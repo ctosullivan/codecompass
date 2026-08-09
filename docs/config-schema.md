@@ -1,8 +1,9 @@
 # `vendor.toml` config schema
 
-> This document describes the **planned** configuration format. As of
-> Phase 0, no code parses this file yet — parsing is planned for Phase 1
-> (see [`planning/`](../planning/) for status).
+> As of Phase 1, `depcompass.config.load_vendor_config()` parses this
+> format (see [`planning/`](../planning/) for status). The CLI commands
+> that read `vendor.toml` in normal use (`sync`, `check`, ...) are still
+> stubs — see [`docs/cli-reference.md`](cli-reference.md).
 
 `vendor.toml` lives at the root of the consuming project and has one table
 per tracked dependency.
@@ -52,6 +53,15 @@ name = "serde"
 ecosystem = "cargo"
 depth = "surface"
 ```
+
+## Validation
+
+Parsing is **fail-fast**: the first invalid vendor entry (a missing
+required field, an `ecosystem`/`depth` value outside the allowed set, or
+`depth = full` without `context_path`) raises an error naming the vendor
+and the specific problem. Parsing does not continue on to collect every
+issue in the file before reporting — fix the first error and re-run to
+see the next one, if any.
 
 ## Notes
 

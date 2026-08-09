@@ -1,13 +1,17 @@
 # CLI reference
 
-> This document describes the **planned** CLI surface. As of Phase 0, no
-> commands are implemented yet — see [`planning/`](../planning/) for
-> current phase status. Each command below is tagged with the roadmap
-> phase that's expected to implement it.
+> This document describes the **planned** CLI surface. As of Phase 1, all
+> 5 commands exist and are visible in `depcompass --help`, but each is a
+> stub: it prints a "not yet implemented" message naming its planned phase
+> and exits non-zero, without accepting the flags/arguments documented
+> below yet — see [`planning/`](../planning/) for current phase status.
+> Each command is tagged with the roadmap phase that's expected to
+> implement its real logic.
 
 ## `depcompass init [--scan <manifest files>]`
 
-**Status:** not yet implemented (planned for Phase 4, refined in Phase 10)
+**Status:** stub (exists, prints "not yet implemented" and exits
+non-zero). Real logic planned for Phase 4, refined in Phase 10.
 
 Bulk-discovers dependencies from the given manifest files (e.g.
 `package.json`, `pyproject.toml`, `Cargo.toml`) and writes a draft
@@ -22,8 +26,8 @@ depcompass init --scan package.json pyproject.toml Cargo.toml
 
 ## `depcompass sync [<vendor>]`
 
-**Status:** not yet implemented (deterministic path planned for Phase 4;
-AI-gated gap analysis added in Phase 5)
+**Status:** stub. Deterministic path planned for Phase 4; AI-gated gap
+analysis added in Phase 5.
 
 Regenerates digests and trees. With no argument, syncs every vendor in
 `vendor.toml`; with a vendor name, syncs just that one.
@@ -44,7 +48,7 @@ depcompass sync --budget 1.00
 
 ## `depcompass index`
 
-**Status:** not yet implemented (planned for Phase 4)
+**Status:** stub. Real logic planned for Phase 4.
 
 Regenerates the routing table injected into the consuming project's root
 `CLAUDE.md` (between `<!-- depcompass:start -->` / `<!-- depcompass:end
@@ -61,7 +65,7 @@ depcompass index
 
 ## `depcompass check [--strict] [--fix]`
 
-**Status:** not yet implemented (planned for Phase 6)
+**Status:** stub. Real logic planned for Phase 6.
 
 Staleness gate. Compares each vendor's recorded "last verified against
 installed version" against the ecosystem adapter's live read of the
@@ -81,8 +85,8 @@ depcompass check --fix
 
 ## `depcompass chat [<name>]`
 
-**Status:** not yet implemented (single-vendor mode planned for Phase 7;
-project-root routing mode planned for Phase 8)
+**Status:** stub. Single-vendor mode planned for Phase 7; project-root
+routing mode planned for Phase 8.
 
 Lightweight terminal REPL, distinct from running Claude Code directly in a
 vendor folder. Loads only digest files as system context and calls the
