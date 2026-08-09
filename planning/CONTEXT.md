@@ -10,18 +10,14 @@ for the log of how it got here.
 
 ## What was just completed
 
-Implemented `depcompass.core` (`VendorConfig`, `Ecosystem`, `Depth` as
-`StrEnum`, `DepNode`, `VendorDigest`), `depcompass.config`
-(`load_vendor_config()` — fail-fast `vendor.toml` parsing via stdlib
-`tomllib`), and `depcompass.cli` (a Typer app with all 5 commands
-registered as stubs, satisfying the `depcompass.cli:app` entry point).
-Recorded two new ADRs: `decisions/0010` resolves the vendor-src
-commit-vs-gitignore question left open from Phase 0 (decided: gitignored,
-regenerated on `sync`), and `decisions/0011` records dataclasses over
-pydantic for the core models. 16 tests pass, `ruff check .` is clean, and
-`depcompass --help` / stub command invocations behave as designed (see
-`planning/phase-1-core-data-models.md`'s Status for the full verification
-record).
+Phase 1 (core data models, `vendor.toml` parsing, CLI skeleton) is done —
+see the prior entry in git history / `CHANGELOG.md` for detail. Since
+then: added `planning/ROADMAP.md`, a full-roadmap phase-status table
+(all 13 phases, MVP-milestone vs post-MVP, distinct from this file's
+current-phase-only view). Updated `CLAUDE.md` (§0, §1, §2, §5 — approved
+by the user before commit, per its own rule) and `CONTRIBUTING.md` to
+require keeping `planning/ROADMAP.md` in sync: added to it when a phase's
+plan file is created, marked `done` when a phase finishes.
 
 ## Decisions made this session not already captured in an ADR
 
@@ -40,6 +36,10 @@ record).
 - `Depth` and `Ecosystem` use `enum.StrEnum` (stdlib since 3.11) rather
   than `class X(str, Enum)` — a small direct benefit of the Phase 0
   min-Python-3.11 decision (`decisions/0009`).
+- `planning/ROADMAP.md`'s addition was treated as a process/tooling
+  change, not an architectural decision — no new ADR was written for it
+  (comparable to how Phase 0's git-commit-granularity choice lived here
+  rather than as an ADR).
 
 ## Next concrete step
 

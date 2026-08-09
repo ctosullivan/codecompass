@@ -21,3 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `depcompass.config` (fail-fast `vendor.toml` parsing via `tomllib`), and
   a `depcompass.cli` skeleton with all 5 planned commands registered as
   stubs. Two new ADRs (`decisions/0010`, `decisions/0011`).
+- `planning/ROADMAP.md`: a full-roadmap phase-status table (all 13
+  phases, MVP milestone vs post-MVP), distinct from `planning/CONTEXT.md`'s
+  current-phase-only session-resumption view.
+
+### Changed
+
+- `CLAUDE.md` and `CONTRIBUTING.md` now require keeping
+  `planning/ROADMAP.md` in sync: added to it when a phase's plan file is
+  created, marked `done` when a phase finishes.

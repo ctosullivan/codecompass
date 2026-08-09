@@ -18,13 +18,15 @@ Before writing code for any roadmap phase, a plan file must exist at
   is done. Not "it should work" — something you can actually run.
 - **Status** — `not started` / `in progress` / `done`.
 
-Don't begin implementation until that file exists. If writing the plan
-surfaces an assumption that isn't already settled elsewhere, pause and ask
-before proceeding from plan to code.
+Don't begin implementation until that file exists. Add the phase's
+row/status to [`planning/ROADMAP.md`](planning/ROADMAP.md) in the same
+commit as the plan file. If writing the plan surfaces an assumption
+that isn't already settled elsewhere, pause and ask before proceeding
+from plan to code.
 
-## The four kept-in-sync folders
+## The kept-in-sync docs
 
-Four folders track different aspects of the project and must each be
+These docs track different aspects of the project and must each be
 updated in the **same commit** as any change that affects them:
 
 - **`docs/`** — user-facing usage documentation (CLI reference, config
@@ -39,6 +41,9 @@ updated in the **same commit** as any change that affects them:
   reversal. Write a new ADR whenever a phase involves a non-obvious
   tradeoff call, not only for decisions already known at project start.
 - **`planning/CONTEXT.md`** — current session-resumption state (see below).
+- **`planning/ROADMAP.md`** — full-roadmap phase-status table (every
+  phase, not just the current one). Updated whenever a phase starts,
+  finishes, or its scope changes.
 
 `CLAUDE.md` is **not** on this list — see the note on it below.
 
@@ -67,8 +72,9 @@ are the log.
 
 A phase is done when: code is implemented, its plan file's verification
 step passes, `docs/`, `architecture/`, and `decisions/` are updated as
-applicable, a changelog entry is added, and `planning/CONTEXT.md` reflects
-the new state. Not done until all of these.
+applicable, a changelog entry is added, `planning/CONTEXT.md` reflects the
+new state, and `planning/ROADMAP.md` marks the phase `done`. Not done
+until all of these.
 
 ## Commit conventions
 
