@@ -7,8 +7,8 @@ disagree, this file wins.
 ## 0. This file is the one exception to same-commit doc-sync
 
 Every other doc folder (`docs/`, `architecture/`, `decisions/`,
-`planning/CONTEXT.md`) is updated in the same commit as the change that
-affects it — see §2. This file is not. **Any change to this file, however
+`planning/CONTEXT.md`, `planning/ROADMAP.md`) is updated in the same
+commit as the change that affects it — see §2. This file is not. **Any change to this file, however
 small, must be presented to the user as a diff and receive explicit
 approval before it is written or committed.** No silent edits, no folding
 a CLAUDE.md tweak into an unrelated commit. This file is what every future
@@ -20,11 +20,12 @@ silently across every subsequent session in a way drift elsewhere doesn't.
 Before writing code for any roadmap phase, write `planning/phase-N-<name>.md`
 describing scope (including what's explicitly deferred), files to be
 created/changed, and how the phase will be verified as done. Do not begin
-implementation until that file exists. If writing the plan surfaces an
-assumption not already settled, pause and ask before proceeding from plan
-to code.
+implementation until that file exists. Add the phase's row/status to
+`planning/ROADMAP.md` in the same commit as the plan file. If writing the
+plan surfaces an assumption not already settled, pause and ask before
+proceeding from plan to code.
 
-## 2. Four kept-in-sync folders, same commit
+## 2. Kept-in-sync docs, same commit
 
 - **`docs/`** — user-facing usage docs. Update when CLI behavior, config
   schema, or generated file formats change.
@@ -36,9 +37,12 @@ to code.
   Write a new ADR whenever a phase involves a non-obvious tradeoff, not
   only for decisions already known at project start.
 - **`planning/CONTEXT.md`** — current session-resumption state (§4).
+- **`planning/ROADMAP.md`** — full-roadmap phase-status table (all
+  phases, not just the current one). Updated whenever a phase starts (§1),
+  finishes (§5), or its scope changes.
 
-All four update in the same commit as the change that touches them — not
-as a follow-up.
+All of the above update in the same commit as the change that touches
+them — not as a follow-up.
 
 ## 3. Changelog, every change
 
@@ -58,7 +62,8 @@ current-state section each time — don't append indefinitely.
 
 Code implemented + plan file's verification step passes + `docs/`,
 `architecture/`, `decisions/` updated as applicable + changelog entry added
-+ `planning/CONTEXT.md` reflects the new state. Not done until all five.
++ `planning/CONTEXT.md` reflects the new state + `planning/ROADMAP.md`
+marks the phase `done`. Not done until all six.
 
 ## 6. Commits and milestones
 
