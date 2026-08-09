@@ -6,52 +6,48 @@ for the log of how it got here.
 
 ## Current phase
 
-**Phase 0: Repository scaffolding — done.**
+**Phase 1: Core data models & config parsing — done.**
 
 ## What was just completed
 
-Initialized the empty repository with full Phase 0 scaffolding:
-licensing/packaging metadata (`LICENSE`, `pyproject.toml`, `.gitignore`,
-empty `src/depcompass/` placeholder), the process-rules `CLAUDE.md`
-(explicitly approved by the user before commit, per its own §0 rule), a
-living `architecture/overview.md`, nine foundational ADRs
-(`decisions/0001`-`0009`), forward-looking `docs/cli-reference.md` and
-`docs/config-schema.md` stubs, and an empty `tests/` skeleton. No
-implementation code exists yet — `src/depcompass/__init__.py` is empty and
-the `depcompass.cli:app` entry point it references doesn't exist yet.
+Implemented `depcompass.core` (`VendorConfig`, `Ecosystem`, `Depth` as
+`StrEnum`, `DepNode`, `VendorDigest`), `depcompass.config`
+(`load_vendor_config()` — fail-fast `vendor.toml` parsing via stdlib
+`tomllib`), and `depcompass.cli` (a Typer app with all 5 commands
+registered as stubs, satisfying the `depcompass.cli:app` entry point).
+Recorded two new ADRs: `decisions/0010` resolves the vendor-src
+commit-vs-gitignore question left open from Phase 0 (decided: gitignored,
+regenerated on `sync`), and `decisions/0011` records dataclasses over
+pydantic for the core models. 16 tests pass, `ruff check .` is clean, and
+`depcompass --help` / stub command invocations behave as designed (see
+`planning/phase-1-core-data-models.md`'s Status for the full verification
+record).
 
 ## Decisions made this session not already captured in an ADR
 
-- **Git commit granularity for Phase 0**: scaffolding landed as 8 separate
-  commits (metadata/licensing, README+CONTRIBUTING, CLAUDE.md alone,
-  architecture, ADRs as one batch, docs stubs, tests skeleton, plan+
-  context+changelog) rather than one big commit, so each piece is
-  independently reviewable — especially isolating the CLAUDE.md commit
-  since it required its own approval step. This is a process choice, not
-  an architectural one, so it lives here rather than as its own ADR.
-- **CI workflow deferred entirely to Phase 6** (not even a placeholder in
-  Phase 0) — rationale is in `planning/phase-0-repo-scaffolding.md`'s
-  Scope section: a placeholder now would either run against zero tests
-  (misleading) or need rework once real tests land.
-- **Build backend: setuptools. Package layout: `src/depcompass/`. Lint
-  tooling: ruff, added now as a `dev` extra.** These were open ambiguities
-  the Phase 0 Plan agent flagged; resolved with the user before
-  implementation (all "recommended" options chosen).
-- **Commit message prefixes are type-appropriate** (`chore(phase-0):`,
-  `docs(phase-0):`) rather than a blanket `feat(phase-0):`, since nothing
-  in Phase 0 is a behavioral feature.
-- `tests/__init__.py` was omitted — modern pytest doesn't require it;
-  revisit only if Phase 1's actual package layout needs mirrored
-  `__init__.py` files for import resolution.
+- `VendorDigest.is_stale` is implemented as a property/setter pair backed
+  by a private `_stale` field (`init=False`) rather than a constructor
+  argument — keeps `VendorDigest(config=..., installed_version=...)`
+  construction clean while still letting Phase 6's `staleness.check()`
+  populate it later via plain assignment (`digest.is_stale = True`).
+  Implementation detail, not an architectural tradeoff worth its own ADR.
+- CLI stub commands (`init`/`sync`/`index`/`check`/`chat`) were kept
+  argument-free for Phase 1 rather than wiring up the flags documented in
+  `docs/cli-reference.md` (e.g. `--scan`, `--budget`, `--strict`) — those
+  flags get added when each command's real logic lands in its own phase,
+  to avoid writing parsing code now that would need revisiting anyway.
+  `docs/cli-reference.md`'s intro note flags this explicitly.
+- `Depth` and `Ecosystem` use `enum.StrEnum` (stdlib since 3.11) rather
+  than `class X(str, Enum)` — a small direct benefit of the Phase 0
+  min-Python-3.11 decision (`decisions/0009`).
 
 ## Next concrete step
 
-Write `planning/phase-1-core-data-models.md` (scope: `VendorConfig`,
-`Depth`, `DepNode`, `VendorDigest` in `src/depcompass/core.py`, plus
-`vendor.toml` parsing via stdlib `tomllib`) before writing any Phase 1
-code, per `CLAUDE.md` §1. That plan file must also resolve the still-open
-question from the original spec (§6): whether `vendor/<name>/src/` source
-snapshots for `FULL`-depth vendors are committed to git or gitignored and
-regenerated on `sync` — noted as unresolved in
-`architecture/overview.md`'s Known footguns section and in
-`decisions/0004`.
+Write `planning/phase-2-ecosystem-adapters.md` before any Phase 2 code,
+per `CLAUDE.md` §1. Phase 2 scope (per the original roadmap): the
+`EcosystemAdapter` ABC (`installed_version`, `source_location`,
+`readme_and_api_surface`, `dependency_tree`) plus npm, Python, and Cargo
+adapter implementations. Note before starting: the Cargo toolchain
+(`cargo`/`rustc`) is not installed in the primary dev environment as of
+this session — confirm availability (or an alternative testing strategy)
+before committing to the Cargo adapter's verification plan.

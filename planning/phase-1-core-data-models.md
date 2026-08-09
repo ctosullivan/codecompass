@@ -89,4 +89,10 @@
 
 ## Status
 
-not started
+done — all verification steps passed: 16/16 tests pass (`pytest`), `ruff
+check .` is clean, `pip install -e ".[dev]"` + `depcompass --help` list
+all 5 commands, `depcompass sync` (and the other 4) print a "not yet
+implemented" message naming their phase and exit 1, and
+`load_vendor_config` correctly parses the 4-entry fixture and rejects each
+of the negative cases (missing field, bad enum value, malformed TOML,
+`full` without `context_path`).

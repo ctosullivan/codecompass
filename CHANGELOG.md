@@ -16,3 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`decisions/0001`-`0009`), forward-looking `docs/cli-reference.md` and
   `docs/config-schema.md`, and an empty `tests/` skeleton. No CLI
   functionality is implemented yet.
+- Core data models and `vendor.toml` parsing (Phase 1): `depcompass.core`
+  (`VendorConfig`, `Ecosystem`, `Depth`, `DepNode`, `VendorDigest`),
+  `depcompass.config` (fail-fast `vendor.toml` parsing via `tomllib`), and
+  a `depcompass.cli` skeleton with all 5 planned commands registered as
+  stubs. Two new ADRs (`decisions/0010`, `decisions/0011`).
