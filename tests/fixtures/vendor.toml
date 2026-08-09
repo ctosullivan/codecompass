@@ -1,0 +1,20 @@
+[[vendor]]
+name = "turndown"
+ecosystem = "npm"
+depth = "full"
+context_path = "README.md"
+
+[[vendor]]
+name = "lodash"
+ecosystem = "npm"
+depth = "surface"
+
+[[vendor]]
+name = "requests"
+ecosystem = "python"
+depth = "surface"
+
+[[vendor]]
+name = "serde"
+ecosystem = "cargo"
+depth = "surface"
