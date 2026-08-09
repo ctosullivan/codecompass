@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# depcompass-specific
+# Generated per-vendor output; not checked in by default (see decisions/0004
+# and the open question tracked in planning/CONTEXT.md re: FULL-depth src
+# snapshots).
+vendor/
+
+# Secrets (Anthropic API key, etc.)
+.env
+*.env
