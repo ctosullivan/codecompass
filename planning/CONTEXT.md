@@ -7,37 +7,50 @@ for the log of how it got here.
 ## Current phase
 
 **Phase 2: Ecosystem adapters — planned (plan file written, implementation
-not started).**
+not started).** Unchanged by this session — see below.
 
 ## What was just completed
 
-Wrote and committed `planning/phase-2-ecosystem-adapters.md`, resolving
-the Cargo-toolchain-unavailable blocker flagged at the end of Phase 1:
-adapters will call subprocesses through a shared `_run_json` seam that
-tests monkeypatch with hand-written fixture JSON, so all three adapters
-(npm, Python, Cargo) get tested core parsing logic without needing a real
-toolchain locally — to be recorded as `decisions/0012` during
-implementation. Also decided: `pipdeptree` will be added as a real
-dependency (not an external prerequisite like npm/cargo), Python API
-surface extraction will use static `ast` parsing rather than importing
-installed code, and confirmed live (in this dev environment) that `npm ls
---json` needs `--all` to avoid truncating, and `pipdeptree --json` (flat)
-is the wrong shape — `--output json-tree --packages <name>` is required.
-No adapter code has been written yet — this session was scoped to the
-plan only, per explicit instruction.
+Recorded a design decision that doesn't touch Phase 2: the chat REPL
+(Phases 7-8, not yet started) is now designed as a primary consumption
+mode for vendor digests, not a convenience layer bolted onto the markdown
+files. New ADR `decisions/0012-conversational-first-repl-design.md`
+covers two consequences for not-yet-written phase plans: Phase 5's gap
+analysis will produce dual-audience output (existing technical block +
+a new conversational overview, same AI call/cost); Phase 8's REPL will
+load a project-wide dependency rollup (synthesized from per-vendor
+conversational overviews) unconditionally at session start, rather than
+routing to it the way vendor-specific escalation does. `architecture
+/overview.md`'s Gap analysis and Chat REPL sections, `planning/ROADMAP.md`
+'s Phase 5/8 rows, and `CHANGELOG.md` were updated in the same commit
+batch. No `CLAUDE.md` change (no process rule affected) and no code
+change (Phases 0-2 are untouched).
+
+Side effect: taking ADR number `0012` for this decision means Phase 2's
+plan file (`planning/phase-2-ecosystem-adapters.md`), which had
+provisionally referenced `decisions/0012` for its own fixture-mocking-
+testing ADR, was renumbered to `decisions/0013` — fixed in the same
+commit as the new ADR.
 
 ## Decisions made this session not already captured in an ADR
 
-- None beyond what's captured in `planning/phase-2-ecosystem-adapters.md`
-  itself (its "Design decisions" section covers everything decided this
-  session). `decisions/0012` will be written during implementation, not
-  this planning session, since ADRs record decisions as they're acted on.
+- None — this session's only decision is the ADR itself
+  (`decisions/0012`).
 
 ## Next concrete step
 
-Implement Phase 2 per `planning/phase-2-ecosystem-adapters.md`: start
-with `src/depcompass/adapters/base.py` (the ABC, `AdapterError`, and the
-`_run_json` seam), then each adapter + its tests (npm, then Python, then
-Cargo), then `decisions/0012`, then the same-commit doc updates
-(`architecture/overview.md`, `planning/ROADMAP.md`, `CHANGELOG.md`), then
-this file. Mirror the Phase 1 commit-per-logical-change pattern.
+Two independent threads, in no particular order:
+
+1. **Phase 2 implementation** (unchanged from before this session):
+   implement per `planning/phase-2-ecosystem-adapters.md`, starting with
+   `src/depcompass/adapters/base.py`, then each adapter + tests, then
+   `decisions/0013` (not 0012 — see above), then doc/changelog/context
+   closeout.
+2. **Whenever Phase 5 or Phase 8 begin**: their `planning/phase-N-*.md`
+   plan files (not yet written) must incorporate `decisions/0012` from
+   the start — Phase 5's plan must scope the dual-audience gap-analysis
+   output, Phase 8's plan must scope the dependency-rollup synthesis step
+   — rather than being written to the old single-audience/fully-routed
+   design and needing rework later. This is the detail most likely to get
+   lost by the time those phases actually start, so it's called out here
+   explicitly rather than trusting the ADR alone to be re-read.

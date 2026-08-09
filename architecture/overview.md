@@ -105,6 +105,18 @@ README/spec) — without project context, the model has no basis to judge
 what counts as a "gap"; a gap analysis generated without this input is
 generic and low value, not just slightly worse.
 
+**Output is dual-audience** (see
+[`decisions/0012`](../decisions/0012-conversational-first-repl-design.md)):
+the same AI call produces two sections — the technical block described
+above (agent-facing, unchanged), plus a short conversational overview
+written the way you'd explain the dependency to a colleague (what it
+does, why the project uses it, its risk posture) rather than the way
+you'd document it. Same call, same cost — a prompt/schema change, not a
+new cost center. The conversational overview is what feeds the Chat
+REPL's project-wide dependency rollup (see **Chat REPL** below); it isn't
+duplicated into the per-vendor `CLAUDE.md` file, which stays agent-facing
+technical content only.
+
 ## Per-vendor CLAUDE.md structure
 
 Required sections, in order:
@@ -118,7 +130,9 @@ Required sections, in order:
    "prefer this over what you already know" instruction, an agent has no
    signal to override its training data.
 3. **Public API surface**.
-4. **Gap analysis + action pointer** (FULL only).
+4. **Gap analysis + action pointer** (FULL only; technical output only —
+   the parallel conversational overview isn't duplicated here, see **Gap
+   analysis** above).
 5. **Known gotchas**.
 6. **Quick links**.
 
@@ -187,6 +201,16 @@ same reasoning as the depth system).
 
 ## Chat REPL
 
+**The REPL is a primary consumption mode for vendor digests, not a
+convenience layer bolted onto the markdown files** (see
+[`decisions/0012`](../decisions/0012-conversational-first-repl-design.md)).
+The digests (`CLAUDE.md`, `FILETREE.md`, `DEPTREE.md`) are backing store
+for two consumers — AI agents reading them directly (see **Two
+consumption modes** above) and the REPL synthesizing them into
+conversation — and content generation is written with "does this read
+well spoken aloud in a casual chat" as a first-class constraint, not an
+afterthought handled by reformatting at query time.
+
 `depcompass chat [<name>]` — a lightweight terminal REPL, distinct from
 just using Claude Code in the vendor folder. It loads only the vendor's
 digest files as system context and calls the API directly (Haiku) with no
@@ -197,10 +221,24 @@ doesn't over-trust an answer beyond what the digest actually covers.
 
 - **Explicit vendor** (`chat turndown`) — loads that vendor's digest only,
   single system prompt, no routing needed.
-- **No vendor specified** (project-root mode) — the REPL handles both
-  vendor-specific *and* whole-project questions. Two-tier routing per
-  question, across three possible context targets (a specific vendor,
-  several vendors, or the project itself):
+- **No vendor specified** (project-root mode) — loads a **project-wide
+  dependency rollup unconditionally at session start**, before any
+  routing happens. The rollup is synthesized once per `sync` (not per
+  query) from the already-generated per-vendor conversational overviews
+  (see **Gap analysis** above): dependency count by depth, a staleness
+  rollup by severity, notable side-effect flags, and a short narrative.
+  No new per-dependency AI calls — one cheap summarization pass over data
+  that's already paid for. This exists because a large share of realistic
+  casual usage ("anything risky in my deps right now," "why do we even
+  use X," "what changed recently") doesn't cleanly signal either "vendor"
+  or "project" the way keyword/phrase matching expects — waiting for a
+  routing match before loading *any* project-level context would miss
+  these. The REPL's startup banner states that the rollup is loaded, once,
+  up front.
+
+  Vendor-specific escalation still uses two-tier routing **on top of**
+  that baseline rollup, across three possible context targets (a specific
+  vendor, several vendors, or the project itself):
   - **Tier 1** (free, instant) — match vendor names/configured aliases
     against the question text. If none match, check for project-level
     signal instead (question references architecture, a roadmap phase, a
@@ -215,14 +253,16 @@ doesn't over-trust an answer beyond what the digest actually covers.
     insufficient.
   - **Always print a visible context indicator line before answering** —
     e.g. `→ loaded turndown digest (exact match)` or `→ using project
-    context (architecture/overview.md, decisions/0003-*.md)`. The user
-    must always be able to tell what grounded a given answer. If a
-    question pulls in both a vendor digest and project context, the
-    indicator line lists both explicitly rather than picking one to
-    display.
-  Loaded context persists in the system prompt for the rest of the session
-  (cheap to keep, cache-friendly); a soft cap (~3-4 loaded context
-  sources, LRU eviction) prevents a long mixed session from letting the
+    context (architecture/overview.md, decisions/0003-*.md)`. This tells
+    the user what *additional* context, beyond the baseline rollup, grounded
+    a given answer — the rollup itself isn't re-announced every turn, only
+    at session start. If a question pulls in both a vendor digest and
+    project context, the indicator line lists both explicitly rather than
+    picking one to display.
+  Loaded context (the baseline rollup, plus anything Tier 1/2 escalation
+  adds) persists in the system prompt for the rest of the session (cheap
+  to keep, cache-friendly); a soft cap (~3-4 loaded context sources beyond
+  the rollup, LRU eviction) prevents a long mixed session from letting the
   system prompt grow unbounded.
 - Rich handles presentation: `Panel` for the startup grounding disclaimer,
   `Markdown` for rendering answers, `Progress`/spinner for multi-vendor

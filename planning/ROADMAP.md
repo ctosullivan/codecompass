@@ -22,7 +22,7 @@ One milestone (see `CLAUDE.md` §6): tagged/released only once phase 6 is
 | 2 | Ecosystem adapters (npm, Python, Cargo) | planned | [`phase-2-ecosystem-adapters.md`](phase-2-ecosystem-adapters.md) |
 | 3 | Deterministic tree generation (FILETREE/DEPTREE) | not started | — |
 | 4 | `sync` and `index` commands (deterministic path) | not started | — |
-| 5 | AI-gated gap analysis (`depth = full`), `--budget` | not started | — |
+| 5 | AI-gated gap analysis (`depth = full`), dual-audience output (technical + conversational overview, decisions/0012), `--budget` | not started | — |
 | 6 | Staleness checking (`check`, `--strict`/`--fix`) | not started | — |
 
 **MVP done when:** a real project can run `init`, `sync`, and `check`
@@ -34,7 +34,7 @@ output.
 | Phase | Name | Status | Plan file |
 |---|---|---|---|
 | 7 | Single-vendor chat REPL | not started | — |
-| 8 | Project-root-aware REPL routing + whole-project context | not started | — |
+| 8 | Project-root-aware REPL routing + whole-project context + unconditional dependency rollup at session start (decisions/0012) | not started | — |
 | 9 | Cursor `.mdc` export | not started | — |
 | 10 | `init` bulk-discovery refinement | not started | — |
 | 11 | Polish: PyPI publish, examples, docs site evaluation | not started | — |
