@@ -69,6 +69,9 @@ class VendorDigest:
 
     Populated incrementally across later phases: `file_tree`/`dep_tree` by
     tree generation (Phase 3), `api_surface` by adapters (Phase 2),
+    `side_effects` by `sync_vendor` (Phase 4, copied from the dependency
+    tree's root `DepNode.side_effects` — e.g. npm postinstall scripts —
+    for the per-vendor `CLAUDE.md`'s Known Gotchas section),
     `gap_analysis` by the AI-gated step (Phase 5). `is_stale` stays a
     documented stub — it raises until `staleness.check()` (Phase 6) sets
     it; a missing implementation there is not a bug to "fix" with a
@@ -81,6 +84,7 @@ class VendorDigest:
     dep_tree: str | None = None
     api_surface: str | None = None
     gap_analysis: str | None = None
+    side_effects: list[str] = field(default_factory=list)
     _stale: bool | None = field(default=None, repr=False, init=False)
 
     @property

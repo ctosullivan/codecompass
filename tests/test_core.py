@@ -50,6 +50,13 @@ def test_vendor_digest_is_stale_raises_until_populated() -> None:
         digest.is_stale
 
 
+def test_vendor_digest_default_side_effects_are_independent_lists() -> None:
+    config = VendorConfig(name="lodash", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    a = VendorDigest(config=config, installed_version="4.17.21")
+    a.side_effects.append("postinstall script")
+    assert VendorDigest(config=config, installed_version="4.17.21").side_effects == []
+
+
 def test_vendor_digest_is_stale_settable() -> None:
     config = VendorConfig(name="lodash", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
     digest = VendorDigest(config=config, installed_version="4.17.21")
