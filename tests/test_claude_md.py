@@ -33,7 +33,9 @@ def test_gap_analysis_section_is_omitted() -> None:
 
 
 def test_known_gotchas_from_side_effects() -> None:
-    markdown = render_vendor_claude_md(_digest(side_effects=["npm postinstall script: node build.js"]))
+    markdown = render_vendor_claude_md(
+        _digest(side_effects=["npm postinstall script: node build.js"])
+    )
     assert "- npm postinstall script: node build.js" in markdown.splitlines()
 
 

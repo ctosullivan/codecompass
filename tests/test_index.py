@@ -57,7 +57,9 @@ def test_render_routing_table_shows_not_synced_placeholder() -> None:
 
 
 def test_update_root_claude_md_first_run_appends_marker_block(tmp_path: Path) -> None:
-    (tmp_path / "CLAUDE.md").write_text("# My Project\n\nSome hand-written notes.\n", encoding="utf-8")
+    (tmp_path / "CLAUDE.md").write_text(
+        "# My Project\n\nSome hand-written notes.\n", encoding="utf-8"
+    )
 
     update_root_claude_md(tmp_path, "| table |")
 
