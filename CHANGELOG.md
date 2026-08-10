@@ -33,6 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   module for per-ecosystem, no-AI purpose/symbol extraction, plus
   `deptree.py` and `filetree.py` renderers. Tree-generation code itself is
   not yet implemented.
+- Phase 4 plan (`planning/phase-4-sync-index-init.md`): scopes real
+  `init`/`sync`/`index` command logic — manifest-based vendor discovery,
+  per-vendor orchestration (adapters + Phase 3's tree renderers + a
+  pruned `vendor/<name>/src/` snapshot copy + `CLAUDE.md` templating),
+  and idempotent root `CLAUDE.md` routing-table injection. Blocked on
+  Phase 3 actually being implemented first; command code itself is not
+  yet implemented.
 - Ecosystem adapters (Phase 2): `depcompass.adapters` — `EcosystemAdapter`
   ABC and a shared `_run_json` subprocess seam (`base.py`); `NpmAdapter`,
   `PythonAdapter`, and `CargoAdapter` implementing `installed_version`,
