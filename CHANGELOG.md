@@ -27,6 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Phase 2 plan (`planning/phase-2-ecosystem-adapters.md`): scopes the
   `EcosystemAdapter` ABC and npm/Python/Cargo adapter implementations.
   Adapter code itself is not yet implemented.
+- Phase 3 plan (`planning/phase-3-tree-generation.md`): scopes deterministic
+  `FILETREE.md`/`DEPTREE.md` (+ JSON sidecar) generation from Phase 2's
+  `DepNode` trees and `source_location()` paths — a new `symbols.py`
+  module for per-ecosystem, no-AI purpose/symbol extraction, plus
+  `deptree.py` and `filetree.py` renderers. Tree-generation code itself is
+  not yet implemented.
 - Ecosystem adapters (Phase 2): `depcompass.adapters` — `EcosystemAdapter`
   ABC and a shared `_run_json` subprocess seam (`base.py`); `NpmAdapter`,
   `PythonAdapter`, and `CargoAdapter` implementing `installed_version`,

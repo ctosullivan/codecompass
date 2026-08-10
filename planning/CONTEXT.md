@@ -6,54 +6,50 @@ for the log of how it got here.
 
 ## Current phase
 
-**Phase 2: Ecosystem adapters — done.**
+**Phase 3: Deterministic tree generation — planned (plan file written,
+not yet implemented).**
 
 ## What was just completed
 
-Implemented `depcompass.adapters`: the `EcosystemAdapter` ABC, `AdapterError`,
-and a shared `_run_json` subprocess seam (`base.py`); `NpmAdapter`,
-`PythonAdapter`, and `CargoAdapter`, each implementing the four adapter
-methods per `planning/phase-2-ecosystem-adapters.md`. `pipdeptree` added
-as a real dependency. New ADR `decisions/0014` records the fixture-mocked
-testing strategy (resolving the Cargo-toolchain-unavailable blocker).
-`architecture/overview.md`, `planning/ROADMAP.md`, and `CHANGELOG.md`
-updated to match. All tests pass (42 total: 41 passed, 1 skipped — the
-Cargo live smoke test — up from 16 at the end of Phase 1), `ruff check .`
-is clean, and the npm/Python live smoke tests
-both ran successfully against real installed packages in this
-environment; the Cargo live smoke test is written but skipped (no Rust
-toolchain here).
-
-**Two real cross-platform bugs were found and fixed during
-implementation** (documented in `architecture/overview.md`'s Known
-footguns and `decisions/0014`'s Consequences, not just here): (1) on
-Windows, `npm` resolves to a `.cmd` shim that `subprocess.run` can't
-launch by bare name without a shell — fixed by resolving via
-`shutil.which` before invoking, in `_run_json`. (2) A bare `pipdeptree`
-isn't reliably on `PATH` outside an activated venv — fixed by invoking it
-as `sys.executable -m pipdeptree` in the Python adapter. Neither would
-have been caught by fixture-only testing; both were caught by the live
-smoke tests the Phase 2 plan called for.
+Wrote and reviewed `planning/phase-3-tree-generation.md` (plan-only
+session, per `CLAUDE.md` §1 — mirrors the Phase 2 plan-writing session's
+precedent). Scope: a new `src/depcompass/symbols.py` module generalizing
+the per-ecosystem parsing adapters already do for API-surface extraction
+(Cargo's `_extract_pub_items`, Python's `ast`-based `__all__`/docstring
+extraction) into reusable per-file symbol/purpose extractors, plus a new
+npm `.d.ts` export scan that doesn't exist yet; `src/depcompass/deptree.py`
+(diamond dedup, dev-only collapsing, depth-capped `DEPTREE.md` +
+`deptree.json`, the JSON sidecar mirroring the same deduplicated/capped
+shape rather than the adapter's raw tree); `src/depcompass/filetree.py`
+(pruned `FILETREE.md` + `filetree.json` with purpose annotations, plus a
+capped flat symbol index). `adapters/cargo.py`/`python.py` will be
+refactored to call into `symbols.py` rather than keeping private copies of
+that logic, with no behavior change to either adapter's public methods.
+Two design questions were resolved via user interview before finalizing
+the plan: extraction reuses adapter parsing per-ecosystem (not one generic
+heuristic), and `deptree.json` mirrors `DEPTREE.md`'s deduplicated/capped
+view (not the adapter's full raw tree). `planning/ROADMAP.md` and
+`CHANGELOG.md` updated in the same commit as the plan file, per
+`CLAUDE.md` §1/§2/§3. **No tree-generation code has been implemented
+yet** — that's a separate, later session.
 
 ## Decisions made this session not already captured in an ADR
 
-- None beyond what's captured in `decisions/0014` and
-  `planning/phase-2-ecosystem-adapters.md` — the two subprocess fixes
-  above are implementation bugs/fixes, not architectural tradeoffs,
-  recorded as footguns in `architecture/overview.md` rather than as
-  ADRs.
+- None yet — the two design decisions above (extraction approach,
+  `deptree.json` shape) are recorded in `planning/phase-3-tree-generation.md`'s
+  Design decisions section; the extraction-approach one is also slated to
+  become a new ADR (number confirmed against actual repo state) once
+  implementation actually happens, per the plan file's Same-commit doc
+  updates list.
 
 ## Next concrete step
 
-Write `planning/phase-3-tree-generation.md` before any Phase 3 code, per
-`CLAUDE.md` §1. Phase 3 scope (per the roadmap): deterministic
-`FILETREE.md`/`DEPTREE.md` generation from the `DepNode` trees Phase 2's
-adapters now produce — diamond-dependency deduplication (the "see X
-above" back-references explicitly deferred from Phase 2), dev-only
-collapsing to a count, depth-capping large trees with an explicit
-collapse notice, purpose annotations, the flat greppable symbol index,
-and the `filetree.json`/`deptree.json` sidecars. No AI calls in this
-phase (see `architecture/overview.md`'s Tree generation section).
+Implement `planning/phase-3-tree-generation.md`: `symbols.py` + its tests
+first (everything else depends on it), then the `cargo.py`/`python.py`
+adapter refactor onto it (existing Phase 2 tests must keep passing
+unchanged), then `deptree.py` + tests, then `filetree.py` + tests, then
+the new ADR, then the doc/changelog/context closeout — same
+commit-per-logical-change pattern as Phases 0-2.
 
 **Still outstanding, not a Phase 3 blocker but worth remembering**: once
 a Rust toolchain is available anywhere in the pipeline, `decisions/0014`
