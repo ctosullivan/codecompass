@@ -34,8 +34,8 @@ output.
 | Phase | Name | Status | Plan file |
 |---|---|---|---|
 | 7 | Single-vendor chat REPL | not started | — |
-| 8 | Project-root-aware REPL routing + whole-project context + unconditional dependency rollup at session start (decisions/0012) | not started | — |
-| 9 | Cursor `.mdc` export | not started | — |
+| 8 | Project-root-aware REPL routing (Tier 1 sourced from Phase 9's Skill descriptions, decisions/0013) + whole-project context + unconditional dependency rollup at session start (decisions/0012) + digest-exceeded escalation to the generated Skill folder (decisions/0013) | not started | — |
+| 9 | Agent Skills export (primary, one per FULL vendor, trigger-accuracy eval) + Cursor `.mdc` export (retained) — decisions/0013 | not started | — |
 | 10 | `init` bulk-discovery refinement | not started | — |
 | 11 | Polish: PyPI publish, examples, docs site evaluation | not started | — |
 | 12 | MCP server (`query_vendor`) | not started | — |

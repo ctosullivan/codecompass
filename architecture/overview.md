@@ -185,19 +185,59 @@ latter is lower risk and shouldn't trigger the same urgency.
 commit. Pre-commit is a courtesy/fast-fail; **CI's `depcompass check` is
 the actual enforcement point** that blocks merge.
 
-## Multi-tool export (Cursor)
+## Multi-tool export (Skills, Cursor)
 
-Cursor does not read `CLAUDE.md` natively. Its modern context system is
-`.cursor/rules/*.mdc` files with YAML frontmatter (`description`, `globs`,
-`alwaysApply`) controlling activation — the legacy single `.cursorrules`
-file is deprecated and unreliable in Cursor's agent mode specifically, so
-it isn't targeted. `CLAUDE.md` remains the source of truth; `.mdc` is a
-**generated export**, not a separately maintained file — same content,
-different serialization — with `globs` scoped to wherever the vendor is
-actually imported in the consuming codebase (inferred, not hand-written)
-and `alwaysApply: false` (vendor digests should only load into context
-when relevant files are open, not on every request — token cost control,
-same reasoning as the depth system).
+**Agent Skills are the primary multi-tool export target** (see
+[`decisions/0013`](../decisions/0013-agent-skills-as-shared-context-selection-source.md)),
+motivated by a reliability gap in the root `CLAUDE.md` routing table: its
+"consult this vendor's digest first" instruction is a soft instruction
+competing for attention with everything else in context, so an agent
+confident in its training knowledge may never read the digest at all —
+precisely the failure mode depcompass exists to prevent. A Skill's
+description is mechanically part of how Claude decides what's relevant to
+load, a stronger (though not absolute) guarantee than the routing table's
+instruction-following alone.
+
+One Skill per `depth = FULL` vendor, generated at
+`.claude/skills/depcompass-<vendor>/SKILL.md`:
+- The trigger description is built from data already generated — the
+  routing table's "Consult when" column plus a condensed gap-analysis
+  summary — not new content generation. **Description length is a real,
+  ongoing tuning knob, not a one-time writing task**: every skill's
+  name+description loads into every session unconditionally, so a long
+  description that maximizes one vendor's trigger accuracy has a real
+  per-vendor cost that compounds as `FULL`-depth vendor count grows.
+  Specificity (concrete API methods, file/function names, exact trigger
+  situations) — not length — is what drives triggering accuracy.
+- `FILETREE.md`/`DEPTREE.md` bundle as `references/` files inside the
+  skill folder rather than inlining — progressive disclosure means they
+  only cost tokens when Claude actually needs to navigate source.
+- A wrapper script shelling out to `depcompass check <vendor>` at trigger
+  time (a live staleness read instead of a cached line) is deferred to a
+  later phase, not required for the initial export.
+- `depth = SURFACE` vendors don't get a Skill yet — no gap-analysis
+  content exists to build a meaningful trigger description from; worth
+  revisiting with a templated (non-AI-generated) description later.
+
+**Cursor `.mdc` export is retained, not replaced.** Cursor does not read
+`CLAUDE.md` natively. Its modern context system is `.cursor/rules/*.mdc`
+files with YAML frontmatter (`description`, `globs`, `alwaysApply`)
+controlling activation — the legacy single `.cursorrules` file is
+deprecated and unreliable in Cursor's agent mode specifically, so it isn't
+targeted. `.mdc` is a **generated export**, not a separately maintained
+file — same content, different serialization — with `globs` scoped to
+wherever the vendor is actually imported in the consuming codebase
+(inferred, not hand-written) and `alwaysApply: false` (token cost control,
+same reasoning as the depth system). Cursor's glob-scoped file-pattern
+activation is a different — sometimes more precise — trigger model than
+Skills' description-matching, and not every Cursor setup has Skills
+support, so this export stays alongside Skills rather than being dropped.
+
+**The `CLAUDE.md` root routing table is also retained, not replaced** — it
+remains the fallback for any tool or context that doesn't support Skills
+at all, including the Mode-1 standalone `cd`-into-vendor scenario (see
+**Two consumption modes** above), which isn't a "current task the agent
+judges relevant" situation the way Skills triggering assumes.
 
 ## Chat REPL
 
@@ -239,13 +279,22 @@ doesn't over-trust an answer beyond what the digest actually covers.
   Vendor-specific escalation still uses two-tier routing **on top of**
   that baseline rollup, across three possible context targets (a specific
   vendor, several vendors, or the project itself):
-  - **Tier 1** (free, instant) — match vendor names/configured aliases
-    against the question text. If none match, check for project-level
-    signal instead (question references architecture, a roadmap phase, a
-    past decision, or general "how does this project..." phrasing) and
-    load **project context** (root `CLAUDE.md` + `architecture/` +
-    relevant `decisions/` entries + `planning/CONTEXT.md`'s current-state
-    section) rather than any vendor digest.
+  - **Tier 1** (free, instant) — match against the **same generated
+    Skill description text** that Phase 9 produces for Claude Code's
+    native Skills triggering (see
+    [`decisions/0013`](../decisions/0013-agent-skills-as-shared-context-selection-source.md)),
+    not an independently-authored keyword/alias list. One source of
+    truth for "what fires on what," tuned once via Phase 9's
+    trigger-accuracy evaluation, benefiting both native Skills triggering
+    and this routing tier. Whichever of Phase 8/Phase 9 is built first
+    exposes this data in a form the other consumes, rather than
+    duplicating it — a sequencing note for both phases' plan files. If
+    nothing matches, check for project-level signal instead (question
+    references architecture, a roadmap phase, a past decision, or general
+    "how does this project..." phrasing) and load **project context**
+    (root `CLAUDE.md` + `architecture/` + relevant `decisions/` entries +
+    `planning/CONTEXT.md`'s current-state section) rather than any vendor
+    digest.
   - **Tier 2** (fallback, only if Tier 1 is ambiguous) — pass both the
     vendor routing table and a summary of available project-context
     sources, and let the model itself judge relevance (no extra API call),
@@ -264,6 +313,19 @@ doesn't over-trust an answer beyond what the digest actually covers.
   to keep, cache-friendly); a soft cap (~3-4 loaded context sources beyond
   the rollup, LRU eviction) prevents a long mixed session from letting the
   system prompt grow unbounded.
+- **Escalation when a question exceeds digest-only scope** (see
+  [`decisions/0013`](../decisions/0013-agent-skills-as-shared-context-selection-source.md))
+  — deep source inspection, execution, or reasoning beyond what a digest
+  captures. Rather than answering confidently from incomplete context
+  (the same over-trust risk flagged for digest-only answers generally),
+  the REPL states the limitation and points at the already-generated
+  `.claude/skills/depcompass-<vendor>/` folder as the handoff artifact for
+  a full Claude Code session, already grounded via the same Skill —
+  reusing Phase 9's output rather than inventing a separate
+  context-packaging mechanism. The REPL's startup disclaimer ("this only
+  knows what's in the digest") is extended to mention this escalation
+  path exists, so a user hitting the boundary knows there's a next step
+  rather than just receiving a lower-confidence answer.
 - Rich handles presentation: `Panel` for the startup grounding disclaimer,
   `Markdown` for rendering answers, `Progress`/spinner for multi-vendor
   `sync` runs, `Table` for `check` output with stale rows highlighted.

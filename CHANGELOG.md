@@ -39,3 +39,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   output (technical + a conversational overview, same call/cost); Phase
   8's REPL will load a project-wide dependency rollup unconditionally at
   session start rather than routing to it. See `decisions/0012`.
+- **Design decision, not yet shipped**: Agent Skills become the primary
+  multi-tool export target (Phase 9), one Skill per `FULL`-depth vendor,
+  addressing a reliability gap in the `CLAUDE.md` routing table's soft
+  "consult this digest" instruction. Cursor `.mdc` export and the
+  `CLAUDE.md` routing table are retained as fallbacks, not replaced.
+  Phase 8's REPL Tier 1 routing will consume the same generated Skill
+  description text Phase 9 produces, rather than independently-authored
+  matching, and the REPL gains an explicit escalation path to the
+  generated Skill folder for questions exceeding digest-only scope. See
+  `decisions/0013`.
