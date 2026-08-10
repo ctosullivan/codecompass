@@ -4,6 +4,7 @@ import pytest
 
 import depcompass.sync as sync_module
 from depcompass.core import DepNode, Depth, Ecosystem, VendorConfig
+from depcompass.gap_analysis import GapAnalysis, GapAnalysisError
 from depcompass.sync import sync_all, sync_vendor
 
 
@@ -150,6 +151,93 @@ def test_sync_vendor_known_gotchas_from_dependency_tree_side_effects(
     assert digest.side_effects == ["postinstall: node build.js"]
     claude_md = (tmp_path / "vendor" / "demo" / "CLAUDE.md").read_text(encoding="utf-8")
     assert "- postinstall: node build.js" in claude_md.splitlines()
+
+
+def test_sync_vendor_full_depth_populates_gap_analysis_and_writes_overview(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    fake_gap_analysis = GapAnalysis(
+        technical="gap found in X",
+        conversational_overview="This is a friendly overview.",
+        action_pointer_file="__init__.py",
+        action_pointer_note="fix here",
+    )
+    monkeypatch.setattr(sync_module, "generate_gap_analysis", lambda *a, **k: fake_gap_analysis)
+    config = VendorConfig(
+        name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.FULL, context_path="README.md"
+    )
+
+    digest = sync_vendor(config, tmp_path)
+
+    assert digest.gap_analysis == "gap found in X"
+    assert digest.conversational_overview == "This is a friendly overview."
+    assert digest.gap_analysis_error is None
+    vendor_dir = tmp_path / "vendor" / "demo"
+    assert (vendor_dir / "OVERVIEW.md").read_text(encoding="utf-8") == (
+        "This is a friendly overview."
+    )
+    filetree_md = (vendor_dir / "FILETREE.md").read_text(encoding="utf-8")
+    assert "← ACTION TARGET: fix here" in filetree_md
+
+
+def test_sync_vendor_gap_analysis_failure_still_writes_deterministic_output(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+
+    def _raise(*args: object, **kwargs: object) -> None:
+        raise GapAnalysisError("simulated failure")
+
+    monkeypatch.setattr(sync_module, "generate_gap_analysis", _raise)
+    config = VendorConfig(
+        name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.FULL, context_path="README.md"
+    )
+
+    digest = sync_vendor(config, tmp_path)  # should not raise
+
+    assert digest.gap_analysis_error == "simulated failure"
+    assert digest.gap_analysis is None
+    vendor_dir = tmp_path / "vendor" / "demo"
+    for filename in ("FILETREE.md", "DEPTREE.md", "filetree.json", "deptree.json", "CLAUDE.md"):
+        assert (vendor_dir / filename).exists(), filename
+    assert not (vendor_dir / "OVERVIEW.md").exists()
+
+
+def test_sync_vendor_surface_depth_never_calls_gap_analysis(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+
+    def _fail_if_called(*args: object, **kwargs: object) -> None:
+        raise AssertionError("generate_gap_analysis should not be called for depth=surface")
+
+    monkeypatch.setattr(sync_module, "generate_gap_analysis", _fail_if_called)
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE)
+
+    digest = sync_vendor(config, tmp_path)  # should not raise
+
+    assert digest.gap_analysis is None
+
+
+def test_sync_all_budget_too_low_raises_before_any_vendor_is_touched(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    configs = [
+        VendorConfig(
+            name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.FULL, context_path="README.md"
+        ),
+    ]
+
+    with pytest.raises(GapAnalysisError, match="exceeds --budget"):
+        sync_all(configs, tmp_path, budget=0.0)
+
+    assert not (tmp_path / "vendor").exists()
 
 
 def test_sync_all_syncs_every_config(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
