@@ -12,6 +12,7 @@ from pathlib import Path
 
 from depcompass.adapters.base import AdapterError, EcosystemAdapter, _run_json
 from depcompass.core import DepNode
+from depcompass.symbols import extract_python_symbols
 
 _PYI_FILE_CAP = 5
 
@@ -86,21 +87,22 @@ class PythonAdapter(EcosystemAdapter):
         installed module, which would execute unrelated module-level
         side effects purely to generate documentation. See
         planning/phase-2-ecosystem-adapters.md's Design decisions.
+
+        Per-symbol extraction is delegated to `depcompass.symbols`
+        (generalized in Phase 3 for reuse by `filetree.py`); `__all__`
+        extraction stays here since it's module-level data, not a symbol.
         """
         init_file = location / "__init__.py"
         if not init_file.exists():
             return ""
-        tree = ast.parse(init_file.read_text(encoding="utf-8"))
         parts: list[str] = []
 
-        all_names = self._extract_all(tree)
+        all_names = self._extract_all(ast.parse(init_file.read_text(encoding="utf-8")))
         if all_names:
             parts.append("__all__ = " + ", ".join(all_names))
 
-        for node in ast.iter_child_nodes(tree):
-            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
-                docstring = ast.get_docstring(node)
-                parts.append(f"{node.name}: {docstring}" if docstring else node.name)
+        for symbol in extract_python_symbols(init_file):
+            parts.append(f"{symbol.name}: {symbol.purpose}" if symbol.purpose else symbol.name)
 
         return "\n".join(parts)
 

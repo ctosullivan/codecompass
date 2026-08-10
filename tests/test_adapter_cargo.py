@@ -7,7 +7,7 @@ import pytest
 
 import depcompass.adapters.cargo as cargo_module
 from depcompass.adapters.base import AdapterError
-from depcompass.adapters.cargo import CargoAdapter, _extract_pub_items
+from depcompass.adapters.cargo import CargoAdapter
 from depcompass.core import Depth, Ecosystem, VendorConfig
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -61,30 +61,13 @@ def test_dependency_tree_dev_only_and_nesting(
     assert by_name["serde"].children[0].dev_only is False
 
 
-def test_extract_pub_items_captures_doc_comment_and_signature() -> None:
-    source = (FIXTURES / "sample_lib.rs").read_text(encoding="utf-8")
-    items = _extract_pub_items(source)
-
-    add_item = next(i for i in items if "pub fn add" in i)
-    assert "Adds two numbers together." in add_item
-
-    assert any("pub struct Point" in i for i in items)
-    assert not any("internal_helper" in i for i in items)  # not pub
-
-
-def test_extract_pub_items_misses_multi_line_signature() -> None:
-    """Documents the coarse-scan limitation explicitly, rather than
-    hiding it: only the opening line of a multi-line signature is
-    captured."""
-    source = (FIXTURES / "sample_lib.rs").read_text(encoding="utf-8")
-    items = _extract_pub_items(source)
-
-    multi_line_item = next(i for i in items if "multi_line_signature" in i)
-    assert multi_line_item.strip().endswith("pub fn multi_line_signature(")
-    assert "-> i32" not in multi_line_item  # the rest of the signature is missed
-
-
 def test_readme_and_api_surface(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Pub-item extraction itself is covered by tests/test_symbols.py
+    (extract_rust_symbols) since Phase 3 moved that logic there; this
+    test only confirms the adapter wires README + extracted symbols
+    together. Rendered format changed from raw signature lines to
+    `name: purpose` when the adapter switched to the shared, name-based
+    extractor (planning/phase-3-tree-generation.md)."""
     (tmp_path / "README.md").write_text("# demo-crate\n\nA demo crate.", encoding="utf-8")
     src_dir = tmp_path / "src"
     src_dir.mkdir()
@@ -97,7 +80,7 @@ def test_readme_and_api_surface(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
 
     surface = adapter.readme_and_api_surface()
     assert "A demo crate." in surface
-    assert "pub fn add" in surface
+    assert "add: Adds two numbers together." in surface
 
 
 @pytest.mark.smoke

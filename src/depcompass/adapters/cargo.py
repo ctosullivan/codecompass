@@ -13,32 +13,7 @@ from pathlib import Path
 
 from depcompass.adapters.base import AdapterError, EcosystemAdapter, _run_json
 from depcompass.core import DepNode
-
-_PUB_PREFIXES = ("pub fn ", "pub struct ", "pub enum ", "pub trait ")
-
-
-def _extract_pub_items(source: str) -> list[str]:
-    """Coarse, line-based scan for `pub fn`/`pub struct`/`pub enum`/
-    `pub trait` items, capturing an immediately preceding `///` doc
-    comment block if present. Explicitly coarse: only the opening line
-    of a signature is captured, so multi-line signatures (generic
-    bounds/`where` clauses spanning lines) are misparsed — a documented
-    limitation, not a bug to silently work around. `rustdoc
-    --output-format json` remains the eventual, more correct fix
-    (decisions/0002), not attempted here without a toolchain to validate
-    its shape against.
-    """
-    items: list[str] = []
-    doc_lines: list[str] = []
-    for line in source.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("///"):
-            doc_lines.append(stripped.removeprefix("///").strip())
-            continue
-        if stripped.startswith(_PUB_PREFIXES):
-            items.append("\n".join([*doc_lines, stripped]) if doc_lines else stripped)
-        doc_lines = []
-    return items
+from depcompass.symbols import extract_rust_symbols
 
 
 class CargoAdapter(EcosystemAdapter):
@@ -91,9 +66,12 @@ class CargoAdapter(EcosystemAdapter):
         src_dir = location / "src"
         if src_dir.exists():
             for rs_file in sorted(src_dir.rglob("*.rs")):
-                items = _extract_pub_items(rs_file.read_text(encoding="utf-8"))
-                if items:
+                symbols = extract_rust_symbols(rs_file)
+                if symbols:
                     rel = rs_file.relative_to(location)
+                    items = [
+                        f"{s.name}: {s.purpose}" if s.purpose else s.name for s in symbols
+                    ]
                     parts.append(f"# {rel}\n\n" + "\n\n".join(items))
         return "\n\n".join(parts)
 
