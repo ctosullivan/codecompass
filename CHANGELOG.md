@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Phase 5 plan (`planning/phase-5-gap-analysis.md`): scopes the AI-gated
+  gap-analysis step — a new `gap_analysis.py` (forced tool-use, dual
+  technical/conversational output, model pinned to a dated Haiku 4.5
+  snapshot, `--budget` pre-flight cost check), `VendorDigest` gaining
+  `conversational_overview`/`gap_analysis_error`, `sync.py` wiring
+  (including a new `vendor/<name>/OVERVIEW.md` output) and `claude_md.py`
+  gaining back its Gap analysis section, and closing Phase 3's deferred
+  FILETREE-cross-linking loop. No test will ever make a real Anthropic
+  API call. Gap-analysis code itself is not yet implemented.
 - Initial project scaffolding (Phase 0): MIT license, Python packaging
   (setuptools, `src/depcompass/` layout, `requires-python >=3.11`),
   process-rules `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`,

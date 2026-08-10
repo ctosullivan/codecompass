@@ -6,72 +6,65 @@ for the log of how it got here.
 
 ## Current phase
 
-**Phase 4: `init`/`sync`/`index` commands — done.** MVP phases 0-4 are
-now complete; phases 5 (AI-gated gap analysis) and 6 (staleness checking)
-remain before the MVP milestone is done.
+**Phase 5: AI-gated gap analysis — planned (plan file written, not yet
+implemented).** MVP phases 0-4 are done; Phase 5 is the next
+implementation target, followed by Phase 6 (staleness checking) to close
+out the MVP milestone.
 
 ## What was just completed
 
-Implemented `planning/phase-4-sync-index-init.md` in full: `get_adapter`
-dispatch (`adapters/__init__.py`); `depcompass.claude_md` (per-vendor
-`CLAUDE.md` template — Metadata with the load-bearing `**Installed
-version:**` line, Grounding preamble, API surface, Known gotchas from
-`DepNode.side_effects`, Quick links; Gap analysis section omitted, not
-stubbed, until Phase 5); `depcompass.sync` (`sync_vendor`/`sync_all` —
-per-vendor orchestration writing all five output files under
-`vendor/<name>/`, plus a `vendor/<name>/src/` snapshot copy for `depth =
-full`, pruned more loosely than `FILETREE.md` so test directories
-survive); `depcompass.index` (idempotent routing-table injection);
-`depcompass.discovery` (manifest-based `vendor.toml` bootstrap for `init
---scan`). `cli.py`'s `init`/`sync`/`index` are wired to this real logic;
-the `_write_claude_md` stub is gone. `VendorDigest` gained a
-`side_effects` field. `architecture/overview.md`, `docs/cli-reference.md`,
-`docs/config-schema.md`, `planning/ROADMAP.md`, and `CHANGELOG.md`
-updated to match. All tests pass (109 total: 108 passed, 1 skipped — the
-Cargo live smoke test, unchanged since Phase 2 — up from 68 at the end of
-Phase 3), `ruff check .` is clean.
+Wrote and reviewed `planning/phase-5-gap-analysis.md` (plan-only session,
+per `CLAUDE.md` §1 — mirrors the Phase 2-4 plan-writing sessions'
+precedent). Scope: a new `gap_analysis.py` module making the one AI call
+in depcompass (`depth = full` + `context_path` vendors only), using
+forced tool-use for structured dual-audience output (technical block for
+`CLAUDE.md`, conversational overview for a new `vendor/<name>/OVERVIEW.md`
+that Phase 8's REPL rollup will later consume, per `decisions/0012`).
+`VendorDigest` gains `conversational_overview`/`gap_analysis_error`
+fields. `sync.py`/`claude_md.py` are updated to wire it in, with per-
+vendor failures caught locally (deterministic output still written,
+`sync` exits non-zero overall) and a `--budget` pre-flight check that
+aborts the whole run before any API call if projected cost is too high.
+Phase 5 also closes Phase 3's deferred FILETREE-cross-linking loop via a
+new optional `action_pointer` parameter on `filetree.py`'s renderers.
 
-**Two deliberate, disclosed deviations from the plan's literal design**
-(documented in `architecture/overview.md`'s Known footguns and
-`CHANGELOG.md`, not just here):
-1. `index` reads each vendor's already-synced `CLAUDE.md` from disk
-   (`index.RoutingRow`/`load_routing_rows`) instead of accepting
-   `list[VendorDigest]` and/or re-running `sync` — the plan had
-   explicitly left this open. Re-running `sync` inside `index` would make
-   `index` silently pay gap-analysis AI cost once Phase 5 lands, which
-   would defeat the entire architectural reason `index` exists as a
-   command separate from `sync`. Consequence: a never-synced vendor shows
-   `_not synced_` rather than erroring, and the routing table's Deps
-   column links to `DEPTREE.md` rather than showing a live count.
-2. `init --scan`'s real CLI syntax is a repeated flag
-   (`--scan a --scan b`), not one flag followed by space-separated files
-   as the original `docs/cli-reference.md` draft showed — Click/Typer
-   options don't support the latter for a named flag. The docs were
-   corrected in this session's closeout commit, not left stale.
+Four design questions were resolved via user interview before finalizing
+the plan, all matching the recommended option: pin the model to a dated
+Haiku 4.5 snapshot rather than `decisions/0003`'s rolling alias; `--budget`
+overruns abort the whole run rather than partially processing; a single
+vendor's AI failure doesn't abort the batch; and Phase 5 (not some later,
+unowned phase) implements FILETREE cross-linking. `planning/ROADMAP.md`
+and `CHANGELOG.md` updated in the same commit as the plan file, per
+`CLAUDE.md` §1/§2/§3. **No gap-analysis code has been implemented yet** —
+that's a separate, later session.
 
-**One real end-to-end verification, not just fixture/mock-based**: `sync`
-was run for real (via the CLI, `typer.testing.CliRunner`) against this
-repo's own installed `pytest` dependency, producing a genuine
-`vendor/pytest/` directory — not mocked, matching the plan's Verification
-step 3.
+**Real cost implication flagged for implementation time**: gap analysis
+is fully regenerated on every `sync` run for a `depth = full` +
+`context_path` vendor, not cached — consistent with Phase 4's "always
+fully overwritten" design applied to the one step that now costs real
+money each time. Must be disclosed in docs, not silently inherited.
 
 ## Decisions made this session not already captured in an ADR
 
-- None — the two deviations above are implementation refinements of
-  details the plan itself left open (see `planning/phase-4-sync-index-init.md`'s
-  Design decisions and Status sections), not new architectural tradeoffs
-  requiring a fresh ADR. No new ADR was written this session.
+- None yet — all of this session's design decisions (model pinning,
+  `--budget` behavior, per-vendor failure handling, FILETREE
+  cross-linking scope, structured-output mechanism, `OVERVIEW.md`
+  persistence, `context_path` truncation, cost-estimate approach) are
+  recorded in `planning/phase-5-gap-analysis.md`'s Design decisions
+  section. One of them — the no-live-API-call testing strategy — is
+  slated to become a new ADR (number confirmed against actual repo state)
+  once implementation actually happens, per the plan file's Same-commit
+  doc updates list.
 
 ## Next concrete step
 
-Write `planning/phase-5-gap-analysis.md` before any Phase 5 code, per
-`CLAUDE.md` §1. Phase 5 scope (per the roadmap): AI-gated gap analysis at
-`depth = full` using `claude-haiku-4-5`, dual-audience output (technical +
-conversational overview, per `decisions/0012`), `--budget` cost control
-for promoting several vendors to `full` at once, and slotting the Gap
-analysis section back into `claude_md.render_vendor_claude_md` (after API
-surface, per architecture/overview.md) — the first section that section
-of the template has been missing since Phase 4 built it.
+Implement `planning/phase-5-gap-analysis.md`: `gap_analysis.py` + tests
+first (the seam and budget/cost logic everything else depends on), then
+the `core.py`/`filetree.py` additions + their tests, then `sync.py`
+wiring + tests (including the new `OVERVIEW.md` output), then
+`claude_md.py`'s Gap analysis section + tests, then `cli.py`'s
+`--budget` + tests, then the new ADR, then the doc/changelog/context
+closeout — same commit-per-logical-change pattern as Phases 0-4.
 
 **Still outstanding, not a Phase 5 blocker but worth remembering**: once
 a Rust toolchain is available anywhere in the pipeline, `decisions/0014`
