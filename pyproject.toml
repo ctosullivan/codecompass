@@ -21,6 +21,7 @@ dependencies = [
     "typer",
     "rich",
     "anthropic",
+    "pipdeptree",
 ]
 # Note: no `tomli` dependency — requires-python >=3.11 means `tomllib` is
 # available in the standard library (see decisions/0009).
