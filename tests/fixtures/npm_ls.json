@@ -1,0 +1,21 @@
+{
+  "name": "consuming-project",
+  "dependencies": {
+    "turndown": {
+      "version": "7.1.2",
+      "dependencies": {
+        "domino": {
+          "version": "2.1.6"
+        },
+        "commander": {
+          "version": "11.0.0",
+          "dependencies": {
+            "domino": {
+              "version": "2.1.6"
+            }
+          }
+        }
+      }
+    }
+  }
+}

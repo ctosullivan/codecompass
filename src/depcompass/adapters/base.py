@@ -6,6 +6,7 @@ See architecture/overview.md's "Adapter interface" section.
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -64,12 +65,26 @@ def _run_json(cmd: list[str], cwd: Path) -> dict | list:
     tests monkeypatch per-module (e.g. depcompass.adapters.npm._run_json)
     to inject fixture JSON instead of invoking a real toolchain — see
     decisions/0014.
+
+    Resolves ``cmd[0]`` via ``shutil.which`` before invoking it. This
+    isn't just a nicer error message: several real-world tools this seam
+    invokes (notably npm) are ``.cmd`` shims on Windows, which
+    ``CreateProcess`` can't launch directly by bare name without a shell
+    — a well-known Windows-specific `subprocess` gotcha. Resolving first
+    gives the full, correctly-extensioned path, so plain ``shell=False``
+    works cross-platform without needing a shell (and the injection
+    surface that comes with one).
     """
+    resolved = shutil.which(cmd[0])
+    if resolved is None:
+        raise AdapterError(
+            f"required tool not found: {cmd[0]!r} — is it installed and on PATH?"
+        )
     try:
         result = subprocess.run(
-            cmd, cwd=cwd, capture_output=True, text=True, check=False
+            [resolved, *cmd[1:]], cwd=cwd, capture_output=True, text=True, check=False
         )
-    except FileNotFoundError as exc:
+    except OSError as exc:
         raise AdapterError(
             f"required tool not found: {cmd[0]!r} — is it installed and on PATH?"
         ) from exc

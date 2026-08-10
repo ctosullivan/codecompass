@@ -39,6 +39,9 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "smoke: exercises a real external tool (npm/cargo) — network/toolchain dependent, skipped automatically when the tool isn't present",
+]
 
 [tool.ruff]
 line-length = 100

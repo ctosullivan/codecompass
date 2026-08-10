@@ -1,0 +1,10 @@
+{
+  "name": "consuming-project",
+  "version": "1.0.0",
+  "dependencies": {
+    "turndown": "^7.1.2"
+  },
+  "devDependencies": {
+    "commander": "^11.0.0"
+  }
+}

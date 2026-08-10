@@ -1,3 +1,4 @@
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -14,7 +15,16 @@ class _FakeCompletedProcess:
         self.stderr = stderr
 
 
+def _pretend_tool_is_on_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    """_run_json resolves cmd[0] via shutil.which before invoking it —
+    tests that fake subprocess.run must also fake a successful resolve,
+    or _run_json short-circuits to the "not found" branch first."""
+    monkeypatch.setattr(shutil, "which", lambda name: f"/fake/path/to/{name}")
+
+
 def test_run_json_success(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    _pretend_tool_is_on_path(monkeypatch)
+
     def fake_run(cmd, **kwargs):
         return _FakeCompletedProcess(0, '{"ok": true}')
 
@@ -30,6 +40,8 @@ def test_run_json_missing_tool_raises_adapter_error(tmp_path: Path) -> None:
 def test_run_json_non_zero_exit_raises_adapter_error(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    _pretend_tool_is_on_path(monkeypatch)
+
     def fake_run(cmd, **kwargs):
         return _FakeCompletedProcess(1, "", "something went wrong")
 
@@ -41,6 +53,8 @@ def test_run_json_non_zero_exit_raises_adapter_error(
 def test_run_json_invalid_json_raises_adapter_error(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    _pretend_tool_is_on_path(monkeypatch)
+
     def fake_run(cmd, **kwargs):
         return _FakeCompletedProcess(0, "not json")
 
