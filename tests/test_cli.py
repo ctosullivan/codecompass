@@ -87,7 +87,7 @@ def test_sync_single_vendor_filters_by_name(
     )
     synced_names: list[str] = []
 
-    def _fake_sync_all(configs, project_root):  # noqa: ANN001
+    def _fake_sync_all(configs, project_root, *, budget=None):  # noqa: ANN001
         synced_names.extend(c.name for c in configs)
         return [VendorDigest(config=c, installed_version="1.0.0") for c in configs]
 
@@ -97,6 +97,51 @@ def test_sync_single_vendor_filters_by_name(
 
     assert result.exit_code == 0, result.output
     assert synced_names == ["a"]
+
+
+def test_sync_budget_too_low_aborts_before_any_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "vendor.toml").write_text(
+        '[[vendor]]\nname = "turndown"\necosystem = "npm"\ndepth = "full"\n'
+        'context_path = "README.md"\n',
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["sync", "--budget", "0"])
+
+    assert result.exit_code == 1
+    assert "exceeds --budget" in result.output
+    assert not (tmp_path / "vendor").exists()
+
+
+def test_sync_reports_gap_analysis_failure_and_exits_nonzero(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "vendor.toml").write_text(
+        '[[vendor]]\nname = "turndown"\necosystem = "npm"\ndepth = "surface"\n',
+        encoding="utf-8",
+    )
+
+    def _fake_sync_all(configs, project_root, *, budget=None):  # noqa: ANN001
+        return [
+            VendorDigest(
+                config=c,
+                installed_version="1.0.0",
+                gap_analysis_error="Anthropic API call failed: timeout",
+            )
+            for c in configs
+        ]
+
+    monkeypatch.setattr(cli_module, "sync_all", _fake_sync_all)
+
+    result = runner.invoke(app, ["sync"])
+
+    assert result.exit_code == 1
+    assert "gap analysis failed" in result.output
+    assert "timeout" in result.output
 
 
 def test_index_injects_routing_table_into_root_claude_md(

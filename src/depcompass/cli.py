@@ -15,6 +15,7 @@ from rich.console import Console
 from depcompass.config import ConfigError, load_vendor_config
 from depcompass.core import VendorConfig
 from depcompass.discovery import DiscoveryError, discover_all, write_vendor_toml
+from depcompass.gap_analysis import GapAnalysisError
 from depcompass.index import load_routing_rows, render_routing_table, update_root_claude_md
 from depcompass.sync import sync_all
 
@@ -73,6 +74,12 @@ def init(
 @app.command()
 def sync(
     vendor: str | None = typer.Argument(None, help="Sync only this vendor; omit to sync all."),
+    budget: float | None = typer.Option(
+        None,
+        "--budget",
+        help="Cap estimated gap-analysis spend (USD) for this run; aborts before any "
+        "API call if the estimate exceeds it. Omit for no cap.",
+    ),
 ) -> None:
     """Regenerate digests and trees for one or all vendors."""
     configs = _load_config()
@@ -81,9 +88,25 @@ def sync(
         if not configs:
             console.print(f"[red]error:[/red] {vendor!r} not found in vendor.toml")
             raise typer.Exit(code=1)
-    digests = sync_all(configs, Path.cwd())
+    try:
+        digests = sync_all(configs, Path.cwd(), budget=budget)
+    except GapAnalysisError as exc:
+        console.print(f"[red]error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    failed = False
     for digest in digests:
-        console.print(f"[green]synced[/green] {digest.config.name}@{digest.installed_version}")
+        if digest.gap_analysis_error:
+            failed = True
+            console.print(
+                f"[yellow]synced (gap analysis failed)[/yellow] "
+                f"{digest.config.name}@{digest.installed_version}: {digest.gap_analysis_error}"
+            )
+        else:
+            console.print(
+                f"[green]synced[/green] {digest.config.name}@{digest.installed_version}"
+            )
+    if failed:
+        raise typer.Exit(code=1)
 
 
 @app.command()
