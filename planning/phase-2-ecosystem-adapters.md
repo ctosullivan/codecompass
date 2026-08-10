@@ -16,11 +16,14 @@
   npm/cargo toolchain. npm and Python additionally get a live smoke test
   (skipped automatically if the tool isn't present); Cargo's live smoke
   test is written but inert in this environment today.
-- New ADR: `decisions/0013` recording the fixture-mocking testing
+- New ADR: `decisions/0014` recording the fixture-mocking testing
   strategy and its explicit tradeoff (doesn't catch real-world tool
-  output drift). (Renumbered from 0012 — that number was claimed by
-  `decisions/0012-conversational-first-repl-design.md`, recorded before
-  Phase 2 implementation began.)
+  output drift). (Renumbered twice now: 0012 was claimed by
+  `decisions/0012-conversational-first-repl-design.md`, then 0013 by
+  `decisions/0013-agent-skills-as-shared-context-selection-source.md`,
+  both recorded before Phase 2 implementation began. Check `/decisions`
+  for the true next available number before actually creating this file
+  — don't trust this plan file's number if further decisions land first.)
 - Same-commit doc updates: `architecture/overview.md` (Adapter interface
   section gets real signatures; Known footguns gains Phase 2-specific
   entries), `planning/ROADMAP.md`, `planning/CONTEXT.md`, `CHANGELOG.md`.
@@ -51,7 +54,8 @@
   going into this phase): resolved by testing all three adapters'
   core parsing logic against hand-written fixture JSON via the `_run_json`
   monkeypatch seam, rather than requiring real subprocess output. Recorded
-  as `decisions/0013` since this is an explicit, real gap — fixtures can
+  as `decisions/0014` (see the number-collision note above) since this is
+  an explicit, real gap — fixtures can
   drift from real tool output undetected until a live test (or a human)
   catches it.
 - **`pipdeptree`** added as a real dependency (pip-installable, unlike the
@@ -135,7 +139,9 @@
   environment); regex-extraction test against `sample_lib.rs` asserting
   current behavior including the documented multi-line-signature miss.
 - `pyproject.toml` — add `"pipdeptree"` to `dependencies`.
-- `decisions/0013-adapter-tests-use-fixture-mocking-not-live-subprocesses.md`.
+- `decisions/0014-adapter-tests-use-fixture-mocking-not-live-subprocesses.md`
+  (number to be reconfirmed against actual repo state at implementation
+  time — see the number-collision note above).
 - `architecture/overview.md`, `planning/ROADMAP.md`,
   `planning/CONTEXT.md`, `CHANGELOG.md` — updated in place.
 
@@ -154,7 +160,8 @@
   `iniconfig`, etc.).
 - Trigger `AdapterError` once per adapter (nonexistent package name) and
   confirm the message is clear.
-- `decisions/0013` has Status/Context/Decision/Alternatives
+- The new adapter-testing ADR (numbered per actual repo state at
+  implementation time) has Status/Context/Decision/Alternatives
   considered/Consequences sections matching the existing ADR template.
 - `architecture/overview.md`'s Known footguns section lists every new
   Phase 2 limitation (npm `dev_only` not transitive, Python `dev_only`
