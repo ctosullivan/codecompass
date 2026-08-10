@@ -54,24 +54,44 @@ def _iter_files(root: Path) -> Iterator[Path]:
         yield path
 
 
-def render_filetree_markdown(root: Path, ecosystem: Ecosystem) -> str:
+def render_filetree_markdown(
+    root: Path, ecosystem: Ecosystem, *, action_pointer: tuple[str, str] | None = None
+) -> str:
     """No version numbers (that's DEPTREE.md's job); a one-line purpose
     annotation per file where inferable.
+
+    `action_pointer`, when given, is `(relative_file_path, note)` from
+    Phase 5's gap analysis — the matching file's line gets an appended
+    `← ACTION TARGET: <note>` marker, cross-linking FILETREE.md directly
+    to the gap-analysis finding instead of leaving a two-hop lookup
+    (deferred in Phase 3, closed here).
     """
+    pointer_path, pointer_note = action_pointer if action_pointer else (None, None)
     lines: list[str] = []
     for path in _iter_files(root):
         rel = path.relative_to(root).as_posix()
         purpose = purpose_for_file(path, ecosystem)
-        lines.append(f"- {rel}  — {purpose}" if purpose else f"- {rel}")
+        line = f"- {rel}  — {purpose}" if purpose else f"- {rel}"
+        if rel == pointer_path:
+            line += f"  ← ACTION TARGET: {pointer_note}"
+        lines.append(line)
     return "\n".join(lines)
 
 
-def render_filetree_json(root: Path, ecosystem: Ecosystem) -> dict:
-    """Machine-readable mirror of `render_filetree_markdown`'s walk."""
-    entries = [
-        {"path": path.relative_to(root).as_posix(), "purpose": purpose_for_file(path, ecosystem)}
-        for path in _iter_files(root)
-    ]
+def render_filetree_json(
+    root: Path, ecosystem: Ecosystem, *, action_pointer: tuple[str, str] | None = None
+) -> dict:
+    """Machine-readable mirror of `render_filetree_markdown`'s walk,
+    including the same `action_pointer` cross-link when given.
+    """
+    pointer_path, pointer_note = action_pointer if action_pointer else (None, None)
+    entries = []
+    for path in _iter_files(root):
+        rel = path.relative_to(root).as_posix()
+        entry = {"path": rel, "purpose": purpose_for_file(path, ecosystem)}
+        if rel == pointer_path:
+            entry["action_pointer"] = pointer_note
+        entries.append(entry)
     return {"entries": entries}
 
 

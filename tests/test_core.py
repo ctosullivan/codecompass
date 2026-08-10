@@ -57,6 +57,14 @@ def test_vendor_digest_default_side_effects_are_independent_lists() -> None:
     assert VendorDigest(config=config, installed_version="4.17.21").side_effects == []
 
 
+def test_vendor_digest_gap_analysis_fields_default_to_none() -> None:
+    config = VendorConfig(name="lodash", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    digest = VendorDigest(config=config, installed_version="4.17.21")
+    assert digest.gap_analysis is None
+    assert digest.conversational_overview is None
+    assert digest.gap_analysis_error is None
+
+
 def test_vendor_digest_is_stale_settable() -> None:
     config = VendorConfig(name="lodash", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
     digest = VendorDigest(config=config, installed_version="4.17.21")

@@ -112,3 +112,42 @@ def test_build_symbol_index_no_notice_when_under_cap(tmp_path: Path) -> None:
 
     assert "not shown" not in index
     assert index.splitlines() == ["solo -> one.py"]
+
+
+def test_render_filetree_markdown_marks_action_pointer_on_matching_file(tmp_path: Path) -> None:
+    (tmp_path / "index.py").write_text("def main(): ...\n", encoding="utf-8")
+    (tmp_path / "other.py").write_text("def helper(): ...\n", encoding="utf-8")
+
+    markdown = render_filetree_markdown(
+        tmp_path, Ecosystem.PYTHON, action_pointer=("index.py", "override main() here")
+    )
+    lines = markdown.splitlines()
+
+    assert any(line.startswith("- index.py") and "← ACTION TARGET: override main() here" in line
+               for line in lines)
+    assert not any("ACTION TARGET" in line for line in lines if line.startswith("- other.py"))
+
+
+def test_render_filetree_markdown_no_action_pointer_leaves_output_unchanged(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "index.py").write_text("def main(): ...\n", encoding="utf-8")
+
+    with_none = render_filetree_markdown(tmp_path, Ecosystem.PYTHON, action_pointer=None)
+    without_arg = render_filetree_markdown(tmp_path, Ecosystem.PYTHON)
+
+    assert with_none == without_arg
+    assert "ACTION TARGET" not in with_none
+
+
+def test_render_filetree_json_marks_action_pointer_on_matching_entry(tmp_path: Path) -> None:
+    (tmp_path / "index.py").write_text("def main(): ...\n", encoding="utf-8")
+    (tmp_path / "other.py").write_text("def helper(): ...\n", encoding="utf-8")
+
+    data = render_filetree_json(
+        tmp_path, Ecosystem.PYTHON, action_pointer=("index.py", "override main() here")
+    )
+    by_path = {entry["path"]: entry for entry in data["entries"]}
+
+    assert by_path["index.py"]["action_pointer"] == "override main() here"
+    assert "action_pointer" not in by_path["other.py"]
