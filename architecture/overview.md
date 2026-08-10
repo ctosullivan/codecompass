@@ -7,13 +7,15 @@ is a living document updated in place as the system evolves. When in doubt
 about *why* something is designed the way it is, check `decisions/`; when
 you want to know *what exists now*, check here.
 
-As of Phase 2, the core data model (`depcompass.core`), `vendor.toml`
+As of Phase 3, the core data model (`depcompass.core`), `vendor.toml`
 parsing (`depcompass.config`), a CLI skeleton (`depcompass.cli`) whose
-commands are stubs, and all three ecosystem adapters
-(`depcompass.adapters`) are implemented. Everything else described below
-— tree generation, gap analysis, staleness checking, the chat REPL,
-Skills/Cursor export — is still the target design that later phases build
-toward; see `planning/CONTEXT.md` for current status.
+commands are stubs, all three ecosystem adapters (`depcompass.adapters`),
+per-ecosystem symbol/purpose extraction (`depcompass.symbols`), and
+deterministic tree generation (`depcompass.deptree`, `depcompass.filetree`)
+are implemented. Everything else described below — gap analysis,
+staleness checking, the chat REPL, Skills/Cursor export — is still the
+target design that later phases build toward; see `planning/CONTEXT.md`
+for current status.
 
 ## Core data model
 
@@ -101,34 +103,67 @@ starting npm-only. See
 
 See [`decisions/0002`](../decisions/0002-adapter-approach-differs-per-ecosystem.md).
 
+## Symbol/purpose extraction (`depcompass.symbols`)
+
+`Symbol(name, purpose)` plus one no-AI, no-subprocess extractor per
+ecosystem, each `Path -> list[Symbol]`: `extract_python_symbols` (`ast`-
+based top-level `def`/`class` + docstring), `extract_rust_symbols`
+(line-based `pub fn`/`struct`/`enum`/`trait` + `///` doc-comment scan),
+`extract_npm_symbols` (regex scan of `.d.ts` `export function/class/
+interface/const/type/enum <name>` + a leading JSDoc line). `purpose_for_file(path,
+ecosystem)` dispatches to the matching extractor by ecosystem *and* file
+suffix, falling back to a generic leading-comment-marker scan (`#`, `//`,
+`/*`, `"""`, `'''`) for files no ecosystem parser claims. Extraction
+functions never raise — a file that fails to parse returns `[]`/`None`.
+
+This module is shared: `adapters/cargo.py` and `adapters/python.py` call
+into it for their `readme_and_api_surface()` output (generalized from
+private per-adapter helpers in Phase 2), and `filetree.py` (below) calls
+it for per-file purpose annotations and the symbol index. See
+[`decisions/0015`](../decisions/0015-symbol-extraction-reuses-adapter-parsing-per-ecosystem.md).
+
 ## Tree generation — deterministic, always free
 
 `FILETREE.md` and `DEPTREE.md` (plus `filetree.json`/`deptree.json`
 sidecars) involve **no AI calls** and run on every `sync` regardless of
-`depth`. Rules:
+`depth`. `depcompass.deptree` renders from a `DepNode` tree;
+`depcompass.filetree` renders from a vendor's source directory
+(`source_location()` today; a copied `vendor/<name>/src/` snapshot once
+Phase 4 adds that). Neither writes to disk or is wired into the CLI yet —
+both return strings/dicts that Phase 4's `sync` command will write to
+files.
 
-- Prune `dist/`, `build/`, `.git/`, `__pycache__/`, `node_modules/`,
-  `.venv/`, test/fixture directories, minified bundles, and source maps —
-  they add tokens without adding navigation value.
-- **Deduplicate diamond dependencies** in `DEPTREE.md` — render each unique
-  `name@version` once, back-reference repeats (`(see lodash@4.17.21
-  above)`) rather than re-expanding. The single biggest token-reduction
-  lever for real npm trees.
-- Dev-only dependencies collapse to a count, not an enumerated list.
-- Depth-cap large trees with an explicit collapse notice — never a silent
-  truncation; an agent must be able to tell an incomplete tree from a
-  complete one.
-- `FILETREE.md` omits version numbers (that's `DEPTREE.md`'s job) but
-  includes a one-line purpose annotation per file where inferable.
-- **Cross-link FILETREE entries to gap-analysis action pointers directly**
-  — e.g. `src/commonmark-rules.js  ← ACTION TARGET: override
-  fencedCodeBlock here` — collapsing a two-hop lookup (read gap analysis,
-  then separately find the file) into one line.
-- Also produce a **flat, greppable symbol index** (keyword → file path)
-  alongside the nested tree — closer to a ctags model than a directory
-  listing. Nested trees are for first-read orientation; flat indexes are
-  for "jump straight to the thing" on a targeted question. Both are
-  needed; they solve different lookup patterns.
+- `deptree.render_deptree_markdown(root: DepNode, *, max_depth: int = 20)
+  -> str` / `render_deptree_json(root, *, max_depth=20) -> dict` —
+  **deduplicate diamond dependencies**: render each unique `name@version`
+  once, back-reference repeats (`(see lodash@4.17.21 above)` in Markdown,
+  `{"ref": "lodash@4.17.21"}` in JSON) rather than re-expanding. The
+  single biggest token-reduction lever for real npm trees. Dev-only
+  children always collapse to a single count line
+  (`N dev-only dependencies (not shown)`), never an enumerated list, at
+  every level. Past `max_depth`, an explicit collapse notice is emitted
+  (`truncated at depth N — see deptree.json for the full tree` in
+  Markdown, `"truncated": true` in JSON) — never a silent truncation.
+- `filetree.render_filetree_markdown(root: Path, ecosystem: Ecosystem) ->
+  str` / `render_filetree_json(root, ecosystem) -> dict` — a deterministic
+  (sorted), pruned walk: drops `dist/`, `build/`, `.git/`, `__pycache__/`,
+  `node_modules/`, `.venv/`/`venv/`, `test/`/`tests/`/`__tests__/`/
+  `fixtures/` directories and `*.min.js`/`*.map` files — noise that adds
+  tokens without adding navigation value. Omits version numbers (that's
+  `DEPTREE.md`'s job) but includes a one-line purpose annotation per file
+  via `symbols.purpose_for_file` where inferable.
+- `filetree.build_symbol_index(root: Path, ecosystem: Ecosystem) -> str`
+  — a **flat, greppable symbol index** (`name -> path`) built from every
+  file's `symbols.extract_symbols_for_file` output, closer to a ctags
+  model than a directory listing. Nested trees are for first-read
+  orientation; flat indexes are for "jump straight to the thing" on a
+  targeted question. Capped at 200 entries with an explicit `+N more, not
+  shown` notice if exceeded — same never-silent-truncation rule as the
+  depth cap above.
+- **Cross-linking FILETREE entries to gap-analysis action pointers**
+  (e.g. `src/commonmark-rules.js  ← ACTION TARGET: override
+  fencedCodeBlock here`) is deferred until Phase 5 produces gap-analysis
+  output to point at — not implemented yet.
 
 ## Gap analysis — the only AI-cost step
 
@@ -443,3 +478,27 @@ not something to drift into silently.
   on cargo's public schema docs. See
   [`decisions/0014`](../decisions/0014-adapter-tests-use-fixture-mocking-not-live-subprocesses.md)
   for the follow-up required once a toolchain becomes available.
+- **`deptree.py`'s `_DEPTREE_MAX_DEPTH` (20)**, **`filetree.py`'s
+  `_PRUNE_DIR_NAMES`/`_PRUNE_FILE_GLOBS`, and `_SYMBOL_INDEX_CAP` (200)**
+  are initial, arbitrary, tunable values, not validated final numbers —
+  same treatment as Phase 2's `.d.ts`/`.pyi` 5-file cap. Flag if they
+  clip useful tree/index content on real-world packages.
+- **`CargoAdapter.readme_and_api_surface()`'s output format changed in
+  Phase 3** — items now render as `name: purpose` instead of the raw `pub
+  fn ...` signature line, because the underlying extraction moved to
+  `symbols.extract_rust_symbols`'s name-based `Symbol` objects. See
+  [`decisions/0015`](../decisions/0015-symbol-extraction-reuses-adapter-parsing-per-ecosystem.md).
+- **`extract_npm_symbols`'s JSDoc/export regex scan is coarse and new** —
+  unlike the Cargo/Python extractors (which generalize Phase 2-validated
+  logic), it has no adapter-level precedent and is only tested against
+  hand-written `.d.ts` fixtures, not a wide range of real-world authoring
+  styles.
+- **`filetree.py`'s directory walk (`_iter_files`) uses `Path.rglob("*")`
+  then filters pruned directories post-hoc** — it doesn't stop descending
+  into a pruned directory like `node_modules/` before walking it, just
+  excludes its contents from the result. Fine at this project's scale
+  (a single vendor package's source tree), but not optimized for very
+  large pruned subtrees.
+- **Gap-analysis cross-linking in `FILETREE.md`** (see Tree generation
+  above) is explicitly not implemented — deferred until Phase 5 exists
+  and has real output to link to.

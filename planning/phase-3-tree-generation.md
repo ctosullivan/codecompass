@@ -154,5 +154,30 @@
 
 ## Status
 
-planned — this plan file has been written and reviewed; no
-tree-generation code has been implemented yet.
+done — all verification steps passed: `pytest` reports 67 passed, 1
+skipped (the Cargo live smoke test, unchanged from Phase 2 — no Rust
+toolchain in this environment) out of 68 total, up from 42 at the end of
+Phase 2; `ruff check .` is clean; `render_deptree_markdown`/
+`render_deptree_json` on a hand-built diamond tree produce a
+back-reference (`(see lodash@4.17.21 above)` / `{"ref": "lodash@4.17.21"}`)
+on the second occurrence, confirmed by exact-line assertions, not just
+"some string was produced"; a tree deeper than `_DEPTREE_MAX_DEPTH`
+produces an explicit `truncated at depth N` notice (Markdown) /
+`"truncated": true` (JSON), not silent truncation; `render_filetree_markdown`
+on a synthetic tree confirms `node_modules/`/`dist/`/`.min.js` are absent
+from output; `build_symbol_index` past its cap produces an explicit `+N
+more, not shown` notice, confirmed via a monkeypatched small cap rather
+than building 200+ fixture files. `decisions/0015` has all required
+template sections. `architecture/overview.md`'s Known footguns section
+lists every Phase 3 limitation, including two found only once
+implementation started: `CargoAdapter.readme_and_api_surface()`'s output
+format changed (raw signature line → `name: purpose`) as a side effect of
+switching to name-based extraction, and that same switch incidentally
+*fixes* the previously-documented "misses multi-line signatures"
+limitation for name capture (the full function name is present on the
+opening `pub fn` line regardless of signature length) — `symbols.py`'s
+docstring and `decisions/0015`'s Consequences record this explicitly.
+`tests/test_adapter_cargo.py` was updated (not left byte-identical) to
+match the new output format and to move `_extract_pub_items`-level unit
+tests into `tests/test_symbols.py`, per this plan's Tests section, which
+anticipated exactly this.

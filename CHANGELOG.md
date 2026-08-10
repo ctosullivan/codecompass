@@ -27,12 +27,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Phase 2 plan (`planning/phase-2-ecosystem-adapters.md`): scopes the
   `EcosystemAdapter` ABC and npm/Python/Cargo adapter implementations.
   Adapter code itself is not yet implemented.
-- Phase 3 plan (`planning/phase-3-tree-generation.md`): scopes deterministic
-  `FILETREE.md`/`DEPTREE.md` (+ JSON sidecar) generation from Phase 2's
-  `DepNode` trees and `source_location()` paths — a new `symbols.py`
-  module for per-ecosystem, no-AI purpose/symbol extraction, plus
-  `deptree.py` and `filetree.py` renderers. Tree-generation code itself is
-  not yet implemented.
+- Deterministic tree generation (Phase 3): `depcompass.symbols`
+  (`Symbol(name, purpose)` plus `extract_python_symbols`,
+  `extract_rust_symbols`, a new `extract_npm_symbols`, and
+  `purpose_for_file` with a generic comment-marker fallback);
+  `depcompass.deptree` (`render_deptree_markdown`/`render_deptree_json` —
+  diamond-dependency dedup, dev-only collapsing to a count, an explicit
+  depth-cap collapse notice); `depcompass.filetree`
+  (`render_filetree_markdown`/`render_filetree_json`/`build_symbol_index`
+  — pruned directory walk, per-file purpose annotations, a capped flat
+  symbol index). New ADR `decisions/0015` records the reuse-adapter-
+  parsing extraction strategy. `adapters/cargo.py` and `adapters/python.py`
+  now call into `symbols.py` instead of keeping private extraction copies.
 - Phase 4 plan (`planning/phase-4-sync-index-init.md`): scopes real
   `init`/`sync`/`index` command logic — manifest-based vendor discovery,
   per-vendor orchestration (adapters + Phase 3's tree renderers + a
@@ -62,6 +68,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `CargoAdapter.readme_and_api_surface()`'s output format (Phase 3):
+  extracted items now render as `name: purpose` instead of the raw `pub
+  fn ...` signature line, as a consequence of switching to
+  `symbols.extract_rust_symbols`'s name-based extraction. See
+  `decisions/0015`.
 - `CLAUDE.md` and `CONTRIBUTING.md` now require keeping
   `planning/ROADMAP.md` in sync: added to it when a phase's plan file is
   created, marked `done` when a phase finishes.
