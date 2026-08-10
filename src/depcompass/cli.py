@@ -1,7 +1,8 @@
 """depcompass CLI entry point.
 
-Every command is currently a stub — see docs/cli-reference.md for the
-planned surface and the roadmap phase each command's real logic lands in.
+`init`, `sync`, and `index` are implemented (Phase 4). `check` and `chat`
+are still stubs — see docs/cli-reference.md for the planned surface and
+the roadmap phase each command's real logic lands in.
 """
 
 from __future__ import annotations
@@ -13,6 +14,9 @@ from rich.console import Console
 
 from depcompass.config import ConfigError, load_vendor_config
 from depcompass.core import VendorConfig
+from depcompass.discovery import DiscoveryError, discover_all, write_vendor_toml
+from depcompass.index import load_routing_rows, render_routing_table, update_root_claude_md
+from depcompass.sync import sync_all
 
 app = typer.Typer(
     help="Grounded, version-pinned dependency reference docs for AI coding agents."
@@ -20,9 +24,6 @@ app = typer.Typer(
 console = Console()
 
 _PHASE_BY_COMMAND = {
-    "init": 4,
-    "sync": 4,
-    "index": 4,
     "check": 6,
     "chat": 7,
 }
@@ -46,29 +47,52 @@ def _load_config(path: Path = Path("vendor.toml")) -> list[VendorConfig]:
         raise typer.Exit(code=1) from exc
 
 
-def _write_claude_md(*args: object, **kwargs: object) -> None:
-    raise NotImplementedError(
-        "_write_claude_md is a deliberate stub pending Phase 4 "
-        "(per-vendor CLAUDE.md template rendering)."
-    )
-
-
 @app.command()
-def init() -> None:
+def init(
+    scan: list[Path] = typer.Option(
+        ...,
+        "--scan",
+        help="Manifest file to scan; repeat for multiple "
+        "(--scan package.json --scan pyproject.toml).",
+    ),
+    vendor_toml: Path = typer.Option(
+        Path("vendor.toml"), "--output", help="Where to write the generated vendor.toml."
+    ),
+) -> None:
     """Bulk-discover dependencies and write a draft vendor.toml."""
-    _not_implemented("init")
+    try:
+        names_by_ecosystem = discover_all(scan)
+        write_vendor_toml(names_by_ecosystem, vendor_toml)
+    except DiscoveryError as exc:
+        console.print(f"[red]error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    total = sum(len(names) for names in names_by_ecosystem.values())
+    console.print(f"[green]wrote[/green] {vendor_toml} with {total} discovered dependencies")
 
 
 @app.command()
-def sync() -> None:
+def sync(
+    vendor: str | None = typer.Argument(None, help="Sync only this vendor; omit to sync all."),
+) -> None:
     """Regenerate digests and trees for one or all vendors."""
-    _not_implemented("sync")
+    configs = _load_config()
+    if vendor is not None:
+        configs = [c for c in configs if c.name == vendor]
+        if not configs:
+            console.print(f"[red]error:[/red] {vendor!r} not found in vendor.toml")
+            raise typer.Exit(code=1)
+    digests = sync_all(configs, Path.cwd())
+    for digest in digests:
+        console.print(f"[green]synced[/green] {digest.config.name}@{digest.installed_version}")
 
 
 @app.command()
 def index() -> None:
     """Regenerate the routing table injected into the project's root CLAUDE.md."""
-    _not_implemented("index")
+    configs = _load_config()
+    rows = load_routing_rows(configs, Path.cwd())
+    update_root_claude_md(Path.cwd(), render_routing_table(rows))
+    console.print(f"[green]updated[/green] CLAUDE.md routing table ({len(rows)} vendors)")
 
 
 @app.command()
