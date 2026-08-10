@@ -87,6 +87,8 @@ def sync_vendor(config: VendorConfig, project_root: Path) -> VendorDigest:
         gap_analysis=gap_analysis.technical if gap_analysis else None,
         conversational_overview=gap_analysis.conversational_overview if gap_analysis else None,
         gap_analysis_error=gap_analysis_error,
+        action_pointer_file=gap_analysis.action_pointer_file if gap_analysis else None,
+        action_pointer_note=gap_analysis.action_pointer_note if gap_analysis else None,
         side_effects=list(dep_tree_root.side_effects),
     )
     if gap_analysis:

@@ -1,9 +1,9 @@
 """Per-vendor CLAUDE.md template rendering.
 
 See architecture/overview.md's "Per-vendor CLAUDE.md structure" section.
-Gap analysis (section 4 in that spec) is omitted entirely until Phase 5
-produces real output to render — not stubbed with placeholder text, per
-planning/phase-4-sync-index-init.md's Design decisions.
+Gap analysis (section 4 in that spec) is populated by Phase 5's AI-gated
+step for `depth = full` + `context_path` vendors; omitted entirely (not a
+placeholder) for every other vendor.
 """
 
 from __future__ import annotations
@@ -23,9 +23,9 @@ _NO_SIDE_EFFECTS_LINE = "No known side effects detected."
 
 def render_vendor_claude_md(digest: VendorDigest) -> str:
     """Sections, in order: Metadata, Grounding preamble, Public API
-    surface, Known gotchas, Quick links. The Metadata section's
-    `**Installed version:**` line is load-bearing — `staleness.py`
-    (Phase 6) regexes against this exact format.
+    surface, Gap analysis (conditional), Known gotchas, Quick links. The
+    Metadata section's `**Installed version:**` line is load-bearing —
+    `staleness.py` (Phase 6) regexes against this exact format.
     """
     config = digest.config
     parts = [
@@ -44,6 +44,11 @@ def render_vendor_claude_md(digest: VendorDigest) -> str:
         "## Public API surface",
         "",
         digest.api_surface or "_No API surface extracted._",
+    ]
+    gap_analysis_section = _render_gap_analysis_section(digest)
+    if gap_analysis_section is not None:
+        parts += ["", "## Gap analysis", "", gap_analysis_section]
+    parts += [
         "",
         "## Known gotchas",
         "",
@@ -56,6 +61,27 @@ def render_vendor_claude_md(digest: VendorDigest) -> str:
         "- [Project root CLAUDE.md](../../CLAUDE.md)",
     ]
     return "\n".join(parts)
+
+
+def _render_gap_analysis_section(digest: VendorDigest) -> str | None:
+    """`None` means "omit the section entirely" (`depth = surface`, or
+    `full` without `context_path` — gap analysis never ran). A failed
+    call still renders an explicit "unavailable" note rather than being
+    indistinguishable from "never ran" — consistent with this project's
+    never-silent-failure convention (explicit collapse/cap notices
+    elsewhere).
+    """
+    if digest.gap_analysis_error:
+        return f"_Gap analysis unavailable: `{digest.gap_analysis_error}`_"
+    if not digest.gap_analysis:
+        return None
+    lines = [digest.gap_analysis]
+    if digest.action_pointer_file:
+        lines.append(
+            f"\n**Action pointer:** `{digest.action_pointer_file}` — "
+            f"{digest.action_pointer_note}"
+        )
+    return "\n".join(lines)
 
 
 def _render_known_gotchas(digest: VendorDigest) -> str:

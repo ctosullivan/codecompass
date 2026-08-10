@@ -72,11 +72,12 @@ class VendorDigest:
     `side_effects` by `sync_vendor` (Phase 4, copied from the dependency
     tree's root `DepNode.side_effects` — e.g. npm postinstall scripts —
     for the per-vendor `CLAUDE.md`'s Known Gotchas section),
-    `gap_analysis`/`conversational_overview` by the AI-gated step (Phase
-    5, only for `depth = full` vendors with `context_path` set) — a
-    failure there sets `gap_analysis_error` instead, rather than leaving
-    both silently `None` with no way to tell "not applicable" from
-    "failed". `is_stale` stays a documented stub — it raises until
+    `gap_analysis`/`conversational_overview`/`action_pointer_file`/
+    `action_pointer_note` by the AI-gated step (Phase 5, only for `depth =
+    full` vendors with `context_path` set) — a failure there sets
+    `gap_analysis_error` instead, rather than leaving everything silently
+    `None` with no way to tell "not applicable" from "failed". `is_stale`
+    stays a documented stub — it raises until
     `staleness.check()` (Phase 6) sets it; a missing implementation there
     is not a bug to "fix" with a default.
     """
@@ -89,6 +90,8 @@ class VendorDigest:
     gap_analysis: str | None = None
     conversational_overview: str | None = None
     gap_analysis_error: str | None = None
+    action_pointer_file: str | None = None
+    action_pointer_note: str | None = None
     side_effects: list[str] = field(default_factory=list)
     _stale: bool | None = field(default=None, repr=False, init=False)
 

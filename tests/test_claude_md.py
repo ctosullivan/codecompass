@@ -32,6 +32,49 @@ def test_gap_analysis_section_is_omitted() -> None:
     assert "Gap analysis" not in markdown
 
 
+def test_gap_analysis_section_renders_technical_text_and_action_pointer() -> None:
+    full_config = VendorConfig(
+        name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL, context_path="README.md"
+    )
+    markdown = render_vendor_claude_md(
+        _digest(
+            config=full_config,
+            gap_analysis="The project uses fencedCodeBlock without overriding it.",
+            action_pointer_file="src/commonmark-rules.js",
+            action_pointer_note="override fencedCodeBlock here",
+        )
+    )
+    assert "## Gap analysis" in markdown
+    assert "The project uses fencedCodeBlock without overriding it." in markdown
+    assert (
+        "**Action pointer:** `src/commonmark-rules.js` — override fencedCodeBlock here"
+        in markdown
+    )
+
+
+def test_gap_analysis_section_omits_action_pointer_when_not_set() -> None:
+    full_config = VendorConfig(
+        name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL, context_path="README.md"
+    )
+    markdown = render_vendor_claude_md(
+        _digest(config=full_config, gap_analysis="No gaps found.")
+    )
+    assert "## Gap analysis" in markdown
+    assert "No gaps found." in markdown
+    assert "Action pointer" not in markdown
+
+
+def test_gap_analysis_section_shows_explicit_unavailable_note_on_failure() -> None:
+    full_config = VendorConfig(
+        name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL, context_path="README.md"
+    )
+    markdown = render_vendor_claude_md(
+        _digest(config=full_config, gap_analysis_error="Anthropic API call failed: timeout")
+    )
+    assert "## Gap analysis" in markdown
+    assert "_Gap analysis unavailable: `Anthropic API call failed: timeout`_" in markdown
+
+
 def test_known_gotchas_from_side_effects() -> None:
     markdown = render_vendor_claude_md(
         _digest(side_effects=["npm postinstall script: node build.js"])
