@@ -6,70 +6,75 @@ for the log of how it got here.
 
 ## Current phase
 
-**Phase 5: AI-gated gap analysis — planned (plan file written, not yet
-implemented).** MVP phases 0-4 are done; Phase 5 is the next
-implementation target, followed by Phase 6 (staleness checking) to close
-out the MVP milestone.
+**Phase 5: AI-gated gap analysis — done.** MVP phases 0-5 are complete;
+Phase 6 (staleness checking) is the last phase before the MVP milestone
+can be promoted from `[Unreleased]` to a dated release (`CLAUDE.md` §6).
 
 ## What was just completed
 
-Wrote and reviewed `planning/phase-5-gap-analysis.md` (plan-only session,
-per `CLAUDE.md` §1 — mirrors the Phase 2-4 plan-writing sessions'
-precedent). Scope: a new `gap_analysis.py` module making the one AI call
-in depcompass (`depth = full` + `context_path` vendors only), using
-forced tool-use for structured dual-audience output (technical block for
-`CLAUDE.md`, conversational overview for a new `vendor/<name>/OVERVIEW.md`
-that Phase 8's REPL rollup will later consume, per `decisions/0012`).
-`VendorDigest` gains `conversational_overview`/`gap_analysis_error`
-fields. `sync.py`/`claude_md.py` are updated to wire it in, with per-
-vendor failures caught locally (deterministic output still written,
-`sync` exits non-zero overall) and a `--budget` pre-flight check that
-aborts the whole run before any API call if projected cost is too high.
-Phase 5 also closes Phase 3's deferred FILETREE-cross-linking loop via a
-new optional `action_pointer` parameter on `filetree.py`'s renderers.
+Implemented `planning/phase-5-gap-analysis.md` in full: `depcompass.gap_analysis`
+(`generate_gap_analysis`, a single forced-tool-use Anthropic call per
+qualifying vendor, pinned to the dated `claude-haiku-4-5-20251001`
+snapshot rather than `decisions/0003`'s rolling alias; `estimate_cost`/
+`check_budget` for `sync --budget`). `VendorDigest` gained
+`conversational_overview`, `gap_analysis_error`, `action_pointer_file`,
+`action_pointer_note`. `sync_vendor` now calls gap analysis for `depth =
+full` + `context_path` vendors, catching failures locally so the rest of
+`sync` isn't blocked by one bad call, and writes a new
+`vendor/<name>/OVERVIEW.md` on success. `claude_md.py`'s Gap analysis
+section is back (technical text + action pointer, or an explicit
+"unavailable" note on failure — never a silent gap). `filetree.py`'s
+renderers gained an optional `action_pointer` parameter, closing Phase
+3's deferred FILETREE-cross-linking loop. New ADR `decisions/0016`
+records that no test in this project ever makes a real Anthropic API
+call — a cost-driven extension of `decisions/0014`'s fixture-mocking
+precedent. `architecture/overview.md`, `docs/cli-reference.md`,
+`docs/config-schema.md`, `planning/ROADMAP.md`, and `CHANGELOG.md`
+updated to match — including two stale-doc fixes caught along the way
+(the old `_write_claude_md` stub footgun entry, still present despite
+Phase 4 having removed it; the Gap analysis section's strikethrough in
+the Per-vendor CLAUDE.md structure list). All tests pass (136 total: 135
+passed, 1 skipped — the Cargo live smoke test, unchanged since Phase 2 —
+up from 108 at the end of Phase 4), `ruff check .` is clean.
 
-Four design questions were resolved via user interview before finalizing
-the plan, all matching the recommended option: pin the model to a dated
-Haiku 4.5 snapshot rather than `decisions/0003`'s rolling alias; `--budget`
-overruns abort the whole run rather than partially processing; a single
-vendor's AI failure doesn't abort the batch; and Phase 5 (not some later,
-unowned phase) implements FILETREE cross-linking. `planning/ROADMAP.md`
-and `CHANGELOG.md` updated in the same commit as the plan file, per
-`CLAUDE.md` §1/§2/§3. **No gap-analysis code has been implemented yet** —
-that's a separate, later session.
-
-**Real cost implication flagged for implementation time**: gap analysis
-is fully regenerated on every `sync` run for a `depth = full` +
-`context_path` vendor, not cached — consistent with Phase 4's "always
-fully overwritten" design applied to the one step that now costs real
-money each time. Must be disclosed in docs, not silently inherited.
+**No test makes a real Anthropic API call** — every `generate_gap_analysis`
+test monkeypatches `_call_anthropic`; a smaller set of tests exercises
+`_call_anthropic` itself against a fake `anthropic.Anthropic` client
+(constructed in-test) to verify tool-use parsing and SDK-error wrapping
+without going over the network. This means **gap_analysis.py's prompt/
+schema correctness against the real model is unverified** — a human must
+manually run `depcompass sync` against a real `depth = full` +
+`context_path` vendor with a real `ANTHROPIC_API_KEY` at least once
+before trusting this phase's output quality. Flagged in
+`decisions/0016`'s Consequences and `architecture/overview.md`'s Known
+footguns, not just here.
 
 ## Decisions made this session not already captured in an ADR
 
-- None yet — all of this session's design decisions (model pinning,
-  `--budget` behavior, per-vendor failure handling, FILETREE
-  cross-linking scope, structured-output mechanism, `OVERVIEW.md`
-  persistence, `context_path` truncation, cost-estimate approach) are
+- None beyond `decisions/0016` (already written this session) — the
+  model-pinning, `--budget` abort-before-any-calls, per-vendor failure
+  isolation, and FILETREE-cross-linking-in-Phase-5 decisions are all
   recorded in `planning/phase-5-gap-analysis.md`'s Design decisions
-  section. One of them — the no-live-API-call testing strategy — is
-  slated to become a new ADR (number confirmed against actual repo state)
-  once implementation actually happens, per the plan file's Same-commit
-  doc updates list.
+  section; none individually rise to a second new ADR.
 
 ## Next concrete step
 
-Implement `planning/phase-5-gap-analysis.md`: `gap_analysis.py` + tests
-first (the seam and budget/cost logic everything else depends on), then
-the `core.py`/`filetree.py` additions + their tests, then `sync.py`
-wiring + tests (including the new `OVERVIEW.md` output), then
-`claude_md.py`'s Gap analysis section + tests, then `cli.py`'s
-`--budget` + tests, then the new ADR, then the doc/changelog/context
-closeout — same commit-per-logical-change pattern as Phases 0-4.
+Write `planning/phase-6-staleness-checking.md` before any Phase 6 code,
+per `CLAUDE.md` §1. Phase 6 scope (per the roadmap): `depcompass check
+[--strict] [--fix]` — comparing each vendor's `CLAUDE.md`
+`**Installed version:**` line against the ecosystem adapter's live read,
+severity-aware (patch silent, minor warns, major hard-fails per
+`decisions/0005`), distinguishing vendor-version bumps from
+transitive-only DEPTREE drift where practical. This is the last phase
+before MVP phases 0-6 can be promoted from `[Unreleased]` to a dated
+release per `CLAUDE.md` §6.
 
-**Still outstanding, not a Phase 5 blocker but worth remembering**: once
-a Rust toolchain is available anywhere in the pipeline, `decisions/0014`
-requires validating the Cargo adapter's fixture assumptions and regex-
-based `pub` extraction against real `cargo metadata` output and a real
-crate — currently entirely unverified. `extract_npm_symbols` (Phase 3) is
-also still untested against real-world `.d.ts` authoring styles beyond
-hand-written fixtures.
+**Still outstanding, not a Phase 6 blocker but worth remembering**:
+- Once a Rust toolchain is available anywhere in the pipeline,
+  `decisions/0014` requires validating the Cargo adapter's fixture
+  assumptions and regex-based `pub` extraction against real `cargo
+  metadata` output and a real crate — currently entirely unverified.
+- `extract_npm_symbols` (Phase 3) is untested against real-world `.d.ts`
+  authoring styles beyond hand-written fixtures.
+- `gap_analysis.py` (Phase 5) has never been run against the real
+  Anthropic API in this environment — see above.

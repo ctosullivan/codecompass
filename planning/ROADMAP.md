@@ -22,7 +22,7 @@ One milestone (see `CLAUDE.md` §6): tagged/released only once phase 6 is
 | 2 | Ecosystem adapters (npm, Python, Cargo — Cargo unverified against real cargo output, decisions/0014) | done | [`phase-2-ecosystem-adapters.md`](phase-2-ecosystem-adapters.md) |
 | 3 | Deterministic tree generation (FILETREE/DEPTREE) | done | [`phase-3-tree-generation.md`](phase-3-tree-generation.md) |
 | 4 | `init`, `sync`, and `index` commands (deterministic path) | done | [`phase-4-sync-index-init.md`](phase-4-sync-index-init.md) |
-| 5 | AI-gated gap analysis (`depth = full`), dual-audience output (technical + conversational overview, decisions/0012), `--budget`, FILETREE cross-linking | planned | [`phase-5-gap-analysis.md`](phase-5-gap-analysis.md) |
+| 5 | AI-gated gap analysis (`depth = full`), dual-audience output (technical + conversational overview, decisions/0012), `--budget`, FILETREE cross-linking | done | [`phase-5-gap-analysis.md`](phase-5-gap-analysis.md) |
 | 6 | Staleness checking (`check`, `--strict`/`--fix`) | not started | — |
 
 **MVP done when:** a real project can run `init`, `sync`, and `check`

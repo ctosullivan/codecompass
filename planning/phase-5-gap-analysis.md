@@ -149,5 +149,29 @@
 
 ## Status
 
-planned — this plan file has been written and reviewed; no gap-analysis
-code has been implemented yet.
+done — all verification steps passed: `pytest` reports 135 passed, 1
+skipped (the Cargo live smoke test, unchanged since Phase 2) out of 136
+total, up from 108 at the end of Phase 4; `ruff check .` is clean; no
+test makes a real Anthropic API call (`_call_anthropic` is monkeypatched
+everywhere, plus a small set of tests exercise it directly against a
+fake `anthropic.Anthropic` client). A hand-built `depth = full` +
+`context_path` vendor with `sync_module.generate_gap_analysis`
+monkeypatched confirms `CLAUDE.md` contains both the technical section
+and the action pointer line, `OVERVIEW.md` is written with the
+conversational overview, and `FILETREE.md` shows the `← ACTION TARGET`
+marker on the matching file's line. A monkeypatched failure confirms the
+vendor still gets `FILETREE.md`/`DEPTREE.md`/`CLAUDE.md` (with the
+explicit "unavailable" note), `sync_all` continues to remaining vendors,
+and the CLI exits non-zero overall. `sync --budget 0` against a `full` +
+`context_path` vendor confirms nothing is written and the command exits
+1 with a clear estimate-vs-budget message. `decisions/0016` has all
+required template sections. `architecture/overview.md`'s Known footguns
+section lists every new Phase 5 limitation, plus two pre-existing stale
+entries fixed along the way (the `_write_claude_md` footgun that Phase 4
+had already resolved but left documented as outstanding, and the Gap
+analysis section's strikethrough).
+
+**Real gap analysis has not been run against the live Anthropic API in
+this environment** — by design, per `decisions/0016`; a human must do
+this manually at least once before trusting output quality. Recorded in
+`planning/CONTEXT.md`'s next-step notes, not just here.

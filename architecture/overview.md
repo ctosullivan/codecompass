@@ -7,19 +7,19 @@ is a living document updated in place as the system evolves. When in doubt
 about *why* something is designed the way it is, check `decisions/`; when
 you want to know *what exists now*, check here.
 
-As of Phase 4, the core data model (`depcompass.core`), `vendor.toml`
+As of Phase 5, the core data model (`depcompass.core`), `vendor.toml`
 parsing (`depcompass.config`), all three ecosystem adapters
 (`depcompass.adapters`), per-ecosystem symbol/purpose extraction
 (`depcompass.symbols`), deterministic tree generation
 (`depcompass.deptree`, `depcompass.filetree`), per-vendor `CLAUDE.md`
 templating (`depcompass.claude_md`), per-vendor sync orchestration
 (`depcompass.sync`), root routing-table injection (`depcompass.index`),
-and manifest-based `vendor.toml` bootstrap (`depcompass.discovery`) are
-implemented — `init`, `sync`, and `index` are real CLI commands, not
-stubs. Everything else described below — AI-gated gap analysis, staleness
-checking, the chat REPL, Skills/Cursor export — is still the target
-design that later phases build toward; see `planning/CONTEXT.md` for
-current status.
+manifest-based `vendor.toml` bootstrap (`depcompass.discovery`), and
+AI-gated gap analysis (`depcompass.gap_analysis`) are implemented —
+`init`, `sync` (including `--budget`), and `index` are real CLI commands,
+not stubs. Everything else described below — staleness checking, the
+chat REPL, Skills/Cursor export — is still the target design that later
+phases build toward; see `planning/CONTEXT.md` for current status.
 
 ## Core data model
 
@@ -132,10 +132,11 @@ it for per-file purpose annotations and the symbol index. See
 sidecars) involve **no AI calls** and run on every `sync` regardless of
 `depth`. `depcompass.deptree` renders from a `DepNode` tree;
 `depcompass.filetree` renders from a vendor's source directory
-(`source_location()` today; a copied `vendor/<name>/src/` snapshot once
-Phase 4 adds that). Neither writes to disk or is wired into the CLI yet —
-both return strings/dicts that Phase 4's `sync` command will write to
-files.
+(`source_location()`, or the copied `vendor/<name>/src/` snapshot for
+`depth = full` — both point at the same content, since the snapshot is a
+copy of `source_location()`). Both are wired into `sync.py` (Phase 4),
+which writes their output to `FILETREE.md`/`DEPTREE.md`/`filetree.json`/
+`deptree.json` under `vendor/<name>/`.
 
 - `deptree.render_deptree_markdown(root: DepNode, *, max_depth: int = 20)
   -> str` / `render_deptree_json(root, *, max_depth=20) -> dict` —
@@ -148,14 +149,16 @@ files.
   every level. Past `max_depth`, an explicit collapse notice is emitted
   (`truncated at depth N — see deptree.json for the full tree` in
   Markdown, `"truncated": true` in JSON) — never a silent truncation.
-- `filetree.render_filetree_markdown(root: Path, ecosystem: Ecosystem) ->
-  str` / `render_filetree_json(root, ecosystem) -> dict` — a deterministic
-  (sorted), pruned walk: drops `dist/`, `build/`, `.git/`, `__pycache__/`,
-  `node_modules/`, `.venv/`/`venv/`, `test/`/`tests/`/`__tests__/`/
-  `fixtures/` directories and `*.min.js`/`*.map` files — noise that adds
-  tokens without adding navigation value. Omits version numbers (that's
-  `DEPTREE.md`'s job) but includes a one-line purpose annotation per file
-  via `symbols.purpose_for_file` where inferable.
+- `filetree.render_filetree_markdown(root: Path, ecosystem: Ecosystem, *,
+  action_pointer: tuple[str, str] | None = None) -> str` /
+  `render_filetree_json(root, ecosystem, *, action_pointer=None) -> dict`
+  — a deterministic (sorted), pruned walk: drops `dist/`, `build/`,
+  `.git/`, `__pycache__/`, `node_modules/`, `.venv/`/`venv/`,
+  `test/`/`tests/`/`__tests__/`/`fixtures/` directories and
+  `*.min.js`/`*.map` files — noise that adds tokens without adding
+  navigation value. Omits version numbers (that's `DEPTREE.md`'s job) but
+  includes a one-line purpose annotation per file via
+  `symbols.purpose_for_file` where inferable.
 - `filetree.build_symbol_index(root: Path, ecosystem: Ecosystem) -> str`
   — a **flat, greppable symbol index** (`name -> path`) built from every
   file's `symbols.extract_symbols_for_file` output, closer to a ctags
@@ -163,35 +166,71 @@ files.
   orientation; flat indexes are for "jump straight to the thing" on a
   targeted question. Capped at 200 entries with an explicit `+N more, not
   shown` notice if exceeded — same never-silent-truncation rule as the
-  depth cap above.
+  depth cap above. Renders as a `## Symbol index` section within
+  `FILETREE.md` itself (`sync.py`), not a separate sidecar file.
 - **Cross-linking FILETREE entries to gap-analysis action pointers**
   (e.g. `src/commonmark-rules.js  ← ACTION TARGET: override
-  fencedCodeBlock here`) is deferred until Phase 5 produces gap-analysis
-  output to point at — not implemented yet.
+  fencedCodeBlock here`) — implemented in Phase 5 via the
+  `action_pointer` parameter above. `sync_vendor` threads a successful
+  gap analysis's `(action_pointer_file, action_pointer_note)` into both
+  `render_filetree_markdown` and `render_filetree_json`; a `depth =
+  surface` vendor, or one with no gap analysis this run, passes `None`
+  and the parameter has no effect.
 
-## Gap analysis — the only AI-cost step
+## Gap analysis — the only AI-cost step (`depcompass.gap_analysis`)
 
-Only runs when `depth = FULL`. Uses `claude-haiku-4-5` — a Q&A/
-summarization task, not agentic coding, so the cheapest capable model tier
-is the right default. See
-[`decisions/0003`](../decisions/0003-haiku-for-gap-analysis.md).
+Only runs for `depth = FULL` vendors with `context_path` set. Uses the
+dated snapshot `claude-haiku-4-5-20251001` — a Q&A/summarization task,
+not agentic coding, so the cheapest capable model tier is the right
+default (`decisions/0003`); pinned to a dated snapshot rather than the
+rolling `claude-haiku-4-5` alias `decisions/0003` names literally, so
+gap-analysis output doesn't silently change character if Anthropic
+updates what the alias resolves to — a plan-level refinement of that
+ADR's model-*tier* choice, not a reversal of it.
 
 **Requires `context_path`** (pointing at the consuming project's own
 README/spec) — without project context, the model has no basis to judge
 what counts as a "gap"; a gap analysis generated without this input is
-generic and low value, not just slightly worse.
+generic and low value, not just slightly worse. Content is truncated to
+an arbitrary, tunable character cap before entering the prompt (see Known
+footguns).
 
 **Output is dual-audience** (see
-[`decisions/0012`](../decisions/0012-conversational-first-repl-design.md)):
-the same AI call produces two sections — the technical block described
-above (agent-facing, unchanged), plus a short conversational overview
-written the way you'd explain the dependency to a colleague (what it
-does, why the project uses it, its risk posture) rather than the way
-you'd document it. Same call, same cost — a prompt/schema change, not a
-new cost center. The conversational overview is what feeds the Chat
-REPL's project-wide dependency rollup (see **Chat REPL** below); it isn't
-duplicated into the per-vendor `CLAUDE.md` file, which stays agent-facing
-technical content only.
+[`decisions/0012`](../decisions/0012-conversational-first-repl-design.md)),
+produced by **one forced-tool-use API call**: `generate_gap_analysis(config,
+api_surface, project_root) -> GapAnalysis` returns `technical` (agent-
+facing, goes in `CLAUDE.md`, unchanged in spirit from the original
+design), `conversational_overview` (human-facing, written the way you'd
+explain the dependency to a colleague — what it does, why the project
+uses it, its risk posture — rather than the way you'd document it), and
+an optional `action_pointer_file`/`action_pointer_note` pair. Same call,
+same cost — a prompt/schema change, not a new cost center. The
+conversational overview is persisted to a new `vendor/<name>/OVERVIEW.md`
+(Phase 5) — not duplicated into `CLAUDE.md`, which stays agent-facing
+technical content only — for Phase 8's Chat REPL project-wide dependency
+rollup to consume later (see **Chat REPL** below); `decisions/0012`
+requires it already exist by then, since the rollup makes no new
+per-dependency AI calls.
+
+**Real cost implication**: like every other `sync` output, gap analysis
+is fully regenerated on every `sync` run, not diffed or cached — a
+`depth = full` vendor's gap analysis is re-purchased every time `sync`
+runs, not just the first time it's promoted.
+
+**Failure handling**: a `GapAnalysisError` (API failure, unreadable
+`context_path`, malformed response) is caught inside `sync_vendor` for
+that one vendor — its deterministic output still gets written (with an
+explicit "unavailable" note in `CLAUDE.md`, see below), remaining
+vendors still run, and `sync` exits non-zero at the end if anything
+failed. This is local to one vendor; it never aborts the batch.
+
+**`sync --budget <amount>`**: `check_budget` runs once per `sync_all`
+call, *before* any vendor's `sync_vendor` runs. If the estimated cost of
+this run's pending gap-analysis calls (vendors with `depth = full` and
+`context_path`, at a fixed rough per-call placeholder estimate — not
+live-queried pricing) exceeds `budget`, the whole run aborts with a clear
+message and **nothing is written this invocation**, not even other
+vendors' free deterministic output.
 
 ## Per-vendor CLAUDE.md structure (`depcompass.claude_md`)
 
@@ -209,10 +248,14 @@ order:
    "prefer this over what you already know" instruction, an agent has no
    signal to override its training data.
 3. **Public API surface** — `digest.api_surface`.
-4. ~~Gap analysis + action pointer~~ — **omitted entirely, not
-   stubbed**, until Phase 5 produces real gap-analysis output to render.
-   Not a placeholder section; Phase 5's plan file specifies exactly where
-   it slots back in (after API surface).
+4. **Gap analysis + action pointer** — `digest.gap_analysis` plus an
+   `**Action pointer:**` line when `digest.action_pointer_file` is set.
+   If `digest.gap_analysis_error` is set instead, renders an explicit
+   `_Gap analysis unavailable: `<error>`_` note rather than silently
+   omitting the section — consistent with this project's never-silent-
+   failure convention (explicit collapse/cap notices elsewhere). Omitted
+   entirely (no heading at all) when neither is set — `depth = surface`,
+   or `full` without `context_path`, where gap analysis never runs.
 5. **Known gotchas** — deterministically derived from `digest.side_effects`
    (the dependency tree's root `DepNode.side_effects`, e.g. npm's
    postinstall-script detection) rather than left empty or AI-generated.
@@ -343,8 +386,10 @@ judges relevant" situation the way Skills triggering assumes.
 **The REPL is a primary consumption mode for vendor digests, not a
 convenience layer bolted onto the markdown files** (see
 [`decisions/0012`](../decisions/0012-conversational-first-repl-design.md)).
-The digests (`CLAUDE.md`, `FILETREE.md`, `DEPTREE.md`) are backing store
-for two consumers — AI agents reading them directly (see **Two
+The digests (`CLAUDE.md`, `FILETREE.md`, `DEPTREE.md`, and — for `depth =
+full` vendors whose gap analysis succeeded — `OVERVIEW.md`, Phase 5's
+persisted conversational overview) are backing store for two consumers —
+AI agents reading them directly (see **Two
 consumption modes** above) and the REPL synthesizing them into
 conversation — and content generation is written with "does this read
 well spoken aloud in a casual chat" as a first-class constraint, not an
@@ -456,12 +501,18 @@ Phase 5 adds any AI call to `sync` at all.
 
 Structural generation (trees, API-surface extraction) makes no AI calls
 and is effectively free. The only cost center is gap-analysis generation
-at `depth = FULL`, using Haiku. At realistic project scale (dozens of
+at `depth = FULL`, using Haiku, and it is **not cached** — every `sync`
+run regenerates it fresh for every `depth = full` + `context_path`
+vendor, so cost scales with how often `sync` is run, not just with how
+many vendors are `FULL`. At realistic project scale (dozens of
 dependencies, a handful at `FULL`, weekly scheduled refresh), total
 ongoing cost is estimated well under $2/month. This is a design constraint
 worth preserving — if a future change would make gap-analysis run more
 broadly or more often by default, that's a deliberate tradeoff to flag,
-not something to drift into silently.
+not something to drift into silently. `sync --budget <amount>` guards
+against one specific runaway scenario (several vendors promoted to
+`FULL` at once) by refusing to run at all — not partially — once the
+projected cost for a single run exceeds the cap.
 
 ## Known footguns
 
@@ -469,10 +520,9 @@ not something to drift into silently.
   staleness check — don't treat a missing implementation there as a bug to
   "fix" by returning a default; it's intentionally unpopulated until
   `staleness.check()` runs.
-- `_load_config` is implemented (Phase 1); `_write_claude_md` in the CLI
-  skeleton is still a deliberate `NotImplementedError` stub —
-  templating glue, not an architectural decision, filled in during
-  Phase 4.
+- `_load_config` and `claude_md.render_vendor_claude_md` are both
+  implemented (Phases 1 and 4) — the CLI skeleton's old `_write_claude_md`
+  `NotImplementedError` stub was removed in Phase 4, not left behind.
 - The `.d.ts` file cap (5 files) in the npm adapter, and the matching
   `.pyi` cap in the Python adapter, are arbitrary initial values for
   cost control, not validated final numbers — flag if they clip useful
@@ -534,12 +584,22 @@ not something to drift into silently.
   excludes its contents from the result. Fine at this project's scale
   (a single vendor package's source tree), but not optimized for very
   large pruned subtrees.
-- **Gap-analysis cross-linking in `FILETREE.md`** (see Tree generation
-  above) is explicitly not implemented — deferred until Phase 5 exists
-  and has real output to link to.
-- **The Gap analysis section of the per-vendor `CLAUDE.md` template is
-  omitted entirely, not stubbed**, until Phase 5 exists — same treatment
-  as the FILETREE cross-linking above.
+- **Gap analysis is fully regenerated, and re-purchased, on every `sync`
+  run** for a `depth = full` + `context_path` vendor — no caching or
+  diffing against a previous result, consistent with every other `sync`
+  output but the one step where that consistency has a real dollar cost.
+- **`gap_analysis.py`'s `_CONTEXT_PATH_CHAR_CAP` (8000) and
+  `_ESTIMATED_COST_PER_CALL_USD` (a rough placeholder, not live-queried
+  Anthropic pricing)** are initial, arbitrary, tunable values — same
+  treatment as every other cap in this project. The cost estimate is not
+  a guarantee of actual billed cost; `--budget` decisions should be made
+  with that in mind.
+- **No test ever makes a real Anthropic API call** (see
+  [`decisions/0016`](../decisions/0016-gap-analysis-tests-never-call-the-live-anthropic-api.md))
+  — `gap_analysis.py`'s prompt/schema correctness against the real model
+  is not validated by the automated suite at all; a human must run `sync`
+  against a real `depth = full` vendor with a real `ANTHROPIC_API_KEY` at
+  least once to trust this phase's output quality.
 - **`index` reads persisted per-vendor `CLAUDE.md` files rather than
   re-running `sync`** — a deliberate deviation from
   `planning/phase-4-sync-index-init.md`'s literal `render_routing_table(digests:

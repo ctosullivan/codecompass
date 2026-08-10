@@ -1,9 +1,9 @@
 # CLI reference
 
-> `init`, `sync`, and `index` are implemented as of Phase 4. `check` and
-> `chat` remain stubs: each prints a "not yet implemented" message naming
-> its planned phase and exits non-zero — see [`planning/`](../planning/)
-> for current phase status.
+> `init`, `sync`, and `index` are fully implemented as of Phase 5,
+> including `sync --budget`. `check` and `chat` remain stubs: each prints
+> a "not yet implemented" message naming its planned phase and exits
+> non-zero — see [`planning/`](../planning/) for current phase status.
 
 ## `depcompass init --scan <manifest file> [--scan <manifest file> ...] [--output <path>]`
 
@@ -28,10 +28,9 @@ without a cost conversation first.
 depcompass init --scan package.json --scan pyproject.toml --scan Cargo.toml
 ```
 
-## `depcompass sync [<vendor>]`
+## `depcompass sync [<vendor>] [--budget <amount>]`
 
-**Status:** deterministic path implemented (Phase 4); `--budget` and
-AI-gated gap analysis are **not yet implemented** (Phase 5).
+**Status:** fully implemented (Phases 4-5).
 
 Regenerates digests and trees. With no argument, syncs every vendor in
 `vendor.toml`; with a vendor name, syncs just that one (errors clearly if
@@ -40,18 +39,31 @@ the name isn't found).
 - Deterministic output — `FILETREE.md` (including the flat symbol index,
   appended as its own section), `DEPTREE.md`, `filetree.json`,
   `deptree.json`, and the per-vendor `CLAUDE.md` (Metadata, Grounding,
-  API surface, Known gotchas, Quick links — Gap analysis section omitted
-  until Phase 5) — is always regenerated under `vendor/<name>/`,
-  regardless of `depth`, and makes no AI calls. `depth = full` vendors
-  additionally get a pinned `vendor/<name>/src/` snapshot copy.
+  API surface, Gap analysis, Known gotchas, Quick links) — is always
+  regenerated under `vendor/<name>/`, regardless of `depth`, and makes no
+  AI calls. `depth = full` vendors additionally get a pinned
+  `vendor/<name>/src/` snapshot copy.
 - Gap analysis (only for `depth = full` vendors with `context_path` set)
-  will be the one step that calls the Anthropic API (Haiku), once Phase 5
-  lands. `--budget` (cost control for promoting many vendors to `full` at
-  once) is a Phase 5-only flag, not yet added to the CLI.
+  is the one step that calls the Anthropic API (`claude-haiku-4-5-20251001`).
+  **It is not cached** — every `sync` run re-purchases it for every
+  qualifying vendor, so cost scales with how often you run `sync`, not
+  just with how many vendors are `full`. A successful call also writes
+  `vendor/<name>/OVERVIEW.md` (a conversational overview, for the future
+  Chat REPL). A failed call (network/auth/rate-limit error, unreadable
+  `context_path`) doesn't block the rest of `sync`: that vendor still
+  gets its deterministic output, with an explicit "unavailable" note in
+  `CLAUDE.md`, and `sync` exits non-zero at the end.
+- `--budget <amount>` caps estimated gap-analysis spend (USD) for this
+  run, checked *before any API call is made*. If the estimate (a rough,
+  fixed placeholder per vendor, not live-queried Anthropic pricing)
+  exceeds `--budget`, the whole run aborts and **nothing is written**,
+  not even other vendors' free deterministic output. Omit `--budget` for
+  no cap.
 
 ```bash
 depcompass sync
 depcompass sync turndown
+depcompass sync --budget 1.00
 ```
 
 ## `depcompass index`

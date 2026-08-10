@@ -9,15 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Phase 5 plan (`planning/phase-5-gap-analysis.md`): scopes the AI-gated
-  gap-analysis step — a new `gap_analysis.py` (forced tool-use, dual
-  technical/conversational output, model pinned to a dated Haiku 4.5
-  snapshot, `--budget` pre-flight cost check), `VendorDigest` gaining
-  `conversational_overview`/`gap_analysis_error`, `sync.py` wiring
-  (including a new `vendor/<name>/OVERVIEW.md` output) and `claude_md.py`
-  gaining back its Gap analysis section, and closing Phase 3's deferred
-  FILETREE-cross-linking loop. No test will ever make a real Anthropic
-  API call. Gap-analysis code itself is not yet implemented.
+- AI-gated gap analysis (Phase 5): `depcompass.gap_analysis` — a single
+  forced-tool-use Anthropic call per qualifying vendor
+  (`generate_gap_analysis`), pinned to the dated snapshot
+  `claude-haiku-4-5-20251001` rather than `decisions/0003`'s rolling
+  alias, producing structured dual-audience output (technical analysis +
+  conversational overview + an optional action pointer) in one call/cost
+  (`decisions/0012`); `estimate_cost`/`check_budget` support `sync
+  --budget <amount>`, aborting the whole run before any API call if
+  projected cost is too high. `VendorDigest` gains
+  `conversational_overview`, `gap_analysis_error`, `action_pointer_file`,
+  and `action_pointer_note`. `sync_vendor` calls gap analysis for `depth
+  = full` + `context_path` vendors, catching failures locally (the
+  vendor still gets its full deterministic output, with an explicit
+  "unavailable" note in `CLAUDE.md`) so one bad call doesn't block the
+  rest of `sync`; a successful call additionally writes a new
+  `vendor/<name>/OVERVIEW.md`. `claude_md.py`'s Gap analysis section is
+  back, no longer omitted. `filetree.py`'s renderers gain an optional
+  `action_pointer` parameter, closing Phase 3's deferred FILETREE-to-
+  gap-analysis cross-linking loop. New ADR `decisions/0016` records that
+  no test in this project ever makes a real Anthropic API call.
 - Initial project scaffolding (Phase 0): MIT license, Python packaging
   (setuptools, `src/depcompass/` layout, `requires-python >=3.11`),
   process-rules `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`,
@@ -88,6 +99,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `filetree.render_filetree_markdown`/`render_filetree_json` (Phase 5)
+  gain an optional `action_pointer: tuple[str, str] | None = None`
+  keyword — additive and non-breaking; every existing Phase 3/4 call
+  site and test is unaffected.
 - `docs/cli-reference.md`'s `init --scan` syntax (Phase 4): corrected from
   one flag followed by space-separated files to a repeated flag
   (`--scan a --scan b`) — the originally documented syntax isn't how a
