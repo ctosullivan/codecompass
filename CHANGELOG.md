@@ -39,13 +39,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   symbol index). New ADR `decisions/0015` records the reuse-adapter-
   parsing extraction strategy. `adapters/cargo.py` and `adapters/python.py`
   now call into `symbols.py` instead of keeping private extraction copies.
-- Phase 4 plan (`planning/phase-4-sync-index-init.md`): scopes real
-  `init`/`sync`/`index` command logic — manifest-based vendor discovery,
-  per-vendor orchestration (adapters + Phase 3's tree renderers + a
-  pruned `vendor/<name>/src/` snapshot copy + `CLAUDE.md` templating),
-  and idempotent root `CLAUDE.md` routing-table injection. Blocked on
-  Phase 3 actually being implemented first; command code itself is not
-  yet implemented.
+- Real `init`/`sync`/`index` commands (Phase 4): `depcompass.adapters.get_adapter`
+  dispatch; `depcompass.claude_md.render_vendor_claude_md` (per-vendor
+  `CLAUDE.md` template — Metadata with the load-bearing `**Installed
+  version:**` line, Grounding preamble, API surface, Known gotchas
+  sourced from `DepNode.side_effects`, Quick links; Gap analysis section
+  omitted until Phase 5); `depcompass.sync` (`sync_vendor`/`sync_all` —
+  per-vendor orchestration writing `FILETREE.md`/`DEPTREE.md`/
+  `filetree.json`/`deptree.json`/`CLAUDE.md` under `vendor/<name>/`, plus
+  a pruned `vendor/<name>/src/` snapshot copy for `depth = full`);
+  `depcompass.index` (`load_routing_rows`/`render_routing_table`/
+  `update_root_claude_md` — idempotent marker-based routing-table
+  injection that reads persisted per-vendor `CLAUDE.md` files rather than
+  re-running `sync`); `depcompass.discovery` (`discover_npm`/
+  `discover_python`/`discover_cargo`/`write_vendor_toml` — manifest-based
+  `vendor.toml` bootstrap for `init --scan`, erroring rather than
+  overwriting an existing file). `VendorDigest` gains a `side_effects`
+  field. `cli.py`'s `init`/`sync`/`index` commands are wired to this real
+  logic; `_write_claude_md` stub removed.
 - Ecosystem adapters (Phase 2): `depcompass.adapters` — `EcosystemAdapter`
   ABC and a shared `_run_json` subprocess seam (`base.py`); `NpmAdapter`,
   `PythonAdapter`, and `CargoAdapter` implementing `installed_version`,
@@ -68,6 +79,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `docs/cli-reference.md`'s `init --scan` syntax (Phase 4): corrected from
+  one flag followed by space-separated files to a repeated flag
+  (`--scan a --scan b`) — the originally documented syntax isn't how a
+  named Click/Typer option works.
+- `index`'s implementation deviates from `planning/phase-4-sync-index-init.md`'s
+  literal `render_routing_table(digests: list[VendorDigest])` signature:
+  it reads persisted per-vendor `CLAUDE.md` files instead of accepting
+  fresh digests, so it never re-runs `sync` — re-running `sync` inside
+  `index` would make it silently pay gap-analysis AI cost once Phase 5
+  lands. See `architecture/overview.md`'s Known footguns.
 - `CargoAdapter.readme_and_api_surface()`'s output format (Phase 3):
   extracted items now render as `name: purpose` instead of the raw `pub
   fn ...` signature line, as a consequence of switching to

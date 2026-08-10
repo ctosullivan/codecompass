@@ -1,63 +1,71 @@
 # CLI reference
 
-> This document describes the **planned** CLI surface. As of Phase 1, all
-> 5 commands exist and are visible in `depcompass --help`, but each is a
-> stub: it prints a "not yet implemented" message naming its planned phase
-> and exits non-zero, without accepting the flags/arguments documented
-> below yet — see [`planning/`](../planning/) for current phase status.
-> Each command is tagged with the roadmap phase that's expected to
-> implement its real logic.
+> `init`, `sync`, and `index` are implemented as of Phase 4. `check` and
+> `chat` remain stubs: each prints a "not yet implemented" message naming
+> its planned phase and exits non-zero — see [`planning/`](../planning/)
+> for current phase status.
 
-## `depcompass init [--scan <manifest files>]`
+## `depcompass init --scan <manifest file> [--scan <manifest file> ...] [--output <path>]`
 
-**Status:** stub (exists, prints "not yet implemented" and exits
-non-zero). Real logic planned for Phase 4, refined in Phase 10.
+**Status:** implemented (Phase 4). Refined in Phase 10.
 
-Bulk-discovers dependencies from the given manifest files (e.g.
-`package.json`, `pyproject.toml`, `Cargo.toml`) and writes a draft
-`vendor.toml` with every discovered dependency defaulted to
+Bulk-discovers dependencies from the given manifest files (`package.json`,
+`pyproject.toml`, `Cargo.toml` — dispatched by filename) and writes a
+draft `vendor.toml` with every discovered dependency defaulted to
 `depth = surface`. Free to run — surface generation has no AI cost — so
 this is safe to run immediately against a large existing dependency list
 without a cost conversation first.
 
+- `--scan` is repeatable, one manifest file per flag (not space-separated
+  after a single flag — that's not how a named Click/Typer option works).
+- `--output` (default `vendor.toml`) is where the draft is written.
+- Errors, rather than overwriting, if a `vendor.toml` already exists at
+  the target path — this is a bootstrap command, not a merge tool yet.
+- `[project.optional-dependencies]` in `pyproject.toml` is not scanned —
+  only `[project.dependencies]`.
+
 ```bash
-depcompass init --scan package.json pyproject.toml Cargo.toml
+depcompass init --scan package.json --scan pyproject.toml --scan Cargo.toml
 ```
 
 ## `depcompass sync [<vendor>]`
 
-**Status:** stub. Deterministic path planned for Phase 4; AI-gated gap
-analysis added in Phase 5.
+**Status:** deterministic path implemented (Phase 4); `--budget` and
+AI-gated gap analysis are **not yet implemented** (Phase 5).
 
 Regenerates digests and trees. With no argument, syncs every vendor in
-`vendor.toml`; with a vendor name, syncs just that one.
+`vendor.toml`; with a vendor name, syncs just that one (errors clearly if
+the name isn't found).
 
-- Deterministic output (`FILETREE.md`, `DEPTREE.md`, JSON sidecars, the
-  per-vendor `CLAUDE.md` metadata/API-surface sections) is always
-  regenerated, regardless of `depth`, and makes no AI calls.
+- Deterministic output — `FILETREE.md` (including the flat symbol index,
+  appended as its own section), `DEPTREE.md`, `filetree.json`,
+  `deptree.json`, and the per-vendor `CLAUDE.md` (Metadata, Grounding,
+  API surface, Known gotchas, Quick links — Gap analysis section omitted
+  until Phase 5) — is always regenerated under `vendor/<name>/`,
+  regardless of `depth`, and makes no AI calls. `depth = full` vendors
+  additionally get a pinned `vendor/<name>/src/` snapshot copy.
 - Gap analysis (only for `depth = full` vendors with `context_path` set)
-  is the one step that calls the Anthropic API (Haiku). See
-  `--budget` below for cost control when many vendors are promoted to
-  `full` at once.
+  will be the one step that calls the Anthropic API (Haiku), once Phase 5
+  lands. `--budget` (cost control for promoting many vendors to `full` at
+  once) is a Phase 5-only flag, not yet added to the CLI.
 
 ```bash
 depcompass sync
 depcompass sync turndown
-depcompass sync --budget 1.00
 ```
 
 ## `depcompass index`
 
-**Status:** stub. Real logic planned for Phase 4.
+**Status:** implemented (Phase 4).
 
 Regenerates the routing table injected into the consuming project's root
 `CLAUDE.md` (between `<!-- depcompass:start -->` / `<!-- depcompass:end
--->` markers) from the current `vendor.toml` and the latest `sync` output,
-without re-running `sync` itself. Idempotent: safe to run repeatedly.
-
-> The exact boundary between what `sync` regenerates automatically and
-> what requires an explicit `index` call is still being refined — see
-> `planning/phase-4-*.md` once that phase's plan is written.
+-->` markers) from the current `vendor.toml` and each vendor's
+already-synced `CLAUDE.md` — it reads persisted state rather than
+re-running `sync`, so it stays cheap even once Phase 5 gives `sync` an
+AI-gated step. Idempotent: safe to run repeatedly. A vendor that hasn't
+been synced yet shows `_not synced_` in the Version column rather than
+erroring.
 
 ```bash
 depcompass index

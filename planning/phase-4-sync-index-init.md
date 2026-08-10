@@ -161,6 +161,36 @@ also recorded in `planning/CONTEXT.md`'s next-step note.
 
 ## Status
 
-planned — this plan file has been written and reviewed; no command
-implementation code has been written yet. Blocked on Phase 3 actually
-being implemented (see Blocking dependency above).
+done — all verification steps passed: `pytest` reports 108 passed, 1
+skipped (the Cargo live smoke test, unchanged since Phase 2) out of 109
+total, up from 68 at the end of Phase 3; `ruff check .` is clean; a real
+end-to-end `sync` against this repo's own installed `pytest` dependency
+(reusing Phase 2's live-package pattern) produced a `vendor/pytest/`
+directory with all five files, `CLAUDE.md`'s `**Installed version:**`
+line matching `importlib.metadata.version("pytest")` exactly;
+`index` run twice in a row leaves exactly one routing-table block with
+surrounding hand-written content untouched (confirmed via both a unit
+test and a CLI-level test); `init --scan` against a real `package.json`
+produces a `vendor.toml` that `load_vendor_config` parses without error,
+and errors clearly without modifying an existing `vendor.toml`; a `depth
+= full` vendor's `vendor/<name>/src/` snapshot was confirmed (via
+`test_sync.py`) to include a `tests/`-named directory while excluding
+`dist/`; `architecture/overview.md`'s Known footguns section lists every
+new Phase 4 limitation.
+
+Two deliberate deviations from this plan's literal design, both flagged
+in `architecture/overview.md`'s Known footguns and `CHANGELOG.md` rather
+than silently made:
+- `index.render_routing_table` takes `list[RoutingRow]` (built by reading
+  each vendor's already-synced `CLAUDE.md`), not `list[VendorDigest]` as
+  originally sketched — this plan's own Design section had explicitly
+  left the digest-vs-persisted-read question open for implementation
+  time. Reading persisted state (rather than re-running `sync` in-process)
+  is required for `index` to stay cheap once Phase 5 adds an AI-gated
+  step to `sync` — re-running `sync` inside `index` would have silently
+  defeated the entire reason `index` is a separate command.
+- `init --scan`'s CLI syntax is a repeated flag (`--scan a --scan b`), not
+  one flag followed by space-separated files as `docs/cli-reference.md`'s
+  original draft showed — not how a named Click/Typer option works. The
+  docs were corrected in the same commit as this closeout, not left
+  stale.

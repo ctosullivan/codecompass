@@ -7,15 +7,19 @@ is a living document updated in place as the system evolves. When in doubt
 about *why* something is designed the way it is, check `decisions/`; when
 you want to know *what exists now*, check here.
 
-As of Phase 3, the core data model (`depcompass.core`), `vendor.toml`
-parsing (`depcompass.config`), a CLI skeleton (`depcompass.cli`) whose
-commands are stubs, all three ecosystem adapters (`depcompass.adapters`),
-per-ecosystem symbol/purpose extraction (`depcompass.symbols`), and
-deterministic tree generation (`depcompass.deptree`, `depcompass.filetree`)
-are implemented. Everything else described below — gap analysis,
-staleness checking, the chat REPL, Skills/Cursor export — is still the
-target design that later phases build toward; see `planning/CONTEXT.md`
-for current status.
+As of Phase 4, the core data model (`depcompass.core`), `vendor.toml`
+parsing (`depcompass.config`), all three ecosystem adapters
+(`depcompass.adapters`), per-ecosystem symbol/purpose extraction
+(`depcompass.symbols`), deterministic tree generation
+(`depcompass.deptree`, `depcompass.filetree`), per-vendor `CLAUDE.md`
+templating (`depcompass.claude_md`), per-vendor sync orchestration
+(`depcompass.sync`), root routing-table injection (`depcompass.index`),
+and manifest-based `vendor.toml` bootstrap (`depcompass.discovery`) are
+implemented — `init`, `sync`, and `index` are real CLI commands, not
+stubs. Everything else described below — AI-gated gap analysis, staleness
+checking, the chat REPL, Skills/Cursor export — is still the target
+design that later phases build toward; see `planning/CONTEXT.md` for
+current status.
 
 ## Core data model
 
@@ -189,24 +193,33 @@ REPL's project-wide dependency rollup (see **Chat REPL** below); it isn't
 duplicated into the per-vendor `CLAUDE.md` file, which stays agent-facing
 technical content only.
 
-## Per-vendor CLAUDE.md structure
+## Per-vendor CLAUDE.md structure (`depcompass.claude_md`)
 
-Required sections, in order:
+`render_vendor_claude_md(digest: VendorDigest) -> str`. Sections, in
+order:
 
-1. **Metadata** — version, ecosystem, depth, and a **"last verified
-   against installed version"** line. This exact line format is parsed by
-   `staleness.py` via regex — it is load-bearing, not cosmetic.
-2. **Grounding preamble** — explicit instruction that the pinned version is
-   authoritative over training knowledge for this library. This is the
+1. **Metadata** — ecosystem, depth, and a `**Installed version:**` line.
+   This exact format (`\*\*Installed version:\*\*\s*(\S+)`) is what
+   `staleness.py` (Phase 6) and `index.py` (Phase 4, reading it back to
+   populate the routing table's Version column) both regex against — it
+   is load-bearing, not cosmetic.
+2. **Grounding preamble** — fixed instructional text: the pinned version
+   is authoritative over training knowledge for this library. This is the
    actual mechanism that changes agent behavior — without an explicit
    "prefer this over what you already know" instruction, an agent has no
    signal to override its training data.
-3. **Public API surface**.
-4. **Gap analysis + action pointer** (FULL only; technical output only —
-   the parallel conversational overview isn't duplicated here, see **Gap
-   analysis** above).
-5. **Known gotchas**.
-6. **Quick links**.
+3. **Public API surface** — `digest.api_surface`.
+4. ~~Gap analysis + action pointer~~ — **omitted entirely, not
+   stubbed**, until Phase 5 produces real gap-analysis output to render.
+   Not a placeholder section; Phase 5's plan file specifies exactly where
+   it slots back in (after API surface).
+5. **Known gotchas** — deterministically derived from `digest.side_effects`
+   (the dependency tree's root `DepNode.side_effects`, e.g. npm's
+   postinstall-script detection) rather than left empty or AI-generated.
+   A vendor with none detected renders a fixed "No known side effects
+   detected." line.
+6. **Quick links** — relative links to `./FILETREE.md`, `./DEPTREE.md`,
+   and a backlink to the project root `CLAUDE.md`.
 
 ## Two consumption modes
 
@@ -217,22 +230,36 @@ Both must work:
    reference into `node_modules` — package managers prune/dedupe/reinstall
    `node_modules` contents, so it isn't a stable pin target. See
    [`decisions/0004`](../decisions/0004-vendor-src-snapshot-not-node-modules-reference.md).
-   Includes a backlink to the project root `CLAUDE.md` so the agent can
-   escalate from "how does this library work" to "how is it used in our
-   project."
+   `sync.py`'s snapshot copy is pruned *more loosely* than `FILETREE.md`'s
+   walk — it strips `node_modules`/`dist`/`build`/`.git`-style noise only
+   and keeps `test`/`tests`/`__tests__`/`fixtures` directories, since a
+   `FULL` vendor is one being extended or subclassed and its own test
+   suite is often exactly what someone wants to reference here. Includes a
+   backlink to the project root `CLAUDE.md` so the agent can escalate from
+   "how does this library work" to "how is it used in our project."
 2. **Routed from project root** — a routing table is injected into the
    consuming project's own root `CLAUDE.md`, between
    `<!-- depcompass:start -->` / `<!-- depcompass:end -->` markers.
-   Idempotent regeneration via `index()`: handles both the first-run case
-   (markers don't exist yet, section is appended) and the regenerate case
-   (`re.sub` with `DOTALL` replaces just the marked block), without
-   clobbering hand-written content around it. Table columns: Vendor, Path,
-   Version (✅/⚠), Depth, Deps, Consult when — paired with an explicit
-   routing instruction sentence, since the table alone is inert data.
+   Idempotent regeneration via `depcompass.index.update_root_claude_md`:
+   handles both the first-run case (markers don't exist yet, the block is
+   appended) and the regenerate case (`re.sub` with `DOTALL` replaces
+   just the marked block), without clobbering hand-written content around
+   it. Table columns: Vendor, Path, Version, Depth, Deps, Consult when —
+   paired with an explicit routing instruction sentence, since the table
+   alone is inert data. As of Phase 4: `index` **reads each vendor's
+   already-synced `CLAUDE.md`** (regexing the Metadata section's
+   `**Installed version:**` line) rather than re-running `sync` — this
+   keeps `index` cheap and side-effect-free even after Phase 5 adds an
+   AI-gated step to `sync`, and a vendor with no synced `CLAUDE.md` yet
+   shows `_not synced_` rather than erroring. The Version column has no
+   ✅/⚠ freshness indicator yet (that's `check`'s job, Phase 6); the Deps
+   column links to `DEPTREE.md` rather than showing a live dependency
+   count, since `index` deliberately has no adapter/tree data to draw one
+   from.
 
 ## Staleness checking
 
-Compares the `**Installed version**:` line in a vendor's `CLAUDE.md`
+Compares the `**Installed version:**` line in a vendor's `CLAUDE.md`
 against the ecosystem adapter's live lockfile read. **Severity-aware, not
 binary**: patch delta is silent/ignored, minor delta warns without
 failing, major delta hard-fails (`check` exits non-zero) because a major
@@ -407,15 +434,23 @@ doesn't over-trust an answer beyond what the digest actually covers.
 
 ## Retrofitting to existing projects
 
-`depcompass init --scan <manifest files>` bulk-discovers dependencies and
-writes a draft `vendor.toml` with everything defaulted to `depth =
-SURFACE` — free, since surface generation has no AI cost, so it's safe to
-run immediately on a large existing dependency list without a cost
-conversation first. Promotion to `FULL` is selective and reactive
-(promote a vendor the first time someone actually needs its deep digest
-mid-task) rather than batch-promoting a whole existing dependency graph
-up front. If several vendors get promoted to `FULL` at once, `--budget`
-caps concurrent AI calls and prints an estimated cost before running.
+`depcompass init --scan <manifest file> [--scan <manifest file> ...]`
+(`depcompass.discovery`) bulk-discovers dependencies and writes a draft
+`vendor.toml` with everything defaulted to `depth = SURFACE` — free,
+since surface generation has no AI cost, so it's safe to run immediately
+on a large existing dependency list without a cost conversation first.
+`--scan` is a repeated flag, not one flag followed by several
+space-separated files (not how a named Click/Typer option works — the
+CLI reference's earlier draft syntax was corrected to match in Phase 4).
+Errors rather than overwriting if `vendor.toml` already exists. Python
+discovery reads only `[project.dependencies]`, not
+`[project.optional-dependencies]`. Promotion to `FULL` is selective and
+reactive (promote a vendor the first time someone actually needs its deep
+digest mid-task) rather than batch-promoting a whole existing dependency
+graph up front. If several vendors get promoted to `FULL` at once,
+`--budget` will cap concurrent AI calls and print an estimated cost
+before running — not yet implemented, since it's meaningless before
+Phase 5 adds any AI call to `sync` at all.
 
 ## Cost model
 
@@ -502,3 +537,26 @@ not something to drift into silently.
 - **Gap-analysis cross-linking in `FILETREE.md`** (see Tree generation
   above) is explicitly not implemented — deferred until Phase 5 exists
   and has real output to link to.
+- **The Gap analysis section of the per-vendor `CLAUDE.md` template is
+  omitted entirely, not stubbed**, until Phase 5 exists — same treatment
+  as the FILETREE cross-linking above.
+- **`index` reads persisted per-vendor `CLAUDE.md` files rather than
+  re-running `sync`** — a deliberate deviation from
+  `planning/phase-4-sync-index-init.md`'s literal `render_routing_table(digests:
+  list[VendorDigest])` signature (that plan explicitly left this detail
+  open). Re-running `sync` inside `index` would make `index` silently pay
+  gap-analysis AI cost once Phase 5 lands, defeating the reason `index`
+  exists as a separate, cheap command. Consequence: a vendor that's never
+  been synced shows `_not synced_` in the routing table instead of an
+  error, and the Deps column links to `DEPTREE.md` instead of showing a
+  live dependency count (no adapter/tree data is available to `index`).
+- **`VendorDigest.side_effects`** (added in Phase 4) is populated by
+  `sync_vendor` from the dependency tree's root `DepNode.side_effects` —
+  not from every node in the tree, only the vendor's own top-level entry.
+  A transitive dependency's side effects (e.g. a sub-dependency's own
+  postinstall script) aren't surfaced in Known Gotchas.
+- **`sync_vendor` fully overwrites `vendor/<name>/` on every call** — no
+  diffing, no incremental update, and (for `depth = full`) the entire
+  `vendor/<name>/src/` snapshot is deleted and recopied each time, not
+  merged. Simple and correct, but means a large `FULL` vendor's `sync` is
+  not cheap to run repeatedly in a tight loop.

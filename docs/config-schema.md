@@ -1,9 +1,8 @@
 # `vendor.toml` config schema
 
-> As of Phase 1, `depcompass.config.load_vendor_config()` parses this
-> format (see [`planning/`](../planning/) for status). The CLI commands
-> that read `vendor.toml` in normal use (`sync`, `check`, ...) are still
-> stubs — see [`docs/cli-reference.md`](cli-reference.md).
+> As of Phase 4, `depcompass.config.load_vendor_config()` parses this
+> format, and `init`/`sync`/`index` read/write it for real. `check` is
+> still a stub — see [`docs/cli-reference.md`](cli-reference.md).
 
 `vendor.toml` lives at the root of the consuming project and has one table
 per tracked dependency.
