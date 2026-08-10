@@ -7,12 +7,13 @@ is a living document updated in place as the system evolves. When in doubt
 about *why* something is designed the way it is, check `decisions/`; when
 you want to know *what exists now*, check here.
 
-As of Phase 1, the core data model (`depcompass.core`) and `vendor.toml`
-parsing (`depcompass.config`) are implemented, along with a CLI skeleton
-(`depcompass.cli`) whose commands are stubs. Everything else described
-below — adapters, tree generation, gap analysis, staleness checking, the
-chat REPL, Cursor export — is still the target design that later phases
-build toward; see `planning/CONTEXT.md` for current status.
+As of Phase 2, the core data model (`depcompass.core`), `vendor.toml`
+parsing (`depcompass.config`), a CLI skeleton (`depcompass.cli`) whose
+commands are stubs, and all three ecosystem adapters
+(`depcompass.adapters`) are implemented. Everything else described below
+— tree generation, gap analysis, staleness checking, the chat REPL,
+Skills/Cursor export — is still the target design that later phases build
+toward; see `planning/CONTEXT.md` for current status.
 
 ## Core data model
 
@@ -38,29 +39,65 @@ build toward; see `planning/CONTEXT.md` for current status.
 
 ## Adapter interface
 
-`EcosystemAdapter` (ABC) defines four methods every ecosystem must
-implement: `installed_version`, `source_location`, `readme_and_api_surface`,
-`dependency_tree`. Adding a new ecosystem means writing one adapter class,
-not touching core logic.
+`EcosystemAdapter` (ABC, `src/depcompass/adapters/base.py`) is constructed
+with `(config: VendorConfig, project_root: Path)` and defines four methods
+every ecosystem implements: `installed_version() -> str`,
+`source_location() -> Path`, `readme_and_api_surface() -> str`,
+`dependency_tree() -> DepNode`. Adding a new ecosystem means writing one
+adapter class against this interface, not touching core logic.
+
+`dependency_tree()` returns the **raw, fully-expanded** tree exactly as
+the underlying tool reports it — no diamond-dependency dedup. Dedup into
+"see X above" back-references is Phase 3's tree-*rendering* concern, not
+this method's tree-*construction* concern.
+
+All three adapters call subprocesses through a shared `_run_json(cmd,
+cwd)` seam in `base.py`, which resolves `cmd[0]` via `shutil.which` before
+invoking it (needed cross-platform — see **Known footguns**) and wraps
+failures into `AdapterError`. Tests monkeypatch this seam per-module to
+inject fixture JSON rather than requiring a real toolchain — see
+[`decisions/0014`](../decisions/0014-adapter-tests-use-fixture-mocking-not-live-subprocesses.md).
 
 MVP ships three adapters on day one — npm, Python, Cargo — rather than
 starting npm-only. See
 [`decisions/0008`](../decisions/0008-mvp-ships-three-adapters-day-one.md).
 
-- **npm adapter** — version/tree via `package.json` + `npm ls --json`; API
-  surface via README + `.d.ts` files, capped at 5 files read per package
-  for cost/size control. That cap is a known limitation, not a validated
-  final number — see **Known footguns**.
-- **Python adapter** — version via `pip show` / installed package metadata;
-  tree via `pipdeptree --json`; API surface has no single canonical source
-  like `.d.ts` — uses `.pyi` stub files where present, else falls back to
-  top-level docstrings/`__all__` exports. Structurally different from the
-  npm adapter; its own judgment calls, not a direct port of npm's approach.
-- **Cargo adapter** — version/tree via `cargo tree` / `cargo metadata
-  --json`; API surface via public (`pub`) function/struct signatures — no
-  standardized doc-comment extraction assumed. `rustdoc --output-format
-  json` is worth investigating as an alternative during implementation,
-  not assumed up front.
+- **npm adapter** — version/location read `node_modules/<name>/package.json`
+  directly (no subprocess); tree via `npm ls <name> --json --all` (the
+  `--all` flag is required — bare `npm ls --json` truncates to top-level
+  only). `dev_only` cross-references the *root* project's `package.json`
+  `devDependencies` against every node's name, regardless of depth — not
+  propagated to a marked node's own children (see **Known footguns**). API
+  surface via README + up to 5 `.d.ts` files, capped for cost/size control
+  — that cap is a known limitation, not a validated final number (see
+  **Known footguns**). `side_effects` picked up from the vendor's own
+  `package.json` `scripts.postinstall`, if present.
+- **Python adapter** — version/location via `importlib.metadata`/
+  `importlib.util.find_spec` (no subprocess); tree via `sys.executable -m
+  pipdeptree --output json-tree --packages <name>` (invoked as a module of
+  the current interpreter, not a bare PATH lookup, so it's found
+  regardless of venv activation state; the flat/deprecated `--json` output
+  is the wrong shape — every installed package with only direct deps
+  each, not a single-rooted tree). API surface has no single canonical
+  source like `.d.ts` — uses `.pyi` stub files where present, else falls
+  back to static `ast` parsing of `__all__`/docstrings (chosen over
+  actually importing the module, which would execute unrelated
+  module-level side effects purely to generate documentation). `dev_only`
+  is always `False` — `pipdeptree` output carries no such field, a real
+  structural difference from npm, not an oversight.
+- **Cargo adapter** — version/location via `cargo metadata
+  --format-version 1 --no-deps`; tree via the full `cargo metadata
+  --format-version 1` call, walking the resolve graph's adjacency list
+  cross-referenced against each package's declared dependency `"kind"`
+  (`"dev"` vs `null`) for per-edge `dev_only` — a cleaner signal than npm
+  has. API surface via a coarse, line-based scan for `pub fn`/`pub
+  struct`/`pub enum`/`pub trait` (+ preceding `///` doc comment) — no
+  standardized doc-comment extraction assumed; misses multi-line
+  signatures (see **Known footguns**). `rustdoc --output-format json`
+  remains a documented future refinement, not attempted since no
+  toolchain is available locally to validate its shape against.
+  **Unverified against real cargo output** — built and tested entirely
+  against hand-written fixture JSON (see **Known footguns**).
 
 See [`decisions/0002`](../decisions/0002-adapter-approach-differs-per-ecosystem.md).
 
@@ -362,16 +399,47 @@ not something to drift into silently.
   staleness check — don't treat a missing implementation there as a bug to
   "fix" by returning a default; it's intentionally unpopulated until
   `staleness.check()` runs.
-- `_load_config` (parse `vendor.toml`) and `_write_claude_md` (render the
-  CLAUDE.md template), once they exist in the CLI skeleton, are expected
-  to start as deliberate `NotImplementedError` stubs — templating/parsing
-  glue, not architectural decisions, filled in during Phase 1/4.
-- The `.d.ts` file cap (5 files) in the npm adapter is an arbitrary initial
-  value for cost control, not a validated final number — flag if it clips
-  useful API surface on real-world packages during Phase 2 testing.
+- `_load_config` is implemented (Phase 1); `_write_claude_md` in the CLI
+  skeleton is still a deliberate `NotImplementedError` stub —
+  templating glue, not an architectural decision, filled in during
+  Phase 4.
+- The `.d.ts` file cap (5 files) in the npm adapter, and the matching
+  `.pyi` cap in the Python adapter, are arbitrary initial values for
+  cost control, not validated final numbers — flag if they clip useful
+  API surface on real-world packages.
 - `vendor/<name>/src/` snapshots are gitignored and regenerated by `sync`,
   not committed (resolved in Phase 1, see
   [`decisions/0010`](../decisions/0010-vendor-src-gitignored-and-regenerated.md)).
   A fresh clone has no working standalone-mode chat for `FULL` vendors
   until `sync` has been run at least once — easy to forget when
   onboarding a new checkout.
+- **`_run_json`'s subprocess seam resolves `cmd[0]` via `shutil.which`
+  before invoking it** — not just for a nicer "not found" error. On
+  Windows, `npm` resolves to a `.cmd` shim, which `subprocess.run` can't
+  launch by bare name without a shell; resolving to the full path first
+  keeps `shell=False` (and its narrower injection surface) working
+  cross-platform. Found and fixed via Phase 2's live npm smoke test —
+  fixture-only testing would not have caught it (see
+  [`decisions/0014`](../decisions/0014-adapter-tests-use-fixture-mocking-not-live-subprocesses.md)).
+- **The Python adapter invokes `pipdeptree` as `sys.executable -m
+  pipdeptree`**, not a bare `pipdeptree` on `PATH` — a standalone venv's
+  `Scripts`/`bin` directory isn't reliably on `PATH` unless the venv is
+  activated. Also found via a Phase 2 live smoke test, for the same
+  reason as the npm fix above.
+- **npm `dev_only` is not transitive**: a node is marked `dev_only` only
+  if its own name is a *direct* `devDependency` of the root consuming
+  project — a transitive dependency of a dev-only package isn't
+  propagated. Documented limitation, not solved in Phase 2.
+- **Python `dev_only` is always `False`** — `pipdeptree`'s output carries
+  no dev/runtime distinction once a package is installed, a real
+  structural difference from npm's `package.json`, not an oversight.
+- **Cargo's API-surface extraction is a coarse, line-based scan**, not a
+  real Rust parser — it misses multi-line function/struct signatures
+  (generic bounds or `where` clauses spanning lines). `rustdoc
+  --output-format json` remains the documented eventual fix.
+- **The Cargo adapter is unverified against real `cargo` output** — no
+  Rust toolchain is available in this dev environment as of Phase 2. Its
+  parsing logic is tested only against hand-written fixture JSON modeled
+  on cargo's public schema docs. See
+  [`decisions/0014`](../decisions/0014-adapter-tests-use-fixture-mocking-not-live-subprocesses.md)
+  for the follow-up required once a toolchain becomes available.

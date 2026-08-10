@@ -27,6 +27,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Phase 2 plan (`planning/phase-2-ecosystem-adapters.md`): scopes the
   `EcosystemAdapter` ABC and npm/Python/Cargo adapter implementations.
   Adapter code itself is not yet implemented.
+- Ecosystem adapters (Phase 2): `depcompass.adapters` — `EcosystemAdapter`
+  ABC and a shared `_run_json` subprocess seam (`base.py`); `NpmAdapter`,
+  `PythonAdapter`, and `CargoAdapter` implementing `installed_version`,
+  `source_location`, `readme_and_api_surface`, and `dependency_tree`
+  against `npm ls`, `pipdeptree`, and `cargo metadata` respectively.
+  `pipdeptree` added as a real dependency. New ADR `decisions/0014`
+  records the fixture-mocked testing strategy, which caught two real
+  cross-platform subprocess bugs during implementation (see Fixed,
+  below). The Cargo adapter is unverified against real `cargo` output —
+  no Rust toolchain is available in this dev environment.
+
+### Fixed
+
+- `_run_json`'s subprocess seam now resolves the target tool via
+  `shutil.which` before invoking it, fixing two real bugs surfaced by
+  Phase 2's live smoke tests: on Windows, a bare `npm` couldn't be
+  launched by `subprocess.run` without a shell (it resolves to a `.cmd`
+  shim); a bare `pipdeptree` wasn't reliably on `PATH` outside an
+  activated venv (now invoked as `sys.executable -m pipdeptree`).
 
 ### Changed
 

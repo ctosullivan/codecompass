@@ -177,4 +177,17 @@
 
 ## Status
 
-not started
+done — all verification steps passed: `pip install -e ".[dev]"` succeeds
+with `pipdeptree` installed; `pytest` reports 41 passed, 1 skipped (the
+Cargo live smoke test — no Rust toolchain in this environment) out of 42
+total; `ruff check .` is clean; the npm live smoke test ran a real `npm
+install lodash` and exercised all four adapter methods successfully; the
+Python live smoke test ran against this repo's own installed `pytest`
+dependency and matched `importlib.metadata.version()` directly;
+`AdapterError` triggers with a clear message for a nonexistent package on
+all three adapters (tested); `decisions/0014` has all required sections;
+`architecture/overview.md`'s Known footguns section lists every Phase 2
+limitation. Two real cross-platform subprocess bugs (Windows npm.cmd
+resolution, pipdeptree not on PATH outside an activated venv) were found
+and fixed via the live smoke tests during implementation — see
+`decisions/0014` and `planning/CONTEXT.md`.

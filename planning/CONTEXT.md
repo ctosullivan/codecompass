@@ -6,66 +6,57 @@ for the log of how it got here.
 
 ## Current phase
 
-**Phase 2: Ecosystem adapters — planned (plan file written, implementation
-not started).** Unchanged by this session — see below.
+**Phase 2: Ecosystem adapters — done.**
 
 ## What was just completed
 
-Recorded a second design decision, independent of Phase 2: Agent Skills
-become the primary multi-tool export target (Phase 9), motivated by a
-reliability gap in the `CLAUDE.md` routing table (a soft "consult this
-digest" instruction an agent can simply not follow, especially for
-well-known libraries it feels confident about). New ADR
-`decisions/0013-agent-skills-as-shared-context-selection-source.md`
-covers: one Skill per `FULL`-depth vendor with `references/`-bundled
-trees; Cursor `.mdc` export and the `CLAUDE.md` routing table retained as
-fallbacks, not replaced; Phase 8's REPL Tier 1 routing consuming the same
-generated Skill description text Phase 9 produces (one source of truth,
-not independently-tuned duplicates); and an explicit REPL escalation path
-to the generated Skill folder for questions exceeding digest-only scope.
-`architecture/overview.md`'s Multi-tool export and Chat REPL sections,
-`planning/ROADMAP.md`'s Phase 8/9 rows, and `CHANGELOG.md` were updated in
-the same commit batch. No `CLAUDE.md` change and no code change (Phases
-0-2 remain untouched).
+Implemented `depcompass.adapters`: the `EcosystemAdapter` ABC, `AdapterError`,
+and a shared `_run_json` subprocess seam (`base.py`); `NpmAdapter`,
+`PythonAdapter`, and `CargoAdapter`, each implementing the four adapter
+methods per `planning/phase-2-ecosystem-adapters.md`. `pipdeptree` added
+as a real dependency. New ADR `decisions/0014` records the fixture-mocked
+testing strategy (resolving the Cargo-toolchain-unavailable blocker).
+`architecture/overview.md`, `planning/ROADMAP.md`, and `CHANGELOG.md`
+updated to match. All tests pass (42 total: 41 passed, 1 skipped — the
+Cargo live smoke test — up from 16 at the end of Phase 1), `ruff check .`
+is clean, and the npm/Python live smoke tests
+both ran successfully against real installed packages in this
+environment; the Cargo live smoke test is written but skipped (no Rust
+toolchain here).
 
-Side effect, second time this has happened: taking ADR number `0013` for
-this decision means Phase 2's plan file
-(`planning/phase-2-ecosystem-adapters.md`), which had provisionally
-re-referenced `decisions/0013` for its own fixture-mocking-testing ADR
-(itself a renumbering from an earlier `0012` collision), was bumped again
-to `decisions/0014`. Added a standing note directly in that plan file to
-verify the true next-available number against `/decisions` at
-implementation time rather than trust either provisional number — this
-has now collided twice, so the plan file should not be trusted blindly
-on this point.
+**Two real cross-platform bugs were found and fixed during
+implementation** (documented in `architecture/overview.md`'s Known
+footguns and `decisions/0014`'s Consequences, not just here): (1) on
+Windows, `npm` resolves to a `.cmd` shim that `subprocess.run` can't
+launch by bare name without a shell — fixed by resolving via
+`shutil.which` before invoking, in `_run_json`. (2) A bare `pipdeptree`
+isn't reliably on `PATH` outside an activated venv — fixed by invoking it
+as `sys.executable -m pipdeptree` in the Python adapter. Neither would
+have been caught by fixture-only testing; both were caught by the live
+smoke tests the Phase 2 plan called for.
 
 ## Decisions made this session not already captured in an ADR
 
-- None — this session's only decision is the ADR itself
-  (`decisions/0013`).
+- None beyond what's captured in `decisions/0014` and
+  `planning/phase-2-ecosystem-adapters.md` — the two subprocess fixes
+  above are implementation bugs/fixes, not architectural tradeoffs,
+  recorded as footguns in `architecture/overview.md` rather than as
+  ADRs.
 
 ## Next concrete step
 
-Two independent threads, in no particular order:
+Write `planning/phase-3-tree-generation.md` before any Phase 3 code, per
+`CLAUDE.md` §1. Phase 3 scope (per the roadmap): deterministic
+`FILETREE.md`/`DEPTREE.md` generation from the `DepNode` trees Phase 2's
+adapters now produce — diamond-dependency deduplication (the "see X
+above" back-references explicitly deferred from Phase 2), dev-only
+collapsing to a count, depth-capping large trees with an explicit
+collapse notice, purpose annotations, the flat greppable symbol index,
+and the `filetree.json`/`deptree.json` sidecars. No AI calls in this
+phase (see `architecture/overview.md`'s Tree generation section).
 
-1. **Phase 2 implementation** (unchanged from before this session):
-   implement per `planning/phase-2-ecosystem-adapters.md`, starting with
-   `src/depcompass/adapters/base.py`, then each adapter + tests. Before
-   creating its adapter-testing ADR, check `/decisions` for the actual
-   next available number rather than trusting the plan file's `0014` —
-   it has been wrong twice already.
-2. **Whenever Phase 5, Phase 8, or Phase 9 begin**: their
-   `planning/phase-N-*.md` plan files (not yet written) must incorporate
-   the relevant ADR(s) from the start:
-   - Phase 5: `decisions/0012`'s dual-audience gap-analysis output.
-   - Phase 8: `decisions/0012`'s dependency-rollup synthesis, plus
-     `decisions/0013`'s Tier-1-sources-from-Skill-descriptions dependency
-     on Phase 9 and the digest-exceeded escalation path.
-   - Phase 9: `decisions/0013`'s Skills-as-primary-export scope
-     (broadened from Cursor-only), including the trigger-accuracy
-     evaluation step.
-   Whichever of Phase 8/Phase 9 is written first should note explicitly,
-   in its own plan file, what data shape the other phase will need to
-   consume — this is the detail most likely to get lost by the time both
-   phases actually exist, so it's called out here rather than trusting
-   the ADRs alone to be re-read at the right moment.
+**Still outstanding, not a Phase 3 blocker but worth remembering**: once
+a Rust toolchain is available anywhere in the pipeline, `decisions/0014`
+requires validating the Cargo adapter's fixture assumptions and regex-
+based `pub` extraction against real `cargo metadata` output and a real
+crate — currently entirely unverified.
