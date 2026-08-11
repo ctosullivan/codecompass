@@ -84,7 +84,7 @@ until all of these.
   a phase or a plan-file item usually means the plan file is incomplete.
 - Changelog entries land in the same commit as the change they describe.
 - **Milestones are roadmap phase groups, not individual phases.** The MVP
-  (phases 0-6) is one milestone. Only when its last phase is marked `done`
+  (phases 0-8) is one milestone. Only when its last phase is marked `done`
   do we promote `[Unreleased]` to a dated release section in
   `CHANGELOG.md` and cut a version tag — not after every phase.
 - `planning/CONTEXT.md` is the tie-breaker if commits, changelog, and

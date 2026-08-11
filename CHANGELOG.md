@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- MVP milestone expanded from phases 0-6 to phases 0-8 (`decisions/0022`)
+  — bookkeeping only, no code. Phase 8 (the chat REPL, `decisions/0012`'s
+  "actual product") structurally depends on Phase 7's outputs (Skill
+  files, dual-audience content shape), so both move from
+  `planning/ROADMAP.md`'s Post-MVP table into its MVP table together;
+  `v0.1` now tags only once Phase 8 is `done`, not Phase 6.
+  `CLAUDE.md` §6, `CONTRIBUTING.md`, `docs/cli-reference.md`,
+  `architecture/overview.md`, and `README.md` updated to match; no phase
+  was renumbered, only table membership and milestone-boundary text.
+
 ### Added
 
 - Phase 7 plan (`planning/phase-7-bootstrap-and-promote.md`) and five new

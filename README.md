@@ -4,9 +4,11 @@ Grounded, version-pinned dependency reference docs for AI coding agents.
 
 ## Status
 
-**Pre-MVP, under active development.** The project is currently at Phase 0
-(repository scaffolding) of its roadmap — no CLI commands are implemented
-yet. See [`planning/`](planning/) for phase-by-phase status.
+**Pre-MVP, under active development.** The MVP spans phases 0-8
+(`decisions/0022`); phases 0-6 are done — `init`, `sync`, `index`, and
+`check` are fully implemented. Phase 7 (`promote`) is planned but not
+yet implemented; Phase 8 (the `chat` REPL) is not started. See
+[`planning/`](planning/) for phase-by-phase status.
 
 ## What it is
 

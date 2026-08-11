@@ -18,10 +18,14 @@ manifest-based `vendor.toml` bootstrap (`depcompass.discovery`), AI-gated
 gap analysis (`depcompass.gap_analysis`), and severity-aware staleness
 checking (`depcompass.staleness`) are implemented — `init`, `sync`
 (including `--budget`), `index`, and `check` (including `--strict`/
-`--fix`) are real CLI commands, not stubs. MVP phases 0-6 are complete.
-Everything else described below — the chat REPL, Skills/Cursor export —
-is still the target design that later phases build toward; see
-`planning/CONTEXT.md` for current status.
+`--fix`) are real CLI commands, not stubs. MVP phases 0-6 are complete;
+the MVP itself now spans phases 0-8, not just 0-6 (`decisions/0022`) —
+Phase 7 (`promote`, replacing gap analysis with grounded description) is
+planned but not implemented, and Phase 8 (the chat REPL) is not started.
+Everything else described below — Skills/Cursor export beyond what Phase
+7 covers, REPL routing/rollup — is still the target design that later,
+post-MVP phases build toward; see `planning/CONTEXT.md` for current
+status.
 
 ## Core data model
 

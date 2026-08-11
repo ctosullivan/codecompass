@@ -1,9 +1,11 @@
 # CLI reference
 
-> `init`, `sync`, `index`, and `check` are fully implemented as of Phase 6
-> (MVP complete). `chat` remains a stub: it prints a "not yet implemented"
-> message naming its planned phase and exits non-zero — see
-> [`planning/`](../planning/) for current phase status.
+> `init`, `sync`, `index`, and `check` are fully implemented as of Phase 6.
+> `promote` (Phase 7, planned) and `chat` (Phase 8, not started) are not
+> yet implemented — `chat` remains a stub: it prints a "not yet
+> implemented" message and exits non-zero. The MVP now spans phases 0-8,
+> not just 0-6 (`decisions/0022`) — see [`planning/`](../planning/) for
+> current phase status.
 
 ## `depcompass init --scan <manifest file> [--scan <manifest file> ...] [--output <path>]`
 

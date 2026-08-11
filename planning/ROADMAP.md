@@ -10,9 +10,9 @@ just planned.
 Status values: `not started` / `planned` (a `planning/phase-N-*.md` file
 exists) / `in progress` / `done`.
 
-## MVP (v0.1) — phases 0-6
+## MVP (v0.1) — phases 0-8
 
-One milestone (see `CLAUDE.md` §6): tagged/released only once phase 6 is
+One milestone (see `CLAUDE.md` §6): tagged/released only once phase 8 is
 `done`, not after each individual phase.
 
 | Phase | Name | Status | Plan file |
@@ -24,20 +24,21 @@ One milestone (see `CLAUDE.md` §6): tagged/released only once phase 6 is
 | 4 | `init`, `sync`, and `index` commands (deterministic path) | done | [`phase-4-sync-index-init.md`](phase-4-sync-index-init.md) |
 | 5 | AI-gated gap analysis (`depth = full`), dual-audience output (technical + conversational overview, decisions/0012), `--budget`, FILETREE cross-linking | done | [`phase-5-gap-analysis.md`](phase-5-gap-analysis.md) |
 | 6 | Staleness checking (`check`, `--strict`/`--fix`) | done | [`phase-6-staleness-checking.md`](phase-6-staleness-checking.md) |
+| 7 | Zero-question bootstrap (bare `depcompass` auto-discovery, decisions/0017) & `promote` (reactive depth escalation, decisions/0018) — grounded-description FULL-depth generation (decisions/0019), tool-level Skill (decisions/0020), PyPI source-resolution fail-loud (decisions/0021); absorbs the former Phase 9 (Skills + Cursor export) and Phase 10 (`init` bulk-discovery refinement) rows | planned | [`phase-7-bootstrap-and-promote.md`](phase-7-bootstrap-and-promote.md) |
+| 8 | Single-vendor chat REPL | not started | — |
 
-**MVP done when:** a real project can run `init`, `sync`, and `check`
-against real npm/Python/Cargo dependencies and get correct, useful
-output. **All six MVP phases are now done** — the `CLAUDE.md` §6
+**MVP done when:** a real project can run `init`, `sync`, `promote`, and
+`check` against real npm/Python/Cargo dependencies, and query them via
+`depcompass chat`, and get correct, useful output. Phases 0-6 are done;
+Phase 7 is planned; Phase 8 is not started — the `CLAUDE.md` §6
 release-promotion step (a dated `[Unreleased]` → version-tagged
-`CHANGELOG.md` section) is a separate, explicit follow-up action, not
-performed automatically as part of Phase 6's own closeout.
+`CHANGELOG.md` section) only happens once all eight are `done`
+(`decisions/0022`).
 
 ## Post-MVP
 
 | Phase | Name | Status | Plan file |
 |---|---|---|---|
-| 7 | Zero-question bootstrap (bare `depcompass` auto-discovery, decisions/0017) & `promote` (reactive depth escalation, decisions/0018) — grounded-description FULL-depth generation (decisions/0019), tool-level Skill (decisions/0020), PyPI source-resolution fail-loud (decisions/0021); absorbs the former Phase 9 (Skills + Cursor export) and Phase 10 (`init` bulk-discovery refinement) rows below | planned | [`phase-7-bootstrap-and-promote.md`](phase-7-bootstrap-and-promote.md) |
-| 8 | Single-vendor chat REPL | not started | — |
 | 9 | Project-root-aware REPL routing (Tier 1 sourced from Phase 7's Skill descriptions, decisions/0013) + whole-project context + unconditional dependency rollup at session start (decisions/0012) + digest-exceeded escalation to the generated Skill folder (decisions/0013) | not started | — |
 | 10 | Polish: PyPI publish, examples, docs site evaluation | not started | — |
 | 11 | MCP server (`query_vendor`) | not started | — |
@@ -50,6 +51,13 @@ fully absorbed into the new Phase 7 above, per `decisions/0017` and
 shifted to 8 and 9; former Phase 11/12 (polish, MCP) shifted to 10/11.
 All shifted phases were `not started`, so this is a clean renumber, not
 a rewrite of in-flight work.
+
+**MVP-boundary note (dated to this change):** Phase 7 and Phase 8 moved
+from this table into the MVP table above — per `decisions/0022`, the MVP
+milestone now spans phases 0-8, not 0-6, since Phase 8 (the REPL,
+`decisions/0012`'s "actual product") structurally depends on Phase 7's
+outputs. No phase was renumbered by this move, only its table
+membership.
 
 ## How this file is kept in sync
 

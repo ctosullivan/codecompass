@@ -71,7 +71,7 @@ marks the phase `done`. Not done until all six.
 - Changelog entries land in the same commit as the change, referencing the
   matching phase tag.
 - Milestones are roadmap phase *groups*, not individual phases — the MVP
-  (phases 0-6) is one milestone. Only when its last phase is marked `done`
+  (phases 0-8) is one milestone. Only when its last phase is marked `done`
   do we promote `[Unreleased]` to a dated release section and cut a
   version tag. Not after every phase.
 - `planning/CONTEXT.md` is the tie-breaker if commits, changelog, and
