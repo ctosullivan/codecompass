@@ -87,3 +87,15 @@ convention, not reconsidered case by case.
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the same rules restated for
 human contributors.
+
+
+<!-- depcompass:start -->
+The table below lists dependencies with a generated reference digest under `vendor/<name>/`. Consult the linked digest before relying on training knowledge for these libraries.
+
+| Vendor | Path | Version | Depth | Deps | Consult when |
+|---|---|---|---|---|---|
+| anthropic | `vendor/anthropic/` | 0.121.0 | surface | [DEPTREE.md](./vendor/anthropic/DEPTREE.md) | general usage questions |
+| pipdeptree | `vendor/pipdeptree/` | 4.2.0 | surface | [DEPTREE.md](./vendor/pipdeptree/DEPTREE.md) | general usage questions |
+| rich | `vendor/rich/` | 15.0.0 | surface | [DEPTREE.md](./vendor/rich/DEPTREE.md) | general usage questions |
+| typer | `vendor/typer/` | 0.27.1 | surface | [DEPTREE.md](./vendor/typer/DEPTREE.md) | general usage questions |
+<!-- depcompass:end -->

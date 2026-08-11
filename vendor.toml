@@ -1,0 +1,19 @@
+[[vendor]]
+name = "anthropic"
+ecosystem = "python"
+depth = "surface"
+
+[[vendor]]
+name = "pipdeptree"
+ecosystem = "python"
+depth = "surface"
+
+[[vendor]]
+name = "rich"
+ecosystem = "python"
+depth = "surface"
+
+[[vendor]]
+name = "typer"
+ecosystem = "python"
+depth = "surface"
