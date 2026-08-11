@@ -3,8 +3,8 @@
 > As of Phase 7, `depcompass.config.load_vendor_config()` parses this
 > format, and `init`/`sync`/`index`/`promote` read/write it for real,
 > including `promote`'s AI-gated grounded-description generation for
-> `depth = full` vendors. `check` is fully implemented (Phase 6). `chat`
-> is still a stub — see [`docs/cli-reference.md`](cli-reference.md).
+> `depth = full` vendors. `check` and `chat` are also fully implemented
+> (Phases 6 and 8) — see [`docs/cli-reference.md`](cli-reference.md).
 
 `vendor.toml` lives at the root of the consuming project and has one table
 per tracked dependency.

@@ -19,14 +19,18 @@ manifest-based `vendor.toml` bootstrap and zero-question auto-discovery
 (`depcompass.source_resolution`), AI-gated grounded-description
 generation (`depcompass.grounded_description`, replacing Phase 5's
 `context_path`-gated gap analysis — `decisions/0019`), Skill/Cursor
-export (`depcompass.skill`), and severity-aware staleness checking
-(`depcompass.staleness`) are implemented — bare `depcompass`, `init`,
-`sync` (including `--budget`), `index`, `check` (including `--strict`/
-`--fix`), and `promote` are real CLI commands, not stubs. The MVP spans
-phases 0-8 (`decisions/0022`); phases 0-7 are done, Phase 8 (the chat
-REPL) is not started. Everything else described below — REPL routing/
-rollup — is still the target design that later, post-MVP phases build
-toward; see `planning/CONTEXT.md` for current status.
+export (`depcompass.skill`), severity-aware staleness checking
+(`depcompass.staleness`), and the single-vendor chat REPL
+(`depcompass.chat`, grounded on persisted digest files, never live
+regeneration — `decisions/0023`) are all implemented — bare `depcompass`,
+`init`, `sync` (including `--budget`), `index`, `check` (including
+`--strict`/`--fix`), `promote`, and `chat <vendor>` are real CLI
+commands, not stubs. The MVP spans phases 0-8 (`decisions/0022`); all
+eight are now `done` (a `v0.1` tag/release has not yet been cut).
+Bare `depcompass chat` project-root routing and the whole-project
+dependency rollup, described in the Chat REPL section below, remain
+post-MVP (Phase 9) target design; see `planning/CONTEXT.md` for current
+status.
 
 ## Core data model
 
@@ -267,10 +271,11 @@ might use it — rather than the way you'd document it), and an optional
 Same call shape, same cost — a prompt/schema and input-source change, not
 a new cost center. The conversational overview is persisted to
 `vendor/<name>/OVERVIEW.md` (unchanged since Phase 5) — not duplicated
-into `CLAUDE.md`, which stays agent-facing technical content only — for
-Phase 8's Chat REPL project-wide dependency rollup to consume later (see
-**Chat REPL** below); `decisions/0012` requires it already exist by then,
-since the rollup makes no new per-dependency AI calls.
+into `CLAUDE.md`, which stays agent-facing technical content only. Phase
+8's `chat <vendor>` reads it directly as part of its grounding
+(`decisions/0023`); Phase 9's project-wide dependency rollup (see **Chat
+REPL** below) will consume it too, with no new per-dependency AI calls,
+once it's built.
 
 **Real cost implication**: like every other `sync` output, grounded
 description is fully regenerated (and re-cloned) on every `sync` run,
@@ -533,17 +538,25 @@ conversation — and content generation is written with "does this read
 well spoken aloud in a casual chat" as a first-class constraint, not an
 afterthought handled by reformatting at query time.
 
-`depcompass chat [<name>]` — a lightweight terminal REPL, distinct from
-just using Claude Code in the vendor folder. It loads only the vendor's
-digest files as system context and calls the API directly (Haiku) with no
-tool-use/file-exploration loop — faster and cheaper per query, but
-strictly narrower: it only knows what's in the digest, not the full pinned
-source. This tradeoff is stated in the REPL's startup banner so a user
-doesn't over-trust an answer beyond what the digest actually covers.
+`depcompass chat <name>` — a lightweight terminal REPL, distinct from
+just using Claude Code in the vendor folder. It loads only `CLAUDE.md`
+(and `OVERVIEW.md`, if the vendor's been `promote`d) as system context and
+calls the API directly (Haiku) with plain multi-turn text completion — no
+forced tool-use, no tool-use/file-exploration loop — faster and cheaper
+per query, but strictly narrower: it only knows what's in those two files,
+not `FILETREE.md`/`DEPTREE.md` or the full pinned source. This tradeoff is
+stated in the REPL's startup banner so a user doesn't over-trust an answer
+beyond what the digest actually covers. Critically, `chat` never calls
+`sync`/`promote` — it reads whatever's already on disk, so starting a
+session never re-incurs a clone or an AI-generation call
+(`decisions/0023`).
 
-- **Explicit vendor** (`chat turndown`) — loads that vendor's digest only,
-  single system prompt, no routing needed.
-- **No vendor specified** (project-root mode) — loads a **project-wide
+- **Explicit vendor** (`chat turndown`) — **implemented (Phase 8).** Loads
+  that vendor's `CLAUDE.md`/`OVERVIEW.md` only, single system prompt, no
+  routing needed. Works at any depth — a vendor with no `OVERVIEW.md` yet
+  gets thinner grounding plus a `promote` hint, not a hard block.
+- **No vendor specified** (project-root mode) — **not yet implemented
+  (Phase 9).** Will load a **project-wide
   dependency rollup unconditionally at session start**, before any
   routing happens. The rollup is synthesized once per `sync` (not per
   query) from the already-generated per-vendor conversational overviews

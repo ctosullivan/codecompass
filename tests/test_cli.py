@@ -494,9 +494,3 @@ class _FakeStalenessAdapter:
         from depcompass.core import DepNode
 
         return DepNode(name="demo", version=self._version)
-
-
-def test_chat_command_is_still_a_stub() -> None:
-    result = runner.invoke(app, ["chat"])
-    assert result.exit_code == 1
-    assert "not yet implemented" in result.output

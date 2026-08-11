@@ -4,11 +4,10 @@ Grounded, version-pinned dependency reference docs for AI coding agents.
 
 ## Status
 
-**Pre-MVP, under active development.** The MVP spans phases 0-8
-(`decisions/0022`); phases 0-7 are done — bare `depcompass`, `init`,
-`sync`, `index`, `check`, and `promote` are fully implemented. Phase 8
-(the `chat` REPL) is not started. See [`planning/`](planning/) for
-phase-by-phase status.
+**MVP complete (phases 0-8, `decisions/0022`)**, not yet tagged/released.
+Bare `depcompass`, `init`, `sync`, `index`, `promote`, `check`, and `chat`
+are all fully implemented. See [`planning/`](planning/) for phase-by-phase
+status.
 
 ## What it is
 
@@ -63,11 +62,11 @@ it explicitly:
 ```bash
 depcompass promote turndown
 depcompass check --strict
+depcompass chat turndown
 ```
 
-`chat` is not yet implemented — see
-[`docs/cli-reference.md`](docs/cli-reference.md) for current status per
-command.
+See [`docs/cli-reference.md`](docs/cli-reference.md) for the full command
+reference.
 
 ## How it works
 

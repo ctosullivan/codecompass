@@ -1,10 +1,8 @@
 """depcompass CLI entry point.
 
 Bare `depcompass` (no subcommand) runs the zero-question bootstrap
-(decisions/0017). `init`, `sync`, `index`, `check`, and `promote` are
-implemented (Phases 4-7). `chat` is still a stub — see
-docs/cli-reference.md for the planned surface and the roadmap phase its
-real logic lands in.
+(decisions/0017). `init`, `sync`, `index`, `promote`, `check`, and `chat`
+are all implemented (Phases 4-8) — see docs/cli-reference.md.
 """
 
 from __future__ import annotations
@@ -17,6 +15,7 @@ from rich.console import Console
 from rich.table import Table
 
 from depcompass.adapters import AdapterError
+from depcompass.chat import ChatError, run_chat
 from depcompass.config import ConfigError, load_vendor_config
 from depcompass.core import Depth, VendorConfig
 from depcompass.discovery import (
@@ -38,20 +37,7 @@ app = typer.Typer(
 )
 console = Console()
 
-_PHASE_BY_COMMAND = {
-    "chat": 8,
-}
-
 _STRICT_FAIL_SEVERITIES = {Severity.MAJOR, Severity.UNKNOWN}
-
-
-def _not_implemented(command: str) -> None:
-    phase = _PHASE_BY_COMMAND[command]
-    console.print(
-        f"[yellow]depcompass {command}[/yellow] is not yet implemented "
-        f"(planned for Phase {phase}). See docs/cli-reference.md."
-    )
-    raise typer.Exit(code=1)
 
 
 def _load_config(path: Path = Path("vendor.toml")) -> list[VendorConfig]:
@@ -338,9 +324,25 @@ def _run_fix(results: list[VendorStaleness]) -> None:
 
 
 @app.command()
-def chat() -> None:
-    """Lightweight terminal REPL grounded in vendor digests."""
-    _not_implemented("chat")
+def chat(
+    vendor: str = typer.Argument(..., help="Vendor name to chat about."),
+) -> None:
+    """Terminal REPL grounded in one vendor's already-generated digest —
+    `vendor/<name>/CLAUDE.md`, plus `OVERVIEW.md` if promoted. Never
+    regenerates anything (decisions/0023): works at any depth, with a
+    thinner grounding + a `promote` hint for a vendor with no grounded
+    description yet.
+    """
+    configs = _load_config()
+    matches = [c for c in configs if c.name == vendor]
+    if not matches:
+        console.print(f"[red]error:[/red] {vendor!r} not found in vendor.toml")
+        raise typer.Exit(code=1)
+    try:
+        run_chat(matches[0], Path.cwd(), console)
+    except ChatError as exc:
+        console.print(f"[red]error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
 
 
 if __name__ == "__main__":

@@ -1,10 +1,9 @@
 # CLI reference
 
-> `init`, `sync`, `index`, `check`, and `promote` are fully implemented
-> (Phases 4-7). `chat` remains a stub — it prints a "not yet implemented"
-> message and exits non-zero. The MVP spans phases 0-8
-> (`decisions/0022`) — see [`planning/`](../planning/) for current phase
-> status.
+> `init`, `sync`, `index`, `promote`, `check`, and `chat` are all fully
+> implemented (Phases 4-8). The MVP spans phases 0-8 (`decisions/0022`);
+> all eight are now `done`, though a `v0.1` tag/release has not yet been
+> cut — see [`planning/`](../planning/) for current status.
 
 ## `depcompass` (no subcommand)
 
@@ -190,24 +189,30 @@ depcompass check --strict
 depcompass check --fix
 ```
 
-## `depcompass chat [<name>]`
+## `depcompass chat <name>`
 
-**Status:** stub. Single-vendor mode planned for Phase 8; project-root
-routing mode planned for Phase 9.
+**Status:** implemented (Phase 8, `decisions/0023`). Explicit single-vendor
+mode only — bare `depcompass chat` with no vendor name (project-root
+routing across vendor-specific, multi-vendor, and whole-project questions)
+is Phase 9, not yet implemented.
 
 Lightweight terminal REPL, distinct from running Claude Code directly in a
-vendor folder. Loads only digest files as system context and calls the
-Anthropic API directly (Haiku) — no tool-use/file-exploration loop, so
-it's faster and cheaper per query but strictly narrower (only knows what's
-in the digest, not the full pinned source). This tradeoff is stated in the
-REPL's startup banner.
+vendor folder. Grounds every answer on the named vendor's already-persisted
+digest files (`vendor/<name>/CLAUDE.md`, plus `OVERVIEW.md` if the vendor
+has been `promote`d) — it never calls `sync`/`promote` itself, so starting
+a chat session never re-clones or re-generates anything. Calls the
+Anthropic API directly (Haiku) with plain multi-turn text completion — no
+tool-use/file-exploration loop, so it's faster and cheaper per query but
+strictly narrower (only knows what's in the digest, not the full pinned
+source). This tradeoff is stated in the REPL's startup banner.
 
-- With a vendor name: loads only that vendor's digest.
-- Without a name: two-tier routing across vendor-specific, multi-vendor,
-  and whole-project questions — see `architecture/overview.md`'s Chat REPL
-  section for the full routing design.
+Works at any depth: a vendor with no `OVERVIEW.md` yet (still `surface`,
+or `full` with a failed description) gets thinner grounding from
+`CLAUDE.md` alone, plus a one-line hint to run `depcompass promote <name>`
+for deeper answers — not a hard block.
+
+Type `exit`, `quit`, or press `Ctrl-D`/`Ctrl-C` to end the session.
 
 ```bash
-depcompass chat
 depcompass chat turndown
 ```

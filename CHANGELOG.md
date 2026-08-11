@@ -21,6 +21,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Single-vendor chat REPL (Phase 8): implements
+  `planning/phase-8-chat-repl.md` and `decisions/0023` — **all eight MVP
+  phases (0-8) are now complete.** New `depcompass chat <vendor>`: a
+  terminal REPL that grounds every answer on the vendor's already-
+  persisted `vendor/<name>/CLAUDE.md` (required) and `OVERVIEW.md`
+  (optional, present once `promote`d), read directly as text — never
+  calls `sync`/`promote` itself, so starting a session never re-clones
+  or re-runs AI generation. Works at any depth; a vendor with no
+  `OVERVIEW.md` yet gets thinner grounding plus a one-line hint to run
+  `promote`, not a hard block. Plain multi-turn text completion against
+  `claude-haiku-4-5-20251001` — no forced tool-use, no file-exploration
+  loop. New `src/depcompass/chat.py`. Bare project-root `chat` (no
+  vendor name), Tier 1/2 routing, and the whole-project dependency
+  rollup remain Phase 9, not built here.
+- Phase 8 plan (`planning/phase-8-chat-repl.md`) and `decisions/0023` —
+  planning only, no code changed (written in the session before this
+  implementation).
 - Zero-question bootstrap & `promote` (Phase 7): implements
   `planning/phase-7-bootstrap-and-promote.md` and `decisions/0017`-
   `0021` — MVP phases 0-7 are now complete. Bare `depcompass` (no
