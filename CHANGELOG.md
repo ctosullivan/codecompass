@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Phase 7 plan (`planning/phase-7-bootstrap-and-promote.md`) and five new
+  ADRs — planning only, no code changed. Reconciles an external MVP-
+  redefinition design doc against actual repo state (correcting the
+  doc's mistaken premise that `depth = full` generation compares a
+  dependency's source against the model's own training knowledge — the
+  real mechanism, superseded here, compared API surface against a
+  project-supplied `context_path`). `decisions/0017`: bare `depcompass`
+  auto-discovers manifests and bootstraps `vendor.toml` at `SURFACE`
+  with no prompts or AI calls; re-running it refreshes idempotently.
+  `decisions/0018`: new `depcompass promote <vendor>` becomes the sole
+  point that costs money or requires confirmation, bundling source
+  resolution, generation, Skill + Cursor `.mdc` export, and an `index`
+  refresh. `decisions/0019`: `FULL`-depth generation becomes grounded
+  description sourced from material retrieved at `promote` time,
+  replacing `context_path`-gated gap analysis (`decisions/0003`'s Haiku
+  model-tier choice is unaffected). `decisions/0020`: a templated,
+  unconditionally-generated tool-level Skill distinct from per-vendor
+  Skills. `decisions/0021`: PyPI source resolution fails loudly rather
+  than falling back to a source tarball when no repository URL resolves.
+  `planning/ROADMAP.md`'s former Phase 9 (Skills + Cursor export) and
+  Phase 10 (`init` bulk-discovery refinement) rows are folded into the
+  new Phase 7 and removed as separate rows; later phases renumbered
+  accordingly (all were `not started`).
 - Staleness checking (Phase 6): `depcompass check [--strict] [--fix]` is
   real — the last MVP phase, so MVP phases 0-6 are now complete. New
   `depcompass.staleness` module: `check_all`/`check_vendor` compare a

@@ -36,12 +36,20 @@ performed automatically as part of Phase 6's own closeout.
 
 | Phase | Name | Status | Plan file |
 |---|---|---|---|
-| 7 | Single-vendor chat REPL | not started | — |
-| 8 | Project-root-aware REPL routing (Tier 1 sourced from Phase 9's Skill descriptions, decisions/0013) + whole-project context + unconditional dependency rollup at session start (decisions/0012) + digest-exceeded escalation to the generated Skill folder (decisions/0013) | not started | — |
-| 9 | Agent Skills export (primary, one per FULL vendor, trigger-accuracy eval) + Cursor `.mdc` export (retained) — decisions/0013 | not started | — |
-| 10 | `init` bulk-discovery refinement | not started | — |
-| 11 | Polish: PyPI publish, examples, docs site evaluation | not started | — |
-| 12 | MCP server (`query_vendor`) | not started | — |
+| 7 | Zero-question bootstrap (bare `depcompass` auto-discovery, decisions/0017) & `promote` (reactive depth escalation, decisions/0018) — grounded-description FULL-depth generation (decisions/0019), tool-level Skill (decisions/0020), PyPI source-resolution fail-loud (decisions/0021); absorbs the former Phase 9 (Skills + Cursor export) and Phase 10 (`init` bulk-discovery refinement) rows below | planned | [`phase-7-bootstrap-and-promote.md`](phase-7-bootstrap-and-promote.md) |
+| 8 | Single-vendor chat REPL | not started | — |
+| 9 | Project-root-aware REPL routing (Tier 1 sourced from Phase 7's Skill descriptions, decisions/0013) + whole-project context + unconditional dependency rollup at session start (decisions/0012) + digest-exceeded escalation to the generated Skill folder (decisions/0013) | not started | — |
+| 10 | Polish: PyPI publish, examples, docs site evaluation | not started | — |
+| 11 | MCP server (`query_vendor`) | not started | — |
+
+**Renumbering note (this table, dated to Phase 7's planning):** the
+former Phase 9 ("Agent Skills export + Cursor `.mdc` export") and
+Phase 10 (`init` bulk-discovery refinement) rows were removed — both are
+fully absorbed into the new Phase 7 above, per `decisions/0017` and
+`decisions/0018`. The former Phase 7 (REPL) and Phase 8 (REPL routing)
+shifted to 8 and 9; former Phase 11/12 (polish, MCP) shifted to 10/11.
+All shifted phases were `not started`, so this is a clean renumber, not
+a rewrite of in-flight work.
 
 ## How this file is kept in sync
 

@@ -6,92 +6,88 @@ for the log of how it got here.
 
 ## Current phase
 
-**Phase 6: Staleness checking — done. MVP phases 0-6 are all complete.**
-The `CLAUDE.md` §6 release-promotion step (a dated `[Unreleased]` →
-version-tagged `CHANGELOG.md` section, tagging the MVP milestone) has
-**not** been done yet — it's a separate, explicit action, not something
-Phase 6's own closeout performs automatically.
+**MVP phases 0-6 are all complete (unchanged this session).** The
+`CLAUDE.md` §6 release-promotion step (a dated `[Unreleased]` →
+version-tagged `CHANGELOG.md` section, tagging the MVP milestone) still
+has **not** been done — still a separate, explicit action.
+
+**Phase 7: Zero-question bootstrap & promote — planned, not yet
+implemented.** A separate planning session proposed redefining the
+post-MVP direction: a zero-question deterministic bootstrap on bare
+`depcompass`, a single reactive `promote <vendor>` command as the only
+cost/confirmation point, and replacing `depth = FULL` generation's
+mechanism. This session reconciled that proposal against actual repo
+state (see below) and produced `planning/phase-7-bootstrap-and-
+promote.md` plus five new ADRs. No code was changed.
 
 ## What was just completed
 
-Implemented `planning/phase-6-staleness-checking.md` in full. New
-`depcompass.staleness` module: `Severity` enum
-(`NONE`/`PATCH`/`MINOR`/`MAJOR`/`UNKNOWN`), a small custom
-`major.minor.patch`-triple version parser (no new dependency, per
-`decisions/0009`/`0011`'s established pattern), `classify` implementing
-`decisions/0005`'s patch-silent/minor-warns/major-hard-fails policy,
-`VendorStaleness` (a lightweight result type mirroring `index.py`'s
-`RoutingRow`, not a `VendorDigest`), `check_vendor`/`check_all`. Detects
-transitive-only (DEPTREE) drift by diffing a vendor's persisted
-`deptree.json` against a freshly built live tree (via a shared `_flatten`
-helper, `deptree.render_deptree_json`'s already-deduplicated shape reused
-for both sides) whenever the vendor's own root version is unchanged —
-informational only, never affects `--strict`'s exit code.
+Reconciled an external design doc against the real repo state before
+writing anything, per `CLAUDE.md` §1 and the doc's own instructions.
+Reconciliation found the doc's central premise for reversing `depth =
+FULL` generation was wrong: it assumed gap analysis (`decisions/0003`,
+Phase 5) compares a dependency's source against the model's own
+training-knowledge self-assessment. No such mechanism exists in this
+repo — the real mechanism compares the vendor's API surface against the
+consuming project's `context_path` (its README/spec), gated on
+`context_path` being set. This was surfaced and resolved with the user
+before drafting: the replacement (grounded description, sourced from
+material retrieved at `promote` time) proceeds, but the new ADR's
+rationale is the real one — `context_path` gating is an adoption
+blocker and produces project-specific rather than vendor-general output
+— not the mistaken training-knowledge framing.
 
-`cli.py`'s `check` command is real: bare `check` is report-only and always
-exits 0; `--strict` is the CI gate (non-zero on `MAJOR`/`UNKNOWN`
-severity or a failed live-version read); `--fix` regenerates every stale
-vendor via the exact same `sync_vendor` `sync` itself uses (including a
-fresh gap-analysis call for `depth = full` vendors), with `check`'s own
-`--fix` loop — not `sync_vendor` — isolating one vendor's `AdapterError`
-from the rest of the batch; `--strict` and `--fix` are mutually exclusive.
-Output is a Rich `Table` (Vendor, Recorded, Live, Severity, Notes), rows
-styled red/yellow by severity/error.
+Also found: the proposal's asks substantially overlap two already-
+planned, not-started roadmap rows — former Phase 9 (Agent Skills +
+Cursor `.mdc` export) and Phase 10 (`init` bulk-discovery refinement).
+Both are folded into the new Phase 7 rather than left as separate rows;
+`planning/ROADMAP.md` was renumbered accordingly (former Phase 7/8 →
+8/9, former 11/12 → 10/11 — all were `not started`, so this was a clean
+renumber).
 
-`claude_md.read_installed_version` is a new shared helper (moved out of a
-private regex `index.py` used to keep to itself) — `index.py`'s
-`load_routing_rows` now calls it too, behavior-preserving, de-duplication
-only.
+Five new ADRs written: `decisions/0017` (zero-question bootstrap — bare
+`depcompass` auto-discovers manifests, idempotent refresh on re-run),
+`decisions/0018` (`promote <vendor>` as the sole cost-disclosure/
+confirmation point, bundling source resolution + generation + Skill +
+`.mdc` export + `index` refresh), `decisions/0019` (grounded description
+replaces `context_path`-gated gap analysis for `FULL`-depth generation —
+model tier, `decisions/0003`, unaffected), `decisions/0020` (a
+templated, unconditionally-generated tool-level Skill distinct from
+per-vendor Skills), `decisions/0021` (PyPI source resolution fails loud
+rather than falling back to a tarball when no repository URL resolves).
 
-**`VendorDigest.is_stale`/`_stale` were removed from `core.py`**, along
-with the two tests that exercised the old stub. This was flagged in the
-plan before implementation, not a silent drive-by: `check` never builds a
-`VendorDigest` (same reasoning `index.py` established in Phase 4 for
-staying cheap and side-effect-free), so the Phase-1 `is_stale` stub had no
-code path left that could ever populate it.
-
-All same-commit docs updated: `architecture/overview.md` (Core data model,
-Per-vendor CLAUDE.md structure, Two consumption modes, and a rewritten
-Staleness checking section with real signatures; Known footguns gained the
-version-parser's limitations, the bare-`check`-always-exits-0 behavior,
-and the `is_stale` removal), `docs/cli-reference.md` (`check` section
-rewritten from stub to real), `planning/ROADMAP.md` (Phase 6 → done, MVP
-completion noted), `CHANGELOG.md` (`Added`/`Removed`/`Changed` entries),
-`planning/phase-6-staleness-checking.md`'s own Status field.
-
-**Verification**: `pytest` reports 162 passed, 1 skipped (the Cargo live
-smoke test, unchanged since Phase 2) out of 163, up from 136 at the end of
-Phase 5; `ruff check .` is clean. A manual end-to-end run against the
-real, already-installed `pytest` package confirmed `sync` → `check` shows
-`NONE` severity and exits 0, `check --strict` also exits 0 when nothing is
-stale, `check --strict --fix` together errors immediately with no output,
-and `check --fix` against an already-fresh vendor makes no changes. No new
-ADR was written — neither the version-parser choice nor the `is_stale`
-removal reverses a previously-recorded decision.
+`planning/phase-7-bootstrap-and-promote.md` written, covering source
+resolution, retrieval scope (a proposed default flagged as needing
+confirmation before implementation, per `CLAUDE.md` §1), CLI changes,
+the `promote` command, the tool-level Skill, and a test plan. Notes one
+open architectural question for the implementer: whether the existing
+`vendor/<name>/src/` local-install snapshot (`decisions/0004`) and the
+new upstream-repository retrieval for grounded description
+(`decisions/0021`) should share a location on disk or stay separate.
 
 ## Decisions made this session not already captured in an ADR
 
-- None. All five of Phase 6's design decisions (version parsing, bare
-  `check`'s always-exits-0 behavior, full transitive-drift diffing,
-  `--fix` reusing `sync_vendor` unmodified, and the `is_stale` removal)
-  are documented in `planning/phase-6-staleness-checking.md`'s Design
-  decisions section and in `architecture/overview.md`'s Known footguns —
-  none was judged to reverse a previously-recorded decision.
+- None beyond the five ADRs above — the retrieval-scope default and the
+  `vendor/<name>/src/`-vs-new-retrieval-location question are recorded
+  as open implementation questions in `planning/phase-7-bootstrap-and-
+  promote.md`'s Design decisions section, not settled here.
 
 ## Next concrete step
 
-**MVP phases 0-6 are complete.** The two things that could reasonably
-come next, neither decided yet:
-1. The `CLAUDE.md` §6 release-promotion step itself: dated
-   `[Unreleased]` → a versioned `CHANGELOG.md` section, and a version tag,
-   for the phases 0-6 MVP milestone.
-2. Planning Phase 7 (single-vendor chat REPL, per `planning/ROADMAP.md`'s
-   Post-MVP table) — per `CLAUDE.md` §1, would need its own
-   `planning/phase-7-*.md` written and approved before any implementation
-   starts, same process as every phase so far.
+**Two things remain undecided, same as before this session** (this
+session added a plan for one path forward, it didn't choose between
+them):
+1. The `CLAUDE.md` §6 release-promotion step for the MVP 0-6 milestone.
+2. Implementing `planning/phase-7-bootstrap-and-promote.md` — per
+   `CLAUDE.md` §1, do not begin without an explicit new implementation
+   request; the plan file's retrieval-scope default needs explicit
+   confirmation first (flagged in the plan itself).
 
-Neither has been started or requested yet — surface both as open options
-next session rather than assuming which one the user wants first.
+Also still outstanding from before, unchanged by this session: Cargo
+adapter validation blocked on no Rust toolchain (`decisions/0014`),
+`extract_npm_symbols` untested against real-world `.d.ts` styles, and
+`staleness.py`'s version parser has no real PEP 440/full-semver
+correctness.
 
 **Still outstanding, not a blocker but worth remembering**:
 - Once a Rust toolchain is available anywhere in the pipeline,
