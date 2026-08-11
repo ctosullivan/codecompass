@@ -3,12 +3,20 @@
 See architecture/overview.md's "Per-vendor CLAUDE.md structure" section.
 Gap analysis (section 4 in that spec) is populated by Phase 5's AI-gated
 step for `depth = full` + `context_path` vendors; omitted entirely (not a
-placeholder) for every other vendor.
+placeholder) for every other vendor. `read_installed_version` reads the
+Metadata section's load-bearing line back — this module owns the file
+format it targets, so `index.py` (Phase 4) and `staleness.py` (Phase 6)
+both call it rather than keeping their own copies of the regex.
 """
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 from depcompass.core import VendorDigest
+
+_INSTALLED_VERSION_RE = re.compile(r"\*\*Installed version:\*\*\s*(\S+)")
 
 _GROUNDING_PREAMBLE = (
     "> **Grounding note:** This file describes the version of `{name}` "
@@ -88,3 +96,18 @@ def _render_known_gotchas(digest: VendorDigest) -> str:
     if not digest.side_effects:
         return _NO_SIDE_EFFECTS_LINE
     return "\n".join(f"- {effect}" for effect in digest.side_effects)
+
+
+def read_installed_version(claude_md_path: Path) -> str | None:
+    """Read back the Metadata section's `**Installed version:**` line from
+    an already-synced per-vendor `CLAUDE.md` — the format this module
+    itself renders in `render_vendor_claude_md`. Returns `None` if the
+    file doesn't exist or the line isn't found (never synced, or a
+    hand-edited file missing the line). Shared by `index.py` (routing
+    table) and `staleness.py` (Phase 6) rather than each keeping its own
+    copy of this regex.
+    """
+    if not claude_md_path.exists():
+        return None
+    match = _INSTALLED_VERSION_RE.search(claude_md_path.read_text(encoding="utf-8"))
+    return match.group(1) if match else None

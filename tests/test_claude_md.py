@@ -1,4 +1,6 @@
-from depcompass.claude_md import render_vendor_claude_md
+from pathlib import Path
+
+from depcompass.claude_md import read_installed_version, render_vendor_claude_md
 from depcompass.core import Depth, Ecosystem, VendorConfig, VendorDigest
 
 
@@ -97,3 +99,21 @@ def test_quick_links_include_backlink_to_project_root() -> None:
 def test_api_surface_fallback_when_none() -> None:
     markdown = render_vendor_claude_md(_digest(api_surface=None))
     assert "_No API surface extracted._" in markdown
+
+
+def test_read_installed_version_finds_the_line(tmp_path: Path) -> None:
+    claude_md_path = tmp_path / "CLAUDE.md"
+    claude_md_path.write_text(
+        "# turndown\n\n## Metadata\n\n- **Installed version:** 7.1.2\n", encoding="utf-8"
+    )
+    assert read_installed_version(claude_md_path) == "7.1.2"
+
+
+def test_read_installed_version_none_when_file_missing(tmp_path: Path) -> None:
+    assert read_installed_version(tmp_path / "CLAUDE.md") is None
+
+
+def test_read_installed_version_none_when_line_missing(tmp_path: Path) -> None:
+    claude_md_path = tmp_path / "CLAUDE.md"
+    claude_md_path.write_text("# turndown\n\nhand-edited, no metadata\n", encoding="utf-8")
+    assert read_installed_version(claude_md_path) is None

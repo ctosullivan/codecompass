@@ -15,6 +15,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from depcompass.claude_md import read_installed_version
 from depcompass.core import Depth, VendorConfig
 
 _START_MARKER = "<!-- depcompass:start -->"
@@ -22,7 +23,6 @@ _END_MARKER = "<!-- depcompass:end -->"
 _MARKER_BLOCK_RE = re.compile(
     re.escape(_START_MARKER) + r".*?" + re.escape(_END_MARKER), re.DOTALL
 )
-_INSTALLED_VERSION_RE = re.compile(r"\*\*Installed version:\*\*\s*(\S+)")
 
 _CONSULT_WHEN_BY_DEPTH = {
     Depth.SURFACE: "general usage questions",
@@ -51,11 +51,7 @@ def load_routing_rows(configs: list[VendorConfig], project_root: Path) -> list[R
     rows = []
     for config in configs:
         claude_md_path = project_root / "vendor" / config.name / "CLAUDE.md"
-        version = None
-        if claude_md_path.exists():
-            match = _INSTALLED_VERSION_RE.search(claude_md_path.read_text(encoding="utf-8"))
-            version = match.group(1) if match else None
-        rows.append(RoutingRow(config=config, version=version))
+        rows.append(RoutingRow(config=config, version=read_installed_version(claude_md_path)))
     return rows
 
 
