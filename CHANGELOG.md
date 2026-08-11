@@ -9,13 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Phase 6 plan (`planning/phase-6-staleness-checking.md`): scopes
-  `depcompass check [--strict] [--fix]` — severity-aware staleness
-  comparison (`decisions/0005`) via a new `depcompass.staleness` module,
-  a shared `claude_md.read_installed_version` helper (de-duplicating
-  `index.py`'s existing regex), and the removal of the never-populatable
-  `VendorDigest.is_stale` stub in favor of `staleness.VendorStaleness`.
-  Staleness-checking code itself is not yet implemented.
+- Staleness checking (Phase 6): `depcompass check [--strict] [--fix]` is
+  real — the last MVP phase, so MVP phases 0-6 are now complete. New
+  `depcompass.staleness` module: `check_all`/`check_vendor` compare a
+  vendor's persisted `**Installed version:**` against the ecosystem
+  adapter's live read, classifying the delta via a small custom
+  `major.minor.patch` parser into `Severity.NONE`/`PATCH`/`MINOR`/`MAJOR`/
+  `UNKNOWN` per `decisions/0005`'s patch-silent/minor-warns/major-hard-
+  fails policy (`UNKNOWN` — an unparseable version string on either side —
+  is treated as a hard-fail case). Also detects transitive-only
+  (DEPTREE) drift by diffing a vendor's persisted `deptree.json` against a
+  freshly built live tree when the vendor's own root version is
+  unchanged — informational only, never affects `--strict`'s exit code.
+  Bare `check` (no flags) is report-only and always exits 0; `--strict` is
+  the CI gate (non-zero on `MAJOR`/`UNKNOWN`/a failed live-version read);
+  `--fix` regenerates every stale vendor via the same `sync_vendor` `sync`
+  itself uses (including gap analysis for `depth = full` vendors),
+  isolating one vendor's adapter failure from the rest of the batch.
+  `--strict` and `--fix` are mutually exclusive. New shared
+  `claude_md.read_installed_version` helper, de-duplicating a regex
+  `index.py` previously kept privately.
 - AI-gated gap analysis (Phase 5): `depcompass.gap_analysis` — a single
   forced-tool-use Anthropic call per qualifying vendor
   (`generate_gap_analysis`), pinned to the dated snapshot
@@ -104,8 +117,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shim); a bare `pipdeptree` wasn't reliably on `PATH` outside an
   activated venv (now invoked as `sys.executable -m pipdeptree`).
 
+### Removed
+
+- `VendorDigest.is_stale` (Phase 6) — the property, its `_stale` field,
+  and the Phase-1 docstring promising a future staleness check would
+  populate it. `check` (Phase 6) never builds a `VendorDigest`, so no code
+  path could ever set it; `depcompass.staleness.VendorStaleness` replaces
+  it as `check`'s own return type.
+
 ### Changed
 
+- `index.py`'s `load_routing_rows` (Phase 6) now calls the new shared
+  `claude_md.read_installed_version` instead of keeping its own private
+  copy of the `**Installed version:**` regex — behavior-preserving,
+  de-duplication only.
 - `filetree.render_filetree_markdown`/`render_filetree_json` (Phase 5)
   gain an optional `action_pointer: tuple[str, str] | None = None`
   keyword — additive and non-breaking; every existing Phase 3/4 call

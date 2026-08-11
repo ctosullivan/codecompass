@@ -7,19 +7,21 @@ is a living document updated in place as the system evolves. When in doubt
 about *why* something is designed the way it is, check `decisions/`; when
 you want to know *what exists now*, check here.
 
-As of Phase 5, the core data model (`depcompass.core`), `vendor.toml`
+As of Phase 6, the core data model (`depcompass.core`), `vendor.toml`
 parsing (`depcompass.config`), all three ecosystem adapters
 (`depcompass.adapters`), per-ecosystem symbol/purpose extraction
 (`depcompass.symbols`), deterministic tree generation
 (`depcompass.deptree`, `depcompass.filetree`), per-vendor `CLAUDE.md`
 templating (`depcompass.claude_md`), per-vendor sync orchestration
 (`depcompass.sync`), root routing-table injection (`depcompass.index`),
-manifest-based `vendor.toml` bootstrap (`depcompass.discovery`), and
-AI-gated gap analysis (`depcompass.gap_analysis`) are implemented —
-`init`, `sync` (including `--budget`), and `index` are real CLI commands,
-not stubs. Everything else described below — staleness checking, the
-chat REPL, Skills/Cursor export — is still the target design that later
-phases build toward; see `planning/CONTEXT.md` for current status.
+manifest-based `vendor.toml` bootstrap (`depcompass.discovery`), AI-gated
+gap analysis (`depcompass.gap_analysis`), and severity-aware staleness
+checking (`depcompass.staleness`) are implemented — `init`, `sync`
+(including `--budget`), `index`, and `check` (including `--strict`/
+`--fix`) are real CLI commands, not stubs. MVP phases 0-6 are complete.
+Everything else described below — the chat REPL, Skills/Cursor export —
+is still the target design that later phases build toward; see
+`planning/CONTEXT.md` for current status.
 
 ## Core data model
 
@@ -38,10 +40,13 @@ phases build toward; see `planning/CONTEXT.md` for current status.
   a raw manifest but explain real-world install size/behavior.
 - **`VendorDigest`** — the aggregate return type each vendor's generation
   produces: config, installed version, generated trees, API surface,
-  optional gap analysis. Its `is_stale` property is a documented stub
-  (`NotImplementedError`) until `staleness.check()` populates it — calling
-  it before a staleness check has run is a bug, not a valid empty state.
-  See **Known footguns** below.
+  optional gap analysis. Carries no staleness information — `check`
+  (Phase 6) reads persisted per-vendor `CLAUDE.md` files directly rather
+  than building a `VendorDigest`, the same pattern `index.py` established
+  in Phase 4, and returns its own `depcompass.staleness.VendorStaleness`
+  type instead. An earlier `is_stale` stub on this class, speculatively
+  added in Phase 1, was removed in Phase 6 once it became clear no code
+  path would ever populate it. See **Known footguns** below.
 
 ## Adapter interface
 
@@ -239,9 +244,10 @@ order:
 
 1. **Metadata** — ecosystem, depth, and a `**Installed version:**` line.
    This exact format (`\*\*Installed version:\*\*\s*(\S+)`) is what
-   `staleness.py` (Phase 6) and `index.py` (Phase 4, reading it back to
-   populate the routing table's Version column) both regex against — it
-   is load-bearing, not cosmetic.
+   `claude_md.read_installed_version` regexes against — a shared helper
+   both `staleness.py` (Phase 6) and `index.py` (Phase 4, populating the
+   routing table's Version column) call, rather than each keeping its own
+   copy of the regex. It is load-bearing, not cosmetic.
 2. **Grounding preamble** — fixed instructional text: the pinned version
    is authoritative over training knowledge for this library. This is the
    actual mechanism that changes agent behavior — without an explicit
@@ -294,38 +300,77 @@ Both must work:
    `**Installed version:**` line) rather than re-running `sync` — this
    keeps `index` cheap and side-effect-free even after Phase 5 adds an
    AI-gated step to `sync`, and a vendor with no synced `CLAUDE.md` yet
-   shows `_not synced_` rather than erroring. The Version column has no
-   ✅/⚠ freshness indicator yet (that's `check`'s job, Phase 6); the Deps
-   column links to `DEPTREE.md` rather than showing a live dependency
-   count, since `index` deliberately has no adapter/tree data to draw one
-   from.
+   shows `_not synced_` rather than erroring. The Version column still has
+   no ✅/⚠ freshness indicator — `check` (Phase 6) reports staleness in
+   its own separate table (`depcompass check`) rather than being wired
+   into `index`'s routing table, a deliberate scope boundary rather than
+   an oversight (see **Known footguns**); the Deps column links to
+   `DEPTREE.md` rather than showing a live dependency count, since `index`
+   deliberately has no adapter/tree data to draw one from.
 
-## Staleness checking
+## Staleness checking (`depcompass.staleness`)
 
-Compares the `**Installed version:**` line in a vendor's `CLAUDE.md`
-against the ecosystem adapter's live lockfile read. **Severity-aware, not
-binary**: patch delta is silent/ignored, minor delta warns without
-failing, major delta hard-fails (`check` exits non-zero) because a major
-bump may mean the digest describes removed or changed APIs. See
+`check_all(configs, project_root) -> list[VendorStaleness]` /
+`check_vendor(config, project_root) -> VendorStaleness`. Compares the
+`**Installed version:**` line in a vendor's persisted `CLAUDE.md` (read
+via `claude_md.read_installed_version`, shared with `index.py`) against
+the ecosystem adapter's live `installed_version()` read. **Severity-aware,
+not binary** (`Severity`: `NONE`/`PATCH`/`MINOR`/`MAJOR`/`UNKNOWN`): patch
+delta is `NONE` (silent/ignored), minor delta is a warning that never
+fails, major delta is the hard-fail case. `UNKNOWN` — either version
+string doesn't parse as a `major.minor.patch` triple — is treated the same
+as `MAJOR` for gating purposes, since an unclassifiable delta is a "can't
+verify" state, not a "safe to ignore" one. See
 [`decisions/0005`](../decisions/0005-severity-aware-staleness.md).
 
-Two run modes:
-- `--strict` — pure gate, human runs `sync` manually. Appropriate for CI,
-  so an automated process doesn't unpredictably spend AI-pass tokens on
-  every PR.
-- `--fix` — regenerates stale digests in place, exits 0 on success.
-  Appropriate for a scheduled maintenance job. Should batch all stale
-  vendors into one PR rather than one PR per bump, to avoid redundant
-  token spend and PR noise.
+Never builds a `VendorDigest` — same reasoning `index.py` (Phase 4)
+already established for staying cheap and side-effect-free. `VendorStaleness`
+(`config`, `recorded_version`, `live_version`, `severity`,
+`transitive_drift`, `error`) is its own lightweight result type, not
+reused from anywhere else. A vendor whose adapter's live read itself fails
+gets `error` set (caught locally — `check` isolates one broken vendor's
+read rather than crashing the whole run, unlike `sync_vendor`, which lets
+`AdapterError` propagate) and is treated as a `--strict` failure the same
+way `MAJOR`/`UNKNOWN` is.
 
-Where practical, distinguish whether the *vendor itself* bumped version vs.
-only one of its *transitive dependencies* bumped (DEPTREE drift) — the
-latter is lower risk and shouldn't trigger the same urgency.
+**Two run modes, `check`'s own flags, mutually exclusive with each
+other**:
+- Bare `check` (no flags) — report-only. Always prints the severity table
+  and exits 0, regardless of what it finds. For a human running it
+  locally.
+- `--strict` — the actual CI gate. Same table, but exits non-zero if any
+  vendor has `MAJOR`/`UNKNOWN` severity or a live-read `error`. Never
+  regenerates anything — a human (or a scheduled job) runs `sync`/`--fix`
+  separately, so an automated PR check doesn't unpredictably spend
+  AI-pass tokens.
+- `--fix` — regenerates every vendor where `recorded_version !=
+  live_version` (including a vendor that's never been synced at all) or
+  `transitive_drift` is set, via the exact same `sync_vendor` `sync`
+  itself uses — unmodified, including a fresh gap-analysis call for
+  `depth = full` vendors. `check`'s own `--fix` loop (not `sync_vendor`)
+  wraps each regeneration in `try/except AdapterError`, so one vendor's
+  broken adapter read doesn't abort the rest of the batch; exits non-zero
+  if anything failed (an adapter error or a gap-analysis error), 0
+  otherwise.
+
+**Transitive-vs-vendor drift** — a full diff, not just a root-version
+comparison. When a vendor's own root version is unchanged
+(`severity is NONE`), `check_vendor` reads the persisted `deptree.json`,
+calls the adapter's `dependency_tree()` fresh (a local
+subprocess/metadata read, same cost profile `sync` already pays — no AI,
+no network beyond what the adapter does at `sync` time), and flattens both
+into `name -> {versions}` maps via a shared `_flatten` helper (reusing
+`deptree.render_deptree_json`'s already-deduplicated shape for the live
+side, resolving `{"ref": "name@version"}` back-references via
+`rpartition("@")` so scoped npm names like `@babel/core` parse correctly).
+A mismatch sets `transitive_drift = True` — informational only, it never
+affects `--strict`'s exit code, consistent with `decisions/0005` treating
+transitive-only drift as lower risk than the vendor's own version moving.
 
 **Hook placement**: pre-commit only fires when a lockfile actually changed
 (`package-lock.json`, `pyproject.lock`, `Cargo.lock`) — not on every
-commit. Pre-commit is a courtesy/fast-fail; **CI's `depcompass check` is
-the actual enforcement point** that blocks merge.
+commit. Pre-commit is a courtesy/fast-fail; **CI's `depcompass check
+--strict` is the actual enforcement point** that blocks merge.
 
 ## Multi-tool export (Skills, Cursor)
 
@@ -516,10 +561,27 @@ projected cost for a single run exceeds the cap.
 
 ## Known footguns
 
-- `VendorDigest.is_stale` is a stub that raises until populated by a
-  staleness check — don't treat a missing implementation there as a bug to
-  "fix" by returning a default; it's intentionally unpopulated until
-  `staleness.check()` runs.
+- **`VendorDigest.is_stale` was removed in Phase 6**, not left as a stub —
+  `check` never builds a `VendorDigest` (same reasoning `index.py`
+  established for staying cheap), so the Phase-1 stub had no code path
+  that could ever populate it. If older notes or memory reference
+  `digest.is_stale`, that API no longer exists; use
+  `depcompass.staleness.check_vendor`/`check_all` instead.
+- **`staleness.py`'s version parser is a small custom regex, not a real
+  PEP 440 or full semver parser** — it only extracts a leading
+  `major.minor.patch` integer triple, tolerating a `v` prefix and ignoring
+  any trailing suffix. No epoch support, no pre-release-ordering
+  correctness (e.g. it can't tell `1.0.0-alpha` from `1.0.0-beta` apart
+  semantically — both parse to the same triple as `1.0.0`). Either side
+  failing to parse a triple at all yields `Severity.UNKNOWN`, treated as a
+  `--strict` failure. A deliberate dependency-avoidance choice
+  (`decisions/0009`, `decisions/0011`), not an oversight — flag if it
+  misclassifies a real-world version string.
+- **Bare `depcompass check` (no flags) always exits 0**, even with a major
+  severity present — it's a report-only table for local use. Only
+  `--strict` turns severity/error findings into a non-zero exit. Don't
+  assume plain `check` in a script or hook enforces anything; use
+  `check --strict` for that.
 - `_load_config` and `claude_md.render_vendor_claude_md` are both
   implemented (Phases 1 and 4) — the CLI skeleton's old `_write_claude_md`
   `NotImplementedError` stub was removed in Phase 4, not left behind.

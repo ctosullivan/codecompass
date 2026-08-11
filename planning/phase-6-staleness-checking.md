@@ -166,4 +166,28 @@
 
 ## Status
 
-planned — implementation not yet started.
+done — all verification steps passed: `pytest` reports 162 passed, 1
+skipped (the Cargo live smoke test, unchanged since Phase 2) out of 163
+total, up from 136 at the end of Phase 5; `ruff check .` is clean. A
+manual end-to-end run against the real, already-installed `pytest`
+package (same live-package pattern as `test_cli.py`'s Phase 4 smoke test)
+confirmed: `check` after a fresh `sync` shows `NONE` severity and exits 0;
+`check --strict` also exits 0 when nothing is stale; `check --strict
+--fix` together errors immediately with no output; `check --fix` against
+an already-fresh vendor makes no changes (no "fixed" line). Unit tests
+(`tests/test_staleness.py`) cover `_parse_version`/`classify`'s full
+severity matrix (including the numeric-triple-matches-despite-string-diff
+`NONE` case and the `UNKNOWN` unparseable case), not-synced vendors,
+transitive-drift detection with the root version held constant, no-drift-
+detection-attempted-when-root-changed, and `AdapterError` isolation.
+`tests/test_cli.py` covers bare/`--strict`/`--fix` exit-code semantics end
+to end via the Typer `CliRunner`, including one vendor's adapter failure
+not blocking `--fix` from fixing the rest. `tests/test_claude_md.py` and
+`tests/test_index.py` confirm `read_installed_version`'s extraction and
+the `index.py` refactor are behavior-preserving. `tests/test_core.py`'s
+`is_stale` tests were removed along with the field itself.
+
+No ADR was written — per the plan's own assessment, neither the
+version-parser choice nor the `is_stale` removal reverses a previously-
+recorded decision; both are documented here and in
+`architecture/overview.md`'s Known footguns instead.

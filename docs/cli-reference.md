@@ -1,9 +1,9 @@
 # CLI reference
 
-> `init`, `sync`, and `index` are fully implemented as of Phase 5,
-> including `sync --budget`. `check` and `chat` remain stubs: each prints
-> a "not yet implemented" message naming its planned phase and exits
-> non-zero — see [`planning/`](../planning/) for current phase status.
+> `init`, `sync`, `index`, and `check` are fully implemented as of Phase 6
+> (MVP complete). `chat` remains a stub: it prints a "not yet implemented"
+> message naming its planned phase and exits non-zero — see
+> [`planning/`](../planning/) for current phase status.
 
 ## `depcompass init --scan <manifest file> [--scan <manifest file> ...] [--output <path>]`
 
@@ -85,20 +85,40 @@ depcompass index
 
 ## `depcompass check [--strict] [--fix]`
 
-**Status:** stub. Real logic planned for Phase 6.
+**Status:** implemented (Phase 6).
 
-Staleness gate. Compares each vendor's recorded "last verified against
-installed version" against the ecosystem adapter's live read of the
-currently installed version. Severity-aware: patch delta is silent, minor
-delta warns, major delta hard-fails.
+Staleness gate. Compares each vendor's recorded `**Installed version:**`
+(from its already-synced `CLAUDE.md`) against the ecosystem adapter's live
+read of the currently installed version. Severity-aware
+(`decisions/0005`): patch delta is silent (`NONE`), minor delta warns
+without failing, major delta — or an unparseable version on either side
+(`UNKNOWN`) — is the hard-fail case. Makes no AI calls itself; only
+`--fix` can trigger gap-analysis cost, and only for the vendors it
+actually regenerates.
 
-- `--strict` — pure gate, does not regenerate anything; exits non-zero on
-  any major-version staleness. Intended for CI.
-- `--fix` — regenerates stale digests in place; exits 0 on success.
-  Intended for a scheduled maintenance job; batches all stale vendors into
-  one PR rather than one PR per bump.
+- No flags — **report-only**. Prints a table (Vendor, Recorded, Live,
+  Severity, Notes) and **always exits 0**, regardless of what it finds.
+  For a human checking status locally.
+- `--strict` — the CI gate. Same table, but exits non-zero if any vendor
+  has `MAJOR`/`UNKNOWN` severity or a failed live-version read. Never
+  regenerates anything.
+- `--fix` — regenerates every vendor whose recorded version differs from
+  its live version (including one that's never been synced at all) or
+  shows transitive-dependency drift, via the same logic `sync` uses —
+  including a fresh gap-analysis call for `depth = full` vendors, so this
+  is not free for those. One vendor's regeneration failure (a broken
+  adapter read) doesn't block the rest; exits non-zero if anything failed,
+  0 otherwise.
+- `--strict` and `--fix` are mutually exclusive — gating and regenerating
+  are different jobs. Passing both errors immediately, before doing
+  anything.
+- Where practical, distinguishes the vendor's own version bump from a
+  transitive-only (DEPTREE) bump — the latter shows as "transitive drift"
+  in the Notes column but never affects `--strict`'s exit code, since it's
+  lower risk than the vendor itself moving.
 
 ```bash
+depcompass check
 depcompass check --strict
 depcompass check --fix
 ```
