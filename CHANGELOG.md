@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Phase 6 plan (`planning/phase-6-staleness-checking.md`): scopes
+  `depcompass check [--strict] [--fix]` — severity-aware staleness
+  comparison (`decisions/0005`) via a new `depcompass.staleness` module,
+  a shared `claude_md.read_installed_version` helper (de-duplicating
+  `index.py`'s existing regex), and the removal of the never-populatable
+  `VendorDigest.is_stale` stub in favor of `staleness.VendorStaleness`.
+  Staleness-checking code itself is not yet implemented.
 - AI-gated gap analysis (Phase 5): `depcompass.gap_analysis` — a single
   forced-tool-use Anthropic call per qualifying vendor
   (`generate_gap_analysis`), pinned to the dated snapshot
