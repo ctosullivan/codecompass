@@ -76,10 +76,15 @@ class VendorDigest:
     `action_pointer_note` by the AI-gated step (Phase 5, only for `depth =
     full` vendors with `context_path` set) — a failure there sets
     `gap_analysis_error` instead, rather than leaving everything silently
-    `None` with no way to tell "not applicable" from "failed". `is_stale`
-    stays a documented stub — it raises until
-    `staleness.check()` (Phase 6) sets it; a missing implementation there
-    is not a bug to "fix" with a default.
+    `None` with no way to tell "not applicable" from "failed".
+
+    Does not carry staleness information — `depcompass.staleness` (Phase
+    6) reads persisted per-vendor `CLAUDE.md` files directly rather than
+    building a `VendorDigest`, the same cheap-and-side-effect-free pattern
+    `index.py` (Phase 4) already established, and returns its own
+    `VendorStaleness` type. An earlier `is_stale` stub on this class was
+    removed in Phase 6 once that pattern made it clear no code path would
+    ever populate it.
     """
 
     config: VendorConfig
@@ -93,17 +98,3 @@ class VendorDigest:
     action_pointer_file: str | None = None
     action_pointer_note: str | None = None
     side_effects: list[str] = field(default_factory=list)
-    _stale: bool | None = field(default=None, repr=False, init=False)
-
-    @property
-    def is_stale(self) -> bool:
-        if self._stale is None:
-            raise NotImplementedError(
-                "VendorDigest.is_stale is unpopulated until staleness.check() "
-                "(Phase 6) runs — this is a documented stub, not a bug."
-            )
-        return self._stale
-
-    @is_stale.setter
-    def is_stale(self, value: bool) -> None:
-        self._stale = value

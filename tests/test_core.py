@@ -43,13 +43,6 @@ def test_depnode_nested_tree() -> None:
     assert root.children[0].name == "leaf"
 
 
-def test_vendor_digest_is_stale_raises_until_populated() -> None:
-    config = VendorConfig(name="lodash", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
-    digest = VendorDigest(config=config, installed_version="4.17.21")
-    with pytest.raises(NotImplementedError):
-        digest.is_stale
-
-
 def test_vendor_digest_default_side_effects_are_independent_lists() -> None:
     config = VendorConfig(name="lodash", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
     a = VendorDigest(config=config, installed_version="4.17.21")
@@ -63,10 +56,3 @@ def test_vendor_digest_gap_analysis_fields_default_to_none() -> None:
     assert digest.gap_analysis is None
     assert digest.conversational_overview is None
     assert digest.gap_analysis_error is None
-
-
-def test_vendor_digest_is_stale_settable() -> None:
-    config = VendorConfig(name="lodash", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
-    digest = VendorDigest(config=config, installed_version="4.17.21")
-    digest.is_stale = True
-    assert digest.is_stale is True
