@@ -8,13 +8,37 @@ for the log of how it got here.
 
 **Phase 7: Zero-question bootstrap & promote — done. MVP phases 0-7 are
 complete** (MVP spans 0-8, `decisions/0022`). Phase 8 (single-vendor chat
-REPL) is not started — it has no `planning/phase-8-*.md` yet; that plan
-file needs writing, per `CLAUDE.md` §1, before its implementation can
-start. The `CLAUDE.md` §6 release-promotion step (a dated `[Unreleased]`
-→ version-tagged `CHANGELOG.md` section) still has **not** been done — it
-waits on Phase 8, not Phase 7.
+REPL) is now **planned** — `planning/phase-8-chat-repl.md` and
+`decisions/0023-chat-grounds-on-persisted-files-not-live-regeneration.md`
+were written this session, per `CLAUDE.md` §1. No implementation code has
+been written yet. The `CLAUDE.md` §6 release-promotion step (a dated
+`[Unreleased]` → version-tagged `CHANGELOG.md` section) still has **not**
+been done — it waits on Phase 8 being `done`, not just planned.
 
 ## What was just completed
+
+Wrote `planning/phase-8-chat-repl.md` (bootstrap + promote already done
+in Phase 7; this session only plans Phase 8, no code). Key points settled
+by the plan and its accompanying ADR (`decisions/0023`):
+- `chat <vendor>` (explicit vendor argument required — no bare
+  project-mode `chat` this phase; that's Phase 9's routing/rollup work)
+  grounds its system prompt by reading the vendor's already-persisted
+  `vendor/<name>/CLAUDE.md` (required) and `vendor/<name>/OVERVIEW.md`
+  (optional) directly as text — no call to `sync_vendor`, no
+  reconstructed `VendorDigest`, no new serialization format. This avoids
+  re-incurring `promote`'s clone + AI-generation cost on every REPL
+  session start.
+- Works at any depth: a `surface` vendor (or a `full` vendor with a
+  failed description) gets thinner grounding from `CLAUDE.md` alone, plus
+  a one-line hint to run `promote` — not a hard block.
+- Plain multi-turn text completion against
+  `claude-haiku-4-5-20251001`, no forced tool-use, no file-exploration
+  loop, no mid-conversation model escalation (`decisions/0013`).
+- New module `src/depcompass/chat.py` planned (not yet created):
+  `_build_system_prompt`, `_call_anthropic` (the monkeypatch seam for
+  tests, `decisions/0016`), `ChatError`, `run_chat`.
+
+## Previously completed (Phase 7)
 
 Implemented `planning/phase-7-bootstrap-and-promote.md` in full. Bare
 `depcompass` (no subcommand, Typer `invoke_without_command`) auto-
@@ -87,26 +111,26 @@ spend — see **Still outstanding** below.
 
 ## Decisions made this session not already captured in an ADR
 
-- None — `decisions/0017`-`0021` (written in the prior planning session)
-  already cover this implementation; the two open questions those ADRs'
-  originating plan flagged (retrieval scope, `vendor/<name>/src/`
-  location) were resolved via `AskUserQuestion` before implementation
-  began and are recorded in `planning/phase-7-bootstrap-and-promote.md`'s
-  Status section, not as new ADRs (neither reverses a prior decision).
+- None outstanding — this session's design decision (chat grounds on
+  persisted `CLAUDE.md`/`OVERVIEW.md` text rather than calling
+  `sync_vendor` or reconstructing a `VendorDigest`; works at any depth,
+  not gated on `depth = full`) is captured in
+  `decisions/0023-chat-grounds-on-persisted-files-not-live-
+  regeneration.md`, written this session.
 
 ## Next concrete step
 
-**MVP phases 0-7 are complete.** The two things that could reasonably
-come next, neither decided yet:
-1. Planning Phase 8 (single-vendor chat REPL) — per `CLAUDE.md` §1,
-   would need its own `planning/phase-8-*.md` written and approved
-   before any implementation starts. Depends on Phase 7's Skill/
-   grounded-description output, which now exists.
-2. The `CLAUDE.md` §6 release-promotion step doesn't apply yet — it
-   waits on Phase 8, per `decisions/0022`.
+**Phase 8 is now planned, not yet implemented.** The next concrete step
+is implementing `planning/phase-8-chat-repl.md`: `src/depcompass/chat.py`
+(new), the real `chat <vendor>` CLI command (replacing the
+`_not_implemented` stub), `tests/test_chat.py`, and the same-commit doc
+updates listed in that plan. Not started yet — only requested when the
+user explicitly asks for it, per this project's established pattern of
+planning and implementation landing as separate, explicitly requested
+steps.
 
-Neither has been started or requested yet — surface both as open options
-next session rather than assuming which one the user wants first.
+The `CLAUDE.md` §6 release-promotion step still doesn't apply — it waits
+on Phase 8 being `done`, per `decisions/0022`.
 
 **Still outstanding, not a blocker but worth remembering**:
 - Once a Rust toolchain is available anywhere in the pipeline,

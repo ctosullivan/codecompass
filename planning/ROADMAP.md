@@ -25,14 +25,15 @@ One milestone (see `CLAUDE.md` §6): tagged/released only once phase 8 is
 | 5 | AI-gated gap analysis (`depth = full`), dual-audience output (technical + conversational overview, decisions/0012), `--budget`, FILETREE cross-linking | done | [`phase-5-gap-analysis.md`](phase-5-gap-analysis.md) |
 | 6 | Staleness checking (`check`, `--strict`/`--fix`) | done | [`phase-6-staleness-checking.md`](phase-6-staleness-checking.md) |
 | 7 | Zero-question bootstrap (bare `depcompass` auto-discovery, decisions/0017) & `promote` (reactive depth escalation, decisions/0018) — grounded-description FULL-depth generation (decisions/0019), tool-level Skill (decisions/0020), PyPI source-resolution fail-loud (decisions/0021); absorbs the former Phase 9 (Skills + Cursor export) and Phase 10 (`init` bulk-discovery refinement) rows | done | [`phase-7-bootstrap-and-promote.md`](phase-7-bootstrap-and-promote.md) |
-| 8 | Single-vendor chat REPL | not started | — |
+| 8 | Single-vendor chat REPL (explicit `chat <vendor>` only; project-root routing is Phase 9) — grounds on persisted `CLAUDE.md`/`OVERVIEW.md` text, no digest regeneration (decisions/0023) | planned | [`phase-8-chat-repl.md`](phase-8-chat-repl.md) |
 
 **MVP done when:** a real project can run `init`, `sync`, `promote`, and
 `check` against real npm/Python/Cargo dependencies, and query them via
 `depcompass chat`, and get correct, useful output. Phases 0-7 are done;
-Phase 8 is not started — the `CLAUDE.md` §6 release-promotion step (a
-dated `[Unreleased]` → version-tagged `CHANGELOG.md` section) only
-happens once all eight are `done` (`decisions/0022`).
+Phase 8 is planned but not implemented — the `CLAUDE.md` §6
+release-promotion step (a dated `[Unreleased]` → version-tagged
+`CHANGELOG.md` section) only happens once all eight are `done`
+(`decisions/0022`).
 
 ## Post-MVP
 
