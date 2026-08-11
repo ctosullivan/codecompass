@@ -7,59 +7,92 @@ is a living document updated in place as the system evolves. When in doubt
 about *why* something is designed the way it is, check `decisions/`; when
 you want to know *what exists now*, check here.
 
-As of Phase 6, the core data model (`depcompass.core`), `vendor.toml`
+As of Phase 7, the core data model (`depcompass.core`), `vendor.toml`
 parsing (`depcompass.config`), all three ecosystem adapters
 (`depcompass.adapters`), per-ecosystem symbol/purpose extraction
 (`depcompass.symbols`), deterministic tree generation
 (`depcompass.deptree`, `depcompass.filetree`), per-vendor `CLAUDE.md`
 templating (`depcompass.claude_md`), per-vendor sync orchestration
 (`depcompass.sync`), root routing-table injection (`depcompass.index`),
-manifest-based `vendor.toml` bootstrap (`depcompass.discovery`), AI-gated
-gap analysis (`depcompass.gap_analysis`), and severity-aware staleness
-checking (`depcompass.staleness`) are implemented — `init`, `sync`
-(including `--budget`), `index`, and `check` (including `--strict`/
-`--fix`) are real CLI commands, not stubs. MVP phases 0-6 are complete;
-the MVP itself now spans phases 0-8, not just 0-6 (`decisions/0022`) —
-Phase 7 (`promote`, replacing gap analysis with grounded description) is
-planned but not implemented, and Phase 8 (the chat REPL) is not started.
-Everything else described below — Skills/Cursor export beyond what Phase
-7 covers, REPL routing/rollup — is still the target design that later,
-post-MVP phases build toward; see `planning/CONTEXT.md` for current
-status.
+manifest-based `vendor.toml` bootstrap and zero-question auto-discovery
+(`depcompass.discovery`), upstream repository resolution
+(`depcompass.source_resolution`), AI-gated grounded-description
+generation (`depcompass.grounded_description`, replacing Phase 5's
+`context_path`-gated gap analysis — `decisions/0019`), Skill/Cursor
+export (`depcompass.skill`), and severity-aware staleness checking
+(`depcompass.staleness`) are implemented — bare `depcompass`, `init`,
+`sync` (including `--budget`), `index`, `check` (including `--strict`/
+`--fix`), and `promote` are real CLI commands, not stubs. The MVP spans
+phases 0-8 (`decisions/0022`); phases 0-7 are done, Phase 8 (the chat
+REPL) is not started. Everything else described below — REPL routing/
+rollup — is still the target design that later, post-MVP phases build
+toward; see `planning/CONTEXT.md` for current status.
 
 ## Core data model
 
-- **`VendorConfig(name, ecosystem, depth, context_path)`** — one entry per
-  dependency, sourced from `vendor.toml`. See
+- **`VendorConfig(name, ecosystem, depth)`** — one entry per dependency,
+  sourced from `vendor.toml`. `context_path` (a Phase 5 field) was
+  removed in Phase 7 — `depth = full` needs no companion field anymore
+  (`decisions/0019`). See
   [`docs/config-schema.md`](../docs/config-schema.md) for the file format.
 - **`Depth`** enum: `SURFACE` (metadata + API surface only, no AI call, no
-  pinned source copy) vs `FULL` (pinned source snapshot + AI-generated gap
-  analysis). Depth is set **per vendor**, not globally — most dependencies
-  are used as-is and only need surface info; only the handful being
-  extended, subclassed, or written custom rules against justify `FULL`'s
-  cost. See [`decisions/0001`](../decisions/0001-depth-is-per-vendor-not-global.md).
+  pinned source copy) vs `FULL` (pinned source snapshot + AI-generated
+  grounded description). Depth is set **per vendor**, not globally — most
+  dependencies are used as-is and only need surface info; only the
+  handful being extended, subclassed, or written custom rules against
+  justify `FULL`'s cost, and the only path to `FULL` is
+  `depcompass promote <vendor>` (`decisions/0018`). See
+  [`decisions/0001`](../decisions/0001-depth-is-per-vendor-not-global.md).
 - **`DepNode(name, version, children, dev_only, side_effects)`** — one node
   in a dependency tree, ecosystem-agnostic. `side_effects` captures things
   like postinstall scripts or native binary downloads that are invisible in
   a raw manifest but explain real-world install size/behavior.
+- **`RepositoryLocation(url, subdirectory)`** — a vendor's resolved
+  upstream repository (Phase 7, `decisions/0021`), returned by each
+  adapter's `repository_url()`. `subdirectory` is set only where an
+  ecosystem can express "this package is part of a larger repo" (npm's
+  `repository.directory`); `None` means the repository root is the
+  package root.
 - **`VendorDigest`** — the aggregate return type each vendor's generation
   produces: config, installed version, generated trees, API surface,
-  optional gap analysis. Carries no staleness information — `check`
-  (Phase 6) reads persisted per-vendor `CLAUDE.md` files directly rather
-  than building a `VendorDigest`, the same pattern `index.py` established
-  in Phase 4, and returns its own `depcompass.staleness.VendorStaleness`
-  type instead. An earlier `is_stale` stub on this class, speculatively
-  added in Phase 1, was removed in Phase 6 once it became clear no code
-  path would ever populate it. See **Known footguns** below.
+  optional `technical_description`/`conversational_overview` (renamed
+  from Phase 5's `gap_analysis` field in Phase 7 — same dual-audience
+  shape, different generation mechanism). Carries no staleness
+  information — `check` (Phase 6) reads persisted per-vendor `CLAUDE.md`
+  files directly rather than building a `VendorDigest`, the same pattern
+  `index.py` established in Phase 4, and returns its own
+  `depcompass.staleness.VendorStaleness` type instead. An earlier
+  `is_stale` stub on this class, speculatively added in Phase 1, was
+  removed in Phase 6 once it became clear no code path would ever
+  populate it. See **Known footguns** below.
 
 ## Adapter interface
 
 `EcosystemAdapter` (ABC, `src/depcompass/adapters/base.py`) is constructed
-with `(config: VendorConfig, project_root: Path)` and defines four methods
+with `(config: VendorConfig, project_root: Path)` and defines five methods
 every ecosystem implements: `installed_version() -> str`,
 `source_location() -> Path`, `readme_and_api_surface() -> str`,
-`dependency_tree() -> DepNode`. Adding a new ecosystem means writing one
-adapter class against this interface, not touching core logic.
+`repository_url() -> RepositoryLocation | None` (Phase 7 —
+`decisions/0021`), `dependency_tree() -> DepNode`. Adding a new ecosystem
+means writing one adapter class against this interface, not touching
+core logic.
+
+`repository_url()` resolves the vendor's upstream repository from
+locally-available package metadata only — never a network call, unlike
+the clone `depcompass.source_resolution` performs from its result. Per
+ecosystem: npm reads `package.json`'s `repository` field (string,
+`git+`-prefixed, or `github:`-shorthand — all normalized to a plain
+`git clone`-able URL; an object form's `directory` key is respected for
+monorepo packages); Python reads the installed package's `Project-URL`
+metadata entries (PEP 621 `project_urls`, already present locally in
+`METADATA`/`PKG-INFO` — no PyPI network call needed), checking key
+variants ("Source", "Repository", "Code", "GitHub", "Homepage") in that
+priority order since PyPI packages don't standardize this field's
+labeling; Cargo reads `cargo metadata`'s package-level `repository`
+field, with no equivalent to npm's `directory` (a known, accepted
+limitation for workspace crates sharing one repository URL). Returns
+`None` if nothing resolves — callers treat that as fail-loud, never a
+fallback trigger (`decisions/0021`).
 
 `dependency_tree()` returns the **raw, fully-expanded** tree exactly as
 the underlying tool reports it — no diamond-dependency dedup. Dedup into
@@ -140,10 +173,15 @@ it for per-file purpose annotations and the symbol index. See
 `FILETREE.md` and `DEPTREE.md` (plus `filetree.json`/`deptree.json`
 sidecars) involve **no AI calls** and run on every `sync` regardless of
 `depth`. `depcompass.deptree` renders from a `DepNode` tree;
-`depcompass.filetree` renders from a vendor's source directory
-(`source_location()`, or the copied `vendor/<name>/src/` snapshot for
-`depth = full` — both point at the same content, since the snapshot is a
-copy of `source_location()`). Both are wired into `sync.py` (Phase 4),
+`depcompass.filetree` renders from a vendor's **locally-installed**
+source directory (`source_location()`) — unchanged in Phase 7, always
+the local install regardless of depth. This is now a distinct source
+from `vendor/<name>/src/`'s snapshot content for `depth = full` vendors:
+since Phase 7, that snapshot is cloned from the vendor's **upstream
+repository** (`depcompass.source_resolution`, `decisions/0021`) rather
+than copied from `source_location()`, since a locally-installed package
+is often a trimmed build artifact missing README/docs content the
+repository has. Both tree renderers are wired into `sync.py` (Phase 4),
 which writes their output to `FILETREE.md`/`DEPTREE.md`/`filetree.json`/
 `deptree.json` under `vendor/<name>/`.
 
@@ -177,69 +215,93 @@ which writes their output to `FILETREE.md`/`DEPTREE.md`/`filetree.json`/
   shown` notice if exceeded — same never-silent-truncation rule as the
   depth cap above. Renders as a `## Symbol index` section within
   `FILETREE.md` itself (`sync.py`), not a separate sidecar file.
-- **Cross-linking FILETREE entries to gap-analysis action pointers**
+- **Cross-linking FILETREE entries to description action pointers**
   (e.g. `src/commonmark-rules.js  ← ACTION TARGET: override
   fencedCodeBlock here`) — implemented in Phase 5 via the
-  `action_pointer` parameter above. `sync_vendor` threads a successful
-  gap analysis's `(action_pointer_file, action_pointer_note)` into both
-  `render_filetree_markdown` and `render_filetree_json`; a `depth =
-  surface` vendor, or one with no gap analysis this run, passes `None`
-  and the parameter has no effect.
+  `action_pointer` parameter above (mechanism unchanged by Phase 7's
+  gap-analysis-to-grounded-description swap). `sync_vendor` threads a
+  successful description's `(action_pointer_file, action_pointer_note)`
+  into both `render_filetree_markdown` and `render_filetree_json`; a
+  `depth = surface` vendor, or one with no description this run, passes
+  `None` and the parameter has no effect.
 
-## Gap analysis — the only AI-cost step (`depcompass.gap_analysis`)
+## Grounded description — the only AI-cost step (`depcompass.grounded_description`)
 
-Only runs for `depth = FULL` vendors with `context_path` set. Uses the
-dated snapshot `claude-haiku-4-5-20251001` — a Q&A/summarization task,
-not agentic coding, so the cheapest capable model tier is the right
-default (`decisions/0003`); pinned to a dated snapshot rather than the
-rolling `claude-haiku-4-5` alias `decisions/0003` names literally, so
-gap-analysis output doesn't silently change character if Anthropic
-updates what the alias resolves to — a plan-level refinement of that
-ADR's model-*tier* choice, not a reversal of it.
+Runs for every `depth = FULL` vendor, unconditionally — no longer gated
+on a project-supplied field (Phase 5's `context_path`, removed in Phase 7
+— `decisions/0019`). Uses the dated snapshot `claude-haiku-4-5-20251001`
+— a summarization task, not agentic coding, so the cheapest capable model
+tier is the right default (`decisions/0003`, unaffected by the Phase 7
+mechanism swap); pinned to a dated snapshot rather than the rolling
+`claude-haiku-4-5` alias `decisions/0003` names literally, so output
+doesn't silently change character if Anthropic updates what the alias
+resolves to.
 
-**Requires `context_path`** (pointing at the consuming project's own
-README/spec) — without project context, the model has no basis to judge
-what counts as a "gap"; a gap analysis generated without this input is
-generic and low value, not just slightly worse. Content is truncated to
-an arbitrary, tunable character cap before entering the prompt (see Known
-footguns).
+**Grounded entirely in material retrieved from the vendor's own upstream
+repository** — not a project-supplied README/spec, and not the model's
+own training knowledge of the dependency (`decisions/0019`'s reversal of
+Phase 5's design). `depcompass.source_resolution.resolve_and_clone`
+clones the repository (resolved via each adapter's `repository_url()` —
+see **Adapter interface** above) into `vendor/<name>/src/`;
+`_gather_material` then assembles up to `_RAW_TEXT_CHAR_CAP` (50,000)
+raw characters from: the repository's README, up to 5 Markdown files
+from a `docs/`/`doc/` folder if present, and one ecosystem-typical entry
+point file (npm: `package.json`'s `main`/`module`, or
+`index.{js,ts}`/`src/index.{js,ts}`; Python: `<name>/__init__.py` or
+`src/<name>/__init__.py`; Cargo: `src/lib.rs` or `src/main.rs`). The cap
+keeps this comfortably within a single Haiku call — no multi-call
+chunking is needed. Each retrieved section is tagged with its source
+path in the prompt, and the system prompt instructs the model to cite
+specific files/functions rather than rely on prior knowledge.
 
 **Output is dual-audience** (see
 [`decisions/0012`](../decisions/0012-conversational-first-repl-design.md)),
-produced by **one forced-tool-use API call**: `generate_gap_analysis(config,
-api_surface, project_root) -> GapAnalysis` returns `technical` (agent-
-facing, goes in `CLAUDE.md`, unchanged in spirit from the original
-design), `conversational_overview` (human-facing, written the way you'd
-explain the dependency to a colleague — what it does, why the project
-uses it, its risk posture — rather than the way you'd document it), and
-an optional `action_pointer_file`/`action_pointer_note` pair. Same call,
-same cost — a prompt/schema change, not a new cost center. The
-conversational overview is persisted to a new `vendor/<name>/OVERVIEW.md`
-(Phase 5) — not duplicated into `CLAUDE.md`, which stays agent-facing
-technical content only — for Phase 8's Chat REPL project-wide dependency
-rollup to consume later (see **Chat REPL** below); `decisions/0012`
-requires it already exist by then, since the rollup makes no new
-per-dependency AI calls.
+produced by **one forced-tool-use API call**:
+`generate_grounded_description(config, repo_root) -> GroundedDescription`
+returns `technical` (agent-facing, goes in `CLAUDE.md`'s Description
+section), `conversational_overview` (human-facing, written the way you'd
+explain the dependency to a colleague — what it does, why a project
+might use it — rather than the way you'd document it), and an optional
+`action_pointer_file`/`action_pointer_note` pair (repurposed from Phase
+5's "most relevant file for the gap" to "most useful file to read next").
+Same call shape, same cost — a prompt/schema and input-source change, not
+a new cost center. The conversational overview is persisted to
+`vendor/<name>/OVERVIEW.md` (unchanged since Phase 5) — not duplicated
+into `CLAUDE.md`, which stays agent-facing technical content only — for
+Phase 8's Chat REPL project-wide dependency rollup to consume later (see
+**Chat REPL** below); `decisions/0012` requires it already exist by then,
+since the rollup makes no new per-dependency AI calls.
 
-**Real cost implication**: like every other `sync` output, gap analysis
-is fully regenerated on every `sync` run, not diffed or cached — a
-`depth = full` vendor's gap analysis is re-purchased every time `sync`
-runs, not just the first time it's promoted.
+**Real cost implication**: like every other `sync` output, grounded
+description is fully regenerated (and re-cloned) on every `sync` run,
+not diffed or cached — a `depth = full` vendor's description is
+re-purchased every time `sync` runs, not just the first time it's
+promoted.
 
-**Failure handling**: a `GapAnalysisError` (API failure, unreadable
-`context_path`, malformed response) is caught inside `sync_vendor` for
-that one vendor — its deterministic output still gets written (with an
-explicit "unavailable" note in `CLAUDE.md`, see below), remaining
-vendors still run, and `sync` exits non-zero at the end if anything
-failed. This is local to one vendor; it never aborts the batch.
+**Failure handling, two distinct failure points**: if source resolution/
+cloning itself fails (`SourceResolutionError` — no repository field, `git`
+missing, network failure, or a declared monorepo subdirectory that
+doesn't exist), `vendor/<name>/src/` falls back to the old local-install-
+sourced copy (`decisions/0004`) so standalone browsing still has
+*something*, and `description_error` is set. If cloning succeeds but the
+AI call fails (`GroundedDescriptionError`), the real clone is kept as-is
+rather than discarded in favor of the fallback. Either way, the failure
+is caught inside `sync_vendor` for that one vendor — its deterministic
+output still gets written (with an explicit "unavailable" note in
+`CLAUDE.md`, see below), remaining vendors still run, and `sync` exits
+non-zero at the end if anything failed. This is local to one vendor; it
+never aborts the batch.
 
 **`sync --budget <amount>`**: `check_budget` runs once per `sync_all`
 call, *before* any vendor's `sync_vendor` runs. If the estimated cost of
-this run's pending gap-analysis calls (vendors with `depth = full` and
-`context_path`, at a fixed rough per-call placeholder estimate — not
+this run's pending generation calls (every vendor with `depth = full` —
+no longer additionally gated on `context_path`, since that field no
+longer exists — at a fixed rough per-call placeholder estimate, not
 live-queried pricing) exceeds `budget`, the whole run aborts with a clear
 message and **nothing is written this invocation**, not even other
-vendors' free deterministic output.
+vendors' free deterministic output. `depcompass promote` performs the
+same disclosure-then-confirm gate for the single vendor it's escalating,
+before setting `depth = full` at all (`decisions/0018`).
 
 ## Per-vendor CLAUDE.md structure (`depcompass.claude_md`)
 
@@ -258,14 +320,14 @@ order:
    "prefer this over what you already know" instruction, an agent has no
    signal to override its training data.
 3. **Public API surface** — `digest.api_surface`.
-4. **Gap analysis + action pointer** — `digest.gap_analysis` plus an
-   `**Action pointer:**` line when `digest.action_pointer_file` is set.
-   If `digest.gap_analysis_error` is set instead, renders an explicit
-   `_Gap analysis unavailable: `<error>`_` note rather than silently
+4. **Description + action pointer** — `digest.technical_description` plus
+   an `**Action pointer:**` line when `digest.action_pointer_file` is set.
+   If `digest.description_error` is set instead, renders an explicit
+   `_Description unavailable: `<error>`_` note rather than silently
    omitting the section — consistent with this project's never-silent-
    failure convention (explicit collapse/cap notices elsewhere). Omitted
    entirely (no heading at all) when neither is set — `depth = surface`,
-   or `full` without `context_path`, where gap analysis never runs.
+   where grounded-description generation never runs.
 5. **Known gotchas** — deterministically derived from `digest.side_effects`
    (the dependency tree's root `DepNode.side_effects`, e.g. npm's
    postinstall-script detection) rather than left empty or AI-generated.
@@ -283,13 +345,19 @@ Both must work:
    reference into `node_modules` — package managers prune/dedupe/reinstall
    `node_modules` contents, so it isn't a stable pin target. See
    [`decisions/0004`](../decisions/0004-vendor-src-snapshot-not-node-modules-reference.md).
-   `sync.py`'s snapshot copy is pruned *more loosely* than `FILETREE.md`'s
-   walk — it strips `node_modules`/`dist`/`build`/`.git`-style noise only
-   and keeps `test`/`tests`/`__tests__`/`fixtures` directories, since a
-   `FULL` vendor is one being extended or subclassed and its own test
-   suite is often exactly what someone wants to reference here. Includes a
-   backlink to the project root `CLAUDE.md` so the agent can escalate from
-   "how does this library work" to "how is it used in our project."
+   Since Phase 7, the snapshot is a shallow `git clone` of the vendor's
+   own upstream repository (`depcompass.source_resolution`,
+   `decisions/0021`) rather than a copy of the local install — richer
+   (a published package often excludes docs/tests) and, per
+   `decisions/0004`'s own underlying concern, at least as stable a pin
+   target. If source resolution fails, `sync_vendor` falls back to the
+   original Phase 4 behavior — a pruned copy of `source_location()`
+   (loosely: strips `node_modules`/`dist`/`build`/`.git`-style noise only
+   and keeps `test`/`tests`/`__tests__`/`fixtures` directories) — so
+   standalone mode always has *something* to reference, never nothing.
+   Includes a backlink to the project root `CLAUDE.md` so the agent can
+   escalate from "how does this library work" to "how is it used in our
+   project."
 2. **Routed from project root** — a routing table is injected into the
    consuming project's own root `CLAUDE.md`, between
    `<!-- depcompass:start -->` / `<!-- depcompass:end -->` markers.
@@ -376,7 +444,7 @@ transitive-only drift as lower risk than the vendor's own version moving.
 commit. Pre-commit is a courtesy/fast-fail; **CI's `depcompass check
 --strict` is the actual enforcement point** that blocks merge.
 
-## Multi-tool export (Skills, Cursor)
+## Multi-tool export (Skills, Cursor) — `depcompass.skill`
 
 **Agent Skills are the primary multi-tool export target** (see
 [`decisions/0013`](../decisions/0013-agent-skills-as-shared-context-selection-source.md)),
@@ -387,42 +455,63 @@ confident in its training knowledge may never read the digest at all —
 precisely the failure mode depcompass exists to prevent. A Skill's
 description is mechanically part of how Claude decides what's relevant to
 load, a stronger (though not absolute) guarantee than the routing table's
-instruction-following alone.
+instruction-following alone. Implemented in Phase 7 as part of
+`depcompass promote` (`decisions/0018`), not a separate later phase — the
+Skill for a vendor is generated at the moment it's promoted, the same
+call that generates its grounded description.
 
 One Skill per `depth = FULL` vendor, generated at
 `.claude/skills/depcompass-<vendor>/SKILL.md`:
-- The trigger description is built from data already generated — the
-  routing table's "Consult when" column plus a condensed gap-analysis
-  summary — not new content generation. **Description length is a real,
-  ongoing tuning knob, not a one-time writing task**: every skill's
-  name+description loads into every session unconditionally, so a long
-  description that maximizes one vendor's trigger accuracy has a real
-  per-vendor cost that compounds as `FULL`-depth vendor count grows.
-  Specificity (concrete API methods, file/function names, exact trigger
-  situations) — not length — is what drives triggering accuracy.
+- The trigger description is built from data already generated — a
+  condensed conversational overview — not a new AI call. **Description
+  length is a real, ongoing tuning knob, not a one-time writing task**:
+  every skill's name+description loads into every session
+  unconditionally, so a long description that maximizes one vendor's
+  trigger accuracy has a real per-vendor cost that compounds as
+  `FULL`-depth vendor count grows (`_VENDOR_SKILL_DESCRIPTION_CAP`, 400
+  characters). Specificity (concrete API methods, file/function names,
+  exact trigger situations) — not length — is what drives triggering
+  accuracy.
 - `FILETREE.md`/`DEPTREE.md` bundle as `references/` files inside the
   skill folder rather than inlining — progressive disclosure means they
   only cost tokens when Claude actually needs to navigate source.
 - A wrapper script shelling out to `depcompass check <vendor>` at trigger
   time (a live staleness read instead of a cached line) is deferred to a
   later phase, not required for the initial export.
-- `depth = SURFACE` vendors don't get a Skill yet — no gap-analysis
-  content exists to build a meaningful trigger description from; worth
-  revisiting with a templated (non-AI-generated) description later.
+- A formal trigger-accuracy evaluation harness (a battery of test
+  questions checked against whether the Skill actually loads) is not
+  implemented — the same category of manual-verification gap Phase 5
+  accepted for gap analysis against the live API (`decisions/0016`), now
+  extended to Skill triggering.
+- `depth = SURFACE` vendors don't get a per-vendor Skill — no grounded-
+  description content exists to build a meaningful trigger description
+  from. Since Phase 7, this gap is covered separately by the **tool-level
+  Skill** (`decisions/0020`): a templated, non-AI-generated Skill at
+  `.claude/skills/depcompass/SKILL.md`, generated unconditionally by
+  `index` (and by bare `depcompass`) regardless of vendor count or depth
+  — listing depcompass's own commands and the current vendor table, so
+  an agent has a mechanical signal that depcompass exists even before
+  anything has been promoted.
 
 **Cursor `.mdc` export is retained, not replaced.** Cursor does not read
 `CLAUDE.md` natively. Its modern context system is `.cursor/rules/*.mdc`
-files with YAML frontmatter (`description`, `globs`, `alwaysApply`)
-controlling activation — the legacy single `.cursorrules` file is
-deprecated and unreliable in Cursor's agent mode specifically, so it isn't
-targeted. `.mdc` is a **generated export**, not a separately maintained
-file — same content, different serialization — with `globs` scoped to
-wherever the vendor is actually imported in the consuming codebase
-(inferred, not hand-written) and `alwaysApply: false` (token cost control,
-same reasoning as the depth system). Cursor's glob-scoped file-pattern
-activation is a different — sometimes more precise — trigger model than
-Skills' description-matching, and not every Cursor setup has Skills
-support, so this export stays alongside Skills rather than being dropped.
+files with YAML frontmatter (`description`, `alwaysApply`) controlling
+activation — the legacy single `.cursorrules` file is deprecated and
+unreliable in Cursor's agent mode specifically, so it isn't targeted.
+`.mdc` is a **generated export**, not a separately maintained file —
+same technical-description content as the Skill, different serialization
+— written to `.cursor/rules/depcompass-<vendor>.mdc` by `promote`
+alongside the Skill. `alwaysApply: false` (token cost control, same
+reasoning as the depth system); Cursor falls back to description-based
+relevance without an explicit `globs` key — a `globs` field scoped to
+wherever the vendor is actually imported in the consuming codebase is a
+documented future refinement, not implemented in Phase 7 (would require
+scanning the consuming project's own source, a different kind of input
+than anything else `promote` reads). Cursor's glob-scoped file-pattern
+activation is a different — potentially more precise, once implemented —
+trigger model than Skills' description-matching, and not every Cursor
+setup has Skills support, so this export stays alongside Skills rather
+than being dropped.
 
 **The `CLAUDE.md` root routing table is also retained, not replaced** — it
 remains the fallback for any tool or context that doesn't support Skills
@@ -436,7 +525,7 @@ judges relevant" situation the way Skills triggering assumes.
 convenience layer bolted onto the markdown files** (see
 [`decisions/0012`](../decisions/0012-conversational-first-repl-design.md)).
 The digests (`CLAUDE.md`, `FILETREE.md`, `DEPTREE.md`, and — for `depth =
-full` vendors whose gap analysis succeeded — `OVERVIEW.md`, Phase 5's
+full` vendors whose grounded description succeeded — `OVERVIEW.md`, the
 persisted conversational overview) are backing store for two consumers —
 AI agents reading them directly (see **Two
 consumption modes** above) and the REPL synthesizing them into
@@ -458,7 +547,7 @@ doesn't over-trust an answer beyond what the digest actually covers.
   dependency rollup unconditionally at session start**, before any
   routing happens. The rollup is synthesized once per `sync` (not per
   query) from the already-generated per-vendor conversational overviews
-  (see **Gap analysis** above): dependency count by depth, a staleness
+  (see **Grounded description** above): dependency count by depth, a staleness
   rollup by severity, notable side-effect flags, and a short narrative.
   No new per-dependency AI calls — one cheap summarization pass over data
   that's already paid for. This exists because a large share of realistic
@@ -473,16 +562,14 @@ doesn't over-trust an answer beyond what the digest actually covers.
   that baseline rollup, across three possible context targets (a specific
   vendor, several vendors, or the project itself):
   - **Tier 1** (free, instant) — match against the **same generated
-    Skill description text** that Phase 9 produces for Claude Code's
-    native Skills triggering (see
+    Skill description text** that `promote` (Phase 7) produces for Claude
+    Code's native Skills triggering (see
     [`decisions/0013`](../decisions/0013-agent-skills-as-shared-context-selection-source.md)),
     not an independently-authored keyword/alias list. One source of
-    truth for "what fires on what," tuned once via Phase 9's
-    trigger-accuracy evaluation, benefiting both native Skills triggering
-    and this routing tier. Whichever of Phase 8/Phase 9 is built first
-    exposes this data in a form the other consumes, rather than
-    duplicating it — a sequencing note for both phases' plan files. If
-    nothing matches, check for project-level signal instead (question
+    truth for "what fires on what" — Phase 9's REPL routing reads the
+    same Skill-description data Phase 7 already generates, rather than
+    duplicating it. If nothing matches, check for project-level signal
+    instead (question
     references architecture, a roadmap phase, a past decision, or general
     "how does this project..." phrasing) and load **project context**
     (root `CLAUDE.md` + `architecture/` + relevant `decisions/` entries +
@@ -514,7 +601,7 @@ doesn't over-trust an answer beyond what the digest actually covers.
   the REPL states the limitation and points at the already-generated
   `.claude/skills/depcompass-<vendor>/` folder as the handoff artifact for
   a full Claude Code session, already grounded via the same Skill —
-  reusing Phase 9's output rather than inventing a separate
+  reusing Phase 7's `promote` output rather than inventing a separate
   context-packaging mechanism. The REPL's startup disclaimer ("this only
   knows what's in the digest") is extended to mention this escalation
   path exists, so a user hitting the boundary knows there's a next step
@@ -528,40 +615,62 @@ doesn't over-trust an answer beyond what the digest actually covers.
 
 ## Retrofitting to existing projects
 
+**Bare `depcompass` (no subcommand) is the zero-question path**
+(`decisions/0017`, Phase 7): auto-discovers manifests at the project root
+(`package.json`, `pyproject.toml`, `requirements.txt`, `Cargo.toml`),
+writes/refreshes `vendor.toml` with everything defaulted to `depth =
+SURFACE` — free, since surface generation has no AI cost — and
+regenerates trees, the routing table, and the tool-level Skill. No
+prompts, no AI calls, regardless of project size. Re-running it on an
+already-bootstrapped project is an **idempotent refresh**: newly
+discovered dependencies are appended at `SURFACE`; already-tracked
+vendors, including any at `depth = FULL`, are left completely untouched
+(their generated output isn't regenerated), so this command never pays
+AI cost no matter how many times it's run.
+
 `depcompass init --scan <manifest file> [--scan <manifest file> ...]`
-(`depcompass.discovery`) bulk-discovers dependencies and writes a draft
-`vendor.toml` with everything defaulted to `depth = SURFACE` — free,
-since surface generation has no AI cost, so it's safe to run immediately
-on a large existing dependency list without a cost conversation first.
-`--scan` is a repeated flag, not one flag followed by several
-space-separated files (not how a named Click/Typer option works — the
-CLI reference's earlier draft syntax was corrected to match in Phase 4).
-Errors rather than overwriting if `vendor.toml` already exists. Python
-discovery reads only `[project.dependencies]`, not
-`[project.optional-dependencies]`. Promotion to `FULL` is selective and
-reactive (promote a vendor the first time someone actually needs its deep
-digest mid-task) rather than batch-promoting a whole existing dependency
-graph up front. If several vendors get promoted to `FULL` at once,
-`--budget` will cap concurrent AI calls and print an estimated cost
-before running — not yet implemented, since it's meaningless before
-Phase 5 adds any AI call to `sync` at all.
+(`depcompass.discovery`) remains as the explicit, scripted/CI-friendly
+synonym — useful for naming specific manifests rather than relying on
+root-level auto-discovery. `--scan` is a repeated flag, not one flag
+followed by several space-separated files (not how a named Click/Typer
+option works — the CLI reference's earlier draft syntax was corrected to
+match in Phase 4). Unlike bare `depcompass`, it keeps its original
+stricter contract: errors rather than overwriting if `vendor.toml`
+already exists. Python discovery reads `[project.dependencies]` from
+`pyproject.toml` and every non-comment, non-option line of
+`requirements.txt` (Phase 7 addition) — not
+`[project.optional-dependencies]`.
+
+**Promotion to `FULL` is selective, reactive, and the only paid
+action**: `depcompass promote <vendor>` (`decisions/0018`, Phase 7) is
+the single command that costs money or asks anything — triggered when
+someone actually needs a vendor's deep digest, not batch-decided for a
+whole existing dependency graph up front. It prints an estimated cost
+disclosure and asks for confirmation (or `--yes`) before doing anything
+AI-assisted. `sync --budget <amount>` separately guards the case where
+several vendors are already `FULL` and a routine `sync` would regenerate
+all of them at once — refusing to run at all (not partially) if the
+projected cost exceeds the cap.
 
 ## Cost model
 
-Structural generation (trees, API-surface extraction) makes no AI calls
-and is effectively free. The only cost center is gap-analysis generation
-at `depth = FULL`, using Haiku, and it is **not cached** — every `sync`
-run regenerates it fresh for every `depth = full` + `context_path`
-vendor, so cost scales with how often `sync` is run, not just with how
-many vendors are `FULL`. At realistic project scale (dozens of
-dependencies, a handful at `FULL`, weekly scheduled refresh), total
-ongoing cost is estimated well under $2/month. This is a design constraint
-worth preserving — if a future change would make gap-analysis run more
-broadly or more often by default, that's a deliberate tradeoff to flag,
-not something to drift into silently. `sync --budget <amount>` guards
-against one specific runaway scenario (several vendors promoted to
-`FULL` at once) by refusing to run at all — not partially — once the
-projected cost for a single run exceeds the cap.
+Structural generation (trees, API-surface extraction, bare `depcompass`'s
+entire zero-question bootstrap) makes no AI calls and is effectively
+free. The only cost center is grounded-description generation at `depth
+= FULL`, using Haiku, first entered through `depcompass promote`
+(`decisions/0018`) and then paid again on every subsequent `sync`/`check
+--fix` for that vendor — it is **not cached**, so cost scales with how
+often `sync` is run, not just with how many vendors are `FULL`. At
+realistic project scale (dozens of dependencies, a handful at `FULL`,
+weekly scheduled refresh), total ongoing cost is estimated well under
+$2/month. This is a design constraint worth preserving — if a future
+change would make grounded-description generation run more broadly or
+more often by default, that's a deliberate tradeoff to flag, not
+something to drift into silently. `promote` discloses cost and confirms
+before the first AI call for a vendor; `sync --budget <amount>` guards
+the ongoing case (several vendors already `FULL`, a routine `sync` about
+to regenerate all of them) by refusing to run at all — not partially —
+once the projected cost for a single run exceeds the cap.
 
 ## Known footguns
 
@@ -650,22 +759,34 @@ projected cost for a single run exceeds the cap.
   excludes its contents from the result. Fine at this project's scale
   (a single vendor package's source tree), but not optimized for very
   large pruned subtrees.
-- **Gap analysis is fully regenerated, and re-purchased, on every `sync`
-  run** for a `depth = full` + `context_path` vendor — no caching or
-  diffing against a previous result, consistent with every other `sync`
-  output but the one step where that consistency has a real dollar cost.
-- **`gap_analysis.py`'s `_CONTEXT_PATH_CHAR_CAP` (8000) and
-  `_ESTIMATED_COST_PER_CALL_USD` (a rough placeholder, not live-queried
-  Anthropic pricing)** are initial, arbitrary, tunable values — same
-  treatment as every other cap in this project. The cost estimate is not
-  a guarantee of actual billed cost; `--budget` decisions should be made
-  with that in mind.
+- **Grounded description is fully regenerated (re-cloned and
+  re-purchased) on every `sync` run** for a `depth = full` vendor — no
+  caching or diffing against a previous result, consistent with every
+  other `sync` output but the one step where that consistency has a real
+  dollar cost.
+- **`grounded_description.py`'s `_RAW_TEXT_CHAR_CAP` (50,000),
+  `_DOCS_FILE_CAP` (5), and `_ESTIMATED_COST_PER_CALL_USD` (a rough
+  placeholder, not live-queried Anthropic pricing)** are initial,
+  arbitrary, tunable values — same treatment as every other cap in this
+  project. The cost estimate is not a guarantee of actual billed cost;
+  `--budget` decisions should be made with that in mind.
 - **No test ever makes a real Anthropic API call** (see
-  [`decisions/0016`](../decisions/0016-gap-analysis-tests-never-call-the-live-anthropic-api.md))
-  — `gap_analysis.py`'s prompt/schema correctness against the real model
-  is not validated by the automated suite at all; a human must run `sync`
-  against a real `depth = full` vendor with a real `ANTHROPIC_API_KEY` at
-  least once to trust this phase's output quality.
+  [`decisions/0016`](../decisions/0016-gap-analysis-tests-never-call-the-live-anthropic-api.md),
+  which continues to apply unchanged to `grounded_description.py`) —
+  its prompt/schema correctness against the real model is not validated
+  by the automated suite at all; a human must run `depcompass promote`
+  against a real vendor with a real `ANTHROPIC_API_KEY` at least once to
+  trust this phase's output quality. (Source resolution and cloning were
+  validated against a real repository — pytest's own, via its PyPI
+  `Project-URL` metadata — during Phase 7's implementation; only the AI
+  call itself remains unvalidated against the live API.)
+- **`git` is now a required external tool for `promote`** (and for
+  `sync`/`check --fix` on any already-`FULL` vendor) — `depcompass
+  source_resolution._git_clone` shells out to it the same way adapters
+  shell out to `npm`/`cargo`/`pipdeptree`, with the same `shutil.which`-
+  first resolution pattern. Not declared as a Python dependency (it isn't
+  one), but its absence surfaces as a clear `SourceResolutionError`
+  rather than a cryptic subprocess failure.
 - **`index` reads persisted per-vendor `CLAUDE.md` files rather than
   re-running `sync`** — a deliberate deviation from
   `planning/phase-4-sync-index-init.md`'s literal `render_routing_table(digests:

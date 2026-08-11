@@ -43,17 +43,7 @@ def _parse_entry(path: Path, index: int, entry: dict) -> VendorConfig:
     name = _require_field(path, label, entry, "name")
     ecosystem = _require_enum(path, name, entry, "ecosystem", Ecosystem)
     depth = _require_enum(path, name, entry, "depth", Depth)
-    context_path = entry.get("context_path")
-
-    try:
-        return VendorConfig(
-            name=name,
-            ecosystem=ecosystem,
-            depth=depth,
-            context_path=context_path,
-        )
-    except ValueError as exc:
-        raise ConfigError(f"{path}: {exc}") from exc
+    return VendorConfig(name=name, ecosystem=ecosystem, depth=depth)
 
 
 def _require_field(path: Path, label: str, entry: dict, field_name: str) -> str:

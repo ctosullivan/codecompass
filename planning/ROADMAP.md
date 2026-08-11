@@ -24,16 +24,15 @@ One milestone (see `CLAUDE.md` §6): tagged/released only once phase 8 is
 | 4 | `init`, `sync`, and `index` commands (deterministic path) | done | [`phase-4-sync-index-init.md`](phase-4-sync-index-init.md) |
 | 5 | AI-gated gap analysis (`depth = full`), dual-audience output (technical + conversational overview, decisions/0012), `--budget`, FILETREE cross-linking | done | [`phase-5-gap-analysis.md`](phase-5-gap-analysis.md) |
 | 6 | Staleness checking (`check`, `--strict`/`--fix`) | done | [`phase-6-staleness-checking.md`](phase-6-staleness-checking.md) |
-| 7 | Zero-question bootstrap (bare `depcompass` auto-discovery, decisions/0017) & `promote` (reactive depth escalation, decisions/0018) — grounded-description FULL-depth generation (decisions/0019), tool-level Skill (decisions/0020), PyPI source-resolution fail-loud (decisions/0021); absorbs the former Phase 9 (Skills + Cursor export) and Phase 10 (`init` bulk-discovery refinement) rows | planned | [`phase-7-bootstrap-and-promote.md`](phase-7-bootstrap-and-promote.md) |
+| 7 | Zero-question bootstrap (bare `depcompass` auto-discovery, decisions/0017) & `promote` (reactive depth escalation, decisions/0018) — grounded-description FULL-depth generation (decisions/0019), tool-level Skill (decisions/0020), PyPI source-resolution fail-loud (decisions/0021); absorbs the former Phase 9 (Skills + Cursor export) and Phase 10 (`init` bulk-discovery refinement) rows | done | [`phase-7-bootstrap-and-promote.md`](phase-7-bootstrap-and-promote.md) |
 | 8 | Single-vendor chat REPL | not started | — |
 
 **MVP done when:** a real project can run `init`, `sync`, `promote`, and
 `check` against real npm/Python/Cargo dependencies, and query them via
-`depcompass chat`, and get correct, useful output. Phases 0-6 are done;
-Phase 7 is planned; Phase 8 is not started — the `CLAUDE.md` §6
-release-promotion step (a dated `[Unreleased]` → version-tagged
-`CHANGELOG.md` section) only happens once all eight are `done`
-(`decisions/0022`).
+`depcompass chat`, and get correct, useful output. Phases 0-7 are done;
+Phase 8 is not started — the `CLAUDE.md` §6 release-promotion step (a
+dated `[Unreleased]` → version-tagged `CHANGELOG.md` section) only
+happens once all eight are `done` (`decisions/0022`).
 
 ## Post-MVP
 

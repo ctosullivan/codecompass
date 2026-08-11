@@ -11,10 +11,14 @@ import sys
 from pathlib import Path
 
 from depcompass.adapters.base import AdapterError, EcosystemAdapter, _run_json
-from depcompass.core import DepNode
+from depcompass.core import DepNode, RepositoryLocation
 from depcompass.symbols import extract_python_symbols
 
 _PYI_FILE_CAP = 5
+
+# PyPI `project_urls` keys aren't standardized across packages — checked
+# case-insensitively, in this priority order (decisions/0021).
+_REPOSITORY_URL_LABELS = ("source", "repository", "code", "github", "homepage")
 
 
 class PythonAdapter(EcosystemAdapter):
@@ -35,6 +39,27 @@ class PythonAdapter(EcosystemAdapter):
                 "pip install it first"
             )
         return Path(spec.origin).parent
+
+    def repository_url(self) -> RepositoryLocation | None:
+        """Installed package metadata's `Project-URL` entries (PEP 621
+        `project_urls`, already present locally in `METADATA`/`PKG-INFO`
+        — no PyPI network call needed). Keys aren't standardized across
+        packages, so `_REPOSITORY_URL_LABELS` is checked in priority
+        order; `None` if nothing matches (decisions/0021's fail-loud
+        case — the caller does not fall back to a source tarball).
+        """
+        try:
+            urls = importlib.metadata.metadata(self.config.name).get_all("Project-URL") or []
+        except importlib.metadata.PackageNotFoundError:
+            return None
+        by_label = {}
+        for entry in urls:
+            label, _, url = entry.partition(",")
+            by_label[label.strip().lower()] = url.strip()
+        for label in _REPOSITORY_URL_LABELS:
+            if label in by_label:
+                return RepositoryLocation(url=by_label[label])
+        return None
 
     def dependency_tree(self) -> DepNode:
         # Invoked via `sys.executable -m pipdeptree` rather than a bare

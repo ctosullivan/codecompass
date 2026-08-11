@@ -21,6 +21,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Zero-question bootstrap & `promote` (Phase 7): implements
+  `planning/phase-7-bootstrap-and-promote.md` and `decisions/0017`-
+  `0021` — MVP phases 0-7 are now complete. Bare `depcompass` (no
+  subcommand) auto-discovers manifests (`package.json`, `pyproject.toml`,
+  new `requirements.txt` support, `Cargo.toml`), writes/refreshes
+  `vendor.toml` at `depth = surface` with no prompts or AI calls, and
+  regenerates trees, the routing table, and a new unconditional
+  tool-level Skill (`depcompass.skill.write_tool_skill`,
+  `decisions/0020`, `.claude/skills/depcompass/SKILL.md`). Refreshing an
+  already-bootstrapped project only syncs newly-discovered vendors —
+  already-tracked ones, including any `depth = full`, are left untouched.
+  New `depcompass promote <vendor> [--yes]`: the sole cost-disclosure/
+  confirmation point (`decisions/0018`); on confirmation, escalates a
+  vendor to `depth = full`, resolves and clones its real upstream
+  repository (`depcompass.source_resolution`, `decisions/0021`),
+  generates a grounded description (`depcompass.grounded_description`,
+  replacing `gap_analysis.py` — `decisions/0019`), writes its per-vendor
+  Skill and Cursor `.mdc` export (`depcompass.skill`, `decisions/0013`),
+  and refreshes the routing table. Idempotent on an already-`full`
+  vendor. `context_path` removed from `VendorConfig`/`vendor.toml` —
+  generation is now unconditional for `depth = full`, not gated on a
+  project-supplied field. `VendorDigest.gap_analysis`/
+  `gap_analysis_error` renamed to `technical_description`/
+  `description_error`. `vendor/<name>/src/` is now cloned from the
+  vendor's upstream repository for `depth = full` vendors (refines
+  `decisions/0004`'s snapshot-not-reference concern), falling back to
+  the old local-install-sourced copy if source resolution fails. Each
+  adapter gained `repository_url()`, resolved from already-local package
+  metadata (no registry network call): npm's `package.json` `repository`
+  field (respecting monorepo `directory`), Python's installed
+  `Project-URL` metadata, Cargo's `cargo metadata` `repository` field. A
+  PyPI vendor with no resolvable repository URL fails `promote` loudly
+  rather than falling back to a source tarball.
 - Phase 7 plan (`planning/phase-7-bootstrap-and-promote.md`) and five new
   ADRs — planning only, no code changed. Reconciles an external MVP-
   redefinition design doc against actual repo state (correcting the
@@ -154,6 +187,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- `depcompass.gap_analysis` module and `VendorConfig.context_path` field
+  (Phase 7) — replaced by `depcompass.grounded_description` and
+  `depcompass.source_resolution` (`decisions/0019`, `decisions/0021`).
+  An existing `vendor.toml` with `context_path` lines still parses
+  cleanly (the field is simply ignored, not rejected); `depth = full`
+  no longer requires it.
 - `VendorDigest.is_stale` (Phase 6) — the property, its `_stale` field,
   and the Phase-1 docstring promising a future staleness check would
   populate it. `check` (Phase 6) never builds a `VendorDigest`, so no code

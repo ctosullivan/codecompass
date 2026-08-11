@@ -8,7 +8,7 @@ import pytest
 import depcompass.adapters.npm as npm_module
 from depcompass.adapters.base import AdapterError
 from depcompass.adapters.npm import NpmAdapter
-from depcompass.core import Depth, Ecosystem, VendorConfig
+from depcompass.core import Depth, Ecosystem, RepositoryLocation, VendorConfig
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -29,6 +29,62 @@ def test_installed_version_and_source_location(tmp_path: Path) -> None:
 
     assert adapter.installed_version() == "7.1.2"
     assert adapter.source_location() == tmp_path / "node_modules" / "turndown"
+
+
+def test_repository_url_from_plain_string(tmp_path: Path) -> None:
+    _write_package(
+        tmp_path,
+        "turndown",
+        {
+            "name": "turndown",
+            "repository": "git+https://github.com/mixmark-io/turndown.git",
+        },
+    )
+    config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    adapter = NpmAdapter(config, project_root=tmp_path)
+
+    assert adapter.repository_url() == RepositoryLocation(
+        url="https://github.com/mixmark-io/turndown.git", subdirectory=None
+    )
+
+
+def test_repository_url_from_object_with_directory(tmp_path: Path) -> None:
+    _write_package(
+        tmp_path,
+        "some-pkg",
+        {
+            "name": "some-pkg",
+            "repository": {
+                "type": "git",
+                "url": "https://github.com/org/monorepo.git",
+                "directory": "packages/some-pkg",
+            },
+        },
+    )
+    config = VendorConfig(name="some-pkg", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    adapter = NpmAdapter(config, project_root=tmp_path)
+
+    assert adapter.repository_url() == RepositoryLocation(
+        url="https://github.com/org/monorepo.git", subdirectory="packages/some-pkg"
+    )
+
+
+def test_repository_url_shorthand_expands_to_https(tmp_path: Path) -> None:
+    _write_package(tmp_path, "some-pkg", {"name": "some-pkg", "repository": "github:org/some-pkg"})
+    config = VendorConfig(name="some-pkg", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    adapter = NpmAdapter(config, project_root=tmp_path)
+
+    assert adapter.repository_url() == RepositoryLocation(
+        url="https://github.com/org/some-pkg", subdirectory=None
+    )
+
+
+def test_repository_url_none_when_field_absent(tmp_path: Path) -> None:
+    _write_package(tmp_path, "some-pkg", {"name": "some-pkg"})
+    config = VendorConfig(name="some-pkg", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    adapter = NpmAdapter(config, project_root=tmp_path)
+
+    assert adapter.repository_url() is None
 
 
 def test_missing_package_raises_adapter_error(tmp_path: Path) -> None:

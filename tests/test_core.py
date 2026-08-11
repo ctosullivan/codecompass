@@ -3,24 +3,9 @@ import pytest
 from depcompass.core import DepNode, Depth, Ecosystem, VendorConfig, VendorDigest
 
 
-def test_vendor_config_surface_does_not_require_context_path() -> None:
-    config = VendorConfig(name="lodash", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
-    assert config.context_path is None
-
-
-def test_vendor_config_full_requires_context_path() -> None:
-    with pytest.raises(ValueError, match="context_path"):
-        VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL)
-
-
-def test_vendor_config_full_with_context_path_succeeds() -> None:
-    config = VendorConfig(
-        name="turndown",
-        ecosystem=Ecosystem.NPM,
-        depth=Depth.FULL,
-        context_path="README.md",
-    )
-    assert config.context_path == "README.md"
+def test_vendor_config_full_needs_no_companion_field() -> None:
+    config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL)
+    assert config.depth is Depth.FULL
 
 
 def test_vendor_config_is_frozen() -> None:
@@ -50,9 +35,9 @@ def test_vendor_digest_default_side_effects_are_independent_lists() -> None:
     assert VendorDigest(config=config, installed_version="4.17.21").side_effects == []
 
 
-def test_vendor_digest_gap_analysis_fields_default_to_none() -> None:
+def test_vendor_digest_description_fields_default_to_none() -> None:
     config = VendorConfig(name="lodash", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
     digest = VendorDigest(config=config, installed_version="4.17.21")
-    assert digest.gap_analysis is None
+    assert digest.technical_description is None
     assert digest.conversational_overview is None
-    assert digest.gap_analysis_error is None
+    assert digest.description_error is None

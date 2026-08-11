@@ -12,7 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from depcompass.adapters.base import AdapterError, EcosystemAdapter, _run_json
-from depcompass.core import DepNode
+from depcompass.core import DepNode, RepositoryLocation
 from depcompass.symbols import extract_rust_symbols
 
 
@@ -25,6 +25,24 @@ class CargoAdapter(EcosystemAdapter):
         metadata = self._metadata(no_deps=True)
         package = self._find_package(metadata)
         return Path(package["manifest_path"]).parent
+
+    def repository_url(self) -> RepositoryLocation | None:
+        """`cargo metadata`'s package-level `repository` field (sourced
+        from the crate's own `Cargo.toml` `[package] repository` key).
+        Unlike npm's `repository.directory`, `cargo metadata` has no
+        per-package subdirectory field to disambiguate a workspace crate
+        sharing a repository URL with its siblings — a known, accepted
+        limitation (decisions/0021 only scopes the npm `directory` case
+        explicitly). Also unverified against real `cargo metadata`
+        output, same accepted gap as the rest of this adapter
+        (decisions/0014).
+        """
+        metadata = self._metadata(no_deps=True)
+        package = self._find_package(metadata)
+        repository = package.get("repository")
+        if not repository:
+            return None
+        return RepositoryLocation(url=repository)
 
     def dependency_tree(self) -> DepNode:
         metadata = self._metadata(no_deps=False)

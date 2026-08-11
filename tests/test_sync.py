@@ -1,10 +1,12 @@
+import shutil
 from pathlib import Path
 
 import pytest
 
 import depcompass.sync as sync_module
 from depcompass.core import DepNode, Depth, Ecosystem, VendorConfig
-from depcompass.gap_analysis import GapAnalysis, GapAnalysisError
+from depcompass.grounded_description import GroundedDescription, GroundedDescriptionError
+from depcompass.source_resolution import SourceResolutionError
 from depcompass.sync import sync_all, sync_vendor
 
 
@@ -61,6 +63,23 @@ def _patch_adapter(monkeypatch: pytest.MonkeyPatch, **adapter_kwargs: object) ->
     )
 
 
+def _fake_clone(fake_repo: Path):
+    def _resolve_and_clone(adapter, dest: Path) -> Path:
+        if dest.exists():
+            shutil.rmtree(dest)
+        shutil.copytree(fake_repo, dest)
+        return dest
+
+    return _resolve_and_clone
+
+
+def _build_fake_repo(root: Path) -> Path:
+    fake_repo = root / "fake_repo"
+    fake_repo.mkdir()
+    (fake_repo / "README.md").write_text("This is the readme.", encoding="utf-8")
+    return fake_repo
+
+
 def test_sync_vendor_writes_all_five_output_files(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -94,21 +113,27 @@ def test_sync_vendor_omits_test_dirs_from_filetree(
     assert "__init__.py" in filetree_md
 
 
-def test_sync_vendor_depth_full_copies_looser_pruned_snapshot(
+def test_sync_vendor_full_depth_clones_repo_into_src(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     src = _build_source_tree(tmp_path)
     _patch_adapter(monkeypatch, source_dir=src)
-    config = VendorConfig(
-        name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.FULL, context_path="README.md"
+    fake_repo = _build_fake_repo(tmp_path)
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _fake_clone(fake_repo))
+    monkeypatch.setattr(
+        sync_module,
+        "generate_grounded_description",
+        lambda *a, **k: GroundedDescription(technical="desc", conversational_overview="friendly"),
     )
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.FULL)
 
-    sync_vendor(config, tmp_path)
+    digest = sync_vendor(config, tmp_path)
 
     snapshot = tmp_path / "vendor" / "demo" / "src"
-    assert (snapshot / "tests" / "test_thing.py").exists()  # kept, unlike FILETREE.md
-    assert not (snapshot / "dist").exists()  # stripped, same as FILETREE.md
-    assert (snapshot / "__init__.py").exists()
+    assert (snapshot / "README.md").exists()
+    assert digest.technical_description == "desc"
+    assert digest.conversational_overview == "friendly"
+    assert digest.description_error is None
 
 
 def test_sync_vendor_depth_surface_does_not_copy_snapshot(
@@ -128,14 +153,19 @@ def test_sync_vendor_is_idempotent_on_repeat_runs(
 ) -> None:
     src = _build_source_tree(tmp_path)
     _patch_adapter(monkeypatch, source_dir=src)
-    config = VendorConfig(
-        name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.FULL, context_path="README.md"
+    fake_repo = _build_fake_repo(tmp_path)
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _fake_clone(fake_repo))
+    monkeypatch.setattr(
+        sync_module,
+        "generate_grounded_description",
+        lambda *a, **k: GroundedDescription(technical="d", conversational_overview="o"),
     )
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.FULL)
 
     sync_vendor(config, tmp_path)
     sync_vendor(config, tmp_path)  # should not raise
 
-    assert (tmp_path / "vendor" / "demo" / "src" / "__init__.py").exists()
+    assert (tmp_path / "vendor" / "demo" / "src" / "README.md").exists()
 
 
 def test_sync_vendor_known_gotchas_from_dependency_tree_side_effects(
@@ -153,27 +183,30 @@ def test_sync_vendor_known_gotchas_from_dependency_tree_side_effects(
     assert "- postinstall: node build.js" in claude_md.splitlines()
 
 
-def test_sync_vendor_full_depth_populates_gap_analysis_and_writes_overview(
+def test_sync_vendor_full_depth_writes_overview(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     src = _build_source_tree(tmp_path)
     _patch_adapter(monkeypatch, source_dir=src)
-    fake_gap_analysis = GapAnalysis(
-        technical="gap found in X",
-        conversational_overview="This is a friendly overview.",
-        action_pointer_file="__init__.py",
-        action_pointer_note="fix here",
+    fake_repo = _build_fake_repo(tmp_path)
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _fake_clone(fake_repo))
+    monkeypatch.setattr(
+        sync_module,
+        "generate_grounded_description",
+        lambda *a, **k: GroundedDescription(
+            technical="gap found in X",
+            conversational_overview="This is a friendly overview.",
+            action_pointer_file="__init__.py",
+            action_pointer_note="fix here",
+        ),
     )
-    monkeypatch.setattr(sync_module, "generate_gap_analysis", lambda *a, **k: fake_gap_analysis)
-    config = VendorConfig(
-        name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.FULL, context_path="README.md"
-    )
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.FULL)
 
     digest = sync_vendor(config, tmp_path)
 
-    assert digest.gap_analysis == "gap found in X"
+    assert digest.technical_description == "gap found in X"
     assert digest.conversational_overview == "This is a friendly overview."
-    assert digest.gap_analysis_error is None
+    assert digest.description_error is None
     vendor_dir = tmp_path / "vendor" / "demo"
     assert (vendor_dir / "OVERVIEW.md").read_text(encoding="utf-8") == (
         "This is a friendly overview."
@@ -182,45 +215,75 @@ def test_sync_vendor_full_depth_populates_gap_analysis_and_writes_overview(
     assert "← ACTION TARGET: fix here" in filetree_md
 
 
-def test_sync_vendor_gap_analysis_failure_still_writes_deterministic_output(
+def test_sync_vendor_source_resolution_failure_falls_back_to_local_snapshot(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     src = _build_source_tree(tmp_path)
     _patch_adapter(monkeypatch, source_dir=src)
 
     def _raise(*args: object, **kwargs: object) -> None:
-        raise GapAnalysisError("simulated failure")
+        raise SourceResolutionError("no repository found")
 
-    monkeypatch.setattr(sync_module, "generate_gap_analysis", _raise)
-    config = VendorConfig(
-        name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.FULL, context_path="README.md"
-    )
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _raise)
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.FULL)
 
     digest = sync_vendor(config, tmp_path)  # should not raise
 
-    assert digest.gap_analysis_error == "simulated failure"
-    assert digest.gap_analysis is None
+    snapshot = tmp_path / "vendor" / "demo" / "src"
+    assert (snapshot / "tests" / "test_thing.py").exists()  # kept, unlike FILETREE.md
+    assert not (snapshot / "dist").exists()  # stripped, same as FILETREE.md
+    assert (snapshot / "__init__.py").exists()
+    assert digest.description_error == "no repository found"
+    assert digest.technical_description is None
     vendor_dir = tmp_path / "vendor" / "demo"
     for filename in ("FILETREE.md", "DEPTREE.md", "filetree.json", "deptree.json", "CLAUDE.md"):
         assert (vendor_dir / filename).exists(), filename
     assert not (vendor_dir / "OVERVIEW.md").exists()
 
 
-def test_sync_vendor_surface_depth_never_calls_gap_analysis(
+def test_sync_vendor_description_generation_failure_keeps_cloned_snapshot(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Cloning succeeded — the AI call failing afterward shouldn't throw
+    away real, already-retrieved source in favor of a stale local-install
+    copy.
+    """
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    fake_repo = _build_fake_repo(tmp_path)
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _fake_clone(fake_repo))
+
+    def _raise(*args: object, **kwargs: object) -> None:
+        raise GroundedDescriptionError("simulated failure")
+
+    monkeypatch.setattr(sync_module, "generate_grounded_description", _raise)
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.FULL)
+
+    digest = sync_vendor(config, tmp_path)  # should not raise
+
+    assert digest.description_error == "simulated failure"
+    assert digest.technical_description is None
+    snapshot = tmp_path / "vendor" / "demo" / "src"
+    assert (snapshot / "README.md").exists()  # real clone kept, not discarded
+    assert not (tmp_path / "vendor" / "demo" / "OVERVIEW.md").exists()
+
+
+def test_sync_vendor_surface_depth_never_calls_source_resolution(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     src = _build_source_tree(tmp_path)
     _patch_adapter(monkeypatch, source_dir=src)
 
     def _fail_if_called(*args: object, **kwargs: object) -> None:
-        raise AssertionError("generate_gap_analysis should not be called for depth=surface")
+        raise AssertionError("should not be called for depth=surface")
 
-    monkeypatch.setattr(sync_module, "generate_gap_analysis", _fail_if_called)
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _fail_if_called)
+    monkeypatch.setattr(sync_module, "generate_grounded_description", _fail_if_called)
     config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE)
 
     digest = sync_vendor(config, tmp_path)  # should not raise
 
-    assert digest.gap_analysis is None
+    assert digest.technical_description is None
 
 
 def test_sync_all_budget_too_low_raises_before_any_vendor_is_touched(
@@ -228,13 +291,9 @@ def test_sync_all_budget_too_low_raises_before_any_vendor_is_touched(
 ) -> None:
     src = _build_source_tree(tmp_path)
     _patch_adapter(monkeypatch, source_dir=src)
-    configs = [
-        VendorConfig(
-            name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.FULL, context_path="README.md"
-        ),
-    ]
+    configs = [VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.FULL)]
 
-    with pytest.raises(GapAnalysisError, match="exceeds --budget"):
+    with pytest.raises(GroundedDescriptionError, match="exceeds --budget"):
         sync_all(configs, tmp_path, budget=0.0)
 
     assert not (tmp_path / "vendor").exists()

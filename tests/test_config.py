@@ -15,11 +15,9 @@ def test_load_valid_vendor_config() -> None:
     turndown = vendors[0]
     assert turndown.ecosystem is Ecosystem.NPM
     assert turndown.depth is Depth.FULL
-    assert turndown.context_path == "README.md"
 
     lodash = vendors[1]
     assert lodash.depth is Depth.SURFACE
-    assert lodash.context_path is None
 
     assert vendors[2].ecosystem is Ecosystem.PYTHON
     assert vendors[3].ecosystem is Ecosystem.CARGO
@@ -67,14 +65,17 @@ def test_invalid_depth_raises_config_error(tmp_path: Path) -> None:
         load_vendor_config(path)
 
 
-def test_full_depth_without_context_path_raises_config_error(tmp_path: Path) -> None:
+def test_full_depth_without_context_path_no_longer_errors(tmp_path: Path) -> None:
+    """`context_path` was removed in Phase 7 (decisions/0019) — `depth =
+    full` no longer requires any companion field.
+    """
     path = tmp_path / "vendor.toml"
     path.write_text(
-        '[[vendor]]\nname = "bad"\necosystem = "npm"\ndepth = "full"\n',
+        '[[vendor]]\nname = "ok"\necosystem = "npm"\ndepth = "full"\n',
         encoding="utf-8",
     )
-    with pytest.raises(ConfigError, match="context_path"):
-        load_vendor_config(path)
+    vendors = load_vendor_config(path)
+    assert vendors[0].depth is Depth.FULL
 
 
 def test_fails_fast_on_first_invalid_entry(tmp_path: Path) -> None:

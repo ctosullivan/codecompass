@@ -11,7 +11,7 @@ import subprocess
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from depcompass.core import DepNode, VendorConfig
+from depcompass.core import DepNode, RepositoryLocation, VendorConfig
 
 
 class AdapterError(Exception):
@@ -46,6 +46,16 @@ class EcosystemAdapter(ABC):
     @abstractmethod
     def readme_and_api_surface(self) -> str:
         """Rendered README + extracted public API surface, as one string."""
+
+    @abstractmethod
+    def repository_url(self) -> RepositoryLocation | None:
+        """The vendor's upstream source repository, resolved from
+        locally-available package metadata only — never a network call
+        (decisions/0021). Returns `None` if this ecosystem's local
+        metadata carries no repository information for this package;
+        callers (`depcompass.source_resolution`) treat that as a
+        fail-loud condition, not a fallback trigger.
+        """
 
     @abstractmethod
     def dependency_tree(self) -> DepNode:

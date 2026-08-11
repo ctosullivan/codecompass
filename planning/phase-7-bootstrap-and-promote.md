@@ -121,7 +121,12 @@
 - `src/depcompass/discovery.py` — new manifest-walking function(s);
   merge-write path alongside the existing fresh-write path.
 - `src/depcompass/cli.py` — bare-command callback (Typer
-  `invoke_without_command`/default callback); `promote` command.
+  `invoke_without_command`/default callback); `promote` command; the
+  `index` command additionally calls the new tool-level Skill generator
+  alongside its existing routing-table update (`index.py` itself is
+  unchanged — the orchestration lives in the CLI command, matching how
+  `promote` also calls skill functions directly rather than through
+  `index.py`).
 - `src/depcompass/source_resolution.py` (new) — per-ecosystem repository
   resolution functions, each returning a resolved `(url, subdirectory |
   None)` or a typed failure.
@@ -131,8 +136,6 @@
   per-vendor Skill generator; Cursor `.mdc` export generator.
 - `src/depcompass/config.py`, `src/depcompass/core.py` — schema/model
   updates (`context_path` removal, `VendorDigest` field adjustments).
-- `src/depcompass/index.py` — calls the new tool-level Skill generator
-  alongside its existing routing-table update.
 - Tests as listed under Scope above.
 - `docs/cli-reference.md`, `README.md`, `architecture/overview.md`,
   `planning/ROADMAP.md`, `planning/CONTEXT.md`, `CHANGELOG.md` — updated
@@ -170,7 +173,44 @@
 
 ## Status
 
-planned — implementation not yet started. This plan file, plus
-`decisions/0017`–`0021`, are this session's deliverables; per the
-originating design doc's own instruction, no code changes were made in
-this session.
+done — both open questions flagged above were resolved before
+implementation began (per `CLAUDE.md` §1): retrieval scope proceeds
+exactly as proposed (README + docs folder + entry-point file, ~50KB cap,
+confirmed via `AskUserQuestion`); `vendor/<name>/src/` is reused,
+sourced from the resolved repository, with a fallback to the old
+local-install copy if source resolution fails (implemented in
+`sync_vendor` as a nested try/except, not a flat one — cloning success
+followed by generation failure keeps the real clone rather than
+discarding it for the fallback).
+
+All verification steps passed: `pytest` reports 207 passed, 1 skipped
+(the Cargo live smoke test, unchanged since Phase 2) — up from 162 at
+the end of Phase 6; `ruff check .` is clean. Bare `depcompass` and its
+idempotent refresh were manually verified end-to-end in a scratch
+directory (auto-discovery, `vendor.toml` creation, tree/routing-table/
+tool-Skill generation, and a second no-op run). Source resolution and
+cloning were manually verified against a real repository — `pytest`'s
+own, resolved via its real PyPI `Project-URL` metadata (`Source,
+https://github.com/pytest-dev/pytest`) and shallow-cloned with real
+`git` — confirming `repository_url()`, `resolve_and_clone`, and
+`_gather_material` all work against live, non-fixture data. The AI call
+itself (`generate_grounded_description`) was **not** exercised against
+the live Anthropic API in this session — consistent with
+`decisions/0016`'s existing posture (Phase 5 accepted the same gap for
+`gap_analysis.py`) and this project's general caution around agents
+autonomously incurring real API spend; a human should run
+`depcompass promote <vendor>` against a real vendor with a real
+`ANTHROPIC_API_KEY` at least once before trusting output quality.
+
+One item from Design decisions was **not** implemented, and is carried
+forward rather than silently dropped: the trigger-accuracy evaluation
+step for per-vendor Skills (a battery of test questions checked against
+whether the Skill actually loads) — no such harness exists yet. Skill
+generation itself (description built from a condensed conversational
+overview, `references/` bundling) is implemented and tested.
+
+Two Cargo-specific items remain unverified, both pre-existing accepted
+gaps (`decisions/0014`) rather than new Phase 7 gaps: `CargoAdapter.
+repository_url()` is only fixture-tested, and `promote`'s end-to-end
+flow against a real Cargo vendor is untested — no Rust toolchain is
+available in this environment.

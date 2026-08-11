@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 from depcompass.adapters.base import AdapterError, EcosystemAdapter, _run_json
-from depcompass.core import DepNode
+from depcompass.core import DepNode, RepositoryLocation
 
 _DTS_FILE_CAP = 5
 
@@ -19,6 +19,24 @@ class NpmAdapter(EcosystemAdapter):
 
     def source_location(self) -> Path:
         return self._package_dir()
+
+    def repository_url(self) -> RepositoryLocation | None:
+        """`package.json`'s `repository` field — a bare string
+        (`"github:user/repo"`, `"git+https://.../repo.git"`, or a plain
+        URL) or an object (`{"type": "git", "url": "...", "directory":
+        "packages/foo"}`). `directory` scopes a monorepo package to its
+        subdirectory (decisions/0021) — respected here, not dropped.
+        """
+        repository = self._package_json().get("repository")
+        if repository is None:
+            return None
+        if isinstance(repository, str):
+            url, subdirectory = repository, None
+        else:
+            url, subdirectory = repository.get("url"), repository.get("directory")
+        if not url:
+            return None
+        return RepositoryLocation(url=_normalize_git_url(url), subdirectory=subdirectory)
 
     def dependency_tree(self) -> DepNode:
         data = _run_json(
@@ -77,3 +95,27 @@ class NpmAdapter(EcosystemAdapter):
             return json.loads(path.read_text(encoding="utf-8"))
         except OSError:
             return {}
+
+
+_SHORTHAND_HOSTS = {
+    "github": "github.com",
+    "gitlab": "gitlab.com",
+    "bitbucket": "bitbucket.org",
+}
+
+
+def _normalize_git_url(url: str) -> str:
+    """`git clone`-able form of an npm `repository.url` value.
+
+    Handles the two non-plain-URL forms npm accepts: the `git+` scheme
+    prefix (`"git+https://github.com/user/repo.git"`) and the
+    `github:`/`gitlab:`/`bitbucket:` host-shorthand (`"github:user/repo"`).
+    A plain URL passes through unchanged.
+    """
+    if url.startswith("git+"):
+        return url[len("git+") :]
+    for shorthand, host in _SHORTHAND_HOSTS.items():
+        prefix = f"{shorthand}:"
+        if url.startswith(prefix):
+            return f"https://{host}/{url[len(prefix):]}"
+    return url

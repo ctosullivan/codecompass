@@ -8,7 +8,7 @@ import pytest
 import depcompass.adapters.cargo as cargo_module
 from depcompass.adapters.base import AdapterError
 from depcompass.adapters.cargo import CargoAdapter
-from depcompass.core import Depth, Ecosystem, VendorConfig
+from depcompass.core import Depth, Ecosystem, RepositoryLocation, VendorConfig
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -30,6 +30,30 @@ def test_installed_version_and_source_location(
 
     assert adapter.installed_version() == "1.0.0"
     assert adapter.source_location() == Path("/registry/serde-1.0.0")
+
+
+def test_repository_url_none_when_field_absent(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The shared `cargo_metadata.json` fixture's packages carry no
+    `repository` field — the common real-world case for a fixture built
+    before this field mattered.
+    """
+    monkeypatch.setattr(cargo_module, "_run_json", lambda cmd, cwd: _metadata())
+    adapter = _adapter("demo-crate", tmp_path)
+
+    assert adapter.repository_url() is None
+
+
+def test_repository_url_present(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    data = _metadata()
+    data["packages"][0]["repository"] = "https://github.com/example/demo-crate"
+    monkeypatch.setattr(cargo_module, "_run_json", lambda cmd, cwd: data)
+    adapter = _adapter("demo-crate", tmp_path)
+
+    assert adapter.repository_url() == RepositoryLocation(
+        url="https://github.com/example/demo-crate", subdirectory=None
+    )
 
 
 def test_missing_package_raises_adapter_error(

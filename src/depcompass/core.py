@@ -32,20 +32,31 @@ class Depth(StrEnum):
 
 @dataclass(frozen=True)
 class VendorConfig:
-    """One `[[vendor]]` entry from vendor.toml."""
+    """One `[[vendor]]` entry from vendor.toml.
+
+    `depth = FULL` no longer requires any companion field (`context_path`
+    was removed in Phase 7 — decisions/0019 — since grounded-description
+    generation is sourced from the vendor's own upstream repository, not
+    from a project-supplied README/spec).
+    """
 
     name: str
     ecosystem: Ecosystem
     depth: Depth
-    context_path: str | None = None
 
-    def __post_init__(self) -> None:
-        if self.depth is Depth.FULL and not self.context_path:
-            raise ValueError(
-                f"vendor {self.name!r}: depth='full' requires context_path "
-                "— without it, gap analysis has no basis to judge what "
-                "counts as a gap (see architecture/overview.md)"
-            )
+
+@dataclass(frozen=True)
+class RepositoryLocation:
+    """Where a vendor's upstream source repository actually lives —
+    resolved from locally-available package metadata (decisions/0021),
+    not a network lookup. `subdirectory` is set only for ecosystems that
+    can express "this package is a subdirectory of a larger repo" (npm's
+    `repository.directory`); `None` means the repository root itself is
+    the package root.
+    """
+
+    url: str
+    subdirectory: str | None = None
 
 
 @dataclass
@@ -72,11 +83,13 @@ class VendorDigest:
     `side_effects` by `sync_vendor` (Phase 4, copied from the dependency
     tree's root `DepNode.side_effects` — e.g. npm postinstall scripts —
     for the per-vendor `CLAUDE.md`'s Known Gotchas section),
-    `gap_analysis`/`conversational_overview`/`action_pointer_file`/
-    `action_pointer_note` by the AI-gated step (Phase 5, only for `depth =
-    full` vendors with `context_path` set) — a failure there sets
-    `gap_analysis_error` instead, rather than leaving everything silently
-    `None` with no way to tell "not applicable" from "failed".
+    `technical_description`/`conversational_overview`/`action_pointer_file`/
+    `action_pointer_note` by the AI-gated step (Phase 7,
+    `depcompass.grounded_description` — replaced Phase 5's `context_path`-
+    gated gap analysis, decisions/0019 — runs for every `depth = full`
+    vendor unconditionally) — a failure there sets `description_error`
+    instead, rather than leaving everything silently `None` with no way
+    to tell "not applicable" from "failed".
 
     Does not carry staleness information — `depcompass.staleness` (Phase
     6) reads persisted per-vendor `CLAUDE.md` files directly rather than
@@ -92,9 +105,9 @@ class VendorDigest:
     file_tree: str | None = None
     dep_tree: str | None = None
     api_surface: str | None = None
-    gap_analysis: str | None = None
+    technical_description: str | None = None
     conversational_overview: str | None = None
-    gap_analysis_error: str | None = None
+    description_error: str | None = None
     action_pointer_file: str | None = None
     action_pointer_note: str | None = None
     side_effects: list[str] = field(default_factory=list)

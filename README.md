@@ -5,10 +5,10 @@ Grounded, version-pinned dependency reference docs for AI coding agents.
 ## Status
 
 **Pre-MVP, under active development.** The MVP spans phases 0-8
-(`decisions/0022`); phases 0-6 are done — `init`, `sync`, `index`, and
-`check` are fully implemented. Phase 7 (`promote`) is planned but not
-yet implemented; Phase 8 (the `chat` REPL) is not started. See
-[`planning/`](planning/) for phase-by-phase status.
+(`decisions/0022`); phases 0-7 are done — bare `depcompass`, `init`,
+`sync`, `index`, `check`, and `promote` are fully implemented. Phase 8
+(the `chat` REPL) is not started. See [`planning/`](planning/) for
+phase-by-phase status.
 
 ## What it is
 
@@ -26,9 +26,11 @@ For each dependency you configure, depcompass can generate:
   and pruned for token efficiency — always free, no AI calls.
 - A **public API surface** extracted from the vendor's own type
   definitions/docstrings/stubs.
-- Optionally (`depth = full`), an AI-generated **gap analysis** comparing the
-  vendor's API against how *your* project actually uses it, plus a **pinned
-  source snapshot** for standalone consultation.
+- Optionally (`depth = full`, reached via `depcompass promote <vendor>`),
+  an AI-generated **grounded description** — sourced from the vendor's own
+  upstream repository, not your project's own docs or the model's
+  training knowledge — plus a **pinned source snapshot** for standalone
+  consultation.
 - A **routing table** injected into your project's root `CLAUDE.md` so an
   agent knows which vendor digest to consult and when.
 - **Staleness checking** that flags when a digest no longer matches the
@@ -39,25 +41,41 @@ For each dependency you configure, depcompass can generate:
 npm, PyPI, and Cargo — all three ship in the MVP from day one (see
 [`decisions/0008`](decisions/0008-mvp-ships-three-adapters-day-one.md)).
 
-## Quick example (planned)
+## Quick example
 
-> These commands are not yet implemented — see
-> [`docs/cli-reference.md`](docs/cli-reference.md) for current status per
-> command.
+Bootstrapping a project is one command — no flags, no prompts, no AI
+calls:
 
 ```bash
-depcompass init --scan package.json pyproject.toml Cargo.toml
-depcompass sync
-depcompass check --strict
-depcompass chat turndown
+depcompass
 ```
+
+That auto-discovers manifests (`package.json`, `pyproject.toml`,
+`requirements.txt`, `Cargo.toml`), writes `vendor.toml` with every
+dependency at `depth = surface`, and generates trees + the root
+`CLAUDE.md` routing table. Re-running it later is a free, idempotent
+refresh.
+
+When you actually need more than surface info for one specific
+dependency — deep API digest, pinned source, a Skill export — escalate
+it explicitly:
+
+```bash
+depcompass promote turndown
+depcompass check --strict
+```
+
+`chat` is not yet implemented — see
+[`docs/cli-reference.md`](docs/cli-reference.md) for current status per
+command.
 
 ## How it works
 
 See [`architecture/overview.md`](architecture/overview.md) for the full
-design: data model, ecosystem adapters, tree generation, gap analysis, the
-two consumption modes (standalone vendor folder vs. routed from project
-root), staleness checking, and the chat REPL.
+design: data model, ecosystem adapters, tree generation, grounded
+description generation, the two consumption modes (standalone vendor
+folder vs. routed from project root), staleness checking, and the chat
+REPL.
 
 ## Installation
 

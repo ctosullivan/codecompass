@@ -7,7 +7,7 @@ from typer.testing import CliRunner
 import depcompass.cli as cli_module
 from depcompass.cli import app
 from depcompass.config import load_vendor_config
-from depcompass.core import VendorDigest
+from depcompass.core import Depth, VendorDigest
 
 runner = CliRunner()
 
@@ -41,6 +41,79 @@ def test_init_errors_when_vendor_toml_already_exists(
     assert result.exit_code == 1
     assert "already exists" in result.output
     assert (tmp_path / "vendor.toml").read_text(encoding="utf-8") == "# hand-edited\n"
+
+
+def test_bare_bootstrap_creates_vendor_toml_and_syncs_new_vendors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "requirements.txt").write_text("pytest\n", encoding="utf-8")
+
+    result = runner.invoke(app, [])
+
+    assert result.exit_code == 0, result.output
+    vendors = load_vendor_config(tmp_path / "vendor.toml")
+    assert [v.name for v in vendors] == ["pytest"]
+    assert vendors[0].depth is Depth.SURFACE
+    assert (tmp_path / "vendor" / "pytest" / "CLAUDE.md").exists()
+    assert "<!-- depcompass:start -->" in (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
+    assert (tmp_path / ".claude" / "skills" / "depcompass" / "SKILL.md").exists()
+
+
+def test_bare_bootstrap_no_manifests_creates_empty_vendor_toml(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, [])
+
+    assert result.exit_code == 0, result.output
+    assert load_vendor_config(tmp_path / "vendor.toml") == []
+
+
+def test_bare_bootstrap_refresh_leaves_existing_full_vendor_untouched(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "vendor.toml").write_text(
+        '[[vendor]]\nname = "pytest"\necosystem = "python"\ndepth = "full"\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "requirements.txt").write_text("pytest\nrich\n", encoding="utf-8")
+
+    synced_names: list[str] = []
+
+    def _fake_sync_all(configs, project_root, *, budget=None):  # noqa: ANN001
+        synced_names.extend(c.name for c in configs)
+        return [VendorDigest(config=c, installed_version="1.0.0") for c in configs]
+
+    monkeypatch.setattr(cli_module, "sync_all", _fake_sync_all)
+
+    result = runner.invoke(app, [])
+
+    assert result.exit_code == 0, result.output
+    # Only the newly-discovered "rich" is synced — "pytest" was already
+    # tracked (at depth=full) and is left untouched, so this command
+    # never pays AI cost (decisions/0017).
+    assert synced_names == ["rich"]
+    vendors = {v.name: v for v in load_vendor_config(tmp_path / "vendor.toml")}
+    assert vendors["pytest"].depth is Depth.FULL
+    assert vendors["rich"].depth is Depth.SURFACE
+
+
+def test_bare_bootstrap_second_run_is_a_noop_when_nothing_new(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "requirements.txt").write_text("pytest\n", encoding="utf-8")
+
+    first = runner.invoke(app, [])
+    assert first.exit_code == 0, first.output
+    second = runner.invoke(app, [])
+    assert second.exit_code == 0, second.output
+
+    vendors = load_vendor_config(tmp_path / "vendor.toml")
+    assert [v.name for v in vendors] == ["pytest"]
 
 
 def test_sync_all_vendors_end_to_end_real_python_adapter(
@@ -104,8 +177,7 @@ def test_sync_budget_too_low_aborts_before_any_output(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     (tmp_path / "vendor.toml").write_text(
-        '[[vendor]]\nname = "turndown"\necosystem = "npm"\ndepth = "full"\n'
-        'context_path = "README.md"\n',
+        '[[vendor]]\nname = "turndown"\necosystem = "npm"\ndepth = "full"\n',
         encoding="utf-8",
     )
 
@@ -116,7 +188,7 @@ def test_sync_budget_too_low_aborts_before_any_output(
     assert not (tmp_path / "vendor").exists()
 
 
-def test_sync_reports_gap_analysis_failure_and_exits_nonzero(
+def test_sync_reports_description_failure_and_exits_nonzero(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
@@ -130,7 +202,7 @@ def test_sync_reports_gap_analysis_failure_and_exits_nonzero(
             VendorDigest(
                 config=c,
                 installed_version="1.0.0",
-                gap_analysis_error="Anthropic API call failed: timeout",
+                description_error="Anthropic API call failed: timeout",
             )
             for c in configs
         ]
@@ -140,7 +212,7 @@ def test_sync_reports_gap_analysis_failure_and_exits_nonzero(
     result = runner.invoke(app, ["sync"])
 
     assert result.exit_code == 1
-    assert "gap analysis failed" in result.output
+    assert "description failed" in result.output
     assert "timeout" in result.output
 
 
@@ -166,20 +238,116 @@ def test_index_injects_routing_table_into_root_claude_md(
     assert "turndown" in root_claude_md
     assert "7.1.2" in root_claude_md
     assert "<!-- depcompass:start -->" in root_claude_md
+    assert (tmp_path / ".claude" / "skills" / "depcompass" / "SKILL.md").exists()
 
 
-def _write_vendor_toml_and_synced_claude_md(
-    tmp_path: Path, *, name: str = "demo", ecosystem: str = "python", recorded: str = "1.0.0"
-) -> None:
+def test_promote_unknown_vendor_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
     (tmp_path / "vendor.toml").write_text(
-        f'[[vendor]]\nname = "{name}"\necosystem = "{ecosystem}"\ndepth = "surface"\n',
+        '[[vendor]]\nname = "lodash"\necosystem = "npm"\ndepth = "surface"\n',
         encoding="utf-8",
     )
-    vendor_dir = tmp_path / "vendor" / name
-    vendor_dir.mkdir(parents=True)
-    (vendor_dir / "CLAUDE.md").write_text(
-        f"# {name}\n\n## Metadata\n\n- **Installed version:** {recorded}\n", encoding="utf-8"
+
+    result = runner.invoke(app, ["promote", "not-a-real-vendor"])
+
+    assert result.exit_code == 1
+    assert "not found in vendor.toml" in result.output
+
+
+def test_promote_aborts_when_confirmation_declined(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "vendor.toml").write_text(
+        '[[vendor]]\nname = "lodash"\necosystem = "npm"\ndepth = "surface"\n',
+        encoding="utf-8",
     )
+
+    result = runner.invoke(app, ["promote", "lodash"], input="n\n")
+
+    assert result.exit_code == 1
+    assert "aborted" in result.output
+    vendors = load_vendor_config(tmp_path / "vendor.toml")
+    assert vendors[0].depth is Depth.SURFACE
+
+
+def test_promote_yes_flag_skips_confirmation_and_promotes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "vendor.toml").write_text(
+        '[[vendor]]\nname = "lodash"\necosystem = "npm"\ndepth = "surface"\n\n'
+        '[[vendor]]\nname = "requests"\necosystem = "python"\ndepth = "surface"\n',
+        encoding="utf-8",
+    )
+
+    def _fake_sync_vendor(config, project_root):  # noqa: ANN001
+        return VendorDigest(
+            config=config,
+            installed_version="4.17.21",
+            technical_description="Utility functions.",
+            conversational_overview="A grab-bag of JS utilities.",
+        )
+
+    monkeypatch.setattr(cli_module, "sync_vendor", _fake_sync_vendor)
+
+    result = runner.invoke(app, ["promote", "lodash", "--yes"])
+
+    assert result.exit_code == 0, result.output
+    vendors = {v.name: v for v in load_vendor_config(tmp_path / "vendor.toml")}
+    assert vendors["lodash"].depth is Depth.FULL
+    assert vendors["requests"].depth is Depth.SURFACE  # untouched
+    assert (tmp_path / ".claude" / "skills" / "depcompass-lodash" / "SKILL.md").exists()
+    assert (tmp_path / ".cursor" / "rules" / "depcompass-lodash.mdc").exists()
+    assert "turndown" not in (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
+
+
+def test_promote_already_full_vendor_regenerates_without_erroring(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "vendor.toml").write_text(
+        '[[vendor]]\nname = "lodash"\necosystem = "npm"\ndepth = "full"\n',
+        encoding="utf-8",
+    )
+
+    def _fake_sync_vendor(config, project_root):  # noqa: ANN001
+        return VendorDigest(config=config, installed_version="4.17.21")
+
+    monkeypatch.setattr(cli_module, "sync_vendor", _fake_sync_vendor)
+
+    result = runner.invoke(app, ["promote", "lodash", "--yes"])
+
+    assert result.exit_code == 0, result.output
+    vendors = load_vendor_config(tmp_path / "vendor.toml")
+    assert vendors[0].depth is Depth.FULL
+
+
+def test_promote_reports_description_failure_and_exits_nonzero(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "vendor.toml").write_text(
+        '[[vendor]]\nname = "lodash"\necosystem = "npm"\ndepth = "surface"\n',
+        encoding="utf-8",
+    )
+
+    def _fake_sync_vendor(config, project_root):  # noqa: ANN001
+        return VendorDigest(
+            config=config, installed_version="4.17.21", description_error="no repository found"
+        )
+
+    monkeypatch.setattr(cli_module, "sync_vendor", _fake_sync_vendor)
+
+    result = runner.invoke(app, ["promote", "lodash", "--yes"])
+
+    assert result.exit_code == 1
+    assert "description failed" in result.output
+    assert "no repository found" in result.output
+    # Depth is still persisted as full — the escalation itself succeeded,
+    # only description generation failed.
+    vendors = load_vendor_config(tmp_path / "vendor.toml")
+    assert vendors[0].depth is Depth.FULL
 
 
 def test_check_bare_always_exits_0_even_with_major_delta(
@@ -196,6 +364,20 @@ def test_check_bare_always_exits_0_even_with_major_delta(
 
     assert result.exit_code == 0, result.output
     assert "major" in result.output
+
+
+def _write_vendor_toml_and_synced_claude_md(
+    tmp_path: Path, *, name: str = "demo", ecosystem: str = "python", recorded: str = "1.0.0"
+) -> None:
+    (tmp_path / "vendor.toml").write_text(
+        f'[[vendor]]\nname = "{name}"\necosystem = "{ecosystem}"\ndepth = "surface"\n',
+        encoding="utf-8",
+    )
+    vendor_dir = tmp_path / "vendor" / name
+    vendor_dir.mkdir(parents=True)
+    (vendor_dir / "CLAUDE.md").write_text(
+        f"# {name}\n\n## Metadata\n\n- **Installed version:** {recorded}\n", encoding="utf-8"
+    )
 
 
 def test_check_strict_exits_1_on_major_delta(

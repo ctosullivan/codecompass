@@ -2,7 +2,6 @@
 name = "turndown"
 ecosystem = "npm"
 depth = "full"
-context_path = "README.md"
 
 [[vendor]]
 name = "lodash"

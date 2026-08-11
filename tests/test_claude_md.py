@@ -29,52 +29,46 @@ def test_metadata_includes_ecosystem_and_depth() -> None:
     assert "- **Depth:** surface" in markdown.splitlines()
 
 
-def test_gap_analysis_section_is_omitted() -> None:
+def test_description_section_is_omitted() -> None:
     markdown = render_vendor_claude_md(_digest())
-    assert "Gap analysis" not in markdown
+    assert "Description" not in markdown
 
 
-def test_gap_analysis_section_renders_technical_text_and_action_pointer() -> None:
-    full_config = VendorConfig(
-        name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL, context_path="README.md"
-    )
+def test_description_section_renders_technical_text_and_action_pointer() -> None:
+    full_config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL)
     markdown = render_vendor_claude_md(
         _digest(
             config=full_config,
-            gap_analysis="The project uses fencedCodeBlock without overriding it.",
+            technical_description="TurndownService converts HTML to Markdown via rules.",
             action_pointer_file="src/commonmark-rules.js",
             action_pointer_note="override fencedCodeBlock here",
         )
     )
-    assert "## Gap analysis" in markdown
-    assert "The project uses fencedCodeBlock without overriding it." in markdown
+    assert "## Description" in markdown
+    assert "TurndownService converts HTML to Markdown via rules." in markdown
     assert (
         "**Action pointer:** `src/commonmark-rules.js` — override fencedCodeBlock here"
         in markdown
     )
 
 
-def test_gap_analysis_section_omits_action_pointer_when_not_set() -> None:
-    full_config = VendorConfig(
-        name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL, context_path="README.md"
-    )
+def test_description_section_omits_action_pointer_when_not_set() -> None:
+    full_config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL)
     markdown = render_vendor_claude_md(
-        _digest(config=full_config, gap_analysis="No gaps found.")
+        _digest(config=full_config, technical_description="Converts HTML to Markdown.")
     )
-    assert "## Gap analysis" in markdown
-    assert "No gaps found." in markdown
+    assert "## Description" in markdown
+    assert "Converts HTML to Markdown." in markdown
     assert "Action pointer" not in markdown
 
 
-def test_gap_analysis_section_shows_explicit_unavailable_note_on_failure() -> None:
-    full_config = VendorConfig(
-        name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL, context_path="README.md"
-    )
+def test_description_section_shows_explicit_unavailable_note_on_failure() -> None:
+    full_config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL)
     markdown = render_vendor_claude_md(
-        _digest(config=full_config, gap_analysis_error="Anthropic API call failed: timeout")
+        _digest(config=full_config, description_error="Anthropic API call failed: timeout")
     )
-    assert "## Gap analysis" in markdown
-    assert "_Gap analysis unavailable: `Anthropic API call failed: timeout`_" in markdown
+    assert "## Description" in markdown
+    assert "_Description unavailable: `Anthropic API call failed: timeout`_" in markdown
 
 
 def test_known_gotchas_from_side_effects() -> None:
