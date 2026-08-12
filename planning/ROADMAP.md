@@ -39,9 +39,14 @@ decision — it is not implied by phase completion alone.
 
 | Phase | Name | Status | Plan file |
 |---|---|---|---|
-| 9 | Project-root-aware REPL routing (Tier 1 sourced from Phase 7's Skill descriptions, decisions/0013) + whole-project context + unconditional dependency rollup at session start (decisions/0012) + digest-exceeded escalation to the generated Skill folder (decisions/0013) | not started | — |
-| 10 | Polish: PyPI publish, examples, docs site evaluation | not started | — |
-| 11 | MCP server (`query_vendor`) | not started | — |
+| 9a | Context graph — vendor presence detection: `SourceFile`/`Vendor` nodes, vendor-level `uses` edges, dead-dependency detection surfaced via `check` (decisions/0024, decisions/0025) | planned | [`phase-9a-vendor-presence-graph.md`](phase-9a-vendor-presence-graph.md) |
+| 9b | Context graph — symbol-level usage: upgrades `uses` to `SourceFile → Symbol`, reusing existing per-ecosystem symbol extraction | planned | [`phase-9b-symbol-usage-graph.md`](phase-9b-symbol-usage-graph.md) |
+| 9c | Context graph — doc & Skill mapping: `DocArtifact` nodes, `documents`/`routes_via`/`depends_on` edges, coverage-gap reporting via `check` (decisions/0013 point 6 made concrete as real data) | planned | [`phase-9c-doc-skill-mapping.md`](phase-9c-doc-skill-mapping.md) |
+| 9d | Context graph — optional LLM enrichment: usage-purpose labels, clustering, `DOCUMENTS` quality delta, file-role summaries, `EXPLAINS` chunk retrieval, trigger-accuracy proxy; off by default, separately cost-disclosed (decisions/0026, decisions/0027) | planned | [`phase-9d-llm-enrichment.md`](phase-9d-llm-enrichment.md) |
+| 9e | Usage-cluster classification + draft (never auto-written) project-level Skill suggestion — deliberately deferred until 9d ships real field data (decisions/0028) | not started | — |
+| 10 | *(was 9)* Project-root-aware REPL routing (Tier 1 sourced from Phase 7's Skill descriptions, decisions/0013) + whole-project context + unconditional dependency rollup at session start (decisions/0012) + digest-exceeded escalation to the generated Skill folder (decisions/0013) — now consumes 9a-9d's context graph instead of inventing ad hoc heuristics | not started | — |
+| 11 | *(was 10)* Polish: PyPI publish, examples, docs site evaluation | not started | — |
+| 12 | *(was 11)* MCP server (`query_vendor`) | not started | — |
 
 **Renumbering note (this table, dated to Phase 7's planning):** the
 former Phase 9 ("Agent Skills export + Cursor `.mdc` export") and
@@ -51,6 +56,15 @@ fully absorbed into the new Phase 7 above, per `decisions/0017` and
 shifted to 8 and 9; former Phase 11/12 (polish, MCP) shifted to 10/11.
 All shifted phases were `not started`, so this is a clean renumber, not
 a rewrite of in-flight work.
+
+**Renumbering note (this table, dated to the Phase 9 context-graph
+planning session):** the context graph (9a-9e) is inserted as the new
+Phase 9, ahead of the routing/rollup work — it supplies that work with
+real usage/doc-mapping data instead of the routing phase inventing ad
+hoc heuristics inline. The former Phase 9 (routing/rollup) shifts to
+**10**; former 10/11 (polish, MCP) shift to **11/12**. All shifted
+phases were `not started`, so this is again a clean renumber, not a
+rewrite of in-flight work — same precedent condition as the note above.
 
 **MVP-boundary note (dated to this change):** Phase 7 and Phase 8 moved
 from this table into the MVP table above — per `decisions/0022`, the MVP

@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `planning/ROADMAP.md` renumbered: the context graph (Phase 9,
+  sub-phases 9a-9e) is inserted ahead of the previously-unplanned
+  project-root REPL routing/rollup work, which shifts from Phase 9 to
+  **Phase 10** (former Phase 10/11 — polish, MCP — shift to 11/12).
+  Bookkeeping only, no code; all shifted phases were `not started`, so
+  this is a clean renumber, not a rewrite of in-flight work — same
+  precedent as the Phase 7-era renumbering below.
 - MVP milestone expanded from phases 0-6 to phases 0-8 (`decisions/0022`)
   — bookkeeping only, no code. Phase 8 (the chat REPL, `decisions/0012`'s
   "actual product") structurally depends on Phase 7's outputs (Skill
@@ -21,6 +28,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Phase 9 planning: context graph (sub-phases 9a-9d) — planning only, no
+  code changed. New `planning/phase-9a-vendor-presence-graph.md` (vendor-
+  level `uses` edges, dead-dependency detection surfaced via `check`),
+  `planning/phase-9b-symbol-usage-graph.md` (symbol-level `uses`, reusing
+  existing per-ecosystem symbol extraction rather than re-deriving it),
+  `planning/phase-9c-doc-skill-mapping.md` (`DocArtifact` nodes,
+  `documents`/`routes_via`/`depends_on` edges, coverage-gap reporting),
+  and `planning/phase-9d-llm-enrichment.md` (optional, off-by-default
+  LLM enrichment: usage-purpose labels, clustering, a `DOCUMENTS` quality
+  delta, file-role summaries, `EXPLAINS` chunk retrieval, a
+  trigger-accuracy proxy). Five new ADRs, `decisions/0024`-`0028`:
+  context-graph storage model (single root-level `context-graph.json`),
+  its cache-invalidation trigger (rebuilds only on bare `sync`/bootstrap,
+  never incrementally), Phase 9d's optional/deterministic-gated posture
+  (explicitly not closing `decisions/0013`'s outstanding trigger-accuracy
+  harness item), `EXPLAINS`-vs-`decisions/0023` reconciliation
+  (coexistence — `chat.py` is untouched), and usage-cluster
+  classification's draft-only, never-auto-written posture (deferred to a
+  future Phase 9e, not part of this pass). A future Phase 9e is
+  identified in `planning/ROADMAP.md` but deliberately not planned in
+  implementation detail this session — it needs real field data from 9d.
 - Single-vendor chat REPL (Phase 8): implements
   `planning/phase-8-chat-repl.md` and `decisions/0023` — **all eight MVP
   phases (0-8) are now complete.** New `depcompass chat <vendor>`: a
