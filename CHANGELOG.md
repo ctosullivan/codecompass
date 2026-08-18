@@ -40,6 +40,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `rebuild_deterministic`, read-only query functions), per
   `decisions/0032`. Library-only; not yet wired into `sync.py`/`cli.py`.
   Planning only, no code changed.
+- **Phases 11-19 planning: the rest of MVP (v0.2) is now fully
+  implementation-ready.** Nine new plan files, each grounded in the
+  actual current source, covering the whole arc in dependency order:
+  `phase-11-project-source-usage-detection.md` (new `usage.py`;
+  `filetree._iter_files` becomes public `iter_source_files` with
+  configurable prune sets; new `sync.rebuild_project_graph`, wired into
+  bare bootstrap and whole-project `sync` only), `phase-12-doc-and-
+  wide-skill-mapping.md` (new `doc_mapping.py` + `skill_scan.py`,
+  including the project-wide, not-just-codecompass-generated skill scope
+  expansion; word-boundary matching, no new YAML dependency),
+  `phase-13-universal-source-cloning.md` (splits cloning from grounded-
+  description generation in `sync_vendor` — cloning becomes
+  unconditional, description stays `depth`-gated until Phase 15),
+  `phase-14-batched-enrichment.md` (new `enrichment.py` replacing
+  `grounded_description.py`; batched candidate selection, two-tier
+  cache-hash skip logic, a new `claude_md.update_description_section`
+  for in-place `CLAUDE.md` updates instead of full `VendorDigest`
+  reconstruction), `phase-15-cli-rewire.md` (the integration phase:
+  `promote` removed, bare `codecompass` gains `--yes`/`--budget` for
+  Phase B's auto-triggered consent gate, new `query` command group,
+  `check`/`index`/`skill.py` migrated to graph-backed enrichment status),
+  `phase-16-retire-depth.md` (now safe — the `Depth` enum/field finally
+  removed, `vendor.toml`'s legacy `depth=` line tolerated on read),
+  `phase-17-discovery-slash-command.md` (new `commands.py`, `/discovery`
+  generated alongside the tool Skill), `phase-18-undo-command.md` (new
+  `undo [--yes] [--dry-run]`, graph-backed enumeration with a
+  pattern-based fallback when no graph exists yet, never commits), and
+  `phase-19-chat-demotion-and-governance-docs.md` (README/architecture
+  rewritten around the graph+Skills+`/discovery` as primary, MVP (v0.2)
+  closes out). Every `planning/ROADMAP.md` row for phases 11-19 flips
+  from `not started` to `planned` with its plan file linked. Planning
+  only, no implementation code changed — implementation proceeds
+  strictly in this order starting from Phase 10, since each later
+  phase's plan assumes the previous ones' code already exists.
 - `planning/ROADMAP.md` renumbered: the context graph (Phase 9,
   sub-phases 9a-9e) is inserted ahead of the previously-unplanned
   project-root REPL routing/rollup work, which shifts from Phase 9 to

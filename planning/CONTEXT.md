@@ -6,11 +6,15 @@ for the log of how it got here.
 
 ## Current phase
 
-**Phase 10: SQLite graph foundation — planned, not yet implemented.** All
-eight v0.1 MVP phases (0-8) remain `done` (`decisions/0022`); Phase 9
-(rename) is `done`. MVP (v0.2) (`decisions/0030`, phases 9-19) had its
-phase order corrected this session — see "Decisions made this session"
-below — before Phase 10's plan file was written.
+**Phase 10: SQLite graph foundation — planned, not yet implemented.**
+All eight v0.1 MVP phases (0-8) remain `done` (`decisions/0022`); Phase 9
+(rename) is `done`. **Every remaining phase in MVP (v0.2) now has a
+full, implementation-ready plan file** — phases 10-19 are all `planned`
+in `planning/ROADMAP.md`, none yet implemented. Implementation proceeds
+strictly in order starting with Phase 10, since each later phase's plan
+assumes the previous ones' code already exists (e.g. Phase 15's CLI
+rewire assumes `graph.py`, `usage.py`, `enrichment.py`, and universal
+cloning are all already built).
 
 ## What was just completed
 
@@ -88,15 +92,77 @@ the *old* numbering — not editable (append-only) — `planning/ROADMAP.md`'s
 renumbering note has the explicit old→new translation table for anyone
 cross-referencing them.
 
+## What was just completed (this session, continued)
+
+Wrote implementation-ready plan files for the entire remainder of MVP
+(v0.2), phases 11-19, in order — each grounded in the actual current
+source (`src/codecompass/`, read in full for this pass: `sync.py`,
+`cli.py`, `index.py`, `skill.py`, `claude_md.py`, `chat.py`,
+`staleness.py`, `grounded_description.py`, `source_resolution.py`,
+`discovery.py`, `filetree.py`, `symbols.py`), not just the earlier
+design-agent sketch. A few real design decisions surfaced and were
+resolved *while writing these plans* (not deferred as open questions —
+each is recorded in its own phase file's Design decisions section, cross-
+referenced here for visibility):
+
+- **Phase 11**: `filetree._iter_files` becomes public
+  `iter_source_files(root, *, prune_dirs=..., prune_globs=...)` so
+  project-source scanning can reuse the same walk shape with its *own*
+  prune set (must NOT exclude `tests`/`fixtures` — test-file usage is
+  real usage signal, unlike a vendor's own source walk). The graph
+  rebuild is a new standalone `sync.rebuild_project_graph`, not threaded
+  through `sync_all` itself — `sync_all` is sometimes called with a
+  *subset* of configs (bare bootstrap's `new_configs`) even on a
+  whole-project run, so a flag on `sync_all` would have rebuilt the graph
+  from incomplete data.
+- **Phase 12**: no YAML dependency added for Skill frontmatter parsing —
+  a minimal custom extractor handles the two frontmatter shapes this
+  project's own generated Skills already use, consistent with this
+  project's existing "avoid unnecessary dependencies" precedent
+  (`decisions/0009`/`0011`). Word-boundary (not substring) matching for
+  every mention-edge type, to avoid false positives on short/common
+  vendor names.
+- **Phase 13**: cloning and grounded-description generation are two
+  *independent* decisions inside `sync_vendor` as of this phase —
+  cloning becomes unconditional, description stays `depth`-gated until
+  Phase 15 wires in the replacement. `FILETREE.md` switches from
+  `source_location()` to the clone root (with the existing fallback) for
+  every vendor, a real visible output change.
+- **Phase 14**: `CLAUDE.md`'s Description section is updated via a new
+  targeted `claude_md.update_description_section` (reusing `index.py`'s
+  existing bounded-region-replace idiom), not full `VendorDigest`
+  reconstruction — `VendorDigest` was never designed to be persisted and
+  reloaded. Per-vendor Skill generation reuses a deliberately *minimal*
+  `VendorDigest` (only the fields `render_vendor_skill`/
+  `render_cursor_mdc` actually read) rather than a full one — confirmed
+  safe by reading both functions' bodies.
+- **Phase 15**: bare `codecompass` (the top-level Typer callback) gains
+  `--yes`/`--budget` options it never had before, since Phase B now
+  auto-triggers there per `decisions/0033`, not just from a manually
+  invoked `promote`.
+- **Phase 17**: `doc_artifacts.kind`'s CHECK constraint needs a new
+  `'slash_command'` value — `graph.py` needs a `schema_version` bump and
+  a migration note in `open_graph` (safe: the table is fully
+  deterministic and rebuilt every whole-project sync anyway).
+- **Phase 18**: a new ADR is called for (`decisions/0035` or next
+  available number at implementation time) — "`undo` is best-effort,
+  origin-tag-driven, never commits" — flagged in that phase's own plan
+  rather than written now, since it's implementation-time work, not this
+  planning pass's.
+
 ## Next concrete step
 
-Implement `planning/phase-10-sqlite-graph-foundation.md` (just written
-this session) — the new `graph.py` module: SQLite schema, `init_schema`,
-`rebuild_deterministic`, and read-only query functions, per
-`decisions/0032`. Library-only in this phase, deliberately not wired into
-any CLI command yet (that's Phase 15). After Phase 10, write
-`planning/phase-11-project-source-usage-detection.md` next, per the
-corrected phase order above.
+Implement `planning/phase-10-sqlite-graph-foundation.md` first — the new
+`graph.py` module: SQLite schema, `init_schema`, `rebuild_deterministic`,
+and read-only query functions, per `decisions/0032`. Library-only,
+deliberately not wired into any CLI command yet (Phase 15). Then
+implement phases 11 through 19 **in that exact order** — each phase's
+plan file explicitly assumes the previous ones already exist in the
+codebase (Phase 12 extends Phase 11's `rebuild_project_graph` call site;
+Phase 15 wires together everything Phases 10-14 built as libraries; Phase
+16 is only safe once Phase 15 has removed every other consumer of
+`Depth`). Do not skip ahead or reorder further without re-checking
+dependencies the way this session's Phase 10 correction did.
 
 **Still outstanding, not a blocker but worth remembering** (carried
 forward, still applicable):

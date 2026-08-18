@@ -48,15 +48,15 @@ only once phase 19 is `done`, not after each individual phase.
 |---|---|---|---|
 | 9 | Rename to codecompass — mechanical only, zero behavior change (decisions/0029) | done | [`phase-9-rename-to-codecompass.md`](phase-9-rename-to-codecompass.md) |
 | 10 | SQLite graph foundation — new `graph.py`: schema, `init_schema`, `rebuild_deterministic`, queries (library only, not CLI-wired yet) (decisions/0032) | planned | [`phase-10-sqlite-graph-foundation.md`](phase-10-sqlite-graph-foundation.md) |
-| 11 | Project-source usage detection — new `usage.py` (Python/npm/Rust import + symbol-level detection), wired into `sync.py`'s whole-project path | not started | — |
-| 12 | Doc & wide skill mapping — new `doc_mapping.py` (ports former 9c) + new `skill_scan.py` (project-wide `.claude/skills/**` indexing, not just codecompass-generated skills) | not started | — |
-| 13 | Universal source cloning — remove the `depth is FULL` gate in `sync.py`/`source_resolution.py`; clone every vendor by default (decisions/0033) | not started | — |
-| 14 | Batched enrichment (Phase B) — new `enrichment.py` replacing `grounded_description.py`; usage-scoped candidate selection, batched calls, CLAUDE.md-hash-line caching, reworked cost estimate | not started | — |
-| 15 | CLI rewire — `cli.py`: Phase A+B wiring, `promote` deleted, `query` command added, `check`/`index`/`skill.py` migrated to graph-backed data (decisions/0033) | not started | — |
-| 16 | Retire `Depth` — now safe: `core.py`/`config.py`/`discovery.py` shrink once phases 13-15 have replaced every consumer; legacy `depth=` tolerated on read (decisions/0031) | not started | — |
-| 17 | `/discovery` slash command — new generated `.claude/commands/discovery.md`, read-only guided-exploration entry point, wired into the same generation points as the tool Skill | not started | — |
-| 18 | `undo` command — new `undo [--yes] [--dry-run]`, driven by the graph's origin-tagged artifacts + known fixed paths; root CLAUDE.md removal goes through the diff-approval flow (CLAUDE.md §0) | not started | — |
-| 19 | Chat demotion + governance docs — README/architecture rewritten around the graph+Skills+`/discovery` as primary; tool Skill stops featuring chat first (decisions/0034) | not started | — |
+| 11 | Project-source usage detection — new `usage.py` (Python/npm/Rust import + symbol-level detection), wired into `sync.py`'s whole-project path | planned | [`phase-11-project-source-usage-detection.md`](phase-11-project-source-usage-detection.md) |
+| 12 | Doc & wide skill mapping — new `doc_mapping.py` (ports former 9c) + new `skill_scan.py` (project-wide `.claude/skills/**` indexing, not just codecompass-generated skills) | planned | [`phase-12-doc-and-wide-skill-mapping.md`](phase-12-doc-and-wide-skill-mapping.md) |
+| 13 | Universal source cloning — remove the `depth is FULL` gate in `sync.py`/`source_resolution.py`; clone every vendor by default (decisions/0033) | planned | [`phase-13-universal-source-cloning.md`](phase-13-universal-source-cloning.md) |
+| 14 | Batched enrichment (Phase B) — new `enrichment.py` replacing `grounded_description.py`; usage-scoped candidate selection, batched calls, CLAUDE.md-hash-line caching, reworked cost estimate | planned | [`phase-14-batched-enrichment.md`](phase-14-batched-enrichment.md) |
+| 15 | CLI rewire — `cli.py`: Phase A+B wiring, `promote` deleted, `query` command added, `check`/`index`/`skill.py` migrated to graph-backed data (decisions/0033) | planned | [`phase-15-cli-rewire.md`](phase-15-cli-rewire.md) |
+| 16 | Retire `Depth` — now safe: `core.py`/`config.py`/`discovery.py` shrink once phases 13-15 have replaced every consumer; legacy `depth=` tolerated on read (decisions/0031) | planned | [`phase-16-retire-depth.md`](phase-16-retire-depth.md) |
+| 17 | `/discovery` slash command — new generated `.claude/commands/discovery.md`, read-only guided-exploration entry point, wired into the same generation points as the tool Skill | planned | [`phase-17-discovery-slash-command.md`](phase-17-discovery-slash-command.md) |
+| 18 | `undo` command — new `undo [--yes] [--dry-run]`, driven by the graph's origin-tagged artifacts + known fixed paths; root CLAUDE.md removal goes through the diff-approval flow (CLAUDE.md §0) | planned | [`phase-18-undo-command.md`](phase-18-undo-command.md) |
+| 19 | Chat demotion + governance docs — README/architecture rewritten around the graph+Skills+`/discovery` as primary; tool Skill stops featuring chat first (decisions/0034) | planned | [`phase-19-chat-demotion-and-governance-docs.md`](phase-19-chat-demotion-and-governance-docs.md) |
 
 **Renumbering note (dated to Phase 10's planning):** the original Phase
 9-planning-session order placed "Retire `Depth`" second (as Phase 10),
