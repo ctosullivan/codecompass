@@ -47,16 +47,39 @@ only once phase 19 is `done`, not after each individual phase.
 | Phase | Name | Status | Plan file |
 |---|---|---|---|
 | 9 | Rename to codecompass — mechanical only, zero behavior change (decisions/0029) | done | [`phase-9-rename-to-codecompass.md`](phase-9-rename-to-codecompass.md) |
-| 10 | Retire `Depth` — `core.py`/`config.py`/`discovery.py` shrink; legacy `depth=` tolerated on read (decisions/0031) | not started | — |
-| 11 | SQLite graph foundation — new `graph.py`: schema, `init_schema`, `rebuild_deterministic`, queries (library only, not CLI-wired yet) (decisions/0032) | not started | — |
-| 12 | Project-source usage detection — new `usage.py` (Python/npm/Rust import + symbol-level detection), wired into `sync.py`'s whole-project path | not started | — |
-| 13 | Doc & wide skill mapping — new `doc_mapping.py` (ports former 9c) + new `skill_scan.py` (project-wide `.claude/skills/**` indexing, not just codecompass-generated skills) | not started | — |
-| 14 | Universal source cloning — remove the `depth is FULL` gate in `sync.py`/`source_resolution.py`; clone every vendor by default (decisions/0033) | not started | — |
-| 15 | Batched enrichment (Phase B) — new `enrichment.py` replacing `grounded_description.py`; usage-scoped candidate selection, batched calls, CLAUDE.md-hash-line caching, reworked cost estimate | not started | — |
-| 16 | CLI rewire — `cli.py`: Phase A+B wiring, `promote` deleted, `query` command added, `check`/`index`/`skill.py` migrated to graph-backed data (decisions/0033) | not started | — |
+| 10 | SQLite graph foundation — new `graph.py`: schema, `init_schema`, `rebuild_deterministic`, queries (library only, not CLI-wired yet) (decisions/0032) | planned | [`phase-10-sqlite-graph-foundation.md`](phase-10-sqlite-graph-foundation.md) |
+| 11 | Project-source usage detection — new `usage.py` (Python/npm/Rust import + symbol-level detection), wired into `sync.py`'s whole-project path | not started | — |
+| 12 | Doc & wide skill mapping — new `doc_mapping.py` (ports former 9c) + new `skill_scan.py` (project-wide `.claude/skills/**` indexing, not just codecompass-generated skills) | not started | — |
+| 13 | Universal source cloning — remove the `depth is FULL` gate in `sync.py`/`source_resolution.py`; clone every vendor by default (decisions/0033) | not started | — |
+| 14 | Batched enrichment (Phase B) — new `enrichment.py` replacing `grounded_description.py`; usage-scoped candidate selection, batched calls, CLAUDE.md-hash-line caching, reworked cost estimate | not started | — |
+| 15 | CLI rewire — `cli.py`: Phase A+B wiring, `promote` deleted, `query` command added, `check`/`index`/`skill.py` migrated to graph-backed data (decisions/0033) | not started | — |
+| 16 | Retire `Depth` — now safe: `core.py`/`config.py`/`discovery.py` shrink once phases 13-15 have replaced every consumer; legacy `depth=` tolerated on read (decisions/0031) | not started | — |
 | 17 | `/discovery` slash command — new generated `.claude/commands/discovery.md`, read-only guided-exploration entry point, wired into the same generation points as the tool Skill | not started | — |
 | 18 | `undo` command — new `undo [--yes] [--dry-run]`, driven by the graph's origin-tagged artifacts + known fixed paths; root CLAUDE.md removal goes through the diff-approval flow (CLAUDE.md §0) | not started | — |
 | 19 | Chat demotion + governance docs — README/architecture rewritten around the graph+Skills+`/discovery` as primary; tool Skill stops featuring chat first (decisions/0034) | not started | — |
+
+**Renumbering note (dated to Phase 10's planning):** the original Phase
+9-planning-session order placed "Retire `Depth`" second (as Phase 10),
+ahead of everything that would replace its role. That's a dependency-order
+bug caught before any Phase 10 code was written: `Depth` is read by eight
+call sites (`sync.py`'s clone gate, `grounded_description.py`'s cost
+estimate, `cli.py`'s `promote`, `index.py`/`skill.py`/`claude_md.py`'s
+display columns, `chat.py`'s banner, `discovery.py`'s default) and none of
+their replacements exist yet at that point in the sequence. Corrected:
+"Retire `Depth`" moves to **Phase 16**, after phases 13-15 have replaced
+every one of those call sites; the graph/usage-detection/cloning/
+enrichment/CLI phases (formerly 11-16) shift down to **10-15**. Phases
+17-19 (`/discovery`, `undo`, chat demotion) are unaffected. All shifted
+phases were `not started`, so this is a clean renumber, not a rewrite of
+in-flight work — same precedent condition as every renumbering note above.
+**`decisions/0031`-`0034` (already written) contain a handful of internal
+"Phase N" citations keyed to the pre-reorder numbering** (e.g. `0031`
+says "Phase 12" for usage detection, now Phase 11; `0032` says "Phase 11"
+for `graph.py`, now Phase 10, and "Phase 15" for the enrichment cache-key
+mechanism, now Phase 14; `0033` says "Phase 16" for `promote`'s removal,
+now Phase 15; `0034` says "Phase 16/19" for the tool Skill rewrite, now
+"Phase 15/19") — not editable (append-only), so use this note to
+translate old→new when cross-referencing them.
 
 **MVP (v0.2) done when:** a real project can run bare `codecompass`
 against real npm/Python/Cargo dependencies, get every vendor cloned and

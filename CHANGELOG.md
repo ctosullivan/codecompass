@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **MVP (v0.2) phase order corrected**: "Retire `Depth`" moves from
+  Phase 10 to **Phase 16** — it was originally sequenced before anything
+  existed to replace the eight call sites that currently read it
+  (`sync.py`, `grounded_description.py`, `cli.py`, `index.py`,
+  `skill.py`, `claude_md.py`, `chat.py`, `discovery.py`); it's only safe
+  once phases 13-15 replace all of them. The graph/usage-detection/
+  mapping/cloning/enrichment/CLI phases shift from 11-16 down to 10-15;
+  phases 17-19 unaffected. Bookkeeping only, no code — caught and fixed
+  before any Phase 10 code was written. See `planning/ROADMAP.md`'s
+  renumbering note for the full old→new table, including which of
+  `decisions/0031`-`0034`'s internal "Phase N" citations are now stale
+  (not editable — append-only).
 - **Phase 9: renamed the package from `depcompass` to `codecompass`**
   (`decisions/0029`, `planning/phase-9-rename-to-codecompass.md`) —
   mechanical only, zero behavior change. `src/depcompass/` moved to
@@ -23,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   new name; verified end-to-end with a fresh `pip install -e ".[dev]"`
   and a bare `codecompass` + `codecompass sync` run against this repo
   itself.
+- Phase 10 planning: `planning/phase-10-sqlite-graph-foundation.md` — the
+  new `graph.py` module (SQLite schema, `init_schema`,
+  `rebuild_deterministic`, read-only query functions), per
+  `decisions/0032`. Library-only; not yet wired into `sync.py`/`cli.py`.
+  Planning only, no code changed.
 - `planning/ROADMAP.md` renumbered: the context graph (Phase 9,
   sub-phases 9a-9e) is inserted ahead of the previously-unplanned
   project-root REPL routing/rollup work, which shifts from Phase 9 to

@@ -6,10 +6,11 @@ for the log of how it got here.
 
 ## Current phase
 
-**Phase 9: Rename to codecompass — done.** All eight v0.1 MVP phases
-(0-8) remain `done` (`decisions/0022`). MVP (v0.2) now has its first
-phase complete (`decisions/0030`, phases 9-19); Phase 10 (retire `Depth`)
-is next, not yet planned in implementation detail.
+**Phase 10: SQLite graph foundation — planned, not yet implemented.** All
+eight v0.1 MVP phases (0-8) remain `done` (`decisions/0022`); Phase 9
+(rename) is `done`. MVP (v0.2) (`decisions/0030`, phases 9-19) had its
+phase order corrected this session — see "Decisions made this session"
+below — before Phase 10's plan file was written.
 
 ## What was just completed
 
@@ -69,20 +70,33 @@ wanted again (real API cost).
 
 ## Decisions made this session not already captured in an ADR
 
-None. Phase 9 was purely mechanical, exactly as planned and as approved
-via the CLAUDE.md diff — no new design decisions arose during
-implementation.
+**One real correction, recorded in `planning/ROADMAP.md`'s own
+renumbering-note convention rather than a new ADR (bookkeeping, not a
+design reversal — same precedent as every prior renumbering note in that
+file):** the original phase order placed "Retire `Depth`" second (Phase
+10), before anything existed to replace its role. `Depth` is read by
+eight call sites across `sync.py`, `grounded_description.py`, `cli.py`,
+`index.py`, `skill.py`, `claude_md.py`, `chat.py`, and `discovery.py` —
+removing it that early would either break all eight or force Phase 10 to
+prematurely absorb most of the graph/cloning/enrichment/CLI-rewire work.
+Corrected: "Retire `Depth`" moves to **Phase 16** (after phases 13-15
+replace every one of those call sites); the graph/usage-detection/
+mapping/cloning/enrichment/CLI phases shift from 11-16 down to **10-15**.
+Phases 17-19 unaffected. `decisions/0031`-`0034` (already written, before
+this correction) each contain a few internal "Phase N" citations keyed to
+the *old* numbering — not editable (append-only) — `planning/ROADMAP.md`'s
+renumbering note has the explicit old→new translation table for anyone
+cross-referencing them.
 
 ## Next concrete step
 
-Write `planning/phase-10-retire-depth.md` (per `CLAUDE.md` §1 — a plan
-file must exist before any implementation code), covering: deleting the
-`Depth` enum from `core.py`, dropping `VendorConfig.depth`, and making
-`config.py` silently tolerate-and-ignore a legacy `depth = "..."` line in
-an existing `vendor.toml` on read (no migrate command) — per
-`decisions/0031`. This repo's own `vendor.toml` (4 entries, each with a
-`depth = "surface"` line) is a real, immediate test case for that
-tolerance behavior once Phase 10 lands.
+Implement `planning/phase-10-sqlite-graph-foundation.md` (just written
+this session) — the new `graph.py` module: SQLite schema, `init_schema`,
+`rebuild_deterministic`, and read-only query functions, per
+`decisions/0032`. Library-only in this phase, deliberately not wired into
+any CLI command yet (that's Phase 15). After Phase 10, write
+`planning/phase-11-project-source-usage-detection.md` next, per the
+corrected phase order above.
 
 **Still outstanding, not a blocker but worth remembering** (carried
 forward, still applicable):
@@ -90,14 +104,14 @@ forward, still applicable):
   `decisions/0014` requires validating the Cargo adapter's fixture
   assumptions (including `repository_url()`) and regex-based `pub`
   extraction against real `cargo metadata` output and a real crate —
-  currently entirely unverified. Relevant to Phase 14's universal cloning
+  currently entirely unverified. Relevant to Phase 13's universal cloning
   (every vendor gets cloned, including Cargo ones).
 - `extract_npm_symbols` (Phase 3) is untested against real-world `.d.ts`
   authoring styles beyond hand-written fixtures.
 - `grounded_description.py` (soon retired/replaced by `enrichment.py`,
-  Phase 15) and `chat.py` (Phase 8) have never been run against the real
+  Phase 14) and `chat.py` (Phase 8) have never been run against the real
   Anthropic API in this environment — a human must do this manually at
-  least once, now specifically against Phase 15's *batched* call shape,
+  least once, now specifically against Phase 14's *batched* call shape,
   before trusting output quality (`decisions/0016`).
 - `staleness.py`'s custom version parser (Phase 6) has no real PEP 440 or
   full-semver correctness — flag if it misclassifies a real-world version
