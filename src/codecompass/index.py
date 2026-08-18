@@ -15,11 +15,11 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from depcompass.claude_md import read_installed_version
-from depcompass.core import Depth, VendorConfig
+from codecompass.claude_md import read_installed_version
+from codecompass.core import Depth, VendorConfig
 
-_START_MARKER = "<!-- depcompass:start -->"
-_END_MARKER = "<!-- depcompass:end -->"
+_START_MARKER = "<!-- codecompass:start -->"
+_END_MARKER = "<!-- codecompass:end -->"
 _MARKER_BLOCK_RE = re.compile(
     re.escape(_START_MARKER) + r".*?" + re.escape(_END_MARKER), re.DOTALL
 )

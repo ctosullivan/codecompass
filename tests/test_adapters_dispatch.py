@@ -1,10 +1,10 @@
 from pathlib import Path
 
-from depcompass.adapters import get_adapter
-from depcompass.adapters.cargo import CargoAdapter
-from depcompass.adapters.npm import NpmAdapter
-from depcompass.adapters.python import PythonAdapter
-from depcompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.adapters import get_adapter
+from codecompass.adapters.cargo import CargoAdapter
+from codecompass.adapters.npm import NpmAdapter
+from codecompass.adapters.python import PythonAdapter
+from codecompass.core import Depth, Ecosystem, VendorConfig
 
 
 def _config(ecosystem: Ecosystem) -> VendorConfig:

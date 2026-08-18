@@ -11,7 +11,7 @@ import subprocess
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from depcompass.core import DepNode, RepositoryLocation, VendorConfig
+from codecompass.core import DepNode, RepositoryLocation, VendorConfig
 
 
 class AdapterError(Exception):
@@ -53,7 +53,7 @@ class EcosystemAdapter(ABC):
         locally-available package metadata only — never a network call
         (decisions/0021). Returns `None` if this ecosystem's local
         metadata carries no repository information for this package;
-        callers (`depcompass.source_resolution`) treat that as a
+        callers (`codecompass.source_resolution`) treat that as a
         fail-loud condition, not a fallback trigger.
         """
 
@@ -72,7 +72,7 @@ def _run_json(cmd: list[str], cwd: Path) -> dict | list:
     """Run cmd, parse stdout as JSON.
 
     This is the seam each adapter module imports and calls, and that
-    tests monkeypatch per-module (e.g. depcompass.adapters.npm._run_json)
+    tests monkeypatch per-module (e.g. codecompass.adapters.npm._run_json)
     to inject fixture JSON instead of invoking a real toolchain — see
     decisions/0014.
 

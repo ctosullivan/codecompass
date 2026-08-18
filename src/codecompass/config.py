@@ -5,7 +5,7 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
-from depcompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.core import Depth, Ecosystem, VendorConfig
 
 
 class ConfigError(Exception):

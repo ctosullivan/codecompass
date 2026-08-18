@@ -7,8 +7,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from depcompass.adapters.base import AdapterError, EcosystemAdapter, _run_json
-from depcompass.core import DepNode, RepositoryLocation
+from codecompass.adapters.base import AdapterError, EcosystemAdapter, _run_json
+from codecompass.core import DepNode, RepositoryLocation
 
 _DTS_FILE_CAP = 5
 

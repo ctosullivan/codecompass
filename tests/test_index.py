@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from depcompass.core import Depth, Ecosystem, VendorConfig
-from depcompass.index import (
+from codecompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.index import (
     RoutingRow,
     load_routing_rows,
     render_routing_table,
@@ -65,8 +65,8 @@ def test_update_root_claude_md_first_run_appends_marker_block(tmp_path: Path) ->
 
     content = (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
     assert "Some hand-written notes." in content
-    assert "<!-- depcompass:start -->" in content
-    assert "<!-- depcompass:end -->" in content
+    assert "<!-- codecompass:start -->" in content
+    assert "<!-- codecompass:end -->" in content
     assert "| table |" in content
 
 
@@ -82,7 +82,7 @@ def test_update_root_claude_md_is_idempotent_and_preserves_surrounding_content(
 ) -> None:
     (tmp_path / "CLAUDE.md").write_text(
         "# My Project\n\nBefore.\n\n"
-        "<!-- depcompass:start -->\nold table\n<!-- depcompass:end -->\n\n"
+        "<!-- codecompass:start -->\nold table\n<!-- codecompass:end -->\n\n"
         "After.\n",
         encoding="utf-8",
     )
@@ -90,8 +90,8 @@ def test_update_root_claude_md_is_idempotent_and_preserves_surrounding_content(
     update_root_claude_md(tmp_path, "new table")
 
     content = (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
-    assert content.count("<!-- depcompass:start -->") == 1
-    assert content.count("<!-- depcompass:end -->") == 1
+    assert content.count("<!-- codecompass:start -->") == 1
+    assert content.count("<!-- codecompass:end -->") == 1
     assert "old table" not in content
     assert "new table" in content
     assert "Before." in content

@@ -4,10 +4,10 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-import depcompass.cli as cli_module
-from depcompass.cli import app
-from depcompass.config import load_vendor_config
-from depcompass.core import Depth, VendorDigest
+import codecompass.cli as cli_module
+from codecompass.cli import app
+from codecompass.config import load_vendor_config
+from codecompass.core import Depth, VendorDigest
 
 runner = CliRunner()
 
@@ -56,8 +56,8 @@ def test_bare_bootstrap_creates_vendor_toml_and_syncs_new_vendors(
     assert [v.name for v in vendors] == ["pytest"]
     assert vendors[0].depth is Depth.SURFACE
     assert (tmp_path / "vendor" / "pytest" / "CLAUDE.md").exists()
-    assert "<!-- depcompass:start -->" in (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
-    assert (tmp_path / ".claude" / "skills" / "depcompass" / "SKILL.md").exists()
+    assert "<!-- codecompass:start -->" in (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
+    assert (tmp_path / ".claude" / "skills" / "codecompass" / "SKILL.md").exists()
 
 
 def test_bare_bootstrap_no_manifests_creates_empty_vendor_toml(
@@ -237,8 +237,8 @@ def test_index_injects_routing_table_into_root_claude_md(
     root_claude_md = (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
     assert "turndown" in root_claude_md
     assert "7.1.2" in root_claude_md
-    assert "<!-- depcompass:start -->" in root_claude_md
-    assert (tmp_path / ".claude" / "skills" / "depcompass" / "SKILL.md").exists()
+    assert "<!-- codecompass:start -->" in root_claude_md
+    assert (tmp_path / ".claude" / "skills" / "codecompass" / "SKILL.md").exists()
 
 
 def test_promote_unknown_vendor_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -297,8 +297,8 @@ def test_promote_yes_flag_skips_confirmation_and_promotes(
     vendors = {v.name: v for v in load_vendor_config(tmp_path / "vendor.toml")}
     assert vendors["lodash"].depth is Depth.FULL
     assert vendors["requests"].depth is Depth.SURFACE  # untouched
-    assert (tmp_path / ".claude" / "skills" / "depcompass-lodash" / "SKILL.md").exists()
-    assert (tmp_path / ".cursor" / "rules" / "depcompass-lodash.mdc").exists()
+    assert (tmp_path / ".claude" / "skills" / "codecompass-lodash" / "SKILL.md").exists()
+    assert (tmp_path / ".cursor" / "rules" / "codecompass-lodash.mdc").exists()
     assert "turndown" not in (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
 
 
@@ -356,7 +356,7 @@ def test_check_bare_always_exits_0_even_with_major_delta(
     monkeypatch.chdir(tmp_path)
     _write_vendor_toml_and_synced_claude_md(tmp_path, recorded="1.0.0")
     monkeypatch.setattr(
-        "depcompass.staleness.get_adapter",
+        "codecompass.staleness.get_adapter",
         lambda config, project_root: _FakeStalenessAdapter(version="2.0.0"),
     )
 
@@ -386,7 +386,7 @@ def test_check_strict_exits_1_on_major_delta(
     monkeypatch.chdir(tmp_path)
     _write_vendor_toml_and_synced_claude_md(tmp_path, recorded="1.0.0")
     monkeypatch.setattr(
-        "depcompass.staleness.get_adapter",
+        "codecompass.staleness.get_adapter",
         lambda config, project_root: _FakeStalenessAdapter(version="2.0.0"),
     )
 
@@ -401,7 +401,7 @@ def test_check_strict_exits_0_on_minor_or_patch_only(
     monkeypatch.chdir(tmp_path)
     _write_vendor_toml_and_synced_claude_md(tmp_path, recorded="1.0.0")
     monkeypatch.setattr(
-        "depcompass.staleness.get_adapter",
+        "codecompass.staleness.get_adapter",
         lambda config, project_root: _FakeStalenessAdapter(version="1.1.0"),
     )
 
@@ -428,7 +428,7 @@ def test_check_fix_regenerates_stale_vendor_and_exits_0(
     monkeypatch.chdir(tmp_path)
     _write_vendor_toml_and_synced_claude_md(tmp_path, recorded="1.0.0")
     monkeypatch.setattr(
-        "depcompass.staleness.get_adapter",
+        "codecompass.staleness.get_adapter",
         lambda config, project_root: _FakeStalenessAdapter(version="2.0.0"),
     )
     monkeypatch.setattr(
@@ -460,7 +460,7 @@ def test_check_fix_isolates_one_vendor_adapter_failure(
         )
 
     monkeypatch.setattr(
-        "depcompass.staleness.get_adapter",
+        "codecompass.staleness.get_adapter",
         lambda config, project_root: _FakeStalenessAdapter(version="2.0.0"),
     )
     fixed: list[str] = []
@@ -491,6 +491,6 @@ class _FakeStalenessAdapter:
         return self._version
 
     def dependency_tree(self):  # noqa: ANN201
-        from depcompass.core import DepNode
+        from codecompass.core import DepNode
 
         return DepNode(name="demo", version=self._version)

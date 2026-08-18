@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Phase 9: renamed the package from `depcompass` to `codecompass`**
+  (`decisions/0029`, `planning/phase-9-rename-to-codecompass.md`) —
+  mechanical only, zero behavior change. `src/depcompass/` moved to
+  `src/codecompass/` (`git mv`, preserving blame); the console script is
+  now `codecompass`; every internal import, the root `CLAUDE.md` routing
+  marker (`<!-- codecompass:start/end -->`), the tool-level Skill
+  (`.claude/skills/codecompass/`), and all prose in `README.md`,
+  `CONTRIBUTING.md`, `docs/`, and `architecture/overview.md` updated to
+  match. `decisions/*.md` and `CHANGELOG.md`'s prior entries are
+  deliberately untouched (append-only / historical record). Full test
+  suite (218 passed, 1 skipped) and `ruff check .` both green under the
+  new name; verified end-to-end with a fresh `pip install -e ".[dev]"`
+  and a bare `codecompass` + `codecompass sync` run against this repo
+  itself.
 - `planning/ROADMAP.md` renumbered: the context graph (Phase 9,
   sub-phases 9a-9e) is inserted ahead of the previously-unplanned
   project-root REPL routing/rollup work, which shifts from Phase 9 to

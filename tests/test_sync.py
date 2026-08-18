@@ -3,11 +3,11 @@ from pathlib import Path
 
 import pytest
 
-import depcompass.sync as sync_module
-from depcompass.core import DepNode, Depth, Ecosystem, VendorConfig
-from depcompass.grounded_description import GroundedDescription, GroundedDescriptionError
-from depcompass.source_resolution import SourceResolutionError
-from depcompass.sync import sync_all, sync_vendor
+import codecompass.sync as sync_module
+from codecompass.core import DepNode, Depth, Ecosystem, VendorConfig
+from codecompass.grounded_description import GroundedDescription, GroundedDescriptionError
+from codecompass.source_resolution import SourceResolutionError
+from codecompass.sync import sync_all, sync_vendor
 
 
 class _FakeAdapter:

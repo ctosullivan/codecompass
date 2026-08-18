@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from depcompass.config import load_vendor_config
-from depcompass.core import Depth, Ecosystem, VendorConfig
-from depcompass.discovery import (
+from codecompass.config import load_vendor_config
+from codecompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.discovery import (
     DiscoveryError,
     append_vendor_toml,
     discover_all,

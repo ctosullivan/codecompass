@@ -1,4 +1,4 @@
-"""Core, ecosystem-agnostic data models for depcompass.
+"""Core, ecosystem-agnostic data models for codecompass.
 
 See architecture/overview.md's "Core data model" section for the design
 rationale behind these types.
@@ -19,7 +19,7 @@ class Ecosystem(StrEnum):
 
 
 class Depth(StrEnum):
-    """How much detail depcompass generates for a vendor.
+    """How much detail codecompass generates for a vendor.
 
     Set per vendor (see decisions/0001), not globally: SURFACE is free
     metadata + API surface; FULL adds a pinned source snapshot and an
@@ -85,13 +85,13 @@ class VendorDigest:
     for the per-vendor `CLAUDE.md`'s Known Gotchas section),
     `technical_description`/`conversational_overview`/`action_pointer_file`/
     `action_pointer_note` by the AI-gated step (Phase 7,
-    `depcompass.grounded_description` — replaced Phase 5's `context_path`-
+    `codecompass.grounded_description` — replaced Phase 5's `context_path`-
     gated gap analysis, decisions/0019 — runs for every `depth = full`
     vendor unconditionally) — a failure there sets `description_error`
     instead, rather than leaving everything silently `None` with no way
     to tell "not applicable" from "failed".
 
-    Does not carry staleness information — `depcompass.staleness` (Phase
+    Does not carry staleness information — `codecompass.staleness` (Phase
     6) reads persisted per-vendor `CLAUDE.md` files directly rather than
     building a `VendorDigest`, the same cheap-and-side-effect-free pattern
     `index.py` (Phase 4) already established, and returns its own

@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pytest
 
-import depcompass.adapters.cargo as cargo_module
-from depcompass.adapters.base import AdapterError
-from depcompass.adapters.cargo import CargoAdapter
-from depcompass.core import Depth, Ecosystem, RepositoryLocation, VendorConfig
+import codecompass.adapters.cargo as cargo_module
+from codecompass.adapters.base import AdapterError
+from codecompass.adapters.cargo import CargoAdapter
+from codecompass.core import Depth, Ecosystem, RepositoryLocation, VendorConfig
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -117,11 +117,11 @@ def test_live_smoke_cargo_self_package(tmp_path: Path) -> None:
     cargo_path = shutil.which("cargo")
     assert cargo_path is not None
     subprocess.run(
-        [cargo_path, "init", "--name", "depcompass_cargo_smoke", "--vcs", "none"],
+        [cargo_path, "init", "--name", "codecompass_cargo_smoke", "--vcs", "none"],
         cwd=tmp_path,
         check=True,
         capture_output=True,
     )
-    adapter = _adapter("depcompass_cargo_smoke", tmp_path)
+    adapter = _adapter("codecompass_cargo_smoke", tmp_path)
     assert adapter.installed_version() == "0.1.0"
     assert adapter.source_location().exists()

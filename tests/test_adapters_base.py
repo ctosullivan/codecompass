@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from depcompass.adapters.base import AdapterError, EcosystemAdapter, _run_json
-from depcompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.adapters.base import AdapterError, EcosystemAdapter, _run_json
+from codecompass.core import Depth, Ecosystem, VendorConfig
 
 
 class _FakeCompletedProcess:

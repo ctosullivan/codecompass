@@ -6,7 +6,7 @@ No AI calls, runs regardless of `depth`. See architecture/overview.md's
 
 from __future__ import annotations
 
-from depcompass.core import DepNode
+from codecompass.core import DepNode
 
 _DEPTREE_MAX_DEPTH = 20
 

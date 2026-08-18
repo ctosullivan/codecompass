@@ -1,33 +1,33 @@
 # Architecture overview
 
-This document describes depcompass's **current** design — component
+This document describes codecompass's **current** design — component
 responsibilities and how they fit together. Unlike `decisions/`, which
 records the historical *why* behind a choice and is append-only, this file
 is a living document updated in place as the system evolves. When in doubt
 about *why* something is designed the way it is, check `decisions/`; when
 you want to know *what exists now*, check here.
 
-As of Phase 7, the core data model (`depcompass.core`), `vendor.toml`
-parsing (`depcompass.config`), all three ecosystem adapters
-(`depcompass.adapters`), per-ecosystem symbol/purpose extraction
-(`depcompass.symbols`), deterministic tree generation
-(`depcompass.deptree`, `depcompass.filetree`), per-vendor `CLAUDE.md`
-templating (`depcompass.claude_md`), per-vendor sync orchestration
-(`depcompass.sync`), root routing-table injection (`depcompass.index`),
+As of Phase 7, the core data model (`codecompass.core`), `vendor.toml`
+parsing (`codecompass.config`), all three ecosystem adapters
+(`codecompass.adapters`), per-ecosystem symbol/purpose extraction
+(`codecompass.symbols`), deterministic tree generation
+(`codecompass.deptree`, `codecompass.filetree`), per-vendor `CLAUDE.md`
+templating (`codecompass.claude_md`), per-vendor sync orchestration
+(`codecompass.sync`), root routing-table injection (`codecompass.index`),
 manifest-based `vendor.toml` bootstrap and zero-question auto-discovery
-(`depcompass.discovery`), upstream repository resolution
-(`depcompass.source_resolution`), AI-gated grounded-description
-generation (`depcompass.grounded_description`, replacing Phase 5's
+(`codecompass.discovery`), upstream repository resolution
+(`codecompass.source_resolution`), AI-gated grounded-description
+generation (`codecompass.grounded_description`, replacing Phase 5's
 `context_path`-gated gap analysis — `decisions/0019`), Skill/Cursor
-export (`depcompass.skill`), severity-aware staleness checking
-(`depcompass.staleness`), and the single-vendor chat REPL
-(`depcompass.chat`, grounded on persisted digest files, never live
-regeneration — `decisions/0023`) are all implemented — bare `depcompass`,
+export (`codecompass.skill`), severity-aware staleness checking
+(`codecompass.staleness`), and the single-vendor chat REPL
+(`codecompass.chat`, grounded on persisted digest files, never live
+regeneration — `decisions/0023`) are all implemented — bare `codecompass`,
 `init`, `sync` (including `--budget`), `index`, `check` (including
 `--strict`/`--fix`), `promote`, and `chat <vendor>` are real CLI
 commands, not stubs. The MVP spans phases 0-8 (`decisions/0022`); all
 eight are now `done` (a `v0.1` tag/release has not yet been cut).
-Bare `depcompass chat` project-root routing and the whole-project
+Bare `codecompass chat` project-root routing and the whole-project
 dependency rollup, described in the Chat REPL section below, remain
 post-MVP (Phase 9) target design; see `planning/CONTEXT.md` for current
 status.
@@ -45,7 +45,7 @@ status.
   dependencies are used as-is and only need surface info; only the
   handful being extended, subclassed, or written custom rules against
   justify `FULL`'s cost, and the only path to `FULL` is
-  `depcompass promote <vendor>` (`decisions/0018`). See
+  `codecompass promote <vendor>` (`decisions/0018`). See
   [`decisions/0001`](../decisions/0001-depth-is-per-vendor-not-global.md).
 - **`DepNode(name, version, children, dev_only, side_effects)`** — one node
   in a dependency tree, ecosystem-agnostic. `side_effects` captures things
@@ -65,14 +65,14 @@ status.
   information — `check` (Phase 6) reads persisted per-vendor `CLAUDE.md`
   files directly rather than building a `VendorDigest`, the same pattern
   `index.py` established in Phase 4, and returns its own
-  `depcompass.staleness.VendorStaleness` type instead. An earlier
+  `codecompass.staleness.VendorStaleness` type instead. An earlier
   `is_stale` stub on this class, speculatively added in Phase 1, was
   removed in Phase 6 once it became clear no code path would ever
   populate it. See **Known footguns** below.
 
 ## Adapter interface
 
-`EcosystemAdapter` (ABC, `src/depcompass/adapters/base.py`) is constructed
+`EcosystemAdapter` (ABC, `src/codecompass/adapters/base.py`) is constructed
 with `(config: VendorConfig, project_root: Path)` and defines five methods
 every ecosystem implements: `installed_version() -> str`,
 `source_location() -> Path`, `readme_and_api_surface() -> str`,
@@ -83,7 +83,7 @@ core logic.
 
 `repository_url()` resolves the vendor's upstream repository from
 locally-available package metadata only — never a network call, unlike
-the clone `depcompass.source_resolution` performs from its result. Per
+the clone `codecompass.source_resolution` performs from its result. Per
 ecosystem: npm reads `package.json`'s `repository` field (string,
 `git+`-prefixed, or `github:`-shorthand — all normalized to a plain
 `git clone`-able URL; an object form's `directory` key is respected for
@@ -153,7 +153,7 @@ starting npm-only. See
 
 See [`decisions/0002`](../decisions/0002-adapter-approach-differs-per-ecosystem.md).
 
-## Symbol/purpose extraction (`depcompass.symbols`)
+## Symbol/purpose extraction (`codecompass.symbols`)
 
 `Symbol(name, purpose)` plus one no-AI, no-subprocess extractor per
 ecosystem, each `Path -> list[Symbol]`: `extract_python_symbols` (`ast`-
@@ -176,13 +176,13 @@ it for per-file purpose annotations and the symbol index. See
 
 `FILETREE.md` and `DEPTREE.md` (plus `filetree.json`/`deptree.json`
 sidecars) involve **no AI calls** and run on every `sync` regardless of
-`depth`. `depcompass.deptree` renders from a `DepNode` tree;
-`depcompass.filetree` renders from a vendor's **locally-installed**
+`depth`. `codecompass.deptree` renders from a `DepNode` tree;
+`codecompass.filetree` renders from a vendor's **locally-installed**
 source directory (`source_location()`) — unchanged in Phase 7, always
 the local install regardless of depth. This is now a distinct source
 from `vendor/<name>/src/`'s snapshot content for `depth = full` vendors:
 since Phase 7, that snapshot is cloned from the vendor's **upstream
-repository** (`depcompass.source_resolution`, `decisions/0021`) rather
+repository** (`codecompass.source_resolution`, `decisions/0021`) rather
 than copied from `source_location()`, since a locally-installed package
 is often a trimmed build artifact missing README/docs content the
 repository has. Both tree renderers are wired into `sync.py` (Phase 4),
@@ -229,7 +229,7 @@ which writes their output to `FILETREE.md`/`DEPTREE.md`/`filetree.json`/
   `depth = surface` vendor, or one with no description this run, passes
   `None` and the parameter has no effect.
 
-## Grounded description — the only AI-cost step (`depcompass.grounded_description`)
+## Grounded description — the only AI-cost step (`codecompass.grounded_description`)
 
 Runs for every `depth = FULL` vendor, unconditionally — no longer gated
 on a project-supplied field (Phase 5's `context_path`, removed in Phase 7
@@ -244,7 +244,7 @@ resolves to.
 **Grounded entirely in material retrieved from the vendor's own upstream
 repository** — not a project-supplied README/spec, and not the model's
 own training knowledge of the dependency (`decisions/0019`'s reversal of
-Phase 5's design). `depcompass.source_resolution.resolve_and_clone`
+Phase 5's design). `codecompass.source_resolution.resolve_and_clone`
 clones the repository (resolved via each adapter's `repository_url()` —
 see **Adapter interface** above) into `vendor/<name>/src/`;
 `_gather_material` then assembles up to `_RAW_TEXT_CHAR_CAP` (50,000)
@@ -304,11 +304,11 @@ no longer additionally gated on `context_path`, since that field no
 longer exists — at a fixed rough per-call placeholder estimate, not
 live-queried pricing) exceeds `budget`, the whole run aborts with a clear
 message and **nothing is written this invocation**, not even other
-vendors' free deterministic output. `depcompass promote` performs the
+vendors' free deterministic output. `codecompass promote` performs the
 same disclosure-then-confirm gate for the single vendor it's escalating,
 before setting `depth = full` at all (`decisions/0018`).
 
-## Per-vendor CLAUDE.md structure (`depcompass.claude_md`)
+## Per-vendor CLAUDE.md structure (`codecompass.claude_md`)
 
 `render_vendor_claude_md(digest: VendorDigest) -> str`. Sections, in
 order:
@@ -351,7 +351,7 @@ Both must work:
    `node_modules` contents, so it isn't a stable pin target. See
    [`decisions/0004`](../decisions/0004-vendor-src-snapshot-not-node-modules-reference.md).
    Since Phase 7, the snapshot is a shallow `git clone` of the vendor's
-   own upstream repository (`depcompass.source_resolution`,
+   own upstream repository (`codecompass.source_resolution`,
    `decisions/0021`) rather than a copy of the local install — richer
    (a published package often excludes docs/tests) and, per
    `decisions/0004`'s own underlying concern, at least as stable a pin
@@ -365,8 +365,8 @@ Both must work:
    project."
 2. **Routed from project root** — a routing table is injected into the
    consuming project's own root `CLAUDE.md`, between
-   `<!-- depcompass:start -->` / `<!-- depcompass:end -->` markers.
-   Idempotent regeneration via `depcompass.index.update_root_claude_md`:
+   `<!-- codecompass:start -->` / `<!-- codecompass:end -->` markers.
+   Idempotent regeneration via `codecompass.index.update_root_claude_md`:
    handles both the first-run case (markers don't exist yet, the block is
    appended) and the regenerate case (`re.sub` with `DOTALL` replaces
    just the marked block), without clobbering hand-written content around
@@ -379,13 +379,13 @@ Both must work:
    AI-gated step to `sync`, and a vendor with no synced `CLAUDE.md` yet
    shows `_not synced_` rather than erroring. The Version column still has
    no ✅/⚠ freshness indicator — `check` (Phase 6) reports staleness in
-   its own separate table (`depcompass check`) rather than being wired
+   its own separate table (`codecompass check`) rather than being wired
    into `index`'s routing table, a deliberate scope boundary rather than
    an oversight (see **Known footguns**); the Deps column links to
    `DEPTREE.md` rather than showing a live dependency count, since `index`
    deliberately has no adapter/tree data to draw one from.
 
-## Staleness checking (`depcompass.staleness`)
+## Staleness checking (`codecompass.staleness`)
 
 `check_all(configs, project_root) -> list[VendorStaleness]` /
 `check_vendor(config, project_root) -> VendorStaleness`. Compares the
@@ -446,10 +446,10 @@ transitive-only drift as lower risk than the vendor's own version moving.
 
 **Hook placement**: pre-commit only fires when a lockfile actually changed
 (`package-lock.json`, `pyproject.lock`, `Cargo.lock`) — not on every
-commit. Pre-commit is a courtesy/fast-fail; **CI's `depcompass check
+commit. Pre-commit is a courtesy/fast-fail; **CI's `codecompass check
 --strict` is the actual enforcement point** that blocks merge.
 
-## Multi-tool export (Skills, Cursor) — `depcompass.skill`
+## Multi-tool export (Skills, Cursor) — `codecompass.skill`
 
 **Agent Skills are the primary multi-tool export target** (see
 [`decisions/0013`](../decisions/0013-agent-skills-as-shared-context-selection-source.md)),
@@ -457,16 +457,16 @@ motivated by a reliability gap in the root `CLAUDE.md` routing table: its
 "consult this vendor's digest first" instruction is a soft instruction
 competing for attention with everything else in context, so an agent
 confident in its training knowledge may never read the digest at all —
-precisely the failure mode depcompass exists to prevent. A Skill's
+precisely the failure mode codecompass exists to prevent. A Skill's
 description is mechanically part of how Claude decides what's relevant to
 load, a stronger (though not absolute) guarantee than the routing table's
 instruction-following alone. Implemented in Phase 7 as part of
-`depcompass promote` (`decisions/0018`), not a separate later phase — the
+`codecompass promote` (`decisions/0018`), not a separate later phase — the
 Skill for a vendor is generated at the moment it's promoted, the same
 call that generates its grounded description.
 
 One Skill per `depth = FULL` vendor, generated at
-`.claude/skills/depcompass-<vendor>/SKILL.md`:
+`.claude/skills/codecompass-<vendor>/SKILL.md`:
 - The trigger description is built from data already generated — a
   condensed conversational overview — not a new AI call. **Description
   length is a real, ongoing tuning knob, not a one-time writing task**:
@@ -480,7 +480,7 @@ One Skill per `depth = FULL` vendor, generated at
 - `FILETREE.md`/`DEPTREE.md` bundle as `references/` files inside the
   skill folder rather than inlining — progressive disclosure means they
   only cost tokens when Claude actually needs to navigate source.
-- A wrapper script shelling out to `depcompass check <vendor>` at trigger
+- A wrapper script shelling out to `codecompass check <vendor>` at trigger
   time (a live staleness read instead of a cached line) is deferred to a
   later phase, not required for the initial export.
 - A formal trigger-accuracy evaluation harness (a battery of test
@@ -492,10 +492,10 @@ One Skill per `depth = FULL` vendor, generated at
   description content exists to build a meaningful trigger description
   from. Since Phase 7, this gap is covered separately by the **tool-level
   Skill** (`decisions/0020`): a templated, non-AI-generated Skill at
-  `.claude/skills/depcompass/SKILL.md`, generated unconditionally by
-  `index` (and by bare `depcompass`) regardless of vendor count or depth
-  — listing depcompass's own commands and the current vendor table, so
-  an agent has a mechanical signal that depcompass exists even before
+  `.claude/skills/codecompass/SKILL.md`, generated unconditionally by
+  `index` (and by bare `codecompass`) regardless of vendor count or depth
+  — listing codecompass's own commands and the current vendor table, so
+  an agent has a mechanical signal that codecompass exists even before
   anything has been promoted.
 
 **Cursor `.mdc` export is retained, not replaced.** Cursor does not read
@@ -505,7 +505,7 @@ activation — the legacy single `.cursorrules` file is deprecated and
 unreliable in Cursor's agent mode specifically, so it isn't targeted.
 `.mdc` is a **generated export**, not a separately maintained file —
 same technical-description content as the Skill, different serialization
-— written to `.cursor/rules/depcompass-<vendor>.mdc` by `promote`
+— written to `.cursor/rules/codecompass-<vendor>.mdc` by `promote`
 alongside the Skill. `alwaysApply: false` (token cost control, same
 reasoning as the depth system); Cursor falls back to description-based
 relevance without an explicit `globs` key — a `globs` field scoped to
@@ -538,7 +538,7 @@ conversation — and content generation is written with "does this read
 well spoken aloud in a casual chat" as a first-class constraint, not an
 afterthought handled by reformatting at query time.
 
-`depcompass chat <name>` — a lightweight terminal REPL, distinct from
+`codecompass chat <name>` — a lightweight terminal REPL, distinct from
 just using Claude Code in the vendor folder. It loads only `CLAUDE.md`
 (and `OVERVIEW.md`, if the vendor's been `promote`d) as system context and
 calls the API directly (Haiku) with plain multi-turn text completion — no
@@ -612,7 +612,7 @@ session never re-incurs a clone or an AI-generation call
   captures. Rather than answering confidently from incomplete context
   (the same over-trust risk flagged for digest-only answers generally),
   the REPL states the limitation and points at the already-generated
-  `.claude/skills/depcompass-<vendor>/` folder as the handoff artifact for
+  `.claude/skills/codecompass-<vendor>/` folder as the handoff artifact for
   a full Claude Code session, already grounded via the same Skill —
   reusing Phase 7's `promote` output rather than inventing a separate
   context-packaging mechanism. The REPL's startup disclaimer ("this only
@@ -628,7 +628,7 @@ session never re-incurs a clone or an AI-generation call
 
 ## Retrofitting to existing projects
 
-**Bare `depcompass` (no subcommand) is the zero-question path**
+**Bare `codecompass` (no subcommand) is the zero-question path**
 (`decisions/0017`, Phase 7): auto-discovers manifests at the project root
 (`package.json`, `pyproject.toml`, `requirements.txt`, `Cargo.toml`),
 writes/refreshes `vendor.toml` with everything defaulted to `depth =
@@ -641,13 +641,13 @@ vendors, including any at `depth = FULL`, are left completely untouched
 (their generated output isn't regenerated), so this command never pays
 AI cost no matter how many times it's run.
 
-`depcompass init --scan <manifest file> [--scan <manifest file> ...]`
-(`depcompass.discovery`) remains as the explicit, scripted/CI-friendly
+`codecompass init --scan <manifest file> [--scan <manifest file> ...]`
+(`codecompass.discovery`) remains as the explicit, scripted/CI-friendly
 synonym — useful for naming specific manifests rather than relying on
 root-level auto-discovery. `--scan` is a repeated flag, not one flag
 followed by several space-separated files (not how a named Click/Typer
 option works — the CLI reference's earlier draft syntax was corrected to
-match in Phase 4). Unlike bare `depcompass`, it keeps its original
+match in Phase 4). Unlike bare `codecompass`, it keeps its original
 stricter contract: errors rather than overwriting if `vendor.toml`
 already exists. Python discovery reads `[project.dependencies]` from
 `pyproject.toml` and every non-comment, non-option line of
@@ -655,7 +655,7 @@ already exists. Python discovery reads `[project.dependencies]` from
 `[project.optional-dependencies]`.
 
 **Promotion to `FULL` is selective, reactive, and the only paid
-action**: `depcompass promote <vendor>` (`decisions/0018`, Phase 7) is
+action**: `codecompass promote <vendor>` (`decisions/0018`, Phase 7) is
 the single command that costs money or asks anything — triggered when
 someone actually needs a vendor's deep digest, not batch-decided for a
 whole existing dependency graph up front. It prints an estimated cost
@@ -667,10 +667,10 @@ projected cost exceeds the cap.
 
 ## Cost model
 
-Structural generation (trees, API-surface extraction, bare `depcompass`'s
+Structural generation (trees, API-surface extraction, bare `codecompass`'s
 entire zero-question bootstrap) makes no AI calls and is effectively
 free. The only cost center is grounded-description generation at `depth
-= FULL`, using Haiku, first entered through `depcompass promote`
+= FULL`, using Haiku, first entered through `codecompass promote`
 (`decisions/0018`) and then paid again on every subsequent `sync`/`check
 --fix` for that vendor — it is **not cached**, so cost scales with how
 often `sync` is run, not just with how many vendors are `FULL`. At
@@ -692,7 +692,7 @@ once the projected cost for a single run exceeds the cap.
   established for staying cheap), so the Phase-1 stub had no code path
   that could ever populate it. If older notes or memory reference
   `digest.is_stale`, that API no longer exists; use
-  `depcompass.staleness.check_vendor`/`check_all` instead.
+  `codecompass.staleness.check_vendor`/`check_all` instead.
 - **`staleness.py`'s version parser is a small custom regex, not a real
   PEP 440 or full semver parser** — it only extracts a leading
   `major.minor.patch` integer triple, tolerating a `v` prefix and ignoring
@@ -703,7 +703,7 @@ once the projected cost for a single run exceeds the cap.
   `--strict` failure. A deliberate dependency-avoidance choice
   (`decisions/0009`, `decisions/0011`), not an oversight — flag if it
   misclassifies a real-world version string.
-- **Bare `depcompass check` (no flags) always exits 0**, even with a major
+- **Bare `codecompass check` (no flags) always exits 0**, even with a major
   severity present — it's a report-only table for local use. Only
   `--strict` turns severity/error findings into a non-zero exit. Don't
   assume plain `check` in a script or hook enforces anything; use
@@ -787,14 +787,14 @@ once the projected cost for a single run exceeds the cap.
   [`decisions/0016`](../decisions/0016-gap-analysis-tests-never-call-the-live-anthropic-api.md),
   which continues to apply unchanged to `grounded_description.py`) —
   its prompt/schema correctness against the real model is not validated
-  by the automated suite at all; a human must run `depcompass promote`
+  by the automated suite at all; a human must run `codecompass promote`
   against a real vendor with a real `ANTHROPIC_API_KEY` at least once to
   trust this phase's output quality. (Source resolution and cloning were
   validated against a real repository — pytest's own, via its PyPI
   `Project-URL` metadata — during Phase 7's implementation; only the AI
   call itself remains unvalidated against the live API.)
 - **`git` is now a required external tool for `promote`** (and for
-  `sync`/`check --fix` on any already-`FULL` vendor) — `depcompass
+  `sync`/`check --fix` on any already-`FULL` vendor) — `codecompass
   source_resolution._git_clone` shells out to it the same way adapters
   shell out to `npm`/`cargo`/`pipdeptree`, with the same `shutil.which`-
   first resolution pattern. Not declared as a Python dependency (it isn't

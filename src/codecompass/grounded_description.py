@@ -1,4 +1,4 @@
-"""Grounded-description generation — the only step in depcompass that
+"""Grounded-description generation — the only step in codecompass that
 calls the Anthropic API. Runs for every `depth = full` vendor. Replaces
 Phase 5's `context_path`-gated gap analysis (decisions/0019): instead of
 comparing a vendor's API surface against a project-supplied README/spec,
@@ -17,7 +17,7 @@ from pathlib import Path
 
 import anthropic
 
-from depcompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.core import Depth, Ecosystem, VendorConfig
 
 _MODEL = "claude-haiku-4-5-20251001"
 _MAX_TOKENS = 1024
@@ -111,7 +111,7 @@ class GroundedDescription:
 
 def generate_grounded_description(config: VendorConfig, repo_root: Path) -> GroundedDescription:
     """Gather retrieval material from `repo_root` (an already-cloned
-    upstream repository — see `depcompass.source_resolution`), call the
+    upstream repository — see `codecompass.source_resolution`), call the
     model once via `_call_anthropic` (forced tool-use, so both audiences
     come back in one structured response — decisions/0012), and map the
     result into `GroundedDescription`. Raises `GroundedDescriptionError`
@@ -232,7 +232,7 @@ def _build_user_prompt(config: VendorConfig, material: str) -> str:
 
 def _call_anthropic(system_prompt: str, user_prompt: str) -> dict:
     """Run one forced-tool-use call against `_MODEL`. Tests monkeypatch
-    this per-module (`depcompass.grounded_description._call_anthropic`)
+    this per-module (`codecompass.grounded_description._call_anthropic`)
     to inject a fixed response — no test makes a real API call, ever
     (decisions/0016).
     """

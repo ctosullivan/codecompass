@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 
-import depcompass.adapters.python as python_module
-from depcompass.adapters.base import AdapterError
-from depcompass.adapters.python import PythonAdapter
-from depcompass.core import Depth, Ecosystem, RepositoryLocation, VendorConfig
+import codecompass.adapters.python as python_module
+from codecompass.adapters.base import AdapterError
+from codecompass.adapters.python import PythonAdapter
+from codecompass.core import Depth, Ecosystem, RepositoryLocation, VendorConfig
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

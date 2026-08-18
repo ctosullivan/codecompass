@@ -6,11 +6,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from depcompass.adapters.base import AdapterError, EcosystemAdapter
-from depcompass.adapters.cargo import CargoAdapter
-from depcompass.adapters.npm import NpmAdapter
-from depcompass.adapters.python import PythonAdapter
-from depcompass.core import Ecosystem, VendorConfig
+from codecompass.adapters.base import AdapterError, EcosystemAdapter
+from codecompass.adapters.cargo import CargoAdapter
+from codecompass.adapters.npm import NpmAdapter
+from codecompass.adapters.python import PythonAdapter
+from codecompass.core import Ecosystem, VendorConfig
 
 __all__ = ["AdapterError", "EcosystemAdapter", "get_adapter"]
 

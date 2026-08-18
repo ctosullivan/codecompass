@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from depcompass.config import ConfigError, load_vendor_config
-from depcompass.core import Depth, Ecosystem
+from codecompass.config import ConfigError, load_vendor_config
+from codecompass.core import Depth, Ecosystem
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

@@ -1,5 +1,5 @@
-from depcompass.core import DepNode
-from depcompass.deptree import render_deptree_json, render_deptree_markdown
+from codecompass.core import DepNode
+from codecompass.deptree import render_deptree_json, render_deptree_markdown
 
 
 def _diamond_tree() -> DepNode:

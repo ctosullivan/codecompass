@@ -12,7 +12,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from depcompass.adapters.base import EcosystemAdapter
+from codecompass.adapters.base import EcosystemAdapter
 
 
 class SourceResolutionError(Exception):
@@ -49,7 +49,7 @@ def resolve_and_clone(adapter: EcosystemAdapter, dest: Path) -> Path:
 def _git_clone(url: str, dest: Path) -> None:
     """Shallow clone `url` into `dest`, replacing it if it already
     exists. Tests monkeypatch this per-module
-    (`depcompass.source_resolution._git_clone`) to avoid a real network
+    (`codecompass.source_resolution._git_clone`) to avoid a real network
     call, the same seam role `_run_json` plays for ecosystem adapters
     (decisions/0014).
     """

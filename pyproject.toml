@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "depcompass"
+name = "codecompass"
 version = "0.1.0.dev0"
 description = "Grounded, version-pinned dependency reference docs for AI coding agents."
 readme = "README.md"
@@ -33,7 +33,7 @@ dev = [
 ]
 
 [project.scripts]
-depcompass = "depcompass.cli:app"
+codecompass = "codecompass.cli:app"
 
 [tool.setuptools.packages.find]
 where = ["src"]

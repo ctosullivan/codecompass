@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from depcompass.claude_md import read_installed_version, render_vendor_claude_md
-from depcompass.core import Depth, Ecosystem, VendorConfig, VendorDigest
+from codecompass.claude_md import read_installed_version, render_vendor_claude_md
+from codecompass.core import Depth, Ecosystem, VendorConfig, VendorDigest
 
 
 def _digest(**overrides: object) -> VendorDigest:

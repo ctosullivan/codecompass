@@ -1,4 +1,4 @@
-"""Severity-aware staleness checking (`depcompass check`).
+"""Severity-aware staleness checking (`codecompass check`).
 
 Compares each vendor's persisted `**Installed version:**` line (read via
 `claude_md.read_installed_version`, the same helper `index.py` uses)
@@ -18,10 +18,10 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-from depcompass.adapters import AdapterError, get_adapter
-from depcompass.claude_md import read_installed_version
-from depcompass.core import VendorConfig
-from depcompass.deptree import render_deptree_json
+from codecompass.adapters import AdapterError, get_adapter
+from codecompass.claude_md import read_installed_version
+from codecompass.core import VendorConfig
+from codecompass.deptree import render_deptree_json
 
 _VERSION_TRIPLE_RE = re.compile(r"^\D*(\d+)\.(\d+)\.(\d+)")
 

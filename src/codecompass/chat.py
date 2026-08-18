@@ -1,4 +1,4 @@
-"""Single-vendor chat REPL (`depcompass chat <vendor>`).
+"""Single-vendor chat REPL (`codecompass chat <vendor>`).
 
 Grounds every answer on the vendor's already-persisted digest files
 (`vendor/<name>/CLAUDE.md`, and `OVERVIEW.md` if the vendor has been
@@ -18,7 +18,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.prompt import Prompt
 
-from depcompass.core import VendorConfig
+from codecompass.core import VendorConfig
 
 _MODEL = "claude-haiku-4-5-20251001"
 _MAX_TOKENS = 1024
@@ -51,7 +51,7 @@ def _build_system_prompt(vendor_dir: Path, config: VendorConfig) -> str:
     claude_md_path = vendor_dir / "CLAUDE.md"
     if not claude_md_path.is_file():
         raise ChatError(
-            f"{config.name}: not yet synced (no {claude_md_path}) — run `depcompass` first"
+            f"{config.name}: not yet synced (no {claude_md_path}) — run `codecompass` first"
         )
     sections = [claude_md_path.read_text(encoding="utf-8")]
     overview_path = vendor_dir / "OVERVIEW.md"
@@ -94,14 +94,14 @@ def run_chat(config: VendorConfig, project_root: Path, console: Console) -> None
     system_prompt = _build_system_prompt(vendor_dir, config)
 
     console.print(
-        f"[bold]depcompass chat[/bold] — {config.name} "
+        f"[bold]codecompass chat[/bold] — {config.name} "
         f"(depth={config.depth.value}). Digest-only, no live source. "
         "Type 'exit' or Ctrl-D to quit."
     )
     if not (vendor_dir / "OVERVIEW.md").is_file():
         console.print(
             f"[yellow]no grounded description yet — run "
-            f"`depcompass promote {config.name}` for deeper answers[/yellow]"
+            f"`codecompass promote {config.name}` for deeper answers[/yellow]"
         )
 
     messages: list[dict[str, str]] = []

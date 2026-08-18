@@ -10,8 +10,8 @@ from __future__ import annotations
 from collections.abc import Iterator
 from pathlib import Path
 
-from depcompass.core import Ecosystem
-from depcompass.symbols import extract_symbols_for_file, purpose_for_file
+from codecompass.core import Ecosystem
+from codecompass.symbols import extract_symbols_for_file, purpose_for_file
 
 _PRUNE_DIR_NAMES = {
     "dist",

@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from depcompass.core import Depth, Ecosystem, VendorConfig, VendorDigest
-from depcompass.skill import (
+from codecompass.core import Depth, Ecosystem, VendorConfig, VendorDigest
+from codecompass.skill import (
     render_cursor_mdc,
     render_tool_skill,
     render_vendor_skill,
@@ -29,8 +29,8 @@ def _digest(**overrides: object) -> VendorDigest:
 
 def test_render_tool_skill_lists_commands_and_vendor_table() -> None:
     content = render_tool_skill(_configs())
-    assert "name: depcompass" in content
-    assert "depcompass promote <vendor>" in content
+    assert "name: codecompass" in content
+    assert "codecompass promote <vendor>" in content
     assert "| turndown | npm | full |" in content
     assert "| lodash | npm | surface |" in content
     assert "2 tracked, 1 at `full` depth" in content
@@ -38,14 +38,14 @@ def test_render_tool_skill_lists_commands_and_vendor_table() -> None:
 
 def test_write_tool_skill_writes_expected_path(tmp_path: Path) -> None:
     write_tool_skill(tmp_path, _configs())
-    skill_md = tmp_path / ".claude" / "skills" / "depcompass" / "SKILL.md"
+    skill_md = tmp_path / ".claude" / "skills" / "codecompass" / "SKILL.md"
     assert skill_md.exists()
-    assert "name: depcompass" in skill_md.read_text(encoding="utf-8")
+    assert "name: codecompass" in skill_md.read_text(encoding="utf-8")
 
 
 def test_render_vendor_skill_name_cannot_collide_with_tool_skill() -> None:
     content = render_vendor_skill(_digest())
-    assert "name: depcompass-turndown" in content
+    assert "name: codecompass-turndown" in content
 
 
 def test_render_vendor_skill_includes_technical_description_and_action_pointer() -> None:
@@ -76,7 +76,7 @@ def test_write_vendor_skill_bundles_filetree_and_deptree_as_references(tmp_path:
 
     write_vendor_skill(tmp_path, _digest())
 
-    skill_dir = tmp_path / ".claude" / "skills" / "depcompass-turndown"
+    skill_dir = tmp_path / ".claude" / "skills" / "codecompass-turndown"
     assert (skill_dir / "SKILL.md").exists()
     assert (skill_dir / "references" / "FILETREE.md").read_text(encoding="utf-8") == "# tree"
     assert (skill_dir / "references" / "DEPTREE.md").read_text(encoding="utf-8") == "# deps"
@@ -84,7 +84,7 @@ def test_write_vendor_skill_bundles_filetree_and_deptree_as_references(tmp_path:
 
 def test_write_vendor_skill_tolerates_missing_tree_files(tmp_path: Path) -> None:
     write_vendor_skill(tmp_path, _digest())  # no vendor/turndown/ dir at all — should not raise
-    skill_dir = tmp_path / ".claude" / "skills" / "depcompass-turndown"
+    skill_dir = tmp_path / ".claude" / "skills" / "codecompass-turndown"
     assert (skill_dir / "SKILL.md").exists()
     assert not (skill_dir / "references" / "FILETREE.md").exists()
 
@@ -97,5 +97,5 @@ def test_render_cursor_mdc_includes_technical_description() -> None:
 
 def test_write_cursor_mdc_writes_expected_path(tmp_path: Path) -> None:
     write_cursor_mdc(tmp_path, _digest())
-    mdc_path = tmp_path / ".cursor" / "rules" / "depcompass-turndown.mdc"
+    mdc_path = tmp_path / ".cursor" / "rules" / "codecompass-turndown.mdc"
     assert mdc_path.exists()

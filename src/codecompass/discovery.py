@@ -1,6 +1,6 @@
 """Manifest-based dependency discovery and vendor.toml bootstrap. Two
 entry points: `init --scan` (explicit manifests, `discover_all` +
-`write_vendor_toml`, unchanged since Phase 4) and bare `depcompass`'s
+`write_vendor_toml`, unchanged since Phase 4) and bare `codecompass`'s
 zero-question auto-discovery (`discover_manifest_paths` + `discover_all`
 + `append_vendor_toml`, new in Phase 7 — decisions/0017). See
 docs/config-schema.md.
@@ -14,7 +14,7 @@ import tomllib
 from collections.abc import Callable
 from pathlib import Path
 
-from depcompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.core import Depth, Ecosystem, VendorConfig
 
 
 class DiscoveryError(Exception):
@@ -53,7 +53,7 @@ def discover_python(manifest: Path) -> list[str]:
 
 def discover_requirements_txt(manifest: Path) -> list[str]:
     """Line-based `requirements.txt` parser (decisions/0017 — bare
-    `depcompass` auto-discovery recognizes this alongside
+    `codecompass` auto-discovery recognizes this alongside
     `pyproject.toml` for Python). One requirement per line; blank lines,
     `#` comments, and pip-option lines (`-r other.txt`, `-e .`, etc.,
     which aren't package names) are skipped. Version specifiers/extras/
@@ -105,7 +105,7 @@ _MANIFEST_HANDLERS: dict[str, tuple[Ecosystem, Callable[[Path], list[str]]]] = {
 
 def discover_manifest_paths(root: Path) -> list[Path]:
     """Root-level (non-recursive) scan for every known manifest filename
-    present in `root` — the auto-discovery bare `depcompass` and its
+    present in `root` — the auto-discovery bare `codecompass` and its
     idempotent refresh use (decisions/0017), as opposed to `init
     --scan`'s explicit, individually-named manifests.
     """
@@ -160,7 +160,7 @@ def write_vendor_toml(names_by_ecosystem: dict[Ecosystem, list[str]], path: Path
 
 def append_vendor_toml(new_configs: list[VendorConfig], path: Path) -> None:
     """Append `new_configs` as fresh blocks onto an already-existing
-    `vendor.toml` — the idempotent-refresh path bare `depcompass` uses
+    `vendor.toml` — the idempotent-refresh path bare `codecompass` uses
     (decisions/0017) when new dependencies are discovered in a project
     that's already bootstrapped. A no-op if `new_configs` is empty.
     Callers are responsible for `path` already existing; unlike

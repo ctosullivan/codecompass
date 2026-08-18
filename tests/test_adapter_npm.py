@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pytest
 
-import depcompass.adapters.npm as npm_module
-from depcompass.adapters.base import AdapterError
-from depcompass.adapters.npm import NpmAdapter
-from depcompass.core import Depth, Ecosystem, RepositoryLocation, VendorConfig
+import codecompass.adapters.npm as npm_module
+from codecompass.adapters.base import AdapterError
+from codecompass.adapters.npm import NpmAdapter
+from codecompass.core import Depth, Ecosystem, RepositoryLocation, VendorConfig
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
-import depcompass.source_resolution as source_resolution_module
-from depcompass.core import Depth, Ecosystem, RepositoryLocation, VendorConfig
-from depcompass.source_resolution import SourceResolutionError, resolve_and_clone
+import codecompass.source_resolution as source_resolution_module
+from codecompass.core import Depth, Ecosystem, RepositoryLocation, VendorConfig
+from codecompass.source_resolution import SourceResolutionError, resolve_and_clone
 
 
 class _FakeAdapter:

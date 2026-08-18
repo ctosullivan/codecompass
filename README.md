@@ -1,11 +1,11 @@
-# depcompass
+# codecompass
 
 Grounded, version-pinned dependency reference docs for AI coding agents.
 
 ## Status
 
 **MVP complete (phases 0-8, `decisions/0022`)**, not yet tagged/released.
-Bare `depcompass`, `init`, `sync`, `index`, `promote`, `check`, and `chat`
+Bare `codecompass`, `init`, `sync`, `index`, `promote`, `check`, and `chat`
 are all fully implemented. See [`planning/`](planning/) for phase-by-phase
 status.
 
@@ -13,19 +13,19 @@ status.
 
 AI coding agents (Claude Code, Cursor) tend to answer questions about your
 dependencies from training-data memory, which drifts out of date the moment
-a library ships a new release. depcompass closes that gap: it inspects the
+a library ships a new release. codecompass closes that gap: it inspects the
 dependencies actually installed in your project (npm, PyPI, crates.io) and
 generates per-vendor `CLAUDE.md` digests — grounded in the exact pinned
 version you're running — that an agent can consult instead of guessing.
 
 ## Core idea
 
-For each dependency you configure, depcompass can generate:
+For each dependency you configure, codecompass can generate:
 - A **file tree** and **dependency tree** of the vendor's source, deduplicated
   and pruned for token efficiency — always free, no AI calls.
 - A **public API surface** extracted from the vendor's own type
   definitions/docstrings/stubs.
-- Optionally (`depth = full`, reached via `depcompass promote <vendor>`),
+- Optionally (`depth = full`, reached via `codecompass promote <vendor>`),
   an AI-generated **grounded description** — sourced from the vendor's own
   upstream repository, not your project's own docs or the model's
   training knowledge — plus a **pinned source snapshot** for standalone
@@ -46,7 +46,7 @@ Bootstrapping a project is one command — no flags, no prompts, no AI
 calls:
 
 ```bash
-depcompass
+codecompass
 ```
 
 That auto-discovers manifests (`package.json`, `pyproject.toml`,
@@ -60,9 +60,9 @@ dependency — deep API digest, pinned source, a Skill export — escalate
 it explicitly:
 
 ```bash
-depcompass promote turndown
-depcompass check --strict
-depcompass chat turndown
+codecompass promote turndown
+codecompass check --strict
+codecompass chat turndown
 ```
 
 See [`docs/cli-reference.md`](docs/cli-reference.md) for the full command

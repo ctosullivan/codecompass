@@ -25,7 +25,7 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# depcompass-specific
+# codecompass-specific
 # Generated per-vendor output; not checked in by default (see decisions/0004
 # and the open question tracked in planning/CONTEXT.md re: FULL-depth src
 # snapshots).

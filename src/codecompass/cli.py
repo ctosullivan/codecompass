@@ -1,6 +1,6 @@
-"""depcompass CLI entry point.
+"""codecompass CLI entry point.
 
-Bare `depcompass` (no subcommand) runs the zero-question bootstrap
+Bare `codecompass` (no subcommand) runs the zero-question bootstrap
 (decisions/0017). `init`, `sync`, `index`, `promote`, `check`, and `chat`
 are all implemented (Phases 4-8) — see docs/cli-reference.md.
 """
@@ -14,11 +14,11 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from depcompass.adapters import AdapterError
-from depcompass.chat import ChatError, run_chat
-from depcompass.config import ConfigError, load_vendor_config
-from depcompass.core import Depth, VendorConfig
-from depcompass.discovery import (
+from codecompass.adapters import AdapterError
+from codecompass.chat import ChatError, run_chat
+from codecompass.config import ConfigError, load_vendor_config
+from codecompass.core import Depth, VendorConfig
+from codecompass.discovery import (
     DiscoveryError,
     append_vendor_toml,
     discover_all,
@@ -26,11 +26,11 @@ from depcompass.discovery import (
     rewrite_vendor_toml,
     write_vendor_toml,
 )
-from depcompass.grounded_description import GroundedDescriptionError, estimate_cost
-from depcompass.index import load_routing_rows, render_routing_table, update_root_claude_md
-from depcompass.skill import write_cursor_mdc, write_tool_skill, write_vendor_skill
-from depcompass.staleness import Severity, VendorStaleness, check_all
-from depcompass.sync import sync_all, sync_vendor
+from codecompass.grounded_description import GroundedDescriptionError, estimate_cost
+from codecompass.index import load_routing_rows, render_routing_table, update_root_claude_md
+from codecompass.skill import write_cursor_mdc, write_tool_skill, write_vendor_skill
+from codecompass.staleness import Severity, VendorStaleness, check_all
+from codecompass.sync import sync_all, sync_vendor
 
 app = typer.Typer(
     help="Grounded, version-pinned dependency reference docs for AI coding agents."
@@ -114,7 +114,7 @@ def init(
 ) -> None:
     """Bulk-discover dependencies from named manifests and write a draft
     vendor.toml — the explicit, scripted/CI-friendly synonym for bare
-    `depcompass`'s auto-discovery (decisions/0017). Errors if vendor.toml
+    `codecompass`'s auto-discovery (decisions/0017). Errors if vendor.toml
     already exists.
     """
     try:

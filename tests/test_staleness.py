@@ -3,11 +3,11 @@ from pathlib import Path
 
 import pytest
 
-import depcompass.staleness as staleness_module
-from depcompass.adapters import AdapterError
-from depcompass.core import DepNode, Depth, Ecosystem, VendorConfig
-from depcompass.deptree import render_deptree_json
-from depcompass.staleness import (
+import codecompass.staleness as staleness_module
+from codecompass.adapters import AdapterError
+from codecompass.core import DepNode, Depth, Ecosystem, VendorConfig
+from codecompass.deptree import render_deptree_json
+from codecompass.staleness import (
     Severity,
     VendorStaleness,
     check_all,

@@ -46,7 +46,7 @@ only once phase 19 is `done`, not after each individual phase.
 
 | Phase | Name | Status | Plan file |
 |---|---|---|---|
-| 9 | Rename to codecompass — mechanical only, zero behavior change (decisions/0029) | planned | [`phase-9-rename-to-codecompass.md`](phase-9-rename-to-codecompass.md) |
+| 9 | Rename to codecompass — mechanical only, zero behavior change (decisions/0029) | done | [`phase-9-rename-to-codecompass.md`](phase-9-rename-to-codecompass.md) |
 | 10 | Retire `Depth` — `core.py`/`config.py`/`discovery.py` shrink; legacy `depth=` tolerated on read (decisions/0031) | not started | — |
 | 11 | SQLite graph foundation — new `graph.py`: schema, `init_schema`, `rebuild_deterministic`, queries (library only, not CLI-wired yet) (decisions/0032) | not started | — |
 | 12 | Project-source usage detection — new `usage.py` (Python/npm/Rust import + symbol-level detection), wired into `sync.py`'s whole-project path | not started | — |

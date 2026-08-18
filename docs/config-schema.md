@@ -1,6 +1,6 @@
 # `vendor.toml` config schema
 
-> As of Phase 7, `depcompass.config.load_vendor_config()` parses this
+> As of Phase 7, `codecompass.config.load_vendor_config()` parses this
 > format, and `init`/`sync`/`index`/`promote` read/write it for real,
 > including `promote`'s AI-gated grounded-description generation for
 > `depth = full` vendors. `check` and `chat` are also fully implemented
@@ -26,14 +26,14 @@ README/spec to ground gap analysis) was removed in Phase 7
 
 - **`surface`** — metadata + public API surface only. No AI call, no
   pinned source copy. The default for everything discovered by bare
-  `depcompass` or `depcompass init --scan`.
+  `codecompass` or `codecompass init --scan`.
 - **`full`** — everything `surface` produces, plus a pinned source
   snapshot at `vendor/<name>/src/` (now sourced from the vendor's own
   upstream repository, not the local install —
   [`decisions/0021`](../decisions/0021-pypi-source-resolution-fails-loudly.md))
   and an AI-generated grounded description
   ([`decisions/0019`](../decisions/0019-grounded-description-replaces-gap-analysis.md)).
-  Only reachable via `depcompass promote <vendor>`
+  Only reachable via `codecompass promote <vendor>`
   ([`decisions/0018`](../decisions/0018-promote-is-the-sole-reactive-depth-escalation-point.md))
   — the sole command that costs money or asks anything. Reserve this for
   the handful of dependencies you're actually extending, subclassing, or
@@ -73,14 +73,14 @@ the first error and re-run to see the next one, if any.
 
 ## Notes
 
-- Bare `depcompass` and `depcompass init --scan` both write every
+- Bare `codecompass` and `codecompass init --scan` both write every
   discovered dependency with `depth = "surface"` — safe and free to run
-  immediately on a large existing dependency list. Bare `depcompass`
+  immediately on a large existing dependency list. Bare `codecompass`
   additionally auto-discovers manifests and refreshes an existing
   `vendor.toml` idempotently, without touching already-tracked vendors
   (including any at `depth = "full"`) —
   [`decisions/0017`](../decisions/0017-zero-question-deterministic-bootstrap.md).
-- `depcompass promote <vendor>` is the only way a vendor reaches
+- `codecompass promote <vendor>` is the only way a vendor reaches
   `depth = "full"`; it discloses estimated cost and asks for
   confirmation before making any AI call. Re-running it on an
   already-`full` vendor regenerates in place rather than erroring.

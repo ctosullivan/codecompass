@@ -5,10 +5,10 @@ import pytest
 from rich.console import Console
 from typer.testing import CliRunner
 
-import depcompass.chat as chat_module
-from depcompass.chat import ChatError, _build_system_prompt, run_chat
-from depcompass.cli import app
-from depcompass.core import Depth, Ecosystem, VendorConfig
+import codecompass.chat as chat_module
+from codecompass.chat import ChatError, _build_system_prompt, run_chat
+from codecompass.cli import app
+from codecompass.core import Depth, Ecosystem, VendorConfig
 
 runner = CliRunner()
 
@@ -214,4 +214,4 @@ def test_chat_cli_surface_vendor_shows_promote_hint(
 
     assert result.exit_code == 0, result.output
     assert "no grounded description yet" in result.output
-    assert "depcompass promote lodash" in result.output
+    assert "codecompass promote lodash" in result.output

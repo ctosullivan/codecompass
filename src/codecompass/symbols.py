@@ -13,7 +13,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from depcompass.core import Ecosystem
+from codecompass.core import Ecosystem
 
 _RUST_PUB_PREFIXES = ("pub fn ", "pub struct ", "pub enum ", "pub trait ")
 _NPM_EXPORT_RE = re.compile(

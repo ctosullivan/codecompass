@@ -5,7 +5,7 @@ Phase 7's AI-gated grounded-description generation (`depth = full`
 vendors, unconditional — replaced Phase 5's `context_path`-gated gap
 analysis, decisions/0019), a `vendor/<name>/src/` snapshot for `depth =
 full` vendors (now sourced from the vendor's own upstream repository via
-`depcompass.source_resolution`, not the local install — decisions/0021),
+`codecompass.source_resolution`, not the local install — decisions/0021),
 and per-vendor `CLAUDE.md` templating — writing everything under
 `vendor/<name>/`. See planning/phase-4-sync-index-init.md,
 planning/phase-5-gap-analysis.md, and
@@ -18,17 +18,17 @@ import json
 import shutil
 from pathlib import Path
 
-from depcompass.adapters import get_adapter
-from depcompass.claude_md import render_vendor_claude_md
-from depcompass.core import Depth, VendorConfig, VendorDigest
-from depcompass.deptree import render_deptree_json, render_deptree_markdown
-from depcompass.filetree import build_symbol_index, render_filetree_json, render_filetree_markdown
-from depcompass.grounded_description import (
+from codecompass.adapters import get_adapter
+from codecompass.claude_md import render_vendor_claude_md
+from codecompass.core import Depth, VendorConfig, VendorDigest
+from codecompass.deptree import render_deptree_json, render_deptree_markdown
+from codecompass.filetree import build_symbol_index, render_filetree_json, render_filetree_markdown
+from codecompass.grounded_description import (
     GroundedDescriptionError,
     check_budget,
     generate_grounded_description,
 )
-from depcompass.source_resolution import SourceResolutionError, resolve_and_clone
+from codecompass.source_resolution import SourceResolutionError, resolve_and_clone
 
 _SNAPSHOT_PRUNE_NAMES = ("node_modules", "dist", "build", ".git", "__pycache__", ".venv", "venv")
 

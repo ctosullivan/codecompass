@@ -1,4 +1,4 @@
-# Contributing to depcompass
+# Contributing to codecompass
 
 This project follows a deliberately strict process, designed so that both
 human contributors and AI coding sessions (which don't retain memory across
@@ -122,5 +122,5 @@ pytest
 ruff check .
 ```
 
-(This will expand once the `src/depcompass/` package has real modules —
+(This will expand once the `src/codecompass/` package has real modules —
 see `planning/CONTEXT.md` for current phase status.)

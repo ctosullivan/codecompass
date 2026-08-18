@@ -10,9 +10,9 @@ import importlib.util
 import sys
 from pathlib import Path
 
-from depcompass.adapters.base import AdapterError, EcosystemAdapter, _run_json
-from depcompass.core import DepNode, RepositoryLocation
-from depcompass.symbols import extract_python_symbols
+from codecompass.adapters.base import AdapterError, EcosystemAdapter, _run_json
+from codecompass.core import DepNode, RepositoryLocation
+from codecompass.symbols import extract_python_symbols
 
 _PYI_FILE_CAP = 5
 
@@ -63,7 +63,7 @@ class PythonAdapter(EcosystemAdapter):
 
     def dependency_tree(self) -> DepNode:
         # Invoked via `sys.executable -m pipdeptree` rather than a bare
-        # "pipdeptree" on PATH — pipdeptree is a depcompass dependency
+        # "pipdeptree" on PATH — pipdeptree is a codecompass dependency
         # installed into this same environment, so this reliably finds
         # it regardless of whether the venv's script shims happen to be
         # on PATH (e.g. an unactivated venv).
@@ -113,7 +113,7 @@ class PythonAdapter(EcosystemAdapter):
         side effects purely to generate documentation. See
         planning/phase-2-ecosystem-adapters.md's Design decisions.
 
-        Per-symbol extraction is delegated to `depcompass.symbols`
+        Per-symbol extraction is delegated to `codecompass.symbols`
         (generalized in Phase 3 for reuse by `filetree.py`); `__all__`
         extraction stays here since it's module-level data, not a symbol.
         """

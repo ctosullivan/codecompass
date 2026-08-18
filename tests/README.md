@@ -2,7 +2,7 @@
 
 No package exists yet (see
 [`planning/phase-0-repo-scaffolding.md`](../planning/phase-0-repo-scaffolding.md)).
-Real tests begin in Phase 1 alongside `src/depcompass/`, mirroring its
+Real tests begin in Phase 1 alongside `src/codecompass/`, mirroring its
 module structure with one test module per source module minimum.
 
 This directory exists now so `pyproject.toml`'s `testpaths` and future CI

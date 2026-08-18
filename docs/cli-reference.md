@@ -5,7 +5,7 @@
 > all eight are now `done`, though a `v0.1` tag/release has not yet been
 > cut — see [`planning/`](../planning/) for current status.
 
-## `depcompass` (no subcommand)
+## `codecompass` (no subcommand)
 
 **Status:** implemented (Phase 7, `decisions/0017`).
 
@@ -28,13 +28,13 @@ calls, regardless of project size.
   `vendor.toml`.
 
 ```bash
-depcompass
+codecompass
 ```
 
-## `depcompass init --scan <manifest file> [--scan <manifest file> ...] [--output <path>]`
+## `codecompass init --scan <manifest file> [--scan <manifest file> ...] [--output <path>]`
 
 **Status:** implemented (Phase 4). The explicit, scripted/CI-friendly
-synonym for bare `depcompass`'s auto-discovery (`decisions/0017`) —
+synonym for bare `codecompass`'s auto-discovery (`decisions/0017`) —
 useful when you want to name specific manifest files rather than rely on
 root-level auto-discovery.
 
@@ -48,16 +48,16 @@ generation has no AI cost.
   after a single flag — that's not how a named Click/Typer option works).
 - `--output` (default `vendor.toml`) is where the draft is written.
 - Errors, rather than overwriting, if a `vendor.toml` already exists at
-  the target path — unlike bare `depcompass`, this keeps a strict
+  the target path — unlike bare `codecompass`, this keeps a strict
   contract for scripted use.
 - `[project.optional-dependencies]` in `pyproject.toml` is not scanned —
   only `[project.dependencies]`.
 
 ```bash
-depcompass init --scan package.json --scan pyproject.toml --scan Cargo.toml
+codecompass init --scan package.json --scan pyproject.toml --scan Cargo.toml
 ```
 
-## `depcompass sync [<vendor>] [--budget <amount>]`
+## `codecompass sync [<vendor>] [--budget <amount>]`
 
 **Status:** fully implemented (Phases 4, 7).
 
@@ -96,16 +96,16 @@ the name isn't found).
   vendor from `surface` to `full`.
 
 ```bash
-depcompass sync
-depcompass sync turndown
-depcompass sync --budget 1.00
+codecompass sync
+codecompass sync turndown
+codecompass sync --budget 1.00
 ```
 
-## `depcompass promote <vendor> [--yes]`
+## `codecompass promote <vendor> [--yes]`
 
 **Status:** implemented (Phase 7, `decisions/0018`).
 
-Escalates one vendor to `depth = full` — the only command in depcompass
+Escalates one vendor to `depth = full` — the only command in codecompass
 that costs money or asks anything (`decisions/0018`). Prints an estimated
 cost disclosure and asks for confirmation before doing anything
 AI-assisted (`--yes` skips the prompt, for scripted use). On
@@ -127,17 +127,17 @@ routing table and tool-level Skill so the change is visible immediately.
   (`decisions/0018`).
 
 ```bash
-depcompass promote turndown
-depcompass promote turndown --yes
+codecompass promote turndown
+codecompass promote turndown --yes
 ```
 
-## `depcompass index`
+## `codecompass index`
 
 **Status:** implemented (Phase 4, extended Phase 7).
 
 Regenerates the routing table injected into the consuming project's root
-`CLAUDE.md` (between `<!-- depcompass:start -->` / `<!-- depcompass:end
--->` markers), and the tool-level Skill (`.claude/skills/depcompass/
+`CLAUDE.md` (between `<!-- codecompass:start -->` / `<!-- codecompass:end
+-->` markers), and the tool-level Skill (`.claude/skills/codecompass/
 SKILL.md`, `decisions/0020`) — both from the current `vendor.toml` and
 each vendor's already-synced `CLAUDE.md`. Reads persisted state rather
 than re-running `sync`, so it stays cheap regardless of `sync`'s AI-gated
@@ -146,10 +146,10 @@ synced yet shows `_not synced_` in the Version column rather than
 erroring.
 
 ```bash
-depcompass index
+codecompass index
 ```
 
-## `depcompass check [--strict] [--fix]`
+## `codecompass check [--strict] [--fix]`
 
 **Status:** implemented (Phase 6).
 
@@ -184,15 +184,15 @@ actually regenerates.
   lower risk than the vendor itself moving.
 
 ```bash
-depcompass check
-depcompass check --strict
-depcompass check --fix
+codecompass check
+codecompass check --strict
+codecompass check --fix
 ```
 
-## `depcompass chat <name>`
+## `codecompass chat <name>`
 
 **Status:** implemented (Phase 8, `decisions/0023`). Explicit single-vendor
-mode only — bare `depcompass chat` with no vendor name (project-root
+mode only — bare `codecompass chat` with no vendor name (project-root
 routing across vendor-specific, multi-vendor, and whole-project questions)
 is Phase 9, not yet implemented.
 
@@ -208,11 +208,11 @@ source). This tradeoff is stated in the REPL's startup banner.
 
 Works at any depth: a vendor with no `OVERVIEW.md` yet (still `surface`,
 or `full` with a failed description) gets thinner grounding from
-`CLAUDE.md` alone, plus a one-line hint to run `depcompass promote <name>`
+`CLAUDE.md` alone, plus a one-line hint to run `codecompass promote <name>`
 for deeper answers — not a hard block.
 
 Type `exit`, `quit`, or press `Ctrl-D`/`Ctrl-C` to end the session.
 
 ```bash
-depcompass chat turndown
+codecompass chat turndown
 ```

@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from depcompass.core import Ecosystem
-from depcompass.symbols import (
+from codecompass.core import Ecosystem
+from codecompass.symbols import (
     Symbol,
     extract_npm_symbols,
     extract_python_symbols,

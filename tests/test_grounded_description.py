@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-import depcompass.grounded_description as grounded_description_module
-from depcompass.core import Depth, Ecosystem, VendorConfig
-from depcompass.grounded_description import (
+import codecompass.grounded_description as grounded_description_module
+from codecompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.grounded_description import (
     GroundedDescription,
     GroundedDescriptionError,
     check_budget,

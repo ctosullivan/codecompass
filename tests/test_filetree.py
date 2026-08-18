@@ -1,8 +1,8 @@
 from pathlib import Path
 
-import depcompass.filetree as filetree_module
-from depcompass.core import Ecosystem
-from depcompass.filetree import (
+import codecompass.filetree as filetree_module
+from codecompass.core import Ecosystem
+from codecompass.filetree import (
     build_symbol_index,
     render_filetree_json,
     render_filetree_markdown,

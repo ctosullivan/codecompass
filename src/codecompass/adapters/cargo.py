@@ -11,9 +11,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from depcompass.adapters.base import AdapterError, EcosystemAdapter, _run_json
-from depcompass.core import DepNode, RepositoryLocation
-from depcompass.symbols import extract_rust_symbols
+from codecompass.adapters.base import AdapterError, EcosystemAdapter, _run_json
+from codecompass.core import DepNode, RepositoryLocation
+from codecompass.symbols import extract_rust_symbols
 
 
 class CargoAdapter(EcosystemAdapter):

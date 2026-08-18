@@ -1,6 +1,6 @@
 import pytest
 
-from depcompass.core import DepNode, Depth, Ecosystem, VendorConfig, VendorDigest
+from codecompass.core import DepNode, Depth, Ecosystem, VendorConfig, VendorDigest
 
 
 def test_vendor_config_full_needs_no_companion_field() -> None:
