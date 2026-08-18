@@ -83,10 +83,11 @@ until all of these.
   `docs(phase-0): add architecture overview`). A commit that doesn't map to
   a phase or a plan-file item usually means the plan file is incomplete.
 - Changelog entries land in the same commit as the change they describe.
-- **Milestones are roadmap phase groups, not individual phases.** The MVP
-  (phases 0-8) is one milestone. Only when its last phase is marked `done`
-  do we promote `[Unreleased]` to a dated release section in
-  `CHANGELOG.md` and cut a version tag — not after every phase.
+- **Milestones are roadmap phase groups, not individual phases.** MVP
+  (v0.1, phases 0-8) and MVP (v0.2, phases 9-19) are each one milestone.
+  Only when a milestone's last phase is marked `done` do we promote
+  `[Unreleased]` to a dated release section in `CHANGELOG.md` and cut a
+  version tag for that milestone — not after every phase.
 - `planning/CONTEXT.md` is the tie-breaker if commits, changelog, and
   milestones ever drift apart.
 

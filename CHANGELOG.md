@@ -28,7 +28,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Phase 9 planning: context graph (sub-phases 9a-9d) — planning only, no
+- **MVP (v0.2) planning: rename to codecompass, retire `promote`/`Depth`,
+  SQLite relationship graph, `/discovery`, `undo`** — planning only, no
+  code changed. Supersedes the Phase 9 context-graph planning entry below
+  (that plan was never implemented; its four plan files are deleted —
+  recoverable from git history — while its five ADRs stay, append-only;
+  see `planning/ROADMAP.md`'s "Superseded planning" note). New
+  `planning/phase-9-rename-to-codecompass.md`
+  (mechanical rename, zero behavior change) and six new ADRs:
+  `decisions/0029` (rename announcement), `decisions/0030` (MVP milestone
+  redefined — v0.2 spans phases 9-19, `planning/ROADMAP.md`'s new MVP
+  (v0.2) table), `decisions/0031` (`Depth` retired — enrichment becomes
+  usage-driven, not a manual per-vendor toggle, superseding
+  `decisions/0001`), `decisions/0032` (context graph moves from a single
+  JSON file to SQLite, superseding `decisions/0024`), `decisions/0033`
+  (`promote` retired — universal source cloning plus an auto-triggered,
+  still cost-disclosed/confirmable batched enrichment step replaces it,
+  superseding `decisions/0018` and partially `decisions/0017`), and
+  `decisions/0034` (chat demoted from "the actual product" to a secondary,
+  unchanged-code subcommand — the graph, generated Skills, and the new
+  `/discovery` command become primary, superseding `decisions/0012`).
+  `planning/ROADMAP.md` restructured: former Post-MVP phases 9a-9e
+  superseded (retained, not deleted); new MVP (v0.2) table added spanning
+  phases 9-19 (rename → depth retirement → SQLite graph foundation →
+  usage detection → doc/skill mapping → universal cloning → batched
+  enrichment → CLI rewire → `/discovery` → `undo` → chat demotion/docs);
+  former routing/rollup, polish, and MCP-server phases renumbered
+  10→20, 11→21, 12→22.
+- Phase 9 planning (superseded — see entry above): context graph
+  (sub-phases 9a-9d) — planning only, no
   code changed. New `planning/phase-9a-vendor-presence-graph.md` (vendor-
   level `uses` edges, dead-dependency detection surfaced via `check`),
   `planning/phase-9b-symbol-usage-graph.md` (symbol-level `uses`, reusing

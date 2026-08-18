@@ -35,18 +35,72 @@ One milestone (see `CLAUDE.md` §6): tagged/released only once phase 8 is
 (`decisions/0022`) but cutting the `v0.1` tag is a separate, not-yet-made
 decision — it is not implied by phase completion alone.
 
+## MVP (v0.2) — phases 9-19
+
+A second milestone group (`decisions/0030`), grouped for the same reason
+`decisions/0022` grouped 0-8: no phase in this range is a coherent,
+shippable state on its own — the rework's payoff (SQLite graph +
+generated Skills + `/discovery` as the primary interface, `promote`/
+`Depth` fully retired) only exists once Phase 19 lands. Tagged/released
+only once phase 19 is `done`, not after each individual phase.
+
+| Phase | Name | Status | Plan file |
+|---|---|---|---|
+| 9 | Rename to codecompass — mechanical only, zero behavior change (decisions/0029) | planned | [`phase-9-rename-to-codecompass.md`](phase-9-rename-to-codecompass.md) |
+| 10 | Retire `Depth` — `core.py`/`config.py`/`discovery.py` shrink; legacy `depth=` tolerated on read (decisions/0031) | not started | — |
+| 11 | SQLite graph foundation — new `graph.py`: schema, `init_schema`, `rebuild_deterministic`, queries (library only, not CLI-wired yet) (decisions/0032) | not started | — |
+| 12 | Project-source usage detection — new `usage.py` (Python/npm/Rust import + symbol-level detection), wired into `sync.py`'s whole-project path | not started | — |
+| 13 | Doc & wide skill mapping — new `doc_mapping.py` (ports former 9c) + new `skill_scan.py` (project-wide `.claude/skills/**` indexing, not just codecompass-generated skills) | not started | — |
+| 14 | Universal source cloning — remove the `depth is FULL` gate in `sync.py`/`source_resolution.py`; clone every vendor by default (decisions/0033) | not started | — |
+| 15 | Batched enrichment (Phase B) — new `enrichment.py` replacing `grounded_description.py`; usage-scoped candidate selection, batched calls, CLAUDE.md-hash-line caching, reworked cost estimate | not started | — |
+| 16 | CLI rewire — `cli.py`: Phase A+B wiring, `promote` deleted, `query` command added, `check`/`index`/`skill.py` migrated to graph-backed data (decisions/0033) | not started | — |
+| 17 | `/discovery` slash command — new generated `.claude/commands/discovery.md`, read-only guided-exploration entry point, wired into the same generation points as the tool Skill | not started | — |
+| 18 | `undo` command — new `undo [--yes] [--dry-run]`, driven by the graph's origin-tagged artifacts + known fixed paths; root CLAUDE.md removal goes through the diff-approval flow (CLAUDE.md §0) | not started | — |
+| 19 | Chat demotion + governance docs — README/architecture rewritten around the graph+Skills+`/discovery` as primary; tool Skill stops featuring chat first (decisions/0034) | not started | — |
+
+**MVP (v0.2) done when:** a real project can run bare `codecompass`
+against real npm/Python/Cargo dependencies, get every vendor cloned and
+deterministically documented for free, see usage-proven vendors
+automatically enriched (with disclosed, confirmable cost), query the
+resulting relationship graph via `codecompass query` or `/discovery`, and
+cleanly `undo` everything if desired — all under the `codecompass` name,
+with `promote`/`Depth` fully retired and chat re-framed as secondary.
+
 ## Post-MVP
 
 | Phase | Name | Status | Plan file |
 |---|---|---|---|
-| 9a | Context graph — vendor presence detection: `SourceFile`/`Vendor` nodes, vendor-level `uses` edges, dead-dependency detection surfaced via `check` (decisions/0024, decisions/0025) | planned | [`phase-9a-vendor-presence-graph.md`](phase-9a-vendor-presence-graph.md) |
-| 9b | Context graph — symbol-level usage: upgrades `uses` to `SourceFile → Symbol`, reusing existing per-ecosystem symbol extraction | planned | [`phase-9b-symbol-usage-graph.md`](phase-9b-symbol-usage-graph.md) |
-| 9c | Context graph — doc & Skill mapping: `DocArtifact` nodes, `documents`/`routes_via`/`depends_on` edges, coverage-gap reporting via `check` (decisions/0013 point 6 made concrete as real data) | planned | [`phase-9c-doc-skill-mapping.md`](phase-9c-doc-skill-mapping.md) |
-| 9d | Context graph — optional LLM enrichment: usage-purpose labels, clustering, `DOCUMENTS` quality delta, file-role summaries, `EXPLAINS` chunk retrieval, trigger-accuracy proxy; off by default, separately cost-disclosed (decisions/0026, decisions/0027) | planned | [`phase-9d-llm-enrichment.md`](phase-9d-llm-enrichment.md) |
-| 9e | Usage-cluster classification + draft (never auto-written) project-level Skill suggestion — deliberately deferred until 9d ships real field data (decisions/0028) | not started | — |
-| 10 | *(was 9)* Project-root-aware REPL routing (Tier 1 sourced from Phase 7's Skill descriptions, decisions/0013) + whole-project context + unconditional dependency rollup at session start (decisions/0012) + digest-exceeded escalation to the generated Skill folder (decisions/0013) — now consumes 9a-9d's context graph instead of inventing ad hoc heuristics | not started | — |
-| 11 | *(was 10)* Polish: PyPI publish, examples, docs site evaluation | not started | — |
-| 12 | *(was 11)* MCP server (`query_vendor`) | not started | — |
+| 20 | *(was 10, formerly 9)* Project-root-aware REPL routing (Tier 1 sourced from generated Skill descriptions, decisions/0013) + whole-project context + unconditional dependency rollup at session start (decisions/0012, now demoted per decisions/0034) + digest-exceeded escalation to the generated Skill folder — now consumes the SQLite graph (decisions/0032) instead of inventing ad hoc heuristics | not started | — |
+| 21 | *(was 11, formerly 10)* Polish: PyPI publish as `codecompass`, examples, docs site evaluation | not started | — |
+| 22 | *(was 12, formerly 11)* MCP server (`query_vendor`) | not started | — |
+
+**Superseded planning (dated to this rework's planning session):** the
+former Post-MVP context-graph phases 9a-9e (`planning/
+phase-9a-vendor-presence-graph.md` through `phase-9d-llm-enrichment.md`,
+plus the never-planned 9e) are **superseded and their plan files
+deleted** from the working tree (still recoverable from git history at
+or before commit `a9969e4` if needed as a reference) — their design is
+the closest existing source for Phase 11's SQLite schema and Phase
+12/13's usage/doc-mapping modules, which port its content directly
+rather than redesigning from scratch, but the files themselves no longer
+need to stay on disk once that porting happens phase-by-phase. Their five
+ADRs (`decisions/0024`-`0028`) are **not deleted** — append-only per
+`CLAUDE.md` §2, unlike plan files. Their JSON-file storage model
+(`decisions/0024`) is superseded by `decisions/0032`; their
+optional/manually-promoted enrichment posture (`decisions/0026`) is
+superseded by `decisions/0031`/`0033`'s usage-driven,
+automatically-triggered model. Phase 9e's deferral condition
+(`decisions/0028` — needs real field data from a 9d that will now never
+ship in its originally planned form) is moot; usage-cluster
+classification remains unplanned, now with no specific future phase
+slot, revisit only if real need resurfaces.
+
+**Renumbering note (this table, dated to this rework's planning
+session):** the former Post-MVP table's Phase 9/10/11/12 renumbered to
+**20/21/22** (routing/rollup, polish, MCP), making room for the new MVP
+(v0.2) group (phases 9-19) above. All three were `not started`, so this
+is a clean renumber, not a rewrite of in-flight work — same precedent
+condition as the two renumbering notes below.
 
 **Renumbering note (this table, dated to Phase 7's planning):** the
 former Phase 9 ("Agent Skills export + Cursor `.mdc` export") and
@@ -65,13 +119,15 @@ hoc heuristics inline. The former Phase 9 (routing/rollup) shifts to
 **10**; former 10/11 (polish, MCP) shift to **11/12**. All shifted
 phases were `not started`, so this is again a clean renumber, not a
 rewrite of in-flight work — same precedent condition as the note above.
+(This context-graph insertion is itself now superseded — see the
+"Superseded planning" note above.)
 
-**MVP-boundary note (dated to this change):** Phase 7 and Phase 8 moved
-from this table into the MVP table above — per `decisions/0022`, the MVP
-milestone now spans phases 0-8, not 0-6, since Phase 8 (the REPL,
-`decisions/0012`'s "actual product") structurally depends on Phase 7's
-outputs. No phase was renumbered by this move, only its table
-membership.
+**MVP-boundary note (dated to Phase 7-8's completion):** Phase 7 and
+Phase 8 moved from this table into the MVP (v0.1) table above — per
+`decisions/0022`, the MVP milestone now spans phases 0-8, not 0-6, since
+Phase 8 (the REPL, `decisions/0012`'s "actual product") structurally
+depends on Phase 7's outputs. No phase was renumbered by this move, only
+its table membership.
 
 ## How this file is kept in sync
 
