@@ -16,6 +16,7 @@ from codecompass.core import VendorConfig
 from codecompass.graph import (
     DependsOnEdgeRow,
     DocArtifactRow,
+    DocRelationEdgeRow,
     DocumentsEdgeRow,
     RoutesViaEdgeRow,
     SymbolRow,
@@ -124,6 +125,57 @@ def build_routes_via_edges(
         target = per_vendor_skill.get(config.name, tool_skill_path)
         if target is not None:
             edges.append(RoutesViaEdgeRow(vendor_name=config.name, doc_artifact_path=target))
+    return edges
+
+
+def build_doc_relations_edges(
+    spec_doc_rows: list[DocArtifactRow],
+    configs: list[VendorConfig],
+    other_doc_artifact_rows: list[DocArtifactRow],
+    project_root: Path,
+) -> list[DocRelationEdgeRow]:
+    """For each spec doc (`kind='spec_doc'`), read its file text off disk
+    once and word-boundary-match it (`re.search(rf"\\b{re.escape(name)}\\b",
+    text)`, same helper pattern as `build_documents_edges`/
+    `skill_scan.build_skill_mentions_edges`) against: (a) every tracked
+    vendor's name (`relation_kind='mentions_dependency'`), and (b) every
+    *other* doc artifact's `name` field — a Skill's frontmatter `name`, a
+    dependency doc's `f"{vendor} CLAUDE.md"`-style name
+    (`relation_kind='mentions_artifact'`). A doc artifact with no `name`
+    set is never a match target — nothing to word-boundary-search for.
+
+    Spec-doc-outward scanning only (Phase 21's Explicitly deferred
+    section): a Skill's or dependency doc's own body mentioning a spec doc
+    by name is not scanned for here, and never will be from this
+    function — that's a distinct, deliberately deferred direction.
+    """
+    vendor_names = [config.name for config in configs]
+    named_artifacts = [row for row in other_doc_artifact_rows if row.name]
+
+    edges: list[DocRelationEdgeRow] = []
+    for row in spec_doc_rows:
+        text = (project_root / row.path).read_text(encoding="utf-8")
+
+        for vendor_name in vendor_names:
+            if re.search(rf"\b{re.escape(vendor_name)}\b", text):
+                edges.append(
+                    DocRelationEdgeRow(
+                        source_doc_artifact_path=row.path,
+                        relation_kind="mentions_dependency",
+                        target_vendor_name=vendor_name,
+                    )
+                )
+
+        for artifact in named_artifacts:
+            if re.search(rf"\b{re.escape(artifact.name)}\b", text):
+                edges.append(
+                    DocRelationEdgeRow(
+                        source_doc_artifact_path=row.path,
+                        relation_kind="mentions_artifact",
+                        target_doc_artifact_path=artifact.path,
+                    )
+                )
+
     return edges
 
 

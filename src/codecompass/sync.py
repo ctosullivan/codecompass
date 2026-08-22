@@ -29,13 +29,14 @@ import shutil
 import sqlite3
 from pathlib import Path
 
-from codecompass import skill_scan, usage
+from codecompass import skill_scan, spec_docs, usage
 from codecompass.adapters import EcosystemAdapter, get_adapter
 from codecompass.claude_md import render_vendor_claude_md
 from codecompass.core import VendorConfig, VendorDigest
 from codecompass.deptree import render_deptree_json, render_deptree_markdown
 from codecompass.doc_mapping import (
     build_depends_on_edges,
+    build_doc_relations_edges,
     build_documents_edges,
     build_routes_via_edges,
     collect_vendor_doc_artifacts,
@@ -253,6 +254,13 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
     every Skill/`.mdc` under the project (not just codecompass's own) and
     derives `skill_mentions_edges`. Both modules are pure transformations
     over already-generated artifacts — no new AI call, no new extraction.
+
+    Phase 21 adds the project's own spec docs: `spec_docs.scan_spec_docs`
+    globs the fixed default spec-doc pattern set (`kind='spec_doc'`,
+    `origin='project'`), and `doc_mapping.build_doc_relations_edges`
+    word-boundary-scans each one's text for mentions of a tracked vendor
+    or another doc artifact's name, producing `doc_relations_edges` —
+    mechanical only, same posture as every other edge table here.
     """
     vendor_rows: list[VendorRow] = []
     symbol_rows: list[SymbolRow] = []
@@ -295,7 +303,8 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
 
     vendor_doc_rows = collect_vendor_doc_artifacts(configs, project_root)
     skill_doc_rows = skill_scan.scan_skills(project_root, configs)
-    doc_artifact_rows = vendor_doc_rows + skill_doc_rows
+    spec_doc_rows = spec_docs.scan_spec_docs(project_root)
+    doc_artifact_rows = vendor_doc_rows + skill_doc_rows + spec_doc_rows
 
     documents_edge_rows = build_documents_edges(doc_artifact_rows, symbol_rows, project_root)
     skill_mentions_edge_rows = skill_scan.build_skill_mentions_edges(
@@ -303,6 +312,9 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
     )
     routes_via_edge_rows = build_routes_via_edges(configs, doc_artifact_rows)
     depends_on_edge_rows = build_depends_on_edges(configs, project_root)
+    doc_relations_edge_rows = build_doc_relations_edges(
+        spec_doc_rows, configs, vendor_doc_rows + skill_doc_rows, project_root
+    )
 
     conn = open_graph(project_root)
     try:
@@ -317,6 +329,7 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
             skill_mentions_edges=skill_mentions_edge_rows,
             routes_via_edges=routes_via_edge_rows,
             depends_on_edges=depends_on_edge_rows,
+            doc_relations_edges=doc_relations_edge_rows,
         )
     finally:
         conn.close()

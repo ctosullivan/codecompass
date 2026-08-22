@@ -841,7 +841,12 @@ tables or raw JSON, `check` gains report-only coverage-gap sections built
 on the same queries, and `index.py`/`skill.py` source their
 "Enriched"/enrichment-count display from the new `has_enrichment` query —
 each gracefully falls back to "no graph yet" rather than erroring if
-`context-graph.db` doesn't exist. See
+`context-graph.db` doesn't exist. Phase 21 adds a tenth deterministic
+table, `doc_relations_edges` — a project's own spec docs (`docs/**/*.md`,
+`decisions/**/*.md`, etc.) mechanically linked to vendors/other doc
+artifacts, the first half of a new three-way relationship feature (Phase
+22 adds AI enrichment over these edges, deliberately separate — see
+[`decisions/0037`](../decisions/0037-spec-docs-get-a-dedicated-table-and-glob-based-detection.md)). See
 [`decisions/0032`](../decisions/0032-context-graph-stored-in-sqlite.md)
 (SQLite over the original `decisions/0024` JSON-file choice) and
 [`decisions/0025`](../decisions/0025-context-graph-rebuilds-only-on-whole-project-sync.md)
@@ -860,7 +865,7 @@ calls `init_schema`, and returns the connection. `init_schema(conn)` is an
 idempotent `CREATE TABLE IF NOT EXISTS`/`CREATE INDEX IF NOT EXISTS` for
 every table, seeding a `meta.schema_version` row on first call.
 
-**Schema** — nine deterministic tables plus `meta` plus two enrichment
+**Schema** — ten deterministic tables plus `meta` plus two enrichment
 tables:
 - `vendors`, `source_files`, `symbols` (unique per `(vendor_id, name)`,
   since symbol names aren't globally unique across vendors) — the graph's
@@ -868,12 +873,22 @@ tables:
 - `uses_edges` (`source_file → vendor`/`symbol`, `symbol_id` nullable for
   a usage that resolves to a vendor but not a specific symbol),
   `doc_artifacts` (`kind` one of `claude_md`/`overview`/`skill`/
-  `cursor_mdc`; `vendor_id` nullable for tool-level artifacts like the
-  unconditional tool Skill, `decisions/0020`), `documents_edges` (a doc
-  artifact documenting one symbol), `skill_mentions_edges` (a Skill
-  mechanically mentioning a vendor and/or a source file — both nullable,
+  `cursor_mdc`/`slash_command`/`spec_doc`; `origin` one of
+  `codecompass_tool`/`codecompass_vendor`/`third_party`/`project` —
+  `spec_doc`/`project` added in Phase 21 for a project's own
+  human-authored docs, distinct from every generated/third-party kind;
+  `vendor_id` nullable for tool-level artifacts like the unconditional
+  tool Skill, `decisions/0020`), `documents_edges` (a doc artifact
+  documenting one symbol), `skill_mentions_edges` (a Skill mechanically
+  mentioning a vendor and/or a source file — both nullable,
   independently), `routes_via_edges` (a vendor routed to a Skill),
-  `depends_on_edges` (vendor-to-vendor dependency) — the graph's edges.
+  `depends_on_edges` (vendor-to-vendor dependency), `doc_relations_edges`
+  (Phase 21 — a spec doc mechanically mentioning a vendor or another doc
+  artifact; `target_vendor_id`/`target_doc_artifact_id` nullable, exactly
+  one set per row, matching `relation_kind`
+  `'mentions_dependency'`/`'mentions_artifact'` — the same
+  two-nullable-target shape `skill_mentions_edges` already established)
+  — the graph's edges.
 - `vendor_enrichment`/`symbol_enrichment` — the two tables that **survive
   every `rebuild_deterministic` call**, holding Phase 14's paid AI
   enrichment output (`technical_description`, `conversational_overview`,
@@ -891,7 +906,10 @@ specific order.
 integer id** — `VendorRow` (keyed by `name`), `SourceFileRow` (keyed by
 `path`), `SymbolRow` (keyed by `(vendor_name, name)`), `UsesEdgeRow`,
 `DocArtifactRow` (keyed by `path`), `DocumentsEdgeRow`,
-`SkillMentionEdgeRow`, `RoutesViaEdgeRow`, `DependsOnEdgeRow`. This is a
+`SkillMentionEdgeRow`, `RoutesViaEdgeRow`, `DependsOnEdgeRow`,
+`DocRelationEdgeRow` (Phase 21 — `source_doc_artifact_path`,
+`relation_kind`, `target_vendor_name`/`target_doc_artifact_path`, the
+latter two nullable and mutually exclusive by `relation_kind`). This is a
 deliberate Phase 10 design choice, not spelled out verbatim in the SQL
 schema itself: the detection logic that will construct these rows in
 Phases 11-13 (an AST/regex walk over project source, doc/Skill mapping)
@@ -903,7 +921,8 @@ resolves natural keys to integer primary keys internally.
 
 **`rebuild_deterministic(conn, *, vendors, source_files, symbols,
 uses_edges, doc_artifacts, documents_edges, skill_mentions_edges,
-routes_via_edges, depends_on_edges) -> None`** wipes and rewrites every
+routes_via_edges, depends_on_edges, doc_relations_edges) -> None`** wipes
+and rewrites every
 deterministic table inside one transaction and updates
 `meta.last_deterministic_rebuild_at`. **Never touches
 `vendor_enrichment`/`symbol_enrichment`** — the mechanical reason Phase
@@ -917,9 +936,10 @@ rebuild and leaves any enrichment row referencing that id completely
 untouched. Only a vendor or symbol that no longer appears in the new
 fixture at all is deleted (correctly cascading away its enrichment too,
 since the thing it enriched no longer exists). Every other table
-(`source_files`, `uses_edges`, `doc_artifacts`, and the four edge tables
-other than the ones above) carries no cross-rebuild identity worth
-preserving and is unconditionally cleared and reinserted.
+(`source_files`, `uses_edges`, `doc_artifacts`, and the five edge tables
+other than the ones above, `doc_relations_edges` included) carries no
+cross-rebuild identity worth preserving and is unconditionally cleared and
+reinserted.
 
 **Query functions**, each a plain read against already-populated tables —
 none of them write, none of them decide staleness:
@@ -943,6 +963,13 @@ none of them write, none of them decide staleness:
   `vendor_enrichment.symbol_set_hash` if any. `graph.py` deliberately
   doesn't decide staleness here — Phase 14's `enrichment.py` diffs the
   returned hash against a freshly-computed one itself.
+- `doc_relations(conn, doc_artifact_path) -> list[dict]` (Phase 21) —
+  every `doc_relations_edges` row whose source is `doc_artifact_path`,
+  resolved to the target's name/path; empty for an unknown path or a spec
+  doc with zero detected mentions.
+- `spec_docs_without_relations(conn) -> list[str]` (Phase 21) — spec-doc
+  paths with zero `doc_relations_edges` rows as their source; `check`'s
+  report-only coverage-gap section for this table.
 
 **`record_enrichment(conn, vendor_id, **fields)` /
 `record_symbol_enrichment(conn, symbol_id, purpose, generated_at)`** are
@@ -1189,6 +1216,65 @@ English word (`rich`, `six`) or is short enough to appear inside an
 unrelated word (a vendor named `six` must not match `sixty-four`) —
 covered by a regression test in both `tests/test_doc_mapping.py` and
 `tests/test_skill_scan.py`.
+
+### Spec-doc detection & relationship graph (`codecompass.spec_docs`, extended `codecompass.doc_mapping`)
+
+**New in Phase 21 — part 1 of a new three-way relationship feature (spec
+docs ↔ dependency docs ↔ Skills); Phase 22 adds AI enrichment over the
+edges this phase detects, deliberately separate.** Mechanical only, same
+posture as every other graph-populating module above — no AI call, no
+cost. See
+[`decisions/0037`](../decisions/0037-spec-docs-get-a-dedicated-table-and-glob-based-detection.md)
+for the two real design decisions (a dedicated table vs. extending an
+existing one; fixed default globs vs. a hand-maintained manifest).
+
+`spec_docs.py`:
+- `scan_spec_docs(project_root) -> list[DocArtifactRow]` — globs a fixed
+  default pattern set rooted at `project_root` (`README.md`,
+  `ARCHITECTURE.md`, `REQUIREMENTS.md`, `PRD.md`, `docs/**/*.md`,
+  `architecture/**/*.md`, `decisions/**/*.md`, `spec/**/*.md`,
+  `specs/**/*.md`, `rfcs/**/*.md`, `*.spec.md`), producing
+  `kind='spec_doc'`, `origin='project'` rows. Excludes `CHANGELOG.md` (a
+  log, not a spec), `CONTRIBUTING.md` (process, not product), `LICENSE*`,
+  and root `CLAUDE.md` itself (governance, not spec), plus anything
+  nested under a directory name in `usage._PROJECT_PRUNE_DIR_NAMES`
+  (imported, not duplicated — same cross-module import precedent
+  `skill_scan.py` already set for `skill.py`'s `_TOOL_SKILL_DIR_NAME`/
+  `_vendor_skill_name`). No `vendor.toml` configurability yet — see
+  `decisions/0037`.
+
+`doc_mapping.py` gains one function:
+- `build_doc_relations_edges(spec_doc_rows, configs,
+  other_doc_artifact_rows, project_root) -> list[DocRelationEdgeRow]` —
+  for each spec doc, reads its text once and word-boundary-matches it
+  (same helper pattern as `build_documents_edges`/
+  `build_skill_mentions_edges`) against every tracked vendor's name
+  (`relation_kind='mentions_dependency'`) and every *other* doc artifact's
+  `name` field — a Skill's frontmatter name, a dependency doc's
+  `f"{vendor} CLAUDE.md"`-style name (`relation_kind='mentions_artifact'`).
+  Spec-doc-outward scanning only: a Skill's or dependency doc's own body
+  mentioning a spec doc by name is not scanned for, a deliberately
+  deferred direction.
+
+`sync.rebuild_project_graph` calls `spec_docs.scan_spec_docs` alongside
+`skill_scan.scan_skills`/`collect_vendor_doc_artifacts`, adds the result to
+`doc_artifact_rows`, and feeds `build_doc_relations_edges`'s output into
+`rebuild_deterministic`'s new `doc_relations_edges` parameter — same
+wiring shape as every other scan+edge-build pair already there.
+
+`cli.py` gains `codecompass query relations <name>` (the `query` group's
+fifth canned query): given a spec-doc path, prints what it mechanically
+mentions (`graph.doc_relations`); given a vendor name or another doc
+artifact's name (a Skill, a dependency doc), prints which spec docs
+mechanically mention it (a reverse lookup against `doc_relations_edges`,
+resolved directly in `cli.py` rather than added to `graph.py`, matching
+`query vendors`' own precedent of ad hoc inline SQL for CLI-specific
+shapes). `check` gains a report-only coverage-gap section, "Spec docs with
+no detected relations" (`graph.spec_docs_without_relations`) — never
+`--strict`-blocking, same posture as every other graph-derived coverage
+gap. `skill.py`'s tool Skill and the `/discovery` slash-command template
+both gain a one-line mention of `query relations` alongside their existing
+per-`query`-subcommand documentation.
 
 ## `undo` — best-effort generated-artifact cleanup (`codecompass.cli`)
 

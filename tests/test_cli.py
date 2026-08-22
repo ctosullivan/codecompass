@@ -700,6 +700,7 @@ def _rebuild_empty_graph(project_root: Path, vendor_names: list[str]) -> None:
         skill_mentions_edges=[],
         routes_via_edges=[],
         depends_on_edges=[],
+        doc_relations_edges=[],
     )
     conn.close()
 
@@ -830,6 +831,7 @@ def _build_query_fixture(project_root: Path) -> None:
         skill_mentions_edges=[],
         routes_via_edges=[],
         depends_on_edges=[],
+        doc_relations_edges=[],
     )
     conn.close()
 
@@ -936,6 +938,7 @@ def test_query_skills_lists_skill_artifacts(
         skill_mentions_edges=[],
         routes_via_edges=[],
         depends_on_edges=[],
+        doc_relations_edges=[],
     )
     conn.close()
 
@@ -980,6 +983,7 @@ def test_query_skills_unused_mentions_filters_to_orphaned_skills(
         ],
         routes_via_edges=[],
         depends_on_edges=[],
+        doc_relations_edges=[],
     )
     conn.close()
 
@@ -988,3 +992,149 @@ def test_query_skills_unused_mentions_filters_to_orphaned_skills(
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
     assert [entry["name"] for entry in payload] == ["orphan"]
+
+
+# --- query relations ------------------------------------------------------
+
+
+def test_query_relations_without_graph_prints_note(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["query", "relations", "README.md"])
+
+    assert result.exit_code == 0, result.output
+    assert "sync" in result.output.lower()
+
+
+_SPEC_DOC_PATH = "README.md"
+_SKILL_PATH = ".claude/skills/codecompass-demo/SKILL.md"
+
+
+def _build_relations_fixture(project_root: Path) -> None:
+    conn = graph.open_graph(project_root)
+    graph.rebuild_deterministic(
+        conn,
+        vendors=[graph.VendorRow(name="demo", ecosystem="npm", installed_version="1.0.0")],
+        source_files=[],
+        symbols=[],
+        uses_edges=[],
+        doc_artifacts=[
+            graph.DocArtifactRow(path=_SPEC_DOC_PATH, kind="spec_doc", origin="project"),
+            graph.DocArtifactRow(
+                path=_SKILL_PATH,
+                kind="skill",
+                origin="codecompass_vendor",
+                vendor_name="demo",
+                name="codecompass-demo",
+            ),
+        ],
+        documents_edges=[],
+        skill_mentions_edges=[],
+        routes_via_edges=[],
+        depends_on_edges=[],
+        doc_relations_edges=[
+            graph.DocRelationEdgeRow(
+                source_doc_artifact_path=_SPEC_DOC_PATH,
+                relation_kind="mentions_dependency",
+                target_vendor_name="demo",
+            ),
+            graph.DocRelationEdgeRow(
+                source_doc_artifact_path=_SPEC_DOC_PATH,
+                relation_kind="mentions_artifact",
+                target_doc_artifact_path=_SKILL_PATH,
+            ),
+        ],
+    )
+    conn.close()
+
+
+def test_query_relations_by_spec_doc_path_shows_outgoing_mentions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_relations_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "relations", _SPEC_DOC_PATH, "--json"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    kinds = {entry["relation_kind"] for entry in payload}
+    assert kinds == {"mentions_dependency", "mentions_artifact"}
+
+
+def test_query_relations_by_vendor_name_shows_incoming_mentions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_relations_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "relations", "demo", "--json"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert len(payload) == 1
+    assert payload[0]["relation_kind"] == "mentions_dependency"
+    assert payload[0]["source_doc_artifact_path"] == _SPEC_DOC_PATH
+
+
+def test_query_relations_by_skill_name_shows_incoming_mentions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_relations_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "relations", "codecompass-demo", "--json"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert len(payload) == 1
+    assert payload[0]["relation_kind"] == "mentions_artifact"
+    assert payload[0]["source_doc_artifact_path"] == _SPEC_DOC_PATH
+
+
+def test_query_relations_unknown_name_errors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_relations_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "relations", "does-not-exist"])
+
+    assert result.exit_code == 1
+    assert "not found" in result.output
+
+
+def test_check_reports_spec_docs_without_relations_section(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _write_vendor_toml_and_synced_claude_md(tmp_path, name="demo", recorded="1.0.0")
+    monkeypatch.setattr(
+        "codecompass.staleness.get_adapter",
+        lambda config, project_root: _FakeStalenessAdapter(version="1.0.0"),
+    )
+    conn = graph.open_graph(tmp_path)
+    graph.rebuild_deterministic(
+        conn,
+        vendors=[graph.VendorRow(name="demo", ecosystem="python")],
+        source_files=[],
+        symbols=[],
+        uses_edges=[],
+        doc_artifacts=[
+            graph.DocArtifactRow(path="README.md", kind="spec_doc", origin="project"),
+        ],
+        documents_edges=[],
+        skill_mentions_edges=[],
+        routes_via_edges=[],
+        depends_on_edges=[],
+        doc_relations_edges=[],
+    )
+    conn.close()
+
+    result = runner.invoke(app, ["check"])
+
+    assert result.exit_code == 0, result.output
+    assert "Spec docs with no detected relations" in result.output
+    assert "README.md" in result.output

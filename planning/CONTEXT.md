@@ -6,10 +6,9 @@ for the log of how it got here.
 
 ## Current phase
 
-**MVP (v0.2) is complete (phases 9-19, all `done`). Phase 20 (Refresh
-generated artifacts after enrichment) is now also `done`** — the first
-phase of the path-to-v1.0 sequence. Phases 21-22 (spec-doc detection &
-AI-enriched relationships) are planned, not yet implemented; Phase 23
+**MVP (v0.2) is complete (phases 9-19, all `done`). Phases 20-21 of the
+path-to-v1.0 sequence are now also `done`.** Phase 22 (AI-enriched
+cross-artifact relationships) is planned, not yet implemented; Phase 23
 (Polish/PyPI publish, the release itself) has no plan file yet.
 Phases 0-8 (v0.1) were already `done`. `codecompass` now: renames
 complete; auto-clones every tracked vendor; detects real project-source
@@ -128,21 +127,43 @@ projects"/"Cost model" sections updated. Verified independently: `pytest`
 371 passed/1 skipped (up from 367), `ruff check .` clean, diff read
 directly against the plan (matches exactly, no scope drift).
 
+## What was just completed (Phase 21)
+
+Implemented per its plan file and verified independently (diff read
+directly against the plan, not just green tests): new `spec_docs.py`
+(`scan_spec_docs`, fixed default glob set, reuses `usage.
+_PROJECT_PRUNE_DIR_NAMES` for exclusion rather than a third copy); new
+`doc_mapping.build_doc_relations_edges` (spec-doc-outward word-boundary
+scan against vendor names and other doc artifacts' `name` fields); new
+`graph.py` table `doc_relations_edges` plus a generalized `doc_artifacts`
+CHECK-constraint migration (`_migrate_doc_artifacts_constraints`,
+`_SCHEMA_VERSION` "2"→"3", widens both `kind` +`'spec_doc'` and `origin`
++`'project'`); new `codecompass query relations <name>` (forward lookup
+from a spec-doc path, reverse lookup from a vendor/Skill name); `check`
+gained a "Spec docs with no detected relations" section; tool
+Skill/`/discovery` template/`architecture/overview.md`/`docs/
+cli-reference.md` all updated; new `decisions/0037` covers the two real
+design calls (dedicated table vs. extending `documents_edges`/
+`skill_mentions_edges`; fixed default globs vs. a manifest file).
+Verified independently: `pytest` 398 passed/1 skipped (up from 371),
+`ruff check .` clean, manual dogfooding sync against this repo confirmed
+real spec docs detected and related (e.g. `architecture/overview.md` →
+`mentions_dependency` edges to all four tracked vendors).
+
 ## Next concrete step
 
 **Implementing the path-to-v1.0 sequence, phase by phase, per user
-request ("implement the plans to initial release stage").** Phase 20 is
-`done` (above). Phase 21 (spec-doc detection & relationship graph) is
-next, then Phase 22 (AI-enriched cross-artifact relationships — its
-verification step requires one real, disclosed live API call against this
-repo, same posture as the earlier live-enrichment validation session).
-Phase 23 (Polish/PyPI publish) still has no plan file — write it per
-`CLAUDE.md` §1 before implementing it, and note its *actual* publish step
-is a hard-to-reverse, externally-visible action (claiming a PyPI package
-name forever) that must pause for explicit user confirmation, not proceed
+request ("implement the plans to initial release stage").** Phase 22
+(AI-enriched cross-artifact relationships) is next — its verification
+step requires one real, disclosed live API call against this repo, same
+posture as the earlier live-enrichment validation session. Phase 23
+(Polish/PyPI publish) still has no plan file — write it per `CLAUDE.md`
+§1 before implementing it, and note its *actual* publish step is a
+hard-to-reverse, externally-visible action (claiming a PyPI package name
+forever) that must pause for explicit user confirmation, not proceed
 automatically even under a broad "implement to release" instruction.
 
-Three decisions remain genuinely open, none blocking Phase 21
+Three decisions remain genuinely open, none blocking Phase 22
 implementation from starting immediately:
 
 1. **Cutting the `v0.2` git tag and promoting `CHANGELOG.md`'s

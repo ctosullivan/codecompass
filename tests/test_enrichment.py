@@ -63,6 +63,7 @@ def _seed_graph(
         skill_mentions_edges=[],
         routes_via_edges=[],
         depends_on_edges=[],
+        doc_relations_edges=[],
     )
 
 

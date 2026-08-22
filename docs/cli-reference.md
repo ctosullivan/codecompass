@@ -122,9 +122,9 @@ codecompass sync --yes
 codecompass sync --budget 1.00
 ```
 
-## `codecompass query vendors|vendor|symbol|skills`
+## `codecompass query vendors|vendor|symbol|skills|relations`
 
-**Status:** implemented (Phase 15).
+**Status:** implemented (Phase 15; `relations` added Phase 21).
 
 Reads `context-graph.db` and renders the result as a Rich table by
 default, or raw JSON with `--json`. If `context-graph.db` doesn't exist
@@ -148,6 +148,15 @@ prints a one-line note pointing at `sync` rather than a traceback.
   origin, and what it mechanically mentions (`graph.skills_index`).
   `--unused-mentions` filters to ones mentioning no known vendor or
   source file.
+- `codecompass query relations <name> [--json]` — given a spec-doc path
+  (e.g. `architecture/overview.md`), what it mechanically mentions —
+  tracked vendors and other doc artifacts (`graph.doc_relations`); given a
+  vendor name or another doc artifact's name (a Skill, a dependency doc),
+  which spec docs mechanically mention it (a reverse lookup). Errors if
+  `<name>` matches nothing in the graph at all. A project's spec docs
+  (README, `ARCHITECTURE.md`, `docs/**/*.md`, `decisions/**/*.md`, etc.)
+  are detected automatically on every whole-project `sync` — no separate
+  command needed to pick them up.
 
 ```bash
 codecompass query vendors
@@ -155,6 +164,8 @@ codecompass query vendors --unused --json
 codecompass query vendor turndown
 codecompass query symbol parse
 codecompass query skills --unused-mentions
+codecompass query relations architecture/overview.md
+codecompass query relations turndown
 ```
 
 ## `codecompass index`
@@ -206,16 +217,19 @@ actually regenerates.
   transitive-only (DEPTREE) bump — the latter shows as "transitive drift"
   in the Notes column but never affects `--strict`'s exit code, since it's
   lower risk than the vendor itself moving.
-- **Coverage-gap sections** (Phase 15), report-only and always alongside
-  the staleness table if `context-graph.db` exists (a one-line note
-  instead if it doesn't): "Unused vendors" (`graph.unused_vendors`),
-  "Documented but unused" / "Used but undocumented"
-  (`graph.documented_but_unused`/`used_but_undocumented`), and
+- **Coverage-gap sections** (Phase 15, extended Phase 21), report-only and
+  always alongside the staleness table if `context-graph.db` exists (a
+  one-line note instead if it doesn't): "Unused vendors"
+  (`graph.unused_vendors`), "Documented but unused" / "Used but
+  undocumented" (`graph.documented_but_unused`/`used_but_undocumented`),
   "Third-party skill mentions with no backing vendor/symbol" (Skills/
   `.mdc` rules not authored by codecompass that mention no known vendor
-  or source file). **None of these affect `--strict`'s exit code** — it
-  stays scoped to version-drift severity alone, confirmed during this
-  rework's planning interview.
+  or source file), and "Spec docs with no detected relations"
+  (`graph.spec_docs_without_relations` — a project's own spec doc
+  mentioning no known vendor or other doc artifact; could mean genuinely
+  unrelated content, could mean a naming mismatch worth a look). **None of
+  these affect `--strict`'s exit code** — it stays scoped to version-drift
+  severity alone, confirmed during this rework's planning interview.
 
 ```bash
 codecompass check

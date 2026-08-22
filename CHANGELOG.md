@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 21**: a project's own human-authored spec docs (README,
+  `ARCHITECTURE.md`, `docs/**/*.md`, `architecture/**/*.md`,
+  `decisions/**/*.md`, `spec/**/*.md`, `specs/**/*.md`, `rfcs/**/*.md`,
+  `*.spec.md`) are now detected as `doc_artifacts` rows
+  (`kind='spec_doc'`, `origin='project'`, new module `spec_docs.py`) and
+  mechanically linked to tracked vendors and other doc artifacts
+  (Skills, `.mdc` rules, dependency docs) via a new `doc_relations_edges`
+  table and `doc_mapping.build_doc_relations_edges` — the same
+  word-boundary mention heuristic already used elsewhere, no AI call.
+  New `codecompass query relations <name>` (a spec-doc path, or a
+  vendor/Skill name for the reverse lookup); `check` gained a "Spec docs
+  with no detected relations" report-only section. `doc_artifacts`'
+  `kind`/`origin` CHECK constraints widened (`_SCHEMA_VERSION` "2" →
+  "3"). See `decisions/0037`.
+
 ### Fixed
 
 - **Phase 20**: the root `CLAUDE.md` routing table, tool-level Skill, and

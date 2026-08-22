@@ -23,6 +23,9 @@ writing, editing, or planning code.
    - `codecompass query vendor <name> [--json]`
    - `codecompass query symbol <name> [--json]`
    - `codecompass query skills [--unused-mentions] [--json]`
+   - `codecompass query relations <name> [--json]` — given a
+     spec-doc path, what it mechanically mentions; given a vendor
+     or Skill name, which spec docs mechanically mention it.
    - `codecompass check` — staleness + coverage-gap report.
 2. If a question doesn't fit any canned query — an ad hoc join or
    filter across the graph — fall back to direct, read-only SQL
@@ -31,7 +34,8 @@ writing, editing, or planning code.
    `architecture/overview.md`'s "Context graph" section for the
    schema (`vendors`, `symbols`, `uses_edges`, `doc_artifacts`,
    `documents_edges`, `skill_mentions_edges`, `routes_via_edges`,
-   `depends_on_edges`, `vendor_enrichment`, `symbol_enrichment`).
+   `depends_on_edges`, `doc_relations_edges`, `vendor_enrichment`,
+   `symbol_enrichment`).
 3. Read persisted digests directly when a query result points at
    one: `vendor/<name>/CLAUDE.md`, `vendor/<name>/OVERVIEW.md`
    (if enriched), `vendor/<name>/FILETREE.md`,

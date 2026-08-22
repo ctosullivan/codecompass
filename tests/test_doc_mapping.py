@@ -4,6 +4,7 @@ from pathlib import Path
 from codecompass.core import Ecosystem, VendorConfig
 from codecompass.doc_mapping import (
     build_depends_on_edges,
+    build_doc_relations_edges,
     build_documents_edges,
     build_routes_via_edges,
     collect_vendor_doc_artifacts,
@@ -263,3 +264,113 @@ def test_build_depends_on_edges_no_self_edge(tmp_path: Path) -> None:
     edges = build_depends_on_edges(configs, tmp_path)
 
     assert edges == []
+
+
+# --- build_doc_relations_edges ------------------------------------------
+
+
+def _write_spec_doc(project_root: Path, rel_path: str, text: str) -> None:
+    path = project_root / rel_path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
+def test_build_doc_relations_edges_matches_tracked_vendor_name(tmp_path: Path) -> None:
+    _write_spec_doc(tmp_path, "README.md", "This project depends on demo for parsing.\n")
+    spec_doc_rows = [DocArtifactRow(path="README.md", kind="spec_doc", origin="project")]
+    configs = [_config("demo")]
+
+    edges = build_doc_relations_edges(spec_doc_rows, configs, [], tmp_path)
+
+    assert len(edges) == 1
+    assert edges[0].source_doc_artifact_path == "README.md"
+    assert edges[0].relation_kind == "mentions_dependency"
+    assert edges[0].target_vendor_name == "demo"
+    assert edges[0].target_doc_artifact_path is None
+
+
+def test_build_doc_relations_edges_matches_other_doc_artifact_name(tmp_path: Path) -> None:
+    _write_spec_doc(tmp_path, "README.md", "See the codecompass-demo skill for details.\n")
+    spec_doc_rows = [DocArtifactRow(path="README.md", kind="spec_doc", origin="project")]
+    other_rows = [
+        DocArtifactRow(
+            path=".claude/skills/codecompass-demo/SKILL.md",
+            kind="skill",
+            origin="codecompass_vendor",
+            vendor_name="demo",
+            name="codecompass-demo",
+        )
+    ]
+
+    edges = build_doc_relations_edges(spec_doc_rows, [], other_rows, tmp_path)
+
+    assert len(edges) == 1
+    assert edges[0].source_doc_artifact_path == "README.md"
+    assert edges[0].relation_kind == "mentions_artifact"
+    assert edges[0].target_doc_artifact_path == ".claude/skills/codecompass-demo/SKILL.md"
+    assert edges[0].target_vendor_name is None
+
+
+def test_build_doc_relations_edges_word_boundary_avoids_substring_false_positive(
+    tmp_path: Path,
+) -> None:
+    """Regression case, same posture as `build_documents_edges`'s /
+    `build_skill_mentions_edges`'s own: a vendor named "six" must not
+    false-positive-match "sixty-four" in a spec doc's body text.
+    """
+    _write_spec_doc(tmp_path, "README.md", "Ships sixty-four bit values.\n")
+    spec_doc_rows = [DocArtifactRow(path="README.md", kind="spec_doc", origin="project")]
+    configs = [_config("six")]
+
+    edges = build_doc_relations_edges(spec_doc_rows, configs, [], tmp_path)
+
+    assert edges == []
+
+
+def test_build_doc_relations_edges_no_mention_produces_no_edge(tmp_path: Path) -> None:
+    _write_spec_doc(tmp_path, "README.md", "Nothing relevant here.\n")
+    spec_doc_rows = [DocArtifactRow(path="README.md", kind="spec_doc", origin="project")]
+    configs = [_config("demo")]
+    other_rows = [
+        DocArtifactRow(
+            path="vendor/demo/CLAUDE.md", kind="claude_md", origin="codecompass_vendor",
+            vendor_name="demo", name="demo CLAUDE.md",
+        )
+    ]
+
+    edges = build_doc_relations_edges(spec_doc_rows, configs, other_rows, tmp_path)
+
+    assert edges == []
+
+
+def test_build_doc_relations_edges_ignores_unnamed_doc_artifacts(tmp_path: Path) -> None:
+    """A doc artifact with no `name` set (e.g. a Skill file whose
+    frontmatter couldn't be parsed) is never a match target — nothing to
+    word-boundary-search for.
+    """
+    _write_spec_doc(tmp_path, "README.md", "demo appears here, name=None below.\n")
+    spec_doc_rows = [DocArtifactRow(path="README.md", kind="spec_doc", origin="project")]
+    other_rows = [
+        DocArtifactRow(
+            path=".claude/skills/mystery/SKILL.md", kind="skill", origin="third_party", name=None,
+        )
+    ]
+
+    edges = build_doc_relations_edges(spec_doc_rows, [], other_rows, tmp_path)
+
+    assert edges == []
+
+
+def test_build_doc_relations_edges_scans_every_spec_doc_independently(tmp_path: Path) -> None:
+    _write_spec_doc(tmp_path, "README.md", "Uses demo.\n")
+    _write_spec_doc(tmp_path, "docs/other.md", "No mentions here.\n")
+    spec_doc_rows = [
+        DocArtifactRow(path="README.md", kind="spec_doc", origin="project"),
+        DocArtifactRow(path="docs/other.md", kind="spec_doc", origin="project"),
+    ]
+    configs = [_config("demo")]
+
+    edges = build_doc_relations_edges(spec_doc_rows, configs, [], tmp_path)
+
+    assert len(edges) == 1
+    assert edges[0].source_doc_artifact_path == "README.md"

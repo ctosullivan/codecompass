@@ -113,6 +113,7 @@ def _build_full_project(tmp_path: Path) -> None:
         skill_mentions_edges=[],
         routes_via_edges=[],
         depends_on_edges=[],
+        doc_relations_edges=[],
     )
     conn.close()
 

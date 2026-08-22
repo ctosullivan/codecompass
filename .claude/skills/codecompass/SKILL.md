@@ -21,7 +21,8 @@ This project uses codecompass to keep AI-consultable dependency reference docs u
   - `query vendor <name> [--json]` — one vendor's full profile: symbols, usage count, documenting artifacts, routed Skill, `depends_on`.
   - `query symbol <name> [--json]` — every symbol with this name across all vendors (names aren't globally unique), its purpose and usage count.
   - `query skills [--unused-mentions] [--json]` — every Skill/`.mdc` rule in the project (not just codecompass's own) and what it mechanically mentions.
-  - If a question doesn't fit any of these — an ad hoc join or filter — query `context-graph.db` directly with `sqlite3` (a plain SQLite file at the project root); see `architecture/overview.md`'s "Context graph" section for the schema (`vendors`, `symbols`, `uses_edges`, `doc_artifacts`, `documents_edges`, `skill_mentions_edges`, `routes_via_edges`, `depends_on_edges`, `vendor_enrichment`, `symbol_enrichment`).
+  - `query relations <name> [--json]` — given a spec-doc path (e.g. `architecture/overview.md`), what it mechanically mentions; given a vendor or Skill name, which spec docs mechanically mention it.
+  - If a question doesn't fit any of these — an ad hoc join or filter — query `context-graph.db` directly with `sqlite3` (a plain SQLite file at the project root); see `architecture/overview.md`'s "Context graph" section for the schema (`vendors`, `symbols`, `uses_edges`, `doc_artifacts`, `documents_edges`, `skill_mentions_edges`, `routes_via_edges`, `depends_on_edges`, `doc_relations_edges`, `vendor_enrichment`, `symbol_enrichment`).
 - `/discovery` — a read-only guided-exploration slash command covering the same ground as `query`, for a human-initiated session that should never write, edit, or plan code changes.
 
 ## Vendors (4 tracked, 3 enriched)

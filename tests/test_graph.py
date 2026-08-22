@@ -3,6 +3,7 @@ import sqlite3
 from codecompass.graph import (
     DependsOnEdgeRow,
     DocArtifactRow,
+    DocRelationEdgeRow,
     DocumentsEdgeRow,
     RoutesViaEdgeRow,
     SkillMentionEdgeRow,
@@ -10,6 +11,7 @@ from codecompass.graph import (
     SymbolRow,
     UsesEdgeRow,
     VendorRow,
+    doc_relations,
     documented_but_unused,
     enrichment_candidates,
     has_enrichment,
@@ -19,6 +21,7 @@ from codecompass.graph import (
     record_enrichment,
     record_symbol_enrichment,
     skills_index,
+    spec_docs_without_relations,
     symbol_profile,
     unused_vendors,
     used_but_undocumented,
@@ -36,6 +39,7 @@ _ALL_TABLES = {
     "skill_mentions_edges",
     "routes_via_edges",
     "depends_on_edges",
+    "doc_relations_edges",
     "vendor_enrichment",
     "symbol_enrichment",
 }
@@ -43,6 +47,8 @@ _ALL_TABLES = {
 _SOURCE_FILE = "src/app.ts"
 _CLAUDE_MD_PATH = "vendor/used-lib/CLAUDE.md"
 _SKILL_PATH = ".claude/skills/used-lib/SKILL.md"
+_SPEC_DOC_PATH = "README.md"
+_UNRELATED_SPEC_DOC_PATH = "docs/unrelated.md"
 
 
 def _fixture_kwargs() -> dict:
@@ -51,7 +57,8 @@ def _fixture_kwargs() -> dict:
     undocumented, documented-but-unused); one doc artifact documenting two
     of them; one skill routed to the used vendor and mentioning it plus the
     one source file; a depends_on edge from the used vendor to the unused
-    one.
+    one; two spec docs, one mentioning the used vendor and the skill (one
+    `doc_relations_edges` row of each kind) and one with zero relations.
     """
     return {
         "vendors": [
@@ -89,6 +96,8 @@ def _fixture_kwargs() -> dict:
                 origin="codecompass_tool",
                 name="used-lib skill",
             ),
+            DocArtifactRow(path=_SPEC_DOC_PATH, kind="spec_doc", origin="project"),
+            DocArtifactRow(path=_UNRELATED_SPEC_DOC_PATH, kind="spec_doc", origin="project"),
         ],
         "documents_edges": [
             DocumentsEdgeRow(
@@ -107,6 +116,18 @@ def _fixture_kwargs() -> dict:
         ],
         "depends_on_edges": [
             DependsOnEdgeRow(vendor_name="used-lib", depends_on_vendor_name="unused-lib"),
+        ],
+        "doc_relations_edges": [
+            DocRelationEdgeRow(
+                source_doc_artifact_path=_SPEC_DOC_PATH,
+                relation_kind="mentions_dependency",
+                target_vendor_name="used-lib",
+            ),
+            DocRelationEdgeRow(
+                source_doc_artifact_path=_SPEC_DOC_PATH,
+                relation_kind="mentions_artifact",
+                target_doc_artifact_path=_SKILL_PATH,
+            ),
         ],
     }
 
@@ -138,7 +159,7 @@ def test_init_schema_seeds_schema_version(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "2"
+    assert value == "3"
 
 
 def test_init_schema_is_idempotent(tmp_path) -> None:
@@ -148,7 +169,7 @@ def test_init_schema_is_idempotent(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "2"
+    assert value == "3"
 
 
 def test_doc_artifacts_accepts_slash_command_kind(tmp_path) -> None:
@@ -160,6 +181,18 @@ def test_doc_artifacts_accepts_slash_command_kind(tmp_path) -> None:
     conn.execute(
         "INSERT INTO doc_artifacts (kind, origin, path) VALUES "
         "('slash_command', 'codecompass_tool', '.claude/commands/discovery.md')"
+    )  # must not raise
+
+
+def test_doc_artifacts_accepts_spec_doc_kind_and_project_origin(tmp_path) -> None:
+    """Phase 21: `doc_artifacts.kind`'s CHECK constraint gained `'spec_doc'`
+    and `origin`'s gained `'project'` — a fresh database must accept both
+    directly (a migration test below covers an already-existing
+    pre-Phase-21 db).
+    """
+    conn = open_graph(tmp_path)
+    conn.execute(
+        "INSERT INTO doc_artifacts (kind, origin, path) VALUES ('spec_doc', 'project', 'README.md')"
     )  # must not raise
 
 
@@ -223,12 +256,17 @@ def test_open_graph_migrates_pre_phase_17_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "2"
+    assert schema_version == "3"
 
     # Would raise sqlite3.IntegrityError under the pre-migration constraint.
     conn.execute(
         "INSERT INTO doc_artifacts (kind, origin, path) VALUES "
         "('slash_command', 'codecompass_tool', '.claude/commands/discovery.md')"
+    )
+    # Same for Phase 21's widened values, migrated to in the same pass since
+    # this simulated db's stored version ("1") is older than both.
+    conn.execute(
+        "INSERT INTO doc_artifacts (kind, origin, path) VALUES ('spec_doc', 'project', 'README.md')"
     )
 
     # The stale documents_edges row (referencing a doc_artifacts id wiped
@@ -244,6 +282,58 @@ def test_open_graph_migrates_pre_phase_17_schema(tmp_path) -> None:
     ).fetchone()
     assert technical_description == "A demo library."
     assert symbol_set_hash == "hash-abc"
+
+
+def test_open_graph_migrates_pre_phase_21_schema(tmp_path) -> None:
+    """Simulates a `context-graph.db` created at Phase 17-20's schema
+    (`schema_version` "2", `doc_artifacts.kind`/`origin` CHECK constraints
+    not yet widened for spec docs) — `open_graph` must migrate it in place:
+    bump `schema_version` to "3" and accept `kind='spec_doc'`,
+    `origin='project'` afterward. `doc_relations_edges` itself needs no
+    migration (a brand-new table `init_schema`'s `CREATE TABLE IF NOT
+    EXISTS` creates directly), only `doc_artifacts`'s constraints do.
+    """
+    db_path = tmp_path / "context-graph.db"
+    old_conn = sqlite3.connect(db_path)
+    old_conn.execute("PRAGMA foreign_keys = ON")
+    old_conn.executescript(
+        """
+        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE vendors (
+          id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE,
+          ecosystem TEXT NOT NULL, installed_version TEXT
+        );
+        CREATE TABLE doc_artifacts (
+          id INTEGER PRIMARY KEY,
+          vendor_id INTEGER REFERENCES vendors(id) ON DELETE CASCADE,
+          kind TEXT NOT NULL CHECK (
+            kind IN ('claude_md','overview','skill','cursor_mdc','slash_command')
+          ),
+          origin TEXT CHECK (origin IN ('codecompass_tool','codecompass_vendor','third_party')),
+          path TEXT NOT NULL UNIQUE, name TEXT, description TEXT
+        );
+        """
+    )
+    old_conn.execute("INSERT INTO meta (key, value) VALUES ('schema_version', '2')")
+    old_conn.commit()
+    old_conn.close()
+
+    conn = open_graph(tmp_path)
+
+    (schema_version,) = conn.execute(
+        "SELECT value FROM meta WHERE key = 'schema_version'"
+    ).fetchone()
+    assert schema_version == "3"
+
+    # Would raise sqlite3.IntegrityError under the pre-Phase-21 constraints.
+    conn.execute(
+        "INSERT INTO doc_artifacts (kind, origin, path) VALUES ('spec_doc', 'project', 'README.md')"
+    )
+
+    table_names = {
+        name for (name,) in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
+    }
+    assert "doc_relations_edges" in table_names
 
 
 def test_open_graph_migration_is_noop_when_schema_version_already_current(tmp_path) -> None:
@@ -584,3 +674,43 @@ def test_has_enrichment_false_for_unknown_vendor(tmp_path) -> None:
     rebuild_deterministic(conn, **_fixture_kwargs())
 
     assert has_enrichment(conn, "does-not-exist") is False
+
+
+# --- doc_relations / spec_docs_without_relations -----------------------
+
+
+def test_doc_relations_lists_both_relation_kinds_for_a_spec_doc(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+
+    relations = doc_relations(conn, _SPEC_DOC_PATH)
+
+    kinds = {r["relation_kind"] for r in relations}
+    assert kinds == {"mentions_dependency", "mentions_artifact"}
+    dependency_relation = next(r for r in relations if r["relation_kind"] == "mentions_dependency")
+    assert dependency_relation["target_vendor"] == "used-lib"
+    assert dependency_relation["target_doc_artifact_path"] is None
+    artifact_relation = next(r for r in relations if r["relation_kind"] == "mentions_artifact")
+    assert artifact_relation["target_doc_artifact_path"] == _SKILL_PATH
+    assert artifact_relation["target_vendor"] is None
+
+
+def test_doc_relations_empty_for_spec_doc_with_no_relations(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+
+    assert doc_relations(conn, _UNRELATED_SPEC_DOC_PATH) == []
+
+
+def test_doc_relations_empty_for_unknown_path(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+
+    assert doc_relations(conn, "does/not/exist.md") == []
+
+
+def test_spec_docs_without_relations_lists_only_the_unrelated_one(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+
+    assert spec_docs_without_relations(conn) == [_UNRELATED_SPEC_DOC_PATH]

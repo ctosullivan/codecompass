@@ -54,8 +54,10 @@ def test_render_tool_skill_explains_each_query_subcommand_and_escape_hatch(
     assert "query vendor <name> [--json]" in content
     assert "query symbol <name> [--json]" in content
     assert "query skills [--unused-mentions] [--json]" in content
+    assert "query relations <name> [--json]" in content
     assert "sqlite3" in content
     assert "vendor_enrichment" in content and "symbol_enrichment" in content
+    assert "doc_relations_edges" in content
     assert "/discovery" in content
 
 
@@ -75,6 +77,7 @@ def test_render_tool_skill_reflects_enrichment_status_from_graph(tmp_path: Path)
         skill_mentions_edges=[],
         routes_via_edges=[],
         depends_on_edges=[],
+        doc_relations_edges=[],
     )
     (turndown_id,) = conn.execute(
         "SELECT id FROM vendors WHERE name = 'turndown'"

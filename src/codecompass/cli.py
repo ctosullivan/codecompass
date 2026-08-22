@@ -432,6 +432,9 @@ def _print_coverage_gap_sections(project_root: Path) -> None:
         _print_name_list_table(
             "Third-party skill mentions with no backing vendor/symbol", orphaned_skills
         )
+        _print_name_list_table(
+            "Spec docs with no detected relations", graph.spec_docs_without_relations(conn)
+        )
     finally:
         conn.close()
 
@@ -626,6 +629,102 @@ def query_skills(
                 ", ".join(entry["mentions_vendors"]) or "(none)",
                 str(len(entry["mentions_source_files"])),
             )
+        console.print(table)
+    finally:
+        conn.close()
+
+
+def _incoming_doc_relations(conn: sqlite3.Connection, column: str, value: int) -> list[dict]:
+    """Reverse lookup for `_resolve_relations`'s vendor-name/doc-artifact-
+    name branches: every spec doc whose `doc_relations_edges` row targets
+    `value` via `column` (always one of this function's own two fixed
+    literal column names below, never external input). Shaped like
+    `graph.doc_relations`'s own per-row dicts (`relation_kind`, plus
+    which "other" thing is on the far end) so `query_relations` can render
+    both directions the same way.
+    """
+    return [
+        {"relation_kind": relation_kind, "source_doc_artifact_path": path}
+        for path, relation_kind in conn.execute(
+            f"""
+            SELECT da.path, dre.relation_kind
+            FROM doc_relations_edges dre
+            JOIN doc_artifacts da ON dre.source_doc_artifact_id = da.id
+            WHERE dre.{column} = ?
+            ORDER BY da.path
+            """,
+            (value,),
+        )
+    ]
+
+
+def _resolve_relations(conn: sqlite3.Connection, name: str) -> list[dict] | None:
+    """Resolves `query relations <name>`'s three accepted shapes, tried in
+    order: a spec-doc path (its own outgoing `doc_relations_edges` rows,
+    via `graph.doc_relations`), a vendor name, or any other doc artifact's
+    `name` field (a Skill's frontmatter name, a dependency doc's
+    `f"{vendor} CLAUDE.md"`-style name) — the latter two are incoming
+    lookups: which spec docs mechanically mention it. `None` if `name`
+    matches nothing in the graph at all.
+    """
+    if conn.execute("SELECT 1 FROM doc_artifacts WHERE path = ?", (name,)).fetchone():
+        return graph.doc_relations(conn, name)
+
+    vendor_row = conn.execute("SELECT id FROM vendors WHERE name = ?", (name,)).fetchone()
+    if vendor_row is not None:
+        return _incoming_doc_relations(conn, "target_vendor_id", vendor_row[0])
+
+    artifact_ids = [
+        artifact_id
+        for (artifact_id,) in conn.execute(
+            "SELECT id FROM doc_artifacts WHERE name = ?", (name,)
+        )
+    ]
+    if artifact_ids:
+        results: list[dict] = []
+        for artifact_id in artifact_ids:
+            results.extend(_incoming_doc_relations(conn, "target_doc_artifact_id", artifact_id))
+        return results
+
+    return None
+
+
+@query_app.command("relations")
+def query_relations(
+    name: str = typer.Argument(
+        ..., help="A spec-doc path, a vendor name, or a Skill/doc-artifact name."
+    ),
+    json_output: bool = typer.Option(
+        False, "--json", help="Raw JSON instead of a Rich table."
+    ),
+) -> None:
+    """What a spec doc mechanically mentions (given its path — a vendor or
+    another doc artifact), or which spec docs mechanically mention a
+    vendor/Skill (given its name) — `doc_relations_edges`, Phase 21's
+    mechanical spec-doc <-> dependency-doc <-> Skill web.
+    """
+    conn = _open_graph_or_note(Path.cwd())
+    if conn is None:
+        return
+    try:
+        relations = _resolve_relations(conn, name)
+        if relations is None:
+            console.print(f"[red]error:[/red] {name!r} not found in context-graph.db")
+            raise typer.Exit(code=1)
+        if json_output:
+            console.print(json.dumps(relations, indent=2))
+            return
+        table = Table("Relation", "Other")
+        for r in relations:
+            other = (
+                r.get("source_doc_artifact_path")
+                or r.get("target_vendor")
+                or r.get("target_doc_artifact_path")
+                or ""
+            )
+            table.add_row(r["relation_kind"], other)
+        if not relations:
+            table.add_row("[dim](none)[/dim]", "")
         console.print(table)
     finally:
         conn.close()

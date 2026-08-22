@@ -61,6 +61,7 @@ def test_load_routing_rows_enriched_true_when_graph_says_so(tmp_path: Path) -> N
         skill_mentions_edges=[],
         routes_via_edges=[],
         depends_on_edges=[],
+        doc_relations_edges=[],
     )
     (vendor_id,) = conn.execute(
         "SELECT id FROM vendors WHERE name = 'turndown'"

@@ -29,7 +29,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 _DB_FILENAME = "context-graph.db"
-_SCHEMA_VERSION = "2"
+_SCHEMA_VERSION = "3"
 
 _SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -78,9 +78,11 @@ CREATE TABLE IF NOT EXISTS doc_artifacts (
   id          INTEGER PRIMARY KEY,
   vendor_id   INTEGER REFERENCES vendors(id) ON DELETE CASCADE,
   kind        TEXT NOT NULL CHECK (
-                kind IN ('claude_md','overview','skill','cursor_mdc','slash_command')
+                kind IN ('claude_md','overview','skill','cursor_mdc','slash_command','spec_doc')
               ),
-  origin      TEXT CHECK (origin IN ('codecompass_tool','codecompass_vendor','third_party')),
+  origin      TEXT CHECK (
+                origin IN ('codecompass_tool','codecompass_vendor','third_party','project')
+              ),
   path        TEXT NOT NULL UNIQUE,
   name        TEXT,
   description TEXT
@@ -111,6 +113,17 @@ CREATE TABLE IF NOT EXISTS depends_on_edges (
   vendor_id            INTEGER NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
   depends_on_vendor_id INTEGER NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
   UNIQUE (vendor_id, depends_on_vendor_id)
+);
+
+CREATE TABLE IF NOT EXISTS doc_relations_edges (
+  id                     INTEGER PRIMARY KEY,
+  source_doc_artifact_id INTEGER NOT NULL REFERENCES doc_artifacts(id) ON DELETE CASCADE,
+  target_vendor_id       INTEGER REFERENCES vendors(id) ON DELETE CASCADE,
+  target_doc_artifact_id INTEGER REFERENCES doc_artifacts(id) ON DELETE CASCADE,
+  relation_kind          TEXT NOT NULL CHECK (
+                           relation_kind IN ('mentions_dependency','mentions_artifact')
+                         ),
+  UNIQUE (source_doc_artifact_id, target_vendor_id, target_doc_artifact_id)
 );
 
 -- Survive every rebuild_deterministic call:
@@ -233,6 +246,22 @@ class DependsOnEdgeRow:
     depends_on_vendor_name: str
 
 
+@dataclass(frozen=True)
+class DocRelationEdgeRow:
+    """One `doc_relations_edges` row: a spec doc mechanically mentioning a
+    tracked vendor or another doc artifact. `relation_kind` says which:
+    `'mentions_dependency'` pairs with `target_vendor_name`,
+    `'mentions_artifact'` with `target_doc_artifact_path` — exactly one of
+    the two is set per row, mirroring `SkillMentionEdgeRow`'s existing
+    two-nullable-target shape, not a new pattern.
+    """
+
+    source_doc_artifact_path: str
+    relation_kind: str
+    target_vendor_name: str | None = None
+    target_doc_artifact_path: str | None = None
+
+
 # --- Schema / connection setup --------------------------------------------
 
 
@@ -249,17 +278,22 @@ def init_schema(conn: sqlite3.Connection) -> None:
         )
 
 
-def _migrate_doc_artifacts_kind_constraint(conn: sqlite3.Connection) -> None:
-    """Phase 17 (`schema_version` "1" -> "2"): `doc_artifacts.kind`'s CHECK
-    constraint gained a `'slash_command'` variant. `init_schema`'s `CREATE
-    TABLE IF NOT EXISTS` won't retrofit an already-existing table's CHECK
-    constraint, so a `context-graph.db` created before this phase needs its
-    `doc_artifacts` table dropped and recreated under the widened
-    constraint. Safe: `doc_artifacts` (and everything that references it —
-    `documents_edges`/`skill_mentions_edges`/`routes_via_edges`, all
-    `ON DELETE CASCADE`) is fully cleared and rewritten by
-    `rebuild_deterministic` on every whole-project sync anyway, so there's
-    no data-loss risk in recreating it here — and with
+def _migrate_doc_artifacts_constraints(conn: sqlite3.Connection) -> None:
+    """Migrates an on-disk schema older than `_SCHEMA_VERSION` by dropping
+    and recreating `doc_artifacts` under the current (widened) CHECK
+    constraints. Phase 17 widened `kind` (added `'slash_command'`,
+    "1" -> "2"); Phase 21 widens both `kind` (added `'spec_doc'`) and
+    `origin` (added `'project'`, "2" -> "3") for the same reason. One
+    generic, version-agnostic function handles any prior version, not one
+    function per phase — it only ever compares the stored version against
+    current and, on mismatch, drops+recreates once; `init_schema`'s
+    `CREATE TABLE IF NOT EXISTS` won't retrofit an already-existing
+    table's CHECK constraint on its own, which is why this is needed at
+    all. Safe: `doc_artifacts` (and everything that references it —
+    `documents_edges`/`skill_mentions_edges`/`routes_via_edges`/
+    `doc_relations_edges`, all `ON DELETE CASCADE`) is fully cleared and
+    rewritten by `rebuild_deterministic` on every whole-project sync
+    anyway, so there's no data-loss risk in recreating it here — and with
     `PRAGMA foreign_keys = ON` already set on this connection, SQLite
     itself cascades the drop into those referencing tables' rows, so no
     dangling foreign keys are left behind even between this migration and
@@ -295,7 +329,7 @@ def open_graph(project_root: Path) -> sqlite3.Connection:
     db_path = project_root / _DB_FILENAME
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
-    _migrate_doc_artifacts_kind_constraint(conn)
+    _migrate_doc_artifacts_constraints(conn)
     init_schema(conn)
     return conn
 
@@ -315,6 +349,7 @@ def rebuild_deterministic(
     skill_mentions_edges: Sequence[SkillMentionEdgeRow],
     routes_via_edges: Sequence[RoutesViaEdgeRow],
     depends_on_edges: Sequence[DependsOnEdgeRow],
+    doc_relations_edges: Sequence[DocRelationEdgeRow],
 ) -> None:
     """Wipe and rewrite every deterministic table inside one transaction,
     then update `meta.last_deterministic_rebuild_at`. Never touches
@@ -337,6 +372,7 @@ def rebuild_deterministic(
     with conn:
         # Edge / leaf tables carry no cross-rebuild identity — clear and
         # reinsert unconditionally.
+        conn.execute("DELETE FROM doc_relations_edges")
         conn.execute("DELETE FROM depends_on_edges")
         conn.execute("DELETE FROM routes_via_edges")
         conn.execute("DELETE FROM skill_mentions_edges")
@@ -361,6 +397,7 @@ def rebuild_deterministic(
         )
         _insert_routes_via_edges(conn, routes_via_edges, vendor_ids, doc_artifact_ids)
         _insert_depends_on_edges(conn, depends_on_edges, vendor_ids)
+        _insert_doc_relations_edges(conn, doc_relations_edges, vendor_ids, doc_artifact_ids)
 
         conn.execute(
             "INSERT INTO meta (key, value) VALUES ('last_deterministic_rebuild_at', ?) "
@@ -559,6 +596,37 @@ def _insert_depends_on_edges(
         )
 
 
+def _insert_doc_relations_edges(
+    conn: sqlite3.Connection,
+    doc_relations_edges: Sequence[DocRelationEdgeRow],
+    vendor_ids: dict[str, int],
+    doc_artifact_ids: dict[str, int],
+) -> None:
+    for e in doc_relations_edges:
+        target_vendor_id = (
+            vendor_ids[e.target_vendor_name] if e.target_vendor_name is not None else None
+        )
+        target_doc_artifact_id = (
+            doc_artifact_ids[e.target_doc_artifact_path]
+            if e.target_doc_artifact_path is not None
+            else None
+        )
+        conn.execute(
+            """
+            INSERT INTO doc_relations_edges (
+                source_doc_artifact_id, target_vendor_id, target_doc_artifact_id, relation_kind
+            )
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                doc_artifact_ids[e.source_doc_artifact_path],
+                target_vendor_id,
+                target_doc_artifact_id,
+                e.relation_kind,
+            ),
+        )
+
+
 # --- Query functions --------------------------------------------------------
 
 
@@ -604,6 +672,61 @@ def used_but_undocumented(conn: sqlite3.Connection) -> list[tuple[str, str]]:
         ORDER BY v.name, s.name
         """
     ).fetchall()
+
+
+def spec_docs_without_relations(conn: sqlite3.Connection) -> list[str]:
+    """Spec-doc paths (`kind='spec_doc'`) with zero `doc_relations_edges`
+    rows as their source — could mean genuinely unrelated content, could
+    mean a naming mismatch worth a human look. `check`'s report-only
+    coverage-gap section, never `--strict`-blocking, same posture as every
+    other graph-derived coverage gap.
+    """
+    rows = conn.execute(
+        """
+        SELECT da.path FROM doc_artifacts da
+        WHERE da.kind = 'spec_doc'
+          AND NOT EXISTS (
+              SELECT 1 FROM doc_relations_edges dre WHERE dre.source_doc_artifact_id = da.id
+          )
+        ORDER BY da.path
+        """
+    ).fetchall()
+    return [path for (path,) in rows]
+
+
+def doc_relations(conn: sqlite3.Connection, doc_artifact_path: str) -> list[dict]:
+    """Every `doc_relations_edges` row whose source is `doc_artifact_path`,
+    resolved to the target's name/path. Empty for an unknown path or a
+    spec doc with zero detected mentions — never an error, mirroring every
+    other by-name query function's graceful-empty posture.
+    """
+    row = conn.execute(
+        "SELECT id FROM doc_artifacts WHERE path = ?", (doc_artifact_path,)
+    ).fetchone()
+    if row is None:
+        return []
+    source_id = row[0]
+    results = []
+    for relation_kind, target_vendor, target_path, target_name in conn.execute(
+        """
+        SELECT dre.relation_kind, v.name, da.path, da.name
+        FROM doc_relations_edges dre
+        LEFT JOIN vendors v ON dre.target_vendor_id = v.id
+        LEFT JOIN doc_artifacts da ON dre.target_doc_artifact_id = da.id
+        WHERE dre.source_doc_artifact_id = ?
+        ORDER BY v.name, da.path
+        """,
+        (source_id,),
+    ):
+        results.append(
+            {
+                "relation_kind": relation_kind,
+                "target_vendor": target_vendor,
+                "target_doc_artifact_path": target_path,
+                "target_doc_artifact_name": target_name,
+            }
+        )
+    return results
 
 
 def vendor_profile(conn: sqlite3.Connection, name: str) -> dict | None:

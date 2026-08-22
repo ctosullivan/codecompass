@@ -29,6 +29,7 @@ def test_render_discovery_command_mentions_canned_queries_and_sqlite_escape_hatc
     assert "codecompass query vendor <name>" in content
     assert "codecompass query symbol <name>" in content
     assert "codecompass query skills" in content
+    assert "codecompass query relations <name>" in content
     assert "codecompass check" in content
     assert "sqlite3 context-graph.db" in content
 
