@@ -64,6 +64,21 @@ def test_render_discovery_command_repeats_the_constraint_at_least_twice() -> Non
     assert content.lower().count("stop") >= 2
 
 
+def test_render_discovery_command_states_the_default_persists_past_the_first_turn() -> None:
+    """`allowed-tools` only pre-approves tools for the single turn that
+    invokes `/discovery` (confirmed against real Claude Code behavior —
+    the grant clears once the reply is sent, and nothing re-applies it or
+    blocks Write/Edit/ExitPlanMode on a later turn). The body text must
+    say so explicitly and instruct Claude to hold the read-only posture
+    for the rest of the session anyway, rather than implying the
+    frontmatter alone keeps later turns read-only.
+    """
+    content = render_discovery_command()
+    assert "rest of this session" in content or "whole session" in content
+    assert "clears" in content
+    assert "ExitPlanMode" in content
+
+
 def test_write_discovery_command_writes_expected_path(tmp_path: Path) -> None:
     write_discovery_command(tmp_path)
     command_md = tmp_path / ".claude" / "commands" / "discovery.md"

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `/discovery`'s generated body overstated what its `allowed-tools`
+  frontmatter guarantees: confirmed against actual Claude Code behavior
+  (not assumed) that the pre-approval grant covers only the single turn
+  that invokes the command — it clears once the reply is sent, and
+  nothing re-applies it or blocks `Write`/`Edit`/`ExitPlanMode` on a later
+  turn in the same conversation. `render_discovery_command` (`commands.py`)
+  and `architecture/overview.md` now say so explicitly and instruct Claude
+  to hold the read-only posture deliberately for the rest of the session,
+  not assume the frontmatter still enforces it past the first reply. See
+  `decisions/0040`.
+
 ### Added
 
 - **Phase 23, Part A** (packaging/release readiness — the actual PyPI

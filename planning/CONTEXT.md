@@ -147,36 +147,37 @@ Verified independently throughout: `pytest` 371 → 398 → 440 passed (1
 skipped throughout), `ruff check .` clean at every step, core-logic diffs
 read directly (not just test output) against each plan. Phase 21's manual
 dogfooding sync confirmed real spec docs detected/related in this repo.
+Phase 22's live-API validation (a real `sync --yes`, 23 relationships
+enriched for ~$0.02) confirmed genuinely grounded summaries and that the
+non-negotiable never-write-to-a-spec-doc boundary held in practice
+(`sha256` of the mentioned spec docs unchanged before/after).
 
-**Phase 22's live-API validation, now done**: ran a real `sync --yes`
-against this repo — one Anthropic call, 23 relationships enriched
-(~$0.02), genuinely grounded summaries (e.g. correctly identified `rich`
-as used for terminal rendering, `typer` as the CLI framework, from real
-`architecture/overview.md` content, verified via `query relations
-architecture/overview.md --json`). `sha256` of `architecture/overview.md`/
-`README.md`/`decisions/0037-*.md` confirmed byte-identical before and
-after — the non-negotiable boundary held in practice, not just in mocked
-tests. Only the tool Skill/discovery command (tracked generated
-artifacts) regenerated, picking up the new `doc_relation_enrichment`
-schema mention; committed separately.
+**Phase 23, Part A, done**: user confirmed the version-number assumption
+(`1.0.0`). `pyproject.toml` bumped, `README.md` brought current (found a
+real gap: no README mention of Phase 21/22's spec-doc relationship
+detection at all), new `examples/toy-project`, new `decisions/0039`
+(v1.0 ships without a dedicated docs site). A real `python -m build`
+wheel verified installable in a fresh throwaway venv, independent of this
+repo's own editable dev install.
 
-## What was just completed (Phase 23, Part A)
-
-User confirmed the one open assumption the plan flagged (version `1.0.0`,
-over the alternative `0.3.0`). Implemented and verified independently:
-`pyproject.toml` (`version = "1.0.0"`, `classifiers` → `4 - Beta`,
-`[project.urls]` added), `README.md`'s Status/feature-list brought current
-(including a real gap found: no README mention of Phase 21/22's spec-doc
-relationship detection at all until now), new `examples/toy-project`
-(real `requests`/`click` usage, real captured `codecompass` output in its
-`README.md`, no generated artifacts committed — already covered by the
-existing `vendor/` gitignore pattern), new `decisions/0039` (ship v1.0
-without a dedicated docs site — a deliberate, revisitable deferral).
-Packaging smoke test genuinely run, not assumed: a real `python -m build`
-wheel installed into a fresh throwaway venv independent of this repo's
-editable dev install, `codecompass --help` confirmed working from it.
-`pytest` 440 passed/1 skipped (unchanged — no functional code touched),
-`ruff check .` clean.
+**Most recently**: reinstalled `codecompass` 1.0.0 editable into the
+local `.venv` fresh and re-ran it against this repo (`sync --yes`, `query
+vendors`, `check`) to confirm the reinstall actually works end-to-end —
+it does. Then fixed a real accuracy gap found while investigating a user
+request that `/discovery` be read-only by default: its generated body and
+`architecture/overview.md` both overstated what `allowed-tools`
+guarantees. Confirmed against actual Claude Code behavior (via the
+`claude-code-guide` agent, not assumed): the pre-approval grant covers
+only the single turn that invokes the command, clears on the next
+message, and nothing mechanically blocks `Write`/`Edit`/`ExitPlanMode`
+afterward — no frontmatter field locks a whole session read-only.
+`commands.render_discovery_command` and `architecture/overview.md` now
+say this explicitly and instruct Claude to hold the posture deliberately
+for the rest of the session. New `decisions/0040`. New regression test
+(`test_render_discovery_command_states_the_default_persists_past_the_
+first_turn`). This repo's own `.claude/commands/discovery.md` regenerated
+via `codecompass index` to match. `pytest` 441 passed/1 skipped, `ruff
+check .` clean.
 
 ## Next concrete step
 

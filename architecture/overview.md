@@ -567,19 +567,22 @@ no existing "same points write_tool_skill already is" precedent at that
 third call site to actually mirror; see `planning/CONTEXT.md` for the
 current status of this gap.
 
-**Read-only by mechanical constraint, not just instruction.** Its
-frontmatter sets `allowed-tools` — confirmed, as of this phase's
-implementation date, to be supported identically for `.claude/commands/
-*.md` files as for Agent Skills (same frontmatter reference, pre-approving
-the listed tools for that invocation without a permission prompt) — to
-`Read`/`Grep`/`Glob` plus narrowly-scoped `Bash(...)` patterns for exactly
-two sanctioned escape hatches: `codecompass query`/`check`, and read-only
-`sqlite3` access to `context-graph.db` for anything the canned `query`
-subcommands don't cover. `Write`/`Edit` are never granted. The command
-body also repeats, in plain instructional text (not solely relying on the
-tool restriction), that it must never create a plan file or make a code
-change — if answering a question would require one, it states that
-explicitly and stops rather than proceeding.
+**Mechanically read-only for the single turn that invokes it; held by
+prose for the rest of the session (`decisions/0040`).** Its frontmatter
+sets `allowed-tools` to `Read`/`Grep`/`Glob` plus narrowly-scoped
+`Bash(...)` patterns for exactly two sanctioned escape hatches:
+`codecompass query`/`check`, and read-only `sqlite3` access to
+`context-graph.db` for anything the canned `query` subcommands don't
+cover. `Write`/`Edit` are never granted — but confirmed against actual
+Claude Code behavior, not assumed, this pre-approval grant **clears the
+moment the next message is sent**; nothing re-applies it or blocks
+`Write`/`Edit`/`ExitPlanMode` on a later turn in the same conversation.
+There is no frontmatter field or session "mode" that locks a whole
+conversation to read-only. The command body is written knowing this: it
+states the mechanical grant's one-turn scope explicitly and instructs
+Claude to hold the read-only posture — no plan file, no code change, say
+so and stop if one would be needed — for every later turn by default,
+deliberately, not because the frontmatter still enforces it.
 
 **Indexed into the context graph the same way Skills/`.mdc` rules are**:
 `skill_scan.scan_skills` (Phase 12's mapping module — the name predates

@@ -44,8 +44,19 @@ writing, editing, or planning code.
    `vendor/<name>/DEPTREE.md`, and `.claude/skills/**/SKILL.md`
    (including this project's own tool-level Skill).
 
-## Constraints — hold these for the whole exchange, not just once
+## Constraints — hold these for the rest of this session, not just this reply
 
+- **This is the default for the entire remainder of this
+  conversation, not only the message that invoked `/discovery`.**
+  This file's `allowed-tools` pre-approval only covers this
+  turn — it clears the moment you reply, and Claude Code does
+  not mechanically block `Write`/`Edit`/`ExitPlanMode` on a later
+  turn on its own. Treat every subsequent message in this
+  conversation as still governed by these constraints by
+  default, unless the user clearly starts a distinctly different
+  request that isn't a continuation of exploring this project's
+  dependencies — don't let the discipline quietly lapse a few
+  turns in just because the mechanical grant already has.
 - **No `Write`, no `Edit`, no code changes, no plan file.** This
   command answers questions; it does not act on them.
 - If answering would require changing something — code, config,
@@ -62,5 +73,6 @@ writing, editing, or planning code.
   `codecompass sync` — don't guess at an answer `query`/`check`
   would otherwise ground.
 
-**Restated: read-only. No `Write`. No `Edit`. No plan file. No
-code changes.** If in doubt, stop and ask rather than act.
+**Restated: read-only, for this whole session by default. No
+`Write`. No `Edit`. No plan file. No code changes.** If in doubt,
+stop and ask rather than act.

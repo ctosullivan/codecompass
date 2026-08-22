@@ -25,16 +25,22 @@ def render_discovery_command() -> str:
     project's codecompass output currently is at question time (`query`/
     `check`/persisted digests already answer "what's the current state").
 
-    `allowed-tools` (checked against Claude Code's own docs at this
-    phase's implementation date: `.claude/commands/*.md` files support the
-    same frontmatter reference Agent Skills do, `allowed-tools` included,
-    with the same "pre-approve without prompting for this invocation"
-    semantics) makes the read-only posture mechanical, not just
-    instructional — `Read`/`Grep`/`Glob` for browsing persisted digests/
+    `allowed-tools` (`Read`/`Grep`/`Glob` for browsing persisted digests/
     Skills, plus narrowly-scoped `Bash(...)` patterns for exactly the two
-    sanctioned escape-hatch commands (`codecompass query`/`check`, and
-    read-only `sqlite3` access to `context-graph.db`). `Write` and `Edit`
-    are deliberately absent from the list.
+    sanctioned escape-hatch commands — `codecompass query`/`check`, and
+    read-only `sqlite3` access to `context-graph.db` — with `Write`/`Edit`
+    deliberately absent) is a genuine mechanical restriction, **but only
+    for the single turn that invokes `/discovery`** — confirmed against
+    current Claude Code behavior, not assumed: the grant clears the moment
+    the next message is sent, and nothing in Claude Code re-applies it or
+    blocks `Write`/`Edit`/`ExitPlanMode` on a later turn in the same
+    conversation. There is no frontmatter field or "mode" that locks a
+    whole session to read-only from a slash command — only project-wide
+    permission deny rules can do that, a far blunter instrument than one
+    exploratory command warrants (see `decisions/0040`). The body text
+    below is written knowing this: it explicitly tells Claude the
+    read-only posture must be held deliberately on *every* later turn,
+    not assumed to still be mechanically enforced past the first reply.
     """
     lines = [
         "---",
@@ -83,8 +89,19 @@ def render_discovery_command() -> str:
         "   `vendor/<name>/DEPTREE.md`, and `.claude/skills/**/SKILL.md`",
         "   (including this project's own tool-level Skill).",
         "",
-        "## Constraints — hold these for the whole exchange, not just once",
+        "## Constraints — hold these for the rest of this session, not just this reply",
         "",
+        "- **This is the default for the entire remainder of this",
+        "  conversation, not only the message that invoked `/discovery`.**",
+        "  This file's `allowed-tools` pre-approval only covers this",
+        "  turn — it clears the moment you reply, and Claude Code does",
+        "  not mechanically block `Write`/`Edit`/`ExitPlanMode` on a later",
+        "  turn on its own. Treat every subsequent message in this",
+        "  conversation as still governed by these constraints by",
+        "  default, unless the user clearly starts a distinctly different",
+        "  request that isn't a continuation of exploring this project's",
+        "  dependencies — don't let the discipline quietly lapse a few",
+        "  turns in just because the mechanical grant already has.",
         "- **No `Write`, no `Edit`, no code changes, no plan file.** This",
         "  command answers questions; it does not act on them.",
         "- If answering would require changing something — code, config,",
@@ -101,8 +118,9 @@ def render_discovery_command() -> str:
         "  `codecompass sync` — don't guess at an answer `query`/`check`",
         "  would otherwise ground.",
         "",
-        "**Restated: read-only. No `Write`. No `Edit`. No plan file. No",
-        "code changes.** If in doubt, stop and ask rather than act.",
+        "**Restated: read-only, for this whole session by default. No",
+        "`Write`. No `Edit`. No plan file. No code changes.** If in doubt,",
+        "stop and ask rather than act.",
     ]
     return "\n".join(lines) + "\n"
 
