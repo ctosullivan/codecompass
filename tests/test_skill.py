@@ -38,6 +38,27 @@ def test_render_tool_skill_lists_commands_and_vendor_table_no_graph_yet(tmp_path
     assert "2 tracked, 0 enriched" in content
 
 
+def test_render_tool_skill_explains_each_query_subcommand_and_escape_hatch(
+    tmp_path: Path,
+) -> None:
+    """The tool-level Skill previously just said 'query vendors|vendor|
+    symbol|skills — inspect the context graph' with no per-subcommand
+    guidance, unlike `/discovery`'s much richer content — a real gap
+    flagged directly by inspecting the generated file. Confirms the fix:
+    each subcommand explained, `--json` mentioned, and a raw-`sqlite3`
+    escape hatch pointing at the schema for anything the canned queries
+    don't cover.
+    """
+    content = render_tool_skill(_configs(), tmp_path)
+    assert "query vendors [--unused] [--json]" in content
+    assert "query vendor <name> [--json]" in content
+    assert "query symbol <name> [--json]" in content
+    assert "query skills [--unused-mentions] [--json]" in content
+    assert "sqlite3" in content
+    assert "vendor_enrichment" in content and "symbol_enrichment" in content
+    assert "/discovery" in content
+
+
 def test_render_tool_skill_reflects_enrichment_status_from_graph(tmp_path: Path) -> None:
     conn = open_graph(tmp_path)
     rebuild_deterministic(

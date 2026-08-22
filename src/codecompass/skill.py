@@ -73,11 +73,37 @@ def render_tool_skill(configs: list[VendorConfig], project_root: Path) -> str:
         "",
         "## Commands",
         "",
-        "- `codecompass sync [vendor]` — regenerate digests and trees.",
-        "- `codecompass index` — refresh the root CLAUDE.md routing table.",
-        "- `codecompass check [--strict] [--fix]` — staleness + coverage gate.",
-        "- `codecompass query vendors|vendor|symbol|skills` — inspect the "
-        "context graph.",
+        "- `codecompass sync [vendor]` — regenerate digests and trees; a "
+        "whole-project sync also rebuilds the context graph and, for "
+        "usage-proven vendors, auto-triggers disclosed AI enrichment.",
+        "- `codecompass index` — refresh the root CLAUDE.md routing table "
+        "and this Skill.",
+        "- `codecompass check [--strict] [--fix]` — staleness + coverage "
+        "gate (unused vendors, undocumented usage, orphaned skill "
+        "mentions).",
+        "- `codecompass query <subcommand>` — read the context graph "
+        "(`context-graph.db`) without writing raw SQL:",
+        "  - `query vendors [--unused] [--json]` — every tracked vendor, "
+        "its usage/enrichment status.",
+        "  - `query vendor <name> [--json]` — one vendor's full profile: "
+        "symbols, usage count, documenting artifacts, routed Skill, "
+        "`depends_on`.",
+        "  - `query symbol <name> [--json]` — every symbol with this "
+        "name across all vendors (names aren't globally unique), its "
+        "purpose and usage count.",
+        "  - `query skills [--unused-mentions] [--json]` — every "
+        "Skill/`.mdc` rule in the project (not just codecompass's own) "
+        "and what it mechanically mentions.",
+        "  - If a question doesn't fit any of these — an ad hoc join or "
+        "filter — query `context-graph.db` directly with `sqlite3` (a "
+        "plain SQLite file at the project root); see "
+        "`architecture/overview.md`'s \"Context graph\" section for the "
+        "schema (`vendors`, `symbols`, `uses_edges`, `doc_artifacts`, "
+        "`documents_edges`, `skill_mentions_edges`, `routes_via_edges`, "
+        "`depends_on_edges`, `vendor_enrichment`, `symbol_enrichment`).",
+        "- `/discovery` — a read-only guided-exploration slash command "
+        "covering the same ground as `query`, for a human-initiated "
+        "session that should never write, edit, or plan code changes.",
         "",
         f"## Vendors ({len(configs)} tracked, {enriched_count} enriched)",
         "",

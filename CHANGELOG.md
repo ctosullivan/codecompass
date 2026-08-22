@@ -7,7 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Planning: `planning/phase-20-refresh-generated-artifacts-after-
+  enrichment.md` — a future plan for the remaining piece of the graph/
+  enrichment ordering gap (routing table, tool Skill, `undo`/`query
+  skills` freshness immediately after a vendor's first enrichment).
+  `planning/ROADMAP.md`'s Post-MVP table updated: new Phase 20 inserted,
+  former 20/21/22 shift to 21/22/23. Planning only, no code changed.
+
 ### Fixed
+
+- The tool-level Skill (`.claude/skills/codecompass/SKILL.md`) listed
+  `codecompass query vendors|vendor|symbol|skills` as one bare line with
+  no guidance on what each subcommand does, no mention of `--json`, and
+  no pointer to `context-graph.db`'s schema for ad hoc queries — found by
+  direct inspection, unlike `/discovery`'s much richer equivalent
+  content. `skill.py`'s `render_tool_skill` now explains each `query`
+  subcommand, the raw-`sqlite3` escape hatch, and points at `/discovery`.
 
 - **`codecompass sync` crashed on any second run once a vendor had been
   git-cloned** — `source_resolution._git_clone`'s naive

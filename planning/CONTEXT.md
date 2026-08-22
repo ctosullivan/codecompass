@@ -71,11 +71,34 @@ and the fixes re-confirmed against this repo's real state a second time
 (`sync --yes` re-run: no crash, `OVERVIEW.md` present, Phase B correctly
 skipped re-enrichment via its cache — no wasted spend).
 
+**One more real gap found by inspection, fixed inline, not deferred**:
+the tool-level Skill (`.claude/skills/codecompass/SKILL.md`) listed
+`codecompass query vendors|vendor|symbol|skills` as one bare line with
+no per-subcommand guidance, no mention of `--json`, and no pointer to
+`context-graph.db`'s schema for ad hoc queries — unlike `/discovery`'s
+much richer content. `skill.py`'s `render_tool_skill` expanded to explain
+each `query` subcommand, mention the raw-`sqlite3` escape hatch and the
+schema table names, and point at `/discovery` itself. New test
+(`test_render_tool_skill_explains_each_query_subcommand_and_escape_hatch`
+in `tests/test_skill.py`); this repo's own `.claude/skills/codecompass/
+SKILL.md` regenerated via `codecompass index` to match.
+
+**Wrote `planning/phase-20-refresh-generated-artifacts-after-enrichment.md`**
+— a proper future plan for the graph/enrichment ordering gap's remaining
+piece (see "Still outstanding" below), rather than leaving it as a bare
+`CONTEXT.md` note. `planning/ROADMAP.md`'s Post-MVP table updated: new
+Phase 20 inserted, former 20/21/22 (routing/rollup, polish, MCP) shift to
+21/22/23 — same clean-renumber pattern this project has used repeatedly,
+noted inline in the table.
+
 ## Next concrete step
 
-**MVP (v0.2) is done.** No phase is currently in progress. Two decisions
-remain genuinely open, both explicitly deferred rather than accidentally
-skipped:
+**MVP (v0.2) is done.** `planning/phase-20-refresh-generated-artifacts-
+after-enrichment.md` is written and ready to implement (same pattern as
+every phase in the v0.2 arc: dispatch, re-verify independently, doc-sync,
+commit, push) whenever that's prioritized — not started yet. Two
+decisions remain genuinely open alongside it, both explicitly deferred
+rather than accidentally skipped:
 
 1. **Cutting the `v0.2` git tag and promoting `CHANGELOG.md`'s
    `[Unreleased]` section to a dated release** (`CLAUDE.md` §6,
@@ -83,27 +106,24 @@ skipped:
    but not yet decided or acted on, same posture `decisions/0022`
    established for `v0.1` (also still untagged). This is a user decision,
    not something to act on unilaterally.
-2. **What comes after** — `planning/ROADMAP.md`'s Post-MVP table (phases
-   20-22: project-root routing/rollup consuming the new graph, polish/
-   PyPI publish, MCP server) is unstarted and unplanned in implementation
-   detail. Whether/when to start Phase 20 is the next real decision point
-   once (1) above is resolved, or independently of it.
+2. **What comes after Phase 20** — `planning/ROADMAP.md`'s Post-MVP table
+   (phases 21-23: project-root routing/rollup consuming the new graph,
+   polish/PyPI publish, MCP server) is unstarted and unplanned in
+   implementation detail.
 
 **Still outstanding, not a blocker but worth remembering:**
-- **The graph/enrichment ordering gap is now only *partially* resolved.**
-  `OVERVIEW.md`'s piece is fixed (above). What remains: `_maybe_run_
-  enrichment` still runs after the graph rebuild and routing-table/
-  tool-Skill regen it arguably should precede (or be followed by a
-  second, cheap catch-up pass) — so `undo`'s enumeration and the routing
-  table's `Enriched` column still lag by one sync cycle immediately after
-  a vendor's *first* enrichment (self-corrects on the next whole-project
-  sync, not data-destructive). A natural candidate for the first real
-  post-MVP session.
-- `write_tool_skill`/`write_discovery_command` only fire at two points
-  (`_bootstrap`, `index()`) — `sync()`'s whole-project branch never
-  regenerates either. `codecompass query skills` hard-filters to
-  `kind='skill'`, so `/discovery`'s own `slash_command`-kind graph row
-  never surfaces through it. Neither blocks anything.
+- **The graph/enrichment ordering gap is now only *partially* resolved
+  — the remaining piece has a real plan file, `planning/phase-20-
+  refresh-generated-artifacts-after-enrichment.md`.** `OVERVIEW.md`'s
+  piece is fixed (above). What remains, covered by that plan: `sync`'s
+  whole-project branch never refreshes the routing table/tool Skill at
+  all (a second, distinct gap from the ordering one — found by grep
+  during Phase 17), and `_bootstrap`'s ordering means a vendor enriched
+  in that same invocation still shows pre-enrichment status until a
+  second run. Both mean `undo`'s enumeration and `codecompass query
+  skills` also lag by one sync cycle right after a vendor's *first*
+  enrichment (self-corrects on the next whole-project sync, not
+  data-destructive).
 - Once a Rust toolchain is available anywhere in the pipeline,
   `decisions/0014` requires validating the Cargo adapter against real
   `cargo metadata` output and a real crate — currently entirely

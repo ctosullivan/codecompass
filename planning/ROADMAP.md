@@ -96,9 +96,21 @@ with `promote`/`Depth` fully retired and chat re-framed as secondary.
 
 | Phase | Name | Status | Plan file |
 |---|---|---|---|
-| 20 | *(was 10, formerly 9)* Project-root-aware REPL routing (Tier 1 sourced from generated Skill descriptions, decisions/0013) + whole-project context + unconditional dependency rollup at session start (decisions/0012, now demoted per decisions/0034) + digest-exceeded escalation to the generated Skill folder — now consumes the SQLite graph (decisions/0032) instead of inventing ad hoc heuristics | not started | — |
-| 21 | *(was 11, formerly 10)* Polish: PyPI publish as `codecompass`, examples, docs site evaluation | not started | — |
-| 22 | *(was 12, formerly 11)* MCP server (`query_vendor`) | not started | — |
+| 20 | Refresh generated artifacts after enrichment — fixes the graph/enrichment ordering gap found during this project's first live enrichment run: the routing table, tool Skill, and `undo`/`query skills`'s view of the graph lag one sync cycle behind a vendor's first enrichment | planned | [`phase-20-refresh-generated-artifacts-after-enrichment.md`](phase-20-refresh-generated-artifacts-after-enrichment.md) |
+| 21 | *(was 20, was 10, formerly 9)* Project-root-aware REPL routing (Tier 1 sourced from generated Skill descriptions, decisions/0013) + whole-project context + unconditional dependency rollup at session start (decisions/0012, now demoted per decisions/0034) + digest-exceeded escalation to the generated Skill folder — now consumes the SQLite graph (decisions/0032) instead of inventing ad hoc heuristics | not started | — |
+| 22 | *(was 21, was 11, formerly 10)* Polish: PyPI publish as `codecompass`, examples, docs site evaluation | not started | — |
+| 23 | *(was 22, was 12, formerly 11)* MCP server (`query_vendor`) | not started | — |
+
+**Renumbering note (dated to this project's first live enrichment run):**
+a new Phase 20 ("Refresh generated artifacts after enrichment") is
+inserted ahead of the former Phase 20 (project-root routing/rollup),
+which shifts to **21**; former 21/22 (polish, MCP) shift to **22/23**.
+The new phase fixes a real, reproduced gap (see its plan file and
+`planning/CONTEXT.md`'s account of the validation session that found it)
+rather than being purely a planning reorganization like the earlier
+renumbering notes below, but the mechanical effect on this table is the
+same: all three shifted phases were `not started`, so this is a clean
+renumber, not a rewrite of in-flight work.
 
 **Superseded planning (dated to this rework's planning session):** the
 former Post-MVP context-graph phases 9a-9e (`planning/
