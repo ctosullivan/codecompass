@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 22**: batched AI enrichment now runs over Phase 21's
+  mechanically-detected spec-doc relationships too, gated strictly on
+  those already-proven candidates (new `relation_enrichment.py`, sibling
+  to `enrichment.py`, same batched forced-tool-use call shape). Folded
+  into the existing Phase B cost/consent prompt — one disclosure, one
+  `--yes`/`--budget` gate, covering vendor/symbol enrichment and
+  relationship enrichment together. `codecompass query relations` now
+  shows each relation's AI-enriched `ai_summary` when one exists, else
+  "mentioned, not yet enriched". New `doc_relation_enrichment` table is
+  keyed by plain natural-key strings with **no foreign key** to
+  `doc_artifacts` (which is fully deleted/reinserted every rebuild, unlike
+  the upserted `vendors`/`symbols`) — see `decisions/0038` for why, and
+  for the non-negotiable boundary this phase establishes: the AI-generated
+  summary is written only to the graph, **never into a spec doc's own
+  file** — `relation_enrichment.apply_results` doesn't even accept a
+  `project_root`, so it structurally cannot write one.
+
 - **Phase 21**: a project's own human-authored spec docs (README,
   `ARCHITECTURE.md`, `docs/**/*.md`, `architecture/**/*.md`,
   `decisions/**/*.md`, `spec/**/*.md`, `specs/**/*.md`, `rfcs/**/*.md`,

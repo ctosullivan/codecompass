@@ -5,7 +5,7 @@ import pytest
 from typer.testing import CliRunner
 
 import codecompass.cli as cli_module
-from codecompass import enrichment, graph
+from codecompass import enrichment, graph, relation_enrichment
 from codecompass.cli import app
 from codecompass.config import load_vendor_config
 from codecompass.core import VendorDigest
@@ -403,6 +403,154 @@ def _fake_enrichment_result(vendor_name: str, **overrides):  # noqa: ANN001
     }
     defaults.update(overrides)
     return enrichment.EnrichmentResult(**defaults)
+
+
+def _fake_relation_candidate(**overrides):  # noqa: ANN001
+    defaults = {
+        "source_doc_path": "README.md",
+        "relation_kind": "mentions_dependency",
+        "target_vendor_name": "pytest",
+        "target_doc_path": None,
+        "target_label": "pytest",
+        "target_text": "x",
+        "source_excerpt": "README text mentioning pytest.",
+        "content_hash": "fake-relation-hash",
+    }
+    defaults.update(overrides)
+    return relation_enrichment.RelationEnrichmentCandidate(**defaults)
+
+
+def _fake_relation_result(**overrides):  # noqa: ANN001
+    defaults = {
+        "source_doc_path": "README.md",
+        "target_vendor_name": "pytest",
+        "target_doc_path": None,
+        "ai_summary": "This README explains pytest's role in the project.",
+        "content_hash": "fake-relation-hash",
+    }
+    defaults.update(overrides)
+    return relation_enrichment.RelationEnrichmentResult(**defaults)
+
+
+def test_bare_bootstrap_phase_b_folds_relation_candidates_into_one_prompt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Phase 22: relationship enrichment is folded into the SAME disclosed
+    cost/consent prompt as vendor/symbol enrichment, not a second separate
+    one — one `--yes` skips both, one combined cost line, one write of
+    `doc_relation_enrichment` alongside the vendor enrichment write.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "requirements.txt").write_text("pytest\n", encoding="utf-8")
+
+    def _fake_select_candidates(conn, configs, project_root):  # noqa: ANN001
+        (config,) = [c for c in configs if c.name == "pytest"]
+        return [_fake_enrichment_candidate(config)]
+
+    def _fake_run_enrichment_batches(candidates):  # noqa: ANN001
+        return [_fake_enrichment_result("pytest")]
+
+    def _fake_relation_select_candidates(conn, project_root):  # noqa: ANN001
+        return [_fake_relation_candidate()]
+
+    def _fake_relation_run_enrichment_batches(candidates):  # noqa: ANN001
+        return [_fake_relation_result()]
+
+    monkeypatch.setattr("codecompass.enrichment.select_candidates", _fake_select_candidates)
+    monkeypatch.setattr(
+        "codecompass.enrichment.run_enrichment_batches", _fake_run_enrichment_batches
+    )
+    monkeypatch.setattr(
+        "codecompass.relation_enrichment.select_candidates", _fake_relation_select_candidates
+    )
+    monkeypatch.setattr(
+        "codecompass.relation_enrichment.run_enrichment_batches",
+        _fake_relation_run_enrichment_batches,
+    )
+
+    result = runner.invoke(app, ["--yes"])
+
+    assert result.exit_code == 0, result.output
+    assert "enriched" in result.output
+    # The strongest proof both were folded into the one run: the
+    # relationship result actually got written, alongside the vendor one.
+    conn = graph.open_graph(tmp_path)
+    row = conn.execute(
+        "SELECT ai_summary FROM doc_relation_enrichment WHERE source_doc_path = 'README.md'"
+    ).fetchone()
+    conn.close()
+    assert row == ("This README explains pytest's role in the project.",)
+    assert (tmp_path / ".claude" / "skills" / "codecompass-pytest" / "SKILL.md").exists()
+
+
+def test_bare_bootstrap_relation_only_candidates_still_prompts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`_maybe_run_enrichment` must not skip when only relationship
+    candidates exist and zero vendor candidates do — the early return is
+    an AND-of-empties, not an OR bug that would silently skip relationship
+    enrichment whenever no vendor happens to need it this run.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "requirements.txt").write_text("pytest\n", encoding="utf-8")
+
+    def _fake_relation_select_candidates(conn, project_root):  # noqa: ANN001
+        return [_fake_relation_candidate()]
+
+    def _fake_relation_run_enrichment_batches(candidates):  # noqa: ANN001
+        return [_fake_relation_result()]
+
+    monkeypatch.setattr(
+        "codecompass.relation_enrichment.select_candidates", _fake_relation_select_candidates
+    )
+    monkeypatch.setattr(
+        "codecompass.relation_enrichment.run_enrichment_batches",
+        _fake_relation_run_enrichment_batches,
+    )
+
+    result = runner.invoke(app, ["--yes"])
+
+    assert result.exit_code == 0, result.output
+    assert "enriched" in result.output
+    conn = graph.open_graph(tmp_path)
+    row = conn.execute(
+        "SELECT ai_summary FROM doc_relation_enrichment WHERE source_doc_path = 'README.md'"
+    ).fetchone()
+    conn.close()
+    assert row is not None
+
+
+def test_bare_bootstrap_declining_confirmation_skips_relation_enrichment_too(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "requirements.txt").write_text("pytest\n", encoding="utf-8")
+
+    def _fake_select_candidates(conn, configs, project_root):  # noqa: ANN001
+        (config,) = [c for c in configs if c.name == "pytest"]
+        return [_fake_enrichment_candidate(config)]
+
+    def _fake_relation_select_candidates(conn, project_root):  # noqa: ANN001
+        return [_fake_relation_candidate()]
+
+    called: list[bool] = []
+    monkeypatch.setattr("codecompass.enrichment.select_candidates", _fake_select_candidates)
+    monkeypatch.setattr(
+        "codecompass.enrichment.run_enrichment_batches", lambda candidates: []  # noqa: ANN001
+    )
+    monkeypatch.setattr(
+        "codecompass.relation_enrichment.select_candidates", _fake_relation_select_candidates
+    )
+    monkeypatch.setattr(
+        "codecompass.relation_enrichment.run_enrichment_batches",
+        lambda candidates: called.append(True) or [],  # noqa: ANN001
+    )
+
+    result = runner.invoke(app, [], input="n\n")
+
+    assert result.exit_code == 0, result.output
+    assert not called
+    assert "skipped" in result.output
 
 
 def test_bare_bootstrap_phase_b_yes_flag_enriches_without_prompting(
@@ -1104,6 +1252,98 @@ def test_query_relations_unknown_name_errors(
 
     assert result.exit_code == 1
     assert "not found" in result.output
+
+
+def test_query_relations_shows_ai_summary_when_enriched(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_relations_fixture(tmp_path)
+    conn = graph.open_graph(tmp_path)
+    graph.record_relation_enrichment(
+        conn,
+        _SPEC_DOC_PATH,
+        "demo",
+        None,
+        "This README explains why demo is the tracked HTTP client.",
+        "hash-1",
+        "claude-haiku-4-5-20251001",
+        "2026-01-01T00:00:00+00:00",
+    )
+    conn.close()
+
+    result = runner.invoke(app, ["query", "relations", _SPEC_DOC_PATH, "--json"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    dependency_entry = next(e for e in payload if e["relation_kind"] == "mentions_dependency")
+    assert dependency_entry["ai_summary"] == (
+        "This README explains why demo is the tracked HTTP client."
+    )
+    artifact_entry = next(e for e in payload if e["relation_kind"] == "mentions_artifact")
+    assert artifact_entry["ai_summary"] is None
+
+
+def test_query_relations_shows_not_yet_enriched_placeholder_in_table(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_relations_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "relations", _SPEC_DOC_PATH])
+
+    assert result.exit_code == 0, result.output
+    assert "mentioned, not yet enriched" in result.output
+
+
+def test_query_relations_by_vendor_name_shows_ai_summary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_relations_fixture(tmp_path)
+    conn = graph.open_graph(tmp_path)
+    graph.record_relation_enrichment(
+        conn,
+        _SPEC_DOC_PATH,
+        "demo",
+        None,
+        "summary text",
+        "hash-1",
+        "claude-haiku-4-5-20251001",
+        "2026-01-01T00:00:00+00:00",
+    )
+    conn.close()
+
+    result = runner.invoke(app, ["query", "relations", "demo", "--json"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload[0]["ai_summary"] == "summary text"
+
+
+def test_query_relations_by_skill_name_shows_ai_summary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_relations_fixture(tmp_path)
+    conn = graph.open_graph(tmp_path)
+    graph.record_relation_enrichment(
+        conn,
+        _SPEC_DOC_PATH,
+        None,
+        _SKILL_PATH,
+        "This README points at the demo Skill.",
+        "hash-1",
+        "claude-haiku-4-5-20251001",
+        "2026-01-01T00:00:00+00:00",
+    )
+    conn.close()
+
+    result = runner.invoke(app, ["query", "relations", "codecompass-demo", "--json"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload[0]["ai_summary"] == "This README points at the demo Skill."
 
 
 def test_check_reports_spec_docs_without_relations_section(

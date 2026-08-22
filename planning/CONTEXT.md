@@ -6,10 +6,10 @@ for the log of how it got here.
 
 ## Current phase
 
-**MVP (v0.2) is complete (phases 9-19, all `done`). Phases 20-21 of the
-path-to-v1.0 sequence are now also `done`.** Phase 22 (AI-enriched
-cross-artifact relationships) is planned, not yet implemented; Phase 23
-(Polish/PyPI publish, the release itself) has no plan file yet.
+**MVP (v0.2) is complete (phases 9-19, all `done`). Phases 20-22 of the
+path-to-v1.0 sequence are now also `done`.** Phase 23 (Polish/PyPI
+publish, the release itself) has no plan file yet — the last phase before
+a `v1.0` tag.
 Phases 0-8 (v0.1) were already `done`. `codecompass` now: renames
 complete; auto-clones every tracked vendor; detects real project-source
 usage; maps docs/skills/dependencies into a SQLite graph; auto-triggers
@@ -109,62 +109,66 @@ release phase), routing/rollup and MCP pushed to 24/25 (proposed deferred
 past v1.0 — not a locked decision, see "Next concrete step"). Planning
 only — no code changed, nothing implemented.
 
-## What was just completed (Phase 20)
+## What was just completed (Phases 20-22, path-to-v1.0)
 
-Implemented per its plan file, via the same dispatch-then-independently-
-verify pattern used throughout the v0.2 arc: new `cli._refresh_generated_
-artifacts(project_root, configs)` (graph rebuild → routing table → tool
-Skill → discovery command), called from a `try/finally` wrapped around
-`_maybe_run_enrichment` in both `_bootstrap` and `sync`'s whole-project
-branch — so it runs whether enrichment succeeds, is declined, has nothing
-to do, or aborts on budget. `sync`'s whole-project branch now regenerates
-these artifacts for the first time ever (previously only `_bootstrap`/
-`index` did). Three new regression tests in `tests/test_cli.py`
-(same-invocation post-enrichment freshness, zero-candidate `sync` still
-refreshing, `undo --dry-run` seeing a just-written per-vendor Skill
-immediately). `architecture/overview.md`'s "Retrofitting to existing
-projects"/"Cost model" sections updated. Verified independently: `pytest`
-371 passed/1 skipped (up from 367), `ruff check .` clean, diff read
-directly against the plan (matches exactly, no scope drift).
+All three implemented via the established dispatch-then-independently-
+verify pattern (diff read directly against each plan, not just green
+tests), per explicit user request ("implement the plans to initial
+release stage"):
 
-## What was just completed (Phase 21)
+- **Phase 20**: `cli._refresh_generated_artifacts` (graph rebuild →
+  routing table → tool Skill → discovery command), called from a
+  `try/finally` around `_maybe_run_enrichment` in both `_bootstrap` and
+  `sync`'s whole-project branch, so these artifacts always reflect
+  post-enrichment state and `sync` regenerates them for the first time.
+- **Phase 21**: new `spec_docs.py` (`scan_spec_docs`, fixed default glob
+  set) classifies a project's own README/`docs/`/`architecture/`/
+  `decisions/` etc. as `doc_artifacts` rows (`kind='spec_doc'`,
+  `origin='project'`); new `doc_mapping.build_doc_relations_edges` +
+  `graph.py`'s `doc_relations_edges` table mechanically link them to
+  vendors/other doc artifacts; new `codecompass query relations <name>`.
+  `decisions/0037`.
+- **Phase 22**: new `relation_enrichment.py` (sibling to `enrichment.py`)
+  runs batched AI enrichment over Phase 21's mechanically-proven edges
+  only, folded into the same disclosed Phase B cost/consent prompt. New
+  `doc_relation_enrichment` table is **natural-key-only, no foreign key**
+  to `doc_artifacts` (which is fully deleted/reinserted every rebuild,
+  unlike upserted `vendors`/`symbols` — a real departure from the Phase 10
+  precedent, caught and resolved correctly). The non-negotiable boundary —
+  AI summaries go only to the graph, never into a spec doc's own file —
+  is enforced structurally: `apply_results` doesn't even accept a
+  `project_root`. `query relations` now shows each `ai_summary` when
+  present. `decisions/0038`. A real SQL NULL-uniqueness gotcha
+  (`UNIQUE` treats every `NULL` as distinct) was found during
+  implementation and fixed with delete-then-insert + NULL-safe `IS`
+  matching, documented candidly in the ADR.
 
-Implemented per its plan file and verified independently (diff read
-directly against the plan, not just green tests): new `spec_docs.py`
-(`scan_spec_docs`, fixed default glob set, reuses `usage.
-_PROJECT_PRUNE_DIR_NAMES` for exclusion rather than a third copy); new
-`doc_mapping.build_doc_relations_edges` (spec-doc-outward word-boundary
-scan against vendor names and other doc artifacts' `name` fields); new
-`graph.py` table `doc_relations_edges` plus a generalized `doc_artifacts`
-CHECK-constraint migration (`_migrate_doc_artifacts_constraints`,
-`_SCHEMA_VERSION` "2"→"3", widens both `kind` +`'spec_doc'` and `origin`
-+`'project'`); new `codecompass query relations <name>` (forward lookup
-from a spec-doc path, reverse lookup from a vendor/Skill name); `check`
-gained a "Spec docs with no detected relations" section; tool
-Skill/`/discovery` template/`architecture/overview.md`/`docs/
-cli-reference.md` all updated; new `decisions/0037` covers the two real
-design calls (dedicated table vs. extending `documents_edges`/
-`skill_mentions_edges`; fixed default globs vs. a manifest file).
-Verified independently: `pytest` 398 passed/1 skipped (up from 371),
-`ruff check .` clean, manual dogfooding sync against this repo confirmed
-real spec docs detected and related (e.g. `architecture/overview.md` →
-`mentions_dependency` edges to all four tracked vendors).
+Verified independently throughout: `pytest` 371 → 398 → 440 passed (1
+skipped throughout), `ruff check .` clean at every step, core-logic diffs
+read directly (not just test output) against each plan. Phase 21's manual
+dogfooding sync confirmed real spec docs detected/related in this repo.
+**Phase 22's live-API validation step (a real, disclosed Anthropic call
+confirming a real `ai_summary` appears and the spec doc's file stays
+byte-identical) is the immediate next action, not yet done as of this
+note** — see below.
 
 ## Next concrete step
 
-**Implementing the path-to-v1.0 sequence, phase by phase, per user
-request ("implement the plans to initial release stage").** Phase 22
-(AI-enriched cross-artifact relationships) is next — its verification
-step requires one real, disclosed live API call against this repo, same
-posture as the earlier live-enrichment validation session. Phase 23
-(Polish/PyPI publish) still has no plan file — write it per `CLAUDE.md`
-§1 before implementing it, and note its *actual* publish step is a
-hard-to-reverse, externally-visible action (claiming a PyPI package name
-forever) that must pause for explicit user confirmation, not proceed
+**Run Phase 22's live-API validation** (same posture as the earlier
+live-enrichment validation session: one real, disclosed, small-cost
+Anthropic call against this repo itself, confirming a real relationship
+summary appears via `query relations` and that the mentioned spec doc's
+file is byte-identical before/after — the concrete proof the
+never-write-to-spec-docs boundary holds in practice, not just in code).
+
+Then: **Phase 23 (Polish/PyPI publish)** still has no plan file — write it
+per `CLAUDE.md` §1 before implementing it, and its *actual* publish step
+is a hard-to-reverse, externally-visible action (claiming a PyPI package
+name forever) that must pause for explicit user confirmation, not proceed
 automatically even under a broad "implement to release" instruction.
 
-Three decisions remain genuinely open, none blocking Phase 22
-implementation from starting immediately:
+Three decisions remain genuinely open, none blocking the live validation
+or Phase 23 planning from starting immediately:
 
 1. **Cutting the `v0.2` git tag and promoting `CHANGELOG.md`'s
    `[Unreleased]` section to a dated release** (`CLAUDE.md` §6,

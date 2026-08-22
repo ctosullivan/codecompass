@@ -32,6 +32,7 @@ def test_render_discovery_command_mentions_canned_queries_and_sqlite_escape_hatc
     assert "codecompass query relations <name>" in content
     assert "codecompass check" in content
     assert "sqlite3 context-graph.db" in content
+    assert "doc_relation_enrichment" in content
 
 
 def test_render_discovery_command_mentions_persisted_digest_files() -> None:

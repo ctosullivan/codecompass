@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 import codecompass.enrichment as enrichment_module
+from codecompass import relation_enrichment
 from codecompass.claude_md import (
     read_enrichment_hash,
     read_installed_version,
@@ -474,6 +475,49 @@ def test_check_budget_over_budget_raises() -> None:
     candidates = [_candidate("a", 200_000), _candidate("b", 200_000)]
     with pytest.raises(EnrichmentError, match="exceeds --budget"):
         check_budget(candidates, budget=0.0)
+
+
+def _relation_candidate(**overrides) -> relation_enrichment.RelationEnrichmentCandidate:
+    defaults = {
+        "source_doc_path": "README.md",
+        "relation_kind": "mentions_dependency",
+        "target_vendor_name": "demo",
+        "target_doc_path": None,
+        "target_label": "demo",
+        "target_text": "x",
+        "source_excerpt": "x" * 10,
+        "content_hash": "hash",
+    }
+    defaults.update(overrides)
+    return relation_enrichment.RelationEnrichmentCandidate(**defaults)
+
+
+# --- Phase 22: relation candidates folded into the same cost disclosure -----
+
+
+def test_estimate_cost_folds_in_relation_batch_count() -> None:
+    assert estimate_cost(2, 3) == pytest.approx(5 * enrichment_module._ESTIMATED_COST_PER_BATCH_USD)
+
+
+def test_estimate_cost_relation_batch_count_defaults_to_zero() -> None:
+    # Backward compatible with pre-Phase-22 vendor-only callers.
+    assert estimate_cost(2) == estimate_cost(2, 0)
+
+
+def test_check_budget_folds_in_relation_candidates() -> None:
+    with pytest.raises(EnrichmentError, match="exceeds --budget"):
+        check_budget([], budget=0.0, relation_candidates=[_relation_candidate()])
+
+
+def test_check_budget_relation_candidates_none_behaves_like_pre_phase_22() -> None:
+    # Omitting relation_candidates entirely must behave exactly as it did
+    # before Phase 22 — no extra cost folded in.
+    check_budget([_candidate("a", 10)], budget=enrichment_module._ESTIMATED_COST_PER_BATCH_USD)
+
+
+def test_check_budget_message_mentions_relationship_count() -> None:
+    with pytest.raises(EnrichmentError, match=r"1 relationship\(s\)"):
+        check_budget([], budget=0.0, relation_candidates=[_relation_candidate()])
 
 
 # --- apply_results -------------------------------------------------------------

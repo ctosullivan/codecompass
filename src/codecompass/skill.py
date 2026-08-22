@@ -97,7 +97,8 @@ def render_tool_skill(configs: list[VendorConfig], project_root: Path) -> str:
         "  - `query relations <name> [--json]` — given a spec-doc path "
         "(e.g. `architecture/overview.md`), what it mechanically "
         "mentions; given a vendor or Skill name, which spec docs "
-        "mechanically mention it.",
+        "mechanically mention it. Shows an AI-generated summary of *how* "
+        "the two relate when one has been enriched.",
         "  - If a question doesn't fit any of these — an ad hoc join or "
         "filter — query `context-graph.db` directly with `sqlite3` (a "
         "plain SQLite file at the project root); see "
@@ -105,7 +106,7 @@ def render_tool_skill(configs: list[VendorConfig], project_root: Path) -> str:
         "schema (`vendors`, `symbols`, `uses_edges`, `doc_artifacts`, "
         "`documents_edges`, `skill_mentions_edges`, `routes_via_edges`, "
         "`depends_on_edges`, `doc_relations_edges`, `vendor_enrichment`, "
-        "`symbol_enrichment`).",
+        "`symbol_enrichment`, `doc_relation_enrichment`).",
         "- `/discovery` — a read-only guided-exploration slash command "
         "covering the same ground as `query`, for a human-initiated "
         "session that should never write, edit, or plan code changes.",

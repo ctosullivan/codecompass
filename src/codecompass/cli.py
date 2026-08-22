@@ -21,7 +21,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from codecompass import enrichment, graph
+from codecompass import enrichment, graph, relation_enrichment
 from codecompass.adapters import AdapterError
 from codecompass.chat import ChatError, run_chat
 from codecompass.commands import write_discovery_command
@@ -150,27 +150,43 @@ def _maybe_run_enrichment(
     Phase A's free work (decisions/0033) — the literal mechanism behind
     `decisions/0033`'s "Phase A's zero-question guarantee is preserved for
     Phase A specifically; Phase B keeps a real consent gate." A no-op if
-    `enrichment.select_candidates` finds nothing eligible. Budget is
-    checked *before* the confirmation prompt — no point asking a human to
-    confirm a run that's already going to be refused on cost grounds.
+    neither `enrichment.select_candidates` nor `relation_enrichment.
+    select_candidates` finds anything eligible. Budget is checked *before*
+    the confirmation prompt — no point asking a human to confirm a run
+    that's already going to be refused on cost grounds.
+
+    Phase 22 folds spec-doc relationship enrichment (`relation_
+    enrichment`) into this same call: both candidate sets are selected up
+    front, their combined cost is disclosed once, and one confirm/`--yes`/
+    `--budget` gate covers both — not a second separate prompt (see the
+    phase plan's Covered list). Relationship candidates are selected
+    *before* this run's own vendor enrichment is applied below, so a
+    vendor being enriched for the very first time in this same invocation
+    grounds any relationship mentioning it in whatever that vendor's
+    digest said before this run started, not the freshly-generated one —
+    accepted: the next sync's candidates re-derive from the newer content
+    once it exists.
     """
     conn = graph.open_graph(project_root)
     try:
         candidates = enrichment.select_candidates(conn, configs, project_root)
-        if not candidates:
+        relation_candidates = relation_enrichment.select_candidates(conn, project_root)
+        if not candidates and not relation_candidates:
             return
 
         batch_count = len(enrichment.plan_batches(candidates))
-        estimated = enrichment.estimate_cost(batch_count)
-        vendor_names = ", ".join(c.vendor.name for c in candidates)
+        relation_batch_count = len(relation_enrichment.plan_batches(relation_candidates))
+        estimated = enrichment.estimate_cost(batch_count, relation_batch_count)
+        vendor_names = ", ".join(c.vendor.name for c in candidates) or "(none)"
         console.print(
-            f"[yellow]enrichment[/yellow] will make ~{batch_count} AI call(s) "
-            f"(~${estimated:.2f}) using claude-haiku-4-5-20251001 to describe "
-            f"{len(candidates)} vendor(s): {vendor_names}"
+            f"[yellow]enrichment[/yellow] will make ~{batch_count + relation_batch_count} "
+            f"AI call(s) (~${estimated:.2f}) using claude-haiku-4-5-20251001 to describe "
+            f"{len(candidates)} vendor(s): {vendor_names}, and "
+            f"{len(relation_candidates)} relationship(s)"
         )
 
         try:
-            enrichment.check_budget(candidates, budget)
+            enrichment.check_budget(candidates, budget, relation_candidates=relation_candidates)
         except enrichment.EnrichmentError as exc:
             console.print(f"[red]error:[/red] {exc}")
             raise typer.Exit(code=1) from exc
@@ -181,7 +197,14 @@ def _maybe_run_enrichment(
 
         results = enrichment.run_enrichment_batches(candidates)
         enrichment.apply_results(conn, project_root, results)
-        console.print(f"[green]enriched[/green] {len(results)} vendor(s)")
+
+        relation_results = relation_enrichment.run_enrichment_batches(relation_candidates)
+        relation_enrichment.apply_results(conn, relation_results)
+
+        console.print(
+            f"[green]enriched[/green] {len(results)} vendor(s), "
+            f"{len(relation_results)} relationship(s)"
+        )
     finally:
         conn.close()
 
@@ -658,6 +681,35 @@ def _incoming_doc_relations(conn: sqlite3.Connection, column: str, value: int) -
     ]
 
 
+def _relation_ai_summary(
+    conn: sqlite3.Connection,
+    source_doc_path: str,
+    target_vendor_name: str | None,
+    target_doc_path: str | None,
+) -> str | None:
+    """The cached `ai_summary` for one relationship, keyed by the exact
+    natural-key triple `doc_relation_enrichment` uses (Phase 22) — `None`
+    if Phase B enrichment hasn't produced one yet for this relationship
+    (or ever will, if it isn't usage-proven). Ignores `content_hash`
+    entirely: display only cares whether *some* summary is cached —
+    staleness is `relation_enrichment.select_candidates`'s concern, not
+    this read's, mirroring `graph.has_enrichment`'s same two-state posture
+    for vendors. Resolved directly here with ad hoc SQL, the same
+    "CLI-specific shape" precedent `_incoming_doc_relations` above already
+    set, rather than a new `graph.py` function.
+    """
+    row = conn.execute(
+        """
+        SELECT ai_summary FROM doc_relation_enrichment
+        WHERE source_doc_path = ?
+          AND target_vendor_name IS ?
+          AND target_doc_path IS ?
+        """,
+        (source_doc_path, target_vendor_name, target_doc_path),
+    ).fetchone()
+    return row[0] if row is not None else None
+
+
 def _resolve_relations(conn: sqlite3.Connection, name: str) -> list[dict] | None:
     """Resolves `query relations <name>`'s three accepted shapes, tried in
     order: a spec-doc path (its own outgoing `doc_relations_edges` rows,
@@ -665,25 +717,39 @@ def _resolve_relations(conn: sqlite3.Connection, name: str) -> list[dict] | None
     `name` field (a Skill's frontmatter name, a dependency doc's
     `f"{vendor} CLAUDE.md"`-style name) — the latter two are incoming
     lookups: which spec docs mechanically mention it. `None` if `name`
-    matches nothing in the graph at all.
+    matches nothing in the graph at all. Each returned dict gets an
+    `ai_summary` key (Phase 22) attached here — `None` if this exact
+    relationship hasn't been AI-enriched yet.
     """
     if conn.execute("SELECT 1 FROM doc_artifacts WHERE path = ?", (name,)).fetchone():
-        return graph.doc_relations(conn, name)
+        relations = graph.doc_relations(conn, name)
+        for r in relations:
+            r["ai_summary"] = _relation_ai_summary(
+                conn, name, r["target_vendor"], r["target_doc_artifact_path"]
+            )
+        return relations
 
     vendor_row = conn.execute("SELECT id FROM vendors WHERE name = ?", (name,)).fetchone()
     if vendor_row is not None:
-        return _incoming_doc_relations(conn, "target_vendor_id", vendor_row[0])
+        relations = _incoming_doc_relations(conn, "target_vendor_id", vendor_row[0])
+        for r in relations:
+            r["ai_summary"] = _relation_ai_summary(
+                conn, r["source_doc_artifact_path"], name, None
+            )
+        return relations
 
-    artifact_ids = [
-        artifact_id
-        for (artifact_id,) in conn.execute(
-            "SELECT id FROM doc_artifacts WHERE name = ?", (name,)
-        )
-    ]
-    if artifact_ids:
+    artifact_rows = conn.execute(
+        "SELECT id, path FROM doc_artifacts WHERE name = ?", (name,)
+    ).fetchall()
+    if artifact_rows:
         results: list[dict] = []
-        for artifact_id in artifact_ids:
-            results.extend(_incoming_doc_relations(conn, "target_doc_artifact_id", artifact_id))
+        for artifact_id, artifact_path in artifact_rows:
+            relations = _incoming_doc_relations(conn, "target_doc_artifact_id", artifact_id)
+            for r in relations:
+                r["ai_summary"] = _relation_ai_summary(
+                    conn, r["source_doc_artifact_path"], None, artifact_path
+                )
+            results.extend(relations)
         return results
 
     return None
@@ -701,7 +767,11 @@ def query_relations(
     """What a spec doc mechanically mentions (given its path — a vendor or
     another doc artifact), or which spec docs mechanically mention a
     vendor/Skill (given its name) — `doc_relations_edges`, Phase 21's
-    mechanical spec-doc <-> dependency-doc <-> Skill web.
+    mechanical spec-doc <-> dependency-doc <-> Skill web. Each relation
+    shows its AI-enriched `ai_summary` (Phase 22, `doc_relation_
+    enrichment`) when one has been generated, else "mentioned, not yet
+    enriched" — the same two-state display `query vendor` already uses
+    for `has_enrichment`.
     """
     conn = _open_graph_or_note(Path.cwd())
     if conn is None:
@@ -715,6 +785,7 @@ def query_relations(
             console.print(json.dumps(relations, indent=2))
             return
         table = Table("Relation", "Other")
+        table.add_column("AI summary", no_wrap=True)
         for r in relations:
             other = (
                 r.get("source_doc_artifact_path")
@@ -722,9 +793,11 @@ def query_relations(
                 or r.get("target_doc_artifact_path")
                 or ""
             )
-            table.add_row(r["relation_kind"], other)
+            table.add_row(
+                r["relation_kind"], other, r.get("ai_summary") or "mentioned, not yet enriched"
+            )
         if not relations:
-            table.add_row("[dim](none)[/dim]", "")
+            table.add_row("[dim](none)[/dim]", "", "")
         console.print(table)
     finally:
         conn.close()

@@ -14,6 +14,14 @@ Wired into `cli.py` (Phase 15's `_maybe_run_enrichment`) and read back by
 module remains the only writer of `vendor_enrichment`). See
 architecture/overview.md's "Batched enrichment" section and
 planning/phase-14-batched-enrichment.md.
+
+Phase 22 extends `estimate_cost`/`check_budget` (only) to fold
+`codecompass.relation_enrichment`'s candidate/batch counts into the same
+disclosed cost estimate and budget gate — one unified prompt covering both
+vendor/symbol enrichment and spec-doc relationship enrichment, not two
+separate ones. Everything else in this module is unchanged by that phase;
+`relation_enrichment.py` is a sibling module, not folded in here (see its
+own docstring for why).
 """
 
 from __future__ import annotations
@@ -27,7 +35,7 @@ from pathlib import Path
 
 import anthropic
 
-from codecompass import graph
+from codecompass import graph, relation_enrichment
 from codecompass.claude_md import read_enrichment_hash, update_description_section
 from codecompass.core import Ecosystem, VendorConfig, VendorDigest
 from codecompass.skill import write_cursor_mdc, write_vendor_skill
@@ -566,31 +574,47 @@ def _call_anthropic(system_prompt: str, user_prompt: str) -> dict:
     raise EnrichmentError("Anthropic response did not include the expected tool call")
 
 
-def estimate_cost(batch_count: int) -> float:
+def estimate_cost(batch_count: int, relation_batch_count: int = 0) -> float:
     """Rough, fixed placeholder estimate — not live-queried pricing, not a
     guarantee of actual billed cost. Reworked from
     `grounded_description.estimate_cost`: cost now scales with the number
     of *batches* (`len(plan_batches(...))`), not 1:1 with vendor count,
     reflecting the real batched call shape — several vendors' material and
-    output share one call.
+    output share one call. `relation_batch_count` (Phase 22) folds
+    `relation_enrichment.plan_batches`'s own batch count into the same
+    flat per-batch rate — one Anthropic call either way, a vendor batch or
+    a relationship batch, so no separate formula is needed for the second
+    call shape. Defaults to `0` so existing vendor-only callers are
+    unaffected.
     """
-    return batch_count * _ESTIMATED_COST_PER_BATCH_USD
+    return (batch_count + relation_batch_count) * _ESTIMATED_COST_PER_BATCH_USD
 
 
-def check_budget(candidates: list[EnrichmentCandidate], budget: float | None) -> None:
+def check_budget(
+    candidates: list[EnrichmentCandidate],
+    budget: float | None,
+    relation_candidates: list[relation_enrichment.RelationEnrichmentCandidate] | None = None,
+) -> None:
     """No-op if `budget` is `None`. Otherwise raises `EnrichmentError`
-    *before any API call is made* if this run's projected cost (based on
-    how many batches `plan_batches(candidates)` would need) exceeds
-    `budget` — the whole run aborts, nothing is written, matching
-    `grounded_description.check_budget`'s abort-before-any-spend contract.
+    *before any API call is made* if this run's projected cost — vendor
+    batches (`plan_batches(candidates)`) plus relationship batches
+    (`relation_enrichment.plan_batches(relation_candidates)`, Phase 22,
+    folded into the same disclosure/gate rather than a second separate
+    one — see the phase plan) — exceeds `budget`. The whole run aborts,
+    nothing is written, matching `grounded_description.check_budget`'s
+    abort-before-any-spend contract. `relation_candidates` defaults to
+    `None` (treated as empty) so existing vendor-only callers/tests keep
+    working unchanged.
     """
     if budget is None:
         return
     batch_count = len(plan_batches(candidates))
-    estimated = estimate_cost(batch_count)
+    relation_batch_count = len(relation_enrichment.plan_batches(relation_candidates or []))
+    estimated = estimate_cost(batch_count, relation_batch_count)
     if estimated > budget:
         raise EnrichmentError(
-            f"estimated cost ${estimated:.2f} for {batch_count} batch(es) covering "
-            f"{len(candidates)} vendor(s) exceeds --budget ${budget:.2f} — raise "
-            "--budget or wait for fewer vendors to need enrichment"
+            f"estimated cost ${estimated:.2f} for {batch_count + relation_batch_count} "
+            f"batch(es) covering {len(candidates)} vendor(s) and "
+            f"{len(relation_candidates or [])} relationship(s) exceeds --budget "
+            f"${budget:.2f} — raise --budget or wait for fewer to need enrichment"
         )

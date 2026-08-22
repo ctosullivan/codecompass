@@ -145,6 +145,25 @@ CREATE TABLE IF NOT EXISTS symbol_enrichment (
   purpose      TEXT NOT NULL,
   generated_at TEXT NOT NULL
 );
+
+-- Survives every rebuild_deterministic call, same intent as
+-- vendor_enrichment/symbol_enrichment above, but keyed by plain natural-key
+-- TEXT columns rather than a foreign key to doc_artifacts.id: unlike
+-- vendors/symbols (upserted by natural key, Phase 10), doc_artifacts is
+-- fully deleted and reinserted on every rebuild_deterministic call, so a
+-- foreign key here would cascade this table's whole content away on every
+-- whole-project sync. See decisions/0038.
+CREATE TABLE IF NOT EXISTS doc_relation_enrichment (
+  id                 INTEGER PRIMARY KEY,
+  source_doc_path    TEXT NOT NULL,
+  target_vendor_name TEXT,
+  target_doc_path    TEXT,
+  ai_summary         TEXT NOT NULL,
+  content_hash       TEXT NOT NULL,
+  model              TEXT NOT NULL,
+  generated_at       TEXT NOT NULL,
+  UNIQUE (source_doc_path, target_vendor_name, target_doc_path)
+);
 """
 
 
@@ -1026,4 +1045,110 @@ def record_symbol_enrichment(
                 generated_at = excluded.generated_at
             """,
             (symbol_id, purpose, generated_at),
+        )
+
+
+def relation_enrichment_candidates(conn: sqlite3.Connection) -> list[dict]:
+    """Every `doc_relations_edges` row (Phase 21), joined to its source/
+    target *text* identity — `source_doc_path`, `target_vendor_name`,
+    `target_doc_path` (exactly one of the latter two set per row, mirroring
+    `doc_relations_edges` itself) — plus the `content_hash` already on file
+    for that exact natural-key triple in `doc_relation_enrichment`, if any.
+    `graph.py` doesn't decide staleness here, the same division of
+    responsibility `enrichment_candidates` already has for vendors:
+    `relation_enrichment.select_candidates` freshly computes each
+    candidate's current content hash and diffs it against what this
+    function returns.
+
+    The join matches with SQLite's NULL-safe `IS`, not `=` — `target_
+    vendor_name`/`target_doc_path` are NULL for whichever `relation_kind`
+    doesn't apply, and plain `=` never matches two NULLs, which would
+    silently fail to find an already-cached row for any relationship whose
+    natural key includes a NULL column (i.e. every one of them).
+    """
+    rows = conn.execute(
+        """
+        SELECT sda.path, tv.name, tda.path, dre.relation_kind, dre_enrich.content_hash
+        FROM doc_relations_edges dre
+        JOIN doc_artifacts sda ON dre.source_doc_artifact_id = sda.id
+        LEFT JOIN vendors tv ON dre.target_vendor_id = tv.id
+        LEFT JOIN doc_artifacts tda ON dre.target_doc_artifact_id = tda.id
+        LEFT JOIN doc_relation_enrichment dre_enrich
+            ON dre_enrich.source_doc_path = sda.path
+           AND dre_enrich.target_vendor_name IS tv.name
+           AND dre_enrich.target_doc_path IS tda.path
+        ORDER BY sda.path, tv.name, tda.path
+        """
+    ).fetchall()
+    return [
+        {
+            "source_doc_path": source_doc_path,
+            "target_vendor_name": target_vendor_name,
+            "target_doc_path": target_doc_path,
+            "relation_kind": relation_kind,
+            "content_hash": content_hash,
+        }
+        for source_doc_path, target_vendor_name, target_doc_path, relation_kind, content_hash
+        in rows
+    ]
+
+
+def record_relation_enrichment(
+    conn: sqlite3.Connection,
+    source_doc_path: str,
+    target_vendor_name: str | None,
+    target_doc_path: str | None,
+    ai_summary: str,
+    content_hash: str,
+    model: str,
+    generated_at: str,
+) -> None:
+    """Insert or update the one `doc_relation_enrichment` row for this
+    natural-key triple. The only writer, kept separate from `rebuild_
+    deterministic` for the same reason `record_enrichment`/`record_symbol_
+    enrichment` are (Phase 10): a deterministic rebuild and a paid
+    enrichment write are different trigger points with different costs.
+
+    Deletes any existing row for this exact triple, then inserts fresh,
+    rather than `INSERT ... ON CONFLICT(...) DO UPDATE` the way `record_
+    enrichment` upserts by `vendor_id`. SQL's `UNIQUE` constraint treats
+    every `NULL` as distinct from every other `NULL` (including another
+    `NULL` in the very same column) — since exactly one of `target_vendor_
+    name`/`target_doc_path` is `NULL` per row here, an `ON CONFLICT` target
+    naming both columns would never actually detect a conflict against an
+    existing row whose non-matching column is `NULL`, silently inserting a
+    duplicate row on every re-enrichment instead of updating the existing
+    one in place. Deleting first with a NULL-safe `IS` comparison (matching
+    `relation_enrichment_candidates`'s own join above), then inserting,
+    sidesteps that gotcha entirely — wrapped in one transaction (`with
+    conn:`) so a crash between the two statements can't leave this
+    relationship with zero rows.
+    """
+    with conn:
+        conn.execute(
+            """
+            DELETE FROM doc_relation_enrichment
+            WHERE source_doc_path = ?
+              AND target_vendor_name IS ?
+              AND target_doc_path IS ?
+            """,
+            (source_doc_path, target_vendor_name, target_doc_path),
+        )
+        conn.execute(
+            """
+            INSERT INTO doc_relation_enrichment (
+                source_doc_path, target_vendor_name, target_doc_path,
+                ai_summary, content_hash, model, generated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                source_doc_path,
+                target_vendor_name,
+                target_doc_path,
+                ai_summary,
+                content_hash,
+                model,
+                generated_at,
+            ),
         )

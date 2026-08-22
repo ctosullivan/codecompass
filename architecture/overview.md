@@ -865,7 +865,7 @@ calls `init_schema`, and returns the connection. `init_schema(conn)` is an
 idempotent `CREATE TABLE IF NOT EXISTS`/`CREATE INDEX IF NOT EXISTS` for
 every table, seeding a `meta.schema_version` row on first call.
 
-**Schema** — ten deterministic tables plus `meta` plus two enrichment
+**Schema** — ten deterministic tables plus `meta` plus three enrichment
 tables:
 - `vendors`, `source_files`, `symbols` (unique per `(vendor_id, name)`,
   since symbol names aren't globally unique across vendors) — the graph's
@@ -896,6 +896,16 @@ tables:
   `model`/`generated_at` for cache-key purposes). `DocChunk`/`EXPLAINS`
   tables from the former phase-9d design are explicitly not part of this
   schema at all (`decisions/0032`), not even as unused tables.
+- `doc_relation_enrichment` (Phase 22) — a third table that **survives
+  every `rebuild_deterministic` call**, holding Phase 22's paid AI
+  enrichment output over `doc_relations_edges` relationships: `ai_summary`
+  plus `content_hash`/`model`/`generated_at` for cache-key purposes. Unlike
+  the other two, it holds **no foreign key to `doc_artifacts.id` at all** —
+  keyed purely by natural-key TEXT columns (`source_doc_path`, `target_
+  vendor_name`, `target_doc_path`). See **Relationship enrichment** below
+  and [`decisions/0038`](../decisions/0038-relation-enrichment-natural-key-only-no-fk-never-writes-spec-docs.md)
+  for why this table departs from the FK-based precedent the other two
+  set.
 
 Every table with a foreign key to `vendors`/`symbols`/`doc_artifacts`/
 `source_files` declares `ON DELETE CASCADE` — deliberate, so
@@ -970,16 +980,42 @@ none of them write, none of them decide staleness:
 - `spec_docs_without_relations(conn) -> list[str]` (Phase 21) — spec-doc
   paths with zero `doc_relations_edges` rows as their source; `check`'s
   report-only coverage-gap section for this table.
+- `relation_enrichment_candidates(conn) -> list[dict]` (Phase 22) — every
+  `doc_relations_edges` row joined to its source/target *text* identity
+  (`source_doc_path`, `target_vendor_name`, `target_doc_path`,
+  `relation_kind`) plus the `content_hash` already on file in `doc_
+  relation_enrichment` for that exact natural-key triple, if any. Joins
+  with SQLite's NULL-safe `IS`, not `=` — `target_vendor_name`/`target_
+  doc_path` are NULL for whichever `relation_kind` doesn't apply, and
+  plain `=` never matches two NULLs. Same "graph.py doesn't decide
+  staleness" division of responsibility as `enrichment_candidates`:
+  `relation_enrichment.select_candidates` freshly computes each
+  candidate's current content hash and diffs it against what this
+  function returns.
 
 **`record_enrichment(conn, vendor_id, **fields)` /
 `record_symbol_enrichment(conn, symbol_id, purpose, generated_at)`** are
-the only writers to the two enrichment tables, both upserting (`INSERT ...
-ON CONFLICT DO UPDATE`) so a second call for the same vendor/symbol
+the only writers to those two enrichment tables, both upserting (`INSERT
+... ON CONFLICT DO UPDATE`) so a second call for the same vendor/symbol
 updates in place rather than erroring or duplicating. Kept as separate
 functions from `rebuild_deterministic` on purpose — a deterministic
 rebuild and a paid enrichment write are different trigger points with
 different costs, and conflating them would risk an enrichment write
 becoming implicitly part of the "free, always safe to rerun" rebuild path.
+
+**`record_relation_enrichment(conn, source_doc_path, target_vendor_name,
+target_doc_path, ai_summary, content_hash, model, generated_at)`** (Phase
+22) is the only writer to `doc_relation_enrichment`, kept separate from
+`rebuild_deterministic` for the same reason. It does **not** upsert via
+`INSERT ... ON CONFLICT DO UPDATE` the way `record_enrichment` does —
+SQL's `UNIQUE` constraint treats every `NULL` as distinct from every other
+`NULL`, and exactly one of `target_vendor_name`/`target_doc_path` is
+`NULL` per row, so an `ON CONFLICT` target naming both columns would never
+detect a conflict against an existing row whose non-matching column is
+`NULL`, silently duplicating rather than updating. Instead it deletes any
+existing row for the exact triple (matched with NULL-safe `IS`) and
+inserts fresh, in one transaction. See
+[`decisions/0038`](../decisions/0038-relation-enrichment-natural-key-only-no-fk-never-writes-spec-docs.md).
 
 ### Batched enrichment (`codecompass.enrichment`)
 
@@ -1276,6 +1312,71 @@ gap. `skill.py`'s tool Skill and the `/discovery` slash-command template
 both gain a one-line mention of `query relations` alongside their existing
 per-`query`-subcommand documentation.
 
+### Relationship enrichment (`codecompass.relation_enrichment`)
+
+**New in Phase 22 — part 2 of the three-way relationship feature; a
+sibling module to `codecompass.enrichment`, not folded into it** (a
+relationship candidate's shape — a doc pair plus two text excerpts — is
+different enough from a vendor candidate's shape that sharing one
+module's functions would mean threading a type-discriminated candidate
+through every function; the two modules do share the batched
+forced-tool-use *call machinery* shape, ported near-verbatim, the same way
+`enrichment.py` itself ported that shape from the deleted `grounded_
+description.py`). Asks an AI call to explain, in a sentence or two, *how*
+a spec doc relates to something Phase 21 already mechanically proved it
+mentions — the same "mechanical detection first, AI enrichment only over
+what it proved" gating `decisions/0031`/`0033` established for vendors,
+generalized to relationships. See
+[`decisions/0038`](../decisions/0038-relation-enrichment-natural-key-only-no-fk-never-writes-spec-docs.md).
+
+**Non-negotiable boundary**: the AI-generated summary is written *only* to
+`doc_relation_enrichment` (the gitignored graph), never into a spec doc's
+own file. Enforced structurally, not just by convention —
+`apply_results(conn, results) -> None` doesn't accept a `project_root`
+parameter at all, so it has no filesystem handle to a spec doc to even
+attempt writing to one.
+
+`select_candidates(conn, project_root) -> list[RelationEnrichmentCandidate]`
+reads every `graph.relation_enrichment_candidates` row, reads the source
+spec doc's text off disk (skipped, non-fatal, if the file has vanished
+since the last graph rebuild), looks up the target's existing digest text
+— a vendor's `vendor_enrichment.technical_description` or a doc artifact's
+own `description` column, via direct SQL against those tables (`graph.py`
+has no existing read function for either shape, the same precedent
+`sync._lookup_enrichment` already set) — computes a content hash (sha256
+over the *full* source text + target text, same shape as `enrichment.
+_compute_symbol_set_hash`), and skips a candidate whose hash already
+matches what `graph.relation_enrichment_candidates` reports cached.
+No file-level fallback cache the way vendor enrichment has (Phase 14):
+spec docs are never written to, so there's no codecompass-owned file to
+embed a cache-hash line into — a fresh clone re-pays for relationship
+enrichment once, an accepted v1 cost since these are short summaries over
+a small, usage-proven set.
+
+`plan_batches`/`run_enrichment_batches` mirror `enrichment.py`'s own
+batching and forced-tool-use call shape exactly, grouping by (excerpt +
+target text) character budget. The batched tool schema identifies each
+relationship by a synthetic per-batch integer `relationship_id` the model
+echoes back, rather than matching on an echoed doc path/vendor name the
+way `enrichment.py` does for vendors — safer given a spec-doc path can be
+long/nested, where a small transcription slip would otherwise silently
+drop a result.
+
+`apply_results(conn, results) -> None` calls `graph.record_relation_
+enrichment` — its only action, structurally guaranteeing the non-negotiable
+boundary above.
+
+`enrichment.py`'s `estimate_cost`/`check_budget` are extended (only) to
+fold this module's candidate/batch counts into the same disclosed cost
+estimate and budget gate — see **Cost model** below. `cli.py`'s `_maybe_
+run_enrichment` calls `relation_enrichment.select_candidates`/`run_
+enrichment_batches`/`apply_results` alongside the existing vendor/symbol
+enrichment calls, inside the same `try`/confirm block — one prompt, one
+`--yes`, one `--budget`, covering both. `query relations <name>` (above)
+shows each relationship's `ai_summary` when one exists, else "mentioned,
+not yet enriched" — the same two-state display `query vendor` already
+uses for `has_enrichment`.
+
 ## `undo` — best-effort generated-artifact cleanup (`codecompass.cli`)
 
 **New in Phase 18 (`decisions/0036`).** `codecompass undo [--yes]
@@ -1362,20 +1463,38 @@ budget flow). Unlike the retired `promote`, Phase B is **cached** — a
 vendor already enriched at its current used-symbol set is skipped
 (`enrichment.select_candidates`'s two-tier hash check), so cost scales
 with how often the project's actual dependency *usage* changes, not with
-how often `sync` is run. `enrichment.estimate_cost(batch_count)` /
-`enrichment.check_budget(candidates, budget)` scale with
-`len(plan_batches(candidates))` (batches, not vendors) — several
-vendors' material and output share one call, reworked from the old
-per-vendor formula `grounded_description.estimate_cost` used. `--yes`
-skips the confirmation prompt; `--budget <amount>` refuses to make any
-Phase B API call at all (not partially) once the projected cost for a
-single run exceeds the cap — same abort-before-any-spend contract the
-retired `promote`/`sync --budget` guaranteed. Regardless of how Phase B
-ends — enriched, declined, or budget-aborted — `cli._refresh_generated_
-artifacts` still runs once at the end of the invocation (Phase 20; see
-"Retrofitting to existing projects" above), so a budget-aborted run's
-already-free Phase A output is left with a freshly-regenerated routing
-table/tool Skill, not a stale one from before the abort.
+how often `sync` is run. `enrichment.estimate_cost(batch_count,
+relation_batch_count=0)` / `enrichment.check_budget(candidates, budget,
+relation_candidates=None)` scale with `len(plan_batches(candidates))`
+(batches, not vendors) — several vendors' material and output share one
+call, reworked from the old per-vendor formula `grounded_description.
+estimate_cost` used. `--yes` skips the confirmation prompt; `--budget
+<amount>` refuses to make any Phase B API call at all (not partially) once
+the projected cost for a single run exceeds the cap — same
+abort-before-any-spend contract the retired `promote`/`sync --budget`
+guaranteed. Regardless of how Phase B ends — enriched, declined, or
+budget-aborted — `cli._refresh_generated_artifacts` still runs once at the
+end of the invocation (Phase 20; see "Retrofitting to existing projects"
+above), so a budget-aborted run's already-free Phase A output is left with
+a freshly-regenerated routing table/tool Skill, not a stale one from
+before the abort.
+
+**Phase 22 folds spec-doc relationship enrichment (`codecompass.relation_
+enrichment`) into this same cost center, not a second one.** `relation_
+batch_count`/`relation_candidates` — both optional, defaulting to `0`/
+`None` so pre-Phase-22 callers are unaffected — let `estimate_cost`/
+`check_budget` add `len(relation_enrichment.plan_batches(relation_
+candidates))` batches to the same flat per-batch rate: one Anthropic call
+either way, a vendor batch or a relationship batch. `cli.py`'s `_maybe_
+run_enrichment` selects both candidate sets up front, discloses one
+combined estimate, and gates both behind the same confirm/`--yes`/
+`--budget` — a relationship-only run (zero vendor candidates, some
+relationship candidates, or vice versa) still triggers exactly this one
+prompt, never a silent skip and never a second separate one. Also cached,
+the same way vendor enrichment is, though by a single content-hash check
+(source spec doc text + target's digest text), not a two-tier one — spec
+docs are never written to (see **Relationship enrichment** above), so
+there's no file-level fallback cache to check a second way.
 
 **As of Phase 16, there is no other cost path.** The old `depth = FULL`
 per-vendor grounded-description regeneration

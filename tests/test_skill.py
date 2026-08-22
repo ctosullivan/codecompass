@@ -58,6 +58,7 @@ def test_render_tool_skill_explains_each_query_subcommand_and_escape_hatch(
     assert "sqlite3" in content
     assert "vendor_enrichment" in content and "symbol_enrichment" in content
     assert "doc_relations_edges" in content
+    assert "doc_relation_enrichment" in content
     assert "/discovery" in content
 
 

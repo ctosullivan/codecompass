@@ -156,7 +156,9 @@ prints a one-line note pointing at `sync` rather than a traceback.
   `<name>` matches nothing in the graph at all. A project's spec docs
   (README, `ARCHITECTURE.md`, `docs/**/*.md`, `decisions/**/*.md`, etc.)
   are detected automatically on every whole-project `sync` — no separate
-  command needed to pick them up.
+  command needed to pick them up. Each relation also shows an AI-enriched
+  `ai_summary` (Phase 22, `doc_relation_enrichment`) once usage-driven
+  Phase B enrichment has run over it, else "mentioned, not yet enriched".
 
 ```bash
 codecompass query vendors

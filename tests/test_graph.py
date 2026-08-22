@@ -19,7 +19,9 @@ from codecompass.graph import (
     open_graph,
     rebuild_deterministic,
     record_enrichment,
+    record_relation_enrichment,
     record_symbol_enrichment,
+    relation_enrichment_candidates,
     skills_index,
     spec_docs_without_relations,
     symbol_profile,
@@ -42,6 +44,7 @@ _ALL_TABLES = {
     "doc_relations_edges",
     "vendor_enrichment",
     "symbol_enrichment",
+    "doc_relation_enrichment",
 }
 
 _SOURCE_FILE = "src/app.ts"
@@ -714,3 +717,130 @@ def test_spec_docs_without_relations_lists_only_the_unrelated_one(tmp_path) -> N
     rebuild_deterministic(conn, **_fixture_kwargs())
 
     assert spec_docs_without_relations(conn) == [_UNRELATED_SPEC_DOC_PATH]
+
+
+# --- doc_relation_enrichment (Phase 22) --------------------------------------
+
+
+def test_doc_relation_enrichment_has_no_foreign_key(tmp_path) -> None:
+    """The central design point of Phase 22 (decisions/0038): unlike
+    `vendor_enrichment`/`symbol_enrichment` (FK to an upserted-by-natural-
+    key row), `doc_relation_enrichment` must have *no* foreign key to
+    `doc_artifacts` at all — that table is fully deleted and reinserted on
+    every `rebuild_deterministic` call, so an FK here would cascade this
+    table's whole content away on every whole-project sync.
+    """
+    conn = open_graph(tmp_path)
+    fk_rows = conn.execute("PRAGMA foreign_key_list(doc_relation_enrichment)").fetchall()
+    assert fk_rows == []
+
+
+def test_record_relation_enrichment_survives_rebuild_deterministic(tmp_path) -> None:
+    """The concrete regression test for the same design point: unlike
+    `doc_relations_edges` (fully cleared on every rebuild), a `doc_
+    relation_enrichment` row recorded via `record_relation_enrichment` must
+    still be there — untouched — after a second `rebuild_deterministic`
+    call, even though that call deletes and reinserts every `doc_
+    artifacts` row (and everything that cascades from it).
+    """
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+
+    record_relation_enrichment(
+        conn,
+        _SPEC_DOC_PATH,
+        "used-lib",
+        None,
+        "This README explains why used-lib is the tracked HTTP client.",
+        "hash-1",
+        "claude-haiku-4-5-20251001",
+        "2026-01-01T00:00:00+00:00",
+    )
+
+    # A second whole-project rebuild — same fixture, deletes+reinserts
+    # doc_artifacts and everything cascading from it.
+    rebuild_deterministic(conn, **_fixture_kwargs())
+
+    row = conn.execute(
+        "SELECT ai_summary, content_hash FROM doc_relation_enrichment "
+        "WHERE source_doc_path = ? AND target_vendor_name = ?",
+        (_SPEC_DOC_PATH, "used-lib"),
+    ).fetchone()
+    assert row == (
+        "This README explains why used-lib is the tracked HTTP client.",
+        "hash-1",
+    )
+
+
+def test_record_relation_enrichment_updates_in_place_not_duplicated(tmp_path) -> None:
+    """Regression for the NULL-uniqueness footgun `record_relation_
+    enrichment`'s docstring explains: a naive `ON CONFLICT` on a UNIQUE
+    index over nullable columns never detects a conflict when the
+    non-matching column is NULL (SQL treats every NULL as distinct from
+    every other NULL), so a second call for the same natural-key triple
+    must still result in exactly one row, not two.
+    """
+    conn = open_graph(tmp_path)
+    record_relation_enrichment(
+        conn,
+        "README.md",
+        "demo",
+        None,
+        "first summary",
+        "hash-a",
+        "claude-haiku-4-5-20251001",
+        "2026-01-01T00:00:00+00:00",
+    )
+    record_relation_enrichment(
+        conn,
+        "README.md",
+        "demo",
+        None,
+        "second summary",
+        "hash-b",
+        "claude-haiku-4-5-20251001",
+        "2026-01-02T00:00:00+00:00",
+    )
+
+    rows = conn.execute(
+        "SELECT ai_summary, content_hash FROM doc_relation_enrichment "
+        "WHERE source_doc_path = 'README.md' AND target_vendor_name = 'demo'"
+    ).fetchall()
+    assert rows == [("second summary", "hash-b")]
+
+
+def test_relation_enrichment_candidates_lists_both_relation_kinds(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+
+    candidates = relation_enrichment_candidates(conn)
+
+    by_kind = {c["relation_kind"]: c for c in candidates}
+    assert by_kind["mentions_dependency"]["source_doc_path"] == _SPEC_DOC_PATH
+    assert by_kind["mentions_dependency"]["target_vendor_name"] == "used-lib"
+    assert by_kind["mentions_dependency"]["target_doc_path"] is None
+    assert by_kind["mentions_dependency"]["content_hash"] is None
+    assert by_kind["mentions_artifact"]["target_doc_path"] == _SKILL_PATH
+    assert by_kind["mentions_artifact"]["target_vendor_name"] is None
+    assert by_kind["mentions_artifact"]["content_hash"] is None
+
+
+def test_relation_enrichment_candidates_surfaces_existing_content_hash(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+    record_relation_enrichment(
+        conn,
+        _SPEC_DOC_PATH,
+        "used-lib",
+        None,
+        "summary",
+        "matching-hash",
+        "claude-haiku-4-5-20251001",
+        "2026-01-01T00:00:00+00:00",
+    )
+
+    candidates = relation_enrichment_candidates(conn)
+    by_kind = {c["relation_kind"]: c for c in candidates}
+    assert by_kind["mentions_dependency"]["content_hash"] == "matching-hash"
+    # The other relationship (mentions_artifact) has no enrichment row yet.
+    assert by_kind["mentions_artifact"]["content_hash"] is None
