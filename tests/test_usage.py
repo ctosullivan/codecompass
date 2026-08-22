@@ -71,6 +71,51 @@ def test_detect_python_imports_unparseable_file_returns_empty(tmp_path: Path) ->
     assert detect_python_imports(path) == []
 
 
+def test_detect_python_imports_attribute_access_upgrades_to_symbol_level(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "mod.py"
+    path.write_text("import rich\nrich.Console()\n", encoding="utf-8")
+
+    assert detect_python_imports(path) == [
+        DetectedImport(vendor="rich", symbol_name=None, line=1),
+        DetectedImport(vendor="rich", symbol_name="Console", line=2),
+    ]
+
+
+def test_detect_python_imports_attribute_access_resolves_via_alias(tmp_path: Path) -> None:
+    path = tmp_path / "mod.py"
+    path.write_text("import rich as r\nr.Console()\n", encoding="utf-8")
+
+    assert detect_python_imports(path) == [
+        DetectedImport(vendor="rich", symbol_name=None, line=1),
+        DetectedImport(vendor="rich", symbol_name="Console", line=2),
+    ]
+
+
+def test_detect_python_imports_deep_attribute_chain_resolves_only_first_attribute(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "mod.py"
+    path.write_text("import rich\nrich.console.Console()\n", encoding="utf-8")
+
+    assert detect_python_imports(path) == [
+        DetectedImport(vendor="rich", symbol_name=None, line=1),
+        DetectedImport(vendor="rich", symbol_name="console", line=2),
+    ]
+
+
+def test_detect_python_imports_no_attribute_access_keeps_vendor_level_only(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "mod.py"
+    path.write_text("import rich\n\ndef use():\n    return rich\n", encoding="utf-8")
+
+    assert detect_python_imports(path) == [
+        DetectedImport(vendor="rich", symbol_name=None, line=1)
+    ]
+
+
 # --- detect_npm_imports -------------------------------------------------------
 
 

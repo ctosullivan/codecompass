@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 26**: `usage.detect_python_imports` now upgrades a plain
+  `import X` (or `import X as alias`) to symbol-level usage evidence when
+  the code actually accesses an attribute of it (`X.Attr(...)`) — an
+  additive second AST pass, the vendor-level `DetectedImport` from the
+  `import` statement itself is unchanged. Only the immediate attribute
+  off the bound name resolves (`X.sub.Attr` → `sub`, not `Attr`),
+  mirroring `ImportFrom`'s existing first-dotted-component-only rule.
+  Fixes real noise this repo's own `check` output had: 35 real
+  `anthropic` symbols (`Anthropic`, `AnthropicError`, etc.) showing as
+  "documented but unused" purely because this project imports `anthropic`
+  as a module and accesses attributes on it, which the detector
+  previously couldn't resolve past the module level.
+
 - Planning: two new future phases found via a `/discovery` dogfooding
   session against this repo itself, each with its own real, confirmed
   evidence (not guessed) — `planning/phase-26-symbol-level-resolution-

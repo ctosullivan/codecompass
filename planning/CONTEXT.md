@@ -160,44 +160,34 @@ detection at all), new `examples/toy-project`, new `decisions/0039`
 wheel verified installable in a fresh throwaway venv, independent of this
 repo's own editable dev install.
 
-**Most recently**: reinstalled `codecompass` 1.0.0 editable into the
-local `.venv` fresh and re-ran it against this repo (`sync --yes`, `query
-vendors`, `check`) to confirm the reinstall actually works end-to-end —
-it does. Then fixed a real accuracy gap found while investigating a user
-request that `/discovery` be read-only by default: its generated body and
-`architecture/overview.md` both overstated what `allowed-tools`
-guarantees. Confirmed against actual Claude Code behavior (via the
-`claude-code-guide` agent, not assumed): the pre-approval grant covers
-only the single turn that invokes the command, clears on the next
-message, and nothing mechanically blocks `Write`/`Edit`/`ExitPlanMode`
-afterward — no frontmatter field locks a whole session read-only.
-`commands.render_discovery_command` and `architecture/overview.md` now
-say this explicitly and instruct Claude to hold the posture deliberately
-for the rest of the session. New `decisions/0040`. New regression test
-(`test_render_discovery_command_states_the_default_persists_past_the_
-first_turn`). This repo's own `.claude/commands/discovery.md` regenerated
-via `codecompass index` to match. `pytest` 441 passed/1 skipped, `ruff
-check .` clean.
+**Recent history, condensed**: reinstalled `codecompass` 1.0.0 into the
+local `.venv` and confirmed it works end-to-end against this repo. Fixed
+a real accuracy gap in `/discovery`'s own claims about `allowed-tools`
+(confirmed via `claude-code-guide`, not assumed: the pre-approval grant
+is single-turn only, clears on the next message — `decisions/0040`). Ran
+a `/discovery` session against this repo and reported findings (what's
+enriched, an honest quality assessment, whether embedded vendor docs get
+registered), surfacing two real, evidence-backed gaps that became
+`planning/phase-26-symbol-level-resolution-for-attribute-usage.md` and
+`planning/phase-27-register-embedded-vendor-docs.md` (appended to the
+Post-MVP table as 26/27, no renumbering). Notably held `/discovery`'s own
+"no plan file, say so and stop" constraint correctly when first asked to
+save that plan mid-session, and got explicit confirmation before writing.
 
-**Most recently**: ran a `/discovery` exploration session against this
-repo itself, in response to a direct user request, then reported findings
-(what's enriched, an honest assessment of output quality, and — the
-concrete gaps that turned into new plans — whether embedded vendor docs
-get registered). Two real, evidence-backed gaps surfaced and are now
-planned (not implemented): `planning/phase-26-symbol-level-resolution-
-for-attribute-usage.md` (module-level `import X` + `X.Attr(...)` never
-resolves to a symbol-level usage edge — confirmed via this repo's own
-`anthropic` usage edges, all `symbol_id = NULL`) and `planning/
-phase-27-register-embedded-vendor-docs.md` (a vendor's own upstream
-README/CHANGELOG/etc. — confirmed real content under `vendor/*/src/` —
-has no `doc_artifacts` row, so Phase 21/22's relationship machinery never
-reaches it). `planning/ROADMAP.md`'s Post-MVP table updated: 26/27
-appended after 24/25, no renumbering (both are independent, non-blocking
-improvements found after v1.0's own phases were already underway).
-Notably, the user's first ask to save a plan arrived *while still inside
-the `/discovery` session from the prior exchange* — correctly held that
-session's own "no plan file, say so and stop" constraint and asked for
-explicit confirmation before writing anything, which the user then gave.
+**Most recently — Phase 26, done**: `usage.detect_python_imports` now
+upgrades a plain `import X`/`import X as alias` to symbol-level usage
+evidence via an additive second AST pass over `ast.Attribute` nodes
+(`X.Attr(...)` → a symbol-level `DetectedImport` alongside the unchanged
+vendor-level one from the `import` itself; only the immediate attribute
+resolves, `X.sub.Attr` → `sub` not `Attr`). Four new tests in
+`tests/test_usage.py`. `architecture/overview.md` updated. No ADR needed
+— a straightforward additive change with no design call beyond what the
+plan already settled. Verified independently: `pytest` 445 passed/1
+skipped (up from 441), `ruff check .` clean, diff read directly against
+the plan (matches exactly). **Phase 27 (register embedded vendor docs)
+is next**, followed by a fresh `/discovery` session re-testing output
+quality now that both fixes are live — the user explicitly asked for
+this as the next step after implementation.
 
 ## Next concrete step
 

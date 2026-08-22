@@ -84,27 +84,45 @@ class DetectedImport:
 
 
 def detect_python_imports(path: Path) -> list[DetectedImport]:
-    """`ast`-based scan for `import` (vendor-level only — `import rich`
-    binds no specific symbol) and `from ... import ...` (vendor candidate
-    is the first dotted component of `module`, one `DetectedImport` per
-    bound name). Relative imports (`from . import x`, `from .sibling
-    import x`) are skipped outright — they can never refer to an external
-    vendor by definition, only to the project's own package structure.
-    Walks the whole tree (not just top-level statements), so imports
-    nested inside a function/class body still count as usage. Never
-    raises — a file that fails to parse returns `[]`, the same convention
-    `symbols.py`'s extractors already follow.
+    """`ast`-based scan for `import` (vendor-level, plus an attribute-
+    resolution upgrade pass — see below) and `from ... import ...` (vendor
+    candidate is the first dotted component of `module`, one
+    `DetectedImport` per bound name). Relative imports (`from . import x`,
+    `from .sibling import x`) are skipped outright — they can never refer
+    to an external vendor by definition, only to the project's own package
+    structure. Walks the whole tree (not just top-level statements), so
+    imports nested inside a function/class body still count as usage.
+    Never raises — a file that fails to parse returns `[]`, the same
+    convention `symbols.py`'s extractors already follow.
+
+    Phase 26: a plain `import X` (or `import X as alias`) always records
+    its vendor-level `DetectedImport(symbol_name=None)` as before — that
+    fact doesn't change. Additionally, a second pass over the same tree
+    looks for `ast.Attribute` nodes whose value is a bare `ast.Name`
+    matching one of this file's bound import names (`alias.asname or
+    alias.name`'s top-level component) and emits an *additional*
+    `DetectedImport(vendor=<that name's vendor>, symbol_name=<the
+    attribute's .attr>, line=<the Attribute node's line>)` per match —
+    `import anthropic` + `anthropic.Anthropic(...)` upgrades to a
+    symbol-level candidate alongside the untouched vendor-level one. Only
+    the *immediate* attribute off the bound name resolves: for `X.sub.Attr`
+    the inner `Attribute` (`value` is the bare `Name`) yields `sub`, not
+    `Attr` — deeper chains aren't walked, mirroring `ImportFrom`'s own
+    first-dotted-component-only precedent rather than guessing at a leaf
+    name real type inference would be needed to get right.
     """
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
     except (OSError, SyntaxError, UnicodeDecodeError):
         return []
     detected: list[DetectedImport] = []
+    bound_vendors: dict[str, str] = {}
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
                 vendor = alias.name.split(".")[0]
                 detected.append(DetectedImport(vendor=vendor, symbol_name=None, line=node.lineno))
+                bound_vendors[alias.asname or vendor] = vendor
         elif isinstance(node, ast.ImportFrom):
             if node.module is None or node.level > 0:
                 continue
@@ -112,6 +130,20 @@ def detect_python_imports(path: Path) -> list[DetectedImport]:
             for alias in node.names:
                 detected.append(
                     DetectedImport(vendor=vendor, symbol_name=alias.name, line=node.lineno)
+                )
+    if bound_vendors:
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Attribute)
+                and isinstance(node.value, ast.Name)
+                and node.value.id in bound_vendors
+            ):
+                detected.append(
+                    DetectedImport(
+                        vendor=bound_vendors[node.value.id],
+                        symbol_name=node.attr,
+                        line=node.lineno,
+                    )
                 )
     return detected
 

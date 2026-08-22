@@ -1119,6 +1119,22 @@ external vendor); `detect_npm_imports` (regex over named/default/
 namespace `import` and `require()` forms, same coarse-regex posture
 already accepted for `extract_npm_symbols`); `detect_rust_imports` (regex
 over `use vendor::Symbol;` / `use vendor::*;` / `use vendor;`).
+
+**Phase 26** adds an attribute-resolution upgrade to `detect_python_imports`
+specifically: a plain `import X` (or `import X as alias`) still always
+records its vendor-level `DetectedImport` as before, but a second pass
+over the same file's AST looks for `X.Attr`-shaped attribute access (an
+`ast.Attribute` whose `.value` is a bare `ast.Name` matching the bound
+import name) and emits an *additional* symbol-level `DetectedImport` per
+match — `import anthropic` + `anthropic.Anthropic(...)` now also yields a
+candidate `symbol_name="Anthropic"`, on top of the untouched vendor-level
+edge. Only the immediate attribute off the bound name resolves (`X.sub.Attr`
+yields `sub`, not `Attr`), the same first-component-only posture
+`ImportFrom` already applies to `module`. This closed a real gap found via
+`/discovery` against this repo itself: `import anthropic`-style usage (this
+project's own dominant style for that vendor) never resolved to
+symbol-level `uses_edges`, so genuinely-used symbols like `Anthropic`/
+`AnthropicError` showed up as "documented but unused."
 `detect_imports_for_file(path, ecosystem)` dispatches by ecosystem and
 file suffix, mirroring `symbols.extract_symbols_for_file`'s dispatch
 shape; every detector never raises, returning `[]` for an unparseable
