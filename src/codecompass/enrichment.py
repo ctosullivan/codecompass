@@ -418,14 +418,27 @@ def apply_results(
                 continue  # model described a symbol not actually recorded for this vendor
             graph.record_symbol_enrichment(conn, symbol_id, purpose, generated_at)
 
-        claude_md_path = project_root / "vendor" / result.vendor / "CLAUDE.md"
+        vendor_dir = project_root / "vendor" / result.vendor
         update_description_section(
-            claude_md_path,
+            vendor_dir / "CLAUDE.md",
             technical_description=result.technical_description,
             action_pointer_file=result.action_pointer_file,
             action_pointer_note=result.action_pointer_note,
             symbol_set_hash=result.symbol_set_hash,
         )
+        # sync_vendor (Phase A) only ever writes OVERVIEW.md from an
+        # enrichment record that already existed *before* this run — on a
+        # vendor's first-ever enrichment, Phase A ran with nothing in the
+        # graph yet, so OVERVIEW.md would otherwise not appear until the
+        # *next* whole-project sync. Write it here too, right where
+        # conversational_overview is freshest, so chat.py's fuller
+        # grounding (decisions/0023) is available immediately, not one
+        # sync cycle late. Confirmed missing via a real end-to-end run
+        # against the live API before this fix.
+        if result.conversational_overview:
+            (vendor_dir / "OVERVIEW.md").write_text(
+                result.conversational_overview, encoding="utf-8"
+            )
 
         minimal_digest = VendorDigest(
             config=VendorConfig(

@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`codecompass sync` crashed on any second run once a vendor had been
+  git-cloned** — `source_resolution._git_clone`'s naive
+  `shutil.rmtree(dest)` hit a `PermissionError` re-cloning over a git
+  repo's own read-only `.git/objects/pack/*` files (Windows). Found via
+  the first real end-to-end run of this project against a live
+  Anthropic API key. Fixed by promoting `undo`'s (Phase 18,
+  `decisions/0036`) best-effort rmtree helper —
+  clears the read-only bit and retries, reports genuine failures instead
+  of guessing — to `source_resolution.rmtree_best_effort`, shared by
+  both callers instead of duplicated; `cli.py`'s local copy removed.
+- **A vendor's `OVERVIEW.md` never appeared on its first-ever
+  enrichment**, only from the *next* whole-project sync — `sync_vendor`
+  (Phase A) only ever writes it from an enrichment record that already
+  existed *before* that run, and on a first enrichment nothing was in
+  the graph yet when Phase A ran. Also found via the same live run.
+  Fixed: `enrichment.apply_results` (Phase B) now writes `OVERVIEW.md`
+  itself, right where `conversational_overview` is freshest, instead of
+  waiting a full sync cycle. Regression test simulates a vendor's first
+  enrichment with no prior `OVERVIEW.md` on disk.
+
 - A `depth = surface` vendor whose source clone fails no longer shows a
   misleading "## Description — Description unavailable" section in its
   `CLAUDE.md` — `_render_description_section` now gates on `depth is

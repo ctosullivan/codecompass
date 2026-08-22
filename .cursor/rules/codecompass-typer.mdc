@@ -1,0 +1,11 @@
+---
+description: API questions and known gotchas for typer (python)
+alwaysApply: false
+---
+
+# typer
+
+Pinned to the installed version (0.27.1). See `vendor/typer/CLAUDE.md` for the full digest.
+
+Typer is a library for building CLI applications using Python type hints. According to `typer/__init__.py`, the core `Typer` class from `main` serves as the app container. The library exports `Argument` and `Option` from `params` for declaring CLI parameters. The main entry point is `run()` and `launch()` from `main`. For testing CLI applications, the material references `CliRunner` which is used to invoke and test CLI applications (mentioned in used symbols but not detailed in the provided files). The SDK also exports error handling via `Abort`, `BadParameter`, and `Exit` from vendored Click (`_click.exceptions`), plus terminal utilities like `prompt()`, `confirm()`, `progressbar()`, `echo()`, and `secho()` from Click's termui module. The library is built on top of vendored Click 8.3.1 code (as noted in alternatives.md) with Typer adding a Python-type-hints layer on top. Context and callback model types are available from `models`.
+

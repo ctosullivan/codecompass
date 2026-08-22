@@ -1,0 +1,11 @@
+---
+description: API questions and known gotchas for rich (python)
+alwaysApply: false
+---
+
+# rich
+
+Pinned to the installed version (15.0.0). See `vendor/rich/CLAUDE.md` for the full digest.
+
+Rich is a Python library for rendering rich text and beautiful formatting to the terminal. Based on the retrieved material, the core `Console` class (from `rich.console.Console` as documented in README.cn.md) is the main interface for outputting styled text with support for colors, emphasis, and markup similar to BBCode syntax. The library exports a `Markdown` class (from `rich.markdown.Markdown`) for rendering markdown content to the terminal. The `Table` class enables creation of formatted tables with configurable borders, styles, and cell alignment. The library also provides a `Prompt` class for interactive terminal input (referenced in the exports). These renderables follow a Console Protocol that allows custom implementations. Additional components include logging handlers, progress bars, status animations, tree rendering, and syntax highlighting via Pygments integration. The library automatically handles terminal width, text wrapping, and color/emoji support across platforms.
+

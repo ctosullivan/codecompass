@@ -18,11 +18,11 @@ This project uses codecompass to keep AI-consultable dependency reference docs u
 - `codecompass check [--strict] [--fix]` — staleness + coverage gate.
 - `codecompass query vendors|vendor|symbol|skills` — inspect the context graph.
 
-## Vendors (4 tracked, 0 enriched)
+## Vendors (4 tracked, 3 enriched)
 
 | Name | Ecosystem | Enriched |
 |---|---|---|
-| anthropic | python | no |
+| anthropic | python | yes |
 | pipdeptree | python | no |
-| rich | python | no |
-| typer | python | no |
+| rich | python | yes |
+| typer | python | yes |

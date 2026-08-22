@@ -13,11 +13,8 @@ bootstrap/`sync`.
 from __future__ import annotations
 
 import json
-import os
 import re
-import shutil
 import sqlite3
-import stat
 from pathlib import Path
 
 import typer
@@ -44,6 +41,7 @@ from codecompass.index import (
     update_root_claude_md,
 )
 from codecompass.skill import _TOOL_SKILL_DIR_NAME, write_tool_skill
+from codecompass.source_resolution import rmtree_best_effort
 from codecompass.staleness import Severity, VendorStaleness, check_all
 from codecompass.sync import rebuild_project_graph, sync_all, sync_vendor
 
@@ -671,7 +669,7 @@ def undo(
     leftovers: list[Path] = []
     for target in targets:
         if target.is_dir():
-            if not _rmtree_best_effort(target):
+            if not rmtree_best_effort(target):
                 leftovers.append(target)
         elif target.exists():
             try:
@@ -689,29 +687,6 @@ def undo(
             console.print(f"  {leftover.relative_to(project_root).as_posix()}")
     else:
         console.print("[green]undo complete[/green]")
-
-
-def _rmtree_best_effort(path: Path) -> bool:
-    """`shutil.rmtree`, but a file `PermissionError` (most commonly a
-    git-cloned vendor snapshot's read-only `.git/objects/pack/*` files,
-    especially on Windows) clears the read-only bit and retries once
-    before giving up on that one file — plain `ignore_errors=True` would
-    silently leave such files behind while `undo` still reports success.
-    Returns whether `path` is fully gone afterward, so the caller can
-    report per-target when something survives instead of claiming a clean
-    removal that didn't actually happen.
-    """
-
-    def _on_error(func, sub_path, exc_info):  # noqa: ANN001
-        del exc_info
-        try:
-            os.chmod(sub_path, stat.S_IWRITE)
-            func(sub_path)
-        except OSError:
-            pass
-
-    shutil.rmtree(path, onerror=_on_error)
-    return not path.exists()
 
 
 def _codecompass_generated_paths(project_root: Path) -> set[Path]:

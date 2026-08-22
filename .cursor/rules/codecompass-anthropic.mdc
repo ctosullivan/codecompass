@@ -1,0 +1,11 @@
+---
+description: API questions and known gotchas for anthropic (python)
+alwaysApply: false
+---
+
+# anthropic
+
+Pinned to the installed version (0.121.0). See `vendor/anthropic/CLAUDE.md` for the full digest.
+
+The Claude SDK for Python provides access to the Claude API from Python applications. According to the `src/anthropic/__init__.py`, the SDK exports a `Client` class (aliased as `Anthropic`) that serves as the main entry point for making API calls. The module is generated from an OpenAPI specification using Stainless and provides comprehensive error handling through exception types like `APIError`, `AuthenticationError`, `RateLimitError`, and others defined in `_exceptions`. It also supports both synchronous (`Anthropic`, `Client`) and asynchronous (`AsyncAnthropic`, `AsyncClient`) clients for API interactions. The SDK includes middleware support via `Middleware` and `MiddlewareCallable` types from `_middleware`, request/response handling through `APIRequest` and `APIResponse`, and specialized integrations for AWS, Google Cloud, Bedrock, and Vertex platforms. Core types are exported through a `types` module.
+

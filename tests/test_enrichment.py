@@ -537,6 +537,42 @@ def test_apply_results_writes_graph_claude_md_and_skills(tmp_path: Path) -> None
         encoding="utf-8"
     )
 
+    overview_path = vendor_dir / "OVERVIEW.md"
+    assert overview_path.read_text(encoding="utf-8") == "Handles HTML-to-Markdown conversion."
+
+
+def test_apply_results_writes_overview_even_on_a_vendors_first_ever_enrichment(
+    tmp_path: Path,
+) -> None:
+    """Direct regression test for a real bug found via a live end-to-end
+    run: `sync_vendor` (Phase A) only ever writes `OVERVIEW.md` from an
+    enrichment record that already existed *before* that run — on a
+    vendor's first-ever enrichment, Phase A always runs with nothing in
+    the graph yet, so without this fix `OVERVIEW.md` would never appear
+    until the *next* whole-project sync, one full cycle late. Simulates
+    exactly that: no pre-existing OVERVIEW.md on disk, `apply_results` is
+    this vendor's very first enrichment.
+    """
+    conn = open_graph(tmp_path)
+    _seed_graph(conn)
+    config = _vendor_config()
+    vendor_dir = _write_vendor_files(tmp_path, config)
+    assert not (vendor_dir / "OVERVIEW.md").exists()
+
+    result = EnrichmentResult(
+        vendor="turndown",
+        technical_description="TurndownService converts HTML via visitor rules.",
+        conversational_overview="Handles HTML-to-Markdown conversion.",
+        symbol_purposes={},
+        symbol_set_hash=_current_hash(),
+    )
+
+    apply_results(conn, tmp_path, [result])
+
+    assert (
+        vendor_dir / "OVERVIEW.md"
+    ).read_text(encoding="utf-8") == "Handles HTML-to-Markdown conversion."
+
 
 def test_apply_results_replaces_an_existing_description_section(tmp_path: Path) -> None:
     conn = open_graph(tmp_path)
