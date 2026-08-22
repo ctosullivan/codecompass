@@ -6,20 +6,20 @@ for the log of how it got here.
 
 ## Current phase
 
-**MVP (v0.2) is complete (phases 9-19, all `done`). Phases 20-22 of the
-path-to-v1.0 sequence are now also `done`.** Phase 23 (Polish/PyPI
-publish, the release itself) has no plan file yet — the last phase before
-a `v1.0` tag.
-Phases 0-8 (v0.1) were already `done`. `codecompass` now: renames
-complete; auto-clones every tracked vendor; detects real project-source
-usage; maps docs/skills/dependencies into a SQLite graph; auto-triggers
-disclosed, confirmable batched AI enrichment for usage-proven vendors
-only; exposes all of it via `codecompass query`, `/discovery`, and
-generated Skills; can `undo` itself cleanly; and frames chat as a
-secondary, unchanged tool rather than the product. `promote` and `Depth`
-are fully retired. **The first real end-to-end run against a live
-Anthropic API key has now happened** (against this repo itself, in a
-local `.venv`) — see below.
+**Phases 0-22 are all `done` (v0.1, v0.2, and path-to-v1.0 phases 20-22).
+Phase 23 (Polish/PyPI publish — the v1.0 release itself) is `in
+progress`: Part A (packaging/release readiness) is `done`; Part B (the
+actual publish) is deliberately paused for explicit user confirmation.**
+`codecompass` now: auto-clones every tracked vendor; detects real
+project-source usage; maps docs/skills/dependencies/spec-docs into a
+SQLite graph with both mechanical and AI-enriched relationship edges;
+auto-triggers disclosed, confirmable batched AI enrichment for
+usage-proven vendors *and* relationships; exposes all of it via
+`codecompass query`, `/discovery`, and generated Skills; can `undo`
+itself cleanly; frames chat as secondary. `promote` and `Depth` are fully
+retired. Packaging is release-ready (`version = "1.0.0"`, real wheel
+verified installable in a clean venv) but **not yet published to PyPI,
+and no `v1.0` tag has been cut.**
 
 ## What was just completed
 
@@ -160,32 +160,44 @@ tests. Only the tool Skill/discovery command (tracked generated
 artifacts) regenerated, picking up the new `doc_relation_enrichment`
 schema mention; committed separately.
 
+## What was just completed (Phase 23, Part A)
+
+User confirmed the one open assumption the plan flagged (version `1.0.0`,
+over the alternative `0.3.0`). Implemented and verified independently:
+`pyproject.toml` (`version = "1.0.0"`, `classifiers` → `4 - Beta`,
+`[project.urls]` added), `README.md`'s Status/feature-list brought current
+(including a real gap found: no README mention of Phase 21/22's spec-doc
+relationship detection at all until now), new `examples/toy-project`
+(real `requests`/`click` usage, real captured `codecompass` output in its
+`README.md`, no generated artifacts committed — already covered by the
+existing `vendor/` gitignore pattern), new `decisions/0039` (ship v1.0
+without a dedicated docs site — a deliberate, revisitable deferral).
+Packaging smoke test genuinely run, not assumed: a real `python -m build`
+wheel installed into a fresh throwaway venv independent of this repo's
+editable dev install, `codecompass --help` confirmed working from it.
+`pytest` 440 passed/1 skipped (unchanged — no functional code touched),
+`ruff check .` clean.
+
 ## Next concrete step
 
-**Phase 23 (Polish/PyPI publish) has no plan file yet** — write it per
-`CLAUDE.md` §1 before implementing it. This is the release itself: its
-*actual* publish step is a hard-to-reverse, externally-visible action
-(claiming a PyPI package name forever) that must pause for explicit user
-confirmation, not proceed automatically even under a broad "implement to
-release" instruction — the safe/reversible parts (packaging metadata,
-examples, docs-site evaluation) can be implemented directly, but the
-`twine upload`/tag-cut step itself needs an explicit go-ahead.
+**Phase 23, Part B — the actual publish — is paused for explicit user
+confirmation, not proceeded automatically.** Needs from the user before
+this session acts: (1) go-ahead to actually run `twine upload` (optionally
+`--repository testpypi` first as a dry run — worth offering), (2) go-ahead
+to cut and push the `v1.0` git tag, (3) confirmation that `CHANGELOG.md`'s
+`[Unreleased]` section should be promoted to a dated `v1.0` release
+section at the same time. None of this should happen from a broad
+"implement to release" instruction alone — claiming a PyPI package name
+and pushing a public tag are genuinely irreversible.
 
-Two decisions remain genuinely open, none blocking Phase 23 planning from
-starting immediately:
+One decision remains genuinely open, unrelated to Part B and not blocking
+it:
 
-1. **Cutting the `v0.2` git tag and promoting `CHANGELOG.md`'s
-   `[Unreleased]` section to a dated release** (`CLAUDE.md` §6,
-   `decisions/0030`) — now *applicable* (all of phases 9-19 are `done`),
-   but not yet decided or acted on, same posture `decisions/0022`
-   established for `v0.1` (also still untagged). This is a user decision,
-   not something to act on unilaterally. Note `v1.0` supersedes this as
-   the actual target release if pursued directly — whether an interim
-   `v0.2` tag still gets cut is an open question, not answered here.
-2. **Whether routing/rollup and MCP (now 24/25) really should be deferred
+1. **Whether routing/rollup and MCP (now 24/25) really should be deferred
    past v1.0** — proposed in `planning/v1.0-initial-release-roadmap.md`'s
    "Why this order" section, not locked. Flagged back to the user, not
    decided unilaterally.
+
 **Still outstanding, not a blocker but worth remembering:**
 - The graph/enrichment ordering gap (routing table/tool Skill/`undo`
   freshness immediately after a vendor's first enrichment) is **resolved

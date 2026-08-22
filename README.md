@@ -4,12 +4,13 @@ Grounded, version-pinned dependency reference docs for AI coding agents.
 
 ## Status
 
-**MVP (v0.2) complete (phases 0-19, `decisions/0022`/`decisions/0030`)**,
-not yet tagged/released. Bare `codecompass`, `init`, `sync`, `index`,
-`check`, `query`, `chat`, and `undo` are all fully implemented. `promote`
-was removed in Phase 15 (`decisions/0033`) — its former jobs (clone,
-enrich, generate Skill) are now automatic outcomes of bootstrap/`sync`.
-See [`planning/`](planning/) for phase-by-phase status.
+**Pre-release, v1.0.0 in progress (phases 0-22 all `done`; Phase 23 —
+packaging polish and the PyPI publish itself — is the last phase before a
+`v1.0` tag).** Bare `codecompass`, `init`, `sync`, `index`, `check`,
+`query`, `chat`, and `undo` are all fully implemented. `promote` was
+removed in Phase 15 (`decisions/0033`) — its former jobs (clone, enrich,
+generate Skill) are now automatic outcomes of bootstrap/`sync`. Not yet
+published to PyPI. See [`planning/`](planning/) for phase-by-phase status.
 
 ## What it is
 
@@ -44,6 +45,14 @@ Running codecompass gets you, for every tracked dependency:
   symbol, usage edge, and generated doc artifact — queryable via
   `codecompass query` or, inside a Claude Code session, the generated
   `/discovery` slash command.
+- **Spec-doc relationship detection**: your own hand-authored docs
+  (README, `ARCHITECTURE.md`, `docs/**/*.md`, `decisions/**/*.md`, etc.)
+  are scanned and mechanically linked to the vendors and Skills they
+  mention — no AI call. For any relationship that mention-detection
+  proves real, usage-driven AI enrichment (same gate as above) can add a
+  one- or two-sentence summary of *how* the two relate — written only to
+  the graph, never back into your spec doc's own file. Both are queryable
+  via `codecompass query relations`.
 - **Generated Skills** (`.claude/skills/`) and Cursor `.mdc` rules for
   enriched vendors, plus a tool-level Skill and `/discovery` command
   generated unconditionally — the steady-state way an agent consumes
@@ -85,6 +94,7 @@ consult what codecompass knows:
 
 ```bash
 codecompass query vendor turndown
+codecompass query relations architecture/overview.md
 codecompass check --strict
 ```
 
@@ -119,6 +129,8 @@ pip install -e ".[dev]"
 - [`docs/config-schema.md`](docs/config-schema.md) — `vendor.toml` schema
 - [`architecture/overview.md`](architecture/overview.md) — system design
 - [`decisions/`](decisions/) — architecture decision records
+- [`examples/`](examples/) — a small, real worked example with real
+  codecompass output, for skimming without installing anything
 
 ## Contributing
 

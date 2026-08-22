@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 23, Part A** (packaging/release readiness — the actual PyPI
+  publish is Part B, held for explicit confirmation): `pyproject.toml`
+  bumped to `version = "1.0.0"`, `classifiers` corrected to
+  `Development Status :: 4 - Beta`, `[project.urls]` added
+  (Homepage/Repository/Issues). `README.md`'s Status section and feature
+  list updated to reflect phases 0-22 all `done`, including the Phase
+  21/22 spec-doc relationship detection that had no README mention at
+  all. New `examples/toy-project` — a small real project with real
+  `requests`/`click` usage, plus `examples/README.md` quoting real
+  `codecompass` output captured against it. New `decisions/0039`: v1.0
+  ships without a dedicated docs site (`README.md` + `docs/*.md` on
+  GitHub only), a deliberate, revisitable deferral, not an oversight.
+  Verified: a real `python -m build` wheel installs cleanly into a fresh
+  throwaway venv independent of this repo's editable dev install, and
+  `codecompass --help` runs from it.
+
 - **Phase 22**: batched AI enrichment now runs over Phase 21's
   mechanically-detected spec-doc relationships too, gated strictly on
   those already-proven candidates (new `relation_enrichment.py`, sibling

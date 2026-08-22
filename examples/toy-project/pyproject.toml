@@ -1,0 +1,9 @@
+[project]
+name = "toy-project"
+version = "0.1.0"
+description = "Tiny example project used by codecompass's examples/ walkthrough."
+requires-python = ">=3.11"
+dependencies = [
+    "requests",
+    "click",
+]
