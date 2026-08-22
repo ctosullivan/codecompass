@@ -273,8 +273,9 @@ class DependsOnEdgeRow:
 
 @dataclass(frozen=True)
 class DocRelationEdgeRow:
-    """One `doc_relations_edges` row: a spec doc mechanically mentioning a
-    tracked vendor or another doc artifact. `relation_kind` says which:
+    """One `doc_relations_edges` row: a spec doc or vendor doc (Phase 29,
+    decisions/0043) mechanically mentioning a tracked vendor or another doc
+    artifact. `relation_kind` says which:
     `'mentions_dependency'` pairs with `target_vendor_name`,
     `'mentions_artifact'` with `target_doc_artifact_path` — exactly one of
     the two is set per row, mirroring `SkillMentionEdgeRow`'s existing
@@ -725,15 +726,16 @@ def spec_docs_without_relations(conn: sqlite3.Connection) -> list[str]:
 def vendor_docs_without_relations(conn: sqlite3.Connection) -> list[str]:
     """Vendor-doc paths (`kind='vendor_doc'`, Phase 27) with zero
     `doc_relations_edges` rows *targeting* them — the mirror image of
-    `spec_docs_without_relations` above, not a parameterized copy of it: a
-    spec doc is the only `relation_kind` *source* `build_doc_relations_
-    edges` ever scans from (decisions/0037's spec-doc-outward-only
-    posture), so a vendor doc can only ever appear as a `target_doc_
-    artifact_id`, never a `source_doc_artifact_id`. Checking the wrong
-    column here would report every vendor doc as unrelated unconditionally,
-    since none of them are ever a source. `check`'s report-only
-    coverage-gap section, never `--strict`-blocking, same posture as every
-    other graph-derived coverage gap.
+    `spec_docs_without_relations` above, not a parameterized copy of it:
+    this checks `target_doc_artifact_id` specifically, deliberately
+    ignoring whether the same vendor doc might independently appear as a
+    `source_doc_artifact_id` too (Phase 29, decisions/0043, widened
+    `build_doc_relations_edges` to also scan vendor docs outward). The two
+    roles are orthogonal — "does anything mention this vendor doc" is a
+    different, still-useful coverage question from "does this vendor doc
+    itself mention anything," and this function only answers the former.
+    `check`'s report-only coverage-gap section, never `--strict`-blocking,
+    same posture as every other graph-derived coverage gap.
     """
     rows = conn.execute(
         """

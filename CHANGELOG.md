@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 29**: a vendor's own embedded upstream doc (`kind='vendor_doc'`,
+  Phase 27) is no longer passive, indexed-only content — it now
+  participates in the graph as a relationship *source*, symmetric to how
+  spec docs already did. `build_documents_edges` now scans `vendor_doc`
+  rows for symbol mentions too (a vendor's own README documenting its own
+  API is now a real `documents_edges` source, confirmed live:
+  `vendor/anthropic/src/README.md` now documents the `Anthropic` symbol).
+  `build_doc_relations_edges` now accepts vendor docs as sources alongside
+  spec docs, via a deliberately closed allow-set
+  (`{"spec_doc", "vendor_doc"}` — codecompass-generated artifacts are
+  excluded on purpose, since they'd only ever produce structural
+  self-mentions, not signal), with a self-mention exclusion so a vendor's
+  own README mentioning its own name never produces a
+  `mentions_dependency` edge to itself (confirmed live against real data:
+  zero such edges despite `vendor/anthropic/src/README.md` containing
+  "anthropic"/"Anthropic" seven times). Confirmed live: 3 new
+  vendor-doc-sourced relationships appeared on the first re-sync. See
+  `decisions/0043`, which supersedes `decisions/0041`'s "a vendor doc is
+  never a relation source" claim specifically (its actual root-level
+  detection-scope decision is unaffected).
+
 ### Fixed
 
 - **Phase 28**: `relation_enrichment.select_candidates` no longer always

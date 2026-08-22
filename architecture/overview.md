@@ -857,6 +857,14 @@ registered as one more `doc_artifacts` source so `doc_relations_edges`,
 `query relations`, and `check`'s coverage-gap section pick them up with no
 further changes (see
 [`decisions/0041`](../decisions/0041-vendor-upstream-docs-are-a-new-doc-artifacts-kind-root-level-only.md)).
+Phase 29 widens both `build_documents_edges`'s kind filter and
+`build_doc_relations_edges`'s scannable-source set to include
+`vendor_doc` — a vendor's own upstream README can now document its own
+symbols (`documents_edges`) and mechanically mention another tracked
+vendor, a Skill, or another doc artifact (`doc_relations_edges`), not just
+be mentioned by other docs, with a self-mention exclusion so a vendor
+doc's own name never produces a `mentions_dependency` edge to itself (see
+[`decisions/0043`](../decisions/0043-vendor-docs-become-relationship-sources-closed-allow-set-plus-self-mention-exclusion.md)).
 See
 [`decisions/0032`](../decisions/0032-context-graph-stored-in-sqlite.md)
 (SQLite over the original `decisions/0024` JSON-file choice) and
@@ -900,10 +908,10 @@ tables:
   mentioning a vendor and/or a source file — both nullable,
   independently), `routes_via_edges` (a vendor routed to a Skill),
   `depends_on_edges` (vendor-to-vendor dependency), `doc_relations_edges`
-  (Phase 21 — a spec doc mechanically mentioning a vendor or another doc
-  artifact; `target_vendor_id`/`target_doc_artifact_id` nullable, exactly
-  one set per row, matching `relation_kind`
-  `'mentions_dependency'`/`'mentions_artifact'` — the same
+  (Phase 21, widened Phase 29 — a spec doc or vendor doc mechanically
+  mentioning a vendor or another doc artifact; `target_vendor_id`/
+  `target_doc_artifact_id` nullable, exactly one set per row, matching
+  `relation_kind` `'mentions_dependency'`/`'mentions_artifact'` — the same
   two-nullable-target shape `skill_mentions_edges` already established)
   — the graph's edges.
 - `vendor_enrichment`/`symbol_enrichment` — the two tables that **survive
@@ -1226,14 +1234,17 @@ from `rebuild_project_graph` alongside the Phase 11 pieces above.
   for `vendor/<name>/OVERVIEW.md` if it exists (only vendors that have
   been usage-driven AI-enriched have one). Both `origin='codecompass_vendor'`.
 - `build_documents_edges(doc_artifact_rows, symbol_rows, project_root) ->
-  list[DocumentsEdgeRow]` — for each `claude_md`/`overview` doc artifact,
-  reads its file text off disk and word-boundary-matches it against
-  *that same vendor's* known symbol names. A coverage heuristic ("this
-  symbol's name appears in the vendor's own digest text"), not a quality
-  judgment. Takes `project_root` (beyond the phase plan's originally
-  sketched two-arg signature) since resolving `DocArtifactRow.path` — a
-  natural key, deliberately relative — to an actual file to read requires
-  it; `build_skill_mentions_edges` below needs it for the same reason.
+  list[DocumentsEdgeRow]` — for each `claude_md`/`overview`/`vendor_doc`
+  doc artifact (Phase 29 widened the kind filter to include `vendor_doc`
+  — a vendor's own upstream README already carries `vendor_name`, Phase
+  27, so no other change was needed), reads its file text off disk and
+  word-boundary-matches it against *that same vendor's* known symbol
+  names. A coverage heuristic ("this symbol's name appears in the
+  vendor's own digest text"), not a quality judgment. Takes
+  `project_root` (beyond the phase plan's originally sketched two-arg
+  signature) since resolving `DocArtifactRow.path` — a natural key,
+  deliberately relative — to an actual file to read requires it;
+  `build_skill_mentions_edges` below needs it for the same reason.
 - `build_routes_via_edges(configs, doc_artifact_rows) ->
   list[RoutesViaEdgeRow]` — routes each vendor to its own per-vendor
   Skill doc artifact (`kind='skill'`, `origin='codecompass_vendor'`) if
@@ -1316,18 +1327,20 @@ existing one; fixed default globs vs. a hand-maintained manifest).
   `_vendor_skill_name`). No `vendor.toml` configurability yet — see
   `decisions/0037`.
 
-`doc_mapping.py` gains one function:
-- `build_doc_relations_edges(spec_doc_rows, configs,
+`doc_mapping.py` gains one function (Phase 29 later widens its source
+argument — see **Vendor docs as relationship sources** below):
+- `build_doc_relations_edges(source_doc_rows, configs,
   other_doc_artifact_rows, project_root) -> list[DocRelationEdgeRow]` —
-  for each spec doc, reads its text once and word-boundary-matches it
-  (same helper pattern as `build_documents_edges`/
-  `build_skill_mentions_edges`) against every tracked vendor's name
-  (`relation_kind='mentions_dependency'`) and every *other* doc artifact's
-  `name` field — a Skill's frontmatter name, a dependency doc's
-  `f"{vendor} CLAUDE.md"`-style name (`relation_kind='mentions_artifact'`).
-  Spec-doc-outward scanning only: a Skill's or dependency doc's own body
-  mentioning a spec doc by name is not scanned for, a deliberately
-  deferred direction.
+  for each source doc whose `kind` is in a closed allow-set (originally
+  `spec_doc` only; Phase 29 widens it to `{spec_doc, vendor_doc}`), reads
+  its text once and word-boundary-matches it (same helper pattern as
+  `build_documents_edges`/`build_skill_mentions_edges`) against every
+  tracked vendor's name (`relation_kind='mentions_dependency'`) and every
+  *other* doc artifact's `name` field — a Skill's frontmatter name, a
+  dependency doc's `f"{vendor} CLAUDE.md"`-style name
+  (`relation_kind='mentions_artifact'`). Source-doc-outward scanning only:
+  a Skill's or dependency doc's own body mentioning a spec/vendor doc by
+  name is not scanned for, a deliberately deferred direction.
 
 `sync.rebuild_project_graph` calls `spec_docs.scan_spec_docs` alongside
 `skill_scan.scan_skills`/`collect_vendor_doc_artifacts`, adds the result to
@@ -1452,9 +1465,10 @@ this phase does not undo.** Registers those files as one more
 enrichment machinery — Phase 21/22's existing `doc_relations_edges`/
 relationship-enrichment mechanism already generalizes to any `doc_
 artifacts` row, so a vendor doc becomes an eligible `mentions_artifact`
-*target* (never a source — only spec docs scan outward, decisions/0037)
-the same way a per-vendor `CLAUDE.md`/`OVERVIEW.md` already is, with zero
-further changes downstream. See
+*target* (at this phase, only spec docs scan outward, decisions/0037 —
+Phase 29 below changes this) the same way a per-vendor `CLAUDE.md`/
+`OVERVIEW.md` already is, with zero further changes downstream at this
+point. See
 [`decisions/0041`](../decisions/0041-vendor-upstream-docs-are-a-new-doc-artifacts-kind-root-level-only.md).
 
 `doc_mapping.py` gains one function, a sibling to `collect_vendor_doc_
@@ -1479,10 +1493,11 @@ scan_spec_docs`'s whole-project glob):
 vendor_doc_artifacts`/`skill_scan.scan_skills`/`spec_docs.scan_spec_docs`,
 folding its output into the same `doc_artifact_rows` list and into `build_
 doc_relations_edges`'s `other_doc_artifact_rows` argument — same wiring
-shape as every other scan+edge-build pair already there, no changes to
-`build_documents_edges`/`build_routes_via_edges`/`build_doc_relations_
-edges` themselves (they already ignore/pass through a `kind` they don't
-special-case).
+shape as every other scan+edge-build pair already there. At this phase, no
+changes to `build_documents_edges`/`build_routes_via_edges`/`build_doc_
+relations_edges` themselves were needed (they already ignore/pass through
+a `kind` they don't special-case) — Phase 29 below is the first phase to
+actually change either of the first two.
 
 `check` gains a parallel report-only coverage-gap section, "Vendor docs
 with no detected relations" (`graph.vendor_docs_without_relations`) —
@@ -1490,12 +1505,73 @@ kept separate from "Spec docs with no detected relations" rather than
 folded into it, since the two check opposite `doc_relations_edges`
 columns: a spec doc's own *outgoing* mentions (`source_doc_artifact_id`)
 versus whether anything mentions a vendor doc at all (`target_doc_
-artifact_id`) — a vendor doc is never a relation source. Never
+artifact_id`). At this phase a vendor doc is never a relation source, so
+`target_doc_artifact_id` is the only column that could ever matter for
+one — Phase 29 below adds a vendor doc's *outgoing* mentions too, but
+`vendor_docs_without_relations` still deliberately checks only
+`target_doc_artifact_id`, since it is asking "does anything point at this
+vendor doc," not "does this vendor doc point at anything." Never
 `--strict`-blocking, same posture as every other coverage gap. `query
 relations <name>` needed no code change at all: it already resolves any
 `doc_artifacts` row by path or by `name`, so a vendor doc's name (e.g.
 `"anthropic README.md"`) works as a reverse-lookup target exactly like a
 Skill's or a dependency doc's name already did.
+
+### Vendor docs as relationship sources (Phase 29, extended `codecompass.doc_mapping`)
+
+**A vendor's own embedded upstream doc (`kind='vendor_doc'`, Phase 27) was
+wired into the graph as passive, indexed content only — eligible as a
+`mentions_artifact` *target*, but never itself a relationship *source*,
+and excluded from `documents_edges` symbol-mention detection entirely.**
+Found the same way Phase 26-28 were: a live `/discovery` session testing
+real output, confirmed against the code. Two gaps, both closed this
+phase:
+
+- `build_documents_edges`'s kind filter widens from `("claude_md",
+  "overview")` to `("claude_md", "overview", "vendor_doc")` — a vendor's
+  own README, arguably the single most authoritative source for "this doc
+  documents this symbol" (the upstream authors documenting their own
+  API), now produces real `documents_edges` rows. No other change was
+  needed: `vendor_doc` rows already carry `vendor_name` (Phase 27).
+- `build_doc_relations_edges`'s first parameter is renamed
+  `spec_doc_rows` → `source_doc_rows` and now accepts a **closed
+  allow-set** of source kinds, `{"spec_doc", "vendor_doc"}`
+  (`_DOC_RELATION_SOURCE_KINDS`) — not "any kind not otherwise excluded."
+  `sync.rebuild_project_graph`'s call site passes `spec_doc_rows +
+  vendor_upstream_doc_rows` as this argument (the third argument, the
+  "other doc artifacts a source might mention," is unchanged). A vendor
+  doc mentioning another tracked vendor, a Skill, or another vendor doc
+  now produces a real `doc_relations_edges` row exactly as a spec doc
+  mentioning the same things always has.
+
+**Self-mention exclusion**: a `vendor_doc` source row belonging to vendor
+`V` never produces a `mentions_dependency` edge whose target is `V`
+itself — a package's own README mentioning its own name is guaranteed,
+universal, and adds no signal, unlike a spec doc mentioning a vendor (or
+a vendor doc mentioning a *different* tracked vendor), both of which are
+real evidence. Implemented as a plain vendor-name comparison
+(`row.vendor_name == vendor_name`) before the word-boundary match, not a
+generic self-reference filter — it does not apply to `mentions_artifact`
+edges (a vendor doc's synthetic `name` field, `f"{vendor} {filename}"`,
+is not something the doc's own prose would organically contain) and
+naturally never applies to `spec_doc` sources (no `vendor_name` of their
+own to compare against). See
+[`decisions/0043`](../decisions/0043-vendor-docs-become-relationship-sources-closed-allow-set-plus-self-mention-exclusion.md)
+for the full reasoning behind both the closed allow-set and the
+self-mention exclusion, and for how this supersedes `decisions/0041`'s
+"a vendor doc is never a relation source" claim specifically (that ADR's
+actual subject — root-level, fixed-filename-set scope for *which* files
+get a `doc_artifacts` row — is unchanged).
+
+No change to `graph.py`'s schema (`doc_relations_edges` already supported
+an arbitrary `doc_artifacts` row as `source_doc_artifact_id`; nothing
+there assumed "source is always a spec doc") or to
+`relation_enrichment.py` (it already operates generically over whatever
+`doc_relations_edges` contains, with no assumption about the source row's
+`kind`) — pure `doc_mapping.py`/`sync.py` wiring, confirmed at
+implementation time that `spec_docs_without_relations`/`vendor_docs_
+without_relations` both remain correct unchanged (see the corrected
+paragraph above).
 
 ## `undo` — best-effort generated-artifact cleanup (`codecompass.cli`)
 

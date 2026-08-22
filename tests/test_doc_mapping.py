@@ -231,6 +231,56 @@ def test_build_documents_edges_ignores_non_claude_or_overview_doc_artifacts(tmp_
     assert edges == []
 
 
+def test_build_documents_edges_matches_symbol_names_in_vendor_doc_text(tmp_path: Path) -> None:
+    """Phase 29: a vendor's own upstream README (`kind='vendor_doc'`) is
+    now a scannable source too, same heuristic as `claude_md`/`overview`.
+    """
+    _write_clone_file(tmp_path, "demo", "README.md", "## API\n\ndoStuff: does the thing.\n")
+    doc_rows = [
+        DocArtifactRow(
+            path="vendor/demo/src/README.md", kind="vendor_doc", origin="vendor_upstream",
+            vendor_name="demo", name="demo README.md",
+        )
+    ]
+    symbol_rows = [
+        SymbolRow(vendor_name="demo", name="doStuff"),
+        SymbolRow(vendor_name="demo", name="neverMentioned"),
+    ]
+
+    edges = build_documents_edges(doc_rows, symbol_rows, tmp_path)
+
+    assert len(edges) == 1
+    assert edges[0].doc_artifact_path == "vendor/demo/src/README.md"
+    assert edges[0].vendor_name == "demo"
+    assert edges[0].symbol_name == "doStuff"
+
+
+def test_build_documents_edges_claude_md_and_overview_behavior_unchanged(tmp_path: Path) -> None:
+    """Regression: widening the kind filter to include `vendor_doc` must
+    not change `claude_md`/`overview` handling at all.
+    """
+    _write_vendor_claude_md(tmp_path, "demo", "## API\n\ndoStuff: does the thing.\n")
+    overview_path = tmp_path / "vendor" / "demo" / "OVERVIEW.md"
+    overview_path.write_text("doStuff is also mentioned here.\n", encoding="utf-8")
+    doc_rows = [
+        DocArtifactRow(
+            path="vendor/demo/CLAUDE.md", kind="claude_md", origin="codecompass_vendor",
+            vendor_name="demo",
+        ),
+        DocArtifactRow(
+            path="vendor/demo/OVERVIEW.md", kind="overview", origin="codecompass_vendor",
+            vendor_name="demo",
+        ),
+    ]
+    symbol_rows = [SymbolRow(vendor_name="demo", name="doStuff")]
+
+    edges = build_documents_edges(doc_rows, symbol_rows, tmp_path)
+
+    assert len(edges) == 2
+    paths = {edge.doc_artifact_path for edge in edges}
+    assert paths == {"vendor/demo/CLAUDE.md", "vendor/demo/OVERVIEW.md"}
+
+
 # --- build_routes_via_edges --------------------------------------------------
 
 
@@ -464,3 +514,113 @@ def test_build_doc_relations_edges_scans_every_spec_doc_independently(tmp_path: 
 
     assert len(edges) == 1
     assert edges[0].source_doc_artifact_path == "README.md"
+
+
+# --- build_doc_relations_edges: vendor docs as sources (Phase 29) -----------
+
+
+def _vendor_doc_row(path: str, vendor_name: str) -> DocArtifactRow:
+    return DocArtifactRow(
+        path=path,
+        kind="vendor_doc",
+        origin="vendor_upstream",
+        vendor_name=vendor_name,
+        name=f"{vendor_name} README.md",
+    )
+
+
+def test_build_doc_relations_edges_vendor_doc_source_matches_other_tracked_vendor(
+    tmp_path: Path,
+) -> None:
+    """A vendor doc mentioning a *different* tracked vendor is real
+    signal — same `mentions_dependency` detection a spec doc gets.
+    """
+    _write_clone_file(tmp_path, "demo", "README.md", "demo is built on top of otherlib.\n")
+    source_rows = [_vendor_doc_row("vendor/demo/src/README.md", "demo")]
+    configs = [_config("demo"), _config("otherlib")]
+
+    edges = build_doc_relations_edges(source_rows, configs, [], tmp_path)
+
+    assert len(edges) == 1
+    assert edges[0].source_doc_artifact_path == "vendor/demo/src/README.md"
+    assert edges[0].relation_kind == "mentions_dependency"
+    assert edges[0].target_vendor_name == "otherlib"
+
+
+def test_build_doc_relations_edges_self_mention_exclusion(tmp_path: Path) -> None:
+    """A vendor doc mentioning its *own* vendor's name produces no edge for
+    that vendor specifically, while a different tracked vendor it also
+    mentions in the same text still produces a real edge.
+    """
+    _write_clone_file(
+        tmp_path, "demo", "README.md", "demo is a tool. demo demo demo. Uses otherlib too.\n"
+    )
+    source_rows = [_vendor_doc_row("vendor/demo/src/README.md", "demo")]
+    configs = [_config("demo"), _config("otherlib")]
+
+    edges = build_doc_relations_edges(source_rows, configs, [], tmp_path)
+
+    assert len(edges) == 1
+    assert edges[0].relation_kind == "mentions_dependency"
+    assert edges[0].target_vendor_name == "otherlib"
+
+
+def test_build_doc_relations_edges_mentions_artifact_from_vendor_doc_source(
+    tmp_path: Path,
+) -> None:
+    _write_clone_file(
+        tmp_path, "demo", "README.md", "See the codecompass-other skill for details.\n"
+    )
+    source_rows = [_vendor_doc_row("vendor/demo/src/README.md", "demo")]
+    other_rows = [
+        DocArtifactRow(
+            path=".claude/skills/codecompass-other/SKILL.md",
+            kind="skill",
+            origin="codecompass_vendor",
+            vendor_name="other",
+            name="codecompass-other",
+        )
+    ]
+
+    edges = build_doc_relations_edges(source_rows, [], other_rows, tmp_path)
+
+    assert len(edges) == 1
+    assert edges[0].source_doc_artifact_path == "vendor/demo/src/README.md"
+    assert edges[0].relation_kind == "mentions_artifact"
+    assert edges[0].target_doc_artifact_path == ".claude/skills/codecompass-other/SKILL.md"
+
+
+def test_build_doc_relations_edges_ignores_non_allow_set_source_kinds(tmp_path: Path) -> None:
+    """The source-kind filter is a closed allow-set (`spec_doc`,
+    `vendor_doc`) — a codecompass-generated artifact (e.g. `claude_md`)
+    passed in as a source is never scanned, even though nothing else about
+    it looks different from a legitimate source row.
+    """
+    _write_vendor_claude_md(tmp_path, "demo", "Uses otherlib under the hood.\n")
+    source_rows = [
+        DocArtifactRow(
+            path="vendor/demo/CLAUDE.md", kind="claude_md", origin="codecompass_vendor",
+            vendor_name="demo",
+        )
+    ]
+    configs = [_config("otherlib")]
+
+    edges = build_doc_relations_edges(source_rows, configs, [], tmp_path)
+
+    assert edges == []
+
+
+def test_build_doc_relations_edges_spec_doc_source_still_works_unchanged(tmp_path: Path) -> None:
+    """Regression: the parameter rename/generalization must not change
+    spec-doc-sourced behavior at all.
+    """
+    _write_spec_doc(tmp_path, "README.md", "This project depends on demo for parsing.\n")
+    spec_doc_rows = [DocArtifactRow(path="README.md", kind="spec_doc", origin="project")]
+    configs = [_config("demo")]
+
+    edges = build_doc_relations_edges(spec_doc_rows, configs, [], tmp_path)
+
+    assert len(edges) == 1
+    assert edges[0].source_doc_artifact_path == "README.md"
+    assert edges[0].relation_kind == "mentions_dependency"
+    assert edges[0].target_vendor_name == "demo"

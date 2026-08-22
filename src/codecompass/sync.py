@@ -264,6 +264,13 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
     word-boundary-scans each one's text for mentions of a tracked vendor
     or another doc artifact's name, producing `doc_relations_edges` —
     mechanical only, same posture as every other edge table here.
+
+    Phase 29 widens `build_doc_relations_edges`'s scannable-source set from
+    spec docs alone to `spec_doc_rows + vendor_upstream_doc_rows` — a
+    vendor's own upstream doc (`kind='vendor_doc'`) can now mechanically
+    mention another tracked vendor, a Skill, or another doc artifact too,
+    not just be mentioned by this project's own docs (see
+    `decisions/0043`).
     """
     vendor_rows: list[VendorRow] = []
     symbol_rows: list[SymbolRow] = []
@@ -319,7 +326,7 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
     routes_via_edge_rows = build_routes_via_edges(configs, doc_artifact_rows)
     depends_on_edge_rows = build_depends_on_edges(configs, project_root)
     doc_relations_edge_rows = build_doc_relations_edges(
-        spec_doc_rows,
+        spec_doc_rows + vendor_upstream_doc_rows,
         configs,
         vendor_doc_rows + vendor_upstream_doc_rows + skill_doc_rows,
         project_root,

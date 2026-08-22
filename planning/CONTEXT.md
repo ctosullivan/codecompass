@@ -229,13 +229,39 @@ call). Four new tests reproducing the exact scenario found (needle past
 the cap, for both relation kinds, plus a graceful-fallback case and a
 no-regression-when-already-near-the-start case). Verified independently:
 `pytest` 461 passed/1 skipped (up from 457), `ruff check .` clean,
-core-logic diff read directly against the plan. **Re-enrichment + a
-second `/discovery` retest to confirm the two previously-ungrounded
-summaries actually improve is the immediate next step, not yet done as
-of this note** — per the plan's own Verification section, a plain re-sync
-won't force this on its own (the cache key doesn't depend on which
-excerpt-selection algorithm produced it), so the two stale `doc_relation_
-enrichment` rows need to be cleared deliberately first.
+core-logic diff read directly against the plan. Forced re-enrichment
+(cleared the two stale `doc_relation_enrichment` rows, re-ran `sync
+--yes`) and re-verified via a second `/discovery` session, reading the
+real surrounding text directly: both previously-ungrounded summaries now
+accurately describe the real passage that triggered each match — a
+concrete, confirmed before/after improvement, not just "tests pass."
+
+**Most recently — Phase 29, done**: found via direct user observation
+("the project should be relating docs contained in the vendor packages to
+other nodes in the graph") during that same `/discovery` retest, then
+confirmed against the live code before planning anything. A vendor doc
+was wired in as passive, indexed-only content — eligible as a `mentions_
+artifact` *target*, but excluded from `documents_edges` entirely and
+never a relationship *source*. Fixed: `build_documents_edges` now scans
+`vendor_doc` rows for symbol mentions too; `build_doc_relations_edges`
+now accepts vendor docs as sources via a deliberately closed allow-set
+(`{"spec_doc", "vendor_doc"}` — codecompass-generated artifacts
+excluded, they'd only ever self-mention), with a self-mention exclusion
+so a vendor's own README mentioning its own name never produces a
+self-referencing `mentions_dependency` edge. New `decisions/0043`,
+correctly written as append-only (supersedes `decisions/0041`'s "never a
+relation source" claim specifically, without editing 0041 itself).
+Orchestrator also fixed two now-stale docstrings in `graph.py`
+(`DocRelationEdgeRow`, `vendor_docs_without_relations`) that the
+implementer correctly flagged as out of this phase's file scope rather
+than silently editing. Verified independently: `pytest` 468 passed/1
+skipped (up from 461), `ruff check .` clean, core-logic diff read
+directly. Confirmed live against this repo's own real data: `vendor/
+anthropic/src/README.md` now documents the `Anthropic` symbol; 3 new
+vendor-doc-sourced relationships appeared; zero self-referencing
+`anthropic`→`anthropic` edges despite the file saying "anthropic" seven
+times — the self-mention exclusion confirmed firing on real data, not
+just a synthetic test.
 
 ## Next concrete step
 
@@ -250,7 +276,7 @@ section at the same time. None of this should happen from a broad
 and pushing a public tag are genuinely irreversible.
 
 One decision remains genuinely open, unrelated to Part B and not blocking
-Phase 28's live re-verification:
+anything currently in flight:
 
 1. **Whether routing/rollup and MCP (now 24/25) really should be deferred
    past v1.0** — proposed in `planning/v1.0-initial-release-roadmap.md`'s

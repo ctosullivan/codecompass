@@ -134,11 +134,15 @@ def build_documents_edges(
     symbol_rows: list[SymbolRow],
     project_root: Path,
 ) -> list[DocumentsEdgeRow]:
-    """For each `claude_md`/`overview` doc artifact, read its file text off
-    disk and word-boundary-match it against *that same vendor's* known
-    symbol names — one edge per match. A coverage heuristic ("this
-    symbol's name appears in the vendor's own digest text"), not a
-    quality judgment.
+    """For each `claude_md`/`overview`/`vendor_doc` doc artifact, read its
+    file text off disk and word-boundary-match it against *that same
+    vendor's* known symbol names — one edge per match. A coverage
+    heuristic ("this symbol's name appears in the vendor's own digest
+    text"), not a quality judgment. `vendor_doc` (Phase 27) was added to
+    this filter in Phase 29 — a vendor's own upstream README is at least
+    as authoritative a source of "this doc documents this symbol" as
+    codecompass's own generated `CLAUDE.md`/`OVERVIEW.md`, and it already
+    carries `vendor_name` (Phase 27), so no other change was needed here.
     """
     symbols_by_vendor: dict[str, list[str]] = defaultdict(list)
     for symbol in symbol_rows:
@@ -146,7 +150,7 @@ def build_documents_edges(
 
     edges: list[DocumentsEdgeRow] = []
     for row in doc_artifact_rows:
-        if row.kind not in ("claude_md", "overview") or row.vendor_name is None:
+        if row.kind not in ("claude_md", "overview", "vendor_doc") or row.vendor_name is None:
             continue
         vendor_symbols = symbols_by_vendor.get(row.vendor_name)
         if not vendor_symbols:
@@ -192,35 +196,63 @@ def build_routes_via_edges(
     return edges
 
 
+# Closed allow-set of scannable relationship-source kinds (Phase 29,
+# decisions/0043) — deliberately not "any kind not otherwise excluded".
+# A codecompass-*generated* artifact (`claude_md`, `overview`, `skill`,
+# `cursor_mdc`, `slash_command`) mentioning a vendor by name is structural,
+# not signal, so it stays out of this set; adding a new source kind later
+# is a deliberate one-line change here, not an accidental side effect of
+# some other doc kind's origin changing.
+_DOC_RELATION_SOURCE_KINDS = frozenset({"spec_doc", "vendor_doc"})
+
+
 def build_doc_relations_edges(
-    spec_doc_rows: list[DocArtifactRow],
+    source_doc_rows: list[DocArtifactRow],
     configs: list[VendorConfig],
     other_doc_artifact_rows: list[DocArtifactRow],
     project_root: Path,
 ) -> list[DocRelationEdgeRow]:
-    """For each spec doc (`kind='spec_doc'`), read its file text off disk
-    once and word-boundary-match it (`re.search(rf"\\b{re.escape(name)}\\b",
-    text)`, same helper pattern as `build_documents_edges`/
-    `skill_scan.build_skill_mentions_edges`) against: (a) every tracked
-    vendor's name (`relation_kind='mentions_dependency'`), and (b) every
-    *other* doc artifact's `name` field — a Skill's frontmatter `name`, a
-    dependency doc's `f"{vendor} CLAUDE.md"`-style name
+    """For each scannable source doc — `kind` in `_DOC_RELATION_SOURCE_KINDS`
+    (`spec_doc`, `vendor_doc`; a closed allow-set, see decisions/0043),
+    non-matching rows in `source_doc_rows` are skipped — read its file text
+    off disk once and word-boundary-match it
+    (`re.search(rf"\\b{re.escape(name)}\\b", text)`, same helper pattern as
+    `build_documents_edges`/`skill_scan.build_skill_mentions_edges`)
+    against: (a) every tracked vendor's name
+    (`relation_kind='mentions_dependency'`), and (b) every *other* doc
+    artifact's `name` field — a Skill's frontmatter `name`, a dependency
+    doc's `f"{vendor} CLAUDE.md"`-style name
     (`relation_kind='mentions_artifact'`). A doc artifact with no `name`
     set is never a match target — nothing to word-boundary-search for.
 
-    Spec-doc-outward scanning only (Phase 21's Explicitly deferred
-    section): a Skill's or dependency doc's own body mentioning a spec doc
-    by name is not scanned for here, and never will be from this
-    function — that's a distinct, deliberately deferred direction.
+    Self-mention exclusion (Phase 29): a `vendor_doc` source row's own
+    vendor (its `vendor_name`) never produces a `mentions_dependency` edge
+    targeting that same vendor — a package's own README mentioning its own
+    name is guaranteed, universal noise, unlike a spec doc mentioning a
+    vendor, or a vendor doc mentioning a *different* tracked vendor, both
+    of which are real evidence of a relationship. No equivalent exclusion
+    applies to `mentions_artifact` edges, and none applies to `spec_doc`
+    sources at all (a spec doc has no `vendor_name` of its own to compare
+    against) — see decisions/0043.
+
+    Source-doc-outward scanning only (Phase 21's Explicitly deferred
+    section, widened to vendor docs by Phase 29): a Skill's or dependency
+    doc's own body mentioning a spec/vendor doc by name is not scanned for
+    here, and never will be from this function — that's a distinct,
+    deliberately deferred direction.
     """
     vendor_names = [config.name for config in configs]
     named_artifacts = [row for row in other_doc_artifact_rows if row.name]
 
     edges: list[DocRelationEdgeRow] = []
-    for row in spec_doc_rows:
+    for row in source_doc_rows:
+        if row.kind not in _DOC_RELATION_SOURCE_KINDS:
+            continue
         text = (project_root / row.path).read_text(encoding="utf-8")
 
         for vendor_name in vendor_names:
+            if row.kind == "vendor_doc" and row.vendor_name == vendor_name:
+                continue
             if re.search(rf"\b{re.escape(vendor_name)}\b", text):
                 edges.append(
                     DocRelationEdgeRow(
