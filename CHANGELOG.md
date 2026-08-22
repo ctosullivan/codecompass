@@ -47,6 +47,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 18: `undo` command** — implements
+  `planning/phase-18-undo-command.md` and new `decisions/0036`. New
+  `codecompass undo [--yes] [--dry-run]`: graph-backed enumeration
+  (every `doc_artifacts` row tagged `codecompass_tool`/
+  `codecompass_vendor`, never `third_party`) with a pattern-based
+  fallback when no `context-graph.db` exists yet; strips root
+  `CLAUDE.md`'s routing-table marker block in place rather than deleting
+  the file; never runs a git command or commits on the user's behalf.
+  Fixes a Windows-specific bug found during implementation: naive
+  `rmtree` silently left a cloned vendor's read-only `.git/objects/`
+  files behind while reporting success — `_rmtree_best_effort` clears
+  the read-only bit, retries, and reports genuine leftovers instead.
+  `pytest`: 366 passed, 1 skipped; `ruff check .` clean.
 - **Phase 17: `/discovery` slash command** — implements
   `planning/phase-17-discovery-slash-command.md`. New
   `src/codecompass/commands.py`, generating

@@ -55,7 +55,7 @@ only once phase 19 is `done`, not after each individual phase.
 | 15 | CLI rewire — `cli.py`: Phase A+B wiring, `promote` deleted, `query` command added, `check`/`index`/`skill.py` migrated to graph-backed data (decisions/0033) | done | [`phase-15-cli-rewire.md`](phase-15-cli-rewire.md) |
 | 16 | Retire `Depth` — `core.py`/`config.py`/`discovery.py` shrink; legacy `depth=` tolerated on read (decisions/0031); `sync_vendor` reads enrichment from the graph and `grounded_description.py` is retired (decisions/0035) | done | [`phase-16-retire-depth.md`](phase-16-retire-depth.md) |
 | 17 | `/discovery` slash command — new generated `.claude/commands/discovery.md`, read-only guided-exploration entry point, wired into the same generation points as the tool Skill | done | [`phase-17-discovery-slash-command.md`](phase-17-discovery-slash-command.md) |
-| 18 | `undo` command — new `undo [--yes] [--dry-run]`, driven by the graph's origin-tagged artifacts + known fixed paths; root CLAUDE.md removal goes through the diff-approval flow (CLAUDE.md §0) | planned | [`phase-18-undo-command.md`](phase-18-undo-command.md) |
+| 18 | `undo` command — new `undo [--yes] [--dry-run]`, driven by the graph's origin-tagged artifacts + known fixed paths; root CLAUDE.md removal goes through the diff-approval flow (CLAUDE.md §0) | done | [`phase-18-undo-command.md`](phase-18-undo-command.md) |
 | 19 | Chat demotion + governance docs — README/architecture rewritten around the graph+Skills+`/discovery` as primary; tool Skill stops featuring chat first (decisions/0034) | planned | [`phase-19-chat-demotion-and-governance-docs.md`](phase-19-chat-demotion-and-governance-docs.md) |
 
 **Renumbering note (dated to Phase 10's planning):** the original Phase

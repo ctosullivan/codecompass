@@ -1125,6 +1125,79 @@ unrelated word (a vendor named `six` must not match `sixty-four`) —
 covered by a regression test in both `tests/test_doc_mapping.py` and
 `tests/test_skill_scan.py`.
 
+## `undo` — best-effort generated-artifact cleanup (`codecompass.cli`)
+
+**New in Phase 18 (`decisions/0036`).** `codecompass undo [--yes]
+[--dry-run]` is the first command whose job is to *remove* generated
+output rather than produce it: every tracked vendor's `vendor/<name>/`
+directory, `vendor.toml`, `context-graph.db`, every codecompass-generated
+Skill/`.mdc`/slash-command artifact, and the root `CLAUDE.md`
+routing-table marker block. Implemented entirely in `cli.py` — no new
+module — as a handful of small enumeration helpers plus the command
+function itself.
+
+**Two mutually exclusive enumeration strategies**, chosen by whether
+`context-graph.db` exists (`_codecompass_generated_paths`):
+
+- **Graph-backed** (`_graph_backed_undo_paths`): `SELECT path, kind FROM
+  doc_artifacts WHERE origin IN ('codecompass_tool', 'codecompass_vendor')`
+  — an exact match against `doc_artifacts.origin`'s CHECK constraint
+  (which only ever allows those two values plus `third_party`), not a
+  `LIKE` pattern, so `origin='third_party'` is excluded by construction,
+  never by a filter applied after the fact. A `kind='skill'` row's `path`
+  points at its `SKILL.md` file, but the generated artifact `skill.py`
+  actually writes is the *whole Skill directory* (`SKILL.md` plus a
+  `references/` subdir for a per-vendor Skill) — this function resolves
+  such a row to its parent directory, not the file alone, or
+  `references/*.md` would be orphaned behind an otherwise-deleted Skill.
+  Every tracked vendor's `vendor/<name>/` directory is added directly from
+  the `vendors` table, independent of the `doc_artifacts` rows.
+- **Fallback** (`_fallback_undo_paths`), used only when `context-graph.db`
+  doesn't exist yet (a project that's only run `init`/a single `sync
+  <vendor>`): pattern-matches the exact generated-name conventions
+  `skill.py`'s `_TOOL_SKILL_DIR_NAME`/`commands.py`'s discovery-command
+  path use — `.claude/skills/codecompass/`,
+  `.claude/skills/codecompass-*/` (glob), `.cursor/rules/codecompass-*.mdc`
+  (glob), `.claude/commands/discovery.md` (if present) — plus every vendor
+  listed directly in `vendor.toml` (`load_vendor_config`, no graph
+  needed). Strictly less precise than the graph-backed path (it can't
+  distinguish a hand-renamed third-party Skill that happens to collide
+  with the `codecompass-*` naming pattern from one this tool actually
+  generated) but functional without ever requiring a prior whole-project
+  sync — the scenario `undo` most needs to work in
+  (`decisions/0036`).
+
+Either path, `vendor.toml` and `context-graph.db` themselves are always
+added if present.
+
+**Deduplication** (`_dedupe_contained`): a `claude_md`/`overview`
+`doc_artifacts` row's path (e.g. `vendor/demo/CLAUDE.md`) is always a
+descendant of that same vendor's `vendor/demo/` directory, already in the
+target set — printing and deleting both would be redundant, so any path
+that's a strict descendant of another already-collected path is dropped,
+shallowest paths processed first.
+
+**The root `CLAUDE.md` marker block is stripped, never deleted** —
+`_strip_routing_table_block` reuses `index.py`'s own `_MARKER_BLOCK_RE`
+(imported directly, not duplicated — unlike `skill.py`'s/`sync.py`'s
+locally-duplicated `_open_graph_readonly`, drift between two independent
+copies of *this* regex would be a correctness bug, not just redundant
+code) and runs `update_root_claude_md`'s insertion logic in reverse:
+`_MARKER_BLOCK_RE.sub("", text)` removes the block, then a `\n{3,}` ->
+`\n\n` collapse cleans up the blank-line gap left behind. Hand-written
+content before/after the block survives untouched either way.
+
+**Flow:** enumerate, print the full list, stop if `--dry-run`, otherwise
+prompt (`typer.confirm`, skippable with `--yes`), then delete
+(`shutil.rmtree` for directories, `Path.unlink` for files) and rewrite
+`CLAUDE.md` with the block stripped.
+
+**Never touches git** (no `git rm`/`git add`/`git status`) and **never
+commits** — plain filesystem operations only, the same posture every
+other `codecompass` command already has toward git. Best-effort, not
+transactional: a failure partway through a multi-path deletion is not
+rolled back (`decisions/0036` has the full rationale).
+
 ## Cost model
 
 Structural generation (trees, API-surface extraction, source cloning,

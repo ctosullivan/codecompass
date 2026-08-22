@@ -13,7 +13,11 @@ bootstrap/`sync`.
 from __future__ import annotations
 
 import json
+import os
+import re
+import shutil
 import sqlite3
+import stat
 from pathlib import Path
 
 import typer
@@ -33,8 +37,13 @@ from codecompass.discovery import (
     discover_manifest_paths,
     write_vendor_toml,
 )
-from codecompass.index import load_routing_rows, render_routing_table, update_root_claude_md
-from codecompass.skill import write_tool_skill
+from codecompass.index import (
+    _MARKER_BLOCK_RE,
+    load_routing_rows,
+    render_routing_table,
+    update_root_claude_md,
+)
+from codecompass.skill import _TOOL_SKILL_DIR_NAME, write_tool_skill
 from codecompass.staleness import Severity, VendorStaleness, check_all
 from codecompass.sync import rebuild_project_graph, sync_all, sync_vendor
 
@@ -606,6 +615,222 @@ def chat(
     except ChatError as exc:
         console.print(f"[red]error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
+
+
+@app.command()
+def undo(
+    yes: bool = typer.Option(False, "--yes", help="Skip the confirmation prompt."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print what would be removed, without deleting anything."
+    ),
+) -> None:
+    """Best-effort cleanup of everything codecompass generated in this
+    project (`decisions/0036`): every tracked vendor's `vendor/<name>/`
+    directory, `vendor.toml`, `context-graph.db`, every codecompass-
+    generated Skill/`.mdc`/slash-command artifact, and the root
+    `CLAUDE.md` routing-table marker block (stripped in place — the file
+    itself, and any hand-written content around the block, is left
+    untouched). Never removes a hand-written or third-party Skill/`.mdc`
+    file, and never runs a git command of any kind — plain filesystem
+    operations only; committing the result is left entirely to you.
+
+    Two enumeration strategies depending on whether `context-graph.db`
+    exists yet: the precise graph-backed one (every `doc_artifacts` row
+    tagged `codecompass_tool`/`codecompass_vendor`, never `third_party`),
+    or a pattern-based fallback for a project that hasn't run a
+    whole-project sync yet. See docs/cli-reference.md.
+    """
+    project_root = Path.cwd()
+    targets = _dedupe_contained(_codecompass_generated_paths(project_root))
+
+    claude_md_path = project_root / "CLAUDE.md"
+    stripped_claude_md: str | None = None
+    if claude_md_path.exists():
+        stripped_claude_md = _strip_routing_table_block(
+            claude_md_path.read_text(encoding="utf-8")
+        )
+
+    if not targets and stripped_claude_md is None:
+        console.print("[yellow]nothing to undo[/yellow]")
+        return
+
+    console.print("[bold]codecompass undo[/bold] would remove:")
+    for target in targets:
+        suffix = "/" if target.is_dir() else ""
+        console.print(f"  {target.relative_to(project_root).as_posix()}{suffix}")
+    if stripped_claude_md is not None:
+        console.print("  CLAUDE.md (strip the codecompass routing-table block only)")
+
+    if dry_run:
+        return
+
+    if not yes and not typer.confirm("Proceed?"):
+        console.print("[yellow]undo skipped[/yellow]")
+        return
+
+    leftovers: list[Path] = []
+    for target in targets:
+        if target.is_dir():
+            if not _rmtree_best_effort(target):
+                leftovers.append(target)
+        elif target.exists():
+            try:
+                target.unlink()
+            except OSError:
+                leftovers.append(target)
+    if stripped_claude_md is not None:
+        claude_md_path.write_text(stripped_claude_md, encoding="utf-8")
+
+    if leftovers:
+        console.print(
+            "[yellow]undo finished, but could not fully remove:[/yellow]"
+        )
+        for leftover in leftovers:
+            console.print(f"  {leftover.relative_to(project_root).as_posix()}")
+    else:
+        console.print("[green]undo complete[/green]")
+
+
+def _rmtree_best_effort(path: Path) -> bool:
+    """`shutil.rmtree`, but a file `PermissionError` (most commonly a
+    git-cloned vendor snapshot's read-only `.git/objects/pack/*` files,
+    especially on Windows) clears the read-only bit and retries once
+    before giving up on that one file — plain `ignore_errors=True` would
+    silently leave such files behind while `undo` still reports success.
+    Returns whether `path` is fully gone afterward, so the caller can
+    report per-target when something survives instead of claiming a clean
+    removal that didn't actually happen.
+    """
+
+    def _on_error(func, sub_path, exc_info):  # noqa: ANN001
+        del exc_info
+        try:
+            os.chmod(sub_path, stat.S_IWRITE)
+            func(sub_path)
+        except OSError:
+            pass
+
+    shutil.rmtree(path, onerror=_on_error)
+    return not path.exists()
+
+
+def _codecompass_generated_paths(project_root: Path) -> set[Path]:
+    """Every path `undo` should remove, before de-duplication. Two mutually
+    exclusive enumeration strategies, chosen by whether `context-graph.db`
+    exists:
+
+    - **Graph available:** every `doc_artifacts` row tagged
+      `codecompass_tool`/`codecompass_vendor` (`third_party` is never
+      selected — by construction, not a filter applied after the fact),
+      resolved to a real path, plus every tracked vendor's `vendor/<name>/`
+      directory (`_graph_backed_undo_paths`).
+    - **No graph yet:** a pattern-based fallback matching the exact
+      generated-name conventions `skill.py`/`commands.py` use
+      (`_fallback_undo_paths`) — less precise (can't distinguish a
+      hand-renamed third-party Skill that happens to match), but functional
+      without requiring a prior whole-project sync.
+
+    Always, regardless of path: `vendor.toml` and `context-graph.db`
+    themselves, if present.
+    """
+    targets: set[Path] = set()
+    db_path = project_root / _GRAPH_DB_FILENAME
+    if db_path.exists():
+        conn = graph.open_graph(project_root)
+        try:
+            targets |= _graph_backed_undo_paths(conn, project_root)
+        finally:
+            conn.close()
+    else:
+        targets |= _fallback_undo_paths(project_root)
+
+    vendor_toml = project_root / "vendor.toml"
+    if vendor_toml.exists():
+        targets.add(vendor_toml)
+    if db_path.exists():
+        targets.add(db_path)
+    return targets
+
+
+def _graph_backed_undo_paths(conn: sqlite3.Connection, project_root: Path) -> set[Path]:
+    """`origin IN ('codecompass_tool', 'codecompass_vendor')` — the CHECK
+    constraint on `doc_artifacts.origin` only ever allows those two values
+    plus `third_party`, so this is an exact match on "starts with
+    codecompass_", not a `LIKE` pattern.
+    """
+    targets: set[Path] = set()
+    for path, kind in conn.execute(
+        "SELECT path, kind FROM doc_artifacts "
+        "WHERE origin IN ('codecompass_tool', 'codecompass_vendor')"
+    ):
+        resolved = project_root / path
+        # A Skill's doc_artifacts row points at its SKILL.md, but the
+        # generated artifact skill.py actually writes is the whole Skill
+        # directory (SKILL.md plus a references/ subdir for a per-vendor
+        # Skill) — remove the directory, not just the one file, or
+        # references/*.md would be left orphaned behind an otherwise-deleted
+        # Skill.
+        targets.add(resolved.parent if kind == "skill" else resolved)
+    for (vendor_name,) in conn.execute("SELECT name FROM vendors"):
+        targets.add(project_root / "vendor" / vendor_name)
+    return targets
+
+
+def _fallback_undo_paths(project_root: Path) -> set[Path]:
+    """Pattern-based enumeration for a project with no `context-graph.db`
+    yet (e.g. only `init --scan` has run) — matches the exact naming
+    conventions `skill.py`/`commands.py` use to generate these paths, never
+    a broader glob that could sweep in a hand-written or third-party file.
+    """
+    targets: set[Path] = set()
+
+    tool_skill_dir = project_root / ".claude" / "skills" / _TOOL_SKILL_DIR_NAME
+    if tool_skill_dir.is_dir():
+        targets.add(tool_skill_dir)
+    targets |= set(project_root.glob(".claude/skills/codecompass-*"))
+    targets |= set(project_root.glob(".cursor/rules/codecompass-*.mdc"))
+
+    discovery_md = project_root / ".claude" / "commands" / "discovery.md"
+    if discovery_md.exists():
+        targets.add(discovery_md)
+
+    try:
+        configs = load_vendor_config(project_root / "vendor.toml")
+    except ConfigError:
+        configs = []
+    for config in configs:
+        targets.add(project_root / "vendor" / config.name)
+
+    return targets
+
+
+def _dedupe_contained(paths: set[Path]) -> list[Path]:
+    """Drop any path that's a strict descendant of another path already in
+    the set (e.g. `vendor/<name>/CLAUDE.md` once `vendor/<name>/` itself is
+    already slated for removal) — `rmtree`ing the ancestor directory already
+    removes it, so listing/deleting it again separately would just be
+    redundant. Shallowest paths first, so an ancestor is always recorded
+    before a descendant is checked against it.
+    """
+    ordered = sorted(paths, key=lambda p: len(p.parts))
+    kept: list[Path] = []
+    for path in ordered:
+        if not any(path == k or k in path.parents for k in kept):
+            kept.append(path)
+    return sorted(kept)
+
+
+def _strip_routing_table_block(text: str) -> str | None:
+    """`None` if `text` has no codecompass marker block to strip (nothing
+    to change). Otherwise the block is removed and the blank-line gap it
+    leaves behind is collapsed — `index.py`'s `update_root_claude_md`'s own
+    `_MARKER_BLOCK_RE`-based insertion logic, run in reverse. Hand-written
+    content before/after the block is untouched either way.
+    """
+    if not _MARKER_BLOCK_RE.search(text):
+        return None
+    stripped = _MARKER_BLOCK_RE.sub("", text)
+    return re.sub(r"\n{3,}", "\n\n", stripped)
 
 
 if __name__ == "__main__":

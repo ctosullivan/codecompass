@@ -290,3 +290,51 @@ it participates in the graph like any other generated file.
 # Not a shell command — typed inside a Claude Code session:
 /discovery
 ```
+
+## `codecompass undo [--yes] [--dry-run]`
+
+**Status:** implemented (Phase 18, `decisions/0036`).
+
+Best-effort cleanup of everything codecompass generated in this project:
+every tracked vendor's `vendor/<name>/` directory, `vendor.toml`,
+`context-graph.db`, every codecompass-generated Skill/`.mdc`/slash-command
+artifact, and the root `CLAUDE.md` routing-table marker block (stripped in
+place — the file itself, and any hand-written content around the block,
+is left untouched).
+
+- **Two enumeration paths, depending on whether `context-graph.db`
+  exists:**
+  - **Graph available** (the common case, once a whole-project sync has
+    run): queries `doc_artifacts` for every row tagged
+    `origin='codecompass_tool'`/`'codecompass_vendor'` — never
+    `origin='third_party'` — and resolves each to a real path (a Skill's
+    row points at its `SKILL.md`, but the whole Skill directory is
+    removed, including its `references/` subdir), plus every tracked
+    vendor's `vendor/<name>/` directory from the `vendors` table.
+  - **No graph yet** (a project that's only run `init`/a single `sync
+    <vendor>`): falls back to a pattern-based enumeration —
+    `.claude/skills/codecompass/`, `.claude/skills/codecompass-*/`,
+    `.cursor/rules/codecompass-*.mdc`, `.claude/commands/discovery.md`
+    (if present), plus every vendor listed directly in `vendor.toml`. Less
+    precise than the graph-backed path (it can't distinguish a
+    hand-renamed third-party Skill that happens to match the naming
+    pattern) but functional without requiring a prior whole-project sync
+    — the scenario `undo` most needs to work in.
+  - Always, regardless of path: `vendor.toml` and `context-graph.db`
+    themselves, if present.
+- Prints the full enumerated list before touching anything.
+- `--dry-run` stops after printing — no filesystem changes.
+- Without `--dry-run`, prompts for confirmation (`typer.confirm`) unless
+  `--yes`.
+- **Never touches git** — no `git rm`/`git add`/`git status`, and never
+  commits the resulting working-tree changes. Committing (or not) the
+  removal is left entirely to you, the same posture every other
+  `codecompass` command already has toward git.
+- Best-effort, not transactional (`decisions/0036`): if one deletion fails
+  partway through, `undo` does not roll back what it already removed.
+
+```bash
+codecompass undo --dry-run
+codecompass undo
+codecompass undo --yes
+```
