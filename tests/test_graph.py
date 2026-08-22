@@ -138,7 +138,7 @@ def test_init_schema_seeds_schema_version(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "1"
+    assert value == "2"
 
 
 def test_init_schema_is_idempotent(tmp_path) -> None:
@@ -148,7 +148,117 @@ def test_init_schema_is_idempotent(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "1"
+    assert value == "2"
+
+
+def test_doc_artifacts_accepts_slash_command_kind(tmp_path) -> None:
+    """Phase 17: `doc_artifacts.kind`'s CHECK constraint was widened to
+    include `'slash_command'` — a fresh database must accept it directly
+    (the migration test below covers an already-existing pre-Phase-17 db).
+    """
+    conn = open_graph(tmp_path)
+    conn.execute(
+        "INSERT INTO doc_artifacts (kind, origin, path) VALUES "
+        "('slash_command', 'codecompass_tool', '.claude/commands/discovery.md')"
+    )  # must not raise
+
+
+def test_open_graph_migrates_pre_phase_17_schema(tmp_path) -> None:
+    """Simulates a `context-graph.db` created before Phase 17
+    (`schema_version` "1", `doc_artifacts.kind`'s CHECK constraint not yet
+    widened) — `open_graph` must migrate it in place on next open: bump
+    `schema_version`, drop+recreate `doc_artifacts` under the new
+    constraint (cascading away any stale referencing rows in
+    `documents_edges`), and leave `vendor_enrichment` completely untouched.
+    """
+    db_path = tmp_path / "context-graph.db"
+    old_conn = sqlite3.connect(db_path)
+    old_conn.execute("PRAGMA foreign_keys = ON")
+    old_conn.executescript(
+        """
+        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE vendors (
+          id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE,
+          ecosystem TEXT NOT NULL, installed_version TEXT
+        );
+        CREATE TABLE doc_artifacts (
+          id INTEGER PRIMARY KEY,
+          vendor_id INTEGER REFERENCES vendors(id) ON DELETE CASCADE,
+          kind TEXT NOT NULL CHECK (kind IN ('claude_md','overview','skill','cursor_mdc')),
+          origin TEXT, path TEXT NOT NULL UNIQUE, name TEXT, description TEXT
+        );
+        CREATE TABLE documents_edges (
+          id INTEGER PRIMARY KEY,
+          doc_artifact_id INTEGER NOT NULL REFERENCES doc_artifacts(id) ON DELETE CASCADE,
+          symbol_id INTEGER NOT NULL
+        );
+        CREATE TABLE vendor_enrichment (
+          id INTEGER PRIMARY KEY,
+          vendor_id INTEGER NOT NULL UNIQUE REFERENCES vendors(id) ON DELETE CASCADE,
+          technical_description TEXT, symbol_set_hash TEXT NOT NULL,
+          model TEXT NOT NULL, generated_at TEXT NOT NULL
+        );
+        """
+    )
+    old_conn.execute("INSERT INTO meta (key, value) VALUES ('schema_version', '1')")
+    old_conn.execute(
+        "INSERT INTO vendors (id, name, ecosystem, installed_version) "
+        "VALUES (1, 'demo', 'python', '1.0.0')"
+    )
+    old_conn.execute(
+        "INSERT INTO doc_artifacts (id, kind, origin, path) VALUES "
+        "(1, 'skill', 'codecompass_tool', '.claude/skills/codecompass/SKILL.md')"
+    )
+    old_conn.execute("INSERT INTO documents_edges (doc_artifact_id, symbol_id) VALUES (1, 1)")
+    old_conn.execute(
+        "INSERT INTO vendor_enrichment "
+        "(vendor_id, technical_description, symbol_set_hash, model, generated_at) VALUES "
+        "(1, 'A demo library.', 'hash-abc', 'claude-haiku-4-5', '2026-01-01T00:00:00+00:00')"
+    )
+    old_conn.commit()
+    old_conn.close()
+
+    conn = open_graph(tmp_path)
+
+    (schema_version,) = conn.execute(
+        "SELECT value FROM meta WHERE key = 'schema_version'"
+    ).fetchone()
+    assert schema_version == "2"
+
+    # Would raise sqlite3.IntegrityError under the pre-migration constraint.
+    conn.execute(
+        "INSERT INTO doc_artifacts (kind, origin, path) VALUES "
+        "('slash_command', 'codecompass_tool', '.claude/commands/discovery.md')"
+    )
+
+    # The stale documents_edges row (referencing a doc_artifacts id wiped
+    # out by the migration's drop+recreate) was cascade-cleared, not left
+    # dangling.
+    (edge_count,) = conn.execute("SELECT COUNT(*) FROM documents_edges").fetchone()
+    assert edge_count == 0
+
+    # vendor_enrichment has no foreign key to doc_artifacts at all — this
+    # migration can't reach it, and doesn't.
+    (technical_description, symbol_set_hash) = conn.execute(
+        "SELECT technical_description, symbol_set_hash FROM vendor_enrichment WHERE vendor_id = 1"
+    ).fetchone()
+    assert technical_description == "A demo library."
+    assert symbol_set_hash == "hash-abc"
+
+
+def test_open_graph_migration_is_noop_when_schema_version_already_current(tmp_path) -> None:
+    """A second `open_graph` call against an already-current-version
+    database must not drop/recreate `doc_artifacts` again (which would
+    needlessly discard same-run data mid-session).
+    """
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+    conn.close()
+
+    conn = open_graph(tmp_path)
+
+    (doc_artifact_count,) = conn.execute("SELECT COUNT(*) FROM doc_artifacts").fetchone()
+    assert doc_artifact_count == len(_fixture_kwargs()["doc_artifacts"])
 
 
 # --- rebuild_deterministic ---------------------------------------------------

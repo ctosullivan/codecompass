@@ -522,6 +522,70 @@ at all, including the Mode-1 standalone `cd`-into-vendor scenario (see
 **Two consumption modes** above), which isn't a "current task the agent
 judges relevant" situation the way Skills triggering assumes.
 
+## `/discovery` custom slash command — `codecompass.commands`
+
+**New in Phase 17.** A third generated-artifact type alongside Skills and
+`.mdc` rules, but a genuinely different Claude Code mechanism from
+either: a **custom slash command**, written to `.claude/commands/
+discovery.md` and invoked explicitly by typing `/discovery` inside a
+Claude Code session, rather than auto-triggered by description matching
+the way Skills are. `codecompass.commands` follows `codecompass.skill`'s
+render/write split (`render_discovery_command() -> str` /
+`write_discovery_command(project_root: Path) -> None`) rather than
+inventing a new pattern, but stays a separate module — different
+directory convention, different frontmatter shape, no vendor-specific
+content threaded in (unlike `render_tool_skill`, its content is entirely
+static: it teaches Claude *how* to explore whatever a project's
+codecompass output currently is, not what that output currently
+contains).
+
+**Generated unconditionally**, same trigger points and free/no-AI-cost
+posture as the tool-level Skill: bare `codecompass` (`_bootstrap`) and
+`codecompass index`. Whole-project `codecompass sync` does **not** also
+call it, as of this phase — that call site has never called
+`write_tool_skill` either (only `_bootstrap` and `index` do), so there was
+no existing "same points write_tool_skill already is" precedent at that
+third call site to actually mirror; see `planning/CONTEXT.md` for the
+current status of this gap.
+
+**Read-only by mechanical constraint, not just instruction.** Its
+frontmatter sets `allowed-tools` — confirmed, as of this phase's
+implementation date, to be supported identically for `.claude/commands/
+*.md` files as for Agent Skills (same frontmatter reference, pre-approving
+the listed tools for that invocation without a permission prompt) — to
+`Read`/`Grep`/`Glob` plus narrowly-scoped `Bash(...)` patterns for exactly
+two sanctioned escape hatches: `codecompass query`/`check`, and read-only
+`sqlite3` access to `context-graph.db` for anything the canned `query`
+subcommands don't cover. `Write`/`Edit` are never granted. The command
+body also repeats, in plain instructional text (not solely relying on the
+tool restriction), that it must never create a plan file or make a code
+change — if answering a question would require one, it states that
+explicitly and stops rather than proceeding.
+
+**Indexed into the context graph the same way Skills/`.mdc` rules are**:
+`skill_scan.scan_skills` (Phase 12's mapping module — the name predates
+this phase but the function now covers a third artifact type, not just
+Skills/`.mdc`) additionally globs for `.claude/commands/discovery.md` and,
+if present, appends it as a `doc_artifacts` row (`kind='slash_command'` —
+`doc_artifacts.kind`'s CHECK constraint was widened for this,
+`schema_version` bumped from `"1"` to `"2"`, with `open_graph` migrating
+an already-existing pre-Phase-17 `context-graph.db` by dropping and
+recreating just the `doc_artifacts` table — safe, since that table (and
+everything that cascades from it) is fully rebuilt by
+`rebuild_deterministic` on every whole-project sync anyway, and
+`vendor_enrichment`/`symbol_enrichment` have no foreign key to
+`doc_artifacts` at all, so this migration can't reach them regardless).
+Flowing through the same `scan_skills` return value it also participates
+in `skill_scan.build_skill_mentions_edges`' word-boundary mention
+detection, same as any other Skill/`.mdc` doc artifact.
+
+`graph.skills_index`/`codecompass query skills` were not widened in this
+phase — they remain hard-filtered to `kind = 'skill'`, so a
+`/discovery`-generated `doc_artifacts` row doesn't currently surface
+through `codecompass query skills`, only through a direct
+`context-graph.db` read. See `planning/CONTEXT.md` for the current status
+of this gap.
+
 ## Chat REPL
 
 **The REPL is a primary consumption mode for vendor digests, not a

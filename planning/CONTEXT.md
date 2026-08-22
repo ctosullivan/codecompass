@@ -6,81 +6,88 @@ for the log of how it got here.
 
 ## Current phase
 
-**Phase 16: Retire `Depth` — done.** Phases 0-15 remain `done`. Executing
-MVP (v0.2) per `planning/v0.2-implementation-execution-plan.md`: one
-implementation subagent per phase, independently re-verified, one commit
-per phase, strictly in order.
+**Phase 17: `/discovery` slash command — done.** Phases 0-16 remain
+`done`. Executing MVP (v0.2) per
+`planning/v0.2-implementation-execution-plan.md`.
 
 ## What was just completed
 
-**This phase required a re-plan mid-stream — worth remembering the shape
-of that, not just the outcome.** The first implementation attempt
-correctly stopped without making changes: `Depth` was not actually fully
-behaviorally inert after Phase 15 as the original plan assumed —
-`sync.py`, `claude_md.py`, and `grounded_description.py` still gated real
-behavior on it. Investigating why surfaced a real bug already on `main`
-since Phase 15: a whole-project `sync` re-run silently erased Phase B's
-enrichment content from `CLAUDE.md`, because `sync_vendor` rebuilt every
-vendor's file from scratch via a digest that never carried enrichment
-data, gated on a `Depth` value nothing sets anymore now that `promote` is
-gone. Wrote `decisions/0035` and revised
-`planning/phase-16-retire-depth.md` to fix this properly before
-continuing — see that ADR for the full reasoning.
+Implemented `planning/phase-17-discovery-slash-command.md`: new
+`src/codecompass/commands.py` (`render_discovery_command`/
+`write_discovery_command`), generating `.claude/commands/discovery.md` —
+frontmatter scopes `allowed-tools` to `Read`/`Grep`/`Glob` plus a
+narrow `Bash(codecompass query:*)`/`Bash(codecompass check:*)`/
+`Bash(sqlite3 context-graph.db:*)` allowlist (no `Write`/`Edit`), and
+the body repeats the read-only constraint in plain instructional text
+too — both mechanical and instructional, per the plan. `graph.py`'s
+`doc_artifacts.kind` CHECK constraint widened to add `'slash_command'`
+(`_SCHEMA_VERSION` "1"→"2"), with a migration in `open_graph` that
+drops and recreates `doc_artifacts` for an already-existing older
+database — safe, since that table (and everything cascading from it) is
+fully rebuilt every whole-project sync anyway, and it has no FK
+relationship to `vendor_enrichment`/`symbol_enrichment` to disturb.
+`skill_scan.scan_skills` now also indexes the new file. Wired into
+`cli.py` alongside `write_tool_skill`.
 
-Implemented the revised plan: `sync_vendor` now looks up a vendor's
-current enrichment from the context graph (read-only, gracefully skipped
-if no `context-graph.db` exists) before building its `VendorDigest`, so a
-from-scratch re-render reproduces existing enrichment instead of erasing
-it — directly fixing the bug above, with a regression test that syncs
-twice and confirms the Description section survives. `grounded_description.py`
-and its test file are deleted (not orphaned) — `enrichment.py` fully
-replaces its role. `claude_md._render_description_section`'s gate
-simplified to pure `technical_description` truthiness (no more `Depth`
-check, and no longer conflates a clone failure with a description
-failure — `decisions/0035`'s reasoning). Then the originally-planned
-mechanical removal: `Depth` enum deleted from `core.py`,
-`VendorConfig` narrowed to `(name, ecosystem)`, `config.py` tolerates a
-legacy `depth =` line silently, `discovery.py`/`cli.py` updated.
+**Two legitimate scope gaps found and correctly left alone, not silently
+worked around**: (1) the plan claimed `write_tool_skill` fires at three
+points (`_bootstrap`, `index()`, `sync()`'s whole-project branch) — the
+implementer greped and confirmed it's actually only two;
+`write_discovery_command` was wired to match reality, not the plan's
+inaccurate premise, and this is now documented in
+`docs/cli-reference.md`/`architecture/overview.md`. (2) `codecompass
+query skills` (Phase 15) hard-filters to `kind='skill'`, so the new
+`slash_command`-kind row doesn't surface through it — confirmed present
+via direct `sqlite3` read, left unmodified since fixing it wasn't in this
+phase's scope. Both are minor, documented, low-priority — not blockers,
+not silently patched over.
 
-**Blast radius was much larger than either plan version's Files list**
-(flagged explicitly by the implementer, not hidden): deleting `Depth`
-broke `chat.py` (a real source bug — `config.depth.value` in the REPL's
-banner line) and required mechanical `depth=`-kwarg removal across 14
-test files never named in the plan. Fixed mechanically, not redesigned;
-`sync_all`'s now-meaningless `budget` parameter (no AI call happens in
-`sync_vendor`'s path anymore — the one remaining AI budget gate is
-Phase B's, already in `cli.py`) and two tests whose premise depended on
-it were removed as genuinely obsolete, confirmed by reading their
-original content before agreeing they no longer test anything real.
-
-Verified independently: `pytest` 340 passed/1 skipped (down from 361 —
-`test_grounded_description.py`'s tests and the two obsolete budget tests
-account for the reduction, confirmed deliberate not accidental), `ruff
-check .` clean, `grep -rn "Depth\b"` returns zero hits in `src/` and only
-a docstring + negative-assertion string in `tests/`. Read `sync.py`'s,
-`cli.py`'s, and `claude_md.py`'s full diffs directly and confirmed the
-regression test for the bug fix does what it claims (syncs an enriched
-vendor twice, asserts the Description section survives the second sync).
+Verified independently: `pytest` 355 passed/1 skipped, `ruff check .`
+clean. Read `graph.py`'s migration logic and the generated
+`discovery.md`'s actual content directly — confirmed the migration
+correctly cascades via `ON DELETE CASCADE` without touching enrichment
+tables, and confirmed `CLAUDE.md`'s diff from this phase's dogfooding run
+(bare `codecompass` against this repo) is confined entirely to the
+mechanical routing-table block (a Depth→Enriched column rename
+surfacing for the first time since Phase 15/16, since bare `codecompass`
+hadn't been re-run here since) — no governance prose touched, so treated
+as routine generated-artifact output, not a §0 approval case (consistent
+with Phase 9's precedent, where only marker-delimiter text and prose
+needed separate approval, not the table's row contents). `vendor/`
+being absent from this checkout right now is expected, cosmetic drift in
+a gitignored, freely-regeneratable directory — not a repeat of the
+earlier session's file-loss incident; `vendor.toml` (tracked) is intact.
 
 ## Next concrete step
 
-Implement `planning/phase-17-discovery-slash-command.md` next — new
-`commands.py`, `/discovery` generated alongside the tool Skill at the
-same trigger points. Same pattern: dispatch, re-verify independently
-(read the diff), doc-sync, commit, push. Then 18-19, strictly in order.
+Implement `planning/phase-18-undo-command.md` next — new `undo [--yes]
+[--dry-run]`, graph-backed enumeration of everything codecompass
+generated (via `doc_artifacts.origin`) with a pattern-based fallback
+when no graph exists yet, never commits on the user's behalf. Same
+pattern: dispatch, re-verify independently (read the diff), doc-sync,
+commit, push. Then Phase 19, closing out MVP (v0.2).
 
 **Still outstanding, not a blocker but worth remembering:**
+- Two minor, documented gaps from Phase 17, low-priority: `write_tool_skill`
+  (and now `write_discovery_command`) only fire at two points
+  (`_bootstrap`, `index()`) — `sync()`'s whole-project branch never
+  regenerates either artifact, unlike the plan's original (inaccurate)
+  premise of three trigger points. `codecompass query skills` hard-filters
+  to `kind='skill'`, so `/discovery`'s own `slash_command`-kind graph row
+  never surfaces through it (confirmed present via direct `sqlite3` read).
+  Neither blocks anything; pick up only if they become a real annoyance.
 - Once a Rust toolchain is available anywhere in the pipeline,
   `decisions/0014` requires validating the Cargo adapter against real
   `cargo metadata` output and a real crate — currently entirely
   unverified. Relevant to Phase 13's universal cloning.
 - `extract_npm_symbols` (Phase 3) is untested against real-world `.d.ts`
   authoring styles beyond hand-written fixtures.
-- `grounded_description.py`/`chat.py` have never been run against the
-  real Anthropic API in this environment — a human must do this manually
-  at least once, specifically against Phase 14's *batched* call shape,
-  before trusting output quality (`decisions/0016`). Phase 15's manual
-  verification step is the first point this becomes reachable end-to-end.
+- `enrichment.py` (batched calls) and `chat.py` have never been run
+  against the real Anthropic API in this environment — a human must do
+  this manually at least once before trusting output quality
+  (`decisions/0016`). Phase 15's manual verification step is where this
+  first becomes reachable end-to-end; not yet actually exercised against
+  a live key as of this session.
 - `staleness.py`'s version parser has no real PEP 440/semver correctness
   — flag if it misclassifies a real-world version string.
 - A formal trigger-accuracy evaluation harness for per-vendor Skills
@@ -90,11 +97,12 @@ same trigger points. Same pattern: dispatch, re-verify independently
 - Whether/when to cut the `v0.1` tag is a separate, not-yet-made decision
   (`decisions/0022`); `v0.2`'s tag is not before Phase 19 is `done`
   (`decisions/0030`).
-- This repo's own `rich` vendor never got its `depth = full`
-  promotion/per-vendor Skill regenerated after an earlier session's
-  file-loss incident (fully resolved otherwise, see git history around
-  commit `f2f92bd` if the full account is ever needed) — harmless for
-  phases 10-13's purposes, becomes relevant once Phase 14/15's manual
-  enrichment verification step needs a real usage-proven vendor to test
-  against (any of the four currently-tracked ones will do, once this
-  repo's own source actually imports them somewhere `usage.py` can see).
+- None of this repo's own four tracked vendors have ever been through a
+  real Phase B enrichment run (no vendor's `CLAUDE.md` has a Description
+  section yet). Three of them (`rich`, `typer`, `anthropic`) are
+  genuinely imported by `src/codecompass/` and confirmed as real
+  `uses_edges` (Phase 11's verification) — the moment bare `codecompass`
+  or `sync` runs against this repo with a real `ANTHROPIC_API_KEY` and
+  `--yes` (or a confirmed prompt), those three become real
+  `enrichment_candidates`. `pipdeptree` is invoked only as a subprocess,
+  never imported, so it correctly never becomes a candidate.

@@ -58,6 +58,7 @@ def test_bare_bootstrap_creates_vendor_toml_and_syncs_new_vendors(
     assert (tmp_path / "vendor" / "pytest" / "CLAUDE.md").exists()
     assert "<!-- codecompass:start -->" in (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
     assert (tmp_path / ".claude" / "skills" / "codecompass" / "SKILL.md").exists()
+    assert (tmp_path / ".claude" / "commands" / "discovery.md").exists()
 
 
 def test_bare_bootstrap_no_manifests_creates_empty_vendor_toml(
@@ -277,6 +278,35 @@ def test_index_injects_routing_table_into_root_claude_md(
     assert "7.1.2" in root_claude_md
     assert "<!-- codecompass:start -->" in root_claude_md
     assert (tmp_path / ".claude" / "skills" / "codecompass" / "SKILL.md").exists()
+    assert (tmp_path / ".claude" / "commands" / "discovery.md").exists()
+
+
+def test_index_regenerates_discovery_command_after_manual_deletion(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Same idempotent regeneration guarantee every other generated
+    artifact already has (plan verification step).
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "vendor.toml").write_text(
+        '[[vendor]]\nname = "turndown"\necosystem = "npm"\ndepth = "surface"\n',
+        encoding="utf-8",
+    )
+    vendor_dir = tmp_path / "vendor" / "turndown"
+    vendor_dir.mkdir(parents=True)
+    (vendor_dir / "CLAUDE.md").write_text(
+        "# turndown\n\n## Metadata\n\n- **Installed version:** 7.1.2\n", encoding="utf-8"
+    )
+    (tmp_path / "CLAUDE.md").write_text("# My Project\n", encoding="utf-8")
+    runner.invoke(app, ["index"])
+    discovery_md = tmp_path / ".claude" / "commands" / "discovery.md"
+    assert discovery_md.exists()
+    discovery_md.unlink()
+
+    result = runner.invoke(app, ["index"])
+
+    assert result.exit_code == 0, result.output
+    assert discovery_md.exists()
 
 
 def test_promote_command_removed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

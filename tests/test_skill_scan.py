@@ -137,6 +137,63 @@ def test_scan_skills_tolerates_file_without_frontmatter(tmp_path: Path) -> None:
     assert rows[0].description is None
 
 
+# --- discovery.md indexing (Phase 17) ------------------------------------
+
+
+def _write_discovery_command(project_root: Path, text: str) -> Path:
+    commands_dir = project_root / ".claude" / "commands"
+    commands_dir.mkdir(parents=True, exist_ok=True)
+    path = commands_dir / "discovery.md"
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+_DISCOVERY_COMMAND_TEXT = """---
+description: Explore this project's dependency context graph read-only.
+---
+
+# /discovery
+
+Body text.
+"""
+
+
+def test_scan_skills_indexes_discovery_command_when_present(tmp_path: Path) -> None:
+    _write_discovery_command(tmp_path, _DISCOVERY_COMMAND_TEXT)
+    configs = [_config("demo")]
+
+    rows = scan_skills(tmp_path, configs)
+
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.path == ".claude/commands/discovery.md"
+    assert row.kind == "slash_command"
+    assert row.origin == "codecompass_tool"
+    assert row.vendor_name is None
+    assert row.description == "Explore this project's dependency context graph read-only."
+
+
+def test_scan_skills_omits_discovery_command_when_absent(tmp_path: Path) -> None:
+    configs = [_config("demo")]
+
+    rows = scan_skills(tmp_path, configs)
+
+    assert rows == []
+
+
+def test_scan_skills_indexes_discovery_command_alongside_other_artifacts(
+    tmp_path: Path,
+) -> None:
+    _write_skill(tmp_path, "codecompass", _SINGLE_LINE_SKILL)
+    _write_discovery_command(tmp_path, _DISCOVERY_COMMAND_TEXT)
+    configs = [_config("demo")]
+
+    rows = scan_skills(tmp_path, configs)
+
+    kinds = {row.kind for row in rows}
+    assert kinds == {"skill", "slash_command"}
+
+
 # --- build_skill_mentions_edges -----------------------------------------------
 
 

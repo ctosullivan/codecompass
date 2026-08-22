@@ -78,12 +78,20 @@ def _classify_origin(identifier: str, configs: list[VendorConfig]) -> tuple[str,
     return "third_party", None
 
 
+_DISCOVERY_COMMAND_PATH = Path(".claude") / "commands" / "discovery.md"
+
+
 def scan_skills(project_root: Path, configs: list[VendorConfig]) -> list[DocArtifactRow]:
     """Globs `.claude/skills/**/SKILL.md` (`kind='skill'`) and
     `.cursor/rules/*.mdc` (`kind='cursor_mdc'`), extracting `name`/
     `description` from each file's frontmatter and classifying `origin` by
     directory name / filename-prefix against codecompass's own naming
-    convention — anything not matching `configs` is `third_party`.
+    convention — anything not matching `configs` is `third_party`. Also
+    indexes `.claude/commands/discovery.md` (`kind='slash_command'`,
+    `origin='codecompass_tool'`, Phase 17), if present, so `/discovery`
+    participates in the graph like any other codecompass-generated
+    artifact — e.g. so Phase 18's `undo` can find it the same way it finds
+    every other generated file.
     """
     rows: list[DocArtifactRow] = []
 
@@ -112,6 +120,20 @@ def scan_skills(project_root: Path, configs: list[VendorConfig]) -> list[DocArti
                 kind="cursor_mdc",
                 origin=origin,
                 vendor_name=vendor_name,
+                name=name,
+                description=description,
+            )
+        )
+
+    discovery_path = project_root / _DISCOVERY_COMMAND_PATH
+    if discovery_path.exists():
+        name, description, _ = _parse_skill_file(discovery_path.read_text(encoding="utf-8"))
+        rows.append(
+            DocArtifactRow(
+                path=discovery_path.relative_to(project_root).as_posix(),
+                kind="slash_command",
+                origin="codecompass_tool",
+                vendor_name=None,
                 name=name,
                 description=description,
             )

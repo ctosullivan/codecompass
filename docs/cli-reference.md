@@ -244,3 +244,49 @@ Type `exit`, `quit`, or press `Ctrl-D`/`Ctrl-C` to end the session.
 ```bash
 codecompass chat turndown
 ```
+
+## `/discovery` — a generated artifact, not a `codecompass` CLI command
+
+**Not a subcommand of `codecompass`.** `/discovery` is a Claude Code
+**custom slash command** — a templated markdown file codecompass writes to
+`.claude/commands/discovery.md`, invoked inside a Claude Code session by
+typing `/discovery`, not from a shell. It's easy to misread as one more
+entry in this reference alongside `sync`/`index`/`check`; it isn't one —
+there is no `codecompass discovery` command, and running `codecompass
+discovery` at a shell prompt errors the same way any unrecognized
+subcommand does.
+
+**Status:** implemented (Phase 17). Generated unconditionally — same
+trigger points and free/no-AI-cost posture as the tool-level Skill
+(`decisions/0020`): bare `codecompass` (Phase A), `codecompass index`. (As
+of this phase, whole-project `codecompass sync` does **not** also write
+it — that call site never wrote the tool-level Skill either, so there was
+no existing precedent to mirror there; see `planning/CONTEXT.md` for the
+current status of that gap.)
+
+Read-only by design, and — as of Claude Code's current custom-slash-command
+frontmatter support — mechanically restricted via `allowed-tools`, not just
+instructed: it can read files (`Read`/`Grep`/`Glob`) and run a narrow,
+scoped set of inspection commands (`codecompass query`/`check`, read-only
+`sqlite3` access to `context-graph.db`), but `Write`/`Edit` are never
+granted. Its body also repeats, in plain instructional text, that it must
+never create a plan file or make a code change — if answering a question
+would require one, it says so and stops rather than proceeding.
+
+It exists to give an agent a mechanical, low-friction way to explore a
+project's codecompass-tracked dependency context — usage, enrichment
+status, relationships between vendors and project source — without
+defaulting into `chat <vendor>`'s narrower single-vendor scope or an
+unguided, exploratory read of the whole `vendor/` tree.
+
+Deterministic, no AI cost — regenerated (overwritten) every time its
+trigger points run, same idempotent-regeneration guarantee every other
+codecompass-generated artifact has. It's also indexed into
+`context-graph.db` as a `doc_artifacts` row (`kind='slash_command'`,
+`origin='codecompass_tool'`) the same way Skills and `.mdc` rules are, so
+it participates in the graph like any other generated file.
+
+```
+# Not a shell command — typed inside a Claude Code session:
+/discovery
+```

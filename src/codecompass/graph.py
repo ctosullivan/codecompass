@@ -29,7 +29,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 _DB_FILENAME = "context-graph.db"
-_SCHEMA_VERSION = "1"
+_SCHEMA_VERSION = "2"
 
 _SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -77,7 +77,9 @@ CREATE INDEX IF NOT EXISTS idx_uses_source_file ON uses_edges(source_file_id);
 CREATE TABLE IF NOT EXISTS doc_artifacts (
   id          INTEGER PRIMARY KEY,
   vendor_id   INTEGER REFERENCES vendors(id) ON DELETE CASCADE,
-  kind        TEXT NOT NULL CHECK (kind IN ('claude_md','overview','skill','cursor_mdc')),
+  kind        TEXT NOT NULL CHECK (
+                kind IN ('claude_md','overview','skill','cursor_mdc','slash_command')
+              ),
   origin      TEXT CHECK (origin IN ('codecompass_tool','codecompass_vendor','third_party')),
   path        TEXT NOT NULL UNIQUE,
   name        TEXT,
@@ -247,16 +249,53 @@ def init_schema(conn: sqlite3.Connection) -> None:
         )
 
 
+def _migrate_doc_artifacts_kind_constraint(conn: sqlite3.Connection) -> None:
+    """Phase 17 (`schema_version` "1" -> "2"): `doc_artifacts.kind`'s CHECK
+    constraint gained a `'slash_command'` variant. `init_schema`'s `CREATE
+    TABLE IF NOT EXISTS` won't retrofit an already-existing table's CHECK
+    constraint, so a `context-graph.db` created before this phase needs its
+    `doc_artifacts` table dropped and recreated under the widened
+    constraint. Safe: `doc_artifacts` (and everything that references it —
+    `documents_edges`/`skill_mentions_edges`/`routes_via_edges`, all
+    `ON DELETE CASCADE`) is fully cleared and rewritten by
+    `rebuild_deterministic` on every whole-project sync anyway, so there's
+    no data-loss risk in recreating it here — and with
+    `PRAGMA foreign_keys = ON` already set on this connection, SQLite
+    itself cascades the drop into those referencing tables' rows, so no
+    dangling foreign keys are left behind even between this migration and
+    the next sync. Never touches `vendor_enrichment`/`symbol_enrichment` —
+    those tables have no foreign key to `doc_artifacts` at all, so a
+    `doc_artifacts` drop can't reach them (same "never touch enrichment"
+    invariant every other phase in this arc preserves).
+
+    A brand-new database (no `meta` table yet — `init_schema` hasn't run
+    at all) has nothing to migrate; `init_schema`, called right after this
+    function returns, seeds `schema_version` at the current value fresh.
+    """
+    meta_table_exists = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'meta'"
+    ).fetchone()
+    if not meta_table_exists:
+        return
+    row = conn.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()
+    if row is None or row[0] == _SCHEMA_VERSION:
+        return
+    with conn:
+        conn.execute("DROP TABLE IF EXISTS doc_artifacts")
+        conn.execute("UPDATE meta SET value = ? WHERE key = 'schema_version'", (_SCHEMA_VERSION,))
+
+
 def open_graph(project_root: Path) -> sqlite3.Connection:
     """Resolve `context-graph.db` at `project_root`, connect (creating the
     file if absent), enable foreign keys (SQLite defaults this off, so it
-    must be set per-connection), initialize the schema, and return the
-    connection. The one function later phases call to get a working
-    handle.
+    must be set per-connection), migrate an older on-disk schema version if
+    needed, initialize the schema, and return the connection. The one
+    function later phases call to get a working handle.
     """
     db_path = project_root / _DB_FILENAME
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
+    _migrate_doc_artifacts_kind_constraint(conn)
     init_schema(conn)
     return conn
 

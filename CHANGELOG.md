@@ -47,6 +47,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 17: `/discovery` slash command** — implements
+  `planning/phase-17-discovery-slash-command.md`. New
+  `src/codecompass/commands.py`, generating
+  `.claude/commands/discovery.md`: `allowed-tools` scoped to
+  `Read`/`Grep`/`Glob` plus a narrow `codecompass query`/`check`/`sqlite3
+  context-graph.db` allowlist (no `Write`/`Edit`), with the read-only
+  constraint also repeated in plain instructional text. `graph.py`'s
+  `doc_artifacts.kind` widened to include `'slash_command'`
+  (`_SCHEMA_VERSION` bump + migration for an already-existing database).
+  `skill_scan.py` indexes the new file. Two minor, documented scope gaps
+  found and correctly left alone rather than silently expanded: the
+  plan's claimed three `write_tool_skill` trigger points are actually
+  two; `query skills` doesn't yet surface the new artifact kind.
+  `pytest`: 355 passed, 1 skipped; `ruff check .` clean.
 - **Phase 16: retire `Depth`** — implements `planning/phase-16-retire-depth.md`
   and `decisions/0031`/`0035`. `core.py`'s `Depth` enum deleted;
   `VendorConfig` narrowed to `(name, ecosystem)`; `config.py` tolerates a

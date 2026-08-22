@@ -23,6 +23,7 @@ from rich.table import Table
 from codecompass import enrichment, graph
 from codecompass.adapters import AdapterError
 from codecompass.chat import ChatError, run_chat
+from codecompass.commands import write_discovery_command
 from codecompass.config import ConfigError, load_vendor_config
 from codecompass.core import VendorConfig
 from codecompass.discovery import (
@@ -115,6 +116,7 @@ def _bootstrap(project_root: Path, *, yes: bool, budget: float | None) -> None:
     rows = load_routing_rows(all_configs, project_root)
     update_root_claude_md(project_root, render_routing_table(rows))
     write_tool_skill(project_root, all_configs)
+    write_discovery_command(project_root)
     rebuild_project_graph(all_configs, project_root)
 
     console.print(
@@ -254,6 +256,7 @@ def index() -> None:
     rows = load_routing_rows(configs, Path.cwd())
     update_root_claude_md(Path.cwd(), render_routing_table(rows))
     write_tool_skill(Path.cwd(), configs)
+    write_discovery_command(Path.cwd())
     console.print(f"[green]updated[/green] CLAUDE.md routing table ({len(rows)} vendors)")
 
 

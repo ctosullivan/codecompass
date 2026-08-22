@@ -93,10 +93,10 @@ human contributors.
 <!-- codecompass:start -->
 The table below lists dependencies with a generated reference digest under `vendor/<name>/`. Consult the linked digest before relying on training knowledge for these libraries.
 
-| Vendor | Path | Version | Depth | Deps | Consult when |
+| Vendor | Path | Version | Enriched | Deps | Consult when |
 |---|---|---|---|---|---|
-| anthropic | `vendor/anthropic/` | _not synced_ | surface | [DEPTREE.md](./vendor/anthropic/DEPTREE.md) | general usage questions |
-| pipdeptree | `vendor/pipdeptree/` | _not synced_ | surface | [DEPTREE.md](./vendor/pipdeptree/DEPTREE.md) | general usage questions |
-| rich | `vendor/rich/` | _not synced_ | surface | [DEPTREE.md](./vendor/rich/DEPTREE.md) | general usage questions |
-| typer | `vendor/typer/` | _not synced_ | surface | [DEPTREE.md](./vendor/typer/DEPTREE.md) | general usage questions |
+| anthropic | `vendor/anthropic/` | _not synced_ | no | [DEPTREE.md](./vendor/anthropic/DEPTREE.md) | general usage questions |
+| pipdeptree | `vendor/pipdeptree/` | _not synced_ | no | [DEPTREE.md](./vendor/pipdeptree/DEPTREE.md) | general usage questions |
+| rich | `vendor/rich/` | _not synced_ | no | [DEPTREE.md](./vendor/rich/DEPTREE.md) | general usage questions |
+| typer | `vendor/typer/` | _not synced_ | no | [DEPTREE.md](./vendor/typer/DEPTREE.md) | general usage questions |
 <!-- codecompass:end -->
