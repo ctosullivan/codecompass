@@ -97,9 +97,30 @@ with `promote`/`Depth` fully retired and chat re-framed as secondary.
 | Phase | Name | Status | Plan file |
 |---|---|---|---|
 | 20 | Refresh generated artifacts after enrichment — fixes the graph/enrichment ordering gap found during this project's first live enrichment run: the routing table, tool Skill, and `undo`/`query skills`'s view of the graph lag one sync cycle behind a vendor's first enrichment | planned | [`phase-20-refresh-generated-artifacts-after-enrichment.md`](phase-20-refresh-generated-artifacts-after-enrichment.md) |
-| 21 | *(was 20, was 10, formerly 9)* Project-root-aware REPL routing (Tier 1 sourced from generated Skill descriptions, decisions/0013) + whole-project context + unconditional dependency rollup at session start (decisions/0012, now demoted per decisions/0034) + digest-exceeded escalation to the generated Skill folder — now consumes the SQLite graph (decisions/0032) instead of inventing ad hoc heuristics | not started | — |
-| 22 | *(was 21, was 11, formerly 10)* Polish: PyPI publish as `codecompass`, examples, docs site evaluation | not started | — |
-| 23 | *(was 22, was 12, formerly 11)* MCP server (`query_vendor`) | not started | — |
+| 21 | Spec-doc detection & relationship graph — new `spec_docs.py` classifies a project's own README/`docs/`/`architecture/`/`decisions/` etc. as graph nodes; new `doc_relations_edges` mechanically links them to dependency docs and skills (mention heuristic, no AI call) | planned | [`phase-21-spec-doc-detection-and-relationship-graph.md`](phase-21-spec-doc-detection-and-relationship-graph.md) |
+| 22 | AI-enriched cross-artifact relationships — batched AI summary of *how* each Phase 21 edge relates, gated on Phase 21's mechanically-proven candidates only, folded into the existing Phase B cost/consent flow; never writes to a spec doc's own file | planned | [`phase-22-ai-enriched-cross-artifact-relationships.md`](phase-22-ai-enriched-cross-artifact-relationships.md) |
+| 23 | *(was 22, was 21, was 11, formerly 10)* Polish: PyPI publish as `codecompass`, examples, docs site evaluation — the v1.0 release itself | not started | — |
+| 24 | *(was 21, was 20, was 10, formerly 9)* Project-root-aware REPL routing (Tier 1 sourced from generated Skill descriptions, decisions/0013) + whole-project context + unconditional dependency rollup at session start (decisions/0012, now demoted per decisions/0034) + digest-exceeded escalation to the generated Skill folder — now consumes the SQLite graph (decisions/0032) instead of inventing ad hoc heuristics — deferred past v1.0, see renumbering note below | not started | — |
+| 25 | *(was 23, was 22, was 12, formerly 11)* MCP server (`query_vendor`) — deferred past v1.0, see renumbering note below | not started | — |
+
+**Renumbering note (dated to `planning/v1.0-initial-release-roadmap.md`'s
+planning session):** two new phases (21, "Spec-doc detection &
+relationship graph" and 22, "AI-enriched cross-artifact relationships")
+are inserted, requested alongside a path-to-v1.0 roadmap pass. Former
+Phase 21 (routing/rollup) and Phase 22 (polish/PyPI publish) both shift —
+but not by a uniform +2: Polish (formerly 22) moves to **23**, directly
+after the two new phases, since it *is* the release itself and Phases
+20-22 are all release blockers; routing/rollup (formerly 21) moves to
+**24**, past the release line, on the reasoning that it enhances the
+already-demoted `chat` REPL (decisions/0034) rather than the primary
+`/discovery`/Skills interface, so it doesn't need to block v1.0 — see
+`planning/v1.0-initial-release-roadmap.md`'s "Why this order" section for
+the full reasoning (flagged there as a proposal, not a locked decision).
+Former Phase 23 (MCP) shifts to **25**, unaffected in relative order but
+renumbered by the two insertions ahead of it. All three shifted phases
+were `not started`, so this is a clean renumber, not a rewrite of
+in-flight work — same precedent condition as every renumbering note
+below.
 
 **Renumbering note (dated to this project's first live enrichment run):**
 a new Phase 20 ("Refresh generated artifacts after enrichment") is

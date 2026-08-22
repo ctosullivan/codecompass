@@ -91,25 +91,55 @@ Phase 20 inserted, former 20/21/22 (routing/rollup, polish, MCP) shift to
 21/22/23 — same clean-renumber pattern this project has used repeatedly,
 noted inline in the table.
 
+**Most recently: a path-to-v1.0 planning pass**, at explicit user request
+("draft a plan to get to initial release," plus a new requirement to
+recognize AI-enriched edges between dependency docs, spec docs, and custom
+skills). Produced `planning/v1.0-initial-release-roadmap.md` (umbrella),
+`planning/phase-21-spec-doc-detection-and-relationship-graph.md` (new —
+mechanical detection of a project's own spec docs as graph nodes, linked
+to dependency docs/skills via the existing mention-heuristic pattern), and
+`planning/phase-22-ai-enriched-cross-artifact-relationships.md` (new — a
+batched AI call summarizing *how* each Phase 21 edge relates, gated on
+Phase 21's candidates only). `planning/ROADMAP.md`'s Post-MVP table
+updated again: 21/22 inserted, Polish moved to 23 (proposed as the actual
+release phase), routing/rollup and MCP pushed to 24/25 (proposed deferred
+past v1.0 — not a locked decision, see "Next concrete step"). Planning
+only — no code changed, nothing implemented.
+
 ## Next concrete step
 
-**MVP (v0.2) is done.** `planning/phase-20-refresh-generated-artifacts-
-after-enrichment.md` is written and ready to implement (same pattern as
-every phase in the v0.2 arc: dispatch, re-verify independently, doc-sync,
-commit, push) whenever that's prioritized — not started yet. Two
-decisions remain genuinely open alongside it, both explicitly deferred
-rather than accidentally skipped:
+**MVP (v0.2) is done.** A path-to-v1.0 planning pass has now happened:
+`planning/v1.0-initial-release-roadmap.md` lays out phases 20-23 as the
+release-blocking sequence (20: the already-known artifact-refresh bug fix;
+21: new — mechanically detect a project's own spec docs, README/`docs/`/
+`architecture/`/`decisions/`, and link them to dependency docs/skills via
+the existing mention-heuristic pattern; 22: new — AI-enriched summaries of
+*how* each of those relationships connects, gated on Phase 21's candidates
+only, folded into the existing Phase B cost/consent flow; 23: Polish/PyPI
+publish, the release itself), with routing/rollup and MCP (now 24/25)
+proposed as deferred past v1.0 rather than blocking it. Individual plan
+files exist for 20 (already did), 21, and 22 — 23 is not written in detail
+yet. **None of phases 20-22 have been implemented** — this was planning
+only, at explicit user request, same as Phase 20's plan was written
+without being implemented.
+
+Three decisions remain genuinely open, none blocking Phase 20/21
+implementation from starting whenever prioritized:
 
 1. **Cutting the `v0.2` git tag and promoting `CHANGELOG.md`'s
    `[Unreleased]` section to a dated release** (`CLAUDE.md` §6,
    `decisions/0030`) — now *applicable* (all of phases 9-19 are `done`),
    but not yet decided or acted on, same posture `decisions/0022`
    established for `v0.1` (also still untagged). This is a user decision,
-   not something to act on unilaterally.
-2. **What comes after Phase 20** — `planning/ROADMAP.md`'s Post-MVP table
-   (phases 21-23: project-root routing/rollup consuming the new graph,
-   polish/PyPI publish, MCP server) is unstarted and unplanned in
-   implementation detail.
+   not something to act on unilaterally. Note `v1.0` supersedes this as
+   the actual target release if pursued directly — whether an interim
+   `v0.2` tag still gets cut is an open question, not answered here.
+2. **Whether routing/rollup and MCP (now 24/25) really should be deferred
+   past v1.0** — proposed in `planning/v1.0-initial-release-roadmap.md`'s
+   "Why this order" section, not locked. Flagged back to the user, not
+   decided unilaterally.
+3. **Phase 23 (Polish/PyPI publish)** has no plan file yet — needs one
+   before implementation per `CLAUDE.md` §1, same as every other phase.
 
 **Still outstanding, not a blocker but worth remembering:**
 - **The graph/enrichment ordering gap is now only *partially* resolved

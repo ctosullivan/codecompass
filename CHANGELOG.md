@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Planning: `planning/v1.0-initial-release-roadmap.md` — the path-to-v1.0
+  umbrella plan, plus two new phase plans it introduces: `planning/
+  phase-21-spec-doc-detection-and-relationship-graph.md` (mechanical
+  detection of a project's own README/`docs/`/`architecture/`/`decisions/`
+  etc. as graph nodes, linked to dependency docs and skills via the
+  existing mention-heuristic pattern) and `planning/
+  phase-22-ai-enriched-cross-artifact-relationships.md` (a batched AI call
+  summarizing *how* each of those mechanically-detected relationships
+  connects, gated on Phase 21's candidates only, folded into the existing
+  Phase B cost/consent flow, never writing to a spec doc's own file).
+  `planning/ROADMAP.md`'s Post-MVP table updated: Phases 21/22 inserted;
+  former Polish phase moves to 23 (now the v1.0 release phase itself);
+  former routing/rollup and MCP phases move to 24/25, deferred past the
+  v1.0 release line (proposed, not locked — see the roadmap doc's "Why
+  this order" section). Planning only, no code changed.
+
 - Planning: `planning/phase-20-refresh-generated-artifacts-after-
   enrichment.md` — a future plan for the remaining piece of the graph/
   enrichment ordering gap (routing table, tool Skill, `undo`/`query
