@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from codecompass.core import Depth, Ecosystem, VendorConfig, VendorDigest
+from codecompass.graph import VendorRow, open_graph, rebuild_deterministic, record_enrichment
 from codecompass.skill import (
     render_cursor_mdc,
     render_tool_skill,
@@ -27,13 +28,50 @@ def _digest(**overrides: object) -> VendorDigest:
     return VendorDigest(**defaults)  # type: ignore[arg-type]
 
 
-def test_render_tool_skill_lists_commands_and_vendor_table() -> None:
-    content = render_tool_skill(_configs())
+def test_render_tool_skill_lists_commands_and_vendor_table_no_graph_yet(tmp_path: Path) -> None:
+    content = render_tool_skill(_configs(), tmp_path)
     assert "name: codecompass" in content
-    assert "codecompass promote <vendor>" in content
-    assert "| turndown | npm | full |" in content
-    assert "| lodash | npm | surface |" in content
-    assert "2 tracked, 1 at `full` depth" in content
+    assert "promote" not in content
+    assert "codecompass query" in content
+    assert "| turndown | npm | no |" in content
+    assert "| lodash | npm | no |" in content
+    assert "2 tracked, 0 enriched" in content
+
+
+def test_render_tool_skill_reflects_enrichment_status_from_graph(tmp_path: Path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(
+        conn,
+        vendors=[
+            VendorRow(name="turndown", ecosystem="npm", installed_version="7.1.2"),
+            VendorRow(name="lodash", ecosystem="npm", installed_version="4.17.21"),
+        ],
+        source_files=[],
+        symbols=[],
+        uses_edges=[],
+        doc_artifacts=[],
+        documents_edges=[],
+        skill_mentions_edges=[],
+        routes_via_edges=[],
+        depends_on_edges=[],
+    )
+    (turndown_id,) = conn.execute(
+        "SELECT id FROM vendors WHERE name = 'turndown'"
+    ).fetchone()
+    record_enrichment(
+        conn,
+        turndown_id,
+        symbol_set_hash="hash",
+        model="claude-haiku-4-5",
+        generated_at="2026-01-01T00:00:00+00:00",
+    )
+    conn.close()
+
+    content = render_tool_skill(_configs(), tmp_path)
+
+    assert "| turndown | npm | yes |" in content
+    assert "| lodash | npm | no |" in content
+    assert "2 tracked, 1 enriched" in content
 
 
 def test_write_tool_skill_writes_expected_path(tmp_path: Path) -> None:

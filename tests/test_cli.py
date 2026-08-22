@@ -5,6 +5,7 @@ import pytest
 from typer.testing import CliRunner
 
 import codecompass.cli as cli_module
+from codecompass import enrichment, graph
 from codecompass.cli import app
 from codecompass.config import load_vendor_config
 from codecompass.core import Depth, VendorDigest
@@ -221,6 +222,56 @@ def test_sync_reports_description_failure_and_exits_nonzero(
     assert "timeout" in result.output
 
 
+def test_sync_whole_project_phase_b_yes_flag_enriches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "vendor.toml").write_text(
+        '[[vendor]]\nname = "pytest"\necosystem = "python"\ndepth = "surface"\n',
+        encoding="utf-8",
+    )
+
+    def _fake_select_candidates(conn, configs, project_root):  # noqa: ANN001
+        (config,) = configs
+        return [_fake_enrichment_candidate(config)]
+
+    def _fake_run_enrichment_batches(candidates):  # noqa: ANN001
+        return [_fake_enrichment_result("pytest")]
+
+    monkeypatch.setattr("codecompass.enrichment.select_candidates", _fake_select_candidates)
+    monkeypatch.setattr(
+        "codecompass.enrichment.run_enrichment_batches", _fake_run_enrichment_batches
+    )
+
+    result = runner.invoke(app, ["sync", "--yes"])
+
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / ".claude" / "skills" / "codecompass-pytest" / "SKILL.md").exists()
+
+
+def test_sync_single_vendor_never_triggers_phase_b(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`sync <vendor>` is the single-vendor branch — no graph rebuild, no
+    enrichment trigger (decisions/0025).
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "vendor.toml").write_text(
+        '[[vendor]]\nname = "pytest"\necosystem = "python"\ndepth = "surface"\n',
+        encoding="utf-8",
+    )
+    called: list[bool] = []
+    monkeypatch.setattr(
+        "codecompass.enrichment.select_candidates",
+        lambda *a, **k: called.append(True) or [],  # noqa: ANN001
+    )
+
+    result = runner.invoke(app, ["sync", "pytest"])
+
+    assert result.exit_code == 0, result.output
+    assert not called
+
+
 def test_index_injects_routing_table_into_root_claude_md(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -246,113 +297,137 @@ def test_index_injects_routing_table_into_root_claude_md(
     assert (tmp_path / ".claude" / "skills" / "codecompass" / "SKILL.md").exists()
 
 
-def test_promote_unknown_vendor_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_promote_command_removed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`promote` is retired entirely (decisions/0033, Phase 15) — its three
+    former jobs (clone, enrich, generate Skill) are now automatic outcomes
+    of bootstrap/`sync`. Typer's standard "no such command" error, not a
+    traceback.
+    """
     monkeypatch.chdir(tmp_path)
-    (tmp_path / "vendor.toml").write_text(
-        '[[vendor]]\nname = "lodash"\necosystem = "npm"\ndepth = "surface"\n',
-        encoding="utf-8",
-    )
 
-    result = runner.invoke(app, ["promote", "not-a-real-vendor"])
+    result = runner.invoke(app, ["promote", "anything"])
 
-    assert result.exit_code == 1
-    assert "not found in vendor.toml" in result.output
+    assert result.exit_code != 0
+    assert "no such command" in result.output.lower()
 
 
-def test_promote_aborts_when_confirmation_declined(
+def _fake_enrichment_candidate(config, **overrides):  # noqa: ANN001
+    defaults = {
+        "vendor": config,
+        "used_symbol_names": [],
+        "material": "# fake\n\nSome material.",
+        "installed_version": "1.0.0",
+    }
+    defaults.update(overrides)
+    return enrichment.EnrichmentCandidate(**defaults)
+
+
+def _fake_enrichment_result(vendor_name: str, **overrides):  # noqa: ANN001
+    defaults = {
+        "vendor": vendor_name,
+        "technical_description": "Does a thing.",
+        "conversational_overview": "A thing-doer.",
+        "symbol_purposes": {},
+        "symbol_set_hash": "fake-hash",
+    }
+    defaults.update(overrides)
+    return enrichment.EnrichmentResult(**defaults)
+
+
+def test_bare_bootstrap_phase_b_yes_flag_enriches_without_prompting(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    (tmp_path / "vendor.toml").write_text(
-        '[[vendor]]\nname = "lodash"\necosystem = "npm"\ndepth = "surface"\n',
-        encoding="utf-8",
+    (tmp_path / "requirements.txt").write_text("pytest\n", encoding="utf-8")
+
+    def _fake_select_candidates(conn, configs, project_root):  # noqa: ANN001
+        (config,) = [c for c in configs if c.name == "pytest"]
+        return [_fake_enrichment_candidate(config)]
+
+    def _fake_run_enrichment_batches(candidates):  # noqa: ANN001
+        return [_fake_enrichment_result("pytest")]
+
+    monkeypatch.setattr("codecompass.enrichment.select_candidates", _fake_select_candidates)
+    monkeypatch.setattr(
+        "codecompass.enrichment.run_enrichment_batches", _fake_run_enrichment_batches
     )
 
-    result = runner.invoke(app, ["promote", "lodash"], input="n\n")
-
-    assert result.exit_code == 1
-    assert "aborted" in result.output
-    vendors = load_vendor_config(tmp_path / "vendor.toml")
-    assert vendors[0].depth is Depth.SURFACE
-
-
-def test_promote_yes_flag_skips_confirmation_and_promotes(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "vendor.toml").write_text(
-        '[[vendor]]\nname = "lodash"\necosystem = "npm"\ndepth = "surface"\n\n'
-        '[[vendor]]\nname = "requests"\necosystem = "python"\ndepth = "surface"\n',
-        encoding="utf-8",
-    )
-
-    def _fake_sync_vendor(config, project_root):  # noqa: ANN001
-        return VendorDigest(
-            config=config,
-            installed_version="4.17.21",
-            technical_description="Utility functions.",
-            conversational_overview="A grab-bag of JS utilities.",
-        )
-
-    monkeypatch.setattr(cli_module, "sync_vendor", _fake_sync_vendor)
-
-    result = runner.invoke(app, ["promote", "lodash", "--yes"])
+    result = runner.invoke(app, ["--yes"])
 
     assert result.exit_code == 0, result.output
-    vendors = {v.name: v for v in load_vendor_config(tmp_path / "vendor.toml")}
-    assert vendors["lodash"].depth is Depth.FULL
-    assert vendors["requests"].depth is Depth.SURFACE  # untouched
-    assert (tmp_path / ".claude" / "skills" / "codecompass-lodash" / "SKILL.md").exists()
-    assert (tmp_path / ".cursor" / "rules" / "codecompass-lodash.mdc").exists()
-    assert "turndown" not in (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
+    assert "enriched" in result.output
+    assert (tmp_path / ".claude" / "skills" / "codecompass-pytest" / "SKILL.md").exists()
+    assert (tmp_path / ".cursor" / "rules" / "codecompass-pytest.mdc").exists()
 
 
-def test_promote_already_full_vendor_regenerates_without_erroring(
+def test_bare_bootstrap_phase_b_declined_confirmation_skips_enrichment(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    (tmp_path / "vendor.toml").write_text(
-        '[[vendor]]\nname = "lodash"\necosystem = "npm"\ndepth = "full"\n',
-        encoding="utf-8",
+    (tmp_path / "requirements.txt").write_text("pytest\n", encoding="utf-8")
+
+    def _fake_select_candidates(conn, configs, project_root):  # noqa: ANN001
+        (config,) = [c for c in configs if c.name == "pytest"]
+        return [_fake_enrichment_candidate(config)]
+
+    called: list[bool] = []
+    monkeypatch.setattr("codecompass.enrichment.select_candidates", _fake_select_candidates)
+    monkeypatch.setattr(
+        "codecompass.enrichment.run_enrichment_batches",
+        lambda candidates: called.append(True) or [],  # noqa: ANN001
     )
 
-    def _fake_sync_vendor(config, project_root):  # noqa: ANN001
-        return VendorDigest(config=config, installed_version="4.17.21")
-
-    monkeypatch.setattr(cli_module, "sync_vendor", _fake_sync_vendor)
-
-    result = runner.invoke(app, ["promote", "lodash", "--yes"])
+    result = runner.invoke(app, [], input="n\n")
 
     assert result.exit_code == 0, result.output
-    vendors = load_vendor_config(tmp_path / "vendor.toml")
-    assert vendors[0].depth is Depth.FULL
+    assert not called
+    assert "skipped" in result.output
+    # Phase A output still exists — declining Phase B doesn't undo it.
+    assert (tmp_path / "vendor" / "pytest" / "CLAUDE.md").exists()
+    assert not (tmp_path / ".claude" / "skills" / "codecompass-pytest" / "SKILL.md").exists()
 
 
-def test_promote_reports_description_failure_and_exits_nonzero(
+def test_bare_bootstrap_phase_b_budget_too_low_exits_nonzero_but_keeps_phase_a(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    (tmp_path / "vendor.toml").write_text(
-        '[[vendor]]\nname = "lodash"\necosystem = "npm"\ndepth = "surface"\n',
-        encoding="utf-8",
-    )
+    (tmp_path / "requirements.txt").write_text("pytest\n", encoding="utf-8")
 
-    def _fake_sync_vendor(config, project_root):  # noqa: ANN001
-        return VendorDigest(
-            config=config, installed_version="4.17.21", description_error="no repository found"
-        )
+    def _fake_select_candidates(conn, configs, project_root):  # noqa: ANN001
+        (config,) = [c for c in configs if c.name == "pytest"]
+        return [_fake_enrichment_candidate(config)]
 
-    monkeypatch.setattr(cli_module, "sync_vendor", _fake_sync_vendor)
+    monkeypatch.setattr("codecompass.enrichment.select_candidates", _fake_select_candidates)
 
-    result = runner.invoke(app, ["promote", "lodash", "--yes"])
+    result = runner.invoke(app, ["--budget", "0"])
 
     assert result.exit_code == 1
-    assert "description failed" in result.output
-    assert "no repository found" in result.output
-    # Depth is still persisted as full — the escalation itself succeeded,
-    # only description generation failed.
-    vendors = load_vendor_config(tmp_path / "vendor.toml")
-    assert vendors[0].depth is Depth.FULL
+    # Two separate substring checks, not one contiguous phrase — Rich
+    # word-wraps long console lines at the terminal width, which can (and
+    # here does) insert a line break between "exceeds" and "--budget".
+    assert "exceeds" in result.output
+    assert "--budget" in result.output
+    # Phase A's free work already completed before Phase B's budget check.
+    assert (tmp_path / "vendor" / "pytest" / "CLAUDE.md").exists()
+    assert "<!-- codecompass:start -->" in (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
+
+
+def test_bare_bootstrap_no_enrichment_candidates_never_prompts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No usage-proven vendors (the common case for these fixtures — no
+    real project source imports anything) means `select_candidates`
+    returns `[]` and Phase B is a silent no-op — this is what lets nearly
+    every other bootstrap test invoke `codecompass` with no `--yes` and
+    never risk a real Anthropic API call (decisions/0016).
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "requirements.txt").write_text("pytest\n", encoding="utf-8")
+
+    result = runner.invoke(app, [])
+
+    assert result.exit_code == 0, result.output
+    assert "enrichment" not in result.output
 
 
 def test_check_bare_always_exits_0_even_with_major_delta(
@@ -485,6 +560,79 @@ def test_check_fix_isolates_one_vendor_adapter_failure(
     assert "fix failed" in result.output
 
 
+def test_check_without_graph_prints_note_and_still_exits_0(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _write_vendor_toml_and_synced_claude_md(tmp_path, recorded="1.0.0")
+    monkeypatch.setattr(
+        "codecompass.staleness.get_adapter",
+        lambda config, project_root: _FakeStalenessAdapter(version="1.0.0"),
+    )
+
+    result = runner.invoke(app, ["check"])
+
+    assert result.exit_code == 0, result.output
+    assert "context-graph.db" in result.output
+
+
+def _rebuild_empty_graph(project_root: Path, vendor_names: list[str]) -> None:
+    conn = graph.open_graph(project_root)
+    graph.rebuild_deterministic(
+        conn,
+        vendors=[graph.VendorRow(name=name, ecosystem="python") for name in vendor_names],
+        source_files=[],
+        symbols=[],
+        uses_edges=[],
+        doc_artifacts=[],
+        documents_edges=[],
+        skill_mentions_edges=[],
+        routes_via_edges=[],
+        depends_on_edges=[],
+    )
+    conn.close()
+
+
+def test_check_reports_unused_vendor_section_when_graph_exists(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _write_vendor_toml_and_synced_claude_md(tmp_path, name="demo", recorded="1.0.0")
+    monkeypatch.setattr(
+        "codecompass.staleness.get_adapter",
+        lambda config, project_root: _FakeStalenessAdapter(version="1.0.0"),
+    )
+    _rebuild_empty_graph(tmp_path, ["demo"])  # zero uses_edges — unused by construction
+
+    result = runner.invoke(app, ["check"])
+
+    assert result.exit_code == 0, result.output
+    assert "Unused vendors" in result.output
+    assert "demo" in result.output
+
+
+def test_check_strict_exit_code_unaffected_by_coverage_gaps(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A real coverage gap (an unused vendor present in the graph) must not
+    flip `--strict`'s exit code — it stays governed by version-drift
+    severity alone (confirmed twice during this rework's planning
+    interview, per planning/phase-15-cli-rewire.md's Design decisions).
+    """
+    monkeypatch.chdir(tmp_path)
+    _write_vendor_toml_and_synced_claude_md(tmp_path, name="demo", recorded="1.0.0")
+    monkeypatch.setattr(
+        "codecompass.staleness.get_adapter",
+        lambda config, project_root: _FakeStalenessAdapter(version="1.0.0"),
+    )
+    _rebuild_empty_graph(tmp_path, ["demo"])
+
+    result = runner.invoke(app, ["check", "--strict"])
+
+    assert result.exit_code == 0, result.output
+    assert "demo" in result.output
+
+
 class _FakeStalenessAdapter:
     def __init__(self, *, version: str, error: Exception | None = None) -> None:
         self._version = version
@@ -499,3 +647,233 @@ class _FakeStalenessAdapter:
         from codecompass.core import DepNode
 
         return DepNode(name="demo", version=self._version)
+
+
+# --- query command group ------------------------------------------------
+
+
+def test_query_vendors_without_graph_prints_note(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["query", "vendors"])
+
+    assert result.exit_code == 0, result.output
+    assert "sync" in result.output.lower()
+
+
+def test_query_vendor_without_graph_prints_note(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["query", "vendor", "demo"])
+
+    assert result.exit_code == 0, result.output
+    assert "sync" in result.output.lower()
+
+
+def test_query_symbol_without_graph_prints_note(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["query", "symbol", "doStuff"])
+
+    assert result.exit_code == 0, result.output
+    assert "sync" in result.output.lower()
+
+
+def test_query_skills_without_graph_prints_note(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["query", "skills"])
+
+    assert result.exit_code == 0, result.output
+    assert "sync" in result.output.lower()
+
+
+def _build_query_fixture(project_root: Path) -> None:
+    conn = graph.open_graph(project_root)
+    graph.rebuild_deterministic(
+        conn,
+        vendors=[
+            graph.VendorRow(name="used-lib", ecosystem="npm", installed_version="1.2.3"),
+            graph.VendorRow(name="unused-lib", ecosystem="python", installed_version="0.1.0"),
+        ],
+        source_files=[graph.SourceFileRow(path="src/app.ts")],
+        symbols=[graph.SymbolRow(vendor_name="used-lib", name="doStuff", purpose="does stuff")],
+        uses_edges=[
+            graph.UsesEdgeRow(
+                source_file_path="src/app.ts",
+                vendor_name="used-lib",
+                symbol_name="doStuff",
+                line=1,
+            )
+        ],
+        doc_artifacts=[],
+        documents_edges=[],
+        skill_mentions_edges=[],
+        routes_via_edges=[],
+        depends_on_edges=[],
+    )
+    conn.close()
+
+
+def test_query_vendors_lists_every_tracked_vendor(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_query_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "vendors"])
+
+    assert result.exit_code == 0, result.output
+    assert "used-lib" in result.output
+    assert "unused-lib" in result.output
+
+
+def test_query_vendors_unused_filters_to_unused_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # "used-lib" and "unused-lib" are both vendor names below (the latter
+    # containing the former as a substring), so this asserts on parsed
+    # JSON rather than a raw-output substring check.
+    monkeypatch.chdir(tmp_path)
+    _build_query_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "vendors", "--unused", "--json"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    names = {entry["name"] for entry in payload}
+    assert names == {"unused-lib"}
+
+
+def test_query_vendors_json_outputs_parseable_json(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_query_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "vendors", "--json"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    names = {entry["name"] for entry in payload}
+    assert names == {"used-lib", "unused-lib"}
+
+
+def test_query_vendor_returns_profile(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_query_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "vendor", "used-lib"])
+
+    assert result.exit_code == 0, result.output
+    assert "used-lib" in result.output
+    assert "doStuff" in result.output
+
+
+def test_query_vendor_unknown_name_errors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_query_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "vendor", "does-not-exist"])
+
+    assert result.exit_code == 1
+    assert "not found" in result.output
+
+
+def test_query_symbol_returns_matches_across_vendors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_query_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "symbol", "doStuff"])
+
+    assert result.exit_code == 0, result.output
+    assert "used-lib" in result.output
+
+
+def test_query_skills_lists_skill_artifacts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    conn = graph.open_graph(tmp_path)
+    graph.rebuild_deterministic(
+        conn,
+        vendors=[],
+        source_files=[],
+        symbols=[],
+        uses_edges=[],
+        doc_artifacts=[
+            graph.DocArtifactRow(
+                path=".claude/skills/third-party/SKILL.md",
+                kind="skill",
+                origin="third_party",
+                name="third-party",
+            )
+        ],
+        documents_edges=[],
+        skill_mentions_edges=[],
+        routes_via_edges=[],
+        depends_on_edges=[],
+    )
+    conn.close()
+
+    result = runner.invoke(app, ["query", "skills", "--json"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert [entry["name"] for entry in payload] == ["third-party"]
+
+
+def test_query_skills_unused_mentions_filters_to_orphaned_skills(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    conn = graph.open_graph(tmp_path)
+    graph.rebuild_deterministic(
+        conn,
+        vendors=[graph.VendorRow(name="used-lib", ecosystem="npm")],
+        source_files=[],
+        symbols=[],
+        uses_edges=[],
+        doc_artifacts=[
+            graph.DocArtifactRow(
+                path=".claude/skills/orphan/SKILL.md",
+                kind="skill",
+                origin="third_party",
+                name="orphan",
+            ),
+            graph.DocArtifactRow(
+                path=".claude/skills/mentions-vendor/SKILL.md",
+                kind="skill",
+                origin="third_party",
+                name="mentions-vendor",
+            ),
+        ],
+        documents_edges=[],
+        skill_mentions_edges=[
+            graph.SkillMentionEdgeRow(
+                doc_artifact_path=".claude/skills/mentions-vendor/SKILL.md",
+                vendor_name="used-lib",
+            )
+        ],
+        routes_via_edges=[],
+        depends_on_edges=[],
+    )
+    conn.close()
+
+    result = runner.invoke(app, ["query", "skills", "--unused-mentions", "--json"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert [entry["name"] for entry in payload] == ["orphan"]

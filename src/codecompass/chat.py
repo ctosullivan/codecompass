@@ -100,8 +100,9 @@ def run_chat(config: VendorConfig, project_root: Path, console: Console) -> None
     )
     if not (vendor_dir / "OVERVIEW.md").is_file():
         console.print(
-            f"[yellow]no grounded description yet — run "
-            f"`codecompass promote {config.name}` for deeper answers[/yellow]"
+            "[yellow]no grounded description yet — run `codecompass sync` to "
+            "let usage-driven AI enrichment (Phase B) pick this vendor up for "
+            "deeper answers[/yellow]"
         )
 
     messages: list[dict[str, str]] = []

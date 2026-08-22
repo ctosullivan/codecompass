@@ -12,11 +12,13 @@ detail was left open there for implementation time to settle).
 from __future__ import annotations
 
 import re
+import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
 from codecompass.claude_md import read_installed_version
-from codecompass.core import Depth, VendorConfig
+from codecompass.core import VendorConfig
+from codecompass.graph import has_enrichment
 
 _START_MARKER = "<!-- codecompass:start -->"
 _END_MARKER = "<!-- codecompass:end -->"
@@ -24,9 +26,11 @@ _MARKER_BLOCK_RE = re.compile(
     re.escape(_START_MARKER) + r".*?" + re.escape(_END_MARKER), re.DOTALL
 )
 
-_CONSULT_WHEN_BY_DEPTH = {
-    Depth.SURFACE: "general usage questions",
-    Depth.FULL: "API questions and known gotchas",
+_GRAPH_DB_FILENAME = "context-graph.db"
+
+_CONSULT_WHEN_BY_ENRICHED = {
+    True: "API questions and known gotchas",
+    False: "general usage questions",
 }
 
 _ROUTING_INSTRUCTION = (
@@ -36,40 +40,72 @@ _ROUTING_INSTRUCTION = (
 )
 
 
+def _open_graph_readonly(project_root: Path) -> sqlite3.Connection | None:
+    """`None` if `context-graph.db` doesn't exist yet — a project that's
+    only run `init`/one `sync <vendor>`, never a whole-project sync. A
+    genuine read-only connection (SQLite URI `mode=ro`), not
+    `graph.open_graph` — `index` must stay cheap and side-effect-free
+    (this module's own docstring), and `open_graph` both creates the file
+    if absent and issues `CREATE TABLE IF NOT EXISTS` on every call, which
+    is not appropriate for what should be a pure read.
+    """
+    db_path = project_root / _GRAPH_DB_FILENAME
+    if not db_path.exists():
+        return None
+    return sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
+
+
 @dataclass
 class RoutingRow:
     """One vendor's routing-table row. `version` is `None` if the vendor
     hasn't been synced yet — `index` reads persisted state, it never
-    triggers a sync itself.
+    triggers a sync itself. `enriched` is graph-derived (`has_enrichment`)
+    rather than `config.depth`-derived — `False` (not just for an unsynced
+    vendor but for any project without a `context-graph.db` yet) rather
+    than erroring.
     """
 
     config: VendorConfig
     version: str | None
+    enriched: bool
 
 
 def load_routing_rows(configs: list[VendorConfig], project_root: Path) -> list[RoutingRow]:
-    rows = []
-    for config in configs:
-        claude_md_path = project_root / "vendor" / config.name / "CLAUDE.md"
-        rows.append(RoutingRow(config=config, version=read_installed_version(claude_md_path)))
-    return rows
+    conn = _open_graph_readonly(project_root)
+    try:
+        rows = []
+        for config in configs:
+            claude_md_path = project_root / "vendor" / config.name / "CLAUDE.md"
+            enriched = conn is not None and has_enrichment(conn, config.name)
+            rows.append(
+                RoutingRow(
+                    config=config,
+                    version=read_installed_version(claude_md_path),
+                    enriched=enriched,
+                )
+            )
+        return rows
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 def render_routing_table(rows: list[RoutingRow]) -> str:
     lines = [
         _ROUTING_INSTRUCTION,
         "",
-        "| Vendor | Path | Version | Depth | Deps | Consult when |",
+        "| Vendor | Path | Version | Enriched | Deps | Consult when |",
         "|---|---|---|---|---|---|",
     ]
     for row in rows:
         config = row.config
         version = row.version if row.version is not None else "_not synced_"
         deps = f"[DEPTREE.md](./vendor/{config.name}/DEPTREE.md)"
-        consult_when = _CONSULT_WHEN_BY_DEPTH[config.depth]
+        enriched_label = "yes" if row.enriched else "no"
+        consult_when = _CONSULT_WHEN_BY_ENRICHED[row.enriched]
         lines.append(
             f"| {config.name} | `vendor/{config.name}/` | {version} | "
-            f"{config.depth.value} | {deps} | {consult_when} |"
+            f"{enriched_label} | {deps} | {consult_when} |"
         )
     return "\n".join(lines)
 

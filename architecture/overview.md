@@ -654,18 +654,29 @@ session never re-incurs a clone or an AI-generation call
 
 ## Retrofitting to existing projects
 
-**Bare `codecompass` (no subcommand) is the zero-question path**
-(`decisions/0017`, Phase 7): auto-discovers manifests at the project root
-(`package.json`, `pyproject.toml`, `requirements.txt`, `Cargo.toml`),
-writes/refreshes `vendor.toml` with everything defaulted to `depth =
-SURFACE` — free, since surface generation has no AI cost — and
-regenerates trees, the routing table, and the tool-level Skill. No
+**Two phases, back to back, both triggered from the same call sites**
+(bare `codecompass` and whole-project `sync` — `init --scan` and
+`sync <vendor>` are explicitly not trigger points): Phase A is the
+always-free, no-prompts bootstrap; Phase B is usage-driven AI enrichment,
+auto-triggered right after Phase A but kept behind a real disclose-and-
+confirm gate. This is Phase 15's rewiring of `decisions/0031` (enrichment
+is usage-driven, not a per-vendor `Depth` toggle) and `decisions/0033`
+(`promote` retired; universal cloning + auto-triggered, disclosed
+consent is the sole cost point) into the actual CLI — see those two ADRs
+for the full rationale; this section describes the resulting flow.
+
+**Phase A** (`decisions/0017`, Phase 7; extended Phase 15 with universal
+cloning and a graph rebuild): auto-discovers manifests at the project
+root (`package.json`, `pyproject.toml`, `requirements.txt`,
+`Cargo.toml`), writes/refreshes `vendor.toml`, clones every vendor's
+source (`decisions/0033` — extended from `depth = FULL`-only cloning),
+regenerates trees, the routing table, and the tool-level Skill, and
+rebuilds `context-graph.db` from the whole project's current state. No
 prompts, no AI calls, regardless of project size. Re-running it on an
 already-bootstrapped project is an **idempotent refresh**: newly
-discovered dependencies are appended at `SURFACE`; already-tracked
-vendors, including any at `depth = FULL`, are left completely untouched
-(their generated output isn't regenerated), so this command never pays
-AI cost no matter how many times it's run.
+discovered dependencies are appended; already-tracked vendors are left
+untouched by Phase A itself, so Phase A alone never pays AI cost no
+matter how many times it's run.
 
 `codecompass init --scan <manifest file> [--scan <manifest file> ...]`
 (`codecompass.discovery`) remains as the explicit, scripted/CI-friendly
@@ -678,23 +689,41 @@ stricter contract: errors rather than overwriting if `vendor.toml`
 already exists. Python discovery reads `[project.dependencies]` from
 `pyproject.toml` and every non-comment, non-option line of
 `requirements.txt` (Phase 7 addition) — not
-`[project.optional-dependencies]`.
+`[project.optional-dependencies]`. `init --scan` is not a Phase A/B
+trigger point itself — no cloning, no graph rebuild, no Phase B.
 
-**Promotion to `FULL` is selective, reactive, and the only paid
-action**: `codecompass promote <vendor>` (`decisions/0018`, Phase 7) is
-the single command that costs money or asks anything — triggered when
-someone actually needs a vendor's deep digest, not batch-decided for a
-whole existing dependency graph up front. It prints an estimated cost
-disclosure and asks for confirmation (or `--yes`) before doing anything
-AI-assisted. `sync --budget <amount>` separately guards the case where
-several vendors are already `FULL` and a routine `sync` would regenerate
-all of them at once — refusing to run at all (not partially) if the
-projected cost exceeds the cap.
+**Phase B** (`decisions/0031`, `decisions/0033`, wired in Phase 15):
+after Phase A's graph rebuild, `enrichment.select_candidates` checks
+which vendors the project's own source actually imports
+(`graph.enrichment_candidates`, usage-driven — not a per-vendor toggle)
+and don't already have up-to-date enrichment (a two-tier hash check —
+DB-level and, for a fresh clone with no `context-graph.db` yet,
+file-level against the committed `CLAUDE.md`). If any exist, `cli.py`
+discloses an estimated cost (`enrichment.estimate_cost`) and asks for
+confirmation (`typer.confirm`, skipped by `--yes`) before calling
+`enrichment.run_enrichment_batches` + `enrichment.apply_results` — the
+one step that calls the Anthropic API, batched across several vendors
+per call rather than one call per vendor (unlike the retired `promote`).
+`--budget <amount>` is checked via `enrichment.check_budget` *before any
+API call*; if exceeded, Phase B aborts for this run without undoing
+Phase A's already-written output, and the command exits non-zero.
+Declining the confirmation prompt is not a failure — Phase A already
+succeeded — and exits 0. Both bare `codecompass` and whole-project `sync`
+gained `--yes`/`--budget` for this reason (`sync` already had `--budget`
+for its pre-existing `depth = FULL` regeneration path, now shared by
+Phase B too); `sync <vendor>` (a named vendor) skips both the graph
+rebuild and Phase B entirely (`decisions/0025`).
+
+`promote` is retired (`decisions/0033`) — its three former jobs (clone,
+enrich, generate Skill/`.mdc`) are these two phases' automatic outcomes.
+`codecompass query vendor <name>`/`check` are the replacement for
+"inspect what promote would tell you," reading the graph rather than
+requiring a vendor to have been manually escalated first.
 
 ## Context graph (`codecompass.graph`)
 
-**As of Phase 12, fully populated at both whole-project call sites — not
-yet CLI-visible.** `codecompass.graph` is the SQLite persistence layer
+**Fully populated at both whole-project call sites and, as of Phase 15,
+CLI-readable too.** `codecompass.graph` is the SQLite persistence layer
 every phase in the v0.2 rework (10-16) builds on: a schema, a set of typed
 row dataclasses that form the insertion contract for a full-rebuild
 orchestrator, and a set of read-only query functions. Phase 10 built it as
@@ -704,10 +733,15 @@ from real project data — `sync.rebuild_project_graph` (below) — wiring in
 `cli.py`'s two whole-project call sites; Phase 12 extends the same call
 site with the remaining five tables (`doc_artifacts`/`documents_edges`/
 `skill_mentions_edges`/`routes_via_edges`/`depends_on_edges`), which
-previously received empty lists. `codecompass query` and `check`'s
-coverage-gap sections reading from it is still Phase 15's job; until then
-the graph is written but nothing reads it back through the
-CLI. See [`decisions/0032`](../decisions/0032-context-graph-stored-in-sqlite.md)
+previously received empty lists. Phase 15 is the first phase to read it
+back through the CLI: the new `codecompass query` command group renders
+`unused_vendors`/`vendor_profile`/`symbol_profile`/`skills_index` as Rich
+tables or raw JSON, `check` gains report-only coverage-gap sections built
+on the same queries, and `index.py`/`skill.py` source their
+"Enriched"/enrichment-count display from the new `has_enrichment` query —
+each gracefully falls back to "no graph yet" rather than erroring if
+`context-graph.db` doesn't exist. See
+[`decisions/0032`](../decisions/0032-context-graph-stored-in-sqlite.md)
 (SQLite over the original `decisions/0024` JSON-file choice) and
 [`decisions/0025`](../decisions/0025-context-graph-rebuilds-only-on-whole-project-sync.md)
 (the rebuild-trigger posture — full rebuild only on whole-project `sync`,
@@ -1057,23 +1091,30 @@ covered by a regression test in both `tests/test_doc_mapping.py` and
 
 ## Cost model
 
-Structural generation (trees, API-surface extraction, bare `codecompass`'s
-entire zero-question bootstrap) makes no AI calls and is effectively
-free. The only cost center is grounded-description generation at `depth
-= FULL`, using Haiku, first entered through `codecompass promote`
-(`decisions/0018`) and then paid again on every subsequent `sync`/`check
---fix` for that vendor — it is **not cached**, so cost scales with how
-often `sync` is run, not just with how many vendors are `FULL`. At
-realistic project scale (dozens of dependencies, a handful at `FULL`,
-weekly scheduled refresh), total ongoing cost is estimated well under
-$2/month. This is a design constraint worth preserving — if a future
-change would make grounded-description generation run more broadly or
-more often by default, that's a deliberate tradeoff to flag, not
-something to drift into silently. `promote` discloses cost and confirms
-before the first AI call for a vendor; `sync --budget <amount>` guards
-the ongoing case (several vendors already `FULL`, a routine `sync` about
-to regenerate all of them) by refusing to run at all — not partially —
-once the projected cost for a single run exceeds the cap.
+Structural generation (trees, API-surface extraction, source cloning,
+Phase A's entire zero-question bootstrap) makes no AI calls and is
+effectively free. As of Phase 15, the primary cost center is **Phase B**
+(`decisions/0031`): usage-driven batched enrichment, using Haiku, wired
+into `cli.py` behind bare `codecompass` and whole-project `sync` (see
+"Retrofitting to existing projects" above for the full disclose/confirm/
+budget flow). Unlike the retired `promote`, Phase B is **cached** — a
+vendor already enriched at its current used-symbol set is skipped
+(`enrichment.select_candidates`'s two-tier hash check), so cost scales
+with how often the project's actual dependency *usage* changes, not with
+how often `sync` is run. `enrichment.estimate_cost(batch_count)` /
+`enrichment.check_budget(candidates, budget)` scale with
+`len(plan_batches(candidates))` (batches, not vendors) — several
+vendors' material and output share one call, reworked from the old
+per-vendor formula `grounded_description.estimate_cost` used. `--yes`
+skips the confirmation prompt; `--budget <amount>` refuses to make any
+Phase B API call at all (not partially) once the projected cost for a
+single run exceeds the cap — same abort-before-any-spend contract the
+retired `promote`/`sync --budget` guaranteed.
+
+A `depth = FULL` vendor's per-vendor grounded-description regeneration
+(`codecompass.grounded_description`, pre-Phase-15) still exists and still
+runs on every `sync`, uncached, for as long as `Depth` isn't retired
+(Phase 16) — a legacy cost path, not the primary one going forward.
 
 ## Known footguns
 

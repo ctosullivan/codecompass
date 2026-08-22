@@ -20,6 +20,22 @@ from codecompass.filetree import iter_source_files
 # Build/dependency noise only, no test exclusion — unlike
 # `filetree._PRUNE_DIR_NAMES`, a project's own test files importing a
 # vendor is real usage signal and must not be pruned away.
+#
+# `vendor` is pruned for a different reason: since Phase 13/`decisions/
+# 0033`, every tracked vendor's own upstream source is cloned to
+# `vendor/<name>/src/` unconditionally, at the project root — inside
+# this walk's `root` (`project_root`) unless excluded. A vendor's own
+# source very often references its own package name somewhere (its own
+# absolute self-imports, docs code samples, setup/build scripts), which
+# would otherwise register as a false-positive "the project uses this
+# vendor" `uses_edges` row for nearly every tracked vendor on every
+# run — silently defeating usage-driven enrichment selection
+# (`decisions/0031`) by making Phase B (Phase 15) consider almost
+# everything "used" regardless of whether the *consuming* project's own
+# code actually imports it. Found via Phase 15's first real end-to-end
+# CLI exercise of this path — no earlier phase's tests caught it because
+# none combined a real clone with a real graph rebuild against a project
+# fixture.
 _PROJECT_PRUNE_DIR_NAMES = {
     "node_modules",
     "dist",
@@ -28,6 +44,7 @@ _PROJECT_PRUNE_DIR_NAMES = {
     "__pycache__",
     ".venv",
     "venv",
+    "vendor",
 }
 
 _NPM_SOURCE_SUFFIXES = (".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs")

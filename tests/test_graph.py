@@ -12,6 +12,7 @@ from codecompass.graph import (
     VendorRow,
     documented_but_unused,
     enrichment_candidates,
+    has_enrichment,
     init_schema,
     open_graph,
     rebuild_deterministic,
@@ -439,3 +440,37 @@ def test_enrichment_candidates_surfaces_existing_symbol_set_hash(tmp_path) -> No
     candidates = enrichment_candidates(conn)
 
     assert candidates[0]["symbol_set_hash"] == "hash-abc123"
+
+
+# --- has_enrichment -----------------------------------------------------
+
+
+def test_has_enrichment_false_before_any_enrichment(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+
+    assert has_enrichment(conn, "used-lib") is False
+
+
+def test_has_enrichment_true_after_record_enrichment(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+    (vendor_id,) = conn.execute(
+        "SELECT id FROM vendors WHERE name = 'used-lib'"
+    ).fetchone()
+    record_enrichment(
+        conn,
+        vendor_id,
+        symbol_set_hash="hash-abc123",
+        model="claude-haiku-4-5",
+        generated_at="2026-01-01T00:00:00+00:00",
+    )
+
+    assert has_enrichment(conn, "used-lib") is True
+
+
+def test_has_enrichment_false_for_unknown_vendor(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+
+    assert has_enrichment(conn, "does-not-exist") is False

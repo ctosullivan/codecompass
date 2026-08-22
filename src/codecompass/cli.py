@@ -1,19 +1,26 @@
 """codecompass CLI entry point.
 
-Bare `codecompass` (no subcommand) runs the zero-question bootstrap
-(decisions/0017). `init`, `sync`, `index`, `promote`, `check`, and `chat`
-are all implemented (Phases 4-8) — see docs/cli-reference.md.
+Bare `codecompass` (no subcommand) runs the zero-question Phase A
+bootstrap (decisions/0017) and then, if usage-proven enrichment
+candidates exist, an auto-triggered but disclosed/confirmable Phase B
+(decisions/0031, decisions/0033). `init`, `sync`, `index`, `check`,
+`query`, and `chat` are all implemented — see docs/cli-reference.md.
+`promote` was removed in Phase 15 (decisions/0033): its three former jobs
+(clone, enrich, generate Skill) are now automatic outcomes of
+bootstrap/`sync`.
 """
 
 from __future__ import annotations
 
-from dataclasses import replace
+import json
+import sqlite3
 from pathlib import Path
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
+from codecompass import enrichment, graph
 from codecompass.adapters import AdapterError
 from codecompass.chat import ChatError, run_chat
 from codecompass.config import ConfigError, load_vendor_config
@@ -23,21 +30,24 @@ from codecompass.discovery import (
     append_vendor_toml,
     discover_all,
     discover_manifest_paths,
-    rewrite_vendor_toml,
     write_vendor_toml,
 )
-from codecompass.grounded_description import GroundedDescriptionError, estimate_cost
+from codecompass.grounded_description import GroundedDescriptionError
 from codecompass.index import load_routing_rows, render_routing_table, update_root_claude_md
-from codecompass.skill import write_cursor_mdc, write_tool_skill, write_vendor_skill
+from codecompass.skill import write_tool_skill
 from codecompass.staleness import Severity, VendorStaleness, check_all
 from codecompass.sync import rebuild_project_graph, sync_all, sync_vendor
 
 app = typer.Typer(
     help="Grounded, version-pinned dependency reference docs for AI coding agents."
 )
+query_app = typer.Typer(help="Query the context graph (context-graph.db).")
+app.add_typer(query_app, name="query")
 console = Console()
 
 _STRICT_FAIL_SEVERITIES = {Severity.MAJOR, Severity.UNKNOWN}
+_GRAPH_DB_FILENAME = "context-graph.db"
+_NO_GRAPH_NOTE = "no context-graph.db yet — run `codecompass sync` first"
 
 
 def _load_config(path: Path = Path("vendor.toml")) -> list[VendorConfig]:
@@ -50,18 +60,32 @@ def _load_config(path: Path = Path("vendor.toml")) -> list[VendorConfig]:
 
 
 @app.callback(invoke_without_command=True)
-def main(ctx: typer.Context) -> None:
-    """With no subcommand: zero-question bootstrap (decisions/0017) —
-    auto-discovers manifests, writes/refreshes vendor.toml at
-    `depth = surface`, and regenerates trees + the routing table + the
-    tool-level Skill. No prompts, no AI calls.
+def main(
+    ctx: typer.Context,
+    yes: bool = typer.Option(
+        False, "--yes", help="Skip Phase B's (AI enrichment) confirmation prompt."
+    ),
+    budget: float | None = typer.Option(
+        None,
+        "--budget",
+        help="Cap estimated Phase B enrichment spend (USD) for this run; aborts "
+        "before any API call if the estimate exceeds it. Omit for no cap.",
+    ),
+) -> None:
+    """With no subcommand: Phase A bootstrap (decisions/0017) —
+    auto-discovers manifests, writes/refreshes vendor.toml, clones every
+    vendor's source, and regenerates trees + the routing table + the
+    tool-level Skill. No prompts, no AI calls. If Phase A's context-graph
+    rebuild finds usage-proven vendors eligible for AI enrichment, Phase B
+    (decisions/0031) auto-triggers right after — cost-disclosed and
+    confirmed (`--yes` skips the prompt; `--budget` caps spend).
     """
     if ctx.invoked_subcommand is not None:
         return
-    _bootstrap(Path.cwd())
+    _bootstrap(Path.cwd(), yes=yes, budget=budget)
 
 
-def _bootstrap(project_root: Path) -> None:
+def _bootstrap(project_root: Path, *, yes: bool, budget: float | None) -> None:
     vendor_toml = project_root / "vendor.toml"
     try:
         discovered = discover_all(discover_manifest_paths(project_root))
@@ -84,8 +108,8 @@ def _bootstrap(project_root: Path) -> None:
 
     # Only newly-discovered (guaranteed depth=surface) vendors are synced
     # here — an already-tracked vendor's generated output is left
-    # untouched by a bare-command refresh, including any already at
-    # depth=full, so this command never pays AI cost (decisions/0017).
+    # untouched by a bare-command refresh, so Phase A never pays AI cost
+    # (decisions/0017).
     if new_configs:
         sync_all(new_configs, project_root)
 
@@ -99,6 +123,51 @@ def _bootstrap(project_root: Path) -> None:
         f"[green]bootstrapped[/green] {vendor_toml} — {len(all_configs)} vendor(s) "
         f"tracked, {len(new_configs)} newly discovered"
     )
+
+    _maybe_run_enrichment(project_root, all_configs, yes=yes, budget=budget)
+
+
+def _maybe_run_enrichment(
+    project_root: Path, configs: list[VendorConfig], *, yes: bool, budget: float | None
+) -> None:
+    """Phase B: usage-driven AI enrichment, auto-triggered right after
+    Phase A's free work (decisions/0033) — the literal mechanism behind
+    `decisions/0033`'s "Phase A's zero-question guarantee is preserved for
+    Phase A specifically; Phase B keeps a real consent gate." A no-op if
+    `enrichment.select_candidates` finds nothing eligible. Budget is
+    checked *before* the confirmation prompt — no point asking a human to
+    confirm a run that's already going to be refused on cost grounds.
+    """
+    conn = graph.open_graph(project_root)
+    try:
+        candidates = enrichment.select_candidates(conn, configs, project_root)
+        if not candidates:
+            return
+
+        batch_count = len(enrichment.plan_batches(candidates))
+        estimated = enrichment.estimate_cost(batch_count)
+        vendor_names = ", ".join(c.vendor.name for c in candidates)
+        console.print(
+            f"[yellow]enrichment[/yellow] will make ~{batch_count} AI call(s) "
+            f"(~${estimated:.2f}) using claude-haiku-4-5-20251001 to describe "
+            f"{len(candidates)} vendor(s): {vendor_names}"
+        )
+
+        try:
+            enrichment.check_budget(candidates, budget)
+        except enrichment.EnrichmentError as exc:
+            console.print(f"[red]error:[/red] {exc}")
+            raise typer.Exit(code=1) from exc
+
+        if not yes and not typer.confirm("Proceed?"):
+            console.print("[yellow]enrichment skipped[/yellow]")
+            return
+
+        results = enrichment.run_enrichment_batches(candidates)
+        enrichment.apply_results(conn, project_root, results)
+        console.print(f"[green]enriched[/green] {len(results)} vendor(s)")
+    finally:
+        conn.close()
 
 
 @app.command()
@@ -116,7 +185,8 @@ def init(
     """Bulk-discover dependencies from named manifests and write a draft
     vendor.toml — the explicit, scripted/CI-friendly synonym for bare
     `codecompass`'s auto-discovery (decisions/0017). Errors if vendor.toml
-    already exists.
+    already exists. Not a Phase A/B trigger point itself — unaffected by
+    this phase's rewiring.
     """
     try:
         names_by_ecosystem = discover_all(scan)
@@ -131,14 +201,24 @@ def init(
 @app.command()
 def sync(
     vendor: str | None = typer.Argument(None, help="Sync only this vendor; omit to sync all."),
+    yes: bool = typer.Option(
+        False, "--yes", help="Skip Phase B's (AI enrichment) confirmation prompt."
+    ),
     budget: float | None = typer.Option(
         None,
         "--budget",
-        help="Cap estimated grounded-description spend (USD) for this run; aborts "
-        "before any API call if the estimate exceeds it. Omit for no cap.",
+        help="Cap estimated AI spend (USD) for this run — both any depth=full "
+        "grounded-description regeneration and, for a whole-project sync, "
+        "Phase B enrichment; aborts before any API call if the estimate "
+        "exceeds it. Omit for no cap.",
     ),
 ) -> None:
-    """Regenerate digests and trees for one or all vendors."""
+    """Regenerate digests and trees for one or all vendors. A whole-project
+    sync (no vendor name) also rebuilds context-graph.db and, if usage-proven
+    enrichment candidates exist, auto-triggers Phase B — same trigger bare
+    `codecompass` gains (decisions/0033). `sync <vendor>` (single-vendor) is
+    unaffected: no graph rebuild, no enrichment trigger (decisions/0025).
+    """
     configs = _load_config()
     if vendor is not None:
         configs = [c for c in configs if c.name == vendor]
@@ -154,6 +234,7 @@ def sync(
         # Whole-project sync only (decisions/0025) — `sync <vendor>` and
         # `check --fix`'s per-vendor loop leave the graph untouched.
         rebuild_project_graph(configs, Path.cwd())
+        _maybe_run_enrichment(Path.cwd(), configs, yes=yes, budget=budget)
     failed = False
     for digest in digests:
         if digest.description_error:
@@ -183,63 +264,6 @@ def index() -> None:
 
 
 @app.command()
-def promote(
-    vendor: str = typer.Argument(..., help="Vendor name to escalate to depth=full."),
-    yes: bool = typer.Option(
-        False, "--yes", help="Skip the confirmation prompt (for scripted use)."
-    ),
-) -> None:
-    """Escalate one vendor to depth=full — the only command that costs
-    money or asks anything (decisions/0018). Discloses estimated cost,
-    then: resolves the vendor's upstream repository, generates a
-    grounded description, generates its Skill and Cursor `.mdc` export,
-    and refreshes the routing table. Safe to re-run on an already-full
-    vendor — it regenerates in place rather than erroring.
-    """
-    vendor_toml = Path("vendor.toml")
-    configs = _load_config(vendor_toml)
-    if not any(c.name == vendor for c in configs):
-        console.print(f"[red]error:[/red] {vendor!r} not found in vendor.toml")
-        raise typer.Exit(code=1)
-
-    estimated = estimate_cost(1)
-    console.print(
-        f"[yellow]promote[/yellow] will make ~1 AI call (~${estimated:.2f}) using "
-        f"claude-haiku-4-5-20251001 to generate {vendor!r}'s grounded description."
-    )
-    if not yes and not typer.confirm("Proceed?"):
-        console.print("aborted")
-        raise typer.Exit(code=1)
-
-    updated_configs = [
-        replace(c, depth=Depth.FULL) if c.name == vendor else c for c in configs
-    ]
-    rewrite_vendor_toml(updated_configs, vendor_toml)
-    promoted_config = next(c for c in updated_configs if c.name == vendor)
-
-    try:
-        digest = sync_vendor(promoted_config, Path.cwd())
-    except AdapterError as exc:
-        console.print(f"[red]error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
-
-    write_vendor_skill(Path.cwd(), digest)
-    write_cursor_mdc(Path.cwd(), digest)
-
-    rows = load_routing_rows(updated_configs, Path.cwd())
-    update_root_claude_md(Path.cwd(), render_routing_table(rows))
-    write_tool_skill(Path.cwd(), updated_configs)
-
-    if digest.description_error:
-        console.print(
-            f"[yellow]promoted (description failed)[/yellow] {vendor}: "
-            f"{digest.description_error}"
-        )
-        raise typer.Exit(code=1)
-    console.print(f"[green]promoted[/green] {vendor} to depth=full")
-
-
-@app.command()
 def check(
     strict: bool = typer.Option(
         False,
@@ -254,10 +278,15 @@ def check(
         "as `sync`, including grounded description for depth=full vendors).",
     ),
 ) -> None:
-    """Staleness gate comparing digests against installed versions.
+    """Staleness gate comparing digests against installed versions, plus
+    report-only context-graph coverage-gap sections (unused vendors,
+    documented-but-unused/used-but-undocumented symbols, orphaned
+    third-party skill mentions) if context-graph.db exists.
 
     With no flags, always exits 0 — a report-only table for a human
     running it locally. `--strict` and `--fix` are mutually exclusive.
+    `--strict`'s exit code is governed by version-drift severity alone —
+    none of the coverage-gap sections affect it.
     """
     if strict and fix:
         console.print("[red]error:[/red] --strict and --fix are mutually exclusive")
@@ -266,6 +295,7 @@ def check(
     configs = _load_config()
     results = check_all(configs, Path.cwd())
     console.print(_render_check_table(results))
+    _print_coverage_gap_sections(Path.cwd())
 
     if fix:
         _run_fix(results)
@@ -328,15 +358,246 @@ def _run_fix(results: list[VendorStaleness]) -> None:
         raise typer.Exit(code=1)
 
 
+def _open_graph_or_note(project_root: Path) -> sqlite3.Connection | None:
+    """`None` (having already printed a one-line note) if context-graph.db
+    doesn't exist yet — the graceful-skip posture `query`'s subcommands and
+    `check`'s coverage-gap sections both use, rather than a traceback from
+    trying to query tables that don't exist, or silently creating a fresh
+    empty db as a side effect of a read-only command.
+    """
+    db_path = project_root / _GRAPH_DB_FILENAME
+    if not db_path.exists():
+        console.print(f"[yellow]{_NO_GRAPH_NOTE}[/yellow]")
+        return None
+    return graph.open_graph(project_root)
+
+
+def _print_coverage_gap_sections(project_root: Path) -> None:
+    conn = _open_graph_or_note(project_root)
+    if conn is None:
+        return
+    try:
+        _print_name_list_table("Unused vendors", graph.unused_vendors(conn))
+        _print_pair_table("Documented but unused", graph.documented_but_unused(conn))
+        _print_pair_table("Used but undocumented", graph.used_but_undocumented(conn))
+        orphaned_skills = [
+            entry["path"]
+            for entry in graph.skills_index(conn)
+            if entry["origin"] == "third_party"
+            and not entry["mentions_vendors"]
+            and not entry["mentions_source_files"]
+        ]
+        _print_name_list_table(
+            "Third-party skill mentions with no backing vendor/symbol", orphaned_skills
+        )
+    finally:
+        conn.close()
+
+
+def _print_name_list_table(title: str, names: list[str]) -> None:
+    # The section heading prints as plain text, not `Table(title=...)` —
+    # Rich wraps a table's title to the table's own (content-driven) box
+    # width, which can split a multi-word heading mid-word for a narrow,
+    # short-content table like these.
+    console.print(f"[bold]{title}[/bold]")
+    table = Table("Name")
+    for name in names:
+        table.add_row(name)
+    if not names:
+        table.add_row("[dim](none)[/dim]")
+    console.print(table)
+
+
+def _print_pair_table(title: str, pairs: list[tuple[str, str]]) -> None:
+    console.print(f"[bold]{title}[/bold]")
+    table = Table("Vendor", "Symbol")
+    for vendor_name, symbol_name in pairs:
+        table.add_row(vendor_name, symbol_name)
+    if not pairs:
+        table.add_row("[dim](none)[/dim]", "")
+    console.print(table)
+
+
+@query_app.command("vendors")
+def query_vendors(
+    unused: bool = typer.Option(
+        False, "--unused", help="List only vendors with no detected usage anywhere."
+    ),
+    json_output: bool = typer.Option(
+        False, "--json", help="Raw JSON instead of a Rich table."
+    ),
+) -> None:
+    """Every tracked vendor's usage/enrichment status, from the context graph."""
+    conn = _open_graph_or_note(Path.cwd())
+    if conn is None:
+        return
+    try:
+        unused_names = set(graph.unused_vendors(conn))
+        rows = conn.execute(
+            "SELECT name, ecosystem, installed_version FROM vendors ORDER BY name"
+        ).fetchall()
+        results = []
+        for name, ecosystem, installed_version in rows:
+            if unused and name not in unused_names:
+                continue
+            results.append(
+                {
+                    "name": name,
+                    "ecosystem": ecosystem,
+                    "installed_version": installed_version,
+                    "used": name not in unused_names,
+                    "enriched": graph.has_enrichment(conn, name),
+                }
+            )
+        if json_output:
+            console.print(json.dumps(results, indent=2))
+            return
+        table = Table("Vendor", "Ecosystem", "Version", "Used", "Enriched")
+        for r in results:
+            table.add_row(
+                r["name"],
+                r["ecosystem"],
+                r["installed_version"] or "_unknown_",
+                "yes" if r["used"] else "no",
+                "yes" if r["enriched"] else "no",
+            )
+        console.print(table)
+    finally:
+        conn.close()
+
+
+@query_app.command("vendor")
+def query_vendor(
+    name: str = typer.Argument(..., help="Vendor name to look up."),
+    json_output: bool = typer.Option(
+        False, "--json", help="Raw JSON instead of a Rich table."
+    ),
+) -> None:
+    """One vendor's full profile: symbols, usage count, documenting
+    artifacts, routed Skills, and its `depends_on` vendors.
+    """
+    conn = _open_graph_or_note(Path.cwd())
+    if conn is None:
+        return
+    try:
+        profile = graph.vendor_profile(conn, name)
+        if profile is None:
+            console.print(f"[red]error:[/red] {name!r} not found in context-graph.db")
+            raise typer.Exit(code=1)
+        if json_output:
+            console.print(json.dumps(profile, indent=2))
+            return
+        vendor = profile["vendor"]
+        console.print(
+            f"[bold]{vendor['name']}[/bold] ({vendor['ecosystem']}) "
+            f"{vendor['installed_version'] or '_unknown_'} — "
+            f"usage count: {profile['usage_count']}"
+        )
+        # Section headings print as plain text, not `Table(title=...)` —
+        # see `_print_name_list_table`'s comment on why.
+        console.print("[bold]Symbols[/bold]")
+        symbols_table = Table("Symbol", "Purpose")
+        for symbol in profile["symbols"]:
+            symbols_table.add_row(symbol["name"], symbol["purpose"] or "")
+        console.print(symbols_table)
+        console.print("[bold]Documenting artifacts[/bold]")
+        docs_table = Table("Path", "Kind")
+        for doc in profile["documenting_artifacts"]:
+            docs_table.add_row(doc["path"], doc["kind"])
+        console.print(docs_table)
+        console.print("[bold]Routed Skills[/bold]")
+        skills_table = Table("Path")
+        for skill in profile["routed_skills"]:
+            skills_table.add_row(skill["path"])
+        console.print(skills_table)
+        console.print(f"Depends on: {', '.join(profile['depends_on']) or '(none)'}")
+    finally:
+        conn.close()
+
+
+@query_app.command("symbol")
+def query_symbol(
+    name: str = typer.Argument(..., help="Symbol name to look up (across all vendors)."),
+    json_output: bool = typer.Option(
+        False, "--json", help="Raw JSON instead of a Rich table."
+    ),
+) -> None:
+    """Every symbol named `name`, across every vendor — symbol names aren't
+    globally unique.
+    """
+    conn = _open_graph_or_note(Path.cwd())
+    if conn is None:
+        return
+    try:
+        profiles = graph.symbol_profile(conn, name)
+        if json_output:
+            console.print(json.dumps(profiles, indent=2))
+            return
+        if not profiles:
+            console.print(f"[yellow]no symbol named {name!r} found in context-graph.db[/yellow]")
+            return
+        table = Table("Vendor", "Purpose", "Usage count", "Documenting artifacts")
+        for profile in profiles:
+            docs = ", ".join(doc["path"] for doc in profile["documenting_artifacts"]) or "(none)"
+            table.add_row(
+                profile["vendor"], profile["purpose"] or "", str(profile["usage_count"]), docs
+            )
+        console.print(table)
+    finally:
+        conn.close()
+
+
+@query_app.command("skills")
+def query_skills(
+    unused_mentions: bool = typer.Option(
+        False,
+        "--unused-mentions",
+        help="List only Skills/.mdc rules that mention no known vendor or source file.",
+    ),
+    json_output: bool = typer.Option(
+        False, "--json", help="Raw JSON instead of a Rich table."
+    ),
+) -> None:
+    """Every Skill/`.mdc` rule under the project, its origin, and what it
+    mechanically mentions.
+    """
+    conn = _open_graph_or_note(Path.cwd())
+    if conn is None:
+        return
+    try:
+        index_rows = graph.skills_index(conn)
+        if unused_mentions:
+            index_rows = [
+                entry
+                for entry in index_rows
+                if not entry["mentions_vendors"] and not entry["mentions_source_files"]
+            ]
+        if json_output:
+            console.print(json.dumps(index_rows, indent=2))
+            return
+        table = Table("Path", "Name", "Origin", "Mentions vendors", "Mentions files")
+        for entry in index_rows:
+            table.add_row(
+                entry["path"],
+                entry["name"] or "",
+                entry["origin"] or "",
+                ", ".join(entry["mentions_vendors"]) or "(none)",
+                str(len(entry["mentions_source_files"])),
+            )
+        console.print(table)
+    finally:
+        conn.close()
+
+
 @app.command()
 def chat(
     vendor: str = typer.Argument(..., help="Vendor name to chat about."),
 ) -> None:
     """Terminal REPL grounded in one vendor's already-generated digest —
-    `vendor/<name>/CLAUDE.md`, plus `OVERVIEW.md` if promoted. Never
-    regenerates anything (decisions/0023): works at any depth, with a
-    thinner grounding + a `promote` hint for a vendor with no grounded
-    description yet.
+    `vendor/<name>/CLAUDE.md`, plus `OVERVIEW.md` if enriched. Never
+    regenerates anything (decisions/0023): works whether or not the vendor
+    has been AI-enriched yet, with a thinner grounding + a `sync` hint for
+    a vendor with no grounded description yet.
     """
     configs = _load_config()
     matches = [c for c in configs if c.name == vendor]

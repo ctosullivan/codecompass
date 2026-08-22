@@ -197,9 +197,13 @@ def test_chat_cli_full_conversation_round_trip(
     assert "no grounded description yet" not in result.output
 
 
-def test_chat_cli_surface_vendor_shows_promote_hint(
+def test_chat_cli_surface_vendor_shows_sync_hint(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """`promote` was removed in Phase 15 (`decisions/0033`) — the hint for
+    a vendor with no grounded description yet now points at `sync`
+    (Phase B may pick the vendor up), not the retired command.
+    """
     monkeypatch.chdir(tmp_path)
     (tmp_path / "vendor.toml").write_text(
         '[[vendor]]\nname = "lodash"\necosystem = "npm"\ndepth = "surface"\n',
@@ -214,4 +218,5 @@ def test_chat_cli_surface_vendor_shows_promote_hint(
 
     assert result.exit_code == 0, result.output
     assert "no grounded description yet" in result.output
-    assert "codecompass promote lodash" in result.output
+    assert "codecompass sync" in result.output
+    assert "promote" not in result.output

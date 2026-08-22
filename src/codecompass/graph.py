@@ -796,6 +796,24 @@ def enrichment_candidates(conn: sqlite3.Connection) -> list[dict]:
     return candidates
 
 
+def has_enrichment(conn: sqlite3.Connection, vendor_name: str) -> bool:
+    """Whether `vendor_name` has a `vendor_enrichment` row — i.e. has been
+    AI-enriched at least once (Phase B, `decisions/0031`/`decisions/0033`).
+    `False` for an unknown vendor name too, never an error — callers
+    (`index.py`'s routing table, `skill.py`'s tool Skill) treat "not yet
+    enriched" and "not a known vendor" the same way for display purposes.
+    """
+    row = conn.execute(
+        """
+        SELECT 1 FROM vendor_enrichment ve
+        JOIN vendors v ON ve.vendor_id = v.id
+        WHERE v.name = ?
+        """,
+        (vendor_name,),
+    ).fetchone()
+    return row is not None
+
+
 # --- Enrichment writers ------------------------------------------------------
 
 

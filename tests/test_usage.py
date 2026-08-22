@@ -227,6 +227,23 @@ def test_resolve_project_usage_excludes_node_modules_and_venv_noise(tmp_path: Pa
     assert resolve_project_usage(tmp_path, configs) == []
 
 
+def test_resolve_project_usage_excludes_codecompass_vendor_output_dir(tmp_path: Path) -> None:
+    """`vendor/<name>/src/` is a cloned upstream snapshot (Phase 13,
+    `decisions/0033`), not the consuming project's own source — a
+    self-import inside a vendor's own cloned code (e.g. its own package
+    name appearing in its own source) must not register as this project
+    using that vendor, or usage-driven enrichment selection
+    (`decisions/0031`) would treat nearly every tracked vendor as "used"
+    regardless of whether the project's own code imports it.
+    """
+    vendor_src = tmp_path / "vendor" / "rich" / "src"
+    vendor_src.mkdir(parents=True)
+    (vendor_src / "__init__.py").write_text("import rich\n", encoding="utf-8")
+    configs = [_config("rich", Ecosystem.PYTHON)]
+
+    assert resolve_project_usage(tmp_path, configs) == []
+
+
 def test_resolve_project_usage_across_mixed_ecosystem_project(tmp_path: Path) -> None:
     (tmp_path / "app.py").write_text("from rich.console import Console\n", encoding="utf-8")
     (tmp_path / "app.ts").write_text('import { Table } from "cli-table";\n', encoding="utf-8")

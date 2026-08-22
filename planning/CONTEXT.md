@@ -6,56 +6,61 @@ for the log of how it got here.
 
 ## Current phase
 
-**Phase 14: Batched enrichment (Phase B) — done.** Phases 0-13 remain
-`done`. Executing MVP (v0.2) per
-`planning/v0.2-implementation-execution-plan.md`: one implementation
-subagent per phase, independently re-verified, one commit per phase,
-strictly in order.
+**Phase 15: CLI rewire — done.** Phases 0-14 remain `done`. Executing
+MVP (v0.2) per `planning/v0.2-implementation-execution-plan.md`: one
+implementation subagent per phase, independently re-verified, one commit
+per phase, strictly in order.
 
 ## What was just completed
 
-Implemented `planning/phase-14-batched-enrichment.md`: new
-`src/codecompass/enrichment.py` (`select_candidates` — two-tier
-DB-hash + file-hash cache check, per `decisions/0032`; `plan_batches`;
-the batched `_TOOL_SCHEMA`/`run_enrichment_batches`; `apply_results` —
-writes `graph.record_enrichment`/`record_symbol_enrichment`, calls the
-new `claude_md.update_description_section` for an in-place `CLAUDE.md`
-rewrite, generates per-vendor Skill/`.mdc` via a minimal `VendorDigest`;
-`estimate_cost`/`check_budget` reworked to scale with batch count, not
-vendor count). New `claude_md.update_description_section`/
-`read_enrichment_hash`. **Library only, like Phase 10** — nothing wired
-into `cli.py`/`sync.py` yet (Phase 15). `grounded_description.py`
-untouched, still in active use for `depth = full` vendors until Phase
-15/16 retire it.
+Implemented `planning/phase-15-cli-rewire.md` — the integration phase,
+the largest in this arc. `cli.py`: `promote` removed entirely; bare
+`codecompass` and whole-project `sync` both gain `--yes`/`--budget` and
+auto-trigger Phase B (`enrichment.select_candidates` →
+disclose/confirm → `run_enrichment_batches`/`apply_results`) right after
+Phase A's free work; new `query {vendors|vendor|symbol|skills}` command
+group (Rich tables or `--json`, graceful "run sync first" note if no
+graph exists); `check` gains report-only coverage-gap sections
+(confirmed **`--strict`'s exit code is untouched** — still governed by
+version-drift severity alone, verified directly in the diff, not just
+by description). `index.py`/`skill.py` migrated from `Depth`-keyed to
+graph-derived `has_enrichment` status (new `graph.has_enrichment`), both
+using a genuine read-only SQLite connection rather than `graph.open_graph`
+— correctly reasoned that `open_graph` creates the file and issues
+schema DDL, which would violate `index`'s own "must stay cheap and
+side-effect-free" documented design principle.
 
-Correctly reused the Phase 13 fix rather than reintroducing it: the new
-in-place `CLAUDE.md` write path never checks `Depth` at all (matching
-`decisions/0031` — enrichment eligibility is usage-driven), which is
-safe specifically because `apply_results` only ever calls it for a
-vendor that was just actually enriched, never for an ineligible one the
-way a from-scratch `render_vendor_claude_md` re-render could. Documented
-in both `claude_md.py`'s module docstring and `architecture/overview.md`.
+**A second real, high-stakes bug was caught — this time by the
+implementing subagent itself, during its own end-to-end testing, not by
+orchestrator review**: `usage.py`'s project-source prune set didn't
+exclude `vendor/` — but since Phase 13, every tracked vendor's own
+upstream source clones into `vendor/<name>/src/` inside that same walk.
+A vendor's own source very often self-references its own package name,
+which registered as false-positive "the project uses this vendor"
+evidence for nearly every vendor on every run — silently defeating the
+entire "usage-driven, not everything" premise this whole rework is built
+on (`decisions/0031`). Fixed by adding `"vendor"` to
+`_PROJECT_PRUNE_DIR_NAMES`, with a regression test. Also fixed in
+passing: `chat.py`'s "no grounded description yet" hint still literally
+said `` `codecompass promote {name}` `` (a command this phase deletes) —
+reworded to point at `sync`.
 
-Verified independently, including reading `enrichment.py`'s core logic
-in full (not just trusting green tests, per Phase 13's lesson): `pytest`
-336 passed/1 skipped, `ruff check .` clean, `git diff --stat` matches
-exactly. One judgment call worth remembering: `EnrichmentCandidate`
-gained an `installed_version` field beyond the plan's literal 3-field
-sketch — genuinely required, since `run_enrichment_batches` must
-recompute the cache-key hash with the *exact* same inputs
-`select_candidates` used, or the cache silently breaks (a written hash
-that never matches next run, re-purchasing enrichment every time).
+Verified independently: `pytest` 361 passed/1 skipped, `ruff check .`
+clean, `git diff --stat` matches. Read the full `cli.py`/`index.py`/
+`skill.py`/`graph.py`/`chat.py`/`usage.py` diffs directly (not just test
+output) given this phase's size and the Phase 13 lesson about green
+tests not catching everything — confirmed the `--strict` exit-code
+preservation, the graph connection lifecycle (sequential opens/closes,
+no concurrency issue), and the vendor-prune fix's regression test
+firsthand.
 
 ## Next concrete step
 
-Implement `planning/phase-15-cli-rewire.md` next — the integration
-phase, the largest remaining one: wires together everything phases
-10-14 built as libraries (`promote` removed, bare `codecompass` gains
-`--yes`/`--budget` for Phase B's auto-triggered consent, new `query`
-command group, `check`/`index`/`skill.py` migrated to graph-backed
-enrichment status). Same pattern: dispatch, re-verify independently
-(read the diff, don't just trust tests), doc-sync, commit, push. Then
-16 through 19, strictly in that order.
+Implement `planning/phase-16-retire-depth.md` next — now safe: `core.py`/
+`config.py`/`discovery.py` finally lose `Depth`/`VendorConfig.depth`,
+since Phase 15 removed every remaining behavioral consumer. Same
+pattern: dispatch, re-verify independently (read the diff), doc-sync,
+commit, push. Then 17 through 19, strictly in that order.
 
 **Still outstanding, not a blocker but worth remembering:**
 - Once a Rust toolchain is available anywhere in the pipeline,

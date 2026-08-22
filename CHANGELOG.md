@@ -20,8 +20,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   its absence) — see `planning/v0.2-implementation-execution-plan.md`
   for the reinforced verification step this prompted.
 
+### Fixed
+
+- `usage.py`'s project-source scan didn't exclude `vendor/` — since
+  Phase 13, every tracked vendor's own upstream source clones into
+  `vendor/<name>/src/` inside that same walk, and a vendor's own source
+  very often self-references its own package name, registering as a
+  false-positive "the project uses this vendor" signal for nearly every
+  vendor on every run. Fixed by adding `"vendor"` to
+  `_PROJECT_PRUNE_DIR_NAMES` (Phase 15), with a regression test. Caught
+  by the implementing subagent's own end-to-end testing before it ever
+  reached the orchestrating session's independent review.
+- `chat.py`'s "no grounded description yet" hint still referenced
+  `codecompass promote <vendor>`, a command removed in Phase 15 — reworded
+  to point at `sync`.
+
 ### Added
 
+- **Phase 15: CLI rewire** — implements `planning/phase-15-cli-rewire.md`
+  and `decisions/0033`. `promote` removed entirely. Bare `codecompass`
+  and whole-project `sync` gain `--yes`/`--budget` and auto-trigger Phase
+  B (disclose/confirm, then batched enrichment) right after Phase A's
+  free work. New `query {vendors|vendor|symbol|skills}` command group
+  (Rich tables or `--json`). `check` gains report-only coverage-gap
+  sections — unused vendors, documented-but-unused/used-but-undocumented
+  symbols, orphaned third-party skill mentions — **`--strict`'s exit code
+  unaffected**, still version-drift severity only. `index.py`/`skill.py`
+  migrated from `Depth`-keyed to graph-derived enrichment status (new
+  `graph.has_enrichment`). `pytest`: 361 passed, 1 skipped; `ruff
+  check .` clean.
 - **Phase 14: batched enrichment (Phase B)** — implements
   `planning/phase-14-batched-enrichment.md`. New
   `src/codecompass/enrichment.py`: `select_candidates` (two-tier
