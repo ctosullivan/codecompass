@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Planning: `planning/phase-28-center-relationship-excerpts-on-the-
+  actual-match.md` — a future plan found via a live `/discovery` session
+  testing Phase 26/27's real output quality. `relation_enrichment.
+  select_candidates` always sends a spec doc's first 4,000 characters as
+  grounding, regardless of where the mechanical match actually is;
+  confirmed with real data that both of this repo's currently-enriched
+  vendor-doc relationships got ungrounded AI summaries as a result (the
+  real match sits at character 7,870 of one file and 91,374 of another,
+  both past the fixed window). `planning/ROADMAP.md`'s Post-MVP table
+  updated: 28 appended after 27, no renumbering. Planning only, no code
+  changed.
+
 - **Phase 27**: a cloned vendor's own embedded upstream doc files
   (`README*.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`,
   `MIGRATION.md` at its clone root, `vendor/<name>/src/`) are now
