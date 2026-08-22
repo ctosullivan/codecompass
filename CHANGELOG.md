@@ -22,6 +22,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 14: batched enrichment (Phase B)** — implements
+  `planning/phase-14-batched-enrichment.md`. New
+  `src/codecompass/enrichment.py`: `select_candidates` (two-tier
+  DB-hash + `CLAUDE.md`-file-hash cache check, per `decisions/0032`),
+  `plan_batches`, batched forced-tool-use enrichment
+  (`run_enrichment_batches`), `apply_results` (writes to the graph,
+  updates `CLAUDE.md` in place via new `claude_md.
+  update_description_section`/`read_enrichment_hash`, generates
+  per-vendor Skill/`.mdc` via a minimal `VendorDigest`),
+  `estimate_cost`/`check_budget` reworked to scale with batch count.
+  Library-only — not yet wired into `cli.py`/`sync.py` (Phase 15).
+  `grounded_description.py` untouched, still active for `depth = full`
+  vendors until Phase 15/16. `pytest`: 336 passed, 1 skipped; `ruff
+  check .` clean.
 - **Phase 13: universal source cloning** — implements
   `planning/phase-13-universal-source-cloning.md` and `decisions/0033`.
   `sync.sync_vendor` restructured: cloning now runs unconditionally for

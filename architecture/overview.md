@@ -354,6 +354,19 @@ order:
 6. **Quick links** — relative links to `./FILETREE.md`, `./DEPTREE.md`,
    and a backlink to the project root `CLAUDE.md`.
 
+**Phase 14 adds a second, narrower write path** alongside this
+from-scratch renderer: `update_description_section`/`read_enrichment_hash`
+(see **Batched enrichment** above) rewrite just an already-rendered
+file's Description section and a `**Enrichment symbol-set hash:**`
+metadata line in place, for `codecompass.enrichment`'s batched,
+usage-driven enrichment — which doesn't gate on `Depth` at all
+(`decisions/0031`), unlike section 4's from-scratch render path above.
+That's safe rather than a regression of the Phase 13 "surface vendor
+shows a misleading Description note" fix: this path is only ever invoked
+for a vendor `codecompass.enrichment` just actually enriched, never as a
+generic re-render, so there's no equivalent "ineligible vendor with a
+stray error note" case for it to reintroduce.
+
 ## Two consumption modes
 
 Both must work:
@@ -805,6 +818,88 @@ functions from `rebuild_deterministic` on purpose — a deterministic
 rebuild and a paid enrichment write are different trigger points with
 different costs, and conflating them would risk an enrichment write
 becoming implicitly part of the "free, always safe to rerun" rebuild path.
+
+### Batched enrichment (`codecompass.enrichment`)
+
+**New in Phase 14 — library only, like Phase 10's `graph.py` was: nothing
+here is called from `cli.py`/`sync.py` yet (Phase 15's job).** Conceptually
+replaces `codecompass.grounded_description` (below), but that module stays
+in place, unmodified, and still the one `sync_vendor` actually calls for
+`depth = full` vendors through this phase — `Depth`/`promote` aren't
+retired until Phase 15/16 (`decisions/0033`). The two modules coexist
+through Phase 14; `grounded_description.py` is only deleted once Phase 15
+rewires `cli.py`/`sync.py` off it entirely. `enrichment.py` ports
+`_gather_material`/`_find_entry_point`/`_read_text`/`_first_existing` and
+the `_call_anthropic` forced-tool-use pattern from
+`grounded_description.py` near-verbatim (same caps, same
+per-module-monkeypatch test seam — `decisions/0016`).
+
+**Selection is usage-driven, not `Depth`-driven** — the whole point of
+`decisions/0031`, already reflected in Phase 10's `graph.enrichment_candidates`
+even though `Depth` itself isn't removed until later. `select_candidates(conn,
+configs, project_root) -> list[EnrichmentCandidate]` takes every vendor
+`graph.enrichment_candidates` reports as usage-proven, computes its
+*current* symbol-set hash (`_compute_symbol_set_hash(vendor_name,
+sorted(used_symbol_names), installed_version)`, sha256 over the three
+joined with a separator byte that can't appear in any of them), and skips
+it if that hash already matches — checked two independent ways
+(`decisions/0032`'s belt-and-suspenders design): the DB-level
+`vendor_enrichment.symbol_set_hash` `graph.enrichment_candidates` already
+surfaces, and a file-level check via the new `claude_md.read_enrichment_hash`
+against the committed `vendor/<name>/CLAUDE.md`. The file-level check is
+the one that actually survives a fresh clone with no `context-graph.db` at
+all (gitignored) — belt-and-suspenders, not redundant for no reason. A
+vendor with no retrievable material (no README/docs/entry-point in its
+`vendor/<name>/src/` clone — unconditional since Phase 13) is skipped
+outright rather than aborting the run. `EnrichmentCandidate` carries
+`installed_version` alongside `vendor`/`used_symbol_names`/`material` —
+beyond the phase plan's field sketch, but required so
+`run_enrichment_batches` can recompute the *exact* same hash later when
+writing `EnrichmentResult.symbol_set_hash` back; without it the cache-key
+contract silently breaks (a written hash that never matches what the next
+`select_candidates` call recomputes, re-purchasing enrichment every run).
+
+**Batched, not one call per vendor**: `plan_batches(candidates, *,
+batch_char_budget=150_000) -> list[list[EnrichmentCandidate]]` greedily
+groups candidates into as few batches as fit under the character budget
+(a single oversized candidate still gets its own batch rather than being
+split or dropped) — a conservative starting constant, flagged for
+empirical tuning once Phase 15 makes a real multi-vendor batched call
+reachable to test manually, the same treatment this project already gives
+`_RAW_TEXT_CHAR_CAP` and friends. `run_enrichment_batches(candidates) ->
+list[EnrichmentResult]` calls `_call_anthropic` once per batch against a
+batched `_TOOL_SCHEMA` (forced tool-use; input schema is an array of
+per-vendor results — `vendor`, `technical_description`,
+`conversational_overview`, `symbol_purposes` (one purpose per used
+symbol), optional `action_pointer_file`/`action_pointer_note`), then maps
+each batch's response back onto that batch's candidates. A result naming
+a vendor outside the batch (a hallucinated/misspelled entry) is dropped
+rather than failing the whole batch.
+
+**`apply_results(conn, project_root, results) -> None`** writes each
+result three ways: `graph.record_enrichment`/`graph.record_symbol_enrichment`
+(Phase 10's writers, unchanged); `claude_md.update_description_section`
+(new — see **Per-vendor CLAUDE.md structure** below) to rewrite just that
+vendor's `CLAUDE.md` Description section and hash line in place, without
+re-running `sync_vendor`'s whole pipeline; and
+`skill.write_vendor_skill`/`write_cursor_mdc` against a **minimal
+`VendorDigest`** populated only with the fields those two functions
+actually read (`config`, `installed_version`, `conversational_overview`,
+`technical_description`, `action_pointer_file`, `action_pointer_note`) —
+confirmed by reading both functions' bodies that neither touches
+`api_surface`/`file_tree`/`dep_tree`/`side_effects`, so leaving those at
+their dataclass defaults is safe, not a partial digest.
+`VendorConfig.depth` has no real meaning on this path (`decisions/0031`)
+and isn't derivable from an `EnrichmentResult` (which only carries the
+vendor's name); it's set to `Depth.FULL` as the closest existing label,
+a value `skill.py` never actually reads.
+
+**Cost model reworked for the batched shape**: `estimate_cost(batch_count)`
+/`check_budget(candidates, budget)` scale with `len(plan_batches(candidates))`,
+not 1:1 with vendor count — several vendors' material and output now share
+one call, so the old per-vendor formula
+(`grounded_description.estimate_cost`) would overstate cost for a batch of
+more than one. Same abort-before-any-spend contract otherwise.
 
 ### Project-source usage detection (`codecompass.usage`)
 

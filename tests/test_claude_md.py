@@ -1,6 +1,11 @@
 from pathlib import Path
 
-from codecompass.claude_md import read_installed_version, render_vendor_claude_md
+from codecompass.claude_md import (
+    read_enrichment_hash,
+    read_installed_version,
+    render_vendor_claude_md,
+    update_description_section,
+)
 from codecompass.core import Depth, Ecosystem, VendorConfig, VendorDigest
 
 
@@ -123,3 +128,138 @@ def test_read_installed_version_none_when_line_missing(tmp_path: Path) -> None:
     claude_md_path = tmp_path / "CLAUDE.md"
     claude_md_path.write_text("# turndown\n\nhand-edited, no metadata\n", encoding="utf-8")
     assert read_installed_version(claude_md_path) is None
+
+
+# --- read_enrichment_hash / update_description_section (Phase 14) -----------
+
+
+def test_read_enrichment_hash_finds_the_line(tmp_path: Path) -> None:
+    claude_md_path = tmp_path / "CLAUDE.md"
+    claude_md_path.write_text(
+        "# turndown\n\n## Metadata\n\n"
+        "- **Installed version:** 7.1.2\n"
+        "- **Enrichment symbol-set hash:** abc123\n",
+        encoding="utf-8",
+    )
+    assert read_enrichment_hash(claude_md_path) == "abc123"
+
+
+def test_read_enrichment_hash_none_when_file_missing(tmp_path: Path) -> None:
+    assert read_enrichment_hash(tmp_path / "CLAUDE.md") is None
+
+
+def test_read_enrichment_hash_none_when_line_missing(tmp_path: Path) -> None:
+    claude_md_path = tmp_path / "CLAUDE.md"
+    claude_md_path.write_text("# turndown\n\nhand-edited, no metadata\n", encoding="utf-8")
+    assert read_enrichment_hash(claude_md_path) is None
+
+
+def _surface_markdown(name: str = "turndown") -> str:
+    """A `depth = surface` vendor's rendered `CLAUDE.md` — no Description
+    section at all, the state `update_description_section` must be able to
+    insert into, not just replace within.
+    """
+    config = VendorConfig(name=name, ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    digest = VendorDigest(
+        config=config, installed_version="7.1.2", api_surface="TurndownService API."
+    )
+    return render_vendor_claude_md(digest)
+
+
+def test_update_description_section_inserts_a_new_section(tmp_path: Path) -> None:
+    claude_md_path = tmp_path / "CLAUDE.md"
+    claude_md_path.write_text(_surface_markdown(), encoding="utf-8")
+    assert "## Description" not in claude_md_path.read_text(encoding="utf-8")
+
+    update_description_section(
+        claude_md_path,
+        technical_description="TurndownService converts HTML via visitor rules.",
+        action_pointer_file="src/commonmark-rules.js",
+        action_pointer_note="override fencedCodeBlock here",
+        symbol_set_hash="hash-123",
+    )
+
+    content = claude_md_path.read_text(encoding="utf-8")
+    assert content.count("## Description") == 1
+    assert "TurndownService converts HTML via visitor rules." in content
+    assert (
+        "**Action pointer:** `src/commonmark-rules.js` — override fencedCodeBlock here" in content
+    )
+    assert "- **Enrichment symbol-set hash:** hash-123" in content
+    assert (
+        content.index("## Public API surface")
+        < content.index("## Description")
+        < content.index("## Known gotchas")
+    )
+
+
+def test_update_description_section_omits_action_pointer_when_not_set(tmp_path: Path) -> None:
+    claude_md_path = tmp_path / "CLAUDE.md"
+    claude_md_path.write_text(_surface_markdown(), encoding="utf-8")
+
+    update_description_section(
+        claude_md_path,
+        technical_description="Converts HTML to Markdown.",
+        action_pointer_file=None,
+        action_pointer_note=None,
+        symbol_set_hash="hash-123",
+    )
+
+    content = claude_md_path.read_text(encoding="utf-8")
+    assert "Converts HTML to Markdown." in content
+    assert "Action pointer" not in content
+
+
+def test_update_description_section_replaces_an_existing_section(tmp_path: Path) -> None:
+    full_config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL)
+    old_digest = VendorDigest(
+        config=full_config,
+        installed_version="7.1.2",
+        api_surface="API.",
+        technical_description="OLD description.",
+    )
+    claude_md_path = tmp_path / "CLAUDE.md"
+    claude_md_path.write_text(render_vendor_claude_md(old_digest), encoding="utf-8")
+
+    update_description_section(
+        claude_md_path,
+        technical_description="NEW description.",
+        action_pointer_file=None,
+        action_pointer_note=None,
+        symbol_set_hash="hash-456",
+    )
+
+    content = claude_md_path.read_text(encoding="utf-8")
+    assert content.count("## Description") == 1
+    assert "NEW description." in content
+    assert "OLD description." not in content
+    assert "Action pointer" not in content
+
+
+def test_update_description_section_updates_hash_line_in_place_on_second_call(
+    tmp_path: Path,
+) -> None:
+    claude_md_path = tmp_path / "CLAUDE.md"
+    claude_md_path.write_text(_surface_markdown(), encoding="utf-8")
+
+    update_description_section(
+        claude_md_path,
+        technical_description="v1",
+        action_pointer_file=None,
+        action_pointer_note=None,
+        symbol_set_hash="hash-v1",
+    )
+    update_description_section(
+        claude_md_path,
+        technical_description="v2",
+        action_pointer_file=None,
+        action_pointer_note=None,
+        symbol_set_hash="hash-v2",
+    )
+
+    content = claude_md_path.read_text(encoding="utf-8")
+    assert content.count("**Enrichment symbol-set hash:**") == 1
+    assert read_enrichment_hash(claude_md_path) == "hash-v2"
+    assert "v1" not in content
+    assert "v2" in content
+    assert read_installed_version(claude_md_path) == "7.1.2"
