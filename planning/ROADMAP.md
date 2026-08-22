@@ -102,6 +102,16 @@ with `promote`/`Depth` fully retired and chat re-framed as secondary.
 | 23 | *(was 22, was 21, was 11, formerly 10)* Polish: PyPI publish as `codecompass`, examples, docs site evaluation — the v1.0 release itself (decisions/0039; Part A done, Part B — the actual publish — paused for explicit user confirmation) | in progress | [`phase-23-polish-and-pypi-publish.md`](phase-23-polish-and-pypi-publish.md) |
 | 24 | *(was 21, was 20, was 10, formerly 9)* Project-root-aware REPL routing (Tier 1 sourced from generated Skill descriptions, decisions/0013) + whole-project context + unconditional dependency rollup at session start (decisions/0012, now demoted per decisions/0034) + digest-exceeded escalation to the generated Skill folder — now consumes the SQLite graph (decisions/0032) instead of inventing ad hoc heuristics — deferred past v1.0, see renumbering note below | not started | — |
 | 25 | *(was 23, was 22, was 12, formerly 11)* MCP server (`query_vendor`) — deferred past v1.0, see renumbering note below | not started | — |
+| 26 | Symbol-level resolution for `module.attr` usage — `usage.detect_python_imports` currently only resolves `from X import Y`-style usage to a symbol; a plain `import X` followed by `X.Attr(...)` (this project's own dominant style for `anthropic`) stays vendor-level-only, causing real used symbols to show as "documented but unused" in `check` | planned | [`phase-26-symbol-level-resolution-for-attribute-usage.md`](phase-26-symbol-level-resolution-for-attribute-usage.md) |
+| 27 | Register embedded vendor docs — a cloned vendor's own upstream README/CHANGELOG/CONTRIBUTING etc. (confirmed real content under `vendor/*/src/` in this repo) currently has no `doc_artifacts` row at all, so none of Phase 21/22's relationship detection/enrichment ever applies to them | planned | [`phase-27-register-embedded-vendor-docs.md`](phase-27-register-embedded-vendor-docs.md) |
+
+**Renumbering note:** none — 26/27 are appended after the existing 24/25
+(routing/rollup, MCP) rather than inserted ahead of them. Both were found
+via a `/discovery` dogfooding session *after* v1.0's own phases (20-23)
+were already planned/underway, are independent, non-blocking improvements
+to already-shipped Phase 12/21/22 mechanisms, and don't affect the
+reasoning behind 24/25's deferral-past-v1.0 placement — no reason to
+reorder phases that were already `not started`.
 
 **Renumbering note (dated to `planning/v1.0-initial-release-roadmap.md`'s
 planning session):** two new phases (21, "Spec-doc detection &

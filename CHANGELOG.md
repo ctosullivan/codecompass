@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Planning: two new future phases found via a `/discovery` dogfooding
+  session against this repo itself, each with its own real, confirmed
+  evidence (not guessed) — `planning/phase-26-symbol-level-resolution-
+  for-attribute-usage.md` (a plain `import X` followed by `X.Attr(...)`
+  never resolves to a symbol-level usage edge, confirmed: all 6
+  `anthropic` `uses_edges` rows in this repo have `symbol_id = NULL`,
+  causing 35 real symbols to show as "documented but unused") and
+  `planning/phase-27-register-embedded-vendor-docs.md` (a cloned vendor's
+  own upstream docs — confirmed: 30+ real files under `vendor/*/src/` in
+  this repo — have no `doc_artifacts` row at all, so Phase 21/22's
+  relationship detection/enrichment never applies to them).
+  `planning/ROADMAP.md`'s Post-MVP table updated: 26/27 appended after
+  24/25, no renumbering needed. Planning only, no code changed.
+
 ### Fixed
 
 - `/discovery`'s generated body overstated what its `allowed-tools`

@@ -179,6 +179,26 @@ first_turn`). This repo's own `.claude/commands/discovery.md` regenerated
 via `codecompass index` to match. `pytest` 441 passed/1 skipped, `ruff
 check .` clean.
 
+**Most recently**: ran a `/discovery` exploration session against this
+repo itself, in response to a direct user request, then reported findings
+(what's enriched, an honest assessment of output quality, and — the
+concrete gaps that turned into new plans — whether embedded vendor docs
+get registered). Two real, evidence-backed gaps surfaced and are now
+planned (not implemented): `planning/phase-26-symbol-level-resolution-
+for-attribute-usage.md` (module-level `import X` + `X.Attr(...)` never
+resolves to a symbol-level usage edge — confirmed via this repo's own
+`anthropic` usage edges, all `symbol_id = NULL`) and `planning/
+phase-27-register-embedded-vendor-docs.md` (a vendor's own upstream
+README/CHANGELOG/etc. — confirmed real content under `vendor/*/src/` —
+has no `doc_artifacts` row, so Phase 21/22's relationship machinery never
+reaches it). `planning/ROADMAP.md`'s Post-MVP table updated: 26/27
+appended after 24/25, no renumbering (both are independent, non-blocking
+improvements found after v1.0's own phases were already underway).
+Notably, the user's first ask to save a plan arrived *while still inside
+the `/discovery` session from the prior exchange* — correctly held that
+session's own "no plan file, say so and stop" constraint and asked for
+explicit confirmation before writing anything, which the user then gave.
+
 ## Next concrete step
 
 **Phase 23, Part B — the actual publish — is paused for explicit user
@@ -191,13 +211,16 @@ section at the same time. None of this should happen from a broad
 "implement to release" instruction alone — claiming a PyPI package name
 and pushing a public tag are genuinely irreversible.
 
-One decision remains genuinely open, unrelated to Part B and not blocking
-it:
+Two decisions remain genuinely open, unrelated to Part B and not blocking
+it or Phase 26/27 implementation:
 
 1. **Whether routing/rollup and MCP (now 24/25) really should be deferred
    past v1.0** — proposed in `planning/v1.0-initial-release-roadmap.md`'s
    "Why this order" section, not locked. Flagged back to the user, not
    decided unilaterally.
+2. **Whether/when to implement Phases 26-27** — written as future plans
+   per the user's explicit request, not implemented yet; no urgency
+   signal from the user either way.
 
 **Still outstanding, not a blocker but worth remembering:**
 - The graph/enrichment ordering gap (routing table/tool Skill/`undo`
