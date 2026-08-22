@@ -255,6 +255,65 @@ def test_sync_single_vendor_never_triggers_phase_b(
     assert not called
 
 
+def test_sync_whole_project_zero_candidates_still_refreshes_routing_table(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression for gap 2 (planning/phase-20-refresh-generated-artifacts-
+    after-enrichment.md): before this phase, `sync`'s whole-project branch
+    never called `update_root_claude_md`/`write_tool_skill`/
+    `write_discovery_command` at all — only `index` or `_bootstrap` did.
+    A whole-project `sync` with zero enrichment candidates (no `--yes`, no
+    fixture that triggers Phase B — the common case) must still refresh
+    them at least once, without a separate `codecompass index`.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "vendor.toml").write_text(
+        '[[vendor]]\nname = "pytest"\necosystem = "python"\ndepth = "surface"\n',
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["sync"])
+
+    assert result.exit_code == 0, result.output
+    assert "<!-- codecompass:start -->" in (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
+    assert (tmp_path / ".claude" / "skills" / "codecompass" / "SKILL.md").exists()
+    assert (tmp_path / ".claude" / "commands" / "discovery.md").exists()
+
+
+def test_undo_dry_run_sees_per_vendor_skill_immediately_after_enrichment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression for the `undo`-freshness symptom this phase also closes:
+    both gaps meant `context-graph.db` didn't know about a Skill Phase B
+    just wrote (`skill_scan.scan_skills` hadn't re-run since) until a
+    separate whole-project sync — so `undo`'s graph-backed enumeration
+    (`_graph_backed_undo_paths`) missed a vendor's brand-new per-vendor
+    Skill at this exact point, right after the triggering enrichment run.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "requirements.txt").write_text("pytest\n", encoding="utf-8")
+
+    def _fake_select_candidates(conn, configs, project_root):  # noqa: ANN001
+        (config,) = [c for c in configs if c.name == "pytest"]
+        return [_fake_enrichment_candidate(config)]
+
+    def _fake_run_enrichment_batches(candidates):  # noqa: ANN001
+        return [_fake_enrichment_result("pytest")]
+
+    monkeypatch.setattr("codecompass.enrichment.select_candidates", _fake_select_candidates)
+    monkeypatch.setattr(
+        "codecompass.enrichment.run_enrichment_batches", _fake_run_enrichment_batches
+    )
+
+    bootstrap_result = runner.invoke(app, ["--yes"])
+    assert bootstrap_result.exit_code == 0, bootstrap_result.output
+
+    result = runner.invoke(app, ["undo", "--dry-run"])
+
+    assert result.exit_code == 0, result.output
+    assert ".claude/skills/codecompass-pytest" in result.output
+
+
 def test_index_injects_routing_table_into_root_claude_md(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -370,6 +429,46 @@ def test_bare_bootstrap_phase_b_yes_flag_enriches_without_prompting(
     assert "enriched" in result.output
     assert (tmp_path / ".claude" / "skills" / "codecompass-pytest" / "SKILL.md").exists()
     assert (tmp_path / ".cursor" / "rules" / "codecompass-pytest.mdc").exists()
+
+
+def test_bare_bootstrap_phase_b_enrichment_refreshes_routing_table_same_invocation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression for gap 1 (planning/phase-20-refresh-generated-artifacts-
+    after-enrichment.md): before this phase, the routing table and
+    tool-level Skill were regenerated *before* Phase B ran, so a vendor
+    enriched in this same invocation still showed `Enriched: no` until a
+    separate `codecompass index`. Both must show post-enrichment status
+    without a follow-up command.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "requirements.txt").write_text("pytest\n", encoding="utf-8")
+
+    def _fake_select_candidates(conn, configs, project_root):  # noqa: ANN001
+        (config,) = [c for c in configs if c.name == "pytest"]
+        return [_fake_enrichment_candidate(config)]
+
+    def _fake_run_enrichment_batches(candidates):  # noqa: ANN001
+        return [_fake_enrichment_result("pytest")]
+
+    monkeypatch.setattr("codecompass.enrichment.select_candidates", _fake_select_candidates)
+    monkeypatch.setattr(
+        "codecompass.enrichment.run_enrichment_batches", _fake_run_enrichment_batches
+    )
+
+    result = runner.invoke(app, ["--yes"])
+
+    assert result.exit_code == 0, result.output
+    root_claude_md = (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
+    # `render_routing_table` only emits this "consult when" text for a row
+    # it considers enriched (`_CONSULT_WHEN_BY_ENRICHED[True]`) — its
+    # presence is proof the routing table was rendered *after* Phase B
+    # applied its results, not before.
+    assert "API questions and known gotchas" in root_claude_md
+    tool_skill_md = (tmp_path / ".claude" / "skills" / "codecompass" / "SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    assert "| pytest | python | yes |" in tool_skill_md
 
 
 def test_bare_bootstrap_phase_b_declined_confirmation_skips_enrichment(

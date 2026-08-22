@@ -6,7 +6,11 @@ for the log of how it got here.
 
 ## Current phase
 
-**MVP (v0.2) is complete — all eleven phases (9-19) are `done`.**
+**MVP (v0.2) is complete (phases 9-19, all `done`). Phase 20 (Refresh
+generated artifacts after enrichment) is now also `done`** — the first
+phase of the path-to-v1.0 sequence. Phases 21-22 (spec-doc detection &
+AI-enriched relationships) are planned, not yet implemented; Phase 23
+(Polish/PyPI publish, the release itself) has no plan file yet.
 Phases 0-8 (v0.1) were already `done`. `codecompass` now: renames
 complete; auto-clones every tracked vendor; detects real project-source
 usage; maps docs/skills/dependencies into a SQLite graph; auto-triggers
@@ -106,25 +110,40 @@ release phase), routing/rollup and MCP pushed to 24/25 (proposed deferred
 past v1.0 — not a locked decision, see "Next concrete step"). Planning
 only — no code changed, nothing implemented.
 
+## What was just completed (Phase 20)
+
+Implemented per its plan file, via the same dispatch-then-independently-
+verify pattern used throughout the v0.2 arc: new `cli._refresh_generated_
+artifacts(project_root, configs)` (graph rebuild → routing table → tool
+Skill → discovery command), called from a `try/finally` wrapped around
+`_maybe_run_enrichment` in both `_bootstrap` and `sync`'s whole-project
+branch — so it runs whether enrichment succeeds, is declined, has nothing
+to do, or aborts on budget. `sync`'s whole-project branch now regenerates
+these artifacts for the first time ever (previously only `_bootstrap`/
+`index` did). Three new regression tests in `tests/test_cli.py`
+(same-invocation post-enrichment freshness, zero-candidate `sync` still
+refreshing, `undo --dry-run` seeing a just-written per-vendor Skill
+immediately). `architecture/overview.md`'s "Retrofitting to existing
+projects"/"Cost model" sections updated. Verified independently: `pytest`
+371 passed/1 skipped (up from 367), `ruff check .` clean, diff read
+directly against the plan (matches exactly, no scope drift).
+
 ## Next concrete step
 
-**MVP (v0.2) is done.** A path-to-v1.0 planning pass has now happened:
-`planning/v1.0-initial-release-roadmap.md` lays out phases 20-23 as the
-release-blocking sequence (20: the already-known artifact-refresh bug fix;
-21: new — mechanically detect a project's own spec docs, README/`docs/`/
-`architecture/`/`decisions/`, and link them to dependency docs/skills via
-the existing mention-heuristic pattern; 22: new — AI-enriched summaries of
-*how* each of those relationships connects, gated on Phase 21's candidates
-only, folded into the existing Phase B cost/consent flow; 23: Polish/PyPI
-publish, the release itself), with routing/rollup and MCP (now 24/25)
-proposed as deferred past v1.0 rather than blocking it. Individual plan
-files exist for 20 (already did), 21, and 22 — 23 is not written in detail
-yet. **None of phases 20-22 have been implemented** — this was planning
-only, at explicit user request, same as Phase 20's plan was written
-without being implemented.
+**Implementing the path-to-v1.0 sequence, phase by phase, per user
+request ("implement the plans to initial release stage").** Phase 20 is
+`done` (above). Phase 21 (spec-doc detection & relationship graph) is
+next, then Phase 22 (AI-enriched cross-artifact relationships — its
+verification step requires one real, disclosed live API call against this
+repo, same posture as the earlier live-enrichment validation session).
+Phase 23 (Polish/PyPI publish) still has no plan file — write it per
+`CLAUDE.md` §1 before implementing it, and note its *actual* publish step
+is a hard-to-reverse, externally-visible action (claiming a PyPI package
+name forever) that must pause for explicit user confirmation, not proceed
+automatically even under a broad "implement to release" instruction.
 
-Three decisions remain genuinely open, none blocking Phase 20/21
-implementation from starting whenever prioritized:
+Three decisions remain genuinely open, none blocking Phase 21
+implementation from starting immediately:
 
 1. **Cutting the `v0.2` git tag and promoting `CHANGELOG.md`'s
    `[Unreleased]` section to a dated release** (`CLAUDE.md` §6,
@@ -142,18 +161,9 @@ implementation from starting whenever prioritized:
    before implementation per `CLAUDE.md` §1, same as every other phase.
 
 **Still outstanding, not a blocker but worth remembering:**
-- **The graph/enrichment ordering gap is now only *partially* resolved
-  — the remaining piece has a real plan file, `planning/phase-20-
-  refresh-generated-artifacts-after-enrichment.md`.** `OVERVIEW.md`'s
-  piece is fixed (above). What remains, covered by that plan: `sync`'s
-  whole-project branch never refreshes the routing table/tool Skill at
-  all (a second, distinct gap from the ordering one — found by grep
-  during Phase 17), and `_bootstrap`'s ordering means a vendor enriched
-  in that same invocation still shows pre-enrichment status until a
-  second run. Both mean `undo`'s enumeration and `codecompass query
-  skills` also lag by one sync cycle right after a vendor's *first*
-  enrichment (self-corrects on the next whole-project sync, not
-  data-destructive).
+- The graph/enrichment ordering gap (routing table/tool Skill/`undo`
+  freshness immediately after a vendor's first enrichment) is **resolved
+  by Phase 20** (above).
 - Once a Rust toolchain is available anywhere in the pipeline,
   `decisions/0014` requires validating the Cargo adapter against real
   `cargo metadata` output and a real crate — currently entirely

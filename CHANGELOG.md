@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Phase 20**: the root `CLAUDE.md` routing table, tool-level Skill, and
+  discovery command now always refresh *after* AI enrichment finishes
+  (success or budget-abort), not before — a vendor enriched during the
+  same `codecompass`/`sync` invocation no longer shows stale
+  pre-enrichment status until a second run. New `cli._refresh_generated_
+  artifacts`, called from a `try/finally` around `_maybe_run_enrichment`
+  in both `_bootstrap` and `sync`'s whole-project branch — the latter
+  previously never regenerated these artifacts at all. Closes the
+  graph/enrichment ordering gap flagged after Phase 18 and confirmed
+  during this project's first live enrichment run.
+
 ### Added
 
 - Planning: `planning/v1.0-initial-release-roadmap.md` — the path-to-v1.0

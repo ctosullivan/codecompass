@@ -744,13 +744,36 @@ cloning and a graph rebuild): auto-discovers manifests at the project
 root (`package.json`, `pyproject.toml`, `requirements.txt`,
 `Cargo.toml`), writes/refreshes `vendor.toml`, clones every vendor's
 source (`decisions/0033` — extended from `depth = FULL`-only cloning),
-regenerates trees, the routing table, and the tool-level Skill, and
-rebuilds `context-graph.db` from the whole project's current state. No
-prompts, no AI calls, regardless of project size. Re-running it on an
-already-bootstrapped project is an **idempotent refresh**: newly
+regenerates trees, and rebuilds `context-graph.db` from the whole
+project's current state — that rebuild has to happen here, pre-Phase B,
+because `enrichment.select_candidates` reads usage-proven candidates from
+it. No prompts, no AI calls, regardless of project size. Re-running it on
+an already-bootstrapped project is an **idempotent refresh**: newly
 discovered dependencies are appended; already-tracked vendors are left
 untouched by Phase A itself, so Phase A alone never pays AI cost no
 matter how many times it's run.
+
+**Routing table / tool Skill refresh timing (Phase 20).** The routing
+table and the tool-level Skill are *not* regenerated as part of Phase A
+above — they're regenerated once, unconditionally, by
+`cli._refresh_generated_artifacts` at the very end of the whole
+bare-`codecompass`/`sync` invocation, *after* Phase B returns (success,
+decline, or budget-abort — a `try`/`finally` around the Phase B call
+guarantees this runs either way). Earlier phases regenerated them
+*before* Phase B ran, so a vendor enriched in that same invocation still
+showed `Enriched: no` until a separate `codecompass index` — confirmed
+directly during this project's first live enrichment run. `sync`'s
+whole-project branch previously never called this regeneration at all
+(only `index`/bare `codecompass` did); it now shares the same
+post-Phase-B call. `_refresh_generated_artifacts` re-runs
+`rebuild_project_graph` a second time (a full pass, not a partial
+update — `graph.rebuild_deterministic` has no partial-update mode) before
+re-deriving the routing table/tool Skill from it, which also means
+`context-graph.db` picks up any Skill/`.mdc` file Phase B just wrote
+(`skill_scan.scan_skills`) in the same invocation — fixing `codecompass
+undo`'s graph-backed enumeration and `codecompass query skills` missing a
+vendor's brand-new per-vendor Skill until the next whole-project sync.
+See planning/phase-20-refresh-generated-artifacts-after-enrichment.md.
 
 `codecompass init --scan <manifest file> [--scan <manifest file> ...]`
 (`codecompass.discovery`) remains as the explicit, scripted/CI-friendly
@@ -1261,7 +1284,12 @@ per-vendor formula `grounded_description.estimate_cost` used. `--yes`
 skips the confirmation prompt; `--budget <amount>` refuses to make any
 Phase B API call at all (not partially) once the projected cost for a
 single run exceeds the cap — same abort-before-any-spend contract the
-retired `promote`/`sync --budget` guaranteed.
+retired `promote`/`sync --budget` guaranteed. Regardless of how Phase B
+ends — enriched, declined, or budget-aborted — `cli._refresh_generated_
+artifacts` still runs once at the end of the invocation (Phase 20; see
+"Retrofitting to existing projects" above), so a budget-aborted run's
+already-free Phase A output is left with a freshly-regenerated routing
+table/tool Skill, not a stale one from before the abort.
 
 **As of Phase 16, there is no other cost path.** The old `depth = FULL`
 per-vendor grounded-description regeneration

@@ -120,10 +120,12 @@ def _bootstrap(project_root: Path, *, yes: bool, budget: float | None) -> None:
         sync_all(new_configs, project_root)
 
     all_configs = load_vendor_config(vendor_toml)
-    rows = load_routing_rows(all_configs, project_root)
-    update_root_claude_md(project_root, render_routing_table(rows))
-    write_tool_skill(project_root, all_configs)
-    write_discovery_command(project_root)
+    # Only the graph rebuild happens here, pre-enrichment — it must exist
+    # before `enrichment.select_candidates` can read usage-proven
+    # candidates from it. The routing table/tool Skill/discovery command
+    # are regenerated post-enrichment instead (`_refresh_generated_artifacts`
+    # below) so they reflect this run's enrichment, not the state before it
+    # (planning/phase-20-refresh-generated-artifacts-after-enrichment.md).
     rebuild_project_graph(all_configs, project_root)
 
     console.print(
@@ -131,7 +133,14 @@ def _bootstrap(project_root: Path, *, yes: bool, budget: float | None) -> None:
         f"tracked, {len(new_configs)} newly discovered"
     )
 
-    _maybe_run_enrichment(project_root, all_configs, yes=yes, budget=budget)
+    try:
+        _maybe_run_enrichment(project_root, all_configs, yes=yes, budget=budget)
+    finally:
+        # Unconditional, success or budget-abort (`typer.Exit` from
+        # `_maybe_run_enrichment`) — the routing table/tool Skill/graph are
+        # always left in a consistent, freshly-generated state after any
+        # invocation (phase-20 plan's Design decisions).
+        _refresh_generated_artifacts(project_root, all_configs)
 
 
 def _maybe_run_enrichment(
@@ -175,6 +184,28 @@ def _maybe_run_enrichment(
         console.print(f"[green]enriched[/green] {len(results)} vendor(s)")
     finally:
         conn.close()
+
+
+def _refresh_generated_artifacts(project_root: Path, configs: list[VendorConfig]) -> None:
+    """Re-run the graph rebuild plus everything derived from it — the
+    routing table, the tool-level Skill, and the discovery command —
+    called once, unconditionally, at the very end of both `_bootstrap` and
+    `sync`'s whole-project branch, *after* `_maybe_run_enrichment` returns
+    (success or budget-abort). Closes two gaps
+    (planning/phase-20-refresh-generated-artifacts-after-enrichment.md):
+    the routing table/tool Skill otherwise reflect pre-enrichment state
+    for a vendor enriched in this same invocation, and `sync`'s
+    whole-project branch never refreshed them at all. A second full
+    `rebuild_project_graph` pass, not a lighter targeted update — see that
+    plan's Design decisions for why: `graph.rebuild_deterministic` is a
+    deliberate wipe-and-rewrite transaction with no partial-update mode,
+    and the redundant pass is deterministic and free (no AI call).
+    """
+    rebuild_project_graph(configs, project_root)
+    rows = load_routing_rows(configs, project_root)
+    update_root_claude_md(project_root, render_routing_table(rows))
+    write_tool_skill(project_root, configs)
+    write_discovery_command(project_root)
 
 
 @app.command()
@@ -237,7 +268,14 @@ def sync(
         # Whole-project sync only (decisions/0025) — `sync <vendor>` and
         # `check --fix`'s per-vendor loop leave the graph untouched.
         rebuild_project_graph(configs, Path.cwd())
-        _maybe_run_enrichment(Path.cwd(), configs, yes=yes, budget=budget)
+        try:
+            _maybe_run_enrichment(Path.cwd(), configs, yes=yes, budget=budget)
+        finally:
+            # Unconditional post-enrichment refresh — closes the gap where
+            # a whole-project `sync` never regenerated the routing
+            # table/tool Skill at all (planning/phase-20-refresh-
+            # generated-artifacts-after-enrichment.md).
+            _refresh_generated_artifacts(Path.cwd(), configs)
     failed = False
     for digest in digests:
         if digest.description_error:
