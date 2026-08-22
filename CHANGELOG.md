@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 12: doc & wide skill mapping** — implements
+  `planning/phase-12-doc-and-wide-skill-mapping.md`. New
+  `src/codecompass/doc_mapping.py` (`collect_vendor_doc_artifacts`,
+  `build_documents_edges`, `build_routes_via_edges`,
+  `build_depends_on_edges`) and new `src/codecompass/skill_scan.py`
+  (`scan_skills` — indexes **every** skill under `.claude/skills/` and
+  `.cursor/rules/`, not just codecompass-generated ones, via a minimal
+  custom frontmatter extractor with no new YAML dependency;
+  `build_skill_mentions_edges` — word-boundary, not substring, matching
+  against tracked vendor names and source-file basenames).
+  `sync.rebuild_project_graph` now populates every table in the graph,
+  not just vendors/symbols/uses. Manually confirmed against this repo's
+  own `.claude/skills/codecompass/SKILL.md` and `vendor/*/deptree.json`.
+  `pytest`: 296 passed, 1 skipped; `ruff check .` clean.
+
 - **Phase 11: project-source usage detection** — implements
   `planning/phase-11-project-source-usage-detection.md`. New
   `src/codecompass/usage.py`: `detect_python_imports` (`ast`-based),

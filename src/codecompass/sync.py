@@ -7,14 +7,17 @@ analysis, decisions/0019), a `vendor/<name>/src/` snapshot for `depth =
 full` vendors (now sourced from the vendor's own upstream repository via
 `codecompass.source_resolution`, not the local install — decisions/0021),
 and per-vendor `CLAUDE.md` templating — writing everything under
-`vendor/<name>/`. Also `rebuild_project_graph` (Phase 11), which rebuilds
-`context-graph.db` from every tracked vendor's current state plus a fresh
-project-source usage scan — decoupled from `sync_all`'s per-vendor loop on
-purpose (see planning/phase-11-project-source-usage-detection.md's Design
-decisions) and called only from the two whole-project call sites in
-`cli.py`. See planning/phase-4-sync-index-init.md,
-planning/phase-5-gap-analysis.md, planning/phase-7-bootstrap-and-promote.md,
-and planning/phase-11-project-source-usage-detection.md.
+`vendor/<name>/`. Also `rebuild_project_graph` (Phase 11, extended in
+Phase 12 with doc/skill-mapping data via `codecompass.doc_mapping`/
+`codecompass.skill_scan`), which rebuilds `context-graph.db` from every
+tracked vendor's current state plus a fresh project-source usage scan —
+decoupled from `sync_all`'s per-vendor loop on purpose (see
+planning/phase-11-project-source-usage-detection.md's Design decisions)
+and called only from the two whole-project call sites in `cli.py`. See
+planning/phase-4-sync-index-init.md, planning/phase-5-gap-analysis.md,
+planning/phase-7-bootstrap-and-promote.md,
+planning/phase-11-project-source-usage-detection.md, and
+planning/phase-12-doc-and-wide-skill-mapping.md.
 """
 
 from __future__ import annotations
@@ -23,11 +26,17 @@ import json
 import shutil
 from pathlib import Path
 
-from codecompass import usage
+from codecompass import skill_scan, usage
 from codecompass.adapters import EcosystemAdapter, get_adapter
 from codecompass.claude_md import render_vendor_claude_md
 from codecompass.core import Depth, VendorConfig, VendorDigest
 from codecompass.deptree import render_deptree_json, render_deptree_markdown
+from codecompass.doc_mapping import (
+    build_depends_on_edges,
+    build_documents_edges,
+    build_routes_via_edges,
+    collect_vendor_doc_artifacts,
+)
 from codecompass.filetree import (
     build_symbol_index,
     iter_source_files,
@@ -186,8 +195,13 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
     vendor-level fallback edge (`symbol_name=None`), matching
     `uses_edges.symbol_id`'s nullability (`decisions/0031`).
 
-    The doc/skill-mapping tables stay empty here — Phase 12 extends this
-    same call site with real data.
+    Phase 12 adds the doc/skill-mapping tables: `doc_mapping.py` collects
+    each vendor's `CLAUDE.md`/`OVERVIEW.md` as doc artifacts and derives
+    `documents_edges`/`routes_via_edges`/`depends_on_edges` from them plus
+    the persisted per-vendor `deptree.json` files; `skill_scan.py` indexes
+    every Skill/`.mdc` under the project (not just codecompass's own) and
+    derives `skill_mentions_edges`. Both modules are pure transformations
+    over already-generated artifacts — no new AI call, no new extraction.
     """
     vendor_rows: list[VendorRow] = []
     symbol_rows: list[SymbolRow] = []
@@ -228,6 +242,17 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
         )
     source_file_rows = [SourceFileRow(path=p) for p in sorted(source_file_paths)]
 
+    vendor_doc_rows = collect_vendor_doc_artifacts(configs, project_root)
+    skill_doc_rows = skill_scan.scan_skills(project_root, configs)
+    doc_artifact_rows = vendor_doc_rows + skill_doc_rows
+
+    documents_edge_rows = build_documents_edges(doc_artifact_rows, symbol_rows, project_root)
+    skill_mentions_edge_rows = skill_scan.build_skill_mentions_edges(
+        skill_doc_rows, configs, source_file_rows, project_root
+    )
+    routes_via_edge_rows = build_routes_via_edges(configs, doc_artifact_rows)
+    depends_on_edge_rows = build_depends_on_edges(configs, project_root)
+
     conn = open_graph(project_root)
     try:
         rebuild_deterministic(
@@ -236,11 +261,11 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
             source_files=source_file_rows,
             symbols=symbol_rows,
             uses_edges=uses_edge_rows,
-            doc_artifacts=[],
-            documents_edges=[],
-            skill_mentions_edges=[],
-            routes_via_edges=[],
-            depends_on_edges=[],
+            doc_artifacts=doc_artifact_rows,
+            documents_edges=documents_edge_rows,
+            skill_mentions_edges=skill_mentions_edge_rows,
+            routes_via_edges=routes_via_edge_rows,
+            depends_on_edges=depends_on_edge_rows,
         )
     finally:
         conn.close()

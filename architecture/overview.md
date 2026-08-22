@@ -667,16 +667,20 @@ projected cost exceeds the cap.
 
 ## Context graph (`codecompass.graph`)
 
-**As of Phase 11, wired into both whole-project call sites — not yet
-CLI-visible.** `codecompass.graph` is the SQLite persistence layer every
-phase in the v0.2 rework (10-16) builds on: a schema, a set of typed row
-dataclasses that form the insertion contract for a full-rebuild
+**As of Phase 12, fully populated at both whole-project call sites — not
+yet CLI-visible.** `codecompass.graph` is the SQLite persistence layer
+every phase in the v0.2 rework (10-16) builds on: a schema, a set of typed
+row dataclasses that form the insertion contract for a full-rebuild
 orchestrator, and a set of read-only query functions. Phase 10 built it as
-a standalone library; Phase 11 is the first phase to actually populate it
-from real project data — `sync.rebuild_project_graph` (below) — and call
-that from `cli.py`'s two whole-project call sites. `codecompass query` and
-`check`'s coverage-gap sections reading from it is still Phase 15's job;
-until then the graph is written but nothing reads it back through the
+a standalone library; Phase 11 was the first phase to actually populate it
+from real project data — `sync.rebuild_project_graph` (below) — wiring in
+`vendors`/`source_files`/`symbols`/`uses_edges` and calling that from
+`cli.py`'s two whole-project call sites; Phase 12 extends the same call
+site with the remaining five tables (`doc_artifacts`/`documents_edges`/
+`skill_mentions_edges`/`routes_via_edges`/`depends_on_edges`), which
+previously received empty lists. `codecompass query` and `check`'s
+coverage-gap sections reading from it is still Phase 15's job; until then
+the graph is written but nothing reads it back through the
 CLI. See [`decisions/0032`](../decisions/0032-context-graph-stored-in-sqlite.md)
 (SQLite over the original `decisions/0024` JSON-file choice) and
 [`decisions/0025`](../decisions/0025-context-graph-rebuilds-only-on-whole-project-sync.md)
@@ -845,11 +849,10 @@ imports, and each `DetectedImport.symbol_name` is resolved against the
 matching vendor's just-collected symbol names: a match becomes a
 symbol-level `UsesEdgeRow`, no match (or `symbol_name=None` to begin with)
 stays a vendor-level fallback edge, matching `uses_edges.symbol_id`'s
-nullability (`decisions/0031`). `graph.open_graph` +
-`graph.rebuild_deterministic` then writes it all in one transaction —
-`doc_artifacts`/`documents_edges`/`skill_mentions_edges`/
-`routes_via_edges`/`depends_on_edges` all pass empty lists this phase;
-Phase 12 extends this same call site with real data for those five.
+nullability (`decisions/0031`). Phase 12 adds real `doc_artifacts`/
+`documents_edges`/`skill_mentions_edges`/`routes_via_edges`/
+`depends_on_edges` data (below); `graph.open_graph` +
+`graph.rebuild_deterministic` then writes everything in one transaction.
 
 **Deliberately decoupled from `sync_all`'s per-vendor loop, not threaded
 through it as a flag** — `sync_all` is sometimes called with a *subset* of
@@ -863,6 +866,86 @@ existing rebuild-trigger posture, carried into `decisions/0032`), with
 `configs` right after `sync_all` succeeds. `sync <vendor>` (single-vendor)
 and `check --fix`'s per-vendor loop (already calling `sync_vendor`
 directly, never `sync_all`) leave the graph untouched.
+
+### Doc & wide skill mapping (`codecompass.doc_mapping`, `codecompass.skill_scan`)
+
+**New in Phase 12 — still not CLI-visible (Phase 15's job); this phase
+only populates the five tables `rebuild_project_graph` previously passed
+empty lists for.** Both modules are pure transformations over
+already-generated artifacts — no new AI call, no new extraction — called
+from `rebuild_project_graph` alongside the Phase 11 pieces above.
+
+`doc_mapping.py`:
+- `collect_vendor_doc_artifacts(configs, project_root) ->
+  list[DocArtifactRow]` — one `kind='claude_md'` row per tracked vendor's
+  `vendor/<name>/CLAUDE.md` (skipped if that vendor hasn't been synced
+  yet — no row points at a nonexistent file) and one `kind='overview'` row
+  for `vendor/<name>/OVERVIEW.md` if it exists (only currently-`promote`d
+  vendors have one). Both `origin='codecompass_vendor'`.
+- `build_documents_edges(doc_artifact_rows, symbol_rows, project_root) ->
+  list[DocumentsEdgeRow]` — for each `claude_md`/`overview` doc artifact,
+  reads its file text off disk and word-boundary-matches it against
+  *that same vendor's* known symbol names. A coverage heuristic ("this
+  symbol's name appears in the vendor's own digest text"), not a quality
+  judgment. Takes `project_root` (beyond the phase plan's originally
+  sketched two-arg signature) since resolving `DocArtifactRow.path` — a
+  natural key, deliberately relative — to an actual file to read requires
+  it; `build_skill_mentions_edges` below needs it for the same reason.
+- `build_routes_via_edges(configs, doc_artifact_rows) ->
+  list[RoutesViaEdgeRow]` — routes each vendor to its own per-vendor
+  Skill doc artifact (`kind='skill'`, `origin='codecompass_vendor'`) if
+  one exists, else to the shared tool-level Skill
+  (`kind='skill'`, `origin='codecompass_tool'`) if present — operationalizes
+  `decisions/0013` point 6 as real queryable data.
+- `build_depends_on_edges(configs, project_root) -> list[DependsOnEdgeRow]`
+  — reads each tracked vendor's persisted `vendor/<name>/deptree.json` and
+  flattens it with a module-local `_flatten_deptree` (mirroring
+  `staleness._flatten`, deliberately duplicated rather than imported —
+  same small-local-helper style as elsewhere in this codebase), emitting a
+  `Vendor → Vendor` edge wherever a flattened name matches another
+  *tracked* vendor's name. An untracked transitive dependency isn't a
+  graph node, so no edge for it. A missing/corrupt `deptree.json` is
+  skipped, best-effort, the same tolerant posture
+  `staleness._detect_transitive_drift` already takes toward this file.
+
+`skill_scan.py` — the scope-expanded piece: indexes **every** Skill under
+`.claude/skills/` and every Cursor rule under `.cursor/rules/`, not just
+codecompass's own generated ones:
+- `scan_skills(project_root, configs) -> list[DocArtifactRow]` — globs
+  `.claude/skills/**/SKILL.md` (`kind='skill'`) and `.cursor/rules/*.mdc`
+  (`kind='cursor_mdc'`), extracting `name`/`description` via a **minimal
+  custom frontmatter extractor** (`_extract_scalar` — split on `---`
+  delimiters, handle a single-line `key: value` and a folded `key: >-`
+  block with indented continuation lines, the two shapes this project's
+  own generated Skills use; never raises, returns `None` on anything else
+  — deliberately not a real YAML parser, since this project has no YAML
+  dependency and doesn't need to fully solve arbitrary third-party
+  frontmatter). Classifies `origin` by directory name (`SKILL.md`) or
+  filename stem (`.mdc`) against codecompass's own naming convention,
+  reusing `skill.py`'s own `_TOOL_SKILL_DIR_NAME`/`_vendor_skill_name`
+  rather than duplicating those literals: an exact match on the tool
+  Skill's directory name is `codecompass_tool`; a match against a tracked
+  vendor's `_vendor_skill_name` is `codecompass_vendor` (`vendor_name`
+  set); anything else is `third_party`.
+- `build_skill_mentions_edges(skill_doc_artifacts, configs,
+  source_file_rows, project_root) -> list[SkillMentionEdgeRow]` — for
+  each skill's body text (everything after the frontmatter, not just the
+  parsed `name`/`description` fields), word-boundary-matches against every
+  tracked vendor name (→ vendor-mention edge) and every tracked project
+  source file's basename (→ source-file-mention edge, one per source file
+  sharing that basename). A presence heuristic, same posture as
+  `documents_edges` — explicitly not a claim the skill is *about* that
+  vendor/file, just that it mentions it mechanically. Also takes
+  `project_root` for the same disk-read reason as `build_documents_edges`.
+
+**Word-boundary (`\b<name>\b`), not substring, matching for both mention-
+edge types** — case-sensitive, matching this project's own generated
+Skill/doc content being lowercase-consistent. A naive substring match
+risks false positives on any vendor/file name that collides with a common
+English word (`rich`, `six`) or is short enough to appear inside an
+unrelated word (a vendor named `six` must not match `sixty-four`) —
+covered by a regression test in both `tests/test_doc_mapping.py` and
+`tests/test_skill_scan.py`.
 
 ## Cost model
 

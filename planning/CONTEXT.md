@@ -6,54 +6,58 @@ for the log of how it got here.
 
 ## Current phase
 
-**Phase 11: Project-source usage detection — done.** Phases 0-9 and 10
-remain `done`. Executing MVP (v0.2) per
-`planning/v0.2-implementation-execution-plan.md`: one implementation
-subagent per phase, independently re-verified, one commit per phase,
-strictly in order.
+**Phase 12: Doc & wide skill mapping — done.** Phases 0-11 remain `done`.
+Executing MVP (v0.2) per `planning/v0.2-implementation-execution-plan.md`:
+one implementation subagent per phase, independently re-verified, one
+commit per phase, strictly in order.
 
 ## What was just completed
 
-Implemented `planning/phase-11-project-source-usage-detection.md`: new
-`src/codecompass/usage.py` (`detect_python_imports`/`detect_npm_imports`/
-`detect_rust_imports`/`detect_imports_for_file`/`resolve_project_usage`,
-`DetectedImport`), `filetree._iter_files` made public as
-`iter_source_files` with configurable `prune_dirs`/`prune_globs` (zero
-behavior change for existing callers), new `sync.rebuild_project_graph`
-wired into `cli.py` at exactly two whole-project call sites (`_bootstrap`
-with the full tracked vendor list, `sync`'s no-vendor-arg branch only).
+Implemented `planning/phase-12-doc-and-wide-skill-mapping.md`: new
+`src/codecompass/doc_mapping.py` (`collect_vendor_doc_artifacts`,
+`build_documents_edges`, `build_routes_via_edges`,
+`build_depends_on_edges`) and new `src/codecompass/skill_scan.py`
+(`scan_skills` — globs `.claude/skills/**/SKILL.md` +
+`.cursor/rules/*.mdc`, minimal custom frontmatter extractor, no YAML
+dependency; `build_skill_mentions_edges` — word-boundary matching, not
+substring). `sync.rebuild_project_graph` (Phase 11) extended to call all
+four new functions and pass real data into `rebuild_deterministic`'s
+five previously-empty parameters.
 
-Verified independently: `pytest` 270 passed/1 skipped, `ruff check .`
-clean, `git diff --stat` matches the plan's Files list plus one
-necessary, minimal test fix outside it (`tests/test_cli.py` — an
-existing test faked `sync_all` but not the new `rebuild_project_graph`
-call site, needed one line stubbing it; read the diff directly, confirmed
-it's exactly that and nothing more). Manually reviewed `usage.py` in
-full: sound design, correctly handles mixed-ecosystem projects (tries
-every ecosystem's suffix-gated detector per file), Rust `use crate::X`
-pattern generalized sensibly to real crate names, relative Python imports
-correctly excluded (can never name an external vendor). One reasoned
-judgment call worth remembering: `rebuild_project_graph` lets
-`AdapterError` propagate uncaught rather than isolating it per-vendor —
-deliberate, because `rebuild_deterministic` deletes any vendor absent
-from the incoming list, cascading away its `vendor_enrichment` rows;
-silently swallowing a transient adapter error would permanently destroy
-paid enrichment data, so a hard failure was judged safer than silent data
-loss.
+Verified independently: `pytest` 296 passed/1 skipped, `ruff check .`
+clean, `git diff --stat` matches the plan's Files list exactly (only
+`sync.py` + `architecture/overview.md` modified, two new modules + two
+new test files — no test-file touches were needed this time). Manually
+reviewed both new modules in full: word-boundary regexes correctly
+`re.escape`d, self-dependency edges correctly excluded in
+`build_depends_on_edges`, doc artifacts for a not-yet-synced vendor
+correctly skipped rather than pointing at a nonexistent file.
 
-Manually confirmed against this repo itself: `rich`/`typer`/`anthropic`
-all show real usage edges with correct symbol-level resolution (e.g.
-`from rich.console import Console` in `chat.py` resolves to `rich`'s own
-`Console` symbol); `pipdeptree` correctly shows zero uses (invoked as a
-subprocess, never imported); single-vendor `sync rich` left
-`context-graph.db`'s mtime unchanged, confirming `decisions/0025`'s
-posture holds under the new storage backend.
+Two signature deviations from the plan's literal prose, both reasoned
+and correct: `build_documents_edges`/`build_skill_mentions_edges` gained
+an explicit `project_root: Path` parameter (the plan's prose omitted it,
+but both functions must read artifact file text off disk, and
+`DocArtifactRow.path` is a natural-key relative path per `graph.py`'s
+existing convention — there's no way to satisfy "read its file text"
+without it). `skill_scan.py` imports `_TOOL_SKILL_DIR_NAME`/
+`_vendor_skill_name` directly from `skill.py` (a private cross-module
+import) rather than duplicating codecompass's own naming-convention
+literals locally — a deliberate single-source-of-truth choice, diverging
+from the deptree-flattener precedent (which the plan explicitly says to
+duplicate) but avoiding two independent copies of the same naming rule.
+
+Manually confirmed against this repo itself: the tool Skill shows up as
+a `doc_artifacts` row with `origin='codecompass_tool'`, mentioning all
+four tracked vendors; every vendor currently routes to it (none
+promoted, expected); `depends_on_edges` correctly shows `typer → rich`
+(a real transitive relationship, both tracked); 58 `documents_edges` rows
+populated from real `CLAUDE.md` text.
 
 ## Next concrete step
 
-Implement `planning/phase-12-doc-and-wide-skill-mapping.md` next (same
+Implement `planning/phase-13-universal-source-cloning.md` next (same
 pattern: dispatch, re-verify independently, doc-sync, commit, push).
-Then 13 through 19, strictly in that order.
+Then 14 through 19, strictly in that order.
 
 **Still outstanding, not a blocker but worth remembering:**
 - Once a Rust toolchain is available anywhere in the pipeline,
