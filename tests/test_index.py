@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from codecompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.core import Ecosystem, VendorConfig
 from codecompass.graph import VendorRow, open_graph, rebuild_deterministic, record_enrichment
 from codecompass.index import (
     RoutingRow,
@@ -21,7 +21,7 @@ def _write_vendor_claude_md(project_root: Path, name: str, version: str) -> None
 
 def test_load_routing_rows_reads_version_from_synced_claude_md(tmp_path: Path) -> None:
     _write_vendor_claude_md(tmp_path, "turndown", "7.1.2")
-    configs = [VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)]
+    configs = [VendorConfig(name="turndown", ecosystem=Ecosystem.NPM)]
 
     rows = load_routing_rows(configs, tmp_path)
 
@@ -29,7 +29,7 @@ def test_load_routing_rows_reads_version_from_synced_claude_md(tmp_path: Path) -
 
 
 def test_load_routing_rows_none_when_not_yet_synced(tmp_path: Path) -> None:
-    configs = [VendorConfig(name="unsynced", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)]
+    configs = [VendorConfig(name="unsynced", ecosystem=Ecosystem.NPM)]
 
     rows = load_routing_rows(configs, tmp_path)
 
@@ -41,7 +41,7 @@ def test_load_routing_rows_enriched_false_when_no_graph_yet(tmp_path: Path) -> N
     whole-project sync, has no context-graph.db yet — falls back to "not
     enriched" rather than erroring.
     """
-    configs = [VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)]
+    configs = [VendorConfig(name="turndown", ecosystem=Ecosystem.NPM)]
 
     rows = load_routing_rows(configs, tmp_path)
 
@@ -73,7 +73,7 @@ def test_load_routing_rows_enriched_true_when_graph_says_so(tmp_path: Path) -> N
         generated_at="2026-01-01T00:00:00+00:00",
     )
     conn.close()
-    configs = [VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)]
+    configs = [VendorConfig(name="turndown", ecosystem=Ecosystem.NPM)]
 
     rows = load_routing_rows(configs, tmp_path)
 
@@ -82,7 +82,7 @@ def test_load_routing_rows_enriched_true_when_graph_says_so(tmp_path: Path) -> N
 
 def test_render_routing_table_includes_expected_columns() -> None:
     row = RoutingRow(
-        config=VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE),
+        config=VendorConfig(name="turndown", ecosystem=Ecosystem.NPM),
         version="7.1.2",
         enriched=True,
     )
@@ -95,7 +95,7 @@ def test_render_routing_table_includes_expected_columns() -> None:
 
 def test_render_routing_table_not_enriched_shows_general_usage_consult_when() -> None:
     row = RoutingRow(
-        config=VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE),
+        config=VendorConfig(name="turndown", ecosystem=Ecosystem.NPM),
         version="7.1.2",
         enriched=False,
     )
@@ -107,7 +107,7 @@ def test_render_routing_table_not_enriched_shows_general_usage_consult_when() ->
 
 def test_render_routing_table_shows_not_synced_placeholder() -> None:
     row = RoutingRow(
-        config=VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE),
+        config=VendorConfig(name="turndown", ecosystem=Ecosystem.NPM),
         version=None,
         enriched=False,
     )

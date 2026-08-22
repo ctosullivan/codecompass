@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 import codecompass.source_resolution as source_resolution_module
-from codecompass.core import Depth, Ecosystem, RepositoryLocation, VendorConfig
+from codecompass.core import Ecosystem, RepositoryLocation, VendorConfig
 from codecompass.source_resolution import SourceResolutionError, resolve_and_clone
 
 
@@ -17,7 +17,7 @@ class _FakeAdapter:
 
 
 def _config(name: str = "turndown") -> VendorConfig:
-    return VendorConfig(name=name, ecosystem=Ecosystem.NPM, depth=Depth.FULL)
+    return VendorConfig(name=name, ecosystem=Ecosystem.NPM)
 
 
 def _fake_clone_writes_marker(marker_name: str = "cloned.txt"):

@@ -8,13 +8,13 @@ from typer.testing import CliRunner
 import codecompass.chat as chat_module
 from codecompass.chat import ChatError, _build_system_prompt, run_chat
 from codecompass.cli import app
-from codecompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.core import Ecosystem, VendorConfig
 
 runner = CliRunner()
 
 
-def _config(name: str = "lodash", depth: Depth = Depth.FULL) -> VendorConfig:
-    return VendorConfig(name=name, ecosystem=Ecosystem.NPM, depth=depth)
+def _config(name: str = "lodash") -> VendorConfig:
+    return VendorConfig(name=name, ecosystem=Ecosystem.NPM)
 
 
 def _sync_vendor(tmp_path: Path, name: str, *, overview: str | None = None) -> Path:
@@ -40,7 +40,7 @@ def test_build_system_prompt_includes_claude_md_and_overview(tmp_path: Path) -> 
 def test_build_system_prompt_without_overview_is_claude_md_only(tmp_path: Path) -> None:
     vendor_dir = _sync_vendor(tmp_path, "lodash")
 
-    prompt = _build_system_prompt(vendor_dir, _config(depth=Depth.SURFACE))
+    prompt = _build_system_prompt(vendor_dir, _config())
 
     assert "Installed version:** 1.0.0" in prompt
 
@@ -180,7 +180,7 @@ def test_chat_cli_full_conversation_round_trip(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     (tmp_path / "vendor.toml").write_text(
-        '[[vendor]]\nname = "lodash"\necosystem = "npm"\ndepth = "full"\n',
+        '[[vendor]]\nname = "lodash"\necosystem = "npm"\n',
         encoding="utf-8",
     )
     _sync_vendor(tmp_path, "lodash", overview="A grab-bag of JS utilities.")
@@ -192,7 +192,6 @@ def test_chat_cli_full_conversation_round_trip(
 
     assert result.exit_code == 0, result.output
     assert "lodash" in result.output
-    assert "depth=full" in result.output
     assert "It's a utility library." in result.output
     assert "no grounded description yet" not in result.output
 

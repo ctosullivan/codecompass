@@ -6,13 +6,11 @@ from codecompass.claude_md import (
     render_vendor_claude_md,
     update_description_section,
 )
-from codecompass.core import Depth, Ecosystem, VendorConfig, VendorDigest
+from codecompass.core import Ecosystem, VendorConfig, VendorDigest
 
 
 def _digest(**overrides: object) -> VendorDigest:
-    config = overrides.pop("config", None) or VendorConfig(
-        name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE
-    )
+    config = overrides.pop("config", None) or VendorConfig(name="turndown", ecosystem=Ecosystem.NPM)
     defaults: dict[str, object] = {
         "config": config,
         "installed_version": "7.1.2",
@@ -28,10 +26,14 @@ def test_metadata_section_has_load_bearing_installed_version_line() -> None:
     assert "- **Installed version:** 7.1.2" in markdown.splitlines()
 
 
-def test_metadata_includes_ecosystem_and_depth() -> None:
+def test_metadata_includes_ecosystem_and_no_longer_a_depth_line() -> None:
+    """Phase 16 (decisions/0031, decisions/0035) retires `Depth` — the
+    Metadata section's `**Depth:**` line is gone for good, not just for
+    this particular vendor.
+    """
     markdown = render_vendor_claude_md(_digest())
     assert "- **Ecosystem:** npm" in markdown.splitlines()
-    assert "- **Depth:** surface" in markdown.splitlines()
+    assert "Depth" not in markdown
 
 
 def test_description_section_is_omitted() -> None:
@@ -40,10 +42,8 @@ def test_description_section_is_omitted() -> None:
 
 
 def test_description_section_renders_technical_text_and_action_pointer() -> None:
-    full_config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL)
     markdown = render_vendor_claude_md(
         _digest(
-            config=full_config,
             technical_description="TurndownService converts HTML to Markdown via rules.",
             action_pointer_file="src/commonmark-rules.js",
             action_pointer_note="override fencedCodeBlock here",
@@ -58,34 +58,47 @@ def test_description_section_renders_technical_text_and_action_pointer() -> None
 
 
 def test_description_section_omits_action_pointer_when_not_set() -> None:
-    full_config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL)
     markdown = render_vendor_claude_md(
-        _digest(config=full_config, technical_description="Converts HTML to Markdown.")
+        _digest(technical_description="Converts HTML to Markdown.")
     )
     assert "## Description" in markdown
     assert "Converts HTML to Markdown." in markdown
     assert "Action pointer" not in markdown
 
 
-def test_description_section_shows_explicit_unavailable_note_on_failure() -> None:
-    full_config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL)
-    markdown = render_vendor_claude_md(
-        _digest(config=full_config, description_error="Anthropic API call failed: timeout")
-    )
-    assert "## Description" in markdown
-    assert "_Description unavailable: `Anthropic API call failed: timeout`_" in markdown
-
-
-def test_description_section_omitted_for_surface_vendor_even_with_error_set() -> None:
+def test_description_section_omitted_when_no_enrichment_even_with_clone_error_set() -> None:
     """Since Phase 13, cloning (and therefore `description_error`) happens
-    for every vendor, not just `depth = full` ones — a `depth = surface`
-    vendor whose clone failed must not show a misleading "Description
-    unavailable" note for an AI step it was never eligible for.
+    for every vendor — a vendor with no enrichment record whose clone
+    failed this run must not show a misleading "Description unavailable"
+    note for an AI step nothing inside `sync_vendor` ever attempts anymore
+    (decisions/0035). Phase 13's original regression test for this,
+    renamed: the gate that used to be `depth`-based is now purely
+    `technical_description`-truthiness-based, but the outcome is
+    unchanged.
     """
     markdown = render_vendor_claude_md(
         _digest(description_error="git clone https://example.com/turndown failed: timeout")
     )
     assert "Description" not in markdown
+
+
+def test_description_section_ignores_clone_error_when_enrichment_exists() -> None:
+    """The direct case decisions/0035 exists to fix: a vendor with an
+    existing enrichment record (from a previous, successful sync) still
+    shows its Description section on a run where *this* sync's clone
+    attempt failed — a source-clone failure and enrichment content are
+    unrelated since Phase 16; `description_error` is deliberately not
+    consulted by this render path at all anymore.
+    """
+    markdown = render_vendor_claude_md(
+        _digest(
+            technical_description="TurndownService converts HTML to Markdown via rules.",
+            description_error="git clone https://example.com/turndown failed: timeout",
+        )
+    )
+    assert "## Description" in markdown
+    assert "TurndownService converts HTML to Markdown via rules." in markdown
+    assert "unavailable" not in markdown.lower()
 
 
 def test_known_gotchas_from_side_effects() -> None:
@@ -155,11 +168,11 @@ def test_read_enrichment_hash_none_when_line_missing(tmp_path: Path) -> None:
 
 
 def _surface_markdown(name: str = "turndown") -> str:
-    """A `depth = surface` vendor's rendered `CLAUDE.md` — no Description
+    """An unenriched vendor's rendered `CLAUDE.md` — no Description
     section at all, the state `update_description_section` must be able to
     insert into, not just replace within.
     """
-    config = VendorConfig(name=name, ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    config = VendorConfig(name=name, ecosystem=Ecosystem.NPM)
     digest = VendorDigest(
         config=config, installed_version="7.1.2", api_surface="TurndownService API."
     )
@@ -211,9 +224,9 @@ def test_update_description_section_omits_action_pointer_when_not_set(tmp_path: 
 
 
 def test_update_description_section_replaces_an_existing_section(tmp_path: Path) -> None:
-    full_config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL)
+    config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM)
     old_digest = VendorDigest(
-        config=full_config,
+        config=config,
         installed_version="7.1.2",
         api_surface="API.",
         technical_description="OLD description.",

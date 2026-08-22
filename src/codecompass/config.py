@@ -5,7 +5,7 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
-from codecompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.core import Ecosystem, VendorConfig
 
 
 class ConfigError(Exception):
@@ -38,12 +38,16 @@ def load_vendor_config(path: Path) -> list[VendorConfig]:
 
 
 def _parse_entry(path: Path, index: int, entry: dict) -> VendorConfig:
+    """A legacy `depth = "surface"`/`depth = "full"` key (Phase 16 retired
+    the field — decisions/0031, decisions/0035) is silently tolerated:
+    this function simply never looks at it, so an old vendor.toml still
+    parses without error. No migration, no warning.
+    """
     label = entry.get("name", f"entry #{index + 1}")
 
     name = _require_field(path, label, entry, "name")
     ecosystem = _require_enum(path, name, entry, "ecosystem", Ecosystem)
-    depth = _require_enum(path, name, entry, "depth", Depth)
-    return VendorConfig(name=name, ecosystem=ecosystem, depth=depth)
+    return VendorConfig(name=name, ecosystem=ecosystem)
 
 
 def _require_field(path: Path, label: str, entry: dict, field_name: str) -> str:

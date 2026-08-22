@@ -8,7 +8,7 @@ import pytest
 import codecompass.adapters.npm as npm_module
 from codecompass.adapters.base import AdapterError
 from codecompass.adapters.npm import NpmAdapter
-from codecompass.core import Depth, Ecosystem, RepositoryLocation, VendorConfig
+from codecompass.core import Ecosystem, RepositoryLocation, VendorConfig
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -24,7 +24,7 @@ def test_installed_version_and_source_location(tmp_path: Path) -> None:
         (FIXTURES / "npm_package_with_postinstall.json").read_text(encoding="utf-8")
     )
     _write_package(tmp_path, "turndown", postinstall_pkg)
-    config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM)
     adapter = NpmAdapter(config, project_root=tmp_path)
 
     assert adapter.installed_version() == "7.1.2"
@@ -40,7 +40,7 @@ def test_repository_url_from_plain_string(tmp_path: Path) -> None:
             "repository": "git+https://github.com/mixmark-io/turndown.git",
         },
     )
-    config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM)
     adapter = NpmAdapter(config, project_root=tmp_path)
 
     assert adapter.repository_url() == RepositoryLocation(
@@ -61,7 +61,7 @@ def test_repository_url_from_object_with_directory(tmp_path: Path) -> None:
             },
         },
     )
-    config = VendorConfig(name="some-pkg", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    config = VendorConfig(name="some-pkg", ecosystem=Ecosystem.NPM)
     adapter = NpmAdapter(config, project_root=tmp_path)
 
     assert adapter.repository_url() == RepositoryLocation(
@@ -71,7 +71,7 @@ def test_repository_url_from_object_with_directory(tmp_path: Path) -> None:
 
 def test_repository_url_shorthand_expands_to_https(tmp_path: Path) -> None:
     _write_package(tmp_path, "some-pkg", {"name": "some-pkg", "repository": "github:org/some-pkg"})
-    config = VendorConfig(name="some-pkg", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    config = VendorConfig(name="some-pkg", ecosystem=Ecosystem.NPM)
     adapter = NpmAdapter(config, project_root=tmp_path)
 
     assert adapter.repository_url() == RepositoryLocation(
@@ -81,14 +81,14 @@ def test_repository_url_shorthand_expands_to_https(tmp_path: Path) -> None:
 
 def test_repository_url_none_when_field_absent(tmp_path: Path) -> None:
     _write_package(tmp_path, "some-pkg", {"name": "some-pkg"})
-    config = VendorConfig(name="some-pkg", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    config = VendorConfig(name="some-pkg", ecosystem=Ecosystem.NPM)
     adapter = NpmAdapter(config, project_root=tmp_path)
 
     assert adapter.repository_url() is None
 
 
 def test_missing_package_raises_adapter_error(tmp_path: Path) -> None:
-    config = VendorConfig(name="nonexistent-pkg", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    config = VendorConfig(name="nonexistent-pkg", ecosystem=Ecosystem.NPM)
     adapter = NpmAdapter(config, project_root=tmp_path)
     with pytest.raises(AdapterError, match="not found"):
         adapter.installed_version()
@@ -109,7 +109,7 @@ def test_dependency_tree_no_dedup_and_dev_only(
 
     monkeypatch.setattr(npm_module, "_run_json", lambda cmd, cwd: ls_data)
 
-    config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM)
     adapter = NpmAdapter(config, project_root=tmp_path)
     tree = adapter.dependency_tree()
 
@@ -145,7 +145,7 @@ def test_readme_and_dts_cap(tmp_path: Path) -> None:
     for i in range(1, 7):  # 6 files, cap is 5
         (pkg_dir / f"{i}.d.ts").write_text(dts_content, encoding="utf-8")
 
-    config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM)
     adapter = NpmAdapter(config, project_root=tmp_path)
     surface = adapter.readme_and_api_surface()
 
@@ -166,7 +166,7 @@ def test_readme_with_no_dts_files(tmp_path: Path) -> None:
         (FIXTURES / "sample_readme.md").read_text(encoding="utf-8"), encoding="utf-8"
     )
 
-    config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    config = VendorConfig(name="turndown", ecosystem=Ecosystem.NPM)
     adapter = NpmAdapter(config, project_root=tmp_path)
     surface = adapter.readme_and_api_surface()
 
@@ -188,7 +188,7 @@ def test_live_smoke_npm_install_lodash(tmp_path: Path) -> None:
         check=True,
         capture_output=True,
     )
-    config = VendorConfig(name="lodash", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    config = VendorConfig(name="lodash", ecosystem=Ecosystem.NPM)
     adapter = NpmAdapter(config, project_root=tmp_path)
 
     assert adapter.installed_version()

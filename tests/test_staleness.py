@@ -5,7 +5,7 @@ import pytest
 
 import codecompass.staleness as staleness_module
 from codecompass.adapters import AdapterError
-from codecompass.core import DepNode, Depth, Ecosystem, VendorConfig
+from codecompass.core import DepNode, Ecosystem, VendorConfig
 from codecompass.deptree import render_deptree_json
 from codecompass.staleness import (
     Severity,
@@ -110,7 +110,7 @@ def _write_synced_vendor(
 
 
 def _config(name: str = "demo") -> VendorConfig:
-    return VendorConfig(name=name, ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE)
+    return VendorConfig(name=name, ecosystem=Ecosystem.PYTHON)
 
 
 def test_check_vendor_never_synced(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

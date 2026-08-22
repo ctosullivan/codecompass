@@ -8,13 +8,13 @@ import pytest
 import codecompass.adapters.cargo as cargo_module
 from codecompass.adapters.base import AdapterError
 from codecompass.adapters.cargo import CargoAdapter
-from codecompass.core import Depth, Ecosystem, RepositoryLocation, VendorConfig
+from codecompass.core import Ecosystem, RepositoryLocation, VendorConfig
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
 def _adapter(name: str, project_root: Path) -> CargoAdapter:
-    config = VendorConfig(name=name, ecosystem=Ecosystem.CARGO, depth=Depth.SURFACE)
+    config = VendorConfig(name=name, ecosystem=Ecosystem.CARGO)
     return CargoAdapter(config, project_root=project_root)
 
 

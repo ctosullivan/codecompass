@@ -1,12 +1,12 @@
 from pathlib import Path
 
-from codecompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.core import Ecosystem, VendorConfig
 from codecompass.graph import DocArtifactRow, SourceFileRow
 from codecompass.skill_scan import build_skill_mentions_edges, scan_skills
 
 
 def _config(name: str) -> VendorConfig:
-    return VendorConfig(name=name, ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE)
+    return VendorConfig(name=name, ecosystem=Ecosystem.PYTHON)
 
 
 def _write_skill(project_root: Path, dir_name: str, text: str) -> Path:

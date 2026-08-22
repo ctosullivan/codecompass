@@ -4,11 +4,11 @@ from codecompass.adapters import get_adapter
 from codecompass.adapters.cargo import CargoAdapter
 from codecompass.adapters.npm import NpmAdapter
 from codecompass.adapters.python import PythonAdapter
-from codecompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.core import Ecosystem, VendorConfig
 
 
 def _config(ecosystem: Ecosystem) -> VendorConfig:
-    return VendorConfig(name="demo", ecosystem=ecosystem, depth=Depth.SURFACE)
+    return VendorConfig(name="demo", ecosystem=ecosystem)
 
 
 def test_get_adapter_dispatches_by_ecosystem(tmp_path: Path) -> None:

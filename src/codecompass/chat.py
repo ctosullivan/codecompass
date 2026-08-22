@@ -94,8 +94,7 @@ def run_chat(config: VendorConfig, project_root: Path, console: Console) -> None
     system_prompt = _build_system_prompt(vendor_dir, config)
 
     console.print(
-        f"[bold]codecompass chat[/bold] — {config.name} "
-        f"(depth={config.depth.value}). Digest-only, no live source. "
+        f"[bold]codecompass chat[/bold] — {config.name}. Digest-only, no live source. "
         "Type 'exit' or Ctrl-D to quit."
     )
     if not (vendor_dir / "OVERVIEW.md").is_file():

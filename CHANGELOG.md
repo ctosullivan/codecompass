@@ -22,6 +22,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A whole-project `sync` re-run silently erased Phase B's AI-enrichment
+  content from `CLAUDE.md` — `sync_vendor` rebuilt every vendor's file
+  from scratch via a digest that never carried enrichment data, gated on
+  a `Depth` value nothing has set since `promote` was removed in Phase
+  15. Shipped on `main` since that phase; caught while implementing
+  Phase 16. Fixed per `decisions/0035`: `sync_vendor` now reads a
+  vendor's current enrichment from the context graph before building its
+  digest, so a from-scratch re-render reproduces existing enrichment
+  instead of erasing it. Regression test syncs an enriched vendor twice
+  and confirms the Description section survives.
 - `usage.py`'s project-source scan didn't exclude `vendor/` — since
   Phase 13, every tracked vendor's own upstream source clones into
   `vendor/<name>/src/` inside that same walk, and a vendor's own source
@@ -37,6 +47,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 16: retire `Depth`** — implements `planning/phase-16-retire-depth.md`
+  and `decisions/0031`/`0035`. `core.py`'s `Depth` enum deleted;
+  `VendorConfig` narrowed to `(name, ecosystem)`; `config.py` tolerates a
+  legacy `depth =` line in `vendor.toml` silently rather than erroring;
+  `discovery.py`/`cli.py` updated to match.
+  `src/codecompass/grounded_description.py` (and its test file) deleted
+  — `codecompass.enrichment` (Phase 14) fully replaces its role. `pytest`:
+  340 passed, 1 skipped (down from 361 — the deleted module's tests and
+  two now-obsolete budget tests account for the difference); `ruff
+  check .` clean; `grep -rn "Depth\b" src/` returns zero hits.
 - **Phase 15: CLI rewire** — implements `planning/phase-15-cli-rewire.md`
   and `decisions/0033`. `promote` removed entirely. Bare `codecompass`
   and whole-project `sync` gain `--yes`/`--budget` and auto-trigger Phase

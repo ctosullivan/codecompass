@@ -1,10 +1,11 @@
 # `vendor.toml` config schema
 
-> As of Phase 7, `codecompass.config.load_vendor_config()` parses this
-> format, and `init`/`sync`/`index`/`promote` read/write it for real,
-> including `promote`'s AI-gated grounded-description generation for
-> `depth = full` vendors. `check` and `chat` are also fully implemented
-> (Phases 6 and 8) — see [`docs/cli-reference.md`](cli-reference.md).
+> `codecompass.config.load_vendor_config()` parses this format, and
+> `init`/bare `codecompass`/`sync`/`index`/`check` read/write it for real
+> — see [`docs/cli-reference.md`](cli-reference.md). `promote` was removed
+> in Phase 15 ([`decisions/0033`](../decisions/0033-promote-retired-universal-cloning-and-auto-triggered-consent.md)):
+> AI enrichment is now usage-driven and automatic, not a per-vendor field
+> or a separate command.
 
 `vendor.toml` lives at the root of the consuming project and has one table
 per tracked dependency.
@@ -15,29 +16,33 @@ per tracked dependency.
 |---|---|---|---|
 | `name` | string | yes | Dependency name, as published (e.g. `turndown`, `requests`, `serde`). |
 | `ecosystem` | string, one of `npm` \| `python` \| `cargo` | yes | Which `EcosystemAdapter` handles this vendor. |
-| `depth` | string, one of `surface` \| `full` | yes | See below. Set **per vendor** — not a project-wide setting (see [`decisions/0001`](../decisions/0001-depth-is-per-vendor-not-global.md)). |
 
-`context_path` (a Phase 5 field, pointing at the consuming project's own
-README/spec to ground gap analysis) was removed in Phase 7
-([`decisions/0019`](../decisions/0019-grounded-description-replaces-gap-analysis.md)):
-`depth = full` no longer requires or accepts any companion field.
+No other fields are read. `context_path` (a Phase 5 field) was removed in
+Phase 7 ([`decisions/0019`](../decisions/0019-grounded-description-replaces-gap-analysis.md)).
+`depth` (the original per-vendor `surface`/`full` toggle,
+[`decisions/0001`](../decisions/0001-depth-is-per-vendor-not-global.md))
+was removed in Phase 16
+([`decisions/0031`](../decisions/0031-depth-retired-enrichment-is-usage-driven.md),
+[`decisions/0035`](../decisions/0035-sync-vendor-reads-enrichment-from-graph-grounded-description-retired.md)):
+cloning a vendor's upstream source is now unconditional for every vendor
+(Phase 13, `decisions/0033`), and AI enrichment is selected from actual
+usage evidence in the context graph, not a config flag. A legacy
+`vendor.toml` that still carries a `depth = "surface"`/`depth = "full"`
+line keeps parsing without error — the parser simply never looks at that
+key. No migration and no warning; the line is just inert.
 
-## `depth` values
+## What every tracked vendor gets
 
-- **`surface`** — metadata + public API surface only. No AI call, no
-  pinned source copy. The default for everything discovered by bare
-  `codecompass` or `codecompass init --scan`.
-- **`full`** — everything `surface` produces, plus a pinned source
-  snapshot at `vendor/<name>/src/` (now sourced from the vendor's own
-  upstream repository, not the local install —
-  [`decisions/0021`](../decisions/0021-pypi-source-resolution-fails-loudly.md))
-  and an AI-generated grounded description
-  ([`decisions/0019`](../decisions/0019-grounded-description-replaces-gap-analysis.md)).
-  Only reachable via `codecompass promote <vendor>`
-  ([`decisions/0018`](../decisions/0018-promote-is-the-sole-reactive-depth-escalation-point.md))
-  — the sole command that costs money or asks anything. Reserve this for
-  the handful of dependencies you're actually extending, subclassing, or
-  writing custom rules against.
+Every vendor listed in `vendor.toml` gets, on `sync`: metadata + public
+API surface, a pinned source snapshot at `vendor/<name>/src/` (sourced
+from the vendor's own upstream repository —
+[`decisions/0021`](../decisions/0021-pypi-source-resolution-fails-loudly.md)),
+and generated dependency/file trees. A vendor additionally gets a
+Description section (technical description, conversational overview, and
+an optional action pointer) once usage-driven AI enrichment has run for
+it — automatic, cost-disclosed, and confirmable, triggered from bare
+`codecompass` or a whole-project `sync`
+([`decisions/0031`](../decisions/0031-depth-retired-enrichment-is-usage-driven.md)).
 
 ## Example
 
@@ -45,53 +50,36 @@ README/spec to ground gap analysis) was removed in Phase 7
 [[vendor]]
 name = "turndown"
 ecosystem = "npm"
-depth = "full"
 
 [[vendor]]
 name = "lodash"
 ecosystem = "npm"
-depth = "surface"
 
 [[vendor]]
 name = "requests"
 ecosystem = "python"
-depth = "surface"
 
 [[vendor]]
 name = "serde"
 ecosystem = "cargo"
-depth = "surface"
 ```
 
 ## Validation
 
 Parsing is **fail-fast**: the first invalid vendor entry (a missing
-required field, or an `ecosystem`/`depth` value outside the allowed set)
-raises an error naming the vendor and the specific problem. Parsing does
-not continue on to collect every issue in the file before reporting — fix
-the first error and re-run to see the next one, if any.
+required field, or an `ecosystem` value outside the allowed set) raises an
+error naming the vendor and the specific problem. Parsing does not
+continue on to collect every issue in the file before reporting — fix the
+first error and re-run to see the next one, if any.
 
 ## Notes
 
 - Bare `codecompass` and `codecompass init --scan` both write every
-  discovered dependency with `depth = "surface"` — safe and free to run
-  immediately on a large existing dependency list. Bare `codecompass`
-  additionally auto-discovers manifests and refreshes an existing
-  `vendor.toml` idempotently, without touching already-tracked vendors
-  (including any at `depth = "full"`) —
+  discovered dependency as a bare `name`/`ecosystem` entry — safe and free
+  to run immediately on a large existing dependency list. Bare
+  `codecompass` additionally auto-discovers manifests and refreshes an
+  existing `vendor.toml` idempotently, without touching already-tracked
+  vendors' generated output —
   [`decisions/0017`](../decisions/0017-zero-question-deterministic-bootstrap.md).
-- `codecompass promote <vendor>` is the only way a vendor reaches
-  `depth = "full"`; it discloses estimated cost and asks for
-  confirmation before making any AI call. Re-running it on an
-  already-`full` vendor regenerates in place rather than erroring.
-- A `depth = "full"` vendor's source resolution can fail — most commonly
-  for PyPI packages with no recognized repository URL in their published
-  metadata. `promote` fails loudly for that vendor rather than falling
-  back to a source tarball; the vendor stays at its current depth.
-- Once a vendor is `depth = "full"`, an AI call runs on *every*
-  subsequent `sync`, not just the next one — generation isn't cached.
-  If several vendors are promoted, `sync --budget <amount>` refuses to
-  run at all (rather than partially) once the estimated cost for that
-  run exceeds the cap.
-- See `architecture/overview.md` for what `surface` and `full` actually
-  produce on disk.
+- See `architecture/overview.md` for what `sync` produces on disk, and
+  what changes once a vendor has been AI-enriched.

@@ -1,18 +1,17 @@
 """Batched, usage-driven AI enrichment (Phase B) — `codecompass.enrichment`.
 
 Selects vendors for AI enrichment from the SQLite context graph's actual
-usage evidence (`graph.enrichment_candidates`), not a per-vendor `Depth`
+usage evidence (`graph.enrichment_candidates`), not a per-vendor depth
 toggle (`decisions/0031`), and describes several vendors per Anthropic
-call instead of one call per vendor. Conceptually replaces
-`codecompass.grounded_description`, but that module stays in place and
-unmodified through this phase — `sync_vendor` still calls it for
-`depth = full` vendors, since `Depth`/`promote` aren't retired until
-Phase 15/16 (`decisions/0033`). `_gather_material`/`_find_entry_point`/
+call instead of one call per vendor. Replaced
+`codecompass.grounded_description` entirely — that module is deleted as
+of Phase 16 (`decisions/0035`); `_gather_material`/`_find_entry_point`/
 `_read_text`/`_first_existing` and the `_call_anthropic` forced-tool-use
-pattern below are ported near-verbatim from that module.
+pattern below were ported near-verbatim from it while it still existed.
 
-**Library only, like Phase 10's `graph.py`** — nothing here is called
-from `cli.py`/`sync.py` yet; that wiring is Phase 15. See
+Wired into `cli.py` (Phase 15's `_maybe_run_enrichment`) and read back by
+`sync.py`'s `sync_vendor` (Phase 16, a read-only graph lookup — this
+module remains the only writer of `vendor_enrichment`). See
 architecture/overview.md's "Batched enrichment" section and
 planning/phase-14-batched-enrichment.md.
 """
@@ -30,7 +29,7 @@ import anthropic
 
 from codecompass import graph
 from codecompass.claude_md import read_enrichment_hash, update_description_section
-from codecompass.core import Depth, Ecosystem, VendorConfig, VendorDigest
+from codecompass.core import Ecosystem, VendorConfig, VendorDigest
 from codecompass.skill import write_cursor_mdc, write_vendor_skill
 
 _MODEL = "claude-haiku-4-5-20251001"
@@ -218,15 +217,14 @@ def select_candidates(
        fresh clone with no `context-graph.db` at all (gitignored).
 
     A candidate is skipped if *either* check already matches. `configs`
-    supplies each candidate's `Ecosystem`/`Depth` (not derivable from the
-    graph, which has no `depth` column — `decisions/0031` hasn't removed
-    the field yet) and `project_root` locates both `vendor/<name>/src/`
-    (material) and `vendor/<name>/CLAUDE.md` (file-level hash check,
-    unconditionally cloned since Phase 13). A vendor with no retrievable
-    material (no README/docs/entry-point in its clone) is skipped outright
-    — same "nothing to ground the call in" posture
-    `generate_grounded_description` enforces by raising, just non-fatal
-    here since one ungroundable vendor shouldn't abort an entire batch run.
+    supplies each candidate's `Ecosystem` (the graph has no `ecosystem`-
+    independent way to derive it) and `project_root` locates both
+    `vendor/<name>/src/` (material) and `vendor/<name>/CLAUDE.md`
+    (file-level hash check, unconditionally cloned since Phase 13). A
+    vendor with no retrievable material (no README/docs/entry-point in
+    its clone) is skipped outright — nothing to ground the call in, just
+    non-fatal here since one ungroundable vendor shouldn't abort an
+    entire batch run.
     """
     configs_by_name = {config.name: config for config in configs}
     candidates: list[EnrichmentCandidate] = []
@@ -388,12 +386,10 @@ def apply_results(
     `action_pointer_file`, `action_pointer_note`) — confirmed by reading
     both functions' bodies that neither touches
     `api_surface`/`file_tree`/`dep_tree`/`side_effects`, so leaving those
-    at their dataclass defaults is safe. `VendorConfig.depth` has no
-    real meaning for this path (`decisions/0031` — enrichment eligibility
-    is usage-driven, not depth-driven) and isn't available here (a result
-    only carries the vendor's name); it's set to `Depth.FULL` as the
-    closest existing label for "this vendor now has a grounded AI
-    description," a value `skill.py` never actually reads.
+    at their dataclass defaults is safe. `VendorConfig` no longer carries
+    a `depth` field at all (Phase 16, `decisions/0035`) — enrichment
+    eligibility is purely usage-driven (`decisions/0031`), so there was
+    never a real value to set here in the first place.
     """
     generated_at = datetime.now(UTC).isoformat()
 
@@ -435,7 +431,6 @@ def apply_results(
             config=VendorConfig(
                 name=result.vendor,
                 ecosystem=Ecosystem(vendor_row["ecosystem"]),
-                depth=Depth.FULL,
             ),
             installed_version=vendor_row["installed_version"] or "",
             conversational_overview=result.conversational_overview,

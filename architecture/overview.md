@@ -34,19 +34,18 @@ status.
 
 ## Core data model
 
-- **`VendorConfig(name, ecosystem, depth)`** — one entry per dependency,
-  sourced from `vendor.toml`. `context_path` (a Phase 5 field) was
-  removed in Phase 7 — `depth = full` needs no companion field anymore
-  (`decisions/0019`). See
+- **`VendorConfig(name, ecosystem)`** — one entry per dependency, sourced
+  from `vendor.toml`. `context_path` (a Phase 5 field) was removed in
+  Phase 7 (`decisions/0019`); the per-vendor `depth` toggle
+  (`SURFACE`/`FULL`, originally `decisions/0001`) was removed in Phase 16
+  once usage-driven enrichment (`decisions/0031`) and unconditional
+  cloning (`decisions/0033`) made it meaningless — every tracked vendor
+  now gets the same deterministic treatment on `sync`, and AI enrichment
+  eligibility is derived from the context graph's actual usage evidence,
+  not a config field. A legacy `vendor.toml` entry still carrying a
+  `depth = "..."` line keeps parsing without error (`codecompass.config`
+  simply never looks at that key). See
   [`docs/config-schema.md`](../docs/config-schema.md) for the file format.
-- **`Depth`** enum: `SURFACE` (metadata + API surface only, no AI call, no
-  pinned source copy) vs `FULL` (pinned source snapshot + AI-generated
-  grounded description). Depth is set **per vendor**, not globally — most
-  dependencies are used as-is and only need surface info; only the
-  handful being extended, subclassed, or written custom rules against
-  justify `FULL`'s cost, and the only path to `FULL` is
-  `codecompass promote <vendor>` (`decisions/0018`). See
-  [`decisions/0001`](../decisions/0001-depth-is-per-vendor-not-global.md).
 - **`DepNode(name, version, children, dev_only, side_effects)`** — one node
   in a dependency tree, ecosystem-agnostic. `side_effects` captures things
   like postinstall scripts or native binary downloads that are invisible in
@@ -175,14 +174,14 @@ it for per-file purpose annotations and the symbol index. See
 ## Tree generation — deterministic, always free
 
 `FILETREE.md` and `DEPTREE.md` (plus `filetree.json`/`deptree.json`
-sidecars) involve **no AI calls** and run on every `sync` regardless of
-`depth`. `codecompass.deptree` renders from a `DepNode` tree;
+sidecars) involve **no AI calls** and run on every `sync` for every
+tracked vendor. `codecompass.deptree` renders from a `DepNode` tree;
 `codecompass.filetree` renders from `sync_vendor`'s clone-or-fallback
 root, not unconditionally `source_location()` — **since Phase 13**, that
 root is `vendor/<name>/src/`'s clone content (via
 `codecompass.source_resolution`, `decisions/0021`) for **every** vendor,
-not just `depth = full` ones, since cloning is now unconditional
-(`decisions/0033`); when this run's clone attempt fails, it falls back to
+since cloning is unconditional (`decisions/0033`); when this run's clone
+attempt fails, it falls back to
 the vendor's **locally-installed** source directory (`source_location()`)
 instead, the same fallback semantics already established for the
 `vendor/<name>/src/` snapshot itself. This is a real, visible output
@@ -227,106 +226,74 @@ renderers are wired into `sync.py` (Phase 4), which writes their output to
   (e.g. `src/commonmark-rules.js  ← ACTION TARGET: override
   fencedCodeBlock here`) — implemented in Phase 5 via the
   `action_pointer` parameter above (mechanism unchanged by Phase 7's
-  gap-analysis-to-grounded-description swap). `sync_vendor` threads a
-  successful description's `(action_pointer_file, action_pointer_note)`
-  into both `render_filetree_markdown` and `render_filetree_json`; a
-  `depth = surface` vendor, or one with no description this run, passes
+  gap-analysis-to-grounded-description swap). `sync_vendor` threads
+  `(action_pointer_file, action_pointer_note)`, read from this vendor's
+  current enrichment record in the context graph (Phase 16,
+  `decisions/0035`), into both `render_filetree_markdown` and
+  `render_filetree_json`; a vendor with no enrichment record yet passes
   `None` and the parameter has no effect.
 
-## Grounded description — the only AI-cost step (`codecompass.grounded_description`)
+## Grounded description — retired; `sync_vendor` now reads it back (Phase 16)
 
-This section covers the AI-gated *description* step only. **Cloning
-itself is no longer exclusive to this section's scope**: since Phase 13,
-`resolve_and_clone` runs for every vendor unconditionally, also feeding
-`FILETREE.md` generation (see **Tree generation** above,
-`decisions/0033`) — it is only this section's grounded-description
-generation that stays gated, on `depth = FULL` and, since Phase 13,
-additionally on this run's own clone attempt for that vendor having
-succeeded; a `depth = full` vendor whose clone fails this run gets no
-description attempt (same fallback `description_error` either way). No
-longer gated on a project-supplied field (Phase 5's `context_path`,
-removed in Phase 7 — `decisions/0019`). Uses the dated snapshot
-`claude-haiku-4-5-20251001`
-— a summarization task, not agentic coding, so the cheapest capable model
-tier is the right default (`decisions/0003`, unaffected by the Phase 7
-mechanism swap); pinned to a dated snapshot rather than the rolling
-`claude-haiku-4-5` alias `decisions/0003` names literally, so output
-doesn't silently change character if Anthropic updates what the alias
-resolves to.
+`codecompass.grounded_description` — the original one-call-per-vendor,
+`depth = FULL`-gated AI description step this section used to document —
+is **deleted** as of Phase 16 (`decisions/0035`). It made a single
+forced-tool-use call against `claude-haiku-4-5-20251001` per `depth =
+full` vendor, on *every* `sync` run, uncached; that entire mechanism is
+gone. Usage-driven, batched AI enrichment (`codecompass.enrichment`, see
+**Batched enrichment** below) is the sole remaining generator of a
+vendor's Description content, and it writes what it generates straight to
+the context graph's `vendor_enrichment` table (`graph.record_enrichment`)
+— `sync_vendor` itself makes no AI call, ever.
 
-**Grounded entirely in material retrieved from the vendor's own upstream
-repository** — not a project-supplied README/spec, and not the model's
-own training knowledge of the dependency (`decisions/0019`'s reversal of
-Phase 5's design). `codecompass.source_resolution.resolve_and_clone`
-clones the repository (resolved via each adapter's `repository_url()` —
-see **Adapter interface** above) into `vendor/<name>/src/`;
-`_gather_material` then assembles up to `_RAW_TEXT_CHAR_CAP` (50,000)
-raw characters from: the repository's README, up to 5 Markdown files
-from a `docs/`/`doc/` folder if present, and one ecosystem-typical entry
-point file (npm: `package.json`'s `main`/`module`, or
-`index.{js,ts}`/`src/index.{js,ts}`; Python: `<name>/__init__.py` or
-`src/<name>/__init__.py`; Cargo: `src/lib.rs` or `src/main.rs`). The cap
-keeps this comfortably within a single Haiku call — no multi-call
-chunking is needed. Each retrieved section is tagged with its source
-path in the prompt, and the system prompt instructs the model to cite
-specific files/functions rather than rely on prior knowledge.
+**What `sync_vendor` does instead**: before building a vendor's
+`VendorDigest`, it opens a genuine read-only connection to
+`context-graph.db` (the same cheap, side-effect-free pattern
+`index.py`'s `_open_graph_readonly` already used — `None`, gracefully, if
+the file doesn't exist yet) and looks up that vendor's current
+`vendor_enrichment` row, if any. Found or not, this is a pure read: no
+retrieval, no prompt, no API call, no write. If found, its four fields
+(`technical_description`, `conversational_overview`,
+`action_pointer_file`, `action_pointer_note`) populate the digest exactly
+as a live-generated description used to; if not, they stay `None`,
+same as an unenriched vendor always looked. This makes a from-scratch
+`CLAUDE.md` regeneration — including a plain whole-project `sync` that
+touches every tracked vendor, not just newly-enriched ones — idempotent
+with respect to enrichment: it always reproduces whatever the graph
+currently says, rather than either requiring `sync_vendor` to somehow
+preserve file content it isn't re-deriving, or (the bug this fix
+replaces) silently dropping the Description section on every ordinary
+resync because nothing in the deterministic path ever populated it.
 
-**Output is dual-audience** (see
-[`decisions/0012`](../decisions/0012-conversational-first-repl-design.md)),
-produced by **one forced-tool-use API call**:
-`generate_grounded_description(config, repo_root) -> GroundedDescription`
-returns `technical` (agent-facing, goes in `CLAUDE.md`'s Description
-section), `conversational_overview` (human-facing, written the way you'd
-explain the dependency to a colleague — what it does, why a project
-might use it — rather than the way you'd document it), and an optional
-`action_pointer_file`/`action_pointer_note` pair (repurposed from Phase
-5's "most relevant file for the gap" to "most useful file to read next").
-Same call shape, same cost — a prompt/schema and input-source change, not
-a new cost center. The conversational overview is persisted to
-`vendor/<name>/OVERVIEW.md` (unchanged since Phase 5) — not duplicated
-into `CLAUDE.md`, which stays agent-facing technical content only. Phase
-8's `chat <vendor>` reads it directly as part of its grounding
-(`decisions/0023`); Phase 9's project-wide dependency rollup (see **Chat
-REPL** below) will consume it too, with no new per-dependency AI calls,
-once it's built.
+**Failure handling**: `description_error` is set only by a source-clone
+failure (`SourceResolutionError` — no repository field, `git` missing,
+network failure, or a declared monorepo subdirectory that doesn't exist);
+`vendor/<name>/src/` falls back to the old local-install-sourced copy
+(`decisions/0004`) so standalone browsing still has *something*. There is
+no longer a second failure point here — no AI call happens inside
+`sync_vendor` to fail. A clone failure and an existing enrichment record
+are unrelated: `claude_md._render_description_section` does not consult
+`description_error` at all, so a vendor with a good enrichment record
+still shows its Description section even on a run where this particular
+clone attempt failed (see **Per-vendor CLAUDE.md structure** below).
 
-**Real cost implication**: like every other `sync` output, grounded
-description is fully regenerated (and re-cloned) on every `sync` run,
-not diffed or cached — a `depth = full` vendor's description is
-re-purchased every time `sync` runs, not just the first time it's
-promoted.
-
-**Failure handling, two distinct failure points**: if source resolution/
-cloning itself fails (`SourceResolutionError` — no repository field, `git`
-missing, network failure, or a declared monorepo subdirectory that
-doesn't exist), `vendor/<name>/src/` falls back to the old local-install-
-sourced copy (`decisions/0004`) so standalone browsing still has
-*something*, and `description_error` is set. If cloning succeeds but the
-AI call fails (`GroundedDescriptionError`), the real clone is kept as-is
-rather than discarded in favor of the fallback. Either way, the failure
-is caught inside `sync_vendor` for that one vendor — its deterministic
-output still gets written (with an explicit "unavailable" note in
-`CLAUDE.md`, see below), remaining vendors still run, and `sync` exits
-non-zero at the end if anything failed. This is local to one vendor; it
-never aborts the batch.
-
-**`sync --budget <amount>`**: `check_budget` runs once per `sync_all`
-call, *before* any vendor's `sync_vendor` runs. If the estimated cost of
-this run's pending generation calls (every vendor with `depth = full` —
-no longer additionally gated on `context_path`, since that field no
-longer exists — at a fixed rough per-call placeholder estimate, not
-live-queried pricing) exceeds `budget`, the whole run aborts with a clear
-message and **nothing is written this invocation**, not even other
-vendors' free deterministic output. `codecompass promote` performs the
-same disclosure-then-confirm gate for the single vendor it's escalating,
-before setting `depth = full` at all (`decisions/0018`).
+**No more `sync`-level AI budget gate**: `sync_all` used to run
+`check_budget` once, before any vendor's `sync_vendor`, aborting the
+whole run before any output was written if the estimated cost of this
+run's pending `depth = full` generation calls exceeded `--budget`. That
+gate is deleted along with the generation it was guarding. The one
+AI-cost budget gate left in the codebase is Phase B enrichment's, in
+`cli.py`'s `_maybe_run_enrichment` (see **Batched enrichment** below);
+`sync --budget`/bare `codecompass --budget` are passed through to it, not
+consulted by `sync_all`/`sync_vendor` themselves.
 
 ## Per-vendor CLAUDE.md structure (`codecompass.claude_md`)
 
 `render_vendor_claude_md(digest: VendorDigest) -> str`. Sections, in
 order:
 
-1. **Metadata** — ecosystem, depth, and a `**Installed version:**` line.
+1. **Metadata** — ecosystem and a `**Installed version:**` line (the
+   `**Depth:**` line was removed in Phase 16 along with the field).
    This exact format (`\*\*Installed version:\*\*\s*(\S+)`) is what
    `claude_md.read_installed_version` regexes against — a shared helper
    both `staleness.py` (Phase 6) and `index.py` (Phase 4, populating the
@@ -340,12 +307,14 @@ order:
 3. **Public API surface** — `digest.api_surface`.
 4. **Description + action pointer** — `digest.technical_description` plus
    an `**Action pointer:**` line when `digest.action_pointer_file` is set.
-   If `digest.description_error` is set instead, renders an explicit
-   `_Description unavailable: `<error>`_` note rather than silently
-   omitting the section — consistent with this project's never-silent-
-   failure convention (explicit collapse/cap notices elsewhere). Omitted
-   entirely (no heading at all) when neither is set — `depth = surface`,
-   where grounded-description generation never runs.
+   Omitted entirely (no heading at all) when `technical_description` is
+   unset — a vendor with no enrichment record yet. As of Phase 16
+   (`decisions/0035`), `digest.description_error` is a source-clone
+   failure, not a description failure, and this section no longer
+   consults it at all: a vendor with a good enrichment record still shows
+   its Description even on a run where this sync's own clone attempt
+   failed, since the two are unrelated once description content comes
+   from the graph rather than this run's own generation attempt.
 5. **Known gotchas** — deterministically derived from `digest.side_effects`
    (the dependency tree's root `DepNode.side_effects`, e.g. npm's
    postinstall-script detection) rather than left empty or AI-generated.
@@ -359,13 +328,16 @@ from-scratch renderer: `update_description_section`/`read_enrichment_hash`
 (see **Batched enrichment** above) rewrite just an already-rendered
 file's Description section and a `**Enrichment symbol-set hash:**`
 metadata line in place, for `codecompass.enrichment`'s batched,
-usage-driven enrichment — which doesn't gate on `Depth` at all
-(`decisions/0031`), unlike section 4's from-scratch render path above.
-That's safe rather than a regression of the Phase 13 "surface vendor
-shows a misleading Description note" fix: this path is only ever invoked
-for a vendor `codecompass.enrichment` just actually enriched, never as a
-generic re-render, so there's no equivalent "ineligible vendor with a
-stray error note" case for it to reintroduce.
+usage-driven enrichment. This path never had an eligibility gate — it's
+only ever invoked for a vendor `codecompass.enrichment` just actually
+enriched, never as a generic re-render. Section 4's from-scratch render
+path used to differ (gated on `depth is FULL`, to avoid a misleading
+Description note on a vendor that was never eligible for the old
+grounded-description step); Phase 16 (`decisions/0035`) drops that gate
+too, since `technical_description`'s own truthiness already says
+everything the `Depth` gate used to — the two write paths now agree on
+exactly the same "is there enrichment content" test, reading from and
+writing to the same `vendor_enrichment` table.
 
 ## Two consumption modes
 

@@ -8,7 +8,7 @@ import codecompass.cli as cli_module
 from codecompass import enrichment, graph
 from codecompass.cli import app
 from codecompass.config import load_vendor_config
-from codecompass.core import Depth, VendorDigest
+from codecompass.core import VendorDigest
 
 runner = CliRunner()
 
@@ -55,7 +55,6 @@ def test_bare_bootstrap_creates_vendor_toml_and_syncs_new_vendors(
     assert result.exit_code == 0, result.output
     vendors = load_vendor_config(tmp_path / "vendor.toml")
     assert [v.name for v in vendors] == ["pytest"]
-    assert vendors[0].depth is Depth.SURFACE
     assert (tmp_path / "vendor" / "pytest" / "CLAUDE.md").exists()
     assert "<!-- codecompass:start -->" in (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
     assert (tmp_path / ".claude" / "skills" / "codecompass" / "SKILL.md").exists()
@@ -84,7 +83,7 @@ def test_bare_bootstrap_refresh_leaves_existing_full_vendor_untouched(
 
     synced_names: list[str] = []
 
-    def _fake_sync_all(configs, project_root, *, budget=None):  # noqa: ANN001
+    def _fake_sync_all(configs, project_root):  # noqa: ANN001
         synced_names.extend(c.name for c in configs)
         return [VendorDigest(config=c, installed_version="1.0.0") for c in configs]
 
@@ -94,12 +93,11 @@ def test_bare_bootstrap_refresh_leaves_existing_full_vendor_untouched(
 
     assert result.exit_code == 0, result.output
     # Only the newly-discovered "rich" is synced — "pytest" was already
-    # tracked (at depth=full) and is left untouched, so this command
-    # never pays AI cost (decisions/0017).
+    # tracked and is left untouched, so this command never pays AI cost
+    # (decisions/0017).
     assert synced_names == ["rich"]
     vendors = {v.name: v for v in load_vendor_config(tmp_path / "vendor.toml")}
-    assert vendors["pytest"].depth is Depth.FULL
-    assert vendors["rich"].depth is Depth.SURFACE
+    assert set(vendors) == {"pytest", "rich"}
 
 
 def test_bare_bootstrap_second_run_is_a_noop_when_nothing_new(
@@ -161,7 +159,7 @@ def test_sync_single_vendor_filters_by_name(
     )
     synced_names: list[str] = []
 
-    def _fake_sync_all(configs, project_root, *, budget=None):  # noqa: ANN001
+    def _fake_sync_all(configs, project_root):  # noqa: ANN001
         synced_names.extend(c.name for c in configs)
         return [VendorDigest(config=c, installed_version="1.0.0") for c in configs]
 
@@ -173,32 +171,16 @@ def test_sync_single_vendor_filters_by_name(
     assert synced_names == ["a"]
 
 
-def test_sync_budget_too_low_aborts_before_any_output(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "vendor.toml").write_text(
-        '[[vendor]]\nname = "turndown"\necosystem = "npm"\ndepth = "full"\n',
-        encoding="utf-8",
-    )
-
-    result = runner.invoke(app, ["sync", "--budget", "0"])
-
-    assert result.exit_code == 1
-    assert "exceeds --budget" in result.output
-    assert not (tmp_path / "vendor").exists()
-
-
 def test_sync_reports_description_failure_and_exits_nonzero(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
     (tmp_path / "vendor.toml").write_text(
-        '[[vendor]]\nname = "turndown"\necosystem = "npm"\ndepth = "surface"\n',
+        '[[vendor]]\nname = "turndown"\necosystem = "npm"\n',
         encoding="utf-8",
     )
 
-    def _fake_sync_all(configs, project_root, *, budget=None):  # noqa: ANN001
+    def _fake_sync_all(configs, project_root):  # noqa: ANN001
         return [
             VendorDigest(
                 config=c,

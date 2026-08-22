@@ -60,9 +60,8 @@ class RoutingRow:
     """One vendor's routing-table row. `version` is `None` if the vendor
     hasn't been synced yet — `index` reads persisted state, it never
     triggers a sync itself. `enriched` is graph-derived (`has_enrichment`)
-    rather than `config.depth`-derived — `False` (not just for an unsynced
-    vendor but for any project without a `context-graph.db` yet) rather
-    than erroring.
+    — `False` (not just for an unsynced vendor but for any project
+    without a `context-graph.db` yet) rather than erroring.
     """
 
     config: VendorConfig

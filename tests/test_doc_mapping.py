@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from codecompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.core import Ecosystem, VendorConfig
 from codecompass.doc_mapping import (
     build_depends_on_edges,
     build_documents_edges,
@@ -12,7 +12,7 @@ from codecompass.graph import DependsOnEdgeRow, DocArtifactRow, SymbolRow
 
 
 def _config(name: str, ecosystem: Ecosystem = Ecosystem.PYTHON) -> VendorConfig:
-    return VendorConfig(name=name, ecosystem=ecosystem, depth=Depth.SURFACE)
+    return VendorConfig(name=name, ecosystem=ecosystem)
 
 
 def _write_vendor_claude_md(project_root: Path, name: str, text: str) -> None:

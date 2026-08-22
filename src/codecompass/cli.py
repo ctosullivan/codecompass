@@ -24,7 +24,7 @@ from codecompass import enrichment, graph
 from codecompass.adapters import AdapterError
 from codecompass.chat import ChatError, run_chat
 from codecompass.config import ConfigError, load_vendor_config
-from codecompass.core import Depth, VendorConfig
+from codecompass.core import VendorConfig
 from codecompass.discovery import (
     DiscoveryError,
     append_vendor_toml,
@@ -32,7 +32,6 @@ from codecompass.discovery import (
     discover_manifest_paths,
     write_vendor_toml,
 )
-from codecompass.grounded_description import GroundedDescriptionError
 from codecompass.index import load_routing_rows, render_routing_table, update_root_claude_md
 from codecompass.skill import write_tool_skill
 from codecompass.staleness import Severity, VendorStaleness, check_all
@@ -96,7 +95,7 @@ def _bootstrap(project_root: Path, *, yes: bool, budget: float | None) -> None:
     if vendor_toml.exists():
         existing_names = {c.name for c in load_vendor_config(vendor_toml)}
         new_configs = [
-            VendorConfig(name=name, ecosystem=ecosystem, depth=Depth.SURFACE)
+            VendorConfig(name=name, ecosystem=ecosystem)
             for ecosystem, names in discovered.items()
             for name in names
             if name not in existing_names
@@ -106,10 +105,9 @@ def _bootstrap(project_root: Path, *, yes: bool, budget: float | None) -> None:
         write_vendor_toml(discovered, vendor_toml)
         new_configs = load_vendor_config(vendor_toml)
 
-    # Only newly-discovered (guaranteed depth=surface) vendors are synced
-    # here — an already-tracked vendor's generated output is left
-    # untouched by a bare-command refresh, so Phase A never pays AI cost
-    # (decisions/0017).
+    # Only newly-discovered vendors are synced here — an already-tracked
+    # vendor's generated output is left untouched by a bare-command
+    # refresh, so Phase A never pays AI cost (decisions/0017).
     if new_configs:
         sync_all(new_configs, project_root)
 
@@ -207,10 +205,10 @@ def sync(
     budget: float | None = typer.Option(
         None,
         "--budget",
-        help="Cap estimated AI spend (USD) for this run — both any depth=full "
-        "grounded-description regeneration and, for a whole-project sync, "
-        "Phase B enrichment; aborts before any API call if the estimate "
-        "exceeds it. Omit for no cap.",
+        help="Cap estimated AI spend (USD) for this run — for a whole-project "
+        "sync, Phase B enrichment; aborts before any API call if the "
+        "estimate exceeds it. Omit for no cap. No effect on `sync <vendor>` "
+        "(single-vendor), which never triggers Phase B (decisions/0025).",
     ),
 ) -> None:
     """Regenerate digests and trees for one or all vendors. A whole-project
@@ -225,11 +223,7 @@ def sync(
         if not configs:
             console.print(f"[red]error:[/red] {vendor!r} not found in vendor.toml")
             raise typer.Exit(code=1)
-    try:
-        digests = sync_all(configs, Path.cwd(), budget=budget)
-    except GroundedDescriptionError as exc:
-        console.print(f"[red]error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
+    digests = sync_all(configs, Path.cwd())
     if vendor is None:
         # Whole-project sync only (decisions/0025) — `sync <vendor>` and
         # `check --fix`'s per-vendor loop leave the graph untouched.
@@ -275,7 +269,7 @@ def check(
         False,
         "--fix",
         help="Regenerate every stale vendor's digest in place (via the same logic "
-        "as `sync`, including grounded description for depth=full vendors).",
+        "as `sync`).",
     ),
 ) -> None:
     """Staleness gate comparing digests against installed versions, plus

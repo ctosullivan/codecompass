@@ -1,28 +1,25 @@
 """Per-vendor CLAUDE.md template rendering.
 
 See architecture/overview.md's "Per-vendor CLAUDE.md structure" section.
-Description (section 4 in that spec) is populated by Phase 7's AI-gated
-grounded-description step for every `depth = full` vendor (replaced
-Phase 5's `context_path`-gated gap analysis — decisions/0019); omitted
-entirely (not a placeholder) for every other vendor. `read_installed_version`
-reads the Metadata section's load-bearing line back — this module owns
-the file format it targets, so `index.py` (Phase 4) and `staleness.py`
-(Phase 6) both call it rather than keeping their own copies of the regex.
+Description (section 4 in that spec) is populated whenever a vendor has an
+enrichment record — usage-driven, batched AI enrichment
+(`codecompass.enrichment`, decisions/0031), read from the context graph by
+`sync_vendor` (Phase 16, decisions/0035) for a from-scratch re-render;
+omitted entirely (not a placeholder) for every other vendor.
+`read_installed_version` reads the Metadata section's load-bearing line
+back — this module owns the file format it targets, so `index.py` (Phase
+4) and `staleness.py` (Phase 6) both call it rather than keeping their own
+copies of the regex.
 
 Phase 14 adds a second, narrower in-place-editing path:
 `update_description_section`/`read_enrichment_hash` rewrite just the
 Description section and a metadata hash line of an already-rendered
 `CLAUDE.md`, for `codecompass.enrichment`'s batched, usage-driven
-enrichment (decisions/0031) — which is agnostic to `Depth` on purpose
-(the whole point of that decision is that enrichment eligibility no
-longer depends on it). These two functions therefore never look at
-`Depth` at all; they always write the section they're given. That's safe
-because `enrichment.apply_results` only ever calls
-`update_description_section` for a vendor it actually just enriched — the
-`_render_description_section` gate below exists to stop a from-scratch
-`render_vendor_claude_md` re-render (`sync`'s deterministic Phase A) from
-showing a misleading note for a vendor that was never eligible in the
-first place; that from-scratch path is untouched by this phase.
+enrichment — called right after `graph.record_enrichment` writes the same
+data these two functions edit into the file, so the two paths
+(`sync_vendor`'s from-scratch re-render and this in-place edit) never
+disagree about what a vendor's current enrichment content is; both
+ultimately read from or write the same `vendor_enrichment` table.
 """
 
 from __future__ import annotations
@@ -30,7 +27,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from codecompass.core import Depth, VendorDigest
+from codecompass.core import VendorDigest
 
 _INSTALLED_VERSION_RE = re.compile(r"\*\*Installed version:\*\*\s*(\S+)")
 _INSTALLED_VERSION_LINE_RE = re.compile(r"^(- \*\*Installed version:\*\*.*)$", re.MULTILINE)
@@ -70,7 +67,6 @@ def render_vendor_claude_md(digest: VendorDigest) -> str:
         "## Metadata",
         "",
         f"- **Ecosystem:** {config.ecosystem.value}",
-        f"- **Depth:** {config.depth.value}",
         f"- **Installed version:** {digest.installed_version}",
         "",
         "## Grounding",
@@ -100,27 +96,24 @@ def render_vendor_claude_md(digest: VendorDigest) -> str:
 
 
 def _render_description_section(digest: VendorDigest) -> str | None:
-    """`None` means "omit the section entirely" (`depth = surface` —
-    grounded description never runs for it). A failed call still renders
-    an explicit "unavailable" note rather than being indistinguishable
-    from "never ran" — consistent with this project's never-silent-
-    failure convention (explicit collapse/cap notices elsewhere).
+    """`None` means "omit the section entirely" — no enrichment content
+    exists for this vendor yet. Phase 16 (decisions/0035) drops the old
+    depth-gate ahead of this check: `technical_description`'s own
+    truthiness already means exactly "is there enrichment content to
+    show," the same test this function already used as its second check,
+    so a redundant first flag would just be another way to say the same
+    thing.
 
-    Gated on `depth is FULL` first, *before* looking at
-    `description_error` — since Phase 13, cloning (and therefore
-    `description_error`) happens for every vendor, not just `depth =
-    full` ones, so a `depth = surface` vendor can have a clone-failure
-    `description_error` set despite never having attempted a description
-    at all. Without this gate, that vendor would show a misleading
-    "Description unavailable" note for an AI step it was never eligible
-    for in the first place — the error here is about the source clone,
-    not about grounded description, and belongs in Known Gotchas /
-    standalone-mode context, not this section.
+    `description_error` (Phase 13) is a source-clone failure, not a
+    description failure — since Phase 16 there's no description
+    "attempt" inside `sync_vendor` to fail — and is deliberately not
+    consulted here: surfacing a clone error in this section would show a
+    misleading "Description unavailable" note for a vendor that either
+    was never enriched at all, or has a perfectly good enrichment record
+    from a previous run that this run's clone failure has no bearing on.
+    A clone failure still belongs in Known Gotchas / standalone-mode
+    context, just not this section.
     """
-    if digest.config.depth is not Depth.FULL:
-        return None
-    if digest.description_error:
-        return f"_Description unavailable: `{digest.description_error}`_"
     if not digest.technical_description:
         return None
     lines = [digest.technical_description]
@@ -191,9 +184,9 @@ def update_description_section(
     Inserts a new "## Description" section (right before "## Known
     gotchas") if the file doesn't already have one — the common case the
     first time a formerly-undocumented vendor gets enriched, since
-    `_render_description_section` omits the section outright for anything
-    that isn't `depth = full`. Replaces it in place if one already exists.
-    Does nothing else to the file: no `Depth`/eligibility check here (see
+    `_render_description_section` omits the section outright for a vendor
+    with no enrichment record yet. Replaces it in place if one already
+    exists. Does nothing else to the file: no eligibility check here (see
     module docstring) — the caller decides who gets enriched.
     """
     content = claude_md_path.read_text(encoding="utf-8")

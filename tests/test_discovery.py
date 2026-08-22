@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from codecompass.config import load_vendor_config
-from codecompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.core import Ecosystem, VendorConfig
 from codecompass.discovery import (
     DiscoveryError,
     append_vendor_toml,
@@ -141,7 +141,6 @@ def test_write_vendor_toml_produces_parseable_config(tmp_path: Path) -> None:
 
     vendors = load_vendor_config(target)
     assert {v.name for v in vendors} == {"lodash", "requests"}
-    assert all(v.depth.value == "surface" for v in vendors)
 
 
 def test_write_vendor_toml_errors_if_target_already_exists(tmp_path: Path) -> None:
@@ -155,20 +154,18 @@ def test_write_vendor_toml_errors_if_target_already_exists(tmp_path: Path) -> No
 
 
 def test_render_vendor_block_produces_parseable_toml_block() -> None:
-    config = VendorConfig(name="lodash", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    config = VendorConfig(name="lodash", ecosystem=Ecosystem.NPM)
     block = render_vendor_block(config)
     assert 'name = "lodash"' in block
     assert 'ecosystem = "npm"' in block
-    assert 'depth = "surface"' in block
+    assert "depth" not in block
 
 
 def test_append_vendor_toml_extends_existing_file(tmp_path: Path) -> None:
     target = tmp_path / "vendor.toml"
     write_vendor_toml({Ecosystem.NPM: ["lodash"]}, target)
 
-    append_vendor_toml(
-        [VendorConfig(name="requests", ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE)], target
-    )
+    append_vendor_toml([VendorConfig(name="requests", ecosystem=Ecosystem.PYTHON)], target)
 
     vendors = load_vendor_config(target)
     assert {v.name for v in vendors} == {"lodash", "requests"}
@@ -184,22 +181,15 @@ def test_append_vendor_toml_empty_list_is_noop(tmp_path: Path) -> None:
     assert target.read_text(encoding="utf-8") == original
 
 
-def test_rewrite_vendor_toml_persists_depth_change(tmp_path: Path) -> None:
+def test_rewrite_vendor_toml_overwrites_with_fresh_configs(tmp_path: Path) -> None:
     target = tmp_path / "vendor.toml"
     configs = [
-        VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE),
-        VendorConfig(name="lodash", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE),
+        VendorConfig(name="turndown", ecosystem=Ecosystem.NPM),
+        VendorConfig(name="lodash", ecosystem=Ecosystem.NPM),
     ]
     rewrite_vendor_toml(configs, target)
 
-    promoted = [
-        VendorConfig(name=c.name, ecosystem=c.ecosystem, depth=Depth.FULL)
-        if c.name == "turndown"
-        else c
-        for c in configs
-    ]
-    rewrite_vendor_toml(promoted, target)
+    rewrite_vendor_toml([VendorConfig(name="turndown", ecosystem=Ecosystem.NPM)], target)
 
     vendors = {v.name: v for v in load_vendor_config(target)}
-    assert vendors["turndown"].depth is Depth.FULL
-    assert vendors["lodash"].depth is Depth.SURFACE
+    assert set(vendors) == {"turndown"}

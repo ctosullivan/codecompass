@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from codecompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.core import Ecosystem, VendorConfig
 from codecompass.usage import (
     DetectedImport,
     detect_imports_for_file,
@@ -12,7 +12,7 @@ from codecompass.usage import (
 
 
 def _config(name: str, ecosystem: Ecosystem) -> VendorConfig:
-    return VendorConfig(name=name, ecosystem=ecosystem, depth=Depth.SURFACE)
+    return VendorConfig(name=name, ecosystem=ecosystem)
 
 
 # --- detect_python_imports ---------------------------------------------------

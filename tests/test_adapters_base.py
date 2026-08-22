@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from codecompass.adapters.base import AdapterError, EcosystemAdapter, _run_json
-from codecompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.core import Ecosystem, VendorConfig
 
 
 class _FakeCompletedProcess:
@@ -68,6 +68,6 @@ def test_ecosystem_adapter_rejects_incomplete_subclass() -> None:
         def installed_version(self) -> str:
             return "1.0.0"
 
-    config = VendorConfig(name="x", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    config = VendorConfig(name="x", ecosystem=Ecosystem.NPM)
     with pytest.raises(TypeError):
         Incomplete(config, Path("."))  # type: ignore[abstract]

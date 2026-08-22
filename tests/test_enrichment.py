@@ -9,7 +9,7 @@ from codecompass.claude_md import (
     read_installed_version,
     render_vendor_claude_md,
 )
-from codecompass.core import Depth, Ecosystem, VendorConfig, VendorDigest
+from codecompass.core import Ecosystem, VendorConfig, VendorDigest
 from codecompass.enrichment import (
     EnrichmentCandidate,
     EnrichmentError,
@@ -35,10 +35,8 @@ _SOURCE_FILE = "src/app.ts"
 _USED_SYMBOLS = ("convert", "parse")
 
 
-def _vendor_config(
-    name: str = "turndown", ecosystem: Ecosystem = Ecosystem.NPM, depth: Depth = Depth.SURFACE
-) -> VendorConfig:
-    return VendorConfig(name=name, ecosystem=ecosystem, depth=depth)
+def _vendor_config(name: str = "turndown", ecosystem: Ecosystem = Ecosystem.NPM) -> VendorConfig:
+    return VendorConfig(name=name, ecosystem=ecosystem)
 
 
 def _seed_graph(
@@ -431,7 +429,7 @@ def test_find_entry_point_python_prefers_package_init(tmp_path: Path) -> None:
     (tmp_path / "widget").mkdir()
     init_file = tmp_path / "widget" / "__init__.py"
     init_file.write_text("", encoding="utf-8")
-    config = VendorConfig(name="widget", ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE)
+    config = VendorConfig(name="widget", ecosystem=Ecosystem.PYTHON)
 
     assert enrichment_module._find_entry_point(tmp_path, config) == init_file
 
@@ -440,13 +438,13 @@ def test_find_entry_point_cargo_prefers_lib_rs(tmp_path: Path) -> None:
     (tmp_path / "src").mkdir()
     lib_rs = tmp_path / "src" / "lib.rs"
     lib_rs.write_text("", encoding="utf-8")
-    config = VendorConfig(name="serde", ecosystem=Ecosystem.CARGO, depth=Depth.SURFACE)
+    config = VendorConfig(name="serde", ecosystem=Ecosystem.CARGO)
 
     assert enrichment_module._find_entry_point(tmp_path, config) == lib_rs
 
 
 def test_find_entry_point_returns_none_when_nothing_matches(tmp_path: Path) -> None:
-    config = VendorConfig(name="widget", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE)
+    config = VendorConfig(name="widget", ecosystem=Ecosystem.NPM)
     assert enrichment_module._find_entry_point(tmp_path, config) is None
 
 
@@ -543,7 +541,7 @@ def test_apply_results_writes_graph_claude_md_and_skills(tmp_path: Path) -> None
 def test_apply_results_replaces_an_existing_description_section(tmp_path: Path) -> None:
     conn = open_graph(tmp_path)
     _seed_graph(conn)
-    config = _vendor_config(depth=Depth.FULL)
+    config = _vendor_config()
     vendor_dir = tmp_path / "vendor" / config.name
     (vendor_dir / "src").mkdir(parents=True)
     (vendor_dir / "src" / "README.md").write_text("Converts HTML to Markdown.", encoding="utf-8")

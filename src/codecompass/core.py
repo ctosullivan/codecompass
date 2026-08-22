@@ -18,31 +18,19 @@ class Ecosystem(StrEnum):
     CARGO = "cargo"
 
 
-class Depth(StrEnum):
-    """How much detail codecompass generates for a vendor.
-
-    Set per vendor (see decisions/0001), not globally: SURFACE is free
-    metadata + API surface; FULL adds a pinned source snapshot and an
-    AI-generated gap analysis.
-    """
-
-    SURFACE = "surface"
-    FULL = "full"
-
-
 @dataclass(frozen=True)
 class VendorConfig:
     """One `[[vendor]]` entry from vendor.toml.
 
-    `depth = FULL` no longer requires any companion field (`context_path`
-    was removed in Phase 7 — decisions/0019 — since grounded-description
-    generation is sourced from the vendor's own upstream repository, not
-    from a project-supplied README/spec).
+    Narrowed to `(name, ecosystem)` in Phase 16 (`decisions/0031`,
+    `decisions/0035`) — the per-vendor `depth` toggle (SURFACE/FULL) that
+    used to gate a pinned source snapshot and AI-generated description is
+    retired: cloning is unconditional (Phase 13) and AI enrichment is
+    usage-driven, read from the context graph, not a `vendor.toml` field.
     """
 
     name: str
     ecosystem: Ecosystem
-    depth: Depth
 
 
 @dataclass(frozen=True)
@@ -84,12 +72,13 @@ class VendorDigest:
     tree's root `DepNode.side_effects` — e.g. npm postinstall scripts —
     for the per-vendor `CLAUDE.md`'s Known Gotchas section),
     `technical_description`/`conversational_overview`/`action_pointer_file`/
-    `action_pointer_note` by the AI-gated step (Phase 7,
-    `codecompass.grounded_description` — replaced Phase 5's `context_path`-
-    gated gap analysis, decisions/0019 — runs for every `depth = full`
-    vendor unconditionally) — a failure there sets `description_error`
-    instead, rather than leaving everything silently `None` with no way
-    to tell "not applicable" from "failed".
+    `action_pointer_note` by `sync_vendor`'s read-only lookup of this
+    vendor's current `vendor_enrichment` record in the context graph
+    (Phase 16, `decisions/0035` — usage-driven AI enrichment, written by
+    `codecompass.enrichment`, is the only source of these fields now).
+    `description_error` is set instead only on a source-clone failure
+    (`codecompass.source_resolution`), not a description failure — there's
+    no description "attempt" inside `sync_vendor` to fail anymore.
 
     Does not carry staleness information — `codecompass.staleness` (Phase
     6) reads persisted per-vendor `CLAUDE.md` files directly rather than

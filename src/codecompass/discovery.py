@@ -14,7 +14,7 @@ import tomllib
 from collections.abc import Callable
 from pathlib import Path
 
-from codecompass.core import Depth, Ecosystem, VendorConfig
+from codecompass.core import Ecosystem, VendorConfig
 
 
 class DiscoveryError(Exception):
@@ -137,10 +137,7 @@ def render_vendor_block(config: VendorConfig) -> str:
     format `write_vendor_toml` already produces — see its docstring for
     why this isn't a round-trip-preserving TOML writer (decisions/0011).
     """
-    return (
-        f'[[vendor]]\nname = "{config.name}"\n'
-        f'ecosystem = "{config.ecosystem.value}"\ndepth = "{config.depth.value}"\n'
-    )
+    return f'[[vendor]]\nname = "{config.name}"\necosystem = "{config.ecosystem.value}"\n'
 
 
 def write_vendor_toml(names_by_ecosystem: dict[Ecosystem, list[str]], path: Path) -> None:
@@ -151,7 +148,7 @@ def write_vendor_toml(names_by_ecosystem: dict[Ecosystem, list[str]], path: Path
     if path.exists():
         raise DiscoveryError(f"{path} already exists — refusing to overwrite it")
     configs = [
-        VendorConfig(name=name, ecosystem=ecosystem, depth=Depth.SURFACE)
+        VendorConfig(name=name, ecosystem=ecosystem)
         for ecosystem, names in names_by_ecosystem.items()
         for name in names
     ]

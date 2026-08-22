@@ -1,12 +1,12 @@
 """Per-vendor sync orchestration.
 
-Wires together an ecosystem adapter (Phase 2), Phase 3's tree renderers,
-Phase 7's AI-gated grounded-description generation (`depth = full`
-vendors, unconditional — replaced Phase 5's `context_path`-gated gap
-analysis, decisions/0019), a `vendor/<name>/src/` snapshot sourced from
-the vendor's own upstream repository via `codecompass.source_resolution`
-(decisions/0021) — since Phase 13, cloned unconditionally for every
-vendor, not just `depth = full` ones (decisions/0033) — and per-vendor
+Wires together an ecosystem adapter (Phase 2), Phase 3's tree renderers, a
+`vendor/<name>/src/` snapshot sourced from the vendor's own upstream
+repository via `codecompass.source_resolution` (decisions/0021) — since
+Phase 13, cloned unconditionally for every vendor (decisions/0033) — a
+read-only lookup of this vendor's current AI enrichment from the context
+graph (Phase 16, decisions/0035 — `codecompass.enrichment` is the only
+writer of that data; `sync_vendor` never generates it), and per-vendor
 `CLAUDE.md` templating — writing everything under `vendor/<name>/`. Also
 `rebuild_project_graph` (Phase 11, extended in
 Phase 12 with doc/skill-mapping data via `codecompass.doc_mapping`/
@@ -17,20 +17,22 @@ planning/phase-11-project-source-usage-detection.md's Design decisions)
 and called only from the two whole-project call sites in `cli.py`. See
 planning/phase-4-sync-index-init.md, planning/phase-5-gap-analysis.md,
 planning/phase-7-bootstrap-and-promote.md,
-planning/phase-11-project-source-usage-detection.md, and
-planning/phase-12-doc-and-wide-skill-mapping.md.
+planning/phase-11-project-source-usage-detection.md,
+planning/phase-12-doc-and-wide-skill-mapping.md, and
+planning/phase-16-retire-depth.md.
 """
 
 from __future__ import annotations
 
 import json
 import shutil
+import sqlite3
 from pathlib import Path
 
 from codecompass import skill_scan, usage
 from codecompass.adapters import EcosystemAdapter, get_adapter
 from codecompass.claude_md import render_vendor_claude_md
-from codecompass.core import Depth, VendorConfig, VendorDigest
+from codecompass.core import VendorConfig, VendorDigest
 from codecompass.deptree import render_deptree_json, render_deptree_markdown
 from codecompass.doc_mapping import (
     build_depends_on_edges,
@@ -52,45 +54,75 @@ from codecompass.graph import (
     open_graph,
     rebuild_deterministic,
 )
-from codecompass.grounded_description import (
-    GroundedDescriptionError,
-    check_budget,
-    generate_grounded_description,
-)
 from codecompass.source_resolution import SourceResolutionError, resolve_and_clone
 from codecompass.symbols import Symbol, extract_symbols_for_file
 
 _SNAPSHOT_PRUNE_NAMES = ("node_modules", "dist", "build", ".git", "__pycache__", ".venv", "venv")
+_GRAPH_DB_FILENAME = "context-graph.db"
+
+
+def _open_graph_readonly(project_root: Path) -> sqlite3.Connection | None:
+    """`None` if `context-graph.db` doesn't exist yet — a project that's
+    never run a whole-project sync. Mirrors `index.py`'s
+    `_open_graph_readonly` exactly: a genuine read-only connection (SQLite
+    URI `mode=ro`), not `graph.open_graph` — this lookup runs on every
+    `sync_vendor` call and must stay a pure read, never creating the file
+    or issuing schema DDL as a side effect.
+    """
+    db_path = project_root / _GRAPH_DB_FILENAME
+    if not db_path.exists():
+        return None
+    return sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
+
+
+def _lookup_enrichment(conn: sqlite3.Connection, vendor_name: str) -> tuple | None:
+    """This vendor's `vendor_enrichment` row, if any — the four fields
+    `sync_vendor` needs to populate its `VendorDigest`. `graph.py` has no
+    existing read function returning these columns (`vendor_profile`
+    joins `vendors`/`symbols`/`doc_artifacts`/etc., never
+    `vendor_enrichment`), so this queries the table directly rather than
+    stretching `vendor_profile`'s contract to cover a shape it wasn't
+    built for.
+    """
+    return conn.execute(
+        """
+        SELECT ve.technical_description, ve.conversational_overview,
+               ve.action_pointer_file, ve.action_pointer_note
+        FROM vendor_enrichment ve
+        JOIN vendors v ON ve.vendor_id = v.id
+        WHERE v.name = ?
+        """,
+        (vendor_name,),
+    ).fetchone()
 
 
 def sync_vendor(config: VendorConfig, project_root: Path) -> VendorDigest:
     """Orchestrate one vendor end to end. Deterministic and idempotent —
     every output file listed below is fully overwritten on each call, no
-    diffing against previous output.
+    diffing against previous output, and no AI call is ever made from this
+    function.
 
-    Since Phase 13, cloning and description generation are two
-    independent decisions. Cloning (`resolve_and_clone`, falling back to
-    `_copy_source_snapshot` on failure) runs unconditionally for every
-    vendor — it costs nothing (no AI call) and its only historical reason
-    for being depth-gated was that it existed solely to feed grounded
-    description. Grounded-description generation stays gated on `config.depth
-    is Depth.FULL`, and additionally only runs if this call's own clone
-    attempt succeeded — a `depth = full` vendor whose clone fails gets no
-    description attempt this run, same as before Phase 13.
+    Cloning (`resolve_and_clone`, falling back to `_copy_source_snapshot`
+    on failure) runs unconditionally for every vendor (decisions/0033) —
+    it costs nothing (no AI call). Separately, this vendor's current AI
+    enrichment (if any) is read from the context graph
+    (`_lookup_enrichment`, read-only, skipped gracefully if no
+    `context-graph.db` exists yet) and used to populate
+    `technical_description`/`conversational_overview`/
+    `action_pointer_file`/`action_pointer_note` — the fix for the bug
+    `decisions/0035` describes: a from-scratch re-render must reproduce a
+    vendor's already-enriched Description section, not silently drop it
+    for lack of a value nothing in this deterministic path ever computes
+    itself. `codecompass.enrichment` is the only writer of that data
+    (Phase B, usage-driven, batched, triggered from `cli.py`) — this
+    function only ever reads it.
 
-    A `depth = full` vendor's description failure is caught locally: the
-    vendor still gets its deterministic output (with an explicit
-    "unavailable" note in `CLAUDE.md` instead of a silently missing
-    section), it just doesn't propagate out of this function. Two
-    distinct failure points are handled separately: if source resolution/
-    cloning itself fails, `vendor/<name>/src/` falls back to the old
-    local-install-sourced snapshot (decisions/0004) so standalone
-    browsing still has *something*, and `FILETREE.md`/`filetree.json`/the
-    symbol index fall back to rendering from `source_location()` too; if
-    cloning succeeds but the AI call fails, the real clone is kept as-is
-    (better than discarding it for a stale local-install copy). Budget
-    enforcement happens in `sync_all`, before any vendor's `sync_vendor`
-    runs — this function never checks budget itself.
+    If source resolution/cloning fails, `description_error` is set (a
+    clone failure, not a description failure — there's no description
+    "attempt" here to fail) and `vendor/<name>/src/` falls back to the old
+    local-install-sourced snapshot (decisions/0004) so standalone browsing
+    still has *something*; `FILETREE.md`/`filetree.json`/the symbol index
+    fall back to rendering from `source_location()` too.
     """
     adapter = get_adapter(config, project_root)
     installed_version = adapter.installed_version()
@@ -110,18 +142,27 @@ def sync_vendor(config: VendorConfig, project_root: Path) -> VendorDigest:
         _copy_source_snapshot(source_location, src_dest)
         repo_root = None
 
-    description = None
-    if config.depth is Depth.FULL and repo_root is not None:
-        try:
-            description = generate_grounded_description(config, repo_root)
-        except GroundedDescriptionError as exc:
-            description_error = str(exc)
-
     tree_root = repo_root if repo_root is not None else source_location
 
+    technical_description = conversational_overview = None
+    action_pointer_file = action_pointer_note = None
+    graph_conn = _open_graph_readonly(project_root)
+    if graph_conn is not None:
+        try:
+            enrichment_row = _lookup_enrichment(graph_conn, config.name)
+        finally:
+            graph_conn.close()
+        if enrichment_row is not None:
+            (
+                technical_description,
+                conversational_overview,
+                action_pointer_file,
+                action_pointer_note,
+            ) = enrichment_row
+
     action_pointer = None
-    if description and description.action_pointer_file:
-        action_pointer = (description.action_pointer_file, description.action_pointer_note)
+    if action_pointer_file:
+        action_pointer = (action_pointer_file, action_pointer_note)
 
     dep_tree_markdown = render_deptree_markdown(dep_tree_root)
     (vendor_dir / "DEPTREE.md").write_text(dep_tree_markdown, encoding="utf-8")
@@ -145,30 +186,25 @@ def sync_vendor(config: VendorConfig, project_root: Path) -> VendorDigest:
         file_tree=file_tree_markdown,
         dep_tree=dep_tree_markdown,
         api_surface=api_surface,
-        technical_description=description.technical if description else None,
-        conversational_overview=description.conversational_overview if description else None,
+        technical_description=technical_description,
+        conversational_overview=conversational_overview,
         description_error=description_error,
-        action_pointer_file=description.action_pointer_file if description else None,
-        action_pointer_note=description.action_pointer_note if description else None,
+        action_pointer_file=action_pointer_file,
+        action_pointer_note=action_pointer_note,
         side_effects=list(dep_tree_root.side_effects),
     )
-    if description:
-        (vendor_dir / "OVERVIEW.md").write_text(
-            description.conversational_overview, encoding="utf-8"
-        )
+    if conversational_overview:
+        (vendor_dir / "OVERVIEW.md").write_text(conversational_overview, encoding="utf-8")
     (vendor_dir / "CLAUDE.md").write_text(render_vendor_claude_md(digest), encoding="utf-8")
     return digest
 
 
-def sync_all(
-    configs: list[VendorConfig], project_root: Path, *, budget: float | None = None
-) -> list[VendorDigest]:
-    """`check_budget` runs first and raises `GroundedDescriptionError` —
-    before any vendor's `sync_vendor` is called, and therefore before any
-    output is written this invocation — if the projected generation cost
-    for this batch exceeds `budget`.
+def sync_all(configs: list[VendorConfig], project_root: Path) -> list[VendorDigest]:
+    """Sync every config in order. No budget/cost gate here — `sync_vendor`
+    never makes an AI call; the one AI-call budget gate left in this
+    codebase (Phase B enrichment) lives in `cli.py`'s
+    `_maybe_run_enrichment`, gating `codecompass.enrichment` directly.
     """
-    check_budget(configs, budget)
     return [sync_vendor(config, project_root) for config in configs]
 
 
@@ -178,10 +214,10 @@ def _render_filetree_with_symbol_index(
     """The flat symbol index renders as a section within FILETREE.md
     ("alongside the nested tree", architecture/overview.md) rather than a
     separate sidecar file — sync produces five deterministic output files
-    per vendor (six for a `depth = full` vendor whose gap analysis
-    succeeds, which additionally gets `OVERVIEW.md`). `tree_root` is the
-    clone root when this vendor's clone succeeded this run, else the
-    local-install `source_location()` fallback (Phase 13).
+    per vendor (six for a vendor with an existing enrichment record, which
+    additionally gets `OVERVIEW.md`). `tree_root` is the clone root when
+    this vendor's clone succeeded this run, else the local-install
+    `source_location()` fallback (Phase 13).
     """
     tree_markdown = render_filetree_markdown(
         tree_root, config.ecosystem, action_pointer=action_pointer
@@ -299,10 +335,10 @@ def _collect_vendor_symbols(adapter: EcosystemAdapter, config: VendorConfig) -> 
 
 def _copy_source_snapshot(source: Path, dest: Path) -> None:
     """Copy `source` to `dest`, stripping node_modules/dist/build/.git-
-    style noise only — looser than filetree.py's prune list, since a
-    depth=full vendor's own test suite is often exactly what someone
-    wants to reference in standalone mode (decisions/0004). Fully
-    overwrites `dest` on each call.
+    style noise only — looser than filetree.py's prune list, since an
+    enriched vendor's own test suite is often exactly what someone wants
+    to reference in standalone mode (decisions/0004). Fully overwrites
+    `dest` on each call.
     """
     if dest.exists():
         shutil.rmtree(dest)

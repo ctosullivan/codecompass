@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from codecompass.core import Depth, Ecosystem, VendorConfig, VendorDigest
+from codecompass.core import Ecosystem, VendorConfig, VendorDigest
 from codecompass.graph import VendorRow, open_graph, rebuild_deterministic, record_enrichment
 from codecompass.skill import (
     render_cursor_mdc,
@@ -14,14 +14,14 @@ from codecompass.skill import (
 
 def _configs() -> list[VendorConfig]:
     return [
-        VendorConfig(name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL),
-        VendorConfig(name="lodash", ecosystem=Ecosystem.NPM, depth=Depth.SURFACE),
+        VendorConfig(name="turndown", ecosystem=Ecosystem.NPM),
+        VendorConfig(name="lodash", ecosystem=Ecosystem.NPM),
     ]
 
 
 def _digest(**overrides: object) -> VendorDigest:
     config = overrides.pop("config", None) or VendorConfig(
-        name="turndown", ecosystem=Ecosystem.NPM, depth=Depth.FULL
+        name="turndown", ecosystem=Ecosystem.NPM
     )
     defaults: dict[str, object] = {"config": config, "installed_version": "7.1.2"}
     defaults.update(overrides)

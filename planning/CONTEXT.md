@@ -6,61 +6,68 @@ for the log of how it got here.
 
 ## Current phase
 
-**Phase 15: CLI rewire — done.** Phases 0-14 remain `done`. Executing
+**Phase 16: Retire `Depth` — done.** Phases 0-15 remain `done`. Executing
 MVP (v0.2) per `planning/v0.2-implementation-execution-plan.md`: one
 implementation subagent per phase, independently re-verified, one commit
 per phase, strictly in order.
 
 ## What was just completed
 
-Implemented `planning/phase-15-cli-rewire.md` — the integration phase,
-the largest in this arc. `cli.py`: `promote` removed entirely; bare
-`codecompass` and whole-project `sync` both gain `--yes`/`--budget` and
-auto-trigger Phase B (`enrichment.select_candidates` →
-disclose/confirm → `run_enrichment_batches`/`apply_results`) right after
-Phase A's free work; new `query {vendors|vendor|symbol|skills}` command
-group (Rich tables or `--json`, graceful "run sync first" note if no
-graph exists); `check` gains report-only coverage-gap sections
-(confirmed **`--strict`'s exit code is untouched** — still governed by
-version-drift severity alone, verified directly in the diff, not just
-by description). `index.py`/`skill.py` migrated from `Depth`-keyed to
-graph-derived `has_enrichment` status (new `graph.has_enrichment`), both
-using a genuine read-only SQLite connection rather than `graph.open_graph`
-— correctly reasoned that `open_graph` creates the file and issues
-schema DDL, which would violate `index`'s own "must stay cheap and
-side-effect-free" documented design principle.
+**This phase required a re-plan mid-stream — worth remembering the shape
+of that, not just the outcome.** The first implementation attempt
+correctly stopped without making changes: `Depth` was not actually fully
+behaviorally inert after Phase 15 as the original plan assumed —
+`sync.py`, `claude_md.py`, and `grounded_description.py` still gated real
+behavior on it. Investigating why surfaced a real bug already on `main`
+since Phase 15: a whole-project `sync` re-run silently erased Phase B's
+enrichment content from `CLAUDE.md`, because `sync_vendor` rebuilt every
+vendor's file from scratch via a digest that never carried enrichment
+data, gated on a `Depth` value nothing sets anymore now that `promote` is
+gone. Wrote `decisions/0035` and revised
+`planning/phase-16-retire-depth.md` to fix this properly before
+continuing — see that ADR for the full reasoning.
 
-**A second real, high-stakes bug was caught — this time by the
-implementing subagent itself, during its own end-to-end testing, not by
-orchestrator review**: `usage.py`'s project-source prune set didn't
-exclude `vendor/` — but since Phase 13, every tracked vendor's own
-upstream source clones into `vendor/<name>/src/` inside that same walk.
-A vendor's own source very often self-references its own package name,
-which registered as false-positive "the project uses this vendor"
-evidence for nearly every vendor on every run — silently defeating the
-entire "usage-driven, not everything" premise this whole rework is built
-on (`decisions/0031`). Fixed by adding `"vendor"` to
-`_PROJECT_PRUNE_DIR_NAMES`, with a regression test. Also fixed in
-passing: `chat.py`'s "no grounded description yet" hint still literally
-said `` `codecompass promote {name}` `` (a command this phase deletes) —
-reworded to point at `sync`.
+Implemented the revised plan: `sync_vendor` now looks up a vendor's
+current enrichment from the context graph (read-only, gracefully skipped
+if no `context-graph.db` exists) before building its `VendorDigest`, so a
+from-scratch re-render reproduces existing enrichment instead of erasing
+it — directly fixing the bug above, with a regression test that syncs
+twice and confirms the Description section survives. `grounded_description.py`
+and its test file are deleted (not orphaned) — `enrichment.py` fully
+replaces its role. `claude_md._render_description_section`'s gate
+simplified to pure `technical_description` truthiness (no more `Depth`
+check, and no longer conflates a clone failure with a description
+failure — `decisions/0035`'s reasoning). Then the originally-planned
+mechanical removal: `Depth` enum deleted from `core.py`,
+`VendorConfig` narrowed to `(name, ecosystem)`, `config.py` tolerates a
+legacy `depth =` line silently, `discovery.py`/`cli.py` updated.
 
-Verified independently: `pytest` 361 passed/1 skipped, `ruff check .`
-clean, `git diff --stat` matches. Read the full `cli.py`/`index.py`/
-`skill.py`/`graph.py`/`chat.py`/`usage.py` diffs directly (not just test
-output) given this phase's size and the Phase 13 lesson about green
-tests not catching everything — confirmed the `--strict` exit-code
-preservation, the graph connection lifecycle (sequential opens/closes,
-no concurrency issue), and the vendor-prune fix's regression test
-firsthand.
+**Blast radius was much larger than either plan version's Files list**
+(flagged explicitly by the implementer, not hidden): deleting `Depth`
+broke `chat.py` (a real source bug — `config.depth.value` in the REPL's
+banner line) and required mechanical `depth=`-kwarg removal across 14
+test files never named in the plan. Fixed mechanically, not redesigned;
+`sync_all`'s now-meaningless `budget` parameter (no AI call happens in
+`sync_vendor`'s path anymore — the one remaining AI budget gate is
+Phase B's, already in `cli.py`) and two tests whose premise depended on
+it were removed as genuinely obsolete, confirmed by reading their
+original content before agreeing they no longer test anything real.
+
+Verified independently: `pytest` 340 passed/1 skipped (down from 361 —
+`test_grounded_description.py`'s tests and the two obsolete budget tests
+account for the reduction, confirmed deliberate not accidental), `ruff
+check .` clean, `grep -rn "Depth\b"` returns zero hits in `src/` and only
+a docstring + negative-assertion string in `tests/`. Read `sync.py`'s,
+`cli.py`'s, and `claude_md.py`'s full diffs directly and confirmed the
+regression test for the bug fix does what it claims (syncs an enriched
+vendor twice, asserts the Description section survives the second sync).
 
 ## Next concrete step
 
-Implement `planning/phase-16-retire-depth.md` next — now safe: `core.py`/
-`config.py`/`discovery.py` finally lose `Depth`/`VendorConfig.depth`,
-since Phase 15 removed every remaining behavioral consumer. Same
-pattern: dispatch, re-verify independently (read the diff), doc-sync,
-commit, push. Then 17 through 19, strictly in that order.
+Implement `planning/phase-17-discovery-slash-command.md` next — new
+`commands.py`, `/discovery` generated alongside the tool Skill at the
+same trigger points. Same pattern: dispatch, re-verify independently
+(read the diff), doc-sync, commit, push. Then 18-19, strictly in order.
 
 **Still outstanding, not a blocker but worth remembering:**
 - Once a Rust toolchain is available anywhere in the pipeline,

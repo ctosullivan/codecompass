@@ -7,13 +7,13 @@ import pytest
 import codecompass.adapters.python as python_module
 from codecompass.adapters.base import AdapterError
 from codecompass.adapters.python import PythonAdapter
-from codecompass.core import Depth, Ecosystem, RepositoryLocation, VendorConfig
+from codecompass.core import Ecosystem, RepositoryLocation, VendorConfig
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
 def _adapter(name: str, project_root: Path) -> PythonAdapter:
-    config = VendorConfig(name=name, ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE)
+    config = VendorConfig(name=name, ecosystem=Ecosystem.PYTHON)
     return PythonAdapter(config, project_root=project_root)
 
 
