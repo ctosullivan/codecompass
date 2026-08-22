@@ -665,6 +665,128 @@ several vendors are already `FULL` and a routine `sync` would regenerate
 all of them at once — refusing to run at all (not partially) if the
 projected cost exceeds the cap.
 
+## Context graph (`codecompass.graph`)
+
+**Library only as of Phase 10 — not called from `sync.py` or `cli.py`
+yet.** `codecompass.graph` is the SQLite persistence layer every later
+phase in the v0.2 rework (11-16) builds on: a schema, a set of typed row
+dataclasses that form the insertion contract for a full-rebuild
+orchestrator, and a set of read-only query functions. Phase 11 (usage
+detection) is the first phase to actually populate it from real project
+data and wire it into `sync`'s whole-project path; Phase 15 rewires the
+CLI (`codecompass query`, `check`'s coverage-gap sections) on top of it.
+See [`decisions/0032`](../decisions/0032-context-graph-stored-in-sqlite.md)
+(SQLite over the original `decisions/0024` JSON-file choice) and
+[`decisions/0025`](../decisions/0025-context-graph-rebuilds-only-on-whole-project-sync.md)
+(the rebuild-trigger posture — full rebuild only on whole-project `sync`,
+never incrementally — carried forward unchanged, just retargeted from "one
+JSON file" to "wipe and rewrite every deterministic table").
+
+**Storage**: `context-graph.db` at the project root, one SQLite database.
+Gitignored (extends `decisions/0010`'s existing `vendor/` precedent — a
+deterministic, cheaply regeneratable artifact). `open_graph(project_root:
+Path) -> sqlite3.Connection` is the one function later phases actually
+call to get a working handle: it resolves the db path, connects (creating
+the file if absent), sets `PRAGMA foreign_keys = ON` (SQLite defaults this
+off, and it must be set per-connection, not just once at the file level),
+calls `init_schema`, and returns the connection. `init_schema(conn)` is an
+idempotent `CREATE TABLE IF NOT EXISTS`/`CREATE INDEX IF NOT EXISTS` for
+every table, seeding a `meta.schema_version` row on first call.
+
+**Schema** — nine deterministic tables plus `meta` plus two enrichment
+tables:
+- `vendors`, `source_files`, `symbols` (unique per `(vendor_id, name)`,
+  since symbol names aren't globally unique across vendors) — the graph's
+  nodes.
+- `uses_edges` (`source_file → vendor`/`symbol`, `symbol_id` nullable for
+  a usage that resolves to a vendor but not a specific symbol),
+  `doc_artifacts` (`kind` one of `claude_md`/`overview`/`skill`/
+  `cursor_mdc`; `vendor_id` nullable for tool-level artifacts like the
+  unconditional tool Skill, `decisions/0020`), `documents_edges` (a doc
+  artifact documenting one symbol), `skill_mentions_edges` (a Skill
+  mechanically mentioning a vendor and/or a source file — both nullable,
+  independently), `routes_via_edges` (a vendor routed to a Skill),
+  `depends_on_edges` (vendor-to-vendor dependency) — the graph's edges.
+- `vendor_enrichment`/`symbol_enrichment` — the two tables that **survive
+  every `rebuild_deterministic` call**, holding Phase 14's paid AI
+  enrichment output (`technical_description`, `conversational_overview`,
+  `action_pointer_file`/`action_pointer_note`, plus `symbol_set_hash` and
+  `model`/`generated_at` for cache-key purposes). `DocChunk`/`EXPLAINS`
+  tables from the former phase-9d design are explicitly not part of this
+  schema at all (`decisions/0032`), not even as unused tables.
+
+Every table with a foreign key to `vendors`/`symbols`/`doc_artifacts`/
+`source_files` declares `ON DELETE CASCADE` — deliberate, so
+`rebuild_deterministic` never has to manually clear dependent tables in a
+specific order.
+
+**Row dataclasses reference each other by natural key, not by pre-assigned
+integer id** — `VendorRow` (keyed by `name`), `SourceFileRow` (keyed by
+`path`), `SymbolRow` (keyed by `(vendor_name, name)`), `UsesEdgeRow`,
+`DocArtifactRow` (keyed by `path`), `DocumentsEdgeRow`,
+`SkillMentionEdgeRow`, `RoutesViaEdgeRow`, `DependsOnEdgeRow`. This is a
+deliberate Phase 10 design choice, not spelled out verbatim in the SQL
+schema itself: the detection logic that will construct these rows in
+Phases 11-13 (an AST/regex walk over project source, doc/Skill mapping)
+naturally produces vendor names, file paths, and symbol names — not
+opaque database-assigned ids — and keeping the row dataclasses natural-key-
+shaped means `graph.py` has no import dependency on those not-yet-existing
+modules, avoiding any circular-import risk. `rebuild_deterministic`
+resolves natural keys to integer primary keys internally.
+
+**`rebuild_deterministic(conn, *, vendors, source_files, symbols,
+uses_edges, doc_artifacts, documents_edges, skill_mentions_edges,
+routes_via_edges, depends_on_edges) -> None`** wipes and rewrites every
+deterministic table inside one transaction and updates
+`meta.last_deterministic_rebuild_at`. **Never touches
+`vendor_enrichment`/`symbol_enrichment`** — the mechanical reason Phase
+14's enrichment output survives a later whole-project refresh. Because
+both enrichment tables cascade from `vendors`/`symbols` on delete, "never
+touches" is implemented, not just declared: `vendors` and `symbols` are
+**upserted by their natural key** (`INSERT ... ON CONFLICT(name) DO
+UPDATE`, respectively `ON CONFLICT(vendor_id, name) DO UPDATE`) rather
+than deleted and reinserted, which preserves their integer id across a
+rebuild and leaves any enrichment row referencing that id completely
+untouched. Only a vendor or symbol that no longer appears in the new
+fixture at all is deleted (correctly cascading away its enrichment too,
+since the thing it enriched no longer exists). Every other table
+(`source_files`, `uses_edges`, `doc_artifacts`, and the four edge tables
+other than the ones above) carries no cross-rebuild identity worth
+preserving and is unconditionally cleared and reinserted.
+
+**Query functions**, each a plain read against already-populated tables —
+none of them write, none of them decide staleness:
+- `unused_vendors(conn) -> list[str]` — vendor names with zero
+  `uses_edges` rows anywhere.
+- `documented_but_unused(conn) -> list[tuple[str, str]]` /
+  `used_but_undocumented(conn) -> list[tuple[str, str]]` — `(vendor,
+  symbol)` pairs covering the two one-sided coverage-gap cases.
+- `vendor_profile(conn, name) -> dict | None` — the vendor row plus its
+  symbols, total usage count, documenting artifacts (linked directly or
+  via one of its symbols), routed Skills, and its `depends_on` vendor
+  names; `None` for an unknown name.
+- `symbol_profile(conn, name) -> list[dict]` — every symbol row named
+  `name` across every vendor (symbol names aren't globally unique), each
+  with its own usage count and documenting artifacts.
+- `skills_index(conn) -> list[dict]` — every `doc_artifacts` row with
+  `kind='skill'`, its `origin`, and what it mechanically mentions via
+  `skill_mentions_edges`.
+- `enrichment_candidates(conn) -> list[dict]` — every vendor with at least
+  one `uses_edges` row, its currently-used symbol names, and its existing
+  `vendor_enrichment.symbol_set_hash` if any. `graph.py` deliberately
+  doesn't decide staleness here — Phase 14's `enrichment.py` diffs the
+  returned hash against a freshly-computed one itself.
+
+**`record_enrichment(conn, vendor_id, **fields)` /
+`record_symbol_enrichment(conn, symbol_id, purpose, generated_at)`** are
+the only writers to the two enrichment tables, both upserting (`INSERT ...
+ON CONFLICT DO UPDATE`) so a second call for the same vendor/symbol
+updates in place rather than erroring or duplicating. Kept as separate
+functions from `rebuild_deterministic` on purpose — a deterministic
+rebuild and a paid enrichment write are different trigger points with
+different costs, and conflating them would risk an enrichment write
+becoming implicitly part of the "free, always safe to rerun" rebuild path.
+
 ## Cost model
 
 Structural generation (trees, API-surface extraction, bare `codecompass`'s

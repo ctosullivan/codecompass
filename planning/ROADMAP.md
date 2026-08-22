@@ -47,7 +47,7 @@ only once phase 19 is `done`, not after each individual phase.
 | Phase | Name | Status | Plan file |
 |---|---|---|---|
 | 9 | Rename to codecompass — mechanical only, zero behavior change (decisions/0029) | done | [`phase-9-rename-to-codecompass.md`](phase-9-rename-to-codecompass.md) |
-| 10 | SQLite graph foundation — new `graph.py`: schema, `init_schema`, `rebuild_deterministic`, queries (library only, not CLI-wired yet) (decisions/0032) | planned | [`phase-10-sqlite-graph-foundation.md`](phase-10-sqlite-graph-foundation.md) |
+| 10 | SQLite graph foundation — new `graph.py`: schema, `init_schema`, `rebuild_deterministic`, queries (library only, not CLI-wired yet) (decisions/0032) | done | [`phase-10-sqlite-graph-foundation.md`](phase-10-sqlite-graph-foundation.md) |
 | 11 | Project-source usage detection — new `usage.py` (Python/npm/Rust import + symbol-level detection), wired into `sync.py`'s whole-project path | planned | [`phase-11-project-source-usage-detection.md`](phase-11-project-source-usage-detection.md) |
 | 12 | Doc & wide skill mapping — new `doc_mapping.py` (ports former 9c) + new `skill_scan.py` (project-wide `.claude/skills/**` indexing, not just codecompass-generated skills) | planned | [`phase-12-doc-and-wide-skill-mapping.md`](phase-12-doc-and-wide-skill-mapping.md) |
 | 13 | Universal source cloning — remove the `depth is FULL` gate in `sync.py`/`source_resolution.py`; clone every vendor by default (decisions/0033) | planned | [`phase-13-universal-source-cloning.md`](phase-13-universal-source-cloning.md) |

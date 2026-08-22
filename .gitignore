@@ -31,6 +31,10 @@ Thumbs.db
 # snapshots).
 vendor/
 
+# Context graph — deterministic, cheaply regeneratable via a whole-project
+# sync (see decisions/0032).
+context-graph.db
+
 # Secrets (Anthropic API key, etc.)
 .env
 *.env

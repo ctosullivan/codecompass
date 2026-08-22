@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 10: SQLite graph foundation** — implements
+  `planning/phase-10-sqlite-graph-foundation.md` and `decisions/0032`.
+  New `src/codecompass/graph.py`: the full 9-table + `meta` schema,
+  `init_schema`, `open_graph`, 9 row dataclasses, `rebuild_deterministic`
+  (upserts vendors/symbols by natural key so `vendor_enrichment`/
+  `symbol_enrichment` survive a rebuild despite their `ON DELETE CASCADE`
+  foreign keys — a real bug caught during implementation, not anticipated
+  in the plan, now locked in with dedicated regression tests), 7 query
+  functions (`unused_vendors`, `documented_but_unused`,
+  `used_but_undocumented`, `vendor_profile`, `symbol_profile`,
+  `skills_index`, `enrichment_candidates`), and
+  `record_enrichment`/`record_symbol_enrichment`. Library-only — not yet
+  called from `sync.py`/`cli.py` (starts Phase 11). `context-graph.db`
+  added to `.gitignore`. `pytest`: 241 passed, 1 skipped; `ruff check .`
+  clean.
+
 ### Changed
 
 - **MVP (v0.2) phase order corrected**: "Retire `Depth`" moves from
