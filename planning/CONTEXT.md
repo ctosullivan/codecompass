@@ -6,48 +6,54 @@ for the log of how it got here.
 
 ## Current phase
 
-**Phase 10: SQLite graph foundation — done.** All eight v0.1 MVP phases
-(0-8) and Phase 9 (rename) remain `done`. Executing MVP (v0.2) per
+**Phase 11: Project-source usage detection — done.** Phases 0-9 and 10
+remain `done`. Executing MVP (v0.2) per
 `planning/v0.2-implementation-execution-plan.md`: one implementation
 subagent per phase, independently re-verified, one commit per phase,
 strictly in order.
 
 ## What was just completed
 
-Implemented `planning/phase-10-sqlite-graph-foundation.md`: new
-`src/codecompass/graph.py` — SQLite schema (9 tables + `meta`),
-`init_schema`, `open_graph`, 9 row dataclasses, `rebuild_deterministic`,
-7 query functions, `record_enrichment`/`record_symbol_enrichment`.
-Library-only — not yet called from `sync.py`/`cli.py` (Phase 11+).
+Implemented `planning/phase-11-project-source-usage-detection.md`: new
+`src/codecompass/usage.py` (`detect_python_imports`/`detect_npm_imports`/
+`detect_rust_imports`/`detect_imports_for_file`/`resolve_project_usage`,
+`DetectedImport`), `filetree._iter_files` made public as
+`iter_source_files` with configurable `prune_dirs`/`prune_globs` (zero
+behavior change for existing callers), new `sync.rebuild_project_graph`
+wired into `cli.py` at exactly two whole-project call sites (`_bootstrap`
+with the full tracked vendor list, `sync`'s no-vendor-arg branch only).
 
-One real bug caught and fixed during implementation, not anticipated in
-the plan: the schema's `ON DELETE CASCADE` from `vendors`/`symbols` to
-`vendor_enrichment`/`symbol_enrichment` means a naive wipe-and-reinsert
-of `vendors`/`symbols` on every rebuild would cascade-delete enrichment
-too — directly contradicting the plan's "never touches enrichment"
-requirement. Fixed by upserting vendors/symbols by natural key (name),
-which preserves their integer id across a rebuild when the vendor/symbol
-still exists, so referencing enrichment rows are never cascaded; only a
-vendor/symbol genuinely absent from the new fixture is deleted (correctly
-cascading its now-orphaned enrichment away). Locked in with dedicated
-tests. `graph.py`'s module docstring and `rebuild_deterministic`'s
-docstring both explain this.
+Verified independently: `pytest` 270 passed/1 skipped, `ruff check .`
+clean, `git diff --stat` matches the plan's Files list plus one
+necessary, minimal test fix outside it (`tests/test_cli.py` — an
+existing test faked `sync_all` but not the new `rebuild_project_graph`
+call site, needed one line stubbing it; read the diff directly, confirmed
+it's exactly that and nothing more). Manually reviewed `usage.py` in
+full: sound design, correctly handles mixed-ecosystem projects (tries
+every ecosystem's suffix-gated detector per file), Rust `use crate::X`
+pattern generalized sensibly to real crate names, relative Python imports
+correctly excluded (can never name an external vendor). One reasoned
+judgment call worth remembering: `rebuild_project_graph` lets
+`AdapterError` propagate uncaught rather than isolating it per-vendor —
+deliberate, because `rebuild_deterministic` deletes any vendor absent
+from the incoming list, cascading away its `vendor_enrichment` rows;
+silently swallowing a transient adapter error would permanently destroy
+paid enrichment data, so a hard failure was judged safer than silent data
+loss.
 
-Verified independently (not just the implementing subagent's own
-report, per the execution plan): `pytest` 241 passed/1 skipped, `ruff
-check .` clean, `git diff --stat` matches exactly the plan's Files list
-(`.gitignore`, `architecture/overview.md`, new `graph.py` + `test_graph.py`
-— nothing else touched), and a manual read of `graph.py` confirmed
-parameterized queries throughout (the two internal f-string uses are over
-fixed table/column-name literals, never external input).
+Manually confirmed against this repo itself: `rich`/`typer`/`anthropic`
+all show real usage edges with correct symbol-level resolution (e.g.
+`from rich.console import Console` in `chat.py` resolves to `rich`'s own
+`Console` symbol); `pipdeptree` correctly shows zero uses (invoked as a
+subprocess, never imported); single-vendor `sync rich` left
+`context-graph.db`'s mtime unchanged, confirming `decisions/0025`'s
+posture holds under the new storage backend.
 
 ## Next concrete step
 
-Implement `planning/phase-11-project-source-usage-detection.md` next
-(per `planning/v0.2-implementation-execution-plan.md`'s pattern: dispatch
-one implementation subagent, re-verify independently, doc-sync, commit,
-push). Then 12 through 19, strictly in that order — each phase's plan
-assumes the previous ones' code already exists.
+Implement `planning/phase-12-doc-and-wide-skill-mapping.md` next (same
+pattern: dispatch, re-verify independently, doc-sync, commit, push).
+Then 13 through 19, strictly in that order.
 
 **Still outstanding, not a blocker but worth remembering:**
 - Once a Rust toolchain is available anywhere in the pipeline,

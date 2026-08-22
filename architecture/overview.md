@@ -667,15 +667,17 @@ projected cost exceeds the cap.
 
 ## Context graph (`codecompass.graph`)
 
-**Library only as of Phase 10 — not called from `sync.py` or `cli.py`
-yet.** `codecompass.graph` is the SQLite persistence layer every later
-phase in the v0.2 rework (11-16) builds on: a schema, a set of typed row
+**As of Phase 11, wired into both whole-project call sites — not yet
+CLI-visible.** `codecompass.graph` is the SQLite persistence layer every
+phase in the v0.2 rework (10-16) builds on: a schema, a set of typed row
 dataclasses that form the insertion contract for a full-rebuild
-orchestrator, and a set of read-only query functions. Phase 11 (usage
-detection) is the first phase to actually populate it from real project
-data and wire it into `sync`'s whole-project path; Phase 15 rewires the
-CLI (`codecompass query`, `check`'s coverage-gap sections) on top of it.
-See [`decisions/0032`](../decisions/0032-context-graph-stored-in-sqlite.md)
+orchestrator, and a set of read-only query functions. Phase 10 built it as
+a standalone library; Phase 11 is the first phase to actually populate it
+from real project data — `sync.rebuild_project_graph` (below) — and call
+that from `cli.py`'s two whole-project call sites. `codecompass query` and
+`check`'s coverage-gap sections reading from it is still Phase 15's job;
+until then the graph is written but nothing reads it back through the
+CLI. See [`decisions/0032`](../decisions/0032-context-graph-stored-in-sqlite.md)
 (SQLite over the original `decisions/0024` JSON-file choice) and
 [`decisions/0025`](../decisions/0025-context-graph-rebuilds-only-on-whole-project-sync.md)
 (the rebuild-trigger posture — full rebuild only on whole-project `sync`,
@@ -786,6 +788,81 @@ functions from `rebuild_deterministic` on purpose — a deterministic
 rebuild and a paid enrichment write are different trigger points with
 different costs, and conflating them would risk an enrichment write
 becoming implicitly part of the "free, always safe to rerun" rebuild path.
+
+### Project-source usage detection (`codecompass.usage`)
+
+**New in Phase 11 — the first module to inspect the *consuming project's*
+source at all.** `symbols.py`'s extractors run in the opposite direction
+(pulling symbols *out of* a vendor's own source); `usage.py` walks the
+project's own source tree looking for imports *of* a tracked vendor.
+`DetectedImport(vendor, symbol_name, line)` — `symbol_name=None` is the
+vendor-level fallback for an import that doesn't resolve to one specific
+bound name (`import rich`, `use serde::*;`, `require("pkg")`). One no-AI,
+no-subprocess detector per ecosystem, each `Path -> list[DetectedImport]`:
+`detect_python_imports` (`ast`-based; `import` is vendor-level, `from X
+import Y` captures one entry per bound name off `X`'s first dotted
+component; relative imports are skipped outright — they can never name an
+external vendor); `detect_npm_imports` (regex over named/default/
+namespace `import` and `require()` forms, same coarse-regex posture
+already accepted for `extract_npm_symbols`); `detect_rust_imports` (regex
+over `use vendor::Symbol;` / `use vendor::*;` / `use vendor;`).
+`detect_imports_for_file(path, ecosystem)` dispatches by ecosystem and
+file suffix, mirroring `symbols.extract_symbols_for_file`'s dispatch
+shape; every detector never raises, returning `[]` for an unparseable
+file, the same convention `symbols.py` established.
+
+`resolve_project_usage(project_root, configs) -> list[tuple[str,
+DetectedImport]]` walks `project_root` via
+`filetree.iter_source_files(project_root, prune_dirs=
+_PROJECT_PRUNE_DIR_NAMES)` — deliberately **not**
+`filetree._PRUNE_DIR_NAMES`: a project's own `tests`/`fixtures` importing
+a vendor is real usage signal, so `usage.py`'s prune set drops only
+build/dependency noise (`node_modules`, `dist`, `build`, `.git`,
+`__pycache__`, `.venv`, `venv`), never test directories. This is exactly
+why `filetree._iter_files` became the public, parameterizable
+`iter_source_files(root, *, prune_dirs=..., prune_globs=...)` in this same
+phase — same deterministic sorted-and-pruned walk shape, reused with a
+different prune set, rather than a second copy of the walk logic. Results
+are filtered to only vendor names present in `configs` — an import of an
+untracked package isn't this project's concern. `usage.py` has no
+`graph.py` dependency (it only detects and filters against `configs`),
+keeping it independently unit-testable; symbol-name-to-`symbol_id`
+resolution happens one layer up, in `sync.py`.
+
+### Populating the graph (`sync.rebuild_project_graph`)
+
+`rebuild_project_graph(configs: list[VendorConfig], project_root: Path) ->
+None`, added to `sync.py` in Phase 11: for **every** tracked vendor in
+`configs` (not just ones a particular `sync_all` call touched — the graph
+must reflect the full current state regardless of which vendors were just
+resynced), reads `installed_version()`/`repository_url()` (both
+already-existing, no-network adapter methods) and collects that vendor's
+own symbol list via the same `iter_source_files` + `extract_symbols_for_file`
+pairing `build_symbol_index` already uses internally — reused, not
+duplicated, just captured as structured `Symbol` objects instead of a
+rendered string. Then `usage.resolve_project_usage` detects the project's
+imports, and each `DetectedImport.symbol_name` is resolved against the
+matching vendor's just-collected symbol names: a match becomes a
+symbol-level `UsesEdgeRow`, no match (or `symbol_name=None` to begin with)
+stays a vendor-level fallback edge, matching `uses_edges.symbol_id`'s
+nullability (`decisions/0031`). `graph.open_graph` +
+`graph.rebuild_deterministic` then writes it all in one transaction —
+`doc_artifacts`/`documents_edges`/`skill_mentions_edges`/
+`routes_via_edges`/`depends_on_edges` all pass empty lists this phase;
+Phase 12 extends this same call site with real data for those five.
+
+**Deliberately decoupled from `sync_all`'s per-vendor loop, not threaded
+through it as a flag** — `sync_all` is sometimes called with a *subset* of
+configs (bare bootstrap's `new_configs` only) even on a whole-project run,
+but the graph needs *every* tracked vendor's data regardless. `cli.py`
+calls `rebuild_project_graph` explicitly at its two whole-project call
+sites, each with the *full* tracked config list: `_bootstrap`, after
+`write_tool_skill`, with `all_configs`; the `sync` command, only when
+`vendor is None` (the whole-project branch — matching `decisions/0025`'s
+existing rebuild-trigger posture, carried into `decisions/0032`), with
+`configs` right after `sync_all` succeeds. `sync <vendor>` (single-vendor)
+and `check --fix`'s per-vendor loop (already calling `sync_vendor`
+directly, never `sync_all`) leave the graph untouched.
 
 ## Cost model
 

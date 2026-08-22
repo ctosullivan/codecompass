@@ -4,10 +4,11 @@ from pathlib import Path
 import pytest
 
 import codecompass.sync as sync_module
-from codecompass.core import DepNode, Depth, Ecosystem, VendorConfig
+from codecompass.core import DepNode, Depth, Ecosystem, RepositoryLocation, VendorConfig
+from codecompass.graph import open_graph, unused_vendors, vendor_profile
 from codecompass.grounded_description import GroundedDescription, GroundedDescriptionError
 from codecompass.source_resolution import SourceResolutionError
-from codecompass.sync import sync_all, sync_vendor
+from codecompass.sync import rebuild_project_graph, sync_all, sync_vendor
 
 
 class _FakeAdapter:
@@ -20,6 +21,7 @@ class _FakeAdapter:
         api_surface: str = "some_fn: does a thing.",
         tree: DepNode | None = None,
         source_dir: Path | None = None,
+        repository: RepositoryLocation | None = None,
     ) -> None:
         self.config = config
         self.project_root = project_root
@@ -27,6 +29,7 @@ class _FakeAdapter:
         self._api_surface = api_surface
         self._tree = tree or DepNode(name=config.name, version=version)
         self._source_dir = source_dir or project_root
+        self._repository = repository
 
     def installed_version(self) -> str:
         return self._version
@@ -39,6 +42,9 @@ class _FakeAdapter:
 
     def dependency_tree(self) -> DepNode:
         return self._tree
+
+    def repository_url(self) -> RepositoryLocation | None:
+        return self._repository
 
 
 def _build_source_tree(root: Path) -> Path:
@@ -312,3 +318,109 @@ def test_sync_all_syncs_every_config(monkeypatch: pytest.MonkeyPatch, tmp_path: 
     assert [d.config.name for d in digests] == ["a", "b"]
     assert (tmp_path / "vendor" / "a" / "CLAUDE.md").exists()
     assert (tmp_path / "vendor" / "b" / "CLAUDE.md").exists()
+
+
+# --- rebuild_project_graph ----------------------------------------------------
+
+
+def test_rebuild_project_graph_records_vendor_and_resolved_symbol_usage(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = tmp_path / "vendor_src"
+    src.mkdir()
+    (src / "__init__.py").write_text(
+        '"""Demo vendor."""\n\ndef greet():\n    """Say hi."""\n    pass\n', encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        sync_module,
+        "get_adapter",
+        lambda config, project_root: _FakeAdapter(
+            config,
+            project_root,
+            version="3.1.4",
+            source_dir=src,
+            repository=RepositoryLocation(url="https://example.com/demo.git"),
+        ),
+    )
+    (tmp_path / "app.py").write_text("from demo import greet\n", encoding="utf-8")
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE)
+
+    rebuild_project_graph([config], tmp_path)
+
+    conn = open_graph(tmp_path)
+    profile = vendor_profile(conn, "demo")
+    assert profile is not None
+    assert profile["vendor"]["installed_version"] == "3.1.4"
+    assert profile["vendor"]["repository_url"] == "https://example.com/demo.git"
+    assert profile["vendor"]["ecosystem"] == "python"
+    assert profile["usage_count"] == 1
+    assert [s["name"] for s in profile["symbols"]] == ["greet"]
+
+
+def test_rebuild_project_graph_includes_unused_vendor_with_zero_usage(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE)
+
+    rebuild_project_graph([config], tmp_path)
+
+    conn = open_graph(tmp_path)
+    assert unused_vendors(conn) == ["demo"]
+
+
+def test_rebuild_project_graph_unresolved_symbol_name_stays_vendor_level_edge(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = tmp_path / "vendor_src"
+    src.mkdir()
+    (src / "__init__.py").write_text("def known(): ...\n", encoding="utf-8")
+    _patch_adapter(monkeypatch, source_dir=src)
+    (tmp_path / "app.py").write_text("from demo import unknown_symbol\n", encoding="utf-8")
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE)
+
+    rebuild_project_graph([config], tmp_path)
+
+    conn = open_graph(tmp_path)
+    (symbol_id,) = conn.execute("SELECT symbol_id FROM uses_edges").fetchone()
+    assert symbol_id is None
+
+
+def test_rebuild_project_graph_scans_project_tests_directory(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = tmp_path / "vendor_src"
+    src.mkdir()
+    (src / "__init__.py").write_text("def greet(): ...\n", encoding="utf-8")
+    _patch_adapter(monkeypatch, source_dir=src)
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    (tests_dir / "test_app.py").write_text("from demo import greet\n", encoding="utf-8")
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE)
+
+    rebuild_project_graph([config], tmp_path)
+
+    conn = open_graph(tmp_path)
+    (path,) = conn.execute("SELECT path FROM source_files").fetchone()
+    assert path == "tests/test_app.py"
+
+
+def test_rebuild_project_graph_reflects_full_tracked_list_not_a_subset(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The graph must represent every tracked vendor passed in, regardless
+    of whether this particular run is what synced each one's files.
+    """
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    configs = [
+        VendorConfig(name="a", ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE),
+        VendorConfig(name="b", ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE),
+    ]
+
+    rebuild_project_graph(configs, tmp_path)
+
+    conn = open_graph(tmp_path)
+    names = {name for (name,) in conn.execute("SELECT name FROM vendors")}
+    assert names == {"a", "b"}

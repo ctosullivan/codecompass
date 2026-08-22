@@ -7,7 +7,7 @@ No AI calls, runs regardless of `depth`. See architecture/overview.md's
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 
 from codecompass.core import Ecosystem
@@ -30,26 +30,36 @@ _PRUNE_FILE_GLOBS = ("*.min.js", "*.map")
 _SYMBOL_INDEX_CAP = 200
 
 
-def _is_pruned_dir(part: str) -> bool:
-    return part in _PRUNE_DIR_NAMES
+def _is_pruned_dir(part: str, prune_dirs: Iterable[str]) -> bool:
+    return part in prune_dirs
 
 
-def _is_pruned_file(path: Path) -> bool:
-    return any(path.match(glob) for glob in _PRUNE_FILE_GLOBS)
+def _is_pruned_file(path: Path, prune_globs: Iterable[str]) -> bool:
+    return any(path.match(glob) for glob in prune_globs)
 
 
-def _iter_files(root: Path) -> Iterator[Path]:
-    """Deterministic (sorted), pruned walk of `root`. Directories in
-    `_PRUNE_DIR_NAMES` and files matching `_PRUNE_FILE_GLOBS` are skipped
-    — noise that adds tokens without adding navigation value.
+def iter_source_files(
+    root: Path,
+    *,
+    prune_dirs: Iterable[str] = _PRUNE_DIR_NAMES,
+    prune_globs: Iterable[str] = _PRUNE_FILE_GLOBS,
+) -> Iterator[Path]:
+    """Deterministic (sorted), pruned walk of `root`. Directories named in
+    `prune_dirs` and files matching `prune_globs` are skipped — noise that
+    adds tokens without adding navigation value. Defaults to this module's
+    own vendor-source-oriented prune sets, so the three existing callers
+    below are unaffected; `usage.py` (Phase 11) reuses this same walk shape
+    for the *consuming project's* source tree with its own, different
+    prune set (a project's own tests are real usage signal, unlike a
+    vendor's).
     """
     for path in sorted(root.rglob("*")):
         if not path.is_file():
             continue
         rel_parts = path.relative_to(root).parts[:-1]
-        if any(_is_pruned_dir(part) for part in rel_parts):
+        if any(_is_pruned_dir(part, prune_dirs) for part in rel_parts):
             continue
-        if _is_pruned_file(path):
+        if _is_pruned_file(path, prune_globs):
             continue
         yield path
 
@@ -68,7 +78,7 @@ def render_filetree_markdown(
     """
     pointer_path, pointer_note = action_pointer if action_pointer else (None, None)
     lines: list[str] = []
-    for path in _iter_files(root):
+    for path in iter_source_files(root):
         rel = path.relative_to(root).as_posix()
         purpose = purpose_for_file(path, ecosystem)
         line = f"- {rel}  — {purpose}" if purpose else f"- {rel}"
@@ -86,7 +96,7 @@ def render_filetree_json(
     """
     pointer_path, pointer_note = action_pointer if action_pointer else (None, None)
     entries = []
-    for path in _iter_files(root):
+    for path in iter_source_files(root):
         rel = path.relative_to(root).as_posix()
         entry = {"path": rel, "purpose": purpose_for_file(path, ecosystem)}
         if rel == pointer_path:
@@ -103,7 +113,7 @@ def build_symbol_index(root: Path, ecosystem: Ecosystem) -> str:
     exceeded — never a silent truncation.
     """
     entries: list[tuple[str, str]] = []
-    for path in _iter_files(root):
+    for path in iter_source_files(root):
         rel = path.relative_to(root).as_posix()
         for symbol in extract_symbols_for_file(path, ecosystem):
             entries.append((symbol.name, rel))

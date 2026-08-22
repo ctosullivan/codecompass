@@ -30,7 +30,7 @@ from codecompass.grounded_description import GroundedDescriptionError, estimate_
 from codecompass.index import load_routing_rows, render_routing_table, update_root_claude_md
 from codecompass.skill import write_cursor_mdc, write_tool_skill, write_vendor_skill
 from codecompass.staleness import Severity, VendorStaleness, check_all
-from codecompass.sync import sync_all, sync_vendor
+from codecompass.sync import rebuild_project_graph, sync_all, sync_vendor
 
 app = typer.Typer(
     help="Grounded, version-pinned dependency reference docs for AI coding agents."
@@ -93,6 +93,7 @@ def _bootstrap(project_root: Path) -> None:
     rows = load_routing_rows(all_configs, project_root)
     update_root_claude_md(project_root, render_routing_table(rows))
     write_tool_skill(project_root, all_configs)
+    rebuild_project_graph(all_configs, project_root)
 
     console.print(
         f"[green]bootstrapped[/green] {vendor_toml} — {len(all_configs)} vendor(s) "
@@ -149,6 +150,10 @@ def sync(
     except GroundedDescriptionError as exc:
         console.print(f"[red]error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
+    if vendor is None:
+        # Whole-project sync only (decisions/0025) — `sync <vendor>` and
+        # `check --fix`'s per-vendor loop leave the graph untouched.
+        rebuild_project_graph(configs, Path.cwd())
     failed = False
     for digest in digests:
         if digest.description_error:

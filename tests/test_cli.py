@@ -208,6 +208,11 @@ def test_sync_reports_description_failure_and_exits_nonzero(
         ]
 
     monkeypatch.setattr(cli_module, "sync_all", _fake_sync_all)
+    # Whole-project `sync` also rebuilds context-graph.db (Phase 11), which
+    # needs a real adapter for "turndown" — not installed in this fixture
+    # and irrelevant to what this test actually verifies (the CLI's
+    # digest-error reporting), so it's stubbed out here too.
+    monkeypatch.setattr(cli_module, "rebuild_project_graph", lambda configs, project_root: None)
 
     result = runner.invoke(app, ["sync"])
 

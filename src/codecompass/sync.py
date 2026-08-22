@@ -7,9 +7,14 @@ analysis, decisions/0019), a `vendor/<name>/src/` snapshot for `depth =
 full` vendors (now sourced from the vendor's own upstream repository via
 `codecompass.source_resolution`, not the local install — decisions/0021),
 and per-vendor `CLAUDE.md` templating — writing everything under
-`vendor/<name>/`. See planning/phase-4-sync-index-init.md,
-planning/phase-5-gap-analysis.md, and
-planning/phase-7-bootstrap-and-promote.md.
+`vendor/<name>/`. Also `rebuild_project_graph` (Phase 11), which rebuilds
+`context-graph.db` from every tracked vendor's current state plus a fresh
+project-source usage scan — decoupled from `sync_all`'s per-vendor loop on
+purpose (see planning/phase-11-project-source-usage-detection.md's Design
+decisions) and called only from the two whole-project call sites in
+`cli.py`. See planning/phase-4-sync-index-init.md,
+planning/phase-5-gap-analysis.md, planning/phase-7-bootstrap-and-promote.md,
+and planning/phase-11-project-source-usage-detection.md.
 """
 
 from __future__ import annotations
@@ -18,17 +23,32 @@ import json
 import shutil
 from pathlib import Path
 
-from codecompass.adapters import get_adapter
+from codecompass import usage
+from codecompass.adapters import EcosystemAdapter, get_adapter
 from codecompass.claude_md import render_vendor_claude_md
 from codecompass.core import Depth, VendorConfig, VendorDigest
 from codecompass.deptree import render_deptree_json, render_deptree_markdown
-from codecompass.filetree import build_symbol_index, render_filetree_json, render_filetree_markdown
+from codecompass.filetree import (
+    build_symbol_index,
+    iter_source_files,
+    render_filetree_json,
+    render_filetree_markdown,
+)
+from codecompass.graph import (
+    SourceFileRow,
+    SymbolRow,
+    UsesEdgeRow,
+    VendorRow,
+    open_graph,
+    rebuild_deterministic,
+)
 from codecompass.grounded_description import (
     GroundedDescriptionError,
     check_budget,
     generate_grounded_description,
 )
 from codecompass.source_resolution import SourceResolutionError, resolve_and_clone
+from codecompass.symbols import Symbol, extract_symbols_for_file
 
 _SNAPSHOT_PRUNE_NAMES = ("node_modules", "dist", "build", ".git", "__pycache__", ".venv", "venv")
 
@@ -146,6 +166,95 @@ def _render_filetree_with_symbol_index(
     if not symbol_index:
         return tree_markdown
     return f"{tree_markdown}\n\n## Symbol index\n\n{symbol_index}"
+
+
+def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> None:
+    """Rebuild `context-graph.db` from **every** tracked vendor's current
+    state (not just ones `sync_vendor` touched this run — the graph must
+    reflect the full current state regardless of which vendors were just
+    resynced) plus a fresh scan of the project's own source for vendor
+    usage.
+
+    For each config: read `installed_version()`/`repository_url()` (both
+    already-existing, no-network-call adapter methods) and collect that
+    vendor's own symbol list via the same walk+extract pairing
+    `build_symbol_index` already does internally, just captured as
+    structured `Symbol` objects instead of a rendered string. Then
+    `usage.resolve_project_usage` detects the project's imports, and each
+    `DetectedImport.symbol_name` is resolved against the matching vendor's
+    collected symbol list by name — unresolved or no match stays a
+    vendor-level fallback edge (`symbol_name=None`), matching
+    `uses_edges.symbol_id`'s nullability (`decisions/0031`).
+
+    The doc/skill-mapping tables stay empty here — Phase 12 extends this
+    same call site with real data.
+    """
+    vendor_rows: list[VendorRow] = []
+    symbol_rows: list[SymbolRow] = []
+    vendor_symbol_names: dict[str, set[str]] = {}
+
+    for config in configs:
+        adapter = get_adapter(config, project_root)
+        repository = adapter.repository_url()
+        vendor_rows.append(
+            VendorRow(
+                name=config.name,
+                ecosystem=config.ecosystem.value,
+                installed_version=adapter.installed_version(),
+                repository_url=repository.url if repository else None,
+                repository_subdirectory=repository.subdirectory if repository else None,
+            )
+        )
+        symbols = _collect_vendor_symbols(adapter, config)
+        vendor_symbol_names[config.name] = {s.name for s in symbols}
+        for symbol in symbols:
+            symbol_rows.append(
+                SymbolRow(vendor_name=config.name, name=symbol.name, purpose=symbol.purpose)
+            )
+
+    source_file_paths: set[str] = set()
+    uses_edge_rows: list[UsesEdgeRow] = []
+    for rel_path, detected in usage.resolve_project_usage(project_root, configs):
+        source_file_paths.add(rel_path)
+        known_names = vendor_symbol_names.get(detected.vendor, set())
+        symbol_name = detected.symbol_name if detected.symbol_name in known_names else None
+        uses_edge_rows.append(
+            UsesEdgeRow(
+                source_file_path=rel_path,
+                vendor_name=detected.vendor,
+                symbol_name=symbol_name,
+                line=detected.line,
+            )
+        )
+    source_file_rows = [SourceFileRow(path=p) for p in sorted(source_file_paths)]
+
+    conn = open_graph(project_root)
+    try:
+        rebuild_deterministic(
+            conn,
+            vendors=vendor_rows,
+            source_files=source_file_rows,
+            symbols=symbol_rows,
+            uses_edges=uses_edge_rows,
+            doc_artifacts=[],
+            documents_edges=[],
+            skill_mentions_edges=[],
+            routes_via_edges=[],
+            depends_on_edges=[],
+        )
+    finally:
+        conn.close()
+
+
+def _collect_vendor_symbols(adapter: EcosystemAdapter, config: VendorConfig) -> list[Symbol]:
+    """Same walk+extract pairing `build_symbol_index` uses internally,
+    reused rather than duplicated — captured as structured `Symbol`
+    objects instead of a rendered string.
+    """
+    symbols: list[Symbol] = []
+    for path in iter_source_files(adapter.source_location()):
+        symbols.extend(extract_symbols_for_file(path, config.ecosystem))
+    return symbols
 
 
 def _copy_source_snapshot(source: Path, dest: Path) -> None:

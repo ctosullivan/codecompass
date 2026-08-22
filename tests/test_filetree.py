@@ -4,6 +4,7 @@ import codecompass.filetree as filetree_module
 from codecompass.core import Ecosystem
 from codecompass.filetree import (
     build_symbol_index,
+    iter_source_files,
     render_filetree_json,
     render_filetree_markdown,
 )
@@ -138,6 +139,39 @@ def test_render_filetree_markdown_no_action_pointer_leaves_output_unchanged(
 
     assert with_none == without_arg
     assert "ACTION TARGET" not in with_none
+
+
+def test_iter_source_files_default_args_match_original_prune_behavior(tmp_path: Path) -> None:
+    """Regression: `_iter_files` -> `iter_source_files` (Phase 11) must be
+    byte-identical for every existing caller when no override is passed.
+    """
+    _build_pruned_sample_tree(tmp_path)
+
+    paths = {p.name for p in iter_source_files(tmp_path)}
+
+    assert "index.py" in paths
+    assert "foo.js" not in paths  # node_modules pruned
+    assert "bundle.js" not in paths  # dist pruned
+    assert "lib.min.js" not in paths  # *.min.js glob pruned
+
+
+def test_iter_source_files_accepts_prune_overrides(tmp_path: Path) -> None:
+    (tmp_path / "keep.py").write_text("x = 1\n", encoding="utf-8")
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_keep.py").write_text("x = 1\n", encoding="utf-8")
+    (tmp_path / "node_modules").mkdir()
+    (tmp_path / "node_modules" / "noise.js").write_text("x = 1;\n", encoding="utf-8")
+
+    paths = {
+        p.relative_to(tmp_path).as_posix()
+        for p in iter_source_files(tmp_path, prune_dirs={"node_modules"})
+    }
+
+    # Default prune set excludes "tests"; the override here doesn't, so it
+    # must show up — proving the parameter actually changes behavior.
+    assert "tests/test_keep.py" in paths
+    assert "keep.py" in paths
+    assert "node_modules/noise.js" not in paths
 
 
 def test_render_filetree_json_marks_action_pointer_on_matching_entry(tmp_path: Path) -> None:

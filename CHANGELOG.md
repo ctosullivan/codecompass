@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 11: project-source usage detection** — implements
+  `planning/phase-11-project-source-usage-detection.md`. New
+  `src/codecompass/usage.py`: `detect_python_imports` (`ast`-based),
+  `detect_npm_imports`/`detect_rust_imports` (regex), `DetectedImport`,
+  `resolve_project_usage`. `filetree._iter_files` made public as
+  `iter_source_files(root, *, prune_dirs=..., prune_globs=...)`, zero
+  behavior change for existing callers. New
+  `sync.rebuild_project_graph`, wired into `cli.py` at exactly two
+  whole-project call sites (bare bootstrap, `sync` with no vendor arg) —
+  `sync <vendor>` and `check --fix` leave the graph untouched, per
+  `decisions/0025`. Manually confirmed against this repo's own source:
+  correct symbol-level resolution (e.g. `rich.console.Console`), correct
+  zero-usage detection for a subprocess-only dependency (`pipdeptree`),
+  and single-vendor sync leaves `context-graph.db` untouched. `pytest`:
+  270 passed, 1 skipped; `ruff check .` clean.
+
 - **Phase 10: SQLite graph foundation** — implements
   `planning/phase-10-sqlite-graph-foundation.md` and `decisions/0032`.
   New `src/codecompass/graph.py`: the full 9-table + `meta` schema,
