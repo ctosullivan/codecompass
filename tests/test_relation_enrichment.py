@@ -188,6 +188,91 @@ def test_select_candidates_skips_spec_doc_missing_from_disk(tmp_path: Path) -> N
     assert select_candidates(conn, tmp_path) == []
 
 
+# --- select_candidates: excerpt centering (Phase 28) -------------------------
+
+# Padding with no "demo"/"codecompass-demo" substring, well past
+# `_SPEC_DOC_EXCERPT_CHAR_CAP` (4,000) — reproduces the exact scenario the
+# phase plan found in this repo's own graph: a mechanical mention sitting
+# well after the file's opening window.
+_PADDING = "filler content far from the mention. " * 150
+assert len(_PADDING) > relation_enrichment_module._SPEC_DOC_EXCERPT_CHAR_CAP
+
+
+def test_select_candidates_excerpt_centers_on_dependency_match_past_the_cap(
+    tmp_path: Path,
+) -> None:
+    spec_doc_text = (
+        _PADDING + "The demo library powers HTTP calls in this project. " + "more " * 50
+    )
+    conn = open_graph(tmp_path)
+    _seed_relation_graph(conn, tmp_path, spec_doc_text=spec_doc_text)
+
+    candidates = select_candidates(conn, tmp_path)
+
+    dependency_candidate = next(c for c in candidates if c.relation_kind == "mentions_dependency")
+    assert "demo library powers HTTP calls" in dependency_candidate.source_excerpt
+    # Not just the file's opening window -- that window never mentions
+    # "demo" at all, which is the whole bug this phase fixes.
+    assert "demo" not in spec_doc_text[: relation_enrichment_module._SPEC_DOC_EXCERPT_CHAR_CAP]
+
+
+def test_select_candidates_excerpt_centers_on_artifact_match_past_the_cap(
+    tmp_path: Path,
+) -> None:
+    spec_doc_text = (
+        _PADDING
+        + "See codecompass-demo for details on the HTTP client wiring. "
+        + "more " * 50
+    )
+    conn = open_graph(tmp_path)
+    _seed_relation_graph(conn, tmp_path, spec_doc_text=spec_doc_text)
+
+    candidates = select_candidates(conn, tmp_path)
+
+    artifact_candidate = next(c for c in candidates if c.relation_kind == "mentions_artifact")
+    assert "codecompass-demo for details" in artifact_candidate.source_excerpt
+    assert (
+        "codecompass-demo"
+        not in spec_doc_text[: relation_enrichment_module._SPEC_DOC_EXCERPT_CHAR_CAP]
+    )
+
+
+def test_select_candidates_excerpt_falls_back_when_needle_not_found(tmp_path: Path) -> None:
+    """A relationship whose needle can't be re-found in the current source
+    text (the file changed since the graph rebuild that detected it, an
+    edge case the phase plan calls out explicitly) degrades gracefully to
+    the original first-N-characters excerpt instead of raising.
+    """
+    spec_doc_text = "This document no longer mentions either target by name."
+    conn = open_graph(tmp_path)
+    _seed_relation_graph(conn, tmp_path, spec_doc_text=spec_doc_text)
+
+    candidates = select_candidates(conn, tmp_path)
+
+    assert len(candidates) == 2
+    for candidate in candidates:
+        assert candidate.source_excerpt == (
+            spec_doc_text[: relation_enrichment_module._SPEC_DOC_EXCERPT_CHAR_CAP]
+        )
+
+
+def test_select_candidates_excerpt_unchanged_when_match_already_near_the_start(
+    tmp_path: Path,
+) -> None:
+    """Regression: a needle that already sits within the first
+    `_SPEC_DOC_EXCERPT_CHAR_CAP` characters still produces an excerpt
+    containing it -- centering must not break the already-working case.
+    """
+    conn = open_graph(tmp_path)
+    _seed_relation_graph(conn, tmp_path)  # default _SPEC_DOC_TEXT, mention near byte 0
+
+    candidates = select_candidates(conn, tmp_path)
+
+    by_kind = {c.relation_kind: c for c in candidates}
+    assert "demo for HTTP calls" in by_kind["mentions_dependency"].source_excerpt
+    assert "codecompass-demo" in by_kind["mentions_artifact"].source_excerpt
+
+
 # --- plan_batches -------------------------------------------------------------
 
 

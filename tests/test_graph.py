@@ -931,9 +931,15 @@ def test_relation_enrichment_candidates_lists_both_relation_kinds(tmp_path) -> N
     assert by_kind["mentions_dependency"]["source_doc_path"] == _SPEC_DOC_PATH
     assert by_kind["mentions_dependency"]["target_vendor_name"] == "used-lib"
     assert by_kind["mentions_dependency"]["target_doc_path"] is None
+    assert by_kind["mentions_dependency"]["target_doc_artifact_name"] is None
     assert by_kind["mentions_dependency"]["content_hash"] is None
     assert by_kind["mentions_artifact"]["target_doc_path"] == _SKILL_PATH
     assert by_kind["mentions_artifact"]["target_vendor_name"] is None
+    # Phase 28: the target doc artifact's own `name` field (the literal
+    # `doc_mapping.build_doc_relations_edges` word-boundary-matched),
+    # distinct from its `path` above — `select_candidates` needs this to
+    # re-find the same mechanical match and center the excerpt on it.
+    assert by_kind["mentions_artifact"]["target_doc_artifact_name"] == "used-lib skill"
     assert by_kind["mentions_artifact"]["content_hash"] is None
 
 

@@ -7,7 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Fixed
+
+- **Phase 28**: `relation_enrichment.select_candidates` no longer always
+  sends the spec doc's first 4,000 characters as AI grounding — it now
+  re-derives the mechanical match's position (the same needle and regex
+  shape `doc_mapping.build_doc_relations_edges` used to detect the
+  relationship) and centers a 4,000-character window on it, falling back
+  to the old first-N-characters slice only if the needle can no longer be
+  found. Fixes a real, reproduced bug: this repo's own two currently-
+  enriched `"anthropic README.md"` relationships had their real
+  mechanical match at character 7,870 and 91,374 of their respective
+  files, both past the old fixed window, producing plausible-sounding but
+  ungrounded AI summaries. `graph.relation_enrichment_candidates` gained
+  a `target_doc_artifact_name` column to support this. See `decisions/0042`.
 
 - Planning: `planning/phase-28-center-relationship-excerpts-on-the-
   actual-match.md` — a future plan found via a live `/discovery` session

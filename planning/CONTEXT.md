@@ -205,25 +205,37 @@ pipdeptree, 21 rich - including translated READMEs, a deliberate,
 documented tradeoff - 1 typer), Phase 15's `vendor/` usage-exclusion
 unaffected.
 
-**Most recently**: re-synced this repo (`sync --yes` — 2 vendors and 15
-relationships re-enriched, real ~$0.04 spend, `anthropic`/`typer`'s
-`symbol_set_hash` correctly invalidated by Phase 26's new symbol-level
-edges) and ran a fresh `/discovery` session testing real output quality.
-Phase 26 confirmed working with real before/after data (`anthropic`'s
-"documented but unused" list shrank from 35→32, correctly dropping
-`Anthropic`/`AnthropicError`/`APIResponse` — the symbols this codebase
+**Recent history, condensed**: re-synced this repo and ran a `/discovery`
+session testing Phase 26/27's real output quality. Phase 26 confirmed
+working with real before/after data (`anthropic`'s "documented but
+unused" list shrank 35→32, correctly dropping the 3 symbols this codebase
 actually constructs/catches). Phase 27 confirmed mechanically working,
-but its one live example (`vendor/anthropic/src/README.md`, matched from
-two spec docs) surfaced a real, reproducible Phase 22 limitation: both
-AI summaries are ungrounded, traced to the exact root cause — `relation_
-enrichment.py`'s excerpt is always the source doc's first 4,000
-characters, and both real matches sit at character 7,870 and 91,374
-respectively, both past that window. Wrote `planning/phase-28-center-
-relationship-excerpts-on-the-actual-match.md` (found via this live
-testing, not guessed) — held `/discovery`'s own "no plan file" constraint
-correctly again when first asked, then wrote it once the user explicitly
-said to exit read-only. `planning/ROADMAP.md` updated: 28 appended after
-27, no renumbering. **Not yet implemented.**
+but its one live example surfaced a real Phase 22 limitation — traced to
+an exact root cause (excerpt always the source doc's first 4,000
+characters; the real match sat at character 7,870/91,374) — written up as
+`planning/phase-28-center-relationship-excerpts-on-the-actual-match.md`.
+
+**Most recently — Phase 28, done**: `relation_enrichment.select_
+candidates` now re-derives the mechanical match's position (same needle/
+regex `doc_mapping.build_doc_relations_edges` used) and centers a
+4,000-character window on it (1,000 before / 3,000 after, a named-
+constant starting guess), falling back to the old first-N-characters
+slice only if the needle can't be re-found. `graph.relation_enrichment_
+candidates` gained `target_doc_artifact_name` to support this. New
+`decisions/0042` (re-derive at enrichment time vs. persisting the offset
+on the mechanical `doc_relations_edges` table — rejected the latter
+since it would go stale between a graph rebuild and a later enrichment
+call). Four new tests reproducing the exact scenario found (needle past
+the cap, for both relation kinds, plus a graceful-fallback case and a
+no-regression-when-already-near-the-start case). Verified independently:
+`pytest` 461 passed/1 skipped (up from 457), `ruff check .` clean,
+core-logic diff read directly against the plan. **Re-enrichment + a
+second `/discovery` retest to confirm the two previously-ungrounded
+summaries actually improve is the immediate next step, not yet done as
+of this note** — per the plan's own Verification section, a plain re-sync
+won't force this on its own (the cache key doesn't depend on which
+excerpt-selection algorithm produced it), so the two stale `doc_relation_
+enrichment` rows need to be cleared deliberately first.
 
 ## Next concrete step
 
@@ -237,20 +249,13 @@ section at the same time. None of this should happen from a broad
 "implement to release" instruction alone — claiming a PyPI package name
 and pushing a public tag are genuinely irreversible.
 
-Two decisions remain genuinely open, unrelated to Part B and not blocking
-Phase 28 planning/implementation:
+One decision remains genuinely open, unrelated to Part B and not blocking
+Phase 28's live re-verification:
 
 1. **Whether routing/rollup and MCP (now 24/25) really should be deferred
    past v1.0** — proposed in `planning/v1.0-initial-release-roadmap.md`'s
    "Why this order" section, not locked. Flagged back to the user, not
    decided unilaterally.
-2. **Whether/when to implement Phase 28** — written as a future plan per
-   the user's explicit request, not implemented yet; no urgency signal
-   from the user either way. Implementing it will require deliberately
-   forcing re-enrichment of the two already-cached (ungrounded)
-   `anthropic README.md` relationships to actually verify the fix — see
-   the plan's own Verification section for why a plain re-sync won't do
-   that on its own.
 
 **Still outstanding, not a blocker but worth remembering:**
 - The graph/enrichment ordering gap (routing table/tool Skill/`undo`

@@ -1095,6 +1095,14 @@ def relation_enrichment_candidates(conn: sqlite3.Connection) -> list[dict]:
     candidate's current content hash and diffs it against what this
     function returns.
 
+    Also returns `target_doc_artifact_name` — the target doc artifact's own
+    `name` field (e.g. `"anthropic README.md"`), NULL whenever `target_
+    doc_path` is NULL. Phase 28: `doc_mapping.build_doc_relations_edges`'s
+    mechanical `mentions_artifact` match was against this `name` field, not
+    the target's `path` — `select_candidates` needs it back to re-run the
+    exact same word-boundary search and center the excerpt on the actual
+    mention instead of always the file's opening.
+
     The join matches with SQLite's NULL-safe `IS`, not `=` — `target_
     vendor_name`/`target_doc_path` are NULL for whichever `relation_kind`
     doesn't apply, and plain `=` never matches two NULLs, which would
@@ -1103,7 +1111,7 @@ def relation_enrichment_candidates(conn: sqlite3.Connection) -> list[dict]:
     """
     rows = conn.execute(
         """
-        SELECT sda.path, tv.name, tda.path, dre.relation_kind, dre_enrich.content_hash
+        SELECT sda.path, tv.name, tda.path, tda.name, dre.relation_kind, dre_enrich.content_hash
         FROM doc_relations_edges dre
         JOIN doc_artifacts sda ON dre.source_doc_artifact_id = sda.id
         LEFT JOIN vendors tv ON dre.target_vendor_id = tv.id
@@ -1117,14 +1125,14 @@ def relation_enrichment_candidates(conn: sqlite3.Connection) -> list[dict]:
     ).fetchall()
     return [
         {
-            "source_doc_path": source_doc_path,
-            "target_vendor_name": target_vendor_name,
-            "target_doc_path": target_doc_path,
-            "relation_kind": relation_kind,
-            "content_hash": content_hash,
+            "source_doc_path": row[0],
+            "target_vendor_name": row[1],
+            "target_doc_path": row[2],
+            "target_doc_artifact_name": row[3],
+            "relation_kind": row[4],
+            "content_hash": row[5],
         }
-        for source_doc_path, target_vendor_name, target_doc_path, relation_kind, content_hash
-        in rows
+        for row in rows
     ]
 
 

@@ -997,18 +997,22 @@ none of them write, none of them decide staleness:
 - `spec_docs_without_relations(conn) -> list[str]` (Phase 21) — spec-doc
   paths with zero `doc_relations_edges` rows as their source; `check`'s
   report-only coverage-gap section for this table.
-- `relation_enrichment_candidates(conn) -> list[dict]` (Phase 22) — every
-  `doc_relations_edges` row joined to its source/target *text* identity
-  (`source_doc_path`, `target_vendor_name`, `target_doc_path`,
-  `relation_kind`) plus the `content_hash` already on file in `doc_
-  relation_enrichment` for that exact natural-key triple, if any. Joins
-  with SQLite's NULL-safe `IS`, not `=` — `target_vendor_name`/`target_
-  doc_path` are NULL for whichever `relation_kind` doesn't apply, and
-  plain `=` never matches two NULLs. Same "graph.py doesn't decide
-  staleness" division of responsibility as `enrichment_candidates`:
-  `relation_enrichment.select_candidates` freshly computes each
-  candidate's current content hash and diffs it against what this
-  function returns.
+- `relation_enrichment_candidates(conn) -> list[dict]` (Phase 22, extended
+  Phase 28) — every `doc_relations_edges` row joined to its source/target
+  *text* identity (`source_doc_path`, `target_vendor_name`, `target_doc_
+  path`, `target_doc_artifact_name`, `relation_kind`) plus the `content_
+  hash` already on file in `doc_relation_enrichment` for that exact
+  natural-key triple, if any. `target_doc_artifact_name` (Phase 28) is the
+  target doc artifact's own `name` field — the literal `doc_mapping.
+  build_doc_relations_edges` word-boundary-matched for a `mentions_
+  artifact` row, not its `path` — so `select_candidates` can re-run the
+  same match to center its excerpt. Joins with SQLite's NULL-safe `IS`,
+  not `=` — `target_vendor_name`/`target_doc_path` are NULL for whichever
+  `relation_kind` doesn't apply, and plain `=` never matches two NULLs.
+  Same "graph.py doesn't decide staleness" division of responsibility as
+  `enrichment_candidates`: `relation_enrichment.select_candidates` freshly
+  computes each candidate's current content hash and diffs it against what
+  this function returns.
 
 **`record_enrichment(conn, vendor_id, **fields)` /
 `record_symbol_enrichment(conn, symbol_id, purpose, generated_at)`** are
@@ -1385,6 +1389,30 @@ spec docs are never written to, so there's no codecompass-owned file to
 embed a cache-hash line into — a fresh clone re-pays for relationship
 enrichment once, an accepted v1 cost since these are short summaries over
 a small, usage-proven set.
+
+**Phase 28 — the excerpt is centered on the actual mechanical mention, not
+always the file's opening.** Each candidate's `source_excerpt` used to be
+a fixed `source_text[:4_000]` regardless of where in the file Phase 21's
+word-boundary match actually landed — for a match past that offset (this
+repo's own two `"anthropic README.md"` relationships both are), the model
+never saw the sentence that triggered the relationship at all, and filled
+in a plausible-sounding but ungrounded summary from whatever was in its
+window instead. `select_candidates` now re-derives the same needle
+`doc_mapping.build_doc_relations_edges` matched against (the target
+vendor's name for `mentions_dependency`, the target doc artifact's own
+`name` field — not its path — for `mentions_artifact`, via `graph.
+relation_enrichment_candidates`'s `target_doc_artifact_name` column),
+re-runs the identical `re.search(rf"\b{re.escape(needle)}\b", source_text)`
+word-boundary search, and — when found — slices a window centered on the
+match (1,000 characters before, 3,000 after; the asymmetric split favors
+context that typically follows a mention) rather than the file's start.
+Still the same `_SPEC_DOC_EXCERPT_CHAR_CAP` total budget — a relocation of
+the window, not an increase in per-call cost. A needle that can't be
+re-found (the file changed since the last graph rebuild) falls back to the
+original first-N-characters slice, non-fatal. Re-derived at enrichment
+time rather than persisted from Phase 21's detection, so `doc_relations_
+edges` stays a purely mechanical table — see
+[`decisions/0042`](../decisions/0042-relation-enrichment-excerpts-re-derive-match-position-at-enrichment-time.md).
 
 `plan_batches`/`run_enrichment_batches` mirror `enrichment.py`'s own
 batching and forced-tool-use call shape exactly, grouping by (excerpt +

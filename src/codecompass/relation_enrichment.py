@@ -32,6 +32,7 @@ to fold in this module's candidate/batch counts).
 from __future__ import annotations
 
 import hashlib
+import re
 import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -51,6 +52,23 @@ _DEFAULT_BATCH_CHAR_BUDGET = 150_000
 # BATCH_CHAR_BUDGET` (the phase plan's Explicitly deferred section: no
 # `vendor.toml` configurability yet).
 _SPEC_DOC_EXCERPT_CHAR_CAP = 4_000
+
+# Phase 28: when the mechanical mention that produced this candidate
+# (`doc_mapping.build_doc_relations_edges`'s word-boundary match) can be
+# re-found in the source text, the excerpt centers on it instead of always
+# starting at character 0 — otherwise a mention past the first
+# `_SPEC_DOC_EXCERPT_CHAR_CAP` characters never actually reaches the model,
+# producing a plausible-sounding but ungrounded summary (confirmed against
+# this repo's own two `"anthropic README.md"` relationships — see the
+# phase plan). Asymmetric before/after split, not a symmetric 2,000/2,000:
+# a mention is more often followed by explanatory text (what it does, why
+# it's used) than preceded by it, so more of the fixed budget goes after
+# the match. Both constants sum to `_SPEC_DOC_EXCERPT_CHAR_CAP` — this
+# relocates the window, it doesn't enlarge it. A starting point to retune
+# from real output quality later, same posture as `_SPEC_DOC_EXCERPT_CHAR_
+# CAP` itself.
+_EXCERPT_CHARS_BEFORE_MATCH = 1_000
+_EXCERPT_CHARS_AFTER_MATCH = _SPEC_DOC_EXCERPT_CHAR_CAP - _EXCERPT_CHARS_BEFORE_MATCH
 
 _TOOL_NAME = "submit_batched_relation_enrichment"
 _TOOL_SCHEMA = {
@@ -195,6 +213,57 @@ def _lookup_doc_artifact_description(conn: sqlite3.Connection, path: str) -> str
     return row[0] if row is not None else None
 
 
+def _relation_needle(
+    relation_kind: str,
+    target_vendor_name: str | None,
+    target_doc_artifact_name: str | None,
+) -> str | None:
+    """The exact literal `doc_mapping.build_doc_relations_edges` word-
+    boundary-matched to detect this relationship in the first place: the
+    target vendor's name for `'mentions_dependency'`, the target doc
+    artifact's own `name` field (not its path) for `'mentions_artifact'`.
+    Re-deriving it here — rather than persisting the match position from
+    Phase 21's detection — is this phase's design decision (see the new
+    ADR): `doc_relations_edges` stays a purely mechanical table with no
+    concept of "where an as-yet-unenriched candidate's excerpt should
+    center."
+    """
+    if relation_kind == "mentions_dependency":
+        return target_vendor_name
+    if relation_kind == "mentions_artifact":
+        return target_doc_artifact_name
+    return None
+
+
+def _select_source_excerpt(source_text: str, needle: str | None) -> str:
+    """The excerpt sent to the model for a relationship's spec-doc side —
+    centered on `needle`'s first word-boundary match (`re.search(rf"\\b
+    {re.escape(needle)}\\b", source_text)`, the exact same regex shape
+    `doc_mapping.build_doc_relations_edges` used to detect this
+    relationship), so the model actually sees the sentence/paragraph that
+    triggered the match rather than whatever happens to sit in the file's
+    opening `_SPEC_DOC_EXCERPT_CHAR_CAP` characters (Phase 28).
+
+    Falls back to the original first-N-characters slice when `needle` is
+    `None` or can't be re-found — the file changed between the graph
+    rebuild that detected the mention and this call. Expected to be rare
+    (the mention was proven to exist as of the last rebuild) but must
+    degrade gracefully, not raise.
+
+    Only the *first* match is used, same as `build_doc_relations_edges`
+    itself already implicitly does via `re.search` (not `re.finditer`) —
+    a relationship with multiple mechanical matches in the same doc isn't
+    handled specially here.
+    """
+    if needle:
+        match = re.search(rf"\b{re.escape(needle)}\b", source_text)
+        if match is not None:
+            start = max(0, match.start() - _EXCERPT_CHARS_BEFORE_MATCH)
+            end = match.end() + _EXCERPT_CHARS_AFTER_MATCH
+            return source_text[start:end]
+    return source_text[:_SPEC_DOC_EXCERPT_CHAR_CAP]
+
+
 def select_candidates(
     conn: sqlite3.Connection, project_root: Path
 ) -> list[RelationEnrichmentCandidate]:
@@ -218,6 +287,7 @@ def select_candidates(
         source_doc_path = row["source_doc_path"]
         target_vendor_name = row["target_vendor_name"]
         target_doc_path = row["target_doc_path"]
+        target_doc_artifact_name = row["target_doc_artifact_name"]
 
         try:
             source_text = (project_root / source_doc_path).read_text(encoding="utf-8")
@@ -235,15 +305,18 @@ def select_candidates(
         if row["content_hash"] == content_hash:
             continue  # cache hit — neither side's grounding text has changed
 
+        relation_kind = row["relation_kind"]
+        needle = _relation_needle(relation_kind, target_vendor_name, target_doc_artifact_name)
+
         candidates.append(
             RelationEnrichmentCandidate(
                 source_doc_path=source_doc_path,
-                relation_kind=row["relation_kind"],
+                relation_kind=relation_kind,
                 target_vendor_name=target_vendor_name,
                 target_doc_path=target_doc_path,
                 target_label=target_label,
                 target_text=target_text,
-                source_excerpt=source_text[:_SPEC_DOC_EXCERPT_CHAR_CAP],
+                source_excerpt=_select_source_excerpt(source_text, needle),
                 content_hash=content_hash,
             )
         )
