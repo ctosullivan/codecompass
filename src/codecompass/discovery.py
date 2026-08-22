@@ -141,9 +141,8 @@ def render_vendor_block(config: VendorConfig) -> str:
 
 
 def write_vendor_toml(names_by_ecosystem: dict[Ecosystem, list[str]], path: Path) -> None:
-    """Fresh `vendor.toml`, everything at `depth = surface` — `init
-    --scan`'s contract. Errors rather than overwriting if `path` already
-    exists.
+    """Fresh `vendor.toml` — `init --scan`'s contract. Errors rather than
+    overwriting if `path` already exists.
     """
     if path.exists():
         raise DiscoveryError(f"{path} already exists — refusing to overwrite it")
@@ -171,9 +170,12 @@ def append_vendor_toml(new_configs: list[VendorConfig], path: Path) -> None:
 
 
 def rewrite_vendor_toml(configs: list[VendorConfig], path: Path) -> None:
-    """Overwrite `path` with a fresh serialization of `configs` —
-    `promote` (decisions/0018) uses this to persist a vendor's `depth`
-    change. Same non-round-trip-preserving rationale as
+    """Overwrite `path` with a fresh serialization of `configs`. Unused
+    since `promote` (its only caller, `decisions/0018`) was retired in
+    Phase 15 (`decisions/0033`) — kept rather than deleted since it's a
+    generically useful, tested primitive and removing it wasn't in any
+    phase's scope; a future command that needs to rewrite `vendor.toml`
+    wholesale can reuse it. Same non-round-trip-preserving rationale as
     `write_vendor_toml`: a fresh, comment-free rewrite, not an
     edit-in-place of a hand-authored file.
     """

@@ -47,6 +47,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 19: chat demotion + governance docs — MVP (v0.2) complete,
+  all eleven phases (9-19) `done`.** Implements
+  `planning/phase-19-chat-demotion-and-governance-docs.md` and
+  `decisions/0034`. `README.md` rewritten around the v0.2 primary
+  workflow (bare `codecompass` → clone + disclosed usage-driven
+  enrichment → `codecompass query`/`/discovery`/generated Skills,
+  `chat` explicitly secondary). `architecture/overview.md`'s opening
+  summary, "Chat REPL" (now framed per `decisions/0034`, historical
+  pointer to superseded `decisions/0012` left unedited — append-only),
+  "Two consumption modes", "Multi-tool export", "Staleness checking",
+  "Retrofitting to existing projects", "Cost model", and "Known
+  footguns" sections, plus `docs/cli-reference.md`, corrected against
+  the fully-built system — roughly a dozen stale `promote`/`Depth`/
+  pre-rework references found and fixed in total, including two
+  present-tense instructions to run a deleted `codecompass promote`
+  command. `chat.py`/`skill.py`/`discovery.py` docstrings updated to
+  match (no logic changes). `pytest`: 366 passed, 1 skipped throughout;
+  `ruff check .` clean.
 - **Phase 18: `undo` command** — implements
   `planning/phase-18-undo-command.md` and new `decisions/0036`. New
   `codecompass undo [--yes] [--dry-run]`: graph-backed enumeration

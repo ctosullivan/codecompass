@@ -1,9 +1,13 @@
 # CLI reference
 
-> `init`, `sync`, `index`, `check`, `query`, and `chat` are implemented.
-> `promote` was removed in Phase 15 (`decisions/0033`) — its three former
-> jobs (clone, enrich, generate Skill) are now automatic outcomes of
-> bootstrap/`sync`. See [`planning/`](../planning/) for current status.
+> `init`, `sync`, `index`, `check`, `query`, `chat`, and `undo` are
+> implemented. `promote` was removed in Phase 15 (`decisions/0033`) — its
+> three former jobs (clone, enrich, generate Skill) are now automatic
+> outcomes of bootstrap/`sync`. The context graph (`query`), generated
+> Skills, and the `/discovery` slash command are the primary way to consult
+> codecompass's output day to day; `chat` is a secondary, digest-only
+> terminal Q&A tool (`decisions/0034`). See [`planning/`](../planning/) for
+> current status.
 
 ## `codecompass [--yes] [--budget <amount>]` (no subcommand)
 
@@ -60,8 +64,9 @@ root-level auto-discovery.
 Bulk-discovers dependencies from the given manifest files (`package.json`,
 `pyproject.toml`, `requirements.txt`, `Cargo.toml` — dispatched by
 filename) and writes a draft `vendor.toml` with every discovered
-dependency defaulted to `depth = surface`. Free to run — surface
-generation has no AI cost.
+dependency listed as a bare `name`/`ecosystem` entry. Free to run — no AI
+call, and no cloning either (that's a bare `codecompass`/whole-project
+`sync` trigger point, not `init --scan`'s job).
 
 - `--scan` is repeatable, one manifest file per flag (not space-separated
   after a single flag — that's not how a named Click/Typer option works).
@@ -102,12 +107,13 @@ the name isn't found).
   vendor) skips both the graph rebuild and the Phase B trigger
   (`decisions/0025`).
 - `--budget <amount>` caps estimated AI spend (USD) for this run —
-  checked *before any API call is made*, covering both a whole-project
-  sync's Phase B batch and (unchanged from before this phase) any
-  `depth = full` vendor's per-vendor grounded-description regeneration —
-  `Depth` isn't retired until Phase 16. If the estimate exceeds
-  `--budget`, that step aborts; already-written deterministic output for
-  other vendors is unaffected. Omit `--budget` for no cap.
+  checked *before any API call is made*, covering a whole-project sync's
+  Phase B enrichment batch. As of Phase 16, Phase B is the only AI cost
+  path left in the codebase (`Depth` and its per-vendor
+  grounded-description regeneration are fully retired —
+  `decisions/0031`/`decisions/0035`). If the estimate exceeds `--budget`,
+  Phase B aborts; already-written deterministic output for every vendor is
+  unaffected. Omit `--budget` for no cap.
 
 ```bash
 codecompass sync
@@ -222,9 +228,13 @@ codecompass check --fix
 **Status:** implemented (Phase 8, `decisions/0023`). Explicit single-vendor
 mode only — bare `codecompass chat` with no vendor name (project-root
 routing across vendor-specific, multi-vendor, and whole-project questions)
-is Phase 9, not yet implemented.
+is post-MVP Phase 20, not yet implemented (renumbered from the original
+Phase 9 during this rework — see `planning/ROADMAP.md`).
 
-Lightweight terminal REPL, distinct from running Claude Code directly in a
+A secondary, digest-only tool (`decisions/0034`) — for day-to-day
+consultation, prefer `codecompass query` or, inside a Claude Code session,
+`/discovery`; `chat` is a lightweight terminal REPL for a quick question
+outside any agent session, distinct from running Claude Code directly in a
 vendor folder. Grounds every answer on the named vendor's already-persisted
 digest files (`vendor/<name>/CLAUDE.md`, plus `OVERVIEW.md` if a grounded
 description exists) — it never calls `sync` itself, so starting a chat

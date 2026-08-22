@@ -1,12 +1,15 @@
-"""Single-vendor chat REPL (`codecompass chat <vendor>`).
+"""Single-vendor chat REPL (`codecompass chat <vendor>`) — a secondary,
+digest-only tool; the context graph, generated Skills, and `/discovery`
+are the primary way to consult codecompass's output (decisions/0034).
 
 Grounds every answer on the vendor's already-persisted digest files
 (`vendor/<name>/CLAUDE.md`, and `OVERVIEW.md` if the vendor has been
-promoted) — never calls `sync_vendor` or reconstructs a `VendorDigest`,
-so starting a chat session never re-incurs `promote`'s clone + AI-
+AI-enriched) — never calls `sync_vendor` or reconstructs a `VendorDigest`,
+so starting a chat session never re-incurs enrichment's clone + AI-
 generation cost (decisions/0023). Explicit-vendor mode only; project-root
-routing and the whole-project rollup are Phase 9
-(planning/phase-8-chat-repl.md, decisions/0012, decisions/0013).
+routing and the whole-project rollup are post-MVP Phase 20
+(planning/phase-8-chat-repl.md, decisions/0012 — superseded by
+decisions/0034 — decisions/0013).
 """
 
 from __future__ import annotations

@@ -41,8 +41,11 @@ A second milestone group (`decisions/0030`), grouped for the same reason
 `decisions/0022` grouped 0-8: no phase in this range is a coherent,
 shippable state on its own — the rework's payoff (SQLite graph +
 generated Skills + `/discovery` as the primary interface, `promote`/
-`Depth` fully retired) only exists once Phase 19 lands. Tagged/released
-only once phase 19 is `done`, not after each individual phase.
+`Depth` fully retired) only exists once Phase 19 lands. **All eleven
+phases (9-19) are now `done`.** Tagged/released only once phase 19 is
+`done`, not after each individual phase — cutting the actual `v0.2` tag
+remains a separate, not-yet-made decision (same posture `decisions/0022`
+established for `v0.1`, which also remains untagged).
 
 | Phase | Name | Status | Plan file |
 |---|---|---|---|
@@ -56,7 +59,7 @@ only once phase 19 is `done`, not after each individual phase.
 | 16 | Retire `Depth` — `core.py`/`config.py`/`discovery.py` shrink; legacy `depth=` tolerated on read (decisions/0031); `sync_vendor` reads enrichment from the graph and `grounded_description.py` is retired (decisions/0035) | done | [`phase-16-retire-depth.md`](phase-16-retire-depth.md) |
 | 17 | `/discovery` slash command — new generated `.claude/commands/discovery.md`, read-only guided-exploration entry point, wired into the same generation points as the tool Skill | done | [`phase-17-discovery-slash-command.md`](phase-17-discovery-slash-command.md) |
 | 18 | `undo` command — new `undo [--yes] [--dry-run]`, driven by the graph's origin-tagged artifacts + known fixed paths; root CLAUDE.md removal goes through the diff-approval flow (CLAUDE.md §0) | done | [`phase-18-undo-command.md`](phase-18-undo-command.md) |
-| 19 | Chat demotion + governance docs — README/architecture rewritten around the graph+Skills+`/discovery` as primary; tool Skill stops featuring chat first (decisions/0034) | planned | [`phase-19-chat-demotion-and-governance-docs.md`](phase-19-chat-demotion-and-governance-docs.md) |
+| 19 | Chat demotion + governance docs — README/architecture rewritten around the graph+Skills+`/discovery` as primary; tool Skill stops featuring chat first (decisions/0034) | done | [`phase-19-chat-demotion-and-governance-docs.md`](phase-19-chat-demotion-and-governance-docs.md) |
 
 **Renumbering note (dated to Phase 10's planning):** the original Phase
 9-planning-session order placed "Retire `Depth`" second (as Phase 10),

@@ -7,7 +7,7 @@ is a living document updated in place as the system evolves. When in doubt
 about *why* something is designed the way it is, check `decisions/`; when
 you want to know *what exists now*, check here.
 
-As of Phase 7, the core data model (`codecompass.core`), `vendor.toml`
+As of Phase 19, the core data model (`codecompass.core`), `vendor.toml`
 parsing (`codecompass.config`), all three ecosystem adapters
 (`codecompass.adapters`), per-ecosystem symbol/purpose extraction
 (`codecompass.symbols`), deterministic tree generation
@@ -16,21 +16,32 @@ templating (`codecompass.claude_md`), per-vendor sync orchestration
 (`codecompass.sync`), root routing-table injection (`codecompass.index`),
 manifest-based `vendor.toml` bootstrap and zero-question auto-discovery
 (`codecompass.discovery`), upstream repository resolution
-(`codecompass.source_resolution`), AI-gated grounded-description
-generation (`codecompass.grounded_description`, replacing Phase 5's
-`context_path`-gated gap analysis — `decisions/0019`), Skill/Cursor
-export (`codecompass.skill`), severity-aware staleness checking
-(`codecompass.staleness`), and the single-vendor chat REPL
-(`codecompass.chat`, grounded on persisted digest files, never live
-regeneration — `decisions/0023`) are all implemented — bare `codecompass`,
-`init`, `sync` (including `--budget`), `index`, `check` (including
-`--strict`/`--fix`), `promote`, and `chat <vendor>` are real CLI
-commands, not stubs. The MVP spans phases 0-8 (`decisions/0022`); all
-eight are now `done` (a `v0.1` tag/release has not yet been cut).
-Bare `codecompass chat` project-root routing and the whole-project
-dependency rollup, described in the Chat REPL section below, remain
-post-MVP (Phase 9) target design; see `planning/CONTEXT.md` for current
-status.
+(`codecompass.source_resolution`), the SQLite context graph
+(`codecompass.graph`) and its population (`codecompass.usage`,
+`codecompass.doc_mapping`, `codecompass.skill_scan`), usage-driven batched
+AI enrichment (`codecompass.enrichment`, replacing the retired
+`codecompass.grounded_description` — `decisions/0031`, `decisions/0035`),
+Skill/Cursor/`/discovery` export (`codecompass.skill`,
+`codecompass.commands`), severity-aware staleness checking
+(`codecompass.staleness`), best-effort generated-artifact cleanup (`undo`,
+`decisions/0036`), and the single-vendor chat REPL (`codecompass.chat`,
+grounded on persisted digest files, never live regeneration —
+`decisions/0023`) are all implemented — bare `codecompass`, `init`, `sync`
+(including `--budget`), `index`, `check` (including `--strict`/`--fix`),
+`query` (`vendors`/`vendor`/`symbol`/`skills`), `chat <vendor>`, and `undo`
+(`--yes`/`--dry-run`) are real CLI commands, not stubs. `promote` and the
+per-vendor `depth` toggle are both retired (`decisions/0033`,
+`decisions/0031`) — every tracked vendor gets the same deterministic
+treatment, and AI enrichment eligibility comes from the context graph's
+usage evidence, not a config field or a separate command. MVP (v0.1) spans
+phases 0-8 (`decisions/0022`); MVP (v0.2) spans phases 9-19
+(`decisions/0030`). Both are now `done` (neither a `v0.1` nor a `v0.2`
+tag/release has been cut yet). Bare `codecompass chat` project-root
+routing and the whole-project dependency rollup, described in the Chat
+REPL section below, remain post-MVP **Phase 20** target design (renumbered
+from the original Phase 9 during this rework — see
+`planning/ROADMAP.md`'s renumbering notes); see `planning/CONTEXT.md` for
+current status.
 
 ## Core data model
 
@@ -344,7 +355,8 @@ writing to the same `vendor_enrichment` table.
 Both must work:
 
 1. **Standalone** — `cd vendor/<name> && claude`. Requires a *copied*
-   pinned source snapshot at `vendor/<name>/src/` for `FULL` vendors, NOT a
+   pinned source snapshot at `vendor/<name>/src/`, for every tracked
+   vendor since Phase 13's universal cloning (`decisions/0033`), NOT a
    reference into `node_modules` — package managers prune/dedupe/reinstall
    `node_modules` contents, so it isn't a stable pin target. See
    [`decisions/0004`](../decisions/0004-vendor-src-snapshot-not-node-modules-reference.md).
@@ -368,7 +380,7 @@ Both must work:
    handles both the first-run case (markers don't exist yet, the block is
    appended) and the regenerate case (`re.sub` with `DOTALL` replaces
    just the marked block), without clobbering hand-written content around
-   it. Table columns: Vendor, Path, Version, Depth, Deps, Consult when —
+   it. Table columns: Vendor, Path, Version, Enriched, Deps, Consult when —
    paired with an explicit routing instruction sentence, since the table
    alone is inert data. As of Phase 4: `index` **reads each vendor's
    already-synced `CLAUDE.md`** (regexing the Metadata section's
@@ -421,12 +433,16 @@ other**:
 - `--fix` — regenerates every vendor where `recorded_version !=
   live_version` (including a vendor that's never been synced at all) or
   `transitive_drift` is set, via the exact same `sync_vendor` `sync`
-  itself uses — unmodified, including a fresh gap-analysis call for
-  `depth = full` vendors. `check`'s own `--fix` loop (not `sync_vendor`)
-  wraps each regeneration in `try/except AdapterError`, so one vendor's
-  broken adapter read doesn't abort the rest of the batch; exits non-zero
-  if anything failed (an adapter error or a gap-analysis error), 0
-  otherwise.
+  itself uses — unmodified. As of Phase 16, this makes **no AI call**:
+  `sync_vendor` only re-clones and re-renders deterministic output,
+  reading back whatever enrichment content the context graph already has
+  (see **Grounded description — retired** below); `--fix` never
+  re-purchases a vendor's description. `check`'s own `--fix` loop (not
+  `sync_vendor`) wraps each regeneration in `try/except AdapterError`, so
+  one vendor's broken adapter read doesn't abort the rest of the batch;
+  exits non-zero if anything failed — either an adapter error, or a
+  vendor whose `sync_vendor` call hit a source-clone failure
+  (`digest.description_error`) — 0 otherwise.
 
 **Transitive-vs-vendor drift** — a full diff, not just a root-version
 comparison. When a vendor's own root version is unchanged
@@ -458,23 +474,26 @@ confident in its training knowledge may never read the digest at all —
 precisely the failure mode codecompass exists to prevent. A Skill's
 description is mechanically part of how Claude decides what's relevant to
 load, a stronger (though not absolute) guarantee than the routing table's
-instruction-following alone. Implemented in Phase 7 as part of
-`codecompass promote` (`decisions/0018`), not a separate later phase — the
-Skill for a vendor is generated at the moment it's promoted, the same
-call that generates its grounded description.
+instruction-following alone. Originally implemented in Phase 7 as part of
+`codecompass promote` (`decisions/0018`); since Phase 15
+(`decisions/0033`), `promote` is retired and a vendor's Skill/`.mdc` pair
+is instead written by `enrichment.apply_results` (see **Batched
+enrichment** below) the moment usage-driven AI enrichment succeeds for
+that vendor — the same trigger point that writes its grounded description,
+just automatic rather than manually invoked.
 
-One Skill per `depth = FULL` vendor, generated at
-`.claude/skills/codecompass-<vendor>/SKILL.md`:
+One Skill per **enriched** vendor (one with a `vendor_enrichment` record —
+no longer gated on a `depth = FULL` toggle, which no longer exists),
+generated at `.claude/skills/codecompass-<vendor>/SKILL.md`:
 - The trigger description is built from data already generated — a
   condensed conversational overview — not a new AI call. **Description
   length is a real, ongoing tuning knob, not a one-time writing task**:
   every skill's name+description loads into every session
   unconditionally, so a long description that maximizes one vendor's
-  trigger accuracy has a real per-vendor cost that compounds as
-  `FULL`-depth vendor count grows (`_VENDOR_SKILL_DESCRIPTION_CAP`, 400
-  characters). Specificity (concrete API methods, file/function names,
-  exact trigger situations) — not length — is what drives triggering
-  accuracy.
+  trigger accuracy has a real per-vendor cost that compounds as enriched
+  vendor count grows (`_VENDOR_SKILL_DESCRIPTION_CAP`, 400 characters).
+  Specificity (concrete API methods, file/function names, exact trigger
+  situations) — not length — is what drives triggering accuracy.
 - `FILETREE.md`/`DEPTREE.md` bundle as `references/` files inside the
   skill folder rather than inlining — progressive disclosure means they
   only cost tokens when Claude actually needs to navigate source.
@@ -486,15 +505,15 @@ One Skill per `depth = FULL` vendor, generated at
   implemented — the same category of manual-verification gap Phase 5
   accepted for gap analysis against the live API (`decisions/0016`), now
   extended to Skill triggering.
-- `depth = SURFACE` vendors don't get a per-vendor Skill — no grounded-
-  description content exists to build a meaningful trigger description
-  from. Since Phase 7, this gap is covered separately by the **tool-level
+- A vendor with no enrichment record yet doesn't get a per-vendor Skill —
+  no grounded-description content exists to build a meaningful trigger
+  description from. This gap is covered separately by the **tool-level
   Skill** (`decisions/0020`): a templated, non-AI-generated Skill at
   `.claude/skills/codecompass/SKILL.md`, generated unconditionally by
-  `index` (and by bare `codecompass`) regardless of vendor count or depth
-  — listing codecompass's own commands and the current vendor table, so
-  an agent has a mechanical signal that codecompass exists even before
-  anything has been promoted.
+  `index` (and by bare `codecompass`) regardless of vendor count or
+  enrichment status — listing codecompass's own commands and the current
+  vendor table, so an agent has a mechanical signal that codecompass
+  exists even before any vendor has been enriched.
 
 **Cursor `.mdc` export is retained, not replaced.** Cursor does not read
 `CLAUDE.md` natively. Its modern context system is `.cursor/rules/*.mdc`
@@ -503,18 +522,18 @@ activation — the legacy single `.cursorrules` file is deprecated and
 unreliable in Cursor's agent mode specifically, so it isn't targeted.
 `.mdc` is a **generated export**, not a separately maintained file —
 same technical-description content as the Skill, different serialization
-— written to `.cursor/rules/codecompass-<vendor>.mdc` by `promote`
-alongside the Skill. `alwaysApply: false` (token cost control, same
-reasoning as the depth system); Cursor falls back to description-based
-relevance without an explicit `globs` key — a `globs` field scoped to
-wherever the vendor is actually imported in the consuming codebase is a
-documented future refinement, not implemented in Phase 7 (would require
-scanning the consuming project's own source, a different kind of input
-than anything else `promote` reads). Cursor's glob-scoped file-pattern
-activation is a different — potentially more precise, once implemented —
-trigger model than Skills' description-matching, and not every Cursor
-setup has Skills support, so this export stays alongside Skills rather
-than being dropped.
+— written to `.cursor/rules/codecompass-<vendor>.mdc` by
+`enrichment.apply_results` alongside the Skill. `alwaysApply: false`
+(token cost control, same reasoning applied to the Skill description
+cap above); Cursor falls back to description-based relevance without an
+explicit `globs` key — a `globs` field scoped to wherever the vendor is
+actually imported in the consuming codebase is a documented future
+refinement, not implemented (would require scanning the consuming
+project's own source, a different kind of input than anything else Phase
+B enrichment reads). Cursor's glob-scoped file-pattern activation is a
+different — potentially more precise, once implemented — trigger model
+than Skills' description-matching, and not every Cursor setup has Skills
+support, so this export stays alongside Skills rather than being dropped.
 
 **The `CLAUDE.md` root routing table is also retained, not replaced** — it
 remains the fallback for any tool or context that doesn't support Skills
@@ -588,66 +607,84 @@ of this gap.
 
 ## Chat REPL
 
-**The REPL is a primary consumption mode for vendor digests, not a
-convenience layer bolted onto the markdown files** (see
-[`decisions/0012`](../decisions/0012-conversational-first-repl-design.md)).
-The digests (`CLAUDE.md`, `FILETREE.md`, `DEPTREE.md`, and — for `depth =
-full` vendors whose grounded description succeeded — `OVERVIEW.md`, the
-persisted conversational overview) are backing store for two consumers —
-AI agents reading them directly (see **Two
-consumption modes** above) and the REPL synthesizing them into
-conversation — and content generation is written with "does this read
-well spoken aloud in a casual chat" as a first-class constraint, not an
-afterthought handled by reformatting at query time.
+**Chat is a secondary, dev/debug-oriented tool, not the product's primary
+interface** (see
+[`decisions/0034`](../decisions/0034-chat-demoted-graph-and-skills-are-primary.md)).
+The SQLite context graph (`codecompass.graph`), generated Skills, and the
+`/discovery` slash command are the primary way both humans and agents
+consume codecompass's output (see **Multi-tool export** and
+**`/discovery`** above). `chat`'s own logic, its digest-only grounding, and
+`decisions/0023`'s "never regenerates" rule are all unchanged by this —
+what changed in Phase 19 is framing, not behavior: `chat <vendor>` remains
+fully functional and genuinely useful for a quick, digest-only Q&A in a
+plain terminal, just no longer described as the product's centerpiece.
+
+> **Historical note**: this section originally opened with
+> [`decisions/0012`](../decisions/0012-conversational-first-repl-design.md)'s
+> framing — "the REPL is the actual product," with the markdown digests as
+> its backing store. `decisions/0012` is not edited (it's append-only and
+> remains an accurate record of the reasoning at the time); it is
+> **superseded by `decisions/0034`**, which this section now reflects.
+
+The digests (`CLAUDE.md`, `FILETREE.md`, `DEPTREE.md`, and — for a vendor
+that's been usage-driven AI-enriched — `OVERVIEW.md`, the persisted
+conversational overview) are backing store for two consumers — AI agents
+reading them directly (see **Two consumption modes** above) and `chat`
+synthesizing them into conversation — and content generation is written
+with "does this read well spoken aloud in a casual chat" as a first-class
+constraint, not an afterthought handled by reformatting at query time.
 
 `codecompass chat <name>` — a lightweight terminal REPL, distinct from
 just using Claude Code in the vendor folder. It loads only `CLAUDE.md`
-(and `OVERVIEW.md`, if the vendor's been `promote`d) as system context and
+(and `OVERVIEW.md`, if the vendor's been AI-enriched) as system context and
 calls the API directly (Haiku) with plain multi-turn text completion — no
 forced tool-use, no tool-use/file-exploration loop — faster and cheaper
 per query, but strictly narrower: it only knows what's in those two files,
 not `FILETREE.md`/`DEPTREE.md` or the full pinned source. This tradeoff is
 stated in the REPL's startup banner so a user doesn't over-trust an answer
 beyond what the digest actually covers. Critically, `chat` never calls
-`sync`/`promote` — it reads whatever's already on disk, so starting a
-session never re-incurs a clone or an AI-generation call
-(`decisions/0023`).
+`sync` — it reads whatever's already on disk, so starting a session never
+re-incurs a clone or an AI-generation call (`decisions/0023`).
 
 - **Explicit vendor** (`chat turndown`) — **implemented (Phase 8).** Loads
   that vendor's `CLAUDE.md`/`OVERVIEW.md` only, single system prompt, no
-  routing needed. Works at any depth — a vendor with no `OVERVIEW.md` yet
-  gets thinner grounding plus a `promote` hint, not a hard block.
+  routing needed. Works whether or not the vendor's been AI-enriched — one
+  with no `OVERVIEW.md` yet gets thinner grounding plus a `sync` hint
+  (Phase B enrichment may pick it up), not a hard block.
 - **No vendor specified** (project-root mode) — **not yet implemented
-  (Phase 9).** Will load a **project-wide
-  dependency rollup unconditionally at session start**, before any
-  routing happens. The rollup is synthesized once per `sync` (not per
-  query) from the already-generated per-vendor conversational overviews
-  (see **Grounded description** above): dependency count by depth, a staleness
-  rollup by severity, notable side-effect flags, and a short narrative.
-  No new per-dependency AI calls — one cheap summarization pass over data
-  that's already paid for. This exists because a large share of realistic
-  casual usage ("anything risky in my deps right now," "why do we even
-  use X," "what changed recently") doesn't cleanly signal either "vendor"
-  or "project" the way keyword/phrase matching expects — waiting for a
-  routing match before loading *any* project-level context would miss
-  these. The REPL's startup banner states that the rollup is loaded, once,
-  up front.
+  (post-MVP Phase 20)**, renumbered from the original Phase 9 during this
+  rework — see `planning/ROADMAP.md`'s renumbering notes. Will load a
+  **project-wide dependency rollup unconditionally at session start**,
+  before any routing happens. The rollup is synthesized once per `sync`
+  (not per query) from the already-generated per-vendor conversational
+  overviews: dependency count, a staleness rollup by severity, notable
+  side-effect flags, and a short narrative. No new per-dependency AI
+  calls — one cheap summarization pass over data that's already paid for.
+  This exists because a large share of realistic casual usage ("anything
+  risky in my deps right now," "why do we even use X," "what changed
+  recently") doesn't cleanly signal either "vendor" or "project" the way
+  keyword/phrase matching expects — waiting for a routing match before
+  loading *any* project-level context would miss these. The REPL's
+  startup banner states that the rollup is loaded, once, up front.
 
   Vendor-specific escalation still uses two-tier routing **on top of**
   that baseline rollup, across three possible context targets (a specific
-  vendor, several vendors, or the project itself):
+  vendor, several vendors, or the project itself), now sourced from the
+  SQLite context graph (`decisions/0032`) rather than inventing ad hoc
+  heuristics inline:
   - **Tier 1** (free, instant) — match against the **same generated
-    Skill description text** that `promote` (Phase 7) produces for Claude
-    Code's native Skills triggering (see
+    Skill description text** that usage-driven AI enrichment
+    (`enrichment.apply_results`, see **Batched enrichment** below)
+    produces for Claude Code's native Skills triggering (see
     [`decisions/0013`](../decisions/0013-agent-skills-as-shared-context-selection-source.md)),
     not an independently-authored keyword/alias list. One source of
-    truth for "what fires on what" — Phase 9's REPL routing reads the
-    same Skill-description data Phase 7 already generates, rather than
-    duplicating it. If nothing matches, check for project-level signal
-    instead (question
-    references architecture, a roadmap phase, a past decision, or general
-    "how does this project..." phrasing) and load **project context**
-    (root `CLAUDE.md` + `architecture/` + relevant `decisions/` entries +
+    truth for "what fires on what" — Phase 20's REPL routing reads the
+    same Skill-description data enrichment already generates and the
+    graph already indexes, rather than duplicating it. If nothing
+    matches, check for project-level signal instead (question references
+    architecture, a roadmap phase, a past decision, or general "how does
+    this project..." phrasing) and load **project context** (root
+    `CLAUDE.md` + `architecture/` + relevant `decisions/` entries +
     `planning/CONTEXT.md`'s current-state section) rather than any vendor
     digest.
   - **Tier 2** (fallback, only if Tier 1 is ambiguous) — pass both the
@@ -676,11 +713,12 @@ session never re-incurs a clone or an AI-generation call
   the REPL states the limitation and points at the already-generated
   `.claude/skills/codecompass-<vendor>/` folder as the handoff artifact for
   a full Claude Code session, already grounded via the same Skill —
-  reusing Phase 7's `promote` output rather than inventing a separate
-  context-packaging mechanism. The REPL's startup disclaimer ("this only
-  knows what's in the digest") is extended to mention this escalation
-  path exists, so a user hitting the boundary knows there's a next step
-  rather than just receiving a lower-confidence answer.
+  reusing that already-generated Skill (now written automatically by
+  Phase B enrichment, not a manual `promote` step) rather than inventing a
+  separate context-packaging mechanism. The REPL's startup disclaimer
+  ("this only knows what's in the digest") is extended to mention this
+  escalation path exists, so a user hitting the boundary knows there's a
+  next step rather than just receiving a lower-confidence answer.
 - Rich handles presentation: `Panel` for the startup grounding disclaimer,
   `Markdown` for rendering answers, `Progress`/spinner for multi-vendor
   `sync` runs, `Table` for `check` output with stale rows highlighted.
@@ -745,10 +783,14 @@ API call*; if exceeded, Phase B aborts for this run without undoing
 Phase A's already-written output, and the command exits non-zero.
 Declining the confirmation prompt is not a failure — Phase A already
 succeeded — and exits 0. Both bare `codecompass` and whole-project `sync`
-gained `--yes`/`--budget` for this reason (`sync` already had `--budget`
-for its pre-existing `depth = FULL` regeneration path, now shared by
-Phase B too); `sync <vendor>` (a named vendor) skips both the graph
-rebuild and Phase B entirely (`decisions/0025`).
+gained `--yes`/`--budget` for this reason. `sync` had already had a
+`--budget` flag before Phase 15, guarding its then-existing
+`depth = FULL` per-vendor regeneration path; that path — and the `Depth`
+field itself — is gone as of Phase 16 (`decisions/0031`,
+`decisions/0035`), so `sync --budget`/bare `codecompass --budget` now
+guard Phase B alone, not two coexisting cost centers. `sync <vendor>` (a
+named vendor) skips both the graph rebuild and Phase B entirely
+(`decisions/0025`).
 
 `promote` is retired (`decisions/0033`) — its three former jobs (clone,
 enrich, generate Skill/`.mdc`) are these two phases' automatic outcomes.
@@ -1058,8 +1100,8 @@ from `rebuild_project_graph` alongside the Phase 11 pieces above.
   list[DocArtifactRow]` — one `kind='claude_md'` row per tracked vendor's
   `vendor/<name>/CLAUDE.md` (skipped if that vendor hasn't been synced
   yet — no row points at a nonexistent file) and one `kind='overview'` row
-  for `vendor/<name>/OVERVIEW.md` if it exists (only currently-`promote`d
-  vendors have one). Both `origin='codecompass_vendor'`.
+  for `vendor/<name>/OVERVIEW.md` if it exists (only vendors that have
+  been usage-driven AI-enriched have one). Both `origin='codecompass_vendor'`.
 - `build_documents_edges(doc_artifact_rows, symbol_rows, project_root) ->
   list[DocumentsEdgeRow]` — for each `claude_md`/`overview` doc artifact,
   reads its file text off disk and word-boundary-matches it against
@@ -1202,7 +1244,8 @@ rolled back (`decisions/0036` has the full rationale).
 
 Structural generation (trees, API-surface extraction, source cloning,
 Phase A's entire zero-question bootstrap) makes no AI calls and is
-effectively free. As of Phase 15, the primary cost center is **Phase B**
+effectively free, for every tracked vendor, regardless of usage. As of
+Phase 15, **Phase B is the sole AI cost center in this codebase**
 (`decisions/0031`): usage-driven batched enrichment, using Haiku, wired
 into `cli.py` behind bare `codecompass` and whole-project `sync` (see
 "Retrofitting to existing projects" above for the full disclose/confirm/
@@ -1220,10 +1263,15 @@ Phase B API call at all (not partially) once the projected cost for a
 single run exceeds the cap — same abort-before-any-spend contract the
 retired `promote`/`sync --budget` guaranteed.
 
-A `depth = FULL` vendor's per-vendor grounded-description regeneration
-(`codecompass.grounded_description`, pre-Phase-15) still exists and still
-runs on every `sync`, uncached, for as long as `Depth` isn't retired
-(Phase 16) — a legacy cost path, not the primary one going forward.
+**As of Phase 16, there is no other cost path.** The old `depth = FULL`
+per-vendor grounded-description regeneration
+(`codecompass.grounded_description`) that used to run on every `sync`,
+uncached, for a `depth = full` vendor is fully deleted, along with the
+`Depth` field that gated it (`decisions/0031`, `decisions/0035`) — see
+**Grounded description — retired** above. `sync`/`check --fix` make no AI
+call at all; Phase B, triggered only from bare `codecompass` and
+whole-project `sync`, is the only place this codebase spends
+Anthropic-API money.
 
 ## Known footguns
 
@@ -1325,21 +1373,24 @@ runs on every `sync`, uncached, for as long as `Depth` isn't retired
   `--budget` decisions should be made with that in mind.
 - **No test ever makes a real Anthropic API call** (see
   [`decisions/0016`](../decisions/0016-gap-analysis-tests-never-call-the-live-anthropic-api.md),
-  which continues to apply unchanged to `grounded_description.py`) —
-  its prompt/schema correctness against the real model is not validated
-  by the automated suite at all; a human must run `codecompass promote`
-  against a real vendor with a real `ANTHROPIC_API_KEY` at least once to
-  trust this phase's output quality. (Source resolution and cloning were
-  validated against a real repository — pytest's own, via its PyPI
-  `Project-URL` metadata — during Phase 7's implementation; only the AI
-  call itself remains unvalidated against the live API.)
-- **`git` is now a required external tool for `promote`** (and for
-  `sync`/`check --fix` on any already-`FULL` vendor) — `codecompass
-  source_resolution._git_clone` shells out to it the same way adapters
-  shell out to `npm`/`cargo`/`pipdeptree`, with the same `shutil.which`-
-  first resolution pattern. Not declared as a Python dependency (it isn't
-  one), but its absence surfaces as a clear `SourceResolutionError`
-  rather than a cryptic subprocess failure.
+  which continues to apply unchanged to `codecompass.enrichment`, the
+  module that replaced `grounded_description.py` in Phase 16) — its
+  batched prompt/schema correctness against the real model is not
+  validated by the automated suite at all; a human must run bare
+  `codecompass`/`sync` against a real, usage-proven vendor with a real
+  `ANTHROPIC_API_KEY` at least once (confirming with `--yes` or the
+  disclosed prompt) to trust Phase B's output quality — not yet actually
+  exercised against a live key as of Phase 19. (Source resolution and
+  cloning were validated against a real repository — pytest's own, via
+  its PyPI `Project-URL` metadata — during Phase 7's implementation; only
+  the AI call itself remains unvalidated against the live API.)
+- **`git` is a required external tool for the universal cloning step**
+  (every vendor, since Phase 13 — no longer gated on a now-removed
+  `FULL` toggle) — `codecompass source_resolution._git_clone` shells out
+  to it the same way adapters shell out to `npm`/`cargo`/`pipdeptree`,
+  with the same `shutil.which`-first resolution pattern. Not declared as
+  a Python dependency (it isn't one), but its absence surfaces as a
+  clear `SourceResolutionError` rather than a cryptic subprocess failure.
 - **`index` reads persisted per-vendor `CLAUDE.md` files rather than
   re-running `sync`** — a deliberate deviation from
   `planning/phase-4-sync-index-init.md`'s literal `render_routing_table(digests:
