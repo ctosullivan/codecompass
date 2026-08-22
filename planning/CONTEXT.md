@@ -184,10 +184,29 @@ resolves, `X.sub.Attr` → `sub` not `Attr`). Four new tests in
 — a straightforward additive change with no design call beyond what the
 plan already settled. Verified independently: `pytest` 445 passed/1
 skipped (up from 441), `ruff check .` clean, diff read directly against
-the plan (matches exactly). **Phase 27 (register embedded vendor docs)
-is next**, followed by a fresh `/discovery` session re-testing output
-quality now that both fixes are live — the user explicitly asked for
-this as the next step after implementation.
+the plan (matches exactly).
+
+**Phase 27, done**: new `doc_mapping.collect_vendor_upstream_doc_
+artifacts` registers a vendor's own embedded upstream docs (`README*.md`/
+`CHANGELOG.md`/`CONTRIBUTING.md`/`SECURITY.md`/`MIGRATION.md`, root-level
+only, at `vendor/<name>/src/`) as `doc_artifacts` rows (`kind=
+'vendor_doc'`, `origin='vendor_upstream'`, `_SCHEMA_VERSION` "3"->"4"),
+wired into `sync.rebuild_project_graph` so every downstream mechanism
+(Phase 21 mention-detection, Phase 22 AI enrichment, `query relations`)
+picks them up with zero further changes. New `graph.
+vendor_docs_without_relations` correctly checks the *target* column, not
+a copy of `spec_docs_without_relations`'s *source*-column query - a real,
+correctly-reasoned distinction (a vendor doc is never a relation source,
+only a target). New `decisions/0041`. Verified independently: `pytest`
+457 passed/1 skipped (up from 445), `ruff check .` clean, core-logic diff
+read directly. Confirmed against this repo's own real dogfooding data: 28
+vendor-doc rows registered across all 4 tracked vendors (5 anthropic, 1
+pipdeptree, 21 rich - including translated READMEs, a deliberate,
+documented tradeoff - 1 typer), Phase 15's `vendor/` usage-exclusion
+unaffected. **Next: a fresh `/discovery` session re-testing output
+quality now that both fixes are live** - the user explicitly asked for
+this as the follow-up step after implementation, not yet done as of this
+note.
 
 ## Next concrete step
 

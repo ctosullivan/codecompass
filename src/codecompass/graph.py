@@ -29,7 +29,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 _DB_FILENAME = "context-graph.db"
-_SCHEMA_VERSION = "3"
+_SCHEMA_VERSION = "4"
 
 _SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -78,10 +78,16 @@ CREATE TABLE IF NOT EXISTS doc_artifacts (
   id          INTEGER PRIMARY KEY,
   vendor_id   INTEGER REFERENCES vendors(id) ON DELETE CASCADE,
   kind        TEXT NOT NULL CHECK (
-                kind IN ('claude_md','overview','skill','cursor_mdc','slash_command','spec_doc')
+                kind IN (
+                  'claude_md','overview','skill','cursor_mdc','slash_command','spec_doc',
+                  'vendor_doc'
+                )
               ),
   origin      TEXT CHECK (
-                origin IN ('codecompass_tool','codecompass_vendor','third_party','project')
+                origin IN (
+                  'codecompass_tool','codecompass_vendor','third_party','project',
+                  'vendor_upstream'
+                )
               ),
   path        TEXT NOT NULL UNIQUE,
   name        TEXT,
@@ -302,7 +308,10 @@ def _migrate_doc_artifacts_constraints(conn: sqlite3.Connection) -> None:
     and recreating `doc_artifacts` under the current (widened) CHECK
     constraints. Phase 17 widened `kind` (added `'slash_command'`,
     "1" -> "2"); Phase 21 widens both `kind` (added `'spec_doc'`) and
-    `origin` (added `'project'`, "2" -> "3") for the same reason. One
+    `origin` (added `'project'`, "2" -> "3") for the same reason; Phase 27
+    widens both again (`kind` gains `'vendor_doc'`, `origin` gains
+    `'vendor_upstream'`, "3" -> "4") for a vendor's own embedded upstream
+    doc files (`vendor/<name>/src/README.md` and siblings). One
     generic, version-agnostic function handles any prior version, not one
     function per phase — it only ever compares the stored version against
     current and, on mismatch, drops+recreates once; `init_schema`'s
@@ -706,6 +715,32 @@ def spec_docs_without_relations(conn: sqlite3.Connection) -> list[str]:
         WHERE da.kind = 'spec_doc'
           AND NOT EXISTS (
               SELECT 1 FROM doc_relations_edges dre WHERE dre.source_doc_artifact_id = da.id
+          )
+        ORDER BY da.path
+        """
+    ).fetchall()
+    return [path for (path,) in rows]
+
+
+def vendor_docs_without_relations(conn: sqlite3.Connection) -> list[str]:
+    """Vendor-doc paths (`kind='vendor_doc'`, Phase 27) with zero
+    `doc_relations_edges` rows *targeting* them — the mirror image of
+    `spec_docs_without_relations` above, not a parameterized copy of it: a
+    spec doc is the only `relation_kind` *source* `build_doc_relations_
+    edges` ever scans from (decisions/0037's spec-doc-outward-only
+    posture), so a vendor doc can only ever appear as a `target_doc_
+    artifact_id`, never a `source_doc_artifact_id`. Checking the wrong
+    column here would report every vendor doc as unrelated unconditionally,
+    since none of them are ever a source. `check`'s report-only
+    coverage-gap section, never `--strict`-blocking, same posture as every
+    other graph-derived coverage gap.
+    """
+    rows = conn.execute(
+        """
+        SELECT da.path FROM doc_artifacts da
+        WHERE da.kind = 'vendor_doc'
+          AND NOT EXISTS (
+              SELECT 1 FROM doc_relations_edges dre WHERE dre.target_doc_artifact_id = da.id
           )
         ORDER BY da.path
         """

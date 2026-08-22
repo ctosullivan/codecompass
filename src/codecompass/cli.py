@@ -458,6 +458,9 @@ def _print_coverage_gap_sections(project_root: Path) -> None:
         _print_name_list_table(
             "Spec docs with no detected relations", graph.spec_docs_without_relations(conn)
         )
+        _print_name_list_table(
+            "Vendor docs with no detected relations", graph.vendor_docs_without_relations(conn)
+        )
     finally:
         conn.close()
 

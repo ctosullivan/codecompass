@@ -469,6 +469,87 @@ def test_rebuild_project_graph_scans_project_tests_directory(
     assert path == "tests/test_app.py"
 
 
+def test_rebuild_project_graph_registers_vendor_upstream_docs(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Phase 27: a vendor's cloned upstream `README.md` (root-level, at the
+    clone root `vendor/<name>/src/`) becomes a `doc_artifacts` row with
+    `kind='vendor_doc'`, `origin='vendor_upstream'` on an ordinary
+    whole-project sync — no separate opt-in needed.
+    """
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    fake_repo = _build_fake_repo(tmp_path)  # writes fake_repo/README.md
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _fake_clone(fake_repo))
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+    # `rebuild_project_graph` itself never clones — only `sync_vendor` does
+    # (the real whole-project `sync` flow always runs `sync_all` first, see
+    # `cli.py`), so the clone this scan reads from has to exist already.
+    sync_vendor(config, tmp_path)
+
+    rebuild_project_graph([config], tmp_path)
+
+    conn = open_graph(tmp_path)
+    row = conn.execute(
+        "SELECT kind, origin, path, name FROM doc_artifacts WHERE kind = 'vendor_doc'"
+    ).fetchone()
+    assert row is not None
+    kind, origin, path, name = row
+    assert kind == "vendor_doc"
+    assert origin == "vendor_upstream"
+    assert path == "vendor/demo/src/README.md"
+    assert name == "demo README.md"
+
+
+def test_rebuild_project_graph_vendor_upstream_docs_never_produce_uses_edges(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Phase 15's `vendor/`-exclusion fix (false-positive usage detection)
+    must still hold: registering a vendor's embedded doc as a `doc_
+    artifacts` row is purely additive and must never resurrect a `uses_
+    edges` row sourced from inside `vendor/`.
+    """
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    fake_repo = _build_fake_repo(tmp_path)
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _fake_clone(fake_repo))
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+    sync_vendor(config, tmp_path)  # populates vendor/demo/src/ with the clone
+
+    rebuild_project_graph([config], tmp_path)
+
+    conn = open_graph(tmp_path)
+    source_file_paths = {
+        path for (path,) in conn.execute("SELECT path FROM source_files")
+    }
+    assert not any(p.startswith("vendor/") for p in source_file_paths)
+    (uses_count,) = conn.execute("SELECT COUNT(*) FROM uses_edges").fetchone()
+    assert uses_count == 0
+
+
+def test_rebuild_project_graph_skips_vendor_upstream_docs_when_clone_missing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """No `resolve_and_clone` patch here — cloning fails/falls back to the
+    local snapshot the same way `test_sync_vendor_clone_failure_falls_back_
+    to_local_snapshot` exercises for `sync_vendor` — so `vendor/demo/src/`
+    exists but was never populated from a real upstream repo. No crash, and
+    no `vendor_doc` rows manufactured from local-install content.
+    """
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+    sync_vendor(config, tmp_path)  # clone fails; falls back to local snapshot
+
+    rebuild_project_graph([config], tmp_path)
+
+    conn = open_graph(tmp_path)
+    (vendor_doc_count,) = conn.execute(
+        "SELECT COUNT(*) FROM doc_artifacts WHERE kind = 'vendor_doc'"
+    ).fetchone()
+    assert vendor_doc_count == 0
+
+
 def test_rebuild_project_graph_reflects_full_tracked_list_not_a_subset(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

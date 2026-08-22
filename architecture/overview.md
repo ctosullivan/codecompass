@@ -849,7 +849,15 @@ table, `doc_relations_edges` — a project's own spec docs (`docs/**/*.md`,
 `decisions/**/*.md`, etc.) mechanically linked to vendors/other doc
 artifacts, the first half of a new three-way relationship feature (Phase
 22 adds AI enrichment over these edges, deliberately separate — see
-[`decisions/0037`](../decisions/0037-spec-docs-get-a-dedicated-table-and-glob-based-detection.md)). See
+[`decisions/0037`](../decisions/0037-spec-docs-get-a-dedicated-table-and-glob-based-detection.md)).
+Phase 27 widens `doc_artifacts` once more — `kind='vendor_doc'`,
+`origin='vendor_upstream'` — for a vendor's own embedded upstream doc
+files (`vendor/<name>/src/README.md` and a small fixed set of siblings),
+registered as one more `doc_artifacts` source so `doc_relations_edges`,
+`query relations`, and `check`'s coverage-gap section pick them up with no
+further changes (see
+[`decisions/0041`](../decisions/0041-vendor-upstream-docs-are-a-new-doc-artifacts-kind-root-level-only.md)).
+See
 [`decisions/0032`](../decisions/0032-context-graph-stored-in-sqlite.md)
 (SQLite over the original `decisions/0024` JSON-file choice) and
 [`decisions/0025`](../decisions/0025-context-graph-rebuilds-only-on-whole-project-sync.md)
@@ -876,10 +884,16 @@ tables:
 - `uses_edges` (`source_file → vendor`/`symbol`, `symbol_id` nullable for
   a usage that resolves to a vendor but not a specific symbol),
   `doc_artifacts` (`kind` one of `claude_md`/`overview`/`skill`/
-  `cursor_mdc`/`slash_command`/`spec_doc`; `origin` one of
-  `codecompass_tool`/`codecompass_vendor`/`third_party`/`project` —
+  `cursor_mdc`/`slash_command`/`spec_doc`/`vendor_doc`; `origin` one of
+  `codecompass_tool`/`codecompass_vendor`/`third_party`/`project`/
+  `vendor_upstream` —
   `spec_doc`/`project` added in Phase 21 for a project's own
   human-authored docs, distinct from every generated/third-party kind;
+  `vendor_doc`/`vendor_upstream` added in Phase 27 for a vendor's own
+  embedded upstream doc files (`vendor/<name>/src/README.md` and
+  siblings) — upstream-*authored* content codecompass merely indexes,
+  distinct from both `codecompass_vendor` (codecompass-generated) and
+  `project` (this project's own hand-authored docs);
   `vendor_id` nullable for tool-level artifacts like the unconditional
   tool Skill, `decisions/0020`), `documents_edges` (a doc artifact
   documenting one symbol), `skill_mentions_edges` (a Skill mechanically
@@ -1395,6 +1409,65 @@ enrichment calls, inside the same `try`/confirm block — one prompt, one
 shows each relationship's `ai_summary` when one exists, else "mentioned,
 not yet enriched" — the same two-state display `query vendor` already
 uses for `has_enrichment`.
+
+### Vendor-embedded upstream docs (extended `codecompass.doc_mapping`)
+
+**New in Phase 27 — a vendor's own cloned upstream repository commonly
+ships real documentation alongside its source
+(`vendor/<name>/src/README.md`, `CHANGELOG.md`, etc.) that had no
+`doc_artifacts` row at all before this phase, since every project-tree
+scanner (`spec_docs.scan_spec_docs`, `usage.py`) deliberately prunes
+`vendor/` (Phase 15, to stop a vendor's own source self-referencing its
+own package name as false "project uses this vendor" evidence) — pruning
+this phase does not undo.** Registers those files as one more
+`doc_artifacts` source instead: mechanical only, no new edge-detection or
+enrichment machinery — Phase 21/22's existing `doc_relations_edges`/
+relationship-enrichment mechanism already generalizes to any `doc_
+artifacts` row, so a vendor doc becomes an eligible `mentions_artifact`
+*target* (never a source — only spec docs scan outward, decisions/0037)
+the same way a per-vendor `CLAUDE.md`/`OVERVIEW.md` already is, with zero
+further changes downstream. See
+[`decisions/0041`](../decisions/0041-vendor-upstream-docs-are-a-new-doc-artifacts-kind-root-level-only.md).
+
+`doc_mapping.py` gains one function, a sibling to `collect_vendor_doc_
+artifacts` rather than a new module (this scan is narrower and inherently
+vendor-scoped, closer in shape to that function than to `spec_docs.
+scan_spec_docs`'s whole-project glob):
+- `collect_vendor_upstream_doc_artifacts(configs, project_root) ->
+  list[DocArtifactRow]` — for each tracked vendor, globs a small fixed
+  root-level filename set (`README*.md`, `CHANGELOG.md`,
+  `CONTRIBUTING.md`, `SECURITY.md`, `MIGRATION.md`) directly under its
+  *cloned source* root (`vendor/<name>/src/` — not `vendor/<name>/`
+  itself, which only holds codecompass's own generated files), no
+  recursion into subdirectories. Produces `kind='vendor_doc'`,
+  `origin='vendor_upstream'` rows — deliberately distinct from
+  `collect_vendor_doc_artifacts`'s `origin='codecompass_vendor'`: this is
+  upstream-*authored* content codecompass merely indexes, not content it
+  generated. A vendor with no clone on disk yet is skipped entirely, the
+  same tolerant posture `collect_vendor_doc_artifacts` already takes
+  toward a not-yet-synced vendor's missing `CLAUDE.md`.
+
+`sync.rebuild_project_graph` calls the new function alongside `collect_
+vendor_doc_artifacts`/`skill_scan.scan_skills`/`spec_docs.scan_spec_docs`,
+folding its output into the same `doc_artifact_rows` list and into `build_
+doc_relations_edges`'s `other_doc_artifact_rows` argument — same wiring
+shape as every other scan+edge-build pair already there, no changes to
+`build_documents_edges`/`build_routes_via_edges`/`build_doc_relations_
+edges` themselves (they already ignore/pass through a `kind` they don't
+special-case).
+
+`check` gains a parallel report-only coverage-gap section, "Vendor docs
+with no detected relations" (`graph.vendor_docs_without_relations`) —
+kept separate from "Spec docs with no detected relations" rather than
+folded into it, since the two check opposite `doc_relations_edges`
+columns: a spec doc's own *outgoing* mentions (`source_doc_artifact_id`)
+versus whether anything mentions a vendor doc at all (`target_doc_
+artifact_id`) — a vendor doc is never a relation source. Never
+`--strict`-blocking, same posture as every other coverage gap. `query
+relations <name>` needed no code change at all: it already resolves any
+`doc_artifacts` row by path or by `name`, so a vendor doc's name (e.g.
+`"anthropic README.md"`) works as a reverse-lookup target exactly like a
+Skill's or a dependency doc's name already did.
 
 ## `undo` — best-effort generated-artifact cleanup (`codecompass.cli`)
 

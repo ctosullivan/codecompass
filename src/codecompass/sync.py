@@ -10,7 +10,8 @@ writer of that data; `sync_vendor` never generates it), and per-vendor
 `CLAUDE.md` templating — writing everything under `vendor/<name>/`. Also
 `rebuild_project_graph` (Phase 11, extended in
 Phase 12 with doc/skill-mapping data via `codecompass.doc_mapping`/
-`codecompass.skill_scan`), which rebuilds `context-graph.db` from every
+`codecompass.skill_scan`, and in Phase 27 with a scan of each vendor's own
+embedded upstream doc files), which rebuilds `context-graph.db` from every
 tracked vendor's current state plus a fresh project-source usage scan —
 decoupled from `sync_all`'s per-vendor loop on purpose (see
 planning/phase-11-project-source-usage-detection.md's Design decisions)
@@ -18,8 +19,9 @@ and called only from the two whole-project call sites in `cli.py`. See
 planning/phase-4-sync-index-init.md, planning/phase-5-gap-analysis.md,
 planning/phase-7-bootstrap-and-promote.md,
 planning/phase-11-project-source-usage-detection.md,
-planning/phase-12-doc-and-wide-skill-mapping.md, and
-planning/phase-16-retire-depth.md.
+planning/phase-12-doc-and-wide-skill-mapping.md,
+planning/phase-16-retire-depth.md, and
+planning/phase-27-register-embedded-vendor-docs.md.
 """
 
 from __future__ import annotations
@@ -40,6 +42,7 @@ from codecompass.doc_mapping import (
     build_documents_edges,
     build_routes_via_edges,
     collect_vendor_doc_artifacts,
+    collect_vendor_upstream_doc_artifacts,
 )
 from codecompass.filetree import (
     build_symbol_index,
@@ -302,9 +305,12 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
     source_file_rows = [SourceFileRow(path=p) for p in sorted(source_file_paths)]
 
     vendor_doc_rows = collect_vendor_doc_artifacts(configs, project_root)
+    vendor_upstream_doc_rows = collect_vendor_upstream_doc_artifacts(configs, project_root)
     skill_doc_rows = skill_scan.scan_skills(project_root, configs)
     spec_doc_rows = spec_docs.scan_spec_docs(project_root)
-    doc_artifact_rows = vendor_doc_rows + skill_doc_rows + spec_doc_rows
+    doc_artifact_rows = (
+        vendor_doc_rows + vendor_upstream_doc_rows + skill_doc_rows + spec_doc_rows
+    )
 
     documents_edge_rows = build_documents_edges(doc_artifact_rows, symbol_rows, project_root)
     skill_mentions_edge_rows = skill_scan.build_skill_mentions_edges(
@@ -313,7 +319,10 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
     routes_via_edge_rows = build_routes_via_edges(configs, doc_artifact_rows)
     depends_on_edge_rows = build_depends_on_edges(configs, project_root)
     doc_relations_edge_rows = build_doc_relations_edges(
-        spec_doc_rows, configs, vendor_doc_rows + skill_doc_rows, project_root
+        spec_doc_rows,
+        configs,
+        vendor_doc_rows + vendor_upstream_doc_rows + skill_doc_rows,
+        project_root,
     )
 
     conn = open_graph(project_root)

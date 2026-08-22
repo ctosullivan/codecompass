@@ -24,6 +24,25 @@ from codecompass.graph import (
 
 _DEPTREE_FILENAME = "deptree.json"
 
+# Root-level-only, fixed filename set (Phase 27, decisions/0041) — not a
+# recursive **/*.md glob, which would sweep up a vendor's own
+# node_modules/build output/nested-package docs inside a monorepo-shaped
+# clone, and not every language's `docs/`-folder convention either (a
+# larger dependency's own `docs/` can hold hundreds of arbitrarily nested,
+# uncurated files). `README*.md` matches every root-level README variant a
+# clone actually has (`README.md`, `README.cn.md`, etc.) rather than just
+# the bare `README.md` — simplest pattern that still satisfies the plan's
+# examples, at the cost of also picking up a vendor's own translated
+# READMEs when it has them at the root (see decisions/0041's Alternatives
+# considered).
+_VENDOR_UPSTREAM_DOC_GLOB_PATTERNS = (
+    "README*.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "MIGRATION.md",
+)
+
 
 def collect_vendor_doc_artifacts(
     configs: list[VendorConfig], project_root: Path
@@ -60,6 +79,51 @@ def collect_vendor_doc_artifacts(
                     origin="codecompass_vendor",
                     vendor_name=config.name,
                     name=f"{config.name} OVERVIEW.md",
+                )
+            )
+    return rows
+
+
+def collect_vendor_upstream_doc_artifacts(
+    configs: list[VendorConfig], project_root: Path
+) -> list[DocArtifactRow]:
+    """One `kind='vendor_doc'` row per matched top-level doc file found
+    directly under each tracked vendor's *cloned source* root
+    (`vendor/<name>/src/` — the clone root `sync.sync_vendor`/
+    `source_resolution.resolve_and_clone` actually write to, not
+    `vendor/<name>/` itself, which only ever holds codecompass's own
+    generated `CLAUDE.md`/`OVERVIEW.md`/`FILETREE.md`/`DEPTREE.md`). All
+    rows are `origin='vendor_upstream'` — deliberately distinct from
+    `collect_vendor_doc_artifacts`'s `origin='codecompass_vendor'` above:
+    this is upstream-*authored* content codecompass merely indexes, not
+    content it generated itself (see decisions/0041).
+
+    Matched against `_VENDOR_UPSTREAM_DOC_GLOB_PATTERNS`, root-level only —
+    no recursion into subdirectories (so a vendor's own nested `docs/`
+    folder, `node_modules`, or monorepo sub-packages are never swept up). A
+    vendor with no clone on disk yet (unresolved source, or not yet synced)
+    is skipped entirely, the same tolerant posture `collect_vendor_doc_
+    artifacts` already takes toward a not-yet-synced vendor's missing
+    `CLAUDE.md`.
+    """
+    rows: list[DocArtifactRow] = []
+    for config in configs:
+        clone_root = project_root / "vendor" / config.name / "src"
+        if not clone_root.is_dir():
+            continue
+
+        matched: set[Path] = set()
+        for pattern in _VENDOR_UPSTREAM_DOC_GLOB_PATTERNS:
+            matched.update(p for p in clone_root.glob(pattern) if p.is_file())
+
+        for doc_path in sorted(matched):
+            rows.append(
+                DocArtifactRow(
+                    path=doc_path.relative_to(project_root).as_posix(),
+                    kind="vendor_doc",
+                    origin="vendor_upstream",
+                    vendor_name=config.name,
+                    name=f"{config.name} {doc_path.name}",
                 )
             )
     return rows

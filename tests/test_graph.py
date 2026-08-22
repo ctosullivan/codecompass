@@ -27,6 +27,7 @@ from codecompass.graph import (
     symbol_profile,
     unused_vendors,
     used_but_undocumented,
+    vendor_docs_without_relations,
     vendor_profile,
 )
 
@@ -162,7 +163,7 @@ def test_init_schema_seeds_schema_version(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "3"
+    assert value == "4"
 
 
 def test_init_schema_is_idempotent(tmp_path) -> None:
@@ -172,7 +173,7 @@ def test_init_schema_is_idempotent(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "3"
+    assert value == "4"
 
 
 def test_doc_artifacts_accepts_slash_command_kind(tmp_path) -> None:
@@ -196,6 +197,19 @@ def test_doc_artifacts_accepts_spec_doc_kind_and_project_origin(tmp_path) -> Non
     conn = open_graph(tmp_path)
     conn.execute(
         "INSERT INTO doc_artifacts (kind, origin, path) VALUES ('spec_doc', 'project', 'README.md')"
+    )  # must not raise
+
+
+def test_doc_artifacts_accepts_vendor_doc_kind_and_vendor_upstream_origin(tmp_path) -> None:
+    """Phase 27: `doc_artifacts.kind`'s CHECK constraint gained `'vendor_doc'`
+    and `origin`'s gained `'vendor_upstream'` — a fresh database must accept
+    both directly (a migration test below covers an already-existing
+    pre-Phase-27 db).
+    """
+    conn = open_graph(tmp_path)
+    conn.execute(
+        "INSERT INTO doc_artifacts (kind, origin, path) VALUES "
+        "('vendor_doc', 'vendor_upstream', 'vendor/demo/src/README.md')"
     )  # must not raise
 
 
@@ -259,17 +273,22 @@ def test_open_graph_migrates_pre_phase_17_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "3"
+    assert schema_version == "4"
 
     # Would raise sqlite3.IntegrityError under the pre-migration constraint.
     conn.execute(
         "INSERT INTO doc_artifacts (kind, origin, path) VALUES "
         "('slash_command', 'codecompass_tool', '.claude/commands/discovery.md')"
     )
-    # Same for Phase 21's widened values, migrated to in the same pass since
-    # this simulated db's stored version ("1") is older than both.
+    # Same for Phase 21's and Phase 27's widened values, migrated to in the
+    # same pass since this simulated db's stored version ("1") is older
+    # than all three.
     conn.execute(
         "INSERT INTO doc_artifacts (kind, origin, path) VALUES ('spec_doc', 'project', 'README.md')"
+    )
+    conn.execute(
+        "INSERT INTO doc_artifacts (kind, origin, path) VALUES "
+        "('vendor_doc', 'vendor_upstream', 'vendor/demo/src/README.md')"
     )
 
     # The stale documents_edges row (referencing a doc_artifacts id wiped
@@ -291,10 +310,12 @@ def test_open_graph_migrates_pre_phase_21_schema(tmp_path) -> None:
     """Simulates a `context-graph.db` created at Phase 17-20's schema
     (`schema_version` "2", `doc_artifacts.kind`/`origin` CHECK constraints
     not yet widened for spec docs) — `open_graph` must migrate it in place:
-    bump `schema_version` to "3" and accept `kind='spec_doc'`,
-    `origin='project'` afterward. `doc_relations_edges` itself needs no
-    migration (a brand-new table `init_schema`'s `CREATE TABLE IF NOT
-    EXISTS` creates directly), only `doc_artifacts`'s constraints do.
+    bump `schema_version` (now "4", since this simulated db's stored
+    version is older than every widening since) and accept
+    `kind='spec_doc'`, `origin='project'` afterward. `doc_relations_edges`
+    itself needs no migration (a brand-new table `init_schema`'s `CREATE
+    TABLE IF NOT EXISTS` creates directly), only `doc_artifacts`'s
+    constraints do.
     """
     db_path = tmp_path / "context-graph.db"
     old_conn = sqlite3.connect(db_path)
@@ -326,17 +347,70 @@ def test_open_graph_migrates_pre_phase_21_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "3"
+    assert schema_version == "4"
 
     # Would raise sqlite3.IntegrityError under the pre-Phase-21 constraints.
     conn.execute(
         "INSERT INTO doc_artifacts (kind, origin, path) VALUES ('spec_doc', 'project', 'README.md')"
+    )
+    # Same for Phase 27's widened values.
+    conn.execute(
+        "INSERT INTO doc_artifacts (kind, origin, path) VALUES "
+        "('vendor_doc', 'vendor_upstream', 'vendor/demo/src/README.md')"
     )
 
     table_names = {
         name for (name,) in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
     }
     assert "doc_relations_edges" in table_names
+
+
+def test_open_graph_migrates_pre_phase_27_schema(tmp_path) -> None:
+    """Simulates a `context-graph.db` created at Phase 21-26's schema
+    (`schema_version` "3", `doc_artifacts.kind`/`origin` CHECK constraints
+    not yet widened for vendor-embedded upstream docs) — `open_graph` must
+    migrate it in place: bump `schema_version` to "4" and accept
+    `kind='vendor_doc'`, `origin='vendor_upstream'` afterward.
+    """
+    db_path = tmp_path / "context-graph.db"
+    old_conn = sqlite3.connect(db_path)
+    old_conn.execute("PRAGMA foreign_keys = ON")
+    old_conn.executescript(
+        """
+        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE vendors (
+          id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE,
+          ecosystem TEXT NOT NULL, installed_version TEXT
+        );
+        CREATE TABLE doc_artifacts (
+          id INTEGER PRIMARY KEY,
+          vendor_id INTEGER REFERENCES vendors(id) ON DELETE CASCADE,
+          kind TEXT NOT NULL CHECK (
+            kind IN ('claude_md','overview','skill','cursor_mdc','slash_command','spec_doc')
+          ),
+          origin TEXT CHECK (
+            origin IN ('codecompass_tool','codecompass_vendor','third_party','project')
+          ),
+          path TEXT NOT NULL UNIQUE, name TEXT, description TEXT
+        );
+        """
+    )
+    old_conn.execute("INSERT INTO meta (key, value) VALUES ('schema_version', '3')")
+    old_conn.commit()
+    old_conn.close()
+
+    conn = open_graph(tmp_path)
+
+    (schema_version,) = conn.execute(
+        "SELECT value FROM meta WHERE key = 'schema_version'"
+    ).fetchone()
+    assert schema_version == "4"
+
+    # Would raise sqlite3.IntegrityError under the pre-Phase-27 constraints.
+    conn.execute(
+        "INSERT INTO doc_artifacts (kind, origin, path) VALUES "
+        "('vendor_doc', 'vendor_upstream', 'vendor/demo/src/README.md')"
+    )
 
 
 def test_open_graph_migration_is_noop_when_schema_version_already_current(tmp_path) -> None:
@@ -717,6 +791,44 @@ def test_spec_docs_without_relations_lists_only_the_unrelated_one(tmp_path) -> N
     rebuild_deterministic(conn, **_fixture_kwargs())
 
     assert spec_docs_without_relations(conn) == [_UNRELATED_SPEC_DOC_PATH]
+
+
+def test_vendor_docs_without_relations_lists_only_the_unmentioned_one(tmp_path) -> None:
+    """A vendor doc (`kind='vendor_doc'`, Phase 27) is only ever a
+    `doc_relations_edges` *target*, never a source — this checks the
+    opposite column from `spec_docs_without_relations` above, not a
+    parameterized copy of the same query (decisions/0041).
+    """
+    conn = open_graph(tmp_path)
+    kwargs = _fixture_kwargs()
+    mentioned_vendor_doc_path = "vendor/used-lib/src/README.md"
+    unmentioned_vendor_doc_path = "vendor/unused-lib/src/README.md"
+    kwargs["doc_artifacts"] = kwargs["doc_artifacts"] + [
+        DocArtifactRow(
+            path=mentioned_vendor_doc_path,
+            kind="vendor_doc",
+            origin="vendor_upstream",
+            vendor_name="used-lib",
+            name="used-lib README.md",
+        ),
+        DocArtifactRow(
+            path=unmentioned_vendor_doc_path,
+            kind="vendor_doc",
+            origin="vendor_upstream",
+            vendor_name="unused-lib",
+            name="unused-lib README.md",
+        ),
+    ]
+    kwargs["doc_relations_edges"] = kwargs["doc_relations_edges"] + [
+        DocRelationEdgeRow(
+            source_doc_artifact_path=_SPEC_DOC_PATH,
+            relation_kind="mentions_artifact",
+            target_doc_artifact_path=mentioned_vendor_doc_path,
+        ),
+    ]
+    rebuild_deterministic(conn, **kwargs)
+
+    assert vendor_docs_without_relations(conn) == [unmentioned_vendor_doc_path]
 
 
 # --- doc_relation_enrichment (Phase 22) --------------------------------------

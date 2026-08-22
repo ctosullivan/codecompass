@@ -151,14 +151,16 @@ prints a one-line note pointing at `sync` rather than a traceback.
 - `codecompass query relations <name> [--json]` — given a spec-doc path
   (e.g. `architecture/overview.md`), what it mechanically mentions —
   tracked vendors and other doc artifacts (`graph.doc_relations`); given a
-  vendor name or another doc artifact's name (a Skill, a dependency doc),
-  which spec docs mechanically mention it (a reverse lookup). Errors if
-  `<name>` matches nothing in the graph at all. A project's spec docs
-  (README, `ARCHITECTURE.md`, `docs/**/*.md`, `decisions/**/*.md`, etc.)
-  are detected automatically on every whole-project `sync` — no separate
-  command needed to pick them up. Each relation also shows an AI-enriched
-  `ai_summary` (Phase 22, `doc_relation_enrichment`) once usage-driven
-  Phase B enrichment has run over it, else "mentioned, not yet enriched".
+  vendor name or another doc artifact's name (a Skill, a dependency doc,
+  or — Phase 27 — a vendor's own embedded upstream doc, e.g.
+  `"anthropic README.md"`), which spec docs mechanically mention it (a
+  reverse lookup). Errors if `<name>` matches nothing in the graph at all.
+  A project's spec docs (README, `ARCHITECTURE.md`, `docs/**/*.md`,
+  `decisions/**/*.md`, etc.) are detected automatically on every
+  whole-project `sync` — no separate command needed to pick them up. Each
+  relation also shows an AI-enriched `ai_summary` (Phase 22,
+  `doc_relation_enrichment`) once usage-driven Phase B enrichment has run
+  over it, else "mentioned, not yet enriched".
 
 ```bash
 codecompass query vendors
@@ -219,17 +221,23 @@ actually regenerates.
   transitive-only (DEPTREE) bump — the latter shows as "transitive drift"
   in the Notes column but never affects `--strict`'s exit code, since it's
   lower risk than the vendor itself moving.
-- **Coverage-gap sections** (Phase 15, extended Phase 21), report-only and
-  always alongside the staleness table if `context-graph.db` exists (a
-  one-line note instead if it doesn't): "Unused vendors"
-  (`graph.unused_vendors`), "Documented but unused" / "Used but
-  undocumented" (`graph.documented_but_unused`/`used_but_undocumented`),
-  "Third-party skill mentions with no backing vendor/symbol" (Skills/
-  `.mdc` rules not authored by codecompass that mention no known vendor
-  or source file), and "Spec docs with no detected relations"
-  (`graph.spec_docs_without_relations` — a project's own spec doc
-  mentioning no known vendor or other doc artifact; could mean genuinely
-  unrelated content, could mean a naming mismatch worth a look). **None of
+- **Coverage-gap sections** (Phase 15, extended Phase 21 and Phase 27),
+  report-only and always alongside the staleness table if
+  `context-graph.db` exists (a one-line note instead if it doesn't):
+  "Unused vendors" (`graph.unused_vendors`), "Documented but unused" /
+  "Used but undocumented" (`graph.documented_but_unused`/
+  `used_but_undocumented`), "Third-party skill mentions with no backing
+  vendor/symbol" (Skills/`.mdc` rules not authored by codecompass that
+  mention no known vendor or source file), "Spec docs with no detected
+  relations" (`graph.spec_docs_without_relations` — a project's own spec
+  doc mentioning no known vendor or other doc artifact; could mean
+  genuinely unrelated content, could mean a naming mismatch worth a look),
+  and "Vendor docs with no detected relations"
+  (`graph.vendor_docs_without_relations` — a vendor's own embedded
+  upstream doc file, e.g. `vendor/<name>/src/README.md`, that no project
+  spec doc mechanically mentions by name; a separate section from "Spec
+  docs" rather than folded into it, since a vendor doc is only ever a
+  *target* of a relation, never a source). **None of
   these affect `--strict`'s exit code** — it stays scoped to version-drift
   severity alone, confirmed during this rework's planning interview.
 

@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 27**: a cloned vendor's own embedded upstream doc files
+  (`README*.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`,
+  `MIGRATION.md` at its clone root, `vendor/<name>/src/`) are now
+  registered as `doc_artifacts` rows (`kind='vendor_doc'`,
+  `origin='vendor_upstream'` — new CHECK values, `_SCHEMA_VERSION` "3" →
+  "4"), via new `doc_mapping.collect_vendor_upstream_doc_artifacts`. Every
+  downstream mechanism picks them up unchanged: they're eligible
+  `mentions_artifact` targets for Phase 21's mention-detection and
+  Phase 22's AI-enriched relationship summaries, appear in `query
+  relations`, and `check` gained a new "Vendor docs with no detected
+  relations" section. Root-level files only, deliberately not a
+  recursive scan of a vendor's own `docs/` folder. Confirmed against
+  this repo: 28 real vendor-doc rows registered across all four tracked
+  vendors, with no impact on Phase 15's existing `vendor/`
+  usage-detection exclusion. See `decisions/0041`.
+
 - **Phase 26**: `usage.detect_python_imports` now upgrades a plain
   `import X` (or `import X as alias`) to symbol-level usage evidence when
   the code actually accesses an attribute of it (`X.Attr(...)`) — an

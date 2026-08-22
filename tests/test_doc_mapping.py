@@ -8,6 +8,7 @@ from codecompass.doc_mapping import (
     build_documents_edges,
     build_routes_via_edges,
     collect_vendor_doc_artifacts,
+    collect_vendor_upstream_doc_artifacts,
 )
 from codecompass.graph import DependsOnEdgeRow, DocArtifactRow, SymbolRow
 
@@ -67,6 +68,95 @@ def test_collect_vendor_doc_artifacts_includes_overview_only_if_present(tmp_path
     assert overview_row.path == "vendor/demo/OVERVIEW.md"
     assert overview_row.origin == "codecompass_vendor"
     assert overview_row.vendor_name == "demo"
+
+
+# --- collect_vendor_upstream_doc_artifacts -----------------------------------
+
+
+def _write_clone_file(project_root: Path, vendor_name: str, filename: str, text: str) -> Path:
+    clone_root = project_root / "vendor" / vendor_name / "src"
+    clone_root.mkdir(parents=True, exist_ok=True)
+    path = clone_root / filename
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def test_collect_vendor_upstream_doc_artifacts_finds_readme(tmp_path: Path) -> None:
+    _write_clone_file(tmp_path, "demo", "README.md", "# demo\n")
+    configs = [_config("demo")]
+
+    rows = collect_vendor_upstream_doc_artifacts(configs, tmp_path)
+
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.path == "vendor/demo/src/README.md"
+    assert row.kind == "vendor_doc"
+    assert row.origin == "vendor_upstream"
+    assert row.vendor_name == "demo"
+    assert row.name == "demo README.md"
+
+
+def test_collect_vendor_upstream_doc_artifacts_matches_the_fixed_filename_set(
+    tmp_path: Path,
+) -> None:
+    for filename in ("README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md", "MIGRATION.md"):
+        _write_clone_file(tmp_path, "demo", filename, f"# {filename}\n")
+    _write_clone_file(tmp_path, "demo", "api.md", "# not in the fixed set\n")
+    configs = [_config("demo")]
+
+    rows = collect_vendor_upstream_doc_artifacts(configs, tmp_path)
+
+    matched_names = {row.name for row in rows}
+    assert matched_names == {
+        "demo README.md",
+        "demo CHANGELOG.md",
+        "demo CONTRIBUTING.md",
+        "demo SECURITY.md",
+        "demo MIGRATION.md",
+    }
+
+
+def test_collect_vendor_upstream_doc_artifacts_matches_readme_variants(tmp_path: Path) -> None:
+    _write_clone_file(tmp_path, "demo", "README.md", "# demo\n")
+    _write_clone_file(tmp_path, "demo", "README.cn.md", "# demo (cn)\n")
+    configs = [_config("demo")]
+
+    rows = collect_vendor_upstream_doc_artifacts(configs, tmp_path)
+
+    matched_names = {row.name for row in rows}
+    assert matched_names == {"demo README.md", "demo README.cn.md"}
+
+
+def test_collect_vendor_upstream_doc_artifacts_ignores_nested_files(tmp_path: Path) -> None:
+    _write_clone_file(tmp_path, "demo", "README.md", "# demo\n")
+    nested = tmp_path / "vendor" / "demo" / "src" / "docs"
+    nested.mkdir(parents=True)
+    (nested / "features.md").write_text("# nested, must be ignored\n", encoding="utf-8")
+    configs = [_config("demo")]
+
+    rows = collect_vendor_upstream_doc_artifacts(configs, tmp_path)
+
+    assert [row.path for row in rows] == ["vendor/demo/src/README.md"]
+
+
+def test_collect_vendor_upstream_doc_artifacts_skips_vendor_without_clone(tmp_path: Path) -> None:
+    configs = [_config("demo")]
+
+    rows = collect_vendor_upstream_doc_artifacts(configs, tmp_path)
+
+    assert rows == []
+
+
+def test_collect_vendor_upstream_doc_artifacts_ignores_files_outside_the_fixed_set(
+    tmp_path: Path,
+) -> None:
+    _write_clone_file(tmp_path, "demo", "LICENSE", "MIT\n")
+    _write_clone_file(tmp_path, "demo", "helpers.md", "# not in the fixed set\n")
+    configs = [_config("demo")]
+
+    rows = collect_vendor_upstream_doc_artifacts(configs, tmp_path)
+
+    assert rows == []
 
 
 # --- build_documents_edges ---------------------------------------------------
