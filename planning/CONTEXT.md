@@ -147,28 +147,32 @@ Verified independently throughout: `pytest` 371 → 398 → 440 passed (1
 skipped throughout), `ruff check .` clean at every step, core-logic diffs
 read directly (not just test output) against each plan. Phase 21's manual
 dogfooding sync confirmed real spec docs detected/related in this repo.
-**Phase 22's live-API validation step (a real, disclosed Anthropic call
-confirming a real `ai_summary` appears and the spec doc's file stays
-byte-identical) is the immediate next action, not yet done as of this
-note** — see below.
+
+**Phase 22's live-API validation, now done**: ran a real `sync --yes`
+against this repo — one Anthropic call, 23 relationships enriched
+(~$0.02), genuinely grounded summaries (e.g. correctly identified `rich`
+as used for terminal rendering, `typer` as the CLI framework, from real
+`architecture/overview.md` content, verified via `query relations
+architecture/overview.md --json`). `sha256` of `architecture/overview.md`/
+`README.md`/`decisions/0037-*.md` confirmed byte-identical before and
+after — the non-negotiable boundary held in practice, not just in mocked
+tests. Only the tool Skill/discovery command (tracked generated
+artifacts) regenerated, picking up the new `doc_relation_enrichment`
+schema mention; committed separately.
 
 ## Next concrete step
 
-**Run Phase 22's live-API validation** (same posture as the earlier
-live-enrichment validation session: one real, disclosed, small-cost
-Anthropic call against this repo itself, confirming a real relationship
-summary appears via `query relations` and that the mentioned spec doc's
-file is byte-identical before/after — the concrete proof the
-never-write-to-spec-docs boundary holds in practice, not just in code).
+**Phase 23 (Polish/PyPI publish) has no plan file yet** — write it per
+`CLAUDE.md` §1 before implementing it. This is the release itself: its
+*actual* publish step is a hard-to-reverse, externally-visible action
+(claiming a PyPI package name forever) that must pause for explicit user
+confirmation, not proceed automatically even under a broad "implement to
+release" instruction — the safe/reversible parts (packaging metadata,
+examples, docs-site evaluation) can be implemented directly, but the
+`twine upload`/tag-cut step itself needs an explicit go-ahead.
 
-Then: **Phase 23 (Polish/PyPI publish)** still has no plan file — write it
-per `CLAUDE.md` §1 before implementing it, and its *actual* publish step
-is a hard-to-reverse, externally-visible action (claiming a PyPI package
-name forever) that must pause for explicit user confirmation, not proceed
-automatically even under a broad "implement to release" instruction.
-
-Three decisions remain genuinely open, none blocking the live validation
-or Phase 23 planning from starting immediately:
+Two decisions remain genuinely open, none blocking Phase 23 planning from
+starting immediately:
 
 1. **Cutting the `v0.2` git tag and promoting `CHANGELOG.md`'s
    `[Unreleased]` section to a dated release** (`CLAUDE.md` §6,
@@ -182,9 +186,6 @@ or Phase 23 planning from starting immediately:
    past v1.0** — proposed in `planning/v1.0-initial-release-roadmap.md`'s
    "Why this order" section, not locked. Flagged back to the user, not
    decided unilaterally.
-3. **Phase 23 (Polish/PyPI publish)** has no plan file yet — needs one
-   before implementation per `CLAUDE.md` §1, same as every other phase.
-
 **Still outstanding, not a blocker but worth remembering:**
 - The graph/enrichment ordering gap (routing table/tool Skill/`undo`
   freshness immediately after a vendor's first enrichment) is **resolved
