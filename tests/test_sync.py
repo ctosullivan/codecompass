@@ -142,16 +142,67 @@ def test_sync_vendor_full_depth_clones_repo_into_src(
     assert digest.description_error is None
 
 
-def test_sync_vendor_depth_surface_does_not_copy_snapshot(
+def test_sync_vendor_surface_depth_clones_repo_into_src(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    """Since Phase 13, cloning is unconditional — a depth=surface vendor
+    now gets a real `src/` clone attempt too, not just depth=full ones.
+    """
     src = _build_source_tree(tmp_path)
     _patch_adapter(monkeypatch, source_dir=src)
+    fake_repo = _build_fake_repo(tmp_path)
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _fake_clone(fake_repo))
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE)
+
+    digest = sync_vendor(config, tmp_path)
+
+    snapshot = tmp_path / "vendor" / "demo" / "src"
+    assert (snapshot / "README.md").exists()
+    assert digest.technical_description is None
+    assert digest.description_error is None
+    assert not (tmp_path / "vendor" / "demo" / "OVERVIEW.md").exists()
+
+
+def test_sync_vendor_surface_depth_filetree_reflects_clone_not_local_install(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """FILETREE.md now renders from the clone root when cloning succeeds,
+    for every vendor including depth=surface ones (Phase 13) — a real,
+    visible output change from always reading `source_location()`.
+    """
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    fake_repo = _build_fake_repo(tmp_path)
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _fake_clone(fake_repo))
     config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE)
 
     sync_vendor(config, tmp_path)
 
-    assert not (tmp_path / "vendor" / "demo" / "src").exists()
+    filetree_md = (tmp_path / "vendor" / "demo" / "FILETREE.md").read_text(encoding="utf-8")
+    assert "README.md" in filetree_md
+    assert "__init__.py" not in filetree_md  # local-install content, not in the clone
+
+
+def test_sync_vendor_surface_depth_clone_failure_falls_back_to_local_snapshot(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A depth=surface vendor now attempts cloning too (Phase 13) — when
+    it fails, `src/` falls back to the local-install snapshot exactly as
+    a depth=full vendor's clone failure already did, even though no
+    description was ever going to be attempted here.
+    """
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE)
+
+    digest = sync_vendor(config, tmp_path)  # should not raise; no repository configured
+
+    snapshot = tmp_path / "vendor" / "demo" / "src"
+    assert (snapshot / "tests" / "test_thing.py").exists()  # kept, unlike FILETREE.md
+    assert not (snapshot / "dist").exists()  # stripped, same as FILETREE.md
+    assert (snapshot / "__init__.py").exists()
+    assert digest.description_error is not None
+    assert digest.technical_description is None
 
 
 def test_sync_vendor_is_idempotent_on_repeat_runs(
@@ -202,7 +253,11 @@ def test_sync_vendor_full_depth_writes_overview(
         lambda *a, **k: GroundedDescription(
             technical="gap found in X",
             conversational_overview="This is a friendly overview.",
-            action_pointer_file="__init__.py",
+            # FILETREE.md now renders from the clone root (fake_repo, which
+            # only contains README.md — see _build_fake_repo), not
+            # source_location()'s pkgsrc/__init__.py, so the action pointer
+            # must name a file that actually exists in the clone.
+            action_pointer_file="README.md",
             action_pointer_note="fix here",
         ),
     )
@@ -274,22 +329,29 @@ def test_sync_vendor_description_generation_failure_keeps_cloned_snapshot(
     assert not (tmp_path / "vendor" / "demo" / "OVERVIEW.md").exists()
 
 
-def test_sync_vendor_surface_depth_never_calls_source_resolution(
+def test_sync_vendor_surface_depth_never_calls_generate_description(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    """Cloning is unconditional since Phase 13 — a depth=surface vendor
+    still clones its upstream repo, but never reaches the AI-gated
+    description call.
+    """
     src = _build_source_tree(tmp_path)
     _patch_adapter(monkeypatch, source_dir=src)
+    fake_repo = _build_fake_repo(tmp_path)
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _fake_clone(fake_repo))
 
     def _fail_if_called(*args: object, **kwargs: object) -> None:
         raise AssertionError("should not be called for depth=surface")
 
-    monkeypatch.setattr(sync_module, "resolve_and_clone", _fail_if_called)
     monkeypatch.setattr(sync_module, "generate_grounded_description", _fail_if_called)
     config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON, depth=Depth.SURFACE)
 
     digest = sync_vendor(config, tmp_path)  # should not raise
 
     assert digest.technical_description is None
+    snapshot = tmp_path / "vendor" / "demo" / "src"
+    assert (snapshot / "README.md").exists()
 
 
 def test_sync_all_budget_too_low_raises_before_any_vendor_is_touched(

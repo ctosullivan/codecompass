@@ -177,17 +177,21 @@ it for per-file purpose annotations and the symbol index. See
 `FILETREE.md` and `DEPTREE.md` (plus `filetree.json`/`deptree.json`
 sidecars) involve **no AI calls** and run on every `sync` regardless of
 `depth`. `codecompass.deptree` renders from a `DepNode` tree;
-`codecompass.filetree` renders from a vendor's **locally-installed**
-source directory (`source_location()`) — unchanged in Phase 7, always
-the local install regardless of depth. This is now a distinct source
-from `vendor/<name>/src/`'s snapshot content for `depth = full` vendors:
-since Phase 7, that snapshot is cloned from the vendor's **upstream
-repository** (`codecompass.source_resolution`, `decisions/0021`) rather
-than copied from `source_location()`, since a locally-installed package
-is often a trimmed build artifact missing README/docs content the
-repository has. Both tree renderers are wired into `sync.py` (Phase 4),
-which writes their output to `FILETREE.md`/`DEPTREE.md`/`filetree.json`/
-`deptree.json` under `vendor/<name>/`.
+`codecompass.filetree` renders from `sync_vendor`'s clone-or-fallback
+root, not unconditionally `source_location()` — **since Phase 13**, that
+root is `vendor/<name>/src/`'s clone content (via
+`codecompass.source_resolution`, `decisions/0021`) for **every** vendor,
+not just `depth = full` ones, since cloning is now unconditional
+(`decisions/0033`); when this run's clone attempt fails, it falls back to
+the vendor's **locally-installed** source directory (`source_location()`)
+instead, the same fallback semantics already established for the
+`vendor/<name>/src/` snapshot itself. This is a real, visible output
+change: `FILETREE.md` now reflects a vendor's actual upstream repository
+(README, docs, tests, examples included) rather than a possibly-trimmed
+local install, for every tracked vendor whose clone succeeds. Both tree
+renderers are wired into `sync.py` (Phase 4), which writes their output to
+`FILETREE.md`/`DEPTREE.md`/`filetree.json`/`deptree.json` under
+`vendor/<name>/`.
 
 - `deptree.render_deptree_markdown(root: DepNode, *, max_depth: int = 20)
   -> str` / `render_deptree_json(root, *, max_depth=20) -> dict` —
@@ -231,9 +235,18 @@ which writes their output to `FILETREE.md`/`DEPTREE.md`/`filetree.json`/
 
 ## Grounded description — the only AI-cost step (`codecompass.grounded_description`)
 
-Runs for every `depth = FULL` vendor, unconditionally — no longer gated
-on a project-supplied field (Phase 5's `context_path`, removed in Phase 7
-— `decisions/0019`). Uses the dated snapshot `claude-haiku-4-5-20251001`
+This section covers the AI-gated *description* step only. **Cloning
+itself is no longer exclusive to this section's scope**: since Phase 13,
+`resolve_and_clone` runs for every vendor unconditionally, also feeding
+`FILETREE.md` generation (see **Tree generation** above,
+`decisions/0033`) — it is only this section's grounded-description
+generation that stays gated, on `depth = FULL` and, since Phase 13,
+additionally on this run's own clone attempt for that vendor having
+succeeded; a `depth = full` vendor whose clone fails this run gets no
+description attempt (same fallback `description_error` either way). No
+longer gated on a project-supplied field (Phase 5's `context_path`,
+removed in Phase 7 — `decisions/0019`). Uses the dated snapshot
+`claude-haiku-4-5-20251001`
 — a summarization task, not agentic coding, so the cheapest capable model
 tier is the right default (`decisions/0003`, unaffected by the Phase 7
 mechanism swap); pinned to a dated snapshot rather than the rolling

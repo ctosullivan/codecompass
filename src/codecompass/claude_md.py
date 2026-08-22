@@ -15,7 +15,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from codecompass.core import VendorDigest
+from codecompass.core import Depth, VendorDigest
 
 _INSTALLED_VERSION_RE = re.compile(r"\*\*Installed version:\*\*\s*(\S+)")
 
@@ -78,7 +78,20 @@ def _render_description_section(digest: VendorDigest) -> str | None:
     an explicit "unavailable" note rather than being indistinguishable
     from "never ran" — consistent with this project's never-silent-
     failure convention (explicit collapse/cap notices elsewhere).
+
+    Gated on `depth is FULL` first, *before* looking at
+    `description_error` — since Phase 13, cloning (and therefore
+    `description_error`) happens for every vendor, not just `depth =
+    full` ones, so a `depth = surface` vendor can have a clone-failure
+    `description_error` set despite never having attempted a description
+    at all. Without this gate, that vendor would show a misleading
+    "Description unavailable" note for an AI step it was never eligible
+    for in the first place — the error here is about the source clone,
+    not about grounded description, and belongs in Known Gotchas /
+    standalone-mode context, not this section.
     """
+    if digest.config.depth is not Depth.FULL:
+        return None
     if digest.description_error:
         return f"_Description unavailable: `{digest.description_error}`_"
     if not digest.technical_description:

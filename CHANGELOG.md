@@ -7,8 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A `depth = surface` vendor whose source clone fails no longer shows a
+  misleading "## Description — Description unavailable" section in its
+  `CLAUDE.md` — `_render_description_section` now gates on `depth is
+  FULL` before ever looking at `description_error`, since Phase 13 made
+  cloning (and therefore `description_error`) universal, decoupling it
+  from whether a description was ever attempted. Caught during
+  independent verification of Phase 13, not by automated tests (nothing
+  before Phase 13 could produce this combination, so nothing asserted
+  its absence) — see `planning/v0.2-implementation-execution-plan.md`
+  for the reinforced verification step this prompted.
+
 ### Added
 
+- **Phase 13: universal source cloning** — implements
+  `planning/phase-13-universal-source-cloning.md` and `decisions/0033`.
+  `sync.sync_vendor` restructured: cloning now runs unconditionally for
+  every vendor (previously gated on `depth = full`), independent of
+  grounded-description generation (still `depth`-gated, additionally
+  requiring this run's own clone to have succeeded). `FILETREE.md`/
+  `filetree.json`/the symbol index now render from the clone root when
+  available, with the existing local-install fallback — a real, visible
+  output change for every vendor, not just previously-`FULL` ones.
+  `pytest`: 299 passed, 1 skipped; `ruff check .` clean.
 - **Phase 12: doc & wide skill mapping** — implements
   `planning/phase-12-doc-and-wide-skill-mapping.md`. New
   `src/codecompass/doc_mapping.py` (`collect_vendor_doc_artifacts`,

@@ -3,11 +3,12 @@
 Wires together an ecosystem adapter (Phase 2), Phase 3's tree renderers,
 Phase 7's AI-gated grounded-description generation (`depth = full`
 vendors, unconditional — replaced Phase 5's `context_path`-gated gap
-analysis, decisions/0019), a `vendor/<name>/src/` snapshot for `depth =
-full` vendors (now sourced from the vendor's own upstream repository via
-`codecompass.source_resolution`, not the local install — decisions/0021),
-and per-vendor `CLAUDE.md` templating — writing everything under
-`vendor/<name>/`. Also `rebuild_project_graph` (Phase 11, extended in
+analysis, decisions/0019), a `vendor/<name>/src/` snapshot sourced from
+the vendor's own upstream repository via `codecompass.source_resolution`
+(decisions/0021) — since Phase 13, cloned unconditionally for every
+vendor, not just `depth = full` ones (decisions/0033) — and per-vendor
+`CLAUDE.md` templating — writing everything under `vendor/<name>/`. Also
+`rebuild_project_graph` (Phase 11, extended in
 Phase 12 with doc/skill-mapping data via `codecompass.doc_mapping`/
 `codecompass.skill_scan`), which rebuilds `context-graph.db` from every
 tracked vendor's current state plus a fresh project-source usage scan —
@@ -67,6 +68,16 @@ def sync_vendor(config: VendorConfig, project_root: Path) -> VendorDigest:
     every output file listed below is fully overwritten on each call, no
     diffing against previous output.
 
+    Since Phase 13, cloning and description generation are two
+    independent decisions. Cloning (`resolve_and_clone`, falling back to
+    `_copy_source_snapshot` on failure) runs unconditionally for every
+    vendor — it costs nothing (no AI call) and its only historical reason
+    for being depth-gated was that it existed solely to feed grounded
+    description. Grounded-description generation stays gated on `config.depth
+    is Depth.FULL`, and additionally only runs if this call's own clone
+    attempt succeeded — a `depth = full` vendor whose clone fails gets no
+    description attempt this run, same as before Phase 13.
+
     A `depth = full` vendor's description failure is caught locally: the
     vendor still gets its deterministic output (with an explicit
     "unavailable" note in `CLAUDE.md` instead of a silently missing
@@ -74,11 +85,12 @@ def sync_vendor(config: VendorConfig, project_root: Path) -> VendorDigest:
     distinct failure points are handled separately: if source resolution/
     cloning itself fails, `vendor/<name>/src/` falls back to the old
     local-install-sourced snapshot (decisions/0004) so standalone
-    browsing still has *something*; if cloning succeeds but the AI call
-    fails, the real clone is kept as-is (better than discarding it for a
-    stale local-install copy). Budget enforcement happens in `sync_all`,
-    before any vendor's `sync_vendor` runs — this function never checks
-    budget itself.
+    browsing still has *something*, and `FILETREE.md`/`filetree.json`/the
+    symbol index fall back to rendering from `source_location()` too; if
+    cloning succeeds but the AI call fails, the real clone is kept as-is
+    (better than discarding it for a stale local-install copy). Budget
+    enforcement happens in `sync_all`, before any vendor's `sync_vendor`
+    runs — this function never checks budget itself.
     """
     adapter = get_adapter(config, project_root)
     installed_version = adapter.installed_version()
@@ -89,20 +101,23 @@ def sync_vendor(config: VendorConfig, project_root: Path) -> VendorDigest:
     vendor_dir = project_root / "vendor" / config.name
     vendor_dir.mkdir(parents=True, exist_ok=True)
 
-    description = None
+    src_dest = vendor_dir / "src"
     description_error = None
-    if config.depth is Depth.FULL:
-        src_dest = vendor_dir / "src"
+    try:
+        repo_root: Path | None = resolve_and_clone(adapter, src_dest)
+    except SourceResolutionError as exc:
+        description_error = str(exc)
+        _copy_source_snapshot(source_location, src_dest)
+        repo_root = None
+
+    description = None
+    if config.depth is Depth.FULL and repo_root is not None:
         try:
-            repo_root = resolve_and_clone(adapter, src_dest)
-        except SourceResolutionError as exc:
+            description = generate_grounded_description(config, repo_root)
+        except GroundedDescriptionError as exc:
             description_error = str(exc)
-            _copy_source_snapshot(source_location, src_dest)
-        else:
-            try:
-                description = generate_grounded_description(config, repo_root)
-            except GroundedDescriptionError as exc:
-                description_error = str(exc)
+
+    tree_root = repo_root if repo_root is not None else source_location
 
     action_pointer = None
     if description and description.action_pointer_file:
@@ -114,13 +129,11 @@ def sync_vendor(config: VendorConfig, project_root: Path) -> VendorDigest:
         json.dumps(render_deptree_json(dep_tree_root), indent=2), encoding="utf-8"
     )
 
-    file_tree_markdown = _render_filetree_with_symbol_index(
-        source_location, config, action_pointer
-    )
+    file_tree_markdown = _render_filetree_with_symbol_index(tree_root, config, action_pointer)
     (vendor_dir / "FILETREE.md").write_text(file_tree_markdown, encoding="utf-8")
     (vendor_dir / "filetree.json").write_text(
         json.dumps(
-            render_filetree_json(source_location, config.ecosystem, action_pointer=action_pointer),
+            render_filetree_json(tree_root, config.ecosystem, action_pointer=action_pointer),
             indent=2,
         ),
         encoding="utf-8",
@@ -160,18 +173,20 @@ def sync_all(
 
 
 def _render_filetree_with_symbol_index(
-    source_location: Path, config: VendorConfig, action_pointer: tuple[str, str] | None
+    tree_root: Path, config: VendorConfig, action_pointer: tuple[str, str] | None
 ) -> str:
     """The flat symbol index renders as a section within FILETREE.md
     ("alongside the nested tree", architecture/overview.md) rather than a
     separate sidecar file — sync produces five deterministic output files
     per vendor (six for a `depth = full` vendor whose gap analysis
-    succeeds, which additionally gets `OVERVIEW.md`).
+    succeeds, which additionally gets `OVERVIEW.md`). `tree_root` is the
+    clone root when this vendor's clone succeeded this run, else the
+    local-install `source_location()` fallback (Phase 13).
     """
     tree_markdown = render_filetree_markdown(
-        source_location, config.ecosystem, action_pointer=action_pointer
+        tree_root, config.ecosystem, action_pointer=action_pointer
     )
-    symbol_index = build_symbol_index(source_location, config.ecosystem)
+    symbol_index = build_symbol_index(tree_root, config.ecosystem)
     if not symbol_index:
         return tree_markdown
     return f"{tree_markdown}\n\n## Symbol index\n\n{symbol_index}"

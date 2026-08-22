@@ -71,6 +71,18 @@ def test_description_section_shows_explicit_unavailable_note_on_failure() -> Non
     assert "_Description unavailable: `Anthropic API call failed: timeout`_" in markdown
 
 
+def test_description_section_omitted_for_surface_vendor_even_with_error_set() -> None:
+    """Since Phase 13, cloning (and therefore `description_error`) happens
+    for every vendor, not just `depth = full` ones — a `depth = surface`
+    vendor whose clone failed must not show a misleading "Description
+    unavailable" note for an AI step it was never eligible for.
+    """
+    markdown = render_vendor_claude_md(
+        _digest(description_error="git clone https://example.com/turndown failed: timeout")
+    )
+    assert "Description" not in markdown
+
+
 def test_known_gotchas_from_side_effects() -> None:
     markdown = render_vendor_claude_md(
         _digest(side_effects=["npm postinstall script: node build.js"])
