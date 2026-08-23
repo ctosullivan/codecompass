@@ -4,13 +4,14 @@ Grounded, version-pinned dependency reference docs for AI coding agents.
 
 ## Status
 
-**Pre-release, v1.0.0 in progress (phases 0-22 all `done`; Phase 23 —
-packaging polish and the PyPI publish itself — is the last phase before a
-`v1.0` tag).** Bare `codecompass`, `init`, `sync`, `index`, `check`,
-`query`, `chat`, and `undo` are all fully implemented. `promote` was
-removed in Phase 15 (`decisions/0033`) — its former jobs (clone, enrich,
-generate Skill) are now automatic outcomes of bootstrap/`sync`. Not yet
-published to PyPI. See [`planning/`](planning/) for phase-by-phase status.
+**Pre-release, v1.0.0 in progress (phases 0-36 all `done`; Phase 23 Part B —
+the actual PyPI publish — is now the only thing left before a `v1.0` tag,
+paused for explicit user confirmation).** Bare `codecompass`, `init`, `sync`,
+`index`, `check`, `query`, `chat`, and `undo` are all fully implemented.
+`promote` was removed in Phase 15 (`decisions/0033`) — its former jobs
+(clone, enrich, generate Skill) are now automatic outcomes of
+bootstrap/`sync`. Not yet published to PyPI. See [`planning/`](planning/)
+for phase-by-phase status.
 
 ## What it is
 
@@ -24,6 +25,61 @@ agent can consult instead of guessing. It also builds a SQLite context
 graph of your project's vendors, symbols, and actual usage, exposed to both
 humans and agents through `codecompass query` and a generated `/discovery`
 slash command.
+
+If you're an AI agent rather than a human reader, see
+[`ai-docs/README.md`](ai-docs/README.md) for a capability/boundary overview
+and example prompts, and [`ai-docs/CLAUDE.md`](ai-docs/CLAUDE.md) as an
+entrypoint.
+
+## Setup
+
+- **Python `>=3.11`** (see `pyproject.toml`).
+- **`git` installed and on `PATH`** — required locally; every tracked
+  vendor's source is cloned from its own upstream repository
+  (`decisions/0021`).
+- **`ANTHROPIC_API_KEY`** — optional. Read automatically from the
+  environment by the `anthropic` SDK (nothing in codecompass passes an
+  explicit key). Only needed if you want AI enrichment (Phase B, below) or
+  `codecompass chat` to run; everything else works with it unset.
+
+```bash
+pip install -e ".[dev]"    # not yet published to PyPI — local dev install
+```
+
+## AI enrichment vs. no-AI usage
+
+Everything below is **free and always-on, no API key needed**: file trees,
+dependency trees, public API surface extraction, pinned source snapshots,
+the SQLite context graph, staleness checking (`check`), the generated
+Skills scaffold and root `CLAUDE.md` routing table, `/discovery`, and
+`undo`. This is "Phase A" — it runs on every `codecompass`/`sync` call, no
+prompts, no cost.
+
+**Phase B** — usage-driven AI enrichment — only runs for vendors your
+project's own source actually imports, and only after disclosing an
+estimated cost and getting your confirmation (`--yes` to skip the prompt,
+`--budget` to cap spend). It adds: a grounded vendor description, a
+conversational overview, per-symbol purposes, and AI-generated summaries of
+how your own docs relate to your dependencies. Skip it entirely with
+`--budget 0` — Phase A's output is unaffected either way.
+
+Real output from running `codecompass --budget 0` (from
+[`examples/README.md`](examples/README.md), which also shows what Phase B
+adds once you drop `--budget 0`):
+
+```
+$ codecompass --budget 0
+bootstrapped vendor.toml — 2 vendor(s) tracked, 2 newly discovered
+enrichment will make ~1 AI call(s) (~$0.02) using claude-haiku-4-5-20251001 to
+describe 2 vendor(s): click, requests, and 0 relationship(s)
+error: estimated cost $0.02 for 1 batch(es) covering 2 vendor(s) and 0
+relationship(s) exceeds --budget $0.00 — raise --budget or wait for fewer to
+need enrichment
+```
+
+Exit code is non-zero (Phase B was refused on cost grounds), but everything
+Phase A already wrote — trees, `CLAUDE.md`, the cloned source snapshot, the
+routing table, `context-graph.db` — stays in place; nothing rolls back.
 
 ## Core idea
 
@@ -115,14 +171,6 @@ enrichment, the context graph, generated Skills/`/discovery`, the two
 consumption modes (standalone vendor folder vs. routed from project root),
 staleness checking, and the chat REPL.
 
-## Installation
-
-Not yet published to PyPI. For local development:
-
-```bash
-pip install -e ".[dev]"
-```
-
 ## Documentation
 
 - [`docs/cli-reference.md`](docs/cli-reference.md) — CLI command reference
@@ -131,6 +179,8 @@ pip install -e ".[dev]"
 - [`decisions/`](decisions/) — architecture decision records
 - [`examples/`](examples/) — a small, real worked example with real
   codecompass output, for skimming without installing anything
+- [`ai-docs/`](ai-docs/) — a capability/boundary overview and entrypoint for
+  an AI agent orienting to this project (see "What it is" above)
 
 ## Contributing
 

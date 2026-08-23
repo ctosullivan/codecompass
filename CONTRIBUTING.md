@@ -122,5 +122,6 @@ pytest
 ruff check .
 ```
 
-(This will expand once the `src/codecompass/` package has real modules —
-see `planning/CONTEXT.md` for current phase status.)
+See [`README.md`](README.md)'s Setup section for external requirements
+(Python version, `git`, the optional `ANTHROPIC_API_KEY`), and
+[`planning/CONTEXT.md`](planning/CONTEXT.md) for current phase status.
