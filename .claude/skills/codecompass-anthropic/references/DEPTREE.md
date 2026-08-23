@@ -1,23 +1,22 @@
-- anthropic@0.121.0
-  - anyio@4.14.2
-    - idna@3.18
-    - typing_extensions@4.16.0
+- anthropic@0.109.1
+  - anyio@4.6.2.post1
+    - idna@3.10
+    - sniffio@1.3.1
   - distro@1.9.0
   - docstring_parser@0.18.0
-  - httpx@0.28.1
-    - anyio@4.14.2 (see anyio@4.14.2 above)
-    - certifi@2026.7.22
-    - httpcore@1.0.9
-      - certifi@2026.7.22 (see certifi@2026.7.22 above)
-      - h11@0.16.0
-    - idna@3.18 (see idna@3.18 above)
-  - jiter@0.16.0
-  - pydantic@2.13.4
-    - annotated-types@0.8.0
-    - pydantic_core@2.46.4
-      - typing_extensions@4.16.0 (see typing_extensions@4.16.0 above)
-    - typing_extensions@4.16.0 (see typing_extensions@4.16.0 above)
-    - typing-inspection@0.4.2
-      - typing_extensions@4.16.0 (see typing_extensions@4.16.0 above)
-  - sniffio@1.3.1
-  - typing_extensions@4.16.0 (see typing_extensions@4.16.0 above)
+  - httpx@0.27.2
+    - anyio@4.6.2.post1 (see anyio@4.6.2.post1 above)
+    - certifi@2024.8.30
+    - httpcore@1.0.7
+      - certifi@2024.8.30 (see certifi@2024.8.30 above)
+      - h11@0.14.0
+    - idna@3.10 (see idna@3.10 above)
+    - sniffio@1.3.1 (see sniffio@1.3.1 above)
+  - jiter@0.7.1
+  - pydantic@2.10.1
+    - annotated-types@0.7.0
+    - pydantic_core@2.27.1
+      - typing_extensions@4.15.0
+    - typing_extensions@4.15.0 (see typing_extensions@4.15.0 above)
+  - sniffio@1.3.1 (see sniffio@1.3.1 above)
+  - typing_extensions@4.15.0 (see typing_extensions@4.15.0 above)

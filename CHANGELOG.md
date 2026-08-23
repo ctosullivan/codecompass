@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Phase 33**: `codecompass query vendors|vendor|symbol|skills|relations
+  --json` no longer emits invalid JSON. Every `--json` call site printed
+  through the shared Rich `Console`, which word-wraps long printed text by
+  inserting real line breaks; a value long enough to cross the wrap width
+  (e.g. `anthropic`'s longer symbol `purpose` strings, confirmed live
+  against this repo's real graph) got a literal newline inserted into it,
+  corrupting the JSON. Fixed by adding `soft_wrap=True` to all five call
+  sites — the same flag Rich's own `Console.print_json` uses internally
+  for exactly this case. New regression test confirmed to fail against the
+  pre-fix code and pass against the fix. Found via a `/discovery` session
+  testing Phase 21/22/27/28/29's relationship-graph quality; that
+  session's other flagged item (a `check` version-drift reading that
+  looked backwards) was investigated and confirmed not a bug — see
+  `planning/phase-33-fix-query-json-line-wrapping.md`'s Context section.
+
 ### Added
 
 - **Phase 29**: a vendor's own embedded upstream doc (`kind='vendor_doc'`,

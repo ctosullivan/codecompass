@@ -84,7 +84,7 @@ Returns:
 - scripts/utils/ruffen-docs.py  — fork of https://github.com/asottile/blacken-docs adapted for ruff
 - scripts/utils/upload-artifact.sh  — !/usr/bin/env bash
 - SECURITY.md  — Security Policy
-- src/anthropic/__init__.py  — File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
+- src/anthropic/__init__.py  — File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.  ← ACTION TARGET: This file shows all the exported symbols from the SDK, including the client classes and the full exception hierarchy, providing a clear overview of the public API.
 - src/anthropic/_base_client.py  — Stores the necessary information to build the request to retrieve the next page.
 
 Either `url` or `params` must be set.

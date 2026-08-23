@@ -1051,6 +1051,48 @@ def test_query_vendor_unknown_name_errors(
     assert "not found" in result.output
 
 
+def test_query_vendor_json_with_long_purpose_stays_parseable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Phase 33 regression: Rich's Console.print word-wraps long printed
+    # text by inserting real line breaks. A short-fixture test would never
+    # exercise this — the purpose text here is deliberately long enough to
+    # cross Rich's default wrap width, which corrupted the JSON before
+    # `soft_wrap=True` was added to every `query --json` call site.
+    monkeypatch.chdir(tmp_path)
+    long_purpose = "does stuff, and also does a lot more stuff besides — " * 5
+    conn = graph.open_graph(tmp_path)
+    graph.rebuild_deterministic(
+        conn,
+        vendors=[graph.VendorRow(name="used-lib", ecosystem="npm", installed_version="1.2.3")],
+        source_files=[graph.SourceFileRow(path="src/app.ts")],
+        symbols=[
+            graph.SymbolRow(vendor_name="used-lib", name="doStuff", purpose=long_purpose)
+        ],
+        uses_edges=[
+            graph.UsesEdgeRow(
+                source_file_path="src/app.ts",
+                vendor_name="used-lib",
+                symbol_name="doStuff",
+                line=1,
+            )
+        ],
+        doc_artifacts=[],
+        documents_edges=[],
+        skill_mentions_edges=[],
+        routes_via_edges=[],
+        depends_on_edges=[],
+        doc_relations_edges=[],
+    )
+    conn.close()
+
+    result = runner.invoke(app, ["query", "vendor", "used-lib", "--json"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["symbols"][0]["purpose"] == long_purpose
+
+
 def test_query_symbol_returns_matches_across_vendors(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

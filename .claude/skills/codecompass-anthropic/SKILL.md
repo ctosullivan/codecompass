@@ -1,16 +1,16 @@
 ---
 name: codecompass-anthropic
 description: >-
-  API questions, known gotchas, and internals for anthropic (python), pinned to the installed version. This is Anthropic's official Python SDK for talking to the Claude API. You create an `Anthropic` client, configure it with your API key, and then call methods like `messages.create()` to send prompts to Claude and get responses back. It handles all the HTTP communication and gives you nice error types when things go wrong. There's also async versions if you need them, and you can even add custom m
+  API questions, known gotchas, and internals for anthropic (python), pinned to the installed version. This is the official Python SDK for Claude, Anthropic's AI model. You use it to send messages to Claude and get responses back. You create an `Anthropic` client object, pass it your API key, and then call methods like `messages.create()` to have Claude process your inputs. The SDK handles all the HTTP communication, error handling, and retries for you. It also provides proper exception types so yo
 ---
 
 # anthropic
 
-Grounded description of the installed `anthropic` (0.121.0), retrieved from its own upstream repository — not from training knowledge. See `vendor/anthropic/CLAUDE.md` for the full per-vendor digest.
+Grounded description of the installed `anthropic` (0.109.1), retrieved from its own upstream repository — not from training knowledge. See `vendor/anthropic/CLAUDE.md` for the full per-vendor digest.
 
-The Anthropic SDK is a Python client library for accessing the Claude API (as documented in the README and `src/anthropic/__init__.py`). The main entry point is the `Anthropic` class, which is a synchronous HTTP client that provides access to Claude models via `client.messages.create()` calls with parameters like `max_tokens`, `messages`, and `model`. The SDK is generated from an OpenAPI specification using Stainless and exports a comprehensive exception hierarchy in the `_exceptions` module. The `AnthropicError` is the base exception class for all API errors, with more specific subclasses like `APIStatusError`, `BadRequestError`, `AuthenticationError`, `RateLimitError`, and others. The SDK also provides `AsyncAnthropic` for async operations, streaming support via `Stream` and `AsyncStream`, middleware support through `Middleware` and `MiddlewareCallable`, and utility functions like `file_from_path`. The SDK requires Python 3.10+.
+The Anthropic Python SDK provides a client interface to the Claude API. The core export is the `Anthropic` class (defined in `src/anthropic/__init__.py` and `_client.py`), which is instantiated with an API key and provides a `messages.create()` method for interacting with Claude models. The SDK is built on top of HTTP client infrastructure (using httpx) and provides request/response handling through `APIRequest` and `APIResponse` classes. The `AnthropicError` is the base exception class from `_exceptions.py` that all API-related errors inherit from, including `APIStatusError`, `APITimeoutError`, `APIConnectionError`, and various HTTP status code-specific errors like `BadRequestError`, `AuthenticationError`, `NotFoundError`, `RateLimitError`, etc. The SDK also exports utility types like `NOT_GIVEN`, `NotGiven`, and `Omit` from `_types.py` for handling optional parameters, and supports both synchronous (`Anthropic`, `Client`) and asynchronous (`AsyncAnthropic`, `AsyncClient`) usage patterns.
 
-**Worth reading next:** `src/anthropic/__init__.py` — This file shows all the exported symbols from the SDK, including the client classes and the full exception hierarchy, providing a clear overview of the public API.
+**Worth reading next:** `src/anthropic/__init__.py` — This file shows the main exports and structure of the SDK, including how to instantiate the Anthropic client and the exception hierarchy.
 
 ## References
 

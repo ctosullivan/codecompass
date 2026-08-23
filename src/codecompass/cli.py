@@ -521,7 +521,7 @@ def query_vendors(
                 }
             )
         if json_output:
-            console.print(json.dumps(results, indent=2))
+            console.print(json.dumps(results, indent=2), soft_wrap=True)
             return
         table = Table("Vendor", "Ecosystem", "Version", "Used", "Enriched")
         for r in results:
@@ -556,7 +556,7 @@ def query_vendor(
             console.print(f"[red]error:[/red] {name!r} not found in context-graph.db")
             raise typer.Exit(code=1)
         if json_output:
-            console.print(json.dumps(profile, indent=2))
+            console.print(json.dumps(profile, indent=2), soft_wrap=True)
             return
         vendor = profile["vendor"]
         console.print(
@@ -602,7 +602,7 @@ def query_symbol(
     try:
         profiles = graph.symbol_profile(conn, name)
         if json_output:
-            console.print(json.dumps(profiles, indent=2))
+            console.print(json.dumps(profiles, indent=2), soft_wrap=True)
             return
         if not profiles:
             console.print(f"[yellow]no symbol named {name!r} found in context-graph.db[/yellow]")
@@ -644,7 +644,7 @@ def query_skills(
                 if not entry["mentions_vendors"] and not entry["mentions_source_files"]
             ]
         if json_output:
-            console.print(json.dumps(index_rows, indent=2))
+            console.print(json.dumps(index_rows, indent=2), soft_wrap=True)
             return
         table = Table("Path", "Name", "Origin", "Mentions vendors", "Mentions files")
         for entry in index_rows:
@@ -785,7 +785,7 @@ def query_relations(
             console.print(f"[red]error:[/red] {name!r} not found in context-graph.db")
             raise typer.Exit(code=1)
         if json_output:
-            console.print(json.dumps(relations, indent=2))
+            console.print(json.dumps(relations, indent=2), soft_wrap=True)
             return
         table = Table("Relation", "Other")
         table.add_column("AI summary", no_wrap=True)
