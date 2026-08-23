@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 35**: `README.md` gains a real Setup section (Python `>=3.11`,
+  `git` as a required local dependency, `ANTHROPIC_API_KEY` as the optional
+  env var gating AI enrichment — previously undocumented anywhere) and a
+  standalone "AI enrichment vs. no-AI usage" section reusing
+  `examples/README.md`'s real `--budget 0` transcript. New `ai-docs/`
+  folder: `ai-docs/README.md` (capability/boundary overview for an agent,
+  each "does NOT do" claim traced to a real ADR, plus example prompts) and
+  `ai-docs/CLAUDE.md` (agent entrypoint, distinct from root `CLAUDE.md`).
+  `CONTRIBUTING.md`'s stale "package has real modules" closing line
+  removed. Requested directly by the user, added to v1.0's blocking scope.
+- **Phase 36**: new maintainer-only `scripts/check_user_docs.py` (outside
+  `src/codecompass/`, not a shipped feature) mechanically flags drift
+  between this repo's own hand-authored docs and its own code: CLI command
+  coverage in `docs/cli-reference.md`, README phase-count consistency with
+  `planning/ROADMAP.md`, `ANTHROPIC_API_KEY` mention, `VendorConfig` field
+  coverage in `docs/config-schema.md`, and `ai-docs/` file presence.
+  Report-only by default, `--strict` for exit-code gating. New
+  `.claude/skills/docs-sync/SKILL.md` instructs an agent to run it and fix
+  findings by judgment, never mechanically — no auto-fix path exists.
+
 ### Fixed
 
 - **Phase 34**: `doc_chunking.chunk_markdown` no longer misdetects a

@@ -111,6 +111,8 @@ with `promote`/`Depth` fully retired and chat re-framed as secondary.
 | 32 | Heading-based doc chunking — deterministic heading-boundary split of markdown doc artifacts into a new `doc_chunks` table; nullable, additive `chunk_id` on `documents_edges`/`doc_relations_edges` sharpens Phase 30's trace output and Phase 31/28's enrichment excerpt precision without changing existing whole-doc fallback behavior (decisions/0046). Confirmed live: chunked `architecture/overview.md`'s real ~1,600 lines correctly; a real enrichment excerpt now slices exactly from its matched chunk; the Phase 28 fallback and Phase 29 self-mention exclusion both confirmed still correct under the new per-chunk pass | done | [`phase-32-doc-chunking.md`](phase-32-doc-chunking.md) |
 | 33 | Fix invalid JSON from `query --json`'s Rich line-wrapping — every `--json` call site printed pre-serialized JSON through the shared Rich `Console`, which word-wraps long text by inserting real line breaks; a value long enough to cross the wrap width got a literal newline inserted into it, corrupting the JSON. Confirmed live against this repo's own `query vendor anthropic --json`. Found via the same `/discovery` session that surfaced Phases 30-32; the session's other flagged item (a version-drift reading that looked backwards) was investigated and confirmed **not** a bug — `check`'s "live" column reads the currently-installed version in this environment, not a PyPI-latest lookup, and this repo's `.venv` genuinely has an older `anthropic` installed than what was last recorded | done | [`phase-33-fix-query-json-line-wrapping.md`](phase-33-fix-query-json-line-wrapping.md) |
 | 34 | Fix `doc_chunking`'s heading detection inside fenced code blocks — a `#`-prefixed comment inside a ` ``` `/`~~~` fence (e.g. example shell/Python code) was misdetected as a real markdown heading, corrupting `heading_path`. Found via a `/discovery` session testing Phase 30-33's real output; scanning all 84 chunkable doc artifacts found 37 false-positive lines, 12 of which had already produced bogus headings on `vendor/anthropic/src/MIGRATION.md`'s real `documents_edges` rows. Fixed by tracking fence state; no backfill, the next `sync` recomputes `doc_chunks` from scratch | done | [`phase-34-fix-chunking-fenced-code-blocks.md`](phase-34-fix-chunking-fenced-code-blocks.md) |
+| 35 | User-facing docs rewrite + `ai-docs/` folder — `README.md` gains a real Setup section (Python version, `git`, `ANTHROPIC_API_KEY`) and a standalone "AI enrichment vs. no-AI usage" explainer reusing `examples/README.md`'s real transcript; new `ai-docs/README.md` (capability/boundary overview with example prompts, each "does NOT do" claim traced to a real ADR) and `ai-docs/CLAUDE.md` (agent entrypoint, distinct from root `CLAUDE.md`); `CONTRIBUTING.md`'s stale closing line removed. Requested directly by the user, not found via `/discovery` | done | [`phase-35-user-facing-docs-and-ai-docs.md`](phase-35-user-facing-docs-and-ai-docs.md) |
+| 36 | Maintainer-only docs-sync script + skill — new `scripts/check_user_docs.py` (outside `src/codecompass/`, not a shipped feature, per explicit user decision) mechanically flags drift between this repo's own hand-authored docs and its own code (CLI command coverage in `docs/cli-reference.md`, README phase-count consistency with ROADMAP, `ANTHROPIC_API_KEY` mention, `VendorConfig` field coverage in `docs/config-schema.md`, `ai-docs/` file presence); new `.claude/skills/docs-sync/SKILL.md` instructs an agent to run it and fix findings by judgment, never mechanically. Confirmed live: running it against this repo today reports zero findings. Depends on Phase 35 (checks what it creates) | done | [`phase-36-docs-sync-tooling.md`](phase-36-docs-sync-tooling.md) |
 
 **Renumbering note:** none — 30/31/32 are appended after 29, keeping the
 numbering already assigned in `planning/doc-graph-precision-roadmap.md`
@@ -132,6 +134,17 @@ ahead of 23 originally is satisfied. Phases 24/25 (routing/rollup, MCP)
 remain deferred past v1.0, unaffected by this — that document's own open
 reordering question (whether they should block v1.0 instead) is still
 unresolved and orthogonal to this group.
+
+**v1.0 scope note (dated to Phase 35/36's planning session):** at explicit
+user request, Phases 35-36 (user-facing docs rewrite + `ai-docs/` folder;
+maintainer-only docs-sync tooling) were added to v1.0's blocking scope,
+alongside Phase 23 and the now-`done` 30-33 group above. **Both are now
+`done`** — Phase 23 Part B (the actual PyPI publish, already paused pending
+explicit user confirmation) no longer waits on anything from this pair.
+Unlike 30-33, this pair wasn't found via `/discovery` dogfooding — requested
+directly by the user, motivated by `README.md` lacking a real setup/AI-usage
+explainer and no agent-facing project overview existing anywhere. Phases
+24/25 remain deferred past v1.0, unaffected.
 
 **Renumbering note:** none — 26/27 are appended after the existing 24/25
 (routing/rollup, MCP) rather than inserted ahead of them. Both were found
