@@ -80,8 +80,8 @@ runs clean post-`vendor.toml` edit; `python -m build` + fresh-venv install
 + `codecompass --help` re-verified after the pin change. `python scripts/
 check_user_docs.py --strict` caught `README.md`'s phase count still
 reading "0-37" once ROADMAP's phase-38 row landed — same catch category
-Phase 37 hit — fixed inline, re-ran clean. Not yet committed or pushed as
-of this update.
+Phase 37 hit — fixed inline, re-ran clean. Committed as `feat(phase-38)`
+and pushed to `origin/main`.
 
 **Phases 35-36, done** — requested directly by the user (not found via
 `/discovery`), added to v1.0's blocking scope alongside the already-`done`
@@ -153,11 +153,9 @@ relationships found, not yet AI-enriched — see Next concrete step).
    section at the same time. None of this should happen from a broad
    "implement to release" instruction alone — claiming a PyPI package
    name and pushing a public tag are genuinely irreversible.
-2. **Confirm before pushing this session's Phase 38 commit(s)** (and this
-   `CONTEXT.md` update) to the remote — not yet committed or pushed as of
-   this update. (Phase 35/36/37's commits from the prior session are
-   already pushed — `git log`/`git status` confirm `main` is up to date
-   with `origin/main` aside from Phase 38's uncommitted changes.)
+2. ~~Confirm before pushing this session's Phase 38 commit~~ — done:
+   committed as `feat(phase-38)` and pushed to `origin/main`
+   (`c388bca`).
 3. **A one-line pointer from root `CLAUDE.md` to `ai-docs/README.md`** was
    flagged during Phase 35's planning as a plausible follow-up (Phase 35
    deliberately did not touch root `CLAUDE.md` — any edit to it needs its
