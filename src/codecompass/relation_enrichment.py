@@ -284,6 +284,23 @@ def _select_source_excerpt(source_text: str, needle: str | None) -> str:
     return source_text[:_SPEC_DOC_EXCERPT_CHAR_CAP]
 
 
+def _select_source_excerpt_from_chunk(source_text: str, start_line: int, end_line: int) -> str:
+    """The excerpt sent to the model when the mechanical match has been
+    attributed to exactly one heading-scoped chunk (Phase 32,
+    `doc_mapping.build_doc_relations_edges`'s per-chunk pass) — that
+    chunk's own text directly, in place of Phase 28's needle-re-
+    derivation-plus-fixed-window guess. `start_line`/`end_line` are
+    1-indexed and inclusive, matching `doc_chunking.DocChunk`'s
+    convention. No character cap here: a heading-scoped section is
+    already a much tighter unit than `_SPEC_DOC_EXCERPT_CHAR_CAP`'s
+    4,000-character window in the common case, and truncating a real
+    section arbitrarily would reintroduce the exact "the model doesn't
+    see the whole grounding" failure mode Phase 28 fixed.
+    """
+    lines = source_text.splitlines()
+    return "\n".join(lines[start_line - 1 : end_line])
+
+
 def select_candidates(
     conn: sqlite3.Connection, project_root: Path
 ) -> list[RelationEnrichmentCandidate]:
@@ -300,6 +317,13 @@ def select_candidates(
     rename/delete mid-session) is skipped outright, non-fatal — the same
     tolerant posture `enrichment.select_candidates` takes toward a vendor
     with no retrievable material.
+
+    Phase 32: when the candidate's edge has a `chunk_id` (`graph.
+    relation_enrichment_candidates`'s `chunk_start_line`/`chunk_end_line`
+    both set), the excerpt is that chunk's own text directly (`_select_
+    source_excerpt_from_chunk`) — Phase 28's needle-re-derivation-plus-
+    fixed-window approach (`_select_source_excerpt`) remains exactly as
+    it was, used only as the fallback when there's no chunk to prefer.
     """
     candidates: list[RelationEnrichmentCandidate] = []
 
@@ -326,7 +350,15 @@ def select_candidates(
             continue  # cache hit — neither side's grounding text has changed
 
         relation_kind = row["relation_kind"]
-        needle = _relation_needle(relation_kind, target_vendor_name, target_doc_artifact_name)
+        chunk_start_line = row.get("chunk_start_line")
+        chunk_end_line = row.get("chunk_end_line")
+        if chunk_start_line is not None and chunk_end_line is not None:
+            source_excerpt = _select_source_excerpt_from_chunk(
+                source_text, chunk_start_line, chunk_end_line
+            )
+        else:
+            needle = _relation_needle(relation_kind, target_vendor_name, target_doc_artifact_name)
+            source_excerpt = _select_source_excerpt(source_text, needle)
 
         candidates.append(
             RelationEnrichmentCandidate(
@@ -336,7 +368,7 @@ def select_candidates(
                 target_doc_path=target_doc_path,
                 target_label=target_label,
                 target_text=target_text,
-                source_excerpt=_select_source_excerpt(source_text, needle),
+                source_excerpt=source_excerpt,
                 content_hash=content_hash,
             )
         )

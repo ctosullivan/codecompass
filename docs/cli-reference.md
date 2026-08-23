@@ -125,7 +125,8 @@ codecompass sync --budget 1.00
 ## `codecompass query vendors|vendor|symbol|skills|relations`
 
 **Status:** implemented (Phase 15; `relations` added Phase 21; `used_at`/
-package-code trace added Phase 30; `relation_label` added Phase 31).
+package-code trace added Phase 30; `relation_label` added Phase 31;
+`heading` added Phase 32).
 
 Reads `context-graph.db` and renders the result as a Rich table by
 default, or raw JSON with `--json`. If `context-graph.db` doesn't exist
@@ -172,7 +173,11 @@ prints a one-line note pointing at `sync` rather than a traceback.
   `<name>` is a vendor) is itself. `--json` output is
   `{"relations": [...], "package_code": [...]}`, not a bare list — a
   relation and a usage site are different shapes that don't merge into one
-  row.
+  row. Each relation and each package-code entry also carries `heading`
+  (Phase 32) — the heading-scoped section of the doc the mechanical match
+  falls in, when the doc has headings and the match is attributable to
+  exactly one of them; `None`/blank otherwise (a headerless doc, or a
+  match that appears in more than one section).
 
 ```bash
 codecompass query vendors

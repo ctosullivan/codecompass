@@ -914,13 +914,24 @@ tables:
   `relation_kind` `'mentions_dependency'`/`'mentions_artifact'` — the same
   two-nullable-target shape `skill_mentions_edges` already established)
   — the graph's edges.
+- `doc_chunks` (Phase 32) — `id`, `doc_artifact_id`, `heading_path`,
+  `start_line`, `end_line`, `content_hash`: deterministic heading-based
+  splits of a chunkable doc artifact's markdown text
+  (`doc_chunking.chunk_markdown`), scoped to only the kinds that can ever
+  be a mention-detection source or target (`claude_md`/`overview`/
+  `vendor_doc`/`spec_doc`). `documents_edges`/`doc_relations_edges` each
+  gain a nullable `chunk_id` (`ON DELETE SET NULL`) pointing at the one
+  chunk a mechanical match was attributed to, when exactly one chunk's
+  own text contains it. **Not** the `DocChunk`/`EXPLAINS` tables from the
+  former phase-9d design that `decisions/0032` explicitly excluded from
+  this schema — same name, unrelated design (no embeddings, no semantic
+  chunking; heading-boundary-only, additive to the already-shipped
+  mechanical mention-detection pipeline). See `decisions/0046`.
 - `vendor_enrichment`/`symbol_enrichment` — the two tables that **survive
   every `rebuild_deterministic` call**, holding Phase 14's paid AI
   enrichment output (`technical_description`, `conversational_overview`,
   `action_pointer_file`/`action_pointer_note`, plus `symbol_set_hash` and
-  `model`/`generated_at` for cache-key purposes). `DocChunk`/`EXPLAINS`
-  tables from the former phase-9d design are explicitly not part of this
-  schema at all (`decisions/0032`), not even as unused tables.
+  `model`/`generated_at` for cache-key purposes).
 - `doc_relation_enrichment` (Phase 22) — a third table that **survives
   every `rebuild_deterministic` call**, holding Phase 22's paid AI
   enrichment output over `doc_relations_edges` relationships: `ai_summary`
@@ -1011,7 +1022,10 @@ none of them write, none of them decide staleness:
   project actually uses it); given a vendor name instead, returns that
   vendor's own `uses_edges` directly (`via: 'direct_usage'`, the same rows
   `vendor_profile`'s `used_at` already exposes). Empty list for a name
-  matching neither, never an error.
+  matching neither, never an error. `'documents'`/`'mentions_dependency'`
+  rows also carry `heading` (Phase 32) — the doc-side heading enclosing
+  the edge, when it has a `chunk_id`; `'direct_usage'` rows have no doc
+  side, so `heading` is always `None` there.
 - `skills_index(conn) -> list[dict]` — every `doc_artifacts` row with
   `kind='skill'`, its `origin`, and what it mechanically mentions via
   `skill_mentions_edges`.
@@ -1023,7 +1037,8 @@ none of them write, none of them decide staleness:
 - `doc_relations(conn, doc_artifact_path) -> list[dict]` (Phase 21) —
   every `doc_relations_edges` row whose source is `doc_artifact_path`,
   resolved to the target's name/path; empty for an unknown path or a spec
-  doc with zero detected mentions.
+  doc with zero detected mentions. `heading` (Phase 32) is the source
+  doc's own heading enclosing the match, when the edge has a `chunk_id`.
 - `spec_docs_without_relations(conn) -> list[str]` (Phase 21) — spec-doc
   paths with zero `doc_relations_edges` rows as their source; `check`'s
   report-only coverage-gap section for this table.
@@ -1256,6 +1271,15 @@ from `rebuild_project_graph` alongside the Phase 11 pieces above.
   yet — no row points at a nonexistent file) and one `kind='overview'` row
   for `vendor/<name>/OVERVIEW.md` if it exists (only vendors that have
   been usage-driven AI-enriched have one). Both `origin='codecompass_vendor'`.
+- `build_doc_chunks(doc_artifact_rows, project_root) -> list[DocChunkRow]`
+  (Phase 32) — `doc_chunking.chunk_markdown` over every doc artifact whose
+  kind is in `_CHUNKABLE_DOC_KINDS` (`claude_md`/`overview`/`vendor_doc`/
+  `spec_doc` — the only kinds `build_documents_edges`/`build_doc_
+  relations_edges` ever scan; chunking any other kind would produce rows
+  nothing could reference). Reads each doc's text off disk again,
+  separately from the two builder functions below — an accepted small
+  duplication, consistent with this module's "each builder function reads
+  its own inputs" shape.
 - `build_documents_edges(doc_artifact_rows, symbol_rows, project_root) ->
   list[DocumentsEdgeRow]` — for each `claude_md`/`overview`/`vendor_doc`
   doc artifact (Phase 29 widened the kind filter to include `vendor_doc`
@@ -1267,7 +1291,13 @@ from `rebuild_project_graph` alongside the Phase 11 pieces above.
   `project_root` (beyond the phase plan's originally sketched two-arg
   signature) since resolving `DocArtifactRow.path` — a natural key,
   deliberately relative — to an actual file to read requires it;
-  `build_skill_mentions_edges` below needs it for the same reason.
+  `build_skill_mentions_edges` below needs it for the same reason. Phase
+  32 additionally attempts to attribute each match to exactly one of the
+  doc's own heading-scoped chunks via `_find_containing_chunk` (`chunk_
+  markdown` over the same text, then a word-boundary re-search against
+  each chunk's own text slice), populating `DocumentsEdgeRow.chunk_start_
+  line` when it can — additive, the whole-doc edge is produced identically
+  either way.
 - `build_routes_via_edges(configs, doc_artifact_rows) ->
   list[RoutesViaEdgeRow]` — routes each vendor to its own per-vendor
   Skill doc artifact (`kind='skill'`, `origin='codecompass_vendor'`) if
@@ -1363,13 +1393,32 @@ argument — see **Vendor docs as relationship sources** below):
   dependency doc's `f"{vendor} CLAUDE.md"`-style name
   (`relation_kind='mentions_artifact'`). Source-doc-outward scanning only:
   a Skill's or dependency doc's own body mentioning a spec/vendor doc by
-  name is not scanned for, a deliberately deferred direction.
+  name is not scanned for, a deliberately deferred direction. Phase 32
+  additionally attempts chunk attribution the same way `build_documents_
+  edges` does, populating `DocRelationEdgeRow.chunk_start_line` when the
+  match falls in exactly one of the source doc's own heading-scoped
+  chunks — additive, same posture.
 
 `sync.rebuild_project_graph` calls `spec_docs.scan_spec_docs` alongside
 `skill_scan.scan_skills`/`collect_vendor_doc_artifacts`, adds the result to
 `doc_artifact_rows`, and feeds `build_doc_relations_edges`'s output into
 `rebuild_deterministic`'s new `doc_relations_edges` parameter — same
-wiring shape as every other scan+edge-build pair already there.
+wiring shape as every other scan+edge-build pair already there. Phase 32
+adds one more call, `build_doc_chunks(doc_artifact_rows, project_root)`,
+feeding `rebuild_deterministic`'s new `doc_chunks` parameter — placed
+right before `build_documents_edges` so `doc_chunks` exist before the two
+edge builders that reference them run.
+
+`doc_chunking.py` (Phase 32, new module — `codecompass.doc_chunking`):
+`chunk_markdown(text) -> list[DocChunk]` splits markdown text into
+heading-scoped chunks on any heading level, root-first nested
+`heading_path` (`"Scope > Covers"`), 1-indexed inclusive `start_line`/
+`end_line`, and a per-chunk sha256 `content_hash`. Returns `[]` for a doc
+with no headings at all — deliberately not one whole-file chunk, so a
+headerless doc naturally produces zero `doc_chunks` rows and every match
+against it stays unattributed without any special-casing elsewhere. Pure,
+no AI, no filesystem access — takes already-read text, same shape as
+every other pure transformation in this arc. See `decisions/0046`.
 
 `cli.py` gains `codecompass query relations <name>` (the `query` group's
 fifth canned query): given a spec-doc path, prints what it mechanically
@@ -1470,6 +1519,18 @@ relationships get enriched — see
 COLUMN` (not the drop-and-recreate `doc_artifacts`'s migration uses —
 this table holds paid AI spend), leaving every pre-existing row with
 `relation_label = NULL` until its next natural re-enrichment.
+
+**Phase 32 — the excerpt prefers the matched chunk's own text over
+Phase 28's fixed-window guess, when one exists.** `graph.relation_
+enrichment_candidates` now also returns `chunk_start_line`/`chunk_end_
+line` (from `doc_chunks` via the edge's `chunk_id`, both `NULL` if unset).
+When both are set, `select_candidates` uses `_select_source_excerpt_
+from_chunk` — the chunk's own text sliced directly by line range, no
+character cap — instead of calling `_select_source_excerpt` at all.
+Phase 28's needle-re-derivation-plus-fixed-window logic is otherwise
+completely unchanged and remains the fallback for any candidate without a
+chunk (a headerless source doc, or a match spanning more than one
+chunk) — not deleted, not made unreachable. See `decisions/0046`.
 
 `plan_batches`/`run_enrichment_batches` mirror `enrichment.py`'s own
 batching and forced-tool-use call shape exactly, grouping by (excerpt +

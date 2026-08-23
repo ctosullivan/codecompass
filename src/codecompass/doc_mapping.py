@@ -13,9 +13,11 @@ from collections import defaultdict
 from pathlib import Path
 
 from codecompass.core import VendorConfig
+from codecompass.doc_chunking import DocChunk, chunk_markdown
 from codecompass.graph import (
     DependsOnEdgeRow,
     DocArtifactRow,
+    DocChunkRow,
     DocRelationEdgeRow,
     DocumentsEdgeRow,
     RoutesViaEdgeRow,
@@ -129,6 +131,66 @@ def collect_vendor_upstream_doc_artifacts(
     return rows
 
 
+# Doc kinds `build_documents_edges`/`build_doc_relations_edges` ever scan
+# as a mention-detection source or target (Phase 32) — chunking a Skill/
+# `.mdc` rule/slash-command doc would produce `doc_chunks` rows nothing
+# could ever reference, since neither builder function scans those kinds.
+_CHUNKABLE_DOC_KINDS = frozenset({"claude_md", "overview", "vendor_doc", "spec_doc"})
+
+
+def build_doc_chunks(
+    doc_artifact_rows: list[DocArtifactRow], project_root: Path
+) -> list[DocChunkRow]:
+    """Heading-based chunks (Phase 32, `doc_chunking.chunk_markdown`) for
+    every doc artifact whose kind can ever be a mention-detection source
+    or target — see `_CHUNKABLE_DOC_KINDS`. Reads each doc's text off disk
+    again (already read separately by `build_documents_edges`/`build_doc_
+    relations_edges` below) — an accepted small duplication, consistent
+    with this module's existing "each builder function reads its own
+    inputs" shape rather than threading a shared text cache through every
+    function. A doc with no headings at all produces zero chunk rows
+    (`chunk_markdown`'s own contract), not an error.
+    """
+    rows: list[DocChunkRow] = []
+    for row in doc_artifact_rows:
+        if row.kind not in _CHUNKABLE_DOC_KINDS:
+            continue
+        text = (project_root / row.path).read_text(encoding="utf-8")
+        for chunk in chunk_markdown(text):
+            rows.append(
+                DocChunkRow(
+                    doc_artifact_path=row.path,
+                    heading_path=chunk.heading_path,
+                    start_line=chunk.start_line,
+                    end_line=chunk.end_line,
+                    content_hash=chunk.content_hash,
+                )
+            )
+    return rows
+
+
+def _find_containing_chunk(
+    lines: list[str], chunks: list[DocChunk], needle: str
+) -> DocChunk | None:
+    """The one chunk (of `chunks`) whose own text contains a word-boundary
+    match for `needle`, or `None` if zero or more than one chunk does —
+    Phase 32's "attributable to exactly one chunk" rule (the phase plan's
+    two named reasons `chunk_id` stays `NULL`: no headings at all, which
+    `chunks` being empty already handles for free, or a match spanning a
+    boundary — treated here as "found in more than one chunk," since a
+    single word-boundary match can't literally straddle a heading line).
+    """
+    matches = [
+        chunk
+        for chunk in chunks
+        if re.search(
+            rf"\b{re.escape(needle)}\b",
+            "\n".join(lines[chunk.start_line - 1 : chunk.end_line]),
+        )
+    ]
+    return matches[0] if len(matches) == 1 else None
+
+
 def build_documents_edges(
     doc_artifact_rows: list[DocArtifactRow],
     symbol_rows: list[SymbolRow],
@@ -143,6 +205,11 @@ def build_documents_edges(
     as authoritative a source of "this doc documents this symbol" as
     codecompass's own generated `CLAUDE.md`/`OVERVIEW.md`, and it already
     carries `vendor_name` (Phase 27), so no other change was needed here.
+
+    Phase 32: also attempts to attribute each match to exactly one of the
+    doc's own heading-scoped chunks (`doc_chunking.chunk_markdown`),
+    populating `chunk_start_line` when it can — additive, the whole-doc
+    edge is produced identically either way.
     """
     symbols_by_vendor: dict[str, list[str]] = defaultdict(list)
     for symbol in symbol_rows:
@@ -156,13 +223,17 @@ def build_documents_edges(
         if not vendor_symbols:
             continue
         text = (project_root / row.path).read_text(encoding="utf-8")
+        lines = text.splitlines()
+        chunks = chunk_markdown(text)
         for symbol_name in vendor_symbols:
             if re.search(rf"\b{re.escape(symbol_name)}\b", text):
+                chunk = _find_containing_chunk(lines, chunks, symbol_name)
                 edges.append(
                     DocumentsEdgeRow(
                         doc_artifact_path=row.path,
                         vendor_name=row.vendor_name,
                         symbol_name=symbol_name,
+                        chunk_start_line=chunk.start_line if chunk else None,
                     )
                 )
     return edges
@@ -240,6 +311,11 @@ def build_doc_relations_edges(
     doc's own body mentioning a spec/vendor doc by name is not scanned for
     here, and never will be from this function — that's a distinct,
     deliberately deferred direction.
+
+    Phase 32: also attempts to attribute each match to exactly one of the
+    source doc's own heading-scoped chunks, populating `chunk_start_line`
+    when it can — additive, the whole-doc edge is produced identically
+    either way.
     """
     vendor_names = [config.name for config in configs]
     named_artifacts = [row for row in other_doc_artifact_rows if row.name]
@@ -249,26 +325,32 @@ def build_doc_relations_edges(
         if row.kind not in _DOC_RELATION_SOURCE_KINDS:
             continue
         text = (project_root / row.path).read_text(encoding="utf-8")
+        lines = text.splitlines()
+        chunks = chunk_markdown(text)
 
         for vendor_name in vendor_names:
             if row.kind == "vendor_doc" and row.vendor_name == vendor_name:
                 continue
             if re.search(rf"\b{re.escape(vendor_name)}\b", text):
+                chunk = _find_containing_chunk(lines, chunks, vendor_name)
                 edges.append(
                     DocRelationEdgeRow(
                         source_doc_artifact_path=row.path,
                         relation_kind="mentions_dependency",
                         target_vendor_name=vendor_name,
+                        chunk_start_line=chunk.start_line if chunk else None,
                     )
                 )
 
         for artifact in named_artifacts:
             if re.search(rf"\b{re.escape(artifact.name)}\b", text):
+                chunk = _find_containing_chunk(lines, chunks, artifact.name)
                 edges.append(
                     DocRelationEdgeRow(
                         source_doc_artifact_path=row.path,
                         relation_kind="mentions_artifact",
                         target_doc_artifact_path=artifact.path,
+                        chunk_start_line=chunk.start_line if chunk else None,
                     )
                 )
 

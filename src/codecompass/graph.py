@@ -29,7 +29,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 _DB_FILENAME = "context-graph.db"
-_SCHEMA_VERSION = "5"
+_SCHEMA_VERSION = "6"
 
 # Closed taxonomy for `doc_relation_enrichment.relation_label` (Phase 31,
 # decisions/0045). `'other'` is the required fallback for any label an AI
@@ -89,6 +89,16 @@ CREATE INDEX IF NOT EXISTS idx_uses_vendor ON uses_edges(vendor_id);
 CREATE INDEX IF NOT EXISTS idx_uses_symbol ON uses_edges(symbol_id);
 CREATE INDEX IF NOT EXISTS idx_uses_source_file ON uses_edges(source_file_id);
 
+CREATE TABLE IF NOT EXISTS doc_chunks (
+  id              INTEGER PRIMARY KEY,
+  doc_artifact_id INTEGER NOT NULL REFERENCES doc_artifacts(id) ON DELETE CASCADE,
+  heading_path    TEXT NOT NULL,
+  start_line      INTEGER NOT NULL,
+  end_line        INTEGER NOT NULL,
+  content_hash    TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_doc_chunks_doc_artifact ON doc_chunks(doc_artifact_id);
+
 CREATE TABLE IF NOT EXISTS doc_artifacts (
   id          INTEGER PRIMARY KEY,
   vendor_id   INTEGER REFERENCES vendors(id) ON DELETE CASCADE,
@@ -112,7 +122,8 @@ CREATE TABLE IF NOT EXISTS doc_artifacts (
 CREATE TABLE IF NOT EXISTS documents_edges (
   id              INTEGER PRIMARY KEY,
   doc_artifact_id INTEGER NOT NULL REFERENCES doc_artifacts(id) ON DELETE CASCADE,
-  symbol_id       INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE
+  symbol_id       INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
+  chunk_id        INTEGER REFERENCES doc_chunks(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS skill_mentions_edges (
@@ -144,6 +155,7 @@ CREATE TABLE IF NOT EXISTS doc_relations_edges (
   relation_kind          TEXT NOT NULL CHECK (
                            relation_kind IN ('mentions_dependency','mentions_artifact')
                          ),
+  chunk_id               INTEGER REFERENCES doc_chunks(id) ON DELETE SET NULL,
   UNIQUE (source_doc_artifact_id, target_vendor_id, target_doc_artifact_id)
 );
 
@@ -236,6 +248,21 @@ class UsesEdgeRow:
 
 
 @dataclass(frozen=True)
+class DocChunkRow:
+    """One `doc_chunks` row (Phase 32), keyed by `(doc_artifact_path,
+    start_line)` — a chunk's start line can't repeat within one doc, so
+    that pair is unambiguous without a pre-assigned integer id, the same
+    natural-key posture every other row dataclass in this module takes.
+    """
+
+    doc_artifact_path: str
+    heading_path: str
+    start_line: int
+    end_line: int
+    content_hash: str
+
+
+@dataclass(frozen=True)
 class DocArtifactRow:
     """One `doc_artifacts` row, keyed by `path` (unique). `vendor_name` is
     optional — tool-level artifacts (e.g. the unconditional tool Skill,
@@ -252,11 +279,19 @@ class DocArtifactRow:
 
 @dataclass(frozen=True)
 class DocumentsEdgeRow:
-    """One `documents_edges` row: a doc artifact documenting one symbol."""
+    """One `documents_edges` row: a doc artifact documenting one symbol.
+    `chunk_start_line` (Phase 32) is the natural-key half of an optional
+    reference to the one `doc_chunks` row (by `(doc_artifact_path,
+    chunk_start_line)`) whose own text contains the match that produced
+    this edge — `None` when the match can't be attributed to exactly one
+    chunk (the doc has no headings, or the match appears in more than
+    one chunk).
+    """
 
     doc_artifact_path: str
     vendor_name: str
     symbol_name: str
+    chunk_start_line: int | None = None
 
 
 @dataclass(frozen=True)
@@ -295,13 +330,18 @@ class DocRelationEdgeRow:
     `'mentions_dependency'` pairs with `target_vendor_name`,
     `'mentions_artifact'` with `target_doc_artifact_path` — exactly one of
     the two is set per row, mirroring `SkillMentionEdgeRow`'s existing
-    two-nullable-target shape, not a new pattern.
+    two-nullable-target shape, not a new pattern. `chunk_start_line`
+    (Phase 32) mirrors `DocumentsEdgeRow.chunk_start_line` — the natural-
+    key half of an optional reference to the *source* doc's one
+    `doc_chunks` row whose own text contains the match that produced this
+    edge, `None` when the match can't be attributed to exactly one chunk.
     """
 
     source_doc_artifact_path: str
     relation_kind: str
     target_vendor_name: str | None = None
     target_doc_artifact_path: str | None = None
+    chunk_start_line: int | None = None
 
 
 # --- Schema / connection setup --------------------------------------------
@@ -323,25 +363,31 @@ def init_schema(conn: sqlite3.Connection) -> None:
 def _migrate_doc_artifacts_constraints(conn: sqlite3.Connection) -> None:
     """Migrates an on-disk schema older than `_SCHEMA_VERSION` by dropping
     and recreating `doc_artifacts` under the current (widened) CHECK
-    constraints. Phase 17 widened `kind` (added `'slash_command'`,
+    constraints, plus `documents_edges`/`doc_relations_edges` under their
+    current column set. Phase 17 widened `kind` (added `'slash_command'`,
     "1" -> "2"); Phase 21 widens both `kind` (added `'spec_doc'`) and
     `origin` (added `'project'`, "2" -> "3") for the same reason; Phase 27
     widens both again (`kind` gains `'vendor_doc'`, `origin` gains
     `'vendor_upstream'`, "3" -> "4") for a vendor's own embedded upstream
-    doc files (`vendor/<name>/src/README.md` and siblings). One
-    generic, version-agnostic function handles any prior version, not one
-    function per phase — it only ever compares the stored version against
-    current and, on mismatch, drops+recreates once; `init_schema`'s
-    `CREATE TABLE IF NOT EXISTS` won't retrofit an already-existing
-    table's CHECK constraint on its own, which is why this is needed at
-    all. Safe: `doc_artifacts` (and everything that references it —
-    `documents_edges`/`skill_mentions_edges`/`routes_via_edges`/
-    `doc_relations_edges`, all `ON DELETE CASCADE`) is fully cleared and
-    rewritten by `rebuild_deterministic` on every whole-project sync
-    anyway, so there's no data-loss risk in recreating it here — and with
-    `PRAGMA foreign_keys = ON` already set on this connection, SQLite
-    itself cascades the drop into those referencing tables' rows, so no
-    dangling foreign keys are left behind even between this migration and
+    doc files (`vendor/<name>/src/README.md` and siblings); Phase 32 adds
+    a nullable `chunk_id` column to `documents_edges`/`doc_relations_edges`
+    ("5" -> "6") — dropping `doc_artifacts` alone only cascades a DELETE of
+    those two tables' *rows* (`ON DELETE CASCADE`), it doesn't touch their
+    own column set, so they need their own explicit drop for `chunk_id` to
+    actually appear on an existing database. One generic, version-agnostic
+    function handles any prior version, not one function per phase — it
+    only ever compares the stored version against current and, on
+    mismatch, drops+recreates once; `init_schema`'s `CREATE TABLE IF NOT
+    EXISTS` won't retrofit an already-existing table's columns/constraints
+    on its own, which is why this is needed at all. Safe: all three tables
+    (plus `skill_mentions_edges`/`routes_via_edges`, cascaded from
+    `doc_artifacts`) are fully cleared and rewritten by `rebuild_
+    deterministic` on every whole-project sync anyway, so there's no
+    data-loss risk in recreating them here — and with `PRAGMA foreign_keys
+    = ON` already set on this connection, SQLite itself cascades the
+    `doc_artifacts` drop into `skill_mentions_edges`/`routes_via_edges`'s
+    rows, so no dangling foreign keys are left behind even between this
+    migration and
     the next sync. Never touches `vendor_enrichment`/`symbol_enrichment` —
     those tables have no foreign key to `doc_artifacts` at all, so a
     `doc_artifacts` drop can't reach them (same "never touch enrichment"
@@ -360,6 +406,8 @@ def _migrate_doc_artifacts_constraints(conn: sqlite3.Connection) -> None:
     if row is None or row[0] == _SCHEMA_VERSION:
         return
     with conn:
+        conn.execute("DROP TABLE IF EXISTS documents_edges")
+        conn.execute("DROP TABLE IF EXISTS doc_relations_edges")
         conn.execute("DROP TABLE IF EXISTS doc_artifacts")
         conn.execute("UPDATE meta SET value = ? WHERE key = 'schema_version'", (_SCHEMA_VERSION,))
 
@@ -432,6 +480,7 @@ def rebuild_deterministic(
     symbols: Sequence[SymbolRow],
     uses_edges: Sequence[UsesEdgeRow],
     doc_artifacts: Sequence[DocArtifactRow],
+    doc_chunks: Sequence[DocChunkRow] = (),
     documents_edges: Sequence[DocumentsEdgeRow],
     skill_mentions_edges: Sequence[SkillMentionEdgeRow],
     routes_via_edges: Sequence[RoutesViaEdgeRow],
@@ -454,7 +503,9 @@ def rebuild_deterministic(
     / symbols that no longer appear in the new fixture at all are deleted
     (correctly cascading away enrichment for something that no longer
     exists). Every other table has no cross-rebuild identity to preserve
-    and is fully cleared and reinserted.
+    and is fully cleared and reinserted, `doc_chunks` (Phase 32) included —
+    `doc_chunks` defaults to `()` so pre-Phase-32 callers/tests that don't
+    pass it keep working unchanged.
     """
     with conn:
         # Edge / leaf tables carry no cross-rebuild identity — clear and
@@ -465,6 +516,7 @@ def rebuild_deterministic(
         conn.execute("DELETE FROM skill_mentions_edges")
         conn.execute("DELETE FROM documents_edges")
         conn.execute("DELETE FROM uses_edges")
+        conn.execute("DELETE FROM doc_chunks")
         conn.execute("DELETE FROM doc_artifacts")
         conn.execute("DELETE FROM source_files")
 
@@ -476,15 +528,20 @@ def rebuild_deterministic(
 
         source_file_ids = _insert_source_files(conn, source_files)
         doc_artifact_ids = _insert_doc_artifacts(conn, doc_artifacts, vendor_ids)
+        doc_chunk_ids = _insert_doc_chunks(conn, doc_chunks, doc_artifact_ids)
 
         _insert_uses_edges(conn, uses_edges, vendor_ids, symbol_ids, source_file_ids)
-        _insert_documents_edges(conn, documents_edges, symbol_ids, doc_artifact_ids)
+        _insert_documents_edges(
+            conn, documents_edges, symbol_ids, doc_artifact_ids, doc_chunk_ids
+        )
         _insert_skill_mentions_edges(
             conn, skill_mentions_edges, vendor_ids, source_file_ids, doc_artifact_ids
         )
         _insert_routes_via_edges(conn, routes_via_edges, vendor_ids, doc_artifact_ids)
         _insert_depends_on_edges(conn, depends_on_edges, vendor_ids)
-        _insert_doc_relations_edges(conn, doc_relations_edges, vendor_ids, doc_artifact_ids)
+        _insert_doc_relations_edges(
+            conn, doc_relations_edges, vendor_ids, doc_artifact_ids, doc_chunk_ids
+        )
 
         conn.execute(
             "INSERT INTO meta (key, value) VALUES ('last_deterministic_rebuild_at', ?) "
@@ -603,6 +660,36 @@ def _insert_doc_artifacts(
     return ids
 
 
+def _insert_doc_chunks(
+    conn: sqlite3.Connection,
+    doc_chunks: Sequence[DocChunkRow],
+    doc_artifact_ids: dict[str, int],
+) -> dict[tuple[str, int], int]:
+    """Inserts every `DocChunkRow`, keyed by `(doc_artifact_path,
+    start_line)` for `_insert_documents_edges`/`_insert_doc_relations_
+    edges` to resolve a `DocumentsEdgeRow`/`DocRelationEdgeRow`'s optional
+    `chunk_start_line` back to an integer `chunk_id`.
+    """
+    ids: dict[tuple[str, int], int] = {}
+    for c in doc_chunks:
+        cur = conn.execute(
+            """
+            INSERT INTO doc_chunks
+                (doc_artifact_id, heading_path, start_line, end_line, content_hash)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                doc_artifact_ids[c.doc_artifact_path],
+                c.heading_path,
+                c.start_line,
+                c.end_line,
+                c.content_hash,
+            ),
+        )
+        ids[(c.doc_artifact_path, c.start_line)] = cur.lastrowid
+    return ids
+
+
 def _insert_uses_edges(
     conn: sqlite3.Connection,
     uses_edges: Sequence[UsesEdgeRow],
@@ -626,13 +713,20 @@ def _insert_documents_edges(
     documents_edges: Sequence[DocumentsEdgeRow],
     symbol_ids: dict[tuple[str, str], int],
     doc_artifact_ids: dict[str, int],
+    doc_chunk_ids: dict[tuple[str, int], int],
 ) -> None:
     for e in documents_edges:
+        chunk_id = (
+            doc_chunk_ids.get((e.doc_artifact_path, e.chunk_start_line))
+            if e.chunk_start_line is not None
+            else None
+        )
         conn.execute(
-            "INSERT INTO documents_edges (doc_artifact_id, symbol_id) VALUES (?, ?)",
+            "INSERT INTO documents_edges (doc_artifact_id, symbol_id, chunk_id) VALUES (?, ?, ?)",
             (
                 doc_artifact_ids[e.doc_artifact_path],
                 symbol_ids[(e.vendor_name, e.symbol_name)],
+                chunk_id,
             ),
         )
 
@@ -688,6 +782,7 @@ def _insert_doc_relations_edges(
     doc_relations_edges: Sequence[DocRelationEdgeRow],
     vendor_ids: dict[str, int],
     doc_artifact_ids: dict[str, int],
+    doc_chunk_ids: dict[tuple[str, int], int],
 ) -> None:
     for e in doc_relations_edges:
         target_vendor_id = (
@@ -698,18 +793,25 @@ def _insert_doc_relations_edges(
             if e.target_doc_artifact_path is not None
             else None
         )
+        chunk_id = (
+            doc_chunk_ids.get((e.source_doc_artifact_path, e.chunk_start_line))
+            if e.chunk_start_line is not None
+            else None
+        )
         conn.execute(
             """
             INSERT INTO doc_relations_edges (
-                source_doc_artifact_id, target_vendor_id, target_doc_artifact_id, relation_kind
+                source_doc_artifact_id, target_vendor_id, target_doc_artifact_id, relation_kind,
+                chunk_id
             )
-            VALUES (?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?)
             """,
             (
                 doc_artifact_ids[e.source_doc_artifact_path],
                 target_vendor_id,
                 target_doc_artifact_id,
                 e.relation_kind,
+                chunk_id,
             ),
         )
 
@@ -812,7 +914,10 @@ def doc_relations(conn: sqlite3.Connection, doc_artifact_path: str) -> list[dict
     """Every `doc_relations_edges` row whose source is `doc_artifact_path`,
     resolved to the target's name/path. Empty for an unknown path or a
     spec doc with zero detected mentions — never an error, mirroring every
-    other by-name query function's graceful-empty posture.
+    other by-name query function's graceful-empty posture. `heading`
+    (Phase 32) is the source doc's own heading enclosing the mechanical
+    match, when the edge has a `chunk_id`; `None` otherwise (a headerless
+    doc, or a match not attributable to exactly one chunk).
     """
     row = conn.execute(
         "SELECT id FROM doc_artifacts WHERE path = ?", (doc_artifact_path,)
@@ -821,12 +926,13 @@ def doc_relations(conn: sqlite3.Connection, doc_artifact_path: str) -> list[dict
         return []
     source_id = row[0]
     results = []
-    for relation_kind, target_vendor, target_path, target_name in conn.execute(
+    for relation_kind, target_vendor, target_path, target_name, heading in conn.execute(
         """
-        SELECT dre.relation_kind, v.name, da.path, da.name
+        SELECT dre.relation_kind, v.name, da.path, da.name, dch.heading_path
         FROM doc_relations_edges dre
         LEFT JOIN vendors v ON dre.target_vendor_id = v.id
         LEFT JOIN doc_artifacts da ON dre.target_doc_artifact_id = da.id
+        LEFT JOIN doc_chunks dch ON dre.chunk_id = dch.id
         WHERE dre.source_doc_artifact_id = ?
         ORDER BY v.name, da.path
         """,
@@ -838,6 +944,7 @@ def doc_relations(conn: sqlite3.Connection, doc_artifact_path: str) -> list[dict
                 "target_vendor": target_vendor,
                 "target_doc_artifact_path": target_path,
                 "target_doc_artifact_name": target_name,
+                "heading": heading,
             }
         )
     return results
@@ -1040,6 +1147,12 @@ def doc_code_trace(conn: sqlite3.Connection, doc_path_or_vendor_name: str) -> li
     - A name matching neither is an empty list, not an error — mirrors
       `doc_relations`'s existing graceful-empty posture for an unknown
       path.
+
+    Each `'documents'`/`'mentions_dependency'` dict also carries `heading`
+    (Phase 32) — the heading in the *doc* (not the code file) enclosing
+    the edge that produced this row, when that edge has a `chunk_id`;
+    `None` otherwise. `'direct_usage'` rows have no doc side at all, so
+    `heading` is always `None` there.
     """
     doc_row = conn.execute(
         "SELECT id FROM doc_artifacts WHERE path = ?", (doc_path_or_vendor_name,)
@@ -1053,15 +1166,17 @@ def doc_code_trace(conn: sqlite3.Connection, doc_path_or_vendor_name: str) -> li
                 "symbol": symbol_name,
                 "source_file_path": path,
                 "line": line,
+                "heading": heading,
             }
-            for vendor_name, symbol_name, path, line in conn.execute(
+            for vendor_name, symbol_name, path, line, heading in conn.execute(
                 """
-                SELECT v.name, s.name, sf.path, ue.line
+                SELECT v.name, s.name, sf.path, ue.line, dch.heading_path
                 FROM documents_edges de
                 JOIN symbols s ON de.symbol_id = s.id
                 JOIN vendors v ON s.vendor_id = v.id
                 JOIN uses_edges ue ON ue.symbol_id = s.id
                 JOIN source_files sf ON ue.source_file_id = sf.id
+                LEFT JOIN doc_chunks dch ON de.chunk_id = dch.id
                 WHERE de.doc_artifact_id = ?
                 ORDER BY v.name, s.name, sf.path, ue.line
                 """,
@@ -1075,14 +1190,16 @@ def doc_code_trace(conn: sqlite3.Connection, doc_path_or_vendor_name: str) -> li
                 "symbol": None,
                 "source_file_path": path,
                 "line": line,
+                "heading": heading,
             }
-            for vendor_name, path, line in conn.execute(
+            for vendor_name, path, line, heading in conn.execute(
                 """
-                SELECT v.name, sf.path, ue.line
+                SELECT v.name, sf.path, ue.line, dch.heading_path
                 FROM doc_relations_edges dre
                 JOIN vendors v ON dre.target_vendor_id = v.id
                 JOIN uses_edges ue ON ue.vendor_id = v.id
                 JOIN source_files sf ON ue.source_file_id = sf.id
+                LEFT JOIN doc_chunks dch ON dre.chunk_id = dch.id
                 WHERE dre.source_doc_artifact_id = ?
                   AND dre.relation_kind = 'mentions_dependency'
                 ORDER BY v.name, sf.path, ue.line
@@ -1104,6 +1221,7 @@ def doc_code_trace(conn: sqlite3.Connection, doc_path_or_vendor_name: str) -> li
                 "symbol": None,
                 "source_file_path": path,
                 "line": line,
+                "heading": None,
             }
             for path, line in conn.execute(
                 """
@@ -1301,10 +1419,18 @@ def relation_enrichment_candidates(conn: sqlite3.Connection) -> list[dict]:
     doesn't apply, and plain `=` never matches two NULLs, which would
     silently fail to find an already-cached row for any relationship whose
     natural key includes a NULL column (i.e. every one of them).
+
+    Also returns `chunk_start_line`/`chunk_end_line` (Phase 32) — the
+    source doc's own matched chunk's line range, from `doc_chunks` via
+    `dre.chunk_id`, both `NULL` when the edge has no `chunk_id`.
+    `select_candidates` uses these to slice the chunk's own text directly
+    as the excerpt, in place of Phase 28's needle-re-derivation, when
+    present.
     """
     rows = conn.execute(
         """
-        SELECT sda.path, tv.name, tda.path, tda.name, dre.relation_kind, dre_enrich.content_hash
+        SELECT sda.path, tv.name, tda.path, tda.name, dre.relation_kind, dre_enrich.content_hash,
+               dch.start_line, dch.end_line
         FROM doc_relations_edges dre
         JOIN doc_artifacts sda ON dre.source_doc_artifact_id = sda.id
         LEFT JOIN vendors tv ON dre.target_vendor_id = tv.id
@@ -1313,6 +1439,7 @@ def relation_enrichment_candidates(conn: sqlite3.Connection) -> list[dict]:
             ON dre_enrich.source_doc_path = sda.path
            AND dre_enrich.target_vendor_name IS tv.name
            AND dre_enrich.target_doc_path IS tda.path
+        LEFT JOIN doc_chunks dch ON dre.chunk_id = dch.id
         ORDER BY sda.path, tv.name, tda.path
         """
     ).fetchall()
@@ -1324,6 +1451,8 @@ def relation_enrichment_candidates(conn: sqlite3.Connection) -> list[dict]:
             "target_doc_artifact_name": row[3],
             "relation_kind": row[4],
             "content_hash": row[5],
+            "chunk_start_line": row[6],
+            "chunk_end_line": row[7],
         }
         for row in rows
     ]

@@ -215,6 +215,71 @@ def test_build_documents_edges_word_boundary_avoids_substring_false_positive(
     assert edges == []
 
 
+def test_build_documents_edges_populates_chunk_start_line_when_match_is_in_one_chunk(
+    tmp_path: Path,
+) -> None:
+    _write_vendor_claude_md(
+        tmp_path,
+        "demo",
+        "## API\n\ndoStuff does the thing.\n\n## Notes\n\nUnrelated notes here.\n",
+    )
+    doc_rows = [
+        DocArtifactRow(
+            path="vendor/demo/CLAUDE.md", kind="claude_md", origin="codecompass_vendor",
+            vendor_name="demo",
+        )
+    ]
+    symbol_rows = [SymbolRow(vendor_name="demo", name="doStuff")]
+
+    edges = build_documents_edges(doc_rows, symbol_rows, tmp_path)
+
+    assert len(edges) == 1
+    assert edges[0].chunk_start_line == 1
+
+
+def test_build_documents_edges_leaves_chunk_start_line_none_when_match_spans_chunks(
+    tmp_path: Path,
+) -> None:
+    # "doStuff" appears in both heading sections — ambiguous which one
+    # chunk_id should point at, so it must stay unattributed (None), not
+    # arbitrarily pick the first.
+    _write_vendor_claude_md(
+        tmp_path,
+        "demo",
+        "## API\n\ndoStuff does the thing.\n\n## Notes\n\ndoStuff mentioned again here.\n",
+    )
+    doc_rows = [
+        DocArtifactRow(
+            path="vendor/demo/CLAUDE.md", kind="claude_md", origin="codecompass_vendor",
+            vendor_name="demo",
+        )
+    ]
+    symbol_rows = [SymbolRow(vendor_name="demo", name="doStuff")]
+
+    edges = build_documents_edges(doc_rows, symbol_rows, tmp_path)
+
+    assert len(edges) == 1
+    assert edges[0].chunk_start_line is None
+
+
+def test_build_documents_edges_leaves_chunk_start_line_none_when_doc_has_no_headings(
+    tmp_path: Path,
+) -> None:
+    _write_vendor_claude_md(tmp_path, "demo", "doStuff does the thing, no headings here.\n")
+    doc_rows = [
+        DocArtifactRow(
+            path="vendor/demo/CLAUDE.md", kind="claude_md", origin="codecompass_vendor",
+            vendor_name="demo",
+        )
+    ]
+    symbol_rows = [SymbolRow(vendor_name="demo", name="doStuff")]
+
+    edges = build_documents_edges(doc_rows, symbol_rows, tmp_path)
+
+    assert len(edges) == 1
+    assert edges[0].chunk_start_line is None
+
+
 def test_build_documents_edges_ignores_non_claude_or_overview_doc_artifacts(tmp_path: Path) -> None:
     skills_dir = tmp_path / ".claude" / "skills" / "codecompass"
     skills_dir.mkdir(parents=True)
@@ -429,6 +494,55 @@ def test_build_doc_relations_edges_matches_tracked_vendor_name(tmp_path: Path) -
     assert edges[0].target_doc_artifact_path is None
 
 
+def test_build_doc_relations_edges_populates_chunk_start_line_when_match_is_in_one_chunk(
+    tmp_path: Path,
+) -> None:
+    _write_spec_doc(
+        tmp_path,
+        "README.md",
+        "## Dependencies\n\nThis project depends on demo for parsing.\n\n"
+        "## License\n\nMIT licensed.\n",
+    )
+    spec_doc_rows = [DocArtifactRow(path="README.md", kind="spec_doc", origin="project")]
+    configs = [_config("demo")]
+
+    edges = build_doc_relations_edges(spec_doc_rows, configs, [], tmp_path)
+
+    assert len(edges) == 1
+    assert edges[0].chunk_start_line == 1
+
+
+def test_build_doc_relations_edges_leaves_chunk_start_line_none_when_match_spans_chunks(
+    tmp_path: Path,
+) -> None:
+    _write_spec_doc(
+        tmp_path,
+        "README.md",
+        "## Dependencies\n\nThis project depends on demo for parsing.\n\n"
+        "## Notes\n\ndemo is also mentioned again here.\n",
+    )
+    spec_doc_rows = [DocArtifactRow(path="README.md", kind="spec_doc", origin="project")]
+    configs = [_config("demo")]
+
+    edges = build_doc_relations_edges(spec_doc_rows, configs, [], tmp_path)
+
+    assert len(edges) == 1
+    assert edges[0].chunk_start_line is None
+
+
+def test_build_doc_relations_edges_leaves_chunk_start_line_none_when_doc_has_no_headings(
+    tmp_path: Path,
+) -> None:
+    _write_spec_doc(tmp_path, "README.md", "This project depends on demo, no headings here.\n")
+    spec_doc_rows = [DocArtifactRow(path="README.md", kind="spec_doc", origin="project")]
+    configs = [_config("demo")]
+
+    edges = build_doc_relations_edges(spec_doc_rows, configs, [], tmp_path)
+
+    assert len(edges) == 1
+    assert edges[0].chunk_start_line is None
+
+
 def test_build_doc_relations_edges_matches_other_doc_artifact_name(tmp_path: Path) -> None:
     _write_spec_doc(tmp_path, "README.md", "See the codecompass-demo skill for details.\n")
     spec_doc_rows = [DocArtifactRow(path="README.md", kind="spec_doc", origin="project")]
@@ -563,6 +677,34 @@ def test_build_doc_relations_edges_self_mention_exclusion(tmp_path: Path) -> Non
     assert len(edges) == 1
     assert edges[0].relation_kind == "mentions_dependency"
     assert edges[0].target_vendor_name == "otherlib"
+
+
+def test_build_doc_relations_edges_self_mention_exclusion_holds_under_per_chunk_pass(
+    tmp_path: Path,
+) -> None:
+    """Phase 32 regression: the self-mention exclusion (Phase 29,
+    decisions/0043) is enforced before the per-chunk attribution logic
+    ever runs, so a heading-having doc that repeats its own vendor's name
+    many times across multiple sections must still produce zero edges for
+    that vendor — the new per-chunk pass must not accidentally resurrect
+    a self-mention the whole-doc pass already excluded.
+    """
+    _write_clone_file(
+        tmp_path,
+        "demo",
+        "README.md",
+        "## About\n\ndemo is a tool. demo demo.\n\n"
+        "## Usage\n\ndemo demo demo. Uses otherlib too.\n",
+    )
+    source_rows = [_vendor_doc_row("vendor/demo/src/README.md", "demo")]
+    configs = [_config("demo"), _config("otherlib")]
+
+    edges = build_doc_relations_edges(source_rows, configs, [], tmp_path)
+
+    assert len(edges) == 1
+    assert edges[0].target_vendor_name == "otherlib"
+    # "otherlib" appears in exactly one section ("## Usage") — attributed.
+    assert edges[0].chunk_start_line is not None
 
 
 def test_build_doc_relations_edges_mentions_artifact_from_vendor_doc_source(

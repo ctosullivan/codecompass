@@ -3,6 +3,7 @@ import sqlite3
 from codecompass.graph import (
     DependsOnEdgeRow,
     DocArtifactRow,
+    DocChunkRow,
     DocRelationEdgeRow,
     DocumentsEdgeRow,
     RoutesViaEdgeRow,
@@ -39,6 +40,7 @@ _ALL_TABLES = {
     "symbols",
     "uses_edges",
     "doc_artifacts",
+    "doc_chunks",
     "documents_edges",
     "skill_mentions_edges",
     "routes_via_edges",
@@ -164,7 +166,7 @@ def test_init_schema_seeds_schema_version(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "5"
+    assert value == "6"
 
 
 def test_init_schema_is_idempotent(tmp_path) -> None:
@@ -174,7 +176,7 @@ def test_init_schema_is_idempotent(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "5"
+    assert value == "6"
 
 
 def test_doc_artifacts_accepts_slash_command_kind(tmp_path) -> None:
@@ -274,7 +276,7 @@ def test_open_graph_migrates_pre_phase_17_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "5"
+    assert schema_version == "6"
 
     # Would raise sqlite3.IntegrityError under the pre-migration constraint.
     conn.execute(
@@ -311,7 +313,7 @@ def test_open_graph_migrates_pre_phase_21_schema(tmp_path) -> None:
     """Simulates a `context-graph.db` created at Phase 17-20's schema
     (`schema_version` "2", `doc_artifacts.kind`/`origin` CHECK constraints
     not yet widened for spec docs) — `open_graph` must migrate it in place:
-    bump `schema_version` (now "5", since this simulated db's stored
+    bump `schema_version` (now "6", since this simulated db's stored
     version is older than every widening since) and accept
     `kind='spec_doc'`, `origin='project'` afterward. `doc_relations_edges`
     itself needs no migration (a brand-new table `init_schema`'s `CREATE
@@ -348,7 +350,7 @@ def test_open_graph_migrates_pre_phase_21_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "5"
+    assert schema_version == "6"
 
     # Would raise sqlite3.IntegrityError under the pre-Phase-21 constraints.
     conn.execute(
@@ -370,9 +372,9 @@ def test_open_graph_migrates_pre_phase_27_schema(tmp_path) -> None:
     """Simulates a `context-graph.db` created at Phase 21-26's schema
     (`schema_version` "3", `doc_artifacts.kind`/`origin` CHECK constraints
     not yet widened for vendor-embedded upstream docs) — `open_graph` must
-    migrate it in place: bump `schema_version` to "5" (current, since this
-    simulated db's stored version is older than every widening since) and accept
-    `kind='vendor_doc'`, `origin='vendor_upstream'` afterward.
+    migrate it in place: bump `schema_version` to "6" (current, since this
+    simulated db's stored version is older than every widening since) and
+    accept `kind='vendor_doc'`, `origin='vendor_upstream'` afterward.
     """
     db_path = tmp_path / "context-graph.db"
     old_conn = sqlite3.connect(db_path)
@@ -406,7 +408,7 @@ def test_open_graph_migrates_pre_phase_27_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "5"
+    assert schema_version == "6"
 
     # Would raise sqlite3.IntegrityError under the pre-Phase-27 constraints.
     conn.execute(
@@ -769,6 +771,7 @@ def test_doc_code_trace_via_documents_edges(tmp_path) -> None:
             "symbol": "doStuff",
             "source_file_path": _SOURCE_FILE,
             "line": 10,
+            "heading": None,
         }
     ]
 
@@ -798,6 +801,159 @@ def test_doc_code_trace_for_unknown_name_is_empty(tmp_path) -> None:
     conn = open_graph(tmp_path)
     rebuild_deterministic(conn, **_fixture_kwargs())
     assert doc_code_trace(conn, "does-not-exist") == []
+
+
+def test_rebuild_deterministic_populates_doc_chunks_and_resolves_chunk_id(tmp_path) -> None:
+    """Phase 32 end-to-end: `doc_chunks` rows are inserted, and both
+    `DocumentsEdgeRow.chunk_start_line`/`DocRelationEdgeRow.chunk_start_line`
+    resolve to the right integer `chunk_id` — surfaced back out as
+    `heading` by `doc_relations`/`doc_code_trace`.
+    """
+    kwargs = _fixture_kwargs()
+    kwargs["doc_chunks"] = [
+        DocChunkRow(
+            doc_artifact_path=_CLAUDE_MD_PATH,
+            heading_path="API",
+            start_line=1,
+            end_line=5,
+            content_hash="hash-claude-md-chunk",
+        ),
+        DocChunkRow(
+            doc_artifact_path=_SPEC_DOC_PATH,
+            heading_path="Dependencies",
+            start_line=1,
+            end_line=3,
+            content_hash="hash-readme-chunk",
+        ),
+    ]
+    kwargs["documents_edges"] = [
+        DocumentsEdgeRow(
+            doc_artifact_path=_CLAUDE_MD_PATH,
+            vendor_name="used-lib",
+            symbol_name="doStuff",
+            chunk_start_line=1,
+        ),
+        DocumentsEdgeRow(
+            doc_artifact_path=_CLAUDE_MD_PATH, vendor_name="used-lib", symbol_name="docOnly"
+        ),
+    ]
+    kwargs["doc_relations_edges"] = [
+        DocRelationEdgeRow(
+            source_doc_artifact_path=_SPEC_DOC_PATH,
+            relation_kind="mentions_dependency",
+            target_vendor_name="used-lib",
+            chunk_start_line=1,
+        ),
+        DocRelationEdgeRow(
+            source_doc_artifact_path=_SPEC_DOC_PATH,
+            relation_kind="mentions_artifact",
+            target_doc_artifact_path=_SKILL_PATH,
+        ),
+    ]
+
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **kwargs)
+
+    (chunk_count,) = conn.execute("SELECT COUNT(*) FROM doc_chunks").fetchone()
+    assert chunk_count == 2
+
+    relations = doc_relations(conn, _SPEC_DOC_PATH)
+    dependency = next(r for r in relations if r["relation_kind"] == "mentions_dependency")
+    assert dependency["heading"] == "Dependencies"
+    artifact = next(r for r in relations if r["relation_kind"] == "mentions_artifact")
+    assert artifact["heading"] is None  # no chunk_start_line given for this edge
+
+    documents_trace = doc_code_trace(conn, _CLAUDE_MD_PATH)
+    do_stuff_row = next(t for t in documents_trace if t["symbol"] == "doStuff")
+    assert do_stuff_row["heading"] == "API"
+
+    mentions_trace = doc_code_trace(conn, _SPEC_DOC_PATH)
+    dependency_rows = [t for t in mentions_trace if t["via"] == "mentions_dependency"]
+    assert dependency_rows and all(t["heading"] == "Dependencies" for t in dependency_rows)
+
+
+def test_rebuild_deterministic_doc_chunks_default_is_empty_and_backward_compatible(
+    tmp_path,
+) -> None:
+    """Pre-Phase-32 callers/tests that don't pass `doc_chunks` at all must
+    keep working unchanged — `chunk_id` simply stays `NULL` everywhere.
+    """
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())  # no doc_chunks key
+
+    (chunk_count,) = conn.execute("SELECT COUNT(*) FROM doc_chunks").fetchone()
+    assert chunk_count == 0
+
+    relations = doc_relations(conn, _SPEC_DOC_PATH)
+    assert all(r["heading"] is None for r in relations)
+
+
+def test_open_graph_migrates_pre_phase_32_schema_adds_chunk_id_columns(tmp_path) -> None:
+    """Simulates a `context-graph.db` created at Phase 30-31's schema
+    (`schema_version` "5", `documents_edges`/`doc_relations_edges` with no
+    `chunk_id` column and no `doc_chunks` table at all) — `open_graph`
+    must migrate it in place: drop+recreate both edge tables under their
+    current (widened) column set and create `doc_chunks` fresh. Safe the
+    same way `doc_artifacts`'s own migration is — both edge tables are
+    fully cleared and reinserted by `rebuild_deterministic` on every
+    whole-project sync regardless.
+    """
+    db_path = tmp_path / "context-graph.db"
+    old_conn = sqlite3.connect(db_path)
+    old_conn.executescript(
+        """
+        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE vendors (
+          id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE,
+          ecosystem TEXT NOT NULL, installed_version TEXT
+        );
+        CREATE TABLE doc_artifacts (
+          id INTEGER PRIMARY KEY,
+          vendor_id INTEGER REFERENCES vendors(id) ON DELETE CASCADE,
+          kind TEXT NOT NULL, origin TEXT,
+          path TEXT NOT NULL UNIQUE, name TEXT, description TEXT
+        );
+        CREATE TABLE symbols (
+          id INTEGER PRIMARY KEY,
+          vendor_id INTEGER NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+          name TEXT NOT NULL, purpose TEXT
+        );
+        CREATE TABLE documents_edges (
+          id INTEGER PRIMARY KEY,
+          doc_artifact_id INTEGER NOT NULL REFERENCES doc_artifacts(id) ON DELETE CASCADE,
+          symbol_id INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE
+        );
+        CREATE TABLE doc_relations_edges (
+          id INTEGER PRIMARY KEY,
+          source_doc_artifact_id INTEGER NOT NULL REFERENCES doc_artifacts(id) ON DELETE CASCADE,
+          target_vendor_id INTEGER REFERENCES vendors(id) ON DELETE CASCADE,
+          target_doc_artifact_id INTEGER REFERENCES doc_artifacts(id) ON DELETE CASCADE,
+          relation_kind TEXT NOT NULL
+        );
+        """
+    )
+    old_conn.execute("INSERT INTO meta (key, value) VALUES ('schema_version', '5')")
+    old_conn.commit()
+    old_conn.close()
+
+    conn = open_graph(tmp_path)
+
+    (schema_version,) = conn.execute(
+        "SELECT value FROM meta WHERE key = 'schema_version'"
+    ).fetchone()
+    assert schema_version == "6"
+
+    documents_edges_columns = {row[1] for row in conn.execute("PRAGMA table_info(documents_edges)")}
+    doc_relations_edges_columns = {
+        row[1] for row in conn.execute("PRAGMA table_info(doc_relations_edges)")
+    }
+    assert "chunk_id" in documents_edges_columns
+    assert "chunk_id" in doc_relations_edges_columns
+
+    table_names = {
+        name for (name,) in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
+    }
+    assert "doc_chunks" in table_names
 
 
 def test_skills_index_lists_skill_artifacts_and_mentions(tmp_path) -> None:

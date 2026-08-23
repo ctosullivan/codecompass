@@ -38,6 +38,7 @@ from codecompass.core import VendorConfig, VendorDigest
 from codecompass.deptree import render_deptree_json, render_deptree_markdown
 from codecompass.doc_mapping import (
     build_depends_on_edges,
+    build_doc_chunks,
     build_doc_relations_edges,
     build_documents_edges,
     build_routes_via_edges,
@@ -319,6 +320,7 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
         vendor_doc_rows + vendor_upstream_doc_rows + skill_doc_rows + spec_doc_rows
     )
 
+    doc_chunk_rows = build_doc_chunks(doc_artifact_rows, project_root)
     documents_edge_rows = build_documents_edges(doc_artifact_rows, symbol_rows, project_root)
     skill_mentions_edge_rows = skill_scan.build_skill_mentions_edges(
         skill_doc_rows, configs, source_file_rows, project_root
@@ -341,6 +343,7 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
             symbols=symbol_rows,
             uses_edges=uses_edge_rows,
             doc_artifacts=doc_artifact_rows,
+            doc_chunks=doc_chunk_rows,
             documents_edges=documents_edge_rows,
             skill_mentions_edges=skill_mentions_edge_rows,
             routes_via_edges=routes_via_edge_rows,

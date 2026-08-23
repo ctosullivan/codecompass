@@ -684,12 +684,13 @@ def _incoming_doc_relations(conn: sqlite3.Connection, column: str, value: int) -
     both directions the same way.
     """
     return [
-        {"relation_kind": relation_kind, "source_doc_artifact_path": path}
-        for path, relation_kind in conn.execute(
+        {"relation_kind": relation_kind, "source_doc_artifact_path": path, "heading": heading}
+        for path, relation_kind, heading in conn.execute(
             f"""
-            SELECT da.path, dre.relation_kind
+            SELECT da.path, dre.relation_kind, dch.heading_path
             FROM doc_relations_edges dre
             JOIN doc_artifacts da ON dre.source_doc_artifact_id = da.id
+            LEFT JOIN doc_chunks dch ON dre.chunk_id = dch.id
             WHERE dre.{column} = ?
             ORDER BY da.path
             """,
@@ -738,7 +739,9 @@ def _resolve_relations(conn: sqlite3.Connection, name: str) -> list[dict] | None
     matches nothing in the graph at all. Each returned dict gets
     `ai_summary` (Phase 22) and `relation_label` (Phase 31) keys attached
     here — both `None` if this exact relationship hasn't been AI-enriched
-    yet.
+    yet. `heading` (Phase 32) comes from `graph.doc_relations`/
+    `_incoming_doc_relations` directly — `None` unless the edge has a
+    `chunk_id`.
     """
     if conn.execute("SELECT 1 FROM doc_artifacts WHERE path = ?", (name,)).fetchone():
         relations = graph.doc_relations(conn, name)
@@ -812,7 +815,7 @@ def query_relations(
                 soft_wrap=True,
             )
             return
-        table = Table("Relation", "Other", "Label")
+        table = Table("Relation", "Other", "Heading", "Label")
         table.add_column("AI summary", no_wrap=True)
         for r in relations:
             other = (
@@ -824,20 +827,22 @@ def query_relations(
             table.add_row(
                 r["relation_kind"],
                 other,
+                r.get("heading") or "",
                 r.get("relation_label") or "",
                 r.get("ai_summary") or "mentioned, not yet enriched",
             )
         if not relations:
-            table.add_row("[dim](none)[/dim]", "", "", "")
+            table.add_row("[dim](none)[/dim]", "", "", "", "")
         console.print(table)
         console.print("[bold]Package code[/bold]")
-        trace_table = Table("Vendor", "Symbol", "File", "Line", "Via")
+        trace_table = Table("Vendor", "Symbol", "File", "Line", "Heading", "Via")
         for t in package_code:
             trace_table.add_row(
                 t["vendor"],
                 t["symbol"] or "",
                 t["source_file_path"],
                 str(t["line"]) if t["line"] is not None else "",
+                t.get("heading") or "",
                 t["via"],
             )
         console.print(trace_table)

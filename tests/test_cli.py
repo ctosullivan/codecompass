@@ -1313,6 +1313,7 @@ def test_query_relations_json_includes_package_code_trace(
             "symbol": None,
             "source_file_path": "src/app.ts",
             "line": 7,
+            "heading": None,
         }
     ]
 

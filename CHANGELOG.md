@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 32**: new `doc_chunking.py` deterministically splits a
+  chunkable doc artifact's (`claude_md`/`overview`/`vendor_doc`/
+  `spec_doc`) markdown text into heading-scoped chunks — any heading
+  level, root-first nested `heading_path` (`"Scope > Covers"`), no NLP,
+  no embeddings. New `doc_chunks` table; `documents_edges`/`doc_relations_
+  edges` each gain a nullable `chunk_id`, populated when a mechanical
+  mention-detection match is attributable to exactly one chunk (`doc_
+  mapping.py`'s existing whole-doc word-boundary passes gain an additive
+  per-chunk pass). A doc with no headings at all produces zero chunks, so
+  its matches naturally stay unattributed — no special-casing needed.
+  Phase 30's `doc_code_trace`/`graph.doc_relations` (and `query
+  relations`'s output) gain an optional `heading` field when a match has
+  a `chunk_id`. `relation_enrichment.select_candidates` now uses the
+  matched chunk's own text directly as the AI-enrichment excerpt when one
+  exists, in place of Phase 28's needle-re-derivation-plus-fixed-window
+  guess — which remains, unchanged, as the fallback for any edge without
+  a chunk. `documents_edges`/`doc_relations_edges` migrate on an existing
+  database via the same drop-and-recreate approach `doc_artifacts`'s
+  migration already uses (both are always fully rewritten every sync
+  regardless); `doc_relation_enrichment` (paid AI spend) is untouched by
+  this phase. See `decisions/0046`.
+
 - **Phase 31**: `doc_relation_enrichment` (Phase 22) gains a closed-
   taxonomy `relation_label` alongside its existing free-text `ai_summary`
   — `documents_configuration_of`, `explains_usage_of`, `contrasts_with`,
@@ -56,11 +78,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   corrupting the JSON. Fixed by adding `soft_wrap=True` to all five call
   sites — the same flag Rich's own `Console.print_json` uses internally
   for exactly this case. New regression test confirmed to fail against the
-  pre-fix code and pass against the fix. Found via a `/discovery` session
-  testing Phase 21/22/27/28/29's relationship-graph quality; that
-  session's other flagged item (a `check` version-drift reading that
-  looked backwards) was investigated and confirmed not a bug — see
-  `planning/phase-33-fix-query-json-line-wrapping.md`'s Context section.
+  pre-fix code and pass against the fix. Found via the same `/discovery`
+  session that surfaced Phases 30-32 below; that session's other flagged
+  item (a `check` version-drift reading that looked backwards) was
+  investigated and confirmed not a bug — see `planning/
+  phase-33-fix-query-json-line-wrapping.md`'s Context section.
 
 ### Added
 

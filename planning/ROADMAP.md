@@ -108,8 +108,8 @@ with `promote`/`Depth` fully retired and chat re-framed as secondary.
 | 29 | Vendor docs as relationship sources — `build_documents_edges` currently excludes `vendor_doc` rows entirely (a vendor's own README never documents its own symbols), and `build_doc_relations_edges` only ever scans spec docs outward, never a vendor doc's own content, found via direct user observation during a `/discovery` session (decisions/0043, supersedes decisions/0041's "never a relation source" claim) | done | [`phase-29-vendor-docs-as-relationship-sources.md`](phase-29-vendor-docs-as-relationship-sources.md) |
 | 30 | Expose vendor/doc → package-code traversal in the query layer — `vendor_profile`/`symbol_profile` currently collapse `uses_edges`' existing file/line data to a bare `usage_count`; this phase surfaces it as a `used_at` list and adds a new `graph.doc_code_trace` two-hop query (`documents_edges`/`doc_relations_edges` → `uses_edges`) — query-time join only, no new tables, no AI. Confirmed live: `query symbol Console`'s `used_at` matches real import-line locations in this repo; `query relations architecture/overview.md`'s new "Package code" section lists real `typer` call sites | done | [`phase-30-bidirectional-code-traversal.md`](phase-30-bidirectional-code-traversal.md) |
 | 31 | Typed relation kinds for AI-enriched doc relations — a closed `relation_label` enum (`documents_configuration_of`/`explains_usage_of`/`contrasts_with`/`supersedes`/`other`) added alongside Phase 22's existing free-text `ai_summary`, strictly gated on Phase 21/29's already-mechanically-proven candidates — no new candidate discovery, `decisions/0031`'s boundary held (decisions/0045). Confirmed live: a real re-enrichment run against this repo's 39 real relationships populated a valid label on every row (0 NULL/invalid), 2 spot-checked labels confirmed grounded against the real decision text | done | [`phase-31-typed-relation-enrichment.md`](phase-31-typed-relation-enrichment.md) |
-| 32 | Heading-based doc chunking — deterministic heading-boundary split of markdown doc artifacts into a new `doc_chunks` table; nullable, additive `chunk_id` on `documents_edges`/`doc_relations_edges` sharpens Phase 30's trace output and Phase 31/28's enrichment excerpt precision without changing existing whole-doc fallback behavior | planned | [`phase-32-doc-chunking.md`](phase-32-doc-chunking.md) |
-| 33 | Fix invalid JSON from `query --json`'s Rich line-wrapping — every `--json` call site printed pre-serialized JSON through the shared Rich `Console`, which word-wraps long text by inserting real line breaks; a value long enough to cross the wrap width got a literal newline inserted into it, corrupting the JSON. Confirmed live against this repo's own `query vendor anthropic --json`. Found via a `/discovery` session testing Phase 21/22/27/28/29's relationship-graph quality; that session's other flagged item (a version-drift reading that looked backwards) was investigated and confirmed **not** a bug — `check`'s "live" column reads the currently-installed version in this environment, not a PyPI-latest lookup, and this repo's `.venv` genuinely has an older `anthropic` installed than what was last recorded | done | [`phase-33-fix-query-json-line-wrapping.md`](phase-33-fix-query-json-line-wrapping.md) |
+| 32 | Heading-based doc chunking — deterministic heading-boundary split of markdown doc artifacts into a new `doc_chunks` table; nullable, additive `chunk_id` on `documents_edges`/`doc_relations_edges` sharpens Phase 30's trace output and Phase 31/28's enrichment excerpt precision without changing existing whole-doc fallback behavior (decisions/0046). Confirmed live: chunked `architecture/overview.md`'s real ~1,600 lines correctly; a real enrichment excerpt now slices exactly from its matched chunk; the Phase 28 fallback and Phase 29 self-mention exclusion both confirmed still correct under the new per-chunk pass | done | [`phase-32-doc-chunking.md`](phase-32-doc-chunking.md) |
+| 33 | Fix invalid JSON from `query --json`'s Rich line-wrapping — every `--json` call site printed pre-serialized JSON through the shared Rich `Console`, which word-wraps long text by inserting real line breaks; a value long enough to cross the wrap width got a literal newline inserted into it, corrupting the JSON. Confirmed live against this repo's own `query vendor anthropic --json`. Found via the same `/discovery` session that surfaced Phases 30-32; the session's other flagged item (a version-drift reading that looked backwards) was investigated and confirmed **not** a bug — `check`'s "live" column reads the currently-installed version in this environment, not a PyPI-latest lookup, and this repo's `.venv` genuinely has an older `anthropic` installed than what was last recorded | done | [`phase-33-fix-query-json-line-wrapping.md`](phase-33-fix-query-json-line-wrapping.md) |
 
 **Renumbering note:** none — 30/31/32 are appended after 29, keeping the
 numbering already assigned in `planning/doc-graph-precision-roadmap.md`
@@ -120,16 +120,17 @@ dependency: 31 doesn't hard-depend on 30 but is written to ship after it;
 
 **v1.0 scope note (dated to this planning session):** at explicit user
 request, Phases 30-32 (doc-graph precision: bidirectional traversal,
-typed relation labels, heading-based chunking) are added to v1.0's
-blocking scope, alongside Phase 23. Phase 23 Part B (the actual PyPI
+typed relation labels, heading-based chunking) were added to v1.0's
+blocking scope, alongside Phase 23. **All three (plus Phase 33, a bug fix
+found along the way) are now `done`** — Phase 23 Part B (the actual PyPI
 publish, already paused pending explicit user confirmation per
-`planning/CONTEXT.md`) now also waits on Phases 30-32 reaching `done` —
-the same "don't re-release almost immediately after" reasoning
+`planning/CONTEXT.md`) no longer waits on anything from this group; the
+"don't re-release almost immediately after" reasoning
 `planning/v1.0-initial-release-roadmap.md` used to order Phases 20-22
-ahead of 23 originally. Phases 24/25 (routing/rollup, MCP) remain
-deferred past v1.0, unaffected by this addition — that document's own
-open reordering question (whether they should block v1.0 instead) is
-still unresolved and orthogonal to this change.
+ahead of 23 originally is satisfied. Phases 24/25 (routing/rollup, MCP)
+remain deferred past v1.0, unaffected by this — that document's own open
+reordering question (whether they should block v1.0 instead) is still
+unresolved and orthogonal to this group.
 
 **Renumbering note:** none — 26/27 are appended after the existing 24/25
 (routing/rollup, MCP) rather than inserted ahead of them. Both were found

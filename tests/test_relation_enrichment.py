@@ -4,8 +4,10 @@ from pathlib import Path
 import pytest
 
 import codecompass.relation_enrichment as relation_enrichment_module
+from codecompass.doc_chunking import chunk_markdown
 from codecompass.graph import (
     DocArtifactRow,
+    DocChunkRow,
     DocRelationEdgeRow,
     VendorRow,
     open_graph,
@@ -272,6 +274,67 @@ def test_select_candidates_excerpt_unchanged_when_match_already_near_the_start(
     by_kind = {c.relation_kind: c for c in candidates}
     assert "demo for HTTP calls" in by_kind["mentions_dependency"].source_excerpt
     assert "codecompass-demo" in by_kind["mentions_artifact"].source_excerpt
+
+
+def test_select_candidates_uses_chunk_text_directly_when_chunk_id_is_set(tmp_path: Path) -> None:
+    """Phase 32: when the mechanical match has been attributed to exactly
+    one heading-scoped chunk, the excerpt is that chunk's own text
+    directly — not Phase 28's needle-centered fixed-window guess, which
+    remains the fallback for edges with no `chunk_id` (exercised by every
+    other `select_candidates` test above, none of which pass `doc_chunks`).
+    """
+    spec_doc_text = (
+        "# Intro\n\nUnrelated intro text.\n\n"
+        "## Dependencies\n\nThe demo library powers HTTP calls in this project.\n\n"
+        "## License\n\nMIT licensed.\n"
+    )
+    (tmp_path / _SPEC_DOC_PATH).write_text(spec_doc_text, encoding="utf-8")
+    dependencies_chunk = next(
+        c for c in chunk_markdown(spec_doc_text) if c.heading_path.endswith("Dependencies")
+    )
+
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(
+        conn,
+        vendors=[VendorRow(name="demo", ecosystem="npm", installed_version="1.0.0")],
+        source_files=[],
+        symbols=[],
+        uses_edges=[],
+        doc_artifacts=[DocArtifactRow(path=_SPEC_DOC_PATH, kind="spec_doc", origin="project")],
+        doc_chunks=[
+            DocChunkRow(
+                doc_artifact_path=_SPEC_DOC_PATH,
+                heading_path=dependencies_chunk.heading_path,
+                start_line=dependencies_chunk.start_line,
+                end_line=dependencies_chunk.end_line,
+                content_hash=dependencies_chunk.content_hash,
+            )
+        ],
+        documents_edges=[],
+        skill_mentions_edges=[],
+        routes_via_edges=[],
+        depends_on_edges=[],
+        doc_relations_edges=[
+            DocRelationEdgeRow(
+                source_doc_artifact_path=_SPEC_DOC_PATH,
+                relation_kind="mentions_dependency",
+                target_vendor_name="demo",
+                chunk_start_line=dependencies_chunk.start_line,
+            )
+        ],
+    )
+
+    candidates = select_candidates(conn, tmp_path)
+
+    assert len(candidates) == 1
+    excerpt = candidates[0].source_excerpt
+    assert "demo library powers HTTP calls" in excerpt
+    # Scoped to just the matched chunk — the fixed-window Phase 28
+    # fallback would have pulled in the whole short file, including the
+    # unrelated "Intro"/"License" sections; the chunk-based excerpt must
+    # not.
+    assert "Unrelated intro" not in excerpt
+    assert "MIT licensed" not in excerpt
 
 
 # --- plan_batches -------------------------------------------------------------
