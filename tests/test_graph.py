@@ -11,6 +11,7 @@ from codecompass.graph import (
     SymbolRow,
     UsesEdgeRow,
     VendorRow,
+    doc_code_trace,
     doc_relations,
     documented_but_unused,
     enrichment_candidates,
@@ -642,6 +643,10 @@ def test_vendor_profile_for_used_vendor(tmp_path) -> None:
     assert [d["path"] for d in profile["documenting_artifacts"]] == [_CLAUDE_MD_PATH]
     assert [s["path"] for s in profile["routed_skills"]] == [_SKILL_PATH]
     assert profile["depends_on"] == ["unused-lib"]
+    assert profile["used_at"] == [
+        {"source_file_path": _SOURCE_FILE, "line": 10},
+        {"source_file_path": _SOURCE_FILE, "line": 20},
+    ]
 
 
 def test_vendor_profile_for_nonexistent_vendor_is_none(tmp_path) -> None:
@@ -662,15 +667,61 @@ def test_symbol_profile_returns_every_match_across_vendors(tmp_path) -> None:
     used_lib_profile = next(p for p in profiles if p["vendor"] == "used-lib")
     assert used_lib_profile["usage_count"] == 1
     assert [d["path"] for d in used_lib_profile["documenting_artifacts"]] == [_CLAUDE_MD_PATH]
+    assert used_lib_profile["used_at"] == [{"source_file_path": _SOURCE_FILE, "line": 10}]
     unused_lib_profile = next(p for p in profiles if p["vendor"] == "unused-lib")
     assert unused_lib_profile["usage_count"] == 0
     assert unused_lib_profile["documenting_artifacts"] == []
+    assert unused_lib_profile["used_at"] == []
 
 
 def test_symbol_profile_for_nonexistent_symbol_is_empty(tmp_path) -> None:
     conn = open_graph(tmp_path)
     rebuild_deterministic(conn, **_fixture_kwargs())
     assert symbol_profile(conn, "doesNotExist") == []
+
+
+def test_doc_code_trace_via_documents_edges(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+
+    trace = doc_code_trace(conn, _CLAUDE_MD_PATH)
+
+    assert trace == [
+        {
+            "via": "documents",
+            "vendor": "used-lib",
+            "symbol": "doStuff",
+            "source_file_path": _SOURCE_FILE,
+            "line": 10,
+        }
+    ]
+
+
+def test_doc_code_trace_via_mentions_dependency(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+
+    trace = doc_code_trace(conn, _SPEC_DOC_PATH)
+
+    assert [t["via"] for t in trace] == ["mentions_dependency", "mentions_dependency"]
+    assert all(t["vendor"] == "used-lib" and t["symbol"] is None for t in trace)
+    assert {t["line"] for t in trace} == {10, 20}
+
+
+def test_doc_code_trace_via_vendor_name(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+
+    trace = doc_code_trace(conn, "used-lib")
+
+    assert [t["via"] for t in trace] == ["direct_usage", "direct_usage"]
+    assert {t["line"] for t in trace} == {10, 20}
+
+
+def test_doc_code_trace_for_unknown_name_is_empty(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+    assert doc_code_trace(conn, "does-not-exist") == []
 
 
 def test_skills_index_lists_skill_artifacts_and_mentions(tmp_path) -> None:

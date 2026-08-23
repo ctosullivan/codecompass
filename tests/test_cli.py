@@ -1039,6 +1039,45 @@ def test_query_vendor_returns_profile(tmp_path: Path, monkeypatch: pytest.Monkey
     assert "doStuff" in result.output
 
 
+def test_query_vendor_json_includes_used_at(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_query_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "vendor", "used-lib", "--json"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["used_at"] == [{"source_file_path": "src/app.ts", "line": 1}]
+
+
+def test_query_vendor_human_output_shows_used_at_section(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_query_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "vendor", "used-lib"])
+
+    assert result.exit_code == 0, result.output
+    assert "Used at" in result.output
+    assert "src/app.ts" in result.output
+
+
+def test_query_symbol_json_includes_used_at(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_query_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "symbol", "doStuff", "--json"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload[0]["used_at"] == [{"source_file_path": "src/app.ts", "line": 1}]
+
+
 def test_query_vendor_unknown_name_errors(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1207,9 +1246,11 @@ def _build_relations_fixture(project_root: Path) -> None:
     graph.rebuild_deterministic(
         conn,
         vendors=[graph.VendorRow(name="demo", ecosystem="npm", installed_version="1.0.0")],
-        source_files=[],
+        source_files=[graph.SourceFileRow(path="src/app.ts")],
         symbols=[],
-        uses_edges=[],
+        uses_edges=[
+            graph.UsesEdgeRow(source_file_path="src/app.ts", vendor_name="demo", line=7)
+        ],
         doc_artifacts=[
             graph.DocArtifactRow(path=_SPEC_DOC_PATH, kind="spec_doc", origin="project"),
             graph.DocArtifactRow(
@@ -1250,8 +1291,42 @@ def test_query_relations_by_spec_doc_path_shows_outgoing_mentions(
 
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
-    kinds = {entry["relation_kind"] for entry in payload}
+    kinds = {entry["relation_kind"] for entry in payload["relations"]}
     assert kinds == {"mentions_dependency", "mentions_artifact"}
+
+
+def test_query_relations_json_includes_package_code_trace(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_relations_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "relations", _SPEC_DOC_PATH, "--json"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["package_code"] == [
+        {
+            "via": "mentions_dependency",
+            "vendor": "demo",
+            "symbol": None,
+            "source_file_path": "src/app.ts",
+            "line": 7,
+        }
+    ]
+
+
+def test_query_relations_human_output_shows_package_code_section(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _build_relations_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "relations", _SPEC_DOC_PATH])
+
+    assert result.exit_code == 0, result.output
+    assert "Package code" in result.output
+    assert "src/app.ts" in result.output
 
 
 def test_query_relations_by_vendor_name_shows_incoming_mentions(
@@ -1264,9 +1339,9 @@ def test_query_relations_by_vendor_name_shows_incoming_mentions(
 
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
-    assert len(payload) == 1
-    assert payload[0]["relation_kind"] == "mentions_dependency"
-    assert payload[0]["source_doc_artifact_path"] == _SPEC_DOC_PATH
+    assert len(payload["relations"]) == 1
+    assert payload["relations"][0]["relation_kind"] == "mentions_dependency"
+    assert payload["relations"][0]["source_doc_artifact_path"] == _SPEC_DOC_PATH
 
 
 def test_query_relations_by_skill_name_shows_incoming_mentions(
@@ -1279,9 +1354,9 @@ def test_query_relations_by_skill_name_shows_incoming_mentions(
 
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
-    assert len(payload) == 1
-    assert payload[0]["relation_kind"] == "mentions_artifact"
-    assert payload[0]["source_doc_artifact_path"] == _SPEC_DOC_PATH
+    assert len(payload["relations"]) == 1
+    assert payload["relations"][0]["relation_kind"] == "mentions_artifact"
+    assert payload["relations"][0]["source_doc_artifact_path"] == _SPEC_DOC_PATH
 
 
 def test_query_relations_unknown_name_errors(
@@ -1318,11 +1393,12 @@ def test_query_relations_shows_ai_summary_when_enriched(
 
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
-    dependency_entry = next(e for e in payload if e["relation_kind"] == "mentions_dependency")
+    relations = payload["relations"]
+    dependency_entry = next(e for e in relations if e["relation_kind"] == "mentions_dependency")
     assert dependency_entry["ai_summary"] == (
         "This README explains why demo is the tracked HTTP client."
     )
-    artifact_entry = next(e for e in payload if e["relation_kind"] == "mentions_artifact")
+    artifact_entry = next(e for e in relations if e["relation_kind"] == "mentions_artifact")
     assert artifact_entry["ai_summary"] is None
 
 
@@ -1360,7 +1436,7 @@ def test_query_relations_by_vendor_name_shows_ai_summary(
 
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
-    assert payload[0]["ai_summary"] == "summary text"
+    assert payload["relations"][0]["ai_summary"] == "summary text"
 
 
 def test_query_relations_by_skill_name_shows_ai_summary(
@@ -1385,7 +1461,7 @@ def test_query_relations_by_skill_name_shows_ai_summary(
 
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
-    assert payload[0]["ai_summary"] == "This README points at the demo Skill."
+    assert payload["relations"][0]["ai_summary"] == "This README points at the demo Skill."
 
 
 def test_check_reports_spec_docs_without_relations_section(

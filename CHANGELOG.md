@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 30**: `codecompass query vendor`/`query symbol` now show real
+  `(file, line)` usage locations ("Used at" — `used_at` in JSON), no
+  longer just a bare `usage_count`. New `graph.doc_code_trace(conn,
+  doc_path_or_vendor_name)` composes existing edges into a two-hop
+  package-code trace — `documents_edges` → `symbols` → `uses_edges` for
+  what a doc documents, and a doc's own outgoing `mentions_dependency`
+  `doc_relations_edges` → `vendors` → `uses_edges` for what it mentions —
+  surfaced in `query relations` as a new "Package code" section. Pure
+  query-time joins over data already in the graph; no new table, no new
+  detection, no AI call, same posture as `documented_but_unused`.
+  `query relations --json`'s payload changes from a bare list to
+  `{"relations": [...], "package_code": [...]}` — a relation and a usage
+  site are different shapes that don't merge into one row; `query
+  vendor`/`query symbol --json` gain `used_at` as one more key, purely
+  additive. Confirmed live against this repo's real graph: `query symbol
+  Console`'s `used_at` matches the real import-line locations `grep`
+  finds; `query relations architecture/overview.md`'s "Package code"
+  section lists real `typer` call sites in `cli.py`. See `planning/
+  phase-30-bidirectional-code-traversal.md`.
+
 ### Fixed
 
 - **Phase 33**: `codecompass query vendors|vendor|symbol|skills|relations
@@ -25,6 +47,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `planning/phase-33-fix-query-json-line-wrapping.md`'s Context section.
 
 ### Added
+
+- Planning: `planning/doc-graph-precision-roadmap.md` — a new umbrella
+  plan (same role `v1.0-initial-release-roadmap.md` played for 20-23),
+  plus three new phase plans it introduces: `planning/
+  phase-30-bidirectional-code-traversal.md` (surface `uses_edges`'
+  existing file/line data via a new `used_at` list and a `doc_code_trace`
+  two-hop query — no new tables, no AI), `planning/
+  phase-31-typed-relation-enrichment.md` (a closed `relation_label` enum
+  alongside Phase 22's existing free-text `ai_summary`, gated on Phase
+  21/29's already-mechanically-proven candidates only), and `planning/
+  phase-32-doc-chunking.md` (deterministic heading-based split of doc
+  artifacts into a new `doc_chunks` table, with a nullable, additive
+  `chunk_id` on `documents_edges`/`doc_relations_edges`). All three hold
+  the same detection-vs-description AI boundary established by
+  `decisions/0031`. `planning/ROADMAP.md`'s Post-MVP table updated: 30/31/32
+  appended after 29, no renumbering. At explicit user request, these three
+  phases also expand v1.0's blocking scope — Phase 23 Part B (the actual
+  publish) now waits on 30-32 reaching `done` too, alongside its existing
+  confirmation gates. Planning only, no code changed.
 
 - **Phase 29**: a vendor's own embedded upstream doc (`kind='vendor_doc'`,
   Phase 27) is no longer passive, indexed-only content — it now

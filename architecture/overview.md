@@ -984,12 +984,27 @@ none of them write, none of them decide staleness:
   `used_but_undocumented(conn) -> list[tuple[str, str]]` — `(vendor,
   symbol)` pairs covering the two one-sided coverage-gap cases.
 - `vendor_profile(conn, name) -> dict | None` — the vendor row plus its
-  symbols, total usage count, documenting artifacts (linked directly or
-  via one of its symbols), routed Skills, and its `depends_on` vendor
-  names; `None` for an unknown name.
+  symbols, total usage count, real `(file, line)` usage locations
+  (`used_at`, Phase 30 — surfaces `uses_edges`' existing file/line data,
+  previously collapsed to just `usage_count`), documenting artifacts
+  (linked directly or via one of its symbols), routed Skills, and its
+  `depends_on` vendor names; `None` for an unknown name.
 - `symbol_profile(conn, name) -> list[dict]` — every symbol row named
   `name` across every vendor (symbol names aren't globally unique), each
-  with its own usage count and documenting artifacts.
+  with its own usage count, `used_at` locations (Phase 30, same shape as
+  `vendor_profile`'s), and documenting artifacts.
+- `doc_code_trace(conn, doc_path_or_vendor_name) -> list[dict]` (Phase
+  30) — a query-time composition of edges already in the graph, no new
+  table (same posture as `documented_but_unused`): given a doc artifact
+  path, unions `documents_edges → symbols → uses_edges` (`via:
+  'documents'` — what this doc documents, and where the project's own
+  code calls it) with this doc's own outgoing `mentions_dependency`
+  `doc_relations_edges → vendors → uses_edges` (`via:
+  'mentions_dependency'` — what vendor this doc mentions, and where the
+  project actually uses it); given a vendor name instead, returns that
+  vendor's own `uses_edges` directly (`via: 'direct_usage'`, the same rows
+  `vendor_profile`'s `used_at` already exposes). Empty list for a name
+  matching neither, never an error.
 - `skills_index(conn) -> list[dict]` — every `doc_artifacts` row with
   `kind='skill'`, its `origin`, and what it mechanically mentions via
   `skill_mentions_edges`.

@@ -124,7 +124,8 @@ codecompass sync --budget 1.00
 
 ## `codecompass query vendors|vendor|symbol|skills|relations`
 
-**Status:** implemented (Phase 15; `relations` added Phase 21).
+**Status:** implemented (Phase 15; `relations` added Phase 21; `used_at`/
+package-code trace added Phase 30).
 
 Reads `context-graph.db` and renders the result as a Rich table by
 default, or raw JSON with `--json`. If `context-graph.db` doesn't exist
@@ -136,13 +137,15 @@ prints a one-line note pointing at `sync` rather than a traceback.
   status. `--unused` filters to vendors with zero detected usage anywhere
   in the project (`graph.unused_vendors`).
 - `codecompass query vendor <name> [--json]` — one vendor's full profile:
-  its symbols, total usage count, documenting artifacts, routed Skills,
-  and `depends_on` vendors (`graph.vendor_profile`). Errors if `<name>`
-  isn't a known vendor in the graph.
+  its symbols, total usage count, real `(file, line)` usage locations
+  ("Used at", Phase 30 — `used_at` in JSON), documenting artifacts, routed
+  Skills, and `depends_on` vendors (`graph.vendor_profile`). Errors if
+  `<name>` isn't a known vendor in the graph.
 - `codecompass query symbol <name> [--json]` — every symbol named
   `<name>`, across every vendor (symbol names aren't globally unique),
-  each with its vendor, usage count, and documenting artifacts
-  (`graph.symbol_profile`).
+  each with its vendor, usage count, real `(file, line)` usage locations
+  ("Used at" column — `used_at` in JSON, Phase 30), and documenting
+  artifacts (`graph.symbol_profile`).
 - `codecompass query skills [--unused-mentions] [--json]` — every
   Skill/`.mdc` rule under the project (not just codecompass's own), its
   origin, and what it mechanically mentions (`graph.skills_index`).
@@ -160,7 +163,13 @@ prints a one-line note pointing at `sync` rather than a traceback.
   whole-project `sync` — no separate command needed to pick them up. Each
   relation also shows an AI-enriched `ai_summary` (Phase 22,
   `doc_relation_enrichment`) once usage-driven Phase B enrichment has run
-  over it, else "mentioned, not yet enriched".
+  over it, else "mentioned, not yet enriched". Also shows a "Package code"
+  trace (Phase 30, `graph.doc_code_trace`) — real project-source usage
+  sites for whatever `<name>` mechanically mentions, documents, or (if
+  `<name>` is a vendor) is itself. `--json` output is
+  `{"relations": [...], "package_code": [...]}`, not a bare list — a
+  relation and a usage site are different shapes that don't merge into one
+  row.
 
 ```bash
 codecompass query vendors

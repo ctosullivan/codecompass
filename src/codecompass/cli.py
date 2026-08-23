@@ -581,6 +581,12 @@ def query_vendor(
         for skill in profile["routed_skills"]:
             skills_table.add_row(skill["path"])
         console.print(skills_table)
+        console.print("[bold]Used at[/bold]")
+        used_at_table = Table("File", "Line")
+        for u in profile["used_at"]:
+            line = str(u["line"]) if u["line"] is not None else ""
+            used_at_table.add_row(u["source_file_path"], line)
+        console.print(used_at_table)
         console.print(f"Depends on: {', '.join(profile['depends_on']) or '(none)'}")
     finally:
         conn.close()
@@ -607,11 +613,19 @@ def query_symbol(
         if not profiles:
             console.print(f"[yellow]no symbol named {name!r} found in context-graph.db[/yellow]")
             return
-        table = Table("Vendor", "Purpose", "Usage count", "Documenting artifacts")
+        table = Table("Vendor", "Purpose", "Usage count", "Documenting artifacts", "Used at")
         for profile in profiles:
             docs = ", ".join(doc["path"] for doc in profile["documenting_artifacts"]) or "(none)"
+            used_at = (
+                ", ".join(f"{u['source_file_path']}:{u['line']}" for u in profile["used_at"])
+                or "(none)"
+            )
             table.add_row(
-                profile["vendor"], profile["purpose"] or "", str(profile["usage_count"]), docs
+                profile["vendor"],
+                profile["purpose"] or "",
+                str(profile["usage_count"]),
+                docs,
+                used_at,
             )
         console.print(table)
     finally:
@@ -774,7 +788,12 @@ def query_relations(
     shows its AI-enriched `ai_summary` (Phase 22, `doc_relation_
     enrichment`) when one has been generated, else "mentioned, not yet
     enriched" — the same two-state display `query vendor` already uses
-    for `has_enrichment`.
+    for `has_enrichment`. Also shows a "Package code" trace (Phase 30,
+    `graph.doc_code_trace`): real project-source usage sites for whatever
+    `name` mechanically mentions or documents, or its own usage sites if
+    `name` is a vendor. `--json` output is `{"relations": [...],
+    "package_code": [...]}`, not a bare list — the two are different
+    shapes (a relation vs. a usage site) that don't merge into one row.
     """
     conn = _open_graph_or_note(Path.cwd())
     if conn is None:
@@ -784,8 +803,12 @@ def query_relations(
         if relations is None:
             console.print(f"[red]error:[/red] {name!r} not found in context-graph.db")
             raise typer.Exit(code=1)
+        package_code = graph.doc_code_trace(conn, name)
         if json_output:
-            console.print(json.dumps(relations, indent=2), soft_wrap=True)
+            console.print(
+                json.dumps({"relations": relations, "package_code": package_code}, indent=2),
+                soft_wrap=True,
+            )
             return
         table = Table("Relation", "Other")
         table.add_column("AI summary", no_wrap=True)
@@ -802,6 +825,17 @@ def query_relations(
         if not relations:
             table.add_row("[dim](none)[/dim]", "", "")
         console.print(table)
+        console.print("[bold]Package code[/bold]")
+        trace_table = Table("Vendor", "Symbol", "File", "Line", "Via")
+        for t in package_code:
+            trace_table.add_row(
+                t["vendor"],
+                t["symbol"] or "",
+                t["source_file_path"],
+                str(t["line"]) if t["line"] is not None else "",
+                t["via"],
+            )
+        console.print(trace_table)
     finally:
         conn.close()
 

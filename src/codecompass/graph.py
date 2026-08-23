@@ -828,6 +828,20 @@ def vendor_profile(conn: sqlite3.Connection, name: str) -> dict | None:
         "SELECT COUNT(*) FROM uses_edges WHERE vendor_id = ?", (vendor_id,)
     ).fetchone()
 
+    used_at = [
+        {"source_file_path": path, "line": line}
+        for path, line in conn.execute(
+            """
+            SELECT sf.path, ue.line
+            FROM uses_edges ue
+            JOIN source_files sf ON ue.source_file_id = sf.id
+            WHERE ue.vendor_id = ?
+            ORDER BY sf.path, ue.line
+            """,
+            (vendor_id,),
+        )
+    ]
+
     documenting_artifacts = [
         {"id": did, "path": path, "kind": kind, "name": dname, "description": description}
         for did, path, kind, dname, description in conn.execute(
@@ -878,6 +892,7 @@ def vendor_profile(conn: sqlite3.Connection, name: str) -> dict | None:
         "vendor": vendor,
         "symbols": symbols,
         "usage_count": usage_count,
+        "used_at": used_at,
         "documenting_artifacts": documenting_artifacts,
         "routed_skills": routed_skills,
         "depends_on": depends_on,
@@ -903,6 +918,19 @@ def symbol_profile(conn: sqlite3.Connection, name: str) -> list[dict]:
         (usage_count,) = conn.execute(
             "SELECT COUNT(*) FROM uses_edges WHERE symbol_id = ?", (symbol_id,)
         ).fetchone()
+        used_at = [
+            {"source_file_path": path, "line": line}
+            for path, line in conn.execute(
+                """
+                SELECT sf.path, ue.line
+                FROM uses_edges ue
+                JOIN source_files sf ON ue.source_file_id = sf.id
+                WHERE ue.symbol_id = ?
+                ORDER BY sf.path, ue.line
+                """,
+                (symbol_id,),
+            )
+        ]
         documenting_artifacts = [
             {"id": did, "path": path, "kind": kind}
             for did, path, kind in conn.execute(
@@ -923,10 +951,115 @@ def symbol_profile(conn: sqlite3.Connection, name: str) -> list[dict]:
                 "name": name,
                 "purpose": purpose,
                 "usage_count": usage_count,
+                "used_at": used_at,
                 "documenting_artifacts": documenting_artifacts,
             }
         )
     return profiles
+
+
+def doc_code_trace(conn: sqlite3.Connection, doc_path_or_vendor_name: str) -> list[dict]:
+    """Composes existing edges into a doc/vendor → package-code usage
+    trace (Phase 30) — a query-time join over data already in the graph,
+    no new table, same posture as `documented_but_unused`. Each returned
+    dict has `vendor`, `symbol` (`None` for a vendor-level usage site),
+    `source_file_path`, `line`, and `via` (which composition produced it):
+
+    - A known `doc_artifacts.path` resolves two ways, unioned:
+      - `'documents'`: `documents_edges` → `symbols` → `uses_edges` — every
+        symbol this doc artifact documents, and where the project's own
+        code actually calls it.
+      - `'mentions_dependency'`: this doc artifact's own outgoing
+        `doc_relations_edges` rows of kind `'mentions_dependency'` →
+        `uses_edges` — every vendor this doc mechanically mentions
+        (a spec doc or vendor doc, per `decisions/0043`), and every
+        real usage site for that vendor anywhere in the project.
+    - A known vendor `name` resolves directly: `'direct_usage'` — that
+      vendor's own `uses_edges`, the same rows `vendor_profile`'s
+      `used_at` already exposes, available here too so a caller that only
+      has a name (not knowing whether it's a doc path or a vendor) can
+      use one function for either.
+    - A name matching neither is an empty list, not an error — mirrors
+      `doc_relations`'s existing graceful-empty posture for an unknown
+      path.
+    """
+    doc_row = conn.execute(
+        "SELECT id FROM doc_artifacts WHERE path = ?", (doc_path_or_vendor_name,)
+    ).fetchone()
+    if doc_row is not None:
+        doc_id = doc_row[0]
+        results = [
+            {
+                "via": "documents",
+                "vendor": vendor_name,
+                "symbol": symbol_name,
+                "source_file_path": path,
+                "line": line,
+            }
+            for vendor_name, symbol_name, path, line in conn.execute(
+                """
+                SELECT v.name, s.name, sf.path, ue.line
+                FROM documents_edges de
+                JOIN symbols s ON de.symbol_id = s.id
+                JOIN vendors v ON s.vendor_id = v.id
+                JOIN uses_edges ue ON ue.symbol_id = s.id
+                JOIN source_files sf ON ue.source_file_id = sf.id
+                WHERE de.doc_artifact_id = ?
+                ORDER BY v.name, s.name, sf.path, ue.line
+                """,
+                (doc_id,),
+            )
+        ]
+        results.extend(
+            {
+                "via": "mentions_dependency",
+                "vendor": vendor_name,
+                "symbol": None,
+                "source_file_path": path,
+                "line": line,
+            }
+            for vendor_name, path, line in conn.execute(
+                """
+                SELECT v.name, sf.path, ue.line
+                FROM doc_relations_edges dre
+                JOIN vendors v ON dre.target_vendor_id = v.id
+                JOIN uses_edges ue ON ue.vendor_id = v.id
+                JOIN source_files sf ON ue.source_file_id = sf.id
+                WHERE dre.source_doc_artifact_id = ?
+                  AND dre.relation_kind = 'mentions_dependency'
+                ORDER BY v.name, sf.path, ue.line
+                """,
+                (doc_id,),
+            )
+        )
+        return results
+
+    vendor_row = conn.execute(
+        "SELECT id, name FROM vendors WHERE name = ?", (doc_path_or_vendor_name,)
+    ).fetchone()
+    if vendor_row is not None:
+        vendor_id, vendor_name = vendor_row
+        return [
+            {
+                "via": "direct_usage",
+                "vendor": vendor_name,
+                "symbol": None,
+                "source_file_path": path,
+                "line": line,
+            }
+            for path, line in conn.execute(
+                """
+                SELECT sf.path, ue.line
+                FROM uses_edges ue
+                JOIN source_files sf ON ue.source_file_id = sf.id
+                WHERE ue.vendor_id = ?
+                ORDER BY sf.path, ue.line
+                """,
+                (vendor_id,),
+            )
+        ]
+
+    return []
 
 
 def skills_index(conn: sqlite3.Connection) -> list[dict]:
