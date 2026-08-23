@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Phase 34**: `doc_chunking.chunk_markdown` no longer misdetects a
+  `#`-prefixed comment inside a fenced code block (` ``` `/`~~~`) as a
+  real markdown heading. Found via a `/discovery` session testing Phase
+  30-33's real output quality: `docs/cli-reference.md`'s example fence
+  containing `# Not a shell command...` was misdetected, corrupting the
+  `heading` reported for the `typer` relation sourced from that doc.
+  Scanning all 84 currently-chunkable doc artifacts found 37 such
+  false-positive lines, 12 of which had already produced real bogus
+  `heading_path` values on `vendor/anthropic/src/MIGRATION.md`'s
+  `documents_edges` rows (e.g. `"After > Bedrock: a region is now
+  required"` — a fake heading prepended to a real one). Fixed by tracking
+  fence state and never treating a line inside one as a heading
+  candidate. No backfill — the next whole-project `sync` naturally
+  recomputes `doc_chunks` from scratch.
+
 ### Added
 
 - **Phase 32**: new `doc_chunking.py` deterministically splits a

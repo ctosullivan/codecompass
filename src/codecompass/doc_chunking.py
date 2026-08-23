@@ -54,11 +54,22 @@ def chunk_markdown(text: str) -> list[DocChunk]:
     produces the chunk boundaries, `doc_mapping.py` decides attribution).
     """
     lines = text.splitlines()
-    headings = [
-        (i, len(m.group(1)), m.group(2))
-        for i, line in enumerate(lines)
-        if (m := _HEADING_RE.match(line))
-    ]
+    headings: list[tuple[int, int, str]] = []
+    in_fence = False
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        # Phase 34: a fenced code block (```/~~~) can contain a `#`-prefixed
+        # comment (shell/Python example code) that would otherwise match
+        # the heading regex — track fence state so lines inside one are
+        # never treated as headings, matching real markdown semantics.
+        if stripped.startswith(("```", "~~~")):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        m = _HEADING_RE.match(line)
+        if m:
+            headings.append((i, len(m.group(1)), m.group(2)))
     if not headings:
         return []
 

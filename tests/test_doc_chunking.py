@@ -87,3 +87,38 @@ def test_heading_line_trailing_whitespace_is_trimmed_from_the_title() -> None:
     text = "#   Title with leading/trailing spaces   \n\nbody\n"
     chunks = chunk_markdown(text)
     assert chunks[0].heading_path == "Title with leading/trailing spaces"
+
+
+def test_hash_prefixed_comment_inside_fenced_code_block_is_not_a_heading() -> None:
+    # Phase 34 regression: a `#`-prefixed comment inside a fenced example
+    # (a real, reproduced case from docs/cli-reference.md) must not be
+    # treated as a heading, and must not corrupt the heading_path of the
+    # real heading that follows the fence.
+    text = (
+        "## Real Heading\n\n"
+        "Some text.\n\n"
+        "```\n"
+        "# Not a real heading\n"
+        "some code\n"
+        "```\n\n"
+        "## Another Real Heading\n\n"
+        "More text.\n"
+    )
+    chunks = chunk_markdown(text)
+    assert [c.heading_path for c in chunks] == ["Real Heading", "Another Real Heading"]
+    assert "Not a real heading" not in " ".join(c.heading_path for c in chunks)
+
+
+def test_tilde_fenced_code_block_is_also_respected() -> None:
+    text = "## Title\n\n~~~\n# fake heading\n~~~\n\nbody\n"
+    chunks = chunk_markdown(text)
+    assert [c.heading_path for c in chunks] == ["Title"]
+
+
+def test_heading_immediately_after_a_closed_fence_is_still_detected() -> None:
+    # Confirms fence-tracking correctly turns back off, not just on. The
+    # fence itself is leading content before the first real heading, so
+    # it gets its own ("") chunk, same as any other leading content.
+    text = "```\ncode\n```\n## Heading Right After\n\nbody\n"
+    chunks = chunk_markdown(text)
+    assert [c.heading_path for c in chunks] == ["", "Heading Right After"]

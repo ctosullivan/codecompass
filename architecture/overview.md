@@ -1419,6 +1419,11 @@ headerless doc naturally produces zero `doc_chunks` rows and every match
 against it stays unattributed without any special-casing elsewhere. Pure,
 no AI, no filesystem access — takes already-read text, same shape as
 every other pure transformation in this arc. See `decisions/0046`.
+Tracks fenced-code-block (` ``` `/`~~~`) state and never treats a line
+inside one as a heading candidate (Phase 34) — a `#`-prefixed comment in
+an example fence would otherwise be misdetected as a real heading,
+confirmed live against this repo's own `docs/cli-reference.md` and
+`vendor/anthropic/src/MIGRATION.md`.
 
 `cli.py` gains `codecompass query relations <name>` (the `query` group's
 fifth canned query): given a spec-doc path, prints what it mechanically

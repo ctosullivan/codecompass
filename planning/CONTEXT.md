@@ -6,15 +6,15 @@ for the log of how it got here.
 
 ## Current phase
 
-**Phases 0-33 are all `done`.** Phase 23 (Polish/PyPI publish — the v1.0
+**Phases 0-34 are all `done`.** Phase 23 (Polish/PyPI publish — the v1.0
 release itself) is `in progress`: Part A (packaging/release readiness) is
 `done`; Part B (the actual publish) remains paused for explicit user
 confirmation — this is now the **only** thing between the current state
 and a `v1.0` release. Phases 30-32 (doc-graph precision: bidirectional
 traversal, typed relation labels, heading-based chunking), added to v1.0's
-blocking scope at explicit user request, are all `done`; Phase 33 (a bug
-fix found along the way) is also `done`. Nothing from this group blocks
-Part B any longer.
+blocking scope at explicit user request, are all `done`; Phases 33 and 34
+(both bug fixes found via live `/discovery` dogfooding) are also `done`.
+Nothing from this group blocks Part B any longer.
 `codecompass` now: auto-clones every tracked vendor; detects real
 project-source usage (vendor- and symbol-level); maps docs/skills/
 dependencies/spec-docs/vendor-docs into a SQLite graph with both
@@ -39,105 +39,72 @@ usage resolution for `import X` + `X.Attr(...)` (26); vendor upstream
 docs registered as `doc_artifacts` (27); enrichment excerpts centered on
 the real mechanical match instead of the file's opening (28); vendor docs
 became relationship *sources*, not just targets, with a self-mention
-exclusion (29). `pytest` climbed 367→468 across this arc, `ruff check .`
-clean throughout, every phase live-verified against this repo's own real
-graph, not just green tests.
+exclusion (29). `pytest` climbed 367→468 across this arc.
 
-**A `/discovery` session tested that graph's real relationship-data
-quality** and found: full AI-enrichment coverage (39/39 relations
-enriched); 3 spot-checked summaries all grounded in real text; `uses_edges`
-already had real `(file, line)` data `query vendor --json` didn't expose
-(confirmed the real gap Phase 30 targets); vendor-doc-as-source (29) works
-but yields sparsely (1 of 28 vendor docs actually sources a relation);
-and two incidental issues outside 30-32's scope — a `query --json`
-Rich-wrapping bug, and a `check` version-drift reading that looked
-backwards.
-
-**Following that: a doc-graph precision planning pass** finalized three
-attached draft phase plans (`planning/phase-30/31/32-*.md`) plus their
-umbrella (`planning/doc-graph-precision-roadmap.md`) as committed plans,
-and — per explicit user instruction — added all three to v1.0's blocking
-scope alongside Phase 23.
-
-**Then, at the user's request ("implement and fix bugs"), all four
-phases were implemented, tested, and live-verified in one session:**
-
-- **Phase 33** (`decisions`: none needed — a contained bug fix): every
-  `codecompass query ... --json` call site printed pre-serialized JSON
-  through the shared Rich `Console`, which word-wraps long printed text
-  by inserting real line breaks — a value long enough to cross the wrap
-  width got a literal newline inserted into it, corrupting the JSON.
-  Fixed with `soft_wrap=True` on all five call sites, the same flag
-  Rich's own `Console.print_json` uses internally. The session's other
-  `/discovery`-flagged item (the version-drift reading) was investigated
-  and confirmed **not** a bug: `check`'s "live" column reads the
-  currently-installed version in this environment, not a PyPI-latest
-  lookup, and this repo's `.venv` genuinely had an older `anthropic`
-  installed than what was last recorded (`importlib.metadata` confirmed
-  it directly) — no code change, no plan needed.
-
-- **Phase 30** (`graph.py`, `cli.py`): `vendor_profile`/`symbol_profile`
-  gained a `used_at` list (real `(file, line)` locations, not just a
-  count); new `graph.doc_code_trace` composes `documents_edges`/
-  `doc_relations_edges` with `uses_edges` into a two-hop package-code
-  trace, surfaced in `query relations` as a new "Package code" section.
-  `query relations --json`'s payload changed from a bare list to
-  `{"relations": [...], "package_code": [...]}` — a deliberate, disclosed
-  breaking change to that endpoint's shape (acceptable pre-1.0), noted
-  directly in the phase's own plan file. Confirmed live: `query symbol
-  Console`'s `used_at` matched real import-line locations `grep` found;
-  `query relations architecture/overview.md`'s "Package code" section
-  listed real `typer` call sites in `cli.py`.
-
-- **Phase 31** (`relation_enrichment.py`, `graph.py`, `decisions/0045`):
-  closed-taxonomy `relation_label` (`documents_configuration_of`/
+**Doc-graph precision arc (Phases 30-32), condensed** — planned together
+(`planning/doc-graph-precision-roadmap.md`), added to v1.0's blocking
+scope at explicit user request, implemented and live-verified in one
+session:
+- **30**: `vendor_profile`/`symbol_profile` gained a `used_at` list (real
+  `(file, line)` locations); new `graph.doc_code_trace` composes edges
+  into a two-hop package-code trace, surfaced in `query relations` as a
+  new "Package code" section. `query relations --json`'s payload changed
+  from a bare list to `{"relations": [...], "package_code": [...]}` — a
+  deliberate, disclosed pre-1.0 breaking change.
+- **31**: closed-taxonomy `relation_label` (`documents_configuration_of`/
   `explains_usage_of`/`contrasts_with`/`supersedes`/`other`) alongside
-  the existing free-text `ai_summary`, strictly gated on Phase 21/29's
-  already-mechanically-proven candidates. Any label outside the enum
-  normalizes to `'other'`, never raises. `doc_relation_enrichment`
-  migrated via `ALTER TABLE ADD COLUMN` (not drop-and-recreate — this
-  table holds paid AI spend). Confirmed live: cleared and forced a real
-  re-enrichment run over this repo's 39 real relationships (~$0.04); every
-  row got a valid label, 0 NULL/invalid; 2 spot-checked labels
-  (`decisions/0016`→`anthropic`, `decisions/0034`→the tool Skill)
-  confirmed grounded against the real decision text.
+  the existing free-text `ai_summary`, gated on already-mechanically-
+  proven candidates only; any out-of-enum label normalizes to `'other'`.
+  `doc_relation_enrichment` migrated via `ALTER TABLE ADD COLUMN` (paid
+  AI spend, must survive). `decisions/0045`.
+- **32**: new `doc_chunking.py`, deterministic heading-based markdown
+  chunking; new `doc_chunks` table; nullable `chunk_id` on
+  `documents_edges`/`doc_relations_edges`. Enrichment excerpts prefer the
+  matched chunk's own text over Phase 28's fixed-window guess (which
+  remains as fallback). `documents_edges`/`doc_relations_edges` migrated
+  via drop-and-recreate (always fully rewritten every sync anyway).
+  `decisions/0046`.
 
-- **Phase 32** (`doc_chunking.py` new, `graph.py`, `doc_mapping.py`,
-  `relation_enrichment.py`, `decisions/0046`): deterministic heading-based
-  markdown chunking (any heading level, root-first nested `heading_path`,
-  zero chunks for a headerless doc by design). New `doc_chunks` table;
-  nullable `chunk_id` on `documents_edges`/`doc_relations_edges`,
-  populated only when a mechanical match is attributable to exactly one
-  chunk. `doc_code_trace`/`query relations` gained an optional `heading`
-  field. Enrichment excerpts now prefer the matched chunk's own text over
-  Phase 28's fixed-window guess, which remains as the fallback, unchanged.
-  `documents_edges`/`doc_relations_edges` migrated via the same
-  drop-and-recreate approach `doc_artifacts` already uses (both always
-  fully rewritten every sync). Confirmed live: chunked
-  `architecture/overview.md`'s real ~1,600 lines into a correctly-nested
-  structure; a real relation's excerpt now slices exactly from its
-  matched chunk (`decisions/0016`→`anthropic`, verified byte-for-byte); a
-  `chunk_id = NULL` relation still enriches correctly via the unchanged
-  Phase 28 fallback; Phase 29's self-mention exclusion confirmed still
-  correct under the new per-chunk pass (`vendor/anthropic/src/
-  CHANGELOG.md` says "anthropic" 1,161 times, zero self-referencing
-  edges, one real edge to `rich`).
+Verified independently throughout: `pytest` climbed 469→502 passed,
+`ruff check .` clean at every step, core-logic diffs read directly
+against each plan, every live-verification claim checked against this
+repo's real `context-graph.db`/files directly. Committed as one commit
+per phase (`fix(phase-33)`, `feat(phase-30)`, `feat(phase-31)`,
+`feat(phase-32)`, plus a `docs:` commit for this file), pushed to
+`origin/main`.
 
-Verified independently throughout all four: `pytest` climbed 469→502
-passed (1 skipped throughout), `ruff check .` clean at every step,
-core-logic diffs read directly against each plan before marking `done`,
-every live-verification claim above checked against this repo's real
-`context-graph.db`/files directly, not assumed.
+**Most recently — a second `/discovery` session tested Phase 30-33's real
+output quality** and found Phase 30/31/33 all working correctly on real
+data (used_at/package-code locations verified against `grep`; all 39
+relation labels valid and 2 spot-checked as grounded; `query --json`
+confirmed parseable). It also found a **real bug in Phase 32**:
+`doc_chunking.chunk_markdown`'s heading regex had no awareness of fenced
+code blocks (` ``` `/`~~~`), so a `#`-prefixed comment inside an example
+fence (e.g. `docs/cli-reference.md`'s `# Not a shell command...`) got
+misdetected as a real heading — corrupting `heading_path` both for the
+bogus chunk itself and for whatever real heading followed it. Scanning
+all 84 chunkable doc artifacts found 37 such false-positive lines, 12 of
+which had already produced real bogus headings on `vendor/anthropic/src/
+MIGRATION.md`'s `documents_edges` rows (e.g. `"After > Bedrock: a region
+is now required"`, a fake heading prepended to a real one).
 
-**Committed as 5 commits this session**: `fix(phase-33)`,
-`feat(phase-30)`, `feat(phase-31)`, `feat(phase-32)`, and a final `docs:`
-commit for this file — one per phase, matching this project's established
-one-phase-one-commit convention. Not yet pushed to the remote.
+**Phase 34, done**: fixed by tracking fence state in `chunk_markdown` and
+never treating a line inside one as a heading candidate — deliberately a
+simple toggle (any line starting with ` ``` ` or `~~~`), not a full
+markdown parser, consistent with this project's mechanical-detection
+posture elsewhere. No backfill; the next whole-project `sync` naturally
+recomputes `doc_chunks`. Three new regression tests (two confirmed to
+fail against the pre-fix code). `pytest` 502→505 passed, `ruff check .`
+clean. **Confirmed live**: re-synced this repo after the fix —
+`docs/cli-reference.md`'s `typer` relation now reports the real heading
+(`` `codecompass undo [--yes] [--dry-run]` ``, not the fabricated one);
+`vendor/anthropic/src/MIGRATION.md`'s previously-bogus headings now show
+real chains (`"Migrating to v1 > Bedrock: a region is now required"`).
+Committed as `fix(phase-34)`.
 
 ## Next concrete step
 
-**Nothing from Phases 30-33 blocks anything anymore.** The two open items
-are:
+**Nothing outstanding blocks anything.** The two open items are:
 
 1. **Phase 23, Part B — the actual publish — remains paused for explicit
    user confirmation**, the only phase left before `v1.0`. Needs from the
@@ -148,12 +115,8 @@ are:
    section at the same time. None of this should happen from a broad
    "implement to release" instruction alone — claiming a PyPI package
    name and pushing a public tag are genuinely irreversible.
-2. **This session's commits are not yet pushed to the remote** — 5 local
-   commits ahead of origin/main as of this update.
-
-**Two items from the `/discovery` session are now resolved**, not
-outstanding: the `query --json` line-wrapping bug is fixed (Phase 33);
-the version-drift reading was confirmed not a bug (see above).
+2. **Confirm before pushing this session's Phase 34 commit** (and this
+   `CONTEXT.md` update) to the remote — not yet pushed as of this update.
 
 One decision remains genuinely open, unrelated to the above and not
 blocking anything currently in flight:
@@ -182,6 +145,10 @@ blocking anything currently in flight:
   since Phase 22. Computed correctly and available for a future phase if
   chunk-grain cache invalidation is ever pursued (noted in
   `decisions/0046`), not wired up now.
+- The fenced-code-block fix (Phase 34) only tracks ` ``` `/`~~~` fences,
+  not indented (4-space) code blocks — not a gap in practice, since a
+  heading regex requires `#` at column 0, which an indented block's
+  content can never satisfy.
 - `vendor/` exists in this checkout with real, enriched content — a live
   artifact of past validation runs, not a fixture. Still gitignored and
   freely regeneratable (`decisions/0010`).
