@@ -139,8 +139,9 @@ one rule that was failing pre-Phase-35, the `ANTHROPIC_API_KEY` mention).
 `pytest tests/test_check_user_docs.py` — 14 tests, covering all five rules'
 positive and negative paths plus `--strict`'s exit-code behavior both ways —
 all pass. `ruff check .` clean across the whole repo including the new
-`scripts/` file. The skill's judgment-application step (item 2 in the
-Verification list above) wasn't exercised against a real flagged item in
-this session, since the script reports nothing to fix once Phase 35 has
-landed — noted honestly rather than staged artificially; the next real
-finding (a future doc/code drift) is this skill's first real workout.
+`scripts/` file. The judgment-application step (item 2 in the
+Verification list above) got a real, unplanned workout later the same
+session: Phase 37's own commit landed without updating README's phase
+count, and `check_user_docs.py --strict` caught it immediately (`README.md
+claims 'phases 0-36' but the highest done phase ... is 37`) — fixed by
+hand and committed separately (`docs(phase-37)`).

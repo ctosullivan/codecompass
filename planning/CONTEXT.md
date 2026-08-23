@@ -130,11 +130,13 @@ blocking anything currently in flight:
    past v1.0** — proposed in `planning/v1.0-initial-release-roadmap.md`'s
    "Why this order" section, not locked. Flagged back to the user, not
    decided unilaterally.
-2. The `.claude/skills/docs-sync` skill's judgment-application step
-   (running it, then fixing a real flagged item by hand) hasn't been
-   exercised against a genuine finding yet, since `check_user_docs.py`
-   reports nothing to fix as of this session — its first real workout is
-   whenever a future doc/code change next drifts.
+2. ~~The `.claude/skills/docs-sync` skill's judgment-application step
+   hasn't been exercised against a genuine finding yet~~ — resolved within
+   this same session: Phase 37's commit landed without updating README's
+   phase count, `check_user_docs.py --strict` caught it immediately
+   (`README.md claims 'phases 0-36' but the highest done phase ... is
+   37`), fixed by hand and committed separately (`docs(phase-37)`). First
+   real finding, real fix, same session it shipped in.
 
 **Still outstanding, not a blocker but worth remembering:**
 - Once a Rust toolchain is available anywhere in the pipeline,
