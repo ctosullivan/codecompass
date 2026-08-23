@@ -136,3 +136,15 @@ def test_scan_spec_docs_ignores_unrelated_root_markdown_files(tmp_path: Path) ->
     rows = scan_spec_docs(tmp_path)
 
     assert rows == []
+
+
+def test_scan_spec_docs_finds_ai_docs_directory(tmp_path: Path) -> None:
+    _write(tmp_path, "ai-docs/README.md")
+    _write(tmp_path, "ai-docs/CLAUDE.md")
+
+    rows = scan_spec_docs(tmp_path)
+
+    paths = {row.path for row in rows}
+    assert paths == {"ai-docs/README.md", "ai-docs/CLAUDE.md"}
+    # ai-docs/CLAUDE.md is not root-level, so the root-only CLAUDE.md
+    # exclusion correctly does not apply to it.

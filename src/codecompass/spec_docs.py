@@ -31,6 +31,7 @@ _DEFAULT_GLOBS = (
     "specs/**/*.md",
     "rfcs/**/*.md",
     "*.spec.md",
+    "ai-docs/**/*.md",
 )
 
 # Root-level-only exclusions: a log (CHANGELOG.md), process docs

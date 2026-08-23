@@ -31,6 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Phase 37**: `spec_docs._DEFAULT_GLOBS` gains `"ai-docs/**/*.md"` — found
+  live during this repo's own dogfooding sync right after Phase 35 created
+  `ai-docs/README.md`/`ai-docs/CLAUDE.md`: neither was detected as a spec
+  doc at all, so `query relations ai-docs/README.md` errored "not found in
+  context-graph.db". Confirmed live: both files now resolve correctly and
+  participate in mechanical relationship detection.
+
 - **Phase 34**: `doc_chunking.chunk_markdown` no longer misdetects a
   `#`-prefixed comment inside a fenced code block (` ``` `/`~~~`) as a
   real markdown heading. Found via a `/discovery` session testing Phase

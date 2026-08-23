@@ -6,7 +6,7 @@ for the log of how it got here.
 
 ## Current phase
 
-**Phases 0-36 are all `done`.** Phase 23 (Polish/PyPI publish — the v1.0
+**Phases 0-37 are all `done`.** Phase 23 (Polish/PyPI publish — the v1.0
 release itself) is `in progress`: Part A (packaging/release readiness) is
 `done`; Part B (the actual publish) remains paused for explicit user
 confirmation — this is now the **only** thing between the current state
@@ -14,9 +14,9 @@ and a `v1.0` release. Phases 30-32 (doc-graph precision: bidirectional
 traversal, typed relation labels, heading-based chunking) and Phases 35-36
 (user-facing docs rewrite + `ai-docs/` folder; maintainer-only docs-sync
 tooling), both added to v1.0's blocking scope at explicit user request, are
-all `done`; Phases 33 and 34 (bug fixes found via live `/discovery`
-dogfooding) are also `done`. Nothing from either group blocks Part B any
-longer.
+all `done`; Phases 33, 34, and 37 (bug fixes found via live dogfooding —
+33/34 via `/discovery`, 37 via this repo's own post-Phase-35 sync) are also
+`done`. Nothing from any of these groups blocks Part B any longer.
 `codecompass` now: auto-clones every tracked vendor; detects real
 project-source usage (vendor- and symbol-level); maps docs/skills/
 dependencies/spec-docs/vendor-docs into a SQLite graph with both
@@ -76,6 +76,26 @@ both ways. `ruff check .` clean. **Confirmed live**: `python scripts/
 check_user_docs.py --strict` against this repo's real current state
 reports zero findings and exits 0.
 
+Both commits pushed... no — committed locally as `docs(phase-35)` and
+`feat(phase-36)`, not yet pushed as of this update (see Next concrete step).
+A whole-project `codecompass sync` was then run against this repo itself
+(dogfooding): `--budget 0` first (Phase A only, confirmed the new README
+Setup/AI-usage sections are already mechanically traced — `query relations
+README.md` shows a new "Setup" heading linked to real `anthropic` usage
+sites), then, at explicit user go-ahead, `--yes` for real — spent ~$0.02 to
+AI-summarize 2 new relationships (`README.md` → the tool Skill, and →
+`anthropic`'s new Setup mention), both spot-checked as accurately grounded.
+
+**Phase 37, done** (a third small fix, found via this same dogfooding sync,
+not originally planned): `spec_docs._DEFAULT_GLOBS` had no entry for
+`ai-docs/`, so `query relations ai-docs/README.md` errored "not found in
+context-graph.db" — neither new Phase 35 file was detected as a spec doc at
+all. Fixed by adding `"ai-docs/**/*.md"` to the glob set (one line) plus a
+regression test. `pytest tests/test_spec_docs.py` — 10 passed. `ruff check .`
+clean. **Confirmed live**: re-synced after the fix; both `ai-docs/README.md`
+and `ai-docs/CLAUDE.md` now resolve in `query relations` (5 new mechanical
+relationships found, not yet AI-enriched — see Next concrete step).
+
 ## Next concrete step
 
 **Nothing outstanding blocks anything.** Open items:
@@ -89,13 +109,20 @@ reports zero findings and exits 0.
    section at the same time. None of this should happen from a broad
    "implement to release" instruction alone — claiming a PyPI package
    name and pushing a public tag are genuinely irreversible.
-2. **Confirm before pushing this session's Phase 35/36 commits** (and this
-   `CONTEXT.md` update) to the remote — not yet pushed as of this update.
+2. **Confirm before pushing this session's Phase 35/36/37 commits** (and
+   this `CONTEXT.md` update) to the remote — not yet pushed as of this
+   update.
 3. **A one-line pointer from root `CLAUDE.md` to `ai-docs/README.md`** was
    flagged during Phase 35's planning as a plausible follow-up (Phase 35
    deliberately did not touch root `CLAUDE.md` — any edit to it needs its
    own explicit-approval diff per `CLAUDE.md` §0). Not yet proposed;
    surfaced here so it isn't forgotten, not assumed or actioned.
+4. **Phase 37's fix surfaced 5 new mechanical relationships for
+   `ai-docs/README.md`/`ai-docs/CLAUDE.md`** (mentions of the tool Skill,
+   `anthropic`, `typer`), all currently "mentioned, not yet enriched" — an
+   AI-enrichment run to summarize them wasn't requested for this batch;
+   flagged here as available whenever wanted (same `sync --yes`/`--budget`
+   flow used earlier this session).
 
 Two decisions remain genuinely open, unrelated to the above and not
 blocking anything currently in flight:
