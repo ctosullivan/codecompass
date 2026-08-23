@@ -172,6 +172,7 @@ def test_select_candidates_empty_after_apply_results(tmp_path: Path) -> None:
             target_doc_path=c.target_doc_path,
             ai_summary="a generated summary",
             content_hash=c.content_hash,
+            relation_label="explains_usage_of",
         )
         for c in candidates
     ]
@@ -357,6 +358,56 @@ def test_run_enrichment_batches_maps_response_to_result(monkeypatch: pytest.Monk
     assert result.target_doc_path == candidate.target_doc_path
     assert result.ai_summary == "This README explains why demo is used for HTTP calls."
     assert result.content_hash == candidate.content_hash
+    # No `relation_label` key in _FIXED_BATCH_RESPONSE — never raises,
+    # falls back to "other" (Phase 31).
+    assert result.relation_label == "other"
+
+
+def test_run_enrichment_batches_maps_valid_relation_label(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    candidate = _candidate(40)
+    response = {
+        "results": [
+            {
+                "relationship_id": "0",
+                "ai_summary": "x",
+                "relation_label": "explains_usage_of",
+            }
+        ]
+    }
+    monkeypatch.setattr(
+        relation_enrichment_module, "_call_anthropic", lambda *a, **k: dict(response)
+    )
+
+    results = run_enrichment_batches([candidate])
+
+    assert results[0].relation_label == "explains_usage_of"
+
+
+def test_run_enrichment_batches_falls_back_to_other_for_adversarial_label(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Phase 31 verification: a label the model invents despite the tool
+    # schema's `enum` constraint must never raise — forced tool use still
+    # can't be fully trusted to honor `enum`.
+    candidate = _candidate(40)
+    response = {
+        "results": [
+            {
+                "relationship_id": "0",
+                "ai_summary": "x",
+                "relation_label": "definitely_not_a_real_label",
+            }
+        ]
+    }
+    monkeypatch.setattr(
+        relation_enrichment_module, "_call_anthropic", lambda *a, **k: dict(response)
+    )
+
+    results = run_enrichment_batches([candidate])
+
+    assert results[0].relation_label == "other"
 
 
 def test_run_enrichment_batches_missing_required_field_raises(
@@ -483,12 +534,13 @@ def test_apply_results_writes_doc_relation_enrichment_row(tmp_path: Path) -> Non
         target_doc_path=None,
         ai_summary="This README explains why demo is used.",
         content_hash="hash-1",
+        relation_label="explains_usage_of",
     )
 
     apply_results(conn, [result])
 
     row = conn.execute(
-        "SELECT ai_summary, content_hash, model FROM doc_relation_enrichment "
+        "SELECT ai_summary, content_hash, model, relation_label FROM doc_relation_enrichment "
         "WHERE source_doc_path = ? AND target_vendor_name = ?",
         (_SPEC_DOC_PATH, "demo"),
     ).fetchone()
@@ -496,6 +548,7 @@ def test_apply_results_writes_doc_relation_enrichment_row(tmp_path: Path) -> Non
         "This README explains why demo is used.",
         "hash-1",
         relation_enrichment_module._MODEL,
+        "explains_usage_of",
     )
 
 
@@ -533,6 +586,7 @@ def test_apply_results_never_writes_any_file(
         target_doc_path=None,
         ai_summary="A generated summary.",
         content_hash="hash-1",
+        relation_label="explains_usage_of",
     )
 
     apply_results(conn, [result])  # must not raise
@@ -560,6 +614,7 @@ def test_apply_results_leaves_spec_doc_file_byte_identical(tmp_path: Path) -> No
         target_doc_path=None,
         ai_summary="A generated summary.",
         content_hash="hash-1",
+        relation_label="explains_usage_of",
     )
     apply_results(conn, [result])
 
@@ -580,6 +635,7 @@ def test_apply_results_updates_in_place_on_second_call(tmp_path: Path) -> None:
                 target_doc_path=None,
                 ai_summary="first summary",
                 content_hash="hash-1",
+                relation_label="explains_usage_of",
             )
         ],
     )
@@ -592,6 +648,7 @@ def test_apply_results_updates_in_place_on_second_call(tmp_path: Path) -> None:
                 target_doc_path=None,
                 ai_summary="second summary",
                 content_hash="hash-2",
+                relation_label="contrasts_with",
             )
         ],
     )

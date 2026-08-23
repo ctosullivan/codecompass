@@ -41,6 +41,7 @@ from pathlib import Path
 import anthropic
 
 from codecompass import graph
+from codecompass.graph import RELATION_LABELS
 
 _MODEL = "claude-haiku-4-5-20251001"
 _MAX_TOKENS = 4096
@@ -74,9 +75,10 @@ _TOOL_NAME = "submit_batched_relation_enrichment"
 _TOOL_SCHEMA = {
     "name": _TOOL_NAME,
     "description": (
-        "Submit a one-to-two sentence explanation of how each spec-doc "
-        "excerpt in this batch relates to what it mentions — a tracked "
-        "dependency, or another generated doc artifact."
+        "Submit a one-to-two sentence explanation, plus a closed-taxonomy "
+        "label, of how each spec-doc excerpt in this batch relates to "
+        "what it mentions — a tracked dependency, or another generated "
+        "doc artifact."
     ),
     "input_schema": {
         "type": "object",
@@ -106,8 +108,18 @@ _TOOL_SCHEMA = {
                                 "material given for that relationship."
                             ),
                         },
+                        "relation_label": {
+                            "type": "string",
+                            "enum": list(RELATION_LABELS),
+                            "description": (
+                                "The single label from this closed set that "
+                                "best characterizes the relationship. Use "
+                                "'other' if none of the specific labels fit "
+                                "— never invent a label outside this list."
+                            ),
+                        },
                     },
-                    "required": ["relationship_id", "ai_summary"],
+                    "required": ["relationship_id", "ai_summary", "relation_label"],
                 },
             },
         },
@@ -124,7 +136,14 @@ _SYSTEM_PROMPT = (
     "own excerpt and the target's existing description. Do not describe "
     "anything not grounded in the material given — your own prior "
     "knowledge may not match what this specific spec doc actually says. "
-    "Submit exactly one result per relationship given."
+    "For each relationship, also pick exactly one relation_label from this "
+    "closed set: 'documents_configuration_of' (the excerpt explains how to "
+    "configure or set up the target), 'explains_usage_of' (the excerpt "
+    "explains how or why the target is used), 'contrasts_with' (the "
+    "excerpt compares or distinguishes itself from the target), "
+    "'supersedes' (the excerpt states it replaces or deprecates the "
+    "target), or 'other' (none of the above cleanly fits — never invent a "
+    "new label). Submit exactly one result per relationship given."
 )
 
 
@@ -164,6 +183,7 @@ class RelationEnrichmentResult:
     target_doc_path: str | None
     ai_summary: str
     content_hash: str
+    relation_label: str
 
 
 def _compute_content_hash(source_text: str, target_text: str) -> str:
@@ -390,6 +410,22 @@ def _build_batch_user_prompt(batch: list[RelationEnrichmentCandidate]) -> str:
     return "\n\n---\n\n".join(sections)
 
 
+def _normalize_relation_label(raw_label: object) -> str:
+    """Coerces whatever the model returned for `relation_label` to a value
+    in `RELATION_LABELS`, falling back to `'other'` for anything outside
+    the closed set (missing, wrong type, or a string the model invented
+    despite the schema's `enum` constraint — a forced-tool-use call still
+    can't be trusted to always honor an `enum` field). Never raises,
+    matching this project's established "never raises, degrades to a
+    safe default" posture (`staleness._parse_version`, `skill_scan.
+    _extract_scalar`) — an enrichment run over dozens of relationships
+    shouldn't fail because one label came back malformed.
+    """
+    if raw_label in RELATION_LABELS:
+        return raw_label  # type: ignore[return-value]
+    return "other"
+
+
 def _map_batch_response(
     batch: list[RelationEnrichmentCandidate], response: dict
 ) -> list[RelationEnrichmentResult]:
@@ -409,6 +445,7 @@ def _map_batch_response(
             raise RelationEnrichmentError(
                 f"Anthropic response missing required field {exc}"
             ) from exc
+        relation_label = _normalize_relation_label(raw.get("relation_label"))
 
         try:
             index = int(relationship_id)
@@ -427,6 +464,7 @@ def _map_batch_response(
                 target_doc_path=candidate.target_doc_path,
                 ai_summary=ai_summary,
                 content_hash=candidate.content_hash,
+                relation_label=relation_label,
             )
         )
 
@@ -456,6 +494,7 @@ def apply_results(conn: sqlite3.Connection, results: list[RelationEnrichmentResu
             result.content_hash,
             _MODEL,
             generated_at,
+            relation_label=result.relation_label,
         )
 
 

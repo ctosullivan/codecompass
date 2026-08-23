@@ -698,33 +698,34 @@ def _incoming_doc_relations(conn: sqlite3.Connection, column: str, value: int) -
     ]
 
 
-def _relation_ai_summary(
+def _relation_enrichment_row(
     conn: sqlite3.Connection,
     source_doc_path: str,
     target_vendor_name: str | None,
     target_doc_path: str | None,
-) -> str | None:
-    """The cached `ai_summary` for one relationship, keyed by the exact
-    natural-key triple `doc_relation_enrichment` uses (Phase 22) — `None`
-    if Phase B enrichment hasn't produced one yet for this relationship
-    (or ever will, if it isn't usage-proven). Ignores `content_hash`
-    entirely: display only cares whether *some* summary is cached —
-    staleness is `relation_enrichment.select_candidates`'s concern, not
-    this read's, mirroring `graph.has_enrichment`'s same two-state posture
-    for vendors. Resolved directly here with ad hoc SQL, the same
-    "CLI-specific shape" precedent `_incoming_doc_relations` above already
-    set, rather than a new `graph.py` function.
+) -> tuple[str | None, str | None]:
+    """The cached `(ai_summary, relation_label)` for one relationship,
+    keyed by the exact natural-key triple `doc_relation_enrichment` uses
+    (Phase 22; `relation_label` added Phase 31) — `(None, None)` if Phase
+    B enrichment hasn't produced one yet for this relationship (or ever
+    will, if it isn't usage-proven). Ignores `content_hash` entirely:
+    display only cares whether *some* summary is cached — staleness is
+    `relation_enrichment.select_candidates`'s concern, not this read's,
+    mirroring `graph.has_enrichment`'s same two-state posture for vendors.
+    Resolved directly here with ad hoc SQL, the same "CLI-specific shape"
+    precedent `_incoming_doc_relations` above already set, rather than a
+    new `graph.py` function.
     """
     row = conn.execute(
         """
-        SELECT ai_summary FROM doc_relation_enrichment
+        SELECT ai_summary, relation_label FROM doc_relation_enrichment
         WHERE source_doc_path = ?
           AND target_vendor_name IS ?
           AND target_doc_path IS ?
         """,
         (source_doc_path, target_vendor_name, target_doc_path),
     ).fetchone()
-    return row[0] if row is not None else None
+    return (row[0], row[1]) if row is not None else (None, None)
 
 
 def _resolve_relations(conn: sqlite3.Connection, name: str) -> list[dict] | None:
@@ -734,14 +735,15 @@ def _resolve_relations(conn: sqlite3.Connection, name: str) -> list[dict] | None
     `name` field (a Skill's frontmatter name, a dependency doc's
     `f"{vendor} CLAUDE.md"`-style name) — the latter two are incoming
     lookups: which spec docs mechanically mention it. `None` if `name`
-    matches nothing in the graph at all. Each returned dict gets an
-    `ai_summary` key (Phase 22) attached here — `None` if this exact
-    relationship hasn't been AI-enriched yet.
+    matches nothing in the graph at all. Each returned dict gets
+    `ai_summary` (Phase 22) and `relation_label` (Phase 31) keys attached
+    here — both `None` if this exact relationship hasn't been AI-enriched
+    yet.
     """
     if conn.execute("SELECT 1 FROM doc_artifacts WHERE path = ?", (name,)).fetchone():
         relations = graph.doc_relations(conn, name)
         for r in relations:
-            r["ai_summary"] = _relation_ai_summary(
+            r["ai_summary"], r["relation_label"] = _relation_enrichment_row(
                 conn, name, r["target_vendor"], r["target_doc_artifact_path"]
             )
         return relations
@@ -750,7 +752,7 @@ def _resolve_relations(conn: sqlite3.Connection, name: str) -> list[dict] | None
     if vendor_row is not None:
         relations = _incoming_doc_relations(conn, "target_vendor_id", vendor_row[0])
         for r in relations:
-            r["ai_summary"] = _relation_ai_summary(
+            r["ai_summary"], r["relation_label"] = _relation_enrichment_row(
                 conn, r["source_doc_artifact_path"], name, None
             )
         return relations
@@ -763,7 +765,7 @@ def _resolve_relations(conn: sqlite3.Connection, name: str) -> list[dict] | None
         for artifact_id, artifact_path in artifact_rows:
             relations = _incoming_doc_relations(conn, "target_doc_artifact_id", artifact_id)
             for r in relations:
-                r["ai_summary"] = _relation_ai_summary(
+                r["ai_summary"], r["relation_label"] = _relation_enrichment_row(
                     conn, r["source_doc_artifact_path"], None, artifact_path
                 )
             results.extend(relations)
@@ -810,7 +812,7 @@ def query_relations(
                 soft_wrap=True,
             )
             return
-        table = Table("Relation", "Other")
+        table = Table("Relation", "Other", "Label")
         table.add_column("AI summary", no_wrap=True)
         for r in relations:
             other = (
@@ -820,10 +822,13 @@ def query_relations(
                 or ""
             )
             table.add_row(
-                r["relation_kind"], other, r.get("ai_summary") or "mentioned, not yet enriched"
+                r["relation_kind"],
+                other,
+                r.get("relation_label") or "",
+                r.get("ai_summary") or "mentioned, not yet enriched",
             )
         if not relations:
-            table.add_row("[dim](none)[/dim]", "", "")
+            table.add_row("[dim](none)[/dim]", "", "", "")
         console.print(table)
         console.print("[bold]Package code[/bold]")
         trace_table = Table("Vendor", "Symbol", "File", "Line", "Via")

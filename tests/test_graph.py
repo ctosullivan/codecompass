@@ -164,7 +164,7 @@ def test_init_schema_seeds_schema_version(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "4"
+    assert value == "5"
 
 
 def test_init_schema_is_idempotent(tmp_path) -> None:
@@ -174,7 +174,7 @@ def test_init_schema_is_idempotent(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "4"
+    assert value == "5"
 
 
 def test_doc_artifacts_accepts_slash_command_kind(tmp_path) -> None:
@@ -274,7 +274,7 @@ def test_open_graph_migrates_pre_phase_17_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "4"
+    assert schema_version == "5"
 
     # Would raise sqlite3.IntegrityError under the pre-migration constraint.
     conn.execute(
@@ -311,7 +311,7 @@ def test_open_graph_migrates_pre_phase_21_schema(tmp_path) -> None:
     """Simulates a `context-graph.db` created at Phase 17-20's schema
     (`schema_version` "2", `doc_artifacts.kind`/`origin` CHECK constraints
     not yet widened for spec docs) — `open_graph` must migrate it in place:
-    bump `schema_version` (now "4", since this simulated db's stored
+    bump `schema_version` (now "5", since this simulated db's stored
     version is older than every widening since) and accept
     `kind='spec_doc'`, `origin='project'` afterward. `doc_relations_edges`
     itself needs no migration (a brand-new table `init_schema`'s `CREATE
@@ -348,7 +348,7 @@ def test_open_graph_migrates_pre_phase_21_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "4"
+    assert schema_version == "5"
 
     # Would raise sqlite3.IntegrityError under the pre-Phase-21 constraints.
     conn.execute(
@@ -370,7 +370,8 @@ def test_open_graph_migrates_pre_phase_27_schema(tmp_path) -> None:
     """Simulates a `context-graph.db` created at Phase 21-26's schema
     (`schema_version` "3", `doc_artifacts.kind`/`origin` CHECK constraints
     not yet widened for vendor-embedded upstream docs) — `open_graph` must
-    migrate it in place: bump `schema_version` to "4" and accept
+    migrate it in place: bump `schema_version` to "5" (current, since this
+    simulated db's stored version is older than every widening since) and accept
     `kind='vendor_doc'`, `origin='vendor_upstream'` afterward.
     """
     db_path = tmp_path / "context-graph.db"
@@ -405,7 +406,7 @@ def test_open_graph_migrates_pre_phase_27_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "4"
+    assert schema_version == "5"
 
     # Would raise sqlite3.IntegrityError under the pre-Phase-27 constraints.
     conn.execute(
@@ -427,6 +428,81 @@ def test_open_graph_migration_is_noop_when_schema_version_already_current(tmp_pa
 
     (doc_artifact_count,) = conn.execute("SELECT COUNT(*) FROM doc_artifacts").fetchone()
     assert doc_artifact_count == len(_fixture_kwargs()["doc_artifacts"])
+
+
+def test_open_graph_migrates_pre_phase_31_schema_preserves_existing_rows(tmp_path) -> None:
+    """Simulates a `context-graph.db` created before Phase 31
+    (`schema_version` "4", `doc_relation_enrichment` with no
+    `relation_label` column) with one real paid-enrichment row already on
+    disk — `open_graph` must add the column via `ALTER TABLE ADD COLUMN`,
+    not `_migrate_doc_artifacts_constraints`'s drop-and-recreate approach:
+    this table holds paid AI spend that must survive the migration, unlike
+    `doc_artifacts`, which is safe to drop because it's always fully
+    rewritten by the next `rebuild_deterministic` anyway.
+    """
+    db_path = tmp_path / "context-graph.db"
+    old_conn = sqlite3.connect(db_path)
+    old_conn.executescript(
+        """
+        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE doc_relation_enrichment (
+          id INTEGER PRIMARY KEY,
+          source_doc_path TEXT NOT NULL,
+          target_vendor_name TEXT,
+          target_doc_path TEXT,
+          ai_summary TEXT NOT NULL,
+          content_hash TEXT NOT NULL,
+          model TEXT NOT NULL,
+          generated_at TEXT NOT NULL,
+          UNIQUE (source_doc_path, target_vendor_name, target_doc_path)
+        );
+        """
+    )
+    old_conn.execute("INSERT INTO meta (key, value) VALUES ('schema_version', '4')")
+    old_conn.execute(
+        "INSERT INTO doc_relation_enrichment "
+        "(source_doc_path, target_vendor_name, target_doc_path, ai_summary, "
+        "content_hash, model, generated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (
+            "README.md",
+            "demo",
+            None,
+            "pre-existing summary",
+            "hash-1",
+            "claude-haiku-4-5-20251001",
+            "2026-01-01T00:00:00+00:00",
+        ),
+    )
+    old_conn.commit()
+    old_conn.close()
+
+    conn = open_graph(tmp_path)
+
+    row = conn.execute(
+        "SELECT ai_summary, relation_label FROM doc_relation_enrichment "
+        "WHERE source_doc_path = 'README.md'"
+    ).fetchone()
+    assert row == ("pre-existing summary", None)
+
+    # Would raise sqlite3.IntegrityError under a CHECK rejecting an unknown label.
+    conn.execute(
+        "UPDATE doc_relation_enrichment SET relation_label = 'explains_usage_of' "
+        "WHERE source_doc_path = 'README.md'"
+    )
+
+
+def test_open_graph_relation_label_migration_is_idempotent(tmp_path) -> None:
+    """A second `open_graph` call against an already-migrated database must
+    not attempt `ALTER TABLE ADD COLUMN` again, which would raise
+    `sqlite3.OperationalError: duplicate column name`.
+    """
+    conn = open_graph(tmp_path)
+    conn.close()
+
+    conn = open_graph(tmp_path)  # must not raise
+
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(doc_relation_enrichment)")}
+    assert "relation_label" in columns
 
 
 # --- rebuild_deterministic ---------------------------------------------------

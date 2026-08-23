@@ -29,9 +29,24 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 _DB_FILENAME = "context-graph.db"
-_SCHEMA_VERSION = "4"
+_SCHEMA_VERSION = "5"
 
-_SCHEMA_SQL = """
+# Closed taxonomy for `doc_relation_enrichment.relation_label` (Phase 31,
+# decisions/0045). `'other'` is the required fallback for any label an AI
+# response returns that isn't in this set — never raises, matches this
+# project's established "never raises, degrades to a safe default" posture.
+RELATION_LABELS = (
+    "documents_configuration_of",
+    "explains_usage_of",
+    "contrasts_with",
+    "supersedes",
+    "other",
+)
+_RELATION_LABEL_CHECK_SQL = "relation_label IN ({})".format(
+    ", ".join(f"'{label}'" for label in RELATION_LABELS)
+)
+
+_SCHEMA_SQL = f"""
 CREATE TABLE IF NOT EXISTS meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
@@ -165,6 +180,7 @@ CREATE TABLE IF NOT EXISTS doc_relation_enrichment (
   target_vendor_name TEXT,
   target_doc_path    TEXT,
   ai_summary         TEXT NOT NULL,
+  relation_label     TEXT CHECK ({_RELATION_LABEL_CHECK_SQL}),
   content_hash       TEXT NOT NULL,
   model              TEXT NOT NULL,
   generated_at       TEXT NOT NULL,
@@ -348,6 +364,47 @@ def _migrate_doc_artifacts_constraints(conn: sqlite3.Connection) -> None:
         conn.execute("UPDATE meta SET value = ? WHERE key = 'schema_version'", (_SCHEMA_VERSION,))
 
 
+def _migrate_doc_relation_enrichment_relation_label(conn: sqlite3.Connection) -> None:
+    """Adds `doc_relation_enrichment.relation_label` (Phase 31) to a
+    pre-Phase-31 on-disk database via `ALTER TABLE ... ADD COLUMN`, not
+    `_migrate_doc_artifacts_constraints`'s drop-and-recreate approach:
+    `doc_relation_enrichment` holds paid AI enrichment output that
+    survives every `rebuild_deterministic` call (decisions/0038), so
+    dropping it would destroy real spend, unlike `doc_artifacts`, which
+    is fully rewritten every sync anyway and has no such cost to lose.
+    SQLite has supported `ADD COLUMN ... CHECK (...)` since 3.25 (2018); a
+    `CHECK` referencing only the new column is satisfied by every
+    pre-existing row automatically, since a bare `ADD COLUMN` with no
+    `DEFAULT` back-fills `NULL`, and `NULL IN (...)` evaluates to `NULL`
+    (not `FALSE`), which SQLite's `CHECK` treats as passing — existing
+    rows simply start with `relation_label = NULL`, exactly the "not
+    migrated, filled on next natural re-enrichment cycle" design (see
+    planning/phase-31-typed-relation-enrichment.md's Design decisions).
+
+    Checked directly via `PRAGMA table_info`, not `meta.schema_version` —
+    self-contained and idempotent regardless of whether some other
+    migration already advanced the stored version this call, since this
+    function's own precondition is "does the column exist," not "what
+    version does `meta` say." A brand-new database has no `doc_relation_
+    enrichment` table yet at all — `init_schema`'s `CREATE TABLE IF NOT
+    EXISTS`, called right after this function returns, creates it with
+    the column already present, so there's nothing to migrate.
+    """
+    table_exists = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'doc_relation_enrichment'"
+    ).fetchone()
+    if not table_exists:
+        return
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(doc_relation_enrichment)")}
+    if "relation_label" in columns:
+        return
+    with conn:
+        conn.execute(
+            f"ALTER TABLE doc_relation_enrichment ADD COLUMN relation_label TEXT "
+            f"CHECK ({_RELATION_LABEL_CHECK_SQL})"
+        )
+
+
 def open_graph(project_root: Path) -> sqlite3.Connection:
     """Resolve `context-graph.db` at `project_root`, connect (creating the
     file if absent), enable foreign keys (SQLite defaults this off, so it
@@ -359,6 +416,7 @@ def open_graph(project_root: Path) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
     _migrate_doc_artifacts_constraints(conn)
+    _migrate_doc_relation_enrichment_relation_label(conn)
     init_schema(conn)
     return conn
 
@@ -1280,12 +1338,20 @@ def record_relation_enrichment(
     content_hash: str,
     model: str,
     generated_at: str,
+    relation_label: str | None = None,
 ) -> None:
     """Insert or update the one `doc_relation_enrichment` row for this
     natural-key triple. The only writer, kept separate from `rebuild_
     deterministic` for the same reason `record_enrichment`/`record_symbol_
     enrichment` are (Phase 10): a deterministic rebuild and a paid
     enrichment write are different trigger points with different costs.
+
+    `relation_label` (Phase 31) is one of `RELATION_LABELS`, enforced by
+    the column's own `CHECK` constraint — callers are expected to have
+    already substituted `'other'` for anything the model returned outside
+    the closed set (`relation_enrichment._normalize_relation_label`), not
+    to rely on this function to validate. Defaults to `None` so existing
+    callers/tests that don't pass it keep working unchanged.
 
     Deletes any existing row for this exact triple, then inserts fresh,
     rather than `INSERT ... ON CONFLICT(...) DO UPDATE` the way `record_
@@ -1316,15 +1382,16 @@ def record_relation_enrichment(
             """
             INSERT INTO doc_relation_enrichment (
                 source_doc_path, target_vendor_name, target_doc_path,
-                ai_summary, content_hash, model, generated_at
+                ai_summary, relation_label, content_hash, model, generated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 source_doc_path,
                 target_vendor_name,
                 target_doc_path,
                 ai_summary,
+                relation_label,
                 content_hash,
                 model,
                 generated_at,

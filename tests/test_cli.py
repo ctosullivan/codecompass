@@ -427,6 +427,7 @@ def _fake_relation_result(**overrides):  # noqa: ANN001
         "target_doc_path": None,
         "ai_summary": "This README explains pytest's role in the project.",
         "content_hash": "fake-relation-hash",
+        "relation_label": "explains_usage_of",
     }
     defaults.update(overrides)
     return relation_enrichment.RelationEnrichmentResult(**defaults)

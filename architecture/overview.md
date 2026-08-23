@@ -924,8 +924,15 @@ tables:
 - `doc_relation_enrichment` (Phase 22) — a third table that **survives
   every `rebuild_deterministic` call**, holding Phase 22's paid AI
   enrichment output over `doc_relations_edges` relationships: `ai_summary`
-  plus `content_hash`/`model`/`generated_at` for cache-key purposes. Unlike
-  the other two, it holds **no foreign key to `doc_artifacts.id` at all** —
+  plus `content_hash`/`model`/`generated_at` for cache-key purposes, plus a
+  closed-taxonomy `relation_label` (Phase 31, `decisions/0045` — one of
+  `documents_configuration_of`/`explains_usage_of`/`contrasts_with`/
+  `supersedes`/`other`, `NULL` on a row not yet re-enriched since Phase 31
+  shipped). Added to an existing on-disk database via `ALTER TABLE ...
+  ADD COLUMN`, not the drop-and-recreate approach `doc_artifacts`'s own
+  migration uses — this table holds paid AI spend that must survive.
+  Unlike the other two, it holds **no foreign key to `doc_artifacts.id`
+  at all** —
   keyed purely by natural-key TEXT columns (`source_doc_path`, `target_
   vendor_name`, `target_doc_path`). See **Relationship enrichment** below
   and [`decisions/0038`](../decisions/0038-relation-enrichment-natural-key-only-no-fk-never-writes-spec-docs.md)
@@ -1048,8 +1055,9 @@ different costs, and conflating them would risk an enrichment write
 becoming implicitly part of the "free, always safe to rerun" rebuild path.
 
 **`record_relation_enrichment(conn, source_doc_path, target_vendor_name,
-target_doc_path, ai_summary, content_hash, model, generated_at)`** (Phase
-22) is the only writer to `doc_relation_enrichment`, kept separate from
+target_doc_path, ai_summary, content_hash, model, generated_at,
+relation_label=None)`** (Phase 22; `relation_label` added Phase 31) is the
+only writer to `doc_relation_enrichment`, kept separate from
 `rebuild_deterministic` for the same reason. It does **not** upsert via
 `INSERT ... ON CONFLICT DO UPDATE` the way `record_enrichment` does —
 SQL's `UNIQUE` constraint treats every `NULL` as distinct from every other
@@ -1442,6 +1450,27 @@ time rather than persisted from Phase 21's detection, so `doc_relations_
 edges` stays a purely mechanical table — see
 [`decisions/0042`](../decisions/0042-relation-enrichment-excerpts-re-derive-match-position-at-enrichment-time.md).
 
+**Phase 31 — a closed-taxonomy `relation_label` alongside the existing
+free-text `ai_summary`.** The batched tool schema's `results` items now
+also require a `relation_label` field, constrained by the schema's own
+`enum` to `graph.RELATION_LABELS`
+(`documents_configuration_of`/`explains_usage_of`/`contrasts_with`/
+`supersedes`/`other`). `_normalize_relation_label` coerces whatever comes
+back to a value in that set, falling back to `'other'` for anything else
+(missing field, wrong type, or a label the model invented despite the
+schema's `enum` — forced tool use doesn't guarantee `enum` is honored) —
+never raises, same "never raises, degrades to a safe default" posture as
+`staleness._parse_version`. The label describes an already-mechanically-
+proven relationship; it cannot create, widen, or narrow *which*
+relationships get enriched — see
+[`decisions/0045`](../decisions/0045-typed-relation-labels-not-new-detection.md).
+`record_relation_enrichment` gained an optional `relation_label` parameter
+(`None` default, so pre-Phase-31 callers/tests are unaffected);
+`doc_relation_enrichment` gained the column via `ALTER TABLE ... ADD
+COLUMN` (not the drop-and-recreate `doc_artifacts`'s migration uses —
+this table holds paid AI spend), leaving every pre-existing row with
+`relation_label = NULL` until its next natural re-enrichment.
+
 `plan_batches`/`run_enrichment_batches` mirror `enrichment.py`'s own
 batching and forced-tool-use call shape exactly, grouping by (excerpt +
 target text) character budget. The batched tool schema identifies each
@@ -1464,7 +1493,8 @@ enrichment calls, inside the same `try`/confirm block — one prompt, one
 `--yes`, one `--budget`, covering both. `query relations <name>` (above)
 shows each relationship's `ai_summary` when one exists, else "mentioned,
 not yet enriched" — the same two-state display `query vendor` already
-uses for `has_enrichment`.
+uses for `has_enrichment` — plus `relation_label` (Phase 31) alongside it
+once enriched.
 
 ### Vendor-embedded upstream docs (extended `codecompass.doc_mapping`)
 

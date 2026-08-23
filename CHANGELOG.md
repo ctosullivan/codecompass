@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 31**: `doc_relation_enrichment` (Phase 22) gains a closed-
+  taxonomy `relation_label` alongside its existing free-text `ai_summary`
+  — `documents_configuration_of`, `explains_usage_of`, `contrasts_with`,
+  `supersedes`, or `other`. The batched enrichment tool schema now
+  requires a `relation_label` per result; any value the model returns
+  outside the enum (missing, malformed, or invented despite the schema's
+  own `enum` constraint) is normalized to `'other'`, never raises.
+  Strictly gated on Phase 21/29's already-mechanically-proven candidates —
+  no new candidate discovery, same detection-vs-description boundary held
+  since `decisions/0031`. `query relations` shows the label alongside the
+  summary in both human and `--json` output. Schema migrates an existing
+  database via `ALTER TABLE ... ADD COLUMN` (not the drop-and-recreate
+  `doc_artifacts` uses) since this table holds paid AI spend that must
+  survive; pre-existing rows get `relation_label = NULL` until their next
+  natural re-enrichment, no backfill. See `decisions/0045`.
+
 - **Phase 30**: `codecompass query vendor`/`query symbol` now show real
   `(file, line)` usage locations ("Used at" — `used_at` in JSON), no
   longer just a bare `usage_count`. New `graph.doc_code_trace(conn,

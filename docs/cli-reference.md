@@ -125,7 +125,7 @@ codecompass sync --budget 1.00
 ## `codecompass query vendors|vendor|symbol|skills|relations`
 
 **Status:** implemented (Phase 15; `relations` added Phase 21; `used_at`/
-package-code trace added Phase 30).
+package-code trace added Phase 30; `relation_label` added Phase 31).
 
 Reads `context-graph.db` and renders the result as a Rich table by
 default, or raw JSON with `--json`. If `context-graph.db` doesn't exist
@@ -163,7 +163,10 @@ prints a one-line note pointing at `sync` rather than a traceback.
   whole-project `sync` — no separate command needed to pick them up. Each
   relation also shows an AI-enriched `ai_summary` (Phase 22,
   `doc_relation_enrichment`) once usage-driven Phase B enrichment has run
-  over it, else "mentioned, not yet enriched". Also shows a "Package code"
+  over it, else "mentioned, not yet enriched" — plus a closed-taxonomy
+  `relation_label` (Phase 31, `decisions/0045`) once enriched:
+  `documents_configuration_of`, `explains_usage_of`, `contrasts_with`,
+  `supersedes`, or `other`. Also shows a "Package code"
   trace (Phase 30, `graph.doc_code_trace`) — real project-source usage
   sites for whatever `<name>` mechanically mentions, documents, or (if
   `<name>` is a vendor) is itself. `--json` output is
