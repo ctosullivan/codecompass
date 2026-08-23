@@ -129,8 +129,10 @@ core-logic diffs read directly against each plan before marking `done`,
 every live-verification claim above checked against this repo's real
 `context-graph.db`/files directly, not assumed.
 
-**Not yet committed to git** — all of the above (Phases 30-33) is applied
-to the working tree only; no commit has been made this session.
+**Committed as 5 commits this session**: `fix(phase-33)`,
+`feat(phase-30)`, `feat(phase-31)`, `feat(phase-32)`, and a final `docs:`
+commit for this file — one per phase, matching this project's established
+one-phase-one-commit convention. Not yet pushed to the remote.
 
 ## Next concrete step
 
@@ -146,13 +148,8 @@ are:
    section at the same time. None of this should happen from a broad
    "implement to release" instruction alone — claiming a PyPI package
    name and pushing a public tag are genuinely irreversible.
-2. **This session's work is uncommitted.** Ask before committing (this
-   session was not explicitly asked to commit) — a large multi-phase
-   diff across `src/codecompass/{graph,cli,doc_mapping,relation_
-   enrichment}.py`, new `doc_chunking.py`, `decisions/0045`/`0046`, and
-   test/doc updates. Natural to split into 4 commits (one per phase,
-   `type(phase-N): summary`, matching this project's established
-   one-phase-one-commit convention) rather than one large commit.
+2. **This session's commits are not yet pushed to the remote** — 5 local
+   commits ahead of origin/main as of this update.
 
 **Two items from the `/discovery` session are now resolved**, not
 outstanding: the `query --json` line-wrapping bug is fixed (Phase 33);
