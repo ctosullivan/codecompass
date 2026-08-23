@@ -6,17 +6,18 @@ for the log of how it got here.
 
 ## Current phase
 
-**Phases 0-37 are all `done`.** Phase 23 (Polish/PyPI publish — the v1.0
+**Phases 0-38 are all `done`.** Phase 23 (Polish/PyPI publish — the v1.0
 release itself) is `in progress`: Part A (packaging/release readiness) is
 `done`; Part B (the actual publish) remains paused for explicit user
 confirmation — this is now the **only** thing between the current state
 and a `v1.0` release. Phases 30-32 (doc-graph precision: bidirectional
-traversal, typed relation labels, heading-based chunking) and Phases 35-36
+traversal, typed relation labels, heading-based chunking), Phases 35-36
 (user-facing docs rewrite + `ai-docs/` folder; maintainer-only docs-sync
-tooling), both added to v1.0's blocking scope at explicit user request, are
-all `done`; Phases 33, 34, and 37 (bug fixes found via live dogfooding —
-33/34 via `/discovery`, 37 via this repo's own post-Phase-35 sync) are also
-`done`. Nothing from any of these groups blocks Part B any longer.
+tooling), and Phase 38 (final polish: redundancy cleanup), all added to
+v1.0's blocking scope at explicit user request, are all `done`; Phases 33,
+34, and 37 (bug fixes found via live dogfooding — 33/34 via `/discovery`,
+37 via this repo's own post-Phase-35 sync) are also `done`. Nothing from
+any of these groups blocks Part B any longer.
 `codecompass` now: auto-clones every tracked vendor; detects real
 project-source usage (vendor- and symbol-level); maps docs/skills/
 dependencies/spec-docs/vendor-docs into a SQLite graph with both
@@ -27,17 +28,60 @@ batched AI enrichment for usage-proven vendors *and* relationships;
 exposes all of it via `codecompass query`, `/discovery`, and generated
 Skills; can `undo` itself cleanly; frames chat as secondary. `promote` and
 `Depth` are fully retired. Packaging is release-ready (`version =
-"1.0.0"`, real wheel verified installable in a clean venv) but **not yet
-published to PyPI, and no `v1.0` tag has been cut.**
+"1.0.0"`, real wheel re-verified installable in a clean venv after Phase
+38's dependency-pin change) but **not yet published to PyPI, and no
+`v1.0` tag has been cut.**
 `README.md` now documents real setup requirements (Python version, `git`,
 `ANTHROPIC_API_KEY`) and a plain free-vs-paid AI enrichment explainer; a new
 `ai-docs/` folder gives an agent a capability/boundary overview distinct
 from root `CLAUDE.md`'s process rules; a new maintainer-only
 `scripts/check_user_docs.py` + `.claude/skills/docs-sync/` mechanically
 flags future drift between this repo's own docs and its own code (not
-shipped, not a `codecompass` feature).
+shipped, not a `codecompass` feature). `pyproject.toml`'s 4 runtime
+dependencies now carry lower-bound version pins (`decisions/0047`), and
+`cli.py`'s query-command boilerplate/`vendor.toml`'s dead `depth` lines
+were cleaned up (Phase 38).
 
 ## What was just completed
+
+**Phase 38, done** — a final-polish pass requested directly by the user
+ahead of finishing Phase 23 Part B. Two research passes ran first: a full
+roadmap/state review (confirmed the picture above; also caught that an
+initial "README status line is stale" claim from that review was itself
+wrong — re-checked directly against the real file, already accurate,
+dropped), then a targeted 5-category redundancy/dead-code audit (dead
+references to retired `Depth`/`promote`/`grounded_description`, duplicate
+logic, unused/unpinned dependencies, doc staleness, test-suite overlap).
+Three categories were clean; two had real findings, acted on:
+- `cli.py`: extracted `_not_found_error()` (was duplicated verbatim across
+  `query_vendor`/`query_relations`) and `_graph_session()`, a context
+  manager collapsing the open/`if None: return`/try/finally scaffold that
+  6 query commands each hand-repeated.
+- `vendor.toml`: stripped 4 dead `depth = "surface"` lines (the retired
+  `Depth` field, confirmed never read by `config.py`).
+- `pyproject.toml`: added lower-bound pins to all 4 runtime dependencies
+  (per user decision, over leaving them unpinned) — `decisions/0047`.
+  Verified live, not just assumed: the fresh-venv smoke test resolved
+  `anthropic` to a real `1.0.0`, a genuine breaking major version
+  (`vendor/anthropic/src/MIGRATION.md`); checked all three of
+  codecompass's own `_call_anthropic` implementations line-by-line against
+  it — none touch any removed/changed API, so the pin is confirmed safe,
+  not just SemVer-optimistic.
+The word-boundary mention-regex duplication across `doc_mapping.py`/
+`skill_scan.py`/`relation_enrichment.py` was investigated and deliberately
+left alone — `decisions/0038` already documents this project's preference
+for small, single-purpose modules over shared abstractions here.
+
+Verified: `pytest` 520 passed, 1 skipped (Cargo, no toolchain — unchanged,
+pre-existing). `ruff check .` clean. Manual smoke tests: `query vendor`/
+`query relations` with a bad name still error identically; `query vendors`/
+`query symbol` still work; `codecompass check` against this repo itself
+runs clean post-`vendor.toml` edit; `python -m build` + fresh-venv install
++ `codecompass --help` re-verified after the pin change. `python scripts/
+check_user_docs.py --strict` caught `README.md`'s phase count still
+reading "0-37" once ROADMAP's phase-38 row landed — same catch category
+Phase 37 hit — fixed inline, re-ran clean. Not yet committed or pushed as
+of this update.
 
 **Phases 35-36, done** — requested directly by the user (not found via
 `/discovery`), added to v1.0's blocking scope alongside the already-`done`
@@ -109,9 +153,11 @@ relationships found, not yet AI-enriched — see Next concrete step).
    section at the same time. None of this should happen from a broad
    "implement to release" instruction alone — claiming a PyPI package
    name and pushing a public tag are genuinely irreversible.
-2. **Confirm before pushing this session's Phase 35/36/37 commits** (and
-   this `CONTEXT.md` update) to the remote — not yet pushed as of this
-   update.
+2. **Confirm before pushing this session's Phase 38 commit(s)** (and this
+   `CONTEXT.md` update) to the remote — not yet committed or pushed as of
+   this update. (Phase 35/36/37's commits from the prior session are
+   already pushed — `git log`/`git status` confirm `main` is up to date
+   with `origin/main` aside from Phase 38's uncommitted changes.)
 3. **A one-line pointer from root `CLAUDE.md` to `ai-docs/README.md`** was
    flagged during Phase 35's planning as a plausible follow-up (Phase 35
    deliberately did not touch root `CLAUDE.md` — any edit to it needs its

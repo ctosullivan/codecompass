@@ -18,10 +18,10 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "typer",
-    "rich",
-    "anthropic",
-    "pipdeptree",
+    "typer>=0.27",
+    "rich>=15",
+    "anthropic>=0.109",
+    "pipdeptree>=4.2",
 ]
 # Note: no `tomli` dependency — requires-python >=3.11 means `tomllib` is
 # available in the standard library (see decisions/0009).

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Phase 38**: final polish pass ahead of the v1.0 release. `cli.py`
+  gained `_not_found_error()` and `_graph_session()` (a context manager),
+  removing a verbatim-duplicated error block and a 6-times-repeated
+  graph-connection open/close scaffold across the `query` subcommands.
+  `vendor.toml` lost 4 dead `depth = "surface"` lines (the retired `Depth`
+  field). `pyproject.toml`'s 4 runtime dependencies gained lower-bound
+  version pins (`typer>=0.27`, `rich>=15`, `anthropic>=0.109`,
+  `pipdeptree>=4.2`) — verified live against `anthropic`'s real `1.0.0`
+  breaking release (`decisions/0047`). A 5-category redundancy audit found
+  the rest of the codebase clean (no dead references to retired concepts,
+  no stale docs beyond what's noted, no test-suite overlap); one
+  duplicate-looking pattern (the word-boundary mention-regex across
+  `doc_mapping.py`/`skill_scan.py`/`relation_enrichment.py`) was
+  deliberately left as-is per `decisions/0038`'s existing small-module
+  precedent.
+
 ### Added
 
 - **Phase 35**: `README.md` gains a real Setup section (Python `>=3.11`,

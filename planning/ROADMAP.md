@@ -114,6 +114,7 @@ with `promote`/`Depth` fully retired and chat re-framed as secondary.
 | 35 | User-facing docs rewrite + `ai-docs/` folder — `README.md` gains a real Setup section (Python version, `git`, `ANTHROPIC_API_KEY`) and a standalone "AI enrichment vs. no-AI usage" explainer reusing `examples/README.md`'s real transcript; new `ai-docs/README.md` (capability/boundary overview with example prompts, each "does NOT do" claim traced to a real ADR) and `ai-docs/CLAUDE.md` (agent entrypoint, distinct from root `CLAUDE.md`); `CONTRIBUTING.md`'s stale closing line removed. Requested directly by the user, not found via `/discovery` | done | [`phase-35-user-facing-docs-and-ai-docs.md`](phase-35-user-facing-docs-and-ai-docs.md) |
 | 36 | Maintainer-only docs-sync script + skill — new `scripts/check_user_docs.py` (outside `src/codecompass/`, not a shipped feature, per explicit user decision) mechanically flags drift between this repo's own hand-authored docs and its own code (CLI command coverage in `docs/cli-reference.md`, README phase-count consistency with ROADMAP, `ANTHROPIC_API_KEY` mention, `VendorConfig` field coverage in `docs/config-schema.md`, `ai-docs/` file presence); new `.claude/skills/docs-sync/SKILL.md` instructs an agent to run it and fix findings by judgment, never mechanically. Confirmed live: running it against this repo today reports zero findings. Depends on Phase 35 (checks what it creates) | done | [`phase-36-docs-sync-tooling.md`](phase-36-docs-sync-tooling.md) |
 | 37 | Register `ai-docs/` in spec-doc detection — `spec_docs._DEFAULT_GLOBS` had no entry for `ai-docs/`, found live via this repo's own dogfooding sync right after Phase 35 created `ai-docs/README.md`/`ai-docs/CLAUDE.md`: `query relations ai-docs/README.md` errored "not found in context-graph.db". Added `"ai-docs/**/*.md"` to the fixed glob set — the module's own comment says it stays fixed "until a real project shows it's wrong for it," and this repo just did. Confirmed live: both files now resolve in `query relations` | done | [`phase-37-ai-docs-spec-doc-detection.md`](phase-37-ai-docs-spec-doc-detection.md) |
+| 38 | Final polish: redundancy cleanup — a 5-category redundancy/dead-code audit (dead references to retired `Depth`/`promote`/`grounded_description`, duplicate logic, unused/unpinned deps, doc staleness, test overlap) found `cli.py` had two verbatim-duplicate error blocks and a 6-times-repeated graph-connection open/close scaffold (both extracted into `_not_found_error`/`_graph_session`); `vendor.toml` had 4 dead leftover `depth = "surface"` lines from the retired `Depth` field (stripped); `pyproject.toml`'s 4 runtime deps had zero version pins (given lower bounds, `decisions/0047`, verified safe against `anthropic`'s real 1.0.0 breaking release). The word-boundary mention-regex duplication across `doc_mapping.py`/`skill_scan.py`/`relation_enrichment.py` was investigated and deliberately left as-is per `decisions/0038`'s existing small-module precedent. Requested directly by the user | done | [`phase-38-final-polish-redundancy-cleanup.md`](phase-38-final-polish-redundancy-cleanup.md) |
 
 **Renumbering note:** none — 30/31/32 are appended after 29, keeping the
 numbering already assigned in `planning/doc-graph-precision-roadmap.md`
@@ -146,6 +147,15 @@ Unlike 30-33, this pair wasn't found via `/discovery` dogfooding — requested
 directly by the user, motivated by `README.md` lacking a real setup/AI-usage
 explainer and no agent-facing project overview existing anywhere. Phases
 24/25 remain deferred past v1.0, unaffected.
+
+**v1.0 scope note (dated to Phase 38's planning session):** at explicit user
+request, Phase 38 (final polish: redundancy cleanup) was added to v1.0's
+blocking scope, alongside Phase 23 and the now-`done` 30-37 group above.
+**Phase 38 is now `done`** — Phase 23 Part B (the actual PyPI publish,
+already paused pending explicit user confirmation) no longer waits on
+anything from it. Requested directly by the user as a pre-release polish
+pass, not found via `/discovery` dogfooding. Phases 24/25 remain deferred
+past v1.0, unaffected.
 
 **Renumbering note:** none — 26/27 are appended after the existing 24/25
 (routing/rollup, MCP) rather than inserted ahead of them. Both were found

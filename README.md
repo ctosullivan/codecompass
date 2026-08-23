@@ -4,7 +4,7 @@ Grounded, version-pinned dependency reference docs for AI coding agents.
 
 ## Status
 
-**Pre-release, v1.0.0 in progress (phases 0-37 all `done`; Phase 23 Part B —
+**Pre-release, v1.0.0 in progress (phases 0-38 all `done`; Phase 23 Part B —
 the actual PyPI publish — is now the only thing left before a `v1.0` tag,
 paused for explicit user confirmation).** Bare `codecompass`, `init`, `sync`,
 `index`, `check`, `query`, `chat`, and `undo` are all fully implemented.

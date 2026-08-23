@@ -12,10 +12,13 @@ bootstrap/`sync`.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 import sqlite3
+from collections.abc import Iterator
 from pathlib import Path
+from typing import NoReturn
 
 import typer
 from rich.console import Console
@@ -437,11 +440,31 @@ def _open_graph_or_note(project_root: Path) -> sqlite3.Connection | None:
     return graph.open_graph(project_root)
 
 
-def _print_coverage_gap_sections(project_root: Path) -> None:
+@contextlib.contextmanager
+def _graph_session(project_root: Path) -> Iterator[sqlite3.Connection | None]:
+    """`with`-block wrapper around `_open_graph_or_note`: yields `None`
+    (having already printed the one-line note) if the graph doesn't exist
+    yet, else a connection that's closed automatically on exit — collapses
+    every call site's own open/`if None: return`/try/finally down to one
+    `with` block plus the still-necessary `None` check.
+    """
     conn = _open_graph_or_note(project_root)
-    if conn is None:
-        return
     try:
+        yield conn
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+def _not_found_error(name: str) -> NoReturn:
+    console.print(f"[red]error:[/red] {name!r} not found in context-graph.db")
+    raise typer.Exit(code=1)
+
+
+def _print_coverage_gap_sections(project_root: Path) -> None:
+    with _graph_session(project_root) as conn:
+        if conn is None:
+            return
         _print_name_list_table("Unused vendors", graph.unused_vendors(conn))
         _print_pair_table("Documented but unused", graph.documented_but_unused(conn))
         _print_pair_table("Used but undocumented", graph.used_but_undocumented(conn))
@@ -461,8 +484,6 @@ def _print_coverage_gap_sections(project_root: Path) -> None:
         _print_name_list_table(
             "Vendor docs with no detected relations", graph.vendor_docs_without_relations(conn)
         )
-    finally:
-        conn.close()
 
 
 def _print_name_list_table(title: str, names: list[str]) -> None:
@@ -499,10 +520,9 @@ def query_vendors(
     ),
 ) -> None:
     """Every tracked vendor's usage/enrichment status, from the context graph."""
-    conn = _open_graph_or_note(Path.cwd())
-    if conn is None:
-        return
-    try:
+    with _graph_session(Path.cwd()) as conn:
+        if conn is None:
+            return
         unused_names = set(graph.unused_vendors(conn))
         rows = conn.execute(
             "SELECT name, ecosystem, installed_version FROM vendors ORDER BY name"
@@ -533,8 +553,6 @@ def query_vendors(
                 "yes" if r["enriched"] else "no",
             )
         console.print(table)
-    finally:
-        conn.close()
 
 
 @query_app.command("vendor")
@@ -547,14 +565,12 @@ def query_vendor(
     """One vendor's full profile: symbols, usage count, documenting
     artifacts, routed Skills, and its `depends_on` vendors.
     """
-    conn = _open_graph_or_note(Path.cwd())
-    if conn is None:
-        return
-    try:
+    with _graph_session(Path.cwd()) as conn:
+        if conn is None:
+            return
         profile = graph.vendor_profile(conn, name)
         if profile is None:
-            console.print(f"[red]error:[/red] {name!r} not found in context-graph.db")
-            raise typer.Exit(code=1)
+            _not_found_error(name)
         if json_output:
             console.print(json.dumps(profile, indent=2), soft_wrap=True)
             return
@@ -588,8 +604,6 @@ def query_vendor(
             used_at_table.add_row(u["source_file_path"], line)
         console.print(used_at_table)
         console.print(f"Depends on: {', '.join(profile['depends_on']) or '(none)'}")
-    finally:
-        conn.close()
 
 
 @query_app.command("symbol")
@@ -602,10 +616,9 @@ def query_symbol(
     """Every symbol named `name`, across every vendor — symbol names aren't
     globally unique.
     """
-    conn = _open_graph_or_note(Path.cwd())
-    if conn is None:
-        return
-    try:
+    with _graph_session(Path.cwd()) as conn:
+        if conn is None:
+            return
         profiles = graph.symbol_profile(conn, name)
         if json_output:
             console.print(json.dumps(profiles, indent=2), soft_wrap=True)
@@ -628,8 +641,6 @@ def query_symbol(
                 used_at,
             )
         console.print(table)
-    finally:
-        conn.close()
 
 
 @query_app.command("skills")
@@ -646,10 +657,9 @@ def query_skills(
     """Every Skill/`.mdc` rule under the project, its origin, and what it
     mechanically mentions.
     """
-    conn = _open_graph_or_note(Path.cwd())
-    if conn is None:
-        return
-    try:
+    with _graph_session(Path.cwd()) as conn:
+        if conn is None:
+            return
         index_rows = graph.skills_index(conn)
         if unused_mentions:
             index_rows = [
@@ -670,8 +680,6 @@ def query_skills(
                 str(len(entry["mentions_source_files"])),
             )
         console.print(table)
-    finally:
-        conn.close()
 
 
 def _incoming_doc_relations(conn: sqlite3.Connection, column: str, value: int) -> list[dict]:
@@ -800,14 +808,12 @@ def query_relations(
     "package_code": [...]}`, not a bare list — the two are different
     shapes (a relation vs. a usage site) that don't merge into one row.
     """
-    conn = _open_graph_or_note(Path.cwd())
-    if conn is None:
-        return
-    try:
+    with _graph_session(Path.cwd()) as conn:
+        if conn is None:
+            return
         relations = _resolve_relations(conn, name)
         if relations is None:
-            console.print(f"[red]error:[/red] {name!r} not found in context-graph.db")
-            raise typer.Exit(code=1)
+            _not_found_error(name)
         package_code = graph.doc_code_trace(conn, name)
         if json_output:
             console.print(
@@ -846,8 +852,6 @@ def query_relations(
                 t["via"],
             )
         console.print(trace_table)
-    finally:
-        conn.close()
 
 
 @app.command()
