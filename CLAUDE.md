@@ -87,7 +87,9 @@ convention, not reconsidered case by case.
 ---
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the same rules restated for
-human contributors.
+human contributors. See [`ai-docs/README.md`](ai-docs/README.md) for a
+capability/boundary overview of what codecompass itself does and doesn't
+do, aimed at an agent orienting to this project rather than working on it.
 
 
 <!-- codecompass:start -->
