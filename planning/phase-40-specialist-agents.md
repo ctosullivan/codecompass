@@ -1,6 +1,29 @@
 # Phase 40: Specialist agent roster + lead workflow
 
-**Status:** planned
+**Status:** done (2026-09-09)
+
+## Outcome note
+
+- Gate G4 approved (user: "Proceed"). `CLAUDE.md` gained §8 (agent-led
+  model), a §1 paragraph (curator/gate touchpoint), a §5 DoD amendment
+  (learning triage + independent audit + context-eval for
+  reference-project phases), and a §6 milestone-group bullet. Mirrored
+  into `CONTRIBUTING.md`. This landed A1+A2+A3+A4 together rather than
+  splitting A2 to Phase 42.
+- `.claude/agents/` created: `context-evaluator`,
+  `reference-project-tester`, `docs-maintainer`,
+  `roadmap-context-curator`, `knowledge-curator`, `docs-reconstructor`,
+  `release-phase-auditor`. `planning/agent-led-workflow.md` written
+  (12-step procedure + trivial-change fast path + conflict resolution).
+- Small forced fix: `scripts/check_user_docs.py::check_readme_phase_count`
+  now excludes the "Redefined CodeCompass v1" ROADMAP section (Stage
+  A–F phases are a process milestone, not product) + regression test.
+  Captured as candidate learning **L-001**.
+- **Live smoke delegation deferred:** not spawned speculatively (standing
+  "don't spawn agents unless asked" instruction). The roster's first
+  real exercise is Phase 41, whose DoD already requires a
+  `release-phase-auditor` pass. Agent files validated structurally
+  (frontmatter, name==filename, tool sets).
 
 Stage A. Creates the specialist agent definitions and the fresh-session
 workflow doc. Design: `planning/v1-redefinition/agent-led-development.md`.

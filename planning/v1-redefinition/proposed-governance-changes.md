@@ -4,9 +4,13 @@ Per `CLAUDE.md` §0, **any** change to `CLAUDE.md` must be presented as a
 diff and explicitly approved before it is written or committed. This file
 holds those proposed diffs (§A) and the ADR drafts (§B).
 
-**Status:** §A (the `CLAUDE.md` / `CONTRIBUTING.md` changes) is **not
-applied** — gate G4, lands in Phases 40–42. §B ADRs `0048`/`0049` are
-**approved and published** (Phase 39); `0050` is still a draft.
+**Status:** §A (the `CLAUDE.md` / `CONTRIBUTING.md` changes) — **approved
+(gate G4) and applied in Phase 40** (A1+A2+A3+A4 together), mirrored into
+`CONTRIBUTING.md`. §B ADRs `0048`/`0049` — **approved and published**
+(Phase 39). `0050` is still a draft (write only if Phase 41 surfaces a
+non-obvious tradeoff). This file is now a historical record of what was
+proposed; `CLAUDE.md` / `CONTRIBUTING.md` / `decisions/` are
+authoritative.
 
 ---
 

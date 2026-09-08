@@ -4,11 +4,11 @@ Grounded, version-pinned dependency reference docs for AI coding agents.
 
 ## Status
 
-**Pre-release, not yet published.** Phases 0-39 are `done` — phases 0-38
-are the **foundation** (the npm/PyPI/Cargo package/source-grounding tool:
-bare `codecompass`, `init`, `sync`, `index`, `check`, `query`, `chat`, and
-`undo`, all fully implemented; `promote` was removed in Phase 15,
-`decisions/0033`), and Phase 39 redefined the v1 milestone (below).
+**Pre-release, not yet published.** The **foundation** (phases 0-38) is
+complete: the npm/PyPI/Cargo package/source-grounding tool — bare
+`codecompass`, `init`, `sync`, `index`, `check`, `query`, `chat`, and
+`undo`, all fully implemented (`promote` was removed in Phase 15,
+`decisions/0033`).
 
 "CodeCompass v1" has been **redefined** (`decisions/0048`,
 [`planning/v1-redefinition/`](planning/v1-redefinition/)) from a packaging

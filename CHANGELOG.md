@@ -7,7 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 40**: the agent-led development model is operational. New
+  `.claude/agents/` roster — `context-evaluator`,
+  `reference-project-tester`, `docs-maintainer`, `roadmap-context-curator`,
+  `knowledge-curator`, `docs-reconstructor`, `release-phase-auditor` —
+  each with explicit read/write boundaries and independence requirements.
+  New `planning/agent-led-workflow.md` (the 12-step per-session procedure,
+  a trivial-change fast path, and conflict resolution). `CLAUDE.md` gained
+  §8 (agent-led model), a §1 paragraph, a §5 Definition-of-Done amendment
+  (candidate-learning triage + independent `release-phase-auditor` pass +
+  `context-evaluator` report for reference-project phases), and a §6
+  milestone-group bullet — all approved (gate G4) and mirrored into
+  `CONTRIBUTING.md`. `decisions/0049` records the model.
+
 ### Changed
+
+- **Phase 40**: `scripts/check_user_docs.py::check_readme_phase_count`
+  now excludes ROADMAP content from the `## Redefined CodeCompass v1`
+  heading onward — the Stage A–F phases are a process/validation
+  milestone group (`decisions/0048`) and marking them `done` must not
+  force the README's foundation "phases 0-N" claim upward. Regression
+  test added. `README.md` Status section reverted to "phases 0-38" (the
+  foundation). Captured as candidate learning L-001.
 
 - **Phase 39**: ratified the v1 redefinition. New ADRs `decisions/0048`
   (redefined v1 is a product-validation milestone, not a packaging one)

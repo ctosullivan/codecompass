@@ -78,9 +78,24 @@ def check_cli_commands_documented(root: Path) -> list[Finding]:
 
 def check_readme_phase_count(root: Path) -> list[Finding]:
     """README's Status-line phase-count claim matches the highest phase
-    number marked `done` anywhere in planning/ROADMAP.md."""
+    number marked `done` in planning/ROADMAP.md's *foundation* tables.
+
+    The README's "phases 0-N" claim describes the foundation (the
+    npm/PyPI/Cargo package/source tool, MVP v0.1/v0.2 + Post-MVP). The
+    "Redefined CodeCompass v1 — Stages A–F" phases (39+) are a separate
+    process/validation milestone group (decisions/0048) whose completion
+    does not change what "phases 0-N" means to a prospective user, so
+    ROADMAP content from that heading onward is excluded from this check.
+    """
     readme_text = _read(root / "README.md")
     roadmap_text = _read(root / "planning" / "ROADMAP.md")
+
+    # Exclude the redefined-v1 milestone-group section from the scan.
+    _redef_heading = re.search(
+        r"^##\s+Redefined CodeCompass v1", roadmap_text, re.MULTILINE
+    )
+    if _redef_heading:
+        roadmap_text = roadmap_text[: _redef_heading.start()]
 
     readme_match = re.search(r"phases 0-(\d+)", readme_text, re.IGNORECASE)
     if not readme_match:

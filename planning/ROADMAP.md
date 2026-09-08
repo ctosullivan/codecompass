@@ -283,8 +283,11 @@ the redefined v1 as `1.0.0` at Phase 67), G3 (this restructuring), and G5
 (ADRs 0048/0049) are decided. Phases 0–38 and 24/25 are **not**
 renumbered. Historical tables and "v1.0 scope notes" above are unchanged
 (dated records); the note before them reframes "v1.0" → "foundation
-release". Gate **G4** (`CLAUDE.md` §8/§5/§1 changes) is still open and
-gates Phase 40 —
+release".
+
+Gate **G4** (`CLAUDE.md` §8/§5/§1/§6 changes for the agent-led model) was
+approved and applied in **Phase 40** (2026-09-09), mirrored into
+`CONTRIBUTING.md` — see
 [`v1-redefinition/proposed-governance-changes.md`](v1-redefinition/proposed-governance-changes.md).
 
 Milestone-grouping convention (`CLAUDE.md` §6, `decisions/0022`/`0030`):
@@ -298,7 +301,7 @@ a named gate; may be dropped) / **DEFERRED** (revisit trigger named).
 | Phase | Name | Label | Status | Plan file |
 |---|---|---|---|---|
 | 39 | Reconcile repo state + versioning realignment | COMMITTED | done | [`phase-39-reconcile-v1-redefinition.md`](phase-39-reconcile-v1-redefinition.md) |
-| 40 | Specialist agent roster + lead workflow | COMMITTED | planned | [`phase-40-specialist-agents.md`](phase-40-specialist-agents.md) |
+| 40 | Specialist agent roster + lead workflow | COMMITTED | done | [`phase-40-specialist-agents.md`](phase-40-specialist-agents.md) |
 | 41 | Project-learning lifecycle (operational) | COMMITTED | planned | [`phase-41-learning-lifecycle.md`](phase-41-learning-lifecycle.md) |
 | 42 | Documentation lifecycle (incremental + closeout gate) | COMMITTED | planned | [`phase-42-documentation-lifecycle.md`](phase-42-documentation-lifecycle.md) |
 | 43 | Dogfood the agent-led loop on a real change — **GATE DA** | COMMITTED | planned | [`phase-43-dogfood-agent-led-workflow.md`](phase-43-dogfood-agent-led-workflow.md) |

@@ -25,6 +25,12 @@ implementation until that file exists. Add the phase's row/status to
 plan surfaces an assumption not already settled, pause and ask before
 proceeding from plan to code.
 
+When the agent-led development model is in effect (§8), establishing
+"current project state" and "the next approved work" is the
+`roadmap-context-curator`'s step, and a phase is not started until any
+human-decision gate recorded against it in
+`planning/v1-redefinition/README.md` §7 is resolved.
+
 ## 2. Kept-in-sync docs, same commit
 
 - **`docs/`** — user-facing usage docs. Update when CLI behavior, config
@@ -63,7 +69,14 @@ current-state section each time — don't append indefinitely.
 Code implemented + plan file's verification step passes + `docs/`,
 `architecture/`, `decisions/` updated as applicable + changelog entry added
 + `planning/CONTEXT.md` reflects the new state + `planning/ROADMAP.md`
-marks the phase `done`. Not done until all six.
+marks the phase `done` + candidate learnings from the phase have been
+triaged by the `knowledge-curator` (promote / retain / merge / discard,
+per `planning/learnings/`) + an independent `release-phase-auditor` pass
+(or, for a trivial phase, an explicit lead confirmation) verifies the
+preceding conditions rather than trusting the implementing agent's report.
+For a reference-project or context-evaluation phase, a `context-evaluator`
+report exists and is linked from the phase's exit note. Not done until all
+of these.
 
 ## 6. Commits and milestones
 
@@ -75,6 +88,10 @@ marks the phase `done`. Not done until all six.
   Only when a milestone's last phase is marked `done` do we promote
   `[Unreleased]` to a dated release section and cut a version tag for
   that milestone. Not after every phase.
+- The redefined-CodeCompass-v1 effort (`planning/v1-redefinition/`) is one
+  further milestone group; its stages A–F tag/release only on group
+  completion (Phase 67). "CodeCompass v1" as a product milestone is
+  distinct from the `pyproject.toml` version string.
 - `planning/CONTEXT.md` is the tie-breaker if commits, changelog, and
   milestones ever drift.
 
@@ -83,6 +100,35 @@ marks the phase `done`. Not done until all six.
 Commits never include an AI assistant as co-author, contributor, or
 attribution trailer, regardless of how much of a change it authored. Fixed
 convention, not reconsidered case by case.
+
+## 8. Agent-led development model
+
+CodeCompass is developed by a lead Claude Code session acting as project
+lead, delegating bounded work to a small set of specialist agents defined
+in `.claude/agents/`. The full model — roles, write boundaries,
+independence requirements, how results return to the lead — is
+`planning/v1-redefinition/agent-led-development.md`; the per-session
+procedure is `planning/agent-led-workflow.md`.
+
+Fixed points:
+
+- **Claude Code orchestrates; CodeCompass never spawns or coordinates
+  agents.**
+- Specialist agents operationalise the *existing* governance mechanisms
+  (this file, `ROADMAP.md`, `CONTEXT.md`, ADRs, `architecture/`, tests,
+  `CHANGELOG.md`, §5's DoD, §0's protected-file rule). No agent maintains
+  a private parallel system.
+- Evaluation and audit agents inspect their target directly, never via
+  CodeCompass, and never repair what they are judging.
+- No agent writes this file, `decisions/*`, or `src/` (the lead owns
+  those; ADRs go through §2's process; `src/` changes are the lead's or an
+  ad-hoc implementer subagent's).
+- **An agent observation is not authoritative because an agent recorded
+  it** — it enters the learning lifecycle (`planning/learnings/`,
+  `planning/v1-redefinition/learning-lifecycle.md`) as a candidate; only
+  curation plus evidence promotes it into a test, ADR, doc, roadmap row,
+  rule, or skill. Agent persistent memory is a per-agent working aid,
+  never a source of truth.
 
 ---
 

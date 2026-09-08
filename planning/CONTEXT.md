@@ -19,26 +19,37 @@ agent-led, validated against real external reference-project work
 generalised only as far as evidence justifies, then released after
 blank-slate doc reconstruction and an independent audit.
 
-**Phase 39 is `done` (Stage A of the redefined-v1 roadmap).** It ratified
-the redefinition: ADRs [`decisions/0048`](../decisions/0048-redefined-v1-is-a-product-validation-milestone.md)
-and [`decisions/0049`](../decisions/0049-agent-led-development-model.md)
-are `Accepted`; `pyproject.toml` `version` is now `1.0.0.dev0`;
-`planning/ROADMAP.md`'s "Redefined CodeCompass v1 — Stages A–F" section is
-ratified, Phase 23 Part B marked superseded, Phases 24/25 marked
-`deferred` (not renumbered); `README.md` Status reframed. **No `src/`
-change, no release/tag (gate G2-b), `CLAUDE.md` untouched.**
+**Phases 39 and 40 are `done` (Stage A of the redefined-v1 roadmap).**
 
-**Next: Phase 40** ([`phase-40-specialist-agents.md`](phase-40-specialist-agents.md))
-— create `.claude/agents/*` + `planning/agent-led-workflow.md`. **Blocked
-on gate G4**: the `CLAUDE.md` §8 (agent-led model) + §1 (touchpoint)
-changes must be presented as an exact diff and approved (`CLAUDE.md` §0)
-before Phase 40 starts. The proposed diff is
-[`v1-redefinition/proposed-governance-changes.md`](v1-redefinition/proposed-governance-changes.md)
-§A. §5 (DoD) can land in Phase 40 or 42.
+- **39** ratified the redefinition: ADRs [`decisions/0048`](../decisions/0048-redefined-v1-is-a-product-validation-milestone.md)
+  and [`decisions/0049`](../decisions/0049-agent-led-development-model.md)
+  `Accepted`; `pyproject.toml` `version` → `1.0.0.dev0`; ROADMAP's Stage
+  A–F section ratified; Phase 23 Part B superseded; Phases 24/25
+  `deferred` (not renumbered).
+- **40** made the agent-led model operational: `.claude/agents/` roster
+  of 7 (`context-evaluator`, `reference-project-tester`, `docs-maintainer`,
+  `roadmap-context-curator`, `knowledge-curator`, `docs-reconstructor`,
+  `release-phase-auditor`); `planning/agent-led-workflow.md`; `CLAUDE.md`
+  §8/§1/§5/§6 changes approved (gate G4) + applied + mirrored to
+  `CONTRIBUTING.md`. Small forced fix to
+  `scripts/check_user_docs.py::check_readme_phase_count` (excludes the
+  redefined-v1 ROADMAP section) — candidate learning **L-001**.
 
-The `planning/v1-redefinition/` package (11 docs) + `planning/learnings/`
-scaffold + Stage A phase plans (`phase-39`…`phase-44`) are the governing
-plan for this milestone group.
+**No `src/codecompass/` change in either phase; no release/tag (gate
+G2-b).** The live agent smoke delegation was deferred — the roster's
+first real exercise is Phase 41 (its DoD already requires a
+`release-phase-auditor` pass).
+
+**Next: Phase 41** ([`phase-41-learning-lifecycle.md`](phase-41-learning-lifecycle.md))
+— make `planning/learnings/` operational, finalise the
+`knowledge-curator` brief against the real files, extend
+`scripts/check_user_docs.py` with learnings-hygiene checks, and triage
+L-001 end-to-end (first real use of the agent-led loop). No gate blocks
+it.
+
+The `planning/v1-redefinition/` package + `planning/learnings/` scaffold +
+`planning/agent-led-workflow.md` + Stage A phase plans (`phase-39`…`phase-44`)
+are the governing plan for this milestone group.
 
 Everything below this line describes the **foundation** (phases 0-38) and
 remains accurate.
@@ -71,6 +82,21 @@ dependencies now carry lower-bound version pins (`decisions/0047`), and
 were cleaned up (Phase 38).
 
 ## What was just completed
+
+**Phase 40, done** (2026-09-09) — agent-led development model operational.
+Gate G4 approved ("Proceed"): `CLAUDE.md` gained §8 (agent-led model),
+a §1 paragraph, a §5 DoD amendment (candidate-learning triage +
+independent `release-phase-auditor` pass + `context-evaluator` report for
+reference-project phases), a §6 milestone bullet — all mirrored into
+`CONTRIBUTING.md`. Created `.claude/agents/` (7 definitions, each with
+read/write boundaries and independence rules) and
+`planning/agent-led-workflow.md` (12-step procedure + trivial-change fast
+path). One forced fix: `check_user_docs.py`'s phase-count rule excluded
+the redefined-v1 ROADMAP section (Stage A–F phases are process, not
+product) + regression test; `README.md` back to "phases 0-38"; captured
+as L-001. Live agent smoke delegation deferred to Phase 41's first real
+use rather than spawned speculatively. Verified: `ruff` clean;
+`check_user_docs.py --strict` clean; `pytest` (full suite — see commit).
 
 **Phase 39, done** (2026-09-09) — ratified the v1 redefinition.
 `decisions/0048` (redefined v1 = product-validation milestone, not
@@ -211,14 +237,19 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 40** ([`phase-40-specialist-agents.md`](phase-40-specialist-agents.md))
-— create the `.claude/agents/*` roster + `planning/agent-led-workflow.md`.
-**Blocked on gate G4**: present the `CLAUDE.md` §8 (agent-led model) + §1
-(touchpoint) changes as an exact diff for approval per `CLAUDE.md` §0,
-then apply. The proposed text is
-[`v1-redefinition/proposed-governance-changes.md`](v1-redefinition/proposed-governance-changes.md)
-§A (A1, A3; A2/§5-DoD may land in Phase 40 or 42; A4/§6 milestone note is
-optional). Nothing else blocks Phase 40.
+**Phase 41** ([`phase-41-learning-lifecycle.md`](phase-41-learning-lifecycle.md))
+— make `planning/learnings/` operational: finalise the `knowledge-curator`
+brief against the real files, extend `scripts/check_user_docs.py` with
+learnings-hygiene checks (+ tests), and run L-001 through the full
+promote/retain/merge/discard triage end-to-end as the first real exercise
+of the agent-led loop (its DoD already requires a `release-phase-auditor`
+pass). No human-decision gate blocks it. ADR `0050` only if a non-obvious
+curation tradeoff surfaces.
+
+This is also the point to run a **live agent smoke delegation** (deferred
+from Phase 40): dispatching `knowledge-curator` for the L-001 triage and
+`release-phase-auditor` for the DoD check validates the roster's
+frontmatter/tooling for real.
 
 Open items carried from the foundation:
 

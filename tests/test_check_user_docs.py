@@ -92,6 +92,28 @@ class TestReadmePhaseCount:
 
         assert findings == []
 
+    def test_ignores_done_phases_in_redefined_v1_section(self, tmp_path):
+        # `done` phases under the "Redefined CodeCompass v1" heading are a
+        # separate milestone group (decisions/0048) and must not force the
+        # README's foundation "phases 0-N" claim upward.
+        _write(tmp_path / "README.md", "Status: phases 0-1 all `done`.\n")
+        _write(
+            tmp_path / "planning" / "ROADMAP.md",
+            "| Phase | Name | Status |\n"
+            "|---|---|---|\n"
+            "| 0 | a | done |\n"
+            "| 1 | b | done |\n"
+            "\n## Redefined CodeCompass v1 — Stages A–F (phases 39–67)\n\n"
+            "| Phase | Name | Status |\n"
+            "|---|---|---|\n"
+            "| 39 | ratify | done |\n"
+            "| 40 | agents | done |\n",
+        )
+
+        findings = check_user_docs.check_readme_phase_count(tmp_path)
+
+        assert findings == []
+
 
 class TestApiKeyDocumented:
     def test_flags_missing_mention(self, tmp_path):
