@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Planning: **`planning/v1-redefinition/`** — an umbrella planning package
+  (same role `v1.0-initial-release-roadmap.md` played for phases 20–23,
+  larger scope) that **redefines "CodeCompass v1"** from a packaging
+  milestone (publish the npm/PyPI/Cargo package-source tool) to a
+  product-validation milestone: CodeCompass developed agent-led, validated
+  against real external reference-project work (Technical Clipper, then
+  Ledgerkit), improved from that evidence, generalised only as far as
+  evidence justifies, released after blank-slate documentation
+  reconstruction and an independent audit. 11 planning docs + the
+  `planning/learnings/` lifecycle scaffold + Stage A phase plans
+  (`planning/phase-39-*.md` … `phase-43-*.md`) + `planning/phase-44-*.md`.
+  `planning/ROADMAP.md` gains an additive "Redefined CodeCompass v1 —
+  Stages A–F" section (phases 39–67). Key inputs: nothing has been
+  published (no PyPI release, no git tags, `v0.1`/`v0.2` never cut,
+  `pyproject.toml` at `1.0.0` only via Phase 23 Part A), and both proposed
+  reference projects have ≈0 runtime package dependencies — so the current
+  model produces near-empty output for the first two real targets.
+  Decided this session (gates G1/G2): all publishing is **held until the
+  redefined v1** — CodeCompass has never been published, and the
+  first-ever PyPI release will be the redefined v1 as `1.0.0` (Phase 67);
+  `pyproject.toml` moves `1.0.0` → `1.0.0.dev0` in the interim (Phase 39).
+  **Planning only — no code, no governance file changed.** A proposed
+  `CLAUDE.md` §8/§5/§1 diff and ADR drafts 0048/0049 are staged in
+  `planning/v1-redefinition/proposed-governance-changes.md`, not applied;
+  the restructuring and version realignment are Phase 39's job, gated on
+  human decisions G1–G5.
+
 ### Changed
 
 - **Phase 38**: final polish pass ahead of the v1.0 release. `cli.py`

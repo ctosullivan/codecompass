@@ -250,6 +250,58 @@ Phase 8 (the REPL, `decisions/0012`'s "actual product") structurally
 depends on Phase 7's outputs. No phase was renumbered by this move, only
 its table membership.
 
+## Redefined CodeCompass v1 — Stages A–F (planning)
+
+**Planning package:** [`v1-redefinition/`](v1-redefinition/) (umbrella,
+same role `v1.0-initial-release-roadmap.md` played for 20–23, larger
+scope). This group **redefines what "CodeCompass v1" means** — from a
+packaging milestone (publish the npm/PyPI/Cargo package-source tool) to a
+*product-validation* milestone (agent-led development + real
+reference-project validation + evidence-gated generalisation). Full
+rationale: [`v1-redefinition/README.md`](v1-redefinition/README.md).
+
+**Partly ratified.** Gates **G1** (`pyproject.toml` `1.0.0` →
+`1.0.0.dev0`) and **G2** (→ G2-b: **hold all publishing until the
+redefined v1** — CodeCompass has never been published; the first-ever
+PyPI release is the redefined v1 as `1.0.0` at Phase 67) are **decided
+(2026-09-09)**. The rest of the restructuring (retitling the "v1.0 scope
+notes" as foundation-release notes, marking Phase 23 Part B superseded,
+ADRs 0048/0049, deferring Phases 24/25) is **Phase 39's** job and still
+depends on gates G3 and G5
+([`v1-redefinition/README.md`](v1-redefinition/README.md) §7). Until
+Phase 39 runs, this section is additive planning only — no phase 0–38 or
+24–25 number changes, and the existing v1.0 / foundation-release scope
+notes above stand as written.
+
+Stage labels: **COMMITTED** / **EXPERIMENTAL** (activity committed,
+findings not) / **CONDITIONAL** (on a named gate) / **DEFERRED**.
+
+| Phase | Name | Label | Status | Plan file |
+|---|---|---|---|---|
+| 39 | Reconcile repo state + versioning realignment | COMMITTED | planned | [`phase-39-reconcile-v1-redefinition.md`](phase-39-reconcile-v1-redefinition.md) |
+| 40 | Specialist agent roster + lead workflow | COMMITTED | planned | [`phase-40-specialist-agents.md`](phase-40-specialist-agents.md) |
+| 41 | Project-learning lifecycle (operational) | COMMITTED | planned | [`phase-41-learning-lifecycle.md`](phase-41-learning-lifecycle.md) |
+| 42 | Documentation lifecycle (incremental + closeout gate) | COMMITTED | planned | [`phase-42-documentation-lifecycle.md`](phase-42-documentation-lifecycle.md) |
+| 43 | Dogfood the agent-led loop on a real change — **GATE DA** | COMMITTED | planned | [`phase-43-dogfood-agent-led-workflow.md`](phase-43-dogfood-agent-led-workflow.md) |
+| 44 | Reference-project protocol + context-quality eval spec | COMMITTED | planned | [`phase-44-reference-project-protocol.md`](phase-44-reference-project-protocol.md) |
+| 45 | Register Technical Clipper + baseline evaluation | EXPERIMENTAL | not started | — (written in Phase 44) |
+| 46 | CodeCompass during genuine Technical Clipper tasks + independent evals | EXPERIMENTAL | not started | — |
+| 47 | Consolidate recurring friction into confirmed findings — **GATE DB** | EXPERIMENTAL | not started | — |
+| 48–51 | Stage C — improve the existing product (task-oriented retrieval, graph quality, shared-agent context, re-evaluate) | CONDITIONAL (GATE DB) | not started | — |
+| 52–55 | Stage D — Ledgerkit: heterogeneous docs / executable / behavioural context — **GATE DD** | EXPERIMENTAL | not started | — |
+| 56–59 | Stage E — minimum justified generalisation (technical-dependency + provenance abstractions, migrate package/source, re-validate) | CONDITIONAL (GATE DD) | not started | — |
+| 60–67 | Stage F — blank-slate doc reconstruction, architecture/ADR/roadmap reconciliation, final Technical Clipper + Ledgerkit validation, independent release audit, milestone closeout, release | COMMITTED (once E completes) | not started | — |
+
+Detail for every stage: [`v1-redefinition/roadmap.md`](v1-redefinition/roadmap.md).
+Phases 45+ get their own plan files as their preceding gate resolves —
+later stages are deliberately revisable based on earlier findings, so
+they are not written speculatively now.
+
+**Existing Post-MVP Phases 24 (chat routing/rollup) and 25 (MCP):**
+Phase 39 will re-mark these **deferred** — 24 as a redefined-v1 Stage C
+candidate (only if reference-project evidence supports project-root
+context routing), 25 as post-redefined-v1. **Not renumbered.**
+
 ## How this file is kept in sync
 
 - Starting a phase: add its plan-file link here and flip status to
