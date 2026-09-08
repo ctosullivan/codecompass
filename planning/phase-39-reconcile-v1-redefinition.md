@@ -1,6 +1,6 @@
 # Phase 39: Reconcile repo state + versioning realignment
 
-**Status:** planned
+**Status:** done (2026-09-09)
 
 Part of the redefined-v1 effort (`planning/v1-redefinition/`), Stage A.
 This phase changes **no `src/` code** and **publishes nothing** (gate
@@ -9,16 +9,13 @@ roadmap, and lands the two foundational ADRs.
 
 ## Depends on (human-decision gates — `planning/v1-redefinition/README.md` §7)
 
-- **G1** — ✅ decided 2026-09-09: `pyproject.toml` `1.0.0` → `1.0.0.dev0`.
-- **G2** — ✅ decided 2026-09-09 → **G2-b**: hold all publishing until
-  redefined v1 (Phase 67). No build, no `twine`, no tag, no dated
-  CHANGELOG section in this phase.
-- **G3** — approve the `ROADMAP.md` restructuring shape (still open).
-- **G5** — approve ADR drafts `0048` and `0049`
-  (`planning/v1-redefinition/proposed-governance-changes.md` §B) (still
-  open).
+All resolved 2026-09-09 (user: "Proceed. Hold release until v1 complete"):
 
-If G3 or G5 is unresolved, stop and ask — do not proceed on assumption.
+- **G1** — `pyproject.toml` `1.0.0` → `1.0.0.dev0`. ✅
+- **G2 → G2-b** — hold all publishing until redefined v1 (Phase 67). No
+  build, no `twine`, no tag, no dated CHANGELOG section. ✅
+- **G3** — ROADMAP restructuring shape approved. ✅
+- **G5** — ADRs `0048`/`0049` approved. ✅
 
 ## Scope
 
@@ -28,14 +25,13 @@ If G3 or G5 is unresolved, stop and ask — do not proceed on assumption.
   governing plan for the redefined-v1 milestone).
 - `pyproject.toml`: `version = "1.0.0"` → `"1.0.0.dev0"`. Keep
   `Development Status :: 4 - Beta`.
-- `ROADMAP.md`: append a new milestone-group table "Redefined
-  CodeCompass v1 — Stages A–F (phases 39–67)" summarising
-  `planning/v1-redefinition/roadmap.md`; add rows for phases 39–44 with
-  plan-file links and status; retitle each existing "**v1.0 scope
-  note**" block to "**Foundation-release scope note**" (wording change
-  only — no content removed); add a one-paragraph "Redefinition note"
-  explaining the split between the internal v1 milestone and the wheel
-  version, pointing at `planning/v1-redefinition/README.md` §2.
+- `ROADMAP.md`: the "Redefined CodeCompass v1 — Stages A–F (phases
+  39–67)" milestone-group section (added additively with the planning
+  package) is marked **ratified**, with rows for phases 39–44. **The
+  dated "v1.0 scope note" blocks are left unedited** (accurate historical
+  records — same treatment superseded ADRs get); instead a single
+  reframing note above them says "v1.0" there now means the foundation
+  release. `deferred`/`superseded` added to the status-value legend.
 - Existing Phases 24/25: change their status note to "**deferred** —
   revisit as redefined-v1 Stage C candidate (24) / post-redefined-v1
   (25); see `planning/v1-redefinition/roadmap.md`". **No renumbering.**
@@ -83,16 +79,17 @@ If G3 or G5 is unresolved, stop and ask — do not proceed on assumption.
 - **No release in this phase** (G2-b) — no `python -m build`, no
   `twine`, no `git tag`, no dated `CHANGELOG.md` section.
 
-## Files
+## Files (actual)
 
-- `pyproject.toml` — version bump to `1.0.0.dev0`.
-- `planning/ROADMAP.md` — new group table, retitled notes, 24/25 status,
-  Phase 23 disposition, rows 39–44.
-- `README.md`, `docs/cli-reference.md`, `ai-docs/README.md`,
-  `ai-docs/CLAUDE.md` — framing pass (`docs-maintainer`).
-- `decisions/0048-redefined-v1-milestone.md` — new (from draft).
-- `decisions/0049-agent-led-development-model.md` — new (from draft).
-- `CHANGELOG.md` — `[Unreleased]` entry (undated).
+- `pyproject.toml` — `version` → `1.0.0.dev0`.
+- `planning/ROADMAP.md` — legend gains `deferred`/`superseded`; reframing
+  note above the "v1.0 scope notes"; Phase 23/24/25 rows; the Stage A–F
+  section marked ratified.
+- `README.md` — Status section reframed. (`docs/cli-reference.md` /
+  `ai-docs/` had no release-status framing to change — checked.)
+- `decisions/0048-redefined-v1-is-a-product-validation-milestone.md` — new.
+- `decisions/0049-agent-led-development-model.md` — new.
+- `CHANGELOG.md` — `[Unreleased]` Phase 39 entry (undated).
 - `planning/CONTEXT.md` — current-state overwrite.
 
 ## Verification
@@ -102,11 +99,10 @@ If G3 or G5 is unresolved, stop and ask — do not proceed on assumption.
 - `python scripts/check_user_docs.py --strict` passes (README
   phase/version claims now consistent).
 - `pyproject.toml` reads `version = "1.0.0.dev0"`.
-- `ROADMAP.md` renders: the new group table is present; no phase 0–38 or
-  24–25 number changed; every "v1.0 scope note" now reads "Foundation-release
-  scope note"; Phase 23 row updated.
-- `decisions/0048` and `0049` exist with `Status: Accepted` and match the
-  approved drafts.
+- `ROADMAP.md` renders: the group section is ratified; no phase 0–38 or
+  24–25 number changed; the reframing note sits above the (unedited)
+  "v1.0 scope notes"; Phase 23 / 24 / 25 rows updated.
+- `decisions/0048` and `0049` exist with `Status: Accepted`.
 - `git tag -l` unchanged (still empty); `CHANGELOG.md` has no dated
   section.
 - `planning/CONTEXT.md` reflects: Phase 39 done, Stage A in progress,

@@ -4,14 +4,20 @@ Grounded, version-pinned dependency reference docs for AI coding agents.
 
 ## Status
 
-**Pre-release, v1.0.0 in progress (phases 0-38 all `done`; Phase 23 Part B —
-the actual PyPI publish — is now the only thing left before a `v1.0` tag,
-paused for explicit user confirmation).** Bare `codecompass`, `init`, `sync`,
-`index`, `check`, `query`, `chat`, and `undo` are all fully implemented.
-`promote` was removed in Phase 15 (`decisions/0033`) — its former jobs
-(clone, enrich, generate Skill) are now automatic outcomes of
-bootstrap/`sync`. Not yet published to PyPI. See [`planning/`](planning/)
-for phase-by-phase status.
+**Pre-release, not yet published.** Phases 0-39 are `done` — phases 0-38
+are the **foundation** (the npm/PyPI/Cargo package/source-grounding tool:
+bare `codecompass`, `init`, `sync`, `index`, `check`, `query`, `chat`, and
+`undo`, all fully implemented; `promote` was removed in Phase 15,
+`decisions/0033`), and Phase 39 redefined the v1 milestone (below).
+
+"CodeCompass v1" has been **redefined** (`decisions/0048`,
+[`planning/v1-redefinition/`](planning/v1-redefinition/)) from a packaging
+milestone into a *product-validation* milestone: CodeCompass developed
+agent-led, validated against real external reference-project work,
+improved from that evidence, and released only after a blank-slate
+documentation reconstruction and an independent audit. All publishing is
+held until then — the first PyPI release will be that redefined v1
+(`1.0.0`). See [`planning/`](planning/) for phase-by-phase status.
 
 ## What it is
 

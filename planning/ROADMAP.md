@@ -8,7 +8,9 @@ full-roadmap, at-a-glance view: what's done, what's next, what's still
 just planned.
 
 Status values: `not started` / `planned` (a `planning/phase-N-*.md` file
-exists) / `in progress` / `done`.
+exists) / `in progress` / `done` / `deferred` (on the roadmap, not
+scheduled — revisit trigger named in the row) / `superseded` (replaced by
+a later decision — ADR named in the row).
 
 ## MVP (v0.1) — phases 0-8
 
@@ -99,9 +101,9 @@ with `promote`/`Depth` fully retired and chat re-framed as secondary.
 | 20 | Refresh generated artifacts after enrichment — fixes the graph/enrichment ordering gap found during this project's first live enrichment run: the routing table, tool Skill, and `undo`/`query skills`'s view of the graph lag one sync cycle behind a vendor's first enrichment | done | [`phase-20-refresh-generated-artifacts-after-enrichment.md`](phase-20-refresh-generated-artifacts-after-enrichment.md) |
 | 21 | Spec-doc detection & relationship graph — new `spec_docs.py` classifies a project's own README/`docs/`/`architecture/`/`decisions/` etc. as graph nodes; new `doc_relations_edges` mechanically links them to dependency docs and skills (mention heuristic, no AI call) (decisions/0037) | done | [`phase-21-spec-doc-detection-and-relationship-graph.md`](phase-21-spec-doc-detection-and-relationship-graph.md) |
 | 22 | AI-enriched cross-artifact relationships — batched AI summary of *how* each Phase 21 edge relates, gated on Phase 21's mechanically-proven candidates only, folded into the existing Phase B cost/consent flow; never writes to a spec doc's own file (decisions/0038) | done | [`phase-22-ai-enriched-cross-artifact-relationships.md`](phase-22-ai-enriched-cross-artifact-relationships.md) |
-| 23 | *(was 22, was 21, was 11, formerly 10)* Polish: PyPI publish as `codecompass`, examples, docs site evaluation — the v1.0 release itself (decisions/0039; Part A done, Part B — the actual publish — paused for explicit user confirmation) | in progress | [`phase-23-polish-and-pypi-publish.md`](phase-23-polish-and-pypi-publish.md) |
-| 24 | *(was 21, was 20, was 10, formerly 9)* Project-root-aware REPL routing (Tier 1 sourced from generated Skill descriptions, decisions/0013) + whole-project context + unconditional dependency rollup at session start (decisions/0012, now demoted per decisions/0034) + digest-exceeded escalation to the generated Skill folder — now consumes the SQLite graph (decisions/0032) instead of inventing ad hoc heuristics — deferred past v1.0, see renumbering note below | not started | — |
-| 25 | *(was 23, was 22, was 12, formerly 11)* MCP server (`query_vendor`) — deferred past v1.0, see renumbering note below | not started | — |
+| 23 | *(was 22, was 21, was 11, formerly 10)* Polish: examples, docs-site evaluation, packaging readiness (decisions/0039). **Part A done.** Part B (the PyPI publish) is **superseded** by the v1 redefinition (`decisions/0048`) — CodeCompass publishes nothing until the redefined v1 (Phase 67, gate G2-b). | Part A done; Part B superseded | [`phase-23-polish-and-pypi-publish.md`](phase-23-polish-and-pypi-publish.md) |
+| 24 | *(was 21, was 20, was 10, formerly 9)* Project-root-aware REPL routing + whole-project context + dependency rollup at session start (decisions/0012, demoted per decisions/0034) — **deferred** (`decisions/0048`); revisit as a redefined-v1 Stage C candidate only if reference-project evidence shows project-root context routing is a recurring need. **Not renumbered.** | deferred | — |
+| 25 | *(was 23, was 22, was 12, formerly 11)* MCP server (`query_vendor`) — **deferred** (`decisions/0048`); revisit post-redefined-v1, informed by real CLI/Skill usage. **Not renumbered.** | deferred | — |
 | 26 | Symbol-level resolution for `module.attr` usage — `usage.detect_python_imports` currently only resolves `from X import Y`-style usage to a symbol; a plain `import X` followed by `X.Attr(...)` (this project's own dominant style for `anthropic`) stays vendor-level-only, causing real used symbols to show as "documented but unused" in `check` | done | [`phase-26-symbol-level-resolution-for-attribute-usage.md`](phase-26-symbol-level-resolution-for-attribute-usage.md) |
 | 27 | Register embedded vendor docs — a cloned vendor's own upstream README/CHANGELOG/CONTRIBUTING etc. (confirmed real content under `vendor/*/src/` in this repo) currently has no `doc_artifacts` row at all, so none of Phase 21/22's relationship detection/enrichment ever applies to them (decisions/0041) | done | [`phase-27-register-embedded-vendor-docs.md`](phase-27-register-embedded-vendor-docs.md) |
 | 28 | Center relationship excerpts on the actual match — `relation_enrichment.select_candidates` always sends the spec doc's first 4,000 characters, regardless of where the mechanical match actually is; confirmed with real data from this repo that both currently-enriched vendor-doc relationships got ungrounded AI summaries because the real match sits far past that window (decisions/0042) | done | [`phase-28-center-relationship-excerpts-on-the-actual-match.md`](phase-28-center-relationship-excerpts-on-the-actual-match.md) |
@@ -122,6 +124,16 @@ numbering already assigned in `planning/doc-graph-precision-roadmap.md`
 dependency: 31 doesn't hard-depend on 30 but is written to ship after it;
 32 hard-depends on both being `done`, since it modifies files both touch
 — see the umbrella doc's "Why this order" section for the full reasoning.
+
+> **"v1.0" in every scope note below now means the *foundation release*,
+> superseded by the v1 redefinition (Phase 39, `decisions/0048`).** The
+> notes are accurate dated records of what was decided at the time and
+> are **not edited** (same treatment superseded ADRs get). What they call
+> "Phase 23 Part B (the actual PyPI publish, paused)" is now superseded:
+> per gate G2-b, CodeCompass publishes nothing until the redefined v1
+> (Phase 67). Phases 24/25's "deferred past v1.0" still holds — see the
+> "Redefined CodeCompass v1" section below and
+> [`v1-redefinition/roadmap.md`](v1-redefinition/roadmap.md).
 
 **v1.0 scope note (dated to this planning session):** at explicit user
 request, Phases 30-32 (doc-graph precision: bidirectional traversal,
@@ -250,35 +262,42 @@ Phase 8 (the REPL, `decisions/0012`'s "actual product") structurally
 depends on Phase 7's outputs. No phase was renumbered by this move, only
 its table membership.
 
-## Redefined CodeCompass v1 — Stages A–F (planning)
+## Redefined CodeCompass v1 — Stages A–F (phases 39–67)
 
 **Planning package:** [`v1-redefinition/`](v1-redefinition/) (umbrella,
 same role `v1.0-initial-release-roadmap.md` played for 20–23, larger
-scope). This group **redefines what "CodeCompass v1" means** — from a
-packaging milestone (publish the npm/PyPI/Cargo package-source tool) to a
-*product-validation* milestone (agent-led development + real
-reference-project validation + evidence-gated generalisation). Full
-rationale: [`v1-redefinition/README.md`](v1-redefinition/README.md).
+scope). This milestone group **redefines what "CodeCompass v1" means** —
+from a packaging milestone (publish the npm/PyPI/Cargo package-source
+tool) to a *product-validation* milestone: CodeCompass developed
+agent-led, validated against real external reference-project work
+(Technical Clipper, then Ledgerkit), improved from that evidence,
+generalised only as far as evidence justifies, released after a
+blank-slate documentation reconstruction and an independent audit. Full
+rationale: [`v1-redefinition/README.md`](v1-redefinition/README.md);
+`decisions/0048`, `0049`.
 
-**Partly ratified.** Gates **G1** (`pyproject.toml` `1.0.0` →
-`1.0.0.dev0`) and **G2** (→ G2-b: **hold all publishing until the
-redefined v1** — CodeCompass has never been published; the first-ever
-PyPI release is the redefined v1 as `1.0.0` at Phase 67) are **decided
-(2026-09-09)**. The rest of the restructuring (retitling the "v1.0 scope
-notes" as foundation-release notes, marking Phase 23 Part B superseded,
-ADRs 0048/0049, deferring Phases 24/25) is **Phase 39's** job and still
-depends on gates G3 and G5
-([`v1-redefinition/README.md`](v1-redefinition/README.md) §7). Until
-Phase 39 runs, this section is additive planning only — no phase 0–38 or
-24–25 number changes, and the existing v1.0 / foundation-release scope
-notes above stand as written.
+**Ratified by Phase 39 (2026-09-09).** Gates G1 (`pyproject.toml` →
+`1.0.0.dev0`), G2 (→ G2-b: **hold all publishing until the redefined v1**
+— CodeCompass has never been published; the first-ever PyPI release is
+the redefined v1 as `1.0.0` at Phase 67), G3 (this restructuring), and G5
+(ADRs 0048/0049) are decided. Phases 0–38 and 24/25 are **not**
+renumbered. Historical tables and "v1.0 scope notes" above are unchanged
+(dated records); the note before them reframes "v1.0" → "foundation
+release". Gate **G4** (`CLAUDE.md` §8/§5/§1 changes) is still open and
+gates Phase 40 —
+[`v1-redefinition/proposed-governance-changes.md`](v1-redefinition/proposed-governance-changes.md).
 
-Stage labels: **COMMITTED** / **EXPERIMENTAL** (activity committed,
-findings not) / **CONDITIONAL** (on a named gate) / **DEFERRED**.
+Milestone-grouping convention (`CLAUDE.md` §6, `decisions/0022`/`0030`):
+Stages A–F are **one milestone group**; the `v1.0.0` tag/release is cut
+only on group completion (Phase 67), not per phase.
+
+Stage labels: **COMMITTED** (will happen; only a §7 gate stops it) /
+**EXPERIMENTAL** (activity committed, findings not) / **CONDITIONAL** (on
+a named gate; may be dropped) / **DEFERRED** (revisit trigger named).
 
 | Phase | Name | Label | Status | Plan file |
 |---|---|---|---|---|
-| 39 | Reconcile repo state + versioning realignment | COMMITTED | planned | [`phase-39-reconcile-v1-redefinition.md`](phase-39-reconcile-v1-redefinition.md) |
+| 39 | Reconcile repo state + versioning realignment | COMMITTED | done | [`phase-39-reconcile-v1-redefinition.md`](phase-39-reconcile-v1-redefinition.md) |
 | 40 | Specialist agent roster + lead workflow | COMMITTED | planned | [`phase-40-specialist-agents.md`](phase-40-specialist-agents.md) |
 | 41 | Project-learning lifecycle (operational) | COMMITTED | planned | [`phase-41-learning-lifecycle.md`](phase-41-learning-lifecycle.md) |
 | 42 | Documentation lifecycle (incremental + closeout gate) | COMMITTED | planned | [`phase-42-documentation-lifecycle.md`](phase-42-documentation-lifecycle.md) |
@@ -297,10 +316,11 @@ Phases 45+ get their own plan files as their preceding gate resolves —
 later stages are deliberately revisable based on earlier findings, so
 they are not written speculatively now.
 
-**Existing Post-MVP Phases 24 (chat routing/rollup) and 25 (MCP):**
-Phase 39 will re-mark these **deferred** — 24 as a redefined-v1 Stage C
-candidate (only if reference-project evidence supports project-root
-context routing), 25 as post-redefined-v1. **Not renumbered.**
+**Existing Post-MVP Phases 24 (chat routing/rollup) and 25 (MCP)** are
+marked **deferred** in the Post-MVP table above (`decisions/0048`) — 24 a
+redefined-v1 Stage C candidate (only if reference-project evidence
+supports project-root context routing), 25 post-redefined-v1. **Not
+renumbered.**
 
 ## How this file is kept in sync
 

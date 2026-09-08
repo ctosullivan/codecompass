@@ -19,26 +19,31 @@ agent-led, validated against real external reference-project work
 generalised only as far as evidence justifies, then released after
 blank-slate doc reconstruction and an independent audit.
 
-**The redefined-v1 planning package is [`planning/v1-redefinition/`](v1-redefinition/)**
-(11 docs) + the `planning/learnings/` scaffold + Stage A phase plans
-(`phase-39`…`phase-43`) + `phase-44`. `planning/ROADMAP.md` has a new
-"Redefined CodeCompass v1 — Stages A–F" section (additive; the full
-restructuring is Phase 39's job).
+**Phase 39 is `done` (Stage A of the redefined-v1 roadmap).** It ratified
+the redefinition: ADRs [`decisions/0048`](../decisions/0048-redefined-v1-is-a-product-validation-milestone.md)
+and [`decisions/0049`](../decisions/0049-agent-led-development-model.md)
+are `Accepted`; `pyproject.toml` `version` is now `1.0.0.dev0`;
+`planning/ROADMAP.md`'s "Redefined CodeCompass v1 — Stages A–F" section is
+ratified, Phase 23 Part B marked superseded, Phases 24/25 marked
+`deferred` (not renumbered); `README.md` Status reframed. **No `src/`
+change, no release/tag (gate G2-b), `CLAUDE.md` untouched.**
 
-**Nothing is implemented and no governance file changed.** `pyproject.toml`
-still says `1.0.0` (Phase 39 changes it to `1.0.0.dev0`); `CLAUDE.md` is
-untouched. Gates **G1** (version → `1.0.0.dev0`) and **G2** (→ G2-b, hold
-all publishing until redefined v1) are **decided**; Phase 39 still waits
-on **G3** (roadmap restructuring shape) and **G5** (approve ADR drafts
-0048/0049) — see [`v1-redefinition/README.md`](v1-redefinition/README.md)
-§7.
+**Next: Phase 40** ([`phase-40-specialist-agents.md`](phase-40-specialist-agents.md))
+— create `.claude/agents/*` + `planning/agent-led-workflow.md`. **Blocked
+on gate G4**: the `CLAUDE.md` §8 (agent-led model) + §1 (touchpoint)
+changes must be presented as an exact diff and approved (`CLAUDE.md` §0)
+before Phase 40 starts. The proposed diff is
+[`v1-redefinition/proposed-governance-changes.md`](v1-redefinition/proposed-governance-changes.md)
+§A. §5 (DoD) can land in Phase 40 or 42.
+
+The `planning/v1-redefinition/` package (11 docs) + `planning/learnings/`
+scaffold + Stage A phase plans (`phase-39`…`phase-44`) are the governing
+plan for this milestone group.
 
 Everything below this line describes the **foundation** (phases 0-38) and
 remains accurate.
 
-Phase 23 Part B (the original publish step) is superseded — the
-first-ever publish is the redefined v1 (Phase 67, as `1.0.0`). Phases
-30-38 (doc-graph precision, user-facing docs, docs-sync tooling,
+Phases 30-38 (doc-graph precision, user-facing docs, docs-sync tooling,
 redundancy cleanup) are all `done`.
 `codecompass` now: auto-clones every tracked vendor; detects real
 project-source usage (vendor- and symbol-level); maps docs/skills/
@@ -49,10 +54,11 @@ doc chunking sharpening both; auto-triggers disclosed, confirmable
 batched AI enrichment for usage-proven vendors *and* relationships;
 exposes all of it via `codecompass query`, `/discovery`, and generated
 Skills; can `undo` itself cleanly; frames chat as secondary. `promote` and
-`Depth` are fully retired. Packaging is release-ready (`version =
-"1.0.0"`, real wheel re-verified installable in a clean venv after Phase
-38's dependency-pin change) but **not yet published to PyPI, and no
-`v1.0` tag has been cut.**
+`Depth` are fully retired. Packaging is release-ready (real wheel
+re-verified installable in a clean venv after Phase 38's dependency-pin
+change; `version` is `1.0.0.dev0` as of Phase 39) but **nothing is
+published to PyPI and no tag has been cut — and won't be until the
+redefined v1, Phase 67 (gate G2-b).**
 `README.md` now documents real setup requirements (Python version, `git`,
 `ANTHROPIC_API_KEY`) and a plain free-vs-paid AI enrichment explainer; a new
 `ai-docs/` folder gives an agent a capability/boundary overview distinct
@@ -66,10 +72,25 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 39, done** (2026-09-09) — ratified the v1 redefinition.
+`decisions/0048` (redefined v1 = product-validation milestone, not
+packaging) and `decisions/0049` (agent-led development model) written and
+`Accepted`. `pyproject.toml` `version` `1.0.0` → `1.0.0.dev0` (gate G1).
+Gate G2 → **G2-b**: all publishing held until the redefined-v1 release
+(Phase 67, first-ever publish, as `1.0.0`). `planning/ROADMAP.md`: the
+Stage A–F section ratified; a reframing note added above the dated
+"v1.0 scope notes" (left unedited — historical records); Phase 23 row →
+"Part A done; Part B superseded"; Phases 24/25 → `deferred` (not
+renumbered); `deferred`/`superseded` added to the status legend.
+`README.md` Status section reframed. Verified: `pytest` 520 passed /
+1 skipped, `ruff` clean, `check_user_docs.py --strict` clean, no `src/`
+change, `git tag -l` still empty. `CLAUDE.md` untouched (its changes are
+gate G4, Phases 40–42).
+
 **Redefined-v1 planning session** (2026-09-09) — no code, no governance
 change. Inspected the full repo, the release/version state (nothing
-published; no tags; `v0.1`/`v0.2` never cut; `pyproject.toml` at `1.0.0`
-via Phase 23 Part A), and both proposed reference projects
+published; no tags; `v0.1`/`v0.2` never cut; `pyproject.toml` was at
+`1.0.0` via Phase 23 Part A), and both proposed reference projects
 (`technical-clipper` — TypeScript MV3 extension, **0 runtime deps**, ~7
 build-only devDeps; `ledgerkit` — pure Python, **0 runtime deps**, real
 context is the `hledger` executable + manuals + journal syntax). Key
@@ -190,47 +211,32 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**The redefined-v1 planning package is committed. Gates G1 (version →
-`1.0.0.dev0`) and G2 (→ G2-b, hold all publishing until redefined v1) are
-resolved.** Phase 39
-([`phase-39-reconcile-v1-redefinition.md`](phase-39-reconcile-v1-redefinition.md))
-still needs **G3** (approve the ROADMAP restructuring shape:
-retitle the "v1.0 scope notes" as foundation-release notes; mark Phase 23
-Part B superseded; defer 24/25; no renumbering) and **G5** (approve ADR
-drafts 0048/0049 in
-[`proposed-governance-changes.md`](v1-redefinition/proposed-governance-changes.md)).
-Once G3/G5 are confirmed → run Phase 39.
+**Phase 40** ([`phase-40-specialist-agents.md`](phase-40-specialist-agents.md))
+— create the `.claude/agents/*` roster + `planning/agent-led-workflow.md`.
+**Blocked on gate G4**: present the `CLAUDE.md` §8 (agent-led model) + §1
+(touchpoint) changes as an exact diff for approval per `CLAUDE.md` §0,
+then apply. The proposed text is
+[`v1-redefinition/proposed-governance-changes.md`](v1-redefinition/proposed-governance-changes.md)
+§A (A1, A3; A2/§5-DoD may land in Phase 40 or 42; A4/§6 milestone note is
+optional). Nothing else blocks Phase 40.
 
-Open items carried from the foundation (unchanged by the planning
-session):
+Open items carried from the foundation:
 
-1. **The first-ever publish is now Phase 67** (redefined v1, `1.0.0`) —
-   gate G2-b holds everything until then. No `twine`, no git tag during
-   Stages A–F.
-2. ~~Confirm before pushing this session's Phase 38 commit~~ — done:
-   committed as `feat(phase-38)` and pushed to `origin/main`
-   (`c388bca`).
-3. **A one-line pointer from root `CLAUDE.md` to `ai-docs/README.md`** —
-   still not done; now a candidate target change for **Phase 43** (the
-   agent-led dogfood run — it doubles as a live test of the `CLAUDE.md`
-   §0 approval flow through an agent-led phase).
-4. **Phase 37's fix surfaced 5 new mechanical relationships for
+1. **The first-ever publish is Phase 67** (redefined v1, `1.0.0`) — gate
+   G2-b holds everything until then. No `twine`, no git tag during Stages
+   A–F.
+2. **A one-line pointer from root `CLAUDE.md` to `ai-docs/README.md`** —
+   still not done; a candidate target change for **Phase 43** (the
+   agent-led dogfood run — doubles as a live test of the `CLAUDE.md` §0
+   approval flow through an agent-led phase).
+3. **Phase 37's fix surfaced 5 new mechanical relationships for
    `ai-docs/README.md`/`ai-docs/CLAUDE.md`** — still "mentioned, not yet
    enriched"; also a Phase 43 candidate target change.
 
-Two decisions remain genuinely open, unrelated to the above and not
-blocking anything currently in flight:
-1. **Whether routing/rollup and MCP (24/25) really should be deferred** —
-   now folded into the redefinition: Phase 39 marks 24 a Stage C
-   candidate and 25 post-redefined-v1 (`v1-redefinition/roadmap.md`).
-   Confirm at gate G3.
-2. ~~The `.claude/skills/docs-sync` skill's judgment-application step
-   hasn't been exercised against a genuine finding yet~~ — resolved within
-   this same session: Phase 37's commit landed without updating README's
-   phase count, `check_user_docs.py --strict` caught it immediately
-   (`README.md claims 'phases 0-36' but the highest done phase ... is
-   37`), fixed by hand and committed separately (`docs(phase-37)`). First
-   real finding, real fix, same session it shipped in.
+The former open question of whether routing/rollup and MCP (24/25) should
+be deferred is now settled: `decisions/0048` marks 24 a Stage C candidate
+(conditional on reference-project evidence) and 25 post-redefined-v1, not
+renumbered.
 
 **Still outstanding, not a blocker but worth remembering:**
 - Once a Rust toolchain is available anywhere in the pipeline,

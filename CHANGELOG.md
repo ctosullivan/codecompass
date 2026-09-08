@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Phase 39**: ratified the v1 redefinition. New ADRs `decisions/0048`
+  (redefined v1 is a product-validation milestone, not a packaging one)
+  and `decisions/0049` (agent-led development model). `pyproject.toml`
+  `version` `1.0.0` → `1.0.0.dev0` — all publishing is held until the
+  redefined-v1 release (Phase 67), which will be the first-ever PyPI
+  publish, as `1.0.0` (gate G2-b). `planning/ROADMAP.md`: the
+  "Redefined CodeCompass v1 — Stages A–F" section is now ratified (not
+  "planning"); Phase 23 row marked "Part A done; Part B superseded";
+  Phases 24/25 marked `deferred` (not renumbered); a reframing note added
+  above the historical "v1.0 scope notes" clarifying "v1.0" there now
+  means the foundation release (the notes themselves are unedited dated
+  records). `README.md` Status section reframed. No `src/` change; no
+  release, tag, or dated CHANGELOG section (G2-b). `CLAUDE.md` is
+  untouched — its §8/§5/§1 changes are gate G4, landing in Phases 40–42.
+
 ### Added
 
 - Planning: **`planning/v1-redefinition/`** — an umbrella planning package

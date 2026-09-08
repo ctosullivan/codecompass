@@ -2,8 +2,11 @@
 
 Per `CLAUDE.md` §0, **any** change to `CLAUDE.md` must be presented as a
 diff and explicitly approved before it is written or committed. This file
-holds those proposed diffs and the proposed ADR drafts. **Nothing here is
-applied.**
+holds those proposed diffs (§A) and the ADR drafts (§B).
+
+**Status:** §A (the `CLAUDE.md` / `CONTRIBUTING.md` changes) is **not
+applied** — gate G4, lands in Phases 40–42. §B ADRs `0048`/`0049` are
+**approved and published** (Phase 39); `0050` is still a draft.
 
 ---
 
@@ -93,15 +96,20 @@ so). Whatever subset of A1–A4 is approved, mirror it into
 
 ---
 
-## B. Proposed ADR drafts (gate G5)
+## B. ADR drafts (gate G5)
 
-Drafts only. On approval, the lead moves each into `decisions/` with the
-next free number, `Status: Accepted`, in the Phase 39 (`0048`) / Phase 40
-(`0049`) / Phase 41 (`0050`) commit.
+> **`0048` and `0049` were approved (gate G5, 2026-09-09) and are now
+> `Accepted` at
+> [`decisions/0048-redefined-v1-is-a-product-validation-milestone.md`](../../decisions/0048-redefined-v1-is-a-product-validation-milestone.md)
+> and
+> [`decisions/0049-agent-led-development-model.md`](../../decisions/0049-agent-led-development-model.md)
+> (Phase 39). The published ADRs are authoritative; the drafts below are
+> kept for context.** `0050` remains a draft, written only if Phase 41
+> surfaces a non-obvious tradeoff.
 
 ### Draft `decisions/0048` — Redefined v1 milestone
 
-- **Status:** Proposed (→ Accepted at Phase 39 on gate G5).
+- **Status:** ✅ Accepted (Phase 39, 2026-09-09) — see published ADR.
 - **Context:** `pyproject.toml` says `1.0.0`; nothing is published; no
   tags; `v0.1`/`v0.2` never cut. The internal "v1.0"
   (`planning/v1.0-initial-release-roadmap.md`) is a *packaging* milestone
@@ -139,7 +147,8 @@ next free number, `Status: Accepted`, in the Phase 39 (`0048`) / Phase 40
 
 ### Draft `decisions/0049` — Agent-led development model
 
-- **Status:** Proposed (→ Accepted at Phase 40).
+- **Status:** ✅ Accepted (Phase 39, 2026-09-09) — see published ADR. The
+  roster itself is still built in Phase 40.
 - **Context:** CodeCompass is positioned as the context layer for AI
   development agents but is not itself developed agent-led; it has no
   independent evaluation of the context it produces and no systematic
