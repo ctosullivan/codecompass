@@ -9,6 +9,24 @@
   OBSERVATIONS)
 - **Reports:** `_drift-audit-phase-41.md`, `_audit-phase-41.md`
 
+## Where we are
+
+- **Redefined-v1 Stage A** ("make CodeCompass agent-led"), phase 3 of 5
+  (`planning/v1-redefinition/roadmap.md`). Foundation = phases 0–38
+  (shipped, unpublished — gate G2-b holds all release until Phase 67).
+- **Built directly on:** Phase 39 ratified the redefinition (ADRs
+  0048/0049, `version → 1.0.0.dev0`); Phase 40 stood up the specialist
+  agent roster + `agent-led-workflow.md` + `CLAUDE.md` §8, but its live
+  smoke delegation was deferred. Phase 41 is where the roster was
+  *actually used* for the first time — the learning lifecycle it
+  operationalises is the pipeline Phase 40's `knowledge-curator` needed,
+  and L-001 (raised in Phase 40) was the first candidate through it.
+- **State after this phase:** the agent-led loop is proven end-to-end on
+  a real phase (its own). `CLAUDE.md` §5 now has the full per-phase DoD:
+  drift audit + retro + learning triage + independent auditor. Stage A
+  has 2 phases left (42: documentation lifecycle; 43: dogfood a real code
+  change → GATE DA).
+
 ## Goal
 
 Make `planning/learnings/` operational (first real use of the learning
@@ -36,6 +54,17 @@ Delivered as scoped in the (rewritten) plan file. Deviations:
   weight vs. drift protection, with "milestone-only reconstruction + trust
   self-cert" as the rejected alternative — is genuinely non-obvious, so
   the ADR is warranted.
+- **Same-day template refinement (user request, 2026-09-10, after the
+  `feat(phase-41)` commit):** the retro `TEMPLATE.md` gained **Where we
+  are** and **Where we're going** sections so retros orient a future
+  session in the arc, not just report a phase in isolation. This retro
+  was updated to add them; `agent-led-workflow.md` step 11,
+  `release-phase-auditor` / `agent-led-development.md` retro-content
+  descriptions, and `retros/README.md` updated to match. `CLAUDE.md`
+  §5's illustrative parenthetical was left as-is (already non-exhaustive
+  — it omits "candidate learnings filed" / "time-cost" too;
+  `TEMPLATE.md` is the authoritative section list). Landed as a
+  `docs(phase-41)` follow-up commit.
 - **One `docs-maintainer` step was skipped** — Phase 41 changed no
   current-truth product docs (`README.md`/`docs/`/`architecture/`/
   `ai-docs/`), only `planning/`, `.claude/`, `CLAUDE.md`, `CONTRIBUTING.md`,
@@ -119,6 +148,25 @@ Delivered as scoped in the (rewritten) plan file. Deviations:
   reasons about (no Bash). Filed `retain` pending GATE DA.
 - **L-003** — no independent check on `planning/**` narrative-doc
   accuracy. Filed `retain` pending GATE DA.
+
+## Where we're going
+
+- **Next: Phase 42** (documentation lifecycle) — no gate blocks it.
+  Delivers the `docs-maintainer` brief in operational form,
+  `check_user_docs.py` link / example-command / ADR-status checks, and
+  `planning/milestone-closeout-checklist.md` (executed later at Phase 66).
+  Phase 41 unblocked it by proving the `docs-maintainer` ↔
+  `docs-reconstructor` split works and by giving `check_user_docs.py` the
+  `Finding.strict` mechanism the new checks will reuse.
+- **Then Phase 43** dogfoods the whole 14-step loop on one real,
+  user-chosen CodeCompass code change, then **GATE DA**: did each role
+  earn its keep? Phase 41 pre-loaded that decision with 4 concrete
+  inputs — L-002, L-003, the triage/retro ordering inversion, and the
+  "process weight on a medium phase" watch item.
+- **Trajectory: confirmed, with two open scoping questions for GATE DA**
+  (curator Bash; `planning/**` prose ownership) and a mild scope-creep
+  signal (Stage A has absorbed two feature requests). Nothing that
+  reshapes Stage B–F.
 
 ## Time / cost note
 

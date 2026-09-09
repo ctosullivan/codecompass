@@ -76,11 +76,13 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
     *only if every DoD condition holds*, overwrite `CONTEXT.md`, add the
     `CHANGELOG.md` entry.
 11. **Write the phase retro.** The lead authors
-    `planning/retros/phase-N-<slug>.md` from `TEMPLATE.md` — goal,
-    delivered vs planned + deviations, what was achieved, lessons learnt,
-    process-improvement feedback, candidate learnings filed, time/cost.
-    A few lines for a trivial phase. Only the lead can write this (only
-    the lead saw the whole phase).
+    `planning/retros/phase-N-<slug>.md` from `TEMPLATE.md` — **where we
+    are** (arc/stage context, what the previous phase set up, state now),
+    goal, delivered vs planned + deviations, what was achieved, lessons
+    learnt, process-improvement feedback, candidate learnings filed,
+    **where we're going** (next phase(s), gate ahead, trajectory
+    confirmed/changed), time/cost. A few lines for a trivial phase. Only
+    the lead can write this (only the lead saw the whole phase).
 12. **Triage candidate learnings.** Dispatch `knowledge-curator` over
     every candidate the phase raised **and the retro's contents**:
     promote / retain / merge / discard, with drafts for promotions and

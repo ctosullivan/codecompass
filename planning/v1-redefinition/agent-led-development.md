@@ -236,7 +236,7 @@ artifact — no agent writes it.
 | Added DoD condition | Owner |
 |---|---|
 | an independent `docs-reconstructor` per-phase **drift audit** finds no current-truth doc left misdescribing the system (findings fixed + re-audited) | `docs-reconstructor` |
-| a substantive **phase retro** at `planning/retros/phase-N-<slug>.md` (goal, delivered vs planned, lessons learnt, process-improvement feedback) — a few lines for a trivial phase | lead |
+| a substantive **phase retro** at `planning/retros/phase-N-<slug>.md` — every `planning/retros/TEMPLATE.md` section, incl. **Where we are** (arc/stage context) and **Where we're going** (next phase, gate ahead, trajectory); a few lines for a trivial phase | lead |
 | candidate learnings (incl. any from the retro) **triaged** promote/retain/merge/discard | `knowledge-curator` |
 | an independent **`release-phase-auditor` pass** (or explicit lead confirmation for a trivial phase) verifies the preceding rather than trusting the implementer's report | `release-phase-auditor` |
 

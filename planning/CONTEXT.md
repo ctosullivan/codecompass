@@ -96,7 +96,11 @@ agent-led loop** (the smoke delegation deferred from Phase 40).
   (it records `check_readme_phase_count`'s "highest done phase ≠ product
   completeness" fix + its regression test).
 - New `planning/retros/` — `README.md` + `TEMPLATE.md`; every phase from
-  here on gets a lead-authored `planning/retros/phase-N-<slug>.md`.
+  here on gets a lead-authored `planning/retros/phase-N-<slug>.md`. The
+  template includes **Where we are** (arc/previous-phase context) and
+  **Where we're going** (next-phase context) sections (user request,
+  same-day `docs(phase-41)` follow-up) so retros form a running
+  narrative, not isolated reports.
 - `CLAUDE.md` §5 gained two DoD conditions (phase retro; independent
   per-phase `docs-reconstructor` drift audit), approved 2026-09-10 and
   mirrored into `CONTRIBUTING.md`; `decisions/0050` records both. The

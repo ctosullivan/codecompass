@@ -27,7 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `planning/v1-redefinition/agent-led-development.md`,
   `documentation-lifecycle.md`, and `proposed-governance-changes.md` are
   updated to match. This is the first phase to exercise the agent-led
-  loop for real.
+  loop for real. Follow-up (user request, same day): the retro
+  `TEMPLATE.md` gains **Where we are** and **Where we're going** sections
+  so each retro orients a future session in the arc (current + previous
+  phase context, upcoming phase context), not just reports a phase in
+  isolation.
 
 ### Changed
 

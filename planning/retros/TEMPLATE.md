@@ -7,6 +7,16 @@ A DoD condition (CLAUDE.md §5). A few lines is fine for a trivial phase. -->
 - **Commit(s):** <hash(es)>
 - **Agents used:** <e.g. roadmap-context-curator, knowledge-curator, release-phase-auditor>
 
+## Where we are
+
+<Orient a future session in the arc — not just this phase in isolation.
+- Which stage / milestone group this phase belongs to
+  (v1-redefinition/roadmap.md).
+- What the **previous** phase(s) established that this one built directly
+  on — the running thread, not a re-list of history.
+- The overall project state *after* this phase (one or two sentences —
+  the CONTEXT.md "current phase" view, but as a narrative).>
+
 ## Goal
 
 <What this phase set out to do — 1-2 sentences, from the plan file.>
@@ -37,6 +47,16 @@ that fired late, a tool permission gap. Concrete suggestions, not vibes.
 
 <L-NNN ids filed to planning/learnings/inbox.md from this phase, or
 "none". The knowledge-curator will triage these.>
+
+## Where we're going
+
+<The trajectory out of this phase.
+- The next phase(s) and what they depend on from this one — what this
+  phase unblocked or set up.
+- Any gate / decision ahead (v1-redefinition/README.md §7 or a stage
+  GATE), and whether this phase's outcome affects it.
+- Whether this phase *confirmed* the planned trajectory or *changed* it
+  (scope shift, a finding that reshapes a later stage, a deferral).>
 
 ## Time / cost note
 
