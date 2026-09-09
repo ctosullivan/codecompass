@@ -1,8 +1,7 @@
 # Phase 41 retro — Project-learning lifecycle + phase retros + per-phase docs-drift gate
 
 - **Date:** 2026-09-10
-- **Commit:** the `feat(phase-41)` completion commit (hash added in a
-  follow-up per the auditor's obs 3)
+- **Commit:** `a4525a3` (`feat(phase-41)`)
 - **Agents used:** `knowledge-curator` (L-001 triage + L-002/L-003
   follow-up), `docs-reconstructor` (per-phase drift audit → NO DRIFT),
   `roadmap-context-curator` (ROADMAP/CONTEXT/CHANGELOG),
