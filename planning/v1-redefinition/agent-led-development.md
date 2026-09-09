@@ -119,20 +119,32 @@ default.
   `proposed-governance-changes.md`, never edits `CLAUDE.md`.
 - **Active in:** every phase (triage step 10), heavy in 47/55.
 
-### 2.7 `docs-reconstructor` — blank-slate milestone documentation
-- At **major milestones only** (Phase 60): independently reconstruct the
-  documentation that *ought* to exist, from authoritative project reality
-  (source, tests, CLI `--help`, config/schema, generated outputs, ADRs,
-  current architecture, current planning state) — deliberately as though
-  the current narrative docs did not exist.
-- Output: a **shadow/temporary proposal** under
-  `planning/v1-docs-reconstruction/`. Never overwrites `docs/` directly.
-- **Isolation:** should *not* read the current `README.md` /
-  `architecture/overview.md` narrative first — the point is a fresh
-  derivation. It may read them during the *reconciliation* step, not the
-  reconstruction step.
-- **Tools:** read/search + Write only under `planning/v1-docs-reconstruction/`.
-- **Active in:** Phase 60 (and any future milestone).
+### 2.7 `docs-reconstructor` — independent docs check (two modes)
+The *independent* counterweight to `docs-maintainer`, who both edits the
+docs and self-certifies them.
+
+- **Per-phase drift audit (every phase, `CLAUDE.md` §5 DoD condition).**
+  Read-only. Given the phase's diff (not `docs-maintainer`'s summary of
+  it), find every current-truth doc sentence (`README.md`, `docs/`,
+  `architecture/`, `ai-docs/`) the change made false, scoped to what
+  actually changed about observable system behaviour. Verdict `NO DRIFT`
+  / `DRIFT — n findings`; findings go back to `docs-maintainer`, then
+  re-audit. Report at `planning/retros/_drift-audit-phase-NN.md`.
+  `NO DRIFT` is fine and common for a `planning/`- / internal-only phase.
+- **Blank-slate reconstruction (milestones only — Phase 60).**
+  Independently reconstruct the documentation that *ought* to exist, from
+  authoritative project reality (source, tests, CLI `--help`,
+  config/schema, generated outputs, ADRs, current planning state) —
+  deliberately as though the current narrative docs did not exist. It
+  must *not* read `README.md` / `architecture/overview.md` as a starting
+  structure. Output: a shadow proposal under
+  `planning/v1-docs-reconstruction/` (proposed docs + `concepts-to-retire.md`).
+- **Never edits** `docs/` / `README.md` / `architecture/` / `ai-docs/` /
+  `CLAUDE.md` / `decisions/*` / `src/`. Findings and proposals only.
+- **Tools:** read/search + Bash (read-only) + Write to its own report /
+  `planning/v1-docs-reconstruction/`.
+- **Active in:** every phase (drift audit); Phase 60 + future milestones
+  (blank-slate).
 
 ### 2.8 `release-phase-auditor` — independent Definition-of-Done audit
 - Final **read-only** DoD audit — per phase where the lead wants an
@@ -144,13 +156,17 @@ default.
   back to the lead.
 - Checks: code implemented; plan-file verification step actually passes
   (re-runs it); `docs/`/`architecture/`/`decisions/` updated as
-  applicable; `CHANGELOG.md` entry present and correct; `CONTEXT.md`
-  reflects new state; `ROADMAP.md` marks the phase; **no protected-file
-  drift**; **candidate learnings triaged**; for reference-project phases,
-  a context-eval report exists.
+  applicable; **the `docs-reconstructor` per-phase drift audit ran and
+  its findings (if any) were fixed**; **a substantive phase retro exists
+  at `planning/retros/phase-N-<slug>.md`**; `CHANGELOG.md` entry present
+  and correct; `CONTEXT.md` reflects new state; `ROADMAP.md` marks the
+  phase; **no protected-file drift**; **candidate learnings triaged**
+  (incl. any from the retro); for reference-project phases, a
+  context-eval report exists.
 - **Tools:** read/search + run tests/lint + Write only its own audit
   report file.
-- **Active in:** Phase 43, 65, and any phase the lead flags.
+- **Active in:** every phase where the lead wants an independent DoD
+  check (all non-trivial phases); mandatory at Phase 65.
 
 ### 2.9 Roles deliberately NOT created
 - No "implementer" agent — the lead implements or delegates ad hoc to a
@@ -172,11 +188,13 @@ default.
 | `docs-maintainer` | everything | `docs/`, `architecture/`, `README.md`, `ai-docs/`, `CONTRIBUTING.md` | tests/lint, deterministic doc checks | no — participant |
 | `roadmap-context-curator` | everything | `ROADMAP.md`, `CONTEXT.md`, `CHANGELOG.md`, `planning/**` | git log/status | no — participant |
 | `knowledge-curator` | everything | `planning/learnings/**`, `planning/` drafts | — | no — participant |
-| `docs-reconstructor` | source/tests/CLI/schema/ADRs (not narrative docs, until reconciliation) | `planning/v1-docs-reconstruction/` only | CLI `--help`, tests | **yes** — blank-slate |
+| `docs-reconstructor` | the phase diff + code/`--help` (drift audit); source/tests/CLI/schema/ADRs, not narrative docs (blank-slate) | its drift-audit report / `planning/v1-docs-reconstruction/` | CLI `--help`, tests (read-only) | **yes** — independent of `docs-maintainer` |
 | `release-phase-auditor` | everything | its audit report only | tests/lint, re-runs plan verification | **yes** — read-only, no repair |
 
 **No agent** writes `CLAUDE.md`, `decisions/*` (except the lead via the
 ADR process), or `src/` (except the lead / ad-hoc implementer subagent).
+The **phase retro** (`planning/retros/phase-N-*.md`) is the lead's
+artifact — no agent writes it.
 
 ## 4. How results return to the lead
 
@@ -210,21 +228,27 @@ ADR process), or `src/` (except the lead / ad-hoc implementer subagent).
   divergence is filed as a candidate learning (it usually means a
   promotion step was skipped).
 
-## 6. Definition-of-Done integration (feeds gate G4 / `CLAUDE.md` §5)
+## 6. Definition-of-Done integration (`CLAUDE.md` §5)
 
-Current `CLAUDE.md` §5 has six conditions. Proposed additions, applied
-**per phase type**:
+`CLAUDE.md` §5 was amended (gate G4, Phase 40; extended by the user's
+2026-09-10 request, Phase 41). It now also requires, **per phase**:
 
-| Phase type | Added DoD conditions |
+| Added DoD condition | Owner |
 |---|---|
-| Any phase | `release-phase-auditor` (or the lead, for trivial phases) confirms the six existing conditions hold **independently**; candidate learnings from the phase are triaged (promote/retain/merge/discard) by `knowledge-curator`. |
-| Reference-project / evaluation phase | A `context-evaluator` report exists and is linked from the phase's exit note; `reference-project-tester` findings are filed as candidate learnings. |
-| Milestone-closeout phase (65–67) | `release-phase-auditor` verdict is `PASS` or `PASS WITH NON-BLOCKING OBSERVATIONS` (a `FAIL` blocks); the milestone-closeout checklist is complete. |
+| an independent `docs-reconstructor` per-phase **drift audit** finds no current-truth doc left misdescribing the system (findings fixed + re-audited) | `docs-reconstructor` |
+| a substantive **phase retro** at `planning/retros/phase-N-<slug>.md` (goal, delivered vs planned, lessons learnt, process-improvement feedback) — a few lines for a trivial phase | lead |
+| candidate learnings (incl. any from the retro) **triaged** promote/retain/merge/discard | `knowledge-curator` |
+| an independent **`release-phase-auditor` pass** (or explicit lead confirmation for a trivial phase) verifies the preceding rather than trusting the implementer's report | `release-phase-auditor` |
 
-These are additive — the six existing conditions are unchanged. Exact
-wording is in `proposed-governance-changes.md` for gate G4.
+| Phase type | Additional |
+|---|---|
+| Reference-project / evaluation phase | a `context-evaluator` report exists and is linked; `reference-project-tester` findings filed as candidate learnings |
+| Milestone-closeout phase (65–67) | `release-phase-auditor` verdict `PASS` / `PASS WITH NON-BLOCKING OBSERVATIONS` (a `FAIL` blocks); the milestone-closeout checklist complete |
 
-## 7. The 12-step fresh-session workflow (→ `planning/agent-led-workflow.md`, Phase 40)
+The six original conditions are unchanged. Exact wording:
+`decisions/0050` and `CLAUDE.md` §5.
+
+## 7. The 14-step fresh-session workflow (→ `planning/agent-led-workflow.md`)
 
 1. Inspect the repository.
 2. `roadmap-context-curator` establishes current project state.
@@ -234,10 +258,15 @@ wording is in `proposed-governance-changes.md` for gate G4.
 5. Delegate bounded specialist work.
 6. Implement / coordinate implementation.
 7. Obtain independent testing/evaluation (`context-evaluator` /
-   `reference-project-tester` / `release-phase-auditor` as applicable).
+   `reference-project-tester` / `release-phase-auditor` as applicable);
+   the lead re-verifies independently regardless.
 8. `docs-maintainer` reconciles current documentation.
-9. `roadmap-context-curator` reconciles `ROADMAP.md` / `CONTEXT.md`.
-10. `knowledge-curator` triages candidate learnings.
-11. Obtain independent completion audit (`release-phase-auditor`).
-12. Refuse to mark work complete when the gate fails — fix, or re-scope
+9. `docs-reconstructor` runs the independent per-phase drift audit;
+   findings → back to step 8, then re-audit.
+10. `roadmap-context-curator` reconciles `ROADMAP.md` / `CONTEXT.md` /
+    `CHANGELOG.md`.
+11. The **lead** writes the phase retro (`planning/retros/phase-N-<slug>.md`).
+12. `knowledge-curator` triages candidate learnings (incl. the retro's).
+13. Obtain independent completion audit (`release-phase-auditor`).
+14. Refuse to mark work complete when the gate fails — fix, or re-scope
     with an ADR, then re-audit.

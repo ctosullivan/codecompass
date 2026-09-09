@@ -28,18 +28,27 @@ without fixing anything — that a phase is actually done.
    commands it names (`pytest`, `ruff check .`, `python scripts/check_user_docs.py
    --strict`, any manual checks). Confirm they pass now, on the actual
    working tree.
-2. **Every DoD condition holds:** code implemented; `docs/` /
-   `architecture/` / `decisions/` updated as applicable; a `CHANGELOG.md`
-   `[Unreleased]` entry for this phase (and only this phase); `planning/CONTEXT.md`
-   reflects the new state; `planning/ROADMAP.md` marks the phase.
-3. **Candidate learnings triaged** — the `knowledge-curator` produced an
-   outcome for each learning the phase raised.
-4. **No protected-file drift** — `git diff` shows no `CLAUDE.md` change
+2. **Every DoD condition holds** (`CLAUDE.md` §5, as amended): code
+   implemented; `docs/` / `architecture/` / `decisions/` updated as
+   applicable; a `CHANGELOG.md` `[Unreleased]` entry for this phase (and
+   only this phase); `planning/CONTEXT.md` reflects the new state;
+   `planning/ROADMAP.md` marks the phase.
+3. **An independent `docs-reconstructor` per-phase drift audit ran** and
+   its verdict is `NO DRIFT` (or every finding it raised was fixed by
+   `docs-maintainer` and re-audited). The audit report exists.
+4. **A phase retro exists** at `planning/retros/phase-N-<slug>.md` and is
+   substantive (goal, delivered vs planned, lessons learnt,
+   process-improvement feedback) — not a stub, unless the phase is
+   genuinely trivial.
+5. **Candidate learnings triaged** — the `knowledge-curator` produced an
+   outcome (promote / retain / merge / discard) for each learning the
+   phase raised, including any surfaced by the retro.
+6. **No protected-file drift** — `git diff` shows no `CLAUDE.md` change
    unless one was explicitly approved this phase; no edit to a past ADR's
    original content.
-5. **Changed-file list matches the plan's Files section** — no scope
+7. **Changed-file list matches the plan's Files section** — no scope
    creep into files the plan didn't name.
-6. For a reference-project phase: a `context-evaluator` report exists and
+8. For a reference-project phase: a `context-evaluator` report exists and
    is linked.
 
 ## Hard rules

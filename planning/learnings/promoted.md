@@ -9,4 +9,4 @@ Example: `L-017 | 2026-10-01 | invariant | tests/test_usage.py::test_vendor_dir_
 
 ---
 
-<!-- empty until Phase 41 promotes the first learning -->
+L-001 | 2026-09-10 | invariant | tests/test_check_user_docs.py::TestReadmePhaseCount::test_ignores_done_phases_in_redefined_v1_section + scripts/check_user_docs.py::check_readme_phase_count @ c22d8e4

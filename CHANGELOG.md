@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 41**: the project-learning lifecycle is operational and two new
+  per-phase closeout mechanisms are in place. `planning/learnings/` gains
+  a `candidates/` subdirectory; its `README.md` marks the lifecycle live;
+  the `knowledge-curator` agent brief is finalised against the real files
+  and now also mines phase retros for candidate learnings; candidate
+  **L-001** was triaged end-to-end (promoted) and logged in
+  `planning/learnings/promoted.md`. New `planning/retros/` (`README.md` +
+  `TEMPLATE.md`) — every phase from here on gets a lead-authored
+  `planning/retros/phase-N-<slug>.md`. New `decisions/0050` records the
+  learning lifecycle plus the phase-retro / per-phase docs-drift-audit
+  tradeoff. `.claude/agents/docs-reconstructor` gains a scoped, read-only
+  per-phase drift-audit mode (its milestone blank-slate mode is
+  unchanged); `release-phase-auditor` now also checks that the retro and
+  drift audit exist; `knowledge-curator` reads retros.
+  `planning/agent-led-workflow.md` grows from 12 to 14 steps;
+  `planning/v1-redefinition/agent-led-development.md`,
+  `documentation-lifecycle.md`, and `proposed-governance-changes.md` are
+  updated to match. This is the first phase to exercise the agent-led
+  loop for real.
+
+### Changed
+
+- **Phase 41**: `CLAUDE.md` §5 gained two Definition-of-Done conditions —
+  a lead-authored phase retro (`planning/retros/phase-N-<slug>.md`) and an
+  independent per-phase `docs-reconstructor` drift audit scoped to what
+  the phase changed — approved 2026-09-10 and mirrored into
+  `CONTRIBUTING.md`. `scripts/check_user_docs.py` gains a `Finding.strict`
+  flag (blocking vs informational; `--strict` now fails only on blocking
+  findings) and four new checks: learnings-candidate provenance-field
+  coverage, `promoted.md` consistency for `status: promoted` candidates,
+  stale `evidence-gathering` candidates (informational), and per-phase
+  retro presence for phases marked `done` from 41 onward. New tests cover
+  each; `.claude/skills/docs-sync/SKILL.md` notes the new checks.
+
+### Added
+
 - **Phase 40**: the agent-led development model is operational. New
   `.claude/agents/` roster — `context-evaluator`,
   `reference-project-tester`, `docs-maintainer`, `roadmap-context-curator`,

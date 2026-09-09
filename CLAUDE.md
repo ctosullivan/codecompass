@@ -67,16 +67,23 @@ current-state section each time — don't append indefinitely.
 ## 5. Definition of done, per phase
 
 Code implemented + plan file's verification step passes + `docs/`,
-`architecture/`, `decisions/` updated as applicable + changelog entry added
+`architecture/`, `decisions/` updated as applicable + an independent
+`docs-reconstructor` per-phase drift audit finds no current-truth doc
+(`README.md`, `docs/`, `architecture/`, `ai-docs/`) left misdescribing
+the system, scoped to what the phase changed (the full blank-slate
+reconstruction stays a milestone activity) + changelog entry added
 + `planning/CONTEXT.md` reflects the new state + `planning/ROADMAP.md`
-marks the phase `done` + candidate learnings from the phase have been
-triaged by the `knowledge-curator` (promote / retain / merge / discard,
-per `planning/learnings/`) + an independent `release-phase-auditor` pass
-(or, for a trivial phase, an explicit lead confirmation) verifies the
-preceding conditions rather than trusting the implementing agent's report.
-For a reference-project or context-evaluation phase, a `context-evaluator`
-report exists and is linked from the phase's exit note. Not done until all
-of these.
+marks the phase `done` + a phase retro report exists at
+`planning/retros/phase-N-<slug>.md` (goal, delivered vs planned, lessons
+learnt, process-improvement feedback; a few lines suffice for a trivial
+phase) + candidate learnings from the phase — including any surfaced by
+the retro — have been triaged by the `knowledge-curator` (promote /
+retain / merge / discard, per `planning/learnings/`) + an independent
+`release-phase-auditor` pass (or, for a trivial phase, an explicit lead
+confirmation) verifies the preceding conditions rather than trusting the
+implementing agent's report. For a reference-project or
+context-evaluation phase, a `context-evaluator` report exists and is
+linked from the phase's exit note. Not done until all of these.
 
 ## 6. Commits and milestones
 

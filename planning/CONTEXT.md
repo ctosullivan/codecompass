@@ -19,37 +19,40 @@ agent-led, validated against real external reference-project work
 generalised only as far as evidence justifies, then released after
 blank-slate doc reconstruction and an independent audit.
 
-**Phases 39 and 40 are `done` (Stage A of the redefined-v1 roadmap).**
+**Phases 39, 40 and 41 are `done` (Stage A of the redefined-v1 roadmap;
+42–43 remain).**
 
-- **39** ratified the redefinition: ADRs [`decisions/0048`](../decisions/0048-redefined-v1-is-a-product-validation-milestone.md)
-  and [`decisions/0049`](../decisions/0049-agent-led-development-model.md)
+- **39** ratified the redefinition: ADRs `decisions/0048`/`0049`
   `Accepted`; `pyproject.toml` `version` → `1.0.0.dev0`; ROADMAP's Stage
   A–F section ratified; Phase 23 Part B superseded; Phases 24/25
   `deferred` (not renumbered).
 - **40** made the agent-led model operational: `.claude/agents/` roster
-  of 7 (`context-evaluator`, `reference-project-tester`, `docs-maintainer`,
-  `roadmap-context-curator`, `knowledge-curator`, `docs-reconstructor`,
-  `release-phase-auditor`); `planning/agent-led-workflow.md`; `CLAUDE.md`
-  §8/§1/§5/§6 changes approved (gate G4) + applied + mirrored to
-  `CONTRIBUTING.md`. Small forced fix to
-  `scripts/check_user_docs.py::check_readme_phase_count` (excludes the
-  redefined-v1 ROADMAP section) — candidate learning **L-001**.
+  of 7; `planning/agent-led-workflow.md`; `CLAUDE.md` §8/§1/§5/§6 changes
+  approved (gate G4) + applied + mirrored to `CONTRIBUTING.md`. Forced
+  fix to `scripts/check_user_docs.py::check_readme_phase_count` — captured
+  as candidate learning **L-001**.
+- **41** made `planning/learnings/` operational, added the phase-retro
+  and per-phase docs-drift-audit closeout mechanisms (`CLAUDE.md` §5
+  follow-on amendment + `decisions/0050`), and **ran the agent-led loop
+  for real** — `knowledge-curator` (L-001 promoted+logged; L-002/L-003
+  retained), `docs-reconstructor` per-phase drift audit (NO DRIFT),
+  `roadmap-context-curator`, `release-phase-auditor` (**PASS WITH
+  NON-BLOCKING OBSERVATIONS**, 4 advisory items addressed/filed). Retro:
+  `planning/retros/phase-41-learning-lifecycle-and-retros.md`.
 
-**No `src/codecompass/` change in either phase; no release/tag (gate
-G2-b).** The live agent smoke delegation was deferred — the roster's
-first real exercise is Phase 41 (its DoD already requires a
-`release-phase-auditor` pass).
+**No `src/codecompass/` change in any of these phases; no release/tag
+(gate G2-b).**
 
-**Next: Phase 41** ([`phase-41-learning-lifecycle.md`](phase-41-learning-lifecycle.md))
-— make `planning/learnings/` operational, finalise the
-`knowledge-curator` brief against the real files, extend
-`scripts/check_user_docs.py` with learnings-hygiene checks, and triage
-L-001 end-to-end (first real use of the agent-led loop). No gate blocks
-it.
+**Next: Phase 42** ([`phase-42-documentation-lifecycle.md`](phase-42-documentation-lifecycle.md))
+— the documentation lifecycle: the `docs-maintainer` brief, incremental
+`docs/`/`architecture/` upkeep + a milestone closeout gate,
+`scripts/check_user_docs.py` link/example/ADR-status checks, and a new
+`planning/milestone-closeout-checklist.md`. No gate blocks it.
 
-The `planning/v1-redefinition/` package + `planning/learnings/` scaffold +
-`planning/agent-led-workflow.md` + Stage A phase plans (`phase-39`…`phase-44`)
-are the governing plan for this milestone group.
+The `planning/v1-redefinition/` package + `planning/learnings/` (now live)
++ `planning/retros/` + `planning/agent-led-workflow.md` (14 steps) + Stage
+A phase plans (`phase-39`…`phase-44`) are the governing plan for this
+milestone group.
 
 Everything below this line describes the **foundation** (phases 0-38) and
 remains accurate.
@@ -83,20 +86,50 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
-**Phase 40, done** (2026-09-09) — agent-led development model operational.
-Gate G4 approved ("Proceed"): `CLAUDE.md` gained §8 (agent-led model),
-a §1 paragraph, a §5 DoD amendment (candidate-learning triage +
-independent `release-phase-auditor` pass + `context-evaluator` report for
-reference-project phases), a §6 milestone bullet — all mirrored into
-`CONTRIBUTING.md`. Created `.claude/agents/` (7 definitions, each with
-read/write boundaries and independence rules) and
-`planning/agent-led-workflow.md` (12-step procedure + trivial-change fast
-path). One forced fix: `check_user_docs.py`'s phase-count rule excluded
-the redefined-v1 ROADMAP section (Stage A–F phases are process, not
-product) + regression test; `README.md` back to "phases 0-38"; captured
-as L-001. Live agent smoke delegation deferred to Phase 41's first real
-use rather than spawned speculatively. Verified: `ruff` clean;
-`check_user_docs.py --strict` clean; `pytest` (full suite — see commit).
+**Phase 41, done** (2026-09-10) — project-learning lifecycle + phase
+retros + per-phase docs-drift gate; **first real exercise of the
+agent-led loop** (the smoke delegation deferred from Phase 40).
+- `planning/learnings/` is operational: new `candidates/` subdir;
+  `README.md` marks it live; the `knowledge-curator` brief is finalised
+  against the real files and now also mines phase retros. L-001 was
+  triaged → **promoted** and logged in `planning/learnings/promoted.md`
+  (it records `check_readme_phase_count`'s "highest done phase ≠ product
+  completeness" fix + its regression test).
+- New `planning/retros/` — `README.md` + `TEMPLATE.md`; every phase from
+  here on gets a lead-authored `planning/retros/phase-N-<slug>.md`.
+- `CLAUDE.md` §5 gained two DoD conditions (phase retro; independent
+  per-phase `docs-reconstructor` drift audit), approved 2026-09-10 and
+  mirrored into `CONTRIBUTING.md`; `decisions/0050` records both. The
+  §0 diff-approval flow was followed.
+- `scripts/check_user_docs.py`: new `Finding.strict` flag (blocking vs
+  informational — `--strict` fails only on blocking); four new checks
+  (learnings-candidate provenance fields, `promoted.md` consistency,
+  stale `evidence-gathering` (info), per-phase retro presence for `done`
+  phases ≥ 41) + tests (26 pass). `.claude/skills/docs-sync/SKILL.md`
+  notes them.
+- `.claude/agents/`: `docs-reconstructor` gains a scoped read-only
+  per-phase drift-audit mode (milestone blank-slate mode unchanged);
+  `release-phase-auditor` also checks retro + drift audit exist;
+  `knowledge-curator` reads retros. `planning/agent-led-workflow.md`
+  12 → 14 steps; `agent-led-development.md` / `documentation-lifecycle.md`
+  / `proposed-governance-changes.md` updated.
+- Agent-led closeout ran: `knowledge-curator` (L-001 → promoted+logged;
+  L-002 "curator has no Bash", L-003 "no independent `planning/**` prose
+  check" → both `retained`, Phase 47 backstop); `docs-reconstructor`
+  per-phase drift audit → **NO DRIFT** (`planning/retros/_drift-audit-phase-41.md`);
+  `release-phase-auditor` → **PASS WITH NON-BLOCKING OBSERVATIONS**
+  (`planning/retros/_audit-phase-41.md`) — obs 1 (plan Files list) and
+  obs 2 (verbatim §5 diff record) addressed this commit; obs 3 (retro
+  commit hash) is a follow-up; obs 4 (workflow step inversion when a
+  learning blocks verification) filed for GATE DA.
+- Verified: `python scripts/check_user_docs.py --strict` clean; full
+  `pytest` 532 passed / 1 skipped; `ruff` clean.
+
+**Phase 40, done** (2026-09-09) — agent-led development model operational:
+`CLAUDE.md` §8 + §1/§5/§6 changes (gate G4) mirrored into `CONTRIBUTING.md`;
+`.claude/agents/` roster of 7; `planning/agent-led-workflow.md`. Forced
+`check_user_docs.py` phase-count fix (excludes the redefined-v1 ROADMAP
+section) + regression test; captured as L-001.
 
 **Phase 39, done** (2026-09-09) — ratified the v1 redefinition.
 `decisions/0048` (redefined v1 = product-validation milestone, not
@@ -237,18 +270,25 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 41** ([`phase-41-learning-lifecycle.md`](phase-41-learning-lifecycle.md))
-— make `planning/learnings/` operational: finalise the `knowledge-curator`
-brief against the real files, extend `scripts/check_user_docs.py` with
-learnings-hygiene checks (+ tests), and run L-001 through the full
-promote/retain/merge/discard triage end-to-end as the first real exercise
-of the agent-led loop (its DoD already requires a `release-phase-auditor`
-pass). No human-decision gate blocks it. ADR `0050` only if a non-obvious
-curation tradeoff surfaces.
+**Finish closing out Phase 41.** Code is complete; before the ROADMAP row
+flips to `done`, the lead needs to: author `planning/retros/phase-41-*.md`;
+dispatch `docs-reconstructor` for the per-phase drift audit; dispatch
+`knowledge-curator` to triage any retro-surfaced candidates (L-001 is
+already promoted); then dispatch `release-phase-auditor` for the DoD
+audit. On a PASS, mark Phase 41 `done` in ROADMAP + this file in the same
+commit that carries the CHANGELOG entry (already drafted under
+`[Unreleased]`).
 
-This is also the point to run a **live agent smoke delegation** (deferred
-from Phase 40): dispatching `knowledge-curator` for the L-001 triage and
-`release-phase-auditor` for the DoD check validates the roster's
+**Then: Phase 42** ([`phase-42-documentation-lifecycle.md`](phase-42-documentation-lifecycle.md))
+— documentation lifecycle: the `docs-maintainer` brief, incremental
+`docs/`/`architecture/` upkeep + a milestone closeout gate, new
+`scripts/check_user_docs.py` link/example/ADR-status checks, and a new
+`planning/milestone-closeout-checklist.md`. No human-decision gate blocks
+it; do not start it until Phase 41 is `done`.
+
+Phase 41 was the first real run of the agent-led loop (the live smoke
+delegation deferred from Phase 40) — `knowledge-curator` for L-001 and
+`release-phase-auditor` for the DoD check exercise the roster's
 frontmatter/tooling for real.
 
 Open items carried from the foundation:

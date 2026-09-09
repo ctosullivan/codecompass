@@ -4,13 +4,16 @@ Per `CLAUDE.md` §0, **any** change to `CLAUDE.md` must be presented as a
 diff and explicitly approved before it is written or committed. This file
 holds those proposed diffs (§A) and the ADR drafts (§B).
 
-**Status:** §A (the `CLAUDE.md` / `CONTRIBUTING.md` changes) — **approved
-(gate G4) and applied in Phase 40** (A1+A2+A3+A4 together), mirrored into
-`CONTRIBUTING.md`. §B ADRs `0048`/`0049` — **approved and published**
-(Phase 39). `0050` is still a draft (write only if Phase 41 surfaces a
-non-obvious tradeoff). This file is now a historical record of what was
-proposed; `CLAUDE.md` / `CONTRIBUTING.md` / `decisions/` are
-authoritative.
+**Status:** all applied.
+- §A (the `CLAUDE.md` §1/§5/§8/§6 + `CONTRIBUTING.md` changes) — approved
+  (gate G4) and applied in **Phase 40**.
+- A further `CLAUDE.md` §5 amendment (per-phase docs-drift audit + phase
+  retro) — approved 2026-09-10 and applied in **Phase 41**.
+- §B ADRs `0048`/`0049` — published **Phase 39**; `0050` — published
+  **Phase 41**.
+
+This file is now a historical record of what was proposed;
+`CLAUDE.md` / `CONTRIBUTING.md` / `decisions/` are authoritative.
 
 ---
 
@@ -91,10 +94,35 @@ can land in different phases.
 > as a product milestone is distinct from the `pyproject.toml` version
 > string, which tracks published wheels under ordinary SemVer.
 
+### A5 — §5 second amendment (approved 2026-09-10, applied Phase 41)
+
+Presented to and approved by the user on 2026-09-10. Two conditions
+inserted into §5's list. Preserved here verbatim as the historical
+record; authoritative text is `CLAUDE.md` §5 + `decisions/0050`.
+
+**Condition 1, inserted after "`docs/`, `architecture/`, `decisions/`
+updated as applicable":**
+
+> an independent `docs-reconstructor` per-phase drift audit finds no
+> current-truth doc (`README.md`, `docs/`, `architecture/`, `ai-docs/`)
+> left misdescribing the system, scoped to what the phase changed (the
+> full blank-slate reconstruction stays a milestone activity)
+
+**Condition 2, inserted after "`planning/ROADMAP.md` marks the phase
+`done`" (and the learnings-triage clause reworded to "including any
+surfaced by the retro"):**
+
+> a phase retro report exists at `planning/retros/phase-N-<slug>.md`
+> (goal, delivered vs planned, lessons learnt, process-improvement
+> feedback; a few lines suffice for a trivial phase)
+
+Mirrored into `CONTRIBUTING.md`'s "Definition of done" section + a note
+in its "Agent-led development model" section (Phase 41 commit).
+
 ### `CONTRIBUTING.md` mirror
 
 `CONTRIBUTING.md` restates these rules for humans (its own header says
-so). Whatever subset of A1–A4 is approved, mirror it into
+so). Whatever subset of A1–A5 is approved, mirror it into
 `CONTRIBUTING.md` in the **same commit** (the existing
 `decisions/0022`/`0030` precedent for keeping the two in sync).
 
@@ -107,9 +135,10 @@ so). Whatever subset of A1–A4 is approved, mirror it into
 > [`decisions/0048-redefined-v1-is-a-product-validation-milestone.md`](../../decisions/0048-redefined-v1-is-a-product-validation-milestone.md)
 > and
 > [`decisions/0049-agent-led-development-model.md`](../../decisions/0049-agent-led-development-model.md)
-> (Phase 39). The published ADRs are authoritative; the drafts below are
-> kept for context.** `0050` remains a draft, written only if Phase 41
-> surfaces a non-obvious tradeoff.
+> (Phase 39). `0050` was published in Phase 41
+> ([`decisions/0050-phase-retros-and-per-phase-docs-drift-audit.md`](../../decisions/0050-phase-retros-and-per-phase-docs-drift-audit.md)).
+> The published ADRs are authoritative; the drafts below are kept for
+> context.**
 
 ### Draft `decisions/0048` — Redefined v1 milestone
 
@@ -177,12 +206,21 @@ so). Whatever subset of A1–A4 is approved, mirror it into
   created; GATE DA (Phase 43) may prune/merge roles; `knowledge-curator`
   owns `planning/learnings/`.
 
-### Draft `decisions/0050` — Project-learning lifecycle (write only if Phase 41 surfaces a non-obvious tradeoff)
+### `decisions/0050` — ✅ Accepted (Phase 41, 2026-09-10)
 
-- Likely tradeoff worth recording: candidate learnings are cheap to
-  capture but **not authoritative** until promoted; the "promote into the
-  artifact that owns it, keep no giant learnings doc" rule vs. the
-  alternative of a durable curated knowledge base. Decide at Phase 41.
+Published at
+[`decisions/0050-phase-retros-and-per-phase-docs-drift-audit.md`](../../decisions/0050-phase-retros-and-per-phase-docs-drift-audit.md).
+Covers the learning lifecycle **and** the two per-phase closeout
+mechanisms the user added on 2026-09-10 (a lead-authored phase retro; an
+independent per-phase docs-drift audit by `docs-reconstructor`), both new
+`CLAUDE.md` §5 DoD conditions.
+
+### `CLAUDE.md` §5 — second amendment (Phase 41)
+
+The user approved a further §5 diff on 2026-09-10 (two conditions: the
+per-phase drift audit; the phase retro). Applied in the Phase 41 commit,
+mirrored into `CONTRIBUTING.md`. The exact text is in `CLAUDE.md` §5 and
+`decisions/0050`.
 
 ### Further ADRs — written when their phase reaches a real tradeoff
 

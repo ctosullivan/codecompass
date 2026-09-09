@@ -56,10 +56,41 @@ formats, or system design:
    claims consistent with `ROADMAP.md`; every `VendorConfig`/schema field
    documented; `ai-docs/` files present and non-empty; **internal links
    resolve; fenced example commands are real commands** (new in Phase 42).
-4. `release-phase-auditor` (or lead) confirms as part of DoD.
+4. **`docs-reconstructor` runs the per-phase drift audit** (§2.5).
+5. `release-phase-auditor` (or lead) confirms as part of DoD.
 
 Goal of this half: **keep current documentation accurate during
 development.** It is only half.
+
+## 2.5 Per-phase independent docs-drift audit (`CLAUDE.md` §5 DoD condition)
+
+Step 2 above has a gap: `docs-maintainer` both edits the docs and
+certifies them accurate — nothing independent checks that. Every phase
+therefore also gets a **read-only drift audit by `docs-reconstructor`**
+(the independent agent), added to `CLAUDE.md` §5 at the user's request
+(2026-09-10):
+
+- **Input:** the phase's actual diff — not `docs-maintainer`'s summary of
+  what it changed.
+- **Scope:** what actually changed about *observable* system behaviour
+  (CLI, flags, config schema, generated-file formats, defaults,
+  user-visible errors, module responsibilities). Pure internal refactors
+  with no observable change implicate no docs.
+- **Method:** for each such change, `grep` the current-truth docs
+  (`README.md`, `docs/`, `architecture/`, `ai-docs/`) for the affected
+  command/flag/symbol/concept and check every hit against the **verified**
+  new behaviour (read the code / run `--help`).
+- **Verdict:** `NO DRIFT` or `DRIFT — n findings` (each: `file:line`, the
+  now-false sentence, what the code does, blocking vs non-blocking).
+  Findings go back to `docs-maintainer` → re-audit.
+- **`NO DRIFT` is the common, expected verdict** for a phase that only
+  touched `planning/`, `.claude/`, tests, or internal code. The audit is
+  cheap for those (a one-line scope note) and real value on a phase that
+  changed CLI surface.
+
+This is **not** the blank-slate reconstruction (§3) — it is scoped, per
+phase, and never proposes a rewrite. It is the everyday independent
+counterweight; §3 is the milestone renewal.
 
 ## 3. Blank-slate reconstruction (the milestone half) — Phase 60
 
@@ -128,11 +159,16 @@ Phase 42), executed at Phase 66:
 8. final current-doc freeze for the milestone (no further current-doc
    edits until after the tag, except fixes to what the freeze itself
    surfaces);
-9. milestone closeout artifact written where useful
-   (`planning/v1-closeout.md`: architecture summary, what shipped, what
-   deferred + revisit triggers, key ADRs, reference-project evaluation
-   results);
-10. git tag / release preserving the complete historical state.
+9. **phase retros for the milestone's phases reviewed in bulk** — the
+   `planning/retros/` entries since the last milestone are read for
+   recurring process feedback; anything actionable becomes a
+   `knowledge-curator` promotion (a workflow edit, a roster change, a
+   `CLAUDE.md` proposal) and is noted in the closeout artifact;
+10. milestone closeout artifact written where useful
+    (`planning/v1-closeout.md`: architecture summary, what shipped, what
+    deferred + revisit triggers, key ADRs, reference-project evaluation
+    results, distilled process lessons from the retros);
+11. git tag / release preserving the complete historical state.
 
 ## 6. ADR lifecycle (unchanged mechanism, explicit here)
 

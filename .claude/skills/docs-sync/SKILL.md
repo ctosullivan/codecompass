@@ -20,12 +20,17 @@ python scripts/check_user_docs.py           # report-only, always exits 0
 python scripts/check_user_docs.py --strict   # exits 1 if any finding
 ```
 
-Five mechanical rules, no AI, never edits a file:
+Mechanical rules, no AI, never edits a file. A finding tagged `(info)`
+never fails `--strict` — it just prompts a decision.
 1. Every `@app.command()`/`@query_app.command()` name in `src/codecompass/cli.py` is mentioned in `docs/cli-reference.md`.
-2. `README.md`'s "phases 0-N" claim matches the highest `done` phase in `planning/ROADMAP.md`.
+2. `README.md`'s "phases 0-N" claim matches the highest `done` phase in `planning/ROADMAP.md`'s *foundation* tables (the "Redefined CodeCompass v1" section is excluded — `decisions/0048`).
 3. `README.md` mentions `ANTHROPIC_API_KEY`.
 4. Every `VendorConfig` field (`src/codecompass/core.py`) is mentioned in `docs/config-schema.md`.
 5. Every file directly under `ai-docs/` exists and is non-empty.
+6. Every project-learning candidate (`planning/learnings/inbox.md`, `candidates/*.md`) carries all required provenance fields (`learning-lifecycle.md` §3).
+7. Every `status: promoted` candidate has a pointer line in `planning/learnings/promoted.md`.
+8. `(info)` — candidates sitting in `evidence-gathering` (prompts the `knowledge-curator` to decide).
+9. Every phase marked `done` in `planning/ROADMAP.md` with number ≥ 41 has a `planning/retros/phase-N-*.md` retro.
 
 ## How to use this skill
 
@@ -41,6 +46,7 @@ Five mechanical rules, no AI, never edits a file:
    end, per `CLAUDE.md`.
 5. Re-run the script to confirm the finding is gone.
 
-Rule set is intentionally small (five checks) — this is a maintainer smoke
-check, not an exhaustive doc linter. See
-`planning/phase-36-docs-sync-tooling.md` for what's explicitly out of scope.
+Rule set is intentionally small — this is a maintainer smoke check, not an
+exhaustive doc linter. See `planning/phase-36-docs-sync-tooling.md` for
+what's explicitly out of scope, and `planning/phase-41-learning-lifecycle.md`
+for the learnings/retro checks.

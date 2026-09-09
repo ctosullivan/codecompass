@@ -289,6 +289,11 @@ Gate **G4** (`CLAUDE.md` §8/§5/§1/§6 changes for the agent-led model) was
 approved and applied in **Phase 40** (2026-09-09), mirrored into
 `CONTRIBUTING.md` — see
 [`v1-redefinition/proposed-governance-changes.md`](v1-redefinition/proposed-governance-changes.md).
+A follow-on `CLAUDE.md` §5 amendment (two more DoD conditions — a
+lead-authored phase retro in `planning/retros/`, and a per-phase
+independent `docs-reconstructor` drift audit) was approved 2026-09-10 and
+applied in **Phase 41**, mirrored into `CONTRIBUTING.md`; `decisions/0050`
+records both mechanisms.
 
 Milestone-grouping convention (`CLAUDE.md` §6, `decisions/0022`/`0030`):
 Stages A–F are **one milestone group**; the `v1.0.0` tag/release is cut
@@ -302,7 +307,7 @@ a named gate; may be dropped) / **DEFERRED** (revisit trigger named).
 |---|---|---|---|---|
 | 39 | Reconcile repo state + versioning realignment | COMMITTED | done | [`phase-39-reconcile-v1-redefinition.md`](phase-39-reconcile-v1-redefinition.md) |
 | 40 | Specialist agent roster + lead workflow | COMMITTED | done | [`phase-40-specialist-agents.md`](phase-40-specialist-agents.md) |
-| 41 | Project-learning lifecycle (operational) | COMMITTED | planned | [`phase-41-learning-lifecycle.md`](phase-41-learning-lifecycle.md) |
+| 41 | Project-learning lifecycle + phase retros + per-phase docs-drift gate | COMMITTED | done | [`phase-41-learning-lifecycle.md`](phase-41-learning-lifecycle.md) |
 | 42 | Documentation lifecycle (incremental + closeout gate) | COMMITTED | planned | [`phase-42-documentation-lifecycle.md`](phase-42-documentation-lifecycle.md) |
 | 43 | Dogfood the agent-led loop on a real change — **GATE DA** | COMMITTED | planned | [`phase-43-dogfood-agent-led-workflow.md`](phase-43-dogfood-agent-led-workflow.md) |
 | 44 | Reference-project protocol + context-quality eval spec | COMMITTED | planned | [`phase-44-reference-project-protocol.md`](phase-44-reference-project-protocol.md) |

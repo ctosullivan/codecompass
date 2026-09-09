@@ -7,8 +7,16 @@ not a consuming project's docs. Not shipped, not a `codecompass` subcommand.
 
     python scripts/check_user_docs.py [--strict]
 
-Report-only by default (always exits 0). `--strict` exits 1 if any rule
-below finds a problem, for optional local/pre-commit use.
+Report-only by default (always exits 0). `--strict` exits 1 if any
+*blocking* finding is reported (findings tagged `(info)` never fail
+`--strict` — they just prompt a decision). For optional local/pre-commit
+use.
+
+Covers, as of Phase 41: CLI command coverage, README phase-count
+consistency, `ANTHROPIC_API_KEY` mention, `VendorConfig` field coverage,
+`ai-docs/` presence, project-learning candidate provenance +
+promoted-log consistency, and per-phase retro presence
+(`planning/retros/`).
 """
 
 from __future__ import annotations
@@ -27,6 +35,7 @@ ROOT = Path(__file__).resolve().parent.parent
 class Finding:
     rule: str
     message: str
+    strict: bool = True  # False = informational, never fails --strict
 
 
 def _read(path: Path) -> str:
@@ -185,12 +194,142 @@ def check_ai_docs_present(root: Path) -> list[Finding]:
     return findings
 
 
+_LEARNING_REQUIRED_FIELDS = (
+    "origin",
+    "date",
+    "project_revision",
+    "observation",
+    "evidence",
+    "classification",
+    "status",
+)
+
+
+def _iter_learning_candidates(root: Path):
+    """Yield (id, body_text) for every candidate in planning/learnings/inbox.md
+    and planning/learnings/candidates/*.md. A candidate block starts at a
+    `### L-NNN` heading and runs to the next `### ` heading or EOF."""
+    learn_dir = root / "planning" / "learnings"
+    texts: list[str] = []
+    inbox = learn_dir / "inbox.md"
+    if inbox.is_file():
+        texts.append(_read(inbox))
+    cand_dir = learn_dir / "candidates"
+    if cand_dir.is_dir():
+        for p in sorted(cand_dir.glob("*.md")):
+            texts.append(_read(p))
+
+    for text in texts:
+        blocks = re.split(r"(?m)^###\s+", text)
+        for block in blocks[1:]:
+            m = re.match(r"(L-\d+)", block.strip())
+            if not m:
+                continue
+            yield m.group(1), block
+
+
+def check_learnings_candidate_fields(root: Path) -> list[Finding]:
+    """Every candidate learning carries all required provenance fields
+    (planning/v1-redefinition/learning-lifecycle.md §3)."""
+    findings: list[Finding] = []
+    for cand_id, body in _iter_learning_candidates(root):
+        low = body.lower()
+        missing = [
+            f for f in _LEARNING_REQUIRED_FIELDS if f"**{f}:**" not in low
+        ]
+        if missing:
+            findings.append(
+                Finding(
+                    "learnings_candidate_fields",
+                    f"candidate {cand_id} is missing field(s): {', '.join(missing)}",
+                )
+            )
+    return findings
+
+
+def check_promoted_learnings_logged(root: Path) -> list[Finding]:
+    """Every candidate with `status: promoted` has a matching pointer line
+    in planning/learnings/promoted.md."""
+    promoted_path = root / "planning" / "learnings" / "promoted.md"
+    promoted_text = _read(promoted_path) if promoted_path.is_file() else ""
+    findings: list[Finding] = []
+    for cand_id, body in _iter_learning_candidates(root):
+        status_match = re.search(r"\*\*status:\*\*\s*([a-z:_-]+)", body, re.IGNORECASE)
+        status = status_match.group(1).lower() if status_match else ""
+        if status == "promoted" and not re.search(
+            rf"(?m)^{re.escape(cand_id)}\b", promoted_text
+        ):
+            findings.append(
+                Finding(
+                    "promoted_learnings_logged",
+                    f"candidate {cand_id} is `status: promoted` but has no "
+                    "pointer line in planning/learnings/promoted.md",
+                )
+            )
+    return findings
+
+
+def check_stale_evidence_gathering(root: Path) -> list[Finding]:
+    """Informational: candidates sitting in `evidence-gathering` prompt a
+    promote/discard decision (never fails --strict)."""
+    findings: list[Finding] = []
+    for cand_id, body in _iter_learning_candidates(root):
+        status_match = re.search(r"\*\*status:\*\*\s*([a-z:_-]+)", body, re.IGNORECASE)
+        status = status_match.group(1).lower() if status_match else ""
+        if status == "evidence-gathering":
+            findings.append(
+                Finding(
+                    "stale_evidence_gathering",
+                    f"candidate {cand_id} is in `evidence-gathering` — the "
+                    "knowledge-curator should decide promote/retain/discard",
+                    strict=False,
+                )
+            )
+    return findings
+
+
+def check_phase_retros_present(root: Path) -> list[Finding]:
+    """Every phase marked `done` in planning/ROADMAP.md with number >= 41
+    (when the retro rule took effect) has a planning/retros/phase-N-*.md."""
+    roadmap_text = _read(root / "planning" / "ROADMAP.md")
+    retro_dir = root / "planning" / "retros"
+    retro_nums = set()
+    if retro_dir.is_dir():
+        for p in retro_dir.glob("phase-*.md"):
+            m = re.match(r"phase-(\d+)-", p.name)
+            if m:
+                retro_nums.add(int(m.group(1)))
+
+    findings: list[Finding] = []
+    for line in roadmap_text.splitlines():
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) < 3 or not cells[0].isdigit():
+            continue
+        num = int(cells[0])
+        if num >= 41 and "done" in cells and num not in retro_nums:
+            findings.append(
+                Finding(
+                    "phase_retros_present",
+                    f"phase {num} is `done` in ROADMAP.md but has no "
+                    f"planning/retros/phase-{num}-*.md retro",
+                )
+            )
+    return findings
+
+
 CHECKS = [
     check_cli_commands_documented,
     check_readme_phase_count,
     check_api_key_documented,
     check_vendor_config_fields_documented,
     check_ai_docs_present,
+    check_learnings_candidate_fields,
+    check_promoted_learnings_logged,
+    check_stale_evidence_gathering,
+    check_phase_retros_present,
 ]
 
 
@@ -211,15 +350,17 @@ def main() -> int:
     args = parser.parse_args()
 
     findings = run_all(ROOT)
+    blocking = [f for f in findings if f.strict]
 
     if not findings:
         print("check_user_docs: no findings")
     else:
         print(f"check_user_docs: {len(findings)} finding(s)")
         for f in findings:
-            print(f"  [{f.rule}] {f.message}")
+            tag = "" if f.strict else " (info)"
+            print(f"  [{f.rule}]{tag} {f.message}")
 
-    return 1 if (args.strict and findings) else 0
+    return 1 if (args.strict and blocking) else 0
 
 
 if __name__ == "__main__":

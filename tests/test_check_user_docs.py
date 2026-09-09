@@ -184,6 +184,110 @@ class TestAiDocsPresent:
         assert findings == []
 
 
+_GOOD_CANDIDATE = (
+    "### L-042 — a thing was noticed\n\n"
+    "- **origin:** Phase 99\n"
+    "- **date:** 2026-09-10\n"
+    "- **project_revision:** abc1234\n"
+    "- **observation:** X happened\n"
+    "- **evidence:** foo.py:1\n"
+    "- **classification:** uncertain\n"
+    "- **status:** candidate\n"
+)
+
+
+class TestLearningsCandidateFields:
+    def test_flags_missing_fields(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "learnings" / "inbox.md",
+            "### L-001 — incomplete\n\n- **observation:** something\n",
+        )
+        findings = check_user_docs.check_learnings_candidate_fields(tmp_path)
+        assert len(findings) == 1
+        assert "L-001" in findings[0].message
+        assert "origin" in findings[0].message
+
+    def test_no_finding_when_complete(self, tmp_path):
+        _write(tmp_path / "planning" / "learnings" / "inbox.md", _GOOD_CANDIDATE)
+        assert check_user_docs.check_learnings_candidate_fields(tmp_path) == []
+
+    def test_reads_candidates_subdir(self, tmp_path):
+        _write(tmp_path / "planning" / "learnings" / "inbox.md", "# inbox\n")
+        _write(
+            tmp_path / "planning" / "learnings" / "candidates" / "L-007.md",
+            "### L-007 — bad\n\n- **status:** candidate\n",
+        )
+        findings = check_user_docs.check_learnings_candidate_fields(tmp_path)
+        assert len(findings) == 1 and "L-007" in findings[0].message
+
+
+class TestPromotedLearningsLogged:
+    def test_flags_promoted_without_pointer(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "learnings" / "inbox.md",
+            _GOOD_CANDIDATE.replace("**status:** candidate", "**status:** promoted"),
+        )
+        _write(tmp_path / "planning" / "learnings" / "promoted.md", "# log\n")
+        findings = check_user_docs.check_promoted_learnings_logged(tmp_path)
+        assert len(findings) == 1 and "L-042" in findings[0].message
+
+    def test_no_finding_when_logged(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "learnings" / "inbox.md",
+            _GOOD_CANDIDATE.replace("**status:** candidate", "**status:** promoted"),
+        )
+        _write(
+            tmp_path / "planning" / "learnings" / "promoted.md",
+            "# log\n\nL-042 | 2026-09-10 | uncertain | foo.py @ abc1234\n",
+        )
+        assert check_user_docs.check_promoted_learnings_logged(tmp_path) == []
+
+    def test_candidate_status_not_flagged(self, tmp_path):
+        _write(tmp_path / "planning" / "learnings" / "inbox.md", _GOOD_CANDIDATE)
+        assert check_user_docs.check_promoted_learnings_logged(tmp_path) == []
+
+
+class TestStaleEvidenceGathering:
+    def test_informational_only(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "learnings" / "inbox.md",
+            _GOOD_CANDIDATE.replace(
+                "**status:** candidate", "**status:** evidence-gathering"
+            ),
+        )
+        findings = check_user_docs.check_stale_evidence_gathering(tmp_path)
+        assert len(findings) == 1
+        assert findings[0].strict is False
+
+
+class TestPhaseRetrosPresent:
+    def _roadmap(self, rows: str) -> str:
+        return "| Phase | Name | Status |\n|---|---|---|\n" + rows
+
+    def test_flags_done_phase_without_retro(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "ROADMAP.md",
+            self._roadmap("| 41 | x | done |\n| 42 | y | in progress |\n"),
+        )
+        findings = check_user_docs.check_phase_retros_present(tmp_path)
+        assert len(findings) == 1 and "phase 41" in findings[0].message
+
+    def test_no_finding_when_retro_present(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "ROADMAP.md",
+            self._roadmap("| 41 | x | done |\n"),
+        )
+        _write(tmp_path / "planning" / "retros" / "phase-41-x.md", "# retro\n")
+        assert check_user_docs.check_phase_retros_present(tmp_path) == []
+
+    def test_ignores_phases_before_41(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "ROADMAP.md",
+            self._roadmap("| 39 | x | done |\n| 40 | y | done |\n"),
+        )
+        assert check_user_docs.check_phase_retros_present(tmp_path) == []
+
+
 class TestMainStrictExitCode:
     def _broken_root(self, tmp_path):
         """A minimal fixture repo where every rule passes except the
@@ -215,6 +319,21 @@ class TestMainStrictExitCode:
         monkeypatch.setattr(check_user_docs, "ROOT", self._broken_root(tmp_path))
         monkeypatch.setattr(sys, "argv", ["check_user_docs.py"])
 
+        assert check_user_docs.main() == 0
+
+    def test_info_finding_does_not_fail_strict(self, tmp_path, monkeypatch):
+        root = self._broken_root(tmp_path)
+        _write(root / "README.md", "Status: phases 0-0 all `done`. ANTHROPIC_API_KEY.\n")
+        _write(
+            root / "planning" / "learnings" / "inbox.md",
+            _GOOD_CANDIDATE.replace(
+                "**status:** candidate", "**status:** evidence-gathering"
+            ),
+        )
+        monkeypatch.setattr(check_user_docs, "ROOT", root)
+        monkeypatch.setattr(sys, "argv", ["check_user_docs.py", "--strict"])
+
+        # the only finding is the informational stale-evidence one
         assert check_user_docs.main() == 0
 
 

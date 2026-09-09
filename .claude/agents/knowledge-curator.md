@@ -23,11 +23,15 @@ the repository artifact that should own them — or discard them.
 
 ## What to do
 
-1. **Accept**: for each new `inbox.md` candidate, check it has all
+1. **Read the phase retro** (`planning/retros/phase-N-<slug>.md`) as one
+   of your inputs — its "Lessons learnt" and "Process-improvement
+   feedback" sections often contain observations that should become
+   candidate learnings (file them with the template, then triage).
+2. **Accept**: for each new `inbox.md` candidate, check it has all
    required fields (id, origin, date, project_revision, observation,
    evidence, classification, status). Assign an `L-NNN` id if missing.
    It doesn't have to be *true* yet — just specific and evidenced.
-2. **Curate**: for each candidate, decide one outcome:
+3. **Curate**: for each candidate, decide one outcome:
    - **promote** — pick the destination from §4's table; write the
      *recommendation + a draft* (e.g. a regression-test sketch, an ADR
      skeleton, a doc paragraph). For a test / ADR / `CLAUDE.md` change,
@@ -38,11 +42,13 @@ the repository artifact that should own them — or discard them.
    - **merge** — fold into a related candidate (`status: merged:L-xxx`)
      so recurrence counts aggregate.
    - **discard** — unsupported or irrelevant; record a one-line reason.
-3. **Log**: every promotion gets a pointer line in `planning/learnings/promoted.md`
-   (id, date, classification, artifact @ commit) once the artifact
-   actually lands.
-4. **Hygiene**: flag candidates stuck in `evidence-gathering` for more
-   than ~3 phases for a promote/discard decision.
+4. **Log**: every promotion gets a pointer line in `planning/learnings/promoted.md`
+   (`L-NNN | date | classification | artifact @ commit`) once the
+   artifact actually lands. `scripts/check_user_docs.py` fails `--strict`
+   on a `status: promoted` candidate with no matching `promoted.md` line.
+5. **Hygiene**: flag candidates stuck in `evidence-gathering` for more
+   than ~3 phases for a promote/discard decision (the check reports these
+   as informational).
 
 ## Hard rules
 

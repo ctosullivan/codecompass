@@ -20,18 +20,19 @@ something feels off.**
 | `reference-project-tester` | exercise CodeCompass on a real project; file friction | `planning/learnings/**`, `planning/reference-projects/**` | partial |
 | `context-evaluator` | rate context quality by inspecting the target directly | its report only | yes |
 | `release-phase-auditor` | read-only Definition-of-Done audit | its report only | yes |
-| `docs-reconstructor` | blank-slate doc reconstruction (milestones only) | `planning/v1-docs-reconstruction/` only | yes |
+| `docs-reconstructor` | per-phase docs-drift audit (every phase); blank-slate reconstruction (milestones) | its report / `planning/v1-docs-reconstruction/` | yes |
 
 **No agent** writes `CLAUDE.md`, `decisions/*`, or `src/`. The lead owns
 those (ADRs via `CLAUDE.md` §2's process; `CLAUDE.md` via §0;
 `src/` directly or via an ad-hoc `general-purpose` implementer subagent).
+The **lead** authors the phase retro (step 11) — no agent does.
 
-A typical internal phase uses 3 agents (`roadmap-context-curator`,
-`docs-maintainer`, `release-phase-auditor`) plus `knowledge-curator`. A
-reference-project phase adds `reference-project-tester` and
-`context-evaluator`.
+A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
+`docs-reconstructor` (drift audit), `knowledge-curator`, and
+`release-phase-auditor`. A reference-project phase adds
+`reference-project-tester` and `context-evaluator`.
 
-## The 12 steps
+## The 14 steps
 
 1. **Inspect the repository.** `git log`, `git status`, the test state.
 2. **Establish current project state.** Dispatch `roadmap-context-curator`
@@ -64,22 +65,49 @@ reference-project phase adds `reference-project-tester` and
 8. **Reconcile current documentation.** Dispatch `docs-maintainer` with
    the phase diff. It fixes wrong paragraphs (not appends caveats),
    deletes false statements, runs the deterministic doc checks.
-9. **Reconcile roadmap and context state.** Dispatch
-   `roadmap-context-curator` (phase-end job): flip the `ROADMAP.md` row
-   *only if every DoD condition holds*, overwrite `CONTEXT.md`, add the
-   `CHANGELOG.md` entry.
-10. **Triage candidate learnings.** Dispatch `knowledge-curator` over
-    every candidate the phase raised: promote / retain / merge / discard,
-    with drafts for promotions and `promoted.md` pointer lines.
-11. **Obtain independent completion audit.** `release-phase-auditor`
-    final pass: re-runs verification, checks all DoD conditions, checks
-    for protected-file drift and scope creep. Verdict `PASS` / `PASS WITH
+9. **Independent docs-drift audit.** Dispatch `docs-reconstructor` in
+   per-phase mode with the phase diff (not `docs-maintainer`'s summary).
+   It reports `NO DRIFT` or a list of current-truth doc sentences the
+   change made false. Any finding → back to `docs-maintainer` (step 8),
+   then re-audit. `NO DRIFT` is fine and common for a `planning/`- or
+   internal-only phase.
+10. **Reconcile roadmap and context state.** Dispatch
+    `roadmap-context-curator` (phase-end job): flip the `ROADMAP.md` row
+    *only if every DoD condition holds*, overwrite `CONTEXT.md`, add the
+    `CHANGELOG.md` entry.
+11. **Write the phase retro.** The lead authors
+    `planning/retros/phase-N-<slug>.md` from `TEMPLATE.md` — goal,
+    delivered vs planned + deviations, what was achieved, lessons learnt,
+    process-improvement feedback, candidate learnings filed, time/cost.
+    A few lines for a trivial phase. Only the lead can write this (only
+    the lead saw the whole phase).
+12. **Triage candidate learnings.** Dispatch `knowledge-curator` over
+    every candidate the phase raised **and the retro's contents**:
+    promote / retain / merge / discard, with drafts for promotions and
+    `promoted.md` pointer lines.
+13. **Obtain independent completion audit.** `release-phase-auditor`
+    final pass: re-runs verification, checks all DoD conditions
+    (including the drift audit ran + the retro exists), checks for
+    protected-file drift and scope creep. Verdict `PASS` / `PASS WITH
     NON-BLOCKING OBSERVATIONS` / `FAIL`.
-12. **Refuse to mark work complete when the gate fails.** A `FAIL` →
+14. **Refuse to mark work complete when the gate fails.** A `FAIL` →
     fix the named gaps, or re-scope with a new ADR, then re-audit. Only
     on `PASS` (or `PASS WITH NON-BLOCKING OBSERVATIONS`) does the lead
     commit (`type(phase-N): summary`, no AI attribution — `CLAUDE.md` §7)
     and move to the next phase.
+
+## When a candidate learning blocks phase verification
+
+Sometimes a candidate learning *is* the thing failing the plan's
+verification step (e.g. a `check_user_docs.py` finding that a promotion
+wasn't logged). The 14-step order assumes triage (step 12) comes after
+the retro (step 11) so the curator can mine it — but here triage has to
+happen earlier to unblock verification. That's fine: run an early
+`knowledge-curator` pass to resolve the blocking candidate, finish
+verification, write the retro, then do a **short follow-up triage** of
+any candidates the retro itself surfaces. Don't force the strict order.
+(First seen in Phase 41 — L-001 blocked the test suite; see that phase's
+retro.)
 
 ## Conflict resolution
 
@@ -93,10 +121,13 @@ candidate learning at minimum, plus a `CONTEXT.md` note.
 
 For a genuinely one-line change (a doc typo, a pointer, a single-line
 config fix) the full loop is overkill. Fast path: lead implements → lead
-runs `pytest`/`ruff`/`check_user_docs --strict` → `roadmap-context-curator`
-updates `CONTEXT.md`/`CHANGELOG.md` → lead's explicit self-confirmation
-stands in for the auditor (per `CLAUDE.md` §5's "or, for a trivial phase,
-an explicit lead confirmation") → commit. `knowledge-curator` triage is
+runs `pytest`/`ruff`/`check_user_docs --strict` → lead does the drift
+check inline (a one-line change rarely drifts a doc; note it either way)
+→ `roadmap-context-curator` updates `CONTEXT.md`/`CHANGELOG.md` → lead
+writes a 3-line retro (`planning/retros/phase-N-*.md`: goal, "shipped as
+planned", "no process notes") → lead's explicit self-confirmation stands
+in for the auditor (per `CLAUDE.md` §5's "or, for a trivial phase, an
+explicit lead confirmation") → commit. `knowledge-curator` triage is
 still run if the change raised any learning. If in doubt whether a change
 is trivial, it isn't — use the full loop.
 

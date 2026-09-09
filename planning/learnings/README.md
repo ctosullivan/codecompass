@@ -50,6 +50,7 @@ unsupported → discard.
 
 ## Status
 
-Scaffold created by the `planning/v1-redefinition/` package (2026-09-09).
-Not yet operational — activated by Phase 41. Until then, entries may be
-added but curation is manual (the lead).
+Operational since Phase 41 (2026-09-10). The `knowledge-curator` agent
+owns triage; `scripts/check_user_docs.py` enforces candidate provenance
+and `promoted.md` consistency (and, informationally, flags stale
+`evidence-gathering` candidates).
