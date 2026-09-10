@@ -144,8 +144,9 @@ dropped where git history already covers it).
 
 ## 5. Milestone documentation closeout gate — Phase 66
 
-A checklist file `planning/milestone-closeout-checklist.md` (created in
-Phase 42), executed at Phase 66:
+The operational form is **`planning/milestone-closeout-checklist.md`**
+(created in Phase 42) — a per-step checklist with owners and "done"
+signals, executed at Phase 66. In outline:
 
 1. deterministic documentation checks pass;
 2. blank-slate reconstruction done (Phase 60);

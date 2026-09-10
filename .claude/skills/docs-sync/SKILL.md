@@ -31,6 +31,9 @@ never fails `--strict` — it just prompts a decision.
 7. Every `status: promoted` candidate has a pointer line in `planning/learnings/promoted.md`.
 8. `(info)` — candidates sitting in `evidence-gathering` (prompts the `knowledge-curator` to decide).
 9. Every phase marked `done` in `planning/ROADMAP.md` with number ≥ 41 has a `planning/retros/phase-N-*.md` retro.
+10. Every relative Markdown link in `README.md` / `docs/` / `ai-docs/` / `architecture/` / `examples/` / `CONTRIBUTING.md` resolves to an existing file; `#anchor` fragments are checked against headings `(info)`.
+11. Fenced example lines invoking `codecompass` use a real subcommand / `query` subcommand (cross-checked against `cli.py`).
+12. Every `decisions/*.md` ADR has a Status line; every `decisions/NNNN` cross-reference resolves to a real ADR file.
 
 ## How to use this skill
 

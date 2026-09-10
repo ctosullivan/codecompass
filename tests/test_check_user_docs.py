@@ -288,6 +288,102 @@ class TestPhaseRetrosPresent:
         assert check_user_docs.check_phase_retros_present(tmp_path) == []
 
 
+_CLI_PY = (
+    "import typer\n"
+    "app = typer.Typer()\n"
+    "query_app = typer.Typer()\n"
+    'app.add_typer(query_app, name="query")\n'
+    "@app.command()\n"
+    "def sync():\n    pass\n"
+    '@query_app.command("vendor")\n'
+    "def query_vendor():\n    pass\n"
+)
+
+
+class TestInternalLinksResolve:
+    def test_flags_missing_file(self, tmp_path):
+        _write(tmp_path / "README.md", "See [x](./docs/gone.md).\n")
+        findings = check_user_docs.check_internal_links_resolve(tmp_path)
+        assert len(findings) == 1
+        assert "gone.md" in findings[0].message and findings[0].strict
+
+    def test_resolves_existing_and_skips_http(self, tmp_path):
+        _write(tmp_path / "docs" / "a.md", "# A\n")
+        _write(
+            tmp_path / "README.md",
+            "[a](docs/a.md) and [ext](https://example.com) and [self](#heading)\n\n# Heading\n",
+        )
+        assert check_user_docs.check_internal_links_resolve(tmp_path) == []
+
+    def test_bad_anchor_is_informational(self, tmp_path):
+        _write(tmp_path / "README.md", "[x](#no-such-heading)\n\n# Real Heading\n")
+        findings = check_user_docs.check_internal_links_resolve(tmp_path)
+        assert len(findings) == 1 and findings[0].strict is False
+
+    def test_ignores_links_in_code_fences(self, tmp_path):
+        _write(tmp_path / "README.md", "```\n[x](./nope.md)\n```\n")
+        assert check_user_docs.check_internal_links_resolve(tmp_path) == []
+
+
+class TestFencedCodecompassExamples:
+    def _root(self, tmp_path, doc_body: str):
+        _write(tmp_path / "src" / "codecompass" / "cli.py", _CLI_PY)
+        _write(tmp_path / "README.md", doc_body)
+        return tmp_path
+
+    def test_flags_bad_subcommand(self, tmp_path):
+        root = self._root(tmp_path, "```bash\ncodecompass frobnicate\n```\n")
+        findings = check_user_docs.check_fenced_codecompass_examples(root)
+        assert len(findings) == 1 and "frobnicate" in findings[0].message
+
+    def test_flags_bad_query_subcommand(self, tmp_path):
+        root = self._root(tmp_path, "```\ncodecompass query bogus\n```\n")
+        findings = check_user_docs.check_fenced_codecompass_examples(root)
+        assert len(findings) == 1 and "bogus" in findings[0].message
+
+    def test_accepts_real_commands_flags_and_prompts(self, tmp_path):
+        root = self._root(
+            tmp_path,
+            "```bash\n"
+            "$ codecompass sync turndown\n"
+            "codecompass --budget 0\n"
+            "codecompass query vendor turndown  # a comment\n"
+            "codecompass\n"
+            "```\n",
+        )
+        assert check_user_docs.check_fenced_codecompass_examples(root) == []
+
+    def test_ignores_prose_mentions(self, tmp_path):
+        root = self._root(tmp_path, "Run `codecompass wibble` — not in a fence.\n")
+        assert check_user_docs.check_fenced_codecompass_examples(root) == []
+
+
+class TestAdrStatusAndSupersedes:
+    def test_flags_missing_status(self, tmp_path):
+        _write(tmp_path / "decisions" / "0001-x.md", "# 0001. X\n\nsome text\n")
+        findings = check_user_docs.check_adr_status_and_supersedes(tmp_path)
+        assert len(findings) == 1 and "Status" in findings[0].message
+
+    def test_flags_dangling_reference(self, tmp_path):
+        _write(
+            tmp_path / "decisions" / "0002-y.md",
+            "# 0002. Y\n\n## Status\n\nAccepted\n\nSupersedes decisions/0099.\n",
+        )
+        findings = check_user_docs.check_adr_status_and_supersedes(tmp_path)
+        assert any("0099" in f.message for f in findings)
+
+    def test_clean_adr_pair(self, tmp_path):
+        _write(
+            tmp_path / "decisions" / "0001-x.md",
+            "# 0001. X\n\n## Status\n\nSuperseded by `0002`\n",
+        )
+        _write(
+            tmp_path / "decisions" / "0002-y.md",
+            "# 0002. Y\n\n## Status\n\nAccepted — supersedes decisions/0001\n",
+        )
+        assert check_user_docs.check_adr_status_and_supersedes(tmp_path) == []
+
+
 class TestMainStrictExitCode:
     def _broken_root(self, tmp_path):
         """A minimal fixture repo where every rule passes except the

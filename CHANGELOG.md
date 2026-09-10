@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 42**: the everyday documentation lifecycle gains deterministic
+  drift checks and the milestone gets a documentation-closeout gate.
+  `scripts/check_user_docs.py` adds three checks (now 37 tests in that
+  module, +11): `check_internal_links_resolve` (every relative Markdown
+  link in `README.md` / `docs/` / `ai-docs/` / `architecture/` /
+  `examples/` / `CONTRIBUTING.md` resolves to an existing file; `#anchor`
+  fragments checked informationally), `check_fenced_codecompass_examples`
+  (every fenced example line invoking `codecompass` uses a real
+  subcommand or `query` subcommand, cross-checked against `cli.py`
+  including `app.add_typer(name="query")`), and
+  `check_adr_status_and_supersedes` (every `decisions/*.md` ADR has a
+  `Status:` line; every `decisions/NNNN` cross-reference resolves).
+  `--strict` is clean against the current repo. New
+  `planning/milestone-closeout-checklist.md` — the 11-step Phase 66
+  documentation-closeout gate, each step with an owner and a "done"
+  signal. New `planning/v1-redefinition/architecture-split-candidates.md`
+  — the `docs-maintainer`'s catalogue of 36 history-shaped passages in
+  `architecture/overview.md` (including 4 that now contradict the rest of
+  the same file by describing deleted code as live), input for the Phase
+  61 reconciliation. Candidate learning **L-004** filed: the per-phase
+  docs-drift audit is diff-scoped, so pre-existing standing rot is
+  invisible to it.
+
+### Changed
+
+- **Phase 42**: the `docs-maintainer` agent brief is finalised — it runs
+  the new link / example / ADR checks, flags `architecture/overview.md`
+  split candidates for Phase 61 without restructuring the file itself,
+  and may return "no current-truth doc affected" for a phase that changed
+  no observable product behaviour. `.claude/skills/docs-sync/SKILL.md`
+  documents the three new checks;
+  `planning/v1-redefinition/documentation-lifecycle.md` §5 now points at
+  the closeout checklist as its operational form. No `CLAUDE.md` change
+  (§5 was already amended in Phases 40–41) and no `src/codecompass/`
+  change.
+
+### Added
+
 - **Phase 41**: the project-learning lifecycle is operational and two new
   per-phase closeout mechanisms are in place. `planning/learnings/` gains
   a `candidates/` subdirectory; its `README.md` marks the lifecycle live;

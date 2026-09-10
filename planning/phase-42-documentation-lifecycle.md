@@ -1,6 +1,9 @@
 # Phase 42: Documentation lifecycle (incremental + closeout gate)
 
-**Status:** planned
+**Status:** done (2026-09-10) — `docs-reconstructor` drift audit: NO
+DRIFT; `release-phase-auditor`: **PASS WITH NON-BLOCKING OBSERVATIONS**
+(`planning/retros/_audit-phase-42.md`); the 3 advisory observations
+addressed in the completion commit.
 
 Stage A. Operationalises the *everyday* half of the documentation
 lifecycle and defines the *milestone* closeout gate. Blank-slate
@@ -62,17 +65,36 @@ reconstruction itself is Phase 60. Design:
 - **Fix-what-it-flags is in scope** — shipping the checker without
   cleaning the current violations would leave `--strict` red.
 
-## Files
+## Files (actual)
 
 - `.claude/agents/docs-maintainer.md` — brief finalised
-- `scripts/check_user_docs.py` — link / example / ADR-status checks
-- `tests/test_check_user_docs.py` — new tests
-- `planning/milestone-closeout-checklist.md` — new
-- `CLAUDE.md` — §5 (gate G4, §0 approval) if not already done
-- `CONTRIBUTING.md` — mirror
-- `docs/`, `architecture/`, `README.md`, `ai-docs/` — fixes for whatever
-  the new checks flag
-- `CHANGELOG.md`, `planning/ROADMAP.md`, `planning/CONTEXT.md` — curator
+- `.claude/agents/release-phase-auditor.md` — Phase 65/66 wording fix
+  (auditor obs 3)
+- `scripts/check_user_docs.py` — `check_internal_links_resolve`,
+  `check_fenced_codecompass_examples`, `check_adr_status_and_supersedes`
+  + shared helpers; docstring
+- `tests/test_check_user_docs.py` — 11 new tests
+- `.claude/skills/docs-sync/SKILL.md` — the 3 new checks listed
+- `planning/milestone-closeout-checklist.md` — new (11 steps)
+- `planning/v1-redefinition/documentation-lifecycle.md` §5 — points at
+  the checklist
+- `planning/v1-redefinition/architecture-split-candidates.md` — new
+  (`docs-maintainer` output for Phase 61; 36 catalogued passages)
+- `planning/v1-redefinition/roadmap.md` — Phase 61 stanza gains the §C
+  correction obligation (from L-004)
+- `planning/learnings/inbox.md` — L-004 filed + triaged; L-002/L-003
+  curation notes
+- `planning/retros/phase-42-documentation-lifecycle.md`,
+  `planning/retros/_drift-audit-phase-42.md`,
+  `planning/retros/_audit-phase-42.md`
+- `CHANGELOG.md`, `planning/ROADMAP.md`, `planning/CONTEXT.md`,
+  `planning/phase-42-documentation-lifecycle.md` — via
+  `roadmap-context-curator`
+- **No `CLAUDE.md` / `CONTRIBUTING.md` change** — §5 was already amended
+  in Phase 40. **No `docs/` / `architecture/` / `README.md` / `ai-docs/`
+  change** — the new checks flagged nothing; the 4 pre-existing
+  `architecture/overview.md` self-contradictions are deferred to Phase 61
+  (L-004).
 
 ## Verification
 

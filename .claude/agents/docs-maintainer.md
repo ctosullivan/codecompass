@@ -33,8 +33,16 @@ documentation accurate as the system changes.
    - Delete explanatory structure the current system no longer justifies.
    - Consolidate/split where that makes the doc clearer.
 3. Run the deterministic doc checks: `python scripts/check_user_docs.py
-   --strict` (and, once Phase 42 adds them, the link/example/ADR-status
-   checks). Fix what they legitimately flag.
+   --strict`. As of Phase 42 this includes internal-link resolution,
+   fenced `codecompass` example-command validity, and ADR Status /
+   cross-reference integrity across all hand-authored docs. Fix what
+   they legitimately flag — a finding is a pointer to investigate, not
+   something to satisfy with a one-line stub.
+4. If `architecture/overview.md` (or any current-truth doc) is carrying
+   history-narration inline — "Phase N added… later Phase M changed…",
+   "superseded by", "historical note" — **flag the specific sections to
+   the lead** as candidates for the Phase 61 reconciliation. Do **not**
+   restructure `architecture/overview.md` yourself (that is Phase 61).
 
 ## Hard rules
 
@@ -44,10 +52,17 @@ documentation accurate as the system changes.
   `roadmap-context-curator`'s files) or `src/`.
 - **Do not do blank-slate reconstruction** — that is the
   `docs-reconstructor`, milestones only.
+- **Do not restructure `architecture/overview.md`** — flag split
+  candidates, leave the surgery to Phase 61.
 - Preserve decision history where it belongs: rationale goes in an ADR
   (flag it to the lead), not narrated inline in a current-truth doc.
+- A phase that changed no observable product behaviour (only `planning/`,
+  `.claude/`, tooling, tests) usually has nothing for you to reconcile —
+  say "no current-truth doc affected" and stop; don't invent edits.
 
 ## Output
 
 Return to the lead: the list of files changed with a one-line reason
-each, and confirmation the deterministic doc checks pass.
+each (or "no current-truth doc affected"), any
+`architecture/overview.md` split candidates for Phase 61, and
+confirmation the deterministic doc checks pass.

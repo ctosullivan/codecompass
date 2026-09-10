@@ -12,11 +12,13 @@ Report-only by default (always exits 0). `--strict` exits 1 if any
 `--strict` — they just prompt a decision). For optional local/pre-commit
 use.
 
-Covers, as of Phase 41: CLI command coverage, README phase-count
+Covers, as of Phase 42: CLI command coverage, README phase-count
 consistency, `ANTHROPIC_API_KEY` mention, `VendorConfig` field coverage,
 `ai-docs/` presence, project-learning candidate provenance +
-promoted-log consistency, and per-phase retro presence
-(`planning/retros/`).
+promoted-log consistency, per-phase retro presence (`planning/retros/`),
+internal-link resolution across hand-authored docs, fenced `codecompass`
+example commands using real subcommands, and ADR Status +
+cross-reference integrity.
 """
 
 from __future__ import annotations
@@ -320,6 +322,236 @@ def check_phase_retros_present(root: Path) -> list[Finding]:
     return findings
 
 
+# ── documentation-lifecycle checks (Phase 42) ──────────────────────────
+
+_DOC_DIRS = ("docs", "ai-docs", "architecture", "examples")
+_DOC_ROOT_FILES = ("README.md", "CONTRIBUTING.md")
+
+
+def _iter_doc_files(root: Path):
+    """Yield every hand-authored user-facing/contributor Markdown file."""
+    for name in _DOC_ROOT_FILES:
+        p = root / name
+        if p.is_file():
+            yield p
+    for d in _DOC_DIRS:
+        base = root / d
+        if base.is_dir():
+            yield from sorted(base.rglob("*.md"))
+
+
+def _lines_with_fence_state(text: str):
+    """Yield (lineno, line, in_fence, fence_lang) for each line, tracking
+    ``` / ~~~ fenced code blocks."""
+    fence: str | None = None
+    lang = ""
+    for i, line in enumerate(text.splitlines(), start=1):
+        stripped = line.lstrip()
+        m = re.match(r"(```+|~~~+)(.*)", stripped)
+        if m and (fence is None or stripped.startswith(fence)):
+            if fence is None:
+                fence = m.group(1)
+                lang = m.group(2).strip().lower()
+                yield i, line, True, lang
+                continue
+            else:
+                fence = None
+                lang = ""
+                yield i, line, True, ""
+                continue
+        yield i, line, fence is not None, lang
+
+
+_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
+_HEADING_RE = re.compile(r"^#{1,6}\s+(.*?)\s*#*\s*$")
+
+
+def _slugify_heading(text: str) -> str:
+    text = re.sub(r"`", "", text).strip().lower()
+    text = re.sub(r"[^\w\s-]", "", text)
+    return re.sub(r"[\s_]+", "-", text)
+
+
+def _doc_anchor_slugs(text: str) -> set[str]:
+    slugs: set[str] = set()
+    for _lineno, line, in_fence, _lang in _lines_with_fence_state(text):
+        if in_fence:
+            continue
+        m = _HEADING_RE.match(line)
+        if m:
+            slugs.add(_slugify_heading(m.group(1)))
+    return slugs
+
+
+def check_internal_links_resolve(root: Path) -> list[Finding]:
+    """Every relative Markdown link in a hand-authored doc points at a
+    file that exists; a `#fragment` (where present) matches a heading
+    (informational)."""
+    findings: list[Finding] = []
+    for path in _iter_doc_files(root):
+        text = _read(path)
+        own_anchors = _doc_anchor_slugs(text)
+        for lineno, line, in_fence, _lang in _lines_with_fence_state(text):
+            if in_fence:
+                continue
+            for target in _LINK_RE.findall(line):
+                target = target.split()[0].strip()  # drop optional "title"
+                if re.match(r"^(https?:|mailto:|tel:)", target):
+                    continue
+                if target.startswith("#"):
+                    if _slugify_heading(target[1:]) not in own_anchors:
+                        findings.append(
+                            Finding(
+                                "internal_links_resolve",
+                                f"{path.relative_to(root)}:{lineno} — anchor "
+                                f"'{target}' has no matching heading",
+                                strict=False,
+                            )
+                        )
+                    continue
+                file_part = target.split("#", 1)[0]
+                if not file_part:
+                    continue
+                dest = (path.parent / file_part).resolve()
+                if not dest.exists():
+                    findings.append(
+                        Finding(
+                            "internal_links_resolve",
+                            f"{path.relative_to(root)}:{lineno} — link target "
+                            f"'{target}' does not exist",
+                        )
+                    )
+                elif "#" in target and dest.is_file() and dest.suffix == ".md":
+                    frag = target.split("#", 1)[1]
+                    if frag and _slugify_heading(frag) not in _doc_anchor_slugs(
+                        _read(dest)
+                    ):
+                        findings.append(
+                            Finding(
+                                "internal_links_resolve",
+                                f"{path.relative_to(root)}:{lineno} — '{target}': "
+                                f"no heading matching '#{frag}' in {dest.name}",
+                                strict=False,
+                            )
+                        )
+    return findings
+
+
+def _codecompass_command_names(root: Path) -> tuple[set[str], set[str]]:
+    """(top-level `codecompass` subcommands, `codecompass query` subcommands)
+    parsed from cli.py's Typer decorators + `app.add_typer(name=...)`."""
+    cli_path = root / "src" / "codecompass" / "cli.py"
+    tree = ast.parse(_read(cli_path), filename=str(cli_path))
+    app_cmds: set[str] = set()
+    query_cmds: set[str] = set()
+    for node in ast.walk(tree):
+        # app.add_typer(sub_app, name="query")
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "add_typer"
+        ):
+            for kw in node.keywords:
+                if kw.arg == "name" and isinstance(kw.value, ast.Constant):
+                    app_cmds.add(str(kw.value.value))
+        if not isinstance(node, ast.FunctionDef):
+            continue
+        for dec in node.decorator_list:
+            if not isinstance(dec, ast.Call) or not isinstance(dec.func, ast.Attribute):
+                continue
+            if dec.func.attr != "command":
+                continue
+            base = dec.func.value.id if isinstance(dec.func.value, ast.Name) else None
+            if dec.args and isinstance(dec.args[0], ast.Constant):
+                name = str(dec.args[0].value)
+            else:
+                name = node.name.replace("_", "-")
+            if base == "app":
+                app_cmds.add(name)
+            elif base == "query_app":
+                query_cmds.add(name)
+    return app_cmds, query_cmds
+
+
+def check_fenced_codecompass_examples(root: Path) -> list[Finding]:
+    """Fenced example lines invoking `codecompass` use a real subcommand."""
+    app_cmds, query_cmds = _codecompass_command_names(root)
+    findings: list[Finding] = []
+    for path in _iter_doc_files(root):
+        for lineno, line, in_fence, _lang in _lines_with_fence_state(_read(path)):
+            if not in_fence:
+                continue
+            cmd = re.sub(r"^\$\s+", "", line.strip())
+            if not (cmd == "codecompass" or cmd.startswith("codecompass ")):
+                continue
+            toks = cmd.split()[1:]
+            # strip an inline "# comment"
+            if "#" in toks:
+                toks = toks[: toks.index("#")]
+            if not toks or toks[0].startswith("-"):
+                continue  # bare `codecompass` or only options — the app itself
+            sub = toks[0]
+            if sub not in app_cmds:
+                findings.append(
+                    Finding(
+                        "fenced_codecompass_examples",
+                        f"{path.relative_to(root)}:{lineno} — 'codecompass {sub}' "
+                        f"is not a real subcommand ({sorted(app_cmds)})",
+                    )
+                )
+                continue
+            if sub == "query":
+                q_args = [t for t in toks[1:] if not t.startswith("-")]
+                if q_args and q_args[0] not in query_cmds:
+                    findings.append(
+                        Finding(
+                            "fenced_codecompass_examples",
+                            f"{path.relative_to(root)}:{lineno} — 'query {q_args[0]}' "
+                            f"is not a real query subcommand ({sorted(query_cmds)})",
+                        )
+                    )
+    return findings
+
+
+def check_adr_status_and_supersedes(root: Path) -> list[Finding]:
+    """Every ADR has a Status; every `decisions/NNNN` cross-reference in an
+    ADR resolves to a real ADR file."""
+    dec_dir = root / "decisions"
+    if not dec_dir.is_dir():
+        return []
+    adrs = sorted(p for p in dec_dir.glob("*.md") if re.match(r"\d{4}-", p.name))
+    numbers = {p.name[:4] for p in adrs}
+    findings: list[Finding] = []
+    for p in adrs:
+        text = _read(p)
+        head = "\n".join(text.splitlines()[:20]).lower()
+        if "## status" not in head and "**status:**" not in head and "status:" not in head:
+            findings.append(
+                Finding("adr_status_and_supersedes", f"{p.name} has no Status line")
+            )
+        for ref in re.findall(r"decisions/(\d{4})\b", text):
+            if ref not in numbers:
+                findings.append(
+                    Finding(
+                        "adr_status_and_supersedes",
+                        f"{p.name} references decisions/{ref} which does not exist",
+                    )
+                )
+        for lineno, line in enumerate(text.splitlines(), start=1):
+            if "supersed" not in line.lower():
+                continue
+            for ref in re.findall(r"`(\d{4})`", line):
+                if ref not in numbers:
+                    findings.append(
+                        Finding(
+                            "adr_status_and_supersedes",
+                            f"{p.name}:{lineno} — supersede reference `{ref}` "
+                            "resolves to no ADR file",
+                        )
+                    )
+    return findings
+
+
 CHECKS = [
     check_cli_commands_documented,
     check_readme_phase_count,
@@ -330,6 +562,9 @@ CHECKS = [
     check_promoted_learnings_logged,
     check_stale_evidence_gathering,
     check_phase_retros_present,
+    check_internal_links_resolve,
+    check_fenced_codecompass_examples,
+    check_adr_status_and_supersedes,
 ]
 
 

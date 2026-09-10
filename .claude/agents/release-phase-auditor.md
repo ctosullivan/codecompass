@@ -20,7 +20,9 @@ without fixing anything — that a phase is actually done.
   files).
 - The phase's own `planning/phase-N-*.md` (its Verification section).
 - `planning/v1-redefinition/agent-led-development.md` §2.8 and §6.
-- At Phase 65: `planning/milestone-closeout-checklist.md`.
+- At Phase 65 (the milestone release audit): confirm
+  `planning/milestone-closeout-checklist.md` has been executed
+  (it runs at Phase 66) before Phase 66/67 proceed.
 
 ## What to check
 

@@ -83,12 +83,15 @@ roster is probably too big — prune per GATE DA).
   operational form — `docs-maintainer` agent brief; a
   `scripts/check_user_docs.py` extension for deterministic doc checks
   (link validity, example-command validity, ADR-status coverage);
-  define the **milestone documentation closeout gate** (10 steps) as a
-  checklist file `planning/milestone-closeout-checklist.md`. No
-  blank-slate reconstruction yet (that is Phase 60).
+  define the **milestone documentation closeout gate** (11 steps as
+  built) as a checklist file `planning/milestone-closeout-checklist.md`.
+  No blank-slate reconstruction yet (that is Phase 60).
 - **Exit:** deterministic doc checks run green on the current repo;
   closeout checklist committed; `docs-maintainer` used for real on the
   Phase 42 doc changes themselves.
+- **Status:** done (2026-09-10). `--strict` clean; 543 passed / 1
+  skipped; drift audit NO DRIFT; `release-phase-auditor` PASS WITH
+  NON-BLOCKING OBSERVATIONS.
 
 ### Phase 43 — Dogfood the agent-led loop · COMMITTED
 - **Plan:** `planning/phase-43-dogfood-agent-led-workflow.md`
@@ -303,6 +306,16 @@ product instead — the checklist is identical.)
   against current reality; ADR status review (mark superseded ADRs,
   don't rewrite them). Decide retain/rewrite/consolidate/split/replace/
   remove per doc (`documentation-lifecycle.md` §"Reconciliation").
+- **Concrete input:** `planning/v1-redefinition/architecture-split-candidates.md`
+  (the `docs-maintainer`'s Phase 42 catalogue — 36 history-shaped
+  passages).
+- **Concrete obligation (from Phase 42 / L-004):** fix
+  `architecture-split-candidates.md` **§C items 33–36** as *corrections*
+  (not just trims) — `architecture/overview.md` currently describes the
+  deleted `grounded_description.py`, its constants, and `Depth` /
+  `depth = full` as live code, contradicting the same file's own
+  "Grounded description — retired" / "Cost model" sections. Verify each
+  against `src/` before rewording.
 
 ### Phase 62 — Roadmap + context reconciliation · COMMITTED
 - `roadmap-context-curator`: `ROADMAP.md` + `CONTEXT.md` reflect the

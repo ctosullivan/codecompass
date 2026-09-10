@@ -19,8 +19,8 @@ agent-led, validated against real external reference-project work
 generalised only as far as evidence justifies, then released after
 blank-slate doc reconstruction and an independent audit.
 
-**Phases 39, 40 and 41 are `done` (Stage A of the redefined-v1 roadmap;
-42–43 remain).**
+**Stage A of the redefined-v1 roadmap: Phases 39–42 are `done`; Phase 43
+(dogfood the loop → GATE DA) is the last Stage A phase.**
 
 - **39** ratified the redefinition: ADRs `decisions/0048`/`0049`
   `Accepted`; `pyproject.toml` `version` → `1.0.0.dev0`; ROADMAP's Stage
@@ -39,15 +39,35 @@ blank-slate doc reconstruction and an independent audit.
   `roadmap-context-curator`, `release-phase-auditor` (**PASS WITH
   NON-BLOCKING OBSERVATIONS**, 4 advisory items addressed/filed). Retro:
   `planning/retros/phase-41-learning-lifecycle-and-retros.md`.
+- **42** built the everyday documentation-lifecycle machinery: 3 new
+  deterministic checks in `scripts/check_user_docs.py` (internal-link
+  resolution, fenced `codecompass` example validity, ADR `Status:` /
+  cross-reference integrity) + 11 tests (37 in that module; full suite
+  543 passed / 1 skipped), the finalised `docs-maintainer` brief,
+  `planning/milestone-closeout-checklist.md` (the Phase 66 gate), and
+  `planning/v1-redefinition/architecture-split-candidates.md` (Phase 61
+  input, 36 catalogued passages incl. 4 self-contradictions). Agent-led
+  closeout: `docs-maintainer` first real use (no product doc affected;
+  produced the catalogue), drift audit **NO DRIFT**, `knowledge-curator`
+  triaged **L-004** (retained, clustered with L-003 as the "standing-rot
+  blind-spot" pair for GATE DA), `release-phase-auditor` **PASS WITH
+  NON-BLOCKING OBSERVATIONS** (3 advisory items folded into the closeout
+  checklist / auditor brief). Retro:
+  `planning/retros/phase-42-documentation-lifecycle.md`.
 
-**No `src/codecompass/` change in any of these phases; no release/tag
-(gate G2-b).**
+**No `src/codecompass/` change and no `CLAUDE.md` change in Phase 42 (§5
+was already amended in Phases 40–41); no `src/` change in any Stage A
+phase; no release/tag (gate G2-b).**
 
-**Next: Phase 42** ([`phase-42-documentation-lifecycle.md`](phase-42-documentation-lifecycle.md))
-— the documentation lifecycle: the `docs-maintainer` brief, incremental
-`docs/`/`architecture/` upkeep + a milestone closeout gate,
-`scripts/check_user_docs.py` link/example/ADR-status checks, and a new
-`planning/milestone-closeout-checklist.md`. No gate blocks it.
+**Next: Phase 43** ([`phase-43-dogfood-agent-led-workflow.md`](phase-43-dogfood-agent-led-workflow.md))
+— dogfood the full agent-led loop on **one user-chosen real CodeCompass
+code change** (shortlist in the plan file: the `CLAUDE.md` →
+`ai-docs/README.md` pointer, `query skills` surfacing `slash_command`
+rows, `/discovery` at the whole-project `sync` trigger point, or the
+pending `ai-docs/` enrichment run), then retro the roster. **GATE DA** —
+Stage B does not start until Phase 43's retro is done and the
+roster/workflow amended. No human-decision gate blocks starting Phase 43
+once Phase 42 is `done`.
 
 The `planning/v1-redefinition/` package + `planning/learnings/` (now live)
 + `planning/retros/` + `planning/agent-led-workflow.md` (14 steps) + Stage
@@ -85,6 +105,43 @@ dependencies now carry lower-bound version pins (`decisions/0047`), and
 were cleaned up (Phase 38).
 
 ## What was just completed
+
+**Phase 42, done** (2026-09-10) — the everyday documentation lifecycle
+plus the milestone documentation-closeout gate. `release-phase-auditor`:
+PASS WITH NON-BLOCKING OBSERVATIONS.
+- `scripts/check_user_docs.py` gained 3 deterministic checks + 11 tests
+  (37 in that module; full suite 543 passed / 1 skipped; `--strict`
+  clean): `check_internal_links_resolve` (relative Markdown links across
+  README/`docs/`/`ai-docs/`/`architecture/`/`examples/`/`CONTRIBUTING.md`;
+  `#anchor` fragments informational), `check_fenced_codecompass_examples`
+  (fenced `codecompass` example lines use a real subcommand / `query`
+  subcommand, cross-checked against `cli.py` incl.
+  `app.add_typer(name="query")`), `check_adr_status_and_supersedes`
+  (every ADR has a `Status:`; every `decisions/NNNN` cross-ref resolves).
+  Docstring updated.
+- `.claude/agents/docs-maintainer.md` finalised (runs the new checks;
+  flags `architecture/overview.md` split candidates for Phase 61 without
+  restructuring; "no current-truth doc affected" is a valid output for a
+  non-product phase). `.claude/skills/docs-sync/SKILL.md` and
+  `planning/v1-redefinition/documentation-lifecycle.md` §5 updated.
+- NEW `planning/milestone-closeout-checklist.md` — the 11-step Phase 66
+  documentation-closeout gate (owner + "done" signal per step).
+- NEW `planning/v1-redefinition/architecture-split-candidates.md` — the
+  `docs-maintainer`'s catalogue of 36 history-shaped passages in
+  `architecture/overview.md`, incl. 4 self-contradictions describing
+  deleted code (`grounded_description.py` regeneration on every `sync`,
+  `_RAW_TEXT_CHAR_CAP` and sibling constants, `depth = full` /
+  `Depth.FULL`) as live. Input for Phase 61; not actioned now.
+- Candidate learning **L-004** filed (`planning/learnings/inbox.md`): the
+  per-phase drift audit is diff-scoped, so pre-existing standing rot is
+  invisible to it — the 4 `architecture/overview.md` self-contradictions
+  are the evidence. Likely merge-shape with L-003 at triage.
+- **No `CLAUDE.md` change** (§5 was amended in Phases 40–41; Phase 42's
+  plan said "apply A2 if not already applied" — it was). **No
+  `src/codecompass/` change.**
+- **Still pending before Phase 42 is `done`:** `release-phase-auditor`
+  PASS, `planning/retros/phase-42-*.md`, and the `docs-reconstructor`
+  per-phase drift-audit verdict.
 
 **Phase 41, done** (2026-09-10) — project-learning lifecycle + phase
 retros + per-phase docs-drift gate; **first real exercise of the
@@ -274,26 +331,27 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Finish closing out Phase 41.** Code is complete; before the ROADMAP row
-flips to `done`, the lead needs to: author `planning/retros/phase-41-*.md`;
-dispatch `docs-reconstructor` for the per-phase drift audit; dispatch
-`knowledge-curator` to triage any retro-surfaced candidates (L-001 is
-already promoted); then dispatch `release-phase-auditor` for the DoD
-audit. On a PASS, mark Phase 41 `done` in ROADMAP + this file in the same
-commit that carries the CHANGELOG entry (already drafted under
-`[Unreleased]`).
+**Phase 43** ([`phase-43-dogfood-agent-led-workflow.md`](phase-43-dogfood-agent-led-workflow.md))
+— the last Stage A phase. Dogfood the full 14-step agent-led loop on
+**one user-chosen real CodeCompass code change** (shortlist in the plan:
+the `CLAUDE.md` → `ai-docs/README.md` pointer; `query skills` surfacing
+`slash_command` rows; `/discovery` at the whole-project `sync` trigger
+point; the pending `ai-docs/` enrichment run). It will be the **first
+Stage A phase to change `src/codecompass/`** — the first real test of the
+`docs-maintainer` *editing* path and the drift audit *finding* something.
+Then **GATE DA**: did each role earn its keep? Prune/merge the roster,
+amend `agent-led-workflow.md`. GATE DA agenda so far (from Phases 40–42
+retros): L-002 (curator has no Bash — recurred, 2nd instance), L-003+L-004
+(the "standing-rot blind-spot" cluster — diff-scoped checks miss standing
+content), the triage/retro ordering inversion, the process-weight watch,
+`docs-maintainer` value-is-assessment-not-just-editing.
 
-**Then: Phase 42** ([`phase-42-documentation-lifecycle.md`](phase-42-documentation-lifecycle.md))
-— documentation lifecycle: the `docs-maintainer` brief, incremental
-`docs/`/`architecture/` upkeep + a milestone closeout gate, new
-`scripts/check_user_docs.py` link/example/ADR-status checks, and a new
-`planning/milestone-closeout-checklist.md`. No human-decision gate blocks
-it; do not start it until Phase 41 is `done`.
+No human-decision gate blocks Phase 43. Stage B does not start until
+Phase 43's GATE DA retro is done and the roster/workflow amended.
 
 Phase 41 was the first real run of the agent-led loop (the live smoke
-delegation deferred from Phase 40) — `knowledge-curator` for L-001 and
-`release-phase-auditor` for the DoD check exercise the roster's
-frontmatter/tooling for real.
+delegation deferred from Phase 40); Phase 42 was the `docs-maintainer`'s
+first real use.
 
 Open items carried from the foundation:
 
@@ -314,6 +372,16 @@ be deferred is now settled: `decisions/0048` marks 24 a Stage C candidate
 renumbered.
 
 **Still outstanding, not a blocker but worth remembering:**
+- **4 self-contradictions in `architecture/overview.md`** (Section C of
+  `planning/v1-redefinition/architecture-split-candidates.md`) — the file
+  describes deleted code as live (`grounded_description.py` regeneration
+  on every `sync`; `_RAW_TEXT_CHAR_CAP` / `_DOCS_FILE_CAP` /
+  `_ESTIMATED_COST_PER_CALL_USD` of that deleted module; `depth = full` /
+  `Depth.FULL`) while the rest of the same file says the opposite.
+  **Deferred to Phase 61** (the `architecture/overview.md`
+  reconciliation/split); tracked by candidate learning **L-004**. The
+  per-phase `docs-reconstructor` drift audit is diff-scoped and will not
+  catch these on its own.
 - Once a Rust toolchain is available anywhere in the pipeline,
   `decisions/0014` requires validating the Cargo adapter against real
   `cargo metadata` output and a real crate — currently entirely
