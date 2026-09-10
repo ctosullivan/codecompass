@@ -83,6 +83,11 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
     **where we're going** (next phase(s), gate ahead, trajectory
     confirmed/changed), time/cost. A few lines for a trivial phase. Only
     the lead can write this (only the lead saw the whole phase).
+    **If the retro schedules a follow-up phase, amends the roster or
+    workflow, or otherwise changes the plan** — re-dispatch
+    `roadmap-context-curator` after writing it (step 10's reconciliation
+    is now stale). Don't hand-patch the planning docs yourself; that
+    drifts (GATE DA, Phase 43 — L-006).
 12. **Triage candidate learnings.** Dispatch `knowledge-curator` over
     every candidate the phase raised **and the retro's contents**:
     promote / retain / merge / discard, with drafts for promotions and

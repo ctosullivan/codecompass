@@ -22,12 +22,22 @@ blank-slate doc reconstruction and an independent audit.
 **Stage A of the redefined-v1 roadmap is complete: Phases 39–43 are
 `done`.** Phase 43 dogfooded the full 14-step agent-led loop on a real
 `src/codecompass/` change (`query skills` widen, 43a) and **passed GATE
-DA** — the model works, roster stays at 7, no pruning; 3 amendments
-landed + 2 `check_user_docs.py` rules scheduled as **Phase 43b**. The
-`release-phase-auditor` first pass returned FAIL on 3 planning-doc
-bookkeeping gaps (missing 43b ROADMAP row; `v1-redefinition/roadmap.md`
-GATE DA outcome; 43b in the CONTEXT forward path) — all fixed, re-audit
-PASS. **Next: Phase 43b, then Phase 44 (Stage B begins).**
+DA** — the model works, roster stays at 7, no pruning; **4 amendments**
+landed (L-002 curator/knowledge-curator "lead runs the confirming check"
+handoff; `docs-maintainer` "check if a file is generated before editing"
+from L-005; `docs-maintainer` "fix, don't caveat" may mean *delete the
+paragraph*; `agent-led-workflow.md` step 11 + `roadmap-context-curator`
+brief "re-dispatch the curator after a plan-changing retro, reconcile
+*every* planning doc" from **L-006**) + 2 `check_user_docs.py` rules
+scheduled as **Phase 43b**. The `release-phase-auditor` ran a 3-round
+trail — **FAIL → FAIL → PASS** (first pass: 3 planning-doc bookkeeping
+gaps — missing 43b ROADMAP row, `v1-redefinition/roadmap.md` GATE DA
+outcome, 43b absent from the CONTEXT forward path; re-audit #1: the
+CONTEXT fix left the file self-contradictory on Phase 43's status;
+re-audit #2 PASS WITH NON-BLOCKING OBSERVATIONS) — every gap planning-doc
+bookkeeping, none a code defect (the evidence behind L-006). Candidate
+learning **L-006** filed this phase. **Next: Phase 43b, then Phase 44
+(Stage B begins).**
 
 - **39** ratified the redefinition: ADRs `decisions/0048`/`0049`
   `Accepted`; `pyproject.toml` `version` → `1.0.0.dev0`; ROADMAP's Stage
@@ -82,14 +92,24 @@ PASS. **Next: Phase 43b, then Phase 44 (Stage B begins).**
   phase where it verified real current-truth doc *edits*, not just "nothing
   changed". No `CLAUDE.md` change, no ADR, no release/tag (G2-b).
   **GATE DA passed** (`planning/retros/phase-43-dogfood-agent-led-workflow.md`):
-  model works, roster stays at 7, no pruning; 3 amendments landed
-  (`agent-led-workflow.md` step 12 curator "lead runs the check" handoff
-  from L-002; `docs-maintainer` "check if generated" from L-005;
-  `docs-maintainer` "fix may mean *delete*"); 2 `check_user_docs.py`
-  rules scheduled as **Phase 43b**. `release-phase-auditor` first pass
-  **FAIL** on 3 planning-doc bookkeeping gaps (43b ROADMAP row;
-  `v1-redefinition/roadmap.md` GATE DA outcome; 43b in the CONTEXT
-  forward path) — all fixed, re-audit PASS.
+  model works, roster stays at 7, no pruning; **4 amendments** landed —
+  (1) `agent-led-workflow.md` step 12 + `knowledge-curator` brief: curator
+  "lead runs the confirming check" handoff (from L-002); (2)
+  `docs-maintainer` brief "check if a file is generated before editing"
+  (from L-005); (3) `docs-maintainer` brief "fix, don't caveat" may mean
+  *delete the paragraph* (retro lesson 3); (4) `agent-led-workflow.md`
+  step 11 + `roadmap-context-curator` brief: re-dispatch the curator after
+  a plan-changing retro and reconcile *every* planning doc incl.
+  `v1-redefinition/roadmap.md` (from **L-006**, filed this phase as a
+  `candidate` — its disposition confirmed at Phase 43b triage). 2
+  `check_user_docs.py` rules scheduled as **Phase 43b**.
+  `release-phase-auditor` ran a 3-round trail — **FAIL → FAIL → PASS**
+  (first pass: 3 planning-doc bookkeeping gaps — 43b ROADMAP row,
+  `v1-redefinition/roadmap.md` GATE DA outcome, 43b absent from the
+  CONTEXT forward path; re-audit #1: the CONTEXT fix left the file
+  self-contradictory on Phase 43's status; re-audit #2: PASS WITH
+  NON-BLOCKING OBSERVATIONS) — every gap planning-doc bookkeeping, none a
+  code defect.
 
 **Phase 43 (43a) is the first and only `src/codecompass/` change in Stage
 A** — Phases 39–42 changed no `src/`. No `CLAUDE.md` change in Phase 42 or
@@ -172,14 +192,26 @@ vs 5). Closes the gap the Phase 17 CHANGELOG entry recorded. +2 tests
   release or tag** (gate G2-b).
 - **Closeout complete:** GATE DA retro
   (`planning/retros/phase-43-dogfood-agent-led-workflow.md`) — model
-  works, roster stays at 7, no pruning; 3 amendments landed, 2
-  `check_user_docs.py` rules → Phase 43b. `docs-reconstructor` drift
-  audit NO DRIFT. `knowledge-curator` triaged L-005 (promoted the
-  `docs-maintainer` brief rule; the check → 43b), moved L-002 → promoted
-  (GATE DA chose the "lead runs the check" handoff), L-003/L-004 →
-  Phase 43b. `release-phase-auditor` FAIL on 3 planning-doc bookkeeping
-  gaps → all fixed → **re-audit PASS**. ROADMAP row 43 → `done`;
-  **Stage A complete**.
+  works, roster stays at 7, no pruning; **4 amendments** landed: (1)
+  `agent-led-workflow.md` step 12 + `knowledge-curator` brief — curator
+  "lead runs the confirming check" handoff (from L-002); (2)
+  `docs-maintainer` brief — "check if a file is generated before editing"
+  (from L-005); (3) `docs-maintainer` brief — "fix, don't caveat" may mean
+  *delete the paragraph* (retro lesson 3); (4) `agent-led-workflow.md`
+  step 11 + `roadmap-context-curator` brief — re-dispatch the curator
+  after a plan-changing retro and reconcile *every* planning doc incl.
+  `v1-redefinition/roadmap.md` (from **L-006**). 2 `check_user_docs.py`
+  rules → Phase 43b. `docs-reconstructor` drift audit NO DRIFT.
+  `knowledge-curator` triaged L-005 (promoted the `docs-maintainer` brief
+  rule; the check → 43b), moved L-002 → promoted (GATE DA chose the "lead
+  runs the check" handoff), L-003/L-004 → Phase 43b; **L-006** filed this
+  phase as a `candidate` (disposition confirmed at Phase 43b triage, since
+  it post-dates step 12). `release-phase-auditor` ran a 3-round trail —
+  **FAIL → FAIL → PASS** (first pass: 3 planning-doc bookkeeping gaps;
+  re-audit #1: the CONTEXT fix left the file self-contradictory on Phase
+  43's status; re-audit #2: PASS WITH NON-BLOCKING OBSERVATIONS) — every
+  gap planning-doc bookkeeping, none a code defect. ROADMAP row 43 →
+  `done`; **Stage A complete**.
 
 **Phase 42, done** (2026-09-10) — the everyday documentation lifecycle
 plus the milestone documentation-closeout gate. `release-phase-auditor`:

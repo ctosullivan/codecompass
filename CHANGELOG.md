@@ -36,17 +36,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Phase 43**: the `docs-maintainer` agent brief gains a hard rule —
-  before editing any file, check whether it is *generated from `src/`*.
-  `.claude/skills/codecompass/SKILL.md`, the per-vendor Skill/`.mdc`
-  exports, `.claude/commands/discovery.md`, and the root `CLAUDE.md`
-  routing block are git-tracked but regenerated on `sync`, so a fix
-  belongs in the generator (the lead's job) and the artifact is then
-  regenerated; only the hand-authored docs are `docs-maintainer`'s to
-  edit directly. Surfaced by candidate learning **L-005** during the
-  first *editing* use of `docs-maintainer` (it edited the generated
-  `SKILL.md` directly). No `CLAUDE.md` change and no new ADR this phase
-  (43a is a bug fix — the command did not match its own docstring — not a
+- **Phase 43**: GATE DA (Stage A's exit retro) kept the agent roster at 7
+  with no pruning and landed **4 amendments** to the agent-led process
+  docs: (1) `planning/agent-led-workflow.md` step 12 + the
+  `knowledge-curator` brief now require the curator to end its report with
+  an explicit "lead: run `<check>` to confirm" line, which the lead then
+  runs (from candidate learning **L-002**); (2) the `docs-maintainer`
+  brief gains a hard rule — before editing any file, check whether it is
+  *generated from `src/`* (`.claude/skills/codecompass/SKILL.md`, the
+  per-vendor Skill/`.mdc` exports, `.claude/commands/discovery.md`, and
+  the root `CLAUDE.md` routing block are git-tracked but regenerated on
+  `sync`, so a fix belongs in the generator — the lead's job — not the
+  artifact), surfaced by candidate learning **L-005** during the first
+  *editing* use of `docs-maintainer`; (3) the `docs-maintainer` brief now
+  notes "fix, don't caveat" may mean *deleting* a paragraph whose only
+  purpose was to explain a now-resolved gap; (4)
+  `planning/agent-led-workflow.md` step 11 + the `roadmap-context-curator`
+  brief now require re-dispatching the curator after a retro that changes
+  the plan, reconciling *every* planning doc (incl.
+  `planning/v1-redefinition/roadmap.md`), from candidate learning
+  **L-006**. Two `check_user_docs.py` rules GATE DA specified
+  (`check_no_deleted_names_as_live`,
+  `check_generated_artifacts_match_source`) are scheduled as Phase 43b.
+  Candidate learnings filed this phase: **L-005** (promoted — the brief
+  rule above; its `check_user_docs.py` half is Phase 43b) and **L-006**
+  (candidate — the curator reconciles before the retro, so a GATE/retro
+  can stale its pass; disposition confirmed at Phase 43b triage). The
+  `release-phase-auditor` reached PASS WITH NON-BLOCKING OBSERVATIONS
+  after a 3-round FAIL → FAIL → PASS trail, every gap planning-doc
+  bookkeeping. No `CLAUDE.md` change and no new ADR this phase (43a is a
+  bug fix — the command did not match its own docstring — not a
   non-obvious tradeoff), and no release or tag (gate G2-b).
 
 ### Added

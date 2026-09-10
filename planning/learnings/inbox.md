@@ -8,6 +8,39 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-006 — the curator reconciles *before* the retro, but a GATE/retro can change the plan
+
+- **origin:** Phase 43 (dogfood; `release-phase-auditor` FAIL ×3 on
+  planning-doc bookkeeping)
+- **date:** 2026-09-10
+- **project_revision:** d34a486
+- **observation:** the 14-step workflow runs `roadmap-context-curator`
+  (step 10) *before* the lead writes the retro (step 11). For most phases
+  that's fine. But a **GATE phase** (or any retro that schedules a
+  follow-up phase or records roster amendments) *changes the roadmap*
+  after step 10 — so the curator's reconciliation is already stale when
+  it lands. Phase 43's `release-phase-auditor` FAILed 3 times, entirely
+  on planning-doc bookkeeping the lead then hand-patched piecemeal
+  (missing `43b` ROADMAP row — `phase-43b` was created after the curator
+  ran; `v1-redefinition/roadmap.md` GATE DA outcome — the curator read
+  "roadmap.md" as `ROADMAP.md`; `43b` absent from the CONTEXT forward
+  path — written before the retro existed; then the CONTEXT fix left the
+  file self-contradictory). The lead is a poor substitute for the
+  curator on multi-file planning-doc consistency.
+- **evidence:** `planning/retros/_audit-phase-43.md` — 3 audit rounds,
+  every FAIL a planning-doc gap, zero code defects.
+- **classification:** workflow
+- **status:** candidate
+- **recurrence:** first occurrence (but note: the auditor has caught a
+  planning-doc gap on *every* phase 41–43 — 41 plan Files, 42 obs, 43 ×3)
+- **promoted_to:** — (proposed amendment landed this phase:
+  `planning/agent-led-workflow.md` step 11 gains "if the retro schedules
+  a follow-up phase or amends the roster/workflow, re-dispatch
+  `roadmap-context-curator` after writing it"; and the curator brief
+  gets "reconcile *all* planning docs — `ROADMAP.md`,
+  `v1-redefinition/roadmap.md`, `CONTEXT.md`, `CHANGELOG.md`, the phase
+  plan files — not just the first three". Curator to confirm at triage.)
+
 ### L-005 — `docs-maintainer` edited a generated file (it doesn't distinguish generated vs hand-authored)
 
 - **origin:** Phase 43 (dogfood; `docs-maintainer` first *editing* use)
@@ -58,7 +91,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
      `planning/phase-43b-standing-doc-drift-checks.md` §2 (not a vague
      option). Not `promoted` until Phase 43b lands it + its test.
 - **promoted_to:** `.claude/agents/docs-maintainer.md` "Hard rules"
-  (generated-file check) @ feat(phase-43) — *lead fills the real short
+  (generated-file check) @ d34a486 — *lead fills the real short
   hash*. Invariant part: pending Phase 43b.
 
 ### L-004 — the per-phase docs-drift audit is diff-scoped, so standing rot is invisible to it
@@ -244,7 +277,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   43); the recurrence trigger below is satisfied. Logged in `promoted.md`.
 - **moves forward when:** resolved — promoted this phase.
 - **promoted_to:** `planning/agent-led-workflow.md` step 12 +
-  `.claude/agents/knowledge-curator.md` "Hard rules" @ feat(phase-43)
+  `.claude/agents/knowledge-curator.md` "Hard rules" @ d34a486
   — *lead fills the real short hash*.
 
 ### L-001 — `check_readme_phase_count` conflated "highest done phase" with "product completeness"

@@ -1,10 +1,14 @@
 # Phase 43: Dogfood the agent-led loop on a real change
 
 **Status:** done (2026-09-10) — **GATE DA passed** (retro:
-`planning/retros/phase-43-dogfood-agent-led-workflow.md`).
-`release-phase-auditor` first pass FAIL on 3 planning-doc bookkeeping
-gaps (43b ROADMAP row; `v1-redefinition/roadmap.md` GATE DA outcome; 43b
-in the CONTEXT forward path) → all fixed → re-audit PASS.
+`planning/retros/phase-43-dogfood-agent-led-workflow.md`); roster stays at
+7, no pruning, **4 amendments** landed + Phase 43b scheduled; candidate
+learning **L-006** filed. `release-phase-auditor` reached PASS WITH
+NON-BLOCKING OBSERVATIONS after a 3-round trail — **FAIL → FAIL → PASS**
+(first pass: 3 planning-doc bookkeeping gaps — 43b ROADMAP row,
+`v1-redefinition/roadmap.md` GATE DA outcome, 43b in the CONTEXT forward
+path; re-audit #1: the CONTEXT fix left the file self-contradictory on
+Phase 43's status; re-audit #2: PASS).
 
 Stage A, final phase. Runs **one real, small CodeCompass change** through
 the entire 14-step agent-led workflow (`planning/agent-led-workflow.md`),
@@ -108,6 +112,7 @@ the redefinition began**. Spec:
 - The retro exists and names concrete roster/workflow amendments (even
   if the amendment is "no change needed — all roles earned their keep").
 - `planning/CONTEXT.md` shows: Stage A complete, GATE DA passed, next =
+  Phase 43b (the two `check_user_docs.py` rules GATE DA scheduled), then
   Phase 44.
 
 ## Done when

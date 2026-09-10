@@ -103,18 +103,31 @@ roster is probably too big — prune per GATE DA).
   `src/codecompass/` change since the redefinition began). Ran it through
   the full **14-step workflow** (`planning/agent-led-workflow.md`).
 - **Status:** done (2026-09-10). Full suite 545 passed / 1 skipped;
-  drift audit NO DRIFT; `release-phase-auditor` PASS (after 3 planning-doc
-  bookkeeping fixes the first audit pass flagged — the model catching its
-  own gap).
+  drift audit NO DRIFT; `release-phase-auditor` **PASS WITH NON-BLOCKING
+  OBSERVATIONS** after a 3-round trail — **FAIL → FAIL → PASS** (first
+  pass: 3 planning-doc bookkeeping gaps; re-audit #1: the CONTEXT fix left
+  the file self-contradictory on Phase 43's status; re-audit #2: PASS).
+  Every gap was planning-doc bookkeeping the lead hand-patched after the
+  `roadmap-context-curator`'s step-10 pass went stale, none a code defect
+  — the evidence behind **L-006**.
 - **Exit / GATE DA — passed.** The agent-led model works: **roster stays
   at 7, no pruning** (`context-evaluator` / `reference-project-tester`
-  carried forward, first use is Stage B). 3 amendments landed this phase
-  (curator "lead runs the confirming check" handoff, from L-002;
-  `docs-maintainer` "check if a file is generated before editing", from
-  L-005; `docs-maintainer` "fix may mean *delete* the paragraph"). Two
-  `check_user_docs.py` rules from GATE DA (deleted-names-as-live from
-  L-003/L-004; generated-artifacts-match-source from L-005) scheduled as
-  **Phase 43b**, to run before Phase 44. Retro:
+  carried forward, first use is Stage B). **4 amendments landed this
+  phase:** (1) `planning/agent-led-workflow.md` step 12 + the
+  `knowledge-curator` brief — curator "lead runs the confirming check"
+  handoff (from L-002); (2) `docs-maintainer` brief "check if a file is
+  generated before editing" (from L-005); (3) `docs-maintainer` brief
+  "fix, don't caveat" may mean *delete the paragraph* (retro lesson 3);
+  (4) `planning/agent-led-workflow.md` step 11 + the
+  `roadmap-context-curator` brief — re-dispatch the curator after a
+  plan-changing retro and reconcile *every* planning doc incl. this file
+  (`v1-redefinition/roadmap.md`), from **L-006**. Two `check_user_docs.py`
+  rules from GATE DA (`check_no_deleted_names_as_live` from L-003/L-004;
+  `check_generated_artifacts_match_source` from L-005) scheduled as
+  **Phase 43b**, to run before Phase 44. Candidate learning **L-006**
+  filed this phase (the curator reconciles at step 10, before the retro,
+  but a GATE/retro can change the plan) — a `candidate`, its disposition
+  confirmed at Phase 43b's triage. Retro:
   `planning/retros/phase-43-dogfood-agent-led-workflow.md`.
 
 ### Phase 43b — Standing doc-drift checks (from GATE DA) · COMMITTED

@@ -48,6 +48,14 @@ In the phase's own commit:
 
 ## Hard rules
 
+- **Reconcile *every* planning doc, not just the top three.** Your
+  phase-end job covers `planning/ROADMAP.md`, `planning/CONTEXT.md`,
+  `CHANGELOG.md` — **and also** `planning/v1-redefinition/roadmap.md`
+  (the redefined-v1 stage map, which has its own per-phase stanzas +
+  status lines), the phase's own `planning/phase-N-*.md` status line, and
+  any *new* `planning/phase-*.md` a retro just scheduled. "roadmap.md"
+  in a task usually means both `ROADMAP.md` and
+  `v1-redefinition/roadmap.md` — check. (GATE DA, Phase 43 — L-006.)
 - **Never mark a phase `done` because code was written.** All six (as
   amended) DoD conditions, or it's not done.
 - Write only `planning/ROADMAP.md`, `planning/CONTEXT.md`,

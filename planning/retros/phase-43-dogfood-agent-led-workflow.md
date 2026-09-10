@@ -1,7 +1,7 @@
 # Phase 43 retro — Dogfood the agent-led loop + GATE DA
 
 - **Date:** 2026-09-10
-- **Commit:** `feat(phase-43)` (hash in a follow-up)
+- **Commit:** `d34a486` (`feat(phase-43)`)
 - **Auditor verdict:** first pass **FAIL** on 3 planning-doc bookkeeping
   gaps (missing `43b` ROADMAP row; `v1-redefinition/roadmap.md` GATE DA
   outcome not recorded; `43b` absent from the CONTEXT forward path) — the
@@ -27,8 +27,9 @@
 - **State after this phase:** Stage A is complete. The agent-led model
   has been exercised end to end 3 times (Phases 41, 42, 43) with
   progressively more real work each time. GATE DA (below) is passed with
-  3 small amendments and no roster pruning. Stage B (reference-project
-  validation) starts at Phase 44.
+  4 small amendments and no roster pruning. **Phase 43b** (two
+  `check_user_docs.py` rules GATE DA scheduled) runs next, then Stage B
+  (reference-project validation) starts at Phase 44.
 
 ## Goal
 
@@ -100,8 +101,15 @@ Delivered. Deviations:
    "fix, don't caveat" sometimes means "delete the paragraph".
 4. **The independent auditor has caught a real gap every phase**
    (41: plan Files omission + missing verbatim-diff record; 42: 3
-   observations; 43: TBD). Strongest single signal that the independent
-   DoD audit is worth its cost.
+   observations; 43: **3 blocking planning-doc bookkeeping gaps** — a
+   missing `43b` ROADMAP row, the GATE DA outcome not recorded in
+   `v1-redefinition/roadmap.md`, and `43b` absent from the CONTEXT
+   forward path; then a 4th on re-audit — the CONTEXT fix left the file
+   self-contradictory on Phase 43's status). It took 3 audit rounds
+   (FAIL → FAIL → PASS). None was a code defect. Strongest single signal
+   that the independent DoD audit is worth its cost — the lead's own
+   "done" self-assessment was wrong 3 times on bookkeeping the lead
+   authored.
 5. **`knowledge-curator` still can't run a check** (L-002, now 3rd
    occurrence — every triage). It edits `planning/learnings/**` to
    resolve a `check_user_docs.py` finding, then can't confirm.
@@ -112,8 +120,9 @@ Consolidated into GATE DA below.
 
 ## GATE DA — did each role earn its keep?
 
-**Verdict: the model works. Roster stays at 7. 3 small amendments, no
-pruning.**
+**Verdict: the model works. Roster stays at 7. 4 small amendments, no
+pruning.** (The 4th — L-006 — was surfaced *by* GATE DA's own audit
+rounds, which is fitting.)
 
 | Agent | Stage A usage | Verdict |
 |---|---|---|
@@ -141,6 +150,12 @@ briefs):**
 3. **`docs-maintainer` brief: "fix, don't caveat" may mean *delete the
    paragraph*** when the paragraph's whole purpose was to explain a
    now-resolved gap (from lesson 3) — landed this phase.
+4. **`agent-led-workflow.md` step 11 + `roadmap-context-curator` brief:
+   re-dispatch the curator after a retro that changes the plan; the
+   curator reconciles *every* planning doc incl.
+   `v1-redefinition/roadmap.md`** (from L-006 — the 3 audit-round FAILs
+   were all planning-doc bookkeeping the lead hand-patched after the
+   curator's step-10 pass went stale) — landed this phase.
 
 **GATE DA decisions recorded but NOT implemented this phase** (small
 `check_user_docs.py` additions — scheduled as **Phase 43b**, a quick
@@ -165,6 +180,16 @@ sections) — noted, not a problem at this size.
 - **L-005** — `docs-maintainer` edited a generated file. Triaged this
   phase: brief rule landed (project-rule part promoted); the
   generated-artifact drift check is a Phase 43b item.
+- **L-006** — the curator reconciles at step 10, *before* the retro
+  (step 11), but a GATE/retro can schedule a follow-up phase or amend
+  the roster → step 10's work is stale when it lands. Surfaced by the
+  `release-phase-auditor`'s 3 FAIL rounds (all planning-doc bookkeeping
+  the lead then hand-patched — badly). **Amendment landed this phase:**
+  `agent-led-workflow.md` step 11 gains "re-dispatch
+  `roadmap-context-curator` after the retro if it changed the plan";
+  the curator brief gains "reconcile *every* planning doc incl.
+  `v1-redefinition/roadmap.md`". Filed as a `candidate` — Phase 43b's
+  triage confirms the disposition (it post-dates this phase's step 12).
 
 ## Where we're going
 
