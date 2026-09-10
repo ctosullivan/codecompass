@@ -1,7 +1,7 @@
 # Phase 42 retro — Documentation lifecycle (incremental + closeout gate)
 
 - **Date:** 2026-09-10
-- **Commit:** `feat(phase-42)` (hash in a follow-up)
+- **Commit:** `8e29e10` (`feat(phase-42)`)
 - **Auditor verdict:** PASS WITH NON-BLOCKING OBSERVATIONS
   (`_audit-phase-42.md`) — all §5 DoD conditions hold. 3 advisory
   observations: (1) CHANGELOG per-phase stacking vs canonical
