@@ -30,11 +30,27 @@ deviation — added scope, dropped scope, deferred scope — and why.>
 
 <The concrete outcome. What now exists / works that didn't before.>
 
+## What worked
+
+<Things to **keep doing** — a tool, an agent, a sequencing choice, a
+decision that paid off, a check that caught something. Positive and
+specific: "X worked because Y" — not "everything was fine". If a prior
+retro flagged something and the fix worked this phase, say so.>
+
+## What didn't work
+
+<Things that **failed or cost more than they returned** this phase — a
+wasted approach, a handoff that dropped context, a step that added
+nothing, an assumption that was wrong, rework. Not "what we learned"
+(that's below) — what actually went wrong. "No misfires this phase" is a
+valid answer for a smooth phase; don't invent one.>
+
 ## Lessons learnt
 
-<What went wrong, what was harder than expected, what a future session
-should know before doing similar work. Be specific and honest — a retro
-that says "went fine" every time is not doing its job.>
+<The generalizable takeaway — what a future session should know before
+doing similar work (may draw on "what worked" / "what didn't"). Be
+specific and honest — a retro that says "went fine" every time is not
+doing its job.>
 
 ## Process-improvement feedback
 

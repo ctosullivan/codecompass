@@ -78,7 +78,8 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
 11. **Write the phase retro.** The lead authors
     `planning/retros/phase-N-<slug>.md` from `TEMPLATE.md` — **where we
     are** (arc/stage context, what the previous phase set up, state now),
-    goal, delivered vs planned + deviations, what was achieved, lessons
+    goal, delivered vs planned + deviations, what was achieved, **what
+    worked** (keep doing) / **what didn't work** (stop / fix), lessons
     learnt, process-improvement feedback, candidate learnings filed,
     **where we're going** (next phase(s), gate ahead, trajectory
     confirmed/changed), time/cost. A few lines for a trivial phase. Only

@@ -6,7 +6,8 @@
   gaps (missing `43b` ROADMAP row; `v1-redefinition/roadmap.md` GATE DA
   outcome not recorded; `43b` absent from the CONTEXT forward path) — the
   code + closeout were fully green. All 3 fixed; **re-audit PASS**. The
-  independent auditor caught its own gap, again (lesson 4).
+  independent auditor caught real gaps the lead had missed, again
+  (see "What worked" + lesson 2).
 - **Agents used:** `docs-maintainer` (first *editing* use → surfaced L-005),
   `docs-reconstructor` (per-phase drift audit → **NO DRIFT**, first run
   that verified real doc edits), `roadmap-context-curator`,
@@ -72,47 +73,84 @@ Delivered. Deviations:
   verification of those docs, a real learning (L-005), and a passing
   independent DoD audit.
 
+## What worked
+
+- **The full loop on a real product change.** Every agent produced
+  distinct, load-bearing output — unlike Phases 41–42 where "nothing to
+  reconcile" made them look like overhead. This is the shape the model
+  was built for.
+- **Pausing during 43a scoping to read the docstring.** The documented
+  gap was `slash_command`-only; checking `query skills`'s own docstring
+  revealed it already promised `.mdc` coverage the filter never
+  delivered — so the *correct* small fix was all 3 kinds. A 5-minute
+  check found the right scope.
+- **Regenerating `.claude/skills/codecompass/SKILL.md` from `skill.py`**
+  rather than hand-editing → a clean single-line diff that byte-matches
+  the generator (the auditor verified this explicitly).
+- **Live-verifying against the real `context-graph.db`** (9 rows vs 5) —
+  fast, concrete confidence the change did what it should, before any
+  test.
+- **The `docs-reconstructor` drift audit in "verify real edits" mode.**
+  First phase it had actual doc edits to check against code (not just
+  "nothing changed") — it independently confirmed all 3 `docs-maintainer`
+  rewrites were accurate.
+- **The `knowledge-curator` "lead runs the check" handoff** — it had
+  worked informally 3× (curator traces the check by hand, ends with
+  "lead: run X"); GATE DA just formalised what was already working.
+- **The independent auditor.** Caught 3 real bookkeeping gaps + 1
+  self-contradiction the lead had missed. Worth every one of its 3
+  rounds.
+
+## What didn't work
+
+- **The lead hand-patching planning docs.** After the
+  `roadmap-context-curator`'s step-10 pass, the retro scheduled Phase 43b
+  and a 4th amendment; the lead then patched `ROADMAP.md` /
+  `v1-redefinition/roadmap.md` / `CONTEXT.md` piecemeal and got it wrong
+  3 times (missing 43b row, wrong "roadmap.md" file, self-contradictory
+  CONTEXT). Every audit FAIL was self-inflicted bookkeeping. → **L-006**;
+  the fix is to re-dispatch the curator after a plan-changing retro, not
+  hand-patch.
+- **`docs-maintainer` editing the generated `SKILL.md` directly** — a
+  wasted round-trip (revert → fix `skill.py` → regenerate). Its brief
+  didn't tell it to check whether a file is generated. → **L-005**,
+  brief amended.
+- **Writing the retro, then not re-checking whether it changed the
+  plan.** The retro is step 11, *after* the curator (step 10) — so a
+  retro that schedules a follow-up or amends the roster leaves step 10
+  stale. Discovered only via the auditor's FAILs.
+- **Minor:** the `43a` plan said "+3 tests"; actual delta is 2 new test
+  functions + assertions added to 3 existing ones. Sloppy wording the
+  auditor flagged.
+
 ## Lessons learnt
 
-1. **The loop earns its keep on a real change.** Phases 41–42 (governance
-   phases) made the agents look like overhead — "NO DRIFT, nothing to
-   reconcile" every step. Phase 43 (a real product change) is where each
-   agent produced distinct, load-bearing value: `docs-maintainer`
-   rewrote 3 docs, `docs-reconstructor` *independently verified* those
-   rewrites against the code (not just "nothing changed"), the auditor
-   re-ran the live demos. The model was designed for phases like this,
-   not phases like 41–42.
-2. **`docs-maintainer` doesn't distinguish generated from hand-authored
-   docs** (L-005). It edited `.claude/skills/codecompass/SKILL.md`
-   (generated from `skill.py`). It *did* correctly flag
-   `.claude/commands/discovery.md` as generated — so it has partial
-   awareness, just not applied consistently. The `.claude/skills/` path
-   looks like a doc directory; the fact it's generated is only obvious
-   from `skill.py`. Brief amended.
-3. **`docs-maintainer` self-reported friction with "fix, don't caveat".**
-   Its two flagged cases were genuine: (a) the `architecture/overview.md`
-   paragraph it fixed *was itself* a standing caveat ("this gap exists,
-   see CONTEXT.md") whose whole reason to exist evaporated — minimal-fix
-   vs. delete-what-the-system-no-longer-justifies pulled opposite ways;
-   (b) `docs/cli-reference.md`'s per-phase "added in Phase N" Status
-   lines are the exact anti-pattern the brief warns against, but a
-   pre-existing file-wide convention. It chose consistency + flagged the
-   style. Both are good judgement; the brief could acknowledge that
-   "fix, don't caveat" sometimes means "delete the paragraph".
-4. **The independent auditor has caught a real gap every phase**
-   (41: plan Files omission + missing verbatim-diff record; 42: 3
-   observations; 43: **3 blocking planning-doc bookkeeping gaps** — a
-   missing `43b` ROADMAP row, the GATE DA outcome not recorded in
-   `v1-redefinition/roadmap.md`, and `43b` absent from the CONTEXT
-   forward path; then a 4th on re-audit — the CONTEXT fix left the file
-   self-contradictory on Phase 43's status). It took 3 audit rounds
-   (FAIL → FAIL → PASS). None was a code defect. Strongest single signal
-   that the independent DoD audit is worth its cost — the lead's own
-   "done" self-assessment was wrong 3 times on bookkeeping the lead
-   authored.
-5. **`knowledge-curator` still can't run a check** (L-002, now 3rd
-   occurrence — every triage). It edits `planning/learnings/**` to
-   resolve a `check_user_docs.py` finding, then can't confirm.
+The generalizable takeaways (phase-specific detail is in "What worked /
+didn't" above):
+
+1. **The agent-led loop's cost/value ratio tracks how "real" the phase
+   is.** Governance phases (41–42): agents look like overhead. Product
+   phases (43): each earns its keep. Don't judge the model on governance
+   phases.
+2. **Independent verification consistently beats the lead's
+   self-assessment** — the auditor caught a real gap on *all three*
+   phases it ran (41, 42, 43), and Phase 43's 3-round FAIL trail was
+   entirely bookkeeping the lead authored and thought was fine. The
+   lesson isn't "the lead is careless" — it's "the person who did the
+   work is structurally bad at auditing it, so don't skip the
+   independent pass".
+3. **A step that runs before an input it depends on is a latent bug.**
+   The curator (step 10) runs before the retro (step 11); a retro that
+   changes the plan makes step 10 stale (L-006). Same shape as L-003/
+   L-004 (a diff-scoped check runs before standing content it should
+   see). Watch for "X validates Y, but Y can still change after X".
+4. **Agents apply their rules unevenly.** `docs-maintainer` correctly
+   flagged one generated file (`discovery.md`) and edited another
+   (`SKILL.md`) in the same task. A rule stated once isn't a rule
+   applied consistently — spell out the check (L-005).
+5. **"Fix, don't caveat" has a corner case:** when a paragraph's whole
+   purpose was to explain a now-resolved gap, the fix is to *delete* it,
+   not reword it. Amended into the `docs-maintainer` brief.
 
 ## Process-improvement feedback
 
@@ -149,7 +187,8 @@ briefs):**
    editing"** (from L-005) — landed this phase.
 3. **`docs-maintainer` brief: "fix, don't caveat" may mean *delete the
    paragraph*** when the paragraph's whole purpose was to explain a
-   now-resolved gap (from lesson 3) — landed this phase.
+   now-resolved gap (from lesson 5 / "what didn't work") — landed this
+   phase.
 4. **`agent-led-workflow.md` step 11 + `roadmap-context-curator` brief:
    re-dispatch the curator after a retro that changes the plan; the
    curator reconciles *every* planning doc incl.

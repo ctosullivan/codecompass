@@ -67,6 +67,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bookkeeping. No `CLAUDE.md` change and no new ADR this phase (43a is a
   bug fix — the command did not match its own docstring — not a
   non-obvious tradeoff), and no release or tag (gate G2-b).
+  Follow-up (user request): the phase-retro `TEMPLATE.md` gains **What
+  worked** (keep doing) and **What didn't work** (stop / fix) sections
+  between "What was achieved" and "Lessons learnt"; `agent-led-workflow.md`
+  step 11, the `retros/README.md`, and the `release-phase-auditor` brief
+  updated to match, and the Phase 43 retro backfilled.
 
 ### Added
 

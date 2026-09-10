@@ -40,10 +40,11 @@ without fixing anything — that a phase is actually done.
    `docs-maintainer` and re-audited). The audit report exists.
 4. **A phase retro exists** at `planning/retros/phase-N-<slug>.md`, with
    every `planning/retros/TEMPLATE.md` section filled substantively —
-   including **Where we are** (arc/stage context) and **Where we're
-   going** (next phase(s), gate ahead, trajectory). Not a stub, unless
-   the phase is genuinely trivial (then a few real lines still cover
-   where-we-are / goal / shipped / next).
+   including **Where we are** (arc/stage context), **What worked** /
+   **What didn't work**, and **Where we're going** (next phase(s), gate
+   ahead, trajectory). Not a stub, unless the phase is genuinely trivial
+   (then a few real lines still cover where-we-are / goal / shipped /
+   worked-didn't / next).
 5. **Candidate learnings triaged** — the `knowledge-curator` produced an
    outcome (promote / retain / merge / discard) for each learning the
    phase raised, including any surfaced by the retro.
