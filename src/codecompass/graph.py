@@ -1238,13 +1238,22 @@ def doc_code_trace(conn: sqlite3.Connection, doc_path_or_vendor_name: str) -> li
     return []
 
 
+_SKILLS_INDEX_KINDS = ("skill", "cursor_mdc", "slash_command")
+
+
 def skills_index(conn: sqlite3.Connection) -> list[dict]:
-    """Every `doc_artifacts` row with `kind='skill'`, its `origin`, and
-    what it mechanically mentions (`skill_mentions_edges`).
+    """Every agent-context artifact — a `.claude/skills/**` Skill
+    (`kind='skill'`), a Cursor `.cursor/rules/*.mdc` rule
+    (`kind='cursor_mdc'`), or the `/discovery` slash command
+    (`kind='slash_command'`) — with its `kind`, `origin`, and what it
+    mechanically mentions (`skill_mentions_edges`).
     """
     index = []
-    for doc_artifact_id, path, dname, origin in conn.execute(
-        "SELECT id, path, name, origin FROM doc_artifacts WHERE kind = 'skill' ORDER BY path"
+    placeholders = ", ".join("?" for _ in _SKILLS_INDEX_KINDS)
+    for doc_artifact_id, path, dname, origin, kind in conn.execute(
+        f"SELECT id, path, name, origin, kind FROM doc_artifacts "
+        f"WHERE kind IN ({placeholders}) ORDER BY path",
+        _SKILLS_INDEX_KINDS,
     ):
         mentions_vendors = [
             vname
@@ -1275,6 +1284,7 @@ def skills_index(conn: sqlite3.Connection) -> list[dict]:
                 "id": doc_artifact_id,
                 "path": path,
                 "name": dname,
+                "kind": kind,
                 "origin": origin,
                 "mentions_vendors": mentions_vendors,
                 "mentions_source_files": mentions_source_files,

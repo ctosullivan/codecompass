@@ -19,8 +19,15 @@ agent-led, validated against real external reference-project work
 generalised only as far as evidence justifies, then released after
 blank-slate doc reconstruction and an independent audit.
 
-**Stage A of the redefined-v1 roadmap: Phases 39–42 are `done`; Phase 43
-(dogfood the loop → GATE DA) is the last Stage A phase.**
+**Stage A of the redefined-v1 roadmap is complete: Phases 39–43 are
+`done`.** Phase 43 dogfooded the full 14-step agent-led loop on a real
+`src/codecompass/` change (`query skills` widen, 43a) and **passed GATE
+DA** — the model works, roster stays at 7, no pruning; 3 amendments
+landed + 2 `check_user_docs.py` rules scheduled as **Phase 43b**. The
+`release-phase-auditor` first pass returned FAIL on 3 planning-doc
+bookkeeping gaps (missing 43b ROADMAP row; `v1-redefinition/roadmap.md`
+GATE DA outcome; 43b in the CONTEXT forward path) — all fixed, re-audit
+PASS. **Next: Phase 43b, then Phase 44 (Stage B begins).**
 
 - **39** ratified the redefinition: ADRs `decisions/0048`/`0049`
   `Accepted`; `pyproject.toml` `version` → `1.0.0.dev0`; ROADMAP's Stage
@@ -54,20 +61,50 @@ blank-slate doc reconstruction and an independent audit.
   NON-BLOCKING OBSERVATIONS** (3 advisory items folded into the closeout
   checklist / auditor brief). Retro:
   `planning/retros/phase-42-documentation-lifecycle.md`.
+- **43** (`done`) dogfooded the full 14-step agent-led loop on one
+  real `src/codecompass/` change — **43a**
+  ([`phase-43a-query-skills-widen-kinds.md`](phase-43a-query-skills-widen-kinds.md)),
+  the **first `src/` change since the redefinition began**:
+  `graph.skills_index` / `codecompass query skills` widened from
+  `WHERE kind = 'skill'` to `kind IN ('skill', 'cursor_mdc',
+  'slash_command')` (`_SKILLS_INDEX_KINDS`) + a `kind` per row / a "Kind"
+  table column / `--json kind`, with `skill.py`'s generated tool-Skill
+  description and `.claude/skills/codecompass/SKILL.md` regenerated to
+  match — so Cursor `.mdc` rules and `/discovery` now surface in `query
+  skills` (verified live: 9 rows vs 5), closing the documented Phase 17
+  gap. +2 tests (545 suite); `docs-maintainer` reconciled
+  `docs/cli-reference.md` + `architecture/overview.md`. Dogfood outcome:
+  `docs-maintainer`'s first *editing* use surfaced **L-005** (it edited
+  the generated `SKILL.md` directly — the fix belongs in `skill.py`; its
+  brief gained a "check if generated before editing" rule this phase);
+  `docs-reconstructor` per-phase drift audit
+  (`planning/retros/_drift-audit-phase-43.md`) → **NO DRIFT**, the first
+  phase where it verified real current-truth doc *edits*, not just "nothing
+  changed". No `CLAUDE.md` change, no ADR, no release/tag (G2-b).
+  **GATE DA passed** (`planning/retros/phase-43-dogfood-agent-led-workflow.md`):
+  model works, roster stays at 7, no pruning; 3 amendments landed
+  (`agent-led-workflow.md` step 12 curator "lead runs the check" handoff
+  from L-002; `docs-maintainer` "check if generated" from L-005;
+  `docs-maintainer` "fix may mean *delete*"); 2 `check_user_docs.py`
+  rules scheduled as **Phase 43b**. `release-phase-auditor` first pass
+  **FAIL** on 3 planning-doc bookkeeping gaps (43b ROADMAP row;
+  `v1-redefinition/roadmap.md` GATE DA outcome; 43b in the CONTEXT
+  forward path) — all fixed, re-audit PASS.
 
-**No `src/codecompass/` change and no `CLAUDE.md` change in Phase 42 (§5
-was already amended in Phases 40–41); no `src/` change in any Stage A
-phase; no release/tag (gate G2-b).**
+**Phase 43 (43a) is the first and only `src/codecompass/` change in Stage
+A** — Phases 39–42 changed no `src/`. No `CLAUDE.md` change in Phase 42 or
+43 (§5 was already amended in Phases 40–41). No release or tag anywhere in
+Stage A (gate G2-b).
 
-**Next: Phase 43** ([`phase-43-dogfood-agent-led-workflow.md`](phase-43-dogfood-agent-led-workflow.md))
-— dogfood the full agent-led loop on **one user-chosen real CodeCompass
-code change** (shortlist in the plan file: the `CLAUDE.md` →
-`ai-docs/README.md` pointer, `query skills` surfacing `slash_command`
-rows, `/discovery` at the whole-project `sync` trigger point, or the
-pending `ai-docs/` enrichment run), then retro the roster. **GATE DA** —
-Stage B does not start until Phase 43's retro is done and the
-roster/workflow amended. No human-decision gate blocks starting Phase 43
-once Phase 42 is `done`.
+**Next: Phase 43b** ([`phase-43b-standing-doc-drift-checks.md`](phase-43b-standing-doc-drift-checks.md))
+— a ~1-session tooling phase: implement the two `check_user_docs.py`
+rules GATE DA decided (`check_no_deleted_names_as_live`,
+`check_generated_artifacts_match_source`), closing the standing-content
+and generated-artifact drift gaps found during Stage A before Stage B's
+external work. **Then Phase 44** — Stage B begins: the reference-project
+protocol + context-quality eval spec into operational form (also writes
+the Phase 45 plan), briefing `context-evaluator` and
+`reference-project-tester` for their first real use.
 
 The `planning/v1-redefinition/` package + `planning/learnings/` (now live)
 + `planning/retros/` + `planning/agent-led-workflow.md` (14 steps) + Stage
@@ -106,6 +143,44 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 43, done** (2026-09-10) — dogfooded the agent-led loop on one
+real change (Stage A's last phase; exit = **GATE DA, passed**). The code
+change (**43a**): `graph.skills_index` `WHERE kind = 'skill'` →
+`WHERE kind IN ('skill', 'cursor_mdc', 'slash_command')` +
+`_SKILLS_INDEX_KINDS` + a `kind` per returned row;
+`cli.py::query_skills` gains a "Kind" column and `kind` in `--json`;
+`skill.py::render_tool_skill`'s `query skills` description reworded and
+`.claude/skills/codecompass/SKILL.md` regenerated (not hand-edited).
+`codecompass query skills` now surfaces Cursor `.mdc` rules and
+`/discovery`, not just Skills — verified live against this repo (9 rows
+vs 5). Closes the gap the Phase 17 CHANGELOG entry recorded. +2 tests
+(`test_graph.py`, `test_cli.py`; full suite 545). The **first
+`src/codecompass/` change since the v1 redefinition began**.
+- The full 14-step agent-led loop ran for real. `docs-maintainer`'s first
+  *editing* use surfaced **L-005**: it edited the generated
+  `.claude/skills/codecompass/SKILL.md` directly instead of fixing
+  `skill.py` and regenerating. Fixed this phase — the `docs-maintainer`
+  brief gained a hard rule to check whether a file is generated from
+  `src/` before editing it.
+- `docs-reconstructor` per-phase drift audit
+  (`planning/retros/_drift-audit-phase-43.md`) → **NO DRIFT** — the first
+  phase where the audit verified real current-truth doc *edits* (to
+  `docs/cli-reference.md` + `architecture/overview.md`), not just
+  confirmed nothing changed.
+- **No `CLAUDE.md` change, no new ADR** (43a is a bug fix — the command
+  did not match its own docstring — not a non-obvious tradeoff), **no
+  release or tag** (gate G2-b).
+- **Closeout complete:** GATE DA retro
+  (`planning/retros/phase-43-dogfood-agent-led-workflow.md`) — model
+  works, roster stays at 7, no pruning; 3 amendments landed, 2
+  `check_user_docs.py` rules → Phase 43b. `docs-reconstructor` drift
+  audit NO DRIFT. `knowledge-curator` triaged L-005 (promoted the
+  `docs-maintainer` brief rule; the check → 43b), moved L-002 → promoted
+  (GATE DA chose the "lead runs the check" handoff), L-003/L-004 →
+  Phase 43b. `release-phase-auditor` FAIL on 3 planning-doc bookkeeping
+  gaps → all fixed → **re-audit PASS**. ROADMAP row 43 → `done`;
+  **Stage A complete**.
+
 **Phase 42, done** (2026-09-10) — the everyday documentation lifecycle
 plus the milestone documentation-closeout gate. `release-phase-auditor`:
 PASS WITH NON-BLOCKING OBSERVATIONS.
@@ -139,9 +214,10 @@ PASS WITH NON-BLOCKING OBSERVATIONS.
 - **No `CLAUDE.md` change** (§5 was amended in Phases 40–41; Phase 42's
   plan said "apply A2 if not already applied" — it was). **No
   `src/codecompass/` change.**
-- **Still pending before Phase 42 is `done`:** `release-phase-auditor`
-  PASS, `planning/retros/phase-42-*.md`, and the `docs-reconstructor`
-  per-phase drift-audit verdict.
+- Phase 42 closeout completed: `release-phase-auditor` PASS WITH
+  NON-BLOCKING OBSERVATIONS, `planning/retros/phase-42-documentation-lifecycle.md`,
+  and the `docs-reconstructor` per-phase drift-audit verdict (NO DRIFT)
+  all landed; ROADMAP row 42 is `done`.
 
 **Phase 41, done** (2026-09-10) — project-learning lifecycle + phase
 retros + per-phase docs-drift gate; **first real exercise of the
@@ -331,27 +407,31 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 43** ([`phase-43-dogfood-agent-led-workflow.md`](phase-43-dogfood-agent-led-workflow.md))
-— the last Stage A phase. Dogfood the full 14-step agent-led loop on
-**one user-chosen real CodeCompass code change** (shortlist in the plan:
-the `CLAUDE.md` → `ai-docs/README.md` pointer; `query skills` surfacing
-`slash_command` rows; `/discovery` at the whole-project `sync` trigger
-point; the pending `ai-docs/` enrichment run). It will be the **first
-Stage A phase to change `src/codecompass/`** — the first real test of the
-`docs-maintainer` *editing* path and the drift audit *finding* something.
-Then **GATE DA**: did each role earn its keep? Prune/merge the roster,
-amend `agent-led-workflow.md`. GATE DA agenda so far (from Phases 40–42
-retros): L-002 (curator has no Bash — recurred, 2nd instance), L-003+L-004
-(the "standing-rot blind-spot" cluster — diff-scoped checks miss standing
-content), the triage/retro ordering inversion, the process-weight watch,
-`docs-maintainer` value-is-assessment-not-just-editing.
+**Stage A is complete (Phases 39–43 `done`, GATE DA passed).**
 
-No human-decision gate blocks Phase 43. Stage B does not start until
-Phase 43's GATE DA retro is done and the roster/workflow amended.
+**Phase 43b** ([`phase-43b-standing-doc-drift-checks.md`](phase-43b-standing-doc-drift-checks.md))
+— a ~1-session tooling phase from GATE DA: add `check_no_deleted_names_as_live`
+(the standing-content complement to the per-phase drift audit — promotes
+the L-003+L-004 "standing-rot blind-spot" cluster) and
+`check_generated_artifacts_match_source` (`.claude/skills/codecompass/SKILL.md`
+== `render_tool_skill(...)`, etc. — promotes L-005's invariant half) to
+`scripts/check_user_docs.py`. Runs before Phase 44 so the drift gaps
+found during Stage A are closed before Stage B's external reference-project
+work. Judgment call in its plan: whether to also fix
+`architecture/overview.md` §C's 4 self-contradictions here (verified
+against `src/`) or leave them to Phase 61.
+
+**Then Phase 44** ([`phase-44-reference-project-protocol.md`](phase-44-reference-project-protocol.md))
+— **Stage B begins**: turn the reference-project protocol +
+context-quality evaluation spec into operational templates + a registry,
+and brief `context-evaluator` + `reference-project-tester` for their first
+real use. Phase 44 also writes the Phase 45 plan (register Technical
+Clipper + baseline). No human-decision gate blocks Phase 43b or 44.
 
 Phase 41 was the first real run of the agent-led loop (the live smoke
 delegation deferred from Phase 40); Phase 42 was the `docs-maintainer`'s
-first real use.
+first real use; Phase 43 was the first full end-to-end loop and the first
+`src/` change of the milestone.
 
 Open items carried from the foundation:
 
@@ -359,12 +439,13 @@ Open items carried from the foundation:
    G2-b holds everything until then. No `twine`, no git tag during Stages
    A–F.
 2. **A one-line pointer from root `CLAUDE.md` to `ai-docs/README.md`** —
-   still not done; a candidate target change for **Phase 43** (the
-   agent-led dogfood run — doubles as a live test of the `CLAUDE.md` §0
-   approval flow through an agent-led phase).
+   done (commit `0cce314`, foundation); `CLAUDE.md` now ends with a
+   "See `ai-docs/README.md`" pointer. No longer outstanding.
 3. **Phase 37's fix surfaced 5 new mechanical relationships for
    `ai-docs/README.md`/`ai-docs/CLAUDE.md`** — still "mentioned, not yet
-   enriched"; also a Phase 43 candidate target change.
+   enriched". Was a Phase 43 dogfood candidate; option 2 (`query skills`
+   widen) was chosen instead, so this remains an open future
+   enrichment-run candidate.
 
 The former open question of whether routing/rollup and MCP (24/25) should
 be deferred is now settled: `decisions/0048` marks 24 a Stage C candidate

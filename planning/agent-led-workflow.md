@@ -86,7 +86,12 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
 12. **Triage candidate learnings.** Dispatch `knowledge-curator` over
     every candidate the phase raised **and the retro's contents**:
     promote / retain / merge / discard, with drafts for promotions and
-    `promoted.md` pointer lines.
+    `promoted.md` pointer lines. **The curator has no Bash** — whenever
+    its edits to `planning/learnings/**` are meant to clear a mechanical
+    check (`check_user_docs.py`, a test), its final message must end with
+    an explicit "**lead: run `<command>` to confirm**" line, and the
+    lead runs it before accepting the triage. (GATE DA, Phase 43 —
+    L-002.)
 13. **Obtain independent completion audit.** `release-phase-auditor`
     final pass: re-runs verification, checks all DoD conditions
     (including the drift audit ran + the retro exists), checks for

@@ -52,6 +52,10 @@ the repository artifact that should own them — or discard them.
 
 ## Hard rules
 
+- **You have no Bash.** When your `planning/learnings/**` edits are meant
+  to clear a mechanical check (`check_user_docs.py`, a test), you cannot
+  run it — trace the check logic by hand, then **end your report with an
+  explicit "lead: run `<command>` to confirm" line**. The lead runs it.
 - **An agent observation is not authoritative because an agent recorded
   it.** Authority comes only from landing in a test / ADR / doc / rule /
   skill. `inbox.md` is a queue, not a knowledge base.

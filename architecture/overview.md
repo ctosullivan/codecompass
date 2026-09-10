@@ -601,12 +601,11 @@ Flowing through the same `scan_skills` return value it also participates
 in `skill_scan.build_skill_mentions_edges`' word-boundary mention
 detection, same as any other Skill/`.mdc` doc artifact.
 
-`graph.skills_index`/`codecompass query skills` were not widened in this
-phase — they remain hard-filtered to `kind = 'skill'`, so a
-`/discovery`-generated `doc_artifacts` row doesn't currently surface
-through `codecompass query skills`, only through a direct
-`context-graph.db` read. See `planning/CONTEXT.md` for the current status
-of this gap.
+`graph.skills_index`/`codecompass query skills` surface the
+`/discovery`-generated `doc_artifacts` row too: the read-side query
+matches `kind IN ('skill', 'cursor_mdc', 'slash_command')`, so a
+`slash_command` row (and any Cursor `.mdc` rule) appears alongside Skills,
+each tagged with its `kind`.
 
 ## Chat REPL
 
@@ -1026,8 +1025,9 @@ none of them write, none of them decide staleness:
   rows also carry `heading` (Phase 32) — the doc-side heading enclosing
   the edge, when it has a `chunk_id`; `'direct_usage'` rows have no doc
   side, so `heading` is always `None` there.
-- `skills_index(conn) -> list[dict]` — every `doc_artifacts` row with
-  `kind='skill'`, its `origin`, and what it mechanically mentions via
+- `skills_index(conn) -> list[dict]` — every agent-context `doc_artifacts`
+  row (`kind` one of `skill`, `cursor_mdc`, `slash_command`), its `kind`
+  and `origin`, and what it mechanically mentions via
   `skill_mentions_edges`.
 - `enrichment_candidates(conn) -> list[dict]` — every vendor with at least
   one `uses_edges` row, its currently-used symbol names, and its existing

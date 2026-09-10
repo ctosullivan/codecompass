@@ -30,6 +30,10 @@ documentation accurate as the system changes.
    - **Fix the wrong paragraph — do not annotate it.** If a sentence is
      now false, rewrite the sentence. Do not append "Note: since Phase N
      this also…".
+   - **"Fix" sometimes means "delete".** If a paragraph's *entire
+     purpose* was to explain a gap / caveat / transitional state that no
+     longer exists, delete it — don't rewrite it into a bland
+     present-tense sentence nobody needs. (GATE DA, Phase 43.)
    - Delete explanatory structure the current system no longer justifies.
    - Consolidate/split where that makes the doc clearer.
 3. Run the deterministic doc checks: `python scripts/check_user_docs.py
@@ -46,6 +50,16 @@ documentation accurate as the system changes.
 
 ## Hard rules
 
+- **Before editing any file, check whether it is *generated*.**
+  `.claude/skills/codecompass/SKILL.md`, `.claude/skills/codecompass-*/`,
+  `.cursor/rules/codecompass-*.mdc`, `.claude/commands/discovery.md`, and
+  the root `CLAUDE.md` routing-table block are written by
+  `src/codecompass/{skill,commands,index}.py` — git-tracked but
+  generated. A direct edit is overwritten on the next `sync`. The fix
+  goes in the **generator** (`src/…`, the lead's job — hand it back) and
+  the tracked artifact is then regenerated. Only hand-authored docs
+  (`README.md`, `docs/`, `architecture/`, `ai-docs/`, `CONTRIBUTING.md`)
+  are yours to edit directly.
 - **Do not touch `CLAUDE.md`** (protected — `CLAUDE.md` §0) or
   `decisions/*` (append-only, the lead's ADR process) or
   `planning/ROADMAP.md` / `planning/CONTEXT.md` (the

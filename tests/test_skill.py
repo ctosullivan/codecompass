@@ -54,6 +54,8 @@ def test_render_tool_skill_explains_each_query_subcommand_and_escape_hatch(
     assert "query vendor <name> [--json]" in content
     assert "query symbol <name> [--json]" in content
     assert "query skills [--unused-mentions] [--json]" in content
+    # query skills covers Skills + .mdc rules + the /discovery slash command
+    assert "Cursor `.mdc` rules" in content and "slash command" in content
     assert "query relations <name> [--json]" in content
     assert "sqlite3" in content
     assert "vendor_enrichment" in content and "symbol_enrichment" in content

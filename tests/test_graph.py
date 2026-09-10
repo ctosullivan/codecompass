@@ -965,9 +965,40 @@ def test_skills_index_lists_skill_artifacts_and_mentions(tmp_path) -> None:
     assert len(index) == 1
     entry = index[0]
     assert entry["path"] == _SKILL_PATH
+    assert entry["kind"] == "skill"
     assert entry["origin"] == "codecompass_tool"
     assert entry["mentions_vendors"] == ["used-lib"]
     assert entry["mentions_source_files"] == [_SOURCE_FILE]
+
+
+def test_skills_index_includes_cursor_mdc_and_slash_command(tmp_path) -> None:
+    """`skills_index` / `query skills` surface Cursor `.mdc` rules and the
+    `/discovery` slash command, not just `kind='skill'` (Phase 43a)."""
+    kwargs = _fixture_kwargs()
+    kwargs["doc_artifacts"] = kwargs["doc_artifacts"] + [
+        DocArtifactRow(
+            path=".cursor/rules/codecompass-used-lib.mdc",
+            kind="cursor_mdc",
+            origin="codecompass_vendor",
+        ),
+        DocArtifactRow(
+            path=".claude/commands/discovery.md",
+            kind="slash_command",
+            origin="codecompass_tool",
+        ),
+    ]
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **kwargs)
+
+    by_path = {e["path"]: e for e in skills_index(conn)}
+
+    assert set(by_path) == {
+        _SKILL_PATH,
+        ".cursor/rules/codecompass-used-lib.mdc",
+        ".claude/commands/discovery.md",
+    }
+    assert by_path[".cursor/rules/codecompass-used-lib.mdc"]["kind"] == "cursor_mdc"
+    assert by_path[".claude/commands/discovery.md"]["kind"] == "slash_command"
 
 
 def test_enrichment_candidates_lists_only_vendors_with_usage(tmp_path) -> None:

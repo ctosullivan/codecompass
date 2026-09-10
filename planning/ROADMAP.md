@@ -309,7 +309,8 @@ a named gate; may be dropped) / **DEFERRED** (revisit trigger named).
 | 40 | Specialist agent roster + lead workflow | COMMITTED | done | [`phase-40-specialist-agents.md`](phase-40-specialist-agents.md) |
 | 41 | Project-learning lifecycle + phase retros + per-phase docs-drift gate | COMMITTED | done | [`phase-41-learning-lifecycle.md`](phase-41-learning-lifecycle.md) |
 | 42 | Documentation lifecycle (incremental + closeout gate) | COMMITTED | done | [`phase-42-documentation-lifecycle.md`](phase-42-documentation-lifecycle.md) |
-| 43 | Dogfood the agent-led loop on a real change — **GATE DA** | COMMITTED | planned | [`phase-43-dogfood-agent-led-workflow.md`](phase-43-dogfood-agent-led-workflow.md) |
+| 43 | Dogfood the agent-led loop on a real change (`query skills` widen — [`43a`](phase-43a-query-skills-widen-kinds.md)) — **GATE DA passed** (roster stays at 7, no pruning, 3 amendments + `43b`) | COMMITTED | done | [`phase-43-dogfood-agent-led-workflow.md`](phase-43-dogfood-agent-led-workflow.md) |
+| 43b | Two `check_user_docs.py` rules from GATE DA (deleted-names-as-live; generated-artifacts-match-source) — runs before Phase 44 | COMMITTED | planned | [`phase-43b-standing-doc-drift-checks.md`](phase-43b-standing-doc-drift-checks.md) |
 | 44 | Reference-project protocol + context-quality eval spec | COMMITTED | planned | [`phase-44-reference-project-protocol.md`](phase-44-reference-project-protocol.md) |
 | 45 | Register Technical Clipper + baseline evaluation | EXPERIMENTAL | not started | — (written in Phase 44) |
 | 46 | CodeCompass during genuine Technical Clipper tasks + independent evals | EXPERIMENTAL | not started | — |

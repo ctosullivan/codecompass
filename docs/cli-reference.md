@@ -126,7 +126,8 @@ codecompass sync --budget 1.00
 
 **Status:** implemented (Phase 15; `relations` added Phase 21; `used_at`/
 package-code trace added Phase 30; `relation_label` added Phase 31;
-`heading` added Phase 32).
+`heading` added Phase 32; `skills` widened to Cursor `.mdc` rules and the
+`/discovery` slash command, with a `kind` field, Phase 43a).
 
 Reads `context-graph.db` and renders the result as a Rich table by
 default, or raw JSON with `--json`. If `context-graph.db` doesn't exist
@@ -148,10 +149,12 @@ prints a one-line note pointing at `sync` rather than a traceback.
   ("Used at" column — `used_at` in JSON, Phase 30), and documenting
   artifacts (`graph.symbol_profile`).
 - `codecompass query skills [--unused-mentions] [--json]` — every
-  Skill/`.mdc` rule under the project (not just codecompass's own), its
-  origin, and what it mechanically mentions (`graph.skills_index`).
-  `--unused-mentions` filters to ones mentioning no known vendor or
-  source file.
+  agent-context artifact under the project (not just codecompass's own):
+  Skills, Cursor `.mdc` rules, and the `/discovery` slash command. Each
+  row shows its **Kind** (`skill`, `cursor_mdc`, or `slash_command`),
+  origin, and what it mechanically mentions (`graph.skills_index`); the
+  `kind` is also present in `--json`. `--unused-mentions` filters to
+  artifacts mentioning no known vendor or source file.
 - `codecompass query relations <name> [--json]` — given a spec-doc path
   (e.g. `architecture/overview.md`), what it mechanically mentions —
   tracked vendors and other doc artifacts (`graph.doc_relations`); given a

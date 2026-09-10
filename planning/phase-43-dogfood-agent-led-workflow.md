@@ -1,11 +1,21 @@
 # Phase 43: Dogfood the agent-led loop on a real change
 
-**Status:** planned
+**Status:** done (2026-09-10) — **GATE DA passed** (retro:
+`planning/retros/phase-43-dogfood-agent-led-workflow.md`).
+`release-phase-auditor` first pass FAIL on 3 planning-doc bookkeeping
+gaps (43b ROADMAP row; `v1-redefinition/roadmap.md` GATE DA outcome; 43b
+in the CONTEXT forward path) → all fixed → re-audit PASS.
 
 Stage A, final phase. Runs **one real, small CodeCompass change** through
-the entire 12-step agent-led workflow, then retros the roster.
-**GATE DA** — Stage B does not start until this phase's retro is done and
-the roster/workflow amended.
+the entire 14-step agent-led workflow (`planning/agent-led-workflow.md`),
+then retros the roster. **GATE DA** — Stage B does not start until this
+phase's retro is done and the roster/workflow amended.
+
+**Chosen change (user, 2026-09-10):** widen `codecompass query skills` to
+surface `cursor_mdc` + `slash_command` `doc_artifacts` rows (option 2
+from the shortlist below) — the **first `src/codecompass/` change since
+the redefinition began**. Spec:
+[`phase-43a-query-skills-widen-kinds.md`](phase-43a-query-skills-widen-kinds.md).
 
 ## Depends on
 

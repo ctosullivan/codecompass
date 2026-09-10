@@ -92,8 +92,9 @@ def render_tool_skill(configs: list[VendorConfig], project_root: Path) -> str:
         "name across all vendors (names aren't globally unique), its "
         "purpose and usage count.",
         "  - `query skills [--unused-mentions] [--json]` — every "
-        "Skill/`.mdc` rule in the project (not just codecompass's own) "
-        "and what it mechanically mentions.",
+        "agent-context artifact in the project (not just codecompass's "
+        "own): Skills, Cursor `.mdc` rules, and the `/discovery` slash "
+        "command, each with its kind and what it mechanically mentions.",
         "  - `query relations <name> [--json]` — given a spec-doc path "
         "(e.g. `architecture/overview.md`), what it mechanically "
         "mentions; given a vendor or Skill name, which spec docs "

@@ -1177,6 +1177,60 @@ def test_query_skills_lists_skill_artifacts(
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
     assert [entry["name"] for entry in payload] == ["third-party"]
+    assert payload[0]["kind"] == "skill"
+
+
+def test_query_skills_shows_cursor_mdc_and_slash_command(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`query skills` surfaces `.mdc` rules and `/discovery`, with a Kind
+    column / JSON field (Phase 43a)."""
+    monkeypatch.chdir(tmp_path)
+    conn = graph.open_graph(tmp_path)
+    graph.rebuild_deterministic(
+        conn,
+        vendors=[],
+        source_files=[],
+        symbols=[],
+        uses_edges=[],
+        doc_artifacts=[
+            graph.DocArtifactRow(
+                path=".claude/skills/codecompass/SKILL.md",
+                kind="skill",
+                origin="codecompass_tool",
+                name="codecompass",
+            ),
+            graph.DocArtifactRow(
+                path=".cursor/rules/codecompass-x.mdc",
+                kind="cursor_mdc",
+                origin="codecompass_vendor",
+                name="codecompass-x",
+            ),
+            graph.DocArtifactRow(
+                path=".claude/commands/discovery.md",
+                kind="slash_command",
+                origin="codecompass_tool",
+                name="discovery",
+            ),
+        ],
+        documents_edges=[],
+        skill_mentions_edges=[],
+        routes_via_edges=[],
+        depends_on_edges=[],
+        doc_relations_edges=[],
+    )
+    conn.close()
+
+    payload = json.loads(runner.invoke(app, ["query", "skills", "--json"]).output)
+    assert {e["path"]: e["kind"] for e in payload} == {
+        ".claude/skills/codecompass/SKILL.md": "skill",
+        ".cursor/rules/codecompass-x.mdc": "cursor_mdc",
+        ".claude/commands/discovery.md": "slash_command",
+    }
+
+    table_result = runner.invoke(app, ["query", "skills"])
+    assert table_result.exit_code == 0
+    assert "Kind" in table_result.output  # the new column header
 
 
 def test_query_skills_unused_mentions_filters_to_orphaned_skills(

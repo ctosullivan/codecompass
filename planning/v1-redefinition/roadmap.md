@@ -60,8 +60,9 @@ roster is probably too big — prune per GATE DA).
   `reference-project-tester`, `docs-maintainer`,
   `roadmap-context-curator`, `knowledge-curator`, `release-phase-auditor`;
   `docs-reconstructor` created here but only exercised at milestones).
-  Write `planning/agent-led-workflow.md` (the 12-step fresh-session
-  procedure). Add the `CLAUDE.md` §8 draft to the G4 diff.
+  Write `planning/agent-led-workflow.md` (the fresh-session procedure —
+  12 steps as first written; grew to 14 in Phase 41 with the drift-audit
+  and retro steps). Add the `CLAUDE.md` §8 draft to the G4 diff.
 - **Exit:** agents load; a smoke delegation (lead → `roadmap-context-curator`
   → verify) round-trips; workflow doc committed.
 
@@ -94,23 +95,38 @@ roster is probably too big — prune per GATE DA).
   NON-BLOCKING OBSERVATIONS.
 
 ### Phase 43 — Dogfood the agent-led loop · COMMITTED
-- **Plan:** `planning/phase-43-dogfood-agent-led-workflow.md`
+- **Plan:** `planning/phase-43-dogfood-agent-led-workflow.md` +
+  `planning/phase-43a-query-skills-widen-kinds.md` (the change spec).
 - **Depends on:** 40, 41, 42.
-- **Does:** pick **one real, small, already-known CodeCompass change**
-  (candidates, user picks: the `CLAUDE.md` → `ai-docs/README.md` pointer
-  from `CONTEXT.md`; `query skills` surfacing `slash_command` rows; the
-  `/discovery` whole-project `sync` trigger gap; the AI-enrichment run for
-  the 5 pending `ai-docs/` relationships). Execute it **through the full
-  12-step workflow**: curator establishes state → lead implements →
-  `context-evaluator`/`reference-project-tester` N/A here so
-  `release-phase-auditor` does the independent check → `docs-maintainer`
-  reconciles → curator updates roadmap/context → `knowledge-curator`
-  triages learnings → auditor DoD audit → commit.
-- **Exit / GATE DA:** the change ships; a written retro
-  (`planning/learnings/` + a short note in `CONTEXT.md`) answers: did each
-  role earn its keep? which to prune/merge? did the auditor catch
-  anything the lead missed? Roster and workflow amended per the retro
-  before Stage B.
+- **Did:** user chose the `query skills` widening (surface `cursor_mdc` +
+  `slash_command` rows — closes the Phase 17 gap; the first
+  `src/codecompass/` change since the redefinition began). Ran it through
+  the full **14-step workflow** (`planning/agent-led-workflow.md`).
+- **Status:** done (2026-09-10). Full suite 545 passed / 1 skipped;
+  drift audit NO DRIFT; `release-phase-auditor` PASS (after 3 planning-doc
+  bookkeeping fixes the first audit pass flagged — the model catching its
+  own gap).
+- **Exit / GATE DA — passed.** The agent-led model works: **roster stays
+  at 7, no pruning** (`context-evaluator` / `reference-project-tester`
+  carried forward, first use is Stage B). 3 amendments landed this phase
+  (curator "lead runs the confirming check" handoff, from L-002;
+  `docs-maintainer` "check if a file is generated before editing", from
+  L-005; `docs-maintainer` "fix may mean *delete* the paragraph"). Two
+  `check_user_docs.py` rules from GATE DA (deleted-names-as-live from
+  L-003/L-004; generated-artifacts-match-source from L-005) scheduled as
+  **Phase 43b**, to run before Phase 44. Retro:
+  `planning/retros/phase-43-dogfood-agent-led-workflow.md`.
+
+### Phase 43b — Standing doc-drift checks (from GATE DA) · COMMITTED
+- **Plan:** `planning/phase-43b-standing-doc-drift-checks.md`
+- **Depends on:** 43 (GATE DA).
+- **Does:** implement the two `check_user_docs.py` rules GATE DA decided —
+  `check_no_deleted_names_as_live` (the standing-content complement to the
+  diff-scoped per-phase drift audit) and
+  `check_generated_artifacts_match_source`. A ~1-session tooling phase;
+  runs before Stage B so the drift gaps found during Stage A are closed
+  first.
+- **Status:** planned.
 
 ---
 

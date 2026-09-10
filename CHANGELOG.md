@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Phase 43**: `codecompass query skills` (and `graph.skills_index`) no
+  longer hides non-Skill agent-context artifacts. The read-side query was
+  hard-filtered to `WHERE kind = 'skill'`, so Cursor `.mdc` rules
+  (`kind='cursor_mdc'`) and the `/discovery` slash command
+  (`kind='slash_command'`) — both already indexed, both already carrying
+  `skill_mentions_edges` — surfaced only through a raw `context-graph.db`
+  read, even though the command's own docstring promised "Skill/`.mdc`
+  rule". Widened to
+  `WHERE kind IN ('skill', 'cursor_mdc', 'slash_command')`
+  (`graph._SKILLS_INDEX_KINDS`); each returned row now carries its
+  `kind`; `query skills` gains a **Kind** column (and `kind` in `--json`);
+  the generated tool-Skill's `query skills` description
+  (`skill.py::render_tool_skill` → `.claude/skills/codecompass/SKILL.md`)
+  is reworded to match. Closes the gap the Phase 17 entry recorded as
+  "`query skills` doesn't yet surface the new artifact kind" (that
+  time-relative historical line is left as-is; this entry supersedes it).
+  Confirmed live against this repo: `query skills` now returns 9 rows
+  (5 Skills + 3 `.mdc` + `/discovery`) where it previously returned 5.
+  +2 tests (`test_graph.py`, `test_cli.py`); full suite 545.
+  `docs-maintainer` reconciled `docs/cli-reference.md` and
+  `architecture/overview.md` (the stale "not widened in this phase"
+  paragraph removed). This is the first `src/codecompass/` change since
+  the v1 redefinition began; it was dogfooded through the full 14-step
+  agent-led loop (Stage A's exit, GATE DA).
+
+### Changed
+
+- **Phase 43**: the `docs-maintainer` agent brief gains a hard rule —
+  before editing any file, check whether it is *generated from `src/`*.
+  `.claude/skills/codecompass/SKILL.md`, the per-vendor Skill/`.mdc`
+  exports, `.claude/commands/discovery.md`, and the root `CLAUDE.md`
+  routing block are git-tracked but regenerated on `sync`, so a fix
+  belongs in the generator (the lead's job) and the artifact is then
+  regenerated; only the hand-authored docs are `docs-maintainer`'s to
+  edit directly. Surfaced by candidate learning **L-005** during the
+  first *editing* use of `docs-maintainer` (it edited the generated
+  `SKILL.md` directly). No `CLAUDE.md` change and no new ADR this phase
+  (43a is a bug fix — the command did not match its own docstring — not a
+  non-obvious tradeoff), and no release or tag (gate G2-b).
+
 ### Added
 
 - **Phase 42**: the everyday documentation lifecycle gains deterministic

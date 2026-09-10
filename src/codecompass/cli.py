@@ -648,13 +648,15 @@ def query_skills(
     unused_mentions: bool = typer.Option(
         False,
         "--unused-mentions",
-        help="List only Skills/.mdc rules that mention no known vendor or source file.",
+        help="List only artifacts that mention no known vendor or source file.",
     ),
     json_output: bool = typer.Option(
         False, "--json", help="Raw JSON instead of a Rich table."
     ),
 ) -> None:
-    """Every Skill/`.mdc` rule under the project, its origin, and what it
+    """Every agent-context artifact under the project — Skills
+    (`.claude/skills/**`), Cursor `.mdc` rules (`.cursor/rules/`), and the
+    `/discovery` slash command — with its kind, origin, and what it
     mechanically mentions.
     """
     with _graph_session(Path.cwd()) as conn:
@@ -670,10 +672,13 @@ def query_skills(
         if json_output:
             console.print(json.dumps(index_rows, indent=2), soft_wrap=True)
             return
-        table = Table("Path", "Name", "Origin", "Mentions vendors", "Mentions files")
+        table = Table(
+            "Path", "Kind", "Name", "Origin", "Mentions vendors", "Mentions files"
+        )
         for entry in index_rows:
             table.add_row(
                 entry["path"],
+                entry["kind"] or "",
                 entry["name"] or "",
                 entry["origin"] or "",
                 ", ".join(entry["mentions_vendors"]) or "(none)",
