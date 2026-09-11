@@ -1,7 +1,8 @@
 # Phase 43b retro — Two `check_user_docs.py` rules from GATE DA
 
 - **Date:** 2026-09-11
-- **Commit(s):** `<hash>` (`feat(phase-43b)`)
+- **Commit(s):** `3b7f27a` (`feat(phase-43b): two check_user_docs.py
+  rules from GATE DA + arch.md fix`)
 - **Auditor verdict:** **PASS WITH NON-BLOCKING OBSERVATIONS**
   (`planning/retros/_audit-phase-43b.md`) — no blocking gap; every
   re-run check matched independently (`pytest` 554/1, `ruff` clean,
