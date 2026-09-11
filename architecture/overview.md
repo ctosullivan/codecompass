@@ -1154,10 +1154,10 @@ actually read (`config`, `installed_version`, `conversational_overview`,
 confirmed by reading both functions' bodies that neither touches
 `api_surface`/`file_tree`/`dep_tree`/`side_effects`, so leaving those at
 their dataclass defaults is safe, not a partial digest.
-`VendorConfig.depth` has no real meaning on this path (`decisions/0031`)
-and isn't derivable from an `EnrichmentResult` (which only carries the
-vendor's name); it's set to `Depth.FULL` as the closest existing label,
-a value `skill.py` never actually reads.
+`VendorConfig` no longer carries a `depth` field at all (Phase 16,
+`decisions/0035`) — enrichment eligibility is purely usage-driven
+(`decisions/0031`), so there was never a real value to set here in the
+first place.
 
 **Cost model reworked for the batched shape**: `estimate_cost(batch_count)`
 /`check_budget(candidates, budget)` scale with `len(plan_batches(candidates))`,
@@ -1900,17 +1900,15 @@ Anthropic-API money.
   excludes its contents from the result. Fine at this project's scale
   (a single vendor package's source tree), but not optimized for very
   large pruned subtrees.
-- **Grounded description is fully regenerated (re-cloned and
-  re-purchased) on every `sync` run** for a `depth = full` vendor — no
-  caching or diffing against a previous result, consistent with every
-  other `sync` output but the one step where that consistency has a real
-  dollar cost.
-- **`grounded_description.py`'s `_RAW_TEXT_CHAR_CAP` (50,000),
-  `_DOCS_FILE_CAP` (5), and `_ESTIMATED_COST_PER_CALL_USD` (a rough
-  placeholder, not live-queried Anthropic pricing)** are initial,
-  arbitrary, tunable values — same treatment as every other cap in this
-  project. The cost estimate is not a guarantee of actual billed cost;
-  `--budget` decisions should be made with that in mind.
+- **`enrichment.py`'s `_RAW_TEXT_CHAR_CAP` (50,000), `_DOCS_FILE_CAP`
+  (5), and `_ESTIMATED_COST_PER_BATCH_USD` (a rough placeholder, not
+  live-queried Anthropic pricing)** are initial, arbitrary, tunable
+  values — same treatment as every other cap in this project. The cost
+  estimate is not a guarantee of actual billed cost; `--budget` decisions
+  should be made with that in mind. (These constants carried over from
+  the retired `grounded_description.py` with the same values; only
+  `_ESTIMATED_COST_PER_CALL_USD` was renamed to
+  `_ESTIMATED_COST_PER_BATCH_USD` when Phase 15 made enrichment batched.)
 - **No test ever makes a real Anthropic API call** (see
   [`decisions/0016`](../decisions/0016-gap-analysis-tests-never-call-the-live-anthropic-api.md),
   which continues to apply unchanged to `codecompass.enrichment`, the
@@ -1947,7 +1945,9 @@ Anthropic-API money.
   A transitive dependency's side effects (e.g. a sub-dependency's own
   postinstall script) aren't surfaced in Known Gotchas.
 - **`sync_vendor` fully overwrites `vendor/<name>/` on every call** — no
-  diffing, no incremental update, and (for `depth = full`) the entire
-  `vendor/<name>/src/` snapshot is deleted and recopied each time, not
-  merged. Simple and correct, but means a large `FULL` vendor's `sync` is
-  not cheap to run repeatedly in a tight loop.
+  diffing, no incremental update, and the entire `vendor/<name>/src/`
+  snapshot is deleted and recopied each time, not merged, for every
+  vendor (universal since Phase 13's cloning-for-all —
+  `decisions/0031`/`0033`; no `depth`-gating survives). Simple and
+  correct, but means a large vendor's `sync` is not cheap to run
+  repeatedly in a tight loop.

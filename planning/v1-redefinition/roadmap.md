@@ -145,7 +145,35 @@ apply. Noted, not a concern.
   `check_generated_artifacts_match_source`. A ~1-session tooling phase;
   runs before Stage B so the drift gaps found during Stage A are closed
   first.
-- **Status:** planned.
+- **Status:** **done (2026-09-11).** Both checks live in
+  `scripts/check_user_docs.py` (14 rules total, 46 tests in that module,
+  +9), clean (0 findings) against this repo's own docs;
+  `.claude/skills/docs-sync/SKILL.md` lists them as items 13-14. The
+  in-implementation judgment call (fix `architecture/overview.md` §C's 4
+  self-contradictions now, or defer to Phase 61) resolved **in favour of
+  fixing now** — all 4 corrected and verified against `src/` directly,
+  closing that part of L-004's Phase-61 obligation early
+  (`architecture-split-candidates.md` §C, Count 36→32 outstanding).
+  Verifying the plan's own retired-names list against `src/` surfaced a
+  correction to GATE DA's own proposal: `_RAW_TEXT_CHAR_CAP`/
+  `_DOCS_FILE_CAP` were never actually deleted (only re-attributed from
+  `grounded_description.py` to `enrichment.py`); only
+  `_ESTIMATED_COST_PER_CALL_USD` was renamed. Independently re-verified:
+  `pytest` 554 passed / 1 skipped (was 545, +9), `ruff` clean,
+  `check_user_docs.py --strict` clean; `docs-reconstructor` per-phase
+  drift audit → **NO DRIFT** (`planning/retros/_drift-audit-phase-43b.md`).
+  `knowledge-curator` triage: L-004 → `promoted`, L-005's invariant half →
+  `promoted`, L-003 → stays `retained` (flagged for the Phase 47 bulk
+  review), L-008 (new) → `retained`; a follow-up dispatch also closed
+  L-006's outstanding disposition (`promoted`; carried over from Phase 43,
+  landed in `f6cc86d`, not this phase's own commit).
+  `release-phase-auditor` → **PASS WITH NON-BLOCKING OBSERVATIONS**
+  (`planning/retros/_audit-phase-43b.md`) — no blocking gap; 4 non-blocking
+  observations (stale "triage has not yet run" wording in `CONTEXT.md` /
+  the plan / this file; the retro's "Where we're going" pre-empting the
+  verdict; L-006 missed by the first triage pass; commit-hash
+  placeholders), all addressed in this closeout commit. Retro:
+  `planning/retros/phase-43b-standing-doc-drift-checks.md`.
 
 ### Phase 43c — Agent context-suggestion pathways + context-health planning · COMMITTED
 - **Plan:** `planning/phase-43c-agent-context-pathways.md`

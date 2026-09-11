@@ -384,6 +384,85 @@ class TestAdrStatusAndSupersedes:
         assert check_user_docs.check_adr_status_and_supersedes(tmp_path) == []
 
 
+class TestNoDeletedNamesAsLive:
+    def test_flags_live_sounding_claim(self, tmp_path):
+        _write(
+            tmp_path / "docs" / "x.md",
+            "The tool sets depth = full for every vendor by default.\n",
+        )
+        findings = check_user_docs.check_no_deleted_names_as_live(tmp_path)
+        assert len(findings) == 1
+        assert "depth = full" in findings[0].message
+
+    def test_does_not_flag_historically_framed_mention(self, tmp_path):
+        _write(
+            tmp_path / "architecture" / "overview.md",
+            "- **`grounded_description.py`'s cache** — this module was "
+            "retired and deleted in Phase 16; `depth = full` no longer "
+            "exists as a config value.\n",
+        )
+        assert check_user_docs.check_no_deleted_names_as_live(tmp_path) == []
+
+    def test_marker_must_be_in_the_same_unit_not_just_the_file(self, tmp_path):
+        _write(
+            tmp_path / "docs" / "x.md",
+            "`promote` was retired in Phase 15.\n"
+            "\n"
+            "Unrelated paragraph: run `codecompass promote` to regenerate "
+            "a vendor's Skill.\n",
+        )
+        findings = check_user_docs.check_no_deleted_names_as_live(tmp_path)
+        assert len(findings) == 1
+        assert "codecompass promote" in findings[0].message
+
+    def test_ignores_fenced_code_examples(self, tmp_path):
+        _write(
+            tmp_path / "docs" / "x.md",
+            "```\ncodecompass promote anthropic\n```\n",
+        )
+        assert check_user_docs.check_no_deleted_names_as_live(tmp_path) == []
+
+    def test_clean_against_real_repo(self):
+        assert check_user_docs.check_no_deleted_names_as_live(REPO_ROOT) == []
+
+
+class TestGeneratedArtifactsMatchSource:
+    def test_flags_hand_edited_tool_skill(self, tmp_path, monkeypatch):
+        import shutil
+
+        shutil.copytree(REPO_ROOT / ".claude", tmp_path / ".claude")
+        shutil.copy(REPO_ROOT / "vendor.toml", tmp_path / "vendor.toml")
+        skill_path = tmp_path / ".claude" / "skills" / "codecompass" / "SKILL.md"
+        skill_path.write_text(
+            skill_path.read_text(encoding="utf-8") + "\nHAND EDITED\n", encoding="utf-8"
+        )
+
+        findings = check_user_docs.check_generated_artifacts_match_source(tmp_path)
+
+        assert any("SKILL.md" in f.message for f in findings)
+
+    def test_flags_hand_edited_discovery_command(self, tmp_path):
+        import shutil
+
+        shutil.copytree(REPO_ROOT / ".claude", tmp_path / ".claude")
+        shutil.copy(REPO_ROOT / "vendor.toml", tmp_path / "vendor.toml")
+        discovery_path = tmp_path / ".claude" / "commands" / "discovery.md"
+        discovery_path.write_text(
+            discovery_path.read_text(encoding="utf-8") + "\nHAND EDITED\n", encoding="utf-8"
+        )
+
+        findings = check_user_docs.check_generated_artifacts_match_source(tmp_path)
+
+        assert any("discovery.md" in f.message for f in findings)
+
+    def test_clean_against_real_repo(self):
+        assert check_user_docs.check_generated_artifacts_match_source(REPO_ROOT) == []
+
+    def test_missing_artifacts_produce_no_finding(self, tmp_path):
+        # Neither generated artifact exists in this fixture — nothing to compare.
+        assert check_user_docs.check_generated_artifacts_match_source(tmp_path) == []
+
+
 class TestMainStrictExitCode:
     def _broken_root(self, tmp_path):
         """A minimal fixture repo where every rule passes except the

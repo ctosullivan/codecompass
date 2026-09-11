@@ -38,6 +38,14 @@ re-audit #2 PASS WITH NON-BLOCKING OBSERVATIONS) — every gap planning-doc
 bookkeeping, none a code defect (the evidence behind L-006). Candidate
 learning **L-006** filed this phase.
 
+**Both Stage A→B bridge phases are now `done` (2026-09-11): Phase 43b's
+closeout landed** (`knowledge-curator` triage of L-003/L-004/L-005's
+invariant half + a follow-up dispatch closing L-006's outstanding
+disposition; `release-phase-auditor` **PASS WITH NON-BLOCKING
+OBSERVATIONS**). `ROADMAP.md` row `43b`, the `v1-redefinition/roadmap.md`
+Phase 43b stanza, and the phase's own plan-file status line all read
+`done`. **No gate blocks Phase 44** — Stage B begins next.
+
 **Phase 43c is `done` (2026-09-11).** The Stage A→B
 bridge phase (user request 2026-09-11) instrumented the agent-led
 development process to produce context-quality signal from CodeCompass's
@@ -63,7 +71,53 @@ lead-written, not run by the new agent); `release-phase-auditor` →
 **PASS WITH NON-BLOCKING OBSERVATIONS**. One tracked follow-up: the
 `context-health-planner`'s first genuine solo run is before Phase 45
 (pinned into the Phase 45 stanza of `v1-redefinition/roadmap.md`).
-**Next: Phase 43b, then Phase 44 (Stage B begins).**
+
+**Phase 43b is `done` (2026-09-11).** The other Stage A→B bridge phase
+(GATE-DA-scheduled, not user-requested — independent of 43c, either
+order): both `check_user_docs.py` rules GATE DA decided on are live —
+`check_no_deleted_names_as_live` (promotes L-003+L-004, a
+prose-unit-granularity check against a small hand-maintained
+retired-names list, tuned to zero false positives against this repo's
+own historically-narrated `architecture/overview.md`) and
+`check_generated_artifacts_match_source` (promotes L-005's invariant
+half — `.claude/skills/codecompass/SKILL.md` /
+`.claude/commands/discovery.md` byte-match their generators). 46 tests in
+that module (+9). The plan's open judgment call resolved **in favour of
+fixing now**: `architecture/overview.md` §C's 4 self-contradictory
+passages (items 33-36) were corrected directly, verified against `src/`,
+closing that part of L-004's Phase-61 obligation early
+(`architecture-split-candidates.md` §C, 36→32 outstanding). **Undocumented
+decision surfaced this phase, worth recording:** verifying GATE DA's own
+proposed retired-names list against `src/` before implementing it found
+the list itself was partly wrong — `_RAW_TEXT_CHAR_CAP` and
+`_DOCS_FILE_CAP` were never deleted (they still exist unchanged in
+`enrichment.py`, only re-attributed from the deleted
+`grounded_description.py`); only `_ESTIMATED_COST_PER_CALL_USD` was
+actually renamed (to `_ESTIMATED_COST_PER_BATCH_USD`). The check's
+retired-names list uses the corrected facts, not GATE DA's original
+phrasing. Independently re-verified this session: `pytest` 554 passed / 1
+skipped (was 545, +9), `ruff check .` clean,
+`check_user_docs.py --strict` clean (0 findings, including 0 from the 2
+new checks); `docs-reconstructor` drift audit → **NO DRIFT**
+(`planning/retros/_drift-audit-phase-43b.md`).
+**Closeout complete:** `knowledge-curator` triaged L-003 (retained,
+flagged for the Phase 47 bulk review), L-004 and L-005's invariant half
+(both promoted, `promoted.md` lines added), and L-008 (new, retained); a
+follow-up dispatch also closed **L-006**'s outstanding disposition
+(promoted — the amendment landed in commit `f6cc86d`, Phase 43's own
+follow-up commit, not this phase's). `release-phase-auditor` →
+**PASS WITH NON-BLOCKING OBSERVATIONS**
+(`planning/retros/_audit-phase-43b.md`) — no blocking gap; 4 non-blocking
+observations (stale "triage has not yet run" wording across `CONTEXT.md`
+/ the plan / `v1-redefinition/roadmap.md`; the retro's "Where we're
+going" pre-empting the verdict; L-006 missed by the first triage pass;
+commit-hash placeholders), all addressed in this closeout commit. Retro:
+`planning/retros/phase-43b-standing-doc-drift-checks.md`. `ROADMAP.md`
+row 43b and the `v1-redefinition/roadmap.md` Phase 43b stanza both now
+read `done`.
+
+**Both Stage A→B bridge phases (43b, 43c) are closed out. Next: Phase 44
+— Stage B begins.** No gate blocks it.
 
 - **39** ratified the redefinition: ADRs `decisions/0048`/`0049`
   `Accepted`; `pyproject.toml` `version` → `1.0.0.dev0`; ROADMAP's Stage
@@ -195,6 +249,30 @@ dependencies now carry lower-bound version pins (`decisions/0047`), and
 were cleaned up (Phase 38).
 
 ## What was just completed
+
+**Phase 43b, `done`** (2026-09-11). The second Stage A→B bridge phase
+(GATE-DA-scheduled): implemented `check_no_deleted_names_as_live`
+(promotes L-003+L-004) and `check_generated_artifacts_match_source`
+(promotes L-005's invariant half) in `scripts/check_user_docs.py` + 9 new
+tests (46 in that module), and fixed `architecture/overview.md` §C's 4
+self-contradictory passages directly (verified against `src/`), resolving
+the plan's open judgment call in favour of fixing now rather than
+deferring to Phase 61. Surfaced a correction to GATE DA's own proposed
+retired-names list: `_RAW_TEXT_CHAR_CAP`/`_DOCS_FILE_CAP` were never
+actually deleted (still live in `enrichment.py`, only re-attributed from
+the deleted `grounded_description.py`); only
+`_ESTIMATED_COST_PER_CALL_USD` was renamed. No `src/codecompass/` change
+(this phase touches only `scripts/`, `tests/`, and docs). Verified:
+`pytest` 554 passed / 1 skipped, `ruff` clean, `check_user_docs.py
+--strict` clean; `docs-reconstructor` drift audit → NO DRIFT
+(`planning/retros/_drift-audit-phase-43b.md`). Closeout: `knowledge-curator`
+triaged L-003 (retained), L-004 + L-005's invariant half (both promoted),
+L-008 (new, retained), and — via a follow-up dispatch the auditor's
+observation 3 prompted — closed L-006's outstanding disposition
+(promoted, landed in Phase 43's own follow-up commit `f6cc86d`).
+`release-phase-auditor` → **PASS WITH NON-BLOCKING OBSERVATIONS**
+(`planning/retros/_audit-phase-43b.md`; no blocking gap). Retro:
+`planning/retros/phase-43b-standing-doc-drift-checks.md`.
 
 **Phase 43c, `done`** (2026-09-11) — a Stage
 A→B bridge phase (user request) instrumenting the agent-led development
@@ -527,43 +605,36 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Stage A is complete (Phases 39–43 `done`, GATE DA passed). Phase 43c is
-`done` (2026-09-11) — closeout committed. Phase 43b is next.**
+**Stage A is complete (Phases 39–43 `done`, GATE DA passed). Both Stage
+A→B bridge phases (43b, 43c) are `done` and fully closed out.**
 
 **Phase 43c closeout (done):** `docs-reconstructor` drift audit → **NO
 DRIFT**; `knowledge-curator` triage → `CG-001` `candidate` + **L-007**
-`retained` (L-006 stays scheduled for Phase 43b); `release-phase-auditor`
-→ **PASS WITH NON-BLOCKING OBSERVATIONS**. ROADMAP row `43c` /
-`v1-redefinition/roadmap.md` / plan-file status all flipped to `done` in
-the phase's own commit. One tracked follow-up: the
-`context-health-planner`'s first genuine solo run is before Phase 45
-(pinned into the Phase 45 stanza of `v1-redefinition/roadmap.md`).
+`retained` (L-006 stayed scheduled for Phase 43b's own triage, closed
+there via a follow-up dispatch); `release-phase-auditor` → **PASS WITH
+NON-BLOCKING OBSERVATIONS**. ROADMAP row `43c` / `v1-redefinition/roadmap.md`
+/ plan-file status all flipped to `done` in the phase's own commit. One
+tracked follow-up: the `context-health-planner`'s first genuine solo run
+is before Phase 45 (pinned into the Phase 45 stanza of
+`v1-redefinition/roadmap.md`).
 
-**Next: Phase 43b** ([`phase-43b-standing-doc-drift-checks.md`](phase-43b-standing-doc-drift-checks.md))
-— a ~1-session tooling phase from GATE DA: add `check_no_deleted_names_as_live`
-(the standing-content complement to the per-phase drift audit — promotes
-the L-003+L-004 "standing-rot blind-spot" cluster) and
-`check_generated_artifacts_match_source` (`.claude/skills/codecompass/SKILL.md`
-== `render_tool_skill(...)`, etc. — promotes L-005's invariant half) to
-`scripts/check_user_docs.py`. Runs before Phase 44 so the drift gaps
-found during Stage A are closed before Stage B's external reference-project
-work. Judgment call in its plan: whether to also fix
-`architecture/overview.md` §C's 4 self-contradictions here (verified
-against `src/`) or leave them to Phase 61.
+**Phase 43b closeout (done):** `knowledge-curator` triaged L-003
+(retained), L-004 + L-005's invariant half (both promoted), L-008 (new,
+retained), and a follow-up dispatch closed L-006's outstanding
+disposition (promoted). `release-phase-auditor` → **PASS WITH
+NON-BLOCKING OBSERVATIONS** (`planning/retros/_audit-phase-43b.md`; no
+blocking gap — 4 non-blocking observations, all addressed in the
+closeout commit). ROADMAP row `43b` / `v1-redefinition/roadmap.md` /
+the plan file's own status line all flipped to `done` in this commit.
 
-(**Phase 43c** — `done`; see "What was just completed". Its one in-phase
-human-decision point is resolved: the user approved
-`context-health-planner` as the roster's 8th agent, Option A. The
-`agent-inference edges` / `task-oriented retrieval` boundary held — no
-`src/` change; those stay Stage C/E, gated on GATE DB/DD, per
-`decisions/0051`.)
-
-**Then Phase 44** ([`phase-44-reference-project-protocol.md`](phase-44-reference-project-protocol.md))
+**Immediate next step: Phase 44**
+([`phase-44-reference-project-protocol.md`](phase-44-reference-project-protocol.md))
 — **Stage B begins**: turn the reference-project protocol +
 context-quality evaluation spec into operational templates + a registry,
 and brief `context-evaluator` + `reference-project-tester` for their first
 real use. Phase 44 also writes the Phase 45 plan (register Technical
-Clipper + baseline). No human-decision gate blocks Phase 43b or 44.
+Clipper + baseline). No human-decision gate blocks Phase 44 — both bridge
+phases are fully done.
 
 Phase 41 was the first real run of the agent-led loop (the live smoke
 delegation deferred from Phase 40); Phase 42 was the `docs-maintainer`'s
@@ -590,16 +661,13 @@ be deferred is now settled: `decisions/0048` marks 24 a Stage C candidate
 renumbered.
 
 **Still outstanding, not a blocker but worth remembering:**
-- **4 self-contradictions in `architecture/overview.md`** (Section C of
-  `planning/v1-redefinition/architecture-split-candidates.md`) — the file
-  describes deleted code as live (`grounded_description.py` regeneration
-  on every `sync`; `_RAW_TEXT_CHAR_CAP` / `_DOCS_FILE_CAP` /
-  `_ESTIMATED_COST_PER_CALL_USD` of that deleted module; `depth = full` /
-  `Depth.FULL`) while the rest of the same file says the opposite.
-  **Deferred to Phase 61** (the `architecture/overview.md`
-  reconciliation/split); tracked by candidate learning **L-004**. The
-  per-phase `docs-reconstructor` drift audit is diff-scoped and will not
-  catch these on its own.
+- ~~4 self-contradictions in `architecture/overview.md`~~ — **resolved in
+  Phase 43b** (2026-09-11), not deferred to Phase 61 after all: the plan's
+  in-implementation judgment call went the other way once the fix proved
+  independently verifiable against `src/` for all 4 items. See
+  `planning/v1-redefinition/architecture-split-candidates.md` §C
+  ("Resolved in Phase 43b") — 32 broader §A/§B history-shaped trims still
+  await Phase 61.
 - Once a Rust toolchain is available anywhere in the pipeline,
   `decisions/0014` requires validating the Cargo adapter against real
   `cargo metadata` output and a real crate — currently entirely

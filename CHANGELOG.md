@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Phase 43b**: 4 self-contradictory passages in `architecture/overview.md`
+  (catalogued as items 33-36 in
+  `planning/v1-redefinition/architecture-split-candidates.md` §C,
+  candidate learning L-004) described removed code as live, each verified
+  against `src/` and corrected: a "grounded description is regenerated on
+  every `sync` run" footgun deleted outright (`sync_vendor` never makes an
+  AI call — confirmed by its own docstring); the adjacent
+  `_RAW_TEXT_CHAR_CAP`/`_DOCS_FILE_CAP`/`_ESTIMATED_COST_PER_CALL_USD`
+  bullet re-attributed from the deleted `grounded_description.py` to
+  `enrichment.py` (which still carries the first two constants unchanged,
+  with the third renamed to `_ESTIMATED_COST_PER_BATCH_USD`); a
+  `sync_vendor` full-overwrite bullet's false `depth = full`/`FULL`
+  qualifier removed (the behaviour is universal, unconditional since
+  Phase 13); and a passage claiming `VendorConfig.depth` "is set to
+  `Depth.FULL`" rewritten to match `enrichment.py`'s own already-correct
+  docstring (`VendorConfig` has no `depth` field at all). Closes L-004's
+  Phase-61 obligation early for these 4 items — the broader §A/§B
+  history-shaped trims in that catalogue remain Phase 61's job.
+  `docs-maintainer` applied the fixes from lead-verified source evidence;
+  independent `docs-reconstructor` drift audit confirmed each against
+  `src/` directly.
+
 - **Phase 43**: `codecompass query skills` (and `graph.skills_index`) no
   longer hides non-Skill agent-context artifacts. The read-side query was
   hard-filtered to `WHERE kind = 'skill'`, so Cursor `.mdc` rules
@@ -33,6 +55,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   paragraph removed). This is the first `src/codecompass/` change since
   the v1 redefinition began; it was dogfooded through the full 14-step
   agent-led loop (Stage A's exit, GATE DA).
+
+### Added
+
+- **Phase 43b**: two `check_user_docs.py` rules GATE DA scheduled — the
+  standing-content complement to the diff-scoped per-phase docs-drift
+  audit (now 46 tests in that module, +9). `check_no_deleted_names_as_live`
+  (promotes **L-003 + L-004**) flags a retired identifier/config value
+  (`grounded_description`, `Depth.FULL`, `depth = full`,
+  `_ESTIMATED_COST_PER_CALL_USD`, `codecompass promote`) appearing in a
+  doc's prose with no historical marker anywhere in the same bullet or
+  paragraph — judged at prose-unit granularity
+  (`_iter_prose_units`, list-item-or-paragraph, fenced code excluded),
+  not a fixed line window, after an initial line-window design produced
+  9 false positives against this repo's own legitimately historical
+  `architecture/overview.md` narration (caught independently by
+  `docs-maintainer` during the §C fix below). `check_generated_artifacts_match_source`
+  (promotes **L-005**'s invariant half) confirms `.claude/skills/codecompass/SKILL.md`
+  byte-matches `skill.render_tool_skill(...)` and
+  `.claude/commands/discovery.md` byte-matches
+  `commands.render_discovery_command()`, against this repo's own real
+  `vendor.toml`/`context-graph.db` — deliberately narrow (the root
+  `CLAUDE.md` routing table and per-vendor Skills need full graph state a
+  bare check can't reconstruct; out of scope, covered by the per-phase
+  drift audit instead). Both clean (0 findings) against the current repo.
+  `.claude/skills/docs-sync/SKILL.md` lists both as items 13-14.
 
 ### Changed
 

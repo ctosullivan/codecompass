@@ -14,6 +14,11 @@ Line numbers are as of commit `cd433f9` + the Phase 42 working tree and
 **will drift**; each item quotes an anchor phrase so Phase 61 can relocate
 it. Nothing here has been edited.
 
+**Update (Phase 43b):** Section C's 4 now-self-contradictory items
+(33-36) were fixed directly — L-004's Phase-61 obligation for *those
+specific 4 items* is closed early; see §C below for the resolution. The
+broader §A/§B history-shaped trims remain Phase 61's job, unedited.
+
 ## How Phase 61 should use this
 
 Per `planning/v1-redefinition/documentation-lifecycle.md` §1.1
@@ -319,8 +324,18 @@ briefs:
 
 ## C. Passages that are not just historical but now self-contradictory
 
-Phase 61 should treat these as **corrections**, not merely trimming — the
-rest of `architecture/overview.md` already states the opposite.
+**Resolved in Phase 43b** (`planning/phase-43b-standing-doc-drift-checks.md`)
+— all 4 items below were fixed directly in `architecture/overview.md`,
+verified against `src/` (not merely trimmed): item 33 deleted (no
+equivalent behaviour survives — `sync_vendor` never makes an AI call);
+item 34 re-attributed from the deleted `grounded_description.py` to
+`enrichment.py` (which still carries the same constants, one renamed);
+item 35 had its `depth = full`/`FULL` qualifier removed (the underlying
+full-overwrite behaviour is unconditional, universal per Phase 13); item
+36 rewritten to match `enrichment.py`'s own already-correct docstring
+(`VendorConfig` no longer has a `depth` field at all). Kept below as the
+historical record of what was wrong and why — Phase 61 needs no further
+action on these 4.
 
 33. **Known footguns — "Grounded description is fully regenerated
     (re-cloned and re-purchased) on every `sync` run" (currently
@@ -350,4 +365,5 @@ rest of `architecture/overview.md` already states the opposite.
 ## Count
 
 **36 candidate passages** (5 section-level, 27 passage-level trims, 4
-now-self-contradictory corrections).
+now-self-contradictory corrections — **the 4 corrections were resolved in
+Phase 43b**, leaving 32 still outstanding for Phase 61).

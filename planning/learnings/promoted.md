@@ -12,7 +12,18 @@ Example: `L-017 | 2026-10-01 | invariant | tests/test_usage.py::test_vendor_dir_
 L-001 | 2026-09-10 | invariant | tests/test_check_user_docs.py::TestReadmePhaseCount::test_ignores_done_phases_in_redefined_v1_section + scripts/check_user_docs.py::check_readme_phase_count @ c22d8e4
 L-002 | 2026-09-10 | workflow | planning/agent-led-workflow.md step 12 + .claude/agents/knowledge-curator.md "Hard rules" (lead-runs-the-confirming-check handoff) @ d34a486
 L-005 | 2026-09-10 | project-rule | .claude/agents/docs-maintainer.md "Hard rules" (check whether a file is generated before editing) @ d34a486
+L-004 | 2026-09-11 | future-improvement | scripts/check_user_docs.py::check_no_deleted_names_as_live + tests/test_check_user_docs.py::TestNoDeletedNamesAsLive + architecture/overview.md "Known Footguns" §C corrections (items 33-36) @ <commit>
+L-005 | 2026-09-11 | invariant | scripts/check_user_docs.py::check_generated_artifacts_match_source + tests/test_check_user_docs.py::TestGeneratedArtifactsMatchSource @ <commit>
+L-006 | 2026-09-10 | workflow | planning/agent-led-workflow.md step 11 + .claude/agents/roadmap-context-curator.md "Hard rules" (re-dispatch after a plan-changing retro; reconcile every planning doc) @ f6cc86d
 
-<!-- L-002 and L-005 landed in the Phase 43 commit; replace `feat(phase-43)`
-     with the real short hash once the lead commits. (check_generated_artifacts_match_source,
-     the invariant half of L-005, is Phase 43b — not yet logged.) -->
+<!-- L-002 and prior L-005 (project-rule half) landed in the Phase 43
+     commit; replace `d34a486` if it's not the actual Phase 43 commit hash.
+     L-004 and L-005's invariant half (this table's last two lines) landed
+     in the Phase 43b commit — lead: replace `<commit>` with the real
+     short hash once committed.
+     L-006 landed in `f6cc86d` ("docs(phase-43): GATE DA amendment 4
+     (L-006) + planning-doc reconciliation"), the follow-up commit that
+     actually wrote the agent-led-workflow.md step 11 / roadmap-context-
+     curator.md amendment — not `d34a486` (feat(phase-43), the code
+     change + GATE DA verdict itself, which predates the amendment).
+     Confirmed via `git show --stat f6cc86d`. -->

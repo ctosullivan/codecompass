@@ -34,6 +34,8 @@ never fails `--strict` — it just prompts a decision.
 10. Every relative Markdown link in `README.md` / `docs/` / `ai-docs/` / `architecture/` / `examples/` / `CONTRIBUTING.md` resolves to an existing file; `#anchor` fragments are checked against headings `(info)`.
 11. Fenced example lines invoking `codecompass` use a real subcommand / `query` subcommand (cross-checked against `cli.py`).
 12. Every `decisions/*.md` ADR has a Status line; every `decisions/NNNN` cross-reference resolves to a real ADR file.
+13. A retired identifier/config value (`grounded_description`, `Depth.FULL`, `depth = full`, `_ESTIMATED_COST_PER_CALL_USD`, `codecompass promote`, …) doesn't appear in a doc's prose with no historical marker anywhere in the same bullet/paragraph — the standing-content complement to the per-phase `docs-reconstructor` drift audit, which only catches what a phase's own diff breaks.
+14. The git-tracked generated artifacts a bare function call can reproduce (`.claude/skills/codecompass/SKILL.md`, `.claude/commands/discovery.md`) byte-match their generator (`skill.render_tool_skill`, `commands.render_discovery_command`) against this repo's real config/graph state.
 
 ## How to use this skill
 

@@ -12,13 +12,15 @@ Report-only by default (always exits 0). `--strict` exits 1 if any
 `--strict` — they just prompt a decision). For optional local/pre-commit
 use.
 
-Covers, as of Phase 42: CLI command coverage, README phase-count
+Covers, as of Phase 43b: CLI command coverage, README phase-count
 consistency, `ANTHROPIC_API_KEY` mention, `VendorConfig` field coverage,
 `ai-docs/` presence, project-learning candidate provenance +
 promoted-log consistency, per-phase retro presence (`planning/retros/`),
 internal-link resolution across hand-authored docs, fenced `codecompass`
-example commands using real subcommands, and ADR Status +
-cross-reference integrity.
+example commands using real subcommands, ADR Status +
+cross-reference integrity, retired names appearing as live prose
+(the standing-content complement to the per-phase docs-drift audit), and
+generated-artifact-vs-generator drift.
 """
 
 from __future__ import annotations
@@ -552,6 +554,216 @@ def check_adr_status_and_supersedes(root: Path) -> list[Finding]:
     return findings
 
 
+# ── standing-drift checks (Phase 43b, GATE DA) ─────────────────────────
+
+# Retired identifiers/config values, each *verified against src/* to no
+# longer exist under this name. A retired name may still legitimately
+# appear in current-truth docs as *history* ("X was removed in Phase N");
+# this check only flags an occurrence with no historical marker nearby —
+# i.e. one that reads as a live, present-tense fact. Each entry names the
+# decision/phase that retired it, for the finding message.
+_RETIRED_NAMES = (
+    ("grounded_description", "module deleted, decisions/0031/0035 (Phase 16)"),
+    ("Depth.FULL", "Depth enum deleted, decisions/0031"),
+    ("depth = full", "VendorConfig.depth field deleted, decisions/0031/0035"),
+    ('depth = "full"', "VendorConfig.depth field deleted, decisions/0031/0035"),
+    ("_ESTIMATED_COST_PER_CALL_USD", "renamed to _ESTIMATED_COST_PER_BATCH_USD, Phase 15"),
+    ("codecompass promote", "promote command removed, decisions/0033 (Phase 15)"),
+)
+
+# Substrings whose presence anywhere in the same *prose unit* (the whole
+# wrapped bullet, or the whole blank-line-delimited paragraph — see
+# `_iter_prose_units`) marks a retired-name mention as historical framing
+# rather than a live claim. Deliberately generous — false negatives here
+# (missing a genuinely stale claim) are recoverable at the next phase
+# that touches the passage; false positives (flagging correct history)
+# make the check noise that gets ignored. Calibrated against this repo's
+# own architecture/overview.md, which narrates its implementation history
+# extensively and correctly, at unit granularity, not a fixed line count.
+_HISTORICAL_MARKERS = (
+    "retired",
+    "removed",
+    "deleted",
+    "no longer",
+    "not longer",
+    "used to",
+    "former",
+    "formerly",
+    "renamed",
+    "replaced",
+    "now lives in",
+    "moved to",
+    "superseded",
+    "the old",
+    "extended from",
+    "coexist through",
+    "aren't retired until",
+    "isn't retired until",
+    "only deleted once",
+    "carried over from the retired",
+    "was removed",
+    "were removed",
+    "is gone",
+)
+
+
+def _iter_prose_units(text: str):
+    """Yield (start_lineno, unit_text) blocks of hand-written prose: a
+    top-level `- `/`* ` list item plus its wrapped continuation lines
+    (this doc's lists have no blank line between items — a new bullet
+    line starts a new unit), or otherwise a blank-line-delimited
+    paragraph. Fenced code blocks and headings are unit boundaries, never
+    unit content — a retired name inside a fence is a code example, not a
+    prose claim, and this check only judges prose."""
+    units: list[tuple[int, str]] = []
+    current_lines: list[str] = []
+    current_start: int | None = None
+
+    def flush() -> None:
+        nonlocal current_lines, current_start
+        if current_lines:
+            units.append((current_start, "\n".join(current_lines)))
+        current_lines = []
+        current_start = None
+
+    for lineno, line, in_fence, _lang in _lines_with_fence_state(text):
+        if in_fence:
+            flush()
+            continue
+        stripped = line.strip()
+        if not stripped or _HEADING_RE.match(line):
+            flush()
+            continue
+        if re.match(r"^[-*]\s+", stripped):
+            flush()
+            current_start = lineno
+            current_lines = [line]
+        else:
+            if current_start is None:
+                current_start = lineno
+            current_lines.append(line)
+    flush()
+    return units
+
+
+def check_no_deleted_names_as_live(root: Path) -> list[Finding]:
+    """A retired identifier/config value (`_RETIRED_NAMES`) appears in a
+    current-truth doc's prose with no historical marker anywhere in the
+    same unit (bullet or paragraph) — i.e. described as though it still
+    exists. The standing-content complement to the per-phase
+    `docs-reconstructor` drift audit (decisions/0050), which is
+    diff-scoped and blind to pre-existing false-as-live prose no phase's
+    diff touches (candidate learnings L-003 + L-004)."""
+    findings: list[Finding] = []
+    for path in _iter_doc_files(root):
+        for start_lineno, unit in _iter_prose_units(_read(path)):
+            unit_lower = unit.lower()
+            has_marker = any(marker in unit_lower for marker in _HISTORICAL_MARKERS)
+            if has_marker:
+                continue
+            for name, retired_note in _RETIRED_NAMES:
+                if name.lower() not in unit_lower:
+                    continue
+                # Report the specific line the name occurs on, not just
+                # the unit's start, for a click-to-line finding.
+                offset = next(
+                    i for i, ln in enumerate(unit.splitlines()) if name.lower() in ln.lower()
+                )
+                findings.append(
+                    Finding(
+                        "no_deleted_names_as_live",
+                        f"{path.relative_to(root)}:{start_lineno + offset} — "
+                        f"'{name}' appears with no historical marker anywhere "
+                        f"in its bullet/paragraph ({retired_note}); reads as "
+                        "live, not history",
+                    )
+                )
+    return findings
+
+
+def _load_codecompass_generators():
+    """Import codecompass's deterministic (non-AI) generator functions for
+    check_generated_artifacts_match_source. Returns None if the package
+    isn't importable (informational finding, not a hard error — this repo
+    normally has it installed editable, but a bare checkout shouldn't
+    crash the whole script)."""
+    src_path = ROOT / "src"
+    if str(src_path) not in sys.path:
+        sys.path.insert(0, str(src_path))
+    try:
+        from codecompass import commands, config, skill
+
+        return commands, config, skill
+    except Exception:
+        return None
+
+
+def check_generated_artifacts_match_source(root: Path) -> list[Finding]:
+    """Git-tracked but *generated* artifacts byte-match their generator's
+    output against this repo's own real config/graph state — a hand edit,
+    or a generator change without regeneration, drifts silently otherwise
+    (candidate learning L-005: `docs-maintainer` once edited a generated
+    file directly instead of fixing the generator).
+
+    Deliberately narrow: only the two artifacts a bare function call can
+    reproduce without a live sync. The root CLAUDE.md routing-table block
+    and per-vendor `codecompass-*` Skills/`.mdc` files are regenerated
+    from full graph/enrichment state this check doesn't reconstruct —
+    out of scope here, covered by the per-phase docs-drift audit instead.
+    """
+    generators = _load_codecompass_generators()
+    if generators is None:
+        return [
+            Finding(
+                "generated_artifacts_match_source",
+                "could not import codecompass (src/ not importable) — "
+                "skipped the generated-artifact comparison",
+                strict=False,
+            )
+        ]
+    commands, config, skill = generators
+    findings: list[Finding] = []
+
+    tool_skill_path = root / ".claude" / "skills" / "codecompass" / "SKILL.md"
+    vendor_toml = root / "vendor.toml"
+    if tool_skill_path.is_file() and vendor_toml.is_file():
+        try:
+            configs = config.load_vendor_config(vendor_toml)
+            expected = skill.render_tool_skill(configs, root)
+        except Exception as exc:
+            findings.append(
+                Finding(
+                    "generated_artifacts_match_source",
+                    f"could not render the tool Skill to compare: {exc}",
+                    strict=False,
+                )
+            )
+        else:
+            if _read(tool_skill_path) != expected:
+                findings.append(
+                    Finding(
+                        "generated_artifacts_match_source",
+                        ".claude/skills/codecompass/SKILL.md does not match "
+                        "skill.render_tool_skill(...) — regenerate via "
+                        "`codecompass index`/`sync` rather than hand-editing",
+                    )
+                )
+
+    discovery_path = root / ".claude" / "commands" / "discovery.md"
+    if discovery_path.is_file():
+        if _read(discovery_path) != commands.render_discovery_command():
+            findings.append(
+                Finding(
+                    "generated_artifacts_match_source",
+                    ".claude/commands/discovery.md does not match "
+                    "commands.render_discovery_command() — regenerate "
+                    "rather than hand-editing",
+                )
+            )
+
+    return findings
+
+
 CHECKS = [
     check_cli_commands_documented,
     check_readme_phase_count,
@@ -565,6 +777,8 @@ CHECKS = [
     check_internal_links_resolve,
     check_fenced_codecompass_examples,
     check_adr_status_and_supersedes,
+    check_no_deleted_names_as_live,
+    check_generated_artifacts_match_source,
 ]
 
 

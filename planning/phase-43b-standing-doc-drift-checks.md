@@ -1,6 +1,21 @@
 # Phase 43b: two `check_user_docs.py` rules from GATE DA
 
-**Status:** planned
+**Status:** done (2026-09-11). Both checks implemented and clean against
+the real repo (0 false positives after the marker-vocabulary/paragraph-
+unit tuning documented in the retro). §C's 4 self-contradictory
+`architecture/overview.md` passages were fixed directly (verified
+against `src/`), closing that part of L-004's Phase-61 obligation early —
+see `architecture-split-candidates.md` §C. `pytest` 554 passed / 1
+skipped (was 545, +9), `ruff` clean, `--strict` clean, `docs-reconstructor`
+drift audit → NO DRIFT. Closeout complete: `knowledge-curator` triaged
+L-003 (retained), L-004 and L-005's invariant half (both promoted), and
+L-008 (new, retained); a follow-up dispatch also closed L-006's
+outstanding disposition (promoted). `release-phase-auditor` →
+**PASS WITH NON-BLOCKING OBSERVATIONS**
+(`planning/retros/_audit-phase-43b.md`) — no blocking gap; 4 non-blocking
+observations, all addressed in the closeout commit. See
+`planning/retros/phase-43b-standing-doc-drift-checks.md` and
+`planning/CONTEXT.md`.
 
 A small tooling phase (~1 session) decided at **GATE DA** (Phase 43's
 retro, `planning/retros/phase-43-dogfood-agent-led-workflow.md`). Runs

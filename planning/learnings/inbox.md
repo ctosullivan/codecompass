@@ -8,6 +8,73 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-008 — a prose/text-matching check needs its false-positive regression tests before its true-positive one
+
+- **origin:** Phase 43b (`check_no_deleted_names_as_live`'s first design
+  iteration; retro "What didn't work" #1 + Lesson 1)
+- **date:** 2026-09-11
+- **project_revision:** `<Phase 43b commit>`
+- **observation:** the first implementation of
+  `check_no_deleted_names_as_live` used a naive "flag any line containing
+  a retired name" heuristic and produced ~30 false positives when run
+  against this repo's own real docs (which legitimately discuss retired
+  concepts historically at length — exactly the failure mode L-003/L-004's
+  own description of the problem already implied). The design was
+  iterated to prose-unit matching with a historical-marker vocabulary,
+  calibrated until a manual run produced zero false positives, *before*
+  any regression test was written. The false-positive-shaped tests
+  (`test_does_not_flag_historically_framed_mention`,
+  `test_ignores_fenced_code_examples`) were written after the design
+  settled, not before, so the ordering wasn't literally
+  false-positive-test-first — but the manual-testing equivalent of that
+  discipline (test against false positives before against true positives)
+  is what caught the flaw cheaply, in minutes, rather than in a later
+  audit round. This is a reusable authoring discipline for *any future
+  check that pattern-matches over prose* (not just this one) — including,
+  plausibly, Stage C's mechanical-detection heuristics for context gaps
+  (`planning/context-gaps/`), which will also be text/pattern matching
+  over code/docs and share the same false-positive risk shape.
+- **evidence:** `planning/retros/phase-43b-standing-doc-drift-checks.md`
+  "What didn't work" #1 and Lesson 1 ("A 'detect stale/retired content'
+  check needs a false-positive test suite before its true-positive
+  one"); `tests/test_check_user_docs.py::TestNoDeletedNamesAsLive`
+  (`test_does_not_flag_historically_framed_mention` L397,
+  `test_ignores_fenced_code_examples` L418) as the landed artifact
+  demonstrating the calibrated design.
+- **classification:** project-rule
+- **status:** candidate
+- **recurrence:** first occurrence
+- **curation (Phase 43b triage, 2026-09-11, knowledge-curator):**
+  provenance accepted — the retro text and the named tests both exist as
+  cited. **Outcome: retain**, not promote. Real and specific, with a
+  plausible destination (a short authoring note in
+  `.claude/skills/docs-sync/SKILL.md`, which already lists both Phase 43b
+  checks as items 13-14: "when adding a new `check_user_docs.py` rule
+  that pattern-matches over prose, write and run the false-positive case
+  — 'does this fire on content that is correctly discussing the matched
+  term historically/in a code example' — before writing the true-positive
+  regression test; a naive first design commonly over-fires on exactly
+  this project's own history-narrating docs, per
+  `check_no_deleted_names_as_live`'s first iteration") — but single
+  occurrence, and the curator has no write access to `.claude/skills/`
+  (outside `planning/learnings/**`/`planning/context-gaps/**`/draft files
+  under `planning/`) to land it directly. Not promoted until either (a)
+  the lead/`docs-maintainer` adds the note and a commit exists to log
+  here, or (b) a second prose-matching check hits the same false-positive
+  trap, at which point recurrence makes the case stronger. Considered and
+  **declined to file** a second candidate for the retro's other "what
+  didn't work" item (the plan's retired-names list being factually
+  imprecise, `_RAW_TEXT_CHAR_CAP`/`_DOCS_FILE_CAP` surviving): that item
+  is not a gap needing a new mechanism — it's a single-occurrence
+  successful application of an *already-existing* project discipline
+  ("verify against `src/`, not the candidate's prose", which the retro
+  itself notes the `_iter_learning_candidates`/ADR-cross-reference checks
+  already model) catching an error before it landed. Filing a learning
+  for a discipline that already exists and worked as intended would be
+  filing to have filed one, not because there's an unaddressed gap.
+- **promoted_to:** — (retained; destination is a `docs-sync/SKILL.md`
+  authoring note, pending lead action or recurrence)
+
 ### L-007 — a plan's "Done when" should separate "the mechanism exists" from "the mechanism has produced output"
 
 - **origin:** Phase 43c (retro lesson 2 + "what didn't work" #2;
@@ -70,16 +137,80 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 - **evidence:** `planning/retros/_audit-phase-43.md` — 3 audit rounds,
   every FAIL a planning-doc gap, zero code defects.
 - **classification:** workflow
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** first occurrence (but note: the auditor has caught a
   planning-doc gap on *every* phase 41–43 — 41 plan Files, 42 obs, 43 ×3)
-- **promoted_to:** — (proposed amendment landed this phase:
-  `planning/agent-led-workflow.md` step 11 gains "if the retro schedules
-  a follow-up phase or amends the roster/workflow, re-dispatch
-  `roadmap-context-curator` after writing it"; and the curator brief
-  gets "reconcile *all* planning docs — `ROADMAP.md`,
-  `v1-redefinition/roadmap.md`, `CONTEXT.md`, `CHANGELOG.md`, the phase
-  plan files — not just the first three". Curator to confirm at triage.)
+- **curation (Phase 43b follow-up triage, 2026-09-11, knowledge-curator):**
+  dispatched specifically to close the gap the `release-phase-auditor`
+  flagged (`planning/retros/_audit-phase-43b.md` observation 3): L-006 was
+  committed to being triaged at Phase 43b's own triage but the first
+  triage pass (which covered L-003/L-004/L-005) missed it. Verified two
+  things independently, by reading the artifacts directly (no Bash
+  available):
+  1. **The amendment landed, textually, exactly as the `promoted_to` note
+     describes.** `planning/agent-led-workflow.md` step 11 now reads:
+     "If the retro schedules a follow-up phase, amends the roster or
+     workflow, or otherwise changes the plan — re-dispatch
+     `roadmap-context-curator` after writing it (step 10's reconciliation
+     is now stale). Don't hand-patch the planning docs yourself; that
+     drifts (GATE DA, Phase 43 — L-006)." `.claude/agents/roadmap-context-curator.md`
+     "Hard rules" now opens with "Reconcile *every* planning doc, not just
+     the top three," names `ROADMAP.md`/`CONTEXT.md`/`CHANGELOG.md` *and*
+     `v1-redefinition/roadmap.md`, the phase's own `phase-N-*.md` status
+     line, and any new `phase-*.md` a retro just scheduled, and
+     cites "(GATE DA, Phase 43 — L-006)" as its own provenance. Both
+     match the `promoted_to` note verbatim in substance.
+  2. **The dispatching task's stronger claim — that the specific
+     "re-dispatch after a plan-changing retro" clause fired and caught a
+     premature `done` twice (43c and 43b) — does not hold up on a close
+     read, and I'm not accepting it uncritically.** Re-reading both
+     retros directly: `phase-43c-agent-context-pathways.md`'s own
+     "Candidate learnings filed" section states outright "L-006 stays
+     parked — its disposition confirmation is scheduled for Phase 43b
+     triage… 43c's roster change was resolved *before* the
+     `roadmap-context-curator` ran, so it did not re-trigger L-006's
+     staleness pattern" — i.e., 43c is documented, in its own retro, as a
+     case where the amendment's specific trigger condition (a
+     *post*-curator-run plan change) never fired. Phase 43b's own retro
+     "Where we're going" section doesn't schedule a new follow-up phase
+     or amend the roster/workflow either — it just confirms "no gate
+     blocks Phase 44." So neither phase is actually a case of the
+     re-dispatch clause activating; the `release-phase-auditor`'s reports
+     for both phases show the curator's step-10 run correctly holding
+     `ROADMAP.md`/`v1-redefinition/roadmap.md`/the phase-plan status line
+     at "in progress" pending retro+triage+audit — which is just the
+     *ordinary* step-10 phase-end job (§5's "only if every DoD condition
+     holds"), not the amendment's new re-dispatch mechanism specifically.
+  3. **What the evidence *does* support, on the corrected reading: the
+     amendment's broader remedy — multi-doc reconciliation instead of the
+     lead hand-patching — has demonstrably worked, twice, on the exact
+     failure shape L-006 recorded.** Phase 43 itself needed a 3-round
+     `release-phase-auditor` trail (FAIL → FAIL → PASS), every FAIL a
+     planning-doc bookkeeping gap across `ROADMAP.md` /
+     `v1-redefinition/roadmap.md` / `CONTEXT.md`. Since the amendment
+     landed, both Phase 43c (`_audit-phase-43c.md`) and Phase 43b
+     (`_audit-phase-43b.md`) passed their `release-phase-auditor` audit on
+     the **first round** (both "PASS WITH NON-BLOCKING OBSERVATIONS," no
+     FAIL), with every named planning doc (`ROADMAP.md`,
+     `v1-redefinition/roadmap.md`, the phase-plan status line,
+     `CONTEXT.md`) found internally consistent (the only outstanding items
+     in both were the expected pre-commit "still says in-progress, flip
+     in the closeout commit" state and commit-hash placeholders — not
+     bookkeeping contradictions). That is a real before/after: the
+     specific defect pattern L-006 evidenced (planning-doc drift the lead
+     alone couldn't keep straight) has not recurred across two
+     subsequent phases. **Outcome: promote**, on this corrected basis —
+     the amendment landed and the general remedy it encodes is working —
+     while flagging that the narrower "re-dispatch after a plan-changing
+     retro" trigger specifically remains untested (no retro since Phase
+     43 has actually changed the plan *after* the curator's step-10 run)
+     and should be watched the next time a GATE or retro does schedule a
+     follow-up phase after step 10.
+- **promoted_to:** `planning/agent-led-workflow.md` step 11 +
+  `.claude/agents/roadmap-context-curator.md` "Hard rules" (re-dispatch
+  after a plan-changing retro; reconcile every planning doc) @ `<commit>`
+  — *lead fills the real short hash for the Phase 43 commit these landed
+  in*.
 
 ### L-005 — `docs-maintainer` edited a generated file (it doesn't distinguish generated vs hand-authored)
 
@@ -133,6 +264,25 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 - **promoted_to:** `.claude/agents/docs-maintainer.md` "Hard rules"
   (generated-file check) @ d34a486 — *lead fills the real short
   hash*. Invariant part: pending Phase 43b.
+- **curation (Phase 43b triage, 2026-09-11, knowledge-curator):**
+  **invariant half now also promoted.** Verified independently:
+  `check_generated_artifacts_match_source` is live in
+  `scripts/check_user_docs.py` (L701-764, CHECKS list L781), comparing
+  `.claude/skills/codecompass/SKILL.md` against
+  `skill.render_tool_skill(...)` and `.claude/commands/discovery.md`
+  against `commands.render_discovery_command()` — exactly the two
+  artifacts named in `planning/phase-43b-standing-doc-drift-checks.md`
+  §2, with the root `CLAUDE.md` routing table and per-vendor
+  `codecompass-*` Skills explicitly noted as out of scope (not
+  bare-function-reconstructable) rather than silently dropped. 4
+  regression tests in
+  `tests/test_check_user_docs.py::TestGeneratedArtifactsMatchSource`
+  (L429-462), including `test_clean_against_real_repo` (L458) — this
+  repo's own tracked `SKILL.md`/`discovery.md` verified to currently
+  match their generators, closing the exact silent-drift failure mode
+  this candidate recorded (`docs-maintainer` hand-editing
+  `SKILL.md` in Phase 43). Both halves of L-005 (project-rule +
+  invariant) are now closed; status updated to `promoted` in full.
 
 ### L-004 — the per-phase docs-drift audit is diff-scoped, so standing rot is invisible to it
 
@@ -155,7 +305,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   the same file's `## Grounded description — retired` / `## Cost model`
   sections (self-contradictory).
 - **classification:** future-improvement
-- **status:** retained
+- **status:** promoted
 - **recurrence:** first occurrence of this specific instance; second
   instance of the *pattern* shared with L-003 (see cluster note below).
 - **curation (Phase 42 triage, 2026-09-10, knowledge-curator):**
@@ -212,8 +362,35 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   Phase 61 landing the §C corrections also moves it forward (log that
   commit too). If Phase 43b slips past the Phase 47 bulk review, force
   promote/discard.
-- **promoted_to:** — (retained → promoted-pending Phase 43b; §C fix
-  tracked for Phase 61)
+- **curation (Phase 43b triage, 2026-09-11, knowledge-curator):**
+  **promoted — both halves closed.** Verified independently:
+  (1) `check_no_deleted_names_as_live` is live in
+  `scripts/check_user_docs.py` (CHECKS list, L780) and scoped to exactly
+  L-004's own domain, `architecture/**` (via `_iter_doc_files`'s `docs`,
+  `ai-docs`, `architecture`, `examples` dirs + `README.md`/
+  `CONTRIBUTING.md`) — this is squarely inside L-004's original evidence
+  location (`architecture/overview.md`), not by analogy the way L-003's
+  case is. 5 regression tests in
+  `tests/test_check_user_docs.py::TestNoDeletedNamesAsLive` (L387-426),
+  including `test_clean_against_real_repo` (L425) and a
+  false-positive-shaped `test_does_not_flag_historically_framed_mention`
+  (L397) — directly answering this candidate's own evidence shape (a doc
+  that "narrates decision history" and must not be flagged for doing so
+  correctly). (2) L-004's originally-cited evidence — the 4
+  self-contradictory `architecture/overview.md` passages (items 33-36)
+  — is fixed, per
+  `planning/v1-redefinition/architecture-split-candidates.md` L17-20 and
+  L367-369 ("the 4 corrections were resolved in Phase 43b, leaving 32
+  still outstanding for Phase 61"), independently re-verified by
+  `docs-reconstructor`'s drift audit (`planning/retros/_drift-audit-phase-43b.md`,
+  reported NO DRIFT — could not re-run myself, no Bash; trusting the
+  retro's and the plan file's own reported result).
+- **promoted_to:** `scripts/check_user_docs.py::check_no_deleted_names_as_live`
+  + `tests/test_check_user_docs.py::TestNoDeletedNamesAsLive` (the
+  general-mechanism half) + `architecture/overview.md` §"Known Footguns"
+  / `architecture-split-candidates.md` §C items 33-36 (the
+  motivating-evidence half) @ `<commit>` — *lead fills the real short
+  hash for the Phase 43b commit*.
 
 ### L-003 — no independent check on `planning/**` narrative-doc accuracy
 
@@ -268,7 +445,53 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   item in `planning/**` is caught incidentally (recurrence → reopen
   prose-ownership). If still unresolved at the Phase 47 bulk review,
   force a promote/discard.
-- **promoted_to:** — (retained → promoted-pending Phase 43b)
+- **curation (Phase 43b triage, 2026-09-11, knowledge-curator):**
+  `check_no_deleted_names_as_live` landed — verified directly in
+  `scripts/check_user_docs.py::_iter_doc_files` (L333-342): it walks
+  `README.md`, `CONTRIBUTING.md`, and `docs/` / `ai-docs/` /
+  `architecture/` / `examples/`. **`planning/**` is not in that list.**
+  L-003's own evidence (the stale `planning/learnings/README.md` "not yet
+  operational" line, Phase 41) was a `planning/**` doc — squarely outside
+  this check's scope. Confirms the Phase 43 GATE DA note's own caveat: the
+  check "resolves L-004's domain squarely and L-003's only by analogy."
+  It does not by analogy either, on inspection — `_RETIRED_NAMES` /
+  `_HISTORICAL_MARKERS` matching logic is domain-agnostic, but the
+  *file-selection* (`_iter_doc_files`) is the actual scope boundary, and
+  it structurally excludes `planning/**`. **Outcome: split, not a clean
+  promote.**
+  1. The *general pattern half* shared with L-004 (a diff-scoped drift
+     check has a standing-content blind spot; GATE DA's remedy shape —
+     "a `check_user_docs.py` deleted-names-as-live rule" — is now proven
+     workable) is real and now has landed evidence in the `architecture/**`
+     instance. Credit that shared insight to **L-004's promotion** (below)
+     rather than double-counting here.
+  2. L-003's own specific claim — "no independent check on `planning/**`
+     narrative-doc accuracy" — **remains true and unresolved.** No
+     `planning/**` file is in `_iter_doc_files`'s scope, so nothing
+     mechanical watches for a repeat of the exact incident L-003 records.
+     **Status stays `retained`**, no longer "promoted-pending Phase 43b"
+     (that pending resolution didn't materialize as hoped) — the gap is
+     open-ended: extending `_iter_doc_files` to `planning/**` was never in
+     scope for any phase and would need its own design (planning docs are
+     allowed to describe *retired* things narratively far more than
+     product docs are, e.g. superseded ADRs' summaries in roadmap prose —
+     a blunt deleted-names-as-live rule over `planning/**` risks far more
+     false positives than the product-doc version's own first draft did).
+     Not proposing that extension without a second concrete incident to
+     calibrate against, per L-003's own "moves forward when" clause.
+  3. **Recurrence check:** no second `planning/**` stale-prose incident
+     has been caught since Phase 41. The clause "a second stale-prose item
+     in `planning/**` is caught incidentally" has not fired.
+  4. **Phase 47 bulk-review flag:** L-003 has now been retained across
+     Phases 41, 42, and 43b (3 phases) without promotion or discard —
+     approaching but not yet past the ~3-phase staleness threshold this
+     agent's brief asks it to flag. Note for Phase 47: if still
+     unresolved then, force a promote (a scoped `planning/**`
+     drift-check design) or discard (accept the gap as a known, bounded
+     residual risk given `planning/**` isn't current-truth in the same
+     sense product docs are).
+- **promoted_to:** — (retained; `planning/**` scope gap still open,
+  unrelated to Phase 43b's landed check; flagged for Phase 47 bulk review)
 
 ### L-002 — `knowledge-curator` can't run the mechanical check it reasons about
 
