@@ -1,6 +1,17 @@
 # Phase 43c: Agent context-suggestion pathways + context-health planning
 
-**Status:** planned
+**Status:** done (2026-09-11). All deliverables built and verified
+(`pytest` 545 passed / 1 skipped, `ruff` clean, `check_user_docs.py
+--strict` clean; no `src/` or test change). Human-decision point
+resolved: the user approved `context-health-planner` as the roster's 8th
+agent (Option A). Closeout: `docs-reconstructor` drift audit
+(`planning/retros/_drift-audit-phase-43c.md`) → NO DRIFT;
+`knowledge-curator` triage → `CG-001` `candidate` + `L-007` `retained`;
+`release-phase-auditor` (`planning/retros/_audit-phase-43c.md`) → **PASS
+WITH NON-BLOCKING OBSERVATIONS**. Retro:
+`planning/retros/phase-43c-agent-context-pathways.md`. One tracked
+follow-up: the `context-health-planner`'s first solo run is before Phase
+45 (its own-repo first assessment was lead-written).
 
 Stage A→B **bridge phase** (user request, 2026-09-11). Runs after Phase
 43b, before Phase 44 (Stage B). Instruments the agent-led development

@@ -36,8 +36,34 @@ outcome, 43b absent from the CONTEXT forward path; re-audit #1: the
 CONTEXT fix left the file self-contradictory on Phase 43's status;
 re-audit #2 PASS WITH NON-BLOCKING OBSERVATIONS) — every gap planning-doc
 bookkeeping, none a code defect (the evidence behind L-006). Candidate
-learning **L-006** filed this phase. **Next: Phases 43b + 43c (both
-before Stage B), then Phase 44 (Stage B begins).**
+learning **L-006** filed this phase.
+
+**Phase 43c is `done` (2026-09-11).** The Stage A→B
+bridge phase (user request 2026-09-11) instrumented the agent-led
+development process to produce context-quality signal from CodeCompass's
+own development, with **no `src/` or test change**: new
+`planning/context-gaps/` (a capture pathway for relationships an agent
+believes the graph should hold but mechanical detection can't produce;
+first entry `CG-001`), `planning/context-use-log.md` (a 4-line per-use
+CodeCompass-context-vs-default-pathway record, LOW/MODERATE/HIGH —
+`agent-led-workflow.md` step 4 now requires an entry), and
+`planning/context-health.md` owned by the roster's new **8th agent**
+`context-health-planner` (user-approved, Option A). `decisions/0051`
+(Accepted): agent-suggested context is captured as reviewable candidates,
+**never written to `context-graph.db`** — it becomes authoritative only
+via the learning lifecycle into a Stage C detection heuristic (GATE DB)
+or a Stage E graph capability (GATE DD), each with its own ADR.
+Verification: `pytest` 545 passed / 1 skipped, `ruff` clean,
+`check_user_docs.py --strict` clean. Closeout: `docs-reconstructor`
+drift audit → **NO DRIFT**; `knowledge-curator` triage → `CG-001`
+`candidate` (provenance verified by code-trace) + **L-007** filed
+`retained` (from a retro lesson: "a mechanism existing" ≠ "the mechanism
+produced output this phase" — `context-health.md`'s first assessment was
+lead-written, not run by the new agent); `release-phase-auditor` →
+**PASS WITH NON-BLOCKING OBSERVATIONS**. One tracked follow-up: the
+`context-health-planner`'s first genuine solo run is before Phase 45
+(pinned into the Phase 45 stanza of `v1-redefinition/roadmap.md`).
+**Next: Phase 43b, then Phase 44 (Stage B begins).**
 
 - **39** ratified the redefinition: ADRs `decisions/0048`/`0049`
   `Accepted`; `pyproject.toml` `version` → `1.0.0.dev0`; ROADMAP's Stage
@@ -116,17 +142,18 @@ A** — Phases 39–42 changed no `src/`. No `CLAUDE.md` change in Phase 42 or
 43 (§5 was already amended in Phases 40–41). No release or tag anywhere in
 Stage A (gate G2-b).
 
-**Next: Phases 43b + 43c** (independent of each other, both before Stage
-B). **43b** ([`phase-43b-standing-doc-drift-checks.md`](phase-43b-standing-doc-drift-checks.md))
+**43c is `done`** ([`phase-43c-agent-context-pathways.md`](phase-43c-agent-context-pathways.md),
+user request 2026-09-11) — the Stage A→B bridge that instrumented the
+agent-led dev process to capture context-quality signal from
+CodeCompass's own development (`planning/context-gaps/` + `CG-001`,
+`planning/context-use-log.md` + a step-4 amendment, `context-health.md` +
+the 8th agent `context-health-planner`, `decisions/0051`). Capture +
+evidence only, no `src/` change.
+
+**Next: Phase 43b** ([`phase-43b-standing-doc-drift-checks.md`](phase-43b-standing-doc-drift-checks.md))
 — a ~1-session tooling phase: implement the two `check_user_docs.py`
 rules GATE DA decided (`check_no_deleted_names_as_live`,
-`check_generated_artifacts_match_source`). **43c**
-([`phase-43c-agent-context-pathways.md`](phase-43c-agent-context-pathways.md),
-user request 2026-09-11) — a Stage A→B bridge: instrument the agent-led
-dev process to capture context-quality signal from CodeCompass's own
-development (a context-gap capture pathway, a per-use context-vs-default
-eval, context-health planning + a proposed `context-health-planner`
-agent). Capture + evidence only, **no `src/` change** (`decisions/0051`).
+`check_generated_artifacts_match_source`).
 **Then Phase 44** — Stage B begins: the reference-project
 protocol + context-quality eval spec into operational form (also writes
 the Phase 45 plan), briefing `context-evaluator` and
@@ -168,6 +195,61 @@ dependencies now carry lower-bound version pins (`decisions/0047`), and
 were cleaned up (Phase 38).
 
 ## What was just completed
+
+**Phase 43c, `done`** (2026-09-11) — a Stage
+A→B bridge phase (user request) instrumenting the agent-led development
+process to produce context-quality signal, **no `src/codecompass/` or
+test change**:
+- NEW `planning/context-gaps/` (`README.md`, `TEMPLATE.md`, `inbox.md`) —
+  a capture pathway for relationships an agent believes the graph should
+  hold but mechanical detection can't produce. First entry `CG-001` (the
+  Phase 43 `graph.skills_index` ↔ `cli.py::query_skills` ↔
+  `skill.py::render_tool_skill` "one feature, three modules" relationship;
+  `query relations src/codecompass/skill.py` errors — verified).
+- NEW `planning/context-use-log.md` — a 4-line record per CodeCompass
+  context retrieval (what it gave vs. the grep/read/`--help` default
+  pathway, LOW/MODERATE/HIGH advantage, anything misleading). First entry:
+  the live Phase 43 `query skills` use, rated **LOW** (dogfooding the
+  query layer on itself is a hard case). `planning/agent-led-workflow.md`
+  step 4 amended to require an entry (or a "not used — why" line).
+- NEW `planning/context-health.md` + NEW
+  `.claude/agents/context-health-planner.md` — the roster's **8th agent**
+  (user approved Option A over keeping it a lead/curator function): a
+  forward-looking "is the graph adequate for upcoming phases" assessment,
+  runs `codecompass query` read-only, writes only that one file. First
+  assessment: CodeCompass's own 4-dependency graph is healthy (all fresh,
+  3/4 enriched, `pipdeptree` correctly unused); no Stage A→B phase is
+  gated on it; the graph that matters next is Technical Clipper's,
+  expected near-empty.
+- NEW `decisions/0051` (Accepted) — agent-suggested context is captured
+  as reviewable candidates, **never written to `context-graph.db`**;
+  authoritative only via learning-lifecycle promotion into a Stage C
+  detection heuristic (GATE DB) or a Stage E graph capability (GATE DD),
+  each with its own ADR. Extends the `decisions/0031`/`0037`/`0045`
+  determinism-first boundary to a new input source; does not supersede
+  them.
+- MODIFIED (append-only / additive): `decisions/0049` Consequences
+  (roster-extension note), `.claude/agents/knowledge-curator.md` +
+  `reference-project-tester.md` briefs (own / feed the new pathways),
+  `planning/v1-redefinition/agent-led-development.md` (§2.9 new, §3 table,
+  §7 step 4, roster 7→8), `conditional-generalisation.md` §1.2
+  (agent-suggested-edge evidence collection started).
+- Verified: `pytest` 545 passed / 1 skipped, `ruff check .` clean,
+  `python scripts/check_user_docs.py --strict` clean. **No release or tag
+  (gate G2-b).**
+- Closeout: `docs-reconstructor` per-phase drift audit
+  (`planning/retros/_drift-audit-phase-43c.md`) → **NO DRIFT**;
+  `knowledge-curator` triage → `CG-001` `candidate` (provenance verified
+  by code-trace) + **L-007** filed `retained` ("a mechanism existing" ≠
+  "the mechanism produced output" — `context-health.md`'s first
+  assessment was lead-written, not the new agent's run);
+  `release-phase-auditor` (`planning/retros/_audit-phase-43c.md`) →
+  **PASS WITH NON-BLOCKING OBSERVATIONS** (no blocking gap; all re-run
+  verification matched). Retro:
+  `planning/retros/phase-43c-agent-context-pathways.md`.
+- **Tracked follow-up:** the `context-health-planner`'s first genuine
+  solo run is before Phase 45, on the Technical Clipper clone — pinned
+  into the Phase 45 stanza of `v1-redefinition/roadmap.md`.
 
 **Phase 43, done** (2026-09-10) — dogfooded the agent-led loop on one
 real change (Stage A's last phase; exit = **GATE DA, passed**). The code
@@ -445,9 +527,19 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Stage A is complete (Phases 39–43 `done`, GATE DA passed).**
+**Stage A is complete (Phases 39–43 `done`, GATE DA passed). Phase 43c is
+`done` (2026-09-11) — closeout committed. Phase 43b is next.**
 
-**Phase 43b** ([`phase-43b-standing-doc-drift-checks.md`](phase-43b-standing-doc-drift-checks.md))
+**Phase 43c closeout (done):** `docs-reconstructor` drift audit → **NO
+DRIFT**; `knowledge-curator` triage → `CG-001` `candidate` + **L-007**
+`retained` (L-006 stays scheduled for Phase 43b); `release-phase-auditor`
+→ **PASS WITH NON-BLOCKING OBSERVATIONS**. ROADMAP row `43c` /
+`v1-redefinition/roadmap.md` / plan-file status all flipped to `done` in
+the phase's own commit. One tracked follow-up: the
+`context-health-planner`'s first genuine solo run is before Phase 45
+(pinned into the Phase 45 stanza of `v1-redefinition/roadmap.md`).
+
+**Next: Phase 43b** ([`phase-43b-standing-doc-drift-checks.md`](phase-43b-standing-doc-drift-checks.md))
 — a ~1-session tooling phase from GATE DA: add `check_no_deleted_names_as_live`
 (the standing-content complement to the per-phase drift audit — promotes
 the L-003+L-004 "standing-rot blind-spot" cluster) and
@@ -459,32 +551,19 @@ work. Judgment call in its plan: whether to also fix
 `architecture/overview.md` §C's 4 self-contradictions here (verified
 against `src/`) or leave them to Phase 61.
 
-**Phase 43c** ([`phase-43c-agent-context-pathways.md`](phase-43c-agent-context-pathways.md),
-user request 2026-09-11; independent of 43b) — a Stage A→B bridge.
-Instruments the agent-led dev process so CodeCompass's own development
-produces context-quality signal: (1) `planning/context-gaps/` — a
-capture pathway for relationships an agent believes CodeCompass should
-represent but mechanical detection cannot; (2) `planning/context-use-log.md`
-+ an `agent-led-workflow.md` step-4 amendment — a per-use record of
-CodeCompass context vs. the agent's default pathway (grep/read/`--help`),
-rated LOW/MODERATE/HIGH; (3) `planning/context-health.md` + a proposed
-**`context-health-planner`** agent (8th agent — human-decision point in
-the retro). `decisions/0051`: agent-suggested context is captured as
-reviewable candidates, **never written to `context-graph.db`**. **No
-`src/` change** — agent-inference edges / task-oriented retrieval are
-Stage C/E, gated. This phase gathers the evidence for those gated
-decisions.
+(**Phase 43c** — `done`; see "What was just completed". Its one in-phase
+human-decision point is resolved: the user approved
+`context-health-planner` as the roster's 8th agent, Option A. The
+`agent-inference edges` / `task-oriented retrieval` boundary held — no
+`src/` change; those stay Stage C/E, gated on GATE DB/DD, per
+`decisions/0051`.)
 
 **Then Phase 44** ([`phase-44-reference-project-protocol.md`](phase-44-reference-project-protocol.md))
 — **Stage B begins**: turn the reference-project protocol +
 context-quality evaluation spec into operational templates + a registry,
 and brief `context-evaluator` + `reference-project-tester` for their first
 real use. Phase 44 also writes the Phase 45 plan (register Technical
-Clipper + baseline). No human-decision gate blocks Phase 43b or 44;
-Phase 43c carries one in-phase decision (approve the `context-health-planner`
-8th agent, or keep context-health a lead + `roadmap-context-curator`
-function) — surfaced to the user with the plan and again in the retro,
-not a §7 gate that blocks the phase from starting.
+Clipper + baseline). No human-decision gate blocks Phase 43b or 44.
 
 Phase 41 was the first real run of the agent-led loop (the live smoke
 delegation deferred from Phase 40); Phase 42 was the `docs-maintainer`'s

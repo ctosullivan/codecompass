@@ -25,9 +25,19 @@ output for both, *that* is the evidence — recorded via
 
 ### 1.2 Hypotheses awaiting reference-project validation
 
+**Evidence collection has started (Phase 43c).** Two instruments now feed
+this table with datapoints from CodeCompass's *own* development, alongside
+the reference-project evaluations:
+`planning/context-gaps/` (relationships an agent believes the graph should
+hold but mechanical detection can't produce — `decisions/0051`; first
+entry `CG-001` is evidence for §2.6) and `planning/context-use-log.md`
+(context-vs-default-pathway advantage per use). The `knowledge-curator`
+consolidates both at Phases 47 and 55; a recurring context-gap, or one
+raised by two agents independently, is GATE DB/DD input.
+
 | Hypothesis | Would be confirmed by | Candidate design (§2) |
 |---|---|---|
-| v1 needs a generalised **technical-dependency** concept | recurring "CodeCompass cannot represent dependency X" findings across ≥2 tasks and ≥1 project | §2.1 |
+| v1 needs a generalised **technical-dependency** concept | recurring "CodeCompass cannot represent dependency X" findings across ≥2 tasks and ≥1 project (`context-gaps/` + reference-project evals) | §2.1 |
 | v1 needs an **executable** dependency kind | Ledgerkit Phase 54 shows relating hledger-behaviour evidence is materially useful | §2.2 |
 | v1 needs a **reference-doc / spec / manual** dependency kind | Technical Clipper (CommonMark) *and/or* Ledgerkit (hledger manual) Phase 53 show indexed+related reference material beats direct reading | §2.3 |
 | v1 needs first-class **provenance** (distinct source kinds) | recurring "context was misleading because a doc-statement / agent-inference was shown like a source-fact" findings | §2.4 |

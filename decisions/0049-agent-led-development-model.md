@@ -112,3 +112,12 @@ phases additionally require a linked `context-evaluator` report.
 - GATE DA (Phase 43) may amend this roster; such an amendment is a
   planning-doc + `.claude/agents/` change, not a new ADR unless it
   reverses a fixed point above.
+- **Roster extended in Phase 43c** (2026-09-11): an 8th agent,
+  `context-health-planner` (forward-looking "is the graph adequate for
+  the upcoming roadmap" assessment; writes `planning/context-health.md`
+  only). GATE DA kept the roster at 7 with no pruning; this addition does
+  not reverse a fixed point above (it uses CodeCompass read-only, writes
+  one planning file, files `context-gaps/` rather than editing the
+  graph), so it is a planning-doc + `.claude/agents/` change per the line
+  above. The non-obvious tradeoff it comes packaged with — agent-suggested
+  context is captured, never graphed — is its own ADR, `decisions/0051`.

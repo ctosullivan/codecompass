@@ -40,8 +40,10 @@ Time tripwire: if Stage A exceeds ~6 working sessions, re-scope (the
 roster is probably too big — prune per GATE DA). **Actual:** Phases
 39–43 took ~5 sessions; GATE DA passed with no pruning. Phases 43b + 43c
 (user-requested, ~1–2 sessions each) push the total past the tripwire —
-but the cause is added scope, not roster bloat, so the tripwire's remedy
-(prune) doesn't apply. Noted, not a concern.
+but the cause is added scope, not roster bloat (43c does add an 8th
+agent, `context-health-planner`, but with a specific named concern and
+user approval — not drift), so the tripwire's remedy (prune) doesn't
+apply. Noted, not a concern.
 
 ### Phase 39 — Reconcile repo state + versioning realignment · COMMITTED
 - **Plan:** `planning/phase-39-reconcile-v1-redefinition.md`
@@ -171,8 +173,25 @@ but the cause is added scope, not roster bloat, so the tripwire's remedy
   gated decisions (`conditional-generalisation.md` §2.1/§2.4/§2.6).
 - **Human-decision point:** the `context-health-planner` agent —
   approve an 8th agent, or keep it a lead/curator function? (GATE DA said
-  "roster stays at 7" re: pruning, not adding.)
-- **Status:** planned.
+  "roster stays at 7" re: pruning, not adding.) **Resolved 2026-09-11:
+  8th agent approved (Option A).**
+- **Status:** **done (2026-09-11).** All deliverables built
+  (`planning/context-gaps/` + `CG-001`, `planning/context-use-log.md` +
+  step-4 amendment, `planning/context-health.md`,
+  `.claude/agents/context-health-planner.md`, `decisions/0051` Accepted,
+  briefs + `agent-led-development.md` §2.9/§3/§7 +
+  `conditional-generalisation.md` §1.2). `--strict` clean; `pytest` 545
+  passed / 1 skipped; `ruff` clean; no `src/` or test change.
+  `docs-reconstructor` drift audit → NO DRIFT.
+  `knowledge-curator` triage: `CG-001` → `candidate` (provenance
+  verified), `L-007` filed → `retained`. `release-phase-auditor` →
+  **PASS WITH NON-BLOCKING OBSERVATIONS**
+  (`planning/retros/_audit-phase-43c.md`). Retro:
+  `planning/retros/phase-43c-agent-context-pathways.md`.
+- **Tracked commitment (from the audit):** `context-health.md`'s first
+  assessment was lead-written; the `context-health-planner` agent's first
+  genuine solo run is **before Phase 45**, on the Technical Clipper clone
+  once registered (see the Phase 45 stanza).
 
 ---
 
@@ -210,6 +229,14 @@ a finding — proceed to Ledgerkit earlier.
 - **Exit:** `planning/reference-projects/technical-clipper.md` created with
   the registration record + baseline report. First real datapoint on the
   §1.2(2) hypothesis.
+- **Also (tracked from the Phase 43c audit):** the `context-health-planner`
+  agent runs for the **first time for real** here — a forward-looking
+  `planning/context-health.md` assessment against the freshly-registered
+  Technical Clipper clone (expected honest finding: "the graph is nearly
+  empty; here is what CodeCompass cannot represent", with each
+  un-representable dependency filed as a `planning/context-gaps/` entry
+  per `decisions/0051`). Phase 43c created the agent but the lead wrote
+  its first (own-repo) assessment by hand; this is its first solo run.
 
 ### Phase 46 — CodeCompass during genuine Technical Clipper tasks · EXPERIMENTAL
 - **Plan:** `planning/phase-46-technical-clipper-tasks.md`

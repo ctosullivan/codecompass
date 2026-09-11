@@ -21,6 +21,7 @@ something feels off.**
 | `context-evaluator` | rate context quality by inspecting the target directly | its report only | yes |
 | `release-phase-auditor` | read-only Definition-of-Done audit | its report only | yes |
 | `docs-reconstructor` | per-phase docs-drift audit (every phase); blank-slate reconstruction (milestones) | its report / `planning/v1-docs-reconstruction/` | yes |
+| `context-health-planner` | forward-looking "is the graph adequate for upcoming phases" assessment | `planning/context-health.md` only | partial |
 
 **No agent** writes `CLAUDE.md`, `decisions/*`, or `src/`. The lead owns
 those (ADRs via `CLAUDE.md` §2's process; `CLAUDE.md` via §0;
@@ -46,6 +47,21 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
 4. **Retrieve useful CodeCompass context** where dogfooding it would
    plausibly help this phase (query the graph, read a generated Skill).
    Capture anything surprising as a candidate learning.
+   - **If any CodeCompass context was retrieved, add a
+     `planning/context-use-log.md` entry** before moving on — 4 lines:
+     what was retrieved, what the *default pathway* (grep / file read /
+     `--help`) would have surfaced, a LOW/MODERATE/HIGH advantage rating
+     (`context-quality-evaluation.md` §5), and whether anything was wrong
+     or misleading. **If no CodeCompass context was used this phase, log
+     a one-line "not used — <why>" entry** (also a datapoint). This is
+     lighter than a `context-evaluator` report on purpose. (Phase 43c.)
+   - **If you notice a relationship CodeCompass *should* represent but
+     mechanical detection can't produce**, file a
+     `planning/context-gaps/` entry (`decisions/0051` — it never enters
+     `context-graph.db`; it feeds GATE DB/DD). (Phase 43c.)
+   - Before a phase that leans on CodeCompass context (a reference-project
+     phase, or Phase 60), dispatch **`context-health-planner`** for a
+     forward-looking adequacy assessment (`planning/context-health.md`).
 5. **Delegate bounded specialist work.** One agent = one artifact. Give
    each a self-contained prompt (the phase plan path, exact scope, what
    to return). Run in the background unless the next step strictly

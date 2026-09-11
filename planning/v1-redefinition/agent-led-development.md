@@ -30,10 +30,16 @@ Implemented by Phase 40 (roster + workflow) and proven by Phase 43
   it.** It enters the learning lifecycle (`learning-lifecycle.md`) as a
   candidate; only curation + evidence promotes it.
 
-## 2. The roster (start here; prune at GATE DA)
+## 2. The roster
 
-Seven agent definitions, but only 4–5 are active in a typical phase. All
+Eight agent definitions, but only 4–5 are active in a typical phase. All
 are `.claude/agents/<name>.md` with model/tools/isolation frontmatter.
+
+Started at seven, "prune at GATE DA". GATE DA (Phase 43) kept all seven
+with no pruning; Phase 43c added the eighth (`context-health-planner`)
+with cause — `decisions/0049` permits a roster addition that doesn't
+reverse a fixed point, and GATE DA's "roster stays at 7" was about not
+*pruning*, not a cap on adding.
 
 ### 2.1 Lead Claude session (not an agent file — the human-facing session)
 Responsible for: understanding the requested phase; coordinating and
@@ -168,7 +174,33 @@ docs and self-certifies them.
 - **Active in:** every phase where the lead wants an independent DoD
   check (all non-trivial phases); mandatory at Phase 65.
 
-### 2.9 Roles deliberately NOT created
+### 2.9 `context-health-planner` — forward-looking context adequacy (added Phase 43c)
+- **Question:** is the context CodeCompass currently holds *adequate for
+  the roadmap phases coming up* — fresh (recorded vs installed version,
+  graph rebuilt since the last relevant change), grounded (source +
+  enrichment), complete (usage + docs mapped), low-noise?
+- **Method:** reads `context-graph.db` and **runs `codecompass query`**
+  (read-only commands only — no `sync`, no `--yes`), cross-references
+  `planning/ROADMAP.md` + `v1-redefinition/roadmap.md`. Writes
+  `planning/context-health.md` and nothing else.
+- **Distinct from `roadmap-context-curator`** (planning-doc *truth* —
+  what's done, what's next) and **from `context-evaluator`** (per-task
+  context *quality*, judged by direct inspection, never using
+  CodeCompass). This agent asks "is the graph in good enough shape for
+  what we're about to do".
+- **Rule:** an empty / near-empty graph is a valid expected finding
+  (both reference projects have ≈0 runtime deps) — it never recommends
+  work to make the graph look fuller than the project warrants. If its
+  read suggests a relationship is wrong or missing, it files a
+  `planning/context-gaps/` candidate (`decisions/0051`), never "corrects"
+  the graph.
+- **Tools:** read/search + read-only `codecompass query` + Write to
+  `planning/context-health.md` only. No `src/`, no `decisions/`, no
+  `CLAUDE.md`, no other planning file.
+- **Active in:** stage boundaries; before any phase that leans on
+  CodeCompass context (reference-project phases, Phase 60).
+
+### 2.10 Roles deliberately NOT created
 - No "implementer" agent — the lead implements or delegates ad hoc to a
   general-purpose subagent per the existing
   `v0.2-implementation-execution-plan.md` pattern; a standing role adds
@@ -190,6 +222,7 @@ docs and self-certifies them.
 | `knowledge-curator` | everything | `planning/learnings/**`, `planning/` drafts | — | no — participant |
 | `docs-reconstructor` | the phase diff + code/`--help` (drift audit); source/tests/CLI/schema/ADRs, not narrative docs (blank-slate) | its drift-audit report / `planning/v1-docs-reconstruction/` | CLI `--help`, tests (read-only) | **yes** — independent of `docs-maintainer` |
 | `release-phase-auditor` | everything | its audit report only | tests/lint, re-runs plan verification | **yes** — read-only, no repair |
+| `context-health-planner` | `context-graph.db`, `codecompass query` output, `ROADMAP.md` | `planning/context-health.md` only | read-only `codecompass query` (no `sync`/`--yes`) | partial — uses CodeCompass, writes one planning file |
 
 **No agent** writes `CLAUDE.md`, `decisions/*` (except the lead via the
 ADR process), or `src/` (except the lead / ad-hoc implementer subagent).
@@ -254,7 +287,11 @@ The six original conditions are unchanged. Exact wording:
 2. `roadmap-context-curator` establishes current project state.
 3. Identify the next **approved** work (a phase with a plan file + an
    open row + any gate resolved).
-4. Retrieve useful CodeCompass context where appropriate (dogfooding).
+4. Retrieve useful CodeCompass context where appropriate (dogfooding);
+   log the use in `planning/context-use-log.md` (LOW/MODERATE/HIGH vs the
+   default pathway); file any un-representable relationship in
+   `planning/context-gaps/` (`decisions/0051`); before a context-leaning
+   phase, dispatch `context-health-planner`.
 5. Delegate bounded specialist work.
 6. Implement / coordinate implementation.
 7. Obtain independent testing/evaluation (`context-evaluator` /

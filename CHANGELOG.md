@@ -73,23 +73,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   step 11, the `retros/README.md`, and the `release-phase-auditor` brief
   updated to match, and the Phase 43 retro backfilled.
 
-- **Phase 43c (planned)**: added the plan for a Stage A→B bridge phase
-  (user request) that instruments the agent-led development process to
-  produce context-quality signal from CodeCompass's own development —
-  a `planning/context-gaps/` capture pathway for relationships an agent
-  believes the graph should hold but mechanical detection cannot produce,
-  a `planning/context-use-log.md` recording CodeCompass context vs. the
-  agent's default pathway (grep / read / `--help`) per use, and a
-  forward-looking `planning/context-health.md`. Planned `decisions/0051`:
-  agent-suggested context is captured as reviewable candidates, **never
-  written to `context-graph.db`**. Hard boundary: no `src/codecompass/`
-  change — agent-inference edges and task-oriented retrieval stay Stage
-  C/E decisions, gated on GATE DB evidence. New plan file
-  `planning/phase-43c-agent-context-pathways.md`; `ROADMAP.md` row `43c`
-  added between `43b` and `44` (both before Stage B, independent of each
-  other). Carries one human-decision point: whether to approve an 8th
-  agent (`context-health-planner`) or keep context-health a lead +
-  `roadmap-context-curator` function. Planning only — not implemented.
+- **Phase 43c**: a Stage A→B bridge (user request) that instruments the
+  agent-led development process to produce context-quality signal from
+  CodeCompass's own development. Three new `planning/` pathways, no
+  `src/codecompass/` change:
+  - `planning/context-gaps/` (`README.md`, `TEMPLATE.md`, `inbox.md`) —
+    a capture pathway for relationships an agent believes the graph
+    should hold but mechanical detection can't produce. First entry
+    `CG-001` (the Phase 43 `skill.py` ↔ `graph.skills_index` ↔
+    `cli.py::query_skills` "one feature, three modules" relationship,
+    which `codecompass query relations` cannot surface — verified).
+  - `planning/context-use-log.md` — a 4-line record per CodeCompass
+    context retrieval: what it gave vs. the agent's default pathway
+    (grep / read / `--help`), a LOW/MODERATE/HIGH advantage rating
+    (`context-quality-evaluation.md` §5), and whether anything was
+    misleading. First entry: the live Phase 43 `query skills` use (rated
+    **LOW** — dogfooding the query layer on itself is a hard case).
+    `planning/agent-led-workflow.md` step 4 amended to require an entry.
+  - `planning/context-health.md` + the roster's **8th agent**,
+    `context-health-planner` (`.claude/agents/context-health-planner.md`)
+    — a forward-looking "is the graph adequate for the upcoming roadmap"
+    assessment; runs `codecompass query` read-only, writes only that one
+    file. First assessment: CodeCompass's own 4-dependency graph is
+    healthy (all versions fresh, 3/4 enriched, `pipdeptree` correctly
+    unused); no Stage A→B phase is gated on it; the graph that matters
+    next is Technical Clipper's, expected near-empty.
+  - `decisions/0051` — agent-suggested context is captured as reviewable
+    candidates, **never written to `context-graph.db`**; it becomes
+    authoritative only by promotion through the learning lifecycle into a
+    mechanical-detection heuristic (Stage C / GATE DB) or a graph
+    capability (Stage E / GATE DD), each with its own ADR. Extends the
+    determinism-first boundary (`decisions/0031`/`0037`/`0045`) to a new
+    input source.
+  - `decisions/0049` Consequences gains a roster-extension note;
+    `planning/v1-redefinition/agent-led-development.md` (§2.9 new, §3
+    table, §7 step 4) and `conditional-generalisation.md` §1.2 updated;
+    `knowledge-curator` + `reference-project-tester` briefs updated to
+    own / feed the new pathways. `ROADMAP.md` row `43c` between `43b` and
+    `44`. No `src/` change, no test change, no release (gate G2-b).
+  - Agent-led closeout: `docs-reconstructor` drift audit → **NO DRIFT**;
+    `knowledge-curator` triage → `CG-001` `candidate` (provenance
+    verified by code-trace) + **L-007** filed `retained` ("a mechanism
+    existing" ≠ "the mechanism produced output this phase" — the first
+    `context-health.md` was lead-written, so the `context-health-planner`
+    agent's first solo run is tracked for before Phase 45);
+    `release-phase-auditor` → **PASS WITH NON-BLOCKING OBSERVATIONS**.
+    Retro: `planning/retros/phase-43c-agent-context-pathways.md`.
 
 ### Added
 

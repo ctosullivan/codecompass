@@ -8,6 +8,46 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-007 — a plan's "Done when" should separate "the mechanism exists" from "the mechanism has produced output"
+
+- **origin:** Phase 43c (retro lesson 2 + "what didn't work" #2;
+  `knowledge-curator` triage)
+- **date:** 2026-09-11
+- **project_revision:** f47f3e2 (Phase 43c plan commit)
+- **observation:** Phase 43c's plan Verification said the
+  `context-health-planner` agent "runs once for real and produces the
+  `context-health.md` above". The agent was *created* this phase, so the
+  lead wrote the first `context-health.md` by hand (running the same
+  `codecompass query` commands) and the agent's first genuine solo run
+  slipped to before Phase 45. "An agent will own X" and "X has been
+  produced by that agent this phase" are different commitments; a plan
+  that conflates them lets an artifact land with a stubbed first
+  datapoint and no gate catching the gap. Same shape as the same plan's
+  §2 over-scoping (it predicted three `conditional-generalisation.md`
+  edits; one was needed).
+- **evidence:** `planning/phase-43c-agent-context-pathways.md`
+  Verification vs. `planning/retros/phase-43c-agent-context-pathways.md`
+  "What didn't work" #2 and "Where we're going" (agent's first real run
+  deferred to before Phase 45); `planning/context-health.md`'s first
+  assessment is lead-written narrative, not an agent report.
+- **classification:** workflow
+- **status:** retained
+- **recurrence:** first occurrence (the §2 over-scoping item in the same
+  retro is a weaker related instance of plan-estimate imprecision)
+- **curation (Phase 43c triage, 2026-09-11, knowledge-curator):**
+  provenance accepted — both sources are this phase's own plan + retro,
+  cross-checked against `planning/context-health.md` (first assessment is
+  lead narrative, no agent header). **Outcome: retain.** Real and
+  specific but single-instance and not yet actionable; the candidate
+  destination is a one-line addition to the plan-file guidance (CLAUDE.md
+  §1 / the `agent-led-workflow.md` step-1 plan template: "Done-when
+  distinguishes 'the mechanism exists' from 'the mechanism has produced
+  output this phase'"). That is a CLAUDE.md-class change and needs
+  recurrence evidence before it is worth proposing via
+  `planning/v1-redefinition/proposed-governance-changes.md`. Revisit at
+  the Phase 47 bulk review or on the next occurrence.
+- **promoted_to:** — (retained; revisit Phase 47 or on recurrence)
+
 ### L-006 — the curator reconciles *before* the retro, but a GATE/retro can change the plan
 
 - **origin:** Phase 43 (dogfood; `release-phase-auditor` FAIL ×3 on
