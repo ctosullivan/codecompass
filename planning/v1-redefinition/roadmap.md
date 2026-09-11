@@ -37,7 +37,11 @@ agent team, with continuous doc/roadmap maintenance, systematic learning
 capture, and an independent completion audit — proven on a real change.
 
 Time tripwire: if Stage A exceeds ~6 working sessions, re-scope (the
-roster is probably too big — prune per GATE DA).
+roster is probably too big — prune per GATE DA). **Actual:** Phases
+39–43 took ~5 sessions; GATE DA passed with no pruning. Phases 43b + 43c
+(user-requested, ~1–2 sessions each) push the total past the tripwire —
+but the cause is added scope, not roster bloat, so the tripwire's remedy
+(prune) doesn't apply. Noted, not a concern.
 
 ### Phase 39 — Reconcile repo state + versioning realignment · COMMITTED
 - **Plan:** `planning/phase-39-reconcile-v1-redefinition.md`
@@ -139,6 +143,35 @@ roster is probably too big — prune per GATE DA).
   `check_generated_artifacts_match_source`. A ~1-session tooling phase;
   runs before Stage B so the drift gaps found during Stage A are closed
   first.
+- **Status:** planned.
+
+### Phase 43c — Agent context-suggestion pathways + context-health planning · COMMITTED
+- **Plan:** `planning/phase-43c-agent-context-pathways.md`
+- **Depends on:** 43 (GATE DA). Independent of 43b — either order, both
+  before Phase 44. Requested by the user 2026-09-11.
+- **Does:** a **Stage A→B bridge** — instrument the agent-led dev process
+  so CodeCompass's *own* development produces context-quality signal
+  (the same signal Stage B gathers from Technical Clipper, starting now):
+  (1) `planning/context-gaps/` — a capture pathway for relationships an
+  agent believes CodeCompass should represent but mechanical detection
+  cannot; (2) `planning/context-use-log.md` + a `agent-led-workflow.md`
+  step-4 amendment — a per-use record of what CodeCompass context gave vs.
+  what the agent's *default pathway* (grep / read / `--help`) would have,
+  rated LOW/MODERATE/HIGH (`context-quality-evaluation.md` §5); (3)
+  `planning/context-health.md` + a proposed **`context-health-planner`**
+  agent — a forward-looking "is the context adequate for the upcoming
+  roadmap" assessment. `decisions/0051`: agent-suggested context is
+  captured as reviewable candidates, **never written to
+  `context-graph.db`** — the determinism-first boundary
+  (`decisions/0031`/`0037`/`0045`) applied to a new input source.
+- **Boundary:** **no `src/codecompass/` change.** No agent-inference
+  edges, no task-oriented retrieval feature — those are Stage C
+  (Phase 48/49, GATE DB) / Stage E (Phase 56/57, GATE DD), each with an
+  ADR. This phase builds the pathways and gathers evidence for those
+  gated decisions (`conditional-generalisation.md` §2.1/§2.4/§2.6).
+- **Human-decision point:** the `context-health-planner` agent —
+  approve an 8th agent, or keep it a lead/curator function? (GATE DA said
+  "roster stays at 7" re: pruning, not adding.)
 - **Status:** planned.
 
 ---

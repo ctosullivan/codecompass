@@ -73,6 +73,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   step 11, the `retros/README.md`, and the `release-phase-auditor` brief
   updated to match, and the Phase 43 retro backfilled.
 
+- **Phase 43c (planned)**: added the plan for a Stage A→B bridge phase
+  (user request) that instruments the agent-led development process to
+  produce context-quality signal from CodeCompass's own development —
+  a `planning/context-gaps/` capture pathway for relationships an agent
+  believes the graph should hold but mechanical detection cannot produce,
+  a `planning/context-use-log.md` recording CodeCompass context vs. the
+  agent's default pathway (grep / read / `--help`) per use, and a
+  forward-looking `planning/context-health.md`. Planned `decisions/0051`:
+  agent-suggested context is captured as reviewable candidates, **never
+  written to `context-graph.db`**. Hard boundary: no `src/codecompass/`
+  change — agent-inference edges and task-oriented retrieval stay Stage
+  C/E decisions, gated on GATE DB evidence. New plan file
+  `planning/phase-43c-agent-context-pathways.md`; `ROADMAP.md` row `43c`
+  added between `43b` and `44` (both before Stage B, independent of each
+  other). Carries one human-decision point: whether to approve an 8th
+  agent (`context-health-planner`) or keep context-health a lead +
+  `roadmap-context-curator` function. Planning only — not implemented.
+
 ### Added
 
 - **Phase 42**: the everyday documentation lifecycle gains deterministic

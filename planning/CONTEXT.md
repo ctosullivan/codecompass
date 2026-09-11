@@ -36,8 +36,8 @@ outcome, 43b absent from the CONTEXT forward path; re-audit #1: the
 CONTEXT fix left the file self-contradictory on Phase 43's status;
 re-audit #2 PASS WITH NON-BLOCKING OBSERVATIONS) — every gap planning-doc
 bookkeeping, none a code defect (the evidence behind L-006). Candidate
-learning **L-006** filed this phase. **Next: Phase 43b, then Phase 44
-(Stage B begins).**
+learning **L-006** filed this phase. **Next: Phases 43b + 43c (both
+before Stage B), then Phase 44 (Stage B begins).**
 
 - **39** ratified the redefinition: ADRs `decisions/0048`/`0049`
   `Accepted`; `pyproject.toml` `version` → `1.0.0.dev0`; ROADMAP's Stage
@@ -116,12 +116,18 @@ A** — Phases 39–42 changed no `src/`. No `CLAUDE.md` change in Phase 42 or
 43 (§5 was already amended in Phases 40–41). No release or tag anywhere in
 Stage A (gate G2-b).
 
-**Next: Phase 43b** ([`phase-43b-standing-doc-drift-checks.md`](phase-43b-standing-doc-drift-checks.md))
+**Next: Phases 43b + 43c** (independent of each other, both before Stage
+B). **43b** ([`phase-43b-standing-doc-drift-checks.md`](phase-43b-standing-doc-drift-checks.md))
 — a ~1-session tooling phase: implement the two `check_user_docs.py`
 rules GATE DA decided (`check_no_deleted_names_as_live`,
-`check_generated_artifacts_match_source`), closing the standing-content
-and generated-artifact drift gaps found during Stage A before Stage B's
-external work. **Then Phase 44** — Stage B begins: the reference-project
+`check_generated_artifacts_match_source`). **43c**
+([`phase-43c-agent-context-pathways.md`](phase-43c-agent-context-pathways.md),
+user request 2026-09-11) — a Stage A→B bridge: instrument the agent-led
+dev process to capture context-quality signal from CodeCompass's own
+development (a context-gap capture pathway, a per-use context-vs-default
+eval, context-health planning + a proposed `context-health-planner`
+agent). Capture + evidence only, **no `src/` change** (`decisions/0051`).
+**Then Phase 44** — Stage B begins: the reference-project
 protocol + context-quality eval spec into operational form (also writes
 the Phase 45 plan), briefing `context-evaluator` and
 `reference-project-tester` for their first real use.
@@ -453,12 +459,32 @@ work. Judgment call in its plan: whether to also fix
 `architecture/overview.md` §C's 4 self-contradictions here (verified
 against `src/`) or leave them to Phase 61.
 
+**Phase 43c** ([`phase-43c-agent-context-pathways.md`](phase-43c-agent-context-pathways.md),
+user request 2026-09-11; independent of 43b) — a Stage A→B bridge.
+Instruments the agent-led dev process so CodeCompass's own development
+produces context-quality signal: (1) `planning/context-gaps/` — a
+capture pathway for relationships an agent believes CodeCompass should
+represent but mechanical detection cannot; (2) `planning/context-use-log.md`
++ an `agent-led-workflow.md` step-4 amendment — a per-use record of
+CodeCompass context vs. the agent's default pathway (grep/read/`--help`),
+rated LOW/MODERATE/HIGH; (3) `planning/context-health.md` + a proposed
+**`context-health-planner`** agent (8th agent — human-decision point in
+the retro). `decisions/0051`: agent-suggested context is captured as
+reviewable candidates, **never written to `context-graph.db`**. **No
+`src/` change** — agent-inference edges / task-oriented retrieval are
+Stage C/E, gated. This phase gathers the evidence for those gated
+decisions.
+
 **Then Phase 44** ([`phase-44-reference-project-protocol.md`](phase-44-reference-project-protocol.md))
 — **Stage B begins**: turn the reference-project protocol +
 context-quality evaluation spec into operational templates + a registry,
 and brief `context-evaluator` + `reference-project-tester` for their first
 real use. Phase 44 also writes the Phase 45 plan (register Technical
-Clipper + baseline). No human-decision gate blocks Phase 43b or 44.
+Clipper + baseline). No human-decision gate blocks Phase 43b or 44;
+Phase 43c carries one in-phase decision (approve the `context-health-planner`
+8th agent, or keep context-health a lead + `roadmap-context-curator`
+function) — surfaced to the user with the plan and again in the retro,
+not a §7 gate that blocks the phase from starting.
 
 Phase 41 was the first real run of the agent-led loop (the live smoke
 delegation deferred from Phase 40); Phase 42 was the `docs-maintainer`'s
