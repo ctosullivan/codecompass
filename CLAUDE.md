@@ -150,8 +150,8 @@ The table below lists dependencies with a generated reference digest under `vend
 
 | Vendor | Path | Version | Enriched | Deps | Consult when |
 |---|---|---|---|---|---|
-| anthropic | `vendor/anthropic/` | 0.109.1 | yes | [DEPTREE.md](./vendor/anthropic/DEPTREE.md) | API questions and known gotchas |
-| pipdeptree | `vendor/pipdeptree/` | 4.2.1 | no | [DEPTREE.md](./vendor/pipdeptree/DEPTREE.md) | general usage questions |
-| rich | `vendor/rich/` | 15.0.0 | yes | [DEPTREE.md](./vendor/rich/DEPTREE.md) | API questions and known gotchas |
-| typer | `vendor/typer/` | 0.27.1 | yes | [DEPTREE.md](./vendor/typer/DEPTREE.md) | API questions and known gotchas |
+| anthropic | `vendor/anthropic/` | 1.5.0 | no | [DEPTREE.md](./vendor/anthropic/DEPTREE.md) | general usage questions |
+| pipdeptree | `vendor/pipdeptree/` | 4.2.5 | no | [DEPTREE.md](./vendor/pipdeptree/DEPTREE.md) | general usage questions |
+| rich | `vendor/rich/` | 15.0.0 | no | [DEPTREE.md](./vendor/rich/DEPTREE.md) | general usage questions |
+| typer | `vendor/typer/` | 0.27.2 | no | [DEPTREE.md](./vendor/typer/DEPTREE.md) | general usage questions |
 <!-- codecompass:end -->

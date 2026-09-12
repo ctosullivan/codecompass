@@ -25,11 +25,11 @@ This project uses codecompass to keep AI-consultable dependency reference docs u
   - If a question doesn't fit any of these — an ad hoc join or filter — query `context-graph.db` directly with `sqlite3` (a plain SQLite file at the project root); see `architecture/overview.md`'s "Context graph" section for the schema (`vendors`, `symbols`, `uses_edges`, `doc_artifacts`, `documents_edges`, `skill_mentions_edges`, `routes_via_edges`, `depends_on_edges`, `doc_relations_edges`, `vendor_enrichment`, `symbol_enrichment`, `doc_relation_enrichment`).
 - `/discovery` — a read-only guided-exploration slash command covering the same ground as `query`, for a human-initiated session that should never write, edit, or plan code changes.
 
-## Vendors (4 tracked, 3 enriched)
+## Vendors (4 tracked, 0 enriched)
 
 | Name | Ecosystem | Enriched |
 |---|---|---|
-| anthropic | python | yes |
+| anthropic | python | no |
 | pipdeptree | python | no |
-| rich | python | yes |
-| typer | python | yes |
+| rich | python | no |
+| typer | python | no |

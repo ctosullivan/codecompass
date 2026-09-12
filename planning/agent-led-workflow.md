@@ -87,10 +87,14 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
    change made false. Any finding → back to `docs-maintainer` (step 8),
    then re-audit. `NO DRIFT` is fine and common for a `planning/`- or
    internal-only phase.
-10. **Reconcile roadmap and context state.** Dispatch
-    `roadmap-context-curator` (phase-end job): flip the `ROADMAP.md` row
-    *only if every DoD condition holds*, overwrite `CONTEXT.md`, add the
-    `CHANGELOG.md` entry.
+10. **Reconcile roadmap and context state (interim).** Dispatch
+    `roadmap-context-curator`: overwrite `CONTEXT.md` and add the
+    `CHANGELOG.md` entry reflecting implementation + docs-audit progress
+    so far. **Do not flip the `ROADMAP.md` row to `done` here** —
+    `CLAUDE.md` §5's DoD requires the retro (step 11), triage (step 12),
+    and completion audit (step 13) to all exist first, and none of them
+    do yet at this point in the sequence. This step keeps `CONTEXT.md`
+    current mid-phase; it is not the phase's final reconciliation.
 11. **Write the phase retro.** The lead authors
     `planning/retros/phase-N-<slug>.md` from `TEMPLATE.md` — **where we
     are** (arc/stage context, what the previous phase set up, state now),
@@ -122,8 +126,11 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
 14. **Refuse to mark work complete when the gate fails.** A `FAIL` →
     fix the named gaps, or re-scope with a new ADR, then re-audit. Only
     on `PASS` (or `PASS WITH NON-BLOCKING OBSERVATIONS`) does the lead
-    commit (`type(phase-N): summary`, no AI attribution — `CLAUDE.md` §7)
-    and move to the next phase.
+    **re-dispatch `roadmap-context-curator` for the final
+    reconciliation** — flip the `ROADMAP.md` row to `done` now that every
+    DoD condition genuinely holds, and confirm `CONTEXT.md` reflects the
+    retro/triage/audit outcomes — then commit (`type(phase-N): summary`,
+    no AI attribution — `CLAUDE.md` §7) and move to the next phase.
 
 ## When a candidate learning blocks phase verification
 

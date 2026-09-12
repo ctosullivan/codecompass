@@ -8,6 +8,177 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-014 — a plan file's background/rationale claims can go stale between writing and implementation, independent of its scope list
+
+- **origin:** Phase 44 (retro "Scope delivered vs planned" + "What didn't work" + "Lessons learnt" #1; `knowledge-curator` triage of the retro's contents per step 12)
+- **date:** 2026-09-12
+- **project_revision:** bf6db6e (current HEAD at triage time; Phase 44's own closeout commit is still pending)
+- **observation:** `planning/phase-44-reference-project-protocol.md`'s scope section asserted the `context-evaluator`/`reference-project-tester` agent briefs had "placeholder method sections" left over from Phase 40 needing finalising. At implementation time, both briefs (`.claude/agents/context-evaluator.md`, `.claude/agents/reference-project-tester.md`) were found already fully fleshed out — no placeholder markers, no TODOs, already referencing the exact template filenames this phase was about to create — because Phase 43c had already updated them ("own / feed the new pathways"). No edit was needed; the plan's *background/rationale* claim (not its scope list, which was otherwise accurate) was simply stale by the time the phase ran. The phase behaved correctly here: it grepped for placeholder markers before touching anything, confirmed the claim was false, and recorded the deviation explicitly rather than either (a) blindly rewriting already-correct briefs to match a stale premise, or (b) silently treating "nothing to do" as unremarkable.
+- **evidence:** `planning/phase-44-reference-project-protocol.md` line 38 ("finalise the `context-evaluator` and `reference-project-tester` agent briefs against these templates (they were created in Phase 40 with placeholder method sections)"); `planning/retros/phase-44-reference-project-protocol.md` "Scope delivered vs planned" and "What didn't work"/"Lessons learnt" #1 (independently re-read, not taken on the retro's word alone — the retro itself already cites the specific verification method used, grepping for placeholder markers, and names Phase 43c as the likely cause).
+- **classification:** scoped-rule
+- **status:** discarded
+- **recurrence:**
+- **curation (Phase 44 triage, 2026-09-12, knowledge-curator):** provenance
+  accepted — both the plan file's claim and the retro's account of finding
+  it stale are independently re-read and confirmed accurate. **Outcome:
+  discard, not retain or promote.** This is the same shape as the
+  declined companion candidate in L-008's Phase 43b triage: a
+  single-occurrence, zero-harm instance of an *already-existing* project
+  discipline working exactly as intended, not an unaddressed gap needing
+  a new mechanism. `CLAUDE.md` §1 already requires a plan file per phase
+  and pausing on unsettled assumptions; `agent-led-workflow.md`'s own
+  opening line already states the governing discipline this instance
+  demonstrates ("verify independently, every time, not just when
+  something feels off"); step 1 of the 14-step workflow is literally
+  "Inspect the repository" before proceeding. The phase did exactly
+  that — grepped for placeholder markers, found the premise false,
+  changed nothing, recorded the deviation — and nothing broke or was
+  wasted. Filing a new scoped-rule for "verify a plan's background claims
+  before acting on them" would be restating a norm this phase already
+  correctly applied, not closing a gap it exposed. Distinguishing factor
+  from a real retain-worthy candidate: no incorrect action was taken and
+  no artifact needed correcting (contrast L-004/L-003, where the standing
+  content itself was wrong and stayed wrong until a check existed).
+  If a future phase's *background claim* being stale actually causes a
+  wrong edit (not just a wasted-but-caught assumption), that would be a
+  new, stronger candidate — not a recurrence of this one, since this one
+  caused no harm.
+- **promoted_to:** — (discarded; see rationale above)
+
+### L-013 — the 14-step workflow's step 10 (roadmap/context reconciliation) can never satisfy its own "only if every DoD condition holds" clause at its listed position, since steps 11–13 (retro/triage/audit) haven't run yet
+
+- **origin:** Phase 44 (retro "Process-improvement feedback"; `knowledge-curator` triage of the retro's contents per step 12)
+- **date:** 2026-09-12
+- **project_revision:** bf6db6e (current HEAD at triage time; Phase 44's own closeout commit is still pending)
+- **observation:** `planning/agent-led-workflow.md` step 10 reads "flip the `ROADMAP.md` row *only if every DoD condition holds*" — but `CLAUDE.md` §5's Definition of Done requires a phase retro, a `knowledge-curator` triage, and a `release-phase-auditor` PASS to all exist before a phase counts as done, and none of those three exist yet at step 10's position in the list (they are steps 11, 12, and 13 respectively). So step 10, as literally sequenced, can never legitimately flip a row to `done` — its own stated condition is unsatisfiable at that point in the workflow. In practice, across this phase and at least two prior ones (43b, 43c, per this phase's own retro and cross-checked against `planning/retros/_audit-phase-43b.md` / `_audit-phase-43c.md`, both of which passed `release-phase-auditor` on the first round with the `ROADMAP.md` row still correctly held at "in progress" through step 10), the row has always actually flipped to `done` in a *second*, later `roadmap-context-curator` dispatch after steps 11–13 complete — never at step 10's own position. This is a standing ambiguity in the workflow doc's step ordering, not a new problem this phase caused: step 10's real job (as actually practiced) is a mid-phase `CONTEXT.md`/`CHANGELOG.md` update, and the final done-flipping reconciliation is a distinct, later action the doc doesn't currently name as its own step.
+- **evidence:** `planning/agent-led-workflow.md` step 10 ("flip the `ROADMAP.md` row *only if every DoD condition holds*") vs. steps 11–13 (retro, triage, audit) listed *after* it; `CLAUDE.md` §5 (retro + triage + audit all required for done); `planning/retros/phase-44-reference-project-protocol.md` "Process-improvement feedback" (this phase's own account); `planning/retros/_audit-phase-43b.md` and `_audit-phase-43c.md` (both phases' `release-phase-auditor` passes confirming the `ROADMAP.md` row was correctly still "in progress" through their own step-10 runs, only flipped later).
+- **classification:** workflow
+- **status:** promoted
+- **recurrence:** pattern observed across at least 3 phases (43b, 43c, 44) though this is the first time it was explicitly filed as a candidate rather than absorbed silently into practice
+- **curation (Phase 44 triage, 2026-09-12, knowledge-curator):** provenance
+  accepted — `agent-led-workflow.md`'s step 10/11/12/13 text and
+  `CLAUDE.md` §5's DoD requirements independently re-read and confirmed
+  to say what this candidate claims; the retro's account of prior-phase
+  practice cross-checked against the two named audit files rather than
+  taken on the retro's word alone. **Outcome: promote (recommendation +
+  draft; not yet landed — `agent-led-workflow.md` is outside this
+  agent's write boundary, `planning/learnings/**` /
+  `planning/context-gaps/**` / draft files under `planning/` only).**
+  This is real, specific, low-risk to fix (a clarifying edit, not a
+  policy decision needing a gate), and has recurred silently across
+  three phases without ever being named — worth closing now rather than
+  waiting for a fourth silent workaround. Distinct from **L-006**
+  (already promoted): L-006's fix is conditional — re-dispatch
+  `roadmap-context-curator` *specifically when a retro changes the
+  plan*. This candidate is unconditional — step 10's "flip to done"
+  clause can never fire at its listed position *regardless* of whether
+  the retro changes anything, because retro/triage/audit simply haven't
+  happened yet. Not a duplicate; a sibling gap in the same document.
+  **Recommended fix — split step 10 into an interim update and rename
+  the final action explicitly, rather than renumber the whole list**
+  (draft, for the lead to review and land):
+
+  Step 10, reworded:
+  > 10. **Reconcile roadmap and context state (interim).** Dispatch
+  > `roadmap-context-curator`: overwrite `CONTEXT.md` and add the
+  > `CHANGELOG.md` entry reflecting implementation + docs-audit progress
+  > so far. **Do not flip the `ROADMAP.md` row to `done` here** —
+  > `CLAUDE.md` §5's DoD requires the retro (step 11), triage (step 12),
+  > and completion audit (step 13) to all exist first, and none of them
+  > do yet at this point in the sequence. This step keeps `CONTEXT.md`
+  > current mid-phase; it is not the phase's final reconciliation.
+
+  Step 14, amended (append before "and move to the next phase"):
+  > 14. **Refuse to mark work complete when the gate fails.** … Only on
+  > `PASS` (or `PASS WITH NON-BLOCKING OBSERVATIONS`) does the lead
+  > **re-dispatch `roadmap-context-curator` for the final
+  > reconciliation** — flip the `ROADMAP.md` row to `done` now that every
+  > DoD condition genuinely holds, and confirm `CONTEXT.md` reflects the
+  > retro/triage/audit outcomes — then commit (`type(phase-N): summary`,
+  > no AI attribution — `CLAUDE.md` §7) and move to the next phase.
+
+  This preserves step 10's existing mid-phase value (an interim
+  `CONTEXT.md`/`CHANGELOG.md` snapshot is genuinely useful if a session
+  is interrupted between steps 10 and 13) while making explicit that the
+  row-flip is a distinct, later action — matching what every phase has
+  actually done in practice (per the audit-file cross-check above) rather
+  than what the numbered list currently implies. Not landing this
+  directly: `agent-led-workflow.md` is a core process doc outside this
+  agent's write boundary, and — per the same caution `CLAUDE.md` §0
+  applies to itself — a process-doc edit referenced by `CLAUDE.md` §8
+  deserves the lead's explicit review before it's written, not a
+  curator-authored fait accompli.
+- **promoted_to:** `planning/agent-led-workflow.md` steps 10 + 14 —
+  applied by the lead this phase, logged in `promoted.md` (commit hash to
+  follow once this phase's closeout commit lands).
+
+### L-012 — single-symbol `query symbol` output undersells a vendor's actual usage breadth; `usage_count` isn't independently reproducible by grep
+
+- **origin:** Phase 44 instrument dry-run (`planning/reference-projects/_instrument-dry-run.md`) — a self-test, not a real reference-project datapoint, but the observation is about CodeCompass's own query granularity, not about the target project, so it's filed here rather than discarded with the dry-run label.
+- **date:** 2026-09-12
+- **project_revision:** bf6db6e (pinned commit the dry-run evaluated at)
+- **observation:** asking "what does this project use `typer` for" via `codecompass query symbol Typer --json` returns only the `Typer` class's own 2 call sites (`src/codecompass/cli.py:51`,`:54` — app construction). It omits that the large majority of the vendor's reported "usage count: 43" for `typer` as a whole is actually `typer.Option`/`Exit`/`Argument`/`confirm`/`Context` — the API surface that implements every CLI option, argument, exit code, and confirmation prompt. A reader trusting only the single-symbol query would undersell typer's role to "constructs two app objects." Separately, the vendor-level "usage count: 43" figure could not be exactly reproduced by direct `grep -oE "typer\.[A-Za-z_]+" src/codecompass/cli.py | sort | uniq -c` under any counting convention tried (grep-based counts landed 40–48 depending on what's included) — not demonstrably wrong, but not traceable to an exact provenance the way per-symbol `used_at` line citations are.
+- **evidence:** `planning/reference-projects/_instrument-dry-run.md` (full report); `src/codecompass/cli.py` (option/argument/exit/confirm call sites); `codecompass query symbol Typer --json` output quoted in the report.
+- **classification:** scoped-rule
+- **status:** retained
+- **recurrence:** first occurrence (self-test, not a reference-project finding — see `context-quality-evaluation.md`'s "don't aggregate the dry-run" rule)
+- **curation (Phase 44 triage, 2026-09-12, knowledge-curator):** provenance
+  accepted and independently re-verified beyond taking the dry-run's word
+  for it: re-ran the same `typer\.[A-Za-z_]+` pattern directly against
+  `src/codecompass/cli.py` — 40 total occurrences, breaking down to
+  `Typer` ×2 (L51, L54), `Option` ×17, `Exit` ×13, `Argument` ×5,
+  `confirm` ×2, `Context` ×1, matching the dry-run's own per-symbol
+  breakdown exactly. **Outcome: retain, not promote (yet).** Two distinct
+  findings bundled in one candidate:
+  1. *Single-symbol query undersells breadth* — this is a genuine
+     product-quality observation (`query symbol <X>` only ever returns
+     `<X>`'s own call sites, never sibling members of the same vendor
+     used in the same file/feature), but it comes from a single
+     self-test explicitly labelled "not a real datapoint" and "do not
+     aggregate into Phase 47/62-63 findings" by the phase's own plan and
+     the dry-run report's own header. Promoting a self-test finding
+     straight to a `ROADMAP.md` row would treat it as more authoritative
+     than the phase design intended. The phase's own retro reaches the
+     same conclusion independently ("its one gap … is exactly the kind
+     of evidence Stage C (GATE DB) exists to weigh, not something to
+     react to now" — "Where we're going", trajectory confirmed).
+     Checked `planning/context-gaps/README.md`'s "what does NOT belong"
+     list before considering it a context-gap instead: "feature requests
+     for `query` output formatting" are explicitly excluded there, and
+     this is exactly that — the underlying data (`Option`/`Exit`/etc.
+     usage) already exists in the graph; nothing is *missing* from
+     `context-graph.db`, a query's *scope* is just narrow. Confirmed
+     staying in `planning/learnings/`, not filed as a `context-gaps/`
+     entry too.
+     Also checked `conditional-generalisation.md` §1.2's hypothesis table
+     for a fit: none of the six rows (technical-dependency concept,
+     executable kind, spec/manual kind, provenance, browser-API kind,
+     task-oriented retrieval edges) match a same-vendor sibling-symbol
+     query-scope gap — this doesn't currently feed any named GATE DB/DD
+     hypothesis, it would be a new one if it recurs.
+  2. *`usage_count` not exactly grep-reproducible* — independently
+     confirmed the count is in the right ballpark (this repo's own
+     `typer\.` pattern count is 40 in `cli.py` alone, consistent with the
+     dry-run's own reconciliation of "43" once test-file mentions and
+     `typer.testing.CliRunner` imports are added) and not demonstrably
+     wrong, just not traceable to one exact documented convention. Not
+     enough on its own to justify an invariant/test today — there's no
+     evidence the count is *incorrect*, only that its provenance isn't
+     externally auditable the way per-symbol `used_at` citations are.
+  Recommended destination, once either half recurs on a real
+  reference-project evaluation (Ledgerkit, Phase 45+) or survives to the
+  Phase 47 bulk review: (1) a `future-improvement` `ROADMAP.md` row —
+  "`query symbol`/`query vendor` should surface or link sibling API
+  members of the same vendor used in the same file, not just the queried
+  symbol's own call sites" (`roadmap-context-curator` finalises); (2) a
+  short `docs/` note documenting `usage_count`'s exact computation so it
+  is independently auditable (`docs-maintainer` finalises), if a second
+  instance shows the ambiguity actually misleads someone rather than
+  merely being unreproducible-by-grep. Revisit at Phase 45's real
+  Ledgerkit evaluation, the Phase 47 bulk review, or on a second
+  self-test/reference-project instance of either finding.
+- **promoted_to:** — (retained; revisit Phase 45/47 or on recurrence)
+
 ### L-011 — `check_generated_artifacts_match_source`'s SKILL.md branch false-positives on any environment without a synced `context-graph.db` (a fresh clone/checkout/CI runner)
 
 - **origin:** fresh-Pi dev-environment setup audit, reported by

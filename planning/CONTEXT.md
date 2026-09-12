@@ -48,6 +48,38 @@ revision policy, retained). New planning artifacts:
 `licence-migration.md`, `adoption-blueprint.md`,
 `codecompass-feedback-ingestion.md`. **No `src/` change either time.**
 
+**Phase 44 is `done` (2026-09-12) — Stage B has begun.** The
+reference-project protocol and context-quality evaluation spec are now
+operational, not just prose: new `planning/reference-projects/README.md`
+(registry), `TEMPLATE-registration.md`, `TEMPLATE-evaluation.md`, and a
+real instrument dry-run (`_instrument-dry-run.md`, CodeCompass's own
+`typer` usage evaluated against itself — verdict **PASS WITH GAPS**,
+advantage **LOW**: no incorrect/misleading content, but single-symbol
+`query symbol` scope undersold `typer`'s actual usage breadth, filed as
+**L-012**, retained). The `context-evaluator`/`reference-project-tester`
+briefs were verified already consistent with the new templates (a side
+effect of Phase 43c's own brief updates — no edit needed).
+`planning/phase-45-ledgerkit-baseline.md` written, retargeted to
+Ledgerkit's real current state (Milestone 5 "CLI Filter Flags"
+`[PLANNED]` next). **No `src/codecompass/` change.** Closeout:
+`docs-reconstructor` drift audit → **NO DRIFT**; `knowledge-curator`
+triage of L-012 (retained), **L-013** (promoted), L-014 (discarded);
+`release-phase-auditor` → **PASS WITH NON-BLOCKING OBSERVATIONS** (no
+blocking gap). Verified: `pytest` 554 passed / 2 skipped, `ruff check .`
+clean, `check_user_docs.py --strict` clean. **Undocumented decision
+surfaced this phase, now recorded:** L-013's promotion amended
+`planning/agent-led-workflow.md` steps 10 and 14 — step 10 is now an
+explicit *interim* roadmap/context reconciliation (it never flips
+`ROADMAP.md` to `done`, since the retro/triage/audit steps that DoD
+requires haven't run yet at that point); step 14 is the *final*
+done-flipping reconciliation, run once per phase after the retro (11),
+triage (12), and completion audit (13). This dispatch is the first real
+exercise of the amended step 14. Retro:
+`planning/retros/phase-44-reference-project-protocol.md`. `ROADMAP.md`
+row 44, the `v1-redefinition/roadmap.md` Phase 44 stanza, and the phase's
+own plan-file status line all now read `done`. **No gate blocks Phase
+45** — Stage B continues.
+
 **Stage A of the redefined-v1 roadmap is complete: Phases 39–43 are
 `done`.** Phase 43 dogfooded the full 14-step agent-led loop on a real
 `src/codecompass/` change (`query skills` widen, 43a) and **passed GATE
@@ -73,7 +105,8 @@ invariant half + a follow-up dispatch closing L-006's outstanding
 disposition; `release-phase-auditor` **PASS WITH NON-BLOCKING
 OBSERVATIONS**). `ROADMAP.md` row `43b`, the `v1-redefinition/roadmap.md`
 Phase 43b stanza, and the phase's own plan-file status line all read
-`done`. **No gate blocks Phase 44** — Stage B begins next.
+`done`. **No gate blocked Phase 44** — Stage B began next (Phase 44 is
+now also `done`; see above).
 
 **Phase 43c is `done` (2026-09-11).** The Stage A→B
 bridge phase (user request 2026-09-11) instrumented the agent-led
@@ -145,8 +178,9 @@ commit-hash placeholders), all addressed in this closeout commit. Retro:
 row 43b and the `v1-redefinition/roadmap.md` Phase 43b stanza both now
 read `done`.
 
-**Both Stage A→B bridge phases (43b, 43c) are closed out. Next: Phase 44
-— Stage B begins.** No gate blocks it.
+**Both Stage A→B bridge phases (43b, 43c) are closed out, as are 43d/43e
+and Phase 44. Next: Phase 45** (register Ledgerkit + baseline). No gate
+blocks it.
 
 - **39** ratified the redefinition: ADRs `decisions/0048`/`0049`
   `Accepted`; `pyproject.toml` `version` → `1.0.0.dev0`; ROADMAP's Stage
@@ -233,19 +267,17 @@ CodeCompass's own development (`planning/context-gaps/` + `CG-001`,
 the 8th agent `context-health-planner`, `decisions/0051`). Capture +
 evidence only, no `src/` change.
 
-**Next: Phase 43b** ([`phase-43b-standing-doc-drift-checks.md`](phase-43b-standing-doc-drift-checks.md))
-— a ~1-session tooling phase: implement the two `check_user_docs.py`
-rules GATE DA decided (`check_no_deleted_names_as_live`,
-`check_generated_artifacts_match_source`).
-**Then Phase 44** — Stage B begins: the reference-project
-protocol + context-quality eval spec into operational form (also writes
-the Phase 45 plan), briefing `context-evaluator` and
-`reference-project-tester` for their first real use.
+**Phase 43b, 43c, 43d, 43e, and 44 are all now `done`** — Stage A and
+Stage B's first phase are complete. **Next: Phase 45**
+([`phase-45-ledgerkit-baseline.md`](phase-45-ledgerkit-baseline.md),
+written by Phase 44) — register **Ledgerkit** at a pinned commit, run
+CodeCompass against it as-is, `context-evaluator` baseline report, the
+`context-health-planner`'s first genuine solo run. No gate blocks it.
 
 The `planning/v1-redefinition/` package + `planning/learnings/` (now live)
 + `planning/retros/` + `planning/agent-led-workflow.md` (14 steps) + Stage
-A phase plans (`phase-39`…`phase-44`) are the governing plan for this
-milestone group.
+A phase plans (`phase-39`…`phase-43e`) + Stage B's opening phase plans
+(`phase-44`, `phase-45`) are the governing plan for this milestone group.
 
 Everything below this line describes the **foundation** (phases 0-38) and
 remains accurate.
@@ -278,6 +310,51 @@ dependencies now carry lower-bound version pins (`decisions/0047`), and
 were cleaned up (Phase 38).
 
 ## What was just completed
+
+**Phase 44, `done`** (2026-09-12) — Stage B's first phase. Turned
+`reference-project-protocol.md` + `context-quality-evaluation.md` into
+operational machinery: `planning/reference-projects/README.md`
+(registry + "how an evaluation runs"), `TEMPLATE-registration.md`,
+`TEMPLATE-evaluation.md`, and a real self-test dry-run
+(`_instrument-dry-run.md` — CodeCompass's own `typer` usage evaluated
+against itself, verdict **PASS WITH GAPS**, advantage **LOW**: every
+claim checked out on direct inspection, but a single-symbol `query
+symbol` call materially undersold `typer`'s actual usage breadth — the
+option/argument/exit/confirm surface, not just the two `Typer()`
+construction sites). The `context-evaluator`/`reference-project-tester`
+briefs were verified already consistent with the new templates (a side
+effect of Phase 43c's own brief updates; no edit needed — recorded
+explicitly as a correction to the plan's stale "placeholder method
+sections" premise, rather than silently treated as nothing to do).
+`planning/phase-45-ledgerkit-baseline.md` written, retargeted to
+Ledgerkit's real current state (Milestone 5 "CLI Filter Flags"
+`[PLANNED]` next). **No `src/codecompass/` change.** Running the
+instrument dry-run on this fresh checkout (no `context-graph.db`/`vendor/`
+existed) required `codecompass sync --budget 0` first, which mechanically
+regenerated `CLAUDE.md`'s vendor table and
+`.claude/skills/codecompass/SKILL.md`'s vendor table to reflect this
+environment's real installed versions and its correct "0 enriched" state
+(no `ANTHROPIC_API_KEY` set) — a real §0-governed diff, disclosed to and
+confirmed by the user, not a manual edit. Verified: `pytest` 554 passed /
+2 skipped, `ruff check .` clean, `check_user_docs.py --strict` clean.
+Closeout: `docs-reconstructor` drift audit
+(`planning/retros/_drift-audit-phase-44.md`) → **NO DRIFT**;
+`knowledge-curator` triage → **L-012** (retained: `query symbol`'s
+single-symbol scope and the unreproducible `usage_count` figure),
+**L-013** (promoted: the `agent-led-workflow.md` step 10/14 amendment
+below), L-014 (discarded); `release-phase-auditor`
+(`planning/retros/_audit-phase-44.md`) → **PASS WITH NON-BLOCKING
+OBSERVATIONS** (no blocking gap; both notes resolved — the CLAUDE.md/
+SKILL.md regeneration confirmed fine to include, and the changed-file
+list beyond the plan's literal "Files" section accounted for by normal
+per-phase mechanics, not scope creep). Retro:
+`planning/retros/phase-44-reference-project-protocol.md`.
+**Process amendment (from L-013):** `planning/agent-led-workflow.md`
+step 10 is now an explicit *interim* reconciliation (`CONTEXT.md` +
+`CHANGELOG.md` only, never flips `ROADMAP.md` to `done`); step 14 is the
+*final* done-flipping reconciliation, run once per phase after the retro
+(11), triage (12), and completion audit (13) all exist. This phase's own
+closeout is the first real exercise of the amended step 14.
 
 **Phase 43b, `done`** (2026-09-11). The second Stage A→B bridge phase
 (GATE-DA-scheduled): implemented `check_no_deleted_names_as_live`
@@ -634,8 +711,33 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Stage A is complete (Phases 39–43 `done`, GATE DA passed). Both Stage
-A→B bridge phases (43b, 43c) are `done` and fully closed out.**
+**Stage A is complete (Phases 39–43e `done`, GATE DA passed). All Stage
+A→B bridge phases (43b, 43c) and Stage B's first phase (44) are `done`
+and fully closed out.**
+
+**Phase 44 closeout (done):** `docs-reconstructor` drift audit
+(`planning/retros/_drift-audit-phase-44.md`) → **NO DRIFT**;
+`knowledge-curator` triage → L-012 (retained), **L-013** (promoted — the
+`agent-led-workflow.md` step 10/14 amendment), L-014 (discarded);
+`release-phase-auditor` (`planning/retros/_audit-phase-44.md`) → **PASS
+WITH NON-BLOCKING OBSERVATIONS** (no blocking gap). ROADMAP row `44` /
+the `v1-redefinition/roadmap.md` Phase 44 stanza / the plan file's own
+status line all flipped to `done` in this commit. Retro:
+`planning/retros/phase-44-reference-project-protocol.md`.
+**Process amendment landed this phase (L-013):**
+`planning/agent-led-workflow.md` step 10 is now an explicit *interim*
+reconciliation (never flips `ROADMAP.md` to `done`); step 14 is the
+*final* done-flipping reconciliation, run once per phase after the retro
+(11), triage (12), and completion audit (13) — this closeout is its
+first real exercise.
+
+**Immediate next step: Phase 45**
+([`phase-45-ledgerkit-baseline.md`](phase-45-ledgerkit-baseline.md),
+written by Phase 44) — register **Ledgerkit** at a pinned commit, run
+CodeCompass against it as-is, produce a `context-evaluator` baseline
+context-quality report, and run the `context-health-planner`'s first
+genuine solo run (tracked follow-up from Phase 43c, pinned to before
+Phase 45). **No gate blocks it.**
 
 **Phase 43c closeout (done):** `docs-reconstructor` drift audit → **NO
 DRIFT**; `knowledge-curator` triage → `CG-001` `candidate` + **L-007**
@@ -664,16 +766,15 @@ the plan file's own status line all flipped to `done` in this commit.
 `conditional-generalisation.md`, `context-quality-evaluation.md`,
 `migration.md`, `README.md`; `decisions/0052`/`0053` `Accepted`;
 `LICENSE`/`pyproject.toml`/`README.md`/`CONTRIBUTING.md` updated to
-GPL-3.0-or-later. **All Stage-A work (39–43e) is now `done`; no gate
-blocks Phase 44.**
+GPL-3.0-or-later. **All Stage-A work (39–43e) is now `done`.**
 
-**Immediate next step: Phase 44**
-([`phase-44-reference-project-protocol.md`](phase-44-reference-project-protocol.md))
-— **Stage B begins**: turn the reference-project protocol +
-context-quality evaluation spec into operational templates + a registry,
-brief `context-evaluator` + `reference-project-tester`. Phase 44 now
-writes the Phase 45 plan (register **Ledgerkit** + baseline — Milestone
-5, "CLI Filter Flags", is the confirmed genuine next task).
+**Phase 44 (done, 2026-09-12) turned Stage B on:** the reference-project
+protocol + context-quality evaluation spec are now operational templates
++ a registry, `context-evaluator` + `reference-project-tester` briefed
+(verified already current), and it wrote the Phase 45 plan (register
+**Ledgerkit** + baseline — Milestone 5, "CLI Filter Flags", is the
+confirmed genuine next task). See "Immediate next step" above for
+Phase 45.
 
 Phase 41 was the first real run of the agent-led loop (the live smoke
 delegation deferred from Phase 40); Phase 42 was the `docs-maintainer`'s

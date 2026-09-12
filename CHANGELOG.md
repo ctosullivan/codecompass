@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 44** (Stage B's first phase): the reference-project protocol and
+  context-quality evaluation spec are now operational, not just prose.
+  New `planning/reference-projects/README.md` (registry + "how an
+  evaluation runs"), `TEMPLATE-registration.md`, `TEMPLATE-evaluation.md`.
+  A real instrument dry-run (`_instrument-dry-run.md`) evaluated
+  CodeCompass's own `typer` usage against itself — verdict **PASS WITH
+  GAPS**, advantage **LOW**: every claim checked out against direct
+  inspection, but a single-symbol `query symbol` call undersold `typer`'s
+  actual usage breadth (the option/argument/exit/confirm surface, not
+  just the two `Typer()` construction sites) — filed as candidate
+  learning **L-012** (retained). The `context-evaluator` and
+  `reference-project-tester` agent briefs were verified already
+  consistent with the new templates (finalised as a side effect of Phase
+  43c; no edit needed). `planning/phase-45-ledgerkit-baseline.md` written,
+  retargeted to Ledgerkit's real current state (Milestone 5 "CLI Filter
+  Flags" `[PLANNED]` next). Process amendment from candidate learning
+  **L-013** (promoted): `planning/agent-led-workflow.md` step 10 is now
+  an explicit *interim* roadmap/context reconciliation (never flips
+  `ROADMAP.md` to `done`); step 14 is the *final* done-flipping
+  reconciliation, run only after the retro/triage/audit steps. No
+  `src/codecompass/` change. `docs-reconstructor` drift audit → NO DRIFT;
+  `release-phase-auditor` → PASS WITH NON-BLOCKING OBSERVATIONS (both
+  notes resolved/accounted for, no blocking gap). `pytest` 554 passed / 2
+  skipped, `ruff check .` clean, `check_user_docs.py --strict` clean.
+
 ### Changed
 
 - **BREAKING (licensing): Phases 43d + 43e** — gates G11/G12/G13 approved

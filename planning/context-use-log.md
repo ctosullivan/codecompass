@@ -53,6 +53,34 @@ Entries are dated records — not rewritten.
 
 ## Entries (newest first)
 
+### 2026-09-12 · Phase 44 (reference-project protocol) · lead · `codecompass sync --budget 0` + `query vendor typer` / `query symbol Typer` against the repo's own (freshly rebuilt) `context-graph.db`
+
+- **retrieved:** this checkout had no `context-graph.db`/`vendor/` at all
+  (fresh clone, gitignored artifacts absent); ran `codecompass sync
+  --budget 0` (mechanical Phase A only — no `ANTHROPIC_API_KEY` set, and
+  this was a sanity-check retrieval, not a task needing AI enrichment
+  spend) to rebuild it, then `codecompass query vendor typer` (version
+  `0.27.2`, usage count 43) and `codecompass query symbol Typer --json`
+  (the `Typer` class, `usage_count: 2`, `used_at`:
+  `src/codecompass/cli.py:51` and `:54`, with a mechanically-sourced
+  purpose blurb from the vendored README) — the exact input for the
+  Phase 44 instrument dry-run's "what does this project use `typer` for
+  and at what version" question.
+- **default pathway:** `grep -n "import typer\|typer\.Typer(" -r
+  src/codecompass/` to find the two call sites, then `pip show typer` (or
+  read `pyproject.toml`'s pin) for the version, then read `typer`'s own
+  README/docstring for what `Typer` does. ~3 commands, all obvious for
+  a repo this small.
+- **advantage: LOW** — this is precisely the instrument's own self-test
+  case (`_instrument-dry-run.md`), chosen because it's small and
+  well-understood; CodeCompass packaged the same facts one command sooner
+  but surfaced nothing a quick grep + `pip show` wouldn't have. Honest,
+  expected result — see the dry-run report for the independent
+  `context-evaluator` rating.
+- **wrong or misleading?** no — version, usage count, and both `used_at`
+  line numbers were independently re-verified against `src/codecompass/cli.py`
+  and matched exactly.
+
 ### 2026-09-10 · Phase 43 (`43a`, `query skills` widen) · lead · `codecompass query skills` against the repo's own `context-graph.db`
 
 - **retrieved:** ran `codecompass query skills` before and after the

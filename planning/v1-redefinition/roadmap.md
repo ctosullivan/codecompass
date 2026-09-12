@@ -308,6 +308,24 @@ finding — proceed to Stage C early with whatever evidence exists.
 - **Exit:** template + registry committed; a dry-run evaluation of
   CodeCompass *against its own repo* using the template produces a
   coherent report (sanity check of the instrument, not a real datapoint).
+- **Status:** **done (2026-09-12).** `planning/reference-projects/`
+  (`README.md`, `TEMPLATE-registration.md`, `TEMPLATE-evaluation.md`)
+  built; `_instrument-dry-run.md` ran a real self-test (CodeCompass's own
+  `typer` usage) — verdict **PASS WITH GAPS**, advantage **LOW** (no
+  incorrect/misleading content, but single-symbol `query symbol` scope
+  undersold `typer`'s actual usage breadth; filed as **L-012**, retained).
+  `context-evaluator` / `reference-project-tester` briefs verified
+  already consistent with the new templates (Phase 43c had already
+  finalised them; no edit needed). `planning/phase-45-ledgerkit-baseline.md`
+  written. `docs-reconstructor` drift audit → NO DRIFT;
+  `release-phase-auditor` → PASS WITH NON-BLOCKING OBSERVATIONS (both
+  non-blocking notes resolved/accounted for). No `src/codecompass/`
+  change. Process amendment landed this phase from **L-013**:
+  `agent-led-workflow.md` step 10 is now an explicit *interim*
+  reconciliation (no `ROADMAP.md` `done` flip), step 14 the *final*
+  done-flipping reconciliation, run after the retro/triage/audit steps.
+  Retro: `planning/retros/phase-44-reference-project-protocol.md`. No
+  gate blocks Phase 45.
 
 ### Phase 45 — Register Ledgerkit + baseline · EXPERIMENTAL
 - **Plan:** `planning/phase-45-ledgerkit-baseline.md` (written when Phase 44 done)
