@@ -21,8 +21,12 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 def test_no_false_positives_against_real_repo():
+    """Blocking findings only — an informational one (e.g. the
+    generated_artifacts_match_source SKILL.md comparison skipping itself
+    on a checkout with no context-graph.db, L-011) is expected and fine;
+    it never fails `--strict` either (see Finding.strict)."""
     findings = check_user_docs.run_all(REPO_ROOT)
-    assert findings == []
+    assert [f for f in findings if f.strict] == []
 
 
 def _write(path: Path, text: str) -> None:
@@ -456,11 +460,31 @@ class TestGeneratedArtifactsMatchSource:
         assert any("discovery.md" in f.message for f in findings)
 
     def test_clean_against_real_repo(self):
-        assert check_user_docs.check_generated_artifacts_match_source(REPO_ROOT) == []
+        """Blocking findings only — see test_no_false_positives_against_real_repo."""
+        findings = check_user_docs.check_generated_artifacts_match_source(REPO_ROOT)
+        assert [f for f in findings if f.strict] == []
 
     def test_missing_artifacts_produce_no_finding(self, tmp_path):
         # Neither generated artifact exists in this fixture — nothing to compare.
         assert check_user_docs.check_generated_artifacts_match_source(tmp_path) == []
+
+    def test_skill_comparison_skipped_without_graph_db(self, tmp_path):
+        """A SKILL.md committed from a machine that had already run
+        `codecompass sync` says e.g. "3 enriched"; a fresh checkout with no
+        context-graph.db can only render "0 enriched" and would otherwise
+        false-positive as drift (candidate learning L-011). No live sync
+        happened here — the comparison should be skipped, not fail."""
+        import shutil
+
+        shutil.copytree(REPO_ROOT / ".claude", tmp_path / ".claude")
+        shutil.copy(REPO_ROOT / "vendor.toml", tmp_path / "vendor.toml")
+        assert not (tmp_path / "context-graph.db").exists()
+
+        findings = check_user_docs.check_generated_artifacts_match_source(tmp_path)
+
+        assert not any(f.strict for f in findings)
+        assert any("context-graph.db" in f.message for f in findings)
+        assert not any("does not match" in f.message for f in findings)
 
 
 class TestMainStrictExitCode:

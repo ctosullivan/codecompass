@@ -710,6 +710,16 @@ def check_generated_artifacts_match_source(root: Path) -> list[Finding]:
     and per-vendor `codecompass-*` Skills/`.mdc` files are regenerated
     from full graph/enrichment state this check doesn't reconstruct —
     out of scope here, covered by the per-phase docs-drift audit instead.
+
+    `discovery.md` truly needs no graph state, but `render_tool_skill`'s
+    output includes an enrichment count read from `context-graph.db`
+    (candidate learning L-011) — on a checkout that has never run
+    `codecompass sync` (a fresh clone, this script's own test suite run
+    cold), that db doesn't exist and the count degrades to zero, so a
+    byte-for-byte comparison against a SKILL.md committed from a
+    machine that *had* synced would false-positive as drift. When the db
+    is missing, that one comparison is skipped (informational, not
+    strict) rather than trusted.
     """
     generators = _load_codecompass_generators()
     if generators is None:
@@ -727,27 +737,40 @@ def check_generated_artifacts_match_source(root: Path) -> list[Finding]:
     tool_skill_path = root / ".claude" / "skills" / "codecompass" / "SKILL.md"
     vendor_toml = root / "vendor.toml"
     if tool_skill_path.is_file() and vendor_toml.is_file():
-        try:
-            configs = config.load_vendor_config(vendor_toml)
-            expected = skill.render_tool_skill(configs, root)
-        except Exception as exc:
+        if not (root / "context-graph.db").is_file():
             findings.append(
                 Finding(
                     "generated_artifacts_match_source",
-                    f"could not render the tool Skill to compare: {exc}",
+                    "context-graph.db not present — skipped comparing "
+                    ".claude/skills/codecompass/SKILL.md against "
+                    "skill.render_tool_skill(...) (its enrichment count "
+                    "depends on graph state this checkout doesn't have; "
+                    "run `codecompass sync` first to check it for real)",
                     strict=False,
                 )
             )
         else:
-            if _read(tool_skill_path) != expected:
+            try:
+                configs = config.load_vendor_config(vendor_toml)
+                expected = skill.render_tool_skill(configs, root)
+            except Exception as exc:
                 findings.append(
                     Finding(
                         "generated_artifacts_match_source",
-                        ".claude/skills/codecompass/SKILL.md does not match "
-                        "skill.render_tool_skill(...) — regenerate via "
-                        "`codecompass index`/`sync` rather than hand-editing",
+                        f"could not render the tool Skill to compare: {exc}",
+                        strict=False,
                     )
                 )
+            else:
+                if _read(tool_skill_path) != expected:
+                    findings.append(
+                        Finding(
+                            "generated_artifacts_match_source",
+                            ".claude/skills/codecompass/SKILL.md does not match "
+                            "skill.render_tool_skill(...) — regenerate via "
+                            "`codecompass index`/`sync` rather than hand-editing",
+                        )
+                    )
 
     discovery_path = root / ".claude" / "commands" / "discovery.md"
     if discovery_path.is_file():

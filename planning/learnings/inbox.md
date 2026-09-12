@@ -8,6 +8,136 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-011 — `check_generated_artifacts_match_source`'s SKILL.md branch false-positives on any environment without a synced `context-graph.db` (a fresh clone/checkout/CI runner)
+
+- **origin:** fresh-Pi dev-environment setup audit, reported by
+  `roadmap-context-curator`, triaged by `knowledge-curator`
+- **date:** 2026-09-12
+- **project_revision:** af05987 (current HEAD at triage time)
+- **observation:** on a genuinely fresh checkout (new venv, `pip install
+  -e '.[dev]'`, no `codecompass sync` ever run against this repo — so
+  neither `context-graph.db` nor `vendor/` exist, both gitignored),
+  `pytest` fails two tests:
+  `tests/test_check_user_docs.py::test_no_false_positives_against_real_repo`
+  and
+  `tests/test_check_user_docs.py::TestGeneratedArtifactsMatchSource::test_clean_against_real_repo`.
+  Root cause: `render_tool_skill()` (`src/codecompass/skill.py:36-57`)
+  correctly and deliberately degrades to `enriched_count = 0` / every
+  vendor `no` when `context-graph.db` doesn't exist yet (its own
+  docstring: "`False` for every vendor if `context-graph.db` doesn't
+  exist yet, rather than erroring") — but the committed
+  `.claude/skills/codecompass/SKILL.md` (`.claude/skills/codecompass/SKILL.md:28`)
+  says "4 tracked, 3 enriched" because it was generated on a machine that
+  had already run `codecompass sync`. `check_generated_artifacts_match_source`
+  (`scripts/check_user_docs.py:701-764`, added Phase 43b, motivated by
+  L-005) byte-diffs the committed file against a fresh call to
+  `render_tool_skill` with no guard for "`context-graph.db` doesn't exist
+  at `root`" — unlike its own sibling branch two lines up, which already
+  degrades gracefully ("could not import codecompass … skipped", L715-723)
+  when `src/` isn't importable. The function's own docstring claims it's
+  "deliberately narrow: only the two artifacts a bare function call can
+  reproduce **without a live sync**" (L708-712) — false today for the
+  enrichment portion of `SKILL.md` specifically, which *is*
+  sync-state-dependent. `CONTRIBUTING.md`'s documented dev setup
+  (`CONTRIBUTING.md:165-171`: `pip install -e ".[dev]"` / `pytest` /
+  `ruff check .`) never mentions `codecompass sync`, so any genuinely
+  fresh clone (new contributor, new CI runner, new dev machine) hits
+  these 2 failures out of the box with no documented fix.
+- **evidence:** `src/codecompass/skill.py:23-57`
+  (`_open_graph_readonly`/`render_tool_skill`); `.claude/skills/codecompass/SKILL.md:28-35`
+  (committed "3 enriched" state); `scripts/check_user_docs.py:701-764`
+  (`check_generated_artifacts_match_source`, no `context-graph.db`
+  existence guard on the SKILL.md branch, contrast with its own
+  `generators is None` graceful-degrade branch at L715-723);
+  `tests/test_check_user_docs.py:23-25` and `:458-459` (the two failing
+  tests, no fixture/skip keyed on `context-graph.db`); confirmed no
+  `tests/conftest.py` exists and no `skipif`/`xfail` anywhere in `tests/`
+  addresses this; `CONTRIBUTING.md:165-171` (no `sync` step);
+  `.gitignore:32,36` (`vendor/`, `context-graph.db` both gitignored, so a
+  fresh clone genuinely lacks both). Checked and **rejected** "just
+  document `codecompass sync` as a required bootstrap step" as the
+  primary fix: `src/codecompass/enrichment.py`'s disclosed
+  cost-estimate/budget gate confirms `sync` on this repo's own
+  already-usage-proven `vendor.toml` auto-triggers real, API-key-gated,
+  cost-incurring AI enrichment calls — a bad prerequisite to impose on
+  every fresh contributor or CI runner just to get `pytest` green.
+- **classification:** invariant (the check's own false-positive-free
+  operation on an environment with no synced graph is a required
+  property it currently violates — same *shape* of gap as L-008
+  ("a prose/text-matching check needs its false-positive test before its
+  true-positive one"), but for a *generated-artifact-diff* check rather
+  than a prose-pattern-match check, and from the same Phase 43b batch as
+  L-005's invariant half. Not merged with L-008 — different check,
+  different failure mechanism (environment/sync-state, not prose
+  content) — but noted as a sibling instance of "a Phase 43b
+  drift-detection check shipped without a false-positive case for the
+  one environment state its own inputs can legitimately take.")
+- **status:** candidate
+- **recurrence:** first occurrence
+- **curation (fresh-Pi triage, 2026-09-12, knowledge-curator):**
+  provenance accepted and independently re-verified line-by-line (see
+  evidence) — this is real, specific, reproducible, and not previously
+  filed (checked `inbox.md`, `promoted.md`, `CONTEXT.md`, and
+  `planning/retros/phase-43b-standing-doc-drift-checks.md`: none mention
+  a fresh-checkout/no-synced-graph failure mode for this check).
+  **Outcome: promote-recommendation** (not yet promoted — no artifact has
+  landed). This blocks a basic contributor/CI workflow
+  (`pip install -e ".[dev]"; pytest`) with no documented workaround, so
+  it shouldn't sit as merely "retained." Recommending a concrete
+  destination + draft rather than leaving it open-ended:
+  - **Preferred fix (invariant → test, `scripts/check_user_docs.py` +
+    `tests/test_check_user_docs.py`, lead/ad-hoc implementer finalizes):**
+    make the SKILL.md branch of `check_generated_artifacts_match_source`
+    skip the comparison — an informational, non-strict `Finding`
+    ("`context-graph.db` not found — skipped SKILL.md enrichment-status
+    comparison; run `codecompass sync` to verify fully"), mirroring the
+    existing `generators is None` degrade pattern at L715-723 — whenever
+    `(root / "context-graph.db").exists()` is `False`. Pair it with a new
+    regression test in `TestGeneratedArtifactsMatchSource` (sibling to
+    the existing `test_missing_artifacts_produce_no_finding`, L461-463):
+    a fixture with a committed SKILL.md saying "3 enriched" but *no*
+    `context-graph.db` present, asserting `findings == []` (or only the
+    informational non-strict finding) rather than a drift flag. This
+    keeps the check's real purpose intact (still catches a genuine hand
+    edit or generator change on a machine that *does* have a synced
+    graph) without penalizing the no-graph-yet state the generator itself
+    treats as legitimate.
+  - **Rejected alternative A:** document `codecompass sync --yes` as a
+    required `CONTRIBUTING.md` bootstrap step before `pytest` — rejected
+    as the *primary* fix because it makes a real, API-key-gated,
+    cost-incurring AI call a prerequisite for running the unit test
+    suite (see evidence). Could still be a *secondary*, clearly-labeled
+    "optional: if you want `.claude/skills/codecompass/SKILL.md` to
+    reflect real enrichment state locally, run `codecompass sync`" note,
+    but that's polish, not the fix for the failing tests.
+  - **Rejected alternative B:** commit a `SKILL.md` generated in the
+    "0 enriched" state instead — rejected because it doesn't fix
+    anything structurally; it just flips which environment the check
+    disagrees with (a normal dev machine that *has* run `sync`, which is
+    this project's own ordinary dogfooding state, would then fail the
+    same check the other way, and the next real `codecompass index` run
+    would regenerate "3 enriched" and reintroduce the mismatch
+    immediately).
+  - Not the curator's place to land either the check/test change or a
+    `CONTRIBUTING.md` note — both are `scripts/`/`tests/`/`CONTRIBUTING.md`
+    edits outside this agent's write boundary (`planning/learnings/**`,
+    `planning/context-gaps/**`, draft files under `planning/` only).
+- **promoted_to:** `scripts/check_user_docs.py::check_generated_artifacts_match_source`
+  + `tests/test_check_user_docs.py::TestGeneratedArtifactsMatchSource::test_skill_comparison_skipped_without_graph_db`
+  — the curator's preferred fix landed in the working tree 2026-09-12
+  (lead-implemented, not committed yet): the SKILL.md branch now skips
+  with an informational, non-strict `Finding` when
+  `(root / "context-graph.db").is_file()` is `False`; the two real-repo
+  assertions (`test_no_false_positives_against_real_repo`,
+  `test_clean_against_real_repo`) were narrowed from `findings == []` to
+  `[f for f in findings if f.strict] == []` since an informational
+  finding is expected on any unsynced checkout and never fails
+  `--strict` anyway (`Finding.strict`); a new regression test covers the
+  skip path. Full suite + `ruff check` verified green on this fresh Pi
+  environment. Move this entry to `promoted.md` with the real commit
+  hash once committed — status left as `candidate` until then per
+  `promoted.md`'s own convention of only logging landed commits.
+
 ### L-010 — a reusable/exported document is stronger when it cites the specific incident behind each recommendation and states its own revision policy up front
 
 - **origin:** Phase 43e (`adoption-blueprint.md`; retro "Lessons learnt"
