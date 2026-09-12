@@ -1,7 +1,7 @@
 # Phase 43d retro — GPL-3.0-or-later relicensing
 
 - **Date:** 2026-09-12
-- **Commit(s):** `<hash>` (`feat(phase-43d+43e)`, the combined closeout commit)
+- **Commit(s):** `52f46de` (`feat(phase-43d+43e)`, the combined closeout commit)
 - **Auditor verdict:** **PASS** (`planning/retros/_audit-phase-43d-43e.md`)
   — no blocking gaps. Independently re-verified: `pytest` 554/1, `ruff`
   clean, `check_user_docs --strict` clean, `pip show codecompass` →

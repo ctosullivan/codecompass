@@ -1,7 +1,7 @@
 # Phase 43e retro — Reusable agent-led adoption blueprint
 
 - **Date:** 2026-09-12
-- **Commit(s):** `<hash>` (`feat(phase-43d+43e)`, the combined closeout commit)
+- **Commit(s):** `52f46de` (`feat(phase-43d+43e)`, the combined closeout commit)
 - **Auditor verdict:** **PASS** (`planning/retros/_audit-phase-43d-43e.md`)
   — no blocking gaps. See Phase 43d's retro for the shared verification
   detail (both phases audited together).
