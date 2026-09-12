@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 46** (Stage B, third phase): ran the full per-task procedure
+  (`reference-project-protocol.md` §2.4) against a genuine, live Ledgerkit
+  task for the first time. Reconfirmed the task live at phase start, as
+  hedged by the plan: Ledgerkit's own Stage B closed to `[DONE]` and Stage
+  C opened within a day of Phase 45's pinned commit, so the task actually
+  run was hledger 1.52 query-term semantics, not the plan's named
+  compat-register-migration candidate. Because a real, concurrently-running
+  Ledgerkit development session was producing the task's exact
+  deliverable, the attempt was conducted as a read-only evaluation
+  exercise — no file was written into the Ledgerkit clone.
+  `planning/reference-projects/ledgerkit/01-query-semantics.md` —
+  **CodeCompass's second FAIL verdict**, LOW (negative) advantage, and the
+  first on genuinely in-progress work rather than a spot-check question:
+  CodeCompass returned a complete blank (0 vendors, "not found" for both
+  `dev-docs/` files), while Ledgerkit's own
+  `dev-docs/planning/core-redefinition/07-query-regex.md` §7.1 already had
+  the complete answer, found by one `grep` + file read. **`CG-002`**
+  re-confirmed independently by both `reference-project-tester` and
+  `context-evaluator`, extended to nested `dev-docs/**` paths. A new,
+  structurally distinct gap, **`CG-003`**, filed: the external hledger.org
+  manual itself has zero CodeCompass representation, no glob fix could
+  ever cover it (`candidate`). Candidate learning **L-017** filed
+  (retained): a live `WebFetch` fallback against the real hledger.org
+  manual needed two attempts and still couldn't reliably extract the
+  relevant section — a retrieval-cost finding for Phase 53's
+  manual-as-fetched/vendored-text design question. A process incident
+  surfaced during the phase (dispatching two agents to `Write`, not
+  `Edit`, the same shared report file concurrently silently clobbered one
+  agent's output) was filed as candidate learning **L-018** and
+  **promoted** the same phase: `planning/agent-led-workflow.md` step 5 now
+  explicitly forbids two agents `Write`-ing one shared path concurrently.
+  `planning/phase-47-consolidate-findings.md` written — Stage B's decision
+  phase (GATE DB), with a full evidence inventory assembled from Phases
+  44–46. No `src/codecompass/` change. `docs-reconstructor` drift audit →
+  NO DRIFT; `release-phase-auditor` → PASS WITH NON-BLOCKING OBSERVATIONS
+  (no blocking gap). `pytest` 554 passed / 2 skipped, `ruff check .`
+  clean, `check_user_docs.py --strict` clean.
+
 - **Phase 45** (Stage B, second phase): registered **Ledgerkit** as
   CodeCompass's first external reference project and produced its first
   baseline evaluation. `planning/reference-projects/ledgerkit.md`

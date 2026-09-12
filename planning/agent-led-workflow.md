@@ -65,7 +65,17 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
 5. **Delegate bounded specialist work.** One agent = one artifact. Give
    each a self-contained prompt (the phase plan path, exact scope, what
    to return). Run in the background unless the next step strictly
-   depends on the result.
+   depends on the result. **If two different specialist roles must both
+   contribute to one shared report file, never dispatch both to `Write`
+   that path concurrently** — `Write` replaces the whole file, so
+   whichever call lands second always wins regardless of instructions to
+   "check the file's current state first," and the loss is silent: the
+   earlier agent's own success report gives no signal that its content
+   was later overwritten. Sequence them instead — one agent `Write`s the
+   file first, and only once its dispatch has fully completed is the
+   second told to `Edit`-append its section — or, if both must genuinely
+   run concurrently, give each its own file and merge them afterward
+   once both complete. (Phase 46 — L-018.)
 6. **Implement or coordinate implementation.** The lead implements
    directly, or dispatches one `general-purpose` implementer subagent per
    the `v0.2-implementation-execution-plan.md` pattern (foreground, exact

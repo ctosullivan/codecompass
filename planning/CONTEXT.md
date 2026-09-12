@@ -126,6 +126,52 @@ Ledgerkit's own Stage A closeout) requires live reconfirmation at Phase
 46's own start, since Ledgerkit's roadmap already moved once mid-Phase-45.
 **No gate blocks Phase 46.**
 
+**Phase 46 is `done` (2026-09-13) — the full per-task procedure ran for
+the first time against genuinely live Ledgerkit work, and produced
+CodeCompass's second FAIL verdict.** Reconfirmed live at phase start, as
+hedged: Ledgerkit's own Stage B closed to `[DONE]` and Stage C opened
+within a day of Phase 45's pinned commit, so the task actually run was
+hledger 1.52 query-term semantics, not the plan's named
+compat-register-migration candidate. Because a real, concurrently-running
+Ledgerkit development session was producing the task's exact deliverable,
+the attempt was conducted as a read-only evaluation exercise — no file
+was written into the Ledgerkit clone.
+`planning/reference-projects/ledgerkit/01-query-semantics.md`:
+**second FAIL verdict**, LOW (negative) advantage, and the first on
+genuinely in-progress work rather than a spot-check question — CodeCompass
+returned a complete blank (0 vendors, "not found" for both `dev-docs/`
+files), while Ledgerkit's own
+`dev-docs/planning/core-redefinition/07-query-regex.md` §7.1 already had
+the complete answer, found by one `grep` + file read. **`CG-002`**
+re-confirmed independently by both `reference-project-tester` and
+`context-evaluator`, extended to nested `dev-docs/**` paths. **`CG-003`**
+filed (new, `candidate`): the external hledger.org manual itself has zero
+CodeCompass representation — no glob fix could ever cover it (a Stage
+E/GATE DD question, not Stage C/GATE DB). **`L-017`** filed (retained): a
+live `WebFetch` fallback against hledger.org needed two attempts and
+still couldn't reliably extract the relevant section. A process incident
+— two agents dispatched to `Write` (not `Edit`) the same shared report
+file concurrently, silently clobbering one agent's output — was filed as
+**`L-018`** and **promoted the same phase**: `planning/agent-led-workflow.md`
+step 5 now explicitly forbids two agents `Write`-ing one shared path
+concurrently. **No `src/codecompass/` change.** Verified: `pytest` 554
+passed / 2 skipped, `ruff check .` clean, `check_user_docs.py --strict`
+clean. Closeout: `docs-reconstructor` drift audit
+(`planning/retros/_drift-audit-phase-46.md`) → **NO DRIFT**;
+`knowledge-curator` triage → CG-003 (`candidate`), L-017 (`retained`),
+L-018 (`promoted`); `release-phase-auditor`
+(`planning/retros/_audit-phase-46.md`) → **PASS WITH NON-BLOCKING
+OBSERVATIONS** (no blocking gap; two cosmetic observations — stale
+curation prose next to L-018's already-`promoted` status field, and a
+missing blank line in `context-use-log.md` — both fixed before this
+closeout). Retro: `planning/retros/phase-46-ledgerkit-tasks.md`.
+`planning/phase-47-consolidate-findings.md` written — Stage B's decision
+phase, **GATE DB** (gate G6), with a full evidence inventory from Phases
+44–46. **Phase 47 is a decision phase, not something to auto-proceed
+through: its funding decision on Stage C may need the user's own input**,
+per `CLAUDE.md` §1's "pause and ask" rule for a genuine funding/scope
+call the curator cannot make alone.
+
 **Stage A of the redefined-v1 roadmap is complete: Phases 39–43 are
 `done`.** Phase 43 dogfooded the full 14-step agent-led loop on a real
 `src/codecompass/` change (`query skills` widen, 43a) and **passed GATE
@@ -225,10 +271,10 @@ row 43b and the `v1-redefinition/roadmap.md` Phase 43b stanza both now
 read `done`.
 
 **Both Stage A→B bridge phases (43b, 43c) are closed out, as are 43d/43e,
-44, and 45. Next: Phase 46** (the full per-task procedure against a
-genuine Ledgerkit task, reconfirmed live at that phase's own start since
-Ledgerkit's roadmap has already moved once mid-Phase-45 — Milestone 5 →
-`[SUPERSEDED]`). No gate blocks it.
+44, 45, and 46. Next: Phase 47** (Stage B's fourth and final phase,
+consolidating all Phase 44–46 findings) — **exits at GATE DB (gate G6): a
+funding decision on Stage C that may need the user's own input, not
+something to auto-proceed through.**
 
 - **39** ratified the redefinition: ADRs `decisions/0048`/`0049`
   `Accepted`; `pyproject.toml` `version` → `1.0.0.dev0`; ROADMAP's Stage
@@ -358,6 +404,47 @@ dependencies now carry lower-bound version pins (`decisions/0047`), and
 were cleaned up (Phase 38).
 
 ## What was just completed
+
+**Phase 46, `done`** (2026-09-13) — Stage B's third phase, and the first
+run of the full per-task procedure (`reference-project-protocol.md`
+§2.4) against a genuine, live Ledgerkit task. Reconfirmed live at phase
+start, exactly as the plan hedged: Ledgerkit's own Stage B closed to
+`[DONE]` and Stage C opened (Phase 1 `[IN PROGRESS]`) within a day of
+Phase 45's pinned commit, so the task actually run was hledger 1.52
+query-term semantics, not the plan's named compat-register-migration
+candidate. A real, concurrently-running Ledgerkit development session was
+producing the task's exact deliverable, so the attempt was conducted as a
+read-only evaluation exercise — no file was written into the Ledgerkit
+clone. `planning/reference-projects/ledgerkit/01-query-semantics.md`:
+**CodeCompass's second FAIL verdict**, LOW (negative) advantage, and the
+first on genuinely in-progress work rather than a spot-check question —
+CodeCompass returned a complete blank (0 vendors, "not found" for both
+`dev-docs/` files); Ledgerkit's own
+`dev-docs/planning/core-redefinition/07-query-regex.md` §7.1 already had
+the complete answer, found by one `grep` + file read. **`CG-002`**
+re-confirmed independently by both `reference-project-tester` and
+`context-evaluator`, extended to nested `dev-docs/**` paths. **`CG-003`**
+filed (new, `candidate`): the external hledger.org manual has zero
+CodeCompass representation, no glob fix could ever cover it — a Stage
+E/GATE DD question, not Stage C/GATE DB. **`L-017`** filed (retained): a
+live `WebFetch` fallback against hledger.org needed two attempts and
+still couldn't reliably extract the relevant section. A process
+incident — two agents dispatched to `Write` (not `Edit`) the same shared
+report file concurrently, silently clobbering one agent's output — filed
+as **`L-018`** and **promoted the same phase**: `planning/agent-led-workflow.md`
+step 5 now explicitly forbids two agents `Write`-ing one shared path
+concurrently. **No `src/codecompass/` change.** Verified: `pytest` 554
+passed / 2 skipped, `ruff check .` clean, `check_user_docs.py --strict`
+clean. Closeout: `docs-reconstructor` drift audit
+(`planning/retros/_drift-audit-phase-46.md`) → **NO DRIFT**;
+`knowledge-curator` triage → CG-003 (`candidate`), L-017 (`retained`),
+L-018 (`promoted`); `release-phase-auditor`
+(`planning/retros/_audit-phase-46.md`) → **PASS WITH NON-BLOCKING
+OBSERVATIONS** (no blocking gap; two cosmetic observations, both fixed
+before this closeout). Retro: `planning/retros/phase-46-ledgerkit-tasks.md`.
+`planning/phase-47-consolidate-findings.md` written — Stage B's decision
+phase, **GATE DB** (gate G6), with a full evidence inventory from Phases
+44–46.
 
 **Phase 45, `done`** (2026-09-13) — Stage B's second phase, and
 CodeCompass's first external reference-project datapoint. Registered
@@ -795,38 +882,39 @@ relationships found, not yet AI-enriched — see Next concrete step).
 ## Next concrete step
 
 **Stage A is complete (Phases 39–43e `done`, GATE DA passed). All Stage
-A→B bridge phases (43b, 43c) and Stage B's first two phases (44, 45) are
-`done` and fully closed out.**
+A→B bridge phases (43b, 43c) and Stage B's first three phases (44, 45,
+46) are `done` and fully closed out.**
 
-**Phase 45 closeout (done):** `docs-reconstructor` drift audit
-(`planning/retros/_drift-audit-phase-45.md`) → **NO DRIFT**;
-`knowledge-curator` triage → **CG-002** (`recurred` — not promoted, that's
-Phase 47/GATE DB's job), **L-015** (retained), **L-016** (retained);
-`release-phase-auditor` (`planning/retros/_audit-phase-45.md`) → **PASS
-WITH NON-BLOCKING OBSERVATIONS** (no blocking gap). ROADMAP row `45` /
-the `v1-redefinition/roadmap.md` Phase 45 stanza / the plan file's own
-status line (`done (2026-09-13)`) all flipped to `done` in this commit.
-Retro: `planning/retros/phase-45-ledgerkit-baseline.md`. Three
-non-blocking audit observations, none requiring rework: (1) the
-workflow's interim step-10 reconciliation had nothing substantive to add
-this single continuous session, not a skip; (2) the plan file's own
-status header — already fixed directly by the lead to
-`done (2026-09-13)`; (3) CG-002's context-gap-vs-candidate-learning
-classification is a defensible judgment call, already flagged by the
-entry itself — recorded here for GATE DB (Phase 47) to inherit
-explicitly rather than rediscover.
+**Phase 46 closeout (done):** `docs-reconstructor` drift audit
+(`planning/retros/_drift-audit-phase-46.md`) → **NO DRIFT**;
+`knowledge-curator` triage → **CG-003** (`candidate`), **L-017**
+(retained), **L-018** (`promoted` — the `agent-led-workflow.md` step 5
+fix landed the same phase); `release-phase-auditor`
+(`planning/retros/_audit-phase-46.md`) → **PASS WITH NON-BLOCKING
+OBSERVATIONS** (no blocking gap; two cosmetic observations, both fixed
+before this closeout commit). ROADMAP row `46` / the
+`v1-redefinition/roadmap.md` Phase 46 stanza / the plan file's own status
+line (`done (2026-09-13)`) all flipped to `done` in this commit. Retro:
+`planning/retros/phase-46-ledgerkit-tasks.md`, including an honest "What
+didn't work" on the `Write`-vs-`Write` race between two concurrently
+dispatched agents (see L-018 above).
 
-**Immediate next step: Phase 46**
-([`phase-46-ledgerkit-tasks.md`](phase-46-ledgerkit-tasks.md), written by
-Phase 45) — the full per-task procedure
-(`reference-project-protocol.md` §2.4) against a genuine Ledgerkit task.
-**Explicitly hedged, not fixed by the plan file:** Ledgerkit's own Stage
-B isn't yet scoped/approved, and its roadmap already moved once
-mid-Phase-45 (Milestone 5 "CLI Filter Flags" → `[SUPERSEDED]`) — the
-plan's recommended candidate (a compat-register migration follow-up
-named by Ledgerkit's own Stage A closeout) must be reconfirmed live, or
-superseded by whatever is genuinely current, at this phase's own start.
-**No gate blocks it.**
+**Immediate next step: Phase 47**
+([`phase-47-consolidate-findings.md`](phase-47-consolidate-findings.md),
+written by Phase 46) — Stage B's fourth and final phase.
+`knowledge-curator` reviews every Phase 44–46 candidate learning and
+context-gap entry in bulk, promotes anything with recurrence/evidence to
+a confirmed finding, and writes
+`planning/reference-projects/ledgerkit/findings.md`. **Phase 47 is a
+decision phase, not something to auto-proceed through: it exits at
+GATE DB (gate G6), a funding decision on which Stage C phases (48–51), if
+any, are funded** — per `CLAUDE.md` §1's "pause and ask before proceeding
+from plan to code" rule, this is a genuine funding/scope call the
+evidence can inform but may need the user's own decision, not one the
+curator or lead can resolve alone. The evidence base going in is real:
+two independent FAIL verdicts of the identical failure shape (Phase 45's
+Q2, Phase 46's task 01), `CG-002`'s confirmed recurrence, and `CG-003`'s
+structurally distinct external-dependency gap.
 
 **Phase 43c closeout (done):** `docs-reconstructor` drift audit → **NO
 DRIFT**; `knowledge-curator` triage → `CG-001` `candidate` + **L-007**

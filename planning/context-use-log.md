@@ -53,6 +53,38 @@ Entries are dated records — not rewritten.
 
 ## Entries (newest first)
 
+### 2026-09-13 · Phase 46 (Ledgerkit genuine task — query semantics) · `reference-project-tester` · `codecompass query vendors` / `query relations` against Ledgerkit's own rebuilt `context-graph.db` (pinned `9c33e37`)
+
+- **retrieved:** re-ran the exact retrieval attempt for the genuine task
+  ("determine hledger 1.52's `acct:`/`desc:`/`date:`/`depth:`/`status:`/
+  `not:` query-term semantics", already scoped by Ledgerkit's own
+  `ROADMAP.md`/`CONTEXT.md` for Stage C Phase 1). `codecompass query
+  vendors` → empty table (0 vendors — genuine, matches Phase 45).
+  `codecompass query relations dev-docs/hledger-compatibility.md` and
+  `codecompass query relations
+  dev-docs/planning/core-redefinition/07-query-regex.md` → both
+  `error: '<path>' not found in context-graph.db` — the second path is
+  the file that actually contains the complete answer (§7.1's term
+  table), and it is exactly as invisible as the first, for the identical
+  `CG-002` reason (no `dev-docs/**/*.md` glob entry). CodeCompass
+  contributed **zero** context to this task — not thin, a complete
+  blank; no vendor, no doc relation, no Skill, nothing to read.
+- **default pathway:** `grep -rn "query" dev-docs/planning/core-redefinition/`
+  (seconds) found `07-query-regex.md` directly; reading its §7.1 table
+  answered all 6 terms plus phasing, with no CodeCompass involvement at
+  any point. Strictly faster and strictly more complete than the
+  CodeCompass path, which returned nothing.
+- **advantage: LOW** — and this instance is at the floor of LOW, not
+  just an example of it: the definition's "marginal contribution" still
+  implies *some* contribution. Here the contribution was exactly zero;
+  the entire answer came from Ledgerkit's own prior planning work, found
+  by one `grep`.
+- **wrong or misleading?** no — an honest "not found" for both paths,
+  not a false claim. But (per `L-016`, re-confirmed here) the "not
+  found" error gives no signal that this is a known glob-coverage gap
+  rather than a typo, which is itself the pre-existing finding this
+  entry corroborates rather than a new wrinkle.
+
 ### 2026-09-12 · Phase 45 (Ledgerkit registration + baseline) · lead · bare `codecompass --budget 0` + `query vendors` / `query relations` against a fresh Ledgerkit clone (pinned `a3cf2a7`)
 
 - **retrieved:** ran CodeCompass against Ledgerkit as-is for the first

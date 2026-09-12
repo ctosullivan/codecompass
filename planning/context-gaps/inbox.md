@@ -8,6 +8,110 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
 
 ---
 
+### CG-003 — the external `hledger` reference manual (hledger.org) has zero representation, and unlike CG-002 no glob fix could ever cover it
+
+- **origin:** Phase 46 (Ledgerkit genuine task — hledger 1.52 query-term
+  semantics); observed by the lead attempting the task, verified by
+  `reference-project-tester`.
+- **date:** 2026-09-13
+- **codecompass_revision:** b0717ee
+- **project:** ledgerkit, pinned commit `9c33e37cf8a1eec057e1fb79a83e379d9413a189`
+- **the edge:** `A ↔ B` where A = `https://hledger.org/1.52/hledger.html`
+  (hledger's own external, versioned reference manual — the primary
+  authority for hledger 1.52 query-term semantics), B = Ledgerkit's
+  `context-graph.db` / any CodeCompass concept at all. A is not a
+  package, not a file in the repository, not anything `discover_python()`
+  or `spec_docs.py` could ever glob-match — it is an external web
+  document CodeCompass has no representation for, in any form (not
+  `doc_artifacts`, not `vendor`, not a Skill).
+- **edge kind:** dependency↔local-code (the manual is Ledgerkit's actual
+  compatibility authority for query semantics — see
+  `dev-docs/planning/core-redefinition/07-query-regex.md`'s own citation
+  of `hledger.org/1.52/hledger.html#queries`) — but of a *kind*
+  CodeCompass's current model has no concept for at all: an external,
+  versioned reference document that isn't a package and isn't in the
+  repository.
+- **agent's reasoning:** the task required hledger 1.52's `acct:`/`desc:`/
+  `date:`/`depth:`/`status:`/`not:` query-term semantics. CodeCompass had
+  zero representation of anything hledger-related (see `CG-002`).
+  Ledgerkit's own internal planning doc happened to already have the
+  answer (found by direct `grep`), but the *authoritative* source for
+  this class of question is the external manual, not Ledgerkit's own
+  prose about it — and CodeCompass could not point at it, fetch it,
+  cache it, or relate it to anything, even in principle, with any
+  mechanism that exists today.
+- **what the graph shows instead:** nothing. There is no
+  `doc_artifacts` row, no `vendor` row, no Skill, no edge of any kind
+  referencing `hledger.org` or hledger's manual anywhere in
+  `context-graph.db`.
+- **could mechanical detection ever catch this?** no-conceptual-only —
+  this is not a glob-coverage gap like `CG-002` (which a `_DEFAULT_GLOBS`
+  entry could fix in one line, since `dev-docs/**/*.md` is a real path in
+  the repository). An external manual is not on disk at all; representing
+  it requires *fetching and vendoring external reference material*, a
+  capability CodeCompass does not have in any form today
+  (`decisions/0051`'s "graph capability" bucket, not "detection
+  improvement").
+- **smallest candidate that would fix it:** none at the detection level.
+  This is squarely the open question Phase 53 (`ledgerkit-plan.md`) is
+  already designed to test — "can CodeCompass usefully index and relate
+  reference material — the hledger manual (as fetched/vendored text) —
+  to Ledgerkit's local implementation... as evidence nodes with
+  provenance." This entry is the first concrete, evidenced instance of
+  that hypothesis actually blocking a real task, ahead of Phase 53's
+  scheduled test.
+- **classification:** graph-capability (Stage E / GATE DD) — matches
+  `conditional-generalisation.md` §2.3's "reference-doc / spec / manual
+  dependency kind" hypothesis row exactly.
+- **status:** candidate
+- **recurrence:** first occurrence
+- **curation (Phase 46 triage, 2026-09-13, knowledge-curator):** template
+  fields all present (origin, date, codecompass_revision, project, the
+  edge, edge kind, reasoning, "what the graph shows instead", "could
+  mechanical detection ever catch this?", smallest candidate,
+  classification, status, recurrence) — independently checked rather than
+  taken on the entry's own word: `context-graph.db`'s known schema
+  (`doc_artifacts` rows of `kind='spec_doc'`, `vendor` usage/mention
+  edges) has no table, column, or edge kind anywhere representing an
+  external, non-package, non-repository reference document, confirming
+  the "no-conceptual-only" claim. **Outcome: stays `candidate` — not
+  `recurred`, and not `promoted-to-roadmap`.** Per
+  `context-gaps/README.md`'s hard rule, a context-gap becomes
+  authoritative only via promotion into either a mechanical-detection
+  improvement (Stage C, GATE DB, Phase 47) or a new graph capability
+  (Stage E, GATE DD, Phase 55) — CG-003's own classification
+  (graph-capability) and its own "no glob fix could ever cover it"
+  framing route it to the *latter*, so Phase 47's GATE DB has no lever to
+  promote it even if it wanted to; that gate is scoped to Stage C /
+  detection-improvements only (see `CG-002`, which *is* eligible there).
+  Not `recurred` either: this is the first occurrence of *this specific*
+  gap (an external reference manual with zero representation of any
+  kind) — distinct in kind from `CG-002` (a detection-scope gap over
+  material that already sits inside the repository) despite sharing an
+  origin task and a hledger subject matter. Confirmed the two should stay
+  separate, not merged: per CG-003's own reasoning, even a fixed CG-002
+  "would only surface Ledgerkit's own prior *prose* about hledger" — the
+  external manual itself remains unrepresented either way, so fixing one
+  does not touch the other. `CG-002`'s independent re-confirmation by
+  both agents in this same phase (noted in `CG-002`'s own entry, extended
+  to nested `dev-docs/**` paths) is a separate signal and doesn't
+  transfer to CG-003. This entry is treated as the first concrete,
+  evidenced instance of the reference-doc/manual dependency-kind
+  hypothesis already named in `conditional-generalisation.md` §2.3 and
+  scheduled for Phase 53's own test — real early evidence for that
+  design question and for GATE DD's (Phase 55) eventual input, but not
+  itself sufficient today to move past `candidate`. **Named for GATE
+  DB's (Phase 47) input as context only, not as something GATE DB can act
+  on**: Phase 47's findings should note CG-003 exists and explicitly why
+  it is out of scope for any Stage C funding decision (it needs a Stage E
+  ADR, not a detection heuristic), so the funding decision isn't misread
+  as having addressed it. No entry made to `context-graph.db` — per the
+  hard rule, a context-gap never enters there regardless of status.
+  Revisit at Phase 53 (if the reference-manual-as-vendored-text test runs
+  against this exact case) or on a second, independent occurrence (a
+  different reference project hitting the identical "external manual,
+  zero representation" shape) to move to `recurred`.
+
 ### CG-002 — Ledgerkit's entire `dev-docs/` tree is invisible to spec-doc detection, not merely under-related
 
 - **origin:** Phase 45 (Ledgerkit registration + baseline); observed by the

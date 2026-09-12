@@ -92,8 +92,23 @@ genuine typo, giving no signal to suspect a coverage gap) filed as
 agent — yes/partially" verdict is listed in full as the highest-priority
 GATE DB input: **Q1 partially, Q2 yes, Q3 no.**
 
-*(Task-specific evaluations — e.g. the genuine Stage B task Phase 46 will
-attempt — are added as rows `01`, `02`, ... once that phase runs.)*
+| 01 | `9c33e37` | Genuine task: hledger 1.52 query-term semantics (`acct:`/`desc:`/`date:`/`depth:`/`status:`/`not:`) — Stage C Phase 1, reconfirmed live (Milestone-5-style roadmap movement happened again: Ledgerkit's Stage B closed and Stage C opened between Phase 45 and Phase 46) | `b0717ee` | **FAIL** | LOW (negative) | [`ledgerkit/01-query-semantics.md`](ledgerkit/01-query-semantics.md) |
+
+**Row 01 is CodeCompass's second FAIL verdict, same failure shape as
+Phase 45's Q2 but now on live, in-progress work rather than a spot
+check**: `dev-docs/planning/core-redefinition/07-query-regex.md` already
+contained the complete answer, found by the lead in one `grep` + file
+read; CodeCompass returned an authoritative "not found" for it (`CG-002`,
+re-confirmed to extend to nested `dev-docs/**` paths). A further,
+structurally distinct gap surfaced: even a fixed `CG-002` could only ever
+surface Ledgerkit's own prior prose about hledger, never the external
+hledger 1.52 behaviour itself — filed as **`CG-003`** (no glob fix could
+ever cover it). The retrieval-cost angle of using an external manual as a
+fallback (two failed `WebFetch` attempts on a large page) filed as
+**`L-017`**.
+
+*(Further task-specific evaluations are added as rows `02`, ... in later
+phases.)*
 
 ## Non-invasiveness check (per phase, reference-project-protocol.md §2.7)
 

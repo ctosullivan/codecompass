@@ -293,6 +293,19 @@ Time tripwire: aim for 4–8 evaluated tasks in Phase 46; if fewer than 3
 genuine tasks are available on Ledgerkit's roadmap, that itself is a
 finding — proceed to Stage C early with whatever evidence exists.
 
+**Outcome note (Phase 46 closeout, 2026-09-13):** Phase 46 evaluated
+exactly **one** genuine task (query-term semantics), not 4–8 — the
+tripwire's own "fewer than 3" condition is met. This is itself evidence
+for Phase 47/GATE DB, not a scope failure: the single task delivered a
+second independent FAIL verdict of the identical failure shape as Phase
+45's baseline FAIL, which `context-quality-evaluation.md` §6 already
+treats as highest-priority regardless of count, and Ledgerkit's own
+roadmap moved twice across Phases 44–46 in ways that constrained how many
+genuinely-scoped tasks were available to attempt. Phase 47's plan
+(`planning/phase-47-consolidate-findings.md`) proceeds with this evidence
+rather than waiting for more tasks, consistent with the tripwire's own
+"proceed early with whatever evidence exists" instruction.
+
 ### Phase 44 — Reference-project protocol + context-quality eval spec · COMMITTED
 - **Plan:** `planning/phase-44-reference-project-protocol.md`
 - **Does:** finalise `planning/v1-redefinition/reference-project-protocol.md`
@@ -412,6 +425,47 @@ finding — proceed to Stage C early with whatever evidence exists.
 - **Exit:** one evaluation report per task under
   `planning/reference-projects/ledgerkit/`; any `validation/codecompass/findings/CC-LK-NNN`
   filed.
+- **Status:** **done (2026-09-13).** Reconfirmed live at phase start, as
+  hedged above: Ledgerkit's Stage B closed to `[DONE]` entirely and Stage
+  C opened (Phase 1 `[IN PROGRESS]`) within a day of Phase 45's pinned
+  commit, so the task actually run was hledger 1.52 query-term semantics,
+  not the plan's named compat-register-migration candidate — the plan's
+  explicit hedge worked as designed. A live, concurrently-running
+  Ledgerkit development session was producing the task's exact
+  deliverable, so this phase's "attempt" was conducted as a **read-only
+  evaluation exercise** (no file written into the Ledgerkit clone).
+  `planning/reference-projects/ledgerkit/01-query-semantics.md` —
+  **CodeCompass's second FAIL verdict**, LOW (negative) advantage, and the
+  first on genuinely in-progress work rather than a spot-check question:
+  CodeCompass returned a complete blank (0 vendors, "not found" for both
+  `dev-docs/` files); Ledgerkit's own
+  `dev-docs/planning/core-redefinition/07-query-regex.md` §7.1 already had
+  the complete answer, found by one `grep` + file read. **`CG-002`**
+  re-confirmed independently by both agents, extended to nested
+  `dev-docs/**` paths. **`CG-003`** filed (new): the external hledger.org
+  manual itself has zero CodeCompass representation, no glob fix could
+  ever cover it. **`L-017`** filed (retained): a live `WebFetch` fallback
+  against the real hledger.org manual needed two attempts and still
+  couldn't reliably extract the relevant section — a retrieval-cost
+  finding for Phase 53. `planning/phase-47-consolidate-findings.md`
+  written — Stage B's decision phase (GATE DB), with a full evidence
+  inventory from Phases 44–46. No `src/codecompass/` change. **What didn't
+  work (retro):** dispatching `reference-project-tester` and
+  `context-evaluator` concurrently to `Write` (not `Edit`) the same shared
+  report path caused a silent clobber — the second `Write` replaced the
+  first agent's section entirely; the lead caught it only by reading the
+  file afterward and cross-referencing it against the clobbered agent's
+  own returned summary, then manually reconstructed the lost section.
+  Filed as **`L-018`** and **promoted** the same phase: `planning/agent-
+  led-workflow.md` step 5 now explicitly forbids two agents `Write`-ing
+  one shared path concurrently. `docs-reconstructor` drift audit → NO
+  DRIFT; `release-phase-auditor` → PASS WITH NON-BLOCKING OBSERVATIONS (no
+  blocking gap; two cosmetic observations — stale curation prose next to
+  L-018's already-`promoted` status field, and a missing blank line in
+  `context-use-log.md` — both fixed before commit). Retro:
+  `planning/retros/phase-46-ledgerkit-tasks.md`. No gate blocks Phase 47,
+  but Phase 47 itself exits at **GATE DB** — a funding decision that may
+  need the user's input, not something to auto-proceed through.
 
 ### Phase 47 — Consolidate recurring friction · EXPERIMENTAL → decision
 - **Plan:** `planning/phase-47-consolidate-findings.md`

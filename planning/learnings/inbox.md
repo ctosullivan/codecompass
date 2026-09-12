@@ -8,6 +8,143 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-018 — dispatching two agents to `Write` (not `Edit`) the same file path concurrently silently loses one agent's output
+
+- **origin:** Phase 46 (`planning/retros/phase-46-ledgerkit-tasks.md`, "What didn't work" + "Process-improvement feedback")
+- **date:** 2026-09-13
+- **project_revision:** b0717ee (CodeCompass HEAD when the race occurred)
+- **observation:** `reference-project-tester` and `context-evaluator` were dispatched concurrently, both instructed to write independent sections to `planning/reference-projects/ledgerkit/01-query-semantics.md`, each told to check the file's current state before writing. `context-evaluator` reported successfully writing its report and returned a detailed, accurate summary of its findings. When the lead read the file afterward, only `reference-project-tester`'s section was present — a placeholder comment marking where `context-evaluator`'s section should go was still unfilled. Root cause: `Write` replaces the entire file rather than appending; `reference-project-tester`'s later `Write` call silently clobbered `context-evaluator`'s earlier one, and "check the file first" instructions cannot prevent this race between two independently-scheduled background agents. The lead caught this only by reading the actual file after both agents completed and cross-referencing it against `context-evaluator`'s own returned summary — without that verification step, a real independent verdict (CodeCompass's second FAIL) would have been silently absent from the permanent record while the task-completion report claimed success.
+- **evidence:** `planning/reference-projects/ledgerkit/01-query-semantics.md`'s git history in this phase's uncommitted diff (a single `## reference-project-tester friction log` section present after both agents reported completion, with `context-evaluator`'s content missing until the lead manually reconstructed it as a `## Context-quality evaluation` section from that agent's task-notification summary); `planning/retros/phase-46-ledgerkit-tasks.md` "What didn't work" / "Lessons learnt" #1-2.
+- **classification:** workflow
+- **status:** promoted
+- **recurrence:**
+- **curation (Phase 46 triage, 2026-09-13, knowledge-curator):** provenance
+  accepted — all required fields present; independently cross-checked
+  against `planning/retros/phase-46-ledgerkit-tasks.md` ("What didn't
+  work", "Lessons learnt" #1-2, "Process-improvement feedback") and
+  against `planning/agent-led-workflow.md` step 5 itself, re-read
+  directly rather than taken on the retro's characterization alone: step
+  5 currently reads "**Delegate bounded specialist work.** One agent =
+  one artifact. Give each a self-contained prompt (the phase plan path,
+  exact scope, what to return). Run in the background unless the next
+  step strictly depends on the result." — confirmed this says nothing
+  today about two different specialist roles both contributing to one
+  shared file, so this is a genuine, unaddressed gap in the doc's actual
+  text, not a restatement of a rule that already covers the case. **Outcome:
+  promote (recommendation + draft; does NOT land here — `agent-led-workflow.md`
+  is outside this agent's write boundary, `planning/learnings/**` /
+  `planning/context-gaps/**` / draft files under `planning/` only; the
+  lead reviews and applies it, the same way L-013's step 10/14 split was
+  handled).** Structurally the same shape as L-013 (Phase 44): a real,
+  low-risk, specific process-doc gap, evidenced by one concrete incident
+  with a real (not hypothetical) consequence already caught — worth
+  closing now rather than waiting for a second silent race. Checked for a
+  merge candidate: `L-006`/`L-013` are the only other workflow-classified
+  candidates touching `agent-led-workflow.md`, and both are about
+  roadmap/`CONTEXT.md` reconciliation *timing*, not about two agents
+  writing one shared file — not a duplicate, a sibling gap in the same
+  document. Checked whether this belongs in `context-gaps/` instead: no —
+  per `context-gaps/README.md`'s own "what does NOT belong" list, this is
+  a "how we should work" observation about the agent-led process itself,
+  not a relationship CodeCompass's graph is missing; correctly stays in
+  `planning/learnings/`.
+
+  **Recommended fix — extend step 5** (draft, for the lead to review and
+  land):
+
+  > 5. **Delegate bounded specialist work.** One agent = one artifact. Give
+  > each a self-contained prompt (the phase plan path, exact scope, what
+  > to return). Run in the background unless the next step strictly
+  > depends on the result. **If two different specialist roles must both
+  > contribute to one shared report file, never dispatch both to `Write`
+  > that path concurrently** — `Write` replaces the whole file, so
+  > whichever call lands second always wins regardless of instructions to
+  > "check the file's current state first," and the loss is silent: the
+  > earlier agent's own success report gives no signal that its content
+  > was later overwritten. Sequence them instead — one agent `Write`s the
+  > file first, and only once its dispatch has fully completed is the
+  > second told to `Edit`-append its section — or, if both must genuinely
+  > run concurrently, give each its own file and merge them afterward
+  > once both complete. (Phase 46 — L-018.)
+
+  **Update (lead, same day):** the step-5 addition above has been applied
+  to `planning/agent-led-workflow.md`, and `promoted.md` carries the
+  matching `L-018 | 2026-09-13 | workflow | ...` pointer line — status
+  updated to `promoted` accordingly, mirroring exactly how L-013 was
+  closed out.
+- **promoted_to:** `planning/agent-led-workflow.md` step 5 (concurrent-write
+  guidance) — applied by the lead this phase, logged in `promoted.md`
+  (commit hash to follow once this phase's closeout commit lands).
+
+### L-017 — a live WebFetch of an external reference manual is an expensive, unreliable fallback for section-specific technical content, distinct from whether CodeCompass should model manuals at all
+
+- **origin:** Phase 46 (Ledgerkit genuine task — hledger 1.52 query-term
+  semantics), lead's attempt + `reference-project-tester` verification
+- **date:** 2026-09-13
+- **project_revision:** b0717ee (codecompass) + ledgerkit `9c33e37`
+- **observation:** after CodeCompass returned nothing (see `CG-002`) and
+  Ledgerkit's own `dev-docs/planning/core-redefinition/07-query-regex.md`
+  supplied a complete answer for all 6 query terms, the lead separately
+  tried `WebFetch` against `https://hledger.org/1.52/hledger.html#queries`
+  as a hypothetical fallback source. It correctly confirmed `acct:`/
+  `desc:` (infix, case-insensitive regex) and `depth:` (top-N levels /
+  `REGEXP=NUM` scoping) and `status:` (`status:`/`status:!`/`status:*`
+  forms), but **two separate fetch attempts both failed to surface the
+  page's AND/OR combination logic or the `not:` prefix documentation** —
+  the manual page is long enough that a single fetch truncates before or
+  around that section, and re-fetching didn't reliably target it. This is
+  a distinct finding from "should CodeCompass index/relate the hledger
+  manual" (already named as a hypothesis — `ledgerkit-plan.md` §1 item 2,
+  `conditional-generalisation.md` §2.3, Phase 53's own plan): it is
+  evidence about the **cost profile of a live fetch specifically**, which
+  bears directly on Phase 53's open design question ("the hledger manual
+  as fetched/vendored text") — a live per-question fetch of a large
+  manual page is not a reliable substitute for a one-time
+  fetched-and-indexed/vendored copy, independent of whatever schema Stage
+  E eventually settles on for representing it.
+- **evidence:** the lead's two `WebFetch` attempts against
+  `hledger.org/1.52/hledger.html#queries` (both missing the AND/OR +
+  `not:` section); Ledgerkit's own
+  `dev-docs/planning/core-redefinition/07-query-regex.md` §7.1 already
+  containing that exact information (negation row, implicit-AND/explicit-OR
+  row) without needing any external fetch at all —
+  independently re-read and confirmed by `reference-project-tester`
+  (full table reproduced in
+  `planning/reference-projects/ledgerkit/01-query-semantics.md`).
+- **classification:** future-improvement
+- **status:** retained
+- **recurrence:** first occurrence
+- **curation (Phase 46 triage, 2026-09-13, knowledge-curator):** provenance
+  accepted — all required fields present; independently cross-checked
+  against `planning/retros/phase-46-ledgerkit-tasks.md` ("What was
+  achieved") and `planning/phase-47-consolidate-findings.md`'s own
+  evidence inventory, which already names this candidate as Phase 47
+  (GATE DB) bulk-review input. **Outcome: retain, not promote yet** —
+  the same treatment `L-015`/`L-016` received at Phase 45's triage: real
+  and specific, but single-occurrence (one lead attempt, two `WebFetch`
+  calls) and explicitly the kind of finding Phase 47's consolidated bulk
+  review is designed to weigh alongside the rest of the Phase 44-46
+  evidence, not something a per-phase triage should pre-empt with a
+  standalone promotion. Confirmed distinct from **CG-003**, per this
+  candidate's own observation text: CG-003 is about whether CodeCompass
+  should represent the manual at all (a graph-capability question, Stage
+  E/GATE DD); this is about the retrieval-cost/reliability of a *live*
+  fetch specifically, which bears on Phase 53's "manual as
+  fetched/vendored text" design question regardless of what Stage E
+  eventually decides about representation. Not a merge candidate for
+  either CG-003 or the already-named "should CodeCompass index the
+  manual" hypothesis (`ledgerkit-plan.md` §1 item 2,
+  `conditional-generalisation.md` §2.3) — those already have a home;
+  this supplies one input to that question, not a duplicate of it.
+  Checked for a prior related learning: none exists in this inbox
+  (grepped for "WebFetch" — only this entry). Recommended destination
+  once Phase 47's bulk review (or a second occurrence) acts on it: feeds
+  Phase 53's design question directly as one input among several, not a
+  standalone `ROADMAP.md` row of its own (the design question already has
+  a named home in Phase 53's plan). Revisit at Phase 47's bulk review.
+- **promoted_to:** — (retained; feeds Phase 53's design question via
+  Phase 47's bulk review, no standalone destination)
+
 ### L-016 — `query relations`'s "not found" error is indistinguishable between "never scanned as a doc artifact" (a glob-coverage gap) and "genuine typo/misspelling" (real user error)
 
 - **origin:** Phase 45 (Ledgerkit baseline, `context-evaluator`'s Q2 report — `planning/reference-projects/ledgerkit/00-baseline.md`)

@@ -1,6 +1,6 @@
 # Phase 46: CodeCompass during a genuine Ledgerkit task
 
-**Status:** planned
+**Status:** done (2026-09-13) — see `planning/retros/phase-46-ledgerkit-tasks.md`
 
 Stage B, third phase (EXPERIMENTAL — `planning/v1-redefinition/roadmap.md`).
 Runs the full per-task procedure (`reference-project-protocol.md` §2.4)
