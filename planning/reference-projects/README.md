@@ -11,14 +11,13 @@ and
 
 | Name | URL | Starting revision | Status | Record |
 |---|---|---|---|---|
-| Ledgerkit | https://github.com/ctosullivan/ledgerkit | *(pinned at Phase 45)* | not yet registered | — (`ledgerkit.md`, Phase 45) |
+| Ledgerkit | https://github.com/ctosullivan/ledgerkit | `a3cf2a7` (2026-09-12) | registered, baseline evaluated (Phase 45) | [`ledgerkit.md`](ledgerkit.md) |
 | Technical Clipper | https://github.com/ctosullivan/technical-clipper | *(pinned at Phase 60)* | not yet registered | — (`technical-clipper.md`, Phase 60) |
 
-Nothing above is a live datapoint yet — both rows are placeholders until
-their registration phase runs. `_instrument-dry-run.md` in this directory
-is a **self-test of the instrument itself** (CodeCompass evaluated
-against its own repo), not a reference-project entry, and is never
-aggregated into either row.
+`_instrument-dry-run.md` in this directory is a **self-test of the
+instrument itself** (CodeCompass evaluated against its own repo, Phase
+44), not a reference-project entry, and is never aggregated into either
+row above.
 
 ## How a reference-project evaluation runs
 

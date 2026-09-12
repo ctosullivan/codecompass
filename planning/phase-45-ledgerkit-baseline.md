@@ -1,6 +1,6 @@
 # Phase 45: Register Ledgerkit + baseline evaluation
 
-**Status:** planned
+**Status:** done (2026-09-13) — see `planning/retros/phase-45-ledgerkit-baseline.md`
 
 Stage B, second phase (EXPERIMENTAL —
 `planning/v1-redefinition/roadmap.md`). Written now, per `CLAUDE.md` §1,

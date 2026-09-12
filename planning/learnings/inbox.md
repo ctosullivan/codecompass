@@ -8,6 +8,89 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-016 — `query relations`'s "not found" error is indistinguishable between "never scanned as a doc artifact" (a glob-coverage gap) and "genuine typo/misspelling" (real user error)
+
+- **origin:** Phase 45 (Ledgerkit baseline, `context-evaluator`'s Q2 report — `planning/reference-projects/ledgerkit/00-baseline.md`)
+- **date:** 2026-09-12
+- **project_revision:** 6c3f34e (CodeCompass HEAD at baseline time)
+- **observation:** `codecompass query relations dev-docs/hledger-compatibility.md` returns `error: 'dev-docs/hledger-compatibility.md' not found in context-graph.db` for a real, current file that is simply outside `spec_docs._DEFAULT_GLOBS` (the CG-002 root cause) — the exact same error message a genuine typo would produce. Traced through `src/codecompass/cli.py`: `_resolve_relations` returns `None` for both "never scanned as a doc artifact" and "path doesn't exist/is misspelled," and the CLI's `_not_found_error` can't distinguish them. This is a *symptom-layer* gap distinct from CG-002 (the glob list itself): even after CG-002 is fixed for `dev-docs/`, the identical ambiguity remains for the next unanticipated doc-directory convention the fixed glob list doesn't cover, and gives the caller zero signal to suspect a coverage gap rather than their own typo.
+- **evidence:** `planning/reference-projects/ledgerkit/00-baseline.md` Q2 "Material gaps / failures" (second bullet) and "Criteria assessment" (Safety/trustworthiness: weak — "reads as an authoritative statement about what exists in the project, not a hedge"); `src/codecompass/cli.py::_resolve_relations`/`_not_found_error`; `src/codecompass/spec_docs.py::_DEFAULT_GLOBS`.
+- **classification:** future-improvement
+- **status:** retained
+- **recurrence:** first occurrence
+- **curation (Phase 45 triage, 2026-09-13, knowledge-curator):** provenance
+  accepted — all required fields present; independently re-traced
+  `src/codecompass/cli.py::_resolve_relations`/`_not_found_error` and
+  `spec_docs.py::_DEFAULT_GLOBS` (no `dev-docs/**/*.md` entry, confirming
+  the CG-002 root cause this candidate builds on) rather than taking the
+  baseline report's word alone. The claim stands: both "never scanned"
+  and "genuinely doesn't exist" collapse into the identical
+  `_not_found_error` string with no distinguishing signal. **Outcome:
+  retain, not promote yet.** Real, specific, single-occurrence so far,
+  and this candidate is explicitly named as Phase 46/47 input by
+  `planning/v1-redefinition/roadmap.md`'s own Phase 47 description
+  ("`knowledge-curator` reviews all Phase 45-46 candidate learnings…
+  promotes anything with recurrence/evidence to a confirmed finding" —
+  GATE DB). Promoting straight to a `ROADMAP.md` row now would pre-empt
+  that consolidation step rather than feed it. Distinct from **CG-002**
+  (retain that distinction explicitly, per this candidate's own
+  observation text): CG-002 is the root-cause glob-coverage gap for
+  `dev-docs/` specifically; this candidate is the *symptom-layer*
+  ambiguity that outlives any individual glob fix — worth keeping
+  separate rather than merging, since fixing CG-002 does not resolve
+  this one. Recommended destination once Phase 47 or a second occurrence
+  promotes it: a `future-improvement` `ROADMAP.md` row for a
+  Stage-C-scale CLI fix — e.g. `_not_found_error` distinguishing "path
+  exists on disk but was never scanned as a doc artifact" (say via
+  `Path.exists()` before erroring) from "path does not exist at all",
+  with a different message/hint for each (`roadmap-context-curator`
+  finalises the row; lead/ad-hoc implementer lands the fix + a
+  regression test once funded). Revisit at the Phase 47 bulk review or
+  on a second reference-project instance of the same ambiguity.
+- **promoted_to:** — (retained; revisit Phase 47 bulk review or on
+  recurrence)
+
+### L-015 — `query vendors` / bare-discovery gives no signal that `[project.optional-dependencies]` exist but are unscanned
+
+- **origin:** Phase 45 (Ledgerkit baseline, `context-evaluator`'s Q1 report — `planning/reference-projects/ledgerkit/00-baseline.md`)
+- **date:** 2026-09-12
+- **project_revision:** 6c3f34e (CodeCompass HEAD at baseline time)
+- **observation:** Ledgerkit has `dependencies = []` (0 required runtime deps) but one real, tested, documented optional dependency (`pandas`, via `[project.optional-dependencies]`), which powers a real feature (`ledgerkit/_pandas_compat.py`, `tests/test_dataframe.py`, documented in 3 user-facing docs). `codecompass query vendors` and bare auto-discovery both correctly report "0 vendors" for the strict `dependencies` array, but neither emits any caveat that optional-dependencies exist in the manifest and are out of scope for discovery — confirmed deliberate scope (`discover_python()` in `src/codecompass/discovery.py` only reads `dependencies`, per `planning/phase-4-sync-index-init.md`), but the *silence at the CLI/query layer* about that scope boundary is what's evidenced here as gap-worthy, not the scope decision itself. An agent trusting "0 vendors" as "no dependency surface at all" would miss a real, shipped dependency.
+- **evidence:** `planning/reference-projects/ledgerkit/00-baseline.md` Q1 (Verdict: PASS WITH GAPS; "Material gaps / failures"); `pyproject.toml`'s `[project.optional-dependencies]` block in the pinned Ledgerkit clone; `src/codecompass/discovery.py::discover_python()`.
+- **classification:** future-improvement
+- **status:** retained
+- **recurrence:** first occurrence
+- **curation (Phase 45 triage, 2026-09-13, knowledge-curator):** provenance
+  accepted — all required fields present. Independently checked
+  `src/codecompass/discovery.py::discover_python()`: it reads only the
+  `dependencies` array, confirmed deliberate scope per
+  `planning/phase-4-sync-index-init.md`, not a bug — the candidate itself
+  already draws this distinction correctly (the gap is the *CLI/query
+  layer's silence about the scope boundary*, not the scope decision).
+  **Outcome: retain, not promote yet.** Real and specific, but
+  single-occurrence and, like L-016, explicitly the kind of finding
+  `planning/v1-redefinition/roadmap.md`'s Phase 47 (GATE DB) is designed
+  to consolidate across Phases 45-46 before any roadmap commitment is
+  made — promoting a lone Ledgerkit datapoint straight to a `ROADMAP.md`
+  row now would jump ahead of that gate rather than feed it. Checked for
+  a merge candidate: no prior learning about optional-dependency
+  visibility exists in this inbox (grepped for
+  "optional-dependencies"/`discover_python` — only this entry). Not a
+  context-gap either — checked `planning/context-gaps/README.md`'s
+  "what does NOT belong" list: this is a CLI-output-honesty gap about
+  data CodeCompass already chooses not to scan, not a relationship the
+  graph is missing, so it correctly stays in `planning/learnings/`, not
+  `context-gaps/`. Recommended destination once Phase 47 or a second
+  occurrence promotes it: a `future-improvement` `ROADMAP.md` row for a
+  small CLI caveat — e.g. `codecompass query vendors` / the bare-discovery
+  summary noting "N optional-dependency group(s) present in the manifest,
+  out of scope for discovery" when `[project.optional-dependencies]` is
+  non-empty but unused (`roadmap-context-curator` finalises the row).
+  Revisit at the Phase 47 bulk review or on a second reference-project
+  instance of the same silence.
+- **promoted_to:** — (retained; revisit Phase 47 bulk review or on
+  recurrence)
+
 ### L-014 — a plan file's background/rationale claims can go stale between writing and implementation, independent of its scope list
 
 - **origin:** Phase 44 (retro "Scope delivered vs planned" + "What didn't work" + "Lessons learnt" #1; `knowledge-curator` triage of the retro's contents per step 12)
@@ -365,6 +448,30 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   cross-project or template use.
 - **promoted_to:** — (retained; no destination artifact yet, revisit
   Phase 55/GATE DD or on a second reusable-document instance)
+- **addendum (Phase 45 triage, 2026-09-13, knowledge-curator):** mining
+  Phase 45's retro (`planning/retros/phase-45-ledgerkit-baseline.md`,
+  "Lessons learnt" #3 + "What was achieved") turned up a first real-world
+  adoption signal for the document L-010 concerns:  Ledgerkit has
+  independently stood up a `.claude/agents/context-curator.md` role and a
+  `validation/codecompass/` findings-intake mechanism, structurally
+  matching `codecompass-feedback-ingestion.md` almost exactly, discovered
+  incidentally while reading Ledgerkit's repo for an unrelated reason
+  (its Stage A closeout note) rather than sought out — with zero findings
+  filed yet. Considered filing this as a new standalone candidate;
+  **declined** — it isn't itself a "how we should work" observation the
+  way L-010's own two authoring techniques are, it's a fact about another
+  project's behaviour, and it's already captured durably in
+  `planning/reference-projects/ledgerkit.md` (the registration record)
+  and this phase's own retro, so a third copy in `planning/learnings/`
+  would be restating rather than adding. Filed here instead, as a
+  cross-reference: this is exactly the kind of evidence L-010's own
+  "revisit… when CodeCompass next authors a document meant for
+  cross-project or template use" trigger anticipates, and it strengthens
+  (without yet satisfying) the case for `adoption-blueprint.md`'s
+  scheduled Phase 55/GATE DD revision — an adopting project's real usage,
+  not just CodeCompass's own authoring intent, will be available to
+  revise against by then. Status unchanged (**retained** — no revision
+  has happened yet, only adoption).
 
 ### L-009 — fetching externally-authoritative text (e.g. licence text) directly from its own canonical source guarantees byte-fidelity that memory/a template can't
 

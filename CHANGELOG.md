@@ -9,6 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 45** (Stage B, second phase): registered **Ledgerkit** as
+  CodeCompass's first external reference project and produced its first
+  baseline evaluation. `planning/reference-projects/ledgerkit.md`
+  (registration record, live-reconfirmed against a pinned commit —
+  Ledgerkit's own "Core redefinition" landed the same day as the desk
+  assessment it supersedes: Milestone 5 "CLI Filter Flags" is now
+  `[SUPERSEDED]`) and `ledgerkit/00-baseline.md` (3 baseline
+  context-quality questions). **Q2 is the redefined-v1 effort's first-ever
+  FAIL verdict**: `codecompass query relations
+  dev-docs/hledger-compatibility.md` returned a confident "not found in
+  context-graph.db" for a real, current, 238-line file that is precisely
+  Ledgerkit's own designated hledger-1.52-compatibility governance
+  document, rather than an honest empty result. Root cause —
+  `spec_docs._DEFAULT_GLOBS` has no `dev-docs/**/*.md` entry — filed as
+  candidate context-gap **CG-002** (`recurred`: the same failure shape as
+  Phase 37's `ai-docs/` glob fix, this time surfaced by an external
+  project). A distinct symptom-layer finding — `query relations`'s "not
+  found" error is indistinguishable from a genuine typo — filed as
+  candidate learning **L-016** (retained). Q1's finding — `query vendors`
+  gives no signal that `[project.optional-dependencies]` exist but are
+  unscanned — filed as **L-015** (retained). Q1 and Q3 both verdict PASS
+  WITH GAPS / advantage LOW, honest expected-thin results. The
+  `context-health-planner`'s first genuine solo run
+  (`planning/context-health.md`) predicted LOW context-advantage for
+  Phase 46, with CG-002 directly load-bearing. `planning/phase-46-
+  ledgerkit-tasks.md` written, explicitly hedged since Ledgerkit's own
+  Stage B isn't yet scoped/approved and its roadmap already moved once
+  mid-Phase-45. No `src/codecompass/` change. `docs-reconstructor` drift
+  audit → NO DRIFT; `release-phase-auditor` → PASS WITH NON-BLOCKING
+  OBSERVATIONS (no blocking gap). `pytest` 554 passed / 2 skipped, `ruff
+  check .` clean, `check_user_docs.py --strict` clean.
+
 - **Phase 44** (Stage B's first phase): the reference-project protocol and
   context-quality evaluation spec are now operational, not just prose.
   New `planning/reference-projects/README.md` (registry + "how an

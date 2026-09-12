@@ -53,6 +53,40 @@ Entries are dated records — not rewritten.
 
 ## Entries (newest first)
 
+### 2026-09-12 · Phase 45 (Ledgerkit registration + baseline) · lead · bare `codecompass --budget 0` + `query vendors` / `query relations` against a fresh Ledgerkit clone (pinned `a3cf2a7`)
+
+- **retrieved:** ran CodeCompass against Ledgerkit as-is for the first
+  time — bare `codecompass --budget 0` (auto-discovery), `codecompass
+  check`, `query vendors`, and `query relations` for `README.md`,
+  `docs/journal-format.md`, and `dev-docs/hledger-compatibility.md`.
+  Result: 0 vendors tracked (`dependencies = []` in `pyproject.toml`;
+  `pandas` is a genuinely optional extra, correctly not auto-discovered);
+  `README.md`/`docs/journal-format.md` indexed as spec docs but with zero
+  relations (nothing to relate to); `dev-docs/hledger-compatibility.md`
+  — the file that actually states what governs hledger-1.52
+  compatibility — returned `error: not found in context-graph.db`
+  entirely, not "no relations." Filed as **CG-002** (the entire
+  `dev-docs/` tree is outside `spec_docs._DEFAULT_GLOBS`).
+- **default pathway:** `grep -rn "dependencies" pyproject.toml` for the
+  dependency question (one line, `dependencies = []`); `find dev-docs -name
+  "*.md"` + reading `dev-docs/hledger-compatibility.md` directly for the
+  compatibility question — both at least as fast as CodeCompass here,
+  and the second one *strictly better*, since CodeCompass currently
+  cannot see that file at all.
+- **advantage: LOW** — for the dependency question, matches the honest
+  expected outcome (`ledgerkit-plan.md`, `adoption-blueprint`-adjacent
+  `dev-docs/planning/core-redefinition/04-codecompass-integration.md`
+  both predicted this). For the compatibility-governance question,
+  CodeCompass was **strictly worse than direct inspection** — it didn't
+  just fail to add value, it returned nothing where the real answer
+  (`dev-docs/hledger-compatibility.md`) was one `find`+`read` away. This
+  is the first real Stage B datapoint of that shape.
+- **wrong or misleading?** partially — not a false claim, but silently
+  omitting an entire real spec-doc directory (vs. accurately reporting
+  "no relations" for the docs it does see) could read as "nothing governs
+  this" to an agent that doesn't know to check the glob list. Filed as
+  CG-002, not just noted here.
+
 ### 2026-09-12 · Phase 44 (reference-project protocol) · lead · `codecompass sync --budget 0` + `query vendor typer` / `query symbol Typer` against the repo's own (freshly rebuilt) `context-graph.db`
 
 - **retrieved:** this checkout had no `context-graph.db`/`vendor/` at all

@@ -8,6 +8,107 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
 
 ---
 
+### CG-002 — Ledgerkit's entire `dev-docs/` tree is invisible to spec-doc detection, not merely under-related
+
+- **origin:** Phase 45 (Ledgerkit registration + baseline); observed by the
+  lead while running the baseline "what governs hledger-1.52 compatibility"
+  question.
+- **date:** 2026-09-12
+- **codecompass_revision:** 6c3f34e (CodeCompass HEAD at the time)
+- **project:** ledgerkit, pinned commit `a3cf2a77ca0075fabd4f7153d2a19f45c6e69b97`
+- **the edge:** `A ↔ B` where A = the entire content of Ledgerkit's
+  `dev-docs/**/*.md` tree (`architecture.md`, `api-spec.md`,
+  `hledger-compatibility.md`, `SYNC.md`, and the whole
+  `dev-docs/planning/core-redefinition/*.md` governance package — the
+  documents that actually state what governs hledger-1.52 compatibility
+  and the project's own development process), B = `context-graph.db`'s
+  `doc_artifacts` table (`kind='spec_doc'`). A is **completely absent**
+  from B, not merely unrelated to anything.
+- **edge kind:** doc↔code (detection-scope gap, not a relationship gap
+  between two already-indexed things)
+- **agent's reasoning:** asked "what governs this project's hledger-1.52
+  compatibility behaviour" as one of Phase 45's baseline questions.
+  `codecompass query relations dev-docs/hledger-compatibility.md` → `error:
+  'dev-docs/hledger-compatibility.md' not found in context-graph.db` —
+  not "no relations found" (which is what `README.md` and
+  `docs/journal-format.md` correctly returned), but "this file was never
+  even considered a doc artifact." Confirmed by reading
+  `src/codecompass/spec_docs.py::_DEFAULT_GLOBS` directly: the fixed glob
+  list (`README.md`, `ARCHITECTURE.md`, `docs/**/*.md`,
+  `architecture/**/*.md`, `decisions/**/*.md`, `spec/**/*.md`,
+  `specs/**/*.md`, `rfcs/**/*.md`, `ai-docs/**/*.md`, a few root files) has
+  no entry for a `dev-docs/` convention. This is the identical shape to
+  the Phase 37 `ai-docs/` fix — "the module's own comment says it stays
+  fixed until a real project shows it's wrong for it" — except this time
+  the evidence comes from an *external* reference project (Ledgerkit),
+  which is exactly Stage B's purpose.
+- **what the graph shows instead:** nothing. `dev-docs/` produces zero
+  `doc_artifacts` rows of any kind; every file under it is fully invisible
+  to `query relations`, mechanical mention-detection, and any future
+  AI enrichment pass alike.
+- **could mechanical detection ever catch this?** yes-with-better-heuristics
+  — add `"dev-docs/**/*.md"` to `_DEFAULT_GLOBS`, exactly the Phase 37
+  precedent for `ai-docs/**/*.md`. A single-line, low-risk, deterministic
+  fix if the pattern is judged general enough (not just a Ledgerkit
+  special case — "dev docs" as a convention name is plausible across
+  other real projects, unlike a Ledgerkit-specific term).
+- **smallest candidate that would fix it:** a new glob entry in
+  `spec_docs._DEFAULT_GLOBS`, no new table/edge kind, no ADR-level model
+  change — a Stage C / GATE DB scale fix, not Stage E.
+- **classification:** detection-improvement (Stage C / GATE DB)
+- **status:** recurred
+- **recurrence:** second occurrence of the same failure shape.
+  Independently re-verified against the module itself, not taken on this
+  entry's own word: `src/codecompass/spec_docs.py`'s `_DEFAULT_GLOBS`
+  comment reads "ship with this fixed default list, add configurability
+  only once a real project shows it's wrong for it" (L19-21), and
+  `CHANGELOG.md`'s "Fixed" section records "**Phase 37**:
+  `spec_docs._DEFAULT_GLOBS` gains `\"ai-docs/**/*.md\"` — found live
+  during this repo's own dogfooding sync right after Phase 35 created
+  `ai-docs/README.md`/`ai-docs/CLAUDE.md`: neither was detected as a spec
+  doc at all, so `query relations ai-docs/README.md` errored 'not found
+  in…'" — the identical failure signature (a whole doc-directory
+  convention absent from the fixed glob list → "not found", not "no
+  relations") as this entry's Ledgerkit `dev-docs/` finding, confirmed
+  line-for-line rather than assumed from the resemblance alone.
+- **curation (Phase 45 triage, 2026-09-13, knowledge-curator):**
+  template fields all present and independently checked (see recurrence
+  verification above; `spec_docs.py::_DEFAULT_GLOBS` confirmed to still
+  lack a `dev-docs/**/*.md` entry as of this triage). **Outcome:
+  `candidate` → `recurred`, not `promoted-to-roadmap`.** Per
+  `decisions/0051` / `context-gaps/README.md`'s hard rule, a context-gap
+  "becomes authoritative only by promotion through the learning lifecycle
+  into… a mechanical-detection improvement — a Stage C decision, gated on
+  GATE DB (Phase 47)… Until then it is prose in this folder and nothing
+  more" — so no glob-list edit is being made here, and the move to
+  `recurred` is not a promotion, it is exactly the evidence-strengthening
+  step `README.md`'s "How it feeds the gates" section describes ("A gap
+  that recurs… is promoted from `candidate` to `recurred` and named in
+  the GATE DB/DD input"). Judgment call flagged explicitly since the two
+  occurrences differ in kind, not just in project: Phase 37's instance
+  predates the `context-gaps/` mechanism entirely (introduced Phase 43c)
+  and was fixed directly as ordinary dogfooding, not filed as a `CG-NNN`
+  entry — so this is not a literal second `CG` filing of the same gap,
+  it is the same underlying pattern (a hand-maintained fixed glob list
+  blind to an as-yet-unseen doc-directory convention) demonstrated twice,
+  once via CodeCompass's own dogfooding and once via an external
+  reference project. Given Stage B's whole purpose is exactly this kind
+  of external corroboration of a previously internal-only finding, and
+  given the failure signature is verified identical rather than merely
+  similar, this is treated as sufficient to strengthen the signal for
+  GATE DB's Phase 47 review, without being over-read as two independent
+  external occurrences. **Named for the GATE DB (Phase 47) input:** this
+  supports funding a Stage C phase that generalises `_DEFAULT_GLOBS`
+  handling (e.g. a `vendor.toml`-configurable spec-doc glob list, or a
+  wider default set) rather than continuing to patch one hard-coded entry
+  per newly-discovered project convention — see also `conditional-
+  generalisation.md` §1.2's hypothesis table (no exact row match today;
+  closest is the general "detection-improvement" bucket, not a specific
+  named hypothesis — worth GATE DB considering whether it deserves one).
+  **Not implementing the glob-list fix now** — that would pre-empt GATE
+  DB's funding decision, which is explicitly Phase 47's job, not this
+  triage's.
+
 ### CG-001 — one feature spread across three `src/` modules, with no edge joining them
 
 - **origin:** Phase 43 (`query skills` widen); observed by the lead while

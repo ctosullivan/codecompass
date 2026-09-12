@@ -80,6 +80,52 @@ row 44, the `v1-redefinition/roadmap.md` Phase 44 stanza, and the phase's
 own plan-file status line all now read `done`. **No gate blocks Phase
 45** — Stage B continues.
 
+**Phase 45 is `done` (2026-09-13) — CodeCompass's first external
+reference-project datapoint, and its first-ever FAIL verdict.**
+Registered **Ledgerkit** at a pinned commit
+(`a3cf2a77ca0075fabd4f7153d2a19f45c6e69b97`) into a scratch location
+outside this repo (`planning/reference-projects/ledgerkit.md`), reconfirmed
+live rather than trusting the stale 2026-09-12 desk assessment — Ledgerkit
+had undergone its own "Core redefinition" the same day, superseding
+Milestone 5 "CLI Filter Flags" (the task the desk assessment and Phase
+46's own draft plan were built around) into a new Stage C. `context-evaluator`
+produced a 3-question baseline report (`ledgerkit/00-baseline.md`): Q1
+(runtime dependencies) and Q3 (roadmap state) both PASS WITH GAPS / LOW
+advantage, honest expected-thin results; **Q2 (what governs hledger-1.52
+compatibility) is a FAIL** — `codecompass query relations
+dev-docs/hledger-compatibility.md` returned a confident "not found in
+context-graph.db" for a real, current, 238-line file that is precisely
+Ledgerkit's own designated compatibility-governance document, rather than
+an honest empty result. Root cause (`spec_docs.py::_DEFAULT_GLOBS` has no
+`dev-docs/**/*.md` entry) filed as **CG-002** (triaged to `recurred` — the
+same failure shape as Phase 37's `ai-docs/` fix, this time surfaced by an
+external reference project, not promoted to a roadmap row — that's Phase
+47/GATE DB's job). A distinct symptom-layer finding — `query relations`'s
+"not found" is indistinguishable from a genuine typo — filed as **L-016**
+(retained); Q1's optional-dependencies-silence finding filed as **L-015**
+(retained). `context-health-planner`'s first genuine solo run
+(`planning/context-health.md`, tracked forward from Phase 43c) predicted
+LOW context-advantage for Phase 46, with CG-002 directly load-bearing.
+**No `src/codecompass/` change.** Verified: `pytest` 554 passed / 2
+skipped, `ruff check .` clean, `check_user_docs.py --strict` clean.
+Closeout: `docs-reconstructor` drift audit
+(`planning/retros/_drift-audit-phase-45.md`) → **NO DRIFT**;
+`knowledge-curator` triage → CG-002 (`recurred`), L-015 (`retained`),
+L-016 (`retained`); `release-phase-auditor`
+(`planning/retros/_audit-phase-45.md`) → **PASS WITH NON-BLOCKING
+OBSERVATIONS** (no blocking gap; three advisory notes — the step-10
+interim reconciliation had nothing substantive to add this single
+continuous session; the plan file's own status header, now fixed to
+`done (2026-09-13)`; CG-002's context-gap-vs-candidate-learning
+classification is a defensible judgment call the entry itself already
+flags, worth GATE DB inheriting explicitly). Retro:
+`planning/retros/phase-45-ledgerkit-baseline.md`.
+`planning/phase-46-ledgerkit-tasks.md` written, explicitly hedged: the
+candidate task (a compat-register migration follow-up named by
+Ledgerkit's own Stage A closeout) requires live reconfirmation at Phase
+46's own start, since Ledgerkit's roadmap already moved once mid-Phase-45.
+**No gate blocks Phase 46.**
+
 **Stage A of the redefined-v1 roadmap is complete: Phases 39–43 are
 `done`.** Phase 43 dogfooded the full 14-step agent-led loop on a real
 `src/codecompass/` change (`query skills` widen, 43a) and **passed GATE
@@ -178,9 +224,11 @@ commit-hash placeholders), all addressed in this closeout commit. Retro:
 row 43b and the `v1-redefinition/roadmap.md` Phase 43b stanza both now
 read `done`.
 
-**Both Stage A→B bridge phases (43b, 43c) are closed out, as are 43d/43e
-and Phase 44. Next: Phase 45** (register Ledgerkit + baseline). No gate
-blocks it.
+**Both Stage A→B bridge phases (43b, 43c) are closed out, as are 43d/43e,
+44, and 45. Next: Phase 46** (the full per-task procedure against a
+genuine Ledgerkit task, reconfirmed live at that phase's own start since
+Ledgerkit's roadmap has already moved once mid-Phase-45 — Milestone 5 →
+`[SUPERSEDED]`). No gate blocks it.
 
 - **39** ratified the redefinition: ADRs `decisions/0048`/`0049`
   `Accepted`; `pyproject.toml` `version` → `1.0.0.dev0`; ROADMAP's Stage
@@ -310,6 +358,41 @@ dependencies now carry lower-bound version pins (`decisions/0047`), and
 were cleaned up (Phase 38).
 
 ## What was just completed
+
+**Phase 45, `done`** (2026-09-13) — Stage B's second phase, and
+CodeCompass's first external reference-project datapoint. Registered
+**Ledgerkit** at a pinned commit
+(`a3cf2a77ca0075fabd4f7153d2a19f45c6e69b97`) into a scratch location
+outside this repo, reconfirmed live rather than trusting the stale
+2026-09-12 desk assessment — Ledgerkit had undergone its own "Core
+redefinition" the same day, superseding Milestone 5 "CLI Filter Flags"
+into a new Stage C. `context-evaluator`'s 3-question baseline report
+(`planning/reference-projects/ledgerkit/00-baseline.md`) found Q1
+(runtime dependencies) and Q3 (roadmap state) both PASS WITH GAPS / LOW
+advantage, and **Q2 (what governs hledger-1.52 compatibility) FAIL — the
+redefined-v1 effort's first-ever FAIL verdict**: `codecompass query
+relations dev-docs/hledger-compatibility.md` returned a confident "not
+found in context-graph.db" for a real, current, 238-line file that is
+precisely Ledgerkit's own designated compatibility-governance document.
+Root cause (`spec_docs.py::_DEFAULT_GLOBS` has no `dev-docs/**/*.md`
+entry) filed as **CG-002** (triaged to `recurred`, not promoted — that's
+Phase 47/GATE DB's job); the distinct symptom-layer finding that `query
+relations`'s "not found" is indistinguishable from a genuine typo filed
+as **L-016** (retained); Q1's optional-dependencies-silence finding filed
+as **L-015** (retained). `context-health-planner`'s first genuine solo
+run predicted LOW context-advantage for Phase 46, CG-002 directly
+load-bearing. **No `src/codecompass/` change.** Verified: `pytest` 554
+passed / 2 skipped, `ruff check .` clean, `check_user_docs.py --strict`
+clean. Closeout: `docs-reconstructor` drift audit
+(`planning/retros/_drift-audit-phase-45.md`) → **NO DRIFT**;
+`knowledge-curator` triage → CG-002 (`recurred`), L-015 (`retained`),
+L-016 (`retained`); `release-phase-auditor`
+(`planning/retros/_audit-phase-45.md`) → **PASS WITH NON-BLOCKING
+OBSERVATIONS** (no blocking gap; three advisory notes, none requiring
+rework — see the Next concrete step section). Retro:
+`planning/retros/phase-45-ledgerkit-baseline.md`.
+`planning/phase-46-ledgerkit-tasks.md` written, explicitly hedged since
+Ledgerkit's own Stage B isn't yet scoped/approved.
 
 **Phase 44, `done`** (2026-09-12) — Stage B's first phase. Turned
 `reference-project-protocol.md` + `context-quality-evaluation.md` into
@@ -712,32 +795,38 @@ relationships found, not yet AI-enriched — see Next concrete step).
 ## Next concrete step
 
 **Stage A is complete (Phases 39–43e `done`, GATE DA passed). All Stage
-A→B bridge phases (43b, 43c) and Stage B's first phase (44) are `done`
-and fully closed out.**
+A→B bridge phases (43b, 43c) and Stage B's first two phases (44, 45) are
+`done` and fully closed out.**
 
-**Phase 44 closeout (done):** `docs-reconstructor` drift audit
-(`planning/retros/_drift-audit-phase-44.md`) → **NO DRIFT**;
-`knowledge-curator` triage → L-012 (retained), **L-013** (promoted — the
-`agent-led-workflow.md` step 10/14 amendment), L-014 (discarded);
-`release-phase-auditor` (`planning/retros/_audit-phase-44.md`) → **PASS
-WITH NON-BLOCKING OBSERVATIONS** (no blocking gap). ROADMAP row `44` /
-the `v1-redefinition/roadmap.md` Phase 44 stanza / the plan file's own
-status line all flipped to `done` in this commit. Retro:
-`planning/retros/phase-44-reference-project-protocol.md`.
-**Process amendment landed this phase (L-013):**
-`planning/agent-led-workflow.md` step 10 is now an explicit *interim*
-reconciliation (never flips `ROADMAP.md` to `done`); step 14 is the
-*final* done-flipping reconciliation, run once per phase after the retro
-(11), triage (12), and completion audit (13) — this closeout is its
-first real exercise.
+**Phase 45 closeout (done):** `docs-reconstructor` drift audit
+(`planning/retros/_drift-audit-phase-45.md`) → **NO DRIFT**;
+`knowledge-curator` triage → **CG-002** (`recurred` — not promoted, that's
+Phase 47/GATE DB's job), **L-015** (retained), **L-016** (retained);
+`release-phase-auditor` (`planning/retros/_audit-phase-45.md`) → **PASS
+WITH NON-BLOCKING OBSERVATIONS** (no blocking gap). ROADMAP row `45` /
+the `v1-redefinition/roadmap.md` Phase 45 stanza / the plan file's own
+status line (`done (2026-09-13)`) all flipped to `done` in this commit.
+Retro: `planning/retros/phase-45-ledgerkit-baseline.md`. Three
+non-blocking audit observations, none requiring rework: (1) the
+workflow's interim step-10 reconciliation had nothing substantive to add
+this single continuous session, not a skip; (2) the plan file's own
+status header — already fixed directly by the lead to
+`done (2026-09-13)`; (3) CG-002's context-gap-vs-candidate-learning
+classification is a defensible judgment call, already flagged by the
+entry itself — recorded here for GATE DB (Phase 47) to inherit
+explicitly rather than rediscover.
 
-**Immediate next step: Phase 45**
-([`phase-45-ledgerkit-baseline.md`](phase-45-ledgerkit-baseline.md),
-written by Phase 44) — register **Ledgerkit** at a pinned commit, run
-CodeCompass against it as-is, produce a `context-evaluator` baseline
-context-quality report, and run the `context-health-planner`'s first
-genuine solo run (tracked follow-up from Phase 43c, pinned to before
-Phase 45). **No gate blocks it.**
+**Immediate next step: Phase 46**
+([`phase-46-ledgerkit-tasks.md`](phase-46-ledgerkit-tasks.md), written by
+Phase 45) — the full per-task procedure
+(`reference-project-protocol.md` §2.4) against a genuine Ledgerkit task.
+**Explicitly hedged, not fixed by the plan file:** Ledgerkit's own Stage
+B isn't yet scoped/approved, and its roadmap already moved once
+mid-Phase-45 (Milestone 5 "CLI Filter Flags" → `[SUPERSEDED]`) — the
+plan's recommended candidate (a compat-register migration follow-up
+named by Ledgerkit's own Stage A closeout) must be reconfirmed live, or
+superseded by whatever is genuinely current, at this phase's own start.
+**No gate blocks it.**
 
 **Phase 43c closeout (done):** `docs-reconstructor` drift audit → **NO
 DRIFT**; `knowledge-curator` triage → `CG-001` `candidate` + **L-007**

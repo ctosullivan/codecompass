@@ -350,9 +350,48 @@ finding — proceed to Stage C early with whatever evidence exists.
   dependency filed as a `planning/context-gaps/` entry per
   `decisions/0051`). Phase 43c created the agent but the lead wrote its
   first (own-repo) assessment by hand; this is its first solo run.
+- **Status:** **done (2026-09-13).** `planning/reference-projects/ledgerkit.md`
+  (registration record, live-reconfirmed — Ledgerkit's own "Core
+  redefinition" landed the same day as the stale desk assessment;
+  Milestone 5 "CLI Filter Flags" is now `[SUPERSEDED]`, folded into a new
+  Stage C) + `ledgerkit/00-baseline.md` (3 baseline questions). **Q2 is
+  the redefined-v1 effort's first FAIL verdict:** a confident "not found
+  in context-graph.db" for a real, current, 238-line file
+  (`dev-docs/hledger-compatibility.md`) that is precisely Ledgerkit's own
+  designated hledger-1.52-compatibility governance document — root cause
+  `spec_docs.py::_DEFAULT_GLOBS` has no `dev-docs/**/*.md` entry, filed as
+  **CG-002** (`recurred` — second occurrence of the same shape as Phase
+  37's `ai-docs/` fix, this time from an external reference project) and
+  a distinct symptom-layer finding **L-016** ("not found" indistinguishable
+  from a typo, retained). Q1 (optional-dependencies silence, **L-015**,
+  retained) and Q3 (no roadmap-summary mechanism, not a gap CodeCompass
+  claims to fill) both PASS WITH GAPS / LOW advantage — honest,
+  expected-thin results. `context-health-planner`'s first genuine solo run
+  predicted LOW advantage for Phase 46, CG-002 load-bearing.
+  `planning/phase-46-ledgerkit-tasks.md` written, explicitly hedged (see
+  its own Phase 46 stanza amendment below). No `src/codecompass/` change.
+  `docs-reconstructor` drift audit → NO DRIFT; `release-phase-auditor` →
+  PASS WITH NON-BLOCKING OBSERVATIONS (no blocking gap; three advisory
+  notes — the step-10 interim reconciliation had nothing substantive to
+  say this single-session phase; the plan file's own status header now
+  fixed; CG-002's context-gap-vs-learning classification is a flagged,
+  defensible judgment call GATE DB inherits explicitly). Retro:
+  `planning/retros/phase-45-ledgerkit-baseline.md`. No gate blocks Phase
+  46.
 
 ### Phase 46 — CodeCompass during genuine Ledgerkit tasks · EXPERIMENTAL
 - **Plan:** `planning/phase-46-ledgerkit-tasks.md`
+- **Amended 2026-09-13 (Phase 45 closeout):** the "Does" bullet's named
+  task, Milestone 5 "CLI Filter Flags", is now **stale** — Ledgerkit's own
+  "Core redefinition" (discovered live at Phase 45 registration, same day
+  as the desk assessment below) marked it `[SUPERSEDED]`, folded into a
+  new Stage C. `planning/phase-46-ledgerkit-tasks.md`'s own recommended
+  candidate is now the compat-register migration follow-up named by
+  Ledgerkit's Stage A closeout — itself explicitly hedged, requiring live
+  reconfirmation at this phase's own start, since Ledgerkit's roadmap has
+  already moved once mid-Phase-45. Not rewriting the "Does" text below;
+  treat it as superseded by this note and the plan file, per the same
+  discipline this phase itself demonstrated.
 - **Does:** for each of N genuine tasks drawn from Ledgerkit's own
   roadmap (its root `ROADMAP.md` — confirmed live: **Milestone 5, "CLI
   Filter Flags", `[PLANNED]`**, wiring the existing `Query` dataclass to
