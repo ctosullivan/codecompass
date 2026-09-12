@@ -437,9 +437,9 @@ blocks the *phase* that acts on it. Ordered by when they first bite.
 | **G8** | Any CLI breaking change introduced by Stage C or E migration (`migration.md` flags each) | The specific phase | Prefer additive; breaking changes need their own ADR + this gate |
 | **G9** | Redefined-v1 release: drop `.dev0` → `1.0.0`, `twine upload` (first-ever publish), `v1.0.0` tag, `[Unreleased]` → dated section, public positioning change | Phase 67 | The terminal gate; same irreversibility posture as the old Phase 23 Part B |
 | **G10** | Public product positioning / messaging change (README "what it is", `ai-docs/`) from "dependency reference docs" to "task context map for agents" | Phase 64–70 | Decided at closeout with the reconstructed docs in hand |
-| **G11** | *(added 2026-09-12)* Roadmap restructuring: Ledgerkit becomes Stage B, Technical Clipper becomes a new Stage F; phases 45–70 renumbered (none started) | Phase 44's retarget / any Phase 45+ work | Yes — `realignment-2026-09.md` + amended `roadmap.md` |
-| **G12** | *(added 2026-09-12)* GPL-3.0-or-later relicensing (`LICENSE`, `pyproject.toml`, `README.md`, `CONTRIBUTING.md`; ADR `decisions/0053`) | Phase 43d's mechanical step | Recommended — legally simple case (`licence-migration.md` §2), but its own explicit gate given the downstream effect on users |
-| **G13** | *(added 2026-09-12)* Approve `adoption-blueprint.md` as the version handed to Ledgerkit | Phase 43e completion / before Ledgerkit applies it | Recommended — low risk, but becomes a cross-project contract |
+| **G11** | ✅ **DECIDED 2026-09-12** ("Proceed as recommended") — roadmap restructuring: Ledgerkit is Stage B, Technical Clipper is a new Stage F; phases 45–70 renumbered (none started); `decisions/0052` Accepted | Phase 44's retarget / any Phase 45+ work | done |
+| **G12** | ✅ **DECIDED 2026-09-12** ("Proceed as recommended") — GPL-3.0-or-later relicensing implemented: `LICENSE`, `pyproject.toml`, `README.md`, `CONTRIBUTING.md` updated; `decisions/0053` Accepted | Phase 43d's mechanical step | done |
+| **G13** | ✅ **DECIDED 2026-09-12** ("Proceed as recommended") — `adoption-blueprint.md` approved as the version handed to Ledgerkit | Phase 43e completion / before Ledgerkit applies it | done |
 
 ### Success criteria for *this planning session* (all met)
 

@@ -231,7 +231,7 @@ apply. Noted, not a concern.
   once registered — **now Ledgerkit** (see the Phase 45 stanza; amended
   by the 2026-09-12 realignment, was Technical Clipper).
 
-### Phase 43d — GPL-3.0-or-later relicensing plan · COMMITTED (plan) / CONDITIONAL (mechanics)
+### Phase 43d — GPL-3.0-or-later relicensing · COMMITTED
 - **Plan:** `planning/phase-43d-gpl-relicensing-plan.md`
 - **Depends on:** none technically; requested by the 2026-09-12
   realignment task.
@@ -246,10 +246,14 @@ apply. Noted, not a concern.
 - **Exit (plan-only):** `licence-migration.md` committed; ADR draft
   `decisions/0053` staged in `proposed-governance-changes.md` §C, not yet
   written to `decisions/`.
-- **Exit (mechanics, once G12 resolves):** `LICENSE`/`pyproject.toml`/
-  `README.md` updated in one dated commit; `decisions/0053` moved to
-  `Accepted`; `CHANGELOG.md` entry added.
-- **Status:** planned (plan committed 2026-09-12; mechanics pending G12).
+- **Exit (mechanics):** `LICENSE`/`pyproject.toml`/`README.md`/
+  `CONTRIBUTING.md` updated in one dated commit; `decisions/0053` moved
+  to `Accepted`; `CHANGELOG.md` entry added.
+- **Status:** **done (2026-09-12).** Gate G12 approved ("Proceed as
+  recommended"). `pip install -e .` reports `License: GPL-3.0-or-later`;
+  `ruff check .` clean; `python scripts/check_user_docs.py --strict`
+  clean. No historical commit/release rewritten (none exist under any
+  licence).
 
 ### Phase 43e — Reusable agent-led adoption blueprint · COMMITTED
 - **Plan:** `planning/phase-43e-agent-led-adoption-blueprint.md`
@@ -264,9 +268,9 @@ apply. Noted, not a concern.
 - **Exit:** `adoption-blueprint.md` committed; **gate G13** (light —
   no governance-file change, but it becomes a cross-project contract
   once Ledgerkit applies it).
-- **Status:** planned (content drafted 2026-09-12 as part of this
-  realignment; formal phase closeout — retro, triage, audit — pending
-  the user's go-ahead to execute Stage A's remaining bridge work).
+- **Status:** **done (2026-09-12).** Gate G13 approved ("Proceed as
+  recommended") — `adoption-blueprint.md` is the approved version handed
+  to Ledgerkit.
 
 ---
 

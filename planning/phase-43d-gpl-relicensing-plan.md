@@ -1,6 +1,14 @@
 # Phase 43d: GPL-3.0-or-later relicensing plan
 
-**Status:** planned (plan committed 2026-09-12; mechanics pending gate G12)
+**Status:** done (2026-09-12). Gate G12 approved ("Proceed as
+recommended"); mechanical edits landed the same session:
+`LICENSE` (canonical GPL-3.0-or-later text + CodeCompass notice block),
+`pyproject.toml` (`license` field + classifier), `README.md`
+(`## License` section), `CONTRIBUTING.md` (licence note). `decisions/0053`
+written as `Accepted`. Verified: `pip install -e .` succeeds and reports
+`License: GPL-3.0-or-later`; `ruff check .` clean;
+`python scripts/check_user_docs.py --strict` clean. No historical commit
+or release rewritten (none exist under any licence).
 
 A Stage-A bridge phase from the 2026-09-12 realignment
 (`planning/v1-redefinition/realignment-2026-09.md`). Plans the licence

@@ -200,4 +200,7 @@ status (`planning/CONTEXT.md` reflects the current state).
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+GPL-3.0-or-later — see [`LICENSE`](LICENSE). Previously MIT; see
+[`decisions/0053`](decisions/0053-relicense-to-gpl-3.0-or-later.md) for
+the relicensing rationale (aligning with `hledger`'s own licence family
+ahead of deeper source-assisted, hledger-facing development work).

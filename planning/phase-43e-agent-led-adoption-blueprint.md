@@ -1,6 +1,11 @@
 # Phase 43e: Reusable agent-led adoption blueprint
 
-**Status:** planned (content drafted 2026-09-12; formal phase closeout pending)
+**Status:** done (2026-09-12). Gate G13 approved ("Proceed as
+recommended") — `adoption-blueprint.md` is now the approved version
+CodeCompass hands to Ledgerkit. Content was drafted alongside the
+realignment package; this closeout confirms the gate and runs the
+standard agent-led verification (drift audit, learnings triage,
+independent audit — see the phase retro).
 
 A Stage-A bridge phase from the 2026-09-12 realignment
 (`planning/v1-redefinition/realignment-2026-09.md`). Writes the reusable

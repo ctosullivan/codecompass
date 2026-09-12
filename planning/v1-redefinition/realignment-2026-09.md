@@ -298,15 +298,17 @@ These are **additional** to `README.md` §7/§14's existing table (G1–G10,
 all resolved except G6–G10 which remain conditional on later evidence).
 None blocks *writing* plans; each blocks the *phase* that acts on it.
 
-| Gate | Decision | Needed before | Recommendation |
-|---|---|---|---|
-| **G11** | Roadmap restructuring: Ledgerkit becomes the Stage B reference project, Technical Clipper moves to a new Stage F cross-ecosystem-regression role; phases 45–67 renumbered (none started); GATE letters DB/DC/DD/DE keep their meaning, GATE DF is new | Phase 44's retarget (its "writes Phase 45" line) and any Phase 45+ work | Yes — this document + the amended `roadmap.md` is the specified restructuring |
-| **G12** | GPL-3.0-or-later relicensing: replace `LICENSE`, `pyproject.toml` metadata, README/docs licence statements; publish ADR `decisions/0053` | Phase 43d's mechanical step (planning itself is ungated) | Recommended (§5) — legally simple case, but a licence change is a one-way-feeling decision for downstream users even when technically reversible, so treated as its own explicit gate rather than folded into G11 |
-| **G13** | Agent-led adoption blueprint: approve `adoption-blueprint.md` as the version CodeCompass hands to Ledgerkit (and, later, other adopting projects) | Phase 43e completion / before Ledgerkit applies it (Stage B) | Recommended — no governance-file change, low risk, but the document becomes a cross-project contract once used, so worth an explicit nod |
+**All three resolved 2026-09-12** ("Proceed as recommended").
 
-**No implementation proceeds from this document until the user reviews
-it.** This mirrors the original v1-redefinition session's own posture —
-plan first, gates surfaced, then proceed only on explicit instruction.
+| Gate | Decision | Needed before | Resolution |
+|---|---|---|---|
+| **G11** | Roadmap restructuring: Ledgerkit becomes the Stage B reference project, Technical Clipper moves to a new Stage F cross-ecosystem-regression role; phases 45–67 renumbered (none started); GATE letters DB/DC/DD/DE keep their meaning, GATE DF is new | Phase 44's retarget (its "writes Phase 45" line) and any Phase 45+ work | ✅ **Approved** — `decisions/0052` Accepted; `roadmap.md` amended |
+| **G12** | GPL-3.0-or-later relicensing: replace `LICENSE`, `pyproject.toml` metadata, README/docs licence statements; publish ADR `decisions/0053` | Phase 43d's mechanical step (planning itself is ungated) | ✅ **Approved and executed** (Phase 43d) — `LICENSE`/`pyproject.toml`/`README.md`/`CONTRIBUTING.md` updated; `decisions/0053` Accepted |
+| **G13** | Agent-led adoption blueprint: approve `adoption-blueprint.md` as the version CodeCompass hands to Ledgerkit (and, later, other adopting projects) | Phase 43e completion / before Ledgerkit applies it (Stage B) | ✅ **Approved** (Phase 43e) |
+
+This mirrored the original v1-redefinition session's own posture — plan
+first, gates surfaced, proceed only on explicit instruction — which the
+user then gave ("Proceed as recommended").
 
 ---
 
@@ -348,3 +350,12 @@ plan first, gates surfaced, then proceed only on explicit instruction.
 21. The final v1 release gate (G9) is unchanged and still requires explicit approval (§7, unchanged from `README.md`).
 22. No broad implementation has started (planning artifacts + two small, ungated-content phase plan files only).
 23. A fresh subsequent session could implement Phase 43e (the blueprint) or, once G12 resolves, Phase 43d (the licence mechanics), using only this package.
+
+**Update, same day (2026-09-12):** the user resolved all three gates
+("Proceed as recommended"). Phase 43d (GPL-3.0-or-later relicensing) and
+Phase 43e (adoption blueprint) executed the same session — see their
+plan files' status lines, `decisions/0052`/`0053` (`Accepted`), and
+`planning/retros/phase-43d-gpl-relicensing-plan.md` /
+`phase-43e-agent-led-adoption-blueprint.md`. This §9 list above remains
+the historical record of the planning-only commit's own state at the
+time it was written (`411cda6`) — not retroactively edited.

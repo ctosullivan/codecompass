@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **BREAKING (licensing): Phases 43d + 43e** — gates G11/G12/G13 approved
+  ("Proceed as recommended", 2026-09-12), executed the same session.
+  **CodeCompass is now licensed GPL-3.0-or-later (was MIT)** — `LICENSE`
+  replaced with the canonical GPL-3.0-or-later text (fetched verbatim
+  from `hledgerorg/hledger`'s own `LICENSE` file, unmodified per the
+  FSF's own instructions, plus a CodeCompass copyright/notice block);
+  `pyproject.toml`'s `license` field and classifier updated (verified
+  live: `pip install -e .` + `pip show codecompass` reports
+  `License: GPL-3.0-or-later`); `README.md` and `CONTRIBUTING.md` gain
+  License sections pointing at the rationale. `decisions/0052` (Ledgerkit
+  is the next reference project, ratifying gate G11 — no file changes
+  beyond the already-amended planning docs from the prior commit) and
+  `decisions/0053` (the relicensing itself, ratifying gate G12) written
+  as `Accepted`, superseding their proposed drafts in
+  `proposed-governance-changes.md` §C. `planning/v1-redefinition/adoption-blueprint.md`
+  approved as the version handed to Ledgerkit (gate G13, Phase 43e) — no
+  content change from the prior commit, just the gate resolving.
+  **Nothing published/tagged is affected** — no git tag exists, nothing
+  has ever shipped to PyPI, so no historical release needs
+  reconciling; individual past commits remain, as a historical fact,
+  made under MIT at the time. `docs-reconstructor` drift audit → **NO
+  DRIFT**; `knowledge-curator` triage filed **L-009** (fetch
+  canonical upstream text for byte-fidelity, retained) and **L-010** (a
+  reusable document should cite its justifying incidents + state a
+  revision policy, retained). No `src/codecompass/` change, no test
+  change; `ruff check .` clean, `python scripts/check_user_docs.py
+  --strict` clean.
+
 - **2026-09-12 realignment** (planning only — `planning/v1-redefinition/realignment-2026-09.md`,
   gate G11): reassessed and reordered the remaining redefined-v1 roadmap.
   **Ledgerkit is now Stage B** (the first external reference project;

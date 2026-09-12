@@ -287,13 +287,15 @@ renumbered. Historical tables and "v1.0 scope notes" above are unchanged
 release".
 
 **Realigned by the 2026-09-12 reassessment**
-([`v1-redefinition/realignment-2026-09.md`](v1-redefinition/realignment-2026-09.md),
-gate G11): Ledgerkit becomes Stage B/D (was Stage D only, second);
+([`v1-redefinition/realignment-2026-09.md`](v1-redefinition/realignment-2026-09.md)) —
+**gates G11, G12, G13 all approved** ("Proceed as recommended",
+2026-09-12): Ledgerkit becomes Stage B/D (was Stage D only, second);
 Technical Clipper becomes a new Stage F, later. Phases 39–43c are
 unchanged/`done`/not renumbered; phases 45–67 (none started) are
 renumbered 45–70 to make room for the new Stage F. Two new Stage-A
-bridge phases added: **43d** (GPL-3.0-or-later relicensing plan, gate
-G12) and **43e** (reusable agent-led adoption blueprint, gate G13).
+bridge phases, both **done**: **43d** (GPL-3.0-or-later relicensing —
+`decisions/0053`) and **43e** (reusable agent-led adoption blueprint).
+`decisions/0052` (the reorder) is also `Accepted`.
 
 Gate **G4** (`CLAUDE.md` §8/§5/§1/§6 changes for the agent-led model) was
 approved and applied in **Phase 40** (2026-09-09), mirrored into
@@ -322,8 +324,8 @@ a named gate; may be dropped) / **DEFERRED** (revisit trigger named).
 | 43 | Dogfood the agent-led loop on a real change (`query skills` widen — [`43a`](phase-43a-query-skills-widen-kinds.md)) — **GATE DA passed** (roster stays at 7, no pruning, 4 amendments + `43b`) | COMMITTED | done | [`phase-43-dogfood-agent-led-workflow.md`](phase-43-dogfood-agent-led-workflow.md) |
 | 43b | Two `check_user_docs.py` rules from GATE DA (deleted-names-as-live; generated-artifacts-match-source) — runs before Phase 44 | COMMITTED | done | [`phase-43b-standing-doc-drift-checks.md`](phase-43b-standing-doc-drift-checks.md) |
 | 43c | Stage A→B bridge: agent context-suggestion capture pathway (`planning/context-gaps/`), context-vs-default-pathway eval per use (`context-use-log.md`), context-health planning (`context-health.md` + `context-health-planner`, the roster's 8th agent — user-approved Option A; GATE DA's "roster stays at 7" was about pruning, not a cap on adding). Capture + evidence only — **no `src/` change** (that's Stage C/E, gated). `decisions/0051`. | COMMITTED | done | [`phase-43c-agent-context-pathways.md`](phase-43c-agent-context-pathways.md) |
-| 43d | GPL-3.0-or-later relicensing plan (aligns with `hledger`'s own confirmed licence) — **gate G12** holds the mechanical edits | COMMITTED (plan) | planned | [`phase-43d-gpl-relicensing-plan.md`](phase-43d-gpl-relicensing-plan.md) |
-| 43e | Reusable agent-led adoption blueprint (`adoption-blueprint.md`) — **gate G13** | COMMITTED | planned | [`phase-43e-agent-led-adoption-blueprint.md`](phase-43e-agent-led-adoption-blueprint.md) |
+| 43d | GPL-3.0-or-later relicensing (aligns with `hledger`'s own confirmed licence) — **gate G12 approved**, `LICENSE`/`pyproject.toml`/`README.md`/`CONTRIBUTING.md` updated, `decisions/0053` Accepted | COMMITTED | done | [`phase-43d-gpl-relicensing-plan.md`](phase-43d-gpl-relicensing-plan.md) |
+| 43e | Reusable agent-led adoption blueprint (`adoption-blueprint.md`) — **gate G13 approved** | COMMITTED | done | [`phase-43e-agent-led-adoption-blueprint.md`](phase-43e-agent-led-adoption-blueprint.md) |
 | 44 | Reference-project protocol + context-quality eval spec (project-agnostic; retargeted to write Phase 45's Ledgerkit plan) | COMMITTED | planned | [`phase-44-reference-project-protocol.md`](phase-44-reference-project-protocol.md) |
 | 45 | Register **Ledgerkit** + baseline evaluation *(was Technical Clipper — reordered 2026-09-12, gate G11)* | EXPERIMENTAL | not started | — (written in Phase 44) |
 | 46 | CodeCompass during a genuine Ledgerkit task (Milestone 5: CLI filter flags) + independent evals | EXPERIMENTAL | not started | — |

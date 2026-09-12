@@ -8,6 +8,123 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-010 — a reusable/exported document is stronger when it cites the specific incident behind each recommendation and states its own revision policy up front
+
+- **origin:** Phase 43e (`adoption-blueprint.md`; retro "Lessons learnt"
+  #1 and #2)
+- **date:** 2026-09-12
+- **project_revision:** e2f7122 (current HEAD at triage time; the 43d/43e
+  planning-doc changes — `licence-migration.md`, `adoption-blueprint.md`,
+  `decisions/0052`/`0053` — are this session's uncommitted work, not yet
+  in a closeout commit)
+- **observation:** `planning/v1-redefinition/adoption-blueprint.md` — a
+  document explicitly written to be handed to a *different* project
+  (Ledgerkit) and later revised from its real adoption experience (§10) —
+  uses two authoring techniques its own retro identifies as load-bearing
+  for that kind of document specifically: (1) recommendations cite the
+  concrete CodeCompass phase/incident that justified them rather than
+  reading as generic agent-led-development advice (e.g. §0's
+  `[CODECOMPASS-GENERATED]` tag names Phase 43b's
+  `check_generated_artifacts_match_source` explicitly as "a real
+  incident, not a hypothetical"; §7 names Phases 41/42/43/43b/43c as the
+  phases `release-phase-auditor` caught a real gap in); (2) §10 states,
+  before any external party has actually used the document, that it is
+  "deliberately not treated as finished on first write" and schedules its
+  own revision (Phase 55/GATE DD). Both are reusable techniques for *any
+  future CodeCompass-authored document meant for consumption outside this
+  repository or as a template* — not specific to this one blueprint.
+- **evidence:**
+  `planning/retros/phase-43e-agent-led-adoption-blueprint.md` "Lessons
+  learnt" #1 and #2;
+  `planning/v1-redefinition/adoption-blueprint.md` §0 (the
+  `[CODECOMPASS-GENERATED]` tag citing Phase 43b), §7 (naming Phases
+  41/42/43/43b/43c), §10 ("Revision policy").
+- **classification:** scoped-rule
+- **status:** retained
+- **recurrence:** first occurrence
+- **curation (Phase 43d+43e triage, 2026-09-12, knowledge-curator):**
+  provenance accepted — both retro lessons and all three cited
+  `adoption-blueprint.md` sections exist and say what this candidate
+  claims (independently re-read, not taken on the retro's word alone).
+  **Outcome: retain**, not promote. Real and specific, but single
+  occurrence and no clean destination agent today — this document lives
+  under `planning/v1-redefinition/`, which no specialist agent owns the
+  way `docs-maintainer` owns `docs/`/`architecture/` (the lead writes it
+  directly). Checked `codecompass-feedback-ingestion.md` (the other
+  reusable/exported document written this same session) as a possible
+  second instance: it partially matches — it cites the concrete
+  documents/decisions it's built from (`context-quality-evaluation.md`,
+  `reference-project-protocol.md` §2.6, `decisions/0051`) rather than
+  reading as generic advice — but it has no explicit "this is not
+  finished on first write" revision-policy section, so it isn't a clean
+  second occurrence of *both* techniques. Not counted as recurrence.
+  Plausible destination once/if a second instance is needed: a short
+  authoring note wherever future reusable/exported planning documents get
+  written — `planning/agent-led-workflow.md` or
+  `planning/v1-redefinition/documentation-lifecycle.md` are the two
+  candidate homes, decided at that time. Revisit when
+  `adoption-blueprint.md` is actually revised (Phase 55/GATE DD, per its
+  own §10) or when CodeCompass next authors a document meant for
+  cross-project or template use.
+- **promoted_to:** — (retained; no destination artifact yet, revisit
+  Phase 55/GATE DD or on a second reusable-document instance)
+
+### L-009 — fetching externally-authoritative text (e.g. licence text) directly from its own canonical source guarantees byte-fidelity that memory/a template can't
+
+- **origin:** Phase 43d (GPL-3.0-or-later relicensing; retro "What
+  worked" #1 and "Lessons learnt" #2)
+- **date:** 2026-09-12
+- **project_revision:** e2f7122 (current HEAD at triage time; `LICENSE`,
+  `pyproject.toml`, `decisions/0052`/`0053` are this session's
+  uncommitted work, not yet in a closeout commit)
+- **observation:** `LICENSE`'s new GPL-3.0-or-later text was fetched
+  directly from `hledgerorg/hledger`'s own `LICENSE` file via `gh api`,
+  rather than retyped or reconstructed from training-data memory of "the
+  GPL text" — per the FSF's own instruction that licence text must not be
+  modified, and specifically because this relicensing's whole stated
+  purpose (`licence-migration.md` §1) is alignment with hledger's own
+  licence family, so verified byte-parity with hledger's actual file is
+  stronger evidence than "this is probably the same GPL text everyone
+  uses." This is the same underlying discipline the project already
+  applies to vendored dependencies (root `CLAUDE.md`'s vendor table:
+  "Consult the linked digest before relying on training knowledge";
+  `.claude/skills/codecompass-{rich,typer,anthropic}/SKILL.md`: "retrieved
+  from its own upstream repository — not from training knowledge") but
+  applied here to a different artifact class (legal/licence text, not a
+  library API) and with no existing mechanism enforcing it for that
+  class.
+- **evidence:**
+  `planning/retros/phase-43d-gpl-relicensing-plan.md` "What worked" #1
+  and "Lessons learnt" #2; `planning/v1-redefinition/licence-migration.md`
+  §3 ("Replace MIT text with the canonical GPL-3.0-or-later `COPYING`
+  text… the FSF's own instructions: use the license text verbatim,
+  unmodified"); `CLAUDE.md`'s vendor table caution as the existing analog
+  for a different artifact class.
+- **classification:** scoped-rule
+- **status:** retained
+- **recurrence:** first occurrence
+- **curation (Phase 43d+43e triage, 2026-09-12, knowledge-curator):**
+  provenance accepted — retro text, `licence-migration.md` §3, and the
+  vendor-table analog all independently re-read and confirmed. **Outcome:
+  retain**, not promote. Real and a genuinely reusable discipline (fetch
+  canonical text live rather than trust memory, whenever byte-exactness
+  with a specific external source is the actual point), but this
+  particular instance — relicensing — is a single, already-completed,
+  not-currently-recurring event; no future phase is scheduled to touch
+  `LICENSE` again. No clean destination agent either: editing `LICENSE`
+  is the lead's own direct action, not a specialist-agent's remit, so
+  there is no `.claude/agents/*.md` brief to amend today. Plausible future
+  destination if this recurs: a short line in
+  `CONTRIBUTING.md`/`CLAUDE.md`'s vendor-table section or the ADR-proposal
+  guidance generalising "fetch canonical text for byte-fidelity" beyond
+  vendored dependencies to any externally-authoritative text a future
+  change incorporates (a licence, a copied upstream spec fragment quoted
+  in an ADR, etc.). Revisit if a second such incident occurs (another
+  relicensing, a future vendor-licence audit, or an ADR that needs to
+  quote external text verbatim).
+- **promoted_to:** — (retained; no destination artifact yet, single
+  occurrence, revisit on recurrence)
+
 ### L-008 — a prose/text-matching check needs its false-positive regression tests before its true-positive one
 
 - **origin:** Phase 43b (`check_no_deleted_names_as_live`'s first design

@@ -20,27 +20,33 @@ below), improved from that evidence, generalised only as far as evidence
 justifies, then released after blank-slate doc reconstruction and an
 independent audit.
 
-**2026-09-12 realignment** (planning only —
-`planning/v1-redefinition/realignment-2026-09.md`, gate G11):
-reassessed and reordered the remaining roadmap. **Ledgerkit is now Stage
-B** (was Technical Clipper) — its dependency shape (hledger executable,
-manuals, journal syntax, compatibility tests) is the stronger test of
-CodeCompass's distinctive value, confirmed by live re-inspection
-(hledger: `GPL-3.0-or-later`, stable 1.52.4; Ledgerkit: MIT,
-single-copyright, Milestone 5 "CLI Filter Flags" `[PLANNED]` next).
+**2026-09-12 realignment** (`planning/v1-redefinition/realignment-2026-09.md`)
+reassessed and reordered the remaining roadmap, then **all three gates
+were approved the same day** ("Proceed as recommended"). **Ledgerkit is
+now Stage B** (was Technical Clipper) — its dependency shape (hledger
+executable, manuals, journal syntax, compatibility tests) is the
+stronger test of CodeCompass's distinctive value, confirmed by live
+re-inspection (hledger: `GPL-3.0-or-later`, stable 1.52.4; Ledgerkit:
+MIT, single-copyright, Milestone 5 "CLI Filter Flags" `[PLANNED]` next).
 **Technical Clipper moves to a new Stage F** (cross-ecosystem
 regression, run after Ledgerkit-driven changes land). Phases 39–43c
 unchanged/`done`/not renumbered; phases 45–67 (none started) renumbered
-45–70. Two new Stage-A bridge phases added: **43d** (GPL-3.0-or-later
-relicensing plan, aligning with hledger's own licence — gate G12,
-mechanics not yet executed) and **43e** (reusable agent-led adoption
-blueprint for Ledgerkit and later projects — gate G13). New planning
-artifacts: `licence-migration.md`, `adoption-blueprint.md`,
-`codecompass-feedback-ingestion.md`; draft ADRs `decisions/0052`
-(reorder) and `decisions/0053` (relicensing) staged in
-`proposed-governance-changes.md` §C, not yet written to `decisions/`.
-**No implementation has started from this realignment** — `CLAUDE.md`
-untouched, no `src/` change, no file under gates G12/G13 touched.
+45–70. **`decisions/0052`** (the reorder, gate G11) is `Accepted`.
+**Two new Stage-A bridge phases, both `done`: 43d and 43e.** Phase 43d
+executed the GPL-3.0-or-later relicensing (gate G12): CodeCompass is now
+licensed **GPL-3.0-or-later** (was MIT) — `LICENSE` (canonical text,
+fetched verbatim from `hledgerorg/hledger`'s own file), `pyproject.toml`,
+`README.md`, `CONTRIBUTING.md` updated; `decisions/0053` `Accepted`;
+verified live (`pip show codecompass` → `License: GPL-3.0-or-later`).
+Phase 43e approved `adoption-blueprint.md` as the version handed to
+Ledgerkit (gate G13) — content unchanged from the prior commit, only the
+gate resolved. Both phases' closeout: `docs-reconstructor` drift audit →
+**NO DRIFT**; `knowledge-curator` triage filed **L-009** (fetch
+canonical upstream text for byte-fidelity, retained) and **L-010** (a
+reusable document should cite its justifying incidents + state a
+revision policy, retained). New planning artifacts:
+`licence-migration.md`, `adoption-blueprint.md`,
+`codecompass-feedback-ingestion.md`. **No `src/` change either time.**
 
 **Stage A of the redefined-v1 roadmap is complete: Phases 39–43 are
 `done`.** Phase 43 dogfooded the full 14-step agent-led loop on a real
@@ -650,27 +656,18 @@ blocking gap — 4 non-blocking observations, all addressed in the
 closeout commit). ROADMAP row `43b` / `v1-redefinition/roadmap.md` /
 the plan file's own status line all flipped to `done` in this commit.
 
-**2026-09-12 realignment landed as a planning-only package** (no
-implementation): `realignment-2026-09.md`, `licence-migration.md`,
-`adoption-blueprint.md`, `codecompass-feedback-ingestion.md`; amended
-`roadmap.md`, `ledgerkit-plan.md`, `reference-project-protocol.md`,
+**2026-09-12 realignment (`411cda6`) + Phases 43d/43e execution
+(same day, gates G11/G12/G13 all approved):** `realignment-2026-09.md`,
+`licence-migration.md`, `adoption-blueprint.md`,
+`codecompass-feedback-ingestion.md`; amended `roadmap.md`,
+`ledgerkit-plan.md`, `reference-project-protocol.md`,
 `conditional-generalisation.md`, `context-quality-evaluation.md`,
-`migration.md`, `README.md`, `proposed-governance-changes.md` §C (2 draft
-ADRs); new `planning/ROADMAP.md` rows 43d/43e + retargeted 45–70. Two new
-plan files: `phase-43d-gpl-relicensing-plan.md` (plan only; mechanics
-gated on **G12**), `phase-43e-agent-led-adoption-blueprint.md` (content
-drafted; formal execution/closeout — retro, drift audit, triage, audit —
-still pending). **Three human-decision gates open: G11** (this roadmap
-reorder — recommended, already reflected in the amended docs pending
-final sign-off), **G12** (GPL-3.0-or-later relicensing — `LICENSE`/
-`pyproject.toml`/`README.md` untouched so far), **G13** (approve
-`adoption-blueprint.md` as the version handed to Ledgerkit).
+`migration.md`, `README.md`; `decisions/0052`/`0053` `Accepted`;
+`LICENSE`/`pyproject.toml`/`README.md`/`CONTRIBUTING.md` updated to
+GPL-3.0-or-later. **All Stage-A work (39–43e) is now `done`; no gate
+blocks Phase 44.**
 
-**Immediate next step:** the user reviews this realignment. Once
-resolved: **Phase 43e**'s formal closeout (it's drafted but not yet run
-through the agent-led loop — retro, `docs-reconstructor` drift audit,
-`knowledge-curator` triage, `release-phase-auditor` pass), **Phase 43d**'s
-mechanical licence edits (only if G12 approves), then **Phase 44**
+**Immediate next step: Phase 44**
 ([`phase-44-reference-project-protocol.md`](phase-44-reference-project-protocol.md))
 — **Stage B begins**: turn the reference-project protocol +
 context-quality evaluation spec into operational templates + a registry,

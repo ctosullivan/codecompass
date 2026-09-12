@@ -120,12 +120,14 @@ GPL-3.0-or-later going forward with no bundled-code entanglement.
 
 ## 7. Human approval requirement
 
-**Gate G12** (`realignment-2026-09.md` §7). This is a licence change —
-even though the legal analysis here is simple (§2's conclusion), the
-downstream effect on anyone using CodeCompass (permissive → copyleft) is
-exactly the kind of decision this project's own governance reserves for
-explicit human approval, same posture as `CLAUDE.md` §0 gives `CLAUDE.md`
-itself. **No file in §3 is touched until the user approves this plan.**
+**Gate G12 — ✅ approved 2026-09-12** ("Proceed as recommended").
+`realignment-2026-09.md` §7. This was a licence change — even though the
+legal analysis here is simple (§2's conclusion), the downstream effect on
+anyone using CodeCompass (permissive → copyleft) is exactly the kind of
+decision this project's own governance reserves for explicit human
+approval, same posture as `CLAUDE.md` §0 gives `CLAUDE.md` itself. §3's
+mechanical changes are now implemented (Phase 43d); `decisions/0053` is
+`Accepted`.
 
 ## 8. Verification (once approved and implemented)
 

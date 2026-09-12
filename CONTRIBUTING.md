@@ -173,3 +173,11 @@ ruff check .
 See [`README.md`](README.md)'s Setup section for external requirements
 (Python version, `git`, the optional `ANTHROPIC_API_KEY`), and
 [`planning/CONTEXT.md`](planning/CONTEXT.md) for current phase status.
+
+## License
+
+CodeCompass is licensed under GPL-3.0-or-later (see
+[`LICENSE`](LICENSE); previously MIT — `decisions/0053`). Contributions
+are made under the project's current licence at the time they're
+submitted. There is no separate contributor licence agreement — this is
+a single-maintainer project.

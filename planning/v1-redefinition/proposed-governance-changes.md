@@ -12,11 +12,13 @@ holds those proposed diffs (§A) and the ADR drafts (§B).
 - §B ADRs `0048`/`0049` — published **Phase 39**; `0050` — published
   **Phase 41**.
 
-This file is now a historical record of what was proposed for §A/§B;
-`CLAUDE.md` / `CONTRIBUTING.md` / `decisions/` are authoritative for
-those. **§C (added 2026-09-12) is a live, unresolved proposal** — drafts
-`decisions/0052`/`0053`, pending gates G11/G12
-(`realignment-2026-09.md` §7).
+This file is now a historical record of what was proposed;
+`CLAUDE.md` / `CONTRIBUTING.md` / `decisions/` are authoritative.
+**§C's drafts were approved 2026-09-12** (gates G11/G12, "Proceed as
+recommended") and are now `Accepted` at
+[`decisions/0052`](../../decisions/0052-ledgerkit-is-the-next-reference-project-not-technical-clipper.md)
+and
+[`decisions/0053`](../../decisions/0053-relicense-to-gpl-3.0-or-later.md).
 
 ---
 
@@ -238,12 +240,18 @@ mirrored into `CONTRIBUTING.md`. The exact text is in `CLAUDE.md` §5 and
 
 ## C. 2026-09-12 realignment ADR drafts (gates G11, G12)
 
-Not yet written to `decisions/`. See `realignment-2026-09.md` for the
-full reassessment these two decisions belong to.
+> **`0052` and `0053` were approved (gates G11/G12, 2026-09-12) and are
+> now `Accepted` at
+> [`decisions/0052`](../../decisions/0052-ledgerkit-is-the-next-reference-project-not-technical-clipper.md)
+> and
+> [`decisions/0053`](../../decisions/0053-relicense-to-gpl-3.0-or-later.md).
+> The published ADRs are authoritative; the drafts below are kept for
+> context.** See `realignment-2026-09.md` for the full reassessment
+> these two decisions belong to.
 
 ### Draft `decisions/0052` — Ledgerkit is the next reference project, not Technical Clipper
 
-- **Status:** proposed (not yet Accepted — pending gate G11).
+- **Status:** ✅ Accepted (2026-09-12, gate G11) — see published ADR.
 - **Context:** The original Stage B/D ordering (`decisions/0048`) put
   Technical Clipper first as "first proof point" and Ledgerkit second as
   "harder second proof point." Both were, at the time, un-evaluated
@@ -283,8 +291,8 @@ full reassessment these two decisions belong to.
 
 ### Draft `decisions/0053` — Relicense CodeCompass to GPL-3.0-or-later
 
-- **Status:** proposed (not yet Accepted — pending gate G12). Full plan:
-  `licence-migration.md`.
+- **Status:** ✅ Accepted (2026-09-12, gate G12) — see published ADR.
+  Full plan: `licence-migration.md`.
 - **Context:** `hledger` — the compatibility reference Ledgerkit (and
   now, transitively, CodeCompass's own evidence-relating work) targets —
   is `GPL-3.0-or-later`, confirmed at the SPDX-field level in its own
