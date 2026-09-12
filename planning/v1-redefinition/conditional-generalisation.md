@@ -10,6 +10,12 @@ what is **deferred**.
 decision and pre-loads candidate designs so the deciding session isn't
 starting cold.
 
+**Amended 2026-09-12** (`realignment-2026-09.md`, gate G11): Ledgerkit is
+now the Stage B/D evidence source (was Stage D only, second); Technical
+Clipper moved to a new Stage F, much later. Phase numbers for Ledgerkit's
+evidence (53, 54, 55) are unchanged; §1.2/§2.5's Technical-Clipper-sourced
+rows are flagged below as now unavailable at GATE DD's original timing.
+
 ## 1. Evidence status of each idea (as of this planning session)
 
 ### 1.1 Already supporting the need — nothing yet
@@ -39,9 +45,9 @@ raised by two agents independently, is GATE DB/DD input.
 |---|---|---|
 | v1 needs a generalised **technical-dependency** concept | recurring "CodeCompass cannot represent dependency X" findings across ≥2 tasks and ≥1 project (`context-gaps/` + reference-project evals) | §2.1 |
 | v1 needs an **executable** dependency kind | Ledgerkit Phase 54 shows relating hledger-behaviour evidence is materially useful | §2.2 |
-| v1 needs a **reference-doc / spec / manual** dependency kind | Technical Clipper (CommonMark) *and/or* Ledgerkit (hledger manual) Phase 53 show indexed+related reference material beats direct reading | §2.3 |
+| v1 needs a **reference-doc / spec / manual** dependency kind | Ledgerkit (hledger manual) Phase 53 shows indexed+related reference material beats direct reading — Technical Clipper (CommonMark) can only corroborate later, at its now-later Stage F slot (Phase 61+) | §2.3 |
 | v1 needs first-class **provenance** (distinct source kinds) | recurring "context was misleading because a doc-statement / agent-inference was shown like a source-fact" findings | §2.4 |
-| v1 needs a **browser/platform-API** dependency kind | Technical Clipper tasks recurringly need DOM/Chromium-API context CodeCompass can't give | §2.5 |
+| v1 needs a **browser/platform-API** dependency kind | Technical Clipper tasks recurringly need DOM/Chromium-API context CodeCompass can't give — **evidence for this row is now unavailable until Stage F (Phase 61+), since Technical Clipper moved later in the reordered roadmap (`realignment-2026-09.md` §4)**; GATE DD (Phase 55) will have to decide §2.5 without it, or explicitly defer §2.5 pending Stage F | §2.5 |
 | task-oriented retrieval needs new **edges** (not just new joins) | Phase 48 scoping shows the "what matters for this task" map can't be built from existing graph data | §2.6 |
 
 ### 1.3 Explicitly deferred (not v1 regardless of Stage B/D)
@@ -113,7 +119,11 @@ stays a first-class, unchanged-behaviour kind**.
 - Lower priority — MDN-style reference text as a `reference_doc`
   specialisation may cover it. Only its own kind if Technical Clipper
   findings show DOM/Chromium context is both recurringly needed and
-  poorly served by a generic `reference_doc`.
+  poorly served by a generic `reference_doc`. **Cannot be decided at
+  GATE DD (Phase 55)** — Technical Clipper doesn't run until Stage F
+  (Phase 61+) in the reordered roadmap. GATE DD should either explicitly
+  defer §2.5 to a GATE DF follow-up, or approve §2.1/§2.3 without it if
+  Ledgerkit's evidence alone justifies them.
 
 ### 2.6 Task-oriented retrieval edges
 - If existing joins suffice (Phase 48 finds the map is

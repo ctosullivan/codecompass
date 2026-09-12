@@ -7,6 +7,12 @@ Stage B, first phase. Turns
 `context-quality-evaluation.md` into operational templates and a registry.
 No reference project is registered yet (that is Phase 45).
 
+**Amended 2026-09-12** (`planning/v1-redefinition/realignment-2026-09.md`,
+gate G11): Stage B is now **Ledgerkit**, not Technical Clipper — this
+phase's own content is unchanged (the protocol was always
+project-agnostic), only the "Files" section's downstream reference below
+is retargeted.
+
 ## Depends on
 
 - Phase 43 done / GATE DA passed (roster amended).
@@ -43,7 +49,7 @@ No reference project is registered yet (that is Phase 45).
 
 **Explicitly deferred / out of scope:**
 
-- Cloning / registering Technical Clipper — Phase 45.
+- Cloning / registering Ledgerkit — Phase 45.
 - Any real evaluation datapoint.
 - Any `src/codecompass/` change (this is all `planning/` + `.claude/`).
 
@@ -66,8 +72,9 @@ No reference project is registered yet (that is Phase 45).
 - `.claude/agents/context-evaluator.md` — brief finalised
 - `.claude/agents/reference-project-tester.md` — brief finalised
 - `CHANGELOG.md`, `planning/ROADMAP.md`, `planning/CONTEXT.md` — curator
-- `planning/phase-45-technical-clipper-baseline.md` — written now that
-  the protocol is concrete (per `CLAUDE.md` §1, before Phase 45 starts)
+- `planning/phase-45-ledgerkit-baseline.md` — written now that
+  the protocol is concrete (per `CLAUDE.md` §1, before Phase 45 starts;
+  retargeted from Technical Clipper by the 2026-09-12 realignment)
 
 ## Verification
 

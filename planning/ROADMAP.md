@@ -262,7 +262,7 @@ Phase 8 (the REPL, `decisions/0012`'s "actual product") structurally
 depends on Phase 7's outputs. No phase was renumbered by this move, only
 its table membership.
 
-## Redefined CodeCompass v1 — Stages A–F (phases 39–67)
+## Redefined CodeCompass v1 — Stages A–G (phases 39–70)
 
 **Planning package:** [`v1-redefinition/`](v1-redefinition/) (umbrella,
 same role `v1.0-initial-release-roadmap.md` played for 20–23, larger
@@ -270,20 +270,30 @@ scope). This milestone group **redefines what "CodeCompass v1" means** —
 from a packaging milestone (publish the npm/PyPI/Cargo package-source
 tool) to a *product-validation* milestone: CodeCompass developed
 agent-led, validated against real external reference-project work
-(Technical Clipper, then Ledgerkit), improved from that evidence,
-generalised only as far as evidence justifies, released after a
-blank-slate documentation reconstruction and an independent audit. Full
-rationale: [`v1-redefinition/README.md`](v1-redefinition/README.md);
+(**Ledgerkit, then Technical Clipper** — reordered 2026-09-12, see
+below), improved from that evidence, generalised only as far as evidence
+justifies, released after a blank-slate documentation reconstruction and
+an independent audit. Full rationale:
+[`v1-redefinition/README.md`](v1-redefinition/README.md);
 `decisions/0048`, `0049`.
 
 **Ratified by Phase 39 (2026-09-09).** Gates G1 (`pyproject.toml` →
 `1.0.0.dev0`), G2 (→ G2-b: **hold all publishing until the redefined v1**
 — CodeCompass has never been published; the first-ever PyPI release is
-the redefined v1 as `1.0.0` at Phase 67), G3 (this restructuring), and G5
+the redefined v1 as `1.0.0` at Phase 70), G3 (this restructuring), and G5
 (ADRs 0048/0049) are decided. Phases 0–38 and 24/25 are **not**
 renumbered. Historical tables and "v1.0 scope notes" above are unchanged
 (dated records); the note before them reframes "v1.0" → "foundation
 release".
+
+**Realigned by the 2026-09-12 reassessment**
+([`v1-redefinition/realignment-2026-09.md`](v1-redefinition/realignment-2026-09.md),
+gate G11): Ledgerkit becomes Stage B/D (was Stage D only, second);
+Technical Clipper becomes a new Stage F, later. Phases 39–43c are
+unchanged/`done`/not renumbered; phases 45–67 (none started) are
+renumbered 45–70 to make room for the new Stage F. Two new Stage-A
+bridge phases added: **43d** (GPL-3.0-or-later relicensing plan, gate
+G12) and **43e** (reusable agent-led adoption blueprint, gate G13).
 
 Gate **G4** (`CLAUDE.md` §8/§5/§1/§6 changes for the agent-led model) was
 approved and applied in **Phase 40** (2026-09-09), mirrored into
@@ -296,8 +306,8 @@ applied in **Phase 41**, mirrored into `CONTRIBUTING.md`; `decisions/0050`
 records both mechanisms.
 
 Milestone-grouping convention (`CLAUDE.md` §6, `decisions/0022`/`0030`):
-Stages A–F are **one milestone group**; the `v1.0.0` tag/release is cut
-only on group completion (Phase 67), not per phase.
+Stages A–G are **one milestone group**; the `v1.0.0` tag/release is cut
+only on group completion (Phase 70), not per phase.
 
 Stage labels: **COMMITTED** (will happen; only a §7 gate stops it) /
 **EXPERIMENTAL** (activity committed, findings not) / **CONDITIONAL** (on
@@ -312,14 +322,17 @@ a named gate; may be dropped) / **DEFERRED** (revisit trigger named).
 | 43 | Dogfood the agent-led loop on a real change (`query skills` widen — [`43a`](phase-43a-query-skills-widen-kinds.md)) — **GATE DA passed** (roster stays at 7, no pruning, 4 amendments + `43b`) | COMMITTED | done | [`phase-43-dogfood-agent-led-workflow.md`](phase-43-dogfood-agent-led-workflow.md) |
 | 43b | Two `check_user_docs.py` rules from GATE DA (deleted-names-as-live; generated-artifacts-match-source) — runs before Phase 44 | COMMITTED | done | [`phase-43b-standing-doc-drift-checks.md`](phase-43b-standing-doc-drift-checks.md) |
 | 43c | Stage A→B bridge: agent context-suggestion capture pathway (`planning/context-gaps/`), context-vs-default-pathway eval per use (`context-use-log.md`), context-health planning (`context-health.md` + `context-health-planner`, the roster's 8th agent — user-approved Option A; GATE DA's "roster stays at 7" was about pruning, not a cap on adding). Capture + evidence only — **no `src/` change** (that's Stage C/E, gated). `decisions/0051`. | COMMITTED | done | [`phase-43c-agent-context-pathways.md`](phase-43c-agent-context-pathways.md) |
-| 44 | Reference-project protocol + context-quality eval spec | COMMITTED | planned | [`phase-44-reference-project-protocol.md`](phase-44-reference-project-protocol.md) |
-| 45 | Register Technical Clipper + baseline evaluation | EXPERIMENTAL | not started | — (written in Phase 44) |
-| 46 | CodeCompass during genuine Technical Clipper tasks + independent evals | EXPERIMENTAL | not started | — |
+| 43d | GPL-3.0-or-later relicensing plan (aligns with `hledger`'s own confirmed licence) — **gate G12** holds the mechanical edits | COMMITTED (plan) | planned | [`phase-43d-gpl-relicensing-plan.md`](phase-43d-gpl-relicensing-plan.md) |
+| 43e | Reusable agent-led adoption blueprint (`adoption-blueprint.md`) — **gate G13** | COMMITTED | planned | [`phase-43e-agent-led-adoption-blueprint.md`](phase-43e-agent-led-adoption-blueprint.md) |
+| 44 | Reference-project protocol + context-quality eval spec (project-agnostic; retargeted to write Phase 45's Ledgerkit plan) | COMMITTED | planned | [`phase-44-reference-project-protocol.md`](phase-44-reference-project-protocol.md) |
+| 45 | Register **Ledgerkit** + baseline evaluation *(was Technical Clipper — reordered 2026-09-12, gate G11)* | EXPERIMENTAL | not started | — (written in Phase 44) |
+| 46 | CodeCompass during a genuine Ledgerkit task (Milestone 5: CLI filter flags) + independent evals | EXPERIMENTAL | not started | — |
 | 47 | Consolidate recurring friction into confirmed findings — **GATE DB** | EXPERIMENTAL | not started | — |
-| 48–51 | Stage C — improve the existing product (task-oriented retrieval, graph quality, shared-agent context, re-evaluate) | CONDITIONAL (GATE DB) | not started | — |
-| 52–55 | Stage D — Ledgerkit: heterogeneous docs / executable / behavioural context — **GATE DD** | EXPERIMENTAL | not started | — |
-| 56–59 | Stage E — minimum justified generalisation (technical-dependency + provenance abstractions, migrate package/source, re-validate) | CONDITIONAL (GATE DD) | not started | — |
-| 60–67 | Stage F — blank-slate doc reconstruction, architecture/ADR/roadmap reconciliation, final Technical Clipper + Ledgerkit validation, independent release audit, milestone closeout, release | COMMITTED (once E completes) | not started | — |
+| 48–51 | Stage C — improve the existing product (task-oriented retrieval, graph quality, shared-agent context/entry points, re-evaluate against Ledgerkit) | CONDITIONAL (GATE DB) | not started | — |
+| 52–55 | Stage D — deeper Ledgerkit dogfooding: continued Core development, heterogeneous docs / executable / behavioural context, refine the blueprint — **GATE DD** | EXPERIMENTAL | not started | — |
+| 56–59 | Stage E — minimum justified generalisation (technical-dependency + provenance abstractions, migrate package/source, re-validate against Ledgerkit) | CONDITIONAL (GATE DD) | not started | — |
+| 60–63 | Stage F — cross-ecosystem regression: register + evaluate **Technical Clipper** *(new stage, was Stage B — moved 2026-09-12, gate G11)*; does CodeCompass generalise or overfit? — **GATE DF** | EXPERIMENTAL | not started | — |
+| 64–70 | Stage G — blank-slate doc reconstruction, architecture/ADR/roadmap reconciliation, final self-dogfood + Ledgerkit + Technical Clipper confirmation, independent release audit, milestone closeout, release *(was Stage F, phases 60–67 — renumbered +4)* | COMMITTED (once F completes) | not started | — |
 
 Detail for every stage: [`v1-redefinition/roadmap.md`](v1-redefinition/roadmap.md).
 Phases 45+ get their own plan files as their preceding gate resolves —

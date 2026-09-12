@@ -1,7 +1,14 @@
 # Migration plan (required output 11)
 
 How CodeCompass's existing, working capabilities stay functional as the
-product evolves through Stages A–F. **Prefer migration over rewrite.**
+product evolves through Stages A–G. **Prefer migration over rewrite.**
+
+**Amended 2026-09-12** (`realignment-2026-09.md`, gate G11): stage
+letters/phase numbers below follow the reordered roadmap (Ledgerkit is
+Stage B/D; Technical Clipper is the new Stage F). The licence migration
+(MIT → GPL-3.0-or-later, Phase 43d) is planned separately —
+`licence-migration.md` — since it is a legal/governance change, not a
+capability-preservation one; cross-referenced here for completeness.
 
 ## 1. Versioning realignment (Phase 39) — mechanical steps
 
@@ -54,9 +61,10 @@ The capabilities that must not regress, and how each is protected:
    two whole-project call sites** every other builder uses
    (`decisions/0025` — `sync <vendor>` and `init --scan` never rebuild).
 4. Existing queries unchanged; new queries added.
-5. Regression: Phase 59 re-runs the full Technical Clipper task suite —
-   any movement in the numbers vs Phase 46 that isn't an improvement is a
-   blocker.
+5. Regression: Phase 59 re-runs the full Ledgerkit task suite — any
+   movement in the numbers vs Phase 46 that isn't an improvement is a
+   blocker. Phase 61 (Stage F, Technical Clipper) is the separate,
+   later cross-ecosystem regression check.
 
 ## 4. What "rewrite" would look like, and why to avoid it
 

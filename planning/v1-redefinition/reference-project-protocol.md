@@ -1,12 +1,22 @@
 # Reference-project plan — Technical Clipper (required output 7)
 
-Also defines the **repeatable reference-project protocol** used for both
-Technical Clipper and (later) Ledgerkit. Operationalised by Phase 44;
-first applied in Phases 45–47.
+Also defines the **repeatable reference-project protocol** (§2) used for
+every reference project — Ledgerkit first, Technical Clipper second.
+Operationalised by Phase 44 (generic; unchanged by the realignment
+below).
+
+**Amended 2026-09-12 (`realignment-2026-09.md`, gate G11): Technical
+Clipper is no longer the first reference project.** It moves to a new
+**Stage F** — cross-ecosystem regression, run *after* Ledgerkit has
+driven whatever Stage C/D/E changes land, to check they generalise
+rather than overfit to accounting/hledger. §1's inspection findings and
+§2.3's task pool are otherwise unchanged in substance; only phase numbers
+moved (were 45–47, now 60–63) and their scope-label context changed
+(was "first proof point", now "regression/generalisation check").
 
 Repo: **https://github.com/ctosullivan/technical-clipper**
 
-## 1. Inspection findings (this planning session, 2026-09-09)
+## 1. Inspection findings (2026-09-09 planning session — reconfirm live at Phase 60, its state will have moved)
 
 Established by reading the live repository, per the task's requirement to
 inspect rather than rely on the prompt.
@@ -23,7 +33,7 @@ inspect rather than rely on the prompt.
 | State | "MVP candidate — awaiting release approval." All 10 roadmap phases complete. Phase 10 done except final release approval (blocked on explicit user approval by design). All checks pass. Nothing tagged/released. On `master`. |
 | Deferred / post-MVP (from `planning/CONTEXT.md`) | Firefox + Safari extensions; native Obsidian plugin; ClipSpec editor UI; image mirroring; enhanced HTML sanitization; manifest-based integrity verification for packaged distributions. Plus ongoing detector-robustness / adapter-coverage refinement implied by the architecture. |
 
-### Why this is the right first reference project
+### Why this is now the cross-ecosystem regression check (was: the first reference project)
 
 Its substantive technical context is **almost entirely not in the
 package graph**: DOM APIs, `MutationObserver`/`TreeWalker`, Chromium MV3
@@ -31,9 +41,12 @@ extension APIs (`chrome.scripting`, `chrome.runtime`, content scripts),
 CommonMark / GFM fenced-code-block semantics, highlight.js & Prism
 class-name conventions, Docusaurus/Docsify DOM shapes, ChatGPT's DOM
 structure. CodeCompass's current model discovers ~7 build-tool
-devDependencies and nothing else. Stage B measures the gap between "what
-CodeCompass can say" and "what an agent doing this work actually needs" —
-directly testing `README.md` §1.2(2).
+devDependencies and nothing else. That made it a strong *first* test
+originally; it now makes it the ideal **regression** test — deliberately
+different from Ledgerkit/hledger (TypeScript/npm/browser vs.
+Python/accounting), so Stage F measures whether Ledgerkit-driven changes
+generalise or accidentally became accounting-shaped
+(`realignment-2026-09.md` §4, R10 in `README.md` §13).
 
 ## 2. The repeatable protocol
 
@@ -76,7 +89,7 @@ evaluate. If a task turns out to need such a change, pick a different
 task.
 
 Candidate task pool for Technical Clipper (confirm against the live repo
-at Phase 46 — its state may have moved):
+at Phase 61 — its state may have moved):
 
 - a **fenced Markdown code-block handling** change (e.g. an edge case in
   language-tag inference, nested fences, or a highlight.js class mapping)
@@ -93,7 +106,7 @@ at Phase 46 — its state may have moved):
 For each: the task must be something worth doing for Technical Clipper
 regardless of CodeCompass.
 
-### 2.4 Per-task procedure (Phase 46)
+### 2.4 Per-task procedure (Phase 61 for Technical Clipper; Phase 46 for Ledgerkit's own instantiation of the same steps — `ledgerkit-plan.md`)
 
 1. Lead states the task and the pinned Technical Clipper commit.
 2. Lead attempts the task **using CodeCompass context** where CodeCompass
@@ -134,9 +147,12 @@ candidate learning
         ↓
 repeated evidence  (recurs across tasks, or both agents hit it)
         ↓
-confirmed finding  (Phase 47 consolidation, knowledge-curator)
+confirmed finding  (consolidation phase, knowledge-curator)
         ↓
-roadmap implication  (a Stage C phase, gated by GATE DB)
+roadmap implication  (Ledgerkit's instantiation: a Stage C phase, gated
+                       by GATE DB. Technical Clipper's instantiation: a
+                       narrowly-scoped Stage G fix, gated by GATE DF —
+                       "fix only general problems with evidence")
 ```
 
 A single observation never directly adds a product feature. This is the
@@ -145,17 +161,20 @@ reshape the v1 plan.**
 
 ### 2.7 Non-invasiveness check (per phase)
 
-Before closing Phase 46, `reference-project-tester` confirms in writing
-that no change was made to the Technical Clipper working copy that its
-own maintainers wouldn't want on its own merits, and that no CodeCompass
-repair was made *by the tester* to make an evaluation pass.
+Before closing the per-task phase (61 for Technical Clipper),
+`reference-project-tester` confirms in writing that no change was made
+to the working copy that its own maintainers wouldn't want on its own
+merits, and that no CodeCompass repair was made *by the tester* to make
+an evaluation pass.
 
-## 3. Outputs of Stage B
+## 3. Outputs of Stage F (Technical Clipper)
 
-- `planning/reference-projects/README.md` — the registry.
+- `planning/reference-projects/README.md` — the registry (shared with
+  Ledgerkit's entries).
 - `planning/reference-projects/technical-clipper.md` — registration +
-  baseline (Phase 45).
+  baseline (Phase 60).
 - `planning/reference-projects/technical-clipper/<NN>-*.md` — one per
-  evaluated task (Phase 46).
+  evaluated task (Phase 61).
 - `planning/reference-projects/technical-clipper/findings.md` — confirmed
-  findings + roadmap implications (Phase 47) → **GATE DB**.
+  findings + the fix-only-general-problems decision (Phase 62–63) →
+  **GATE DF**.

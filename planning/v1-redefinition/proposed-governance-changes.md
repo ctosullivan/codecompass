@@ -12,8 +12,11 @@ holds those proposed diffs (§A) and the ADR drafts (§B).
 - §B ADRs `0048`/`0049` — published **Phase 39**; `0050` — published
   **Phase 41**.
 
-This file is now a historical record of what was proposed;
-`CLAUDE.md` / `CONTRIBUTING.md` / `decisions/` are authoritative.
+This file is now a historical record of what was proposed for §A/§B;
+`CLAUDE.md` / `CONTRIBUTING.md` / `decisions/` are authoritative for
+those. **§C (added 2026-09-12) is a live, unresolved proposal** — drafts
+`decisions/0052`/`0053`, pending gates G11/G12
+(`realignment-2026-09.md` §7).
 
 ---
 
@@ -227,6 +230,95 @@ mirrored into `CONTRIBUTING.md`. The exact text is in `CLAUDE.md` §5 and
 - Task-oriented retrieval design (Phase 48), if funded.
 - Each Stage E abstraction (Phases 56/57), one per abstraction, gate G7.
 - Any CLI breaking change (gate G8).
-- A docs-site reversal of `decisions/0039` (Phase 60/61), only if
+- A docs-site reversal of `decisions/0039` (Phase 64/65), only if
   reference-project friction shows up.
-- The redefined-v1 release itself may warrant a closeout ADR (Phase 66).
+- The redefined-v1 release itself may warrant a closeout ADR (Phase 69).
+
+---
+
+## C. 2026-09-12 realignment ADR drafts (gates G11, G12)
+
+Not yet written to `decisions/`. See `realignment-2026-09.md` for the
+full reassessment these two decisions belong to.
+
+### Draft `decisions/0052` — Ledgerkit is the next reference project, not Technical Clipper
+
+- **Status:** proposed (not yet Accepted — pending gate G11).
+- **Context:** The original Stage B/D ordering (`decisions/0048`) put
+  Technical Clipper first as "first proof point" and Ledgerkit second as
+  "harder second proof point." Both were, at the time, un-evaluated
+  hypotheses about which project better tests CodeCompass's distinctive
+  value. Neither Stage B nor Stage D has started (`realignment-2026-09.md`
+  §1.1 — `planning/reference-projects/` doesn't exist). Live re-inspection
+  of both projects (§1.2/§1.3 of that document) confirms Ledgerkit's
+  dependency shape (hledger executable, manuals, journal syntax, query
+  semantics, compatibility tests, intentional divergences) is the
+  stronger test of context *relating*, not just context *discovery* —
+  and it has a concrete, already-scoped genuine next task (Milestone 5,
+  "CLI Filter Flags") ready to use as the Stage B baseline immediately.
+- **Decision:** Ledgerkit becomes Stage B (Phases 44–47) and the deeper
+  Stage D (Phases 52–55); Technical Clipper becomes a new Stage F
+  (Phases 60–63), run *after* Ledgerkit-driven changes land, explicitly
+  to check they generalise rather than overfit to accounting/hledger.
+  Phase numbers 45 onward are renumbered (none had started); GATE
+  letters DB/DC/DD/DE keep their conceptual position, now scoped to
+  Ledgerkit evidence; a new GATE DF covers Technical Clipper's
+  regression decision. Full detail: `roadmap.md` (amended same commit).
+- **Alternatives considered:** (a) keep Technical Clipper first, run
+  Ledgerkit second as originally planned — rejected: the strategic
+  redirection explicitly argues Ledgerkit is the stronger test, and
+  nothing has been invested in a Technical-Clipper-first Stage B yet, so
+  there is no sunk cost to protect; (b) run both simultaneously —
+  rejected: dilutes the evidence-gated discipline (`README.md` R9, R11)
+  that keeps each stage's findings attributable to one project; (c) drop
+  Technical Clipper entirely — rejected: it remains the best available
+  check against overfitting to a single ecosystem (`README.md` R10), a
+  concern the reorder makes *more* relevant, not less.
+- **Consequences:** `roadmap.md`, `ledgerkit-plan.md`,
+  `reference-project-protocol.md`, `context-quality-evaluation.md`,
+  `conditional-generalisation.md` amended (phase numbers, stage
+  references); `planning/ROADMAP.md` / `planning/CONTEXT.md` amended;
+  `decisions/0048` is not superseded (its core redefinition holds) —
+  this ADR narrows one part of it (the reference-project ordering).
+
+### Draft `decisions/0053` — Relicense CodeCompass to GPL-3.0-or-later
+
+- **Status:** proposed (not yet Accepted — pending gate G12). Full plan:
+  `licence-migration.md`.
+- **Context:** `hledger` — the compatibility reference Ledgerkit (and
+  now, transitively, CodeCompass's own evidence-relating work) targets —
+  is `GPL-3.0-or-later`, confirmed at the SPDX-field level in its own
+  `package.yaml` files. CodeCompass is currently MIT, single copyright
+  holder, no bundled third-party source, no other contributors. Aligning
+  CodeCompass's own licence with hledger's family removes the need for
+  an artificial clean-room boundary when a CodeCompass development agent
+  inspects `hledger` source/docs/tests to understand behaviour it is
+  helping relate for Ledgerkit's benefit.
+- **Decision:** Relicense CodeCompass from MIT to GPL-3.0-or-later:
+  `LICENSE` (canonical GPL-3.0-or-later text + standard notice block),
+  `pyproject.toml` (`license` field + classifier), `README.md`
+  (`## License` section), `CONTRIBUTING.md` (a short note on the
+  licence and the absence of a separate CLA). No git tag or release is
+  affected (none exist — `git tag -l` is empty). Source-assisted
+  development policy (four categories: inspection / understanding /
+  adapted implementation / directly translated material, each with its
+  own attribution requirement) recorded in `licence-migration.md` §4 and
+  carried into `adoption-blueprint.md` for adopting projects.
+- **Alternatives considered:** (a) stay MIT, maintain an explicit
+  clean-room boundary for any hledger-facing work — rejected: adds
+  process friction (a boundary to police) for a project whose stated
+  direction is deeper source-assisted evidence-relating work, without a
+  compensating benefit (CodeCompass has no reason to prefer permissive
+  redistribution terms — it isn't a library others embed commercially in
+  a way MIT specifically protects); (b) dual-license (MIT + GPL) —
+  rejected: adds real ongoing maintenance complexity (every future
+  contribution would need to be dual-licensable) for a single-maintainer
+  project with no evidence of demand for the MIT option; (c) relicense
+  to a different copyleft licence (e.g. AGPL, LGPL) — rejected: the
+  specific goal is *alignment with hledger's own licence family*, not
+  copyleft in general, and hledger's own choice (GPL-3.0-or-later, not
+  AGPL/LGPL) is the natural match.
+- **Consequences:** `LICENSE`, `pyproject.toml`, `README.md`,
+  `CONTRIBUTING.md` updated in one dated commit once G12 resolves;
+  `CHANGELOG.md` gains an entry; no historical commit or release is
+  rewritten (none published under any licence to date).

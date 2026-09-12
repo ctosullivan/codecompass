@@ -1,10 +1,19 @@
-# Redefined-v1 roadmap — Stages A–F (phases 39–67)
+# Redefined-v1 roadmap — Stages A–G (phases 39–70)
 
 Companion to [`README.md`](README.md). This is the roadmap-level detail;
 `planning/ROADMAP.md` carries the at-a-glance status table (updated in the
 same commit as this package, per `CLAUDE.md` §2, with the new milestone
 group appended — historical tables untouched, no renumbering of phases
 0–38 or 24–25).
+
+**Amended 2026-09-12** (`realignment-2026-09.md`, gate G11): Stage B is
+now **Ledgerkit**, not Technical Clipper; a new Stage F runs Technical
+Clipper as a later cross-ecosystem regression check; two new Stage A
+bridge phases (43d, 43e) were added. Phases 39–43c are **unchanged,
+`done`, not renumbered** — only phases 44 onward (none started; no
+`phase-45.md`+ files exist yet) were renumbered, same precedent as the
+Phase-9→16 "Retire `Depth`" reorder this project already did once. Full
+rationale: `realignment-2026-09.md`.
 
 ## Scope labels
 
@@ -23,7 +32,7 @@ Every phase carries one:
 | Existing | Disposition |
 |---|---|
 | Phases 0–38 (`done`) | Unchanged. Collectively the **foundation**. Historical tables in `ROADMAP.md` stay as-is. |
-| Phase 23 Part B (publish, paused) | **Superseded.** Gate G2 → G2-b: no release happens until Phase 67. Phase 23's row is marked "Part A done; Part B superseded — first publish is redefined v1 (Phase 67)". |
+| Phase 23 Part B (publish, paused) | **Superseded.** Gate G2 → G2-b: no release happens until Phase 70 (renumbered from 67 by the 2026-09-12 realignment). Phase 23's row is marked "Part A done; Part B superseded — first publish is redefined v1 (Phase 70)". |
 | Phase 24 (chat routing/rollup) | **DEFERRED.** Revisit as a Stage C candidate iff Stage B finds project-root context routing is a recurring need. Not renumbered. |
 | Phase 25 (MCP server) | **DEFERRED.** Revisit post-redefined-v1, informed by real CLI/Skill usage. Not renumbered. |
 | "v1.0 scope notes" in `ROADMAP.md` | Retitled "foundation-release scope notes" (wording only; no content deleted). |
@@ -218,20 +227,67 @@ apply. Noted, not a concern.
   `planning/retros/phase-43c-agent-context-pathways.md`.
 - **Tracked commitment (from the audit):** `context-health.md`'s first
   assessment was lead-written; the `context-health-planner` agent's first
-  genuine solo run is **before Phase 45**, on the Technical Clipper clone
-  once registered (see the Phase 45 stanza).
+  genuine solo run is **before Phase 45**, on the reference-project clone
+  once registered — **now Ledgerkit** (see the Phase 45 stanza; amended
+  by the 2026-09-12 realignment, was Technical Clipper).
+
+### Phase 43d — GPL-3.0-or-later relicensing plan · COMMITTED (plan) / CONDITIONAL (mechanics)
+- **Plan:** `planning/phase-43d-gpl-relicensing-plan.md`
+- **Depends on:** none technically; requested by the 2026-09-12
+  realignment task.
+- **Does:** plans the licence transition MIT → GPL-3.0-or-later, aligning
+  with `hledger`'s own confirmed `GPL-3.0-or-later` SPDX declaration
+  (`realignment-2026-09.md` §1.2). Full detail:
+  `licence-migration.md`. Single copyright holder, no third-party
+  contributions, no bundled upstream source (`vendor/` is gitignored) —
+  legally simple; the actual file edits (`LICENSE`, `pyproject.toml`,
+  `README.md`) are **held behind gate G12** and do not land in this
+  phase unless/until approved.
+- **Exit (plan-only):** `licence-migration.md` committed; ADR draft
+  `decisions/0053` staged in `proposed-governance-changes.md` §C, not yet
+  written to `decisions/`.
+- **Exit (mechanics, once G12 resolves):** `LICENSE`/`pyproject.toml`/
+  `README.md` updated in one dated commit; `decisions/0053` moved to
+  `Accepted`; `CHANGELOG.md` entry added.
+- **Status:** planned (plan committed 2026-09-12; mechanics pending G12).
+
+### Phase 43e — Reusable agent-led adoption blueprint · COMMITTED
+- **Plan:** `planning/phase-43e-agent-led-adoption-blueprint.md`
+- **Depends on:** Stage A complete (39–43c) — the blueprint is extracted
+  from CodeCompass's own working practice, not designed fresh.
+- **Does:** writes `adoption-blueprint.md` — the reusable roster/
+  workflow/permissions/entry-point/knowledge-curation template Ledgerkit
+  (and later projects) can adopt, with an explicit
+  generic / project-specific / optional / CodeCompass-generated /
+  manually-governed split. No `CLAUDE.md` change, no ADR (a planning
+  artifact, same shape as Phase 43c).
+- **Exit:** `adoption-blueprint.md` committed; **gate G13** (light —
+  no governance-file change, but it becomes a cross-project contract
+  once Ledgerkit applies it).
+- **Status:** planned (content drafted 2026-09-12 as part of this
+  realignment; formal phase closeout — retro, triage, audit — pending
+  the user's go-ahead to execute Stage A's remaining bridge work).
 
 ---
 
-## STAGE B — Validate existing CodeCompass against real work  · COMMITTED protocol, EXPERIMENTAL findings
+## STAGE B — Ledgerkit baseline  · COMMITTED protocol, EXPERIMENTAL findings
+
+**Amended 2026-09-12 — this stage was Technical Clipper; Technical
+Clipper moves to Stage F.** Ledgerkit's real technical dependencies span
+local Python source, the `hledger` executable, its manuals, journal
+syntax, query semantics, and compatibility tests — a stronger test of
+CodeCompass's distinctive value than a conventional package-graph repo
+(`realignment-2026-09.md` §3). This stage's content is `ledgerkit-plan.md`
+(previously written for the old Stage D slot), renumbered down, otherwise
+unchanged in substance.
 
 Goal: honest evidence on whether the *current* CodeCompass supplies
-trustworthy, materially-useful context during genuine Technical Clipper
+trustworthy, materially-useful context during genuine Ledgerkit
 development.
 
 Time tripwire: aim for 4–8 evaluated tasks in Phase 46; if fewer than 3
-genuine tasks are available on Technical Clipper's roadmap, that itself is
-a finding — proceed to Ledgerkit earlier.
+genuine tasks are available on Ledgerkit's roadmap, that itself is a
+finding — proceed to Stage C early with whatever evidence exists.
 
 ### Phase 44 — Reference-project protocol + context-quality eval spec · COMMITTED
 - **Plan:** `planning/phase-44-reference-project-protocol.md`
@@ -241,66 +297,84 @@ a finding — proceed to Ledgerkit earlier.
   a per-evaluation report template, and the registration record schema
   (repo URL, pinned commit, CodeCompass revision, task, context supplied,
   eval verdict, gaps). Brief the `context-evaluator` and
-  `reference-project-tester` agents against it.
+  `reference-project-tester` agents against it. **Amended 2026-09-12:**
+  its Files section now writes `planning/phase-45-ledgerkit-baseline.md`
+  (was `phase-45-technical-clipper-baseline.md`) — no other change; the
+  protocol itself was always project-agnostic.
 - **Exit:** template + registry committed; a dry-run evaluation of
   CodeCompass *against its own repo* using the template produces a
   coherent report (sanity check of the instrument, not a real datapoint).
 
-### Phase 45 — Register Technical Clipper + baseline · EXPERIMENTAL
-- **Plan:** `planning/phase-45-technical-clipper-baseline.md` (written when Phase 44 done)
-- **Does:** clone `technical-clipper` at a pinned commit into a scratch
-  location (never into this repo); run CodeCompass against it as-is;
-  record exactly what it discovers (expected: ~7 devDependencies, 0
-  runtime deps, near-empty enrichment) and what its context graph looks
-  like. `context-evaluator` produces a **baseline context-quality report**
-  for 2–3 representative "what does this project depend on" questions.
-- **Exit:** `planning/reference-projects/technical-clipper.md` created with
-  the registration record + baseline report. First real datapoint on the
-  §1.2(2) hypothesis.
+### Phase 45 — Register Ledgerkit + baseline · EXPERIMENTAL
+- **Plan:** `planning/phase-45-ledgerkit-baseline.md` (written when Phase 44 done)
+- **Does:** clone `ledgerkit` at a pinned commit into a scratch location
+  (never into this repo); run CodeCompass against it as-is; record
+  exactly what it discovers (expected: pure-Python, stdlib-only —
+  near-empty package context; the real context is the `hledger`
+  executable, its manuals, journal syntax, 1.52 compatibility, all
+  outside CodeCompass's current model). `context-evaluator` produces a
+  **baseline context-quality report** for 2–3 representative
+  "what does this project depend on / what governs this behaviour"
+  questions. `ledgerkit-plan.md` §1/§2 (inspection findings, confirmed
+  live 2026-09-12: Milestone 5 "CLI Filter Flags" is next `[PLANNED]`).
+- **Exit:** `planning/reference-projects/ledgerkit.md` created with the
+  registration record + baseline report. First real datapoint on the
+  redefined-v1 hypothesis (`README.md` §1.7).
 - **Also (tracked from the Phase 43c audit):** the `context-health-planner`
   agent runs for the **first time for real** here — a forward-looking
   `planning/context-health.md` assessment against the freshly-registered
-  Technical Clipper clone (expected honest finding: "the graph is nearly
-  empty; here is what CodeCompass cannot represent", with each
-  un-representable dependency filed as a `planning/context-gaps/` entry
-  per `decisions/0051`). Phase 43c created the agent but the lead wrote
-  its first (own-repo) assessment by hand; this is its first solo run.
+  Ledgerkit clone (expected honest finding: "the graph is nearly empty;
+  here is what CodeCompass cannot represent", each un-representable
+  dependency filed as a `planning/context-gaps/` entry per
+  `decisions/0051`). Phase 43c created the agent but the lead wrote its
+  first (own-repo) assessment by hand; this is its first solo run.
 
-### Phase 46 — CodeCompass during genuine Technical Clipper tasks · EXPERIMENTAL
-- **Plan:** `planning/phase-46-technical-clipper-tasks.md`
-- **Does:** for each of N genuine tasks drawn from Technical Clipper's own
-  roadmap / deferred work / real bugs (`reference-project-protocol.md`
-  §"Task selection" — e.g. a detector-robustness fix, an adapter-coverage
-  extension, a fenced-code-block edge case): the lead attempts the task
-  *using CodeCompass context*; the `reference-project-tester` records
-  friction (bypass, manual search, stale/incorrect/missing relationship,
-  excess noise, un-representable dependency); the `context-evaluator`
-  **independently inspects the Technical Clipper repo** (not via
-  CodeCompass) and rates the supplied context per
-  `context-quality-evaluation.md` (PASS / PASS WITH GAPS / FAIL +
-  LOW/MODERATE/HIGH advantage).
+### Phase 46 — CodeCompass during genuine Ledgerkit tasks · EXPERIMENTAL
+- **Plan:** `planning/phase-46-ledgerkit-tasks.md`
+- **Does:** for each of N genuine tasks drawn from Ledgerkit's own
+  roadmap (its root `ROADMAP.md` — confirmed live: **Milestone 5, "CLI
+  Filter Flags", `[PLANNED]`**, wiring the existing `Query` dataclass to
+  `--account`/`--date-from`/`--date-to`/`--payee`/`--depth` CLI flags
+  across `balance`/`register`/`accounts`/`stats` — a genuine, real,
+  already-scoped task, not one invented for this evaluation): the lead
+  attempts the task *using CodeCompass context*; the
+  `reference-project-tester` records friction (bypass, manual search,
+  stale/incorrect/missing relationship, excess noise, un-representable
+  dependency) **and** adds `planning/context-use-log.md` entries per
+  `decisions/0051`'s existing instrument; the `context-evaluator`
+  **independently inspects the Ledgerkit repo** (not via CodeCompass) and
+  rates the supplied context per `context-quality-evaluation.md`
+  (PASS / PASS WITH GAPS / FAIL + LOW/MODERATE/HIGH advantage). Ledgerkit's
+  own context-curator role (`adoption-blueprint.md` §1) — if adopted by
+  this point — files any actionable finding per
+  `codecompass-feedback-ingestion.md`.
 - **Exit:** one evaluation report per task under
-  `planning/reference-projects/technical-clipper/`.
+  `planning/reference-projects/ledgerkit/`; any `validation/codecompass/findings/CC-LK-NNN`
+  filed.
 
 ### Phase 47 — Consolidate recurring friction · EXPERIMENTAL → decision
 - **Plan:** `planning/phase-47-consolidate-findings.md`
 - **Does:** `knowledge-curator` reviews all Phase 45–46 candidate
-  learnings; promotes anything with recurrence/evidence to a **confirmed
-  finding**; maps each confirmed finding to a roadmap implication.
+  learnings, `planning/context-gaps/` entries, and any
+  `validation/codecompass/findings/` reports; promotes anything with
+  recurrence/evidence to a **confirmed finding**; maps each to a roadmap
+  implication.
 - **Exit / GATE DB:** a written findings summary
-  (`planning/reference-projects/technical-clipper/findings.md`) +
-  a decision (gate G6) on which Stage C phases are funded and their
-  scope. **Valid outcomes include "advantage is LOW across the board —
-  fund no Stage C improvements; proceed to Stage D to test the broader
-  hypothesis directly"** and **"advantage is already HIGH — minimal Stage
-  C, go straight to hardening."**
+  (`planning/reference-projects/ledgerkit/findings.md`) + a decision
+  (gate G6) on which Stage C phases are funded and their scope. **Valid
+  outcomes include "advantage is LOW across the board — fund no Stage C
+  improvements; proceed to deeper Ledgerkit dogfooding (Stage D) to test
+  the broader hypothesis directly"** and **"advantage is already HIGH —
+  minimal Stage C, go straight to hardening."**
 
 ---
 
 ## STAGE C — Improve the existing product  · CONDITIONAL on GATE DB
 
 Each phase below exists **only if** GATE DB's findings support it. Scope
-is set by the findings, not pre-written here. Sketches only:
+is set by the findings, not pre-written here. Sketches only — unchanged
+in substance from the pre-realignment plan, now Ledgerkit-driven instead
+of Technical-Clipper-driven.
 
 ### Phase 48 — Task-oriented context retrieval · CONDITIONAL
 - If "context is dependency-centric, not task-centric" recurs: add a
@@ -315,38 +389,43 @@ is set by the findings, not pre-written here. Sketches only:
 - If "stale/incorrect/misleading relationship" or "excess noise" recurs:
   targeted fixes — dependency-use relationship precision, context
   selection/ranking, noise reduction, freshness surfacing. Each backed by
-  a specific confirmed finding.
+  a specific confirmed finding. Also where a `planning/context-gaps/`
+  entry reaches `recurred` (`decisions/0051`) and is promoted here.
 
-### Phase 50 — Shared-agent context · CONDITIONAL
+### Phase 50 — Shared-agent context / entry-point improvements · CONDITIONAL
 - If "specialist agents re-discover the same relationships" recurs:
-  a common grounded project map the roster consumes. Hard constraint
-  (`README.md` §1.9, R6): must not become opaque alternative
+  a common grounded project map the roster consumes, or a refinement to
+  the Claude-entry-point hierarchy (`adoption-blueprint.md` §3). Hard
+  constraint (`README.md` §1.9, R6): must not become opaque alternative
   project-memory — canonical knowledge stays in reviewable artifacts;
   this only indexes/connects them.
 
-### Phase 51 — Re-run Technical Clipper evaluation · EXPERIMENTAL
-- Re-run Phase 46's task evaluations (same tasks, same instrument) after
-  Stage C changes.
+### Phase 51 — Re-run Ledgerkit evaluation · EXPERIMENTAL
+- Re-run Phase 46's task evaluation(s) (same tasks, same instrument)
+  after Stage C changes.
 - **Exit / GATE DC:** did measured context quality / advantage improve?
   If not, revert or defer the Stage C changes that didn't pay off.
   **If Stage D evidence later proves weak, the plan may legitimately
   terminate near here: a measured improvement over the foundation
   (phases 0–38) baseline, re-validated on a real external project, is a
-  defensible redefined v1 — proceed to Stage F and ship it as `1.0.0`
+  defensible redefined v1 — proceed to Stage F/G and ship it as `1.0.0`
   (`README.md` R14).**
 
 ---
 
-## STAGE D — Test the broader product hypothesis  · EXPERIMENTAL
+## STAGE D — Deeper Ledgerkit dogfooding  · EXPERIMENTAL
 
-Goal: decide whether v1 scope must exceed package-source grounding, using
-a project whose real dependencies are mostly not packages.
+Goal: decide whether v1 scope must exceed package-source grounding,
+using continued real Ledgerkit Core development (not a one-off baseline
+task) as the evidence source.
 
-### Phase 52 — Register Ledgerkit + baseline · EXPERIMENTAL
-- Same shape as Phase 45, against `ledgerkit` at a pinned commit.
-  Expected baseline: CodeCompass finds ~0 meaningful package context;
-  the real context (`hledger` exe, manuals, journal syntax, 1.52
-  compatibility) is entirely outside its model. Record precisely.
+### Phase 52 — Continue genuine Ledgerkit Core development · EXPERIMENTAL
+- Further real Ledgerkit tasks beyond Phase 46's single baseline task
+  (its own roadmap's next milestones after Milestone 5, confirmed live
+  at this phase — the repo will have moved). Apply the agent-led
+  adoption blueprint (`adoption-blueprint.md`) if not already applied at
+  Stage B. Continues feeding `planning/context-use-log.md`,
+  `planning/context-gaps/`, and `validation/codecompass/findings/`.
 
 ### Phase 53 — Heterogeneous doc / reference / manual dependencies · EXPERIMENTAL
 - Test whether CodeCompass can usefully index + relate *reference
@@ -357,12 +436,18 @@ a project whose real dependencies are mostly not packages.
 
 ### Phase 54 — External executable / behavioural context · EXPERIMENTAL
 - Ledgerkit-specific tooling (not CodeCompass) runs `hledger`, builds
-  fixtures, does differential tests. CodeCompass's role under test:
-  can it *consume and relate* that evidence ("behaviour X: documented by
-  manual §Y, observed by experiment Z, implemented by ledgerkit/foo.py,
-  verified by test_bar")? `ledgerkit-plan.md` §"Behavioural test".
+  fixtures, does differential tests — the hledger executable remains an
+  **independent behavioural oracle** throughout, per
+  `licence-migration.md` §4, regardless of the relicensing. CodeCompass's
+  role under test: can it *consume and relate* that evidence ("behaviour
+  X: documented by manual §Y, observed by experiment Z, implemented by
+  ledgerkit/foo.py, verified by test_bar")? `ledgerkit-plan.md`
+  §"Behavioural test". Also measures the **usefulness** (not just
+  correctness) of any agent-suggested relationships this generates,
+  per `decisions/0051`'s two-property evaluation (correctness/confidence
+  vs. context usefulness — a relationship can be true but not useful).
 
-### Phase 55 — Decide on broader abstractions · EXPERIMENTAL → decision
+### Phase 55 — Decide on broader abstractions + refine the blueprint · EXPERIMENTAL → decision
 - **Exit / GATE DD (gate G7):** a written decision
   (`planning/reference-projects/ledgerkit/findings.md`) answering:
   is a generalised technical-dependency concept necessary for v1? is
@@ -370,6 +455,9 @@ a project whose real dependencies are mostly not packages.
   that covers the demonstrated need?** Approve the abstraction ADR(s) or
   record "not justified — package-source model + Stage C improvements is
   v1". `conditional-generalisation.md` structures this decision.
+- **Also:** revise `adoption-blueprint.md` with whatever Ledgerkit's
+  actual adoption experience surfaced (`adoption-blueprint.md` §10) —
+  the blueprint is not treated as finished after Phase 43e's first draft.
 
 ---
 
@@ -398,71 +486,117 @@ carries candidate designs; none is committed here.
   `chat` — all keep working. Prefer wrapping over rewriting. Any CLI
   breaking change → gate G8 + its own ADR.
 
-### Phase 59 — Re-validate · EXPERIMENTAL
-- Re-run **both** Technical Clipper (Phase 46 tasks) and Ledgerkit
-  (Phase 53–54 scenarios) against the generalised model.
-- **Exit / GATE DE:** existing capability preserved (no regression in the
-  Technical Clipper numbers), new capability proven (Ledgerkit context
-  advantage moved up). FAIL → fix or narrow Stage E before Stage F.
+### Phase 59 — Re-validate against Ledgerkit · EXPERIMENTAL
+- Re-run the Ledgerkit evaluation scenarios (Phases 46/53/54) against the
+  generalised model.
+- **Exit / GATE DE:** existing capability preserved, new capability
+  proven (Ledgerkit context advantage moved up). FAIL → fix or narrow
+  Stage E before Stage F. **Technical Clipper regression is deliberately
+  a separate stage (F, next)** — do not fold it in here; a change that
+  looks fine against Ledgerkit alone may still be accounting-specific.
 
 ---
 
-## STAGE F — Define the real v1 release boundary  · COMMITTED once E completes
+## STAGE F — Cross-ecosystem regression: Technical Clipper  · COMMITTED protocol, EXPERIMENTAL findings
 
-(If Stage D/E were skipped per GATE DD, Stage F runs against the Stage C
-product instead — the checklist is identical.)
+**New stage (2026-09-12 realignment).** Technical Clipper was the old
+Stage B; it moves here, unevaluated so far (Stage B never ran against it —
+confirmed: `planning/reference-projects/` doesn't exist yet). Its role
+changes from "first proof point" to **the check that Ledgerkit-driven
+changes generalise** — package/vendor context still strong, relationship
+types generalise, no accounting-specific overfit, entry points still
+lean, ordinary modern repositories still cheap to navigate. This stage's
+content is `reference-project-protocol.md`'s existing Technical-Clipper
+material (§1, §2.3's task pool, §3's outputs), renumbered down, otherwise
+unchanged in substance — do not invent new Technical Clipper product
+work merely to create a test; use its existing, still-real backlog
+(confirm live at Phase 60 — its state may have moved since the 2026-09-09
+inspection).
 
-### Phase 60 — Blank-slate documentation reconstruction · COMMITTED
+### Phase 60 — Register Technical Clipper + baseline · EXPERIMENTAL
+- Same shape as Phase 45, against `technical-clipper` at a pinned commit,
+  confirmed live at this phase. `reference-project-protocol.md` §1/§2.1.
+
+### Phase 61 — Genuine Technical Clipper task(s) · EXPERIMENTAL
+- One or more real tasks from Technical Clipper's own roadmap/deferred
+  work (`reference-project-protocol.md` §2.3's candidate pool, reconfirmed
+  live), run against the **post-Ledgerkit-evolved** CodeCompass. Same
+  procedure as Phase 46 (`reference-project-protocol.md` §2.4).
+
+### Phase 62 — Consolidate: does it generalise? · EXPERIMENTAL
+- `knowledge-curator` + `context-evaluator` assess: package/vendor
+  context still strong; relationship/evidence concepts introduced by
+  Stage E generalise beyond accounting/hledger; no excessive noise from
+  new abstractions; generated entry points remain useful; ordinary
+  modern repositories still cheap to navigate (this task's explicit
+  overfitting checklist).
+
+### Phase 63 — Decision · EXPERIMENTAL → decision
+- **Exit / GATE DF (new):** fix only *general* problems supported by
+  evidence — a Technical-Clipper-specific special case is not a valid
+  Stage E/F output. If a genuine regression is found, it blocks Stage G
+  until fixed or explicitly, narrowly scoped away with its own ADR.
+
+---
+
+## STAGE G — v1 consolidation  · COMMITTED once F completes
+
+**Renumbered from the old Stage F** (was Phases 60–67; now 64–70) to make
+room for the new Stage F above. Content unchanged except one addition
+(an explicit self-dogfood confirmation folded into Phase 67, not a
+separate phase — Stages D and F already did the heavy Ledgerkit/Technical
+Clipper re-validation work, so this stage's version is a final
+confirmation, not a repeat). (If Stage D/E were skipped per GATE DD,
+Stage G runs against the Stage C product instead — the checklist is
+identical.)
+
+### Phase 64 — Blank-slate documentation reconstruction · COMMITTED
 - `docs-reconstructor` agent, deliberate blank-slate posture
   (`documentation-lifecycle.md` §"Blank-slate reconstruction"). Produces a
   **shadow doc proposal** under `planning/v1-docs-reconstruction/`, not an
   overwrite.
 
-### Phase 61 — Architecture + ADR reconciliation · COMMITTED
-- Reconcile `architecture/overview.md` (currently 1,954 lines, accreted)
-  against current reality; ADR status review (mark superseded ADRs,
-  don't rewrite them). Decide retain/rewrite/consolidate/split/replace/
-  remove per doc (`documentation-lifecycle.md` §"Reconciliation").
+### Phase 65 — Architecture + ADR reconciliation · COMMITTED
+- Reconcile `architecture/overview.md` against current reality; ADR
+  status review (mark superseded ADRs, don't rewrite them). Decide
+  retain/rewrite/consolidate/split/replace/remove per doc
+  (`documentation-lifecycle.md` §"Reconciliation").
 - **Concrete input:** `planning/v1-redefinition/architecture-split-candidates.md`
-  (the `docs-maintainer`'s Phase 42 catalogue — 36 history-shaped
-  passages).
-- **Concrete obligation (from Phase 42 / L-004):** fix
-  `architecture-split-candidates.md` **§C items 33–36** as *corrections*
-  (not just trims) — `architecture/overview.md` currently describes the
-  deleted `grounded_description.py`, its constants, and `Depth` /
-  `depth = full` as live code, contradicting the same file's own
-  "Grounded description — retired" / "Cost model" sections. Verify each
-  against `src/` before rewording.
+  (the `docs-maintainer`'s Phase 42 catalogue). **§C's 4
+  self-contradictory items were already fixed at Phase 43b** — only
+  §A/§B's 32 remaining history-shaped passages are this phase's job.
 
-### Phase 62 — Roadmap + context reconciliation · COMMITTED
+### Phase 66 — Roadmap + context reconciliation · COMMITTED
 - `roadmap-context-curator`: `ROADMAP.md` + `CONTEXT.md` reflect the
   shipped v1; deferred work (Phases 24/25, anything dropped at gates)
   clearly parked with revisit triggers.
 
-### Phase 63 — Technical Clipper final validation · EXPERIMENTAL (gates v1)
-- Full Phase 46 evaluation suite, current code. Target: no FAIL verdicts;
-  advantage MODERATE+ on the majority of tasks, or an explicit written
+### Phase 67 — Final validation: self-dogfood + Ledgerkit + Technical Clipper · EXPERIMENTAL (gates v1)
+- A **lightweight confirmation pass**, not a full re-run (Stages D and F
+  already did that work): re-verify CodeCompass's own dogfooding signal
+  (`planning/context-health.md`, `planning/context-use-log.md`) is
+  current; re-confirm Ledgerkit's final evaluation numbers
+  (`planning/reference-projects/ledgerkit/`) and Technical Clipper's
+  (`planning/reference-projects/technical-clipper/`) still hold against
+  the code as shipped. Target: no FAIL verdicts on either; advantage
+  MODERATE+ on the majority of tasks across both, or an explicit written
   justification for shipping below that bar.
 
-### Phase 64 — Ledgerkit final validation · EXPERIMENTAL (gates v1, where in scope)
-- Same, for whatever Ledgerkit scope Stage E delivered. Skipped cleanly
-  (with a note) if GATE DD deferred all Ledgerkit-driven scope.
-
-### Phase 65 — Independent release audit · COMMITTED (FAIL blocks)
+### Phase 68 — Independent release audit · COMMITTED (FAIL blocks)
 - `release-phase-auditor`, read-only, full Definition-of-Done audit
-  across every Stage A–F phase's exit criteria + the milestone-closeout
+  across every Stage A–G phase's exit criteria + the milestone-closeout
   checklist. Verdicts: `PASS` / `PASS WITH NON-BLOCKING OBSERVATIONS` /
-  `FAIL`. **`FAIL` prevents Phase 66/67.** Auditor does not fix anything.
+  `FAIL`. **`FAIL` prevents Phase 69/70.** Auditor does not fix anything.
 
-### Phase 66 — Milestone closeout · COMMITTED
+### Phase 69 — Milestone closeout · COMMITTED
 - `planning/milestone-closeout-checklist.md` executed: deterministic doc
-  checks; reconciliation applied (Phase 60–61 decisions actioned);
+  checks; reconciliation applied (Phase 64–65 decisions actioned);
   obsolete current docs removed; links/examples validated; a **milestone
   closeout report** (`planning/v1-closeout.md` — architecture summary,
   what shipped, what deferred, key ADRs, evaluation results); current-doc
   freeze.
 
-### Phase 67 — Release redefined CodeCompass v1 · COMMITTED (gate G9)
+### Phase 70 — Release redefined CodeCompass v1 · COMMITTED (gate G9)
 - Drop `.dev0`: `pyproject.toml` `1.0.0.dev0` → `1.0.0`; `twine upload`
   (**the first-ever publish** — G2-b held everything until here); `v1.0.0`
   tag; `[Unreleased]` → dated `1.0.0` section; public positioning change
@@ -476,17 +610,24 @@ product instead — the checklist is identical.)
 If evidence is weak or time runs short, the smallest thing that still
 legitimately counts as "redefined v1":
 
-1. Stage A complete (agent-led, proven).
-2. Stage B complete (Technical Clipper evaluated honestly; findings
-   published even if the verdict is "LOW advantage on a small repo").
+1. Stage A complete (agent-led, proven — including the relicensing
+   decision resolved one way or the other, and the adoption blueprint
+   written).
+2. Stage B complete (Ledgerkit evaluated honestly; findings published
+   even if the verdict is "LOW advantage on this task").
 3. At least one **measured** improvement over the foundation
-   (phases 0–38) baseline, re-validated on Technical Clipper (a trimmed
-   Stage C + Phase 51).
-4. Stage F closeout + independent audit (Phases 60–67), scoped to what
+   (phases 0–38) baseline, re-validated on Ledgerkit (a trimmed Stage C +
+   Phase 51).
+4. Stage F run at least once against Technical Clipper (confirming no
+   regression from whatever Stage C changes landed), even if Stages D/E
+   are skipped.
+5. Stage G closeout + independent audit (Phases 64–70), scoped to what
    shipped; ship as `1.0.0` (first-ever publish).
 
 That is a defensible v1: *"CodeCompass, built agent-led, measurably
 improved on real external work, with honest published evidence of where
-it does and doesn't add advantage."* Stage D/E become v1.x. The plan
-should take this path rather than delay v1 indefinitely chasing the
-broader hypothesis.
+it does and doesn't add advantage, and confirmed not to have overfit to a
+single ecosystem."* Deeper Ledgerkit dogfooding (Stage D) and
+generalisation (Stage E) become v1.x if evidence doesn't clearly justify
+them now. The plan should take this path rather than delay v1
+indefinitely chasing the broader hypothesis.

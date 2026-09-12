@@ -6,6 +6,14 @@ This folder is an **umbrella planning package**, same role
 but larger in scope: it redefines what "CodeCompass v1" means and lays
 out an ordered, evidence-gated path to it.
 
+**Amended 2026-09-12** — see [`realignment-2026-09.md`](realignment-2026-09.md)
+for a strategic reassessment: Ledgerkit (not Technical Clipper) is now
+the Stage B reference project; a GPL-3.0-or-later relicensing is planned
+(gate G12); a reusable agent-led adoption blueprint is added (gate G13).
+This `README.md` is updated in place where it describes the reordered
+parts (§1.6/1.7, §3, §7, §13 below); read the realignment doc for the
+full rationale and current-state evidence.
+
 **This package is planning only. No implementation has started. No
 governance file (`CLAUDE.md`, `decisions/`) has been changed.** Every
 governance/version/roadmap decision it depends on is listed in §7
@@ -28,12 +36,16 @@ evidence gates ahead of them resolve.
 | [`agent-led-development.md`](agent-led-development.md) | Specialist agents, boundaries, DoD integration (4) |
 | [`learning-lifecycle.md`](learning-lifecycle.md) | Project-learning capture/curation/promotion (5) |
 | [`documentation-lifecycle.md`](documentation-lifecycle.md) | Incremental maintenance + blank-slate reconstruction + closeout (6, 12) |
-| [`reference-project-protocol.md`](reference-project-protocol.md) | Reference-project registration/inspection/task-selection; Technical Clipper specifics (7) |
+| [`reference-project-protocol.md`](reference-project-protocol.md) | Reference-project registration/inspection/task-selection (generic); Technical Clipper's now-later Stage F specifics (7, 12) |
 | [`context-quality-evaluation.md`](context-quality-evaluation.md) | Context-quality evaluation spec (8) |
-| [`ledgerkit-plan.md`](ledgerkit-plan.md) | Ledgerkit as the harder second reference project (9) |
+| [`ledgerkit-plan.md`](ledgerkit-plan.md) | Ledgerkit as the **Stage B** reference project (9) |
 | [`conditional-generalisation.md`](conditional-generalisation.md) | Technical-dependency / evidence-provenance generalisation, evidence-gated (10) |
 | [`migration.md`](migration.md) | Keeping existing capabilities working through the evolution (11) |
-| [`proposed-governance-changes.md`](proposed-governance-changes.md) | Proposed `CLAUDE.md` diff + proposed ADRs (feeds §7 gates) |
+| [`proposed-governance-changes.md`](proposed-governance-changes.md) | Proposed `CLAUDE.md` diff + proposed ADRs (feeds §7 gates); §C added 2026-09-12 |
+| [`realignment-2026-09.md`](realignment-2026-09.md) | 2026-09-12 reassessment: Ledgerkit-first reorder, licence migration, adoption blueprint, feedback ingestion |
+| [`licence-migration.md`](licence-migration.md) | GPL-3.0-or-later migration plan (required output 3) |
+| [`adoption-blueprint.md`](adoption-blueprint.md) | Reusable agent-led adoption blueprint (required output 6) |
+| [`codecompass-feedback-ingestion.md`](codecompass-feedback-ingestion.md) | How reference-project context-curator findings are received/reviewed (required output 10) |
 
 The learning-lifecycle scaffold itself lives at
 [`../learnings/`](../learnings/) (created by this package as an empty,
@@ -147,7 +159,33 @@ delegates bounded work to a **small** set of specialist agents
 - the reference-project and context-evaluation work in Stages B–D *is*
   specialist-agent work — the roles have to exist first.
 
-### 1.6 Role of Technical Clipper (first proof point)
+### 1.6 Role of Ledgerkit (Stage B — the primary reference project, amended 2026-09-12)
+
+`https://github.com/ctosullivan/ledgerkit` — a pure-Python
+(3.8–3.12) library bridging to the `hledger` plain-text-accounting
+ecosystem: journal parsing (hledger 1.52-compatible), `balance` /
+`register` / `print` / `accounts` / `stats` / `check`, optional pandas
+export. No runtime deps. Governance: `CLAUDE.md` / `CONTEXT.md` /
+`ROADMAP.md`, `docs/` + `dev-docs/` + a `knowledge/` folder. **Live
+re-inspection 2026-09-12** (`realignment-2026-09.md` §1.3): Milestones
+0–4 done (485 tests passing); Milestone 5 ("CLI Filter Flags") is
+`[PLANNED]`, next up — a genuine, already-scoped task, not one invented
+for this evaluation.
+
+Its important "dependencies" are an **executable** (`hledger`,
+independently confirmed `GPL-3.0-or-later`, currently stable at 1.52.4
+with a 1.99.x preview in progress), its **manuals / reference material**,
+**journal syntax**, **query semantics**, and **observed black-box
+behaviour** verified by compatibility tests. **Stage B now uses it as
+the first honest baseline** (not Stage D as originally planned — see
+`realignment-2026-09.md` §4): does the current, unmodified CodeCompass
+supply trustworthy, materially-useful context here? Stage D then goes
+deeper, using continued real Ledgerkit development to decide whether v1
+scope must expand beyond package-source grounding. **CodeCompass does
+not become the hledger experiment runner** — project-specific tools do
+that; CodeCompass may consume and relate the resulting evidence.
+
+### 1.7 Role of Technical Clipper (Stage F — cross-ecosystem regression, amended 2026-09-12)
 
 `https://github.com/ctosullivan/technical-clipper` — a TypeScript /
 pnpm-monorepo Chromium MV3 browser extension that captures code-heavy web
@@ -161,28 +199,15 @@ governance shape close to CodeCompass's own.
 It tests **conventional** development where the substantive technical
 context is *not* in the package graph: DOM APIs, `MutationObserver`,
 Chromium extension APIs, CommonMark / fenced-code-block semantics,
-highlight.js / Prism detection, ChatGPT's DOM. Stage B measures whether
-CodeCompass adds trustworthy, materially-useful context here, or whether
-a fresh Claude session gets equivalent context from a couple of cheap
-searches.
-
-### 1.7 Role of Ledgerkit (harder second proof point)
-
-`https://github.com/ctosullivan/ledgerkit` — a pure-Python
-(3.8–3.12) library bridging to the `hledger` plain-text-accounting
-ecosystem: journal parsing (hledger 1.52-compatible), `balance` /
-`register` / `print` / `accounts` / `stats` / `check`, optional pandas
-export. No runtime deps. Governance: `CLAUDE.md` / `CONTEXT.md` /
-`ROADMAP.md`, `docs/` + `dev-docs/`.
-
-Its important "dependencies" are an **executable** (`hledger`), its
-**manuals / reference material**, **journal syntax**, **query
-semantics**, and **observed black-box behaviour** verified by
-compatibility tests. Stage D uses it to decide whether v1 scope must
-expand beyond package-source grounding, and what the *smallest* useful
-generalisation is. **CodeCompass does not become the hledger
-experiment runner** — project-specific tools do that; CodeCompass may
-consume and relate the resulting evidence.
+highlight.js / Prism detection, ChatGPT's DOM. **Its role moves from
+"first proof point" to "cross-ecosystem regression check"** (Stage F,
+run *after* Ledgerkit-driven changes land): does CodeCompass still add
+trustworthy, materially-useful context on a project deliberately
+different from Ledgerkit/hledger — package/vendor context still strong,
+relationship types generalising, no accounting-specific overfit? This
+protects against the redirection's own central risk (R10/R11 in §13):
+optimising CodeCompass for one ecosystem at the expense of general
+usefulness.
 
 ### 1.8 Likely v1 boundaries (hypothesis, not commitment)
 
@@ -302,59 +327,71 @@ carries the ADR draft (proposed `decisions/0048`).
 
 ## 3. Ordered redefined-v1 roadmap
 
-Full detail in [`roadmap.md`](roadmap.md). One-screen summary:
+**Amended 2026-09-12** — Ledgerkit is now Stage B/D; Technical Clipper is
+the new Stage F. Full detail in [`roadmap.md`](roadmap.md) and
+[`realignment-2026-09.md`](realignment-2026-09.md) §4. One-screen summary:
 
 ```
-STAGE A — Redefine v1 & make CodeCompass agent-led    (COMMITTED)
+STAGE A — Redefine v1 & make CodeCompass agent-led    (done, + 2 new bridge phases)
   39  Reconcile repo state + versioning realignment
   40  Specialist agent roster + lead workflow
   41  Project-learning lifecycle
   42  Documentation lifecycle (incremental + blank-slate + closeout gate)
   43  Dogfood the agent-led loop on a real CodeCompass change
-      ── GATE DA: agent-led loop proven end-to-end ──
+      ── GATE DA: agent-led loop proven end-to-end — passed ──
+  43b Standing doc-drift checks (from GATE DA)
+  43c Agent context-suggestion pathways + context-health planning
+  43d GPL-3.0-or-later relicensing plan                          ← NEW
+  43e Reusable agent-led adoption blueprint                       ← NEW
 
-STAGE B — Validate existing CodeCompass against real work  (COMMITTED protocol / EXPERIMENTAL findings)
+STAGE B — Ledgerkit baseline  (COMMITTED protocol / EXPERIMENTAL findings)   ← was Technical Clipper
   44  Reference-project evaluation protocol + context-quality eval spec
-  45  Register Technical Clipper, pin commit, baseline evaluation
-  46  Use CodeCompass during genuine Technical Clipper tasks + independent evals
+  45  Register Ledgerkit, pin commit, baseline evaluation
+  46  Use CodeCompass during a genuine Ledgerkit task (Milestone 5: CLI filter flags) + independent evals
   47  Consolidate recurring friction into confirmed findings
       ── GATE DB: which improvements are evidence-supported? ──
 
 STAGE C — Improve the existing product                 (CONDITIONAL on GATE DB)
   48  Task-oriented context retrieval            (if supported)
   49  Graph / context quality                    (if supported)
-  50  Shared-agent context                       (if supported)
-  51  Re-run Technical Clipper evaluation — did context quality improve?
+  50  Shared-agent context / entry points        (if supported)
+  51  Re-run Ledgerkit evaluation — did context quality improve?
       ── GATE DC: measured improvement? ──
 
-STAGE D — Test the broader product hypothesis         (EXPERIMENTAL)
-  52  Register Ledgerkit, baseline
+STAGE D — Deeper Ledgerkit dogfooding                 (EXPERIMENTAL)
+  52  Continue genuine Ledgerkit Core development with CodeCompass
   53  Heterogeneous doc / reference / manual dependencies
   54  External executable / behavioural context (evidence consumed, not run, by CodeCompass)
-  55  Decide whether broader dependency/evidence abstractions are necessary
+  55  Decide whether broader dependency/evidence abstractions are necessary + refine the blueprint
       ── GATE DD: is generalisation required, and what is the minimum? ──
 
 STAGE E — Implement the minimum justified generalisation  (CONDITIONAL on GATE DD)
   56  Technical-dependency abstraction (only what GATE DD justifies)
   57  Provenance / evidence features (only what GATE DD justifies)
   58  Migrate package/source functionality cleanly into the final model
-  59  Re-run Technical Clipper + Ledgerkit validation
+  59  Re-run Ledgerkit validation
       ── GATE DE: existing capability preserved, new capability proven? ──
 
-STAGE F — Define the real v1 release boundary          (COMMITTED once E completes)
-  60  Blank-slate documentation reconstruction
-  61  Architecture + ADR reconciliation
-  62  Roadmap + context reconciliation
-  63  Technical Clipper final validation
-  64  Ledgerkit final validation (where in scope)
-  65  Independent release audit  (FAIL blocks)
-  66  Milestone closeout artifact + git tag
-  67  Release redefined CodeCompass v1
+STAGE F — Cross-ecosystem regression: Technical Clipper  (COMMITTED protocol / EXPERIMENTAL findings)   ← NEW
+  60  Register Technical Clipper, pin commit, baseline evaluation
+  61  Genuine Technical Clipper task(s) + independent evals
+  62  Consolidate: does it generalise, or did it overfit to Ledgerkit/hledger?
+  63  Decide — fix only general problems with evidence
+      ── GATE DF: no un-addressed regression ──
+
+STAGE G — v1 consolidation          (COMMITTED once F completes)     ← was Stage F, renumbered +4
+  64  Blank-slate documentation reconstruction
+  65  Architecture + ADR reconciliation
+  66  Roadmap + context reconciliation
+  67  Final validation: self-dogfood + Ledgerkit + Technical Clipper (lightweight confirmation)
+  68  Independent release audit  (FAIL blocks)
+  69  Milestone closeout artifact + git tag
+  70  Release redefined CodeCompass v1
 ```
 
 **Committed vs experimental vs conditional vs deferred** is marked
 per-phase in `roadmap.md`. Existing Phases 24 (chat routing/rollup) and
-25 (MCP) are **not renumbered** — they become "deferred, revisit as
+25 (MCP) are **not renumbered** — they remain "deferred, revisit as
 Stage C candidates if reference-project evidence supports them."
 
 ---
@@ -379,6 +416,7 @@ Stage C candidates if reference-project evidence supports them."
 | R14 | **Indefinitely delaying a meaningful v1 release** | **High — the central risk (heightened by G2-b: nothing is published until Phase 67)** | (a) Every gate has an explicit "defer / stop" branch — the plan can conclude at GATE DC with a modest, real, measured improvement over the phases-0–38 baseline and ship *that* as `1.0.0` if Stage D evidence is weak. (b) `roadmap.md` §"Minimum viable redefined v1" defines the smallest shippable version and instructs the plan to take it rather than chase the broader hypothesis. (c) Time/phase tripwires are noted per stage. (d) If the hold starts to bite, gate G2 can be revisited to cut an interim `0.x` release — it was a preference, not a one-way door. |
 | R15 | **Reference-project work distorts Technical Clipper / Ledgerkit** | Medium | Protocol rule (task instruction + `reference-project-protocol.md`): reference work is subordinate to each project's own roadmap; no feature is added to them to make CodeCompass easier to evaluate; the reference-project-tester never silently repairs CodeCompass to make its own eval pass. |
 | R16 | **Governance drift** (silent CLAUDE.md / ADR edits by agents) | Medium | `CLAUDE.md` §0 preserved; `proposed-governance-changes.md` is the only route; docs-reconstructor and every agent are explicitly barred from editing protected files; DoD audit checks for it. |
+| R17–R22 | *(added 2026-09-12)* Relicensing regret; over-copying hledger source under a licence-alignment misreading; treating the reorder as license to redesign CodeCompass before Ledgerkit baseline evidence exists; the adoption blueprint becoming a large framework; the feedback-ingestion process becoming Ledgerkit's roadmap remote control; Technical Clipper going stale in its later slot | See `realignment-2026-09.md` §8 for the full table and mitigations. |
 
 ---
 
@@ -398,7 +436,10 @@ blocks the *phase* that acts on it. Ordered by when they first bite.
 | **G7** | GATE DD outcome: whether Stage E generalisation happens at all, and its exact minimum scope; approve the abstraction ADR(s) | Phase 56 | Decided from evidence at that point |
 | **G8** | Any CLI breaking change introduced by Stage C or E migration (`migration.md` flags each) | The specific phase | Prefer additive; breaking changes need their own ADR + this gate |
 | **G9** | Redefined-v1 release: drop `.dev0` → `1.0.0`, `twine upload` (first-ever publish), `v1.0.0` tag, `[Unreleased]` → dated section, public positioning change | Phase 67 | The terminal gate; same irreversibility posture as the old Phase 23 Part B |
-| **G10** | Public product positioning / messaging change (README "what it is", `ai-docs/`) from "dependency reference docs" to "task context map for agents" | Phase 60–67 | Decided at closeout with the reconstructed docs in hand |
+| **G10** | Public product positioning / messaging change (README "what it is", `ai-docs/`) from "dependency reference docs" to "task context map for agents" | Phase 64–70 | Decided at closeout with the reconstructed docs in hand |
+| **G11** | *(added 2026-09-12)* Roadmap restructuring: Ledgerkit becomes Stage B, Technical Clipper becomes a new Stage F; phases 45–70 renumbered (none started) | Phase 44's retarget / any Phase 45+ work | Yes — `realignment-2026-09.md` + amended `roadmap.md` |
+| **G12** | *(added 2026-09-12)* GPL-3.0-or-later relicensing (`LICENSE`, `pyproject.toml`, `README.md`, `CONTRIBUTING.md`; ADR `decisions/0053`) | Phase 43d's mechanical step | Recommended — legally simple case (`licence-migration.md` §2), but its own explicit gate given the downstream effect on users |
+| **G13** | *(added 2026-09-12)* Approve `adoption-blueprint.md` as the version handed to Ledgerkit | Phase 43e completion / before Ledgerkit applies it | Recommended — low risk, but becomes a cross-project contract |
 
 ### Success criteria for *this planning session* (all met)
 

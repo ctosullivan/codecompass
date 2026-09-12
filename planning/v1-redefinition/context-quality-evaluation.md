@@ -4,8 +4,11 @@ The minimum report the `context-evaluator` produces for each
 CodeCompass-assisted reference-project task. Narrowly focused on **context
 quality**, not productivity benchmarking.
 
-Operationalised by Phase 44 (as a template); applied in Phases 46, 51,
-59, 63, 64.
+Operationalised by Phase 44 (as a template); applied in Phases 46, 51, 59
+(Ledgerkit), 61 (Technical Clipper, Stage F), and 67 (final confirmation,
+both). **Amended 2026-09-12** (`realignment-2026-09.md`): Ledgerkit is
+now first (was Technical Clipper); phase numbers updated, template and
+criteria unchanged — this spec was always project-agnostic.
 
 ## 1. Ground rules
 
@@ -89,7 +92,7 @@ equivalent context trivially through ordinary repository inspection
   behaviour, an easily-overlooked caller, a cross-cutting relationship),
   with grounding an agent could verify.
 
-## 6. Aggregation (Phase 47 / 63)
+## 6. Aggregation (Phase 47 / 62–63)
 
 Across all evaluated tasks:
 - count of PASS / PASS WITH GAPS / FAIL;
@@ -99,7 +102,7 @@ Across all evaluated tasks:
   findings);
 - recurring gap categories (the input to GATE DB / GATE DD).
 
-**Shipping bar for redefined v1 (Phase 63):** zero FAIL verdicts on the
+**Shipping bar for redefined v1 (Phase 67):** zero FAIL verdicts on the
 final suite; MODERATE-or-higher advantage on the majority of tasks — or a
 written, explicit justification for shipping below that bar (e.g. "LOW
 advantage is the honest result for repos this small; the value case is

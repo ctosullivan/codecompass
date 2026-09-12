@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **2026-09-12 realignment** (planning only — `planning/v1-redefinition/realignment-2026-09.md`,
+  gate G11): reassessed and reordered the remaining redefined-v1 roadmap.
+  **Ledgerkit is now Stage B** (the first external reference project;
+  was Technical Clipper) — its dependency shape (the `hledger` executable,
+  its manuals, journal syntax, query semantics, compatibility tests,
+  intentional divergences) is the stronger test of CodeCompass's
+  distinctive value, confirmed by live re-inspection this session:
+  `hledger` is `GPL-3.0-or-later` (confirmed at the SPDX-field level),
+  currently stable at 1.52.4 (1.99.x is a preview); Ledgerkit is MIT,
+  single-copyright-holder, with a genuine next task already scoped on
+  its own roadmap (Milestone 5, "CLI Filter Flags"). **Technical Clipper
+  moves to a new Stage F** (cross-ecosystem regression, run after
+  Ledgerkit-driven changes land, to check they generalise rather than
+  overfit to accounting/hledger). Phases 39–43c are unchanged, `done`,
+  not renumbered; phases 45–67 (none started — confirmed:
+  `planning/reference-projects/` doesn't exist yet) are renumbered
+  45–70 to make room for the new stage. GATE letters DB/DC/DD/DE keep
+  their conceptual position (now scoped to Ledgerkit evidence); a new
+  **GATE DF** covers Technical Clipper's regression decision.
+  Two new Stage-A bridge phases: **43d** (GPL-3.0-or-later relicensing
+  plan — CodeCompass is currently MIT, single copyright holder, no
+  bundled third-party source, no other contributors to consult; the
+  actual `LICENSE`/`pyproject.toml`/`README.md` edits are held behind
+  **gate G12**, not made this session) and **43e** (a reusable agent-led
+  adoption blueprint, extracted from CodeCompass's own 8-agent working
+  practice, for Ledgerkit — and later projects — to adopt; **gate G13**).
+  New planning artifacts: `licence-migration.md`, `adoption-blueprint.md`,
+  `codecompass-feedback-ingestion.md` (the standard finding format +
+  review process for a reference project's context-curator findings —
+  Ledgerkit discovers problems, CodeCompass generalises them, promotion
+  is never automatic). Draft ADRs `decisions/0052` (the reorder) and
+  `decisions/0053` (the relicensing) staged in
+  `proposed-governance-changes.md` §C, not yet written to `decisions/`.
+  Amended for consistency: `ledgerkit-plan.md` (promoted from Stage D to
+  Stage B, phase numbers), `reference-project-protocol.md` (Technical
+  Clipper's specifics repositioned as Stage F), `conditional-generalisation.md`
+  (flagged that Technical-Clipper-sourced evidence rows are now
+  unavailable at GATE DD's original timing), `context-quality-evaluation.md`,
+  `migration.md`, the package `README.md` (§1.6/1.7 swapped, §3's roadmap
+  summary reordered, gates/risks tables extended). **No implementation
+  from this realignment** — `CLAUDE.md` untouched, no `src/` change, no
+  file under gate G12/G13 touched, `python scripts/check_user_docs.py --strict`
+  clean throughout.
+
 ### Fixed
 
 - **Phase 43b**: 4 self-contradictory passages in `architecture/overview.md`

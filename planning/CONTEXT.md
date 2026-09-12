@@ -15,9 +15,32 @@ former "v1.0" (Phase 23 = publish that tool to PyPI) is superseded:
 PyPI release will be the redefined v1 as `1.0.0`. "CodeCompass v1" is
 redefined as a *product-validation milestone*: CodeCompass developed
 agent-led, validated against real external reference-project work
-(Technical Clipper, then Ledgerkit), improved from that evidence,
-generalised only as far as evidence justifies, then released after
-blank-slate doc reconstruction and an independent audit.
+(**Ledgerkit, then Technical Clipper** — reordered 2026-09-12, see
+below), improved from that evidence, generalised only as far as evidence
+justifies, then released after blank-slate doc reconstruction and an
+independent audit.
+
+**2026-09-12 realignment** (planning only —
+`planning/v1-redefinition/realignment-2026-09.md`, gate G11):
+reassessed and reordered the remaining roadmap. **Ledgerkit is now Stage
+B** (was Technical Clipper) — its dependency shape (hledger executable,
+manuals, journal syntax, compatibility tests) is the stronger test of
+CodeCompass's distinctive value, confirmed by live re-inspection
+(hledger: `GPL-3.0-or-later`, stable 1.52.4; Ledgerkit: MIT,
+single-copyright, Milestone 5 "CLI Filter Flags" `[PLANNED]` next).
+**Technical Clipper moves to a new Stage F** (cross-ecosystem
+regression, run after Ledgerkit-driven changes land). Phases 39–43c
+unchanged/`done`/not renumbered; phases 45–67 (none started) renumbered
+45–70. Two new Stage-A bridge phases added: **43d** (GPL-3.0-or-later
+relicensing plan, aligning with hledger's own licence — gate G12,
+mechanics not yet executed) and **43e** (reusable agent-led adoption
+blueprint for Ledgerkit and later projects — gate G13). New planning
+artifacts: `licence-migration.md`, `adoption-blueprint.md`,
+`codecompass-feedback-ingestion.md`; draft ADRs `decisions/0052`
+(reorder) and `decisions/0053` (relicensing) staged in
+`proposed-governance-changes.md` §C, not yet written to `decisions/`.
+**No implementation has started from this realignment** — `CLAUDE.md`
+untouched, no `src/` change, no file under gates G12/G13 touched.
 
 **Stage A of the redefined-v1 roadmap is complete: Phases 39–43 are
 `done`.** Phase 43 dogfooded the full 14-step agent-led loop on a real
@@ -627,14 +650,33 @@ blocking gap — 4 non-blocking observations, all addressed in the
 closeout commit). ROADMAP row `43b` / `v1-redefinition/roadmap.md` /
 the plan file's own status line all flipped to `done` in this commit.
 
-**Immediate next step: Phase 44**
+**2026-09-12 realignment landed as a planning-only package** (no
+implementation): `realignment-2026-09.md`, `licence-migration.md`,
+`adoption-blueprint.md`, `codecompass-feedback-ingestion.md`; amended
+`roadmap.md`, `ledgerkit-plan.md`, `reference-project-protocol.md`,
+`conditional-generalisation.md`, `context-quality-evaluation.md`,
+`migration.md`, `README.md`, `proposed-governance-changes.md` §C (2 draft
+ADRs); new `planning/ROADMAP.md` rows 43d/43e + retargeted 45–70. Two new
+plan files: `phase-43d-gpl-relicensing-plan.md` (plan only; mechanics
+gated on **G12**), `phase-43e-agent-led-adoption-blueprint.md` (content
+drafted; formal execution/closeout — retro, drift audit, triage, audit —
+still pending). **Three human-decision gates open: G11** (this roadmap
+reorder — recommended, already reflected in the amended docs pending
+final sign-off), **G12** (GPL-3.0-or-later relicensing — `LICENSE`/
+`pyproject.toml`/`README.md` untouched so far), **G13** (approve
+`adoption-blueprint.md` as the version handed to Ledgerkit).
+
+**Immediate next step:** the user reviews this realignment. Once
+resolved: **Phase 43e**'s formal closeout (it's drafted but not yet run
+through the agent-led loop — retro, `docs-reconstructor` drift audit,
+`knowledge-curator` triage, `release-phase-auditor` pass), **Phase 43d**'s
+mechanical licence edits (only if G12 approves), then **Phase 44**
 ([`phase-44-reference-project-protocol.md`](phase-44-reference-project-protocol.md))
 — **Stage B begins**: turn the reference-project protocol +
 context-quality evaluation spec into operational templates + a registry,
-and brief `context-evaluator` + `reference-project-tester` for their first
-real use. Phase 44 also writes the Phase 45 plan (register Technical
-Clipper + baseline). No human-decision gate blocks Phase 44 — both bridge
-phases are fully done.
+brief `context-evaluator` + `reference-project-tester`. Phase 44 now
+writes the Phase 45 plan (register **Ledgerkit** + baseline — Milestone
+5, "CLI Filter Flags", is the confirmed genuine next task).
 
 Phase 41 was the first real run of the agent-led loop (the live smoke
 delegation deferred from Phase 40); Phase 42 was the `docs-maintainer`'s
