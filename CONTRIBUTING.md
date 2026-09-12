@@ -101,7 +101,14 @@ linked from the phase's exit note. Not done until all of these.
   (e.g. `feat(phase-3): dedupe diamond dependencies in DEPTREE.md`,
   `docs(phase-0): add architecture overview`). A commit that doesn't map to
   a phase or a plan-file item usually means the plan file is incomplete.
+  Commit at logical intervals within a phase rather than holding
+  everything for one end-of-phase commit — a completed sub-deliverable
+  is its own commit when it stands alone.
 - Changelog entries land in the same commit as the change they describe.
+- An agent-led session pushes to `origin` automatically once a phase's
+  commit(s) land and its DoD gate (see "Definition of done" above) has
+  passed — this doesn't change anything about how a human contributor
+  pushes their own work, just documents the agent-led default.
 - **Milestones are roadmap phase groups, not individual phases.** MVP
   (v0.1, phases 0-8) and MVP (v0.2, phases 9-19) are each one milestone.
   Only when a milestone's last phase is marked `done` do we promote

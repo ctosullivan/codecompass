@@ -87,9 +87,21 @@ linked from the phase's exit note. Not done until all of these.
 
 ## 6. Commits and milestones
 
-- One logical change per commit: `type(phase-N): summary`.
+- One logical change per commit: `type(phase-N): summary`. Commit at
+  logical intervals within a phase rather than holding everything for a
+  single end-of-phase commit — a completed sub-deliverable (a plan file,
+  a follow-up fix, a learnings-log backfill) is its own commit when it
+  stands alone, matching this project's existing practice (e.g. Phase
+  44's own closeout was two commits, not one).
 - Changelog entries land in the same commit as the change, referencing the
   matching phase tag.
+- **Push to `origin` automatically once a phase's commit(s) land and its
+  DoD gate (§5) has passed** (`PASS` or `PASS WITH NON-BLOCKING
+  OBSERVATIONS` from `release-phase-auditor`, or an explicit lead
+  confirmation for a trivial phase) — no separate per-push confirmation
+  needed for this specific action. This does not extend to any other
+  hard-to-reverse git action (force-push, tag/branch deletion, history
+  rewrite), which still requires explicit confirmation as usual.
 - Milestones are roadmap phase *groups*, not individual phases — the MVP
   (v0.1, phases 0-8) and MVP (v0.2, phases 9-19) are each one milestone.
   Only when a milestone's last phase is marked `done` do we promote
