@@ -1,7 +1,7 @@
 # Phase 45 retro — Register Ledgerkit + baseline evaluation
 
 - **Date:** 2026-09-13
-- **Commit(s):** *(pending — this phase's closeout commit)*
+- **Commit(s):** `b0717ee` (`feat(phase-45)`)
 - **Agents used:** `context-evaluator` (baseline report),
   `context-health-planner` (first genuine solo run), `docs-maintainer`
   (reconcile), `docs-reconstructor` (drift audit), `knowledge-curator`

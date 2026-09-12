@@ -17,7 +17,7 @@ L-005 | 2026-09-11 | invariant | scripts/check_user_docs.py::check_generated_art
 L-006 | 2026-09-10 | workflow | planning/agent-led-workflow.md step 11 + .claude/agents/roadmap-context-curator.md "Hard rules" (re-dispatch after a plan-changing retro; reconcile every planning doc) @ f6cc86d
 L-011 | 2026-09-12 | invariant | scripts/check_user_docs.py::check_generated_artifacts_match_source + tests/test_check_user_docs.py::TestGeneratedArtifactsMatchSource::test_skill_comparison_skipped_without_graph_db @ 80162fd
 L-013 | 2026-09-12 | workflow | planning/agent-led-workflow.md step 10 (interim reconciliation, no longer flips the row) + step 14 (re-dispatch for final reconciliation) @ 3bd9257
-L-018 | 2026-09-13 | workflow | planning/agent-led-workflow.md step 5 (never dispatch two agents to Write the same shared file path concurrently) @ TBD-this-phase-commit
+L-018 | 2026-09-13 | workflow | planning/agent-led-workflow.md step 5 (never dispatch two agents to Write the same shared file path concurrently) @ 329fa0a
 
 <!-- L-002 and prior L-005 (project-rule half) landed in the Phase 43
      commit; replace `d34a486` if it's not the actual Phase 43 commit hash.

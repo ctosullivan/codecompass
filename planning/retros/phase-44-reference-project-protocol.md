@@ -1,7 +1,7 @@
 # Phase 44 retro — Reference-project protocol + context-quality eval spec
 
 - **Date:** 2026-09-12
-- **Commit(s):** *(pending — this phase's closeout commit)*
+- **Commit(s):** `3bd9257` (`feat(phase-44)`), `6c3f34e` (learnings commit-hash backfill)
 - **Agents used:** `roadmap-context-curator` (state confirmation),
   `context-evaluator` (instrument dry-run), `docs-maintainer` (reconcile),
   `docs-reconstructor` (drift audit), `knowledge-curator` (triage),

@@ -74,7 +74,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   closed out.
 - **promoted_to:** `planning/agent-led-workflow.md` step 5 (concurrent-write
   guidance) — applied by the lead this phase, logged in `promoted.md`
-  (commit hash to follow once this phase's closeout commit lands).
+  @ `329fa0a`.
 
 ### L-017 — a live WebFetch of an external reference manual is an expensive, unreliable fallback for section-specific technical content, distinct from whether CodeCompass should model manuals at all
 

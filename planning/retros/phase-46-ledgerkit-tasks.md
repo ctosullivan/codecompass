@@ -1,7 +1,7 @@
 # Phase 46 retro — CodeCompass during a genuine Ledgerkit task
 
 - **Date:** 2026-09-13
-- **Commit(s):** *(pending — this phase's closeout commit)*
+- **Commit(s):** `329fa0a` (`feat(phase-46)`)
 - **Agents used:** `reference-project-tester`, `context-evaluator` (both
   dispatched concurrently), `docs-maintainer` (reconcile),
   `docs-reconstructor` (drift audit), `knowledge-curator` (triage),
