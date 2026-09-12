@@ -72,7 +72,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   content) — but noted as a sibling instance of "a Phase 43b
   drift-detection check shipped without a false-positive case for the
   one environment state its own inputs can legitimately take.")
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** first occurrence
 - **curation (fresh-Pi triage, 2026-09-12, knowledge-curator):**
   provenance accepted and independently re-verified line-by-line (see
@@ -124,19 +124,16 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
     `planning/context-gaps/**`, draft files under `planning/` only).
 - **promoted_to:** `scripts/check_user_docs.py::check_generated_artifacts_match_source`
   + `tests/test_check_user_docs.py::TestGeneratedArtifactsMatchSource::test_skill_comparison_skipped_without_graph_db`
-  — the curator's preferred fix landed in the working tree 2026-09-12
-  (lead-implemented, not committed yet): the SKILL.md branch now skips
-  with an informational, non-strict `Finding` when
+  @ `80162fd` — the curator's preferred fix: the SKILL.md branch now
+  skips with an informational, non-strict `Finding` when
   `(root / "context-graph.db").is_file()` is `False`; the two real-repo
   assertions (`test_no_false_positives_against_real_repo`,
   `test_clean_against_real_repo`) were narrowed from `findings == []` to
   `[f for f in findings if f.strict] == []` since an informational
   finding is expected on any unsynced checkout and never fails
   `--strict` anyway (`Finding.strict`); a new regression test covers the
-  skip path. Full suite + `ruff check` verified green on this fresh Pi
-  environment. Move this entry to `promoted.md` with the real commit
-  hash once committed — status left as `candidate` until then per
-  `promoted.md`'s own convention of only logging landed commits.
+  skip path. Full suite (554 passed, 2 skipped) + `ruff check` verified
+  green on this fresh Pi environment before committing.
 
 ### L-010 — a reusable/exported document is stronger when it cites the specific incident behind each recommendation and states its own revision policy up front
 

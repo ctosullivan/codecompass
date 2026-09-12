@@ -15,6 +15,7 @@ L-005 | 2026-09-10 | project-rule | .claude/agents/docs-maintainer.md "Hard rule
 L-004 | 2026-09-11 | future-improvement | scripts/check_user_docs.py::check_no_deleted_names_as_live + tests/test_check_user_docs.py::TestNoDeletedNamesAsLive + architecture/overview.md "Known Footguns" §C corrections (items 33-36) @ 3b7f27a
 L-005 | 2026-09-11 | invariant | scripts/check_user_docs.py::check_generated_artifacts_match_source + tests/test_check_user_docs.py::TestGeneratedArtifactsMatchSource @ 3b7f27a
 L-006 | 2026-09-10 | workflow | planning/agent-led-workflow.md step 11 + .claude/agents/roadmap-context-curator.md "Hard rules" (re-dispatch after a plan-changing retro; reconcile every planning doc) @ f6cc86d
+L-011 | 2026-09-12 | invariant | scripts/check_user_docs.py::check_generated_artifacts_match_source + tests/test_check_user_docs.py::TestGeneratedArtifactsMatchSource::test_skill_comparison_skipped_without_graph_db @ 80162fd
 
 <!-- L-002 and prior L-005 (project-rule half) landed in the Phase 43
      commit; replace `d34a486` if it's not the actual Phase 43 commit hash.
