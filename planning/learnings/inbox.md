@@ -109,8 +109,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   deserves the lead's explicit review before it's written, not a
   curator-authored fait accompli.
 - **promoted_to:** `planning/agent-led-workflow.md` steps 10 + 14 —
-  applied by the lead this phase, logged in `promoted.md` (commit hash to
-  follow once this phase's closeout commit lands).
+  applied by the lead this phase, logged in `promoted.md` @ `3bd9257`.
 
 ### L-012 — single-symbol `query symbol` output undersells a vendor's actual usage breadth; `usage_count` isn't independently reproducible by grep
 
