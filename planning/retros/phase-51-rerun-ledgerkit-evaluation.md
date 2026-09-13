@@ -1,7 +1,7 @@
 # Phase 51 retro — Re-run Ledgerkit evaluation (GATE DC)
 
 - **Date:** 2026-09-14
-- **Commit(s):** *(pending — this phase's closeout commit)*
+- **Commit(s):** `0cc39e2` (`feat(phase-51)`)
 - **Agents used:** `context-evaluator` (GATE DC re-evaluation),
   `docs-maintainer` (reconcile), `docs-reconstructor` (drift audit),
   `release-phase-auditor` (final pass)
