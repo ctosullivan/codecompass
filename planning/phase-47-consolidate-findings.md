@@ -1,6 +1,6 @@
 # Phase 47: Consolidate recurring friction — GATE DB
 
-**Status:** planned
+**Status:** done (2026-09-13)
 
 Stage B, fourth and final phase (EXPERIMENTAL → decision —
 `planning/v1-redefinition/roadmap.md`). `knowledge-curator` reviews every

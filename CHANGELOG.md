@@ -9,6 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 47** (Stage B's fourth and final phase — **GATE DB**): pure
+  synthesis, no new evaluation. `knowledge-curator` bulk-reviewed every
+  Phase 44–46 candidate learning and `context-gaps` entry and produced
+  `planning/reference-projects/ledgerkit/findings.md` — 5 evaluated
+  question/task instances, **2 formal FAIL verdicts** (both listed in
+  full per the aggregation rule), **100% LOW context advantage** across
+  every instance (two explicitly negative), and the `_DEFAULT_GLOBS`
+  detection blind spot confirmed at **3 independent occurrences** (Phase
+  37 own-dev, Phase 45 + 46 externally on Ledgerkit). **GATE DB ratified
+  by the user** ("Ratify as recommended"): fund one narrow Stage C phase
+  closing `CG-002` (`dev-docs/**/*.md` glob coverage) + `L-016`
+  (`query relations` not-found disambiguation) —
+  `planning/phase-49-spec-doc-coverage-and-error-disambiguation.md`,
+  matching the roadmap's own pre-written Phase 49 sketch, not Phase 48's;
+  Phase 48 (task-oriented context retrieval) and Phase 50 (shared-agent
+  context/entry points) explicitly **not funded** — no corroborating
+  evidence in the Phase 44–46 dataset; a more general
+  `vendor.toml`-configurable spec-doc glob list explicitly rejected as
+  premature at this evidence threshold; `CG-003`/`L-017` explicitly
+  routed to Stage E/Phase 53, not this gate. `CG-002` moved to
+  `promoted-to-roadmap`; `L-016` stays `retained` until Phase 49's fix
+  actually lands. A genuine, unrelated pre-existing doc-drift fix landed
+  as a side effect: `architecture/overview.md`'s `_DEFAULT_GLOBS`
+  enumeration was missing the Phase 37 `ai-docs/**/*.md` addition,
+  flagged-but-deferred by two prior phases' `docs-maintainer` reviews and
+  finally corrected here, verified item-for-item against the real code.
+  No other `src/codecompass/` change this phase (Phase 49 is
+  CodeCompass's first `src/` change driven by external reference-project
+  evidence). `docs-reconstructor` drift audit → NO DRIFT;
+  `release-phase-auditor` → PASS WITH NON-BLOCKING OBSERVATIONS (no
+  blocking gap). `pytest` 554 passed / 2 skipped, `ruff check .` clean,
+  `check_user_docs.py --strict` clean.
+
 - **Phase 46** (Stage B, third phase): ran the full per-task procedure
   (`reference-project-protocol.md` §2.4) against a genuine, live Ledgerkit
   task for the first time. Reconfirmed the task live at phase start, as

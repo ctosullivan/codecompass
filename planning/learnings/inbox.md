@@ -144,6 +144,14 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   a named home in Phase 53's plan). Revisit at Phase 47's bulk review.
 - **promoted_to:** — (retained; feeds Phase 53's design question via
   Phase 47's bulk review, no standalone destination)
+- **curation (Phase 47 GATE DB bulk review, 2026-09-13, knowledge-curator):**
+  confirmed out of scope for this gate, as this entry's own Phase 46
+  triage anticipated: this is a retrieval-cost finding, not a
+  detection-improvement or graph-capability decision, and it says nothing
+  about what CodeCompass's own detection layer should do differently — it
+  feeds Phase 53's "manual as fetched/vendored text" design question
+  directly (`planning/reference-projects/ledgerkit/findings.md` §5). No
+  Stage C funding recommended for it. Status unchanged: `retained`.
 
 ### L-016 — `query relations`'s "not found" error is indistinguishable between "never scanned as a doc artifact" (a glob-coverage gap) and "genuine typo/misspelling" (real user error)
 
@@ -186,6 +194,25 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   on a second reference-project instance of the same ambiguity.
 - **promoted_to:** — (retained; revisit Phase 47 bulk review or on
   recurrence)
+- **curation (Phase 47 GATE DB bulk review, 2026-09-13, knowledge-curator):**
+  recurrence confirmed — this exact ambiguity was independently hit again
+  in Phase 46's task 01 (`01-query-semantics.md`: both `dev-docs/`
+  `query relations` calls returned the identical "not found" a typo would
+  produce), the second occurrence since this candidate's own Phase 45
+  filing. **GATE DB recommendation (full reasoning:
+  `planning/reference-projects/ledgerkit/findings.md` §4/§7): bundle this
+  fix with `CG-002`'s** — same root code path
+  (`cli.py::_resolve_relations`/`_not_found_error`), same evidence base,
+  cheap to fix together (distinguish "never scanned as a doc artifact"
+  from "does not exist" before erroring). Status stays `retained`, not
+  `promoted` — no artifact has landed; this is a recommendation for the
+  lead/user to ratify at GATE DB, not yet implemented.
+- **GATE DB ratified (lead, 2026-09-13):** user approved the
+  recommendation as written. `planning/phase-49-spec-doc-coverage-and-error-disambiguation.md`
+  now exists and scopes this fix alongside `CG-002`'s. Status stays
+  `retained` until the fix actually lands in `src/codecompass/cli.py` —
+  flips to `promoted` with a `promoted.md` line + commit hash at that
+  point, per the same convention as `L-013`/`L-018`.
 
 ### L-015 — `query vendors` / bare-discovery gives no signal that `[project.optional-dependencies]` exist but are unscanned
 
@@ -227,6 +254,16 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   instance of the same silence.
 - **promoted_to:** — (retained; revisit Phase 47 bulk review or on
   recurrence)
+- **curation (Phase 47 GATE DB bulk review, 2026-09-13, knowledge-curator):**
+  still single-occurrence — Phase 46's task 01 concerned query-term
+  semantics, not the dependency-discovery code path this candidate is
+  about, so it did not re-confirm it. Deliberately **kept out of** the
+  narrow Stage C fix recommended for `CG-002`/`L-016`
+  (`planning/reference-projects/ledgerkit/findings.md` §4): different code
+  path (`discovery.py`, not `spec_docs.py`), and bundling an
+  uncorroborated single-occurrence finding into an otherwise
+  tightly-evidenced narrow phase would be scope creep. Status unchanged:
+  `retained`; revisit at Phase 51's re-run or a second occurrence.
 
 ### L-014 — a plan file's background/rationale claims can go stale between writing and implementation, independent of its scope list
 
@@ -397,6 +434,19 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   Ledgerkit evaluation, the Phase 47 bulk review, or on a second
   self-test/reference-project instance of either finding.
 - **promoted_to:** — (retained; revisit Phase 45/47 or on recurrence)
+- **curation (Phase 47 GATE DB bulk review, 2026-09-13, knowledge-curator):**
+  still uncorroborated by any real reference-project finding — remains a
+  self-test-only observation, explicitly excluded from aggregation by its
+  own phase's design
+  (`planning/v1-redefinition/context-quality-evaluation.md` doesn't
+  count dry-runs), and no Ledgerkit task has touched `query symbol`
+  scope. Now 3 phases old (filed Phase 44, no new evidence through Phase
+  47) — flagged per the lifecycle's own "~3 phases without new evidence
+  is a discard candidate" norm (`learning-lifecycle.md` §2), though not
+  forced since its status is `retained` rather than `evidence-gathering`.
+  **Recommendation: revisit at Phase 51's re-run; discard if still
+  uncorroborated by then** rather than carrying it indefinitely. Full
+  reasoning: `planning/reference-projects/ledgerkit/findings.md` §6.
 
 ### L-011 — `check_generated_artifacts_match_source`'s SKILL.md branch false-positives on any environment without a synced `context-graph.db` (a fresh clone/checkout/CI runner)
 

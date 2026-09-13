@@ -1370,15 +1370,17 @@ existing one; fixed default globs vs. a hand-maintained manifest).
   default pattern set rooted at `project_root` (`README.md`,
   `ARCHITECTURE.md`, `REQUIREMENTS.md`, `PRD.md`, `docs/**/*.md`,
   `architecture/**/*.md`, `decisions/**/*.md`, `spec/**/*.md`,
-  `specs/**/*.md`, `rfcs/**/*.md`, `*.spec.md`), producing
-  `kind='spec_doc'`, `origin='project'` rows. Excludes `CHANGELOG.md` (a
-  log, not a spec), `CONTRIBUTING.md` (process, not product), `LICENSE*`,
-  and root `CLAUDE.md` itself (governance, not spec), plus anything
-  nested under a directory name in `usage._PROJECT_PRUNE_DIR_NAMES`
-  (imported, not duplicated — same cross-module import precedent
-  `skill_scan.py` already set for `skill.py`'s `_TOOL_SKILL_DIR_NAME`/
-  `_vendor_skill_name`). No `vendor.toml` configurability yet — see
-  `decisions/0037`.
+  `specs/**/*.md`, `rfcs/**/*.md`, `*.spec.md`, `ai-docs/**/*.md` — the
+  last added Phase 37, once this repo's own dogfooding sync showed
+  `ai-docs/README.md`/`ai-docs/CLAUDE.md` invisible to detection),
+  producing `kind='spec_doc'`, `origin='project'` rows. Excludes
+  `CHANGELOG.md` (a log, not a spec), `CONTRIBUTING.md` (process, not
+  product), `LICENSE*`, and root `CLAUDE.md` itself (governance, not
+  spec), plus anything nested under a directory name in
+  `usage._PROJECT_PRUNE_DIR_NAMES` (imported, not duplicated — same
+  cross-module import precedent `skill_scan.py` already set for
+  `skill.py`'s `_TOOL_SKILL_DIR_NAME`/`_vendor_skill_name`). No
+  `vendor.toml` configurability yet — see `decisions/0037`.
 
 `doc_mapping.py` gains one function (Phase 29 later widens its source
 argument — see **Vendor docs as relationship sources** below):

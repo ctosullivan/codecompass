@@ -167,10 +167,45 @@ missing blank line in `context-use-log.md` — both fixed before this
 closeout). Retro: `planning/retros/phase-46-ledgerkit-tasks.md`.
 `planning/phase-47-consolidate-findings.md` written — Stage B's decision
 phase, **GATE DB** (gate G6), with a full evidence inventory from Phases
-44–46. **Phase 47 is a decision phase, not something to auto-proceed
-through: its funding decision on Stage C may need the user's own input**,
-per `CLAUDE.md` §1's "pause and ask" rule for a genuine funding/scope
-call the curator cannot make alone.
+44–46.
+
+**Phase 47 is `done` (2026-09-13) — Stage B's fourth and final phase, and
+GATE DB is resolved. Stage B (Phases 44–47) is now fully complete.**
+Pure synthesis, no new evaluation: `knowledge-curator` bulk-reviewed every
+Phase 44–46 candidate learning and `context-gaps` entry and wrote
+`planning/reference-projects/ledgerkit/findings.md` — 5 evaluated
+question/task instances, **2 formal FAIL verdicts**, **100% LOW context
+advantage** (two explicitly negative), and the `_DEFAULT_GLOBS` blind spot
+confirmed at **3 independent occurrences** (Phase 37 own-dev, Phase 45 +
+46 externally on Ledgerkit). **GATE DB ratified by the user** ("Ratify as
+recommended"): fund one narrow Stage C phase closing **`CG-002`**
+(`dev-docs/**/*.md` glob coverage) + **`L-016`** (`query relations`
+not-found disambiguation) —
+`planning/phase-49-spec-doc-coverage-and-error-disambiguation.md`,
+matching the roadmap's own pre-written Phase 49 sketch, not Phase 48's;
+**Phase 48** (task-oriented context retrieval) and **Phase 50**
+(shared-agent context/entry points) explicitly **not funded** — no
+corroborating evidence in the Phase 44–46 dataset; a more general
+`vendor.toml`-configurable glob list explicitly rejected as premature;
+`CG-003`/`L-017` explicitly routed to Stage E/Phase 53, not this gate.
+`CG-002` moved to `promoted-to-roadmap`; `L-016` stays `retained` until
+Phase 49's fix actually lands. A genuine, unrelated pre-existing
+doc-drift fix landed as a side effect: `architecture/overview.md`'s
+`_DEFAULT_GLOBS` enumeration was missing the Phase 37 `ai-docs/**/*.md`
+addition (flagged-but-deferred by two prior phases' `docs-maintainer`
+reviews), corrected here and verified item-for-item against the real
+code. **No `src/codecompass/` change this phase** — Phase 49 is
+CodeCompass's first `src/` change driven by external reference-project
+evidence. Verified: `pytest` 554 passed / 2 skipped, `ruff check .`
+clean, `check_user_docs.py --strict` clean. Closeout:
+`docs-reconstructor` drift audit
+(`planning/retros/_drift-audit-phase-47.md`) → **NO DRIFT**;
+`release-phase-auditor` (`planning/retros/_audit-phase-47.md`) → **PASS
+WITH NON-BLOCKING OBSERVATIONS** (no blocking gap; four advisory notes,
+all either already addressed or explicitly non-blocking — see the
+audit's own text). Retro:
+`planning/retros/phase-47-consolidate-findings.md`. **No gate blocks
+Phase 49.**
 
 **Stage A of the redefined-v1 roadmap is complete: Phases 39–43 are
 `done`.** Phase 43 dogfooded the full 14-step agent-led loop on a real
@@ -270,11 +305,16 @@ commit-hash placeholders), all addressed in this closeout commit. Retro:
 row 43b and the `v1-redefinition/roadmap.md` Phase 43b stanza both now
 read `done`.
 
-**Both Stage A→B bridge phases (43b, 43c) are closed out, as are 43d/43e,
-44, 45, and 46. Next: Phase 47** (Stage B's fourth and final phase,
-consolidating all Phase 44–46 findings) — **exits at GATE DB (gate G6): a
-funding decision on Stage C that may need the user's own input, not
-something to auto-proceed through.**
+**Stage B is fully complete: 43b, 43c, 43d, 43e, 44, 45, 46, and 47 are
+all `done`. GATE DB is resolved (see Phase 47 above). Next: Phase 49**
+([`phase-49-spec-doc-coverage-and-error-disambiguation.md`](phase-49-spec-doc-coverage-and-error-disambiguation.md),
+written by Phase 47) — the actual `src/codecompass/` fix GATE DB funded:
+add `"dev-docs/**/*.md"` to `_DEFAULT_GLOBS` (closes `CG-002`) and
+disambiguate `query relations`'s "not found" error (closes `L-016`), plus
+new tests and a live smoke-test re-check against the Ledgerkit clone.
+This is CodeCompass's first `src/codecompass/` change driven by external
+reference-project evidence — the redefined v1's central hypothesis made
+concrete. **No gate blocks it.**
 
 - **39** ratified the redefinition: ADRs `decisions/0048`/`0049`
   `Accepted`; `pyproject.toml` `version` → `1.0.0.dev0`; ROADMAP's Stage
@@ -404,6 +444,38 @@ dependencies now carry lower-bound version pins (`decisions/0047`), and
 were cleaned up (Phase 38).
 
 ## What was just completed
+
+**Phase 47, `done`** (2026-09-13) — Stage B's fourth and final phase,
+**GATE DB**. Pure synthesis of Phases 44–46's evidence, no new
+evaluation: `knowledge-curator` bulk-reviewed every candidate learning and
+`context-gaps` entry from those phases and produced
+`planning/reference-projects/ledgerkit/findings.md` — 5 evaluated
+instances, 2 formal FAIL verdicts (both listed in full per the
+aggregation rule), 100% LOW advantage (two negative), and the
+`_DEFAULT_GLOBS` blind spot confirmed at 3 independent occurrences (Phase
+37 own-dev, Phase 45 + 46 externally on Ledgerkit). **GATE DB ratified by
+the user** ("Ratify as recommended"): fund one narrow Stage C phase
+closing `CG-002` + `L-016`
+(`planning/phase-49-spec-doc-coverage-and-error-disambiguation.md`,
+matching the roadmap's own pre-written Phase 49 sketch); Phase 48
+(task-oriented context retrieval) and Phase 50 (shared-agent context) not
+funded — no corroborating evidence; `CG-003`/`L-017` routed to Stage
+E/Phase 53. `CG-002` → `promoted-to-roadmap`; `L-016` stays `retained`
+until Phase 49's fix lands. An unrelated pre-existing doc-drift fix
+landed as a side effect: `architecture/overview.md`'s `_DEFAULT_GLOBS`
+enumeration was missing the Phase 37 `ai-docs/**/*.md` addition,
+corrected and verified item-for-item against the real code. **No
+`src/codecompass/` change this phase.** Verified: `pytest` 554 passed / 2
+skipped, `ruff check .` clean, `check_user_docs.py --strict` clean.
+Closeout: `docs-reconstructor` drift audit
+(`planning/retros/_drift-audit-phase-47.md`) → **NO DRIFT**;
+`release-phase-auditor` (`planning/retros/_audit-phase-47.md`) → **PASS
+WITH NON-BLOCKING OBSERVATIONS** (no blocking gap). Retro:
+`planning/retros/phase-47-consolidate-findings.md`.
+`planning/phase-49-spec-doc-coverage-and-error-disambiguation.md` written —
+Stage C's funded phase, CodeCompass's first `src/codecompass/` change
+driven by external reference-project evidence. **Stage B (Phases
+44–47) is now fully complete.**
 
 **Phase 46, `done`** (2026-09-13) — Stage B's third phase, and the first
 run of the full per-task procedure (`reference-project-protocol.md`
@@ -881,40 +953,41 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Stage A is complete (Phases 39–43e `done`, GATE DA passed). All Stage
-A→B bridge phases (43b, 43c) and Stage B's first three phases (44, 45,
-46) are `done` and fully closed out.**
+**Stage A is complete (Phases 39–43e `done`, GATE DA passed). Stage B is
+now also fully complete (Phases 43b, 43c, 44, 45, 46, 47 all `done`,
+GATE DB resolved).**
 
-**Phase 46 closeout (done):** `docs-reconstructor` drift audit
-(`planning/retros/_drift-audit-phase-46.md`) → **NO DRIFT**;
-`knowledge-curator` triage → **CG-003** (`candidate`), **L-017**
-(retained), **L-018** (`promoted` — the `agent-led-workflow.md` step 5
-fix landed the same phase); `release-phase-auditor`
-(`planning/retros/_audit-phase-46.md`) → **PASS WITH NON-BLOCKING
-OBSERVATIONS** (no blocking gap; two cosmetic observations, both fixed
-before this closeout commit). ROADMAP row `46` / the
-`v1-redefinition/roadmap.md` Phase 46 stanza / the plan file's own status
+**Phase 47 closeout (done):** `docs-reconstructor` drift audit
+(`planning/retros/_drift-audit-phase-47.md`) → **NO DRIFT**;
+`release-phase-auditor` (`planning/retros/_audit-phase-47.md`) → **PASS
+WITH NON-BLOCKING OBSERVATIONS** (no blocking gap; four advisory
+notes — doc-file-scope disclosure, a one-step-stale triage table in
+`findings.md` fixed by the lead, and an inherent limit on verifying the
+`AskUserQuestion` event itself directly — all either already addressed or
+explicitly non-blocking). ROADMAP row `47` / the
+`v1-redefinition/roadmap.md` Phase 47 stanza / the plan file's own status
 line (`done (2026-09-13)`) all flipped to `done` in this commit. Retro:
-`planning/retros/phase-46-ledgerkit-tasks.md`, including an honest "What
-didn't work" on the `Write`-vs-`Write` race between two concurrently
-dispatched agents (see L-018 above).
+`planning/retros/phase-47-consolidate-findings.md`.
+**GATE DB outcome:** fund one narrow Stage C phase closing `CG-002` +
+`L-016`; Phase 48 and Phase 50 not funded; `CG-003`/`L-017` routed to
+Stage E/Phase 53 — full reasoning in
+`planning/reference-projects/ledgerkit/findings.md` §4/§7.
 
-**Immediate next step: Phase 47**
-([`phase-47-consolidate-findings.md`](phase-47-consolidate-findings.md),
-written by Phase 46) — Stage B's fourth and final phase.
-`knowledge-curator` reviews every Phase 44–46 candidate learning and
-context-gap entry in bulk, promotes anything with recurrence/evidence to
-a confirmed finding, and writes
-`planning/reference-projects/ledgerkit/findings.md`. **Phase 47 is a
-decision phase, not something to auto-proceed through: it exits at
-GATE DB (gate G6), a funding decision on which Stage C phases (48–51), if
-any, are funded** — per `CLAUDE.md` §1's "pause and ask before proceeding
-from plan to code" rule, this is a genuine funding/scope call the
-evidence can inform but may need the user's own decision, not one the
-curator or lead can resolve alone. The evidence base going in is real:
-two independent FAIL verdicts of the identical failure shape (Phase 45's
-Q2, Phase 46's task 01), `CG-002`'s confirmed recurrence, and `CG-003`'s
-structurally distinct external-dependency gap.
+**Immediate next step: Phase 49**
+([`phase-49-spec-doc-coverage-and-error-disambiguation.md`](phase-49-spec-doc-coverage-and-error-disambiguation.md),
+written by Phase 47) — the actual `src/codecompass/` fix GATE DB funded:
+(1) add `"dev-docs/**/*.md"` to `spec_docs.py::_DEFAULT_GLOBS`, mirroring
+the Phase 37 `ai-docs/**/*.md` precedent, closing `CG-002`; (2)
+disambiguate `query relations`'s "not found" error
+(`cli.py::query_relations`/`_resolve_relations`/`_not_found_error`) so a
+real on-disk file outside the glob set gets a different message than a
+genuine typo, closing `L-016`; (3) new tests for both; (4)
+`docs-maintainer` reconciles `docs/cli-reference.md`/`ai-docs/README.md`
+if either is now stale; (5) a live smoke-test re-check against the
+Ledgerkit clone. **This is CodeCompass's first `src/codecompass/` change
+driven by external reference-project evidence** — the redefined v1's
+central hypothesis made concrete. **No gate blocks it** — Phase 51 (not
+this phase) is where the actual context-quality re-measurement happens.
 
 **Phase 43c closeout (done):** `docs-reconstructor` drift audit → **NO
 DRIFT**; `knowledge-curator` triage → `CG-001` `candidate` + **L-007**

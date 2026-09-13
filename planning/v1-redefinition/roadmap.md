@@ -481,6 +481,32 @@ rather than waiting for more tasks, consistent with the tripwire's own
   improvements; proceed to deeper Ledgerkit dogfooding (Stage D) to test
   the broader hypothesis directly"** and **"advantage is already HIGH —
   minimal Stage C, go straight to hardening."**
+- **Status:** **done (2026-09-13) — the label's own "→ decision" completed:
+  this phase's job was pure synthesis of Phases 44–46's evidence, not new
+  evaluation, and it closes once GATE DB itself resolves.**
+  `knowledge-curator` produced `planning/reference-projects/ledgerkit/findings.md`
+  (5 evaluated instances, 2 formal FAIL verdicts, 100% LOW advantage, the
+  `_DEFAULT_GLOBS` blind spot confirmed at 3 independent occurrences) as an
+  explicit recommendation, not a unilateral call. **GATE DB ratified by the
+  user** ("Ratify as recommended"): fund one narrow Stage C phase closing
+  `CG-002` + `L-016` (`planning/phase-49-spec-doc-coverage-and-error-disambiguation.md`,
+  matching the roadmap's own pre-written Phase 49 sketch, not Phase 48's);
+  Phase 48 (task-oriented context retrieval) and Phase 50 (shared-agent
+  context) explicitly **not funded** — no corroborating evidence in the
+  Phase 44–46 dataset; `CG-003`/`L-017` explicitly routed to Stage E/Phase
+  53, not this gate. A genuine, unrelated pre-existing doc-drift fix
+  (`architecture/overview.md`'s glob-list enumeration missing the Phase 37
+  `ai-docs/**/*.md` addition) landed as a side effect of `docs-maintainer`'s
+  review. No `src/codecompass/` change this phase (Phase 49 is
+  CodeCompass's first). Verified: `pytest` 554 passed / 2 skipped, `ruff
+  check .` clean, `check_user_docs.py --strict` clean. Closeout:
+  `docs-reconstructor` drift audit (`planning/retros/_drift-audit-phase-47.md`)
+  → **NO DRIFT**; `release-phase-auditor`
+  (`planning/retros/_audit-phase-47.md`) → **PASS WITH NON-BLOCKING
+  OBSERVATIONS** (no blocking gap; four advisory notes, all either already
+  addressed or explicitly non-blocking). Retro:
+  `planning/retros/phase-47-consolidate-findings.md`. **Stage B is now
+  fully complete (Phases 44–47 all done). No gate blocks Phase 49.**
 
 ---
 
@@ -492,6 +518,11 @@ in substance from the pre-realignment plan, now Ledgerkit-driven instead
 of Technical-Clipper-driven.
 
 ### Phase 48 — Task-oriented context retrieval · CONDITIONAL
+- **GATE DB outcome (2026-09-13): not funded.** `planning/reference-projects/ledgerkit/findings.md`
+  §4/§7: the only supporting signal is `CG-001` (own-dev, single
+  occurrence) plus a "weak echo" in Phase 46's task 01 findings — not
+  read as a genuine second occurrence. No retrieval entry point built
+  this gate; revisit if `CG-001`'s hypothesis independently recurs.
 - If "context is dependency-centric, not task-centric" recurs: add a
   retrieval entry point that takes a task description and returns a small
   context map (local impl + callers/callees + relevant tests + dep +
@@ -501,6 +532,18 @@ of Technical-Clipper-driven.
   routes to evidence, not completeness.
 
 ### Phase 49 — Graph / context quality · CONDITIONAL
+- **GATE DB outcome (2026-09-13): funded, narrow.** `planning/reference-projects/ledgerkit/findings.md`
+  §4/§7: `CG-002` reached `recurred` (3 occurrences: Phase 37 own-dev,
+  Phase 45 + Phase 46 externally on Ledgerkit, the latter extending to
+  nested `dev-docs/**` paths) — exactly this stanza's own trigger
+  condition. Scope: `planning/phase-49-spec-doc-coverage-and-error-disambiguation.md`
+  — add `"dev-docs/**/*.md"` to `_DEFAULT_GLOBS` (closes `CG-002`) +
+  disambiguate `query relations`'s "not found" error from a genuine
+  coverage gap (closes `L-016`, independently recurred twice). A more
+  general `vendor.toml`-configurable glob list was explicitly considered
+  and rejected as premature at this evidence threshold (2 earned hard-coded
+  entries, not yet a pattern). `CG-003`/`L-017` explicitly out of scope
+  (Stage E/GATE DD and Phase 53 respectively, not this gate).
 - If "stale/incorrect/misleading relationship" or "excess noise" recurs:
   targeted fixes — dependency-use relationship precision, context
   selection/ranking, noise reduction, freshness surfacing. Each backed by
@@ -508,6 +551,8 @@ of Technical-Clipper-driven.
   entry reaches `recurred` (`decisions/0051`) and is promoted here.
 
 ### Phase 50 — Shared-agent context / entry-point improvements · CONDITIONAL
+- **GATE DB outcome (2026-09-13): not funded.** `planning/reference-projects/ledgerkit/findings.md`
+  §7: no supporting finding in the Phase 44–46 evidence base at all.
 - If "specialist agents re-discover the same relationships" recurs:
   a common grounded project map the roster consumes, or a refinement to
   the Claude-entry-point hierarchy (`adoption-blueprint.md` §3). Hard

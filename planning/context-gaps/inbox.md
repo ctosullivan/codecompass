@@ -111,6 +111,11 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   against this exact case) or on a second, independent occurrence (a
   different reference project hitting the identical "external manual,
   zero representation" shape) to move to `recurred`.
+- **curation (Phase 47 GATE DB bulk review, 2026-09-13, knowledge-curator):**
+  confirmed, as this entry's own prior triage already established, that
+  GATE DB has no lever to act on this — it is squarely Stage E/GATE DD
+  (Phase 55) territory (`planning/reference-projects/ledgerkit/findings.md`
+  §5). No status change; named in the findings summary as context only.
 
 ### CG-002 — Ledgerkit's entire `dev-docs/` tree is invisible to spec-doc detection, not merely under-related
 
@@ -160,7 +165,7 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   `spec_docs._DEFAULT_GLOBS`, no new table/edge kind, no ADR-level model
   change — a Stage C / GATE DB scale fix, not Stage E.
 - **classification:** detection-improvement (Stage C / GATE DB)
-- **status:** recurred
+- **status:** promoted-to-roadmap
 - **recurrence:** second occurrence of the same failure shape.
   Independently re-verified against the module itself, not taken on this
   entry's own word: `src/codecompass/spec_docs.py`'s `_DEFAULT_GLOBS`
@@ -212,6 +217,32 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   **Not implementing the glob-list fix now** — that would pre-empt GATE
   DB's funding decision, which is explicitly Phase 47's job, not this
   triage's.
+- **curation (Phase 47 GATE DB bulk review, 2026-09-13, knowledge-curator):**
+  recurrence independently re-confirmed a third time beyond this entry's
+  own two occurrences: Phase 37's `ai-docs/**/*.md` fix (this repo's own
+  dogfooding, predating the `context-gaps/` mechanism) is the identical
+  failure shape one phase earlier again — a hand-maintained glob list
+  blind to an unanticipated doc-directory convention, demonstrated once
+  internally (Phase 37) and now twice externally (Phase 45 + Phase 46, this
+  entry). **GATE DB recommendation (full reasoning + evidence:
+  `planning/reference-projects/ledgerkit/findings.md` §4/§7): fund a
+  narrow Stage C phase adding a single `"dev-docs/**/*.md"` entry to
+  `_DEFAULT_GLOBS`** — the smallest model that covers the demonstrated
+  need, per `conditional-generalisation.md`'s discipline — **not** the
+  more general `vendor.toml`-configurable glob list this entry's own
+  Phase 45 note raised as a candidate; two hard-coded entries earned
+  (`ai-docs/`, `dev-docs/`) does not yet justify building configurability
+  infrastructure. Bundle with `L-016`'s fix (shared root cause/code
+  path). **Status stays `recurred`, not `promoted-to-roadmap`** — this is
+  a recommendation for the lead/user to ratify at GATE DB, not yet a
+  Stage C phase that owns it; move to `promoted-to-roadmap` once that
+  phase's plan file exists.
+- **GATE DB ratified (lead, 2026-09-13):** user approved the
+  recommendation as written. `planning/phase-49-spec-doc-coverage-and-error-disambiguation.md`
+  now exists and owns this gap — status moved to `promoted-to-roadmap`
+  accordingly. Per `context-gaps/README.md`'s "How it feeds the gates,"
+  the `promoted.md` pointer (+ commit hash) is added once Phase 49's
+  implementation actually lands, not at plan-file creation time.
 
 ### CG-001 — one feature spread across three `src/` modules, with no edge joining them
 
@@ -298,3 +329,21 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   (task-oriented retrieval edges). Recorded as the first datapoint for
   the `README.md` hypothesis-table row "the 'one feature, N modules' map
   can't be built from existing graph data" (§2.6).
+- **curation (Phase 47 GATE DB bulk review, 2026-09-13, knowledge-curator):**
+  cross-referencing across all Phase 44–46 evidence in bulk surfaced a
+  weak, conceptually-adjacent echo: Ledgerkit task 01's
+  `reference-project-tester` finding notes "no Skill mentions hledger or
+  query semantics… no 'what matters for this task' retrieval yet" — the
+  same §2.6 hypothesis (task-oriented retrieval edges) this entry's own
+  classification already names, but a different concrete edge/kind, on a
+  different project, from a different observation shape (an absence noted
+  in passing while evaluating an unrelated FAIL, not an agent hitting a
+  missing edge while doing multi-module work). Per `context-gaps/README.md`'s
+  own standard ("recurs, or is filed independently by two agents"), this
+  is judged **not sufficient** to move this entry to `recurred` — it is
+  not the same edge recurring, only the same broader hypothesis being
+  touched from a different angle. Recorded here as a cross-reference for
+  Phase 55/GATE DD's benefit (`planning/reference-projects/ledgerkit/findings.md`
+  §6), not a promotion. Status unchanged: `candidate`, still needs a
+  genuine second occurrence or independent second observer of *this*
+  edge shape.
