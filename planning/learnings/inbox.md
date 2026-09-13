@@ -296,6 +296,45 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   uncorroborated single-occurrence finding into an otherwise
   tightly-evidenced narrow phase would be scope creep. Status unchanged:
   `retained`; revisit at Phase 51's re-run or a second occurrence.
+- **curation (Phase 51 closure, 2026-09-14, knowledge-curator):**
+  independently re-read `planning/phase-51-rerun-ledgerkit-evaluation.md`'s
+  own scope section and `planning/retros/phase-51-rerun-ledgerkit-evaluation.md`
+  rather than assuming the commitment was honoured — confirmed Phase 51's
+  actual scope was narrowly the two original FAIL cases (baseline Q2's
+  `dev-docs/hledger-compatibility.md` lookup, task 01's query-term
+  semantics) plus a generalisation check against a brand-new file
+  (`17-query-semantics-brief.md`); none of those exercises
+  `discovery.py::discover_python()` or Ledgerkit's
+  `[project.optional-dependencies]` manifest section at all — a disjoint
+  code path from what this candidate concerns, exactly as `findings.md`
+  §4 anticipated when it deliberately kept this candidate out of Phase
+  49's fix scope. Phase 51's own retro confirms no `src/codecompass/`
+  change and no new candidate learnings were filed this phase (`retros/
+  phase-51-*.md` "Time / cost note", "Candidate learnings filed"). So the
+  §6 commitment ("revisit at Phase 51's re-run or a second occurrence")
+  was not met by Phase 51 not because anyone skipped it, but because
+  Phase 51 was scoped, correctly, to measure a different fix
+  (`CG-002`/`L-016`) — it structurally could not have produced or
+  refuted evidence about optional-dependency CLI silence one way or the
+  other. **Outcome: stays `retained`, still single-occurrence, no new
+  evidence from Phase 51's specific scope** — this is not a
+  "no evidence after ~3 phases, default to discard" situation
+  (`learning-lifecycle.md` §2), since the intervening phases (47, 49, 51)
+  never had `discover_python()`/optional-dependency scanning in scope at
+  all; the ~3-phase norm presumes phases that *could* have surfaced
+  corroborating or disconfirming evidence and didn't, not phases that
+  never touched the relevant code path. Revised revisit trigger, since
+  "Phase 51's re-run" as originally written is now moot: **the next
+  reference-project phase (Ledgerkit Stage D, a future reference project,
+  or Technical Clipper) that actually exercises dependency discovery** —
+  i.e. any task that runs `codecompass query vendors` or bare discovery
+  against a project with a non-empty `[project.optional-dependencies]` (or
+  equivalent) block — or a second, independent occurrence of the same
+  silence, whichever comes first. If Stage D/Phase 52+ is never funded and
+  no future reference project surfaces this again, this candidate should
+  be revisited for a discard decision at that point on the same "no new
+  evidence after ample opportunity" grounds `L-012` was just closed on
+  below — not before, since it has not yet had a genuine opportunity.
 
 ### L-014 — a plan file's background/rationale claims can go stale between writing and implementation, independent of its scope list
 
@@ -408,7 +447,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 - **observation:** asking "what does this project use `typer` for" via `codecompass query symbol Typer --json` returns only the `Typer` class's own 2 call sites (`src/codecompass/cli.py:51`,`:54` — app construction). It omits that the large majority of the vendor's reported "usage count: 43" for `typer` as a whole is actually `typer.Option`/`Exit`/`Argument`/`confirm`/`Context` — the API surface that implements every CLI option, argument, exit code, and confirmation prompt. A reader trusting only the single-symbol query would undersell typer's role to "constructs two app objects." Separately, the vendor-level "usage count: 43" figure could not be exactly reproduced by direct `grep -oE "typer\.[A-Za-z_]+" src/codecompass/cli.py | sort | uniq -c` under any counting convention tried (grep-based counts landed 40–48 depending on what's included) — not demonstrably wrong, but not traceable to an exact provenance the way per-symbol `used_at` line citations are.
 - **evidence:** `planning/reference-projects/_instrument-dry-run.md` (full report); `src/codecompass/cli.py` (option/argument/exit/confirm call sites); `codecompass query symbol Typer --json` output quoted in the report.
 - **classification:** scoped-rule
-- **status:** retained
+- **status:** discarded
 - **recurrence:** first occurrence (self-test, not a reference-project finding — see `context-quality-evaluation.md`'s "don't aggregate the dry-run" rule)
 - **curation (Phase 44 triage, 2026-09-12, knowledge-curator):** provenance
   accepted and independently re-verified beyond taking the dry-run's word
@@ -479,6 +518,65 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   **Recommendation: revisit at Phase 51's re-run; discard if still
   uncorroborated by then** rather than carrying it indefinitely. Full
   reasoning: `planning/reference-projects/ledgerkit/findings.md` §6.
+- **curation (Phase 51 closure, 2026-09-14, knowledge-curator):**
+  independently re-read `planning/phase-51-rerun-ledgerkit-evaluation.md`'s
+  scope and `planning/retros/phase-51-rerun-ledgerkit-evaluation.md`
+  rather than assuming the promised re-evaluation happened — confirmed
+  Phase 51 was scoped narrowly to re-running baseline Q2 and task 01 (the
+  two original FAIL cases) plus a generalisation check on
+  `17-query-semantics-brief.md`; none of that exercises `query symbol`
+  against any vendor, single or multi-member, so this candidate's domain
+  (single-symbol query-scope breadth) got no opportunity to be
+  corroborated or refuted this phase either — structurally the same
+  situation as `L-015` above, confirmed by the same source documents.
+  However, this candidate is treated differently from `L-015`, because
+  the difference between them is real, not just symmetric bad luck:
+  `L-015`'s domain (`discovery.py`'s optional-dependency scanning) has
+  never once been in scope for *any* phase since its Phase 45 filing —
+  Phase 46 was query semantics, Phase 49 was the glob/error-message fix,
+  Phase 51 was the re-run of those two — so it has had zero genuine
+  opportunities. `L-012`'s domain, by contrast, *was* filed against a
+  standing gap that Ledgerkit's own reference-project evaluations have
+  now had two full baseline/task rounds (Phases 45-46) plus a re-run
+  (Phase 51) to potentially exercise, and none of the questions asked at
+  any of those rounds happened to probe `query symbol`'s single-symbol
+  scope specifically — not because the domain is inherently untestable
+  the way `L-015`'s is unless a future task deliberately targets
+  optional-dependencies, but because no evaluator or task designer across
+  three real evaluation rounds has picked a question shaped like "what
+  does this project use vendor X for" that would exercise it. That is a
+  meaningfully weaker basis for continued waiting: this is now **7 phases
+  since filing (44→51)** with the specific self-test-only caveat
+  (`context-quality-evaluation.md`'s "don't aggregate the dry-run" rule)
+  still unlifted by a single real reference-project instance, and Phase
+  47's own bulk review already named this exact re-run as the forcing
+  function for a promote/discard decision rather than another deferral
+  (`findings.md` §6, quoted above) — explicitly not open-ended.
+  Re-checked for a merge/promote path before defaulting to discard: no
+  second self-test or reference-project instance of either bundled
+  finding (single-symbol breadth undersell; `usage_count` non-grep-
+  reproducibility) has surfaced anywhere in `inbox.md`, `promoted.md`, or
+  any Ledgerkit evaluation file since Phase 44 (re-grepped for
+  "query symbol"/"usage_count" across `planning/reference-projects/` —
+  no hits outside this candidate's own origin document and Phase 44's
+  triage). Per `learning-lifecycle.md` §2's explicit norm — "a candidate
+  with no new evidence after ~3 phases is a discard candidate (curator's
+  call)" — and given this task's own instruction not to defer a third
+  time, **outcome: discard, not retain further.** This is not a claim the
+  underlying observation is false (code-level re-verification at Phase
+  44's own triage already confirmed the `typer.Option`/`Exit`/`Argument`/
+  `confirm`/`Context` breakdown is accurate); it is a claim that a
+  self-test-only finding with three real reference-project opportunities
+  to corroborate and zero takers has exhausted the lifecycle's patience
+  for "retained, awaiting evidence" and should not be carried a fourth
+  time on the same uncorroborated basis. If a future reference-project
+  task (Ledgerkit Stage D, Technical Clipper, or elsewhere) independently
+  hits the same single-symbol-undersells-breadth shape, it should be
+  filed as a **new** candidate learning citing that real instance as its
+  origin — not a reopening of this one — since the discard reason here is
+  "no real-world corroboration despite ample opportunity," not "this
+  phenomenon doesn't occur."
+- **promoted_to:** — (discarded; see Phase 51 closure rationale above)
 
 ### L-011 — `check_generated_artifacts_match_source`'s SKILL.md branch false-positives on any environment without a synced `context-graph.db` (a fresh clone/checkout/CI runner)
 

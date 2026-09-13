@@ -305,8 +305,8 @@ is the agent that finalises the actual `ROADMAP.md` row per
 | `CG-001` | stays `candidate` | single occurrence; cross-reference note added pointing at task 01's weak §2.6 echo, for GATE DD's benefit — not promoted |
 | `CG-002` | `recurred` → `promoted-to-roadmap` | GATE DB ratified by the user; `planning/phase-49-spec-doc-coverage-and-error-disambiguation.md` now owns this gap (see `planning/context-gaps/inbox.md` for the ratification note) |
 | `CG-003` | stays `candidate` | confirmed out of scope for GATE DB (§5); Stage E/GATE DD territory only |
-| `L-012` | stays `retained` | flagged as 3-phases-old with no new evidence (§6) |
-| `L-015` | stays `retained` | single occurrence; explicitly kept out of the narrow Stage C fix's scope (§4) |
+| `L-012` | `retained` → `discarded` (Phase 51 closure) | 7 phases old (44→51), three unclaimed corroboration opportunities, self-test-only per own exclusion — lifecycle's "~3 phases, no new evidence" norm applied |
+| `L-015` | stays `retained` | single occurrence; no phase since filing (45, 46, 47, 49, 51) has been in a position to corroborate it — revisit trigger updated to the next phase touching dependency discovery |
 | `L-016` | stays `retained` | recurrence confirmed (2 independent instances); GATE DB recommends bundling its fix with `CG-002`'s (§4) |
 | `L-017` | stays `retained` | confirmed out of scope for GATE DB (§5); feeds Phase 53 directly |
 | `L-013`, `L-018` | no change | already `promoted`, not this gate's concern |
@@ -318,3 +318,64 @@ across every Ledgerkit instance evaluated so far" — is not a new finding;
 it is `conditional-generalisation.md` §1.1's own prior being confirmed
 twice over, already tracked there and in `context-health.md`'s two
 assessments.
+
+---
+
+## GATE DC (Phase 51) — did Phase 49's fix work?
+
+Per Phase 49's own deferral note, this section is appended here rather
+than reopening the Stage B findings above. Re-pinned Ledgerkit at
+`05218e3` (2026-09-13); CodeCompass at `cea0b1c` (includes the Phase 49
+fix). `context-evaluator` independently re-ran both original FAIL cases
+— same questions, same instrument — plus a generalisation check against
+a brand-new file that didn't exist at the original pin.
+
+| | Baseline Q2 | Task 01 |
+|---|---|---|
+| Before (Phase 45/46) | FAIL / LOW (negative) / misled: yes | FAIL / LOW (negative) / misled: yes |
+| After (Phase 51) | PASS WITH GAPS / LOW / misled: no | PASS WITH GAPS / LOW / misled: no |
+
+**Answer: yes, context quality improved — but only on the dimension the
+fix targeted, and the advantage ceiling did not move.** The specific,
+evidenced, high-severity failure (`query relations` returning a
+confidently-authoritative "not found" for real, load-bearing project
+docs) is gone, independently reconfirmed by direct inspection and by the
+evaluator's own tool runs — not assumed from the fix landing. Generalises
+correctly: `17-query-semantics-brief.md`, written by Ledgerkit's own
+process *after* the original evaluations ran, is also now correctly
+tracked, confirming this is a real mechanism fix, not a two-file patch.
+
+**What did not improve, and structurally cannot with this fix alone:**
+`doc_relations_edges` is built purely from literal vendor/Skill
+name-mention detection. With 0 tracked vendors, `query relations` on any
+Ledgerkit spec doc returns `(none)` regardless of the doc's actual
+content — it can never surface *why* a doc matters, only *whether* it's
+tracked. `17-query-semantics-brief.md` is, by both evaluators' own
+assessment, the single most valuable artifact encountered in any
+Ledgerkit evaluation to date, and `query relations` surfaces none of it.
+This is not a regression or a new gap — it's the same limitation `CG-003`
+and the original baseline already named, now directly demonstrated on a
+concrete artifact rather than argued abstractly.
+
+**Verdict on Phase 49's fix, on its own terms: success.** It closed
+exactly what it was scoped to close (`CG-002`/`L-016`), did not
+over-claim, and the narrow-fix discipline (`findings.md` §4's rejection
+of a more general glob-configurability mechanism) is validated — nothing
+about this re-run suggests the earlier "smallest justified fix" judgment
+was wrong.
+
+**Implication for Stage D (Phases 52-55):** the redefined-v1 plan's own
+honest-exit language applies here (`v1-redefinition/roadmap.md` Phase
+51's own text): "a measured improvement over the foundation baseline,
+re-validated on a real external project, is a defensible redefined v1."
+Phase 49 *is* a measured improvement, validated here. Whether to continue
+into Stage D's deeper dogfooding (testing whether CodeCompass can usefully
+relate heterogeneous content — docs, executable behaviour, compatibility
+tests — a materially harder problem than glob coverage) or treat this as
+sufficient and proceed toward Stage F/G is a genuine strategic call, not
+a technical one this file resolves — see the retro for the lead's
+framing of that choice.
+
+Full per-question detail: `planning/reference-projects/ledgerkit/00-baseline.md`
+and `01-query-semantics.md`'s "Phase 51 re-run" sections (independently
+authored by `context-evaluator`, appended, not overwriting the originals).

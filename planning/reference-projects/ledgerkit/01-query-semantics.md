@@ -290,3 +290,194 @@ original content was lost and had to be reconstructed by the lead from
 its returned summary. Filed as a process-improvement note in the
 Phase 46 retro, not a `CG`/`L` entry (this is about the *agent-led
 workflow*, not CodeCompass's product).
+
+---
+
+## Phase 51 re-run (2026-09-14) — GATE DC re-evaluation of Task 01
+
+Independent re-evaluation after Phase 49's fix landed, run against
+Ledgerkit's own further progress: Stage C Phase 1 (the exact work this
+task originally evaluated) is now `[DONE]` — `hledger-researcher`
+produced `dev-docs/planning/core-redefinition/17-query-semantics-brief.md`
+(didn't exist at the original `9c33e37` pin), and a standalone, tested
+`ledgerkit/query/` subpackage now implements the six in-scope terms
+(not yet wired into `reports.py`/`cli.py`). This section independently
+re-runs the original task's commands and adds one new check for
+`17-query-semantics-brief.md`, per the phase's design decision that the
+new file is a bonus check, not the primary before/after measurement.
+
+### Setup
+
+- **Reference project:** https://github.com/ctosullivan/ledgerkit
+- **Pinned commit:** `05218e3acced83dd8e980206668ca5ee83ebf103`
+- **CodeCompass revision:** `cea0b1c3f80d2600667d832f2b6f178d9fc2c8ed`
+- **Task:** unchanged — hledger 1.52's `acct:`/`desc:`/`date:`/`depth:`/
+  `status:`/`not:` query-term semantics.
+- **Context CodeCompass supplied (independently re-run, venv on `PATH`,
+  from the clone root):**
+
+```
+$ codecompass query vendors
+┏━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━┳━━━━━━━━━━┓
+┃ Vendor ┃ Ecosystem ┃ Version ┃ Used ┃ Enriched ┃
+┡━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━╇━━━━━━━━━━┩
+└────────┴───────────┴─────────┴──────┴──────────┘
+
+$ codecompass query relations dev-docs/hledger-compatibility.md
+(none) / empty Package code — same shape as the Q2 re-run above
+
+$ codecompass query relations dev-docs/planning/core-redefinition/07-query-regex.md
+(none) / empty Package code
+
+$ codecompass query relations dev-docs/planning/core-redefinition/17-query-semantics-brief.md
+(none) / empty Package code
+```
+
+All three now return the identical honest-empty shape (full Rich table
+output reproduced verbatim in the Q2 re-run section above; omitted here
+for brevity since the shape is byte-for-byte the same three times over).
+No "not found" error for any of the three paths, including the file
+that didn't exist at the original pin.
+
+### Ground truth (re-established by direct inspection)
+
+- All three paths are confirmed, by direct `sqlite3` query against the
+  clone's own rebuilt `context-graph.db`, to be registered `doc_artifacts`
+  rows (`kind='spec_doc'`, `origin='project'`):
+  `dev-docs/hledger-compatibility.md`,
+  `dev-docs/planning/core-redefinition/07-query-regex.md`, **and**
+  `dev-docs/planning/core-redefinition/17-query-semantics-brief.md`. The
+  fix generalises to a file that did not exist when `CG-002`/`L-016` were
+  first filed — it isn't special-cased to the two originally-flagged
+  paths.
+- **`07-query-regex.md`** is unchanged since the original pin (`git diff
+  9c33e37...05218e3 -- dev-docs/planning/core-redefinition/07-query-regex.md`
+  produces no output) — it remains the same provisional §7.1 table
+  (informal term-by-term notes, explicitly "finalised at implementation
+  time," not yet source-verified).
+- **`17-query-semantics-brief.md`** (new, read in full) is a rigorous,
+  source-cited answer to essentially the entire task: for each of the six
+  terms it cites exact `hledger` Haskell source lines
+  (`hledger-lib/Hledger/Query.hs`, `Dates.hs`, `AccountName.hs`,
+  `Posting.hs`), the manual section, and — where one exists — the
+  upstream test-suite fixture, and it resolves the task's hardest edge
+  case precisely: `not:acct:a not:acct:b` is `And [Not(Acct a), Not(Acct
+  b)]` (must match neither), not `Or` — with an explicit note that this
+  specific sub-case rests on source-only evidence, not an executable
+  test, flagged as the top-priority fixture for `compat-differential-
+  tester`. It also documents the exclusive-end-date footgun for `date:`
+  ranges and the `HledgerRegex`/`PythonRegex` compatible-subset boundary
+  in detail.
+- **`hledger-compatibility.md`** (re-read in full; see the Q2 re-run
+  section's ground truth for the whole file) has itself grown a new
+  "## Query Language (Stage C)" section since the original pin,
+  presenting the same six-term semantics as an implementation-status
+  table and pointing at `17-query-semantics-brief.md` by name as its
+  grounding — i.e. the task's answer is now duplicated, in summary form,
+  in a *second* tracked doc as well.
+- Root cause of the still-empty relations, re-confirmed as in the Q2
+  re-run: the graph's 8 total `doc_relations_edges` rows all target the
+  CodeCompass Skill by literal name-mention; none of these three files
+  mention "codecompass," so `(none)` is the mechanically correct result
+  for all three, independent of how much genuinely relevant content each
+  contains.
+
+### Criteria assessment
+
+| Criterion | Rating | Notes |
+|---|---|---|
+| Accuracy | strong | No false claim for any of the three paths, including the newly-created one — a meaningful generalisation check the original task couldn't run. |
+| Relevance | n/a | Nothing returned to judge. |
+| Completeness | weak | Zero surfaced content from `17-query-semantics-brief.md`, the single document that most completely answers this task of any artifact in either evaluation round. |
+| Freshness | strong | Correctly reflects the current `dev-docs/` tree, including a file that postdates the original evaluation — the strongest freshness evidence available in this re-run. |
+| Grounding / provenance | adequate | The `(none)` results are honestly traceable to the mention-detection mechanism (verified directly); no false provenance anywhere, but no path to the actual content either. |
+| Noise | strong | Three empty tables, no fabricated filler. |
+| Safety / trustworthiness | strong | The Phase 46 failure mode (authoritative-sounding "not found" for real, load-bearing, in-progress-relevant files) is gone across all three paths, old and new alike. |
+
+### Verdict: PASS WITH GAPS  *(moved from FAIL)*
+
+Same structural improvement as the Q2 re-run, now confirmed across three
+files including one that didn't exist at the original failing
+evaluation — this is evidence the fix is a genuine mechanism change, not
+a two-file patch. It is still not a clean PASS: `17-query-semantics-
+brief.md` is, by a wide margin, the single most valuable artifact either
+evaluation round has encountered for this task, and CodeCompass's
+`query relations` surfaces literally none of it. An agent relying on
+`codecompass query relations` alone learns that the file exists and is
+tracked but gets zero indication of its content or why it matters.
+
+### Context advantage: LOW  *(moved off LOW-negative, but still LOW, not positive)*
+
+Could a fresh Claude session get this trivially, and better? **Yes.**
+`grep -rn "query" dev-docs/planning/core-redefinition/` (the same
+one-line search the original Task 01 evaluation used) still finds
+`07-query-regex.md` in seconds, and `ROADMAP.md`/`CONTEXT.md` name
+`17-query-semantics-brief.md` explicitly as Stage C Phase 1's completed
+output — a diligent agent doing ordinary repository orientation would
+find both files without CodeCompass's involvement at all. CodeCompass's
+fixed behaviour removes the actively-harmful signal but adds no
+retrieval value over that cheap path; the advantage remains at the
+floor, not above it.
+
+### Material gaps / failures
+
+- Confirms, on a live/current task rather than the earlier spot-check,
+  that even a fully-working `query relations` (tracked doc, glob
+  coverage correct) has no mechanism to surface *why* a doc matters or
+  what it says — only whether it name-mentions a vendor/Skill. For a
+  project with 0 tracked vendors, this ceiling means `query relations`
+  can never contribute positively to this class of question, independent
+  of any future glob fix. This is the same underlying limitation named in
+  the Q2 re-run's material-gaps entry, now corroborated by a second,
+  independent artifact (`17-query-semantics-brief.md`) that a working
+  discovery mechanism still could not connect to anything.
+- The `query relations` empty-table output gives no explicit nudge (unlike
+  `_relations_not_found_error`'s disambiguation hint for the genuinely
+  unregistered case) suggesting the caller read the tracked file's actual
+  content directly. This is a softer risk than Phase 46's false negative
+  — an agent that understands "(none)" means "tracked but unrelated,
+  not absent" is not misled — but an agent skimming past three
+  consecutive empty tables without that context could plausibly conclude
+  there's nothing worth reading here, when the opposite is true for
+  `17-query-semantics-brief.md` specifically.
+
+### Would this have misled the implementing agent?  no  *(changed from yes)*
+
+The specific Phase 46 failure — "not found" read as "no prior work
+exists," risking either duplicating `hledger-researcher`'s brief from
+scratch or falling back to ungrounded training-data hledger knowledge —
+no longer occurs for any of the three paths tested, including the new
+one. An agent would correctly infer these files are known to the project
+and would need to read them directly for content, which is also the
+correct and cheap next step regardless of CodeCompass's involvement.
+
+### Comparison table — before (Phase 45/46) vs. after (Phase 51)
+
+| | Baseline Q2 (hledger-compatibility.md) | Task 01 (query-term semantics) |
+|---|---|---|
+| Original verdict | FAIL | FAIL |
+| Original advantage | LOW (negative) | LOW (negative) |
+| Original "misled?" | yes | yes |
+| Re-run verdict | PASS WITH GAPS | PASS WITH GAPS |
+| Re-run advantage | LOW (not negative) | LOW (not negative) |
+| Re-run "misled?" | no | no |
+| What moved | The false "not found" claim is gone; the doc is now correctly tracked. | Same, generalised across two pre-existing files and one brand-new file. |
+| What didn't move | Zero of the doc's actual compatibility content is surfaced by `query relations`. | Zero of `17-query-semantics-brief.md`'s (or any of the three docs') actual semantic content is surfaced. |
+
+### GATE DC assessment (this phase's exit question)
+
+**Did measured context quality improve? Yes, materially, but only on the
+dimension the fix targeted.** Both re-evaluations moved from FAIL to PASS
+WITH GAPS, and from "would have misled the agent: yes" to "no" — the
+specific, evidenced, high-severity failure mode (confidently-authoritative
+false non-existence for real, load-bearing project docs) that drove both
+original FAILs is gone, independently reconfirmed by direct inspection and
+by this evaluator's own `codecompass`/`sqlite3` commands, not assumed from
+the lead's report. **It did not, and structurally could not, close the
+completeness gap**: `query relations`'s mechanism (literal vendor/Skill
+name-mention detection) has no way to surface a spec doc's own subject
+matter, so for a project with 0 tracked vendors, the advantage ceiling for
+this entire class of question stays at LOW regardless of glob coverage.
+Phase 49's fix should be judged a success on its own, narrow terms — it
+is not evidence that Ledgerkit-style dev-docs questions are now
+well-served by CodeCompass overall.

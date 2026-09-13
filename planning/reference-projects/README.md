@@ -11,7 +11,7 @@ and
 
 | Name | URL | Starting revision | Status | Record |
 |---|---|---|---|---|
-| Ledgerkit | https://github.com/ctosullivan/ledgerkit | `a3cf2a7` (2026-09-12) | registered, baseline evaluated (Phase 45) | [`ledgerkit.md`](ledgerkit.md) |
+| Ledgerkit | https://github.com/ctosullivan/ledgerkit | `a3cf2a7` (2026-09-12) | baseline + 1 genuine task evaluated (Phases 45-46); GATE DB fix (Phase 49) confirmed working at GATE DC (Phase 51, re-pinned `05218e3`) | [`ledgerkit.md`](ledgerkit.md) |
 | Technical Clipper | https://github.com/ctosullivan/technical-clipper | *(pinned at Phase 60)* | not yet registered | — (`technical-clipper.md`, Phase 60) |
 
 `_instrument-dry-run.md` in this directory is a **self-test of the

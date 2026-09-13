@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 51** (Stage C's closing phase — **GATE DC**): re-ran Phase 45's
+  baseline Q2 and Phase 46's genuine task — same questions, same
+  instrument — against Ledgerkit re-pinned at `05218e3` (its own Stage C
+  Phase 1 had since landed, producing a brand-new file), to measure
+  whether Phase 49's fix actually improved context quality. **Both
+  original FAIL verdicts moved to PASS WITH GAPS**, and "would this have
+  misled the agent" moved from yes to no for both — independently
+  re-verified by `context-evaluator` via direct inspection and its own
+  `codecompass`/`sqlite3` commands, not assumed from the fix landing.
+  **Confirmed the fix generalises**: the new
+  `17-query-semantics-brief.md` (didn't exist at Phase 46's pin) is also
+  correctly tracked. **Advantage stayed LOW**: `query relations` only
+  does literal vendor/Skill name-mention detection, and Ledgerkit has 0
+  tracked vendors, so it structurally cannot surface a doc's actual
+  content — the ceiling on this question class wasn't raised, and the fix
+  was never scoped to raise it. Phase 49's fix is judged a success **on
+  its own, narrow terms**, validating rather than calling into question
+  the earlier "smallest justified fix" judgment (rejecting a more general
+  configurable-glob mechanism). `planning/reference-projects/ledgerkit/findings.md`
+  GATE DC section appended with the before/after comparison. **This
+  completes Stage C in full** (Phase 48/50 not funded, Phase 49 done,
+  Phase 51 done). No `src/codecompass/` change (measurement only). As a
+  closeout addendum, resolved a Phase-47-committed revisit decision this
+  phase's own scope hadn't touched: `L-015` stays `retained` (genuinely
+  out of scope across five intervening phases; revisit trigger updated);
+  `L-012` moved `retained` → `discarded` (7 phases old, three unclaimed
+  corroboration opportunities, self-test-only by design — the lifecycle's
+  "~3 phases, no new evidence" norm applied). `docs-reconstructor` drift
+  audit → NO DRIFT; `release-phase-auditor` → PASS WITH NON-BLOCKING
+  OBSERVATIONS (the one genuine gap it flagged — the dangling
+  `L-012`/`L-015` commitment — is the addendum resolved above). `pytest`
+  557 passed / 2 skipped, `ruff check .` clean, `check_user_docs.py
+  --strict` clean. **Whether to continue into Stage D or proceed toward
+  Stage F/G is a genuine strategic decision surfaced to the user, not
+  resolved by this phase.**
+
 ### Fixed
 
 - **Phase 49** (Stage C's first phase — GATE DB's funded fix): closes

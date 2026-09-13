@@ -308,25 +308,35 @@ read `done`.
 **Stage B is fully complete: 43b, 43c, 43d, 43e, 44, 45, 46, and 47 are
 all `done`. GATE DB is resolved (see Phase 47 above).**
 
-**Stage C now has its first completed phase: 49, `done` (2026-09-13)**
+**Stage C is now fully complete: 49 and 51 are `done` (48 and 50 not
+funded). GATE DC is resolved.**
 ([`phase-49-spec-doc-coverage-and-error-disambiguation.md`](phase-49-spec-doc-coverage-and-error-disambiguation.md),
-written by Phase 47) — the actual `src/codecompass/` fix GATE DB funded:
-added `"dev-docs/**/*.md"` to `_DEFAULT_GLOBS` (closes `CG-002`) and
+[`phase-51-rerun-ledgerkit-evaluation.md`](phase-51-rerun-ledgerkit-evaluation.md)).
+Phase 49 was the actual `src/codecompass/` fix GATE DB funded: added
+`"dev-docs/**/*.md"` to `_DEFAULT_GLOBS` (closes `CG-002`) and
 disambiguated `query relations`'s "not found" error via a new
 `_relations_not_found_error`, scoped to `query_relations` only (closes
 `L-016`), plus 3 new tests and a live smoke-test re-check against the
-real Ledgerkit clone (independently reproduced by both the lead and the
-`release-phase-auditor`, confirming the fix generalises beyond the one
-directory it was evidenced against). This was CodeCompass's first
-`src/codecompass/` change driven by external reference-project
-evidence — the redefined v1's central hypothesis made concrete. `CG-002`
-stays `promoted-to-roadmap` (closing note added); `L-016` flipped
-`retained` → `promoted`. Stage C's status moves from "CONDITIONAL, not
-started" to "in progress, one phase done" (Phase 48/50 remain not
-funded). **No gate blocks the next step**, but see "Next concrete step"
-below — Phase 50 was explicitly not funded, so Phase 51 (re-run the
-Ledgerkit evaluation, GATE DC) is the natural candidate, contingent on
-live-reconfirming Ledgerkit's current state first.
+real Ledgerkit clone. Phase 51 (2026-09-14) then re-ran Phase 45's
+baseline Q2 and Phase 46's genuine task against Ledgerkit re-pinned at
+`05218e3` to measure whether the fix actually worked: **both original
+FAIL verdicts moved to PASS WITH GAPS**, independently re-verified by
+`context-evaluator`, and the fix was confirmed to generalise (a
+brand-new file, `17-query-semantics-brief.md`, that didn't exist at
+Phase 46's pin is also correctly tracked). **Advantage stayed LOW** —
+`query relations` only does literal name-mention detection and Ledgerkit
+has 0 tracked vendors, a structural ceiling this fix was never scoped to
+raise. Phase 49's fix is judged a success on its own narrow terms.
+`CG-002` stays `promoted-to-roadmap`; `L-016` stays `promoted`; the
+Phase-47-committed `L-012`/`L-015` revisit decision was resolved as part
+of Phase 51's closeout (`L-015` stays `retained`, `L-012` moved
+`retained` → `discarded`). **No gate blocks a next phase — but there
+isn't one queued.** Whether to continue into Stage D (deeper Ledgerkit
+dogfooding, Phases 52–55) or treat GATE DC's result as sufficient and
+proceed toward Stage F/G (Technical Clipper, then blank-slate doc
+reconstruction and release) is a genuine strategic decision for the
+user, not a technical call this reconciliation resolves — see "Next
+concrete step" below.
 
 - **39** ratified the redefinition: ADRs `decisions/0048`/`0049`
   `Accepted`; `pyproject.toml` `version` → `1.0.0.dev0`; ROADMAP's Stage
@@ -453,6 +463,55 @@ dependencies now carry lower-bound version pins (`decisions/0047`), and
 were cleaned up (Phase 38).
 
 ## What was just completed
+
+**Phase 51, `done`** (2026-09-14) — Stage C's closing phase, **GATE DC**.
+Re-ran Phase 45's baseline Q2 and Phase 46's genuine task — same
+questions, same instrument — against Ledgerkit re-pinned at `05218e3`
+(Ledgerkit had, in the interim, finished the exact Stage C task Phase 46
+evaluated, producing a brand-new file that strengthened rather than
+complicated the re-run). **Both original FAILs moved to PASS WITH
+GAPS**, and "would this have misled the agent" moved from yes to no for
+both — independently re-verified by `context-evaluator` via direct
+inspection and its own `codecompass`/`sqlite3` commands, not assumed
+from the fix landing. **Confirmed the fix generalises**: the new
+`17-query-semantics-brief.md` (didn't exist at Phase 46's pin) is also
+correctly tracked now — this wasn't a two-file patch, it's a real
+mechanism change. **Honestly identified what didn't improve, and why it
+structurally can't with this fix**: `query relations` only does literal
+vendor/Skill name-mention detection; with 0 tracked vendors, advantage
+stayed LOW across both re-runs — the ceiling on this class of question
+wasn't raised, and the fix was never scoped to raise it. Phase 49's fix
+is judged a success **on its own, narrow terms** — the earlier "smallest
+justified fix" judgment (rejecting a more general configurable-glob
+mechanism) is validated by this result, not called into question. No
+`src/codecompass/` change this phase (measurement only). **Closeout
+addendum**, caught by `release-phase-auditor`'s audit: Phase 47's
+`findings.md` §6 had committed `L-012`/`L-015` to a promote/discard/
+retain decision "at Phase 51's re-run," which this phase's actual scope
+(re-running two specific hledger-content questions) never touched.
+Resolved rather than left dangling: `L-015` stays `retained` (genuinely
+never in scope across five intervening phases — a "no opportunity
+existed" case, not a "no evidence found" case; revisit trigger updated
+to the next phase that actually exercises dependency discovery); `L-012`
+moved `retained` → `discarded` (now 7 phases old, three unclaimed
+corroboration opportunities, self-test-only by its own design — the
+lifecycle's "~3 phases, no new evidence" norm applied for real).
+`planning/reference-projects/ledgerkit/findings.md`'s own triage table
+updated to match. Verified: `pytest` 557 passed / 2 skipped, `ruff
+check .` clean, `check_user_docs.py --strict` clean. Closeout:
+`docs-reconstructor` drift audit
+(`planning/retros/_drift-audit-phase-51.md`) → **NO DRIFT**;
+`release-phase-auditor` (`planning/retros/_audit-phase-51.md`) → **PASS
+WITH NON-BLOCKING OBSERVATIONS** (the one genuine gap it flagged — the
+dangling `L-012`/`L-015` commitment — is the addendum resolved above; the
+rest were the pending `roadmap-context-curator` reconciliation this
+closeout performs). Retro:
+`planning/retros/phase-51-rerun-ledgerkit-evaluation.md`. **This
+completes Stage C in full** (Phase 48/50 not funded, 49 done, 51 done).
+**The retro explicitly frames the next step as a genuine strategic
+decision for the user** (continue into Stage D's deeper dogfooding, vs.
+treat GATE DC's result as sufficient and proceed toward Stage F/G) — not
+a technical call this reconciliation resolves or defaults on.
 
 **Phase 49, `done`** (2026-09-13) — Stage C's first phase, spending
 GATE DB's funded fix. `spec_docs.py::_DEFAULT_GLOBS` gained
@@ -1000,8 +1059,53 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 **Stage A is complete (Phases 39–43e `done`, GATE DA passed). Stage B is
 fully complete (Phases 43b, 43c, 44, 45, 46, 47 all `done`, GATE DB
-resolved). Stage C now has its first completed phase: 49, `done`
-(2026-09-13).**
+resolved). Stage C is now fully complete (48/50 not funded, 49 and 51
+both `done`, GATE DC resolved 2026-09-14).**
+
+**No phase is queued next. The redefined-v1's own exit language names
+this a legitimate stopping point** (`planning/v1-redefinition/roadmap.md`
+Phase 51's own text: *"a measured improvement over the foundation
+baseline, re-validated on a real external project, is a defensible
+redefined v1"*) — Phase 49 is that measured improvement, Phase 51 is
+that re-validation. **Two paths are both defensible from here, and
+choosing between them is a strategic decision for the user, not a
+technical call this reconciliation should resolve or default on:**
+
+1. **Continue into Stage D (Phases 52–55)**: deeper Ledgerkit
+   dogfooding — test whether CodeCompass can usefully relate
+   heterogeneous content (docs, executable hledger behaviour,
+   compatibility tests) as evidence nodes with provenance. Materially
+   harder and more novel than glob coverage; Phase 51's finding (the
+   *structural* ceiling on `query relations` for 0-vendor projects) is
+   exactly what Stage D would need to address to move the advantage
+   rating past LOW at all.
+2. **Treat GATE DC's result as sufficient and proceed toward Stage F/G**:
+   register Technical Clipper as the cross-ecosystem regression check,
+   then blank-slate doc reconstruction and release. Accepts LOW advantage
+   as the honest, evidenced result for small/dependency-poor projects and
+   ships the redefined v1 on the strength of "agent-led development +
+   evidence-driven fixing works, even if the advantage ceiling on this
+   project shape is modest."
+
+Full reasoning for both options: `planning/retros/phase-51-rerun-ledgerkit-evaluation.md`
+"Where we're going." No `planning/phase-52-*.md` or Stage D scoping note
+has been written — correctly, since that only happens once this choice
+is made, not written speculatively.
+
+**Phase 51 closeout (done):** `docs-reconstructor` drift audit
+(`planning/retros/_drift-audit-phase-51.md`) → **NO DRIFT**;
+`release-phase-auditor` (`planning/retros/_audit-phase-51.md`) → **PASS
+WITH NON-BLOCKING OBSERVATIONS** (one genuine gap flagged — the dangling
+Phase-47 `L-012`/`L-015` revisit commitment Phase 51's own scope hadn't
+touched — resolved as this closeout's addendum: `L-015` stays
+`retained`, revisit trigger updated; `L-012` moved `retained` →
+`discarded`, 7 phases old with no corroboration). GATE DC: both original
+FAILs (Phase 45 Q2, Phase 46 genuine task) moved to PASS WITH GAPS;
+advantage stayed LOW (structural ceiling, 0 tracked Ledgerkit vendors).
+ROADMAP row `51` / the `v1-redefinition/roadmap.md` Phase 51 stanza (+
+Stage C's own header, now "COMPLETE") / the plan file's own status line
+(`done (2026-09-14)`) all flipped to `done` in this commit. Retro:
+`planning/retros/phase-51-rerun-ledgerkit-evaluation.md`.
 
 **Phase 49 closeout (done):** `docs-reconstructor` drift audit
 (`planning/retros/_drift-audit-phase-49.md`) → **NO DRIFT** (also caught,
@@ -1035,17 +1139,11 @@ plan file's own status line (`done (2026-09-13)`) all flipped to `done`
 in this commit. Retro:
 `planning/retros/phase-49-spec-doc-coverage-and-error-disambiguation.md`.
 
-**Immediate next step: Phase 51** (re-run Ledgerkit's evaluation,
-**GATE DC**) is the natural next step per the roadmap — Phase 50 was
-explicitly not funded by GATE DB, and Phase 51's job is to confirm the
-Phase 49 fix actually moves Phase 45/46's two FAIL verdicts /
-LOW-advantage findings. **This needs a live re-check of Ledgerkit's
-current state first**, per this project's now-standard practice: its
-roadmap has already moved multiple times mid-phase (Phase 45's own
-baseline superseded within a day; Phase 46's task was reconfirmed live
-at phase start). Do not assume the Phase 45/46 snapshot is still
-accurate — re-verify the clone's current commit/state before scoping
-Phase 51's exact task set. No gate blocks Phase 51 itself.
+*(Historical, superseded by "No phase is queued next" above: at Phase
+49's own closeout, Phase 51 — re-run Ledgerkit's evaluation, GATE DC —
+was named the natural next step, contingent on a live re-check of
+Ledgerkit's current state first. Phase 51 has since run and completed;
+see "What was just completed" and the top of this section.)*
 
 **GATE DB outcome (for reference):** fund one narrow Stage C phase
 closing `CG-002` + `L-016` (Phase 49, now done); Phase 48 and Phase 50

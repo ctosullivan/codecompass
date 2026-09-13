@@ -234,6 +234,142 @@ contradicts the project's own stated compatibility contract.
 
 ---
 
+## Phase 51 re-run (2026-09-14) — GATE DC re-evaluation of Q2
+
+Independent re-evaluation of this same question after Phase 49's fix
+(`dev-docs/**/*.md` glob coverage + `query relations`'s not-found
+disambiguation) landed. Ground truth re-established by reading the
+Ledgerkit clone directly at the commit below; CodeCompass's own source
+(`src/codecompass/spec_docs.py`, `src/codecompass/cli.py`) re-inspected
+directly; the `context-graph.db` produced by the fixed code was also
+queried directly via `sqlite3` (not through `codecompass query`) to
+confirm the doc-artifact row exists, independent of what the CLI prints.
+
+### Setup
+
+- **Reference project:** https://github.com/ctosullivan/ledgerkit
+- **Pinned commit:** `05218e3acced83dd8e980206668ca5ee83ebf103`
+  (2026-09-13, "docs: confirm and pin the hledger reference binary")
+- **CodeCompass revision:** `cea0b1c3f80d2600667d832f2b6f178d9fc2c8ed`
+  (includes Phase 49's fix)
+- **Task:** unchanged — "What governs Ledgerkit's hledger-1.52
+  journal-format compatibility?"
+- **Context CodeCompass supplied (independently re-run, venv on `PATH`,
+  from the clone root):**
+
+```
+$ codecompass query relations dev-docs/hledger-compatibility.md
+┏━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
+┃ Relation ┃ Other ┃ Heading ┃ Label ┃ AI summary ┃
+┡━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
+│ (none)   │       │         │       │            │
+└──────────┴───────┴─────────┴───────┴────────────┘
+Package code
+┏━━━━━━━━┳━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━┓
+┃ Vendor ┃ Symbol ┃ File ┃ Line ┃ Heading ┃ Via ┃
+┡━━━━━━━━╇━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━┩
+└────────┴────────┴──────┴──────┴─────────┴─────┘
+```
+
+No error, no "not found" — a structurally different result from Phase
+45's `error: 'dev-docs/hledger-compatibility.md' not found in
+context-graph.db`.
+
+### Ground truth (re-established by direct inspection)
+
+- `dev-docs/hledger-compatibility.md` still exists and is still current —
+  it has in fact **grown** since Phase 45's pin (238 → 273 lines): `git
+  diff a3cf2a77...05218e3 -- dev-docs/hledger-compatibility.md` shows a
+  new "## Query Language (Stage C)" section (lines 199–231) added,
+  documenting `acct:`/`desc:`/`date:`/`depth:`/`status:`/`not:` semantics
+  and cross-referencing `17-query-semantics-brief.md` as the
+  hledger-source-verified grounding for each row. It remains exactly the
+  file the question asks about.
+- Direct `sqlite3` query against the clone's own rebuilt
+  `context-graph.db` confirms the file **is** now a registered
+  `doc_artifacts` row: `('dev-docs/hledger-compatibility.md', 'spec_doc',
+  'project')`. This is the mechanical confirmation that the empty
+  `(none)` result above is an honest "tracked, zero mechanical relations
+  found" — not a masked non-existence claim.
+- Root cause of the fix, re-confirmed by reading
+  `src/codecompass/spec_docs.py` directly: `_DEFAULT_GLOBS` now includes
+  `"dev-docs/**/*.md"` (added by Phase 49, commit `780e97b`), where
+  Phase 45's pin had no such entry.
+- Root cause of *why* the table is still empty despite the doc now being
+  tracked, re-confirmed by reading `src/codecompass/doc_mapping.py`
+  directly and by querying `doc_relations_edges` in the rebuilt graph:
+  the whole project graph contains only **8** `doc_relations_edges` rows
+  total, and every one of them targets `doc_artifacts` row id 1
+  (`.claude/skills/codecompass/SKILL.md`, name `codecompass`) — i.e.
+  mechanical mention-detection in this project fires only where a doc
+  happens to say the literal string "codecompass" by name. Nothing in
+  `hledger-compatibility.md` mentions "codecompass" or any tracked
+  vendor (Ledgerkit genuinely has 0 runtime dependencies), so an empty
+  relations table is the mechanically correct output — the mechanism
+  was never capable of surfacing this doc's actual hledger-compatibility
+  content, fixed glob or not.
+
+### Criteria assessment
+
+| Criterion | Rating | Notes |
+|---|---|---|
+| Accuracy | strong | The empty table is literally and practically correct: the file is tracked, and it mechanically mentions no vendor/Skill. No false claim of any kind. |
+| Relevance | n/a | Nothing was returned to judge for relevance — the query engine correctly had nothing mechanical to report. |
+| Completeness | weak | Zero of the file's actual compatibility-governance content (the deviations from real hledger, the new Query Language section) is surfaced — the same completeness gap as before, just no longer disguised as non-existence. |
+| Freshness | strong | The graph correctly reflects the file's current, grown state as a tracked artifact at the pinned commit — no staleness. |
+| Grounding / provenance | adequate | The "(none)" result is honestly traceable to the mechanical mention-detection model (verified directly against `doc_relations_edges`); there is no false provenance claim, but also no path from this result to the file's actual content. |
+| Noise | strong | Minimal — an empty table stays empty, no fabricated filler. |
+| Safety / trustworthiness | strong | This is the material change from Phase 45: an empty, present-tense result reads as "tracked, nothing mechanically related," not as "this doesn't exist." Confirmed by direct inspection that the doc-artifact row is real. |
+
+### Verdict: PASS WITH GAPS  *(moved from FAIL)*
+
+The confidently-wrong "not found" claim that drove Phase 45's FAIL is
+gone — verified independently, not taken on the lead's word. No
+incorrect or misleading claim remains. But this is not a clean PASS:
+the *only* reason the result changed from misleading to honest is that
+the file is now correctly registered as a tracked artifact; the
+underlying inability to surface any of the file's substantive
+compatibility content is completely unchanged and remains a real,
+material gap for this exact question.
+
+### Context advantage: LOW  *(moved off LOW-negative, but still LOW, not positive)*
+
+Could a fresh Claude session get this trivially? **Yes, and it still
+gets a strictly better answer.** Reading `dev-docs/hledger-
+compatibility.md` directly (single file, `cat`/`Read`) gives the
+complete, current compatibility contract in seconds, including the new
+Query Language section. CodeCompass's fixed output no longer actively
+misleads, but it still contributes nothing toward answering the actual
+question — the advantage is not "negative" anymore (Phase 45's "worse
+than doing nothing"), but it has not moved past the floor: a diligent
+agent gains zero net benefit from running `codecompass query relations`
+here versus going straight to the obvious file.
+
+### Material gaps / failures
+
+- `CG-002`/`L-016`'s glob-coverage root cause is fixed and independently
+  reconfirmed here. The **distinct**, not-yet-addressed gap: mechanical
+  `doc_relations_edges` construction has no representation of a spec
+  doc's own subject-matter content — only literal name-mentions of
+  vendors/Skills. For a project with 0 tracked vendors (like Ledgerkit),
+  this means `query relations` on *any* spec doc will structurally
+  return `(none)` regardless of how substantive that doc's content is.
+  This was visible before the fix only because the "not found" error
+  masked it; now that the error is gone, this is the accurately-exposed
+  remaining limitation.
+
+### Would this have misled the implementing agent?  no  *(changed from yes)*
+
+An agent running this exact command now receives an honest "tracked,
+no mechanical relations" signal rather than a confident false claim of
+non-existence. It would not be misled into believing no governance
+document exists. It would, however, learn nothing about the document's
+actual content from this command alone and would still need to read
+`dev-docs/hledger-compatibility.md` directly to get any real value —
+exactly what a diligent agent would do next regardless.
+
+---
+
 # Q3 — Ledgerkit's current development-stage / roadmap state
 
 ## Setup

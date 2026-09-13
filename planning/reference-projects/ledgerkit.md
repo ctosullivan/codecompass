@@ -78,6 +78,7 @@ load-bearing (Stage B's task material lives in `dev-docs/`).
 | 00.Q1 | `a3cf2a7` | Baseline: runtime dependencies | `6c3f34e` | PASS WITH GAPS | LOW | [`ledgerkit/00-baseline.md`](ledgerkit/00-baseline.md#q1--runtime-dependencies) |
 | 00.Q2 | `a3cf2a7` | Baseline: what governs hledger-1.52 compatibility | `6c3f34e` | **FAIL** | LOW (negative) | [`ledgerkit/00-baseline.md`](ledgerkit/00-baseline.md#q2--what-governs-ledgerkits-hledger-152-journal-format-compatibility) |
 | 00.Q3 | `a3cf2a7` | Baseline: current roadmap/stage state | `6c3f34e` | PASS WITH GAPS | LOW | [`ledgerkit/00-baseline.md`](ledgerkit/00-baseline.md#q3--ledgerkits-current-development-stage--roadmap-state) |
+| 00.Q2 (Phase 51 re-run — **GATE DC**) | `05218e3` | Same as 00.Q2, re-run after Phase 49's fix | `cea0b1c` | PASS WITH GAPS *(moved from FAIL)* | LOW, not negative *(moved off negative)* | [`ledgerkit/00-baseline.md`](ledgerkit/00-baseline.md) (Phase 51 section, appended) |
 
 **Q2 is CodeCompass's first FAIL verdict of the redefined-v1 effort.** Not
 an honest "no relations found" — a confident-sounding "not found in
@@ -93,6 +94,7 @@ agent — yes/partially" verdict is listed in full as the highest-priority
 GATE DB input: **Q1 partially, Q2 yes, Q3 no.**
 
 | 01 | `9c33e37` | Genuine task: hledger 1.52 query-term semantics (`acct:`/`desc:`/`date:`/`depth:`/`status:`/`not:`) — Stage C Phase 1, reconfirmed live (Milestone-5-style roadmap movement happened again: Ledgerkit's Stage B closed and Stage C opened between Phase 45 and Phase 46) | `b0717ee` | **FAIL** | LOW (negative) | [`ledgerkit/01-query-semantics.md`](ledgerkit/01-query-semantics.md) |
+| 01 (Phase 51 re-run — **GATE DC**) | `05218e3` | Same task, re-run after Phase 49's fix; also checked a brand-new file (`17-query-semantics-brief.md`) that didn't exist at the original pin, to test generalisation | `cea0b1c` | PASS WITH GAPS *(moved from FAIL)* | LOW, not negative *(moved off negative)* | [`ledgerkit/01-query-semantics.md`](ledgerkit/01-query-semantics.md) (Phase 51 section, appended) |
 
 **Row 01 is CodeCompass's second FAIL verdict, same failure shape as
 Phase 45's Q2 but now on live, in-progress work rather than a spot
@@ -106,6 +108,20 @@ hledger 1.52 behaviour itself — filed as **`CG-003`** (no glob fix could
 ever cover it). The retrieval-cost angle of using an external manual as a
 fallback (two failed `WebFetch` attempts on a large page) filed as
 **`L-017`**.
+
+**GATE DC (Phase 51) — did Phase 49's fix work?** Yes, on the narrow
+dimension it targeted: both `00.Q2` and `01` moved from **FAIL** to
+**PASS WITH GAPS**, and "would this have misled the agent?" moved from
+**yes** to **no** for both — the confidently-authoritative false "not
+found" is gone, independently re-confirmed against a brand-new file
+(`17-query-semantics-brief.md`) that didn't exist at the original pin,
+showing the fix generalises rather than being a two-file patch. **It did
+not, and structurally could not, move the advantage rating above LOW**:
+`query relations`'s only mechanism is literal vendor/Skill name-mention
+detection, and with 0 tracked vendors it can never surface a doc's actual
+subject matter — only whether the doc is tracked at all. Full detail:
+`00-baseline.md` and `01-query-semantics.md`'s "Phase 51 re-run"
+sections.
 
 *(Further task-specific evaluations are added as rows `02`, ... in later
 phases.)*

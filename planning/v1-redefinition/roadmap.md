@@ -510,15 +510,19 @@ rather than waiting for more tasks, consistent with the tripwire's own
 
 ---
 
-## STAGE C — Improve the existing product  · IN PROGRESS (GATE DB ratified 2026-09-13; one phase done)
+## STAGE C — Improve the existing product  · COMPLETE (GATE DB ratified 2026-09-13; GATE DC confirmed 2026-09-14)
 
 Each phase below exists **only if** GATE DB's findings support it. Scope
 is set by the findings, not pre-written here. Sketches only — unchanged
 in substance from the pre-realignment plan, now Ledgerkit-driven instead
 of Technical-Clipper-driven. **GATE DB resolved 2026-09-13** (Phase 47):
 Phase 49 funded (narrow) and now `done`; Phase 48 and Phase 50 not
-funded. Stage C's status moves from "CONDITIONAL, not started" to "in
-progress, one phase done."
+funded. **GATE DC resolved 2026-09-14** (Phase 51): Phase 49's fix
+confirmed working, on its own narrow terms — Stage C is now **fully
+complete** (Phase 48 not funded, Phase 49 done, Phase 50 not funded,
+Phase 51 done). Whether to continue into Stage D or proceed toward
+Stage F/G is an open strategic decision for the user (see Phase 51's
+"Status" note below), not resolved by this stanza.
 
 ### Phase 48 — Task-oriented context retrieval · CONDITIONAL
 - **GATE DB outcome (2026-09-13): not funded.** `planning/reference-projects/ledgerkit/findings.md`
@@ -601,6 +605,7 @@ progress, one phase done."
   this only indexes/connects them.
 
 ### Phase 51 — Re-run Ledgerkit evaluation · EXPERIMENTAL
+- **Plan:** `planning/phase-51-rerun-ledgerkit-evaluation.md`
 - Re-run Phase 46's task evaluation(s) (same tasks, same instrument)
   after Stage C changes.
 - **Exit / GATE DC:** did measured context quality / advantage improve?
@@ -610,6 +615,43 @@ progress, one phase done."
   (phases 0–38) baseline, re-validated on a real external project, is a
   defensible redefined v1 — proceed to Stage F/G and ship it as `1.0.0`
   (`README.md` R14).**
+- **Status: done (2026-09-14). GATE DC confirmed.** Re-ran Phase 45's
+  baseline Q2 and Phase 46's genuine task — same questions, same
+  instrument — against Ledgerkit re-pinned at `05218e3`. Both original
+  FAILs **moved to PASS WITH GAPS**, and "would this have misled the
+  agent" moved from yes to no for both, independently re-verified by
+  `context-evaluator` via direct inspection and its own `codecompass`/
+  `sqlite3` commands. **Confirmed the fix generalises**: the brand-new
+  `17-query-semantics-brief.md` (didn't exist at Phase 46's pin) is also
+  correctly tracked now. **Advantage stayed LOW**: `query relations` only
+  does literal vendor/Skill name-mention detection, and Ledgerkit has 0
+  tracked vendors, so it structurally cannot surface a doc's content —
+  the ceiling on this question class wasn't raised, and the fix was never
+  scoped to raise it. Phase 49's fix judged a success **on its own,
+  narrow terms**; the earlier "smallest justified fix" judgment (rejecting
+  a more general configurable-glob mechanism) is validated by this
+  result, not called into question. No `src/codecompass/` change this
+  phase (measurement only). As a closeout addendum, resolved a
+  Phase-47-committed revisit decision the phase's own scope hadn't
+  touched: `L-015` stays `retained` (genuinely out of scope across five
+  intervening phases; revisit trigger updated to the next phase that
+  actually exercises dependency discovery); `L-012` moved `retained` →
+  `discarded` (7 phases old, three unclaimed corroboration opportunities,
+  self-test-only by design — the lifecycle's "~3 phases, no new evidence"
+  norm applied for real). `planning/reference-projects/ledgerkit/findings.md`'s
+  triage table updated to match. Verified: `pytest` 557 passed / 2
+  skipped, `ruff check .` clean, `check_user_docs.py --strict` clean.
+  `docs-reconstructor` drift audit
+  (`planning/retros/_drift-audit-phase-51.md`) → **NO DRIFT**;
+  `release-phase-auditor` (`planning/retros/_audit-phase-51.md`) → **PASS
+  WITH NON-BLOCKING OBSERVATIONS** (the one genuine gap it flagged — the
+  dangling `L-012`/`L-015` commitment — is the addendum resolved above).
+  Retro: `planning/retros/phase-51-rerun-ledgerkit-evaluation.md`.
+  **This completes Stage C in full** (Phase 48/50 not funded, 49 done, 51
+  done). **Whether to continue into Stage D (Phases 52–55) or treat this
+  as sufficient and proceed toward Stage F/G is a genuine strategic
+  decision surfaced to the user, not resolved by this phase** — see the
+  retro's "Where we're going" section for both options laid out.
 
 ---
 
