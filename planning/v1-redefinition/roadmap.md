@@ -510,12 +510,15 @@ rather than waiting for more tasks, consistent with the tripwire's own
 
 ---
 
-## STAGE C — Improve the existing product  · CONDITIONAL on GATE DB
+## STAGE C — Improve the existing product  · IN PROGRESS (GATE DB ratified 2026-09-13; one phase done)
 
 Each phase below exists **only if** GATE DB's findings support it. Scope
 is set by the findings, not pre-written here. Sketches only — unchanged
 in substance from the pre-realignment plan, now Ledgerkit-driven instead
-of Technical-Clipper-driven.
+of Technical-Clipper-driven. **GATE DB resolved 2026-09-13** (Phase 47):
+Phase 49 funded (narrow) and now `done`; Phase 48 and Phase 50 not
+funded. Stage C's status moves from "CONDITIONAL, not started" to "in
+progress, one phase done."
 
 ### Phase 48 — Task-oriented context retrieval · CONDITIONAL
 - **GATE DB outcome (2026-09-13): not funded.** `planning/reference-projects/ledgerkit/findings.md`
@@ -549,6 +552,43 @@ of Technical-Clipper-driven.
   selection/ranking, noise reduction, freshness surfacing. Each backed by
   a specific confirmed finding. Also where a `planning/context-gaps/`
   entry reaches `recurred` (`decisions/0051`) and is promoted here.
+- **Status:** **done (2026-09-13).** Delivered exactly the narrow scope
+  GATE DB funded, no more: `src/codecompass/spec_docs.py::_DEFAULT_GLOBS`
+  gained `"dev-docs/**/*.md"` (closes `CG-002`), and
+  `src/codecompass/cli.py` gained `_relations_not_found_error`, wired
+  into `query_relations`'s not-found branch only — `query vendor`/`query
+  symbol` untouched, correctly (closes `L-016`). 3 new tests. **This is
+  CodeCompass's first `src/codecompass/` change driven by external
+  reference-project evidence** — `decisions/0048`'s central hypothesis
+  made concrete for the first time since Phase 43a's own-repo dogfood.
+  Live-verified against the real Ledgerkit clone, independently, by both
+  the lead and the auditor, from scratch each time: `dev-docs/` files
+  (including a nested path) now resolve to an honest empty relations
+  table instead of "not found"; a genuinely nonexistent name keeps the
+  plain message; a still-uncovered real file
+  (`knowledge/DOMAIN_RULES.md`) correctly triggers the new disambiguated
+  message — confirming the fix generalises beyond the one directory it
+  was evidenced against. One self-correction caught by the independent
+  drift audit before commit: `_relations_not_found_error`'s docstring
+  initially cited the wrong ADR (`decisions/0051`, unrelated) instead of
+  `CG-002`/`L-016`/GATE DB. `docs-maintainer` reconciled
+  `architecture/overview.md` (glob enumeration) and
+  `docs/cli-reference.md` (`query relations` error-behavior
+  description). `pytest` 557 passed / 2 skipped (+3), `ruff check .`
+  clean, `check_user_docs.py --strict` clean. `docs-reconstructor` drift
+  audit (`planning/retros/_drift-audit-phase-49.md`) → **NO DRIFT**;
+  `release-phase-auditor` (`planning/retros/_audit-phase-49.md`) →
+  **PASS WITH NON-BLOCKING OBSERVATIONS** (the only observations were the
+  pending `roadmap-context-curator` reconciliation this closeout
+  performs). `knowledge-curator` finalized: `CG-002` stays
+  `promoted-to-roadmap` with a closing note confirming the fix landed;
+  `L-016` flipped `retained` → `promoted`. Retro:
+  `planning/retros/phase-49-spec-doc-coverage-and-error-disambiguation.md`.
+  **Stage C now has its first completed phase; Phase 48/50 remain not
+  funded.** No gate blocks Phase 51, but per this project's now-standard
+  practice, Ledgerkit's current state should be re-confirmed live before
+  committing to Phase 51's exact scope — its own roadmap has moved
+  multiple times already (Phases 45/46).
 
 ### Phase 50 — Shared-agent context / entry-point improvements · CONDITIONAL
 - **GATE DB outcome (2026-09-13): not funded.** `planning/reference-projects/ledgerkit/findings.md`

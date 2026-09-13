@@ -148,3 +148,23 @@ def test_scan_spec_docs_finds_ai_docs_directory(tmp_path: Path) -> None:
     assert paths == {"ai-docs/README.md", "ai-docs/CLAUDE.md"}
     # ai-docs/CLAUDE.md is not root-level, so the root-only CLAUDE.md
     # exclusion correctly does not apply to it.
+
+
+def test_scan_spec_docs_finds_dev_docs_directory(tmp_path: Path) -> None:
+    # Phase 49 (CG-002): a real project (Ledgerkit) names its
+    # developer-facing spec/architecture docs `dev-docs/` rather than
+    # `docs/`/`architecture/`, and the fixed glob list had no entry for
+    # it — `query relations` returned an authoritative "not found" for a
+    # real, current, load-bearing file. Nested paths must resolve too
+    # (CG-002 was independently re-confirmed to extend past top-level
+    # `dev-docs/` files).
+    _write(tmp_path, "dev-docs/hledger-compatibility.md")
+    _write(tmp_path, "dev-docs/planning/core-redefinition/07-query-regex.md")
+
+    rows = scan_spec_docs(tmp_path)
+
+    paths = {row.path for row in rows}
+    assert paths == {
+        "dev-docs/hledger-compatibility.md",
+        "dev-docs/planning/core-redefinition/07-query-regex.md",
+    }

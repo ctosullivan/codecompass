@@ -1370,9 +1370,12 @@ existing one; fixed default globs vs. a hand-maintained manifest).
   default pattern set rooted at `project_root` (`README.md`,
   `ARCHITECTURE.md`, `REQUIREMENTS.md`, `PRD.md`, `docs/**/*.md`,
   `architecture/**/*.md`, `decisions/**/*.md`, `spec/**/*.md`,
-  `specs/**/*.md`, `rfcs/**/*.md`, `*.spec.md`, `ai-docs/**/*.md` — the
-  last added Phase 37, once this repo's own dogfooding sync showed
+  `specs/**/*.md`, `rfcs/**/*.md`, `*.spec.md`, `ai-docs/**/*.md` (added
+  Phase 37, once this repo's own dogfooding sync showed
   `ai-docs/README.md`/`ai-docs/CLAUDE.md` invisible to detection),
+  `dev-docs/**/*.md` (added Phase 49, closing `CG-002` once an external
+  reference project, Ledgerkit, was found using `dev-docs/` rather than
+  `docs/`/`architecture/` for its developer-facing spec docs)),
   producing `kind='spec_doc'`, `origin='project'` rows. Excludes
   `CHANGELOG.md` (a log, not a spec), `CONTRIBUTING.md` (process, not
   product), `LICENSE*`, and root `CLAUDE.md` itself (governance, not

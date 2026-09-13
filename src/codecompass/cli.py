@@ -461,6 +461,29 @@ def _not_found_error(name: str) -> NoReturn:
     raise typer.Exit(code=1)
 
 
+def _relations_not_found_error(name: str) -> NoReturn:
+    """`query relations`'s own not-found message: distinguishes a real
+    on-disk file that simply wasn't detected as a doc artifact (a
+    spec-doc glob-coverage gap — `CG-002`/`L-016`, GATE DB Phase 47) from
+    a name matching nothing at all (a vendor/Skill name, or a genuine
+    typo). Plain `_not_found_error` collapses both into the identical
+    "not found" string, which reads as authoritative non-existence for
+    content that's actually just unscanned — confirmed materially
+    misleading against a real reference project (Ledgerkit, Phases
+    45-46). Deliberately names the mechanism ("glob coverage"), not
+    today's specific patterns, so the hint doesn't go stale as
+    `spec_docs._DEFAULT_GLOBS` changes.
+    """
+    if (Path.cwd() / name).is_file():
+        console.print(
+            f"[red]error:[/red] {name!r} exists as a file but was not detected as "
+            "a spec/vendor doc, so it has no relations recorded — check whether "
+            "it's covered by spec_docs's glob coverage, then re-run sync"
+        )
+        raise typer.Exit(code=1)
+    _not_found_error(name)
+
+
 def _print_coverage_gap_sections(project_root: Path) -> None:
     with _graph_session(project_root) as conn:
         if conn is None:
@@ -818,7 +841,7 @@ def query_relations(
             return
         relations = _resolve_relations(conn, name)
         if relations is None:
-            _not_found_error(name)
+            _relations_not_found_error(name)
         package_code = graph.doc_code_trace(conn, name)
         if json_output:
             console.print(

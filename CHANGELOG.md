@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Phase 49** (Stage C's first phase — GATE DB's funded fix): closes
+  `CG-002` and `L-016`, both consolidated at Phase 47's GATE DB.
+  `spec_docs.py::_DEFAULT_GLOBS` gains `"dev-docs/**/*.md"` — the exact
+  Phase 37 `ai-docs/**/*.md` precedent applied a second time, this time
+  from external Ledgerkit evidence (Phases 45/46). `cli.py::query_relations`'s
+  not-found branch now calls a new `_relations_not_found_error`: a real
+  on-disk file that simply wasn't detected as a spec/vendor doc gets an
+  explicit, mechanism-naming message pointing at spec-doc glob coverage,
+  instead of an authoritative-sounding bare "not found" indistinguishable
+  from a genuine typo; `query vendor`/`query symbol`'s "not found" paths
+  are untouched, correctly, since file-existence checking doesn't apply
+  to a vendor/symbol name. **This is CodeCompass's first
+  `src/codecompass/` change driven by external reference-project
+  evidence** — the redefined v1's central hypothesis (`decisions/0048`)
+  made concrete for the first time since Phase 43a's own-repo dogfood. 3
+  new tests. Live-verified against the real Ledgerkit clone, independently
+  reproduced by both the lead and the auditor from scratch: `dev-docs/`
+  files (including a nested path) now resolve to an honest empty
+  relations table instead of "not found"; a genuinely nonexistent name
+  keeps the plain message; a still-uncovered real file
+  (`knowledge/DOMAIN_RULES.md`) correctly triggers the new disambiguated
+  message, confirming the fix generalises beyond the one directory it was
+  evidenced against. `docs-maintainer` reconciled `architecture/overview.md`
+  (glob enumeration) and `docs/cli-reference.md` (`query relations`
+  error-behavior description). `docs-reconstructor` drift audit → NO
+  DRIFT (also caught, and the lead fixed before commit, a mistaken ADR
+  citation in `_relations_not_found_error`'s docstring); `release-phase-auditor`
+  → PASS WITH NON-BLOCKING OBSERVATIONS (no blocking gap). `CG-002` stays
+  `promoted-to-roadmap` with a closing note confirming the fix landed;
+  `L-016` flipped `retained` → `promoted`. `pytest` 557 passed / 2 skipped
+  (+3), `ruff check .` clean, `check_user_docs.py --strict` clean.
+
 ### Added
 
 - **Phase 47** (Stage B's fourth and final phase — **GATE DB**): pure

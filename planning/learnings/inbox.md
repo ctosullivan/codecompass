@@ -161,7 +161,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 - **observation:** `codecompass query relations dev-docs/hledger-compatibility.md` returns `error: 'dev-docs/hledger-compatibility.md' not found in context-graph.db` for a real, current file that is simply outside `spec_docs._DEFAULT_GLOBS` (the CG-002 root cause) — the exact same error message a genuine typo would produce. Traced through `src/codecompass/cli.py`: `_resolve_relations` returns `None` for both "never scanned as a doc artifact" and "path doesn't exist/is misspelled," and the CLI's `_not_found_error` can't distinguish them. This is a *symptom-layer* gap distinct from CG-002 (the glob list itself): even after CG-002 is fixed for `dev-docs/`, the identical ambiguity remains for the next unanticipated doc-directory convention the fixed glob list doesn't cover, and gives the caller zero signal to suspect a coverage gap rather than their own typo.
 - **evidence:** `planning/reference-projects/ledgerkit/00-baseline.md` Q2 "Material gaps / failures" (second bullet) and "Criteria assessment" (Safety/trustworthiness: weak — "reads as an authoritative statement about what exists in the project, not a hedge"); `src/codecompass/cli.py::_resolve_relations`/`_not_found_error`; `src/codecompass/spec_docs.py::_DEFAULT_GLOBS`.
 - **classification:** future-improvement
-- **status:** retained
+- **status:** promoted
 - **recurrence:** first occurrence
 - **curation (Phase 45 triage, 2026-09-13, knowledge-curator):** provenance
   accepted — all required fields present; independently re-traced
@@ -213,6 +213,41 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   `retained` until the fix actually lands in `src/codecompass/cli.py` —
   flips to `promoted` with a `promoted.md` line + commit hash at that
   point, per the same convention as `L-013`/`L-018`.
+- **curation (Phase 49 closure, 2026-09-13, knowledge-curator):** fix
+  confirmed landed — independently read `src/codecompass/cli.py` rather
+  than taking the phase's own report on its word: `_relations_not_found_error`
+  (L464-484) now exists, checks `(Path.cwd() / name).is_file()`, and on a
+  hit prints "exists as a file but was not detected as a spec/vendor doc,
+  so it has no relations recorded — check whether it's covered by
+  spec_docs's glob coverage, then re-run sync" before exiting 1, falling
+  through to the original bare `_not_found_error` otherwise;
+  `query_relations` (L844) now calls it in place of the plain
+  `_not_found_error` in its `relations is None` branch. Confirmed scoped
+  precisely to `query relations` — `query_vendor`/`query_symbol`'s own
+  not-found paths are untouched, correctly, since "does this path exist
+  on disk" isn't a meaningful question for a vendor/symbol name.
+  Regression coverage confirmed:
+  `tests/test_cli.py::test_query_relations_unscanned_file_gets_disambiguated_error`
+  (a real on-disk, unscanned file gets the new message, not "not found")
+  and
+  `tests/test_cli.py::test_query_relations_genuinely_nonexistent_name_keeps_not_found_message`
+  (a name with no file on disk at all still gets the plain "not found",
+  confirming the disambiguation doesn't over-fire). Also live-verified
+  against the actual pinned Ledgerkit clone per
+  `planning/phase-49-spec-doc-coverage-and-error-disambiguation.md`'s
+  retro ("What was achieved" #4): a still-`dev-docs/`-uncovered real file
+  (`knowledge/DOMAIN_RULES.md`) correctly triggers the new disambiguated
+  message too, confirming the fix generalises rather than only covering
+  the one directory (`dev-docs/`) it was evidenced against. **Status:
+  `retained` → `promoted`**, per the convention already stated in the
+  prior curation note. `promoted.md` line added this same triage.
+- **promoted_to:** `src/codecompass/cli.py::_relations_not_found_error`
+  + `tests/test_cli.py::test_query_relations_unscanned_file_gets_disambiguated_error`
+  (+ `test_query_relations_genuinely_nonexistent_name_keeps_not_found_message`
+  as the negative-case regression) @ `TBD-this-phase-commit` —
+  placeholder commit hash per the `L-011`/`L-013`/`L-018` convention; the
+  lead backfills the real hash in a small follow-up commit once Phase
+  49's commit lands.
 
 ### L-015 — `query vendors` / bare-discovery gives no signal that `[project.optional-dependencies]` exist but are unscanned
 

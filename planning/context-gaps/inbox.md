@@ -243,6 +243,37 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   accordingly. Per `context-gaps/README.md`'s "How it feeds the gates,"
   the `promoted.md` pointer (+ commit hash) is added once Phase 49's
   implementation actually lands, not at plan-file creation time.
+- **curation (Phase 49 closure, 2026-09-13, knowledge-curator):** fix
+  confirmed landed — independently verified by reading
+  `src/codecompass/spec_docs.py::_DEFAULT_GLOBS` directly rather than
+  taking the phase's own report on its word: `"dev-docs/**/*.md"` is now
+  present, appended immediately after `"ai-docs/**/*.md"`, exactly the
+  smallest-candidate fix this entry itself recommended. Regression
+  coverage confirmed:
+  `tests/test_spec_docs.py::test_scan_spec_docs_finds_dev_docs_directory`
+  (asserts both a top-level and a nested `dev-docs/**` path resolve,
+  covering this entry's own "independently re-confirmed to extend past
+  top-level `dev-docs/` files" note). Also live-verified against the
+  actual pinned Ledgerkit clone per
+  `planning/phase-49-spec-doc-coverage-and-error-disambiguation.md`'s
+  retro ("What was achieved" #4): `dev-docs/hledger-compatibility.md`
+  and a nested `dev-docs/planning/core-redefinition/07-query-regex.md`
+  now resolve to an honest empty "no relations" table instead of the
+  "not found" this gap originally evidenced. **Status decision:** checked
+  `context-gaps/README.md`'s status list carefully —
+  `candidate` → `recurred` → `promoted-to-roadmap` / `discarded` — there
+  is no further, more-terminal status defined for "the owning phase's
+  implementation has actually landed"; `promoted-to-roadmap` already
+  means "a Stage C/E phase now owns/owned this," which remains true and
+  correct once that phase's fix ships. **Status stays
+  `promoted-to-roadmap`** — this note records that the fix has landed,
+  not a new state transition. `promoted.md` pointer added this same
+  triage: `CG-002 | 2026-09-13 | detection-improvement |
+  src/codecompass/spec_docs.py::_DEFAULT_GLOBS +
+  tests/test_spec_docs.py::test_scan_spec_docs_finds_dev_docs_directory @
+  TBD-this-phase-commit` — placeholder commit hash per the `L-011`/
+  `L-013`/`L-018` convention; the lead backfills the real hash in a
+  small follow-up commit once Phase 49's commit lands.
 
 ### CG-001 — one feature spread across three `src/` modules, with no edge joining them
 

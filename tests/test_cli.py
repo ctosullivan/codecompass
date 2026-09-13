@@ -1427,6 +1427,46 @@ def test_query_relations_unknown_name_errors(
     assert "not found" in result.output
 
 
+def test_query_relations_unscanned_file_gets_disambiguated_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Phase 49 (L-016): a real, on-disk file outside spec_docs's glob
+    # coverage (e.g. `dev-docs/**` before CG-002's fix) previously got the
+    # identical "not found" message a genuine typo would — reading as
+    # authoritative non-existence for content that's simply unscanned.
+    # Confirmed materially misleading against a real reference project
+    # (Ledgerkit, Phases 45-46).
+    monkeypatch.chdir(tmp_path)
+    _build_relations_fixture(tmp_path)
+    unscanned = tmp_path / "dev-docs" / "not-a-spec-doc.md"
+    unscanned.parent.mkdir(parents=True, exist_ok=True)
+    unscanned.write_text("real content\n", encoding="utf-8")
+
+    result = runner.invoke(app, ["query", "relations", "dev-docs/not-a-spec-doc.md"])
+    output = " ".join(result.output.split())  # Rich word-wraps long lines
+
+    assert result.exit_code == 1
+    assert "not found" not in output
+    assert "was not detected as a spec/vendor doc" in output
+    assert "glob coverage" in output
+
+
+def test_query_relations_genuinely_nonexistent_name_keeps_not_found_message(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A name with no corresponding file on disk at all — the disambiguated
+    # message must not fire for this case; it stays the plain "not found".
+    monkeypatch.chdir(tmp_path)
+    _build_relations_fixture(tmp_path)
+
+    result = runner.invoke(app, ["query", "relations", "no/such/file.md"])
+    output = " ".join(result.output.split())
+
+    assert result.exit_code == 1
+    assert "not found" in output
+    assert "glob coverage" not in output
+
+
 def test_query_relations_shows_ai_summary_when_enriched(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

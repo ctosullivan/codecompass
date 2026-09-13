@@ -161,7 +161,10 @@ prints a one-line note pointing at `sync` rather than a traceback.
   vendor name or another doc artifact's name (a Skill, a dependency doc,
   or — Phase 27 — a vendor's own embedded upstream doc, e.g.
   `"anthropic README.md"`), which spec docs mechanically mention it (a
-  reverse lookup). Errors if `<name>` matches nothing in the graph at all.
+  reverse lookup). Errors if `<name>` matches nothing in the graph at all;
+  if `<name>` is a real file on disk that simply wasn't detected as a
+  spec/vendor doc, the error says so explicitly and points at spec-doc
+  glob coverage, rather than reading as if the file doesn't exist.
   A project's spec docs (README, `ARCHITECTURE.md`, `docs/**/*.md`,
   `decisions/**/*.md`, etc.) are detected automatically on every
   whole-project `sync` — no separate command needed to pick them up. Each

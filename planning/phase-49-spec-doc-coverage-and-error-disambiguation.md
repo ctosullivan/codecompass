@@ -1,6 +1,6 @@
 # Phase 49: `dev-docs/` spec-doc coverage + "not found" disambiguation
 
-**Status:** planned
+**Status:** done (2026-09-13)
 
 Stage C (CONDITIONAL on GATE DB — `planning/v1-redefinition/roadmap.md`).
 **GATE DB ratified 2026-09-13** (`planning/reference-projects/ledgerkit/findings.md`
