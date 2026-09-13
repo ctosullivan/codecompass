@@ -1,7 +1,7 @@
 # Phase 49 retro — `dev-docs/` spec-doc coverage + "not found" disambiguation
 
 - **Date:** 2026-09-13
-- **Commit(s):** *(pending — this phase's closeout commit)*
+- **Commit(s):** `780e97b` (`fix(phase-49)`)
 - **Agents used:** `docs-maintainer` (reconcile), `docs-reconstructor`
   (drift audit), `knowledge-curator` (finalize promotion),
   `release-phase-auditor` (final pass)

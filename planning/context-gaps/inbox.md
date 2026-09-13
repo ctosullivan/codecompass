@@ -271,9 +271,7 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   triage: `CG-002 | 2026-09-13 | detection-improvement |
   src/codecompass/spec_docs.py::_DEFAULT_GLOBS +
   tests/test_spec_docs.py::test_scan_spec_docs_finds_dev_docs_directory @
-  TBD-this-phase-commit` — placeholder commit hash per the `L-011`/
-  `L-013`/`L-018` convention; the lead backfills the real hash in a
-  small follow-up commit once Phase 49's commit lands.
+  780e97b`.
 
 ### CG-001 — one feature spread across three `src/` modules, with no edge joining them
 

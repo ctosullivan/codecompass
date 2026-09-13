@@ -244,10 +244,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 - **promoted_to:** `src/codecompass/cli.py::_relations_not_found_error`
   + `tests/test_cli.py::test_query_relations_unscanned_file_gets_disambiguated_error`
   (+ `test_query_relations_genuinely_nonexistent_name_keeps_not_found_message`
-  as the negative-case regression) @ `TBD-this-phase-commit` —
-  placeholder commit hash per the `L-011`/`L-013`/`L-018` convention; the
-  lead backfills the real hash in a small follow-up commit once Phase
-  49's commit lands.
+  as the negative-case regression) @ `780e97b`.
 
 ### L-015 — `query vendors` / bare-discovery gives no signal that `[project.optional-dependencies]` exist but are unscanned
 

@@ -18,8 +18,8 @@ L-006 | 2026-09-10 | workflow | planning/agent-led-workflow.md step 11 + .claude
 L-011 | 2026-09-12 | invariant | scripts/check_user_docs.py::check_generated_artifacts_match_source + tests/test_check_user_docs.py::TestGeneratedArtifactsMatchSource::test_skill_comparison_skipped_without_graph_db @ 80162fd
 L-013 | 2026-09-12 | workflow | planning/agent-led-workflow.md step 10 (interim reconciliation, no longer flips the row) + step 14 (re-dispatch for final reconciliation) @ 3bd9257
 L-018 | 2026-09-13 | workflow | planning/agent-led-workflow.md step 5 (never dispatch two agents to Write the same shared file path concurrently) @ 329fa0a
-L-016 | 2026-09-13 | future-improvement | src/codecompass/cli.py::_relations_not_found_error + tests/test_cli.py::test_query_relations_unscanned_file_gets_disambiguated_error @ TBD-this-phase-commit
-CG-002 | 2026-09-13 | detection-improvement | src/codecompass/spec_docs.py::_DEFAULT_GLOBS + tests/test_spec_docs.py::test_scan_spec_docs_finds_dev_docs_directory @ TBD-this-phase-commit
+L-016 | 2026-09-13 | future-improvement | src/codecompass/cli.py::_relations_not_found_error + tests/test_cli.py::test_query_relations_unscanned_file_gets_disambiguated_error @ 780e97b
+CG-002 | 2026-09-13 | detection-improvement | src/codecompass/spec_docs.py::_DEFAULT_GLOBS + tests/test_spec_docs.py::test_scan_spec_docs_finds_dev_docs_directory @ 780e97b
 
 <!-- L-002 and prior L-005 (project-rule half) landed in the Phase 43
      commit; replace `d34a486` if it's not the actual Phase 43 commit hash.
