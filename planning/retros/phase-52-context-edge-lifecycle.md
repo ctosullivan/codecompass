@@ -1,7 +1,7 @@
 # Phase 52 retro — Context edge lifecycle: observations queue + agent-driven enrichment
 
 - **Date:** 2026-09-14
-- **Commit(s):** *(pending — this phase's closeout commit)*
+- **Commit(s):** `b488f1d` (`feat(phase-52)`)
 - **Agents used:** `docs-maintainer` (reconcile), `docs-reconstructor`
   (drift audit), `context-enrichment-agent` (new, exercised live),
   `knowledge-curator` (triage), `release-phase-auditor` (final pass)

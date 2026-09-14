@@ -1,7 +1,7 @@
 # Phase 47 retro — Consolidate recurring friction (GATE DB)
 
 - **Date:** 2026-09-13
-- **Commit(s):** *(pending — this phase's closeout commit)*
+- **Commit(s):** `8d7f454` (`feat(phase-47)`)
 - **Agents used:** `knowledge-curator` (bulk consolidation),
   `docs-maintainer` (reconcile), `docs-reconstructor` (drift audit),
   `release-phase-auditor` (final pass)
