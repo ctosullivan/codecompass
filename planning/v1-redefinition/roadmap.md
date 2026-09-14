@@ -714,6 +714,37 @@ number, is part of that same open decision.
   Phase 51's retro.
 
 ### Phase 53 — Heterogeneous doc / reference / manual dependencies · EXPERIMENTAL
+
+**Amended 2026-09-14 — this slot was also retargeted**, same
+findings/decision-driven-scope precedent as Phase 52's retarget above and
+Phase 49's against Stage C. At direct user request, Phase 53 instead
+produced `planning/phase-53-legacy-feature-rationalisation-plan.md` — a
+full feature inventory, redundancy map, and per-feature KEEP/REMOVE/
+DEFER decisions across direct-API enrichment vs. Phase 52's agent-driven
+path, chat, generated Skills, and dead code. The original sketch text
+below is left as written, unchanged, per this project's "historical
+roadmap content is not rewritten" convention. **This retarget produces
+no evidence toward Stage D's own goal or the Stage D-vs-Stage-F/G
+decision** (Phase 51's retro) — that decision remains open and
+unaffected. Whether the heterogeneous-doc/reference sketch below still
+gets a phase slot, and under what number, is part of that same open
+decision — see Phase 52's identical note above.
+
+**Retargeted (2026-09-14), plan awaiting review gate — not yet done.**
+`planning/phase-53-legacy-feature-rationalisation-plan.md` classifies
+every runtime feature (CORE / AGENT / HOST-OUTPUT ADAPTER), maps three
+real overlaps (Skill/`/discovery`/CLI-docs command-list duplication,
+direct-API-vs-agent-driven relation enrichment by design, an
+`adapters/`-naming collision), and reaches one unambiguous action (remove
+`discovery.py::rewrite_vendor_toml`, dead since `promote`'s Phase 15
+retirement) plus five genuine product-direction recommendations left for
+the user to accept/reject/defer at the review gate (direct-API
+enrichment's fate now that Phase 52 exists, `chat.py`'s fate, confirming
+the never-built "initial-chat" concept has no code to act on, and two
+doc-only deferrals). No implementation has happened yet.
+
+Original sketch (unchanged):
+
 - Test whether CodeCompass can usefully index + relate *reference
   material* (hledger manuals, journal-format spec, command docs) to
   Ledgerkit's local implementation and compatibility tests — as evidence

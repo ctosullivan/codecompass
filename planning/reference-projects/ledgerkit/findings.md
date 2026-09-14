@@ -222,15 +222,19 @@ below:
 - **`L-017`** (a live `WebFetch` of a large external manual is an
   expensive, unreliable fallback) is a **retrieval-cost finding**, not a
   detection-improvement or a graph-capability decision by itself — it
-  bears directly on Phase 53's already-scheduled design question ("the
-  hledger manual as fetched/vendored text," `ledgerkit-plan.md` §1 item
-  2, `conditional-generalisation.md` §2.3), which is Stage B/D territory
+  bears directly on the "hledger manual as fetched/vendored text" design
+  question (`ledgerkit-plan.md` §1 item 2,
+  `conditional-generalisation.md` §2.3), which is Stage B/D territory
   well downstream of this gate. Funding a Stage C phase around it would
   be premature: the finding says nothing about what CodeCompass's
   *detection* layer should do differently, only about the cost profile of
   one fallback CodeCompass doesn't currently implement at all. It stays
-  `retained`, feeding Phase 53 directly rather than a `ROADMAP.md` row of
-  its own.
+  `retained`, feeding whichever future Stage D/E phase takes this question
+  up directly rather than a `ROADMAP.md` row of its own — **not
+  necessarily Phase 53**, whose slot was retargeted to legacy-feature
+  rationalisation on 2026-09-14 (see `v1-redefinition/roadmap.md`'s Phase
+  53 amendment note); the exact phase number is unresolved along with the
+  rest of Stage D's own scheduling.
 
 ## 6. Not yet actionable (stays as-is)
 
@@ -308,7 +312,7 @@ is the agent that finalises the actual `ROADMAP.md` row per
 | `L-012` | `retained` → `discarded` (Phase 51 closure) | 7 phases old (44→51), three unclaimed corroboration opportunities, self-test-only per own exclusion — lifecycle's "~3 phases, no new evidence" norm applied |
 | `L-015` | stays `retained` | single occurrence; no phase since filing (45, 46, 47, 49, 51) has been in a position to corroborate it — revisit trigger updated to the next phase touching dependency discovery |
 | `L-016` | stays `retained` | recurrence confirmed (2 independent instances); GATE DB recommends bundling its fix with `CG-002`'s (§4) |
-| `L-017` | stays `retained` | confirmed out of scope for GATE DB (§5); feeds Phase 53 directly |
+| `L-017` | stays `retained` | confirmed out of scope for GATE DB (§5); feeds a future Stage D/E phase directly (not Phase 53 — retargeted 2026-09-14) |
 | `L-013`, `L-018` | no change | already `promoted`, not this gate's concern |
 
 No new candidate learnings or context-gaps were surfaced by this bulk

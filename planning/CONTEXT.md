@@ -500,6 +500,37 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 53 plan written (2026-09-14) — awaiting the review gate, not yet
+implemented.** Retargets this roadmap slot (originally Stage D's
+"heterogeneous doc/reference/manual dependencies" sketch) to a full
+legacy-feature-rationalisation review, per direct user request — same
+findings/decision-driven-scope precedent as Phases 49 and 52.
+`planning/phase-53-legacy-feature-rationalisation-plan.md` classifies
+every runtime feature (CORE / AGENT / HOST-OUTPUT ADAPTER), maps three
+real overlaps, and reaches one unambiguous action (remove
+`discovery.py::rewrite_vendor_toml`, dead since `promote`'s Phase 15
+retirement) plus five product-direction recommendations left for the
+user to accept/reject/defer: direct-API vendor/symbol/relation
+enrichment's fate now that Phase 52's agent-driven path exists
+(recommendation: keep both, unchanged — real end-user-project value
+Phase 52's fixture demo doesn't touch); `chat.py`'s fate (recommendation:
+keep, per `decisions/0034`'s still-unrebutted reasoning); confirmation
+that the prompt's "initial-chat"/project-entry-point candidate doesn't
+correspond to any shipped code (Post-MVP Phase 20/24, `decisions/0048`,
+never built) so no action applies; two doc-only deferrals (a Skill/
+`/discovery`/CLI-docs command-list duplication note, an `adapters/`-
+package-vs-"adapter"-tier naming-collision clarification).
+**Produces no evidence toward the still-open Stage D-vs-Stage-F/G
+decision** — orthogonal to it, exactly as Phase 52 was.
+`planning/ROADMAP.md` row `53` and `v1-redefinition/roadmap.md`'s Phase
+53 stanza (+ a retarget amendment note, mirroring Phase 52's) both
+updated in this commit; two now-stale "routed to
+Phase 53" pointers for `CG-003`/`L-017` corrected (in this file and
+`planning/reference-projects/ledgerkit/findings.md`) to say a future
+Stage D/E phase, number unresolved, rather than naming Phase 53
+specifically. **No code implemented yet — next step is presenting §5's
+recommendations to the user.**
+
 **Phase 52, `done`** (2026-09-14) — context edge lifecycle: the
 `planning/context-observations/` queue (generalising `context-use-log.md`,
 migrated verbatim) + agent-driven enrichment as a second producer
@@ -1114,6 +1145,15 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
+**Immediate: present Phase 53's plan (`planning/phase-53-legacy-feature-rationalisation-plan.md`)
+to the user for its review gate.** The plan's §5 contains one
+pre-approved-shape action (remove dead code) and five genuine
+product-direction recommendations that must be explicitly accepted,
+rejected, or deferred before any further code is written — per the
+governing prompt's own "Once the Phase 53 plan has passed the normal
+review gate, implement the approved rationalisation work." Nothing in
+Phase 53 has been implemented yet.
+
 **Stage A is complete (Phases 39–43e `done`, GATE DA passed). Stage B is
 fully complete (Phases 43b, 43c, 44, 45, 46, 47 all `done`, GATE DB
 resolved). Stage C is fully complete (48/50 not funded, 49 and 51 both
@@ -1128,7 +1168,11 @@ Phase 49 established against its own pre-written Stage C sketch — see
 `planning/v1-redefinition/roadmap.md`'s Stage D amendment note. It
 produces no new evidence toward Stage D's substantive goal or the
 decision below, since its live demonstration deliberately used a local
-fixture, not the live Ledgerkit clone.**
+fixture, not the live Ledgerkit clone. **Phase 53's slot has now also
+been retargeted the same way** (legacy-feature rationalisation, plan
+awaiting review gate — see "What was just completed" above); Stage D's
+remaining substantive sketch (heterogeneous doc/reference/manual
+dependencies) still has no phase number assigned to it.**
 
 **The strategic decision below is still open and unresolved — genuinely,
 not as a placeholder.** Two paths remain both defensible, and choosing
@@ -1244,8 +1288,10 @@ see "What was just completed" and the top of this section.)*
 
 **GATE DB outcome (for reference):** fund one narrow Stage C phase
 closing `CG-002` + `L-016` (Phase 49, now done); Phase 48 and Phase 50
-not funded; `CG-003`/`L-017` routed to Stage E/Phase 53 — full reasoning
-in `planning/reference-projects/ledgerkit/findings.md` §4/§7.
+not funded; `CG-003`/`L-017` routed to a future Stage D/E phase (**not
+Phase 53** — that slot was retargeted to legacy-feature rationalisation,
+2026-09-14, see below) — full reasoning in
+`planning/reference-projects/ledgerkit/findings.md` §4/§7.
 
 **Phase 47 closeout (done):** `docs-reconstructor` drift audit
 (`planning/retros/_drift-audit-phase-47.md`) → **NO DRIFT**;

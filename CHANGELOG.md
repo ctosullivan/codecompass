@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+
+- **Phase 53** (legacy feature rationalisation): a full feature
+  inventory (CORE / AGENT / HOST-OUTPUT ADAPTER classification), a
+  redundancy map, and per-feature KEEP/REMOVE/DEFER decisions across
+  direct-API enrichment vs. Phase 52's agent-driven path, the chat REPL,
+  generated Skills, and dead code — see
+  `planning/phase-53-legacy-feature-rationalisation-plan.md`. **Plan
+  only, awaiting review gate; no code changed yet.**
+
 ### Added
 
 - **Phase 52** (context edge lifecycle): a new `planning/context-observations/`
