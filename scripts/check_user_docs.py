@@ -273,6 +273,61 @@ def check_promoted_learnings_logged(root: Path) -> list[Finding]:
     return findings
 
 
+_CONTEXT_OBSERVATION_REQUIRED_FIELDS = (
+    "origin",
+    "date",
+    "codecompass_revision",
+    "project",
+    "edge identity",
+    "observation type",
+    "edge correctness",
+    "task usefulness",
+    "status",
+)
+
+
+def _iter_context_observations(root: Path):
+    """Yield (id, body_text) for every record in
+    planning/context-observations/inbox.md. A record block starts at a
+    `### OBS-NNN` heading and runs to the next `### ` heading or EOF —
+    same shape as `_iter_learning_candidates`, one inbox file only (no
+    `candidates/` subdir equivalent exists for this queue)."""
+    inbox = root / "planning" / "context-observations" / "inbox.md"
+    if not inbox.is_file():
+        return
+    text = _read(inbox)
+    blocks = re.split(r"(?m)^###\s+", text)
+    for block in blocks[1:]:
+        m = re.match(r"(OBS-\d+)", block.strip())
+        if not m:
+            continue
+        yield m.group(1), block
+
+
+def check_context_observation_fields(root: Path) -> list[Finding]:
+    """Every context-observation record carries all required provenance
+    fields (planning/context-observations/TEMPLATE.md) — including the
+    edge-correctness/task-usefulness split Phase 52 introduced
+    specifically to stop those two questions being collapsed into one
+    rating (see planning/context-observations/README.md)."""
+    findings: list[Finding] = []
+    for obs_id, body in _iter_context_observations(root):
+        low = body.lower()
+        missing = [
+            f
+            for f in _CONTEXT_OBSERVATION_REQUIRED_FIELDS
+            if f"**{f}:**" not in low
+        ]
+        if missing:
+            findings.append(
+                Finding(
+                    "context_observation_fields",
+                    f"observation {obs_id} is missing field(s): {', '.join(missing)}",
+                )
+            )
+    return findings
+
+
 def check_stale_evidence_gathering(root: Path) -> list[Finding]:
     """Informational: candidates sitting in `evidence-gathering` prompt a
     promote/discard decision (never fails --strict)."""
@@ -795,6 +850,7 @@ CHECKS = [
     check_ai_docs_present,
     check_learnings_candidate_fields,
     check_promoted_learnings_logged,
+    check_context_observation_fields,
     check_stale_evidence_gathering,
     check_phase_retros_present,
     check_internal_links_resolve,

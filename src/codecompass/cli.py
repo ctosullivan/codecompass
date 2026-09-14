@@ -53,6 +53,10 @@ app = typer.Typer(
 )
 query_app = typer.Typer(help="Query the context graph (context-graph.db).")
 app.add_typer(query_app, name="query")
+enrich_app = typer.Typer(
+    help="Apply agent-authored enrichment to an already-existing mechanical edge."
+)
+app.add_typer(enrich_app, name="enrich")
 console = Console()
 
 _STRICT_FAIL_SEVERITIES = {Severity.MAJOR, Severity.UNKNOWN}
@@ -1095,6 +1099,114 @@ def _strip_routing_table_block(text: str) -> str | None:
         return None
     stripped = _MARKER_BLOCK_RE.sub("", text)
     return re.sub(r"\n{3,}", "\n\n", stripped)
+
+
+@enrich_app.command("apply")
+def enrich_apply(
+    entries_file: Path = typer.Argument(
+        ...,
+        help=(
+            "JSON file: a list of {source_doc_path, target_vendor_name?, "
+            "target_doc_path?, ai_summary, relation_label} objects."
+        ),
+    ),
+    agent: str = typer.Option(
+        ...,
+        "--agent",
+        help=(
+            "Name of the agent supplying this enrichment. Recorded as "
+            "model=f'agent:{agent}' — never a bare model name, so this can "
+            "never be confused with automated Anthropic-API enrichment."
+        ),
+    ),
+) -> None:
+    """Writes agent-authored enrichment for `doc_relations_edges` rows
+    (decisions/0054) — the second, non-automated producer alongside
+    `sync`'s own batched-API path. **Enforces the trust boundary
+    mechanically, not by agent instruction alone**: an entry is only
+    accepted if it matches a row `relation_enrichment.select_candidates`
+    currently lists as pending (a real, mechanically-detected edge that
+    is new or has changed since its last enrichment) — an edge that
+    doesn't exist, or is already enriched and unchanged, is rejected.
+    Writes only through the existing `apply_results`, the same
+    content-hash caching and `UNIQUE` handling every other producer uses;
+    never touches a graph-fact table.
+    """
+    try:
+        raw_entries = json.loads(entries_file.read_text(encoding="utf-8"))
+    except OSError as exc:
+        console.print(f"[red]error:[/red] could not read {entries_file}: {exc}")
+        raise typer.Exit(code=1) from exc
+    except json.JSONDecodeError as exc:
+        console.print(f"[red]error:[/red] {entries_file} is not valid JSON: {exc}")
+        raise typer.Exit(code=1) from exc
+
+    if not isinstance(raw_entries, list):
+        console.print(f"[red]error:[/red] {entries_file} must contain a JSON list")
+        raise typer.Exit(code=1)
+
+    with _graph_session(Path.cwd()) as conn:
+        if conn is None:
+            return
+        candidates = relation_enrichment.select_candidates(conn, Path.cwd())
+        candidate_by_key = {
+            (c.source_doc_path, c.target_vendor_name, c.target_doc_path): c
+            for c in candidates
+        }
+
+        results: list[relation_enrichment.RelationEnrichmentResult] = []
+        rejected: list[str] = []
+        for entry in raw_entries:
+            if not isinstance(entry, dict):
+                rejected.append(f"{entry!r}: not a JSON object")
+                continue
+            key = (
+                entry.get("source_doc_path"),
+                entry.get("target_vendor_name"),
+                entry.get("target_doc_path"),
+            )
+            label = f"{key[0]!r} -> {key[1] or key[2]!r}"
+            candidate = candidate_by_key.get(key)
+            if candidate is None:
+                rejected.append(
+                    f"{label}: not a pending mechanical-edge candidate — the "
+                    "edge doesn't exist, or is already enriched and unchanged"
+                )
+                continue
+            relation_label = entry.get("relation_label")
+            if relation_label not in graph.RELATION_LABELS:
+                rejected.append(
+                    f"{label}: relation_label {relation_label!r} not one of "
+                    f"{sorted(graph.RELATION_LABELS)}"
+                )
+                continue
+            ai_summary = entry.get("ai_summary")
+            if not ai_summary:
+                rejected.append(f"{label}: missing ai_summary")
+                continue
+            results.append(
+                relation_enrichment.RelationEnrichmentResult(
+                    source_doc_path=candidate.source_doc_path,
+                    target_vendor_name=candidate.target_vendor_name,
+                    target_doc_path=candidate.target_doc_path,
+                    ai_summary=ai_summary,
+                    content_hash=candidate.content_hash,
+                    relation_label=relation_label,
+                )
+            )
+
+        if results:
+            relation_enrichment.apply_results(conn, results, model=f"agent:{agent}")
+
+    console.print(
+        f"[green]applied[/green] {len(results)} agent-enrichment result(s) "
+        f"from {agent!r}"
+    )
+    if rejected:
+        console.print(f"[yellow]rejected {len(rejected)} entrie(s):[/yellow]")
+        for reason in rejected:
+            console.print(f"  - {reason}")
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":

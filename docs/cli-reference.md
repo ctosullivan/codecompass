@@ -1,13 +1,14 @@
 # CLI reference
 
-> `init`, `sync`, `index`, `check`, `query`, `chat`, and `undo` are
-> implemented. `promote` was removed in Phase 15 (`decisions/0033`) — its
-> three former jobs (clone, enrich, generate Skill) are now automatic
-> outcomes of bootstrap/`sync`. The context graph (`query`), generated
-> Skills, and the `/discovery` slash command are the primary way to consult
-> codecompass's output day to day; `chat` is a secondary, digest-only
-> terminal Q&A tool (`decisions/0034`). See [`planning/`](../planning/) for
-> current status.
+> `init`, `sync`, `index`, `check`, `query`, `chat`, `undo`, and
+> `enrich apply` are implemented. `promote` was removed in Phase 15
+> (`decisions/0033`) — its three former jobs (clone, enrich, generate
+> Skill) are now automatic outcomes of bootstrap/`sync`. The context graph
+> (`query`), generated Skills, and the `/discovery` slash command are the
+> primary way to consult codecompass's output day to day; `chat` is a
+> secondary, digest-only terminal Q&A tool (`decisions/0034`); `enrich
+> apply` is agent/developer-facing (`decisions/0054`), not part of normal
+> day-to-day use. See [`planning/`](../planning/) for current status.
 
 ## `codecompass [--yes] [--budget <amount>]` (no subcommand)
 
@@ -193,6 +194,43 @@ codecompass query symbol parse
 codecompass query skills --unused-mentions
 codecompass query relations architecture/overview.md
 codecompass query relations turndown
+```
+
+## `codecompass enrich apply <entries.json> --agent <name>`
+
+**Status:** implemented (Phase 52, `decisions/0054`).
+
+**Agent/developer-facing, not a command you'd run by hand day to day.**
+Writes agent-authored enrichment into `doc_relation_enrichment` — the
+same table `sync`'s own batched Anthropic-API call (Phase B) populates —
+as a second, non-automated producer for environments or edges an API key
+doesn't cover. `.claude/agents/context-enrichment-agent.md` is the only
+normal caller.
+
+- `<entries.json>` — a JSON list of `{source_doc_path,
+  target_vendor_name?, target_doc_path?, ai_summary, relation_label}`
+  objects.
+- `--agent <name>` (required) — identifies the producing agent; recorded
+  as `model=f"agent:{name}"`, e.g. `agent:context-enrichment-agent` —
+  never a bare model name, so it can never be confused with automated
+  Anthropic-API enrichment in `query relations`/`query vendor`/`check`
+  output.
+
+Each entry is only accepted if it matches a row
+`relation_enrichment.select_candidates()` currently lists as pending — a
+real, mechanically-detected edge that is new or changed since its last
+enrichment. An entry for an edge that doesn't exist, or is already
+enriched and unchanged, is rejected with a clear reason; an invalid
+`relation_label` or a missing `ai_summary` is likewise rejected. Accepted
+entries are built from the matched candidate's own `content_hash` (never
+an agent-supplied one) and written through the existing `apply_results` —
+the same content-hash caching and `UNIQUE` handling every other producer
+uses. Never touches a graph-fact table. Prints an aggregate accepted
+count, plus a per-entry reason for each rejection, and exits non-zero if
+anything was rejected.
+
+```bash
+codecompass enrich apply entries.json --agent context-enrichment-agent
 ```
 
 ## `codecompass index`

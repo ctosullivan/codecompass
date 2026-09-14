@@ -34,7 +34,10 @@ and how a project's own docs relate to them.
 - **Mechanical relationship detection** between a project's own docs
   (README, `architecture/`, `decisions/`, etc.) and the dependencies/Skills
   they mention, optionally AI-summarized (*how* they relate, never *whether*
-  they do).
+  they do) — either by codecompass's own batched Anthropic-API call, or, for
+  edges that call can't cover (no API key configured), a narrow Claude Code
+  agent writing through the same non-authoritative path (`codecompass enrich
+  apply`, `decisions/0054`).
 - **Staleness checking** (`codecompass check`) against installed versions,
   and a clean `undo` of everything it generated.
 

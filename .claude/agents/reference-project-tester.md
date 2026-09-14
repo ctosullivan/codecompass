@@ -45,11 +45,14 @@ and where it gets in the way.
    using the template — with real evidence (file:line, command output),
    the CodeCompass revision, and the target repo commit.
 5. **For each genuine context retrieval**, add a
-   `planning/context-use-log.md` entry (the same 4-line format the lead
-   uses on CodeCompass's own dev): what was retrieved, what the *default
-   pathway* would have surfaced, a LOW/MODERATE/HIGH advantage rating
-   (`context-quality-evaluation.md` §5), and whether anything was wrong
-   or misleading. One instrument, internal + external. (Phase 43c.)
+   `planning/context-observations/` entry (the same format the lead uses
+   on CodeCompass's own dev, `planning/context-observations/TEMPLATE.md`
+   — Phase 52, superseding the old `context-use-log.md` 4-liner): what
+   was retrieved, the edge identity, the edge-correctness/task-usefulness
+   split, what the *default pathway* would have surfaced, a
+   LOW/MODERATE/HIGH advantage rating (`context-quality-evaluation.md`
+   §5), and whether anything was wrong or misleading. One instrument,
+   internal + external. (Phase 43c, reshaped Phase 52.)
 6. **For each technical dependency CodeCompass cannot represent at all**,
    also file a `planning/context-gaps/` entry (`decisions/0051` — these
    never enter `context-graph.db`; they are GATE DB/DD evidence).
@@ -63,7 +66,7 @@ and where it gets in the way.
   change its design, to make CodeCompass easier to test. If a task needs
   that, pick a different task.
 - Write only to `planning/learnings/**`, `planning/context-gaps/**`,
-  `planning/context-use-log.md`, and `planning/reference-projects/**`.
+  `planning/context-observations/**`, and `planning/reference-projects/**`.
   Never touch CodeCompass `src/` or the reference project's working tree
   beyond what the genuine task requires.
 - Before closing, complete the §2.7 non-invasiveness check in writing.
@@ -71,6 +74,6 @@ and where it gets in the way.
 ## Output
 
 Return to the lead: the list of candidate-learning IDs and
-`planning/context-gaps/` IDs filed, the `context-use-log.md` entries
-added, the task outcome (done / blocked / done-with-workaround), and a
-short prose summary of the friction pattern.
+`planning/context-gaps/` IDs filed, the `planning/context-observations/`
+entries added, the task outcome (done / blocked / done-with-workaround),
+and a short prose summary of the friction pattern.

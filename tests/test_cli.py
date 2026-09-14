@@ -1451,6 +1451,210 @@ def test_query_relations_unscanned_file_gets_disambiguated_error(
     assert "glob coverage" in output
 
 
+def _seed_pending_relation_candidate(tmp_path: Path) -> None:
+    """A minimal graph with exactly one `doc_relations_edges` row that
+    has no cached `doc_relation_enrichment` yet — i.e. genuinely pending,
+    per `relation_enrichment.select_candidates`. Mirrors
+    `test_relation_enrichment.py::_seed_relation_graph`'s shape."""
+    (tmp_path / "README.md").write_text(
+        "This project uses demo for HTTP calls.", encoding="utf-8"
+    )
+    conn = graph.open_graph(tmp_path)
+    graph.rebuild_deterministic(
+        conn,
+        vendors=[graph.VendorRow(name="demo", ecosystem="npm", installed_version="1.0.0")],
+        source_files=[],
+        symbols=[],
+        uses_edges=[],
+        doc_artifacts=[graph.DocArtifactRow(path="README.md", kind="spec_doc", origin="project")],
+        documents_edges=[],
+        skill_mentions_edges=[],
+        routes_via_edges=[],
+        depends_on_edges=[],
+        doc_relations_edges=[
+            graph.DocRelationEdgeRow(
+                source_doc_artifact_path="README.md",
+                relation_kind="mentions_dependency",
+                target_vendor_name="demo",
+            )
+        ],
+    )
+    conn.close()
+
+
+def test_enrich_apply_writes_agent_enrichment_for_pending_candidate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _seed_pending_relation_candidate(tmp_path)
+    entries = tmp_path / "entries.json"
+    entries.write_text(
+        json.dumps(
+            [
+                {
+                    "source_doc_path": "README.md",
+                    "target_vendor_name": "demo",
+                    "target_doc_path": None,
+                    "ai_summary": "README explains the demo integration.",
+                    "relation_label": "explains_usage_of",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app, ["enrich", "apply", str(entries), "--agent", "context-enrichment-agent"]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "applied 1" in result.output
+    conn = graph.open_graph(tmp_path)
+    row = conn.execute(
+        "SELECT ai_summary, model, relation_label FROM doc_relation_enrichment "
+        "WHERE source_doc_path = ? AND target_vendor_name = ?",
+        ("README.md", "demo"),
+    ).fetchone()
+    conn.close()
+    assert row == (
+        "README explains the demo integration.",
+        "agent:context-enrichment-agent",
+        "explains_usage_of",
+    )
+
+
+def test_enrich_apply_rejects_nonexistent_edge(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _seed_pending_relation_candidate(tmp_path)
+    entries = tmp_path / "entries.json"
+    entries.write_text(
+        json.dumps(
+            [
+                {
+                    "source_doc_path": "README.md",
+                    "target_vendor_name": "does-not-exist",
+                    "target_doc_path": None,
+                    "ai_summary": "Fabricated.",
+                    "relation_label": "explains_usage_of",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["enrich", "apply", str(entries), "--agent", "some-agent"])
+
+    assert result.exit_code == 1
+    assert "not a pending mechanical-edge candidate" in result.output
+    conn = graph.open_graph(tmp_path)
+    count = conn.execute("SELECT count(*) FROM doc_relation_enrichment").fetchone()[0]
+    conn.close()
+    assert count == 0
+
+
+def test_enrich_apply_rejects_already_enriched_unchanged_edge(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _seed_pending_relation_candidate(tmp_path)
+    # Pre-enrich it with the exact content hash select_candidates will
+    # recompute, so it's a cache hit — no longer pending.
+    conn = graph.open_graph(tmp_path)
+    candidates = relation_enrichment.select_candidates(conn, tmp_path)
+    assert len(candidates) == 1
+    relation_enrichment.apply_results(
+        conn,
+        [
+            relation_enrichment.RelationEnrichmentResult(
+                source_doc_path="README.md",
+                target_vendor_name="demo",
+                target_doc_path=None,
+                ai_summary="Already enriched.",
+                content_hash=candidates[0].content_hash,
+                relation_label="explains_usage_of",
+            )
+        ],
+    )
+    conn.close()
+
+    entries = tmp_path / "entries.json"
+    entries.write_text(
+        json.dumps(
+            [
+                {
+                    "source_doc_path": "README.md",
+                    "target_vendor_name": "demo",
+                    "target_doc_path": None,
+                    "ai_summary": "A second, agent-authored attempt.",
+                    "relation_label": "explains_usage_of",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["enrich", "apply", str(entries), "--agent", "some-agent"])
+
+    assert result.exit_code == 1
+    assert "not a pending mechanical-edge candidate" in result.output
+    conn = graph.open_graph(tmp_path)
+    row = conn.execute(
+        "SELECT ai_summary, model FROM doc_relation_enrichment "
+        "WHERE source_doc_path = ? AND target_vendor_name = ?",
+        ("README.md", "demo"),
+    ).fetchone()
+    conn.close()
+    # The original automated-path enrichment is untouched, not overwritten.
+    assert row == ("Already enriched.", "claude-haiku-4-5-20251001")
+
+
+def test_enrich_apply_rejects_invalid_relation_label(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _seed_pending_relation_candidate(tmp_path)
+    entries = tmp_path / "entries.json"
+    entries.write_text(
+        json.dumps(
+            [
+                {
+                    "source_doc_path": "README.md",
+                    "target_vendor_name": "demo",
+                    "target_doc_path": None,
+                    "ai_summary": "Fine content, bad label.",
+                    "relation_label": "not_a_real_label",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["enrich", "apply", str(entries), "--agent", "some-agent"])
+
+    assert result.exit_code == 1
+    assert "relation_label" in result.output
+    conn = graph.open_graph(tmp_path)
+    count = conn.execute("SELECT count(*) FROM doc_relation_enrichment").fetchone()[0]
+    conn.close()
+    assert count == 0
+
+
+def test_enrich_apply_rejects_non_object_entry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _seed_pending_relation_candidate(tmp_path)
+    entries = tmp_path / "entries.json"
+    entries.write_text(json.dumps(["not an object"]), encoding="utf-8")
+
+    result = runner.invoke(app, ["enrich", "apply", str(entries), "--agent", "some-agent"])
+
+    assert result.exit_code == 1
+    assert "not a JSON object" in result.output
+
+
 def test_query_relations_genuinely_nonexistent_name_keeps_not_found_message(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

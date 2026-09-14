@@ -661,6 +661,22 @@ Goal: decide whether v1 scope must exceed package-source grounding,
 using continued real Ledgerkit Core development (not a one-off baseline
 task) as the evidence source.
 
+**Amended 2026-09-14 — Phase 52's slot was retargeted.** At direct user
+request during Phase 51's own retro window, Phase 52 implemented
+`planning/context-edge-lifecycle-plan.md` (the context-observations
+lifecycle + agent-driven enrichment, `decisions/0054`) instead of this
+stage's pre-sketched "continue genuine Ledgerkit Core development" —
+the same findings/decision-driven-scope precedent Phase 49 established
+against its own pre-written Stage C sketch (see Phase 49's stanza
+below). The original sketch text is left as written, unchanged, per
+this project's "historical roadmap content is not rewritten" convention
+— see Phase 52's own outcome note below it. **This retarget produces no
+evidence toward Stage D's own goal or the Stage D-vs-Stage-F/G decision**
+(Phase 51's retro) — that decision is still open, unaffected, and is not
+resolved by this note. Whether Stage D's substantive goal (continued
+live Ledgerkit dogfooding) still gets a phase slot, and under what
+number, is part of that same open decision.
+
 ### Phase 52 — Continue genuine Ledgerkit Core development · EXPERIMENTAL
 - Further real Ledgerkit tasks beyond Phase 46's single baseline task
   (its own roadmap's next milestones after Milestone 5, confirmed live
@@ -668,6 +684,34 @@ task) as the evidence source.
   adoption blueprint (`adoption-blueprint.md`) if not already applied at
   Stage B. Continues feeding `planning/context-use-log.md`,
   `planning/context-gaps/`, and `validation/codecompass/findings/`.
+- **Retargeted (2026-09-14), done.** Delivered
+  `planning/phase-52-context-edge-lifecycle.md`'s scope instead of the
+  sketch above (see the Stage D amendment note): the
+  `context-observations/` lifecycle generalising
+  `planning/context-use-log.md`; `decisions/0054`'s agent-driven
+  enrichment (`relation_enrichment.py::apply_results`'s new `model`
+  param, the new `codecompass enrich apply` CLI command, and the new
+  ninth agent `context-enrichment-agent`); and a real, live, two-cycle
+  demonstration against a local fixture
+  (`tests/fixtures/ledgerkit_lifecycle_demo/`, `DEMO.md`) —
+  **deliberately not the live Ledgerkit clone**, per explicit user
+  direction, so this phase contributes no new Ledgerkit-dogfooding
+  evidence. The live demo proved the `enrich apply` trust boundary
+  (rejects a non-pending/stale edge), the enrichment cache surviving a
+  mechanical graph rebuild byte-identically, and a genuine stale-edge
+  rejection — plus one honestly disclosed, root-caused complication
+  (`L-019`, a one-time fixture-bootstrap content-hash artifact).
+  `pytest` 567 passed / 2 skipped, `ruff check .` clean,
+  `check_user_docs.py --strict` clean. `docs-reconstructor` drift audit
+  (`planning/retros/_drift-audit-phase-52.md`) → DRIFT, 2 non-blocking
+  findings, both fixed before commit; `release-phase-auditor`
+  (`planning/retros/_audit-phase-52.md`) → **PASS WITH NON-BLOCKING
+  OBSERVATIONS**, including independently live-reproducing the two-cycle
+  demonstration itself. Retro:
+  `planning/retros/phase-52-context-edge-lifecycle.md`. **This phase is
+  additive infrastructure, not a resolution of the open Stage
+  D-vs-Stage-F/G decision** — see the Stage D amendment note above and
+  Phase 51's retro.
 
 ### Phase 53 — Heterogeneous doc / reference / manual dependencies · EXPERIMENTAL
 - Test whether CodeCompass can usefully index + relate *reference

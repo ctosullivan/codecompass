@@ -1464,9 +1464,9 @@ generalized to relationships. See
 **Non-negotiable boundary**: the AI-generated summary is written *only* to
 `doc_relation_enrichment` (the gitignored graph), never into a spec doc's
 own file. Enforced structurally, not just by convention —
-`apply_results(conn, results) -> None` doesn't accept a `project_root`
-parameter at all, so it has no filesystem handle to a spec doc to even
-attempt writing to one.
+`apply_results(conn, results, *, model=_MODEL) -> None` doesn't accept a
+`project_root` parameter at all, so it has no filesystem handle to a spec
+doc to even attempt writing to one.
 
 `select_candidates(conn, project_root) -> list[RelationEnrichmentCandidate]`
 reads every `graph.relation_enrichment_candidates` row, reads the source
@@ -1551,9 +1551,27 @@ way `enrichment.py` does for vendors — safer given a spec-doc path can be
 long/nested, where a small transcription slip would otherwise silently
 drop a result.
 
-`apply_results(conn, results) -> None` calls `graph.record_relation_
-enrichment` — its only action, structurally guaranteeing the non-negotiable
-boundary above.
+`apply_results(conn, results, model=_MODEL) -> None` calls `graph.record_
+relation_enrichment` — its only action, structurally guaranteeing the
+non-negotiable boundary above.
+
+**Phase 52 — a second, non-automated producer through the same
+`apply_results`, distinguished only by its `model` value.** `apply_
+results` gained the optional `model` parameter above (default unchanged,
+so every existing call site is unaffected) so that `cli.py`'s new
+`codecompass enrich apply` command (see `docs/cli-reference.md`) can pass
+`model=f"agent:{agent}"` when a Claude Code agent
+(`.claude/agents/context-enrichment-agent.md`), rather than this module's
+own batched Anthropic-API call, supplies the `ai_summary`/`relation_
+label`. The trust boundary is enforced by `enrich apply` itself, not by
+agent instruction: it only accepts an entry that matches a row `select_
+candidates` currently lists as pending, and builds the `RelationEnrichment
+Result` from that candidate's own `content_hash`, never an agent-supplied
+one. Both producers write through this same function, the same caching,
+the same `UNIQUE` constraint; `model` is the only column that
+distinguishes them, so every existing reader (`query relations`, `query
+vendor`, `check`) already tells them apart with zero further change — see
+[`decisions/0054`](../decisions/0054-agent-driven-enrichment-is-a-second-non-authoritative-producer.md).
 
 `enrichment.py`'s `estimate_cost`/`check_budget` are extended (only) to
 fold this module's candidate/batch counts into the same disclosed cost

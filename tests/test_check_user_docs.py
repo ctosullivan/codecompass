@@ -199,6 +199,19 @@ _GOOD_CANDIDATE = (
     "- **status:** candidate\n"
 )
 
+_GOOD_OBSERVATION = (
+    "### OBS-042 — an edge was retrieved and it went fine\n\n"
+    "- **origin:** Phase 99\n"
+    "- **date:** 2026-09-10\n"
+    "- **codecompass_revision:** abc1234\n"
+    "- **project:** codecompass (own dev)\n"
+    "- **edge identity:** `foo.py -- uses --> bar`\n"
+    "- **observation type:** EDGE_USEFUL\n"
+    "- **edge correctness:** correct\n"
+    "- **task usefulness:** useful\n"
+    "- **status:** recorded\n"
+)
+
 
 class TestLearningsCandidateFields:
     def test_flags_missing_fields(self, tmp_path):
@@ -249,6 +262,44 @@ class TestPromotedLearningsLogged:
     def test_candidate_status_not_flagged(self, tmp_path):
         _write(tmp_path / "planning" / "learnings" / "inbox.md", _GOOD_CANDIDATE)
         assert check_user_docs.check_promoted_learnings_logged(tmp_path) == []
+
+
+class TestContextObservationFields:
+    def test_flags_missing_fields(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "context-observations" / "inbox.md",
+            "### OBS-001 — incomplete\n\n- **origin:** Phase 1\n",
+        )
+        findings = check_user_docs.check_context_observation_fields(tmp_path)
+        assert len(findings) == 1
+        assert "OBS-001" in findings[0].message
+        assert "edge correctness" in findings[0].message
+
+    def test_no_finding_when_complete(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "context-observations" / "inbox.md",
+            _GOOD_OBSERVATION,
+        )
+        assert check_user_docs.check_context_observation_fields(tmp_path) == []
+
+    def test_no_finding_when_file_absent(self, tmp_path):
+        assert check_user_docs.check_context_observation_fields(tmp_path) == []
+
+    def test_flags_correctness_usefulness_split_specifically(self, tmp_path):
+        # The whole point of Phase 52's format: collapsing "was it true"
+        # and "did it help" into one field must still be caught.
+        missing_split = _GOOD_OBSERVATION.replace(
+            "- **edge correctness:** correct\n- **task usefulness:** useful\n",
+            "",
+        )
+        _write(
+            tmp_path / "planning" / "context-observations" / "inbox.md",
+            missing_split,
+        )
+        findings = check_user_docs.check_context_observation_fields(tmp_path)
+        assert len(findings) == 1
+        assert "edge correctness" in findings[0].message
+        assert "task usefulness" in findings[0].message
 
 
 class TestStaleEvidenceGathering:

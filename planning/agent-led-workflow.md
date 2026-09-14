@@ -48,13 +48,17 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
    plausibly help this phase (query the graph, read a generated Skill).
    Capture anything surprising as a candidate learning.
    - **If any CodeCompass context was retrieved, add a
-     `planning/context-use-log.md` entry** before moving on — 4 lines:
-     what was retrieved, what the *default pathway* (grep / file read /
-     `--help`) would have surfaced, a LOW/MODERATE/HIGH advantage rating
+     `planning/context-observations/` entry** before moving on (Phase 52,
+     `planning/context-observations/TEMPLATE.md` — supersedes the old
+     `context-use-log.md` 4-liner): what was retrieved, the edge
+     identity, the edge-correctness/task-usefulness split, what the
+     *default pathway* (grep / file read / `--help`) would have
+     surfaced, a LOW/MODERATE/HIGH advantage rating
      (`context-quality-evaluation.md` §5), and whether anything was wrong
      or misleading. **If no CodeCompass context was used this phase, log
      a one-line "not used — <why>" entry** (also a datapoint). This is
-     lighter than a `context-evaluator` report on purpose. (Phase 43c.)
+     lighter than a `context-evaluator` report on purpose. (Phase 43c,
+     reshaped Phase 52.)
    - **If you notice a relationship CodeCompass *should* represent but
      mechanical detection can't produce**, file a
      `planning/context-gaps/` entry (`decisions/0051` — it never enters

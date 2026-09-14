@@ -1,0 +1,16 @@
+[
+  {
+    "source_doc_path": "dev-docs/retros/README.md",
+    "target_vendor_name": null,
+    "target_doc_path": ".claude/skills/codecompass/SKILL.md",
+    "ai_summary": "This retros folder explicitly models its own retrospective practice on codecompass's own project process, and points a reader at the codecompass Skill as the reference for how dependency/context information is surfaced during development — i.e. this doc cites the Skill as a process precedent, not as a dependency this project consumes at runtime.",
+    "relation_label": "explains_usage_of"
+  },
+  {
+    "source_doc_path": "dev-docs/planning/README.md",
+    "target_vendor_name": null,
+    "target_doc_path": ".claude/skills/codecompass/SKILL.md",
+    "ai_summary": "This planning doc states that agent-led development here follows the same practice codecompass's own project uses, and directs the reader to the codecompass Skill file for that practice's mechanics — the mention is a governance/process pointer, not a description of a runtime integration.",
+    "relation_label": "explains_usage_of"
+  }
+]

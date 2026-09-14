@@ -338,6 +338,42 @@ reconstruction and release) is a genuine strategic decision for the
 user, not a technical call this reconciliation resolves — see "Next
 concrete step" below.
 
+**Phase 52 is `done` (2026-09-14) — additive infrastructure, not a
+resolution of Stage C's still-open next-step decision.** Scoped by a
+direct user request during Phase 51's own retro window (not by resuming
+the Stage D-vs-Stage-F/G fork), it implemented
+`planning/context-edge-lifecycle-plan.md` in full: the
+`planning/context-observations/` lifecycle generalising
+`context-use-log.md` (migrated 4 entries verbatim as `OBS-001`–`004`,
+reshaped with an explicit edge-correctness/task-usefulness split), and
+**agent-driven enrichment as a second, non-authoritative producer**
+(`decisions/0054`) alongside the existing batched-API path —
+`relation_enrichment.py::apply_results` gained a backward-compatible
+`model` parameter, a new `codecompass enrich apply` CLI command
+mechanically enforces the trust boundary (only accepts entries matching
+a currently-pending `select_candidates()` row), and a new ninth agent,
+`context-enrichment-agent`, produces the grounded content. **Demonstrated
+live, twice, against a local fixture** (`tests/fixtures/ledgerkit_lifecycle_demo/`,
+`DEMO.md`) — deliberately not the live Ledgerkit clone, per explicit
+user direction — proving the trust-boundary rejection, the enrichment
+cache surviving a byte-identical graph rebuild, and a genuine stale-edge
+rejection; one honestly disclosed complication (a fixture-bootstrap
+content-hash artifact) was root-caused live and filed as **L-019**
+(candidate). `pytest` 567 passed / 2 skipped, `ruff check .` clean,
+`check_user_docs.py --strict` clean. Closeout: `docs-reconstructor`
+drift audit (`planning/retros/_drift-audit-phase-52.md`) → DRIFT, 2
+non-blocking findings, both fixed before commit; `release-phase-auditor`
+(`planning/retros/_audit-phase-52.md`) → **PASS WITH NON-BLOCKING
+OBSERVATIONS**, including independently live-reproducing the two-cycle
+demonstration itself in an isolated copy; the two actionable
+observations (a defensive `isinstance` check in `enrich apply` + a
+`DEMO.md` wording correction) were fixed before this closeout. Retro:
+`planning/retros/phase-52-context-edge-lifecycle.md`. **The Stage
+D-vs-Stage-F/G strategic decision (Phase 51's retro) remains open and
+unaffected — this phase's scope did not come from resuming that fork,
+and its fixture demonstration deliberately produced no new evidence
+toward it.** No phase is queued next; see "Next concrete step" below.
+
 - **39** ratified the redefinition: ADRs `decisions/0048`/`0049`
   `Accepted`; `pyproject.toml` `version` → `1.0.0.dev0`; ROADMAP's Stage
   A–F section ratified; Phase 23 Part B superseded; Phases 24/25
@@ -463,6 +499,27 @@ dependencies now carry lower-bound version pins (`decisions/0047`), and
 were cleaned up (Phase 38).
 
 ## What was just completed
+
+**Phase 52, `done`** (2026-09-14) — context edge lifecycle: the
+`planning/context-observations/` queue (generalising `context-use-log.md`,
+migrated verbatim) + agent-driven enrichment as a second producer
+(`decisions/0054`: `apply_results`'s new `model` param, `codecompass
+enrich apply`, the new ninth agent `context-enrichment-agent`) +
+a real, live, two-cycle demonstration against a local fixture
+(`tests/fixtures/ledgerkit_lifecycle_demo/`) — not the live Ledgerkit
+clone, per explicit user direction. Proved the `enrich apply` trust
+boundary, the enrichment cache surviving a byte-identical graph rebuild,
+and a genuine stale-edge rejection; one complication root-caused live and
+filed as `L-019`. `docs-reconstructor` → DRIFT (2 non-blocking, both
+fixed); `release-phase-auditor` → **PASS WITH NON-BLOCKING OBSERVATIONS**
+(independently live-reproduced the demonstration itself). `pytest` 567
+passed / 2 skipped, `ruff check .` clean, `check_user_docs.py --strict`
+clean. Retro: `planning/retros/phase-52-context-edge-lifecycle.md`.
+**This phase's scope came from a direct user request, not from resuming
+Stage D — the Stage D-vs-Stage-F/G decision (Phase 51's retro) remains
+open, unaffected.** ROADMAP row `52`, the `v1-redefinition/roadmap.md`
+Phase 52 stanza (+ a new Stage D amendment note), and the plan file's own
+status line all flipped to `done` in this commit.
 
 **Phase 51, `done`** (2026-09-14) — Stage C's closing phase, **GATE DC**.
 Re-ran Phase 45's baseline Q2 and Phase 46's genuine task — same
@@ -1059,26 +1116,35 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 **Stage A is complete (Phases 39–43e `done`, GATE DA passed). Stage B is
 fully complete (Phases 43b, 43c, 44, 45, 46, 47 all `done`, GATE DB
-resolved). Stage C is now fully complete (48/50 not funded, 49 and 51
-both `done`, GATE DC resolved 2026-09-14).**
+resolved). Stage C is fully complete (48/50 not funded, 49 and 51 both
+`done`, GATE DC resolved 2026-09-14). Phase 52 is also now `done`
+(2026-09-14) — but it is additive infrastructure (context-observations
+lifecycle + agent-driven enrichment), scoped by a direct user request
+during Phase 51's own retro window, not by resuming the Stage D fork.
+It retargeted Phase 52's roadmap slot (originally sketched as "continue
+genuine Ledgerkit Core development", Stage D's opening phase) away from
+that sketch, per the same findings/decision-driven-scope precedent
+Phase 49 established against its own pre-written Stage C sketch — see
+`planning/v1-redefinition/roadmap.md`'s Stage D amendment note. It
+produces no new evidence toward Stage D's substantive goal or the
+decision below, since its live demonstration deliberately used a local
+fixture, not the live Ledgerkit clone.**
 
-**No phase is queued next. The redefined-v1's own exit language names
-this a legitimate stopping point** (`planning/v1-redefinition/roadmap.md`
-Phase 51's own text: *"a measured improvement over the foundation
-baseline, re-validated on a real external project, is a defensible
-redefined v1"*) — Phase 49 is that measured improvement, Phase 51 is
-that re-validation. **Two paths are both defensible from here, and
-choosing between them is a strategic decision for the user, not a
-technical call this reconciliation should resolve or default on:**
+**The strategic decision below is still open and unresolved — genuinely,
+not as a placeholder.** Two paths remain both defensible, and choosing
+between them is the user's call, not a technical call this reconciliation
+should resolve or default on:**
 
-1. **Continue into Stage D (Phases 52–55)**: deeper Ledgerkit
+1. **Continue into Stage D's substantive goal** (deeper Ledgerkit
    dogfooding — test whether CodeCompass can usefully relate
    heterogeneous content (docs, executable hledger behaviour,
-   compatibility tests) as evidence nodes with provenance. Materially
+   compatibility tests) as evidence nodes with provenance). Materially
    harder and more novel than glob coverage; Phase 51's finding (the
    *structural* ceiling on `query relations` for 0-vendor projects) is
-   exactly what Stage D would need to address to move the advantage
-   rating past LOW at all.
+   exactly what this would need to address to move the advantage rating
+   past LOW at all. Since Phase 52's number is now spent on different
+   scope, this would need a fresh phase-number assignment (53 onward, or
+   a renumbering) when/if chosen.
 2. **Treat GATE DC's result as sufficient and proceed toward Stage F/G**:
    register Technical Clipper as the cross-ecosystem regression check,
    then blank-slate doc reconstruction and release. Accepts LOW advantage
@@ -1087,10 +1153,41 @@ technical call this reconciliation should resolve or default on:**
    evidence-driven fixing works, even if the advantage ceiling on this
    project shape is modest."
 
-Full reasoning for both options: `planning/retros/phase-51-rerun-ledgerkit-evaluation.md`
-"Where we're going." No `planning/phase-52-*.md` or Stage D scoping note
-has been written — correctly, since that only happens once this choice
-is made, not written speculatively.
+Either path can also make further use of Phase 52's own new
+infrastructure (e.g. wiring `context-enrichment-agent` into real
+Ledgerkit dogfooding, if Stage D is chosen) — Phase 52 is available to
+whichever path gets picked, not tied to either. Full reasoning:
+`planning/retros/phase-51-rerun-ledgerkit-evaluation.md` "Where we're
+going" and `planning/retros/phase-52-context-edge-lifecycle.md` "Where
+we're going."
+
+**Phase 52 closeout (done):** `docs-reconstructor` drift audit
+(`planning/retros/_drift-audit-phase-52.md`) → **DRIFT — 2 non-blocking
+findings** (a stale two-argument `apply_results` signature quote left
+behind a second, already-updated quote in the same `architecture/overview.md`
+paragraph; `docs/cli-reference.md` overstating the success path as a
+per-entry summary when only the rejection side is per-entry) — both fixed
+by the lead before commit, independently re-confirmed fixed by
+`release-phase-auditor`. `release-phase-auditor`
+(`planning/retros/_audit-phase-52.md`) → **PASS WITH NON-BLOCKING
+OBSERVATIONS**, after independently re-running the full test suite
+(567 passed / 2 skipped) and live-reproducing the two-cycle fixture
+demonstration itself in an isolated copy — confirmed the rejection-path
+proof and the rebuild-survives-untouched proof both genuinely reproduce.
+6 minor observations total; the two actionable ones (a defensive
+`isinstance(entry, dict)` check for `enrich apply` + a `DEMO.md` wording
+correction about `SKILL.md` being tool-regenerated, not hand-authored)
+were fixed before this closeout; the other four were non-blocking/
+informational (a stricter-than-planned `RELATION_LABELS` validation
+choice, arguably better than the plan's literal `_normalize_relation_label`
+wording; a triage-cadence phrasing generalisation; a reproduction that
+correctly didn't reproduce a one-time transient already past;
+`enrich apply`'s malformed-input hardening flagged for the future, not
+blocking). `knowledge-curator` triaged `L-019` (`retained` — no
+generalised destination exists yet). ROADMAP row `52`, the
+`v1-redefinition/roadmap.md` Phase 52 stanza + its new Stage D amendment
+note, and the plan file's own status line all flipped to `done` in this
+commit. Retro: `planning/retros/phase-52-context-edge-lifecycle.md`.
 
 **Phase 51 closeout (done):** `docs-reconstructor` drift audit
 (`planning/retros/_drift-audit-phase-51.md`) → **NO DRIFT**;

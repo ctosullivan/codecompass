@@ -615,6 +615,57 @@ def test_apply_results_writes_doc_relation_enrichment_row(tmp_path: Path) -> Non
     )
 
 
+def test_apply_results_accepts_agent_provenance_model_override(tmp_path: Path) -> None:
+    # Phase 52 (decisions/0054): a second, non-automated producer passes
+    # model=f"agent:{name}" instead of the default _MODEL, so a reader
+    # can always tell the two producers apart from this one column.
+    conn = open_graph(tmp_path)
+    _seed_relation_graph(conn, tmp_path)
+
+    result = RelationEnrichmentResult(
+        source_doc_path=_SPEC_DOC_PATH,
+        target_vendor_name="demo",
+        target_doc_path=None,
+        ai_summary="An agent wrote this one.",
+        content_hash="hash-agent",
+        relation_label="explains_usage_of",
+    )
+
+    apply_results(conn, [result], model="agent:context-enrichment-agent")
+
+    row = conn.execute(
+        "SELECT model FROM doc_relation_enrichment "
+        "WHERE source_doc_path = ? AND target_vendor_name = ?",
+        (_SPEC_DOC_PATH, "demo"),
+    ).fetchone()
+    assert row == ("agent:context-enrichment-agent",)
+
+
+def test_apply_results_default_model_unchanged_for_existing_callers(
+    tmp_path: Path,
+) -> None:
+    conn = open_graph(tmp_path)
+    _seed_relation_graph(conn, tmp_path)
+
+    result = RelationEnrichmentResult(
+        source_doc_path=_SPEC_DOC_PATH,
+        target_vendor_name="demo",
+        target_doc_path=None,
+        ai_summary="Automated path, no model kwarg passed.",
+        content_hash="hash-automated",
+        relation_label="explains_usage_of",
+    )
+
+    apply_results(conn, [result])  # no model= — must default to _MODEL
+
+    row = conn.execute(
+        "SELECT model FROM doc_relation_enrichment "
+        "WHERE source_doc_path = ? AND target_vendor_name = ?",
+        (_SPEC_DOC_PATH, "demo"),
+    ).fetchone()
+    assert row == (relation_enrichment_module._MODEL,)
+
+
 def test_apply_results_never_writes_any_file(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

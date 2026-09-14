@@ -32,14 +32,18 @@ Implemented by Phase 40 (roster + workflow) and proven by Phase 43
 
 ## 2. The roster
 
-Eight agent definitions, but only 4–5 are active in a typical phase. All
+Nine agent definitions, but only 4–5 are active in a typical phase. All
 are `.claude/agents/<name>.md` with model/tools/isolation frontmatter.
 
 Started at seven, "prune at GATE DA". GATE DA (Phase 43) kept all seven
 with no pruning; Phase 43c added the eighth (`context-health-planner`)
 with cause — `decisions/0049` permits a roster addition that doesn't
 reverse a fixed point, and GATE DA's "roster stays at 7" was about not
-*pruning*, not a cap on adding.
+*pruning*, not a cap on adding. Phase 52 added the ninth
+(`context-enrichment-agent`), same rationale, cause named in
+`decisions/0054` — a narrow content-authoring role kept deliberately
+separate from `knowledge-curator`'s investigation-only remit, not an
+expansion of any existing agent's scope.
 
 ### 2.1 Lead Claude session (not an agent file — the human-facing session)
 Responsible for: understanding the requested phase; coordinating and
@@ -200,7 +204,34 @@ docs and self-certifies them.
 - **Active in:** stage boundaries; before any phase that leans on
   CodeCompass context (reference-project phases, Phase 60).
 
-### 2.10 Roles deliberately NOT created
+### 2.10 `context-enrichment-agent` — agent-authored edge enrichment (added Phase 52)
+- **Question:** for a `doc_relations_edges` row CodeCompass has already
+  mechanically proven exists, what does it mean — a grounded
+  `ai_summary`/`relation_label`, written from the real excerpted source
+  text? Never whether the relationship exists at all.
+- **Method:** reads `select_candidates`'s pending list (via
+  `codecompass query relations` on the source doc, or direct file
+  inspection), writes a grounded interpretation, calls
+  `codecompass enrich apply` — the CLI itself, not agent instruction,
+  rejects anything that isn't already a real, pending, mechanically
+  detected candidate (`decisions/0054` §4).
+- **Distinct from `knowledge-curator`**: this agent authors interpretive
+  content for an edge that already exists; `knowledge-curator` never
+  produces edge content, only investigates observations about edges
+  (correctness/usefulness). Kept as two roles deliberately, per
+  `decisions/0054`'s "separation of concerns" reasoning — the same
+  reason a new narrow role was added rather than extending an existing
+  one.
+- **Rule:** never invents a relationship; no tool access to
+  `context-graph.db` other than through `enrich apply`; no
+  `src/codecompass/` writes.
+- **Tools:** Read, Grep, Glob, Bash — `codecompass query`/`codecompass
+  enrich apply` only; no direct DB writes, no `src/` writes.
+- **Active in:** phases exercising agent-driven enrichment when no
+  `ANTHROPIC_API_KEY` is available or the automated path isn't desired
+  (Phase 52 on).
+
+### 2.11 Roles deliberately NOT created
 - No "implementer" agent — the lead implements or delegates ad hoc to a
   general-purpose subagent per the existing
   `v0.2-implementation-execution-plan.md` pattern; a standing role adds
@@ -223,6 +254,7 @@ docs and self-certifies them.
 | `docs-reconstructor` | the phase diff + code/`--help` (drift audit); source/tests/CLI/schema/ADRs, not narrative docs (blank-slate) | its drift-audit report / `planning/v1-docs-reconstruction/` | CLI `--help`, tests (read-only) | **yes** — independent of `docs-maintainer` |
 | `release-phase-auditor` | everything | its audit report only | tests/lint, re-runs plan verification | **yes** — read-only, no repair |
 | `context-health-planner` | `context-graph.db`, `codecompass query` output, `ROADMAP.md` | `planning/context-health.md` only | read-only `codecompass query` (no `sync`/`--yes`) | partial — uses CodeCompass, writes one planning file |
+| `context-enrichment-agent` | source doc excerpts, `codecompass query relations` output | nothing directly — `context-graph.db` only via `codecompass enrich apply` | `codecompass query`, `codecompass enrich apply` | no — participant, but the CLI itself enforces its trust boundary mechanically |
 
 **No agent** writes `CLAUDE.md`, `decisions/*` (except the lead via the
 ADR process), or `src/` (except the lead / ad-hoc implementer subagent).

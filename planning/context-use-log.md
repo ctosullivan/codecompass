@@ -1,4 +1,12 @@
-# Context-use log
+# Context-use log (superseded)
+
+**Superseded by `planning/context-observations/` as of Phase 52.** This
+file's 4 real entries were migrated verbatim (as `OBS-001`…`OBS-004`,
+reshaped into the new template — no content lost, including an explicit
+edge-correctness/task-usefulness split the old format didn't have) into
+`planning/context-observations/inbox.md`. New entries go there, not
+here. Kept in place, not deleted, so any commit/ADR/retro that links to
+a specific dated entry in this file still resolves.
 
 One short entry **each time the lead or an agent retrieves CodeCompass
 context during real work** — on CodeCompass's own development *and*, from

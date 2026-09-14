@@ -503,7 +503,12 @@ def _map_batch_response(
     return mapped
 
 
-def apply_results(conn: sqlite3.Connection, results: list[RelationEnrichmentResult]) -> None:
+def apply_results(
+    conn: sqlite3.Connection,
+    results: list[RelationEnrichmentResult],
+    *,
+    model: str = _MODEL,
+) -> None:
     """Persist each result via `graph.record_relation_enrichment` — the
     **only** thing this function does. Deliberately takes no `project_
     root` parameter at all: unlike `enrichment.apply_results` (which
@@ -514,6 +519,15 @@ def apply_results(conn: sqlite3.Connection, results: list[RelationEnrichmentResu
     non-negotiable boundary: the AI-generated summary is written only to
     `doc_relation_enrichment` (the gitignored graph), never into a spec
     doc's own file (see this module's docstring and decisions/0038).
+
+    `model` defaults to `_MODEL` (the automated batched-API path's own
+    identifier) so every existing call site is unaffected. Phase 52
+    (`decisions/0054`) introduced a second producer — a Claude Code agent
+    reasoning over the same `select_candidates` output rather than a
+    direct Anthropic API call — which passes `model=f"agent:{name}"`
+    instead, so `query relations`/`query vendor` and any other reader can
+    always tell the two producers apart from this one column, with no
+    schema change and no other code path touched.
     """
     generated_at = datetime.now(UTC).isoformat()
     for result in results:
@@ -524,7 +538,7 @@ def apply_results(conn: sqlite3.Connection, results: list[RelationEnrichmentResu
             result.target_doc_path,
             result.ai_summary,
             result.content_hash,
-            _MODEL,
+            model,
             generated_at,
             relation_label=result.relation_label,
         )

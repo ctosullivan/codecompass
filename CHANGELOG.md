@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 52** (context edge lifecycle): a new `planning/context-observations/`
+  queue generalises `context-use-log.md` (4 original entries migrated
+  verbatim, reshaped with an explicit edge-correctness/task-usefulness
+  split), and **agent-driven enrichment lands as a second,
+  non-authoritative producer alongside the existing batched-API path**
+  (`decisions/0054`), for use when no `ANTHROPIC_API_KEY` is available.
+  `relation_enrichment.py::apply_results` gains a backward-compatible
+  `model` keyword parameter (default unchanged; every existing call site
+  and test unaffected). New CLI command `codecompass enrich apply` takes
+  a JSON file of agent-authored `{source_doc_path, ai_summary,
+  relation_label, ...}` entries plus `--agent <name>`, and **mechanically
+  enforces the trust boundary itself**: it only accepts entries matching
+  a currently-pending `relation_enrichment.select_candidates()` row,
+  building the stored result from that candidate's own `content_hash`
+  (never an agent-supplied one) — an agent cannot enrich a relationship
+  that isn't already mechanically proven and pending. New agent role
+  `.claude/agents/context-enrichment-agent.md` (the roster's ninth):
+  reads pending candidates, writes grounded interpretive content from
+  real excerpted source text, calls `enrich apply`; never invents a
+  relationship, never touches a graph-fact table directly, no
+  `src/codecompass/` writes. Demonstrated live, twice, against a new
+  local fixture (`tests/fixtures/ledgerkit_lifecycle_demo/`, mirroring
+  Ledgerkit's own real, previously-observed Skill-mention pattern) —
+  deliberately not the live Ledgerkit clone, per explicit user
+  direction — proving the `enrich apply` rejection path, the enrichment
+  cache surviving a byte-identical mechanical graph rebuild, and a
+  genuine stale-edge resubmission rejection. One real, honestly disclosed
+  complication (a fixture-bootstrap content-hash artifact) was
+  root-caused live and filed as a candidate learning (`L-019`). `pytest`
+  567 passed / 2 skipped (+10), `ruff check .` clean, `check_user_docs.py
+  --strict` clean. `docs-reconstructor` drift audit → DRIFT, 2
+  non-blocking findings, both fixed before commit; `release-phase-auditor`
+  → PASS WITH NON-BLOCKING OBSERVATIONS, including independently
+  live-reproducing the two-cycle demonstration itself. This phase's scope
+  came from a direct user request, not from resuming Stage D's own
+  dogfooding fork — the Stage D-vs-Stage-F/G strategic decision (Phase
+  51) remains open, unaffected.
+
 - **Phase 51** (Stage C's closing phase — **GATE DC**): re-ran Phase 45's
   baseline Q2 and Phase 46's genuine task — same questions, same
   instrument — against Ledgerkit re-pinned at `05218e3` (its own Stage C
