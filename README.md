@@ -8,7 +8,10 @@ Grounded, version-pinned dependency reference docs for AI coding agents.
 complete: the npm/PyPI/Cargo package/source-grounding tool — bare
 `codecompass`, `init`, `sync`, `index`, `check`, `query`, `chat`, and
 `undo`, all fully implemented (`promote` was removed in Phase 15,
-`decisions/0033`).
+`decisions/0033`). Phase 52 added `codecompass enrich apply`
+(`decisions/0054`), a narrower agent/developer-facing command that lets a
+Claude Code agent supply spec-doc relationship enrichment when no
+`ANTHROPIC_API_KEY` is configured — see "Core idea" below.
 
 "CodeCompass v1" has been **redefined** (`decisions/0048`,
 [`planning/v1-redefinition/`](planning/v1-redefinition/)) from a packaging
@@ -45,8 +48,11 @@ entrypoint.
   (`decisions/0021`).
 - **`ANTHROPIC_API_KEY`** — optional. Read automatically from the
   environment by the `anthropic` SDK (nothing in codecompass passes an
-  explicit key). Only needed if you want AI enrichment (Phase B, below) or
-  `codecompass chat` to run; everything else works with it unset.
+  explicit key). Only needed if you want vendor AI enrichment (Phase B,
+  below) or `codecompass chat` to run; everything else works with it
+  unset — including spec-doc relationship summaries, which have a
+  separate, no-key-required path via `codecompass enrich apply` (see
+  "Core idea" below).
 
 ```bash
 pip install -e ".[dev]"    # not yet published to PyPI — local dev install
@@ -110,11 +116,16 @@ Running codecompass gets you, for every tracked dependency:
 - **Spec-doc relationship detection**: your own hand-authored docs
   (README, `ARCHITECTURE.md`, `docs/**/*.md`, `decisions/**/*.md`, etc.)
   are scanned and mechanically linked to the vendors and Skills they
-  mention — no AI call. For any relationship that mention-detection
-  proves real, usage-driven AI enrichment (same gate as above) can add a
-  one- or two-sentence summary of *how* the two relate — written only to
-  the graph, never back into your spec doc's own file. Both are queryable
-  via `codecompass query relations`.
+  mention — no AI call, and it never invents a relationship that isn't
+  mechanically detected first. For any relationship that mention-detection
+  proves real, a one- or two-sentence AI summary of *how* the two relate
+  can be added — either by codecompass's own batched Anthropic-API call
+  (same gate as usage-driven enrichment above), or, for edges that call
+  can't cover (no `ANTHROPIC_API_KEY` configured), a narrow Claude Code
+  agent writing through the same non-authoritative path (`codecompass
+  enrich apply`, `decisions/0054`). Either way the summary is written only
+  to the graph, never back into your spec doc's own file. Both are
+  queryable via `codecompass query relations`.
 - **Generated Skills** (`.claude/skills/`) and Cursor `.mdc` rules for
   enriched vendors, plus a tool-level Skill and `/discovery` command
   generated unconditionally — the steady-state way an agent consumes

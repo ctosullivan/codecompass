@@ -500,6 +500,21 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**README.md reconciled with current state (2026-09-15), standalone
+user-requested fix, not a roadmap phase.** `docs-maintainer` brought
+`README.md` up to date with two real, previously-undocumented gaps: (1)
+the "Status" command list never mentioned `codecompass enrich apply`
+(Phase 52); (2) the "Core idea" spec-doc-relationship bullet and the
+`ANTHROPIC_API_KEY` setup note both described relationship enrichment as
+having only the batched-Anthropic-API path, with no mention of Phase
+52's second, non-authoritative agent-driven producer
+(`decisions/0054`) — a real functionality gap since Phase 52's own
+docs-maintainer pass touched `docs/cli-reference.md`/`architecture/
+overview.md`/`ai-docs/README.md` but never `README.md` itself. Fixed,
+phrasing aligned with `ai-docs/README.md`'s existing equivalent bullet.
+`check_user_docs.py --strict` clean; no other current-truth doc,
+`src/`, or `CLAUDE.md` change.
+
 **Phase 53 is `done` (2026-09-14) — legacy feature rationalisation,
 review-gate passed, implemented.** Retargets this roadmap slot
 (originally Stage D's "heterogeneous doc/reference/manual dependencies"
