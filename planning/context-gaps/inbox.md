@@ -53,13 +53,14 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   (`decisions/0051`'s "graph capability" bucket, not "detection
   improvement").
 - **smallest candidate that would fix it:** none at the detection level.
-  This is squarely the open question Phase 53 (`ledgerkit-plan.md`) is
-  already designed to test — "can CodeCompass usefully index and relate
-  reference material — the hledger manual (as fetched/vendored text) —
-  to Ledgerkit's local implementation... as evidence nodes with
-  provenance." This entry is the first concrete, evidenced instance of
-  that hypothesis actually blocking a real task, ahead of Phase 53's
-  scheduled test.
+  This is squarely the open question a future Stage D/E phase (number
+  unresolved — Phase 53 was retargeted to legacy-feature rationalisation
+  on 2026-09-14; `ledgerkit-plan.md`) is designed to test — "can
+  CodeCompass usefully index and relate reference material — the hledger
+  manual (as fetched/vendored text) — to Ledgerkit's local
+  implementation... as evidence nodes with provenance." This entry is the
+  first concrete, evidenced instance of that hypothesis actually blocking
+  a real task, ahead of that future phase's scheduled test.
 - **classification:** graph-capability (Stage E / GATE DD) — matches
   `conditional-generalisation.md` §2.3's "reference-doc / spec / manual
   dependency kind" hypothesis row exactly.
@@ -98,19 +99,22 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   transfer to CG-003. This entry is treated as the first concrete,
   evidenced instance of the reference-doc/manual dependency-kind
   hypothesis already named in `conditional-generalisation.md` §2.3 and
-  scheduled for Phase 53's own test — real early evidence for that
-  design question and for GATE DD's (Phase 55) eventual input, but not
-  itself sufficient today to move past `candidate`. **Named for GATE
-  DB's (Phase 47) input as context only, not as something GATE DB can act
-  on**: Phase 47's findings should note CG-003 exists and explicitly why
-  it is out of scope for any Stage C funding decision (it needs a Stage E
-  ADR, not a detection heuristic), so the funding decision isn't misread
-  as having addressed it. No entry made to `context-graph.db` — per the
-  hard rule, a context-gap never enters there regardless of status.
-  Revisit at Phase 53 (if the reference-manual-as-vendored-text test runs
-  against this exact case) or on a second, independent occurrence (a
-  different reference project hitting the identical "external manual,
-  zero representation" shape) to move to `recurred`.
+  scheduled for a future Stage D/E phase's own test (number unresolved —
+  Phase 53 was retargeted to legacy-feature rationalisation on
+  2026-09-14) — real early evidence for that design question and for
+  GATE DD's (Phase 55) eventual input, but not itself sufficient today to
+  move past `candidate`. **Named for GATE DB's (Phase 47) input as
+  context only, not as something GATE DB can act on**: Phase 47's
+  findings should note CG-003 exists and explicitly why it is out of
+  scope for any Stage C funding decision (it needs a Stage E ADR, not a
+  detection heuristic), so the funding decision isn't misread as having
+  addressed it. No entry made to `context-graph.db` — per the hard rule,
+  a context-gap never enters there regardless of status. Revisit at that
+  future Stage D/E phase, whenever it is scheduled (if the
+  reference-manual-as-vendored-text test runs against this exact case) or
+  on a second, independent occurrence (a different reference project
+  hitting the identical "external manual, zero representation" shape) to
+  move to `recurred`.
 - **curation (Phase 47 GATE DB bulk review, 2026-09-13, knowledge-curator):**
   confirmed, as this entry's own prior triage already established, that
   GATE DB has no lever to act on this — it is squarely Stage E/GATE DD

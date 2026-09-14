@@ -157,10 +157,12 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   around that section, and re-fetching didn't reliably target it. This is
   a distinct finding from "should CodeCompass index/relate the hledger
   manual" (already named as a hypothesis — `ledgerkit-plan.md` §1 item 2,
-  `conditional-generalisation.md` §2.3, Phase 53's own plan): it is
-  evidence about the **cost profile of a live fetch specifically**, which
-  bears directly on Phase 53's open design question ("the hledger manual
-  as fetched/vendored text") — a live per-question fetch of a large
+  `conditional-generalisation.md` §2.3, a future Stage D/E phase's own
+  plan — number unresolved, Phase 53 was retargeted to legacy-feature
+  rationalisation on 2026-09-14): it is evidence about the **cost profile
+  of a live fetch specifically**, which bears directly on that future
+  phase's open design question ("the hledger manual as fetched/vendored
+  text") — a live per-question fetch of a large
   manual page is not a reliable substitute for a one-time
   fetched-and-indexed/vendored copy, independent of whatever schema Stage
   E eventually settles on for representing it.
@@ -191,28 +193,32 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   candidate's own observation text: CG-003 is about whether CodeCompass
   should represent the manual at all (a graph-capability question, Stage
   E/GATE DD); this is about the retrieval-cost/reliability of a *live*
-  fetch specifically, which bears on Phase 53's "manual as
-  fetched/vendored text" design question regardless of what Stage E
-  eventually decides about representation. Not a merge candidate for
-  either CG-003 or the already-named "should CodeCompass index the
-  manual" hypothesis (`ledgerkit-plan.md` §1 item 2,
+  fetch specifically, which bears on a future Stage D/E phase's "manual as
+  fetched/vendored text" design question (number unresolved — see below)
+  regardless of what Stage E eventually decides about representation. Not
+  a merge candidate for either CG-003 or the already-named "should
+  CodeCompass index the manual" hypothesis (`ledgerkit-plan.md` §1 item 2,
   `conditional-generalisation.md` §2.3) — those already have a home;
   this supplies one input to that question, not a duplicate of it.
   Checked for a prior related learning: none exists in this inbox
   (grepped for "WebFetch" — only this entry). Recommended destination
   once Phase 47's bulk review (or a second occurrence) acts on it: feeds
-  Phase 53's design question directly as one input among several, not a
-  standalone `ROADMAP.md` row of its own (the design question already has
-  a named home in Phase 53's plan). Revisit at Phase 47's bulk review.
-- **promoted_to:** — (retained; feeds Phase 53's design question via
-  Phase 47's bulk review, no standalone destination)
+  that future Stage D/E phase's design question directly as one input
+  among several, not a standalone `ROADMAP.md` row of its own (the design
+  question already has a named home in that future phase's plan — number
+  unresolved, Phase 53 was retargeted to legacy-feature rationalisation on
+  2026-09-14). Revisit at Phase 47's bulk review.
+- **promoted_to:** — (retained; feeds a future Stage D/E phase's design
+  question via Phase 47's bulk review, no standalone destination)
 - **curation (Phase 47 GATE DB bulk review, 2026-09-13, knowledge-curator):**
   confirmed out of scope for this gate, as this entry's own Phase 46
   triage anticipated: this is a retrieval-cost finding, not a
   detection-improvement or graph-capability decision, and it says nothing
   about what CodeCompass's own detection layer should do differently — it
-  feeds Phase 53's "manual as fetched/vendored text" design question
-  directly (`planning/reference-projects/ledgerkit/findings.md` §5). No
+  feeds a future Stage D/E phase's "manual as fetched/vendored text"
+  design question directly (number unresolved — Phase 53 was retargeted
+  to legacy-feature rationalisation on 2026-09-14;
+  `planning/reference-projects/ledgerkit/findings.md` §5). No
   Stage C funding recommended for it. Status unchanged: `retained`.
 
 ### L-016 — `query relations`'s "not found" error is indistinguishable between "never scanned as a doc artifact" (a glob-coverage gap) and "genuine typo/misspelling" (real user error)

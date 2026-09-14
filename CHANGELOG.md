@@ -7,15 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned
+### Removed
 
-- **Phase 53** (legacy feature rationalisation): a full feature
-  inventory (CORE / AGENT / HOST-OUTPUT ADAPTER classification), a
-  redundancy map, and per-feature KEEP/REMOVE/DEFER decisions across
-  direct-API enrichment vs. Phase 52's agent-driven path, the chat REPL,
-  generated Skills, and dead code — see
-  `planning/phase-53-legacy-feature-rationalisation-plan.md`. **Plan
-  only, awaiting review gate; no code changed yet.**
+- **Phase 53** (legacy feature rationalisation): `discovery.py::
+  rewrite_vendor_toml`, dead code with zero callers since the `promote`
+  command's Phase 15 retirement (`decisions/0033`), plus its dedicated
+  test. Reached via a full feature inventory (CORE / AGENT / HOST-OUTPUT
+  ADAPTER classification) and redundancy map covering every runtime
+  module — see `planning/phase-53-legacy-feature-rationalisation-plan.md`.
+  At the review gate, direct-API vendor/symbol/relation enrichment and
+  the `chat` REPL were both explicitly kept unchanged (real,
+  non-hypothetical value; no evidence either is a problem), and two
+  small duplication/naming findings were deferred to a documentation
+  note rather than new tooling.
+
+### Changed
+
+- **Phase 53**: `architecture/overview.md` gains a new "Module tiers:
+  CORE, AGENT, HOST-OUTPUT ADAPTERS" section naming the project's
+  existing (previously implicit) module grouping, plus a one-sentence
+  disambiguation of "adapter" (the ecosystem package-manager sense,
+  `src/codecompass/adapters/`) from the phase's new "host-output
+  adapter" sense (Claude Skills, `CLAUDE.md`, Cursor `.mdc`), plus a
+  caveat naming the tool-level Skill / `/discovery` / `docs/
+  cli-reference.md` `query`-subcommand-list triplication as a known,
+  hand-synced maintenance burden.
 
 ### Added
 

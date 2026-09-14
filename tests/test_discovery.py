@@ -15,7 +15,6 @@ from codecompass.discovery import (
     discover_python,
     discover_requirements_txt,
     render_vendor_block,
-    rewrite_vendor_toml,
     write_vendor_toml,
 )
 
@@ -179,17 +178,3 @@ def test_append_vendor_toml_empty_list_is_noop(tmp_path: Path) -> None:
     append_vendor_toml([], target)
 
     assert target.read_text(encoding="utf-8") == original
-
-
-def test_rewrite_vendor_toml_overwrites_with_fresh_configs(tmp_path: Path) -> None:
-    target = tmp_path / "vendor.toml"
-    configs = [
-        VendorConfig(name="turndown", ecosystem=Ecosystem.NPM),
-        VendorConfig(name="lodash", ecosystem=Ecosystem.NPM),
-    ]
-    rewrite_vendor_toml(configs, target)
-
-    rewrite_vendor_toml([VendorConfig(name="turndown", ecosystem=Ecosystem.NPM)], target)
-
-    vendors = {v.name: v for v in load_vendor_config(target)}
-    assert set(vendors) == {"turndown"}

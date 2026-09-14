@@ -1,7 +1,21 @@
 # Phase 53: Legacy feature rationalisation — plan
 
-**Status:** planned (awaiting review gate — see "Review gate" at the end
-of this file). This file is the plan; the full verbatim request is
+**Status:** done (2026-09-14). Review gate passed: the user approved all
+three recommended options (keep direct-API enrichment unchanged; keep
+`chat.py` unchanged; defer the two doc-only findings to a documentation
+note). Implemented: `discovery.py::rewrite_vendor_toml` removed (dead
+code + its test), `architecture/overview.md` gained the "Module tiers:
+CORE, AGENT, HOST-OUTPUT ADAPTERS" section plus the adapter-terminology
+disambiguation and the command-list-duplication caveat. `pytest` 567
+passed / 2 skipped (569 collected), `ruff check .` clean,
+`check_user_docs.py --strict` clean. `docs-reconstructor` drift audit →
+**NO DRIFT**. `knowledge-curator` confirmed no new candidate learnings/
+gaps/observations from this phase, and fixed stale "Phase 53" pointers
+left over from before this slot's retarget (`context-gaps/inbox.md`
+`CG-003`, `learnings/inbox.md` `L-017`, plus two the lead fixed earlier
+in `CONTEXT.md`/`ledgerkit/findings.md`). Retro:
+`planning/retros/phase-53-legacy-feature-rationalisation.md`. This file
+is the plan; the full verbatim request is
 `planning/phase-53-legacy-feature-rationalisation-prompt.md`.
 
 Retargets the roadmap's `53–55` "Stage D — deeper Ledgerkit dogfooding"

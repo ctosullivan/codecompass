@@ -730,18 +730,40 @@ unaffected. Whether the heterogeneous-doc/reference sketch below still
 gets a phase slot, and under what number, is part of that same open
 decision — see Phase 52's identical note above.
 
-**Retargeted (2026-09-14), plan awaiting review gate — not yet done.**
+**Retargeted (2026-09-14), done — review gate passed, implemented.**
 `planning/phase-53-legacy-feature-rationalisation-plan.md` classifies
 every runtime feature (CORE / AGENT / HOST-OUTPUT ADAPTER), maps three
 real overlaps (Skill/`/discovery`/CLI-docs command-list duplication,
 direct-API-vs-agent-driven relation enrichment by design, an
-`adapters/`-naming collision), and reaches one unambiguous action (remove
+`adapters/`-naming collision), and reached one unambiguous action (remove
 `discovery.py::rewrite_vendor_toml`, dead since `promote`'s Phase 15
-retirement) plus five genuine product-direction recommendations left for
-the user to accept/reject/defer at the review gate (direct-API
-enrichment's fate now that Phase 52 exists, `chat.py`'s fate, confirming
-the never-built "initial-chat" concept has no code to act on, and two
-doc-only deferrals). No implementation has happened yet.
+retirement) plus five genuine product-direction recommendations
+presented to the user at the review gate via `AskUserQuestion`. **All
+three recommended options were approved**: direct-API vendor/symbol/
+relation enrichment kept unchanged (real end-user-project value Phase
+52's fixture demo doesn't touch); `chat.py` kept unchanged
+(`decisions/0034`'s reasoning found no new evidence to unseat); the two
+doc-only findings deferred to a documentation note rather than new
+tooling. The never-built "initial-chat" concept was confirmed to have no
+corresponding shipped code (Post-MVP Phase 20/24, `decisions/0048`) — no
+action needed. **Implemented**: `rewrite_vendor_toml` + its test removed;
+`architecture/overview.md` gained the "Module tiers: CORE, AGENT,
+HOST-OUTPUT ADAPTERS" section, the adapter-terminology disambiguation,
+and the command-list-duplication caveat. `pytest` 567 passed / 2 skipped,
+`ruff check .` clean, `check_user_docs.py --strict` clean.
+`docs-reconstructor` drift audit
+(`planning/retros/_drift-audit-phase-53.md`) → **NO DRIFT**.
+`release-phase-auditor` (`planning/retros/_audit-phase-53.md`) → several
+rounds, every gap found being governance-doc bookkeeping (stale
+`CHANGELOG.md`/`ROADMAP.md`/`CONTEXT.md`/this very stanza still
+describing the phase as unimplemented, one file at a time, after the
+code had already landed), never a substance defect — see the audit
+report and the phase's own retro's "Closeout audit trail" section for
+the full, honest multi-round account and final verdict. Retro:
+`planning/retros/phase-53-legacy-feature-rationalisation.md`, answering
+all 9 of the governing prompt's specific retrospective questions.
+Produces no evidence toward Stage D's own goal or the Stage D-vs-Stage-
+F/G decision, exactly as disclosed above.
 
 Original sketch (unchanged):
 

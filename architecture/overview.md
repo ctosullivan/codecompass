@@ -82,6 +82,13 @@ current status.
 
 ## Adapter interface
 
+This section covers the **ecosystem adapter** package
+(`src/codecompass/adapters/`) — a different sense of "adapter" from the
+**host-output adapters** described in **Module tiers: CORE, AGENT,
+HOST-OUTPUT ADAPTERS** below (Claude Skills, `/discovery`, the root
+`CLAUDE.md` routing table), which render already-computed content into
+tool-specific formats rather than abstracting a package manager.
+
 `EcosystemAdapter` (ABC, `src/codecompass/adapters/base.py`) is constructed
 with `(config: VendorConfig, project_root: Path)` and defines five methods
 every ecosystem implements: `installed_version() -> str`,
@@ -162,6 +169,41 @@ starting npm-only. See
   against hand-written fixture JSON (see **Known footguns**).
 
 See [`decisions/0002`](../decisions/0002-adapter-approach-differs-per-ecosystem.md).
+
+## Module tiers: CORE, AGENT, HOST-OUTPUT ADAPTERS
+
+The runtime modules under `src/codecompass/` group into three tiers —
+host-agnostic content production kept separate from tool-specific
+rendering — plus one module that fits neither (Phase 53):
+
+- **CORE** (host-agnostic — behaves identically whether Claude Code, a
+  plain terminal, or some other agent runtime is driving it):
+  `discovery.py`, `config.py`, `adapters/**` (the *ecosystem* adapters —
+  see **Adapter interface** above), `sync.py`, `symbols.py`,
+  `filetree.py`, `deptree.py`, `usage.py`, `source_resolution.py`,
+  `staleness.py`, `graph.py`, `claude_md.py`, the `query` CLI subgroup,
+  and `enrich apply`.
+- **AGENT** (interchangeable content producers, each writing through
+  CORE's own graph tables rather than through one another):
+  `enrichment.py` and `relation_enrichment.py` (direct-Anthropic-API
+  producers), and the `context-enrichment-agent` role (agent-driven
+  producer invoked via `enrich apply`, `decisions/0054`).
+- **HOST-OUTPUT ADAPTERS** (format-specific renderers with no logic of
+  their own beyond templating content CORE/AGENT already computed):
+  `skill.py` (Claude Skills + Cursor `.mdc`), `commands.py`
+  (`/discovery`), `index.py` (root `CLAUDE.md` routing table).
+- **SECONDARY**: `chat.py` is a fourth, standalone consumption surface
+  that doesn't cleanly fit any of the three tiers above — it is neither
+  a content producer nor a router to another surface.
+
+**Maintenance-burden caveat**: the tool-level Skill's command list
+(`skill.py::render_tool_skill`), `/discovery`'s command list
+(`commands.py::render_discovery_command`), and
+[`docs/cli-reference.md`](../docs/cli-reference.md) are three
+independently hand-maintained enumerations of the same `query`
+subcommand set, kept in sync by convention rather than by any shared
+source. Adding a new `query` subcommand means updating all three by
+hand; there is no structural safeguard against one being missed.
 
 ## Symbol/purpose extraction (`codecompass.symbols`)
 

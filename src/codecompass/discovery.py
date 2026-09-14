@@ -167,16 +167,3 @@ def append_vendor_toml(new_configs: list[VendorConfig], path: Path) -> None:
     blocks = "\n".join(render_vendor_block(c) for c in new_configs)
     with path.open("a", encoding="utf-8") as fp:
         fp.write("\n" + blocks)
-
-
-def rewrite_vendor_toml(configs: list[VendorConfig], path: Path) -> None:
-    """Overwrite `path` with a fresh serialization of `configs`. Unused
-    since `promote` (its only caller, `decisions/0018`) was retired in
-    Phase 15 (`decisions/0033`) — kept rather than deleted since it's a
-    generically useful, tested primitive and removing it wasn't in any
-    phase's scope; a future command that needs to rewrite `vendor.toml`
-    wholesale can reuse it. Same non-round-trip-preserving rationale as
-    `write_vendor_toml`: a fresh, comment-free rewrite, not an
-    edit-in-place of a hand-authored file.
-    """
-    path.write_text("\n".join(render_vendor_block(c) for c in configs), encoding="utf-8")
