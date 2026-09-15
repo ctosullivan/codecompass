@@ -23,6 +23,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Contributor licensing terms** (`decisions/0055`): `CONTRIBUTING.md`'s
+  `## License` section now includes an explicit grant — a contributor
+  retains copyright but grants the project owner an irrevocable,
+  worldwide, royalty-free licence broad enough to relicense the
+  contribution, including under proprietary terms — replacing the prior
+  "no separate CLA" sentence. This preserves the project owner's ability
+  to offer CodeCompass under alternative or commercial licence terms in
+  future; it does not affect CodeCompass's own current licence
+  (GPL-3.0-or-later) or any existing user's rights under it, and nothing
+  has been contributed externally to date for it to apply to
+  retroactively. `README.md`'s `## License` section gains a short,
+  prominent pointer to this term. Documentation-only; no `src/` change.
 - **Phase 53**: `architecture/overview.md` gains a new "Module tiers:
   CORE, AGENT, HOST-OUTPUT ADAPTERS" section naming the project's
   existing (previously implicit) module grouping, plus a one-sentence

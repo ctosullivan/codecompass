@@ -500,6 +500,27 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Contributor licensing terms added (2026-09-15), standalone
+user-requested change, not a roadmap phase.** `decisions/0055` records
+the decision: `CONTRIBUTING.md`'s `## License` section gains an explicit
+contributor grant (verbatim text, per the user's own instruction — the
+contributor retains copyright, grants the project owner an irrevocable,
+worldwide, royalty-free licence broad enough to relicense the
+contribution including under proprietary terms), replacing the prior
+"no separate CLA — single-maintainer project" sentence, which had become
+the thing actually blocking the goal (preserving future dual/proprietary
+licensing optionality once external contributions exist).
+`README.md`'s `## License` section gains a short, prominent pointer note
+covering all four things the user asked for: GPL-3.0-or-later status,
+the new contributor term, why it exists (preserves future
+alternative/commercial licensing), and that existing GPL rights are
+unaffected. No other current-truth doc needed a change (`ai-docs/README.md`
+has no licensing mention at all; no `decisions/` index file exists to
+update). `check_user_docs.py --strict` clean. Documentation-only; no
+`src/` change, no `CLAUDE.md` change (not a protected-file edit — this
+touched `CONTRIBUTING.md`/`README.md`/`decisions/`, not `CLAUDE.md`
+itself).
+
 **README.md reconciled with current state (2026-09-15), standalone
 user-requested fix, not a roadmap phase.** `docs-maintainer` brought
 `README.md` up to date with two real, previously-undocumented gaps: (1)

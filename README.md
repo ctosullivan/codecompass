@@ -215,3 +215,10 @@ GPL-3.0-or-later — see [`LICENSE`](LICENSE). Previously MIT; see
 [`decisions/0053`](decisions/0053-relicense-to-gpl-3.0-or-later.md) for
 the relicensing rationale (aligning with `hledger`'s own licence family
 ahead of deeper source-assisted, hledger-facing development work).
+
+> **Contributing?** External contributions are subject to the
+> contributor licensing terms in [`CONTRIBUTING.md`](CONTRIBUTING.md#license)
+> (`decisions/0055`), which preserve the project owner's ability to
+> offer CodeCompass under alternative or commercial licence terms in
+> future. This does not affect existing users' GPL rights — CodeCompass
+> itself remains GPL-3.0-or-later.

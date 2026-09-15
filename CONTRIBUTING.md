@@ -186,5 +186,18 @@ See [`README.md`](README.md)'s Setup section for external requirements
 CodeCompass is licensed under GPL-3.0-or-later (see
 [`LICENSE`](LICENSE); previously MIT — `decisions/0053`). Contributions
 are made under the project's current licence at the time they're
-submitted. There is no separate contributor licence agreement — this is
-a single-maintainer project.
+submitted, **and are additionally subject to the contributor licensing
+term below** (`decisions/0055`), which preserves the project owner's
+ability to offer CodeCompass under alternative or commercial licence
+terms in future without needing to re-clear each contribution
+individually after the fact. This does not affect existing users' rights
+under the GPL — CodeCompass itself remains, and continues to be
+distributed as, GPL-3.0-or-later.
+
+By submitting a contribution to CodeCompass, you retain copyright in
+your contribution and grant the CodeCompass project owner an
+irrevocable, worldwide, royalty-free licence to use, reproduce, modify,
+distribute, sublicense, and relicense your contribution, including under
+proprietary or other alternative licence terms. Your contribution may
+continue to be distributed as part of the GPL-licensed CodeCompass
+project.
