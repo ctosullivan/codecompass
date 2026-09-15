@@ -773,7 +773,45 @@ Original sketch (unchanged):
   nodes with provenance, without a schema commitment. `ledgerkit-plan.md`
   §"Doc/reference test".
 
-### Phase 54 — External executable / behavioural context · EXPERIMENTAL
+### Phase 54 — Heterogeneous reference-material experiment · EXPERIMENTAL
+
+**Amended 2026-09-16 — this slot was also retargeted**, same
+findings/decision-driven-scope precedent as Phases 52's and 53's
+retargets above. The user's own prompt resolves the Stage D-vs-Stage-F/G
+strategic decision (Phase 51's retro) in Stage D's favour, and its
+requested scope — "test whether CodeCompass can make external technical
+references... materially useful to agents working on real LedgerKit
+tasks" — is word-for-word Phase 53's *own original sketch* below
+("Heterogeneous doc / reference / manual dependencies"), not this
+phase's own original "External executable / behavioural context" sketch.
+Since Phase 53's slot is spent, and the two sketches' own original
+ordering already put the doc/reference test immediately before the
+behavioural/executable one, **Phase 54 is retargeted** to the
+doc/reference work rather than inserting a fresh number — full reasoning
+in `planning/phase-54-heterogeneous-reference-material-experiment.md`
+§0. **This phase's own original sketch below is not discarded** — it
+remains a valid future direction, just without a claimed phase number
+now (alongside Phase 55's still-open, un-renumbered GATE DD).
+
+**Retargeted (2026-09-16), plan awaiting review — not yet implemented.**
+`planning/phase-54-heterogeneous-reference-material-experiment.md`
+evaluates the user's proposed `references.toml → resolve → lock →
+fetch/cache → extract → index → relate` ingestion pipeline against what
+CodeCompass's existing graph/discovery mechanisms already cover (a
+`doc_artifacts.kind='vendor_doc'`/`origin='vendor_upstream'` reuse
+precedent already sketched by `ledgerkit-plan.md` itself; the
+`dev-docs/**/*.md` glob Phase 49 already added; `mentions_artifact`'s
+existing any-named-doc-artifact matching) before committing to any new
+schema — live-confirmed against the real, already-pinned local hledger
+clone (`33fa849e...`, tag `1.52.4`, byte-identical to every citation
+already in Ledgerkit's own real `dev-docs/compat-register/*.yaml`
+entries) and the real, live Ledgerkit Stage C state (Phase 1 done,
+`tag:`/`cur:`/smart-dates explicitly deferred — this phase's chosen
+task). No implementation has happened yet; the plan itself is the
+deliverable pending review.
+
+Original sketch (unchanged):
+
 - Ledgerkit-specific tooling (not CodeCompass) runs `hledger`, builds
   fixtures, does differential tests — the hledger executable remains an
   **independent behavioural oracle** throughout, per

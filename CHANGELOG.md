@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+
+- **Phase 54** (heterogeneous reference-material experiment): pin and
+  expose external hledger manual/source material with provenance
+  (Git-backed resolve/lock/fetch/extract), tested against one genuine
+  Ledgerkit Stage C task (`tag:` query semantics) with a
+  baseline-vs-treatment comparison — see
+  `planning/phase-54-heterogeneous-reference-material-experiment.md`.
+  Resolves the Stage D-vs-Stage-F/G strategic decision (Phase 51's
+  retro) in Stage D's favour. **Plan only, awaiting review; no code
+  changed yet.**
+
 ### Removed
 
 - **Phase 53** (legacy feature rationalisation): `discovery.py::

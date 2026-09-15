@@ -500,6 +500,37 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 54 plan written (2026-09-16) — awaiting review, not yet
+implemented.** The user's own prompt resolves the open Stage
+D-vs-Stage-F/G strategic decision (Phase 51's retro) in Stage D's
+favour, naming the exact objective Stage D's own pre-existing sketch
+already described: test whether CodeCompass can make external hledger
+reference material materially useful for a real Ledgerkit task, without
+prematurely committing to a new graph ontology.
+`planning/phase-54-heterogeneous-reference-material-experiment.md`
+confirms this against live state (Ledgerkit re-fetched, confirmed no
+drift since Phase 51's `05218e3` pin; Stage C Phase 1 done, `tag:`/
+`cur:`/smart-dates explicitly deferred — the chosen task; the pinned
+local hledger clone independently confirmed at the exact commit
+Ledgerkit's own real compat-register entries already cite by hand),
+evaluates the prompt's own `references.toml`/resolve/lock/fetch/extract/
+relate pipeline against what CodeCompass's existing graph mechanisms
+already cover (a `vendor_doc`/`vendor_upstream` reuse precedent already
+sketched in `ledgerkit-plan.md`; the `dev-docs/**/*.md` glob Phase 49
+already added; `mentions_artifact`'s existing any-named-artifact
+matching) before proposing any schema change, and designs a
+baseline-vs-treatment comparison using Phase 52's context-observation
+lifecycle. **A real phase-numbering conflict was caught and resolved**:
+`v1-redefinition/roadmap.md`'s own Phase 54 slot already held a
+*different* sketch ("External executable / behavioural context"), not
+an empty slot — retargeted the same way Phases 52/53 were, with the
+displaced sketch left unclaimed rather than discarded (see the plan's
+§0 and the roadmap's own new Phase 54 amendment note). **No
+implementation yet** — the plan explicitly names two judgment calls
+(the renumbering itself; keeping the ingestion pipeline outside
+`src/codecompass/` for this phase) for the user to confirm or redirect
+before code is written.
+
 **Contributor licensing terms added (2026-09-15), standalone
 user-requested change, not a roadmap phase.** `decisions/0055` records
 the decision: `CONTRIBUTING.md`'s `## License` section gains an explicit
@@ -1197,14 +1228,16 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 53 is done. No phase is queued next** — same open situation
-Phase 52 left behind, now doubly true: Stage D's own substantive goal
-(heterogeneous doc/reference/manual dependencies against Ledgerkit) has
-no phase number assigned to it, since both 52 and 53's slots were spent
-on unrelated, user-requested scope. The Stage D-vs-Stage-F/G strategic
-decision (Phase 51's retro) remains exactly as open as it was — this is
-the lead's/user's call at the next session, per the two options laid out
-below.
+**Immediate: present Phase 54's plan
+(`planning/phase-54-heterogeneous-reference-material-experiment.md`) for
+review before implementing anything.** The Stage D-vs-Stage-F/G
+strategic decision (Phase 51's retro, restated below for history) is now
+resolved in Stage D's favour by the user's own prompt — this section's
+older framing ("no phase queued, the lead's/user's call") is superseded
+by that. What remains open is narrower: the plan's own two named
+judgment calls (the Phase 54 slot retarget; keeping the reference-
+ingestion pipeline outside `src/codecompass/` for this experimental
+phase) — confirm or redirect those, then implement.
 
 **Stage A is complete (Phases 39–43e `done`, GATE DA passed). Stage B is
 fully complete (Phases 43b, 43c, 44, 45, 46, 47 all `done`, GATE DB
