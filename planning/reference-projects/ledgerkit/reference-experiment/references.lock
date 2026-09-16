@@ -1,0 +1,58 @@
+generated_at = "2026-09-16T00:15:19.095640+00:00"
+
+[[reference]]
+name = "hledger"
+source = "git"
+url = "https://github.com/simonmichael/hledger"
+requested_ref = "1.52.4"
+resolved_commit = "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+fetch_method = "local_clone"
+fetched_at = "2026-09-16T00:15:19.080425+00:00"
+
+[[reference.select]]
+label = "tag-query-manual"
+path = "hledger/hledger.1"
+lines = [7372, 7394]
+content_hash = "sha256:4672d39a7d93eda90cb466b21d89ce1aba3bf8c79511976f6d59937fd9b0e64b"
+
+[[reference.select]]
+label = "tag-query-parser"
+path = "hledger-lib/Hledger/Query.hs"
+lines = [482, 487]
+content_hash = "sha256:4b904471982a7b5d98f47775cb7abc4511244c6533c3ddac57b95bfde38ccd62"
+
+[[reference.select]]
+label = "tag-query-account-match"
+path = "hledger-lib/Hledger/Query.hs"
+lines = [889, 897]
+content_hash = "sha256:186a01def0a83afb6fb9330875dc82818d028bbf075459d7003b224388c57d89"
+
+[[reference.select]]
+label = "tag-query-posting-match"
+path = "hledger-lib/Hledger/Query.hs"
+lines = [902, 925]
+content_hash = "sha256:0a339ee6343f3e805329d8964998dff42755a88340901cd885e6538ecadaed3f"
+
+[[reference.select]]
+label = "tag-query-transaction-match"
+path = "hledger-lib/Hledger/Query.hs"
+lines = [949, 972]
+content_hash = "sha256:63823a7b56a7379a26608f7320987b2bc05db135aa9e0dfbc2888997f357f992"
+
+[[reference.select]]
+label = "tag-query-pattern-match"
+path = "hledger-lib/Hledger/Query.hs"
+lines = [1008, 1024]
+content_hash = "sha256:0ede176e2e7172ffdb2a557e1890ffdb248cf3c13c0beea77295c96c2a70126b"
+
+[[reference.select]]
+label = "date-query-span-single"
+path = "hledger-lib/Hledger/Data/Dates.hs"
+lines = [429, 429]
+content_hash = "sha256:435044333c6c422f07924e85ec7d8edb878d16f5b15bd10a19ff2be1ae4e0b19"
+
+[[reference.select]]
+label = "date-query-span-double"
+path = "hledger-lib/Hledger/Data/Dates.hs"
+lines = [1132, 1148]
+content_hash = "sha256:3edd1888479398b2a7a822febd4ae7327440b5c3325bdba7f4174fc57d5f98c9"

@@ -7,17 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned
+### Added
 
-- **Phase 54** (heterogeneous reference-material experiment): pin and
-  expose external hledger manual/source material with provenance
-  (Git-backed resolve/lock/fetch/extract), tested against one genuine
-  Ledgerkit Stage C task (`tag:` query semantics) with a
-  baseline-vs-treatment comparison — see
-  `planning/phase-54-heterogeneous-reference-material-experiment.md`.
-  Resolves the Stage D-vs-Stage-F/G strategic decision (Phase 51's
-  retro) in Stage D's favour. **Plan only, awaiting review; no code
-  changed yet.**
+- **Phase 54** (heterogeneous reference-material experiment): a real,
+  tested Git-backed reference-ingestion pipeline
+  (`planning/reference-projects/ledgerkit/reference-experiment/`,
+  deliberately outside `src/codecompass/` — evidence-gathering for
+  Phase 55/GATE DD, not a shipped feature), resolving a human-friendly
+  hledger tag to an exact pinned commit and extracting selected
+  manual/source sections with content-hash provenance. Tested against
+  one genuine Ledgerkit Stage C task (the `tag:` query-semantics brief,
+  explicitly deferred there) with an independently-evaluated
+  baseline-vs-treatment comparison: **treatment FAIL, baseline PASS
+  WITH GAPS, context-advantage LOW** — not a mechanism failure but a
+  real, caught-and-fixed extraction-boundary defect (a hand-drawn line
+  range silently excluded a documented rule its own description claimed
+  to include). Filed real findings: detection generalises to ingested
+  content with zero schema change; mechanical `mentions_artifact`
+  relation detection structurally cannot relate two `spec_doc`
+  artifacts; the `origin` enum has no value for externally-pinned
+  reference material; a working YAML-evidence-citation-matching relation
+  fallback was demonstrated real (against Ledgerkit's own already-
+  published compat-register data) but isn't wired into CodeCompass's
+  graph. Resolves the Stage D-vs-Stage-F/G strategic decision (Phase
+  51's retro) in Stage D's favour, by having actually run the test —
+  genuinely mixed evidence, not a clean mandate either way. No
+  `src/codecompass/` change.
 
 ### Removed
 

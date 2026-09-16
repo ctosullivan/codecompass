@@ -793,22 +793,38 @@ in `planning/phase-54-heterogeneous-reference-material-experiment.md`
 remains a valid future direction, just without a claimed phase number
 now (alongside Phase 55's still-open, un-renumbered GATE DD).
 
-**Retargeted (2026-09-16), plan awaiting review — not yet implemented.**
-`planning/phase-54-heterogeneous-reference-material-experiment.md`
-evaluates the user's proposed `references.toml → resolve → lock →
+**Retargeted (2026-09-16), done.** `planning/phase-54-heterogeneous-reference-material-experiment.md`
+evaluated the user's proposed `references.toml → resolve → lock →
 fetch/cache → extract → index → relate` ingestion pipeline against what
-CodeCompass's existing graph/discovery mechanisms already cover (a
-`doc_artifacts.kind='vendor_doc'`/`origin='vendor_upstream'` reuse
-precedent already sketched by `ledgerkit-plan.md` itself; the
-`dev-docs/**/*.md` glob Phase 49 already added; `mentions_artifact`'s
-existing any-named-doc-artifact matching) before committing to any new
-schema — live-confirmed against the real, already-pinned local hledger
-clone (`33fa849e...`, tag `1.52.4`, byte-identical to every citation
-already in Ledgerkit's own real `dev-docs/compat-register/*.yaml`
-entries) and the real, live Ledgerkit Stage C state (Phase 1 done,
-`tag:`/`cur:`/smart-dates explicitly deferred — this phase's chosen
-task). No implementation has happened yet; the plan itself is the
-deliverable pending review.
+CodeCompass's existing graph/discovery mechanisms already cover, and
+built/ran it for real: a tested pipeline
+(`planning/reference-projects/ledgerkit/reference-experiment/`, kept
+outside `src/codecompass/`), pinned live against the real, already-pinned
+local hledger clone (`33fa849e...`, tag `1.52.4`), and a genuine two-run
+comparison task (Ledgerkit's own Stage C `tag:` query-semantics brief,
+explicitly deferred there) against a scratch copy of Ledgerkit, never the
+real clone. **Independently evaluated by `context-evaluator`: baseline
+PASS WITH GAPS, treatment FAIL, context-advantage LOW** — the FAIL
+traces to a real, caught, and fixed extraction-boundary defect (a
+hand-drawn line range silently excluded one of three documented rules),
+not a mechanism defect; the pipeline's own hashes, idempotency, and its
+YAML-evidence-matching relation fallback (demonstrated real against
+Ledgerkit's own already-published `LK-COMPAT-QUERY-DATE-001.yaml`) all
+independently confirmed sound. Detection generalises with zero schema
+change; mechanical `mentions_artifact` structurally cannot relate two
+`spec_doc` artifacts (`CG-004`); `origin`'s closed enum has no
+externally-pinned-reference value (`CG-005`) — both filed as small,
+independently-fundable candidates for Phase 55/GATE DD, not a mandate
+for a broad new ontology. `L-020` (content-hash pinning proves an
+excerpt hasn't changed, not that its boundary matches its own claimed
+content) filed, `knowledge-curator` recommends promotion. No
+`src/codecompass/` change. `release-phase-auditor` → **PASS** (first
+round). Retro: `planning/retros/phase-54-heterogeneous-reference-material-experiment.md`.
+**This phase resolves the Stage D-vs-Stage-F/G decision's own open
+question by having actually run the Stage D test — the result is
+genuinely mixed, not a clean mandate either way**, itself valid
+evidence per the plan's own "treat negative or inconclusive results as
+valid evidence" instruction.
 
 Original sketch (unchanged):
 

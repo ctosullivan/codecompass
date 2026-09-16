@@ -1,7 +1,35 @@
 # Phase 54: Heterogeneous reference-material experiment — plan
 
-**Status:** planned (awaiting review — see "Review gate" at the end of
-this file). Full verbatim request:
+**Status:** done (2026-09-16). Review gate implicitly resolved: the
+user's "Implement the plan" approved both named judgment calls (the
+Phase 54 renumbering; keeping the ingestion pipeline outside
+`src/codecompass/`) without redirection. Implemented and run for real:
+`planning/reference-projects/ledgerkit/reference-experiment/` (a real,
+tested Git-backed resolve/lock/fetch/extract pipeline, 13 passing
+tests), a real two-run comparison task (`tag:` query semantics brief,
+baseline vs. treatment) against a scratch copy of Ledgerkit (never the
+real clone), independently evaluated by `context-evaluator`: **baseline
+PASS WITH GAPS, treatment FAIL, context-advantage LOW** — not a
+mechanism failure but a real, caught-and-fixed extraction-boundary
+defect (a hand-drawn line range silently excluded one of three
+documented rules while its own description claimed all three; fixed,
+regression-tested, the original FAIL preserved as the honest record).
+Four real findings filed: detection generalises with zero schema change
+(`OBS-007`); mechanical `mentions_artifact` structurally cannot relate
+two `spec_doc` artifacts (`CG-004`); `origin`'s closed enum has no
+externally-pinned-reference value (`CG-005`); a working YAML-evidence-
+matching relation fallback was demonstrated real against Ledgerkit's own
+already-published compat-register data but isn't wired into
+CodeCompass's graph (`OBS-008`). `L-020` (content-hash pinning proves an
+excerpt hasn't changed, not that its boundary matches its own claimed
+content) filed and recommended for promotion by `knowledge-curator`. No
+`src/codecompass/` change this phase — pure evidence-gathering for Phase
+55/GATE DD. `release-phase-auditor` → **PASS** (first round).
+`docs-reconstructor` drift audit not required (no current-truth doc
+touched — no `src/`/`docs/`/`architecture/`/`ai-docs/` change this
+phase). Retro:
+`planning/retros/phase-54-heterogeneous-reference-material-experiment.md`.
+Full verbatim request:
 `planning/phase-54-heterogeneous-reference-material-prompt.md`.
 
 This is Stage D's substantive goal, finally getting a phase slot: Phases

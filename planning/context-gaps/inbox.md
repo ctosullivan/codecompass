@@ -8,6 +8,201 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
 
 ---
 
+### CG-005 — `doc_artifacts.origin='project'` is semantically wrong for externally-sourced, pinned reference material
+
+- **origin:** Phase 54 (heterogeneous reference-material experiment),
+  treatment run + `reference-project-tester`
+- **date:** 2026-09-16
+- **codecompass_revision:** `72961e0` (working tree;
+  `planning/reference-projects/ledgerkit/reference-experiment/` is
+  untracked, per this phase's own design decision to keep the ingestion
+  pipeline outside `src/codecompass/`)
+- **project:** ledgerkit, scratch copy + this experiment's own
+  `references.lock`
+- **the edge:** `A ↔ B` where A = the six ingested
+  `hledger-tag-query-*.md` files (externally-sourced: hledger's own
+  upstream manual text and `hledger-lib` source excerpts, pinned at
+  commit `33fa849e7ae841968bd21c427094c4fb4a4ec38d`, never authored by
+  Ledgerkit or CodeCompass), B = `doc_artifacts.origin` — the column that
+  is supposed to record where a doc artifact came from.
+- **edge kind:** doc↔code (a provenance/classification gap, not a
+  missing relationship between two artifacts)
+- **agent's reasoning:** `src/codecompass/spec_docs.py::scan_spec_docs`
+  (line 82) hard-codes `origin="project"` for every `kind='spec_doc'` row
+  it produces, with no branch for content that reached the
+  `dev-docs/`-glob path via an extraction pipeline rather than a
+  Ledgerkit contributor writing it by hand. `origin='project'` is
+  accurate for Ledgerkit's own `dev-docs/hledger-compatibility.md`; it is
+  not accurate for `dev-docs/hledger-reference/hledger-tag-query-manual.md`,
+  whose actual origin is "an upstream Git repository
+  (`simonmichael/hledger`), pinned at a specific commit, extracted with a
+  content hash" — a fundamentally different provenance class the schema
+  has no room to record. Independently confirmed:
+  `src/codecompass/graph.py`'s `origin` CHECK enum (lines 111-115) is
+  exactly five closed values (`codecompass_tool`, `codecompass_vendor`,
+  `third_party`, `project`, `vendor_upstream`) — none of which
+  distinguishes "hand-authored by this project" from "externally pinned
+  reference text materialized into this project's tree by a tool."
+- **what the graph shows instead:** `origin='project'` for all six
+  ingested files, identical to every one of Ledgerkit's own hand-written
+  `dev-docs/*.md` files — a reader of `context-graph.db` (or `query
+  relations`' output) cannot tell these apart at all.
+- **could mechanical detection ever catch this?** unsure —
+  `vendor_upstream` already exists as a *candidate* reuse (the phase
+  plan's own §3.1 considered it), but was designed for a vendor package's
+  own embedded upstream docs, which carry a `vendor_name`; this material
+  has no tracked `vendors` row at all (`vendor_id` is already `NULL` for
+  `spec_doc` rows) and deliberately no `vendor.toml` entry ("No
+  `vendor.toml` entry for hledger" — the phase plan's own Design
+  decisions). Reusing `vendor_upstream` without a vendor to hang it on
+  would itself be a misuse of an existing enum value's meaning; a clean
+  fix needs either a new `origin` value or a provenance field this
+  experiment's own frontmatter (commit SHA, content hash, source URL)
+  could populate — neither exists today.
+- **smallest candidate that would fix it:** one new
+  `doc_artifacts.origin` CHECK-enum value (e.g. `pinned_reference`),
+  following the exact one-value-per-phase precedent (Phase 17, 21, the
+  `vendor_doc`-introducing phase) the phase plan itself names — the phase
+  plan explicitly gated this on "the zero-schema-change hypothesis being
+  empirically shown insufficient" (§3.1/Scope); this finding is the
+  evidence that the hypothesis holds for *detection* (`OBS-007`) but
+  fails for *provenance classification* specifically.
+- **classification:** graph-capability (Stage E / GATE DD) — a new
+  provenance distinction, not a detection heuristic; matches
+  `conditional-generalisation.md` §2.4's "first-class provenance"
+  hypothesis (a claim's source class should be visible, not just its
+  content).
+- **status:** candidate
+- **recurrence:** first occurrence
+- **curation (Phase 54 triage, 2026-09-16, knowledge-curator):** template
+  fields all present. Independently re-verified rather than taken on the
+  entry's own word: `src/codecompass/graph.py` lines 111-115 confirm the
+  `origin` CHECK constraint is exactly the closed five-value enum this
+  entry names (`codecompass_tool, codecompass_vendor, third_party,
+  project, vendor_upstream`), and `src/codecompass/spec_docs.py::scan_spec_docs`
+  line 82 hard-codes `origin="project"` for every `kind='spec_doc'` row
+  with no branch for extraction provenance — confirming the six ingested
+  files are indistinguishable by `origin` from Ledgerkit's own
+  hand-authored `dev-docs/*.md` content. Checked the `vendor_upstream`
+  reuse question the entry itself raises: `vendor_upstream` rows carry a
+  `vendor_name` tied to a tracked `vendors` row (Phase 27's own
+  vendor-doc precedent); this material deliberately has no `vendor.toml`
+  entry (the phase plan's own Design decisions), so reusing
+  `vendor_upstream` without a vendor to hang it on would misuse an
+  existing enum value's established meaning, as the entry argues — this
+  reasoning holds up under independent check, not just plausible on its
+  face. Checked for a recurrence against every context-gaps entry filed
+  before this phase (`CG-001` through `CG-003`): none addresses
+  `doc_artifacts.origin`'s enum coverage — `CG-003` is "zero
+  representation prior to ingestion" (a different gap, correctly
+  distinguished in its own Phase-54 note added alongside this entry, not
+  merged with it). **Outcome: stays `candidate`, not `recurred`** —
+  genuinely a first occurrence. Classification `graph-capability (Stage E
+  / GATE DD)` confirmed correct: a new CHECK-enum value is a schema
+  change to a closed enum, not a detection heuristic — matches
+  `conditional-generalisation.md` §2.4 exactly. Named alongside `CG-004`
+  as Phase 55/GATE DD input (`findings.md`'s own Phase 54 section already
+  reaches the same "two independently small, precedented fixes, fundable
+  on their own narrow terms" framing). No entry made to `context-graph.db`
+  — this queue never writes there, per `decisions/0051`.
+
+### CG-004 — mechanical `mentions_artifact` detection cannot relate two `spec_doc`-kind artifacts to each other, in any project, regardless of content
+
+- **origin:** Phase 54 (heterogeneous reference-material experiment),
+  treatment run Step 1
+- **date:** 2026-09-16
+- **codecompass_revision:** `72961e0` (working tree;
+  `reference-experiment/` untracked)
+- **project:** ledgerkit, scratch copy (never the real clone)
+- **the edge:** `A ↔ B` where A = the six ingested
+  `dev-docs/hledger-reference/hledger-tag-query-*.md` files
+  (`kind='spec_doc'`), B = every other `doc_artifacts` row in the scratch
+  copy, including Ledgerkit's own real `dev-docs/hledger-compatibility.md`
+  (also `kind='spec_doc'`) — zero `mentions_artifact` edges exist between
+  any of them, in either direction.
+- **edge kind:** doc↔code (a mechanical relation-*detection* gap between
+  two already-indexed artifacts — distinct from `CG-002`, which was a
+  detection-*scope* gap where one side wasn't tracked at all; here both
+  sides are tracked and detection still produces nothing)
+- **agent's reasoning:** per the treatment run's own report
+  (`treatment-tag-query-brief.md` Step 1), after `codecompass sync
+  --budget 0`, `doc_relations_edges` held exactly 8 rows, all
+  `mentions_artifact` edges from various `dev-docs/*.md` files to the
+  tool-level `codecompass` Skill (the same pattern independently
+  confirmed in Phases 45/46/49/51/52) — none involving any of the six
+  ingested files, and none originating from or targeting
+  `dev-docs/hledger-compatibility.md` either. Root-caused by direct code
+  reading, independently re-confirmed rather than taken on the treatment
+  brief's own word (the scratch copy no longer exists to re-query
+  directly, per this phase's own no-committed-scratch-copy discipline):
+  `spec_docs.py::scan_spec_docs` (line 82) constructs every
+  `kind='spec_doc'` `DocArtifactRow` with no `name=` argument, so it
+  defaults to `None` (`graph.py`'s `DocArtifactRow.name: str | None =
+  None`, line 276). `doc_mapping.py::build_doc_relations_edges`'s own
+  docstring states the rule explicitly ("A doc artifact with no `name`
+  set is never a match target — nothing to word-boundary-search for,"
+  lines 296-297), and its code confirms it (`named_artifacts = [row for
+  row in other_doc_artifact_rows if row.name]`, line 321) — every
+  `spec_doc` row is therefore permanently excluded from ever being a
+  `mentions_artifact` *target*, and since the source-side scan (lines
+  345-355) only searches for *other* artifacts' names in the source
+  doc's text, a `spec_doc` row can also never *produce* a
+  `mentions_artifact` edge pointing at another `spec_doc`. This holds
+  regardless of file content, project, or how distinctively either file
+  is named — a structural property of `kind='spec_doc'` rows never
+  getting a `name`, not a matching-heuristic weakness.
+- **what the graph shows instead:** nothing — zero `mentions_artifact`
+  edges among any `spec_doc`-kind rows, in either the ingested reference
+  material or Ledgerkit's own pre-existing `dev-docs/` content.
+- **could mechanical detection ever catch this?** yes-with-better-
+  heuristics — populating `doc_artifacts.name` for `spec_doc` rows (e.g.
+  from a Markdown title/H1, a frontmatter `title:` field, or a stable
+  slug derived from the path) would make them eligible match targets
+  under the exact same `mentions_artifact` word-boundary logic that
+  already exists; no new relation kind or schema table is needed, only a
+  name-population rule for one `kind`.
+- **smallest candidate that would fix it:** a `scan_spec_docs`/
+  frontmatter-reading change in `src/codecompass/spec_docs.py` to
+  populate `name` for `spec_doc` rows, mirroring how Skills already get a
+  `name` from their own frontmatter — a Stage C / GATE DB-scale fix, not
+  a Stage E one.
+- **classification:** detection-improvement (Stage C / GATE DB)
+- **status:** candidate
+- **recurrence:** first occurrence
+- **curation (Phase 54 triage, 2026-09-16, knowledge-curator):** template
+  fields all present (origin, date, codecompass_revision, project, the
+  edge, edge kind, reasoning, what-the-graph-shows-instead, "could
+  mechanical detection ever catch this?", smallest candidate,
+  classification, status, recurrence). Independently re-verified by
+  direct code reading rather than taking the entry's own account:
+  `src/codecompass/spec_docs.py::scan_spec_docs` line 82 constructs
+  `DocArtifactRow(path=rel.as_posix(), kind="spec_doc",
+  origin="project")` — no `name=` argument, so it takes the dataclass
+  default `None` — and `src/codecompass/doc_mapping.py`'s
+  `named_artifacts = [row for row in other_doc_artifact_rows if
+  row.name]` (line 321) confirms any row with `name is None` is
+  permanently excluded as a match target; since the source-side scan only
+  searches for *other* artifacts' names in a doc's own text, a `spec_doc`
+  row can also never *produce* a match against another `spec_doc` row.
+  This is a structural property of every `kind='spec_doc'` row in every
+  project, exactly as claimed — not scoped to Ledgerkit or to
+  externally-ingested reference material specifically. Checked for a
+  recurrence against every context-gaps entry filed before this phase:
+  `CG-002` is a detection-*scope* gap (a whole directory never globbed at
+  all, one side of the edge never even tracked); `CG-001` is about
+  intra-`src` code-feature grouping; `CG-003` is about the manual having
+  zero representation prior to ingestion — none is the same edge/mechanism
+  as "two already-tracked `spec_doc` rows can never relate to each other."
+  **Outcome: stays `candidate`, not `recurred`** — genuinely a first
+  occurrence of this specific mechanism. Classification
+  `detection-improvement (Stage C / GATE DB)` confirmed correct: the fix
+  (populate `name` for `spec_doc` rows from a title/frontmatter/slug) is a
+  `spec_docs.py`-only change reusing the existing `mentions_artifact`
+  word-boundary logic — no new relation kind or table, matching the
+  entry's own "smallest candidate" framing exactly. Named alongside
+  `CG-005` as Phase 55/GATE DD input (`findings.md`'s own Phase 54
+  section). No entry made to `context-graph.db`.
+
 ### CG-003 — the external `hledger` reference manual (hledger.org) has zero representation, and unlike CG-002 no glob fix could ever cover it
 
 - **origin:** Phase 46 (Ledgerkit genuine task — hledger 1.52 query-term
@@ -120,6 +315,22 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   GATE DB has no lever to act on this — it is squarely Stage E/GATE DD
   (Phase 55) territory (`planning/reference-projects/ledgerkit/findings.md`
   §5). No status change; named in the findings summary as context only.
+- **note added Phase 54 (2026-09-16, `reference-project-tester`):**
+  worth flagging as directly relevant context, not a new occurrence: the
+  Phase 54 heterogeneous reference-material experiment
+  (`planning/phase-54-heterogeneous-reference-material-experiment.md`)
+  is exactly the future Stage D/E test this entry anticipated. It found
+  that ingesting the manual as pinned, extracted text *is* detectable
+  (`OBS-007`) but currently cannot be *related* to anything else in the
+  graph (`CG-004`) nor correctly *classified* by provenance (`CG-005`) —
+  i.e. CG-003's "zero representation of any kind" is no longer literally
+  true once a project actually runs the ingestion experiment, but the
+  practical result (no usable graph relationship reaching this material)
+  is unchanged. Not merged with `CG-004`/`CG-005`: this entry is about
+  the *raw external manual* having no representation path at all absent
+  an ingestion step; `CG-004`/`CG-005` are about what happens *after*
+  ingestion, a different pair of gaps this entry's own "smallest
+  candidate" section correctly anticipated would need separate handling.
 
 ### CG-002 — Ledgerkit's entire `dev-docs/` tree is invisible to spec-doc detection, not merely under-related
 
@@ -276,6 +487,14 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   src/codecompass/spec_docs.py::_DEFAULT_GLOBS +
   tests/test_spec_docs.py::test_scan_spec_docs_finds_dev_docs_directory @
   780e97b`.
+- **note added Phase 54 (2026-09-16, `reference-project-tester`):**
+  independently re-confirmed the fix still holds and generalizes to a
+  materially different content source: the Phase 54 heterogeneous
+  reference-material experiment materialized six *externally-extracted*
+  reference files (not Ledgerkit-authored prose) under
+  `dev-docs/hledger-reference/*.md` in a scratch copy, and all six were
+  detected with zero code change (`OBS-007`) — corroborating evidence
+  this fix's benefit extends beyond its original motivating case.
 
 ### CG-001 — one feature spread across three `src/` modules, with no edge joining them
 

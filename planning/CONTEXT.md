@@ -500,36 +500,45 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
-**Phase 54 plan written (2026-09-16) — awaiting review, not yet
-implemented.** The user's own prompt resolves the open Stage
-D-vs-Stage-F/G strategic decision (Phase 51's retro) in Stage D's
-favour, naming the exact objective Stage D's own pre-existing sketch
-already described: test whether CodeCompass can make external hledger
-reference material materially useful for a real Ledgerkit task, without
-prematurely committing to a new graph ontology.
-`planning/phase-54-heterogeneous-reference-material-experiment.md`
-confirms this against live state (Ledgerkit re-fetched, confirmed no
-drift since Phase 51's `05218e3` pin; Stage C Phase 1 done, `tag:`/
-`cur:`/smart-dates explicitly deferred — the chosen task; the pinned
-local hledger clone independently confirmed at the exact commit
-Ledgerkit's own real compat-register entries already cite by hand),
-evaluates the prompt's own `references.toml`/resolve/lock/fetch/extract/
-relate pipeline against what CodeCompass's existing graph mechanisms
-already cover (a `vendor_doc`/`vendor_upstream` reuse precedent already
-sketched in `ledgerkit-plan.md`; the `dev-docs/**/*.md` glob Phase 49
-already added; `mentions_artifact`'s existing any-named-artifact
-matching) before proposing any schema change, and designs a
-baseline-vs-treatment comparison using Phase 52's context-observation
-lifecycle. **A real phase-numbering conflict was caught and resolved**:
-`v1-redefinition/roadmap.md`'s own Phase 54 slot already held a
-*different* sketch ("External executable / behavioural context"), not
-an empty slot — retargeted the same way Phases 52/53 were, with the
-displaced sketch left unclaimed rather than discarded (see the plan's
-§0 and the roadmap's own new Phase 54 amendment note). **No
-implementation yet** — the plan explicitly names two judgment calls
-(the renumbering itself; keeping the ingestion pipeline outside
-`src/codecompass/` for this phase) for the user to confirm or redirect
-before code is written.
+**Phase 54 is `done` (2026-09-16) — heterogeneous reference-material
+experiment, implemented and run for real.** The user's own prompt
+resolved the open Stage D-vs-Stage-F/G strategic decision (Phase 51's
+retro) in Stage D's favour; "Implement the plan" approved both named
+judgment calls (the Phase 54 slot renumbering; keeping the ingestion
+pipeline outside `src/codecompass/`) without redirection. Built and ran
+a real, tested Git-backed resolve/lock/fetch/extract pipeline
+(`planning/reference-projects/ledgerkit/reference-experiment/`, 13
+passing tests), pinned live against the real, already-confirmed local
+hledger clone (`33fa849e...`, tag `1.52.4`), and a genuine two-run
+comparison task (Ledgerkit's own Stage C `tag:` query-semantics brief)
+against a scratch copy of Ledgerkit, never the real clone.
+**Independently evaluated by `context-evaluator`: baseline PASS WITH
+GAPS, treatment FAIL, context-advantage LOW** — the FAIL traces to a
+real, caught-and-fixed extraction-boundary defect (a hand-drawn line
+range silently excluded one of three documented tag-inheritance rules
+while its own description claimed all three present), not a mechanism
+defect; the pipeline's hashes, idempotency, and its YAML-evidence-
+matching relation fallback (demonstrated real against Ledgerkit's own
+already-published `LK-COMPAT-QUERY-DATE-001.yaml`) all independently
+confirmed sound. Filed: `OBS-007` (detection generalises, zero schema
+change), `CG-004` (mechanical `mentions_artifact` structurally cannot
+relate two `spec_doc` artifacts — root cause: `spec_doc` rows never get
+a `name`), `CG-005` (`origin`'s closed enum has no externally-pinned-
+reference value), `OBS-008` (the YAML-evidence fallback, real but
+unwired), `OBS-009` (corrected by `knowledge-curator`'s own triage —
+caught restating the same false claim that produced the FAIL), `L-020`
+(content-hash pinning proves an excerpt hasn't changed, not that its
+boundary matches its own claimed content — `knowledge-curator`
+recommends promotion). No `src/codecompass/` change — pure
+evidence-gathering. `release-phase-auditor` → **PASS** (first round).
+Retro: `planning/retros/phase-54-heterogeneous-reference-material-experiment.md`.
+**This phase resolves the Stage D-vs-Stage-F/G decision's own open
+question by having actually run the test — the result is genuinely
+mixed, not a clean mandate either way**, itself valid evidence per the
+plan's own "treat negative or inconclusive results as valid evidence"
+instruction. `planning/ROADMAP.md` row `54` and
+`v1-redefinition/roadmap.md`'s Phase 54 stanza both flipped to `done`
+in this commit.
 
 **Contributor licensing terms added (2026-09-15), standalone
 user-requested change, not a roadmap phase.** `decisions/0055` records
@@ -1228,16 +1237,21 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Immediate: present Phase 54's plan
-(`planning/phase-54-heterogeneous-reference-material-experiment.md`) for
-review before implementing anything.** The Stage D-vs-Stage-F/G
-strategic decision (Phase 51's retro, restated below for history) is now
-resolved in Stage D's favour by the user's own prompt — this section's
-older framing ("no phase queued, the lead's/user's call") is superseded
-by that. What remains open is narrower: the plan's own two named
-judgment calls (the Phase 54 slot retarget; keeping the reference-
-ingestion pipeline outside `src/codecompass/` for this experimental
-phase) — confirm or redirect those, then implement.
+**Phase 54 is done. No phase is queued next.** The Stage D-vs-Stage-F/G
+strategic decision (Phase 51's retro, restated below for history) is
+resolved in Stage D's favour, and Stage D's own substantive goal has now
+actually been tested — with a genuinely mixed result (see "What was just
+completed" above), not a clean mandate to continue deeper into Stage D
+or to stop. Two small, independently-fundable fixes are sitting ready
+for a future phase whenever picked up (`CG-004`'s `name` population for
+`spec_doc` rows, a Stage C/GATE-DB-scale fix; `CG-005`'s new `origin`
+value, Stage E/GATE-DD-scale) — neither requires resolving the broader
+ontology question first. The YAML-evidence-matching fallback
+(`OBS-008`) is promising but under-evidenced (one feature family
+tested) — not yet ready to generalise. This is the lead's/user's call at
+the next session: fund one or both small fixes, extend the experiment to
+a second feature family for more evidence, or treat Phase 54's mixed
+result as sufficient signal to move toward Stage F/G.
 
 **Stage A is complete (Phases 39–43e `done`, GATE DA passed). Stage B is
 fully complete (Phases 43b, 43c, 44, 45, 46, 47 all `done`, GATE DB

@@ -383,3 +383,132 @@ framing of that choice.
 Full per-question detail: `planning/reference-projects/ledgerkit/00-baseline.md`
 and `01-query-semantics.md`'s "Phase 51 re-run" sections (independently
 authored by `context-evaluator`, appended, not overwriting the originals).
+
+---
+
+## Phase 54 — heterogeneous reference-material experiment (2026-09-16)
+
+Full plan: `planning/phase-54-heterogeneous-reference-material-experiment.md`.
+Answers the question that section's own framing left open: can
+CodeCompass pin and expose external hledger reference material so it
+materially improves an agent's context for a real Ledgerkit task,
+without prematurely committing to a new graph ontology? **Not primarily
+by generalisation-readiness verdict** (that's this section's own closing
+recommendation) but by real evidence from a genuine, live two-run
+comparison task.
+
+### Setup
+
+A real ingestion pipeline
+(`planning/reference-projects/ledgerkit/reference-experiment/`,
+deliberately outside `src/codecompass/` this phase) pinned hledger at
+tag `1.52.4` (resolved to commit `33fa849e7ae841968bd21c427094c4fb4a4ec38d`,
+confirmed live against the already-pinned local hledger clone
+Ledgerkit's own `hledger-researcher`/`compat-differential-tester`
+tooling already references by convention), extracted eight file/
+line-range selections with content-hash provenance, and materialized six
+of them into `dev-docs/hledger-reference/*.md` in a **scratch copy** of
+Ledgerkit (never the real clone — read-only throughout, same discipline
+as Phase 46). The chosen task: produce an `hledger-researcher`-shaped
+semantics brief for Ledgerkit's own next explicitly-deferred Stage C
+query feature, `tag:` — run twice, once as today's real baseline
+(live `WebFetch` + local grep, no CodeCompass involved) and once as the
+treatment (CodeCompass query + the ingested material only).
+
+### Results — a genuine, useful negative/mixed result, not a clean win
+
+**Detection: positive, zero-code-change.** All six ingested files were
+tracked with no "not found" error, via `spec_docs.py`'s pre-existing
+`dev-docs/**/*.md` glob (Phase 49's own `CG-002` fix) — confirmed to
+generalise beyond its original Ledgerkit-authored-docs motivation to a
+materially different content class (externally-extracted, commit-pinned
+reference text). Filed `OBS-007`.
+
+**Relation: negative.** Mechanical `mentions_artifact` detection
+produced **zero** edges between the ingested material and anything else
+in the project, including Ledgerkit's own real
+`dev-docs/hledger-compatibility.md` — root cause confirmed by direct
+code reading: `spec_docs.py::scan_spec_docs` never populates
+`doc_artifacts.name` for `spec_doc`-kind rows, and `mentions_artifact`
+only matches named artifacts. This is a structural property of every
+`spec_doc` row in *any* project, not specific to this content. Filed
+`CG-004` (detection-improvement, Stage C/GATE-DB-scale — populate `name`
+for `spec_doc` rows from a title/frontmatter, no new relation kind or
+table needed).
+
+**A working relation *fallback* exists, demonstrated real, not wired
+into CodeCompass.** Parsing a compat-register YAML's own structured
+`evidence.ref` citations and matching them against the pinned
+extraction's file+line-range succeeded, real, against the actual,
+already-published `LK-COMPAT-QUERY-DATE-001.yaml`
+(`reference_pipeline.py::match_compat_register_evidence`, 12/12 tests
+passing). More reliable than prose-mention inference because it reads
+already-structured data rather than inferring a relationship — but this
+mechanism currently lives entirely outside `src/codecompass/`. Filed
+`OBS-008`.
+
+**Provenance: a real classification gap.** The ingested material is
+recorded as `origin='project'` — identical to Ledgerkit's own
+hand-authored docs — because the existing 5-value `origin` CHECK enum
+has no value for "externally-sourced, commit-pinned, content-hashed"
+material. Filed `CG-005` (graph-capability, Stage E/GATE-DD-scale — a
+new `origin` value, following the exact one-value-per-phase precedent
+every prior enum extension used).
+
+**A real, honest methodological defect, independently caught by
+`context-evaluator`.** The `tag-query-manual` selection's hand-chosen
+line range silently excluded the third of three tag-inheritance rules
+while its own frontmatter description confidently claimed all three
+were present — a false completeness claim inside the very artifact
+whose value proposition is "trust this without re-checking it
+yourself." `context-evaluator` independently verified this against the
+real pinned manual and rated the **treatment run FAIL** (baseline: PASS
+WITH GAPS; context advantage: **LOW**, not because the mechanism has no
+value but because this specific defect gave the manual workflow's own
+disclosed imprecision a cleaner track record on this task). Full report:
+`planning/reference-projects/ledgerkit/reference-experiment/54-tag-query-semantics-reference-experiment-evaluation.md`.
+Filed `L-020` (invariant: content-hash pinning proves an excerpt hasn't
+silently changed; it does not prove the excerpt's boundary covers what
+its own description claims). Fixed in the same phase (corrected line
+range, regenerated artifact, new regression test) — the fix does not
+retroactively change the FAIL verdict, which stands as the accurate
+record of what the treatment run actually produced and claimed.
+
+### Evidence for Phase 55/GATE DD (the plan's §7 checklist, answered)
+
+1. Zero-schema-change hypothesis: **worked for detection, failed for
+   relation.** A minimal schema addition (`origin` value) is warranted
+   for provenance classification specifically, not a broad ontology.
+2. Mechanical `mentions_artifact`: **found nothing**; the YAML-evidence
+   fallback **worked**, demonstrated against real data.
+3. Treatment evidence precision vs. `hledger-researcher`'s own hand-
+   gathered citations: **not established as superior this run** — the
+   treatment's own extraction had a real accuracy defect the baseline's
+   more manual process did not (though the baseline had its own
+   disclosed, different imprecision).
+4. Context-advantage: **LOW**, verdict **FAIL** (treatment) / **PASS
+   WITH GAPS** (baseline) — both from `context-evaluator`'s independent,
+   ground-truth-checked report, not self-assessed.
+5. `OBS-007`, `OBS-008`, `OBS-009`, `CG-004`, `CG-005`, `L-020` all filed
+   this phase; none recurred from a prior phase (all first occurrences).
+6. **Recommendation** (not a decision): the ingestion pipeline's core
+   shape (resolve/lock/fetch/extract/hash) is sound and reusable: keep it
+   Ledgerkit-specific and outside `src/codecompass/` for now, rather than
+   generalising into a shipped feature. The two concrete graph gaps found
+   (`CG-004`/`CG-005`) are each independently small and precedented
+   (a `name` field, an `origin` value) and worth funding on their own
+   narrow terms regardless of the broader ontology question — matching
+   this project's own "smallest justified fix" precedent (Phase 47/49).
+   The YAML-evidence-matching fallback is the single most promising path
+   toward real provenance-based relation (more reliable than prose
+   mention-detection), but should not be generalised until it's proven
+   against a *second* real feature (not just `date:`/`tag:`, both from
+   the same query-semantics family) — a genuine "not yet enough evidence
+   to generalise" conclusion, not a rejection.
+
+**This phase resolves the Stage D-vs-Stage-F/G decision's own open
+question by having actually run the Stage D test** (Phase 51's retro)
+— the answer is mixed/negative on the specific mechanism tried, not a
+clean win, which is itself valid, reportable evidence per the plan's own
+explicit "treat negative or inconclusive results as valid evidence"
+instruction. Full retro: `planning/retros/phase-54-heterogeneous-reference-material-experiment.md`.

@@ -1,0 +1,89 @@
+# Phase 54 reference-ingestion experiment — declares one external
+# reference source (hledger) and the specific manual/source sections
+# needed for one real Ledgerkit task (the `tag:` query-term semantics
+# brief — see ../../phase-54-heterogeneous-reference-material-experiment.md
+# §2/§4). Not a CodeCompass config file format; this is the experiment's
+# own input, parsed by reference_pipeline.py in this directory.
+#
+# Selections are the exact manual section and source functions a real
+# hledger-researcher-style brief needs, chosen by directly reading the
+# pinned hledger source before writing this file (see the plan's §1) —
+# not a placeholder list.
+
+[[reference]]
+name = "hledger"
+source = "git"
+url = "https://github.com/simonmichael/hledger"
+# Preferred fetch source for this experiment (plan's Design decisions):
+# Ledgerkit's own hledger-researcher/compat-differential-tester tooling
+# already references this exact path by convention
+# (dev-docs/planning/core-redefinition/10-source-assisted-development.md
+# §10.5) — reusing it, rather than a fresh clone, is the tested
+# hypothesis; the resolve step below still runs for real either way.
+local_path = "/home/cormac/projects/hledger"
+requested_ref = "1.52.4"
+
+[[reference.select]]
+label = "tag-query-manual"
+path = "hledger/hledger.1"
+lines = [7372, 7394]
+# Corrected 2026-09-16: the original selection ended at line 7392,
+# which byte-accurately extracted lines 7372-7392 but SILENTLY EXCLUDED
+# lines 7393-7394 (the third inheritance rule, "Transactions also
+# acquire the tags of their postings") while this note's own claim of
+# "the three inheritance rules" remained unchanged — a real, caught
+# defect (planning/reference-projects/ledgerkit/reference-experiment/
+# 54-tag-query-semantics-reference-experiment-evaluation.md's FAIL
+# verdict). Fixed here; the defect itself is preserved as a finding in
+# the phase's retro, not erased by this fix — content-hash pinning
+# guarantees an excerpt hasn't silently changed, it does not guarantee
+# the excerpt's own human-chosen boundary actually covers what its
+# description claims.
+note = "The '### tag: query' section — syntax, infix-matching rule, and the three inheritance rules (accounts from parents, postings from account+transaction, transactions from postings)."
+
+[[reference.select]]
+label = "tag-query-parser"
+path = "hledger-lib/Hledger/Query.hs"
+lines = [482, 487]
+note = "parseTag — splits tag:NAMEREGEX[=VALREGEX] on the first '=', compiles NAMEREGEX and (if present) VALREGEX as case-insensitive regexes."
+
+[[reference.select]]
+label = "tag-query-account-match"
+path = "hledger-lib/Hledger/Query.hs"
+lines = [889, 897]
+note = "matchesAccountExtra's Tag case — matches an account's own inherited tag set (atags), the concrete mechanism behind the manual's 'accounts inherit the tags of their parent accounts' claim."
+
+[[reference.select]]
+label = "tag-query-posting-match"
+path = "hledger-lib/Hledger/Query.hs"
+lines = [902, 925]
+note = "matchesPosting in full — its Tag case (line 921-924) special-cases 'payee'/'note' as synthetic tag names before falling back to patternsMatchTags against postingAllTags (inherited tags)."
+
+[[reference.select]]
+label = "tag-query-transaction-match"
+path = "hledger-lib/Hledger/Query.hs"
+lines = [949, 972]
+note = "matchesTransaction in full — its Tag case (line 968-972) mirrors matchesPosting's payee/note special-case, else patternsMatchTags against transactionAllTags."
+
+[[reference.select]]
+label = "tag-query-pattern-match"
+path = "hledger-lib/Hledger/Query.hs"
+lines = [1008, 1024]
+note = "patternsMatchTags/matchesTag — the actual regex-against-(name,value)-pairs matching logic every Tag case above delegates to."
+
+# Not part of the tag: task itself — included so
+# match_compat_register_evidence's YAML-evidence-matching fallback (plan
+# §3.3) can be demonstrated against a real, already-published
+# compat-register entry (LK-COMPAT-QUERY-DATE-001.yaml cites exactly
+# these two line ranges), since no tag: entry exists yet to test against.
+[[reference.select]]
+label = "date-query-span-single"
+path = "hledger-lib/Hledger/Data/Dates.hs"
+lines = [429, 429]
+note = "Single-date span construction — cited by LK-COMPAT-QUERY-DATE-001.yaml's evidence.ref."
+
+[[reference.select]]
+label = "date-query-span-double"
+path = "hledger-lib/Hledger/Data/Dates.hs"
+lines = [1132, 1148]
+note = "doubledatespanp, exclusive end date — cited by LK-COMPAT-QUERY-DATE-001.yaml's evidence.ref."

@@ -8,6 +8,80 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-020 — content-hash pinning proves an excerpt hasn't silently changed; it does not prove the excerpt's boundary covers what its own description claims
+
+- **origin:** Phase 54 (heterogeneous reference-material experiment), the `tag:` query semantics treatment run, independently caught by `context-evaluator`'s evaluation
+- **date:** 2026-09-16
+- **project_revision:** working tree at `72961e0`; `planning/reference-projects/ledgerkit/reference-experiment/` untracked (outside `src/codecompass/` per this phase's own design decision)
+- **observation:** `references.toml`'s `tag-query-manual` selection was hand-authored with `lines = [7372, 7392]` and a `note`/frontmatter description claiming the excerpt contained "the three inheritance rules (accounts from parents, postings from account+transaction, transactions from postings)." The real hledger manual's third rule ("Transactions also acquire the tags of their postings") is at lines 7393-7394 — one bullet past the selection's own end line, and therefore genuinely absent from the extracted, hashed artifact, even though the artifact's own description confidently claimed otherwise. `references.lock`'s content hash for this selection is completely correct (it hashes exactly what was extracted, byte for byte) — the hash guarantees the excerpt hasn't silently drifted since extraction; it says nothing about whether the excerpt's boundary was drawn correctly in the first place. The treatment brief then repeated the false claim as fact ("all three inheritance rules present and precise... verbatim"), which `context-evaluator`'s independent line-by-line check against the real pinned source caught and correctly rated **FAIL** (the phase's own evaluation report, not this entry, is the authoritative verdict). This is exactly the "confidently wrong, presented authoritatively" failure mode this project's own evaluation rubric treats as worse than an honest gap — and it happened inside the very artifact whose entire value proposition (a provenance hash) is "trust this without re-checking it yourself."
+- **evidence:** `planning/reference-projects/ledgerkit/reference-experiment/54-tag-query-semantics-reference-experiment-evaluation.md` (the independent FAIL verdict, §"Independent findings" item 2); `hledger/hledger.1:7388-7394` in the pinned local hledger clone (`/home/cormac/projects/hledger`, commit `33fa849e7ae841968bd21c427094c4fb4a4ec38d`) directly confirms the third rule sits at lines 7393-7394; `references.toml`'s git history in this same phase shows the selection corrected to `lines = [7372, 7394]` afterward, with a new regression test (`tests/test_reference_pipeline.py::test_tag_query_manual_excerpt_contains_all_three_inheritance_rules`) added to catch a recurrence.
+- **classification:** invariant (a general property of any content-hash-pinned extraction pipeline, not scoped to this one experiment or this one hledger section)
+- **status:** candidate (recommended: promote — see curation note; not flipped to `promoted` yet because the regression test that would back the pointer line is still uncommitted)
+- **recurrence:** first occurrence
+- **curation (Phase 54 triage, 2026-09-16, knowledge-curator):** provenance
+  accepted — all required fields present. Independently re-verified against
+  the real pinned hledger source rather than taking the entry's own
+  citation on faith: read `/home/cormac/projects/hledger/hledger/hledger.1`
+  lines 7368-7394 directly — confirms the three inheritance bullets sit at
+  line 7390 ("Accounts also inherit the tags of their parent accounts"),
+  line 7392 ("Postings also inherit the tags of their account and their
+  transaction"), and lines 7393-7394 ("Transactions also acquire the tags
+  of their postings"), and that the original `[7372, 7392]` selection range
+  therefore byte-accurately extracts *up to* line 7392 while excluding the
+  third rule entirely — exactly as claimed, confirmed by direct read, not
+  by trusting the evaluation report's word for it. Cross-checked against
+  `54-tag-query-semantics-reference-experiment-evaluation.md`'s independent
+  FAIL verdict (finding 2) and confirmed the phase's own fix has already
+  landed in the working tree: `references.toml`'s `tag-query-manual`
+  selection now reads `lines = [7372, 7394]` with an explanatory correction
+  comment, `references.lock`'s content hash for that selection has been
+  regenerated (`sha256:4672d39a...`, differing from the pre-fix
+  `sha256:1590e35d...` still quoted, deliberately unedited, in
+  `treatment-tag-query-brief.md`'s Step 2), and a new regression test —
+  `planning/reference-projects/ledgerkit/reference-experiment/tests/test_reference_pipeline.py::test_tag_query_manual_excerpt_contains_all_three_inheritance_rules`
+  — directly asserts all three inheritance-rule sentences appear in the
+  extracted text, guarding a recurrence of exactly this defect (confirmed
+  by reading the test itself, not just its name). Checked for a
+  merge/duplicate candidate: grepped `promoted.md` and this inbox for any
+  prior invariant about content-hash pinning or extraction-boundary
+  correctness — none exists; not a restatement of `L-005`/`L-011` (both
+  about `check_generated_artifacts_match_source`, a different check and a
+  different failure mechanism — sync-state, not human-drawn extraction
+  boundaries). **Outcome: promote.** Classification `invariant` maps to "a
+  regression test" per `learning-lifecycle.md` §4, and that test already
+  exists, landed within this same phase, directly encoding the invariant
+  this candidate names (a content-hash's immutability guarantee is a
+  different guarantee than its boundary's correctness) rather than merely
+  re-testing the narrower `tag:`-specific outcome. This does not depend on
+  Phase 55/GATE DD's separate, larger decision about whether to generalise
+  the ingestion pipeline into `src/codecompass/` — the invariant is general
+  by its own classification text, and the test's current location inside
+  `planning/reference-projects/ledgerkit/reference-experiment/tests/`
+  (deliberately outside `src/codecompass/` per this phase's own design
+  decision) is the correct home for it today, the same way
+  `tests/fixtures/ledgerkit_lifecycle_demo/`'s own regression coverage
+  stays outside the shipped package until a later phase (if ever)
+  generalises the mechanism itself. Worth naming explicitly for whoever
+  later picks up that generalisation: the boundary-vs-immutability
+  distinction should travel with the pipeline as its own regression test in
+  `tests/`, not be assumed automatically subsumed by a content-hash check
+  alone — not a new candidate learning, just a forward note attached to
+  this one. **Not flipping `status` to `promoted` yet, deliberately**:
+  `planning/reference-projects/ledgerkit/reference-experiment/` is still
+  untracked per `git status` as of this triage — the regression test is
+  real and present in the working tree but has not "actually landed" in
+  the sense this agent's own hard rule requires before a `promoted.md`
+  pointer is written. Recommend: once Phase 54's closeout commit lands
+  (this triage's own edits included), flip `status` to `promoted` and add
+  `L-020 | 2026-09-16 | invariant |
+  planning/reference-projects/ledgerkit/reference-experiment/tests/test_reference_pipeline.py::test_tag_query_manual_excerpt_contains_all_three_inheritance_rules
+  @ <real short SHA>` to `promoted.md` — mirroring exactly how `L-016`/
+  `CG-002` deferred their own `promoted.md` line until Phase 49's fix was
+  confirmed actually committed. **promoted_to:** left blank below until
+  that commit exists.
+- **promoted_to:** — (pending; see curation note — flip once Phase 54's
+  closeout commit lands)
+
 ### L-019 — a fixture bootstrapped from a hand-written placeholder that `codecompass sync` also mechanically regenerates causes a one-time content-hash "false churn"
 
 - **origin:** Phase 52 (context edge lifecycle demonstration, local fixture `tests/fixtures/ledgerkit_lifecycle_demo/`)

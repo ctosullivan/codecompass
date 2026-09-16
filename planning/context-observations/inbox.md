@@ -8,6 +8,253 @@ Statuses: `recorded` → `investigating` → `resolved`.
 
 ---
 
+### OBS-009 — treatment run's exact-text extraction avoided the baseline's WebFetch-summarization omission of account-level tag inheritance
+
+- **origin:** Phase 54 (heterogeneous reference-material experiment —
+  two-run `tag:` query semantics brief comparison), lead +
+  `reference-project-tester`
+- **date:** 2026-09-16
+- **codecompass_revision:** `72961e0` (working tree;
+  `planning/reference-projects/ledgerkit/reference-experiment/` is
+  untracked, per this phase's own design decision to keep the ingestion
+  pipeline outside `src/codecompass/`)
+- **project:** ledgerkit (scratch copy only, never the real clone),
+  pinned hledger source at commit `33fa849e7ae841968bd21c427094c4fb4a4ec38d`
+  (tag `1.52.4`)
+- **edge identity:** `dev-docs/hledger-reference/hledger-tag-query-manual.md`
+  (`kind='spec_doc'`, extracted-with-provenance content sourced from
+  `hledger.1:7372-7392`) — read directly (no `mentions_artifact` edge
+  exists for this artifact at all, see `CG-004`); compared against the
+  baseline run's non-CodeCompass default pathway, a live `WebFetch` of
+  `https://hledger.org/1.52/hledger.html#queries`.
+- **observation type:** EDGE_USEFUL (for the extracted, pinned artifact's
+  content itself, read directly, not via a graph edge)
+- **edge correctness:** correct — independently re-verified: the
+  extracted file's frontmatter (`resolved_commit:
+  33fa849e7ae841968bd21c427094c4fb4a4ec38d`, `path: hledger/hledger.1`,
+  `lines: [7372, 7392]`, `content_hash:
+  sha256:1590e35dac03b5abfa9482750f668656ee40239e226209c26e5d6f0a448fee2d`)
+  matches `references.lock` exactly, and its body is the manual's own
+  exact wording, containing all three tag-inheritance rules
+  (account→parent-account, posting→account+transaction,
+  transaction→posting).
+- **task usefulness:** useful — this is the one place the two runs'
+  outputs actually diverged. The baseline's live `WebFetch`
+  (`baseline-tag-query-brief.md` Step 1) returned only two of the three
+  inheritance rules, omitting "accounts also inherit the tags of their
+  parent accounts" entirely, because the fetch is an AI-summarized
+  paraphrase of the page, not the manual's own text. The treatment run's
+  brief (`treatment-tag-query-brief.md`, "Resulting brief") states the
+  correct three-way chain because it read the pinned extraction's exact
+  formal-section text.
+- **default pathway:** live `WebFetch` of the hledger manual page (what
+  the baseline run actually did) — demonstrated, in this same phase, to
+  introduce a real correctness gap, not a hypothetical one. A
+  `grep`-then-`Read` of the pinned local clone (the baseline's own Step 2
+  fallback, used only because the `WebFetch` result was independently
+  judged ambiguous on a different point) also recovers the correct text —
+  so the advantage here is specifically "pre-extracted and pinned, no
+  live fetch or grep needed at task time," not "otherwise unobtainable."
+- **advantage:** MODERATE — not HIGH, because the baseline's own
+  documented process (falling back to `grep` on the pinned clone when the
+  manual is ambiguous) would eventually have caught this too, and did
+  produce a correct final brief once cross-checked; but that cross-check
+  only happened because the baseline author independently judged the
+  manual's coverage of the *precision* question incomplete, which the
+  AI-summarized `WebFetch` result gives no signal to be suspicious about
+  for the *inheritance* claim specifically (it read as complete, just
+  wrong). The treatment path removed that whole failure mode by
+  construction (exact manual text, not a paraphrase), for zero live-fetch
+  cost at task time.
+- **wrong or misleading?** no (for the treatment's own content) — but see
+  the flip side: the baseline's `WebFetch` step was genuinely misleading
+  (silently incomplete, not merely imprecise), recorded honestly as such
+  in `baseline-tag-query-brief.md`'s own "Friction, recorded honestly"
+  note. This is not itself a CodeCompass defect — no CodeCompass command
+  was used in the baseline's Step 1 at all — but it is relevant context
+  for whether "just `WebFetch` the manual," `hledger-researcher.md`'s own
+  real first step, is a reliable-enough baseline for future comparisons
+  of this kind.
+- **status:** recorded
+- **investigation:** none needed — record-only per `EDGE_USEFUL`'s
+  default action; the `WebFetch`-omission half is a baseline-methodology
+  finding, not a graph/detector defect, so it stays here rather than
+  routing to `context-gaps/`.
+- **resolution:** no action — recorded as evidence for Phase 55/GATE DD
+  (`planning/phase-54-heterogeneous-reference-material-experiment.md`
+  §7.3's "was the treatment run's evidence at least as precise... as
+  `hledger-researcher`'s own hand-gathered citations" question — answer:
+  yes, and more precise than the baseline's own first-pass `WebFetch`
+  result specifically).
+- **curation correction (Phase 54 triage, 2026-09-16, knowledge-curator):**
+  field completeness confirmed, but the **"edge correctness: correct"**
+  claim above needs a material correction, not just a rubber-stamp.
+  Independently read `/home/cormac/projects/hledger/hledger/hledger.1`
+  lines 7368-7394 directly: this entry's own cited frontmatter (`lines:
+  [7372, 7392]`, `content_hash: sha256:1590e35d...`) is the **pre-fix**
+  extraction — the exact one `L-020` and the independent evaluation
+  report rate **FAIL**, because that range excludes lines 7393-7394 (the
+  third inheritance rule) while still being described as containing "all
+  three tag-inheritance rules." At the moment this observation cites
+  (that frontmatter, that hash), the claim "its body is the manual's own
+  exact wording, containing all three tag-inheritance rules" is
+  **independently false**, not correct — this entry, as filed, restates
+  the identical false-completeness claim that produced `L-020`'s FAIL
+  verdict, rather than catching it. `references.toml`/`references.lock`
+  have since been corrected (`lines = [7372, 7394]`, hash
+  `sha256:4672d39a...`) and the *current* artifact genuinely does contain
+  all three rules — so the entry's substantive comparison (treatment's
+  exact-text extraction vs. baseline's lossy `WebFetch` paraphrase) is
+  sound and remains useful evidence, but only for the corrected artifact,
+  not the one this entry actually cites. Per this project's own
+  "don't retroactively edit the evidence, add a correction" convention
+  (`treatment-tag-query-brief.md`'s own top banner is the model), this
+  note is added rather than silently rewriting the "edge correctness"
+  field above. **Effective edge correctness: correct only as of the
+  post-fix artifact; incorrect as literally cited.** `status` stays
+  `recorded` (no graph/detector action follows from this — it's a
+  citation-currency correction to the observation record, not a new
+  `context-gaps`/`context-observations` finding), but any future reader
+  citing `OBS-009` as independent corroboration that the *pre-fix*
+  extraction was fine should not do so — it wasn't, and this entry's
+  original wording should have said so.
+
+### OBS-008 — a working fallback exists for relating pinned reference material to Ledgerkit's own compat-register evidence, demonstrated real but not wired into CodeCompass's graph
+
+- **origin:** Phase 54, treatment run Step 3
+- **date:** 2026-09-16
+- **codecompass_revision:** `72961e0` (working tree;
+  `reference-experiment/` untracked)
+- **project:** ledgerkit — the real, already-published, read-only
+  `dev-docs/compat-register/LK-COMPAT-QUERY-DATE-001.yaml` (never
+  modified) + this experiment's own `references.lock`/extraction
+- **edge identity:** `LK-COMPAT-QUERY-DATE-001.yaml`'s
+  `evidence.ref` citations ("hledger-lib/Hledger/Data/Dates.hs:429",
+  "...:1132-1148") `-- [candidate relation, not wired into
+  context-graph.db] -->` this experiment's `references.lock` selections
+  `date-query-span-single` / `date-query-span-double` (lines 48-58) —
+  produced by
+  `planning/reference-projects/ledgerkit/reference-experiment/reference_pipeline.py::match_compat_register_evidence`
+  (lines 438-466), not by any `src/codecompass/` code path.
+- **observation type:** EDGE_USEFUL
+- **edge correctness:** correct — independently re-run: `match_compat_
+  register_evidence` parses the YAML's two `evidence.ref` strings, and
+  both resolve to the same file plus an overlapping line range as this
+  experiment's own two `date-query-span-*` selections (`Dates.hs:429` vs.
+  `[429, 429]`; `Dates.hs:1132-1148` vs. `[1132, 1148]`) — confirmed via
+  `tests/test_reference_pipeline.py::test_match_compat_register_evidence_finds_real_overlap`,
+  which asserts exactly `{"date-query-span-single",
+  "date-query-span-double"}`.
+- **task usefulness:** useful, though not for *this* task directly (no
+  `tag:` compat-register entry exists yet to match against — that gap is
+  exactly this task's own deliverable) — demonstrated instead against the
+  real, already-published `date:` entry as the nearest available real
+  equivalent, confirming the mechanism works against real
+  Ledgerkit-authored provenance data, not a synthetic fixture.
+- **default pathway:** manually cross-referencing a compat-register
+  entry's `evidence.ref` line-range citations against a separately
+  pinned source tree by eye — exactly what `hledger-researcher` already
+  does by hand once per feature researched
+  (`planning/phase-54-heterogeneous-reference-material-experiment.md` §1's
+  own framing of the current real workflow). Nothing currently automates
+  this cross-check, inside or outside CodeCompass.
+- **advantage:** MODERATE — a genuinely more reliable mechanism than
+  mechanical `mentions_artifact` prose-mention detection (which found
+  zero edges here, `CG-004`), since it matches structured YAML fields
+  directly rather than inferring a relationship from word-boundary text
+  search — but it exists only as standalone script code
+  (`reference_pipeline.py`), not as a queryable part of CodeCompass's own
+  graph, so an agent still has to know to run it rather than getting the
+  relation from `codecompass query relations`.
+- **wrong or misleading?** no.
+- **status:** recorded
+- **investigation:** none needed — record-only; whether this should
+  become part of `src/codecompass/` (vs. staying Ledgerkit-specific
+  experiment code) is explicitly Phase 55/GATE DD's call per the phase
+  plan (§7.6), not something this observation resolves.
+- **resolution:** no action from this entry directly — cross-reference
+  `planning/phase-54-heterogeneous-reference-material-experiment.md`
+  §7.2/§7.6 for the recommendation the phase's own retro must make about
+  generalising it.
+- **curation (Phase 54 triage, 2026-09-16, knowledge-curator):** field
+  completeness confirmed. Independently re-derived the claim rather than
+  trusting the entry's own account: read `reference_pipeline.py`'s
+  `match_compat_register_evidence` and the real, unmodified
+  `LK-COMPAT-QUERY-DATE-001.yaml` — its `evidence.ref` citations are
+  exactly `hledger-lib/Hledger/Data/Dates.hs:429` and `:1132-1148`,
+  matching `references.lock`'s own `date-query-span-single`/
+  `date-query-span-double` selections (`lines = [429, 429]` /
+  `[1132, 1148]`) exactly. `EDGE_USEFUL`, record-only correctly applied.
+  Confirmed this is correctly *not* routed to `context-gaps/` — the entry
+  already defers the "should this land in `src/codecompass/`" question to
+  Phase 55/GATE DD rather than asking this queue to resolve it, matching
+  the queue's own charter that it is never itself the destination of a
+  fix. No action needed.
+
+### OBS-007 — zero-code-change detection of the six ingested reference files succeeded via the pre-existing `dev-docs/**/*.md` glob
+
+- **origin:** Phase 54, treatment run Step 1 (the detection half, before
+  the zero-relations finding — see `CG-004`)
+- **date:** 2026-09-16
+- **codecompass_revision:** `72961e0` (working tree;
+  `reference-experiment/` untracked)
+- **project:** ledgerkit, scratch copy (never the real clone)
+- **edge identity:** the six `dev-docs/hledger-reference/hledger-tag-
+  query-*.md` files (`hledger-tag-query-manual.md`, `-parser.md`,
+  `-account-match.md`, `-posting-match.md`, `-transaction-match.md`,
+  `-pattern-match.md`) `--` tracked as `doc_artifacts` rows,
+  `kind='spec_doc'` `--` (no relation edges produced; see `CG-004`)
+- **observation type:** EDGE_USEFUL (for detection/tracking
+  specifically, independent of the relation gap recorded separately)
+- **edge correctness:** correct — per the treatment run's own report
+  (`treatment-tag-query-brief.md` Step 1), `codecompass sync --budget 0`
+  then `codecompass query relations` for each file confirmed all six
+  tracked with no "not found" error. Independently corroborated by
+  reading the code path directly rather than taking the report on its
+  own word: `src/codecompass/spec_docs.py::_DEFAULT_GLOBS` (line 35)
+  already includes `"dev-docs/**/*.md"` — Phase 49's own fix for `CG-002`
+  — which is sufficient by itself to explain the six files being tracked
+  without any new code.
+- **task usefulness:** useful, as a precondition — without this, the
+  treatment run would have hit the same "not found" error `CG-002`/
+  `OBS-004` already document for Ledgerkit's own `dev-docs/` content,
+  before ever reaching the relation question.
+- **default pathway:** none needed for this half — the point of this
+  observation is precisely that no fallback was required.
+- **advantage:** LOW — the same glob-coverage fix that already existed
+  (Phase 49) accounted for this entirely; nothing new was demonstrated
+  about detection itself, only that the existing fix generalizes to a
+  materially different kind of content (extracted external reference
+  text, not Ledgerkit's own hand-authored docs) placed under the same
+  directory convention.
+- **wrong or misleading?** no.
+- **status:** resolved
+- **investigation:** none needed.
+- **resolution:** no action — recorded as corroborating evidence that
+  Phase 49's `CG-002` fix generalizes beyond its original
+  Ledgerkit-authored-docs motivation. Feeds
+  `planning/phase-54-heterogeneous-reference-material-experiment.md` §7.1
+  directly ("did the zero-schema-change hypothesis... work" — yes, for
+  detection; no, for relation — see `CG-004`).
+- **curation (Phase 54 triage, 2026-09-16, knowledge-curator):** field
+  completeness confirmed against `TEMPLATE.md` (edge correctness/task
+  usefulness kept as separate fields, as required). Independently
+  re-verified the detection claim by direct code reading rather than
+  trusting the treatment brief's own report: `src/codecompass/spec_docs.py::_DEFAULT_GLOBS`
+  currently includes `"dev-docs/**/*.md"` (Phase 49's fix), which is
+  sufficient by itself to explain all six ingested files being tracked
+  with zero code change, exactly as claimed. `status: resolved` is
+  consistent with this project's own established practice for
+  record-only `EDGE_USEFUL` entries (`OBS-001`/`OBS-002`/`OBS-005`, each
+  independently confirmed "resolved" at their own prior triage despite
+  being record-only, rather than `recorded`) — noted for the lead's
+  awareness that this queue's own `README.md` literal text ("most entries
+  stay `recorded` forever") would suggest `recorded` instead, but not
+  treated as a defect requiring correction since it doesn't affect this
+  entry's substance or its "no action" resolution, and matches
+  established precedent rather than deviating from it. No investigation
+  owed or skipped; first occurrence, no recurring pattern to escalate.
+
 ### OBS-006 — Phase 52 lifecycle demo, cycle 2: new mechanical edge enriched, cache-hit rejection proven, cycle 1's audit trail confirmed untouched by rebuild
 
 - **origin:** Phase 52 (context edge lifecycle demonstration, local fixture), `context-enrichment-agent` + lead
