@@ -15,6 +15,17 @@ now the Stage B/D evidence source (was Stage D only, second); Technical
 Clipper moved to a new Stage F, much later. Phase numbers for Ledgerkit's
 evidence (53, 54, 55) are unchanged; §1.2/§2.5's Technical-Clipper-sourced
 rows are flagged below as now unavailable at GATE DD's original timing.
+**Amended again 2026-09-18** (Phase 54c, plan awaiting review): a bounded
+experiment directly testing §2.4's "provenance / evidence" hypothesis —
+an evidence-backed knowledge model (Observation/Evidence/Claim/
+Derivation/Decision/Requirement, file-based under `planning/knowledge/`,
+not a graph schema change) plus a documentation-first review workflow —
+is planned as a new bridge phase, informing this gate rather than
+pre-empting it. Its retro's explicit durable-vs-experimental
+recommendation is intended as this gate's most concrete evidence input
+yet for §2.4 specifically (and, secondarily, §2.2 via the same
+proving-case reasoning Phase 54b already established). See
+`planning/phase-54c-evidence-knowledge-workflow.md`.
 
 ## 1. Evidence status of each idea (as of this planning session)
 
@@ -46,7 +57,7 @@ raised by two agents independently, is GATE DB/DD input.
 | v1 needs a generalised **technical-dependency** concept | recurring "CodeCompass cannot represent dependency X" findings across ≥2 tasks and ≥1 project (`context-gaps/` + reference-project evals) | §2.1 |
 | v1 needs an **executable** dependency kind | Ledgerkit Phase 54 shows relating hledger-behaviour evidence is materially useful; **Phase 54b, expanded 2026-09-18** (`planning/phase-54b-ledgerkit-behavioural-understanding-experiment.md`) tests this directly against Ledgerkit's real Stage C Phase 5 `depth:` investigation — a real, independently-verified case of one behaviour (`depth:`) resolving to three distinct outcomes across five hledger commands, plus a dated, real premature-conclusion mistake (Stage C Phase 1) correctable only by full execution-path tracing. Findings feed this row and Phase 56, not a new hypothesis row | §2.2 |
 | v1 needs a **reference-doc / spec / manual** dependency kind | Ledgerkit (hledger manual) Phase 53's original sketch (retargeted; see Phase 54's own reference-material experiment, which ran this test directly) shows indexed+related reference material beats direct reading, with real mixed evidence (`CG-004`/`CG-006`, `L-020`) | §2.3 |
-| v1 needs first-class **provenance** (distinct source kinds) | recurring "context was misleading because a doc-statement / agent-inference was shown like a source-fact" findings; **Phase 54b, expanded 2026-09-18**, tests whether a *behavioural claim* assembled from documentation + implementation-path + executable-observation + independent-verification (the evidence-kind split Ledgerkit's own compat-register already uses by hand) needs a first-class distinction in CodeCompass's model, or whether existing mechanisms already carry it adequately — feeds **Phase 57** directly | §2.4 |
+| v1 needs first-class **provenance** (distinct source kinds) | recurring "context was misleading because a doc-statement / agent-inference was shown like a source-fact" findings; **Phase 54b, expanded 2026-09-18**, tests whether a *behavioural claim* assembled from documentation + implementation-path + executable-observation + independent-verification (the evidence-kind split Ledgerkit's own compat-register already uses by hand) needs a first-class distinction in CodeCompass's model, or whether existing mechanisms already carry it adequately — feeds **Phase 57** directly. **Phase 54c** (plan awaiting review) goes further: a bounded, file-based (not graph-schema) Observation/Evidence/Claim/Derivation/Decision/Requirement experiment, generalising `decisions/0051`/`0054`'s existing non-graph boundary, whose retro's durable-vs-experimental recommendation is the most concrete evidence this row will have | §2.4 |
 | v1 needs a **browser/platform-API** dependency kind | **Updated 2026-09-17 (`decisions/0056`): this evidence path is now unavailable by default** — Stage F no longer runs Technical Clipper as its required content (retargeted to a Haskell adapter spike); Technical Clipper is only an *optional* Phase 63 smoke-test candidate, and a lightweight smoke test is not designed to surface a recurring-finding-grade signal. GATE DD (Phase 55) should decide §2.5 without this evidence, or explicitly defer §2.5 indefinitely (not merely "pending Stage F") unless Technical Clipper is separately picked up as later ecosystem-expansion work | §2.5 |
 | task-oriented retrieval needs new **edges** (not just new joins) | Phase 48 scoping shows the "what matters for this task" map can't be built from existing graph data | §2.6 |
 

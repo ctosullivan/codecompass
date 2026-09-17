@@ -501,6 +501,44 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 54c is a plan, not started (2026-09-18) — evidence-backed,
+knowledge-based, documentation-first development workflow.** Direct
+user request: design a minimal Observation/Evidence/Claim/Derivation/
+Decision/Requirement model plus a Context Researcher → Documentation
+Agent → user review gate → approved context packet → coding agent →
+behavioural revalidation → retro workflow, usable for both CodeCompass's
+own development and downstream projects like Ledgerkit. Full plan:
+`planning/phase-54c-evidence-knowledge-workflow.md` (prompt saved
+verbatim: `planning/phase-55c-evidence-knowledge-workflow-prompt.md`).
+Grounded in real, already-proven precedent rather than invented from
+scratch: `decisions/0051` (agent-suggested edges live in `planning/`,
+never `context-graph.db`, promoted only through the learning lifecycle)
+and `decisions/0054` (agent-driven enrichment writes through existing
+tables, tagged by producer, never asserting a fact) already establish
+exactly the "agent-derived content must not silently become fact"
+boundary this phase generalises from graph edges/enrichment specifically
+to general behavioural knowledge; Ledgerkit's own real
+`dev-docs/compat-register/*.yaml` schema (studied in depth this session,
+Phase 54/54b) is the direct template for the new record shapes. **Design
+choice: file-based storage under `planning/knowledge/<feature-slug>/`,
+not any `context-graph.db` schema change** — deterministic structural
+facts stay exactly as they are. Numbered as a bridge phase (54c) between
+Phase 54b and Phase 55's own still-open GATE DD decision — informs that
+gate (directly testing `conditional-generalisation.md` §2.4's
+provenance hypothesis), does not pre-empt it; Stage E (56-59) remains
+strictly conditional, untouched. Bounded proving case: `CG-005` (the
+`origin` enum extension, primary — small enough for a full
+research→design-doc→review→approve→packet→implement→revalidate loop
+within one experimental phase) plus a retroactive, low-cost check of
+Phase 54b's own `depth:` evidence against a known-correct answer
+(secondary, no new agent dispatch). Three new experimental agent roles
+proposed (Context Researcher, Documentation Agent, a packet-assembly
+role), explicitly not started yet — this is planning only, per the
+prompt's own "do not begin implementation." No `src/` change, no new
+ADR (deferred to the retro's own durable-vs-experimental
+recommendation, which is this phase's single most important
+deliverable).
+
 **Phase 54b is `done` (2026-09-18) — LedgerKit behavioural-understanding
 experiment.** Expanded from a one-paragraph placeholder into a concrete
 experiment using Ledgerkit's real Stage C Phase 5 `depth:` investigation
@@ -1370,38 +1408,46 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**The Stage F retarget (`decisions/0056`, `7153ca0`) is done and pushed.
-Phase 54b's own full run is complete** (`release-phase-auditor` → PASS
-WITH NON-BLOCKING OBSERVATIONS — see `findings.md`'s Phase 54b section
-for the verdict) **and its closing commit is landing now** (see git log
-for the exact hash once pushed). Stage F targets a minimal Haskell
-`EcosystemAdapter` spike against
-hledger/Ledgerkit; sequence: Phase 54b (done) → 60 → 61 → 62 → 63 →
-Stage G (64-70) unchanged. Stage E (56-59, GATE DD) untouched.
+**Phase 54c's plan awaits review before implementation begins** — per
+the governing prompt's own explicit "do not begin implementation during
+this planning task." Three named judgment calls are flagged for the
+user in the plan's own "Review gate" section: (1) whether this phase
+should merely *inform* GATE DD (as planned) or directly *constitute*
+its resolution; (2) `CG-005` (chosen for boundedness) vs. `CG-006`
+(richer design content) as the primary proving case; (3) three new
+experimental agent roles vs. folding Documentation Agent into
+`docs-maintainer` for a cheaper first test. Once resolved, implementation
+proceeds per the plan's own §1-§10 (data model → Context Researcher →
+Documentation Agent → review gate → context packet →
+`CG-005` implementation → behavioural revalidation → retro with an
+explicit durable-vs-experimental recommendation).
 
-**The live decision point is GATE DD** (Phase 55's own gate, Stage E's
-precondition) — still open, still unstarted. It now has a materially
-richer evidence package than at any prior point: Phase 54b's own result
-(both a fresh baseline and a fresh CodeCompass-assisted treatment
-independently reached the same fully correct, execution-path-complete
-answer to a real hledger behavioural question; CodeCompass's document
-layer was LOW-advantage and, on this occasion, mildly negative on
-completeness relative to the baseline, due to a real curation gap
-rather than a detection/relation defect) sharpens, without yet
-satisfying, the ≥2-occurrence promotion bar for `CG-007` (symbol-level
-cross-references between pinned reference excerpts have no
-representable relation kind). Nothing forces GATE DD's hand yet — it
-remains a genuine open decision, not a foregone conclusion either way.
+**The Stage F retarget (`decisions/0056`, `7153ca0`) and Phase 54b's own
+full run (`1a88f86`, `release-phase-auditor` → PASS WITH NON-BLOCKING
+OBSERVATIONS) are both done and pushed.** Stage F targets a minimal
+Haskell `EcosystemAdapter` spike against hledger/Ledgerkit; sequence:
+Phase 54b (done) → 60 → 61 → 62 → 63 → Stage G (64-70) unchanged.
+Stage E (56-59, GATE DD) untouched by that work.
 
-**Phase 60 (minimal Haskell adapter) is the next unstarted phase in the
-revised sequence** — not gated on GATE DD (Stage F is a separate axis
-from Stage E, per `decisions/0056`), and now carries one concrete, named
-open design question from Phase 54b: does the adapter need mechanical
-call-site/usage detection (not just module-export signatures) to avoid
-the same curation-completeness gap Phase 54b hit by hand (`Stats.hs`
-omitted from a hand-curated set)? Phase 61 (hledger cross-language
-experiment) has Phase 54b's own LOW-advantage, gap-disclosed result as
-its baseline for "how much better does real structural information do."
+**GATE DD** (Phase 55's own gate, Stage E's precondition) remains open
+and unstarted, now with two evidence inputs queued ahead of it: Phase
+54b's own result (LOW advantage, a real curation-completeness gap,
+`CG-007` not yet past the ≥2-occurrence promotion bar) and, once run,
+Phase 54c's own durable-vs-experimental recommendation — the more
+concrete evidence input of the two for `conditional-generalisation.md`
+§2.4's provenance hypothesis specifically. Nothing forces GATE DD's hand
+yet.
+
+**Phase 60 (minimal Haskell adapter) remains the next unstarted phase
+not gated on anything** (Stage F is a separate axis from Stage E, per
+`decisions/0056`) — available to pick up independently of Phase 54c's
+own review, if that's preferred over resolving Phase 54c's judgment
+calls first. It carries one open design question from Phase 54b: does
+the adapter need mechanical call-site/usage detection (not just
+module-export signatures) to avoid the same curation-completeness gap
+Phase 54b hit by hand (`Stats.hs` omitted from a hand-curated set)?
+Phase 61 has Phase 54b's own LOW-advantage, gap-disclosed result as its
+baseline.
 
 `CG-005` (the `origin` enum extension) and `CG-006` (Phase 55b's own
 residual filename-matching gap) remain small, independently-fundable,

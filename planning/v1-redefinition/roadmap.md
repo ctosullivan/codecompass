@@ -910,6 +910,35 @@ evidence: `planning/reference-projects/ledgerkit/findings.md`'s "Phase
 `planning/reference-projects/ledgerkit/02-depth-behavioural-reconstruction-evaluation.md`;
 retro: `planning/retros/phase-54b-ledgerkit-behavioural-understanding.md`.
 
+### Phase 54c — Evidence-backed, knowledge-based, documentation-first workflow · EXPERIMENTAL
+
+**Claimed 2026-09-18**, per direct user request. Numbered as a bridge
+phase (43d/43e, 55b, 54b precedent) between Phase 54b and Phase 55's own
+still-open GATE DD decision — informs that decision, does not pre-empt
+it (Stage E, Phases 56-59, remains strictly conditional on GATE DD,
+unaffected by this phase's own claimed number).
+
+Introduces a minimal, file-based (not `context-graph.db`) evidence/
+knowledge model — Observation, Evidence, Claim, Derivation, Decision,
+Requirement — plus a documentation-first development workflow (Context
+Researcher → knowledge map → Documentation Agent → user-facing design
+doc → user review gate → approved context packet → coding agent →
+implementation → behavioural revalidation → retro), generalising
+`decisions/0051`'s and `decisions/0054`'s already-proven
+"agent-derived content lives outside the graph until promoted" boundary
+from graph edges/enrichment specifically to general behavioural
+knowledge. Explicitly **not** a universal ontology, not RDF/OWL, no
+probabilistic confidence system, no `context-graph.db` schema change
+beyond one incidental CHECK-enum value its own bounded proving case
+(`CG-005`) already calls for. Designed as a bounded, reversible
+experiment whose retro must explicitly recommend which parts (if any)
+become durable Stage E/GATE DD input versus which stay experimental or
+get discarded — not assumed permanent in advance.
+
+Not started; plan awaiting review. Full plan:
+`planning/phase-54c-evidence-knowledge-workflow.md`. Full verbatim
+request: `planning/phase-55c-evidence-knowledge-workflow-prompt.md`.
+
 ### Phase 55 — Decide on broader abstractions + refine the blueprint · EXPERIMENTAL → decision
 - **Exit / GATE DD (gate G7):** a written decision
   (`planning/reference-projects/ledgerkit/findings.md`) answering:

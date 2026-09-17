@@ -47,6 +47,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
+- **Phase 54c plan: evidence-backed, knowledge-based,
+  documentation-first workflow** (planning only, no code, phase not
+  started): a minimal, file-based (not `context-graph.db`)
+  Observation/Evidence/Claim/Derivation/Decision/Requirement model
+  (`planning/knowledge/<feature-slug>/`) plus a development workflow —
+  Context Researcher → knowledge map → Documentation Agent →
+  user-facing design document → user review gate (DRAFT → RESEARCHED →
+  USER REVIEW → APPROVED → IMPLEMENTING → VERIFIED) → approved context
+  packet → coding agent → behavioural revalidation → retro — usable for
+  both CodeCompass's own development and downstream projects like
+  Ledgerkit. Generalises `decisions/0051`'s and `decisions/0054`'s
+  already-proven "agent-derived content stays outside the graph until
+  promoted" boundary from graph edges/enrichment specifically to
+  general behavioural knowledge; adapts Ledgerkit's own real
+  `dev-docs/compat-register/*.yaml` evidence-kind/status shape as the
+  direct template. Bounded proving case: `CG-005` (the `origin` enum
+  extension, primary — small enough for a full loop within one
+  experimental phase) plus a retroactive, no-new-dispatch check of
+  Phase 54b's own `depth:` evidence against Ledgerkit's real, shipped
+  outcome as a known-correct answer (secondary). Numbered as a bridge
+  phase (54c) informing, not pre-empting, GATE DD (Phase 55). No new
+  `context-graph.db` schema change beyond one incidental CHECK-enum
+  value; no universal ontology, RDF/OWL, confidence scoring, or MCP
+  work. See `planning/phase-54c-evidence-knowledge-workflow.md` and
+  `planning/phase-55c-evidence-knowledge-workflow-prompt.md`.
+
 - **Phase 54b plan: behavioural-understanding experiment** (planning
   only, no code, phase not started): expands Phase 54b's one-paragraph
   placeholder into a full plan
