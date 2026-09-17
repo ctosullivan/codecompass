@@ -9,6 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
+- **Phase 54b plan: behavioural-understanding experiment** (planning
+  only, no code, phase not started): expands Phase 54b's one-paragraph
+  placeholder into a full plan
+  (`planning/phase-54b-ledgerkit-behavioural-understanding-experiment.md`)
+  using Ledgerkit's real Stage C Phase 5 evidence (`c6168b2`) — hledger's
+  `depth:` query term resolves to three distinct behaviours across five
+  commands (clip for balance/register/accounts, full depth-blindness for
+  `print`, genuine exclusion for `stats`), and Stage C Phase 1 made a
+  real, dated premature-conclusion mistake (classified from one
+  function's signature without tracing any command's actual consumption)
+  corrected only by a full six-file source trace at Phase 5. Refines the
+  phase's objective to: test whether CodeCompass context helps an agent
+  reach an execution-path-complete conclusion and avoid that exact
+  mistake, using only existing mechanisms (Phase 54's reference-ingestion
+  pipeline, the context-gap/context-observation queues,
+  `context-evaluator`, plus one new phase-scoped evaluation criterion —
+  "execution-path completeness" — not folded into the shared
+  `context-quality-evaluation.md` instrument). No new ontology, claim
+  system, or execution graph. Findings feed GATE DD's existing
+  executable-kind (§2.2 → Phase 56) and provenance (§2.4 → Phase 57)
+  hypothesis rows, not a new one, and carry forward as named design
+  questions for Phase 60 (adapter API-surface sufficiency for
+  entry-point tracing) and a refined Phase 61 (cross-language
+  behavioural comparison via the same `depth:` case, not just "does the
+  adapter parse Haskell"). Existing phase numbering/sequencing preserved
+  throughout; no new ADR (refines scope inside `decisions/0056`'s
+  existing framework). See `planning/phase-54b-ledgerkit-behavioural-understanding-prompt.md`
+  for the full verbatim request.
+
 - **Roadmap revision: cross-language validation strategy** (no phase
   number — planning/documentation only, no code): `decisions/0056`
   replaces Technical Clipper as Stage F's required cross-project

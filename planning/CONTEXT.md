@@ -1331,44 +1331,56 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Uncommitted, this session (2026-09-17): a roadmap revision retargeting
-Stage F**, recorded in new ADR `decisions/0056`. Technical Clipper is
-demoted from being Stage F's required/primary cross-project validation
-target; Stage F is retargeted to a minimal Haskell `EcosystemAdapter`
-spike validated against hledger/Ledgerkit (already this project's
-central reference project). Revised sequence: **Phase 54b** (LedgerKit
-reference/behaviour validation, new bridge phase in Stage D, not
-started) → Phase 60 (minimal Haskell adapter) → Phase 61 (hledger
-cross-language experiment) → Phase 62 (adapter-interface consolidation)
-→ Phase 63 (lightweight ordinary-project smoke test, Technical Clipper
-now merely optional there) → Phases 64-70 unchanged (Stage G; Phase 67
-now says "Stage F smoke test" generically rather than naming Technical
-Clipper). Rust (Cargo)/npm adapter *maturation* work is demoted to
-later, non-near-term ecosystem-expansion work, not required for v1.
-**Stage E (Phases 56-59, GATE DD) is explicitly untouched by this
-decision** — a different axis of generalisation. Edited to match:
-`planning/v1-redefinition/roadmap.md`, `planning/ROADMAP.md`,
-`planning/v1-redefinition/README.md`, `conditional-generalisation.md`,
-`reference-project-protocol.md`, `context-quality-evaluation.md`,
-`migration.md`, `codecompass-feedback-ingestion.md`. **Not yet
-committed** — still pending in this same session: a `CHANGELOG.md`
-`[Unreleased]` entry, a clean `python scripts/check_user_docs.py
---strict` run, then the commit itself.
+**The Stage F retarget (`decisions/0056`, committed `7153ca0`, 2026-09-17)
+is done and pushed.** Technical Clipper is demoted from Stage F's
+required target; Stage F now targets a minimal Haskell `EcosystemAdapter`
+spike against hledger/Ledgerkit; sequence: Phase 54b → 60 → 61 → 62 → 63
+→ Stage G (64-70) unchanged. Stage E (56-59, GATE DD) untouched.
 
-**Once that lands, the live decision point is Phase 54b** (LedgerKit
-reference/behaviour validation). Stage D's substantive goal is no longer
-an open strategic fork — Phase 54 already answered "pursue it" (found
-and fixed a real extraction bug via the reference-ingestion pipeline),
-and Phase 55/55b's evidence-reconciliation work already implemented one
-small fix surfaced by it (`CG-004`). Phase 54b is that work's planned,
-numbered, not-yet-started continuation; `decisions/0056` names it as
-sequence item 1, ahead of the new Haskell-adapter phases. GATE DD (Phase
-55's own gate, Stage E's precondition) also remains open and unstarted,
-per Phase 55's own explicit deferral — not a fork against 54b, a second
-item in the same queue, sequenced after 54b's evidence lands per the
-roadmap's own ordering. `L-021`'s `CLAUDE.md` §1 amendment is fully
-applied (approved via `AskUserQuestion`, mirrored in `CONTRIBUTING.md`);
-no human gate is outstanding from that work.
+**Uncommitted, this session (2026-09-18): Phase 54b now has a full plan
+file**, not just its one-paragraph placeholder —
+`planning/phase-54b-ledgerkit-behavioural-understanding-experiment.md`
+(governing prompt saved verbatim alongside it). Written because
+Ledgerkit's real **Stage C Phase 5** (`c6168b2`, done 2026-09-17,
+confirmed live) landed a materially richer evidence case than the
+placeholder assumed: hledger's `depth:` query term resolves to **three
+distinct behaviours across five commands** (clip for
+balance/register/accounts, full depth-blindness for `print`, genuine
+exclusion for `stats`), and Stage C Phase 1 made a real, dated
+premature-conclusion mistake (classified `depth:` from one function's
+signature, without tracing any actual command's consumption of it) only
+corrected by Phase 5's full six-file source trace. Phase 54b's objective
+is now explicit: test whether CodeCompass context helps an agent reach
+an execution-path-complete conclusion and avoid that exact mistake,
+using only existing mechanisms (Phase 54's reference-ingestion pipeline,
+the context-gap/context-observation queues, `context-evaluator` — plus
+one new phase-scoped evaluation criterion, "execution-path
+completeness," not folded into the shared `context-quality-evaluation.md`
+instrument). No new ontology, claim system, or execution graph. Findings
+feed GATE DD's existing executable-kind (§2.2 → Phase 56) and
+provenance (§2.4 → **Phase 57**) hypothesis rows, and carry forward as
+named design questions for Phase 60 (adapter API-surface sufficiency)
+and a refined Phase 61 (cross-language behavioural comparison, not just
+"does the adapter parse Haskell"). Edited to match:
+`planning/v1-redefinition/roadmap.md` (Phase 54b/60/61 stanzas),
+`planning/ROADMAP.md`, `conditional-generalisation.md`,
+`context-quality-evaluation.md`. **This is a plan, not an
+implementation** — per this project's own "plan first, implement only
+after a separate instruction" pattern (Phase 54's own precedent); no
+`src/` change, no agent dispatch to actually run the experiment yet.
+**Not yet committed** — still pending: a `CHANGELOG.md` entry, a clean
+`check_user_docs.py --strict` run, then the commit.
+
+**Once that lands, the live decision points are (a) review/approval of
+the Phase 54b plan's three named judgment calls** (reusing an
+already-answered question as a controlled re-creation; splitting the
+document-layer test from the code-structural layer Phase 60/61 will
+test; keeping the new evaluation criterion phase-scoped) **and (b) GATE
+DD** (Phase 55's own gate, Stage E's precondition), which remains open
+and unstarted, sequenced after 54b's evidence lands per the roadmap's
+own ordering — not a competing fork, a second item in the same queue.
+`L-021`'s `CLAUDE.md` §1 amendment remains fully applied; no human gate
+is outstanding from that earlier work.
 
 `CG-005` (the `origin` enum extension) and `CG-006` (Phase 55b's own
 residual filename-matching gap) remain small, independently-fundable,

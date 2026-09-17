@@ -13,7 +13,15 @@ criteria unchanged — this spec was always project-agnostic. **Amended
 again 2026-09-17** (`decisions/0056`): Phase 61 now evaluates the
 hledger cross-language experiment (via the new Haskell adapter), not a
 Technical Clipper task — the template/criteria are unaffected either
-way, exactly as the note above already anticipated.
+way, exactly as the note above already anticipated. **Amended again
+2026-09-18**: Phase 54b adds one additional, phase-scoped criterion
+("execution-path completeness" — did the agent identify and inspect all
+materially relevant behavioural entry points before concluding?), defined
+in `planning/phase-54b-ledgerkit-behavioural-understanding-experiment.md`
+§5. It is deliberately **not** added to §3's shared criteria table here —
+staying phase-scoped unless Phase 54b's own result justifies promoting
+it, the same evidence-before-generalisation discipline this file's own
+history already follows.
 
 ## 1. Ground rules
 

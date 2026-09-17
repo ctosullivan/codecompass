@@ -852,17 +852,30 @@ as a bridge phase (43d/43e, 55b precedent) between the Phase 54
 reference-material experiment and Phase 55's own GATE DD, not a retarget
 of either. Not started.
 
-**Scope, per the sketch above, now with real evidence to ground it
-rather than a hypothetical**: use Ledgerkit's own existing
-`compat-differential-tester` workflow and real compat-register entries
-(`LK-COMPAT-QUERY-DEPTH-001`'s manual/source/executable three-evidence
-structure, already inspected during Phase 54/55b) as the concrete
-"behaviour documented by / observed by / implemented by / verified by"
-chain to test relating, rather than an invented scenario. Directly
-informs Phase 60's own Haskell-adapter design: whatever this phase
-finds about representing behavioural/executable evidence bears on
-whether the new adapter's own boundary should (or explicitly should
-not) attempt to represent it.
+**Expanded 2026-09-18** (see full plan,
+`planning/phase-54b-ledgerkit-behavioural-understanding-experiment.md`):
+Ledgerkit's **Stage C Phase 5** (`c6168b2`, done 2026-09-17 — confirmed
+live, Ledgerkit `HEAD` == `origin/main`) landed since this stanza was
+first claimed and materially strengthens the evidence available —
+a real, independently-verified investigation of hledger's `depth:`
+query term showing **three distinct behaviours across five commands**
+(clip for `balance`/`register`/`accounts`, full depth-blindness for
+`print`, genuine exclusion for `stats`), and a real, dated instance of a
+premature conclusion from locally-plausible-but-incomplete source
+evidence (Stage C Phase 1 read one function's signature and wrongly
+classified the behaviour as compatible, corrected only by a six-file
+source trace at Phase 5). Phase 54b's objective is refined accordingly:
+not "test relating an already-written provenance chain," but **test
+whether CodeCompass's context helps an agent reconstruct
+execution-path-complete behavioural understanding and avoid Phase 1's
+own specific mistake**, using existing mechanisms only (Phase 54's
+reference-ingestion pipeline, the context-gap/context-observation
+queues, `context-evaluator`) — no new ontology, claim system, or
+execution graph. Findings feed GATE DD's existing §2.2 (executable kind,
+→ Phase 56) and §2.4 (provenance/evidence, → Phase 57) hypothesis rows,
+not a new one, and carry forward as named requirements for Phase 60's
+adapter design and Phase 61's cross-language comparison (see the plan's
+§7-§9). Not started; plan awaiting review.
 
 ### Phase 55 — Decide on broader abstractions + refine the blueprint · EXPERIMENTAL → decision
 - **Exit / GATE DD (gate G7):** a written decision
@@ -1005,6 +1018,18 @@ drives this stage's or v1's architecture.
   accommodate it (expected to be minimal or none, per `decisions/0002`'s
   own "each adapter implements the common interface using whatever
   native tooling its ecosystem already provides" design).
+- **Amended 2026-09-18** (Phase 54b's plan, §8 — see
+  `planning/phase-54b-ledgerkit-behavioural-understanding-experiment.md`):
+  Phase 54b's findings on whether CodeCompass's document/reference-layer
+  ingestion can surface *all* the real consumers of a concept like
+  hledger's `Depth` (six source files across five commands, not just its
+  defining module) become a **named evaluation question** for this
+  adapter's own design — is exported-module-signature information alone
+  sufficient for an agent to trace a behaviour from entry point through
+  implementation, or is mechanical call-site/usage detection (the same
+  shape as the existing Python/Cargo/npm import-usage detectors) also
+  needed for Haskell? Answered with real evidence once the adapter
+  exists, not decided speculatively here.
 
 ### Phase 61 — hledger cross-language experiment · EXPERIMENTAL
 - Track hledger itself (or `hledger-lib` specifically, the most directly
@@ -1019,6 +1044,21 @@ drives this stage's or v1's architecture.
   fetch/grep-the-pinned-clone workflow Phase 54's own baseline already
   documented? Treat LOW advantage or a null result as valid evidence,
   same posture as every prior phase in this vein.
+- **Refined 2026-09-18** (Phase 54b's plan, §9): the central test is not
+  merely "does the adapter parse Haskell" (that is Phase 60's own DoD) —
+  it is **whether CodeCompass helps an agent recognise that two
+  differently-implemented things are the same behaviour.** Re-run Phase
+  54b's own `depth:` behavioural-reconstruction question (or another
+  Ledgerkit compatibility question with equally rich, independently-
+  verified evidence, reconfirmed live at this phase's own start) using
+  real Haskell-side structural information via the new adapter instead
+  of Phase 54b's document-ingestion layer, and separately test whether
+  CodeCompass can relate that reconstructed Haskell-side understanding to
+  Ledgerkit's own Python implementation (`ledgerkit.query.depth.DepthSpec`,
+  `clip_account_name`, etc.) as one behavioural concept realised in two
+  languages. Phase 54b's own result is this phase's baseline for "how
+  much better does real structural information do, compared to the
+  document-ingestion layer alone."
 
 ### Phase 62 — Adapter-interface consolidation · EXPERIMENTAL
 - Assess `EcosystemAdapter`'s own contract (`decisions/0002`) against
