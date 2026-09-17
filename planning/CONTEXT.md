@@ -16,9 +16,10 @@ PyPI release will be the redefined v1 as `1.0.0`. "CodeCompass v1" is
 redefined as a *product-validation milestone*: CodeCompass developed
 agent-led, validated against real external reference-project work
 (**Ledgerkit, then Technical Clipper** — reordered 2026-09-12, see
-below), improved from that evidence, generalised only as far as evidence
-justifies, then released after blank-slate doc reconstruction and an
-independent audit.
+below; **the Technical Clipper leg was itself retargeted 2026-09-17,
+`decisions/0056` — see "Next concrete step"**), improved from that
+evidence, generalised only as far as evidence justifies, then released
+after blank-slate doc reconstruction and an independent audit.
 
 **2026-09-12 realignment** (`planning/v1-redefinition/realignment-2026-09.md`)
 reassessed and reordered the remaining roadmap, then **all three gates
@@ -1330,79 +1331,51 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 55b is done, and `L-021`'s `CLAUDE.md` §1 amendment is also
-now applied** — presented to the user via `AskUserQuestion`, approved
-("Approve as written"), landed in `CLAUDE.md` §1 (mirrored in
-`CONTRIBUTING.md`) in a small follow-up commit: a phase that adds
-behaviour to an existing function with a real production call site must
-now name that call site and test through it in its own plan, per Phase
-55b's own caught-live wiring-gap failure. No further human gate is
-outstanding from this work.
+**Uncommitted, this session (2026-09-17): a roadmap revision retargeting
+Stage F**, recorded in new ADR `decisions/0056`. Technical Clipper is
+demoted from being Stage F's required/primary cross-project validation
+target; Stage F is retargeted to a minimal Haskell `EcosystemAdapter`
+spike validated against hledger/Ledgerkit (already this project's
+central reference project). Revised sequence: **Phase 54b** (LedgerKit
+reference/behaviour validation, new bridge phase in Stage D, not
+started) → Phase 60 (minimal Haskell adapter) → Phase 61 (hledger
+cross-language experiment) → Phase 62 (adapter-interface consolidation)
+→ Phase 63 (lightweight ordinary-project smoke test, Technical Clipper
+now merely optional there) → Phases 64-70 unchanged (Stage G; Phase 67
+now says "Stage F smoke test" generically rather than naming Technical
+Clipper). Rust (Cargo)/npm adapter *maturation* work is demoted to
+later, non-near-term ecosystem-expansion work, not required for v1.
+**Stage E (Phases 56-59, GATE DD) is explicitly untouched by this
+decision** — a different axis of generalisation. Edited to match:
+`planning/v1-redefinition/roadmap.md`, `planning/ROADMAP.md`,
+`planning/v1-redefinition/README.md`, `conditional-generalisation.md`,
+`reference-project-protocol.md`, `context-quality-evaluation.md`,
+`migration.md`, `codecompass-feedback-ingestion.md`. **Not yet
+committed** — still pending in this same session: a `CHANGELOG.md`
+`[Unreleased]` entry, a clean `python scripts/check_user_docs.py
+--strict` run, then the commit itself.
 
-Everything else the Phase 55 evidence reconciliation surfaced stays
-explicitly deferred, not decided: GATE DD itself (the broader
-technical-dependency/provenance ontology question, Phase 55's own slot)
-remains open, now with a materially richer evidence package than after
-Phase 54 alone (Phase 55b's own real-world validation included);
+**Once that lands, the live decision point is Phase 54b** (LedgerKit
+reference/behaviour validation). Stage D's substantive goal is no longer
+an open strategic fork — Phase 54 already answered "pursue it" (found
+and fixed a real extraction bug via the reference-ingestion pipeline),
+and Phase 55/55b's evidence-reconciliation work already implemented one
+small fix surfaced by it (`CG-004`). Phase 54b is that work's planned,
+numbered, not-yet-started continuation; `decisions/0056` names it as
+sequence item 1, ahead of the new Haskell-adapter phases. GATE DD (Phase
+55's own gate, Stage E's precondition) also remains open and unstarted,
+per Phase 55's own explicit deferral — not a fork against 54b, a second
+item in the same queue, sequenced after 54b's evidence lands per the
+roadmap's own ordering. `L-021`'s `CLAUDE.md` §1 amendment is fully
+applied (approved via `AskUserQuestion`, mirrored in `CONTRIBUTING.md`);
+no human gate is outstanding from that work.
+
 `CG-005` (the `origin` enum extension) and `CG-006` (Phase 55b's own
-residual filename-matching gap) are both small, independently-fundable,
-not urgent; executable/behavioural-evidence representation and
-pinned-reference productisation both wait on cross-domain evidence
-(Technical Clipper/Stage F, not invented from two hledger-only
-instances). No phase is "queued" in the old sense — the next action is
-either the `L-021`/`CLAUDE.md` decision above, or the lead's/user's call
-on which of the small deferred items (if any) to pick up next.
-
-**Stage A is complete (Phases 39–43e `done`, GATE DA passed). Stage B is
-fully complete (Phases 43b, 43c, 44, 45, 46, 47 all `done`, GATE DB
-resolved). Stage C is fully complete (48/50 not funded, 49 and 51 both
-`done`, GATE DC resolved 2026-09-14). Phase 52 is also now `done`
-(2026-09-14) — but it is additive infrastructure (context-observations
-lifecycle + agent-driven enrichment), scoped by a direct user request
-during Phase 51's own retro window, not by resuming the Stage D fork.
-It retargeted Phase 52's roadmap slot (originally sketched as "continue
-genuine Ledgerkit Core development", Stage D's opening phase) away from
-that sketch, per the same findings/decision-driven-scope precedent
-Phase 49 established against its own pre-written Stage C sketch — see
-`planning/v1-redefinition/roadmap.md`'s Stage D amendment note. It
-produces no new evidence toward Stage D's substantive goal or the
-decision below, since its live demonstration deliberately used a local
-fixture, not the live Ledgerkit clone. **Phase 53's slot has now also
-been retargeted the same way** (legacy-feature rationalisation, `done`
-— see "What was just completed" above); Stage D's remaining substantive
-sketch (heterogeneous doc/reference/manual dependencies) still has no
-phase number assigned to it.**
-
-**The strategic decision below is still open and unresolved — genuinely,
-not as a placeholder.** Two paths remain both defensible, and choosing
-between them is the user's call, not a technical call this reconciliation
-should resolve or default on:**
-
-1. **Continue into Stage D's substantive goal** (deeper Ledgerkit
-   dogfooding — test whether CodeCompass can usefully relate
-   heterogeneous content (docs, executable hledger behaviour,
-   compatibility tests) as evidence nodes with provenance). Materially
-   harder and more novel than glob coverage; Phase 51's finding (the
-   *structural* ceiling on `query relations` for 0-vendor projects) is
-   exactly what this would need to address to move the advantage rating
-   past LOW at all. Since Phase 52's number is now spent on different
-   scope, this would need a fresh phase-number assignment (53 onward, or
-   a renumbering) when/if chosen.
-2. **Treat GATE DC's result as sufficient and proceed toward Stage F/G**:
-   register Technical Clipper as the cross-ecosystem regression check,
-   then blank-slate doc reconstruction and release. Accepts LOW advantage
-   as the honest, evidenced result for small/dependency-poor projects and
-   ships the redefined v1 on the strength of "agent-led development +
-   evidence-driven fixing works, even if the advantage ceiling on this
-   project shape is modest."
-
-Either path can also make further use of Phase 52's own new
-infrastructure (e.g. wiring `context-enrichment-agent` into real
-Ledgerkit dogfooding, if Stage D is chosen) — Phase 52 is available to
-whichever path gets picked, not tied to either. Full reasoning:
-`planning/retros/phase-51-rerun-ledgerkit-evaluation.md` "Where we're
-going" and `planning/retros/phase-52-context-edge-lifecycle.md` "Where
-we're going."
+residual filename-matching gap) remain small, independently-fundable,
+not urgent. Executable/behavioural-evidence representation and
+pinned-reference productisation still wait on cross-domain evidence —
+now expected from the Haskell/hledger work (Phases 60-61), not Technical
+Clipper, per `decisions/0056`.
 
 **Phase 52 closeout (done):** `docs-reconstructor` drift audit
 (`planning/retros/_drift-audit-phase-52.md`) → **DRIFT — 2 non-blocking

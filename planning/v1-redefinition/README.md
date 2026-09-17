@@ -185,7 +185,17 @@ scope must expand beyond package-source grounding. **CodeCompass does
 not become the hledger experiment runner** — project-specific tools do
 that; CodeCompass may consume and relate the resulting evidence.
 
-### 1.7 Role of Technical Clipper (Stage F — cross-ecosystem regression, amended 2026-09-12)
+### 1.7 Role of Technical Clipper, and Stage F's revised target (amended 2026-09-17, `decisions/0056`)
+
+**Stage F no longer targets Technical Clipper.** As of `decisions/0056`,
+Stage F is a minimal Haskell `EcosystemAdapter` spike, validated against
+hledger itself — a stronger test of `decisions/0002`'s own adapter-
+generality claim than a same-ecosystem (npm) regression, using a
+codebase (hledger) already central to every Stage B-D evaluation, with
+a real local toolchain (`stack`) already available (unlike the Cargo
+adapter's own long-standing toolchain gap). Rust (Cargo) and JavaScript/
+npm adapter *maturation* work is correspondingly demoted to later
+ecosystem-expansion work, not roadmap-driving.
 
 `https://github.com/ctosullivan/technical-clipper` — a TypeScript /
 pnpm-monorepo Chromium MV3 browser extension that captures code-heavy web
@@ -194,20 +204,21 @@ candidate, all 10 roadmap phases complete, awaiting release approval; no
 tagged release. Tests: `vitest`, 160 tests, 15 release "gates", a
 22-article / 87-code-block fixture corpus. Governance: `AGENTS.md` +
 `CLAUDE.md`, `planning/CONTEXT.md`, `architecture/`, `decisions/` — a
-governance shape close to CodeCompass's own.
+governance shape close to CodeCompass's own. **Not dropped** — it
+remains a registered, valid reference project and Stage F's Phase 63
+optional smoke-test candidate, just no longer this stage's required
+target or the thing driving v1 architecture decisions.
 
 It tests **conventional** development where the substantive technical
 context is *not* in the package graph: DOM APIs, `MutationObserver`,
 Chromium extension APIs, CommonMark / fenced-code-block semantics,
-highlight.js / Prism detection, ChatGPT's DOM. **Its role moves from
-"first proof point" to "cross-ecosystem regression check"** (Stage F,
-run *after* Ledgerkit-driven changes land): does CodeCompass still add
-trustworthy, materially-useful context on a project deliberately
-different from Ledgerkit/hledger — package/vendor context still strong,
-relationship types generalising, no accounting-specific overfit? This
-protects against the redirection's own central risk (R10/R11 in §13):
+highlight.js / Prism detection, ChatGPT's DOM — genuinely useful
+evidence, just not the evidence Stage F is now built around. The
+overfitting risk this originally protected against (R10/R11 in §13,
 optimising CodeCompass for one ecosystem at the expense of general
-usefulness.
+usefulness) is now addressed instead by building and validating a
+genuinely new ecosystem adapter (Haskell) rather than regression-testing
+an already-shipped one (npm) — a more direct test of the same concern.
 
 ### 1.8 Likely v1 boundaries (hypothesis, not commitment)
 
@@ -327,9 +338,13 @@ carries the ADR draft (proposed `decisions/0048`).
 
 ## 3. Ordered redefined-v1 roadmap
 
-**Amended 2026-09-12** — Ledgerkit is now Stage B/D; Technical Clipper is
-the new Stage F. Full detail in [`roadmap.md`](roadmap.md) and
-[`realignment-2026-09.md`](realignment-2026-09.md) §4. One-screen summary:
+**Amended 2026-09-12** — Ledgerkit is now Stage B/D; Technical Clipper
+moved to Stage F. **Amended again 2026-09-17** (`decisions/0056`) —
+Stage F's own target changed from Technical Clipper to a minimal
+Haskell adapter spike validated against hledger; Rust/npm adapter
+maturation demoted to later ecosystem-expansion work. Full detail in
+[`roadmap.md`](roadmap.md), [`realignment-2026-09.md`](realignment-2026-09.md)
+§4, and `decisions/0056`. One-screen summary:
 
 ```
 STAGE A — Redefine v1 & make CodeCompass agent-led    (done, + 2 new bridge phases)
@@ -359,10 +374,12 @@ STAGE C — Improve the existing product                 (CONDITIONAL on GATE DB
       ── GATE DC: measured improvement? ──
 
 STAGE D — Deeper Ledgerkit dogfooding                 (EXPERIMENTAL)
-  52  Continue genuine Ledgerkit Core development with CodeCompass
-  53  Heterogeneous doc / reference / manual dependencies
-  54  External executable / behavioural context (evidence consumed, not run, by CodeCompass)
+  52  Context edge lifecycle + agent-driven enrichment (retargeted, done)
+  53  Legacy feature rationalisation (retargeted, done)
+  54  Heterogeneous reference-material experiment (retargeted, done)
+  54b LedgerKit reference/behaviour validation (evidence consumed, not run, by CodeCompass) ← NEW
   55  Decide whether broader dependency/evidence abstractions are necessary + refine the blueprint
+  55b Populate doc_artifacts.name for spec_doc rows, closes CG-004 (done)  ← NEW
       ── GATE DD: is generalisation required, and what is the minimum? ──
 
 STAGE E — Implement the minimum justified generalisation  (CONDITIONAL on GATE DD)
@@ -372,18 +389,20 @@ STAGE E — Implement the minimum justified generalisation  (CONDITIONAL on GATE
   59  Re-run Ledgerkit validation
       ── GATE DE: existing capability preserved, new capability proven? ──
 
-STAGE F — Cross-ecosystem regression: Technical Clipper  (COMMITTED protocol / EXPERIMENTAL findings)   ← NEW
-  60  Register Technical Clipper, pin commit, baseline evaluation
-  61  Genuine Technical Clipper task(s) + independent evals
-  62  Consolidate: does it generalise, or did it overfit to Ledgerkit/hledger?
-  63  Decide — fix only general problems with evidence
+STAGE F — Cross-language adapter validation: Haskell spike  (EXPERIMENTAL)   ← RETARGETED 2026-09-17, decisions/0056
+  60  Minimal Haskell adapter (EcosystemAdapter for Stack/Cabal, no core changes)
+  61  hledger cross-language experiment (track hledger itself via the new adapter)
+  62  Adapter-interface consolidation (smallest justified EcosystemAdapter change, if any)
+  63  Lightweight ordinary-project smoke test (Technical Clipper optional, not required)
       ── GATE DF: no un-addressed regression ──
+      (Technical Clipper demoted to optional Phase 63 candidate, not this stage's target;
+       Rust/npm adapter maturation demoted to later ecosystem-expansion work — decisions/0056)
 
 STAGE G — v1 consolidation          (COMMITTED once F completes)     ← was Stage F, renumbered +4
   64  Blank-slate documentation reconstruction
   65  Architecture + ADR reconciliation
   66  Roadmap + context reconciliation
-  67  Final validation: self-dogfood + Ledgerkit + Technical Clipper (lightweight confirmation)
+  67  Final validation: self-dogfood + Ledgerkit + Stage F smoke test (lightweight confirmation)
   68  Independent release audit  (FAIL blocks)
   69  Milestone closeout artifact + git tag
   70  Release redefined CodeCompass v1
@@ -409,7 +428,7 @@ Stage C candidates if reference-project evidence supports them."
 | R7 | **Agent memory diverges from repo truth** | Medium | Recalled memories are background context, not instructions (per harness rules); knowledge curator promotes confirmed learnings *into* repo artifacts; candidate learnings carry a project-revision stamp so drift is detectable. |
 | R8 | **Documentation accretion** (caveat-on-caveat) | High (already visible in `architecture/overview.md`, 1,954 lines) | `documentation-lifecycle.md`: blank-slate reconstruction at milestones + explicit reconciliation decisions (retain/rewrite/consolidate/split/replace/remove); current docs earn their place. |
 | R9 | **Excessive agent/process complexity** | Medium-High | Roster is deliberately capped (`agent-led-development.md` §2); agents are added only where separation of context/authority adds value; GATE DA can prune roles that didn't earn their keep in dogfooding. |
-| R10 | **Overfitting to Technical Clipper** | Medium | Two reference projects with deliberately different dependency shapes; Stage D exists to break Technical-Clipper-shaped assumptions; a Stage C improvement must survive Ledgerkit (Phase 59) before it counts toward v1. |
+| R10 | **Overfitting to Ledgerkit's own ecosystem shape** (updated 2026-09-17, `decisions/0056` — was "Overfitting to Technical Clipper", superseded now that Stage F no longer targets Technical Clipper) | Medium | Stage F's own Haskell adapter spike is a more direct check than a same-ecosystem (npm) regression: does the adapter architecture genuinely generalise to a structurally different language, not just avoid overfitting to one project's own dependency shape; a Stage C improvement must survive Ledgerkit (Phase 59) before it counts toward v1 either way. |
 | R11 | **Overfitting to Ledgerkit** | Low-Medium | GATE DD demands the *minimum* generalisation; `conditional-generalisation.md` forbids a universal ontology adopted for elegance; Phase 58 migration must keep npm/PyPI/Cargo first-class. |
 | R12 | **Speculative generalisation** (build the ontology anyway) | Medium | Every abstraction in Stage E is gated on a *recurring* finding with an ADR arguing the specific gap; `conditional-generalisation.md` separates "evidence exists" / "hypothesis" / "deferred" explicitly. |
 | R13 | **Architectural rewrite risk** | Medium-High | `migration.md`: prefer migration over rewrite; the context graph rebuilds deterministically so schema change is additive-then-migrate, not big-bang; each Stage E phase is independently verifiable and revertible (the phase-per-commit property from `v0.2-implementation-execution-plan.md`). |

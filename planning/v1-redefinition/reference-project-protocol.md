@@ -14,6 +14,23 @@ rather than overfit to accounting/hledger. §1's inspection findings and
 moved (were 45–47, now 60–63) and their scope-label context changed
 (was "first proof point", now "regression/generalisation check").
 
+**Amended again 2026-09-17 (`decisions/0056`): Stage F no longer runs
+Technical Clipper as its required content either.** Stage F is now a
+minimal Haskell `EcosystemAdapter` spike validated against hledger
+(`planning/v1-redefinition/roadmap.md`'s Stage F). **This file's own
+content below is not deleted** — the registration/protocol material
+(§2), the real inspection findings (§1), and the task pool (§2.3) remain
+accurate and reusable, exactly as they were the last time this file was
+amended rather than rewritten. Technical Clipper is now an *optional*
+candidate for Phase 63's lightweight ordinary-project smoke test (not
+the multi-task protocol below in full), or for later ecosystem-expansion
+work picked up independently of the redefined-v1 roadmap's own
+sequencing. If Phase 63 does use Technical Clipper, this file's §2.1
+registration format and §2.2 working-copy discipline still apply; §2.3's
+full task pool and §2.4's full per-task procedure are heavier than a
+"lightweight smoke test" calls for — use only as much of them as Phase
+63's own scope actually needs.
+
 Repo: **https://github.com/ctosullivan/technical-clipper**
 
 ## 1. Inspection findings (2026-09-09 planning session — reconfirm live at Phase 60, its state will have moved)

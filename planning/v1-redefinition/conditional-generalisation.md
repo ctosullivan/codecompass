@@ -44,10 +44,10 @@ raised by two agents independently, is GATE DB/DD input.
 | Hypothesis | Would be confirmed by | Candidate design (§2) |
 |---|---|---|
 | v1 needs a generalised **technical-dependency** concept | recurring "CodeCompass cannot represent dependency X" findings across ≥2 tasks and ≥1 project (`context-gaps/` + reference-project evals) | §2.1 |
-| v1 needs an **executable** dependency kind | Ledgerkit Phase 54 shows relating hledger-behaviour evidence is materially useful | §2.2 |
-| v1 needs a **reference-doc / spec / manual** dependency kind | Ledgerkit (hledger manual) Phase 53 shows indexed+related reference material beats direct reading — Technical Clipper (CommonMark) can only corroborate later, at its now-later Stage F slot (Phase 61+) | §2.3 |
+| v1 needs an **executable** dependency kind | Ledgerkit Phase 54 shows relating hledger-behaviour evidence is materially useful; Phase 54b (`decisions/0056`, "LedgerKit reference/behaviour validation") is scoped specifically to test this further using Ledgerkit's own real compat-differential-testing workflow | §2.2 |
+| v1 needs a **reference-doc / spec / manual** dependency kind | Ledgerkit (hledger manual) Phase 53's original sketch (retargeted; see Phase 54's own reference-material experiment, which ran this test directly) shows indexed+related reference material beats direct reading, with real mixed evidence (`CG-004`/`CG-006`, `L-020`) | §2.3 |
 | v1 needs first-class **provenance** (distinct source kinds) | recurring "context was misleading because a doc-statement / agent-inference was shown like a source-fact" findings | §2.4 |
-| v1 needs a **browser/platform-API** dependency kind | Technical Clipper tasks recurringly need DOM/Chromium-API context CodeCompass can't give — **evidence for this row is now unavailable until Stage F (Phase 61+), since Technical Clipper moved later in the reordered roadmap (`realignment-2026-09.md` §4)**; GATE DD (Phase 55) will have to decide §2.5 without it, or explicitly defer §2.5 pending Stage F | §2.5 |
+| v1 needs a **browser/platform-API** dependency kind | **Updated 2026-09-17 (`decisions/0056`): this evidence path is now unavailable by default** — Stage F no longer runs Technical Clipper as its required content (retargeted to a Haskell adapter spike); Technical Clipper is only an *optional* Phase 63 smoke-test candidate, and a lightweight smoke test is not designed to surface a recurring-finding-grade signal. GATE DD (Phase 55) should decide §2.5 without this evidence, or explicitly defer §2.5 indefinitely (not merely "pending Stage F") unless Technical Clipper is separately picked up as later ecosystem-expansion work | §2.5 |
 | task-oriented retrieval needs new **edges** (not just new joins) | Phase 48 scoping shows the "what matters for this task" map can't be built from existing graph data | §2.6 |
 
 ### 1.3 Explicitly deferred (not v1 regardless of Stage B/D)
@@ -119,11 +119,14 @@ stays a first-class, unchanged-behaviour kind**.
 - Lower priority — MDN-style reference text as a `reference_doc`
   specialisation may cover it. Only its own kind if Technical Clipper
   findings show DOM/Chromium context is both recurringly needed and
-  poorly served by a generic `reference_doc`. **Cannot be decided at
-  GATE DD (Phase 55)** — Technical Clipper doesn't run until Stage F
-  (Phase 61+) in the reordered roadmap. GATE DD should either explicitly
-  defer §2.5 to a GATE DF follow-up, or approve §2.1/§2.3 without it if
-  Ledgerkit's evidence alone justifies them.
+  poorly served by a generic `reference_doc`. **Updated 2026-09-17
+  (`decisions/0056`): even less decidable now than "cannot be decided at
+  GATE DD"** — Stage F no longer runs Technical Clipper as required
+  content (retargeted to a Haskell adapter spike; Technical Clipper is
+  only an optional Phase 63 smoke-test candidate). GATE DD should
+  explicitly defer §2.5 indefinitely (not "to a GATE DF follow-up" — that
+  follow-up may never produce this evidence now), or approve §2.1/§2.3
+  without it if Ledgerkit's evidence alone justifies them.
 
 ### 2.6 Task-oriented retrieval edges
 - If existing joins suffice (Phase 48 finds the map is

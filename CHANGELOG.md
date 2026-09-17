@@ -9,6 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
+- **Roadmap revision: cross-language validation strategy** (no phase
+  number — planning/documentation only, no code): `decisions/0056`
+  replaces Technical Clipper as Stage F's required cross-project
+  validation target with a deliberately small Haskell `EcosystemAdapter`
+  spike validated against hledger/Ledgerkit — already CodeCompass's
+  central reference project, with a real Haskell toolchain (Stack
+  3.11.1) confirmed available in this environment, unlike the still-
+  stalled Cargo-toolchain situation (`decisions/0014`). Revised sequence:
+  new bridge phase **54b** (LedgerKit reference/behaviour validation,
+  Stage D) → Phase 60 (minimal Haskell adapter) → Phase 61 (hledger
+  cross-language experiment) → Phase 62 (adapter-interface
+  consolidation) → Phase 63 (lightweight ordinary-project smoke test,
+  Technical Clipper now merely an optional candidate there, not
+  dropped) → Phases 64-70 unchanged (Stage G v1 consolidation; Phase
+  67's description now names the Stage F smoke test generically rather
+  than Technical Clipper specifically). Rust and JavaScript/npm adapter
+  maturation work is demoted to later, non-near-term ecosystem-expansion
+  work — not required to drive v1 architecture or validation. Stage E
+  (Phases 56-59, GATE DD) is explicitly untouched — a different axis of
+  generalisation. Rationale: a new-ecosystem adapter validated against
+  an already-central codebase is a stronger test of the future modular
+  adapter architecture (potentially independently-licensed Python,
+  Haskell, and proprietary COBOL adapters) than a same-ecosystem
+  (TypeScript/npm) regression against Technical Clipper, whose own
+  ecosystem CodeCompass already ships support for. See `decisions/0056`
+  and `planning/v1-redefinition/roadmap.md` Stage F. Technical Clipper's
+  registration/protocol material is preserved, not deleted, for optional
+  later use.
+
 - **Evidence-reconciliation planning session** (no phase number —
   planning only): reconstructed current CodeCompass and Ledgerkit state
   fresh from both repositories (Ledgerkit had advanced 5 commits past

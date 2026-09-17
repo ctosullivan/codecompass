@@ -189,11 +189,20 @@ evidence bar.
 
 ## 6. Cross-ecosystem regression check on the ingestion process itself
 
-Stage F (Technical Clipper) is also the check that this ingestion format
-and its promotion rules **generalise** — if Technical Clipper's own
-findings (should it produce any during its regression phase) don't fit
-the same YAML shape without Ledgerkit-specific fields creeping in, that
-is itself a finding about this plan, filed the same way.
+**Updated 2026-09-17 (`decisions/0056`): Stage F no longer runs Technical
+Clipper by default**, so this specific corroboration path is deferred,
+not scheduled. If Stage F's Haskell adapter spike or its hledger
+cross-language experiment (Phases 60-61) produces a Ledgerkit-shaped
+finding of its own via this same ingestion format — plausible, since
+both live in the same repository — that already exercises this
+section's own intent (does the format hold up outside the exact
+scenario it was designed for) without needing a second reference project
+at all. The original check remains valid if Technical Clipper is ever
+separately picked up: Stage F (Technical Clipper) would be the check
+that this ingestion format and its promotion rules **generalise** — if
+Technical Clipper's own findings (should it produce any) don't fit the
+same YAML shape without Ledgerkit-specific fields creeping in, that is
+itself a finding about this plan, filed the same way.
 
 ## 7. What this plan explicitly does not do
 

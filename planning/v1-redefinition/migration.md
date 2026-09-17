@@ -63,8 +63,9 @@ The capabilities that must not regress, and how each is protected:
 4. Existing queries unchanged; new queries added.
 5. Regression: Phase 59 re-runs the full Ledgerkit task suite — any
    movement in the numbers vs Phase 46 that isn't an improvement is a
-   blocker. Phase 61 (Stage F, Technical Clipper) is the separate,
-   later cross-ecosystem regression check.
+   blocker. Phase 61 (Stage F — the hledger cross-language experiment via
+   the new Haskell adapter, `decisions/0056`; was Technical Clipper) is
+   the separate, later cross-language/cross-ecosystem regression check.
 
 ## 4. What "rewrite" would look like, and why to avoid it
 

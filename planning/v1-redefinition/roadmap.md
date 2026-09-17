@@ -840,6 +840,30 @@ Original sketch (unchanged):
   per `decisions/0051`'s two-property evaluation (correctness/confidence
   vs. context usefulness — a relationship can be true but not useful).
 
+### Phase 54b — LedgerKit reference/behaviour validation · EXPERIMENTAL
+
+**Claimed 2026-09-17 (`decisions/0056`)** — this is the sketch
+immediately above, finally given a phase number, as **sequence item 1**
+of the revised validation strategy `decisions/0056` records ("LedgerKit
+reference/behaviour validation → minimal Haskell adapter → hledger
+cross-language experiment → adapter-interface consolidation →
+lightweight ordinary-project smoke test → v1 consolidation"). Numbered
+as a bridge phase (43d/43e, 55b precedent) between the Phase 54
+reference-material experiment and Phase 55's own GATE DD, not a retarget
+of either. Not started.
+
+**Scope, per the sketch above, now with real evidence to ground it
+rather than a hypothetical**: use Ledgerkit's own existing
+`compat-differential-tester` workflow and real compat-register entries
+(`LK-COMPAT-QUERY-DEPTH-001`'s manual/source/executable three-evidence
+structure, already inspected during Phase 54/55b) as the concrete
+"behaviour documented by / observed by / implemented by / verified by"
+chain to test relating, rather than an invented scenario. Directly
+informs Phase 60's own Haskell-adapter design: whatever this phase
+finds about representing behavioural/executable evidence bears on
+whether the new adapter's own boundary should (or explicitly should
+not) attempt to represent it.
+
 ### Phase 55 — Decide on broader abstractions + refine the blueprint · EXPERIMENTAL → decision
 - **Exit / GATE DD (gate G7):** a written decision
   (`planning/reference-projects/ledgerkit/findings.md`) answering:
@@ -927,13 +951,108 @@ carries candidate designs; none is committed here.
   generalised model.
 - **Exit / GATE DE:** existing capability preserved, new capability
   proven (Ledgerkit context advantage moved up). FAIL → fix or narrow
-  Stage E before Stage F. **Technical Clipper regression is deliberately
-  a separate stage (F, next)** — do not fold it in here; a change that
-  looks fine against Ledgerkit alone may still be accounting-specific.
+  Stage E before Stage F. **Cross-project/cross-language regression is
+  deliberately a separate stage (F, next — a Haskell adapter spike as of
+  `decisions/0056`, not Technical Clipper)** — do not fold it in here; a
+  change that looks fine against Ledgerkit alone may still be
+  accounting-specific or Python-package-shaped in a way a genuinely
+  different ecosystem would expose.
 
 ---
 
-## STAGE F — Cross-ecosystem regression: Technical Clipper  · COMMITTED protocol, EXPERIMENTAL findings
+## STAGE F — Cross-language adapter validation: Haskell spike  · EXPERIMENTAL
+
+**Retargeted 2026-09-17 (`decisions/0056`) — Technical Clipper is no
+longer this stage's target.** The general concept motivating this
+retarget: a genuinely new-ecosystem adapter, built and validated against
+a real, already-central codebase (hledger), is a stronger test of
+`decisions/0002`'s own adapter-generality claim than a same-ecosystem
+(npm) regression check — not "hledger executable support" or "Ledgerkit
+compatibility YAML support" specifically; the concept generalises to any
+future third-party ecosystem adapter (a hypothetical Rust, Go, or
+COBOL adapter would face the identical interface-consolidation question
+Phase 62 below asks). Full rationale: `decisions/0056`. Technical
+Clipper is not dropped — see "Original Stage F content (preserved,
+superseded as this stage's target)" below — it remains a registered,
+valid reference project, explicitly available as Phase 63's smoke-test
+candidate, just no longer roadmap-driving.
+
+**Rust (Cargo) and JavaScript/npm adapter *maturation* work** (the
+long-outstanding "no Rust toolchain available to validate Cargo against"
+gap, `decisions/0014`; deeper real-world npm exercise) is correspondingly
+demoted from near-term priority to later ecosystem-expansion work,
+picked up only if a real project incidentally requires it — neither
+drives this stage's or v1's architecture.
+
+### Phase 60 — Minimal Haskell adapter · EXPERIMENTAL
+- A real `EcosystemAdapter` implementation for Haskell/Stack, following
+  `decisions/0002`'s own per-ecosystem-native-tooling precedent:
+  `package.yaml`/`.cabal` for name/version/licence metadata (hpack
+  format — already inspected against the real, pinned hledger clone
+  during Phase 54: `hledger-lib/package.yaml` carries exactly this),
+  `stack ls dependencies`/`stack query` for the dependency tree, exported
+  top-level module signatures for a public-API-surface approximation
+  (mirroring the Cargo adapter's own `pub`-scan precedent,
+  `decisions/0015`). **No Haskell-specific logic anywhere outside the
+  adapter boundary** — `codecompass.core`/`graph.py`/`sync.py` etc. stay
+  exactly as ecosystem-agnostic as they are today; if this phase finds
+  itself needing a core change, that is itself a finding for Phase 62,
+  not something to build around silently. Real local toolchain already
+  confirmed available (`stack`, used to build the pinned hledger clone
+  itself) — unlike the Cargo adapter's own multi-phase-long
+  toolchain-unavailability gap, this adapter can be tested against a
+  real build from day one. New ADR if the interface needs any change to
+  accommodate it (expected to be minimal or none, per `decisions/0002`'s
+  own "each adapter implements the common interface using whatever
+  native tooling its ecosystem already provides" design).
+
+### Phase 61 — hledger cross-language experiment · EXPERIMENTAL
+- Track hledger itself (or `hledger-lib` specifically, the most directly
+  relevant package to Ledgerkit's own compatibility work) as a real
+  CodeCompass-tracked vendor through the new Haskell adapter — real
+  digests, real graph entries, generated the same way any npm/Python/
+  Cargo vendor's are today. Independently evaluated the same way every
+  Ledgerkit task has been (`context-quality-evaluation.md`'s instrument):
+  does this materially help a real task (e.g. one of Ledgerkit's own
+  Stage C query-semantics questions, or a `hledger-researcher`-style
+  compat-register brief) compared with the existing manual
+  fetch/grep-the-pinned-clone workflow Phase 54's own baseline already
+  documented? Treat LOW advantage or a null result as valid evidence,
+  same posture as every prior phase in this vein.
+
+### Phase 62 — Adapter-interface consolidation · EXPERIMENTAL
+- Assess `EcosystemAdapter`'s own contract (`decisions/0002`) against
+  what building and using the Haskell adapter actually required —
+  the smallest justified interface change, if any (a new optional
+  method, a relaxed assumption an existing method's docstring made that
+  turned out npm/Python/Cargo-specific, etc.), not a speculative
+  redesign. This is the concrete evidence input for whether the
+  interface genuinely supports a plugin-style adapter boundary broad
+  enough for independently-maintained future adapters (the aspirational
+  framing `decisions/0056` names — Python/Haskell/proprietary-COBOL
+  adapters coexisting behind one stable interface) — this phase produces
+  the *evidence*, it does not itself commit to that broader packaging/
+  licensing model.
+
+### Phase 63 — Lightweight ordinary-project smoke test · EXPERIMENTAL
+- A deliberately small confirmation — not a full reference-project
+  protocol run — that ordinary npm/Python/Cargo project support wasn't
+  disturbed by anything Phases 60-62 changed: bootstrap against one real
+  ordinary project, confirm the existing three ecosystems still detect/
+  digest/query correctly, no regression. Technical Clipper remains an
+  available, already-registered, already-scouted candidate for this
+  smoke test (`reference-project-protocol.md`'s existing material is
+  still accurate) if convenient — using it here is explicitly optional,
+  not required, and if used, the check stays lightweight (one bootstrap
+  + one query, not the original Stage F's multi-task protocol).
+- **Exit / GATE DF:** fix only *general* problems supported by evidence.
+  If a genuine regression is found, it blocks Stage G until fixed or
+  explicitly, narrowly scoped away with its own ADR — same bar the
+  original GATE DF set, unchanged.
+
+---
+
+### Original Stage F content (preserved, superseded as this stage's target — `decisions/0056`)
 
 **New stage (2026-09-12 realignment).** Technical Clipper was the old
 Stage B; it moves here, unevaluated so far (Stage B never ran against it —
@@ -945,33 +1064,30 @@ lean, ordinary modern repositories still cheap to navigate. This stage's
 content is `reference-project-protocol.md`'s existing Technical-Clipper
 material (§1, §2.3's task pool, §3's outputs), renumbered down, otherwise
 unchanged in substance — do not invent new Technical Clipper product
-work merely to create a test; use its existing, still-real backlog
-(confirm live at Phase 60 — its state may have moved since the 2026-09-09
-inspection).
+work merely to create a test; use its existing, still-real backlog.
 
-### Phase 60 — Register Technical Clipper + baseline · EXPERIMENTAL
-- Same shape as Phase 45, against `technical-clipper` at a pinned commit,
-  confirmed live at this phase. `reference-project-protocol.md` §1/§2.1.
+- **Phase 60 — Register Technical Clipper + baseline** — same shape as
+  Phase 45, against `technical-clipper` at a pinned commit.
+  `reference-project-protocol.md` §1/§2.1.
+- **Phase 61 — Genuine Technical Clipper task(s)** — one or more real
+  tasks from Technical Clipper's own roadmap/deferred work
+  (`reference-project-protocol.md` §2.3's candidate pool), run against
+  the post-Ledgerkit-evolved CodeCompass. Same procedure as Phase 46
+  (`reference-project-protocol.md` §2.4).
+- **Phase 62 — Consolidate: does it generalise?** — `knowledge-curator` +
+  `context-evaluator` assess: package/vendor context still strong;
+  relationship/evidence concepts introduced by Stage E generalise beyond
+  accounting/hledger; no excessive noise from new abstractions; generated
+  entry points remain useful; ordinary modern repositories still cheap to
+  navigate.
+- **Phase 63 — Decision** — Exit / GATE DF: fix only general problems
+  supported by evidence — a Technical-Clipper-specific special case is
+  not a valid Stage E/F output.
 
-### Phase 61 — Genuine Technical Clipper task(s) · EXPERIMENTAL
-- One or more real tasks from Technical Clipper's own roadmap/deferred
-  work (`reference-project-protocol.md` §2.3's candidate pool, reconfirmed
-  live), run against the **post-Ledgerkit-evolved** CodeCompass. Same
-  procedure as Phase 46 (`reference-project-protocol.md` §2.4).
-
-### Phase 62 — Consolidate: does it generalise? · EXPERIMENTAL
-- `knowledge-curator` + `context-evaluator` assess: package/vendor
-  context still strong; relationship/evidence concepts introduced by
-  Stage E generalise beyond accounting/hledger; no excessive noise from
-  new abstractions; generated entry points remain useful; ordinary
-  modern repositories still cheap to navigate (this task's explicit
-  overfitting checklist).
-
-### Phase 63 — Decision · EXPERIMENTAL → decision
-- **Exit / GATE DF (new):** fix only *general* problems supported by
-  evidence — a Technical-Clipper-specific special case is not a valid
-  Stage E/F output. If a genuine regression is found, it blocks Stage G
-  until fixed or explicitly, narrowly scoped away with its own ADR.
+This content remains available as the basis for a future Technical
+Clipper regression pass (Phase 63's own optional smoke-test candidate,
+or later ecosystem-expansion work) — it is superseded as Stage F's
+*required* content, not deleted.
 
 ---
 
@@ -1007,16 +1123,22 @@ identical.)
   shipped v1; deferred work (Phases 24/25, anything dropped at gates)
   clearly parked with revisit triggers.
 
-### Phase 67 — Final validation: self-dogfood + Ledgerkit + Technical Clipper · EXPERIMENTAL (gates v1)
-- A **lightweight confirmation pass**, not a full re-run (Stages D and F
-  already did that work): re-verify CodeCompass's own dogfooding signal
+### Phase 67 — Final validation: self-dogfood + Ledgerkit + the Stage F smoke test · EXPERIMENTAL (gates v1)
+- **Updated 2026-09-17 (`decisions/0056`)**: references the revised
+  Stage F below, not Technical Clipper specifically. A **lightweight
+  confirmation pass**, not a full re-run (Stages D and F already did
+  that work): re-verify CodeCompass's own dogfooding signal
   (`planning/context-health.md`, `planning/context-use-log.md`) is
   current; re-confirm Ledgerkit's final evaluation numbers
-  (`planning/reference-projects/ledgerkit/`) and Technical Clipper's
-  (`planning/reference-projects/technical-clipper/`) still hold against
-  the code as shipped. Target: no FAIL verdicts on either; advantage
-  MODERATE+ on the majority of tasks across both, or an explicit written
-  justification for shipping below that bar.
+  (`planning/reference-projects/ledgerkit/`) and Phase 63's
+  ordinary-project smoke test result still hold against the code as
+  shipped. If Phase 63 used Technical Clipper as its smoke-test subject,
+  re-confirm that specifically
+  (`planning/reference-projects/technical-clipper/`); if it used a
+  different ordinary project, re-confirm that one instead. Target: no
+  FAIL verdicts on either; advantage MODERATE+ on the majority of tasks
+  across both, or an explicit written justification for shipping below
+  that bar.
 
 ### Phase 68 — Independent release audit · COMMITTED (FAIL blocks)
 - `release-phase-auditor`, read-only, full Definition-of-Done audit
@@ -1054,9 +1176,10 @@ legitimately counts as "redefined v1":
 3. At least one **measured** improvement over the foundation
    (phases 0–38) baseline, re-validated on Ledgerkit (a trimmed Stage C +
    Phase 51).
-4. Stage F run at least once against Technical Clipper (confirming no
-   regression from whatever Stage C changes landed), even if Stages D/E
-   are skipped.
+4. Stage F run at least once — the Phase 63 ordinary-project smoke test
+   at minimum (confirming no regression from whatever Stage C changes
+   landed), even if Stages D/E or the fuller Phase 60-62 Haskell-adapter
+   work are skipped (`decisions/0056`).
 5. Stage G closeout + independent audit (Phases 64–70), scoped to what
    shipped; ship as `1.0.0` (first-ever publish).
 

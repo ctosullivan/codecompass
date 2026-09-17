@@ -5,10 +5,15 @@ CodeCompass-assisted reference-project task. Narrowly focused on **context
 quality**, not productivity benchmarking.
 
 Operationalised by Phase 44 (as a template); applied in Phases 46, 51, 59
-(Ledgerkit), 61 (Technical Clipper, Stage F), and 67 (final confirmation,
-both). **Amended 2026-09-12** (`realignment-2026-09.md`): Ledgerkit is
-now first (was Technical Clipper); phase numbers updated, template and
-criteria unchanged — this spec was always project-agnostic.
+(Ledgerkit), 54b and 61 (Ledgerkit behaviour validation and the hledger
+cross-language experiment, Stage D/F), and 67 (final confirmation).
+**Amended 2026-09-12** (`realignment-2026-09.md`): Ledgerkit is now
+first (was Technical Clipper); phase numbers updated, template and
+criteria unchanged — this spec was always project-agnostic. **Amended
+again 2026-09-17** (`decisions/0056`): Phase 61 now evaluates the
+hledger cross-language experiment (via the new Haskell adapter), not a
+Technical Clipper task — the template/criteria are unaffected either
+way, exactly as the note above already anticipated.
 
 ## 1. Ground rules
 
