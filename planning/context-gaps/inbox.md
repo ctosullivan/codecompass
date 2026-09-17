@@ -202,6 +202,32 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   entry's own "smallest candidate" framing exactly. Named alongside
   `CG-005` as Phase 55/GATE DD input (`findings.md`'s own Phase 54
   section). No entry made to `context-graph.db`.
+- **note added Phase 55 (2026-09-17, evidence reconciliation):**
+  **independently corroborated a second time**, from a genuinely
+  different angle — Ledgerkit's own `validation/codecompass/findings/CC-LK-001`
+  (Stage C Phase 2, Ledgerkit revision `27c410d`/`d86f9b4`), its first-ever
+  real use of the actual `codecompass` CLI against its own live
+  repository (not a scratch copy, not from CodeCompass's own repo): three
+  real, topically-obvious dev-docs files (`dev-docs/hledger-compatibility.md`,
+  `07-query-regex.md`, `17-query-semantics-brief.md` — one is literally
+  the plan document another was implemented from) produced zero
+  `mentions_artifact` edges among them. Recorded as **independent for the
+  raw observation** (a different task, a different real codebase, a
+  different observer — Ledgerkit's own `context-curator` role, not
+  CodeCompass's own agents); **not counted as an independent re-derivation
+  of the causal diagnosis** — `CC-LK-001`'s own text explicitly
+  cross-references this entry's root-cause explanation rather than
+  independently re-deriving it from `spec_docs.py`'s source (see
+  `planning/phase-55-evidence-reconciliation.md`'s own "Independence
+  discipline" section for why this distinction is drawn explicitly, per
+  that document's governing prompt's own strictness requirement). Net
+  effect: still first-occurrence by this entry's own recurrence
+  bookkeeping (one prior corroborating instance, not a second *filed*
+  `CG-NNN` entry), but now backed by two independent real-task
+  observations rather than one — the evidentiary bar
+  `planning/phase-55-evidence-reconciliation.md`'s §F cites as
+  justifying **IMPLEMENT** (a Phase 56 recommendation), not further
+  deferral.
 
 ### CG-003 — the external `hledger` reference manual (hledger.org) has zero representation, and unlike CG-002 no glob fix could ever cover it
 
@@ -331,6 +357,33 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   an ingestion step; `CG-004`/`CG-005` are about what happens *after*
   ingestion, a different pair of gaps this entry's own "smallest
   candidate" section correctly anticipated would need separate handling.
+- **note added Phase 55 (2026-09-17, evidence reconciliation):** this
+  entry's *sibling* claim — "no way to represent executable/behavioural
+  technical dependencies" (named alongside the manual in this entry's
+  own original framing, `conditional-generalisation.md` §2.3) — is now
+  **independently corroborated from a real, live, non-CodeCompass-run
+  instance**: Ledgerkit's own `validation/codecompass/findings/CC-LK-001`
+  (Stage C Phase 2, 2026-09-16) reclassified a Stage C Phase 1
+  compat-register entry (`LK-COMPAT-QUERY-DEPTH-001`, `compatible` →
+  `intentional_divergence`) purely on executable evidence — running the
+  pinned hledger 1.52.4 binary directly, not reading its manual or
+  source — contradicting a claim that had looked correct from
+  source-reading alone. Two real CLI bugs were also found the same way.
+  CodeCompass has zero representation for any of this evidence class
+  (no `doc_relations_edges`/`RELATION_LABELS` concept for "observed by
+  running an executable," no `doc_artifacts.kind` for a reference
+  executable). This is a **genuinely independent, different-mechanism**
+  corroboration (real differential testing against a real binary, not
+  CodeCompass-side reference-material ingestion) of the same underlying
+  gap this entry already named — see
+  `planning/phase-55-evidence-reconciliation.md`'s §D, which classifies
+  this specific gap **DEFER pending cross-domain evidence**, not
+  IMPLEMENT: two same-domain (hledger) instances are not yet sufficient
+  to design a representation for, per that document's own §11 discipline
+  (prove the abstraction generalises beyond hledger before building it).
+  Status unchanged (`candidate`) — this is corroboration of an existing,
+  already-classified gap, not grounds to promote past it on two
+  same-project instances.
 
 ### CG-002 — Ledgerkit's entire `dev-docs/` tree is invisible to spec-doc detection, not merely under-related
 

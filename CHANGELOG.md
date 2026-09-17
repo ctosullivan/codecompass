@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+
+- **Evidence-reconciliation planning session** (no phase number —
+  planning only): reconstructed current CodeCompass and Ledgerkit state
+  fresh from both repositories (Ledgerkit had advanced 5 commits past
+  the pin every prior evaluation used). Recovered Ledgerkit's own
+  first-ever real consumer-side CodeCompass evidence
+  (`validation/codecompass/findings/CC-LK-001`, its live-repo `-q`/
+  `--query` integration task) — PASS WITH GAPS, LOW advantage,
+  independently corroborating Phase 54's `CG-004` (doc-to-doc relation
+  gap) and `CG-003` (executable/behavioural evidence gap) from a
+  genuinely different angle. Built a reconciliation matrix and
+  recommends one small, doubly-corroborated fix (populate
+  `doc_artifacts.name` for `spec_doc` rows) for implementation, with
+  everything larger (executable-evidence representation, pinned-
+  reference productisation) explicitly deferred pending cross-domain
+  evidence. See `planning/phase-55-evidence-reconciliation.md`. **No
+  code changed; a real phase-numbering conflict was surfaced, not
+  silently resolved, for the user to decide.**
+
 ### Added
 
 - **Phase 54** (heterogeneous reference-material experiment): a real,

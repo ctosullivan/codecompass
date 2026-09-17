@@ -500,6 +500,58 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Evidence-reconciliation planning session complete (2026-09-17),
+no implementation.** `planning/phase-55-evidence-reconciliation.md`
+reconstructs current state from both repositories fresh (CodeCompass
+`e40d8d1`, unchanged since Phase 54; Ledgerkit `d362bbb`, **five commits
+past the `05218e3` pin every prior CodeCompass-side evaluation used** —
+confirmed live via `git fetch`, not assumed). Recovered Ledgerkit's own
+first-ever real consumer-side evidence:
+`validation/codecompass/findings/CC-LK-001` (Stage C Phase 2,
+2026-09-16) — Ledgerkit's own `codecompass` CLI run against its real,
+live repository for the first time ever, verdict **PASS WITH GAPS**,
+advantage **LOW**, independently corroborating two of Phase 54's own
+findings from a genuinely different angle: `CG-004` (doc-to-doc relation
+gap — 3 real, obviously-connected dev-docs files, zero relations) and
+`CG-003` (executable/behavioural evidence gap — a real compat-register
+entry, `LK-COMPAT-QUERY-DEPTH-001`, reclassified `compatible` →
+`intentional_divergence` purely via differential testing against the
+pinned hledger binary, a category CodeCompass has no representation for
+at all). Ledgerkit's own retro honestly discloses a process gap (the
+"independent" differential testing was done by the lead, not a separate
+agent) — recorded as a process-quality caveat, not used to discard the
+evidence. Built a full reconciliation matrix (`§D`), being strict about
+independence (the causal *diagnosis* half of `CG-004`'s corroboration is
+marked partial, since Ledgerkit's own finding cross-references
+`CG-004`'s text rather than independently re-deriving the root cause;
+the raw *observation* is fully independent). **One small, doubly-
+corroborated, independently-justified fix recommended for
+implementation**: populate `doc_artifacts.name` for `spec_doc` rows
+(closes `CG-004`, zero schema change, reuses the existing unmodified
+`mentions_artifact` matcher) — validated via a real before/after
+comparison against Ledgerkit's own live repository, using `CC-LK-001`'s
+own three test files. Everything bigger (executable-evidence
+representation, pinned-reference productisation, the `origin` enum
+extension) stays explicitly **DEFER**red pending broader/cross-domain
+evidence, per the plan's own §11 discipline — Technical Clipper (Stage
+F) is the natural place that evidence would come from, not invented now.
+**A real numbering conflict surfaced and was NOT silently resolved**:
+every integer through 63 is already claimed by a pre-written Stage
+E (56-59)/Stage F (60-63) sketch, none matching this new phase's content
+— `planning/ROADMAP.md` records it with a `—` placeholder row; three
+numbering options are presented in the plan's §G for the user to choose
+between (renumber Stage E/F; a 43d/43e-style bridge letter, e.g. "Phase
+55b"; fold into a future Stage E phase), with a stated but non-binding
+preference for the bridge-letter option. Two new context-observations
+filed from reading Ledgerkit's own real evidence (`OBS-010`: bare
+`codecompass` mutated Ledgerkit's real `CLAUDE.md` unprompted for
+zero-value output, reverted; `OBS-011`: generated entry points were pure
+boilerplate for a 0-vendor project, confirming — not undermining — the
+existing lightweight entry-point architecture). `check_user_docs.py
+--strict` clean throughout. **No code implemented, no `CLAUDE.md`
+change, no GATE DD resolution** — this is a planning/evidence session
+exactly as scoped.
+
 **Phase 54 is `done` (2026-09-16) — heterogeneous reference-material
 experiment, implemented and run for real.** The user's own prompt
 resolved the open Stage D-vs-Stage-F/G strategic decision (Phase 51's
@@ -1237,21 +1289,28 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 54 is done. No phase is queued next.** The Stage D-vs-Stage-F/G
-strategic decision (Phase 51's retro, restated below for history) is
-resolved in Stage D's favour, and Stage D's own substantive goal has now
-actually been tested — with a genuinely mixed result (see "What was just
-completed" above), not a clean mandate to continue deeper into Stage D
-or to stop. Two small, independently-fundable fixes are sitting ready
-for a future phase whenever picked up (`CG-004`'s `name` population for
-`spec_doc` rows, a Stage C/GATE-DB-scale fix; `CG-005`'s new `origin`
-value, Stage E/GATE-DD-scale) — neither requires resolving the broader
-ontology question first. The YAML-evidence-matching fallback
-(`OBS-008`) is promising but under-evidenced (one feature family
-tested) — not yet ready to generalise. This is the lead's/user's call at
-the next session: fund one or both small fixes, extend the experiment to
-a second feature family for more evidence, or treat Phase 54's mixed
-result as sufficient signal to move toward Stage F/G.
+**Two things need the user's explicit input before any code is
+written**, per `planning/phase-55-evidence-reconciliation.md`:
+
+1. **Approve (or redirect) implementing the `CG-004` fix** — populate
+   `doc_artifacts.name` for `spec_doc` rows, the one item this
+   reconciliation classifies **IMPLEMENT** (doubly-corroborated by Phase
+   54 and Ledgerkit's independent `CC-LK-001`, zero schema change,
+   validated via a real before/after against the live Ledgerkit repo).
+2. **Pick a phase-numbering approach** for that fix (§G of the plan):
+   renumber Stage E/F's eight pre-written sketches, use a bridge-style
+   letter (e.g. "Phase 55b" — the document's own stated but non-binding
+   preference), or fold it into a future Stage E phase instead of
+   running it now.
+
+Everything else this reconciliation touched stays explicitly deferred,
+not decided: GATE DD itself (the broader technical-dependency/provenance
+ontology question, Phase 55's own slot) remains open, now with a
+materially richer evidence package than after Phase 54 alone; executable/
+behavioural-evidence representation and pinned-reference productisation
+both wait on cross-domain evidence (Technical Clipper/Stage F, not
+invented from two hledger-only instances). No phase is "queued" in the
+old sense — the next action is a decision, not a default next number.
 
 **Stage A is complete (Phases 39–43e `done`, GATE DA passed). Stage B is
 fully complete (Phases 43b, 43c, 44, 45, 46, 47 all `done`, GATE DB
