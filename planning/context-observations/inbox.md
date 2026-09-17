@@ -8,6 +8,169 @@ Statuses: `recorded` → `investigating` → `resolved`.
 
 ---
 
+### OBS-014 — curated `dev-docs/hledger-reference/` corpus omitted `Stats.hs` entirely, forcing the exact same raw-clone fallback the baseline run used for that one command
+
+- **origin:** Phase 54b (Ledgerkit behavioural-understanding experiment —
+  hledger `depth:`/`--depth` semantics across five commands), treatment
+  run + `reference-project-tester` independent verification
+- **date:** 2026-09-18
+- **codecompass_revision:** `d85ac34`
+- **project:** ledgerkit, scratch copy `ledgerkit-scratch-54b`; hledger
+  pinned at tag `1.52.4` / commit `33fa849e7ae841968bd21c427094c4fb4a4ec38d`
+- **edge identity:** `dev-docs/hledger-reference/` (19 curated files) --
+  (absent from corpus) --> `hledger/Hledger/Cli/Commands/Stats.hs` (the
+  one file that would have let the `stats` command's depth behaviour be
+  classified from indexed material alone). Confirmed by direct `ls
+  dev-docs/hledger-reference/`: 19 files, covering `Accounts.hs`,
+  `AccountTransactionsReport.hs`, `EntriesReport.hs`, `Ledger.hs`,
+  `MultiBalanceReport.hs` (x2), `PostingsReport.hs` (x2), `Query.hs`, two
+  manual-section excerpts, plus 6 unrelated `tag:`-query files left over
+  from a prior task — zero files named or containing anything related to
+  `Stats.hs`. Also confirmed no `references.toml`/`references.lock`
+  governs this particular corpus (unlike the tracked `tag:`-query
+  reference-experiment pipeline under
+  `planning/reference-projects/ledgerkit/reference-experiment/`) — this
+  set was hand-built for this task specifically, not produced by that
+  pipeline.
+- **observation type:** EDGE_UNHELPFUL (an absence, not a bad edge) — a
+  corpus-coverage gap, not a mechanical relation defect.
+- **edge correctness:** n/a — there is nothing present to be correct or
+  incorrect about.
+- **task usefulness:** n/a for `stats` specifically. Per the treatment
+  report (`phase54b-treatment-report.md` §3 steps 6-7), the agent noticed
+  the gap mid-investigation ("none of the indexed files covered
+  `hledger/Hledger/Cli/Commands/Stats.hs`") and explicitly fell back to
+  the raw pinned clone at `/home/cormac/projects/hledger` — grepping and
+  reading `Stats.hs`, `Balance.hs`, `Register.hs`, `Print.hs` directly —
+  exactly the baseline run's only method for all five commands. For the
+  other four commands (`balance`, `register`, `accounts`, `print`), the
+  curated material was sufficient on its own (same report, step 4: "This
+  indexed material alone was sufficient to derive the classifications
+  for `balance`, `register`, `accounts`, and `print`").
+- **default pathway:** `grep`/`Read` against the raw pinned hledger clone
+  — identical to what the baseline run used throughout, and to what the
+  treatment run itself had to fall back to for this one command.
+- **advantage:** LOW for `stats` specifically (zero contribution beyond
+  direct repository inspection for this command); does not reduce the
+  advantage the curated material gave for the other four commands, which
+  is recorded separately (this entry is scoped to the coverage gap only).
+- **wrong or misleading?** no — the treatment report is explicit and
+  honest about needing the fallback; nothing false or incomplete was
+  presented as complete.
+- **status:** recorded
+- **investigation:** root cause is corpus-curation completeness, not a
+  CodeCompass detection or relation-matching defect — `_DEFAULT_GLOBS`
+  and `spec_docs.py` handle Haskell-excerpt `.md` files under
+  `dev-docs/hledger-reference/` correctly and with zero code change
+  (`OBS-007`'s prior finding, reconfirmed here for the 19-file superset);
+  the gap is entirely in what a human/agent chose to extract *before*
+  `sync` ever ran, which no amount of mechanical detection improvement
+  can address. **Not filed as a `context-gaps/` entry**: this is not a
+  relationship CodeCompass's context should represent but cannot — it is
+  raw material that was never placed in the repository for CodeCompass to
+  find in the first place.
+- **resolution:** no action — recorded as a second, independently-shaped
+  instance of the standing risk `OBS-009`'s curation-correction note
+  already flagged for this same reference-ingestion approach (there, a
+  pinned extraction's line range was too short and cut off a rule within
+  one file; here, an entire file was never selected at all) — related in
+  kind (a manually-curated reference corpus is only as complete as
+  whoever built it) but a distinct specific mechanism, not a literal
+  recurrence of the same defect. Feeds the same standing "what matters
+  for this task" retrieval gap this task's own governing plan already
+  names as not yet built, and the reference-doc/manual dependency-kind
+  hypothesis `CG-003`'s Phase 54 note already tracks.
+- **curation (Phase 54b triage, 2026-09-18, knowledge-curator):** template
+  fields all present (origin, date, `codecompass_revision`, project, edge
+  identity, observation type, edge correctness/task usefulness kept
+  separate, status). Independently re-verified rather than taken on the
+  entry's own word: confirmed via `02-depth-behavioural-reconstruction-
+  evaluation.md`'s own independent spot-check ("Listed
+  `dev-docs/hledger-reference/` in the scratch clone directly: 19 files,
+  none named for/derived from `Stats.hs`") that the omission is real, not
+  an agent's own mischaracterization. Applied the investigate-vs-record
+  rule correctly: this is `EDGE_UNHELPFUL` (an absence, correctly
+  distinguished from a bad edge) — checked whether it recurs with
+  `OBS-009` closely enough to require escalation to `investigating`
+  rather than staying `recorded`: it does not — `OBS-009` is a boundary-
+  miscalculation defect within one *selected* file (a `lines=` range cut
+  one bullet short); this entry is a whole file never being selected for
+  extraction at all, a different point in the same pipeline (curation
+  vs. boundary-drawing). Genuinely first occurrence of *this* specific
+  mechanism, correctly a record-only disposition per this queue's own
+  investigate-vs-record table, and correctly not escalated to
+  `context-gaps/` — no relationship CodeCompass's graph should hold is
+  missing here; the material simply was never placed where detection
+  could find it. `status` correctly stays `recorded`. No further action.
+
+### OBS-013 — `codecompass query relations` empty result across all 8 checked hledger-reference files independently reproduced; confirmed correct usage and mechanically correct output, not a wiring defect
+
+- **origin:** Phase 54b treatment run + `reference-project-tester`
+  independent verification
+- **date:** 2026-09-18
+- **codecompass_revision:** `d85ac34`
+- **project:** ledgerkit, scratch copy `ledgerkit-scratch-54b`
+  (disposable, read-only inspection only — no write made to it)
+- **edge identity:**
+  `dev-docs/hledger-reference/hledger-accounts-hs.md -- mentions_artifact --> (none)`;
+  `dev-docs/hledger-reference/hledger-entriesreport-hs.md -- mentions_artifact --> (none)`
+  — both reproduced directly this session, matching the treatment
+  report's claim of "(none)"/empty "Package code" tables for all 8 files
+  it checked.
+- **observation type:** EDGE_USEFUL (a mechanism-correctness confirmation,
+  not a defect report)
+- **edge correctness:** correct — the empty result is the mechanically
+  correct output for this exact input, independently confirmed by a
+  direct Python `sqlite3` scan of `context-graph.db` (not the CLI):
+  all 19 `dev-docs/hledger-reference/*.md` rows have a populated `name`
+  (`CG-004`'s fix is live), none of the 19 appears as a source or target
+  in any of the scratch db's 16 real `doc_relations_edges` rows, and a
+  full pairwise word-boundary scan of all 19 files' bodies against all
+  other doc-artifact names found zero matches in either direction — the
+  command was not misused, and the output is honest, not a bug.
+- **task usefulness:** n/a — confirms the tool behaved correctly; provides
+  no information toward the depth-behaviour task itself.
+- **default pathway:** n/a — this is a mechanism-correctness check, not a
+  retrieval comparison.
+- **advantage:** LOW — correctly empty for this query, adding no
+  information beyond what the treatment agent's own direct file reading
+  already gave it.
+- **wrong or misleading?** no. Note: the treatment report's own framing
+  ("not yet wired into any mechanical doc-relation/usage-site edges")
+  is an accurate description of the observed symptom but not a precise
+  diagnosis of the cause — the mechanism is correctly wired and working;
+  what's actually missing is a way to represent the *kind* of
+  relationship that genuinely exists among these files (shared Haskell
+  function symbols, not shared titles/filenames) — see `CG-007`, filed
+  this same session as the substantive finding this observation's
+  root-causing led to.
+- **status:** resolved
+- **investigation:** root-caused directly this session (see `CG-007` for
+  the resulting gap filing). Classification: not itself a defect —
+  `already_represented`/`retrieval_issue` do not apply either, since
+  there genuinely is no title/filename-based relationship for the
+  matcher to have found. Confirmed correctly *not* itself worth a
+  `context-gaps/` filing (the mechanism this observation is about works
+  exactly as designed) — the real gap is filed separately as `CG-007`.
+- **resolution:** no action beyond `CG-007`'s filing — recorded as the
+  evidentiary basis for that entry, and as corroboration that Phase 55b's
+  `mentions_artifact` fix (`CG-004`) continues to behave correctly on a
+  materially different, code-excerpt-heavy corpus.
+- **curation (Phase 54b triage, 2026-09-18, knowledge-curator):** template
+  fields all present (origin, date, `codecompass_revision`, project, edge
+  identity, observation type, edge correctness/task usefulness kept
+  separate, status). Independently re-verified the two reproduced
+  edge-identity claims by reading `src/codecompass/graph.py`'s
+  `relation_kind` CHECK constraint and `spec_docs.py::scan_spec_docs`
+  directly (see `CG-007`'s own curation note for the detail) — the
+  "mechanically correct, not a wiring defect" conclusion holds up under
+  independent code reading, not just the entry's own sqlite scan.
+  `status: resolved` is the correct disposition for an `EDGE_USEFUL`
+  mechanism-correctness confirmation with its own follow-on gap already
+  filed separately (`CG-007`) — matches this queue's own precedent
+  (`OBS-007`/`OBS-011`, record-only `EDGE_USEFUL` entries marked
+  `resolved` rather than left at `recorded`). No further action.
+
 ### OBS-012 — Phase 55b's fix produced 3 real edges against live Ledgerkit, one of them a technically-correct but weakly-attributed title-prefix coincidence
 
 - **origin:** Phase 55b (spec-doc name population, closing `CG-004`),

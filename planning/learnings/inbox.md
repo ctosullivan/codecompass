@@ -8,6 +8,160 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-022 — a hand-authored "authoring rationale" field in evaluation material is not internal commentary if the renderer writes it into the agent-visible output
+
+- **origin:** Phase 54b (Ledgerkit behavioural-understanding experiment),
+  the lead's own material-construction pass while extending Phase 54's
+  reference-ingestion pipeline for the treatment run's indexed corpus;
+  self-caught before either agent was dispatched; filed at the lead's own
+  request that `knowledge-curator` judge whether it warrants an `L-NNN`
+- **date:** 2026-09-18
+- **project_revision:** working tree at `d85ac34` (Phase 54b
+  implementation, uncommitted at filing time)
+- **observation:** the first draft of `references.toml`'s `label`/`note`
+  fields for this task's newly-added depth-related selections stated the
+  lead's own analysis of the correct answer directly — e.g. a label
+  literally reading "depth-trap-matchesaccount" and a note beginning "THE
+  TRAP: ... is the exact evidence Ledgerkit's own Stage C Phase 1 read
+  before wrongly classifying depth: ...", another beginning "THE
+  EXCEPTION: ... a real, deliberate, source-confirmed divergence...".
+  `reference_pipeline.py::render_extracted_markdown` renders **both**
+  `selection.label` (as the extracted file's own H1) and `selection.note`
+  (as visible prose immediately beneath it) into the `.md` file
+  `sync`/`query relations` exposes and a dispatched agent reads directly
+  — there is no separate channel for "authoring-only" commentary; a
+  `references.toml` field reads like private authoring rationale but is,
+  in fact, agent-visible output verbatim. The lead caught this only by
+  rereading `render_extracted_markdown`'s own source (not the authoring
+  schema/interface) before either run was dispatched, confirmed `note` is
+  genuinely written into the rendered body rather than staying in
+  `references.toml`'s own TOML comments, and rewrote every label/note for
+  this task's selections to strictly neutral file/function-location text
+  before either agent ran. Had this rendering path not been re-checked,
+  the treatment agent would have been handed the experiment's own correct
+  answer inside its own "indexed material," and the resulting report
+  would have read as an ordinary, well-reasoned finding — the flaw would
+  have been undetectable from the report itself, silently invalidating
+  the entire baseline-vs-treatment comparison this class of experiment
+  exists to run (a controlled comparison's whole value rests on neither
+  arm being handed the answer).
+- **evidence:**
+  `planning/reference-projects/ledgerkit/reference-experiment/reference_pipeline.py::render_extracted_markdown`
+  (lines 316-352 — both `f"# {selection.label}"` and `selection.note` are
+  written into the returned Markdown body, confirmed by direct read, not
+  by trusting the lead's own account); the current, fixed
+  `references.toml` entries for every depth-related selection (e.g.
+  `label = "query-hs-matchesaccount"` / `note = "matchesAccount,
+  Hledger/Query.hs, in full."`, and identically plain, file/function-only
+  text for `depth-manual-section`, `depth-query-manual-section`,
+  `multibalancereport-hs-a`/`-b`, `postingsreport-hs-a`/`-b`,
+  `entriesreport-hs`, `accounts-hs`, `accounttransactionsreport-hs`,
+  `ledger-hs`) — none of the 9 depth-related selections' current
+  label/note text contains any analysis, verdict, or forward-looking
+  claim; `planning/reference-projects/ledgerkit/findings.md`'s Phase 54b
+  section, "Setup" paragraph, independently corroborating the near-miss
+  ("an early draft's labels/notes stated the answer outright, e.g. 'THE
+  TRAP', 'THE EXCEPTION'; caught and rewritten to plain file/function
+  identification before either agent ran, since the experiment would have
+  been worthless otherwise").
+- **classification:** scoped-rule (specific to constructing hand-authored
+  material a dispatched agent-under-test will read as part of a
+  controlled reference-project experiment — narrower than a project-wide
+  `CLAUDE.md` rule, since it doesn't bind ordinary phase work outside this
+  experimental-design pattern, and Phase 54's own earlier ingestion work
+  never carried this risk in practice, since it had no "trap"/decoy
+  structure for a note to leak)
+- **status:** promoted
+- **recurrence:** first occurrence
+- **curation (Phase 54b triage, 2026-09-18, knowledge-curator):**
+  provenance accepted — all required fields present. Independently
+  re-derived the central claim rather than taking the lead's own account
+  on faith: read `reference_pipeline.py::render_extracted_markdown`
+  directly and confirmed both `selection.label` (as the file's `# `
+  heading) and `selection.note` (as a body paragraph immediately after
+  it) are written into the string `write_extracted_markdown` then persists
+  to disk — genuinely agent-visible output, not retained only in
+  `references.toml`'s own authoring-time structure. Read the current
+  `references.toml` directly and confirmed every one of the 9 depth-
+  related selections' `label`/`note` pairs is now strictly neutral
+  (file/function identification only, e.g. "An excerpt of
+  Hledger/Reports/MultiBalanceReport.hs.") — the fix described did
+  genuinely land, not just get claimed. Cross-checked against
+  `findings.md`'s own Phase 54b section, which independently corroborates
+  the same incident from the experiment-record side, not merely
+  restating the lead's own words. This is a real, evidenced,
+  non-hypothetical near-miss, distinct from `L-014` (a stale
+  *background/rationale* claim in a plan file, discarded because it
+  caused no wrong action and no artifact needed correcting): here, a
+  wrong artifact **would** have been dispatched to an agent and consumed
+  as ground-truth-shaping context, with the resulting report giving no
+  internal signal of the contamination — closer in shape to `L-021`
+  (a defect that would have shipped as "done" had an independent
+  re-derivation not caught it) than to L-014's harmless stale-claim
+  case, even though here the lead's own re-check caught it before
+  dispatch rather than an independent agent catching it after
+  implementation. Checked for a merge/duplicate candidate: grepped this
+  inbox and `promoted.md` for "contaminat"/"leak"/"rendering" — no prior
+  candidate addresses hand-authored evaluation-material construction;
+  `phase-54b-ledgerkit-behavioural-understanding-experiment.md` §4.1's
+  own "avoiding lead-contamination" design point is about *who* is
+  dispatched (a fresh agent, not the lead), a different, already-
+  addressed risk from *what content* a fresh agent is handed — not a
+  duplicate. Checked whether this belongs in `context-gaps/` instead: no
+  — this is "how we should work" when authoring evaluation material, not
+  a relationship CodeCompass's graph is missing; correctly stays in
+  `planning/learnings/`. **Outcome: promote (recommendation + draft;
+  does not land here).** Real, specific, evidenced by a genuine
+  near-miss with a severe (if narrowly averted) consequence, and the fix
+  is a small, concrete, low-risk addition to an existing per-task
+  procedure — worth closing now rather than waiting for a second,
+  actually-realized instance. Destination: `planning/v1-redefinition/
+  reference-project-protocol.md` §2.4 (the per-task procedure every
+  controlled reference-project experiment already instantiates), not a
+  `.claude/` skill/agent-brief — matching the `L-013`/`L-018` precedent
+  of landing a workflow-scoped fix in the actual governing process
+  document rather than forcing it into the classification table's literal
+  Skill-file mapping. Not `CLAUDE.md`/`proposed-governance-changes.md`:
+  this rule is scoped to constructing evaluation material for a
+  controlled experiment specifically, not a project-wide agent
+  discipline, so `CLAUDE.md` §0's heavier review bar does not apply —
+  `reference-project-protocol.md` is outside this agent's write boundary
+  regardless, so the lead applies the diff below.
+
+  **Recommended fix — add a step to `reference-project-protocol.md` §2.4**
+  (draft, for the lead to review and land; does not apply to genuine-task
+  evaluations that use only the target repo's own real, unauthored
+  content, since those carry no equivalent commentary field to leak):
+
+  > **Before dispatching any run, when the per-task procedure includes
+  > constructing hand-authored material a dispatched agent-under-test
+  > will read** (e.g. a reference-ingestion excerpt's `label`/`note`
+  > fields, a synthetic fixture file, any authoring-time rationale meant
+  > to explain *why* a selection was made) — re-verify, by reading the
+  > actual rendering/output function itself (not just the authoring
+  > schema or interface), that no field intended only as internal
+  > authoring commentary is actually written into the agent-visible
+  > output. A field named `note` or similar reads as private authoring
+  > rationale; if the renderer writes it into the file body, it is
+  > agent-visible content indistinguishable from the rest of the
+  > material. Confirmed the hard way at Phase 54b (`L-022`): an early
+  > draft's `note` fields stated the experiment's own correct answer
+  > outright and would have silently invalidated the entire
+  > baseline-vs-treatment comparison had the rendering path not been
+  > re-checked before either agent was dispatched.
+
+  This is deliberately scoped to controlled experiments that construct
+  hand-authored material for a dispatched agent to read, not a general
+  "review your work" restatement — genuine-task evaluations (§2.3/§2.4's
+  ordinary case) use the target repo's own real content and carry no
+  equivalent risk. Revisit/withdraw if a second controlled-experiment
+  phase never recurs this shape, or if the user judges the existing
+  "genuine work only"/independence discipline already sufficient once
+  this specific incident is pointed out.
+- **promoted_to:** — (pending; recommendation drafted above, awaiting
+  lead review — `reference-project-protocol.md` is outside this agent's
+  write boundary)
+
 ### L-021 — a unit test that calls a function directly, bypassing its real production call site, cannot catch a wiring gap at that call site
 
 - **origin:** Phase 55b (spec-doc name population, closing `CG-004`), retro

@@ -875,7 +875,40 @@ execution graph. Findings feed GATE DD's existing §2.2 (executable kind,
 → Phase 56) and §2.4 (provenance/evidence, → Phase 57) hypothesis rows,
 not a new one, and carry forward as named requirements for Phase 60's
 adapter design and Phase 61's cross-language comparison (see the plan's
-§7-§9). Not started; plan awaiting review.
+§7-§9).
+
+**Done (2026-09-18).** Two fresh, independently-dispatched agents (never
+the lead, who had already read Ledgerkit's Stage C Phase 5 material)
+ran the identical real task on the pinned hledger source
+(`33fa849e...`, tag `1.52.4`): baseline with no CodeCompass; treatment
+using 11 new manual/source excerpts (extending Phase 54's ingestion
+pipeline) indexed into a scratch Ledgerkit copy (pinned at real `HEAD`
+`c6168b2`). **Both reached the fully correct, complete answer**
+(clip/aggregate for `balance`/`register`/`accounts`; genuine partial
+exclusion for `stats`; total inertness for `print`) —
+`context-evaluator` independently re-derived ground truth and rated
+**baseline PASS, treatment PASS WITH GAPS, context advantage LOW**: the
+curated set omitted `Stats.hs` entirely (the one file covering the
+task's genuine exception), forcing a disclosed fallback exactly where it
+mattered most, while the baseline never hit that gap working from full
+raw source. Mechanical `query relations` again found **zero** edges for
+all 19 indexed files, even with `CG-004`'s fix live (a second,
+independent confirmation of `CG-006`/`OBS-008`'s structural ceiling).
+**Execution-path-completeness: both runs rated `complete`** — neither
+reproduced Stage C Phase 1's real premature-conclusion mistake, a
+genuinely negative result for the specific failure mode this phase was
+designed to catch, reported honestly rather than reframed as a win.
+Filed `CG-007` (symbol-level cross-references between pinned reference
+excerpts have no representable relation kind), `OBS-013`, `OBS-014`.
+`L-022` (re-verify the actual rendering path, not just the authoring
+interface, before dispatching hand-authored evaluation material to an
+agent-under-test — caught during this phase's own construction, before
+either agent ran) promoted into `reference-project-protocol.md` §2.4.
+No `src/codecompass/` change. `release-phase-auditor` verdict and full
+evidence: `planning/reference-projects/ledgerkit/findings.md`'s "Phase
+54b" section; evaluation report:
+`planning/reference-projects/ledgerkit/02-depth-behavioural-reconstruction-evaluation.md`;
+retro: `planning/retros/phase-54b-ledgerkit-behavioural-understanding.md`.
 
 ### Phase 55 — Decide on broader abstractions + refine the blueprint · EXPERIMENTAL → decision
 - **Exit / GATE DD (gate G7):** a written decision

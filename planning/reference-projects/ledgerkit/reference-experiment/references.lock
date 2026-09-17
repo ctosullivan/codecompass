@@ -1,4 +1,4 @@
-generated_at = "2026-09-16T00:15:19.095640+00:00"
+generated_at = "2026-09-17T17:33:57.657547+00:00"
 
 [[reference]]
 name = "hledger"
@@ -7,7 +7,7 @@ url = "https://github.com/simonmichael/hledger"
 requested_ref = "1.52.4"
 resolved_commit = "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
 fetch_method = "local_clone"
-fetched_at = "2026-09-16T00:15:19.080425+00:00"
+fetched_at = "2026-09-17T17:33:57.615509+00:00"
 
 [[reference.select]]
 label = "tag-query-manual"
@@ -56,3 +56,69 @@ label = "date-query-span-double"
 path = "hledger-lib/Hledger/Data/Dates.hs"
 lines = [1132, 1148]
 content_hash = "sha256:3edd1888479398b2a7a822febd4ae7327440b5c3325bdba7f4174fc57d5f98c9"
+
+[[reference.select]]
+label = "depth-manual-section"
+path = "hledger/hledger.1"
+lines = [7054, 7098]
+content_hash = "sha256:9135b2cd44f0f5505a84da7275b445ee0552c6de1aa7a405418f4d370bd8b1d8"
+
+[[reference.select]]
+label = "depth-query-manual-section"
+path = "hledger/hledger.1"
+lines = [7324, 7332]
+content_hash = "sha256:34b66b7d65fc6c825b4c4f6d8b4ce96030b43c747118d034b24f94f0f0f1ece0"
+
+[[reference.select]]
+label = "query-hs-matchesaccount"
+path = "hledger-lib/Hledger/Query.hs"
+lines = [868, 878]
+content_hash = "sha256:8c1f13a296dd71b34dd4068813a356978dc47ff0f46bcfc089a94e1386fb8456"
+
+[[reference.select]]
+label = "multibalancereport-hs-a"
+path = "hledger-lib/Hledger/Reports/MultiBalanceReport.hs"
+lines = [205, 215]
+content_hash = "sha256:dbce4ac0f38901656610193a7b5234d58b3c48aa0c20948238be1b0796eef08d"
+
+[[reference.select]]
+label = "multibalancereport-hs-b"
+path = "hledger-lib/Hledger/Reports/MultiBalanceReport.hs"
+lines = [220, 238]
+content_hash = "sha256:efeb8719668b954db1205b1423b13e2719e1bf8c7c93dbeec1f182ffc6da4389"
+
+[[reference.select]]
+label = "postingsreport-hs-a"
+path = "hledger-lib/Hledger/Reports/PostingsReport.hs"
+lines = [66, 75]
+content_hash = "sha256:05954972f3f46b4aeb200ac9295a5b293bbf107b873a1c09d109c5250465675b"
+
+[[reference.select]]
+label = "postingsreport-hs-b"
+path = "hledger-lib/Hledger/Reports/PostingsReport.hs"
+lines = [166, 176]
+content_hash = "sha256:268ad3fc1dd020849d9026b7878a327996b8e403e1b2474937a178f95c802946"
+
+[[reference.select]]
+label = "entriesreport-hs"
+path = "hledger-lib/Hledger/Reports/EntriesReport.hs"
+lines = [1, 42]
+content_hash = "sha256:f3af5efa4671a88aac9deedf9e2fd512efcf47f89cc02584d991fcf3450ef288"
+
+[[reference.select]]
+label = "accounts-hs"
+path = "hledger/Hledger/Cli/Commands/Accounts.hs"
+lines = [60, 112]
+content_hash = "sha256:86f18220833e0ac7e33b2211d61d64089eeb21a4b70c2987561c2e471ff301fd"
+
+[[reference.select]]
+label = "accounttransactionsreport-hs"
+path = "hledger-lib/Hledger/Reports/AccountTransactionsReport.hs"
+lines = [99, 108]
+content_hash = "sha256:46bfbd3376a3c2387625ad7d566ffdf8d250b5bcf25e3197f2cb564971eb3182"
+
+[[reference.select]]
+label = "ledger-hs"
+path = "hledger-lib/Hledger/Data/Ledger.hs"
+lines = [54, 67]
+content_hash = "sha256:61b83bf2f8407bd32dcc8c184b9dafc83cc72f5533a22b042a1f00af529aaf1f"

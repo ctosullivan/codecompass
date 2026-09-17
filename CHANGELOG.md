@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 54b** (LedgerKit behavioural-understanding experiment, done):
+  extended Phase 54's reference-ingestion pipeline with 11 new
+  manual/source selections (all line ranges reconfirmed live against the
+  pinned hledger clone) covering hledger's `depth:`/`--depth` behaviour
+  across `balance`/`register`/`accounts`/`stats`/`print`. Two fresh,
+  independently-dispatched agents (never the lead, who had already read
+  Ledgerkit's real Stage C Phase 5 material to write the plan) ran the
+  identical real task: a baseline with no CodeCompass, and a treatment
+  using the new material indexed into a scratch Ledgerkit copy (pinned
+  at real `HEAD` `c6168b2`). **Both reached the fully correct, complete
+  answer** — three distinct behaviours (clip/aggregate for
+  `balance`/`register`/`accounts`; genuine partial exclusion for
+  `stats`; total inertness for `print`), independently confirmed by
+  `context-evaluator` against the real pinned source/manual/binary:
+  **baseline PASS, treatment PASS WITH GAPS, context advantage LOW** —
+  the curated set omitted `Stats.hs` entirely (the one file covering the
+  task's genuine exception), forcing a disclosed fallback exactly where
+  it mattered most, while the baseline never hit that gap. Mechanical
+  `codecompass query relations` again returned **zero** edges for all 19
+  indexed files, even with `CG-004`'s fix live — a second, independent
+  confirmation of `CG-006`/`OBS-008`'s structural ceiling. Both runs
+  rated **complete** on the new execution-path-completeness criterion —
+  neither reproduced Ledgerkit's own real, dated Stage C Phase 1
+  premature-conclusion mistake, an honestly-reported negative result for
+  the specific failure mode this phase was designed to catch. A real
+  methodological near-miss was caught and fixed before either agent ran:
+  an early draft of the extracted material's own labels/notes stated the
+  correct answer directly (e.g. "THE TRAP", "THE EXCEPTION"), which
+  would have silently invalidated the entire comparison — promoted as
+  `L-022` into `reference-project-protocol.md` §2.4. Filed `CG-007`
+  (symbol-level cross-references between pinned reference excerpts have
+  no representable relation kind), `OBS-013`, `OBS-014`. No
+  `src/codecompass/` change. See
+  `planning/reference-projects/ledgerkit/findings.md`'s "Phase 54b"
+  section and `planning/retros/phase-54b-ledgerkit-behavioural-understanding.md`.
+
 ### Planned
 
 - **Phase 54b plan: behavioural-understanding experiment** (planning

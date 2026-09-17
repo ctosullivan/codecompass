@@ -8,6 +8,163 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
 
 ---
 
+### CG-007 — symbol-level (function-call) cross-references between externally-sourced, pinned reference-doc code excerpts have no representable relation kind
+
+- **origin:** Phase 54b (Ledgerkit behavioural-understanding experiment —
+  hledger `depth:`/`--depth` semantics across five commands), treatment
+  run + `reference-project-tester` independent verification
+- **date:** 2026-09-18
+- **codecompass_revision:** `d85ac34` (working tree; unrelated
+  modifications to `planning/reference-projects/ledgerkit/reference-experiment/`
+  present from a different in-flight task, not touched by this filing)
+- **project:** ledgerkit, disposable scratch copy (`ledgerkit-scratch-54b`,
+  never the real repository, never written to); hledger pinned at tag
+  `1.52.4` / commit `33fa849e7ae841968bd21c427094c4fb4a4ec38d`
+- **the edge:** `A ↔ B` where A =
+  `dev-docs/hledger-reference/hledger-entriesreport-hs.md` (excerpt of
+  `hledger-lib/Hledger/Reports/EntriesReport.hs:1-42`, whose
+  `entriesReport` calls `filterQuery`/`queryIsDepth`) and
+  `dev-docs/hledger-reference/hledger-ledger-hs.md` (excerpt of
+  `hledger-lib/Hledger/Data/Ledger.hs:54-67`, whose `ledgerFromJournal`
+  also calls `filterQuery`/`queryIsDepth`/`filterJournalPostings`), B =
+  `dev-docs/hledger-reference/hledger-query-hs-matchesaccount.md`
+  (excerpt of `hledger-lib/Hledger/Query.hs:868-878`, defining
+  `matchesAccount`, the function whose `Depth`/`DepthAcct` cases are the
+  actual semantics `queryIsDepth`-filtered code ultimately depends on) —
+  a real, function-level dependency chain among three separate `spec_doc`
+  rows, all excerpting different modules of hledger's single depth-
+  filtering mechanism, the exact mechanism this task's investigation
+  needed to trace end-to-end.
+- **edge kind:** doc↔code (`spec_doc` ↔ `spec_doc`, but the underlying
+  dependency being missed is a genuine source-code symbol reference, not
+  a doc-to-doc topical or citation link)
+- **agent's reasoning:** the treatment report (`phase54b-treatment-report.md`
+  §3 step 5) found `codecompass query relations <file>` returned "(none)"
+  for all 8 depth-relevant reference files it checked, and read this as
+  "these reference excerpts aren't yet wired into any mechanical
+  doc-relation/usage-site edges." Independently reproduced exactly
+  (`codecompass query relations dev-docs/hledger-reference/hledger-accounts-hs.md`
+  and `...hledger-entriesreport-hs.md`, from inside the scratch copy with
+  the project's own venv activated — both correct usage, both genuinely
+  empty "Relation"/"Package code" tables). Went further to root-cause
+  *why*, rather than accepting "not yet wired" at face value: queried
+  `context-graph.db` directly (Python `sqlite3`, not the CLI) and
+  confirmed (a) `CG-004`'s fix is live and working — all 19
+  `dev-docs/hledger-reference/*.md` rows have a populated, content-derived
+  `name` (e.g. `entriesreport-hs`, `ledger-hs`, `query-hs-matchesaccount`),
+  not `NULL` — so this is not a recurrence of `CG-004`; (b) none of the 19
+  rows appears as a `source_doc_artifact_id` or `target_doc_artifact_id`
+  in any of the 16 real `doc_relations_edges` rows the scratch db holds;
+  (c) a full pairwise scan (word-boundary, case-insensitive) of every one
+  of the 19 files' body text against every other doc artifact's `name`
+  found **zero** matches in either direction — confirming the empty
+  `mentions_artifact` result is *mechanically correct* given the actual
+  text, not a wiring defect (see `OBS-013`). The real gap: these three
+  files' only genuine cross-reference to each other is through shared
+  Haskell **function identifiers** (`filterQuery`, `queryIsDepth`,
+  `matchesAccount`, `filterJournalPostings`) appearing literally in each
+  other's code fences — a real, load-bearing technical dependency an
+  agent tracing "how does depth filtering actually work" must follow by
+  hand (exactly what both the baseline and treatment investigation logs
+  did, reading `Query.hs`, `Ledger.hs`, and the report-generation modules
+  in sequence) — but `mentions_artifact`/`mentions_dependency` only ever
+  word-boundary-match a target's **title or filename** against source
+  text, never a code symbol. No title-matching heuristic, however tuned
+  (including `CG-006`'s proposed filename-matching extension), could ever
+  catch this: the shared vocabulary here isn't a doc title or filename at
+  all.
+- **what the graph shows instead:** nothing — zero `doc_relations_edges`
+  rows connect any of the three files (or any of the other 16 ingested
+  reference files) to each other, despite a real, verifiable, function-
+  level dependency chain running through them.
+- **could mechanical detection ever catch this?** unsure —
+  **yes-with-a-new-heuristic** in principle (extract Haskell — or
+  generally, source-language — identifiers defined in one `spec_doc` code
+  excerpt, then word-boundary-search for their use in others, the same
+  shape as the vendor `symbol_usage` edges CodeCompass already builds for
+  real vendor packages, just applied between two `spec_doc` rows instead
+  of vendor↔project-code) but this is **not a small tuning change** to
+  the existing `mentions_artifact`/`mentions_dependency` matchers — it
+  needs a wholly new relation kind (the current `doc_relations_edges
+  .relation_kind` CHECK constraint is a closed two-value enum,
+  `mentions_dependency`/`mentions_artifact`, both title/name-string
+  oriented) and a symbol-extraction pass over `spec_doc` content that
+  `spec_docs.py` does not do today (it treats these files as prose
+  Markdown with embedded code fences, never as source to be parsed for
+  identifiers, unlike the vendor-usage scanner's treatment of real
+  project/vendor source files).
+- **smallest candidate that would fix it:** unclear — closest precedent is
+  `conditional-generalisation.md` §2.6 ("task-oriented retrieval needs new
+  edges, not just joins") and §2.3 (the reference-doc/manual dependency
+  kind `CG-003` already named), applied to a new case neither entry
+  covers: symbol-level links *among pinned reference-doc excerpts
+  themselves*, not between a manual and local code. A new `relation_kind`
+  (e.g. `references_symbol`) plus a source-excerpt symbol scanner would be
+  the shape of a fix, but scoping it (which languages, which symbol
+  kinds, how to avoid false positives on common short identifiers) is a
+  real design question, not a one-line change.
+- **classification:** graph-capability (Stage E / GATE DD) — a new
+  relation kind and a new detection pass, not a tuning change to an
+  existing Stage C heuristic.
+- **status:** candidate
+- **recurrence:** related to, but distinct from, three prior entries —
+  checked explicitly rather than assumed: **not** `CG-004` (name
+  population for `spec_doc` rows — independently confirmed live and
+  working here, this finding survives that fix intact); **not** `CG-006`
+  (filename-vs-title citation-string matching — these three files never
+  cite each other by filename or title at all, in either form; the shared
+  vocabulary is Haskell function identifiers, a wholly different string
+  domain `CG-006`'s proposed fix would not touch); **not** `CG-005`
+  (provenance/`origin` classification — unaffected by this finding).
+  Structurally resembles `CG-001`'s "one feature spread across N modules,
+  no edge joining them" shape (`context-gaps/README.md`'s own hypothesis
+  table already links that pattern to the §2.6 task-oriented-retrieval
+  question), but `CG-001` is intra-`src/codecompass`'s own Python modules
+  and this is inter-`spec_doc` excerpts of externally pinned Haskell
+  source from a different reference project — a different domain, a
+  different concrete edge, and (per `context-gaps/README.md`'s own
+  standard) not the same edge recurring. Treated as **first occurrence**
+  of this specific mechanism, cross-referenced against `CG-001` for GATE
+  DD's benefit rather than merged with it.
+- **curation (Phase 54b triage, 2026-09-18, knowledge-curator):** template
+  fields all present (origin, date, `codecompass_revision`, project, the
+  edge, edge kind, agent's reasoning, what-the-graph-shows-instead,
+  "could mechanical detection ever catch this?", smallest candidate,
+  classification, status, recurrence). Independently re-verified rather
+  than taken on the entry's own word: read `src/codecompass/graph.py`
+  directly and confirmed `doc_relations_edges.relation_kind`'s CHECK
+  constraint is exactly the closed two-value enum this entry names
+  (`'mentions_dependency','mentions_artifact'`, lines 155-156) — a new
+  `relation_kind` genuinely requires a schema change, not a matcher
+  tweak; read `src/codecompass/spec_docs.py::scan_spec_docs` directly and
+  confirmed it has no symbol/identifier extraction of any kind — it
+  treats every file as prose Markdown with embedded code fences, exactly
+  as claimed, so the "needs a wholly new... symbol-extraction pass"
+  framing holds. Re-derived the recurrence analysis independently rather
+  than accepting the entry's own conclusion: `CG-001` (intra-`src`
+  Python-module feature grouping), `CG-004` (missing `name` on
+  `spec_doc` rows, already fixed and confirmed still live here per the
+  entry's own `OBS-013` cross-check), `CG-005` (`origin` enum
+  provenance), and `CG-006` (filename-vs-title string matching) each
+  address a genuinely different mechanism — none of the four covers
+  "shared source-code identifiers across two `spec_doc` excerpts" — so
+  this is correctly first occurrence, not a duplicate or an
+  under-filed recurrence of any of them. Classification confirmed
+  correct: `graph-capability (Stage E / GATE DD)`, since the smallest
+  fix genuinely needs both a new `relation_kind` value and a new
+  detection pass over `spec_doc` content, not a tuning change inside the
+  existing `mentions_artifact`/`mentions_dependency` matchers (contrast
+  `CG-006`, correctly `detection-improvement`, which needs no schema
+  change). **Outcome: stays `candidate`.** Single occurrence so far —
+  needs a second, independent instance (a different pair of pinned
+  reference-doc excerpts, or a different reference project) before
+  moving to `recurred`. Named for Phase 55b/GATE DD's ongoing input
+  alongside `CG-001`'s existing cross-reference, per
+  `findings.md`'s own Phase 54b §"Evidence for GATE DD" framing (still
+  below the ≥2-occurrence promotion bar). No entry made to
+  `context-graph.db` — this queue never writes there, per
+  `decisions/0051`.
+
 ### CG-006 — `mentions_artifact` matches by target title text only, never by filename, so docs that cross-reference each other by filename in prose (a common real pattern) are missed
 
 - **origin:** Phase 55b (spec-doc name population, closing `CG-004`),

@@ -23,6 +23,7 @@ CG-002 | 2026-09-13 | detection-improvement | src/codecompass/spec_docs.py::_DEF
 L-020 | 2026-09-16 | invariant | planning/reference-projects/ledgerkit/reference-experiment/tests/test_reference_pipeline.py::test_tag_query_manual_excerpt_contains_all_three_inheritance_rules @ a4e58da
 CG-004 | 2026-09-17 | detection-improvement | src/codecompass/spec_docs.py::_extract_title + src/codecompass/doc_mapping.py::build_doc_relations_edges (self-mention exclusion) + src/codecompass/sync.py::rebuild_project_graph (spec_doc_rows wiring) + tests/test_sync.py::test_rebuild_project_graph_relates_two_spec_docs_to_each_other @ 51e4469
 L-021 | 2026-09-17 | project-rule | CLAUDE.md §1 + CONTRIBUTING.md "Plan before implementing" (test-through-real-call-site requirement) @ 899449d
+L-022 | 2026-09-18 | scoped-rule | planning/v1-redefinition/reference-project-protocol.md §2.4 (re-verify the rendering path before dispatching hand-authored evaluation material) @ (this phase's own closeout commit)
 
 <!-- L-002 and prior L-005 (project-rule half) landed in the Phase 43
      commit; replace `d34a486` if it's not the actual Phase 43 commit hash.

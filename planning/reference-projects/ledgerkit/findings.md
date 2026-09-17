@@ -512,3 +512,145 @@ question by having actually run the Stage D test** (Phase 51's retro)
 clean win, which is itself valid, reportable evidence per the plan's own
 explicit "treat negative or inconclusive results as valid evidence"
 instruction. Full retro: `planning/retros/phase-54-heterogeneous-reference-material-experiment.md`.
+
+---
+
+## Phase 54b — behavioural-understanding experiment (2026-09-18)
+
+Full plan: `planning/phase-54b-ledgerkit-behavioural-understanding-experiment.md`.
+Tests whether CodeCompass's document/reference layer helps an agent
+reconstruct **execution-path-complete behavioural understanding** and
+avoid a real, dated premature-conclusion mistake (Ledgerkit's own Stage
+C Phase 1, which classified hledger's `depth:` term from one function's
+signature without tracing any command's actual consumption of it) —
+rather than a generic "test relating a provenance chain," per the
+governing prompt's own refinement of this phase's original placeholder.
+
+### Setup
+
+Two fresh, independently-dispatched agents (never the lead, who had
+already read Ledgerkit's Stage C Phase 5 material to write the plan)
+were given the identical real task — determine hledger's actual
+`depth:`/`--depth` behaviour across `balance`, `register`, `accounts`,
+`stats`, and `print`, citing evidence — with deliberately neutral task
+wording and deliberately neutral extracted-material labels/notes (an
+early draft's labels/notes stated the answer outright, e.g. "THE TRAP",
+"THE EXCEPTION"; caught and rewritten to plain file/function
+identification before either agent ran, since the experiment would have
+been worthless otherwise). **Baseline**: ordinary `Read`/`Grep`/`Bash`/
+`WebFetch` against the raw pinned hledger clone only, no CodeCompass.
+**Treatment**: a scratch copy of Ledgerkit (pinned at its real current
+`HEAD`, `c6168b2` — Stage C Phase 5's own closeout commit) with 11 new
+manual/source excerpts (extending Phase 54's own ingestion pipeline;
+line ranges independently reconfirmed live, not copied from a citation)
+materialized into `dev-docs/hledger-reference/` and indexed via
+CodeCompass's unmodified `sync`, instructed to prefer that indexed
+material and `codecompass query relations` before falling back to the
+raw clone.
+
+### Result
+
+Both agents reached the **fully correct, complete** answer — three
+genuinely distinct behaviours (clip/aggregate for `balance`/`register`/
+`accounts`; genuine partial exclusion for `stats`; total inertness for
+`print`) — independently verified by `context-evaluator` against the
+real pinned source/manual/binary
+(`planning/reference-projects/ledgerkit/02-depth-behavioural-reconstruction-evaluation.md`).
+**Verdict: baseline PASS, treatment PASS WITH GAPS; context advantage
+LOW.** The gap: the curated `dev-docs/hledger-reference/` set omitted
+`Stats.hs` entirely — the one file covering the task's single genuine
+exception — forcing a disclosed fallback to the raw clone exactly where
+the stakes were highest; the baseline, working from the full raw source
+with no curation step, never hit this gap at all. Mechanical
+`codecompass query relations` returned **zero** edges for all 19
+indexed files (independently confirmed via direct graph inspection,
+0-of-16 `doc_relations_edges` rows touch this set) — a second,
+independent confirmation of the same structural ceiling `CG-006`/`OBS-008`
+already recorded, now on a fresh material set with `CG-004`'s fix
+already live (populated `name`s did not produce relations, because
+nothing else in the project mentions these newly-minted labels by name).
+**Execution-path-completeness (§5 addendum): both runs rated
+complete** — neither reproduced Stage C Phase 1's real historical
+mistake; both traced multiple real per-command consumers rather than
+generalising from `Query.hs`'s `Depth` constructor alone, even though
+that exact excerpt was sitting in the treatment's own indexed set as an
+available shortcut.
+
+New findings filed: `CG-007` (symbol-level/function-call cross-references
+between pinned reference-doc code excerpts have no representable
+relation kind — checked, not a recurrence of `CG-004`/`CG-006`),
+`OBS-013` (confirms `query relations`'s empty result is mechanically
+correct, not a wiring bug — root-caused into `CG-007`), `OBS-014`
+(confirms the `Stats.hs` coverage gap is a corpus-curation completeness
+gap, not a detection defect — related to but not a literal recurrence of
+`OBS-009`).
+
+### Evidence for GATE DD, and for Phase 60/61 (the plan's §7/§8/§9, answered)
+
+1. **Executable-kind hypothesis (§2.2 → Phase 56):** this phase adds a
+   second, independent data point (after Phase 54's `tag:`/`date:` case)
+   showing the document/reference layer alone is **not sufficient** for
+   reliably representing "one behaviour, multiple entry points, one
+   command-specific exception" — the curation step itself is the
+   failure point, not detection or relation. Consistent with, not yet
+   past, the ≥2-occurrence promotion bar (`context-gaps/README.md`) —
+   `CG-007` is a first occurrence, not yet a recurrence.
+2. **Provenance hypothesis (§2.4 → Phase 57):** the behavioural-claim
+   evidence shape Ledgerkit's own compat-register already uses by hand
+   (documentation + implementation-path + executable-observation +
+   independent-verification) was successfully assembled by both fresh
+   agents using ordinary tools, with **no CodeCompass-specific
+   provenance mechanism required** to do so beyond what plain source/
+   manual/binary access already provides — this phase does not add
+   evidence that a first-class provenance distinction is *necessary*,
+   only that it remains undemonstrated either way.
+3. **Phase 60 (Haskell adapter) requirement, named per §8:** the
+   document-layer's real failure mode here was a **curation gap** (a
+   materially relevant file never selected for extraction), not a
+   detection or relation gap — this is exactly the class of problem
+   Phase 60's own mechanical, code-structural discovery (module exports,
+   and, per this phase's finding, likely call-site/usage detection too)
+   is meant to replace hand-curation with. Named as Phase 60's own open
+   design question, not resolved here.
+4. **Phase 61 refinement, per §9:** this phase's own result (LOW
+   advantage, a real completeness gap on the document layer) is now
+   Phase 61's baseline — "how much better does real Haskell-side
+   structural information do, compared to hand-curated document
+   excerpts alone," using the same `depth:` case or an equally-evidenced
+   successor, reconfirmed live at that phase's own start.
+5. **Recommendation** (not a decision): the document/reference layer
+   remains real, sound, and worth keeping exactly as scoped (Phase 54's
+   own conclusion, reaffirmed) — but this phase adds concrete evidence
+   that it does **not**, on its own, solve execution-path-completeness
+   for a multi-entry-point behaviour; that remains squarely Phase 60/61's
+   open question, not something to solve by expanding manual curation
+   further.
+
+**Neither run reproduced the premature-conclusion failure mode this
+phase was specifically designed to catch** — a genuinely negative
+result for that specific hypothesis, on this occasion, honestly
+reported rather than reframed as a win. Full retro:
+`planning/retros/phase-54b-ledgerkit-behavioural-understanding.md`.
+
+### `release-phase-auditor` verdict
+
+**PASS WITH NON-BLOCKING OBSERVATIONS.** Independently re-derived ground
+truth against the real pinned hledger source (matched both reports
+byte-for-byte, including the one flagged agent-side line-citation slip),
+independently re-queried the scratch clone's `context-graph.db` directly
+(confirmed 0-of-16 edges touch the 19 indexed files; `symbols`/
+`source_files` both empty), confirmed `Stats.hs` is genuinely absent
+from the extracted set, confirmed no leaked analytical conclusion in any
+extracted file's rendered output, confirmed `pytest`/`ruff`/
+`check_user_docs.py --strict` all clean, confirmed no `src/codecompass/`
+change and no protected-file drift, and confirmed the headline
+LOW-advantage/gap-disclosed result is stated consistently (not
+smoothed over) across this file, the evaluation report, `roadmap.md`,
+and the retro. Four non-blocking observations, all addressed in the
+closing commit: a premature "done and pushed" claim in `CONTEXT.md`
+(fixed to reflect actual sequencing), this verdict pointer itself not
+yet existing at audit time (this section), 8 pre-existing `tag:`/
+`date:` extracted files carrying only a harmless `extracted_at`
+timestamp bump from re-running the shared pipeline (reverted — out of
+this phase's own stated "11 new files" scope), and a cosmetic retro
+heading mismatch against `TEMPLATE.md` (left as-is, content unaffected).

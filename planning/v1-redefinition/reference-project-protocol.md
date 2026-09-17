@@ -145,6 +145,26 @@ regardless of CodeCompass.
    and every friction instance becomes a candidate learning
    (`learning-lifecycle.md`).
 
+**Added 2026-09-18 (`L-022`, Phase 54b):** before dispatching any run,
+when the per-task procedure includes constructing hand-authored material
+a dispatched agent-under-test will read (e.g. a reference-ingestion
+excerpt's `label`/`note` fields, a synthetic fixture file, any
+authoring-time rationale meant to explain *why* a selection was made) —
+re-verify, by reading the actual rendering/output function itself (not
+just the authoring schema or interface), that no field intended only as
+internal authoring commentary is actually written into the agent-visible
+output. A field named `note` or similar reads as private authoring
+rationale; if the renderer writes it into the file body, it is
+agent-visible content indistinguishable from the rest of the material.
+Confirmed the hard way at Phase 54b: an early draft's `note` fields
+stated the experiment's own correct answer outright and would have
+silently invalidated the entire baseline-vs-treatment comparison had the
+rendering path not been re-checked before either agent was dispatched.
+Scoped to controlled experiments that construct hand-authored material
+for a dispatched agent to read — genuine-task evaluations (§2.3/§2.4's
+ordinary case, using the target repo's own real content) carry no
+equivalent risk and are unaffected.
+
 ### 2.5 The central question every evaluation answers
 
 > **Is CodeCompass supplying context that another development agent can

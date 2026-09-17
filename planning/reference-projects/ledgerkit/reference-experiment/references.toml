@@ -87,3 +87,88 @@ label = "date-query-span-double"
 path = "hledger-lib/Hledger/Data/Dates.hs"
 lines = [1132, 1148]
 note = "doubledatespanp, exclusive end date — cited by LK-COMPAT-QUERY-DATE-001.yaml's evidence.ref."
+
+# --- Phase 54b selections (behavioural-understanding experiment) ---
+# The depth:/--depth investigation's evidence set, per
+# ../../../phase-54b-ledgerkit-behavioural-understanding-experiment.md
+# §4.4 — the manual sections, the matchesAccount predicate, and every
+# real command-module that consumes Query/Depth — all line ranges
+# reconfirmed live against this session's pinned hledger clone
+# (33fa849e7ae8..., tag 1.52.4), not copied from a citation without
+# checking.
+#
+# IMPORTANT — labels and `note` fields below are deliberately NEUTRAL
+# (file/function location only, no interpretation of what the excerpt
+# means or implies). Both `label` (rendered as the extracted file's own
+# H1 heading) and `note` (rendered into the extracted file's body) are
+# visible to whichever agent reads the extracted output — this
+# experiment's own baseline/treatment comparison (§4 of the plan) would
+# be worthless if the extraction itself told the reader the conclusion.
+# The analytical commentary belongs here, in this comment block, which
+# the pipeline never renders into `extracted/*.md` — never in `note`.
+
+[[reference.select]]
+label = "depth-manual-section"
+path = "hledger/hledger.1"
+lines = [7054, 7098]
+note = "The manual's '.SH Depth' section, in full."
+
+[[reference.select]]
+label = "depth-query-manual-section"
+path = "hledger/hledger.1"
+lines = [7324, 7332]
+note = "The manual's '.SS depth: query' section, in full."
+
+[[reference.select]]
+label = "query-hs-matchesaccount"
+path = "hledger-lib/Hledger/Query.hs"
+lines = [868, 878]
+note = "matchesAccount, Hledger/Query.hs, in full."
+
+[[reference.select]]
+label = "multibalancereport-hs-a"
+path = "hledger-lib/Hledger/Reports/MultiBalanceReport.hs"
+lines = [205, 215]
+note = "An excerpt of Hledger/Reports/MultiBalanceReport.hs."
+
+[[reference.select]]
+label = "multibalancereport-hs-b"
+path = "hledger-lib/Hledger/Reports/MultiBalanceReport.hs"
+lines = [220, 238]
+note = "An excerpt of Hledger/Reports/MultiBalanceReport.hs."
+
+[[reference.select]]
+label = "postingsreport-hs-a"
+path = "hledger-lib/Hledger/Reports/PostingsReport.hs"
+lines = [66, 75]
+note = "An excerpt of Hledger/Reports/PostingsReport.hs."
+
+[[reference.select]]
+label = "postingsreport-hs-b"
+path = "hledger-lib/Hledger/Reports/PostingsReport.hs"
+lines = [166, 176]
+note = "An excerpt of Hledger/Reports/PostingsReport.hs."
+
+[[reference.select]]
+label = "entriesreport-hs"
+path = "hledger-lib/Hledger/Reports/EntriesReport.hs"
+lines = [1, 42]
+note = "Hledger/Reports/EntriesReport.hs, in full."
+
+[[reference.select]]
+label = "accounts-hs"
+path = "hledger/Hledger/Cli/Commands/Accounts.hs"
+lines = [60, 112]
+note = "An excerpt of Hledger/Cli/Commands/Accounts.hs."
+
+[[reference.select]]
+label = "accounttransactionsreport-hs"
+path = "hledger-lib/Hledger/Reports/AccountTransactionsReport.hs"
+lines = [99, 108]
+note = "An excerpt of Hledger/Reports/AccountTransactionsReport.hs."
+
+[[reference.select]]
+label = "ledger-hs"
+path = "hledger-lib/Hledger/Data/Ledger.hs"
+lines = [54, 67]
+note = "An excerpt of Hledger/Data/Ledger.hs."

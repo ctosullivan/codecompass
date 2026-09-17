@@ -501,6 +501,45 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 54b is `done` (2026-09-18) — LedgerKit behavioural-understanding
+experiment.** Expanded from a one-paragraph placeholder into a concrete
+experiment using Ledgerkit's real Stage C Phase 5 `depth:` investigation
+(`c6168b2`), per the user's explicit prompt (saved verbatim,
+`planning/phase-54b-ledgerkit-behavioural-understanding-prompt.md`).
+Extended Phase 54's reference-ingestion pipeline with 11 new manual/
+source selections (line ranges reconfirmed live against the pinned
+hledger clone). **Two fresh, independently-dispatched agents** (never
+the lead, who had already read the answer to write the plan) ran the
+identical real task — determine hledger's `depth:`/`--depth` behaviour
+across `balance`/`register`/`accounts`/`stats`/`print` — one with no
+CodeCompass, one using the new material indexed into a scratch Ledgerkit
+copy (pinned at real `HEAD` `c6168b2`). **Both reached the fully
+correct, complete answer** (clip/aggregate for three commands, genuine
+partial exclusion for `stats`, total inertness for `print`).
+`context-evaluator` independently re-derived ground truth from the
+pinned source/manual/binary and rated **baseline PASS, treatment PASS
+WITH GAPS, context advantage LOW**: the curated set omitted `Stats.hs`
+entirely (the one file covering the task's genuine exception), forcing
+a disclosed fallback exactly where it mattered most, while the baseline
+never hit that gap. Mechanical `query relations` again found **zero**
+edges for all 19 indexed files, even with `CG-004`'s fix live. **Both
+runs rated `complete`** on the new execution-path-completeness criterion
+— neither reproduced Stage C Phase 1's real premature-conclusion
+mistake, an honestly-reported negative result for the specific failure
+mode this phase was designed to catch. **A real methodological near-miss
+was self-caught before either agent ran**: an early draft of the
+extracted material's own labels/notes stated the correct answer
+directly (e.g. "THE TRAP", "THE EXCEPTION"), which would have silently
+invalidated the entire comparison — caught by rereading the pipeline's
+own rendering function, fixed, promoted as `L-022` into
+`reference-project-protocol.md` §2.4. Filed `CG-007` (symbol-level
+cross-references between pinned reference excerpts have no
+representable relation kind), `OBS-013`, `OBS-014`. No `src/codecompass/`
+change. Full results: `planning/reference-projects/ledgerkit/findings.md`'s
+"Phase 54b" section; evaluation:
+`planning/reference-projects/ledgerkit/02-depth-behavioural-reconstruction-evaluation.md`;
+retro: `planning/retros/phase-54b-ledgerkit-behavioural-understanding.md`.
+
 **Phase 55b is `done` (2026-09-17) — populated `doc_artifacts.name` for
 `spec_doc` rows, closing `CG-004`.** User approved
 `phase-55-evidence-reconciliation.md` §G's recommendation ("Approved"),
@@ -1331,63 +1370,44 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**The Stage F retarget (`decisions/0056`, committed `7153ca0`, 2026-09-17)
-is done and pushed.** Technical Clipper is demoted from Stage F's
-required target; Stage F now targets a minimal Haskell `EcosystemAdapter`
-spike against hledger/Ledgerkit; sequence: Phase 54b → 60 → 61 → 62 → 63
-→ Stage G (64-70) unchanged. Stage E (56-59, GATE DD) untouched.
+**The Stage F retarget (`decisions/0056`, `7153ca0`) is done and pushed.
+Phase 54b's own full run is complete** (`release-phase-auditor` → PASS
+WITH NON-BLOCKING OBSERVATIONS — see `findings.md`'s Phase 54b section
+for the verdict) **and its closing commit is landing now** (see git log
+for the exact hash once pushed). Stage F targets a minimal Haskell
+`EcosystemAdapter` spike against
+hledger/Ledgerkit; sequence: Phase 54b (done) → 60 → 61 → 62 → 63 →
+Stage G (64-70) unchanged. Stage E (56-59, GATE DD) untouched.
 
-**Uncommitted, this session (2026-09-18): Phase 54b now has a full plan
-file**, not just its one-paragraph placeholder —
-`planning/phase-54b-ledgerkit-behavioural-understanding-experiment.md`
-(governing prompt saved verbatim alongside it). Written because
-Ledgerkit's real **Stage C Phase 5** (`c6168b2`, done 2026-09-17,
-confirmed live) landed a materially richer evidence case than the
-placeholder assumed: hledger's `depth:` query term resolves to **three
-distinct behaviours across five commands** (clip for
-balance/register/accounts, full depth-blindness for `print`, genuine
-exclusion for `stats`), and Stage C Phase 1 made a real, dated
-premature-conclusion mistake (classified `depth:` from one function's
-signature, without tracing any actual command's consumption of it) only
-corrected by Phase 5's full six-file source trace. Phase 54b's objective
-is now explicit: test whether CodeCompass context helps an agent reach
-an execution-path-complete conclusion and avoid that exact mistake,
-using only existing mechanisms (Phase 54's reference-ingestion pipeline,
-the context-gap/context-observation queues, `context-evaluator` — plus
-one new phase-scoped evaluation criterion, "execution-path
-completeness," not folded into the shared `context-quality-evaluation.md`
-instrument). No new ontology, claim system, or execution graph. Findings
-feed GATE DD's existing executable-kind (§2.2 → Phase 56) and
-provenance (§2.4 → **Phase 57**) hypothesis rows, and carry forward as
-named design questions for Phase 60 (adapter API-surface sufficiency)
-and a refined Phase 61 (cross-language behavioural comparison, not just
-"does the adapter parse Haskell"). Edited to match:
-`planning/v1-redefinition/roadmap.md` (Phase 54b/60/61 stanzas),
-`planning/ROADMAP.md`, `conditional-generalisation.md`,
-`context-quality-evaluation.md`. **This is a plan, not an
-implementation** — per this project's own "plan first, implement only
-after a separate instruction" pattern (Phase 54's own precedent); no
-`src/` change, no agent dispatch to actually run the experiment yet.
-**Not yet committed** — still pending: a `CHANGELOG.md` entry, a clean
-`check_user_docs.py --strict` run, then the commit.
+**The live decision point is GATE DD** (Phase 55's own gate, Stage E's
+precondition) — still open, still unstarted. It now has a materially
+richer evidence package than at any prior point: Phase 54b's own result
+(both a fresh baseline and a fresh CodeCompass-assisted treatment
+independently reached the same fully correct, execution-path-complete
+answer to a real hledger behavioural question; CodeCompass's document
+layer was LOW-advantage and, on this occasion, mildly negative on
+completeness relative to the baseline, due to a real curation gap
+rather than a detection/relation defect) sharpens, without yet
+satisfying, the ≥2-occurrence promotion bar for `CG-007` (symbol-level
+cross-references between pinned reference excerpts have no
+representable relation kind). Nothing forces GATE DD's hand yet — it
+remains a genuine open decision, not a foregone conclusion either way.
 
-**Once that lands, the live decision points are (a) review/approval of
-the Phase 54b plan's three named judgment calls** (reusing an
-already-answered question as a controlled re-creation; splitting the
-document-layer test from the code-structural layer Phase 60/61 will
-test; keeping the new evaluation criterion phase-scoped) **and (b) GATE
-DD** (Phase 55's own gate, Stage E's precondition), which remains open
-and unstarted, sequenced after 54b's evidence lands per the roadmap's
-own ordering — not a competing fork, a second item in the same queue.
-`L-021`'s `CLAUDE.md` §1 amendment remains fully applied; no human gate
-is outstanding from that earlier work.
+**Phase 60 (minimal Haskell adapter) is the next unstarted phase in the
+revised sequence** — not gated on GATE DD (Stage F is a separate axis
+from Stage E, per `decisions/0056`), and now carries one concrete, named
+open design question from Phase 54b: does the adapter need mechanical
+call-site/usage detection (not just module-export signatures) to avoid
+the same curation-completeness gap Phase 54b hit by hand (`Stats.hs`
+omitted from a hand-curated set)? Phase 61 (hledger cross-language
+experiment) has Phase 54b's own LOW-advantage, gap-disclosed result as
+its baseline for "how much better does real structural information do."
 
 `CG-005` (the `origin` enum extension) and `CG-006` (Phase 55b's own
 residual filename-matching gap) remain small, independently-fundable,
-not urgent. Executable/behavioural-evidence representation and
-pinned-reference productisation still wait on cross-domain evidence —
-now expected from the Haskell/hledger work (Phases 60-61), not Technical
-Clipper, per `decisions/0056`.
+not urgent. `L-021`'s `CLAUDE.md` §1 amendment and `L-022`'s
+`reference-project-protocol.md` §2.4 amendment are both fully applied;
+no human gate is outstanding from either.
 
 **Phase 52 closeout (done):** `docs-reconstructor` drift audit
 (`planning/retros/_drift-audit-phase-52.md`) → **DRIFT — 2 non-blocking

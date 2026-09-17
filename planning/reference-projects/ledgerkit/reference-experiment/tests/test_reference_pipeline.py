@@ -36,10 +36,12 @@ def test_load_references_toml_parses_the_real_file() -> None:
     assert hledger.name == "hledger"
     assert hledger.requested_ref == "1.52.4"
     assert hledger.local_path == str(_HLEDGER_CLONE)
-    assert len(hledger.selections) == 8
+    assert len(hledger.selections) == 19  # 8 tag:/date: (Phase 54) + 11 depth: (Phase 54b)
     labels = {sel.label for sel in hledger.selections}
     assert "tag-query-manual" in labels
     assert "tag-query-parser" in labels
+    assert "query-hs-matchesaccount" in labels
+    assert "ledger-hs" in labels
 
 
 def test_resolve_ref_matches_the_already_known_pinned_commit() -> None:
