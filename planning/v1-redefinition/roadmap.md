@@ -935,9 +935,23 @@ experiment whose retro must explicitly recommend which parts (if any)
 become durable Stage E/GATE DD input versus which stay experimental or
 get discarded — not assumed permanent in advance.
 
+**Amended 2026-09-18** (before implementation; original preserved at
+git commit `9932b7d`): Evidence made strictly neutral (support/
+contradict lives only on the Claim); a Decision structurally can never
+supersede a Claim (only another Decision — a factual correction is a
+new Claim, never a Decision); user-run tests are first-class
+Observation/Evidence; `design.md`'s citation obligation is
+one-directional (every assertion resolves to knowledge, not every
+stored Claim need surface); resolved to **two** new agent roles
+(Context Researcher, Documentation Agent) plus an extended
+`knowledge-curator` mode, not three roles; added a context-packet
+sufficiency log; the two proving cases are now explicitly framed as
+testing workflow mechanics and documentation fidelity respectively, not
+final proof of the methodology.
+
 Not started; plan awaiting review. Full plan:
 `planning/phase-54c-evidence-knowledge-workflow.md`. Full verbatim
-request: `planning/phase-55c-evidence-knowledge-workflow-prompt.md`.
+request: `planning/phase-54c-evidence-knowledge-workflow-prompt.md`.
 
 ### Phase 55 — Decide on broader abstractions + refine the blueprint · EXPERIMENTAL → decision
 - **Exit / GATE DD (gate G7):** a written decision

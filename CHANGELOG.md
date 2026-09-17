@@ -70,8 +70,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   phase (54c) informing, not pre-empting, GATE DD (Phase 55). No new
   `context-graph.db` schema change beyond one incidental CHECK-enum
   value; no universal ontology, RDF/OWL, confidence scoring, or MCP
-  work. See `planning/phase-54c-evidence-knowledge-workflow.md` and
-  `planning/phase-55c-evidence-knowledge-workflow-prompt.md`.
+  work. **Amended 2026-09-18**, before implementation: Evidence made
+  strictly neutral (support/contradict lives only on the Claim); a
+  Decision can never supersede a Claim (only another Decision — a
+  factual correction to observed behaviour is always a new Claim, never
+  a Decision); user-run tests are first-class Observation/Evidence;
+  `design.md`'s citation obligation is one-directional (every assertion
+  resolves to knowledge, not every stored Claim need surface); resolved
+  to two new agent roles (Context Researcher, Documentation Agent) plus
+  an extended `knowledge-curator` packet-assembly mode, not three new
+  roles; added a `packet-sufficiency.md` log measuring whether the
+  packet actually reduces rediscovery; the two proving cases are now
+  explicitly framed as testing workflow mechanics and documentation
+  fidelity respectively, not final proof of the methodology, with Phase
+  60/61 named as the first genuine-uncertainty test. See
+  `planning/phase-54c-evidence-knowledge-workflow.md` and
+  `planning/phase-54c-evidence-knowledge-workflow-prompt.md`.
 
 - **Phase 54b plan: behavioural-understanding experiment** (planning
   only, no code, phase not started): expands Phase 54b's one-paragraph

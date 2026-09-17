@@ -5,7 +5,7 @@ this plan is reviewed — per the governing prompt's own explicit "do not
 begin implementation during this planning task," and this project's
 established two-step pattern (Phase 54, Phase 54b). Full verbatim
 request:
-`planning/phase-55c-evidence-knowledge-workflow-prompt.md`.
+`planning/phase-54c-evidence-knowledge-workflow-prompt.md`.
 
 Numbered as a bridge phase (43d/43e, 55b, 54b precedent) immediately
 after Phase 54b and before Phase 55's own still-open GATE DD decision —
@@ -18,6 +18,25 @@ finding... name the smallest candidate... take the union") — run as a
 real, bounded, reversible experiment rather than a desk decision. Its
 own retrospective's "durable vs. experimental" recommendation is GATE
 DD's most concrete evidence input yet, not a substitute for the gate.
+
+**Amended 2026-09-18** (direct user request, before implementation
+began — no code has been written against the original version): made
+Evidence records strictly neutral (§2.2 — support/contradict now lives
+only on the Claim); made the Decision↔Claim boundary structural (§5.2's
+hard rule — a Decision never supersedes a Claim); made user-run tests
+first-class Observation/Evidence rather than a special case (§3); made
+`design.md`'s citation obligation one-directional (§4 — every assertion
+resolves to knowledge, not every stored Claim need appear); resolved §6
+to two new agent roles plus an extended `knowledge-curator` mode, not
+three new roles; added a context-packet sufficiency log (§6.1); reframed
+§7's two proving cases as testing workflow mechanics and documentation
+fidelity respectively, explicitly not final proof of the methodology,
+with Phase 60/61 named as the first genuine-uncertainty test; and fixed
+the prompt/plan filename mismatch this note's own predecessor
+introduced. The original committed version remains in git history
+(`9932b7d`) per this project's own preserve-don't-silently-overwrite
+convention (§2.4 below is now this plan's own stated rule, applied to
+itself).
 
 ## 0. Why this phase, and why now
 
@@ -71,11 +90,11 @@ design choice below follows from this.
 | AI-derived interpretation of an already-proven fact | `vendor_enrichment`/`symbol_enrichment`/`doc_relation_enrichment`, keyed by content hash, tagged by producer (`model` column, `decisions/0054`) | **Precedent, not extended.** These stay exactly as-is — they enrich a fact that already exists. The new model is for *behavioural* claims that may have no corresponding graph fact at all (e.g. "`depth:` clips rather than excludes" has no `symbols`/`uses_edges` row to attach to). |
 | Agent-suggested graph relationship, not yet proven | `planning/context-gaps/inbox.md` (prose + fixed field template, never in the DB) | **Direct precedent for the storage boundary** (planning/, not the DB) — but scoped to *graph edges* specifically. This phase generalises the *boundary*, not this specific queue. |
 | Process/behavioural lesson | `planning/learnings/` (`decisions/0050`, `learning-lifecycle.md`) | **Sibling, not merged.** A learning is "how we should work"; a Claim/Observation is "what we currently believe about this feature's behaviour" — different lifecycles, same curator (`knowledge-curator`) already reviews both. |
-| Reference-project evaluation | `context-evaluator`, `reference-project-tester`, `context-quality-evaluation.md` | **Reused for the "behavioural revalidation" step** (§6) — re-running examples/experiments after implementation is exactly what these roles already do; no new evaluation mechanism needed. |
+| Reference-project evaluation | `context-evaluator`, `reference-project-tester`, `context-quality-evaluation.md` | **Reused for the "behavioural revalidation" step** (§8) — re-running examples/experiments after implementation is exactly what these roles already do; no new evaluation mechanism needed. |
 | Reference-material ingestion with provenance | `planning/reference-projects/ledgerkit/reference-experiment/` (Phase 54, extended Phase 54b) | **Reused as one *evidence-gathering* input**, not superseded — a Context Researcher may reuse this pipeline's resolve/lock/extract shape when a feature's evidence includes pinned external source, exactly as it already did for the `depth:` case. |
 | A real, external, proven "evidence + status" schema | Ledgerkit's `dev-docs/compat-register/*.yaml` | **The direct template** for this phase's own record shape (§2), adapted to be project-agnostic and to add the categories (Observation, Claim-with-contradicting-evidence, Decision, Requirement) Ledgerkit's own schema doesn't need for its narrower compatibility-classification purpose. |
 | Documentation reconciliation | `docs-maintainer` (reconciles *existing* current-truth docs against *verified* implementation, post-hoc) | **Not reused directly** — this phase's Documentation Agent (§3) writes a *pre-implementation proposal* from research, a different purpose at a different point in the lifecycle. Kept as a distinct role rather than overloading `docs-maintainer`'s brief, per `decisions/0054`'s own "a new, minimal agent... owns this one job" reasoning when a genuinely different concern arises. |
-| Planning-state truth | `roadmap-context-curator` | **Not reused for packet assembly** (§5) — a different concern (implementation-ready compaction of *approved* feature knowledge, not planning-doc reconciliation). |
+| Planning-state truth | `roadmap-context-curator` | **Not reused for packet assembly** (§6, now a `knowledge-curator` mode instead) — a different concern (implementation-ready compaction of *approved* feature knowledge, not planning-doc reconciliation). |
 
 **Conclusion:** no `src/codecompass/graph.py` schema change, no new
 `context-graph.db` table, no MCP work, no new relation-detection
@@ -152,29 +171,41 @@ status: recorded           # recorded is the only status an Observation has --
                             # only the Evidence/Claims built on it do
 
 # --- Evidence (EV-<feature>-NNN) ---
-# One or more Observations (or a doc/test citation) packaged as support
-# for or against a specific proposition. This is the unit a Claim cites.
+# A NEUTRAL package of one or more Observations (or a direct doc/source/
+# test citation) describing what was found. An Evidence record never
+# asserts that it supports or contradicts anything -- that relationship
+# belongs to whichever Claim cites it (supporting_evidence/
+# contradicting_evidence, below). The same Evidence record can be cited
+# as supporting one Claim and contradicting a different, competing Claim
+# without being rewritten either way -- keeping the observation itself
+# stable while interpretations built on it can differ or change.
 id: EV-DEPTH-001
 kind: evidence
 evidence_kind: executable   # executable | source | documentation | test
-proposition: >
-  hledger's `balance` command clips/aggregates display names for
-  depth:/--depth; it does not exclude postings from the underlying
-  calculation.
-supports: true              # false = this evidence contradicts the proposition
+what_it_shows: >
+  hledger `balance --depth 2` and `balance depth:2` both aggregate every
+  posting at or below the given depth into one row at that depth; no
+  posting is excluded from either command's computed total.
 observations: [OBS-DEPTH-001]     # or a direct source/doc/test citation, e.g.:
 source_ref: "hledger-lib/Hledger/Reports/MultiBalanceReport.hs:205-238"
 doc_ref: null                # e.g. "hledger.1:7054-7098" for a manual citation
 test_ref: null
 repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
-status: supported            # proposed | supported | contradicted | superseded
+status: current               # current | superseded -- superseded only if a
+                                # LATER OBSERVATION (e.g. at a newer pinned
+                                # revision) shows this one no longer holds.
+                                # Never used to mean "supports"/"contradicts"
+                                # a Claim -- that distinction lives only on
+                                # the Claim side, never here.
 
 # --- Claim (CL-<feature>-NNN) ---
-# An agent's interpretation, built from one or more Evidence records
-# (which may disagree). NEVER promoted to fact silently -- a Claim's
-# own status field is the only place "how sure are we" is recorded, and
-# contradicting evidence is retained, not discarded, even once a Claim
-# is marked supported.
+# An agent's interpretation, built from one or more Evidence records --
+# THIS is where "does this evidence support or contradict the claim"
+# lives (never on the Evidence record itself, per its own comment
+# above). NEVER promoted to fact silently -- a Claim's own status field
+# is the only place "how sure are we" is recorded, and contradicting
+# evidence is retained, not discarded, even once a Claim is marked
+# supported.
 id: CL-DEPTH-001
 kind: claim
 statement: >
@@ -190,7 +221,12 @@ derived_by: "general-purpose agent dispatch (treatment run)"
 repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
 timestamp: "2026-09-18T00:00:00Z"
 status: supported             # proposed | supported | contradicted | superseded | verified
-supersedes: null              # a prior CL-... id this claim revises, if any
+supersedes: null              # a prior CL-... id this claim revises, if any --
+                                # ALWAYS another Claim, never a Decision. A
+                                # factual claim about observed behaviour is
+                                # only ever revised by a new Claim backed by
+                                # new/reinterpreted Evidence or Derivation --
+                                # see §5.2's hard rule.
 
 # --- Derivation (DE-<feature>-NNN) ---
 # The reasoning PROCESS, not just its result -- what the prompt calls
@@ -213,8 +249,14 @@ timestamp: "2026-09-18T00:00:00Z"
 
 # --- Decision (DEC-<feature>-NNN) ---
 # A user/project-owner decision -- the ONLY record kind a human, not an
-# agent, authors (or explicitly ratifies). Always names what it
-# supersedes, if anything, per the prompt's explicit requirement.
+# agent, authors (or explicitly ratifies). Records CHOSEN TARGET-PROJECT
+# BEHAVIOUR -- never a revision of what was factually observed upstream.
+# Names what it agrees with, deliberately deviates from, or (if
+# applicable) supersedes, per the prompt's explicit requirement -- but
+# `supersedes` here ALWAYS names a prior DEC-... id (a Decision may
+# revise an earlier Decision), NEVER a CL-... id. A Decision does not
+# and cannot make a Claim wrong; it can only choose to build on it, or
+# to deliberately diverge from it for the target project (§5.2/§5.3).
 id: DEC-DEPTH-001
 kind: decision
 decides: >
@@ -225,7 +267,11 @@ rationale: >
   Ledgerkit's own compatibility goal is behavioural fidelity to hledger,
   not a simplified reinterpretation; the stats exception is small and
   already well-evidenced (CL-DEPTH-001).
-supersedes: null
+agrees_with_claim: CL-DEPTH-001   # the Claim this decision builds on --
+                                    # left in place, untouched, unquestioned
+                                    # by this record
+supersedes: null              # a prior DEC-... id this decision revises, if
+                                # any -- never a CL-... id (see comment above)
 decided_by: "project owner"
 timestamp: "2026-09-18T00:00:00Z"
 status: approved            # proposed | approved | rejected | superseded
@@ -250,19 +296,26 @@ status: proposed             # proposed | approved | implemented | verified
 
 **Deliberately excluded from this list**, per the prompt's own §7
 constraints: no confidence *score* (a float/probability) anywhere —
-only the closed `status` enum: `proposed | supported | contradicted |
-superseded | verified` (Claims/Evidence) or `proposed | approved |
-rejected | superseded` (Decisions) or `proposed | approved |
-implemented | verified` (Requirements). No automatic conflict
-resolution — contradicting evidence sits beside supporting evidence
-until a human Decision resolves it, or it doesn't, and the Claim's
-status stays `contradicted` honestly. No inheritance hierarchy, no
-generic base "Node" type — six flat, independently-defined record
-shapes, each only as rich as this phase's own proving case (§7) proves
-necessary. Deterministic structural facts (symbols, imports, calls) are
-**not** re-represented here at all — a Requirement's `relevant_symbols`
-field (§5) references them by name/path, read-only, never duplicating
-`context-graph.db`'s own content.
+only closed `status` enums, one per kind and no two alike: `recorded`
+(Observation), `current | superseded` (Evidence — neutral, §2.2's own
+comment), `proposed | supported | contradicted | superseded | verified`
+(Claims), `proposed | approved | rejected | superseded` (Decisions), or
+`proposed | approved | implemented | verified` (Requirements). **No
+automatic conflict resolution, and no Decision-level resolution
+either** — contradicting evidence sits beside supporting evidence on a
+Claim until a **new Claim**, backed by new or reinterpreted Evidence/
+Derivation, resolves it (or doesn't, and the Claim's status stays
+`contradicted` honestly). A Decision never resolves a factual
+contradiction between Claims — it can only choose which
+already-evidenced Claim the project builds on, or deliberately diverge
+from an accurately-observed one for target-project purposes (§5.2).
+No inheritance hierarchy, no generic base "Node" type — six flat,
+independently-defined record shapes, each only as rich as this phase's
+own proving case (§7) proves necessary. Deterministic structural facts
+(symbols, imports, calls) are **not** re-represented here at all — a
+Requirement's `relevant_symbols` field (§5) references them by
+name/path, read-only, never duplicating `context-graph.db`'s own
+content.
 
 ### 2.3 Provenance fields actually adopted (from the prompt's candidate list)
 
@@ -274,9 +327,9 @@ field (§5) references them by name/path, read-only, never duplicating
 | method of observation | yes | `method` (Observation: `executable\|source_read\|doc_read\|test_run`) |
 | tool/adapter used | yes | `tool`/`tool_version` (Observation) |
 | timestamp | yes, where relevant | `timestamp` (Observation, Claim, Derivation, Decision) — omitted from Evidence/Requirement, which are keyed by revision/status instead, per "only the fields demonstrated to be useful" |
-| agent/process responsible | yes | `performed_by`/`derived_by`/`decided_by` |
-| parent evidence/claims | yes | `observations` (Evidence), `supporting_evidence`/`contradicting_evidence`/`derivation` (Claim), `inputs` (Derivation), `decision` (Requirement) |
-| status | yes | closed enum per kind, §2.2 |
+| agent/process responsible | yes | `performed_by`/`derived_by`/`decided_by` — deliberately the **same** field shape whether the actor is an agent dispatch or the user/project owner running a test themselves (§3's "user-run tests are first-class" rule) — nothing about the record shape changes based on who performed it, only the value of this field |
+| parent evidence/claims | yes | `observations` (Evidence — neutral, no support/contradict flag), `supporting_evidence`/`contradicting_evidence`/`derivation` (Claim — the *only* place a support/contradict relationship is recorded), `inputs` (Derivation), `agrees_with_claim` (Decision), `decision` (Requirement) |
+| status | yes | closed enum per kind, §2.2 — deliberately *different* enums per kind (Evidence's own `current\|superseded` carries no support/contradict meaning at all) |
 
 No field is added that this phase's own proving case (§7) doesn't
 exercise at least once — if a field goes unused, the retro should say so
@@ -284,11 +337,14 @@ plainly rather than the plan padding the schema speculatively.
 
 ### 2.4 Historical preservation, not overwriting
 
-A superseded Claim/Decision is never deleted or edited in place — a new
-record is written with `supersedes: <old-id>`, and the old record's own
-`status` is updated to `superseded` (a one-line, mechanical edit, not a
-rewrite of its content). This mirrors `decisions/`'s own append-only ADR
-convention (`CLAUDE.md` §2) exactly, applied one level down from
+A superseded Claim or Decision is never deleted or edited in place — a
+new record of the **same kind** is written with `supersedes: <old-id>`
+(a Claim only ever supersedes a prior Claim; a Decision only ever
+supersedes a prior Decision — never across kinds, per §5.2's hard rule),
+and the old record's own `status` is updated to `superseded` (a
+one-line, mechanical edit, not a rewrite of its content). This mirrors
+`decisions/`'s own append-only ADR convention (`CLAUDE.md` §2) exactly,
+applied one level down from
 project-wide architecture decisions to per-feature behavioural claims.
 
 ## 3. Behaviour-first Context Researcher
@@ -309,8 +365,12 @@ context-researcher.md`, written at implementation time, not now).
    and Phase 54b's own hard-won lesson (a documentation-only reading is
    exactly how Ledgerkit's real Stage C Phase 1 reached its wrong
    conclusion).
-3. Converts each Observation into one or more Evidence records, tagged
-   `supports`/contradicts a specific proposition.
+3. Converts each Observation into one or more neutral Evidence records
+   (what was found — never itself tagged as supporting or contradicting
+   anything, §2.2). Whether a given Evidence record ends up supporting
+   or contradicting a specific Claim is decided later, when the Claim
+   itself is written (step 6) — the same Evidence may support one Claim
+   and contradict a different, competing one without being rewritten.
 4. Traces every real implementation path that could plausibly explain
    the observed behaviour — not stopping at the first plausible one
    (Phase 54b's own named failure mode, §5's execution-path-completeness
@@ -328,6 +388,17 @@ context-researcher.md`, written at implementation time, not now).
    than running once and stopping — a targeted follow-up experiment is
    explicitly in scope if source inspection raises a new question (e.g.
    Phase 54b's own real mid-investigation revision on `stats`).
+
+**A user/project-owner actually running an example or test is a first-
+class Observation, not a special case.** Whether the `method: test_run`
+Observation behind a given Evidence record was performed by a dispatched
+agent or by the reviewer themselves changes only `performed_by`'s value
+— never the record kind, and never routed through a Decision instead.
+A Decision is reserved for simple approval or a preference among
+already-evidenced options with **no new observation involved**; the
+moment the reviewer actually runs something and sees a real result, that
+result is an Observation/Evidence pair like any other (§5.2 restates
+this from the reviewer's side).
 
 **Tools:** `Read`, `Grep`, `Glob`, `Bash`, `Write` (writes only under
 `planning/knowledge/<feature-slug>/`, never `src/`, `context-graph.db`,
@@ -371,14 +442,21 @@ not every section is mandatory for every feature):
 - non-goals
 - acceptance criteria
 
-**Every substantive claim in `design.md` carries an inline citation**
-(`CL-DEPTH-001`, `EV-DEPTH-003`, etc.) back to the knowledge base —
-`design.md` is **a human-readable projection of the knowledge base, not
-an independent source of truth** (the prompt's own words, adopted
-verbatim as this role's operating rule). A future `check_knowledge_base.py`
-(§9) can mechanically verify every cited id actually exists and every
-Claim has at least one citing document — a cheap, real, checkable
-grounding property, not an aspiration.
+**Every substantive assertion in `design.md` carries an inline citation**
+(`CL-DEPTH-001`, `EV-DEPTH-003`, etc.) back to the knowledge base that
+resolves to a real record — `design.md` is **a human-readable projection
+of the knowledge base, not an independent source of truth** (the
+prompt's own words, adopted verbatim as this role's operating rule). A
+future `check_knowledge_base.py` (§9) mechanically verifies **this one
+direction only**: every id cited from `design.md`/`context-packet.md`
+actually exists. **The reverse is explicitly not required** — a stored
+Claim, Evidence, or Derivation record has no obligation to appear in
+`design.md` at all. Superseded Claims, contradicted Claims, rejected
+Derivation paths, and intermediate research dead-ends are expected to
+stay internal to the knowledge base, cited by nothing in the design
+document, without that being treated as a gap — `design.md`'s job is to
+faithfully project what's currently believed and approved, not to
+exhaustively enumerate the research history behind it.
 
 **Tools:** `Read`, `Grep`, `Glob`, `Write` (writes only `design.md` and
 sets its own frontmatter `status:` to `RESEARCHED`, §5.1 — never
@@ -416,13 +494,27 @@ design assumptions, or incomplete upstream understanding."
 
 ### 5.2 What the reviewer can do, and how it lands in the knowledge base
 
+**Hard rule, stated once and enforced by every row below: a Decision
+must never supersede a Claim.** A Claim is a factual proposition about
+observed behaviour; only a new Claim, backed by new or reinterpreted
+Evidence/Derivation, can revise it (§2.2's own `supersedes` field on
+Claim is scoped to other Claims only, likewise Decision's own
+`supersedes` to other Decisions only). This is the structural expression
+of the prompt's own instruction that "a user Decision must not supersede
+a factual Claim about observed upstream behaviour" — a correction to
+*what actually happens upstream* is a factual-track action (new
+Observation/Evidence, and a replacement Claim/Derivation if the overall
+understanding changes); a Decision is reserved for *what the target
+project chooses to do about it*, which can agree with, or deliberately
+diverge from, an unchanged, still-valid Claim.
+
 | Reviewer action | Structured effect |
 |---|---|
-| Tests an example, confirms it | No new record needed — the example's underlying Requirement stays `proposed`, moving toward `approved` once the whole design is. |
-| Tests an example, finds it wrong | A new Claim (`supersedes` the wrong one) or a new contradicting Evidence record, plus a note in `design.md`'s own "known uncertainties" until resolved. |
-| Challenges the researcher's interpretation | A new Decision record capturing the reviewer's own reading, `supersedes` the Claim it overrides. |
-| Chooses between alternative semantics | A Decision record naming the chosen alternative and the rejected one(s), with rationale — the ADR-style "alternatives considered" discipline, one level down from project ADRs. |
-| Identifies a desired deviation from upstream | A Decision record explicitly distinguishing "observed upstream behaviour" (a Claim, untouched) from "desired target-project behaviour" (a new Decision + Requirement) — never edited into the same record, per the prompt's explicit four-way distinction (§4 below). |
+| Tests an example themselves, confirms it | A new Observation + Evidence record, first-class exactly like an agent-run test (§3) — no Decision needed; the example's underlying Requirement moves toward `approved`. |
+| Tests an example themselves, finds it factually wrong | A new Observation + Evidence record capturing what was actually seen, and — if this changes the overall behavioural understanding — a new Claim + Derivation that `supersedes` the prior Claim. A **factual correction**, on the same track a Context Researcher's own follow-up experiment would use — never routed through a Decision record. |
+| Disputes the researcher's interpretation of evidence already on file (no new test run) | If the dispute reveals the existing Evidence was misread, a new Derivation (and, if warranted, a new Claim superseding the old one) reinterpreting the same Evidence — not a Decision, since no new fact is in play, only a correction to reasoning. |
+| Chooses between two already-evidenced, non-contradictory readings, or simply approves the design as researched | A Decision record only — naming the chosen option (and, if relevant, the rejected one(s)) with rationale, the ADR-style "alternatives considered" discipline. **Neither Claim is marked wrong or superseded** — both stay valid observations; the Decision only says which one the project builds `Requirement`s on. |
+| Identifies a desired deviation from upstream | A Decision record explicitly choosing target-project behaviour that differs from an accurately-observed-and-unchanged Claim, citing which Claim it deliberately deviates from (`agrees_with_claim`, or a parallel `deviates_from_claim` field if the distinction is worth making explicit for a given feature) — the Claim is never edited, marked wrong, or superseded by this Decision, per the prompt's explicit four-way distinction (§5.3 below). |
 | Adds a constraint/non-goal | A Requirement record (`status: proposed`) or a `design.md` "non-goals" bullet, whichever is more natural for the specific case. |
 
 **User corrections update structured knowledge, not just `design.md`
@@ -444,7 +536,9 @@ adjectives on one record:
 - **Interpreted behaviour** → Claim, always citing the Evidence and
   Derivation that produced it.
 - **Desired target-project behaviour** → Decision, always naming what
-  Claim (if any) it agrees with, deviates from, or supersedes.
+  Claim (if any) it agrees with or deliberately deviates from — **never**
+  supersedes; a Decision can only supersede a prior Decision (§5.2's
+  hard rule).
 - **Implementation decision** → Requirement, always citing the Decision
   that authorises it.
 
@@ -455,20 +549,27 @@ property the prompt calls out as "particularly important for Ledgerkit."
 
 ## 6. Approved context packet for coding agents
 
-New experimental role, or a mode of an existing one — **decided at
-implementation time, not speculatively now** (the prompt's own "avoid
-premature architecture" applies to this choice too): either a new
-narrow `context-packet-curator` role, or a new, clearly-bounded mode of
-`knowledge-curator` if the packet-assembly logic turns out to be purely
-mechanical (read every `APPROVED`-lifecycle record for a feature,
-compact it) rather than requiring fresh judgement. The plan's own
-recommendation, subject to revision once §7's proving case is actually
-run: **start as a new role**, since `decisions/0054`'s own precedent
-("a new, minimal agent... owns this one job" beats folding a genuinely
-different concern into an existing broader brief) has already proven out
-twice in this project, and packet assembly ("compact for a coding
-agent," a consumer-facing concern) is a different job from triage
-("investigate an observation," `knowledge-curator`'s actual job).
+**Decided: a new, clearly-bounded mode of `knowledge-curator`, not a
+third new agent role.** This phase introduces exactly two genuinely new
+roles — Context Researcher (§3) and Documentation Agent (§4), each
+justified by a role `knowledge-curator`'s own brief cannot naturally
+absorb (behaviour-first primary research; pre-implementation proposal
+authorship). Packet assembly is different in kind: it is a bounded,
+largely mechanical compaction of records `knowledge-curator` already has
+every reason to be looking at — read every record reachable from
+`design.md`'s own `APPROVED` state for a feature, compact it into
+`context-packet.md`. This is much closer to `knowledge-curator`'s
+existing job (triage and consolidation across a queue of structured
+records) than to either of the two genuinely new roles, and a fourth
+brief this session's own work does not yet clearly need is a heavier
+first step than the evidence calls for. `knowledge-curator.md` gains one
+new, explicitly-scoped mode/section (not a rewrite of its existing
+triage responsibilities) describing exactly this packet-assembly job,
+its own input/output contract (below), and the same write boundary
+every other mode already has (`planning/**` only). If the retro finds
+this blurs "investigate an observation" and "assemble a packet"
+unhelpfully, splitting it into its own role at that point is a small,
+reversible follow-up — not a cost paid for guessing wrong now.
 
 **Input:** only records reachable from `design.md`'s own
 `APPROVED`-lifecycle state, plus any `status: approved`/`implemented`
@@ -501,9 +602,53 @@ from an `APPROVED` record — the whole point (per the prompt) is that
 feature," which requires the packet to be **smaller** than `design.md`,
 not a renamed copy of it.
 
+### 6.1 Sufficiency log: does the packet actually reduce rediscovery?
+
+Word/line count comparisons are a weak proxy for whether a packet is
+*actually* sufficient — this phase measures it directly instead. During
+implementation (§8), the coding agent (the lead, per `CLAUDE.md` §8)
+keeps a running `planning/knowledge/<feature-slug>/packet-sufficiency.md`
+log: every time it has to read, grep, or otherwise consult something
+**not already in `context-packet.md`** to make progress, that gap is
+logged — what was needed, why the packet didn't already have it, and
+whether that's a one-off omission (the packet-assembly mode simply
+missed something reachable from an `APPROVED` record) or a structural
+gap (the knowledge base itself never captured it, because the Context
+Researcher/Documentation Agent never asked the right question). This
+log is the retro's own primary evidence for "is the resulting
+coding-agent context smaller **and more actionable** than raw repository
+context" (§10) — a packet that is small only because it is incomplete is
+not a success, and this log is what would show that, rather than a
+line-count comparison hiding it.
+
+**Not applied to the secondary proving case** (§7) — the retroactive
+`hledger-depth` design doc has no implementation step to generate a
+sufficiency log against.
+
 ## 7. Bounded proving case
 
-**Primary (full loop, real implementation): `CG-005`** — add a new
+**The two proving cases below validate two different, narrower
+properties — neither, and not even both together, constitutes final
+proof that this methodology works.** `CG-005` validates **workflow
+mechanics**: can the six record kinds, the lifecycle, the packet
+contract, and the two new agent roles actually operate end to end on a
+real (if small) change without breaking down. The retroactive `depth:`
+case validates **knowledge→documentation fidelity**: given rich,
+already-verified evidence, does the Documentation Agent's projection of
+it match reality. Neither tests the methodology's value under **genuine
+uncertainty** — a real, currently-unanswered question, researched fresh,
+where the workflow's actual payoff (avoiding a wrong turn nobody has
+already caught) would show up. That test is deliberately deferred: Phase
+60/61's own Haskell-adapter/Ledgerkit work, once it exists, is the first
+opportunity to run this workflow on a question this project doesn't
+already know the answer to. This phase's own retro (§10) must not
+overreach past what its own two bounded cases can actually support —
+"the mechanics worked" and "the projection was faithful" are real,
+useful findings; "the methodology is proven" is not a claim either case
+alone, or both together, can honestly make.
+
+**Primary (full loop, real implementation, tests workflow mechanics):
+`CG-005`** — add a new
 `doc_artifacts.origin` CHECK-enum value for externally-sourced, pinned
 reference material (currently misclassified as `origin='project'`),
 correctly reclassifying Phase 54/54b's own `dev-docs/hledger-reference/*`
@@ -530,8 +675,9 @@ extracted files. Chosen over `CG-006` (mentions-by-filename) and `CG-007`
   experiment's own risk, while `CG-005`'s own subject matter (Ledgerkit
   reference material) still keeps Ledgerkit meaningfully in the loop.
 
-**Secondary, low-cost validation (no new implementation): re-derive
-Phase 54b's own `depth:` findings through this model, retroactively.**
+**Secondary, low-cost validation (no new implementation, tests
+knowledge→documentation fidelity): re-derive Phase 54b's own `depth:`
+findings through this model, retroactively.**
 Since Phase 54b already produced rich, independently-verified evidence
 (two full investigation reports, an independent `context-evaluator`
 report, and Ledgerkit's own real, shipped Stage C Phase 5 outcome as
@@ -552,7 +698,10 @@ for this phase.
 ## 8. Implementation and verification loop (for the primary proving case)
 
 1. Implement `CG-005`'s approved Requirement(s) (the coding
-   agent step is the lead, per `CLAUDE.md` §8 — no new role).
+   agent step is the lead, per `CLAUDE.md` §8 — no new role), working
+   from `context-packet.md` as the primary input and logging every
+   consulted-but-not-in-the-packet gap to `packet-sufficiency.md` as it
+   happens (§6.1) — not reconstructed from memory afterward.
 2. Normal `pytest`/`ruff`/`check_user_docs.py --strict` review, per
    every other phase.
 3. **Behavioural revalidation**: re-run the Observations that
@@ -629,10 +778,12 @@ folded into prose**:
   anticipate the `stats` exception, or would a naive version have missed
   it the way Stage C Phase 1 did?)
 - Is the resulting coding-agent context packet smaller and more
-  actionable than raw repository context? (measured: word/line count of
-  `context-packet.md` vs. the raw `CG-005` filing + relevant
-  `graph.py`/`spec_docs.py` excerpts a coding agent would otherwise have
-  to read.)
+  actionable than raw repository context? (measured primarily from
+  `packet-sufficiency.md`, §6.1 — how many real gaps were logged, and
+  were they one-off omissions or structural knowledge-base gaps — not
+  merely a word/line count of `context-packet.md` against the raw
+  `CG-005` filing, which a small-but-incomplete packet would win
+  trivially and misleadingly.)
 - Can implementation results update the knowledge model without losing
   historical provenance?
 - Does this improve development quality enough to justify making the
@@ -647,7 +798,14 @@ most important deliverable, per the prompt's own explicit framing. It is
 a recommendation for the user to ratify, not a decision this phase makes
 unilaterally (the same posture `phase-47-consolidate-findings.md`
 already established for GATE DB, and `conditional-generalisation.md` §3
-already established for GATE DD).
+already established for GATE DD). **That recommendation must be scoped
+honestly to what §7's two bounded cases can actually support** —
+mechanics-worked and fidelity-held findings, not a general verdict on
+whether the methodology improves development quality under real,
+unresolved uncertainty. Where the recommendation goes beyond what this
+phase's own evidence supports, it should say so explicitly and name
+Phase 60/61's own real-uncertainty test as the open question, not paper
+over the gap.
 
 ## 11. Roadmap update, conditional on success
 
@@ -666,7 +824,11 @@ roadmap.md` gains:
   genuine cross-language Decision records (does Ledgerkit's Python
   implementation need to match hledger's Haskell behaviour exactly, or
   deviate deliberately — the four-way distinction, §5.3, exercised for
-  real across languages).
+  real across languages) — and, per §7's own hedge, framed explicitly as
+  the workflow's **first genuine-uncertainty test**: a real, currently
+  open question, not a retrospective check against a known-correct
+  answer. This is where the methodology's actual value (not just its
+  mechanics or its documentation fidelity) gets a real test.
 - GATE DD's own decision procedure (`conditional-generalisation.md` §3)
   gains this phase's retro as a named evidence input, alongside
   `CG-007`'s still-open promotion-bar status.
@@ -685,11 +847,11 @@ document's own eventual outcome.
   directories: `doc-origin-pinned-reference` (primary, `CG-005`) and a
   retroactive `hledger-depth` directory (secondary, reusing Phase 54b's
   already-collected evidence, no new agent dispatch).
-- Draft agent briefs: `context-researcher.md`, `documentation-agent.md`,
-  and (pending the §6 decision) either `context-packet-curator.md` or a
-  documented new mode of `knowledge-curator.md` — all marked
-  EXPERIMENTAL in their own frontmatter/header, matching
-  `context-enrichment-agent.md`'s own establishment precedent.
+- Two new draft agent briefs: `context-researcher.md`,
+  `documentation-agent.md` — marked EXPERIMENTAL in their own
+  frontmatter/header, matching `context-enrichment-agent.md`'s own
+  establishment precedent. Plus one new, explicitly-scoped mode added to
+  the existing `knowledge-curator.md` (§6) — not a new file.
 - `scripts/check_knowledge_base.py` (§9).
 - The real `CG-005` implementation: one new `doc_artifacts.origin` CHECK-
   enum value in `src/codecompass/graph.py`, the code path that assigns
@@ -701,7 +863,7 @@ document's own eventual outcome.
   feature directories.
 - The context packet (§6) for `doc-origin-pinned-reference` only (the
   retroactive `hledger-depth` case has no implementation to hand a
-  packet to).
+  packet to), plus its `packet-sufficiency.md` log (§6.1).
 - The retro (§10), including the explicit durable-vs-experimental
   recommendation.
 
@@ -744,12 +906,15 @@ document's own eventual outcome.
   reasoned in §7; the smaller, more boundable choice for a first
   experimental phase, at the cost of a slightly less dramatic design
   question than `CG-006`'s real matching-strategy nuance.
-- **New agent roles proposed, not extensions of existing ones** — mirrors
-  `decisions/0054`'s own reasoning (a genuinely different concern
-  deserves its own narrow role) applied three more times (Context
-  Researcher, Documentation Agent, and the packet-assembly role). If the
-  retro finds this fragments responsibility unhelpfully rather than
-  clarifying it, that is itself a valid, expected experimental finding.
+- **Two new agent roles, not three** — Context Researcher and
+  Documentation Agent apply `decisions/0054`'s own reasoning (a
+  genuinely different concern deserves its own narrow role); packet
+  assembly instead extends `knowledge-curator` (§6), deliberately not
+  applying that same reasoning a third time until evidence says a
+  dedicated role is actually needed. If the retro finds the extended
+  `knowledge-curator` mode awkward or overloaded, splitting it out is a
+  small, reversible follow-up — cheaper than guessing a third role was
+  needed now and finding it wasn't.
 - **The secondary `hledger-depth` proving case is deliberately
   retroactive and cheap**, not a new agent dispatch — reuses Phase 54b's
   own already-verified evidence specifically because a known-correct
@@ -759,18 +924,19 @@ document's own eventual outcome.
 
 ## Files
 
-- `planning/phase-55c-evidence-knowledge-workflow-prompt.md` — the
+- `planning/phase-54c-evidence-knowledge-workflow-prompt.md` — the
   governing prompt, verbatim.
 - `planning/phase-54c-evidence-knowledge-workflow.md` — this plan.
 - `planning/knowledge/doc-origin-pinned-reference/*.yaml`,
-  `design.md`, `context-packet.md` — new, at implementation time.
+  `design.md`, `context-packet.md`, `packet-sufficiency.md` (§6.1) —
+  new, at implementation time.
 - `planning/knowledge/hledger-depth/*.yaml`, `design.md` — new, at
   implementation time (retroactive, secondary proving case).
 - `.claude/agents/context-researcher.md`,
-  `.claude/agents/documentation-agent.md`, and either
-  `.claude/agents/context-packet-curator.md` or a documented new
-  `knowledge-curator.md` mode — new, at implementation time, marked
-  EXPERIMENTAL.
+  `.claude/agents/documentation-agent.md` — new, at implementation time,
+  marked EXPERIMENTAL.
+- `.claude/agents/knowledge-curator.md` — amended in place with the new
+  packet-assembly mode (§6); not a new file.
 - `scripts/check_knowledge_base.py` — new, at implementation time.
 - `src/codecompass/graph.py` — one new `doc_artifacts.origin` CHECK-enum
   value (`CG-005`'s own implementation).
@@ -801,6 +967,11 @@ document's own eventual outcome.
 - The "can another agent explain an important claim" test (§10) is run
   for real, not merely asserted — a fresh dispatch, no access to this
   phase's own working notes.
+- `packet-sufficiency.md` (§6.1) exists and was populated live during
+  implementation, not reconstructed afterward — checked by confirming
+  its entries' own timestamps/ordering are consistent with the
+  implementation's actual commit history, not merely that the file is
+  present.
 - `release-phase-auditor` PASS or PASS WITH NON-BLOCKING OBSERVATIONS.
 
 ## Done when
@@ -841,13 +1012,11 @@ Judgment calls worth explicit attention before implementation starts:
    design question is preferred even at the cost of a larger first
    experiment, `CG-006` (real matching-strategy nuance, still fully
    inside this repository) is the next-best candidate.
-3. **Three new experimental agent roles, not extensions of existing
-   ones** (§3, §4, §6) — if the user would prefer testing this workflow
-   with fewer new roles first (e.g. folding Documentation Agent into
-   `docs-maintainer` for this one experiment, deciding the separation
-   question only if that proves awkward), that's a smaller, cheaper
-   first step, at the cost of not directly testing `decisions/0054`'s
-   own "separate concerns, separate roles" precedent at this new scale.
+3. **Resolved**: two new agent roles (Context Researcher, Documentation
+   Agent), plus a new bounded mode on the existing `knowledge-curator`
+   for packet assembly, not a third new role (§6). Flagged here only so
+   the resolution itself is visible at review time, not because it's
+   still open.
 4. **File-based storage under `planning/knowledge/`, not any database**
    (§2.1) — the plan's strongest-argued choice, but worth explicit
    confirmation given how central it is to every other design decision

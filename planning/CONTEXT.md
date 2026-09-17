@@ -509,7 +509,7 @@ Agent → user review gate → approved context packet → coding agent →
 behavioural revalidation → retro workflow, usable for both CodeCompass's
 own development and downstream projects like Ledgerkit. Full plan:
 `planning/phase-54c-evidence-knowledge-workflow.md` (prompt saved
-verbatim: `planning/phase-55c-evidence-knowledge-workflow-prompt.md`).
+verbatim: `planning/phase-54c-evidence-knowledge-workflow-prompt.md`).
 Grounded in real, already-proven precedent rather than invented from
 scratch: `decisions/0051` (agent-suggested edges live in `planning/`,
 never `context-graph.db`, promoted only through the learning lifecycle)
@@ -531,13 +531,35 @@ strictly conditional, untouched. Bounded proving case: `CG-005` (the
 research→design-doc→review→approve→packet→implement→revalidate loop
 within one experimental phase) plus a retroactive, low-cost check of
 Phase 54b's own `depth:` evidence against a known-correct answer
-(secondary, no new agent dispatch). Three new experimental agent roles
-proposed (Context Researcher, Documentation Agent, a packet-assembly
-role), explicitly not started yet — this is planning only, per the
-prompt's own "do not begin implementation." No `src/` change, no new
-ADR (deferred to the retro's own durable-vs-experimental
-recommendation, which is this phase's single most important
-deliverable).
+(secondary, no new agent dispatch). Two new experimental agent roles
+(Context Researcher, Documentation Agent) plus a new bounded
+packet-assembly mode on the existing `knowledge-curator`, explicitly not
+started yet — this is planning only, per the prompt's own "do not begin
+implementation." No `src/` change, no new ADR (deferred to the retro's
+own durable-vs-experimental recommendation, which is this phase's single
+most important deliverable).
+
+**Amended 2026-09-18** (direct user request, before implementation —
+no code written against the original version, git history preserves it
+at `9932b7d`): made Evidence records strictly neutral (support/
+contradict now lives only on the Claim, never embedded in Evidence);
+made the Decision↔Claim boundary structural — **a Decision never
+supersedes a Claim**, only another Decision; a Claim about observed
+behaviour is only ever revised by a new Claim backed by new/reinterpreted
+evidence, never by a user Decision; made user-run tests first-class
+Observation/Evidence, not a special case (simple approval/preference
+stays a Decision); made `design.md`'s citation obligation
+one-directional (every assertion resolves to knowledge; not every
+stored Claim need appear — superseded/contradicted/intermediate claims
+may stay internal); resolved the agent-role question to **two** new
+roles, not three; added a `packet-sufficiency.md` log tracking what the
+coding agent needed beyond the approved packet, as the retro's real
+evidence for whether the packet reduces rediscovery; reframed the two
+proving cases as testing workflow **mechanics** (`CG-005`) and
+knowledge→documentation **fidelity** (`depth:` retroactive check)
+respectively — explicitly not final proof of the methodology, with
+Phase 60/61 named as the first genuine-uncertainty test. Full amended
+plan: `planning/phase-54c-evidence-knowledge-workflow.md`.
 
 **Phase 54b is `done` (2026-09-18) — LedgerKit behavioural-understanding
 experiment.** Expanded from a one-paragraph placeholder into a concrete
