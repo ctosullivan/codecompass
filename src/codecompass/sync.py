@@ -272,6 +272,14 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
     mention another tracked vendor, a Skill, or another doc artifact too,
     not just be mentioned by this project's own docs (see
     `decisions/0043`).
+
+    Phase 55b widens the *target* set the same way: `spec_doc_rows` is
+    now also included in the third argument (previously `vendor_doc_rows
+    + vendor_upstream_doc_rows + skill_doc_rows` only), so one project
+    spec doc can mechanically mention another — reachable at all only
+    once `spec_docs.scan_spec_docs` started populating `name`
+    (`_extract_title`), which is what actually makes a `spec_doc` row an
+    eligible `mentions_artifact` target (closes `CG-004`).
     """
     vendor_rows: list[VendorRow] = []
     symbol_rows: list[SymbolRow] = []
@@ -330,7 +338,7 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
     doc_relations_edge_rows = build_doc_relations_edges(
         spec_doc_rows + vendor_upstream_doc_rows,
         configs,
-        vendor_doc_rows + vendor_upstream_doc_rows + skill_doc_rows,
+        vendor_doc_rows + vendor_upstream_doc_rows + skill_doc_rows + spec_doc_rows,
         project_root,
     )
 

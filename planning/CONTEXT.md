@@ -500,6 +500,47 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 55b is `done` (2026-09-17) — populated `doc_artifacts.name` for
+`spec_doc` rows, closing `CG-004`.** User approved
+`phase-55-evidence-reconciliation.md` §G's recommendation ("Approved"),
+numbered as a bridge phase (43d/43e precedent) rather than disturbing
+Stage E's (56-59)/Stage F's (60-63) own pre-written, unrelated sketches.
+**A genuine mid-phase failure, caught by independent evaluation and
+honestly retained, not smoothed over**: the first implementation
+attempt added real, meaningful unit tests, all green — and was still
+completely non-functional in the real running tool, because `sync.py`'s
+own production call to `build_doc_relations_edges` never included the
+new `spec_doc_rows` argument. `context-evaluator`'s round-1 pass caught
+this by re-running the real tool against the live Ledgerkit repository
+rather than trusting the green suite; that same pass quantified a
+second problem a naive fix would have caused (55 hypothetical
+false-positive edges, 50 of them "every doc mentions README" purely
+because its own H1 is the bare project name `# ledgerkit`). Both fixed:
+the `sync.py` wiring landed, and a genericity guard
+(`_is_specific_enough`) rejects single bare words with no digit/hyphen.
+Round 2: **PASS WITH NON-BLOCKING OBSERVATIONS**, confirmed via a real,
+read-only before/after against the live Ledgerkit repository — 3
+genuine `mentions_artifact` edges now appear, all independently verified
+real, zero reintroduced noise. Honestly disclosed, not claimed fixed:
+the original `CC-LK-001` three files still show zero relations to each
+other, because they cross-reference by filename, not by title text —
+filed as `CG-006`, a small, independently-fundable follow-on of the same
+shape as `CG-004` itself, not urgent. `release-phase-auditor` found 4
+non-blocking gaps in the planning/retro paper trail itself (a stale
+"no stoplist needed" design note, an incomplete Files list, a factual
+misstatement about what the originally-approved plan actually scoped,
+a missing recorded drift-audit verdict) — all fixed before this
+closeout, none affecting the shipped code. `docs-reconstructor` drift
+audit (`planning/retros/_drift-audit-phase-55b.md`) → NO DRIFT, 1
+non-blocking finding, fixed. A process-lesson candidate (`L-021`)
+recommends a `CLAUDE.md` §1 amendment (drafted in
+`planning/v1-redefinition/proposed-governance-changes.md` §D) — **filed,
+not yet approved**, to be presented separately per §0. `pytest` 581
+passed / 2 skipped, `ruff check .` clean, `check_user_docs.py --strict`
+clean throughout. `planning/ROADMAP.md` row `55b` and
+`v1-redefinition/roadmap.md`'s new Phase 55b stanza both `done` as of
+this commit.
+
 **Evidence-reconciliation planning session complete (2026-09-17),
 no implementation.** `planning/phase-55-evidence-reconciliation.md`
 reconstructs current state from both repositories fresh (CodeCompass
@@ -1289,28 +1330,28 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Two things need the user's explicit input before any code is
-written**, per `planning/phase-55-evidence-reconciliation.md`:
+**Phase 55b is done. One thing needs the user's explicit input before
+any further code is written**: approve or reject the `CLAUDE.md` §1
+amendment `L-021` proposes (drafted in
+`planning/v1-redefinition/proposed-governance-changes.md` §D — a phase
+that adds behaviour to an existing function with a real production call
+site must name that call site and test through it, per Phase 55b's own
+caught-live wiring-gap failure). Not yet presented for approval as of
+this checkpoint.
 
-1. **Approve (or redirect) implementing the `CG-004` fix** — populate
-   `doc_artifacts.name` for `spec_doc` rows, the one item this
-   reconciliation classifies **IMPLEMENT** (doubly-corroborated by Phase
-   54 and Ledgerkit's independent `CC-LK-001`, zero schema change,
-   validated via a real before/after against the live Ledgerkit repo).
-2. **Pick a phase-numbering approach** for that fix (§G of the plan):
-   renumber Stage E/F's eight pre-written sketches, use a bridge-style
-   letter (e.g. "Phase 55b" — the document's own stated but non-binding
-   preference), or fold it into a future Stage E phase instead of
-   running it now.
-
-Everything else this reconciliation touched stays explicitly deferred,
-not decided: GATE DD itself (the broader technical-dependency/provenance
-ontology question, Phase 55's own slot) remains open, now with a
-materially richer evidence package than after Phase 54 alone; executable/
-behavioural-evidence representation and pinned-reference productisation
-both wait on cross-domain evidence (Technical Clipper/Stage F, not
-invented from two hledger-only instances). No phase is "queued" in the
-old sense — the next action is a decision, not a default next number.
+Everything else the Phase 55 evidence reconciliation surfaced stays
+explicitly deferred, not decided: GATE DD itself (the broader
+technical-dependency/provenance ontology question, Phase 55's own slot)
+remains open, now with a materially richer evidence package than after
+Phase 54 alone (Phase 55b's own real-world validation included);
+`CG-005` (the `origin` enum extension) and `CG-006` (Phase 55b's own
+residual filename-matching gap) are both small, independently-fundable,
+not urgent; executable/behavioural-evidence representation and
+pinned-reference productisation both wait on cross-domain evidence
+(Technical Clipper/Stage F, not invented from two hledger-only
+instances). No phase is "queued" in the old sense — the next action is
+either the `L-021`/`CLAUDE.md` decision above, or the lead's/user's call
+on which of the small deferred items (if any) to pick up next.
 
 **Stage A is complete (Phases 39–43e `done`, GATE DA passed). Stage B is
 fully complete (Phases 43b, 43c, 44, 45, 46, 47 all `done`, GATE DB

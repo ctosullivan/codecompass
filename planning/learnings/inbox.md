@@ -8,6 +8,152 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-021 — a unit test that calls a function directly, bypassing its real production call site, cannot catch a wiring gap at that call site
+
+- **origin:** Phase 55b (spec-doc name population, closing `CG-004`), retro
+  "Lessons learnt" #1 + "Process-improvement feedback"; filed at the
+  retro's own explicit request that `knowledge-curator` judge whether this
+  warrants its own `L-NNN` during this phase's triage
+- **date:** 2026-09-17
+- **project_revision:** working tree (Phase 55b's own uncommitted diff at
+  filing time)
+- **observation:** Phase 55b's first implementation attempt populated
+  `doc_artifacts.name` for `spec_doc` rows (`spec_docs.py::_extract_title`)
+  and added every new unit test the plan called for
+  (`test_spec_docs.py`/`test_doc_mapping.py`) — all green on the first
+  run. It was still completely non-functional in the real, running tool:
+  `sync.py::rebuild_project_graph`'s own call to
+  `build_doc_relations_edges` never included `spec_doc_rows` in the third
+  (target) argument, so the real gap `CG-004` existed to close still
+  reproduced identically against the live Ledgerkit repository. No unit
+  test caught this, because every one of them called
+  `build_doc_relations_edges` (or `scan_spec_docs`) directly — none went
+  through `sync.py`'s real production wiring, the one place the actual
+  defect lived. This was caught only by `context-evaluator`'s round-1
+  independent pass, which re-ran the real tool against real data rather
+  than trusting the unit tests' own pass/fail — not by the lead's own
+  confidence in the green suite, which had no internal signal telling it
+  to distrust that confidence. The phase's own plan
+  (`phase-55-evidence-reconciliation.md` §G) listed `sync.py` under
+  "Affected architecture" but never required a test through it — the
+  test-plan gap was in the plan document itself, not only in what the
+  implementing pass chose to write.
+- **evidence:** `planning/retros/phase-55b-spec-doc-name-population.md`
+  "Scope delivered vs planned" ("A more consequential failure..."),
+  "Lessons learnt" #1, "Process-improvement feedback" (all three
+  independently re-read, not taken on the retro's own characterization
+  alone); `src/codecompass/sync.py`'s current
+  `build_doc_relations_edges(spec_doc_rows + vendor_upstream_doc_rows,
+  configs, vendor_doc_rows + vendor_upstream_doc_rows + skill_doc_rows +
+  spec_doc_rows, project_root)` call, confirming `spec_doc_rows` is now
+  present in the target argument (the round-2 fix); `tests/test_sync.py::test_rebuild_project_graph_relates_two_spec_docs_to_each_other`,
+  whose own docstring names exactly this failure mode ("caught missing by
+  an independent `context-evaluator` pass before this test existed: the
+  unit-level tests passed even when `spec_doc_rows` was never added to
+  `build_doc_relations_edges`'s target argument in `sync.py`") — the only
+  test in this phase's diff that calls `rebuild_project_graph` itself
+  rather than `build_doc_relations_edges`/`scan_spec_docs` directly.
+- **classification:** project-rule (a recurring project-wide planning
+  discipline, not scoped to the agent-led workflow's own step ordering or
+  to one agent role — it binds whoever writes a phase plan, agent-led or
+  not, per `CLAUDE.md` §1's existing "how the phase will be verified as
+  done" clause, which this candidate proposes strengthening rather than
+  replacing)
+- **status:** candidate
+- **recurrence:** first occurrence (as a filed candidate; the retro itself
+  frames the underlying principle as general/durable, not a one-off)
+- **curation (Phase 55b triage, 2026-09-17, knowledge-curator):** provenance
+  accepted — all required fields present. Independently re-derived the
+  claim from the real diff rather than trusting the retro's own account:
+  confirmed `sync.py`'s `build_doc_relations_edges` call genuinely now
+  includes `spec_doc_rows` in its target argument (the round-2 fix), and
+  confirmed `test_rebuild_project_graph_relates_two_spec_docs_to_each_other`
+  is the one test in this phase's diff that exercises the real production
+  entry point rather than the function in isolation — every other new
+  test in `test_spec_docs.py`/`test_doc_mapping.py` does call the target
+  function/module directly, exactly as the candidate describes. This is a
+  real, evidenced, non-hypothetical incident: a phase whose own plan
+  named `sync.py` as affected architecture still shipped a
+  production-broken first attempt, caught only by independent evaluation
+  re-deriving the real-world claim from scratch. **Two components,
+  weighed separately, per this project's own discipline of not bundling
+  distinct findings into one promotion:**
+  1. *The general methodological claim* ("a unit test bypassing a
+     function's real call site can't catch a wiring gap there") is not
+     novel software-engineering knowledge in the abstract — it is a
+     well-known integration-vs-unit-test distinction — but this project
+     has never once named it as its *own* standing discipline before, and
+     this is the first time it concretely cost a phase a wasted
+     implementation round, independently caught rather than silently
+     absorbed. Distinct from `L-014` (a plan's *background/rationale*
+     claim going stale, discarded because no wrong action resulted) —
+     here a wrong artifact *was* shipped and would have been committed as
+     "done" had round 1's green tests been trusted.
+  2. *The procedural fix* ("any phase adding behavior to an existing
+     multi-argument function with a real production call site must name
+     that call site explicitly in the plan's own test/verification
+     section, and include at least one test through it") is concrete,
+     low-risk, and directly actionable as a `CLAUDE.md` §1 strengthening —
+     §1 already requires a plan to describe "how the phase will be
+     verified as done"; this closes a specific, evidenced way that clause
+     can be satisfied on paper (unit tests exist, plan says "tested") while
+     still failing in exactly the way this phase failed.
+     Checked whether `planning/agent-led-workflow.md` is the better home
+     instead (matching `L-006`/`L-013`/`L-018`'s precedent): those three
+     are about the *agent-orchestration* procedure specifically
+     (dispatch ordering, roadmap-flip timing, concurrent-write races) —
+     narrower in scope than this candidate, which is about what a phase
+     *plan's own content* must specify regardless of which agent or the
+     lead writes it, and would bind even a hypothetical non-agent-led
+     contributor following `CONTRIBUTING.md`. `CLAUDE.md` §1 already
+     governs plan content project-wide; this is a targeted strengthening
+     of an existing clause there, not a new agent-workflow step. Checked
+     for a merge/duplicate candidate: grepped this inbox and
+     `promoted.md` for "call site"/"wiring gap"/"production entry
+     point" — no prior candidate names this specific failure mode; not a
+     restatement of `L-011` (a different mechanism — `check_generated_
+     artifacts_match_source`'s no-graph-yet false-positive, a detection
+     bug in an existing check, not a missing test-through-call-site
+     requirement) or `L-005` (`docs-maintainer` editing a generated file
+     instead of its generator — a different kind of "wrong layer"
+     mistake). **Outcome: promote (recommendation + draft; does not land
+     here — `CLAUDE.md` is outside this agent's write boundary per its
+     own hard rules, and per `CLAUDE.md` §0 itself any change to that
+     file requires the user's explicit review as a diff before being
+     written; propose only via
+     `planning/v1-redefinition/proposed-governance-changes.md`, which
+     this triage does below).**
+
+  **Recommended fix — strengthen `CLAUDE.md` §1's existing verification
+  clause** (draft, added to
+  `planning/v1-redefinition/proposed-governance-changes.md` §D for the
+  lead to review and present to the user; not applied here):
+
+  > Append to §1, after the existing "If writing the plan surfaces an
+  > assumption not already settled, pause and ask before proceeding from
+  > plan to code" sentence:
+  >
+  > If a phase adds behavior to an existing function that already has a
+  > real production call site, the plan's verification section must name
+  > that call site explicitly and include at least one test that
+  > exercises it directly — a test that only calls the changed function
+  > in isolation is not sufficient on its own, no matter how thorough,
+  > since it cannot catch the function's new behavior never actually
+  > being wired into its caller. (Phase 55b — L-021.)
+
+  This is deliberately scoped to the exact failure shape this candidate
+  evidences (a real call site already exists; the plan already names the
+  affected file; only the test-through-that-call-site requirement is
+  missing) rather than a broader "always write integration tests" rule
+  this one incident doesn't yet justify. Revisit/withdraw if the user
+  judges §1's existing "how the phase will be verified as done" language
+  already sufficient once this specific incident is pointed out — that is
+  the user's call at gate G4, not this triage's.
+- **promoted_to:** — (pending; recommendation drafted in
+  `proposed-governance-changes.md` §D, awaiting lead review + user
+  approval per `CLAUDE.md` §0's own requirement for any change to that
+  file)
+
 ### L-020 — content-hash pinning proves an excerpt hasn't silently changed; it does not prove the excerpt's boundary covers what its own description claims
 
 - **origin:** Phase 54 (heterogeneous reference-material experiment), the `tag:` query semantics treatment run, independently caught by `context-evaluator`'s evaluation

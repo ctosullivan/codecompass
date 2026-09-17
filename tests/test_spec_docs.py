@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from codecompass.spec_docs import scan_spec_docs
+from codecompass.spec_docs import _extract_title, _is_specific_enough, scan_spec_docs
 
 
 def _write(project_root: Path, rel_path: str, text: str = "content\n") -> Path:
@@ -168,3 +168,102 @@ def test_scan_spec_docs_finds_dev_docs_directory(tmp_path: Path) -> None:
         "dev-docs/hledger-compatibility.md",
         "dev-docs/planning/core-redefinition/07-query-regex.md",
     }
+
+
+# Phase 55b (closes CG-004): `spec_doc` rows previously always got
+# `name=None`, which structurally excluded every one of them from
+# `doc_mapping.build_doc_relations_edges`'s `mentions_artifact` matching
+# — two independent real-task findings (CodeCompass's own Phase 54,
+# Ledgerkit's `CC-LK-001`) confirmed this meant two obviously-related
+# spec docs could never mechanically relate to each other, in any
+# project.
+
+
+def test_extract_title_reads_the_first_h1_heading(tmp_path: Path) -> None:
+    path = _write(tmp_path, "docs/usage.md", "# Usage Guide\n\nSome body text.\n")
+
+    assert _extract_title(path) == "Usage Guide"
+
+
+def test_extract_title_ignores_headings_below_h1(tmp_path: Path) -> None:
+    # Falls through to the stem ("usage"), which is then rejected by
+    # _is_specific_enough (a single bare word, no digit/hyphen) — None,
+    # not a false-positive-prone generic match target. See
+    # test_extract_title_falls_back_to_a_specific_enough_stem_when_no_h1
+    # for the case where the stem itself IS specific enough to keep.
+    path = _write(tmp_path, "docs/usage.md", "## Not a title\n\nBody.\n")
+
+    assert _extract_title(path) is None
+
+
+def test_extract_title_uses_the_first_h1_when_multiple_exist(tmp_path: Path) -> None:
+    path = _write(tmp_path, "docs/usage.md", "# First Title\n\nBody.\n\n# Second Title\n")
+
+    assert _extract_title(path) == "First Title"
+
+
+def test_extract_title_falls_back_to_a_specific_enough_stem_when_no_h1(tmp_path: Path) -> None:
+    path = _write(tmp_path, "dev-docs/hledger-compatibility.md", "No heading at all.\n")
+
+    assert _extract_title(path) == "hledger-compatibility"
+
+
+def test_extract_title_returns_none_for_an_empty_file_with_a_generic_stem(tmp_path: Path) -> None:
+    # "empty" is a single bare word with no digit/hyphen — the same
+    # noise pattern a bare project-name README title has (see
+    # _is_specific_enough's own docstring); correctly None, not a
+    # false-positive-prone match target.
+    path = _write(tmp_path, "docs/empty.md", "")
+
+    assert _extract_title(path) is None
+
+
+def test_extract_title_returns_none_for_an_unreadable_path_with_a_generic_stem(
+    tmp_path: Path,
+) -> None:
+    # A path that doesn't exist on disk behaves the same as "unreadable" —
+    # never raises, degrades to the stem, which here is also rejected as
+    # not specific enough ("missing", a single bare word).
+    missing = tmp_path / "docs" / "missing.md"
+
+    assert _extract_title(missing) is None
+
+
+def test_extract_title_keeps_an_unreadable_paths_stem_when_specific_enough(
+    tmp_path: Path,
+) -> None:
+    missing = tmp_path / "dev-docs" / "hledger-compatibility.md"
+
+    assert _extract_title(missing) == "hledger-compatibility"
+
+
+def test_is_specific_enough_rejects_a_bare_project_name_style_title() -> None:
+    """The real noise case this guard exists for, found live against the
+    real Ledgerkit repo: a root README's H1 is just the bare repo name
+    (`# ledgerkit`), which would otherwise match nearly every doc in the
+    project purely because they all mention the project's own name in
+    ordinary prose.
+    """
+    assert _is_specific_enough("ledgerkit") is False
+    assert _is_specific_enough("Architecture") is False
+    assert _is_specific_enough("Usage Guide") is True
+    assert _is_specific_enough("07-query-regex") is True
+    assert _is_specific_enough("hledger-compatibility") is True
+
+
+def test_scan_spec_docs_populates_name_from_the_h1_heading(tmp_path: Path) -> None:
+    _write(tmp_path, "docs/usage.md", "# Usage Guide\n\nBody.\n")
+
+    rows = scan_spec_docs(tmp_path)
+
+    assert len(rows) == 1
+    assert rows[0].name == "Usage Guide"
+
+
+def test_scan_spec_docs_populates_name_from_the_stem_when_no_h1(tmp_path: Path) -> None:
+    _write(tmp_path, "dev-docs/hledger-compatibility.md", "No heading here.\n")
+
+    rows = scan_spec_docs(tmp_path)
+
+    assert len(rows) == 1
+    assert rows[0].name == "hledger-compatibility"

@@ -5,7 +5,13 @@ import pytest
 
 import codecompass.sync as sync_module
 from codecompass.core import DepNode, Ecosystem, RepositoryLocation, VendorConfig
-from codecompass.graph import open_graph, record_enrichment, unused_vendors, vendor_profile
+from codecompass.graph import (
+    doc_relations,
+    open_graph,
+    record_enrichment,
+    unused_vendors,
+    vendor_profile,
+)
 from codecompass.source_resolution import SourceResolutionError
 from codecompass.sync import rebuild_project_graph, sync_all, sync_vendor
 
@@ -568,3 +574,55 @@ def test_rebuild_project_graph_reflects_full_tracked_list_not_a_subset(
     conn = open_graph(tmp_path)
     names = {name for (name,) in conn.execute("SELECT name FROM vendors")}
     assert names == {"a", "b"}
+
+
+def test_rebuild_project_graph_relates_two_spec_docs_to_each_other(tmp_path: Path) -> None:
+    """Phase 55b (closes CG-004), through the real production entry point
+    `rebuild_project_graph` — not `build_doc_relations_edges` called
+    directly, unlike the unit tests in `test_doc_mapping.py`. Confirms
+    the fix is actually wired into `sync.py`'s call site, caught missing
+    by an independent `context-evaluator` pass before this test existed:
+    the unit-level tests passed even when `spec_doc_rows` was never
+    added to `build_doc_relations_edges`'s target argument in `sync.py`.
+    """
+    (tmp_path / "dev-docs").mkdir()
+    (tmp_path / "dev-docs" / "17-query-semantics-brief.md").write_text(
+        "# Query semantics brief\n\nResearch notes on query syntax.\n", encoding="utf-8"
+    )
+    (tmp_path / "dev-docs" / "07-query-regex.md").write_text(
+        "# Query regex plan\n\nImplements the Query semantics brief.\n", encoding="utf-8"
+    )
+
+    rebuild_project_graph([], tmp_path)
+
+    conn = open_graph(tmp_path)
+    relations = doc_relations(conn, "dev-docs/07-query-regex.md")
+    matches = [r for r in relations if r["relation_kind"] == "mentions_artifact"]
+    assert len(matches) == 1
+    assert matches[0]["target_doc_artifact_path"] == "dev-docs/17-query-semantics-brief.md"
+
+
+def test_rebuild_project_graph_excludes_a_generic_bare_project_name_readme_title(
+    tmp_path: Path,
+) -> None:
+    """Regression test for the noise `context-evaluator` quantified
+    against the real Ledgerkit repository: a root README whose H1 is
+    just the bare project name (e.g. `# ledgerkit`) would otherwise
+    "mention" — and be mechanically "mentioned by" — nearly every other
+    doc in the project, since ordinary prose repeatedly says the
+    project's own name. `_is_specific_enough` rejects single bare words
+    with no digit/hyphen, so this never reaches the graph as an edge.
+    """
+    (tmp_path / "README.md").write_text(
+        "# demo\n\nA short project description.\n", encoding="utf-8"
+    )
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "usage.md").write_text(
+        "# Usage\n\nThis project, demo, works as follows.\n", encoding="utf-8"
+    )
+
+    rebuild_project_graph([], tmp_path)
+
+    conn = open_graph(tmp_path)
+    relations = doc_relations(conn, "docs/usage.md")
+    assert [r for r in relations if r["relation_kind"] == "mentions_artifact"] == []

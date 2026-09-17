@@ -27,6 +27,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   code changed; a real phase-numbering conflict was surfaced, not
   silently resolved, for the user to decide.**
 
+### Fixed
+
+- **Phase 55b** (a bridge phase, not part of the Phase 55/Stage E
+  sequence): `spec_docs.py::scan_spec_docs` now populates
+  `doc_artifacts.name` for every `spec_doc` row (its own first H1
+  heading, or filename stem, gated by a genericity check rejecting a
+  bare single word like a project's own root README's `# ledgerkit`) —
+  closing `CG-004`, doubly-corroborated by Phase 54's own experiment and
+  Ledgerkit's independent, real-live-repo `CC-LK-001` finding.
+  `doc_mapping.py::build_doc_relations_edges` gained a self-mention
+  exclusion for `mentions_artifact` (a titled doc's own heading
+  otherwise trivially matches itself). `sync.py`'s real production call
+  now includes `spec_doc_rows` as a `mentions_artifact` target — the
+  wiring gap a first implementation attempt missed, caught by an
+  independent `context-evaluator` round-1 FAIL before it shipped, fixed,
+  and re-verified in round 2 (PASS WITH NON-BLOCKING OBSERVATIONS) via a
+  real before/after against the live Ledgerkit repository: 3 genuine
+  edges now appear, zero false-positive noise. `CG-006` (matches by
+  title text only, never filename) filed as a small, honestly-disclosed
+  residual limitation, not claimed to be fixed by this change.
+
 ### Added
 
 - **Phase 54** (heterogeneous reference-material experiment): a real,

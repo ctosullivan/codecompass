@@ -8,6 +8,105 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
 
 ---
 
+### CG-006 — `mentions_artifact` matches by target title text only, never by filename, so docs that cross-reference each other by filename in prose (a common real pattern) are missed
+
+- **origin:** Phase 55b (spec-doc name population, closing `CG-004`),
+  round-2 `context-evaluator` independent verification against the real
+  Ledgerkit repository
+- **date:** 2026-09-17
+- **codecompass_revision:** working tree (Phase 55b's own uncommitted
+  diff at filing time)
+- **project:** ledgerkit, real live repository (read-only)
+- **the edge:** `A → B` where A =
+  `dev-docs/planning/core-redefinition/17-query-semantics-brief.md`, B =
+  `dev-docs/planning/core-redefinition/07-query-regex.md` — the exact
+  real-world relationship `CG-004`'s own original filing named as its
+  motivating example ("one is literally the plan document another was
+  implemented from"). Even after `CG-004`'s fix landed (spec docs now
+  get a real `name`), this specific pair still produces **zero**
+  `mentions_artifact` edge.
+- **edge kind:** doc↔doc (a mechanical relation-*detection* gap distinct
+  from `CG-004`: both artifacts are now named and eligible targets; the
+  match still fails because of *what string* is being searched for, not
+  *whether* the target is eligible)
+- **agent's reasoning:** confirmed by direct inspection —
+  `17-query-semantics-brief.md`'s own text cites the other file by its
+  **filename** (`07-query-regex.md`) in prose, never by its H1 **title**
+  text ("7. Query language and regex extension plan"). `mentions_artifact`
+  (`doc_mapping.py::build_doc_relations_edges`) only word-boundary-matches
+  a target's `name` field (its title, per `spec_docs.py::_extract_title`)
+  — it has no path/filename-based matching mode at all. Referencing
+  another doc by filename (`see 07-query-regex.md`) rather than by its
+  full title is common, ordinary technical-writing practice — arguably
+  *more* common than quoting a target's exact title text verbatim — so
+  this isn't a rare edge case; it's a real, structural blind spot in the
+  matching *strategy* itself, found live on the very first real pair this
+  project's own evidence stream named as the motivating case for `CG-004`.
+- **what the graph shows instead:** nothing — zero `mentions_artifact`
+  edges for this pair, before or after `CG-004`'s fix.
+- **could mechanical detection ever catch this?** yes-with-a-second-
+  matching-mode — a target `doc_artifacts` row's own `path`/filename
+  (already stored, no schema change) could be word-boundary-matched
+  against source text the same way `name` already is, producing the same
+  `relation_kind='mentions_artifact'` edge either way (no new relation
+  kind needed) — filename-mentions and title-mentions are the same kind
+  of evidence, just two different strings to search for.
+- **smallest candidate that would fix it:** extend
+  `build_doc_relations_edges`'s `named_artifacts` matching to also try
+  each target's filename (basename, or basename-without-extension) as an
+  additional pattern, alongside the existing `name` check — a
+  `doc_mapping.py`-only change, no new table, no new relation kind, same
+  self-mention exclusion already applies (path-based, unaffected by
+  which string matched).
+- **classification:** detection-improvement (Stage C / GATE DB-scale) —
+  same class as `CG-002`/`CG-004`, not a Stage E ontology question.
+- **status:** candidate
+- **recurrence:** first occurrence
+- **curation (Phase 55b triage, 2026-09-17, knowledge-curator):** template
+  fields all present (origin, date, `codecompass_revision`, project, the
+  edge, edge kind, reasoning, what-the-graph-shows-instead, "could
+  mechanical detection ever catch this?", smallest candidate,
+  classification, status, recurrence). Independently re-verified rather
+  than taken on the entry's own word: read both real Ledgerkit files
+  directly — `17-query-semantics-brief.md` line 4 cites `07-query-regex.md`
+  by filename ("per `07-query-regex.md` §7.1's phasing note"), and two
+  further citations at lines 383/387 do the same; grepped the full file
+  for the target's actual H1 title text ("Query language and regex
+  extension plan") and found zero occurrences — the claim "cited by
+  filename, never by title text" holds exactly as written, not merely
+  plausible. Read `src/codecompass/doc_mapping.py::build_doc_relations_edges`
+  directly and confirmed it word-boundary-matches only `artifact.name`
+  (the title, via `_extract_title`) with no path/filename-based matching
+  mode at all — the mechanism gap is real, not a symptom of some other
+  already-fixed bug. **Checked this is not a restatement of `CG-004`**:
+  `CG-004` was "a `spec_doc` row has no `name` at all, so it can never be
+  a match target regardless of *how* a source doc refers to it" —
+  structurally fixed this same phase. `CG-006` is a different mechanism
+  that survives that fix: both artifacts here are now named and eligible
+  targets, and the match still fails, because the matching *strategy*
+  (title-substring only) doesn't cover a real, ordinary citation style
+  (by filename). This is exactly the entry's own "distinct from CG-004"
+  framing, and it holds up under independent re-derivation, not just on
+  the entry's say-so. Checked for any other pre-existing entry that might
+  already cover this: `CG-001`/`CG-002`/`CG-003`/`CG-005` are about
+  intra-`src` feature grouping, glob-scope coverage, an unrepresented
+  external manual, and `origin`-enum provenance respectively — none
+  addresses `mentions_artifact`'s matching *strategy*. Classification
+  confirmed correct: the smallest candidate (word-boundary-match each
+  target's filename/basename alongside its existing `name` check) is a
+  `doc_mapping.py`-only change reusing the existing `mentions_artifact`
+  relation kind and the same self-mention exclusion — no new table, no
+  new relation kind, matching `detection-improvement (Stage C / GATE DB)`
+  exactly, not a Stage E ontology question. **Outcome: stays `candidate`,
+  not `recurred`** — genuinely first occurrence of this specific
+  matching-strategy gap (the resemblance to `CG-004` is a shared origin
+  task, not a shared mechanism, per the distinction confirmed above).
+  Named for a future GATE DB input as a small, precedented,
+  independently-fundable follow-on to `CG-004`'s own fix, per the retro's
+  own "Where we're going" framing — not urgent, no forcing deadline. No
+  entry made to `context-graph.db` — this queue never writes there, per
+  `decisions/0051`.
+
 ### CG-005 — `doc_artifacts.origin='project'` is semantically wrong for externally-sourced, pinned reference material
 
 - **origin:** Phase 54 (heterogeneous reference-material experiment),
@@ -167,7 +266,7 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   `name` from their own frontmatter — a Stage C / GATE DB-scale fix, not
   a Stage E one.
 - **classification:** detection-improvement (Stage C / GATE DB)
-- **status:** candidate
+- **status:** promoted-to-roadmap — fix implemented Phase 55b (2026-09-17)
 - **recurrence:** first occurrence
 - **curation (Phase 54 triage, 2026-09-16, knowledge-curator):** template
   fields all present (origin, date, codecompass_revision, project, the
@@ -228,6 +327,83 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   `planning/phase-55-evidence-reconciliation.md`'s §F cites as
   justifying **IMPLEMENT** (a Phase 56 recommendation), not further
   deferral.
+- **note added Phase 55b (2026-09-17), closure:** implemented and
+  independently verified via a two-round `context-evaluator` audit
+  (round 1 FAIL: the fix populated `doc_artifacts.name` but was never
+  wired into `sync.py`'s real production call, so the real running tool
+  still showed zero relations; round 2 PASS WITH NON-BLOCKING
+  OBSERVATIONS, after the wiring was added and a self-mention exclusion
+  plus a genericity guard — `_is_specific_enough`, rejecting a bare
+  single-word title/stem like a project's own root README's `# ledgerkit`
+  — were added to prevent the large-scale noise a naive wiring would
+  have introduced, quantified live at 55 hypothetical edges, 50 of them
+  "every doc mentions README"). **Confirmed working end-to-end against
+  the real, live Ledgerkit repository**: 3 real `mentions_artifact`
+  edges appear (`README.md` → `dev-docs/hledger-compatibility.md`;
+  `dev-docs/compat-register/schema.md` → its own folder's `README.md`;
+  a roadmap-migration doc → a real historical milestone doc), all
+  independently confirmed genuine, none noise. **Honest residual
+  limitation, not claimed to be fixed**: the original `CC-LK-001` three
+  files still show zero relations to each other, because they
+  cross-reference each other by *filename* in prose
+  (`17-query-semantics-brief.md` cites `07-query-regex.md` by name), not
+  by the target's H1 *title* text — the mechanism this phase built
+  matches titles, not filenames, and that gap is real, separate, and
+  unresolved. See `planning/retros/phase-55b-spec-doc-name-population.md`
+  for the full account, including the retroactive process note (a
+  dedicated plan file was written slightly after implementation began).
+- **curation (Phase 55b closure, 2026-09-17, knowledge-curator):**
+  closure claim independently re-derived from the real diff, not taken on
+  the note's own word. Read `src/codecompass/spec_docs.py` directly:
+  `_extract_title`/`_is_specific_enough`/`_H1_RE` exist exactly as
+  described, and `scan_spec_docs` now calls `name=_extract_title(...)`
+  for every row instead of leaving `name` unset — the original structural
+  defect this entry named (every `spec_doc` row permanently excluded from
+  `named_artifacts`) is gone. Read `src/codecompass/doc_mapping.py`
+  directly: `build_doc_relations_edges` now has `if artifact.path ==
+  row.path: continue` before the `named_artifacts` word-boundary check —
+  the self-mention exclusion the closure note claims is real and present,
+  not just described. Read `src/codecompass/sync.py` directly — this is
+  the one claim most worth independently checking, since the note itself
+  says round 1 shipped without it: `rebuild_project_graph`'s call to
+  `build_doc_relations_edges` now passes
+  `vendor_doc_rows + vendor_upstream_doc_rows + skill_doc_rows +
+  spec_doc_rows` as the third (target) argument — `spec_doc_rows` is
+  genuinely present, confirming the wiring fix landed, not just the
+  population logic. Read `tests/test_sync.py` directly and confirmed the
+  regression test that actually exercises this — not a unit test calling
+  `build_doc_relations_edges` in isolation —
+  `test_rebuild_project_graph_relates_two_spec_docs_to_each_other` calls
+  `rebuild_project_graph` itself (the real production entry point) and
+  asserts a genuine `mentions_artifact` edge between two spec docs; a
+  sibling test,
+  `test_rebuild_project_graph_excludes_a_generic_bare_project_name_readme_title`,
+  covers the genericity-guard regression the closure note describes.
+  `tests/test_doc_mapping.py` and `tests/test_spec_docs.py` both carry
+  the matching unit-level coverage (title extraction, self-mention
+  exclusion, cross-doc match) the retro's "Files" section claims.
+  **Outcome: closure independently confirmed accurate** — this is not
+  merely a plausible-sounding note, the diff genuinely closes what CG-004
+  described (two already-tracked `spec_doc` rows can now mechanically
+  relate to each other via `mentions_artifact`), through the real call
+  site, with a real production-path regression test guarding the exact
+  wiring gap round 1 missed. `status` stays
+  `promoted-to-roadmap — fix implemented Phase 55b (2026-09-17)` — no
+  further-terminal status exists per this queue's own status list (same
+  reasoning `CG-002`'s Phase 49 closure note already applied). **Pending
+  `promoted.md` line** (not yet added — Phase 55b's closeout commit has
+  not landed as of this triage, per `git status`; the convention
+  established at `CG-002`'s Phase 49 closure and `L-020`'s Phase 54
+  triage is to add the pointer line once the commit exists, not before):
+  `CG-004 | 2026-09-17 | detection-improvement |
+  src/codecompass/spec_docs.py::_extract_title +
+  src/codecompass/doc_mapping.py::build_doc_relations_edges
+  (self-mention exclusion) +
+  src/codecompass/sync.py::rebuild_project_graph (spec_doc_rows wiring)
+  + tests/test_sync.py::test_rebuild_project_graph_relates_two_spec_docs_to_each_other
+  @ <real short SHA>` — lead/`roadmap-context-curator` to add this line
+  to `planning/learnings/promoted.md` once Phase 55b's own closeout
+  commit lands.
 
 ### CG-003 — the external `hledger` reference manual (hledger.org) has zero representation, and unlike CG-002 no glob fix could ever cover it
 

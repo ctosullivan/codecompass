@@ -281,7 +281,15 @@ that recommendation stands unchanged by this reconciliation.
   "mechanical detection, AI only interprets what's already proven"
   boundary. No new relation trust tier is introduced.
 
-## G. Proposed next phase plan (number pending a human decision — see below)
+## G. Proposed next phase plan — implemented as Phase 55b, `done`
+
+**Resolved (2026-09-17):** user approved implementation ("Approved");
+numbered as a bridge phase, **"Phase 55b"** — option (b) below, this
+document's own stated preference. Full account:
+`planning/phase-55b-spec-doc-name-population.md`,
+`planning/retros/phase-55b-spec-doc-name-population.md`. The rest of
+this section is preserved as originally written (the plan as presented
+for approval), not rewritten with hindsight.
 
 **Numbering conflict, surfaced rather than silently resolved (per §23):**
 this phase is independently justified without resolving GATE DD first
@@ -386,32 +394,32 @@ E/F work that happens to run early. The plan below refers to it as
 
 ## H. Roadmap update proposal
 
-- **Phase added:** one new phase (§G above), `planned`, **number not yet
-  assigned** — pending the human decision named in §G (renumber Stage
-  E/F, use a bridge-style letter suffix, or fold into a future Stage E
-  phase). `planning/ROADMAP.md` records it with a `—` placeholder row
-  rather than guessing.
-- **Phases reordered:** none yet — contingent on which numbering option
-  is chosen; option (a) would reorder eight pre-written Stage E/F
-  stanzas, options (b)/(c) reorder nothing.
-- **Displaced work:** none — this is a genuinely new, independently-
+- **Phase added:** Phase 55b (§G above), `done` — resolved as of
+  2026-09-17, see §G's own update.
+- **Phases reordered:** none — option (b) (bridge letter) was chosen;
+  Stage E's/F's own pre-written stanzas are untouched.
+- **Displaced work:** none — this was a genuinely new, independently-
   justified unit of work, not a retarget of an existing sketch (unlike
   Phases 52/53/54's own single-slot retargets).
 - **Deferred work (unchanged from before this cycle, restated for
   completeness):** the "External executable / behavioural context"
   sketch (unclaimed number); `CG-005`; pinned-reference productisation;
-  Phase 48; MCP.
+  Phase 48; MCP; and now also `CG-006` (Phase 55b's own residual
+  filename-vs-title matching gap), a new small, independently-fundable
+  follow-on of the same shape as `CG-004` itself.
 - **Unchanged work:** GATE DD (Phase 55) remains open, now with a
-  materially richer evidence package (this document) than it had after
-  Phase 54 alone — still not resolved, per §23.
+  materially richer evidence package (this document plus Phase 55b's own
+  real-world validation) than it had after Phase 54 alone — still not
+  resolved, per §23.
 - **Human gates:**
-  1. **GATE DD itself** (Stage E scope) — not resolved here, evidence
-     package updated.
-  2. **The new phase's number** (§G) — genuinely unresolved, not a
-     judgment call this document defaults on; needs an explicit answer
-     before `planning/ROADMAP.md`'s placeholder row and
-     `v1-redefinition/roadmap.md` can be finalized.
-  3. **No `CLAUDE.md` change proposed** by this document at all.
+  1. **GATE DD itself** (Stage E scope) — not resolved here or by Phase
+     55b, evidence package updated.
+  2. **The new phase's number** (§G) — resolved: "Phase 55b."
+  3. **A `CLAUDE.md` §1 amendment** (`L-021`, drafted in
+     `planning/v1-redefinition/proposed-governance-changes.md` §D,
+     surfaced during Phase 55b's own triage) — a new gate this
+     reconciliation didn't originally anticipate, not yet presented to
+     or approved by the user, not yet applied.
 
 ## I. Risks
 

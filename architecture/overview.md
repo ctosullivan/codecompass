@@ -1425,7 +1425,18 @@ existing one; fixed default globs vs. a hand-maintained manifest).
   `usage._PROJECT_PRUNE_DIR_NAMES` (imported, not duplicated — same
   cross-module import precedent `skill_scan.py` already set for
   `skill.py`'s `_TOOL_SKILL_DIR_NAME`/`_vendor_skill_name`). No
-  `vendor.toml` configurability yet — see `decisions/0037`.
+  `vendor.toml` configurability yet — see `decisions/0037`. Each row's
+  `name` (Phase 55b, `_extract_title`) is the doc's own first level-1
+  heading text *if present and "specific enough"* (more than one word,
+  or containing a digit/hyphen), else its filename stem *if that's
+  specific enough*, else `None` — an H1 that exists but fails the
+  specificity check still falls through to the stem, it is not treated
+  the same as no H1 at all (rejects a bare `# ledgerkit`-style repo-name
+  heading or a one-word stem either way). Before Phase 55b every
+  `spec_doc` row had `name=None`, which structurally excluded it as a
+  `mentions_artifact` match target (`build_doc_relations_edges` below
+  only ever matches a *named* `doc_artifacts` row); see
+  `planning/context-gaps/inbox.md` `CG-004`.
 
 `doc_mapping.py` gains one function (Phase 29 later widens its source
 argument — see **Vendor docs as relationship sources** below):
@@ -1437,8 +1448,15 @@ argument — see **Vendor docs as relationship sources** below):
   `build_documents_edges`/`build_skill_mentions_edges`) against every
   tracked vendor's name (`relation_kind='mentions_dependency'`) and every
   *other* doc artifact's `name` field — a Skill's frontmatter name, a
-  dependency doc's `f"{vendor} CLAUDE.md"`-style name
-  (`relation_kind='mentions_artifact'`). Source-doc-outward scanning only:
+  dependency doc's `f"{vendor} CLAUDE.md"`-style name, or (Phase 55b) a
+  `spec_doc`'s own first-H1/filename-stem title
+  (`relation_kind='mentions_artifact'`), excluding the source row itself
+  from its own target set (`artifact.path == row.path`, Phase 55b — a
+  titled `spec_doc`'s own H1 line trivially contains its own name, so
+  without this exclusion every titled `spec_doc` would generate a
+  guaranteed self-mention noise edge; unreachable before Phase 55b, since
+  no source kind had ever had its own `name` populated until then).
+  Source-doc-outward scanning only:
   a Skill's or dependency doc's own body mentioning a spec/vendor doc by
   name is not scanned for, a deliberately deferred direction. Phase 32
   additionally attempts chunk attribution the same way `build_documents_
@@ -1714,11 +1732,12 @@ phase:
   allow-set** of source kinds, `{"spec_doc", "vendor_doc"}`
   (`_DOC_RELATION_SOURCE_KINDS`) — not "any kind not otherwise excluded."
   `sync.rebuild_project_graph`'s call site passes `spec_doc_rows +
-  vendor_upstream_doc_rows` as this argument (the third argument, the
-  "other doc artifacts a source might mention," is unchanged). A vendor
-  doc mentioning another tracked vendor, a Skill, or another vendor doc
-  now produces a real `doc_relations_edges` row exactly as a spec doc
-  mentioning the same things always has.
+  vendor_upstream_doc_rows` as this argument (at this phase, the third
+  argument, the "other doc artifacts a source might mention," is
+  unchanged — Phase 55b below is what later widens it to also include
+  `spec_doc_rows`). A vendor doc mentioning another tracked vendor, a
+  Skill, or another vendor doc now produces a real `doc_relations_edges`
+  row exactly as a spec doc mentioning the same things always has.
 
 **Self-mention exclusion**: a `vendor_doc` source row belonging to vendor
 `V` never produces a `mentions_dependency` edge whose target is `V`
@@ -1727,11 +1746,11 @@ universal, and adds no signal, unlike a spec doc mentioning a vendor (or
 a vendor doc mentioning a *different* tracked vendor), both of which are
 real evidence. Implemented as a plain vendor-name comparison
 (`row.vendor_name == vendor_name`) before the word-boundary match, not a
-generic self-reference filter — it does not apply to `mentions_artifact`
-edges (a vendor doc's synthetic `name` field, `f"{vendor} {filename}"`,
-is not something the doc's own prose would organically contain) and
-naturally never applies to `spec_doc` sources (no `vendor_name` of their
-own to compare against). See
+generic self-reference filter — at this phase it did not apply to
+`mentions_artifact` edges at all (a vendor doc's synthetic `name` field,
+`f"{vendor} {filename}"`, is not something the doc's own prose would
+organically contain), and naturally never applied to `spec_doc` sources
+(no `vendor_name` of their own to compare against). See
 [`decisions/0043`](../decisions/0043-vendor-docs-become-relationship-sources-closed-allow-set-plus-self-mention-exclusion.md)
 for the full reasoning behind both the closed allow-set and the
 self-mention exclusion, and for how this supersedes `decisions/0041`'s
@@ -1748,6 +1767,56 @@ there assumed "source is always a spec doc") or to
 implementation time that `spec_docs_without_relations`/`vendor_docs_
 without_relations` both remain correct unchanged (see the corrected
 paragraph above).
+
+### Spec docs become relationship targets of each other (Phase 55b, extended `codecompass.spec_docs` and `codecompass.doc_mapping`)
+
+**Every `spec_doc` row had `name=None` before this phase**, which
+structurally excluded it as a `mentions_artifact` match target —
+`build_doc_relations_edges` only ever matches a *named* `doc_artifacts`
+row — so two obviously-related spec docs (e.g. a plan file and the retro
+that mentions it by title) could never be mechanically related to each
+other, in any project, regardless of content. Closes `CG-004`
+(`planning/context-gaps/inbox.md`), surfaced independently by both this
+repo's own dogfooding and a real finding against the Ledgerkit reference
+project (`CC-LK-001`).
+
+`spec_docs.scan_spec_docs` now populates `DocArtifactRow.name` for every
+row via `_extract_title(path) -> str | None`: the doc's own first
+level-1 heading text if it has one and it's "specific enough"
+(`_is_specific_enough` — more than one whitespace-separated word, or
+containing a digit/hyphen), else the filename stem if *that's* specific
+enough, else `None`. The specificity guard rejects a bare `# ledgerkit`-
+style repo-name heading or a one-word stem — found live testing against
+the real Ledgerkit repository, where a naive "always use the H1" rule
+produced 50 false `mentions_artifact` edges purely from other docs'
+ordinary prose repeating the project's own name, the same "guaranteed,
+universal noise" reasoning `decisions/0043` already applied to a
+vendor's own README mentioning its own vendor name.
+
+`sync.rebuild_project_graph`'s call to `build_doc_relations_edges` now
+includes `spec_doc_rows` in the third argument (the "other doc artifacts
+a source might mention" target set), alongside `vendor_doc_rows +
+vendor_upstream_doc_rows + skill_doc_rows` — this is what makes a
+`spec_doc` row an actually-reachable `mentions_artifact` target in the
+real running tool, not just in a unit test built against a hand-made
+`DocArtifactRow`.
+
+**Self-mention exclusion, `mentions_artifact`**: `build_doc_relations_
+edges` now skips a `named_artifacts` candidate whose `path` equals the
+source row's own `path`, before the word-boundary match. Unreachable
+before this phase — no `_DOC_RELATION_SOURCE_KINDS` member ever had a
+`name` before `spec_doc` rows got one — and required for the primary fix
+to ship without a guaranteed regression: a doc's own first-H1 title,
+once set as its `name`, is trivially present in that same doc's own full
+text (the heading line itself), so without this exclusion every titled
+`spec_doc` would generate a guaranteed "doc mentions itself" noise edge.
+This is a separate mechanism from the vendor-name-based self-mention
+exclusion above (Phase 29) — that one compares `vendor_name` and applies
+only to `mentions_dependency`; this one compares `path` and applies only
+to `mentions_artifact`.
+
+No new `relation_kind`, no new `doc_artifacts.origin` value, no
+`vendor.toml` change. See `planning/phase-55b-spec-doc-name-population.md`.
 
 ## `undo` — best-effort generated-artifact cleanup (`codecompass.cli`)
 

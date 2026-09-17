@@ -11,6 +11,7 @@ from codecompass.doc_mapping import (
     collect_vendor_upstream_doc_artifacts,
 )
 from codecompass.graph import DependsOnEdgeRow, DocArtifactRow, SymbolRow
+from codecompass.spec_docs import scan_spec_docs
 
 
 def _config(name: str, ecosystem: Ecosystem = Ecosystem.PYTHON) -> VendorConfig:
@@ -563,6 +564,62 @@ def test_build_doc_relations_edges_matches_other_doc_artifact_name(tmp_path: Pat
     assert edges[0].relation_kind == "mentions_artifact"
     assert edges[0].target_doc_artifact_path == ".claude/skills/codecompass-demo/SKILL.md"
     assert edges[0].target_vendor_name is None
+
+
+def test_build_doc_relations_edges_matches_another_spec_doc_by_its_h1_title(
+    tmp_path: Path,
+) -> None:
+    """Phase 55b (closes CG-004): before this phase, `spec_doc` rows
+    always had `name=None`, so two spec docs could never mechanically
+    relate to each other — confirmed independently by CodeCompass's own
+    Phase 54 experiment and Ledgerkit's real `CC-LK-001` finding (three
+    genuinely connected `dev-docs/*.md` files, zero edges). This test
+    uses `scan_spec_docs` itself (not hand-built `DocArtifactRow`s, unlike
+    every other test in this file) to prove the fix end-to-end: two real
+    files on disk, one mentioning the other's own H1 title, produce a
+    real `mentions_artifact` edge with no change to
+    `build_doc_relations_edges` itself.
+    """
+    _write_spec_doc(
+        tmp_path,
+        "dev-docs/17-query-semantics-brief.md",
+        "# Query semantics brief\n\nResearch notes on query syntax.\n",
+    )
+    _write_spec_doc(
+        tmp_path,
+        "dev-docs/07-query-regex.md",
+        "# Query regex plan\n\nImplements the Query semantics brief.\n",
+    )
+    spec_doc_rows = scan_spec_docs(tmp_path)
+
+    edges = build_doc_relations_edges(spec_doc_rows, [], spec_doc_rows, tmp_path)
+
+    matches = [e for e in edges if e.relation_kind == "mentions_artifact"]
+    assert len(matches) == 1
+    assert matches[0].source_doc_artifact_path == "dev-docs/07-query-regex.md"
+    assert matches[0].target_doc_artifact_path == "dev-docs/17-query-semantics-brief.md"
+
+
+def test_build_doc_relations_edges_excludes_a_spec_doc_mentioning_its_own_title(
+    tmp_path: Path,
+) -> None:
+    """Regression case, found live while writing the `CG-004` fix's own
+    integration test: a titled `spec_doc`'s own H1 heading line trivially
+    contains its own name, so without a self-exclusion (mirroring the
+    existing vendor_doc-vs-own-vendor exclusion, Phase 29/decisions/0043)
+    every titled spec doc would generate a guaranteed "mentions itself"
+    noise edge.
+    """
+    _write_spec_doc(
+        tmp_path,
+        "docs/usage.md",
+        "# Usage Guide\n\nSee the Usage Guide section below for details.\n",
+    )
+    spec_doc_rows = scan_spec_docs(tmp_path)
+
+    edges = build_doc_relations_edges(spec_doc_rows, [], spec_doc_rows, tmp_path)
+
+    assert edges == []
 
 
 def test_build_doc_relations_edges_word_boundary_avoids_substring_false_positive(

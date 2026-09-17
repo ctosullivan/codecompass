@@ -852,6 +852,49 @@ Original sketch (unchanged):
   actual adoption experience surfaced (`adoption-blueprint.md` §10) —
   the blueprint is not treated as finished after Phase 43e's first draft.
 
+### Phase 55b — Populate `doc_artifacts.name` for `spec_doc` rows (closes CG-004) · EXPERIMENTAL
+
+**A bridge phase, not part of the Phase 55/Stage E sequence** —
+numbered this way (43d/43e precedent) specifically so it doesn't
+consume any of Stage E's own pre-written 56-59 sketch numbers below,
+none of which matched its content, and doesn't require GATE DD (Phase
+55) to resolve first. Full account:
+`planning/phase-55-evidence-reconciliation.md` §G (the reviewed,
+approved plan), `planning/phase-55b-spec-doc-name-population.md` (the
+dedicated plan file), `planning/retros/phase-55b-spec-doc-name-population.md`
+(the retro).
+
+**Done (2026-09-17).** Closed `CG-004` — CodeCompass's existing
+`mentions_artifact` relation-detection mechanism, unmodified, can now
+relate two of a project's own docs to each other, since `spec_doc` rows
+finally get a real `name` (their own H1 title, or filename stem, gated
+by a genericity check). Doubly-corroborated going in (CodeCompass's own
+Phase 54 experiment + Ledgerkit's independent, real-live-repo
+`CC-LK-001` finding). A genuine mid-phase failure, caught by independent
+evaluation and honestly retained in the record rather than smoothed
+over: the first implementation attempt passed every unit test yet was
+never actually wired into `sync.py`'s real production call, so the real
+gap this phase existed to close still reproduced against the live
+Ledgerkit repository — caught by `context-evaluator`'s round-1 pass,
+fixed, and re-verified in round 2 (PASS WITH NON-BLOCKING OBSERVATIONS)
+with a real before/after against the live repository: 3 genuine
+`mentions_artifact` edges now appear, with a genericity guard
+(`_is_specific_enough`) preventing the large-scale false-positive noise
+a naive fix would have caused (quantified live at 55 hypothetical edges,
+50 of them "every doc mentions README" purely because its own title is
+the bare project name). Residual, honestly disclosed limitation: the
+mechanism matches by title text only, not filename, so the original
+`CC-LK-001` three files still show no relation to each other — filed as
+`CG-006`, a small, independently-fundable follow-on of the same shape,
+not urgent. A process-lesson candidate (`L-021`) proposes a `CLAUDE.md`
+§1 amendment requiring a test through a function's real production call
+site whenever a phase adds behaviour to it — drafted, not yet approved.
+No `src/codecompass/` change beyond `spec_docs.py`/`doc_mapping.py`/
+`sync.py`; no schema change; no new relation kind. Produces no evidence
+toward the still-open GATE DD ontology question beyond what
+`phase-55-evidence-reconciliation.md` already assembled — this phase
+implemented the one item that didn't require resolving it first.
+
 ---
 
 ## STAGE E — Implement the minimum justified generalisation  · CONDITIONAL on GATE DD

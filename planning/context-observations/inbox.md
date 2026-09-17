@@ -8,6 +8,82 @@ Statuses: `recorded` → `investigating` → `resolved`.
 
 ---
 
+### OBS-012 — Phase 55b's fix produced 3 real edges against live Ledgerkit, one of them a technically-correct but weakly-attributed title-prefix coincidence
+
+- **origin:** Phase 55b (spec-doc name population, closing `CG-004`),
+  round-2 `context-evaluator` independent verification
+- **date:** 2026-09-17
+- **codecompass_revision:** working tree (Phase 55b's own uncommitted
+  diff at filing time)
+- **project:** ledgerkit, real live repository (read-only)
+- **edge identity:** `dev-docs/compat-register/schema.md` →
+  `dev-docs/compat-register/README.md` (target name: "Compatibility
+  register"), one of exactly 3 real `mentions_artifact` edges the fix
+  produced against the live repository
+- **observation type:** EDGE_USEFUL, with a noted precision caveat
+- **edge correctness:** correct in the narrow mechanical sense (the
+  string "Compatibility register" — the target's own H1 prefix — does
+  appear, word-boundary-matched, in the source doc's text) — but per
+  direct inspection, the match is a **title-prefix coincidence**
+  (`schema.md`'s own H1 is "Compatibility register — YAML schema") rather
+  than a deliberate cross-reference the doc's author placed to point a
+  reader at the README. The two files are genuinely part of the same
+  subsystem, so the edge isn't *wrong*, but its evidentiary strength is
+  weaker than the other two edges this same run produced (a real `##`
+  section link, and a real roadmap-table citation).
+- **task usefulness:** useful, marginally — a reader following this edge
+  would land somewhere genuinely related, just not for the precise reason
+  the match implies (a title citation, not a shared-naming-family
+  prefix).
+- **default pathway:** n/a — this is a new mechanical capability, not
+  compared against a manual alternative.
+- **advantage:** LOW-to-MODERATE for this specific edge (vs. clearly
+  MODERATE for the other two edges the same run produced).
+- **wrong or misleading?** no — not false, just less precisely evidenced
+  than it reads.
+- **status:** recorded
+- **investigation:** none needed this cycle — a single instance, and the
+  underlying mechanism (word-boundary title matching) is working exactly
+  as designed; this is a property of how titles happen to be named in
+  this one subsystem, not a detector defect. Worth watching if
+  shared-title-prefix docs proliferate in a future project (a real
+  future occurrence would be grounds to consider requiring a longer/more
+  exact match, e.g. the *whole* title rather than any word-boundary
+  substring of it — not proposed now, no second instance exists yet).
+- **resolution:** no action. Feeds
+  `planning/phase-55-evidence-reconciliation.md`'s own risk register
+  ("graph noise") as a real, live, low-severity data point — the
+  anticipated risk materialized in a mild, non-misleading form, not the
+  severe form (`CG-004`'s own closure note; the bare-README-title case)
+  that was caught and fixed before shipping.
+- **curation (Phase 55b triage, 2026-09-17, knowledge-curator):** template
+  fields all present (origin, date, `codecompass_revision`, project, edge
+  identity, observation type, edge correctness/task usefulness kept as
+  two separate fields as required, status). Independently re-verified
+  against the real Ledgerkit files rather than taken on the entry's own
+  word: read `dev-docs/compat-register/schema.md` — its own H1 is exactly
+  "Compatibility register — YAML schema" — and
+  `dev-docs/compat-register/README.md` — its own H1 is exactly
+  "Compatibility register" — confirming both the title-prefix-coincidence
+  mechanism (the target's whole title is a literal prefix of the source's
+  own title, so a word-boundary match on "Compatibility register" fires
+  regardless of any deliberate cross-reference) and that the edge is
+  genuinely between real, related files in the same subsystem (both under
+  `dev-docs/compat-register/`), not a spurious pairing. `edge correctness`
+  and `task usefulness` are correctly kept as two distinct fields, not
+  collapsed, per this queue's own template rule. Applied the
+  investigate-vs-record rule from this agent's own charter: this is
+  `EDGE_USEFUL` (with a precision caveat, not a defect) — a first-occurrence
+  instance, so `status: recorded` with no investigation is the correct
+  disposition; nothing here rises to a recurring `EDGE_UNHELPFUL` (≥2
+  instances), `EDGE_MISLEADING`, or `EDGE_STALE` that would require
+  `status: investigating`. Correctly not escalated to `context-gaps/`
+  — the mechanism (word-boundary title matching) is working exactly as
+  designed for the input it was given; this is evidence about title-naming
+  conventions in one real subsystem, not a relationship the graph is
+  missing or a detector defect. No action beyond record — agrees with the
+  entry's own resolution.
+
 ### OBS-011 — generated tool Skill/`/discovery` content is pure boilerplate for a 0-vendor project, confirming the entry-point architecture behaves correctly rather than revealing a defect
 
 - **origin:** Phase 55 evidence reconciliation, reading Ledgerkit's own

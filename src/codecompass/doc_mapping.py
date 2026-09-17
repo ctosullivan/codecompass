@@ -301,10 +301,23 @@ def build_doc_relations_edges(
     targeting that same vendor — a package's own README mentioning its own
     name is guaranteed, universal noise, unlike a spec doc mentioning a
     vendor, or a vendor doc mentioning a *different* tracked vendor, both
-    of which are real evidence of a relationship. No equivalent exclusion
-    applies to `mentions_artifact` edges, and none applies to `spec_doc`
-    sources at all (a spec doc has no `vendor_name` of its own to compare
-    against) — see decisions/0043.
+    of which are real evidence of a relationship. None applies to
+    `spec_doc` sources for `mentions_dependency` at all (a spec doc has no
+    `vendor_name` of its own to compare against) — see decisions/0043.
+
+    A second, analogous self-mention exclusion (Phase 55b) applies to
+    `mentions_artifact`: a source row is never matched against itself as a
+    `named_artifacts` target (`artifact.path == row.path`). Before Phase
+    55b this was unreachable — no `_DOC_RELATION_SOURCE_KINDS` member
+    (`spec_doc`/`vendor_doc`) ever had its own `name` populated, so a
+    source row could never also be a `named_artifacts` target of itself.
+    Populating `name` for `spec_doc` rows (`spec_docs.py::_extract_title`)
+    made it reachable: a doc's own first-H1 title, once set as its `name`,
+    is trivially present in that same doc's own full text (the H1 heading
+    line itself contains it verbatim) — without this exclusion, every
+    titled `spec_doc` would generate a guaranteed, universal "doc mentions
+    itself" noise edge, discovered live while adding the Phase 55b test
+    below, not designed in speculatively.
 
     Source-doc-outward scanning only (Phase 21's Explicitly deferred
     section, widened to vendor docs by Phase 29): a Skill's or dependency
@@ -343,6 +356,8 @@ def build_doc_relations_edges(
                 )
 
         for artifact in named_artifacts:
+            if artifact.path == row.path:
+                continue
             if re.search(rf"\b{re.escape(artifact.name)}\b", text):
                 chunk = _find_containing_chunk(lines, chunks, artifact.name)
                 edges.append(

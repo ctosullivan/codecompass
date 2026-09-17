@@ -160,9 +160,10 @@ prints a one-line note pointing at `sync` rather than a traceback.
   (e.g. `architecture/overview.md`), what it mechanically mentions —
   tracked vendors and other doc artifacts (`graph.doc_relations`); given a
   vendor name or another doc artifact's name (a Skill, a dependency doc,
-  or — Phase 27 — a vendor's own embedded upstream doc, e.g.
-  `"anthropic README.md"`), which spec docs mechanically mention it (a
-  reverse lookup). Errors if `<name>` matches nothing in the graph at all;
+  a vendor's own embedded upstream doc, e.g. `"anthropic README.md"`, or
+  — Phase 55b — another spec doc's own title, e.g. `"Architecture
+  overview"`), which spec docs mechanically mention it (a reverse
+  lookup). Errors if `<name>` matches nothing in the graph at all;
   if `<name>` is a real file on disk that simply wasn't detected as a
   spec/vendor doc, the error says so explicitly and points at spec-doc
   glob coverage, rather than reading as if the file doesn't exist.

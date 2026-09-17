@@ -330,3 +330,73 @@ mirrored into `CONTRIBUTING.md`. The exact text is in `CLAUDE.md` §5 and
   `CONTRIBUTING.md` updated in one dated commit once G12 resolves;
   `CHANGELOG.md` gains an entry; no historical commit or release is
   rewritten (none published under any licence to date).
+
+---
+
+## D. 2026-09-17 proposed addition (Phase 55b — `L-021`)
+
+**Status:** proposed, not yet presented to the user. Filed by
+`knowledge-curator` during Phase 55b's triage, per `CLAUDE.md` §0's
+requirement that any change to that file be presented as a diff and
+explicitly approved before being written or committed; this agent's own
+write boundary excludes `CLAUDE.md` directly.
+
+### D1 — §1 "Plan before implementing": require a test through the real call site for a shape this project's own Phase 55b showed can otherwise ship broken
+
+- **Context:** Phase 55b's first implementation attempt
+  (`spec_docs.py::_extract_title` populating `doc_artifacts.name`) added
+  every unit test its plan called for, all green on the first run, and
+  was still completely non-functional in the real, running tool —
+  `sync.py::rebuild_project_graph`'s own call to
+  `build_doc_relations_edges` never included the new `spec_doc_rows`
+  argument, so the real gap the phase existed to close still reproduced
+  identically against the live Ledgerkit repository. Every new unit test
+  called the changed function (or its caller-once-removed) directly,
+  never through `sync.py`'s real production wiring — the one place the
+  actual defect lived. Caught only by `context-evaluator`'s round-1
+  independent pass re-running the real tool against real data, not by
+  the lead's own confidence in the green suite. **Correction, caught by
+  `release-phase-auditor`:** the phase's own approved plan
+  (`phase-55-evidence-reconciliation.md` §G) did *not* name `sync.py`
+  under "Affected architecture" at all — it named only `spec_docs.py`
+  and explicitly called `doc_mapping.py` "untouched." Both `sync.py`'s
+  wiring fix and `doc_mapping.py`'s substantive change were discovered
+  necessary only during implementation, beyond what was actually
+  presented to the user for approval — the approved plan was
+  under-scoped, not merely under-tested. See
+  `planning/learnings/inbox.md`'s `L-021` for the full account and
+  independent re-verification.
+- **Proposed text — append to §1, after the existing "If writing the
+  plan surfaces an assumption not already settled, pause and ask before
+  proceeding from plan to code" sentence:**
+
+  > If a phase adds behavior to an existing function that already has a
+  > real production call site, the plan's verification section must name
+  > that call site explicitly and include at least one test that
+  > exercises it directly — a test that only calls the changed function
+  > in isolation is not sufficient on its own, no matter how thorough,
+  > since it cannot catch the function's new behavior never actually
+  > being wired into its caller. (Phase 55b — L-021.)
+
+- **Alternatives considered:** (a) leave §1 as-is, treat this as a
+  one-off caught-in-time incident — rejected: the retro itself frames
+  the underlying principle as durable/general, not specific to this
+  phase's code, and the failure mode (unit-test-green,
+  production-broken) is exactly the kind of thing a green test suite
+  gives no internal signal to distrust; (b) a broader "every phase must
+  include an integration test" rule — rejected as over-broad for what
+  this one incident evidences; scoped instead to the precise shape that
+  actually failed (an existing function, a real call site, behavior
+  added to it); (c) land this in `planning/agent-led-workflow.md`
+  instead of `CLAUDE.md` §1 — considered, but this is about what a
+  phase *plan's own content* must specify regardless of which agent or
+  the lead writes it (unlike `L-006`/`L-013`/`L-018`, which are about the
+  agent-orchestration procedure specifically), and `CLAUDE.md` §1 already
+  governs plan content project-wide, so a targeted strengthening there
+  fits better than a new agent-workflow step.
+- **Consequences if approved:** `CLAUDE.md` §1 gains the sentence above;
+  `CONTRIBUTING.md`'s mirrored "plan before implementing" section gets
+  the same addition in the same commit (existing `decisions/0022`/`0030`
+  precedent for keeping the two in sync); `planning/learnings/inbox.md`'s
+  `L-021` flips to `status: promoted` with a `promoted.md` pointer line
+  once the edit lands.
