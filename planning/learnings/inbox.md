@@ -59,7 +59,10 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   not, per `CLAUDE.md` §1's existing "how the phase will be verified as
   done" clause, which this candidate proposes strengthening rather than
   replacing)
-- **status:** candidate
+- **status:** promoted — `CLAUDE.md` §1 amended (mirrored in
+  `CONTRIBUTING.md`), user-approved via `AskUserQuestion` ("Approve as
+  written"), landed in the follow-up commit after Phase 55b's own
+  closeout; see `planning/learnings/promoted.md`.
 - **recurrence:** first occurrence (as a filed candidate; the retro itself
   frames the underlying principle as general/durable, not a one-off)
 - **curation (Phase 55b triage, 2026-09-17, knowledge-curator):** provenance

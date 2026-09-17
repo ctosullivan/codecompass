@@ -22,7 +22,13 @@ Don't begin implementation until that file exists. Add the phase's
 row/status to [`planning/ROADMAP.md`](planning/ROADMAP.md) in the same
 commit as the plan file. If writing the plan surfaces an assumption
 that isn't already settled elsewhere, pause and ask before proceeding
-from plan to code.
+from plan to code. If a phase adds behavior to an existing function
+that already has a real production call site, the "Verification"
+section must name that call site explicitly and include at least one
+test that exercises it directly — a test that only calls the changed
+function in isolation is not sufficient on its own, no matter how
+thorough, since it cannot catch the function's new behavior never
+actually being wired into its caller. (Phase 55b — L-021.)
 
 When the agent-led development model is in effect (see below), a phase is
 not started until any human-decision gate recorded against it in

@@ -1330,14 +1330,14 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 55b is done. One thing needs the user's explicit input before
-any further code is written**: approve or reject the `CLAUDE.md` §1
-amendment `L-021` proposes (drafted in
-`planning/v1-redefinition/proposed-governance-changes.md` §D — a phase
-that adds behaviour to an existing function with a real production call
-site must name that call site and test through it, per Phase 55b's own
-caught-live wiring-gap failure). Not yet presented for approval as of
-this checkpoint.
+**Phase 55b is done, and `L-021`'s `CLAUDE.md` §1 amendment is also
+now applied** — presented to the user via `AskUserQuestion`, approved
+("Approve as written"), landed in `CLAUDE.md` §1 (mirrored in
+`CONTRIBUTING.md`) in a small follow-up commit: a phase that adds
+behaviour to an existing function with a real production call site must
+now name that call site and test through it in its own plan, per Phase
+55b's own caught-live wiring-gap failure. No further human gate is
+outstanding from this work.
 
 Everything else the Phase 55 evidence reconciliation surfaced stays
 explicitly deferred, not decided: GATE DD itself (the broader

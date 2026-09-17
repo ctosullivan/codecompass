@@ -335,11 +335,10 @@ mirrored into `CONTRIBUTING.md`. The exact text is in `CLAUDE.md` §5 and
 
 ## D. 2026-09-17 proposed addition (Phase 55b — `L-021`)
 
-**Status:** proposed, not yet presented to the user. Filed by
-`knowledge-curator` during Phase 55b's triage, per `CLAUDE.md` §0's
-requirement that any change to that file be presented as a diff and
-explicitly approved before being written or committed; this agent's own
-write boundary excludes `CLAUDE.md` directly.
+**Status:** applied. Presented to the user via `AskUserQuestion`;
+approved ("Approve as written"). `CLAUDE.md` §1 amended, mirrored into
+`CONTRIBUTING.md`, in a follow-up commit after Phase 55b's own closeout.
+This section is left as the historical proposal record, not rewritten.
 
 ### D1 — §1 "Plan before implementing": require a test through the real call site for a shape this project's own Phase 55b showed can otherwise ship broken
 
