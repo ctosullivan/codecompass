@@ -1,0 +1,32 @@
+id: CL-DOCORIGIN-002
+kind: claim
+statement: >
+  A real, mechanically-checkable, content-level signal for "this
+  spec_doc-glob-matched file is externally-pinned, tool-ingested
+  reference material" already exists in the one implemented ingestion
+  pipeline today (a uniform YAML frontmatter block carrying
+  reference/source_url/resolved_commit/content_hash/etc.), but
+  scan_spec_docs reads none of it — it only ever reads a file's first H1
+  or filename stem, treating any frontmatter present as unmatched prose.
+  No path-based or configuration-based signal is available at
+  scan_spec_docs's call site today: the directory this material lands
+  in when synced (dev-docs/hledger-reference/) is an ordinary,
+  arbitrarily-named subdirectory reached only via the pre-existing
+  generic dev-docs/**/*.md glob, indistinguishable in shape from any
+  project's own hand-authored dev-docs content, and there is no
+  vendor.toml or other config entry marking it as external. Any fix that
+  wants scan_spec_docs itself to assign the new origin value
+  automatically would need to add frontmatter parsing (a real, new
+  capability this module does not have today) — it cannot be done by
+  refining the existing glob/title logic alone.
+derivation: DE-DOCORIGIN-002
+supporting_evidence:
+  - EV-DOCORIGIN-002
+  - EV-DOCORIGIN-006
+  - EV-DOCORIGIN-007
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-18"
+timestamp: "2026-09-18T00:00:00Z"
+status: supported
+supersedes: null

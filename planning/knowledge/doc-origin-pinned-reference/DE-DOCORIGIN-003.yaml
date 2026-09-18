@@ -1,0 +1,25 @@
+id: DE-DOCORIGIN-003
+kind: derivation
+claim: CL-DOCORIGIN-003
+method: >
+  CG-005's own filing already named the vendor_upstream-reuse question
+  and rejected it on semantic grounds ("no vendor.toml entry... reusing
+  vendor_upstream without a vendor to hang it on would itself be a
+  misuse"). Rather than accepting that reasoning as sufficient on its
+  own, traced what would mechanically happen if the reuse were attempted
+  anyway: read collect_vendor_upstream_doc_artifacts to confirm every
+  real call site always supplies a vendor_name for an already-tracked
+  vendor, then read DocArtifactRow and _insert_doc_artifacts (the actual
+  INSERT path) to see how vendor_name becomes a stored value. Found it
+  is resolved via a bare dict subscript (vendor_ids[d.vendor_name]) with
+  no .get()/default and no surrounding try/except anywhere in the
+  insert path — an untracked vendor_name is not silently ignored or
+  nulled, it raises KeyError and (absent a caller-level catch, none
+  found) aborts the sync. This upgrades CG-005's own "would misuse an
+  existing enum value" framing from a design-quality argument to an
+  empirically-confirmed hard failure mode, strengthening rather than
+  contradicting the entry's own conclusion.
+inputs:
+  - EV-DOCORIGIN-003
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-18T00:00:00Z"

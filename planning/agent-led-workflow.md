@@ -80,6 +80,20 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
    second told to `Edit`-append its section — or, if both must genuinely
    run concurrently, give each its own file and merge them afterward
    once both complete. (Phase 46 — L-018.)
+
+   **If this phase created a new `.claude/agents/*.md` file in this same
+   session, its real type name may not be immediately dispatchable.**
+   The dispatcher's own agent registry appears to load at some point
+   other than "the moment the file exists," and there is no known way to
+   force a refresh. Observed at Phase 54c: the first dispatch of a
+   newly-created type failed with `Agent type '<name>' not found`
+   despite the file already being committed to the working tree; the
+   same type dispatched correctly later in the same session, for reasons
+   not visible from within the session. Do not treat the first failure
+   as a blocker — fall back to dispatching `general-purpose` with the
+   new role's full brief embedded in the prompt for that first pass, and
+   retry the real type name on a later dispatch; it has, so far, always
+   become available later in the same session. (Phase 54c — L-023.)
 6. **Implement or coordinate implementation.** The lead implements
    directly, or dispatches one `general-purpose` implementer subagent per
    the `v0.2-implementation-execution-plan.md` pattern (foreground, exact

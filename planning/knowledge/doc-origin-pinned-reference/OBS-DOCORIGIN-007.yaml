@@ -1,0 +1,30 @@
+id: OBS-DOCORIGIN-007
+kind: observation
+method: source_read
+what_was_done: >
+  Read two real ingested files in full:
+  planning/reference-projects/ledgerkit/reference-experiment/extracted/hledger-depth-query-manual-section.md
+  and .../extracted/hledger-query-hs-matchesaccount.md.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-18"
+location: >
+  planning/reference-projects/ledgerkit/reference-experiment/extracted/hledger-depth-query-manual-section.md:1-30;
+  .../hledger-query-hs-matchesaccount.md:1-29
+raw_result: >
+  Both files open with an identical-shaped YAML frontmatter block
+  (--- ... ---) carrying: reference: hledger; source_url:
+  https://github.com/simonmichael/hledger; requested_ref: 1.52.4;
+  resolved_commit: 33fa849e7ae841968bd21c427094c4fb4a4ec38d;
+  fetch_method: local_clone; path: <upstream file path>; lines: [start,
+  end]; content_hash: sha256:<hex>; extracted_at: <ISO 8601 timestamp>.
+  After the frontmatter, the body has a normal H1 heading (e.g.
+  "# depth-query-manual-section") followed by prose and a fenced code
+  block containing the excerpt. No other file in the repository was
+  found with this exact frontmatter key set via a targeted read of two
+  representative files (a full scan of all 19 was not performed
+  individually, but the reference_pipeline.py write path, OBS-DOCORIGIN-008,
+  confirms this shape is generated uniformly for every file it writes).
+timestamp: "2026-09-18T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

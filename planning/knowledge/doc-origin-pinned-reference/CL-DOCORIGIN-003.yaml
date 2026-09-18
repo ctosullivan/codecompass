@@ -1,0 +1,24 @@
+id: CL-DOCORIGIN-003
+kind: claim
+statement: >
+  CG-005's own rejection of reusing 'vendor_upstream' for this material
+  (on grounds that it is designed for a vendor's own embedded upstream
+  docs and this material has no tracked vendors row) is not merely a
+  correct semantic argument but understates the actual failure mode:
+  reusing 'vendor_upstream' with a vendor_name that has no corresponding
+  vendor.toml entry would raise an uncaught KeyError inside
+  _insert_doc_artifacts at sync time (a hard crash), and omitting
+  vendor_name entirely while still using origin='vendor_upstream' would
+  silently violate that value's only real-world invariant observed in
+  this codebase (every current vendor_upstream row has a non-null,
+  resolvable vendor_name) without CodeCompass itself ever checking or
+  enforcing that invariant at the schema level.
+derivation: DE-DOCORIGIN-003
+supporting_evidence:
+  - EV-DOCORIGIN-003
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-18"
+timestamp: "2026-09-18T00:00:00Z"
+status: supported
+supersedes: null

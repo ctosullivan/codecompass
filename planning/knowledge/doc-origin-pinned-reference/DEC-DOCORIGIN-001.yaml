@@ -1,0 +1,52 @@
+# Reviewed by the lead, standing in for the user/project-owner role for
+# this Phase 54c dogfooding run (disclosed explicitly in the phase
+# retro, per planning/phase-54c-evidence-knowledge-workflow.md §5.1's
+# own "who actually did the reviewing" honesty requirement). This
+# Decision does not question or revise CL-DOCORIGIN-001 through -004 --
+# all four Claims stay exactly as the research left them. It chooses
+# which of the open, evidenced options (§9 of design.md) the project
+# adopts.
+
+id: DEC-DOCORIGIN-001
+kind: decision
+decides: >
+  1) Name the new doc_artifacts.origin value `pinned_reference`,
+  scoped semantically to "externally-sourced reference material,
+  revision-pinned and materialized into the project tree by a tool" --
+  not narrowed to "git-pinned" in the name itself, since the fetch
+  *mechanism* (git vs. a future url source) is a separate concern from
+  the provenance *class* the origin column records, and no schema
+  change would be needed later if a non-git source is ever implemented.
+  2) Implement automatic detection: teach scan_spec_docs to recognise a
+  YAML frontmatter block containing both `resolved_commit` and
+  `source_url` keys (the two fields present in every real ingested file
+  and structurally absent from ordinary hand-authored dev-docs prose)
+  and assign origin='pinned_reference' instead of 'project' when found
+  -- a small, mechanical, no-AI structural check, not a config-driven
+  manual override. 3) Do not extend this to vendor_doc-kind rows in
+  this phase -- vendor_upstream stays exactly as it is; whether a
+  vendor_doc that happens to be externally-pinned should ever share
+  pinned_reference is left an explicit non-goal (unrelated to CG-005's
+  own real-world instance, which is spec_doc-kind only). 4) No explicit
+  backfill/migration step is needed for already-synced databases:
+  doc_artifacts is dropped and fully repopulated on every whole-project
+  sync (CL-DOCORIGIN-001's own traced precedent), so the new
+  classification applies automatically the next time affected files are
+  synced.
+rationale: >
+  Matches this project's own "smallest justified fix, don't design for
+  hypothetical requirements" discipline while keeping the *name*
+  general enough that a future non-git source (should one ever be
+  implemented) would not need a second schema change -- the name
+  records what the material IS, not how it was fetched. Automatic
+  frontmatter detection (rather than a manual override) is chosen
+  because CL-DOCORIGIN-002 already confirmed the two-field signal is
+  real, mechanical, and uniquely present in ingested content -- adding
+  a manual/config-driven path instead would be more code for a weaker
+  guarantee (a human could forget to flag a file; the frontmatter check
+  cannot).
+agrees_with_claim: CL-DOCORIGIN-001
+supersedes: null
+decided_by: "project owner (lead standing in for this dogfooding run — see retro)"
+timestamp: "2026-09-18T00:00:00Z"
+status: approved

@@ -1,0 +1,20 @@
+id: OBS-DEPTH-004
+kind: observation
+method: executable
+what_was_done: >
+  Ran `hledger stats --depth 2` against the same hand-built test journal
+  as OBS-DEPTH-002 and compared "Txns"/"Accounts" figures to the
+  unrestricted run.
+tool: hledger
+tool_version: "1.52.4-g33fa849e7-20260910"
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+location: null
+raw_result: >
+  "Txns" was unchanged (4 -> 4) between the unrestricted and --depth 2
+  runs, while "Accounts" dropped from 7 to 2 -- postings deeper than the
+  limit were excluded from the accounts count entirely, with no
+  aggregation into any shallower name; whole transactions were never
+  dropped.
+timestamp: "2026-09-18T00:00:00Z"
+performed_by: "context-evaluator (Phase 54b independent evaluation dispatch)"
+status: recorded

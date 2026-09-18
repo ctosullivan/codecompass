@@ -1,0 +1,15 @@
+id: EV-DEPTH-002
+kind: evidence
+evidence_kind: executable
+what_it_shows: >
+  hledger's stats command passes the full, depth-included query into
+  ledgerFromJournal, which genuinely excludes postings (not whole
+  transactions) deeper than the limit from the journal stats reads its
+  own posting-derived counts from -- a real, partial exclusion distinct
+  from every other command's clip-only behaviour.
+observations: [OBS-DEPTH-003, OBS-DEPTH-004]
+source_ref: "hledger-lib/Hledger/Data/Ledger.hs:54-67"
+doc_ref: null
+test_ref: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+status: current

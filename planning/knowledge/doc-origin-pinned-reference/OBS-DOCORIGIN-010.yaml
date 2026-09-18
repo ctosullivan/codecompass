@@ -1,0 +1,31 @@
+id: OBS-DOCORIGIN-010
+kind: observation
+method: source_read
+what_was_done: >
+  Read
+  planning/reference-projects/ledgerkit/reference-experiment/references.toml
+  in full and the ReferenceSource dataclass, load_references_toml,
+  resolve_ref, and _read_source_root in reference_pipeline.py to check
+  whether a non-Git ("url") source variant is implemented.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-18"
+location: >
+  planning/reference-projects/ledgerkit/reference-experiment/references.toml:1-30;
+  .../reference_pipeline.py:55-190
+raw_result: >
+  references.toml's only [[reference]] entry declares `source = "git"`.
+  ReferenceSource.source (dataclass field, reference_pipeline.py line
+  72) is typed `str` with no validation against a closed set anywhere in
+  load_references_toml — any string would parse. However, resolve_ref
+  and _read_source_root are both written exclusively in terms of Git
+  concepts (a local_path clone, `git rev-list`/`git ls-remote` tag
+  resolution, a resolved commit SHA) with no conditional branch on
+  `reference.source`'s value at all — the field is read into
+  ResolvedReference but never inspected to select a code path. There is
+  no implemented non-Git fetch method (no "url" branch, no plain-HTTP
+  fetch, no handling of any value other than the Git-shaped flow)
+  anywhere in this pipeline.
+timestamp: "2026-09-18T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

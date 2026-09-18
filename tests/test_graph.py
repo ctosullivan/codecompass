@@ -166,7 +166,7 @@ def test_init_schema_seeds_schema_version(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "6"
+    assert value == "7"
 
 
 def test_init_schema_is_idempotent(tmp_path) -> None:
@@ -176,7 +176,7 @@ def test_init_schema_is_idempotent(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "6"
+    assert value == "7"
 
 
 def test_doc_artifacts_accepts_slash_command_kind(tmp_path) -> None:
@@ -213,6 +213,19 @@ def test_doc_artifacts_accepts_vendor_doc_kind_and_vendor_upstream_origin(tmp_pa
     conn.execute(
         "INSERT INTO doc_artifacts (kind, origin, path) VALUES "
         "('vendor_doc', 'vendor_upstream', 'vendor/demo/src/README.md')"
+    )  # must not raise
+
+
+def test_doc_artifacts_accepts_pinned_reference_origin(tmp_path) -> None:
+    """Phase 54c (CG-005, REQ-DOCORIGIN-001): `origin`'s CHECK constraint
+    gained `'pinned_reference'` for externally-sourced, revision-pinned
+    reference material — a fresh database must accept it directly (a
+    migration test below covers an already-existing pre-Phase-54c db).
+    """
+    conn = open_graph(tmp_path)
+    conn.execute(
+        "INSERT INTO doc_artifacts (kind, origin, path) VALUES "
+        "('spec_doc', 'pinned_reference', 'dev-docs/hledger-reference/example.md')"
     )  # must not raise
 
 
@@ -276,7 +289,7 @@ def test_open_graph_migrates_pre_phase_17_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "6"
+    assert schema_version == "7"
 
     # Would raise sqlite3.IntegrityError under the pre-migration constraint.
     conn.execute(
@@ -313,7 +326,7 @@ def test_open_graph_migrates_pre_phase_21_schema(tmp_path) -> None:
     """Simulates a `context-graph.db` created at Phase 17-20's schema
     (`schema_version` "2", `doc_artifacts.kind`/`origin` CHECK constraints
     not yet widened for spec docs) — `open_graph` must migrate it in place:
-    bump `schema_version` (now "6", since this simulated db's stored
+    bump `schema_version` (now "7", since this simulated db's stored
     version is older than every widening since) and accept
     `kind='spec_doc'`, `origin='project'` afterward. `doc_relations_edges`
     itself needs no migration (a brand-new table `init_schema`'s `CREATE
@@ -350,7 +363,7 @@ def test_open_graph_migrates_pre_phase_21_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "6"
+    assert schema_version == "7"
 
     # Would raise sqlite3.IntegrityError under the pre-Phase-21 constraints.
     conn.execute(
@@ -372,7 +385,7 @@ def test_open_graph_migrates_pre_phase_27_schema(tmp_path) -> None:
     """Simulates a `context-graph.db` created at Phase 21-26's schema
     (`schema_version` "3", `doc_artifacts.kind`/`origin` CHECK constraints
     not yet widened for vendor-embedded upstream docs) — `open_graph` must
-    migrate it in place: bump `schema_version` to "6" (current, since this
+    migrate it in place: bump `schema_version` to "7" (current, since this
     simulated db's stored version is older than every widening since) and
     accept `kind='vendor_doc'`, `origin='vendor_upstream'` afterward.
     """
@@ -408,7 +421,7 @@ def test_open_graph_migrates_pre_phase_27_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "6"
+    assert schema_version == "7"
 
     # Would raise sqlite3.IntegrityError under the pre-Phase-27 constraints.
     conn.execute(
@@ -941,7 +954,7 @@ def test_open_graph_migrates_pre_phase_32_schema_adds_chunk_id_columns(tmp_path)
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "6"
+    assert schema_version == "7"
 
     documents_edges_columns = {row[1] for row in conn.execute("PRAGMA table_info(documents_edges)")}
     doc_relations_edges_columns = {
@@ -954,6 +967,78 @@ def test_open_graph_migrates_pre_phase_32_schema_adds_chunk_id_columns(tmp_path)
         name for (name,) in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
     }
     assert "doc_chunks" in table_names
+
+
+def test_open_graph_migrates_pre_phase_54c_schema(tmp_path) -> None:
+    """Simulates a `context-graph.db` created at Phase 32-53's schema
+    (`schema_version` "6", `doc_artifacts.origin`'s CHECK constraint not
+    yet widened for `'pinned_reference'`) — `open_graph` must migrate it
+    in place: bump `schema_version` to "7" and accept
+    `origin='pinned_reference'` afterward.
+    """
+    db_path = tmp_path / "context-graph.db"
+    old_conn = sqlite3.connect(db_path)
+    old_conn.executescript(
+        """
+        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE vendors (
+          id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE,
+          ecosystem TEXT NOT NULL, installed_version TEXT
+        );
+        CREATE TABLE doc_artifacts (
+          id INTEGER PRIMARY KEY,
+          vendor_id INTEGER REFERENCES vendors(id) ON DELETE CASCADE,
+          kind TEXT NOT NULL CHECK (
+            kind IN (
+              'claude_md','overview','skill','cursor_mdc','slash_command','spec_doc',
+              'vendor_doc'
+            )
+          ),
+          origin TEXT CHECK (
+            origin IN (
+              'codecompass_tool','codecompass_vendor','third_party','project',
+              'vendor_upstream'
+            )
+          ),
+          path TEXT NOT NULL UNIQUE, name TEXT, description TEXT
+        );
+        CREATE TABLE symbols (
+          id INTEGER PRIMARY KEY,
+          vendor_id INTEGER NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+          name TEXT NOT NULL, purpose TEXT
+        );
+        CREATE TABLE documents_edges (
+          id INTEGER PRIMARY KEY,
+          doc_artifact_id INTEGER NOT NULL REFERENCES doc_artifacts(id) ON DELETE CASCADE,
+          symbol_id INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
+          chunk_id INTEGER
+        );
+        CREATE TABLE doc_relations_edges (
+          id INTEGER PRIMARY KEY,
+          source_doc_artifact_id INTEGER NOT NULL REFERENCES doc_artifacts(id) ON DELETE CASCADE,
+          target_vendor_id INTEGER REFERENCES vendors(id) ON DELETE CASCADE,
+          target_doc_artifact_id INTEGER REFERENCES doc_artifacts(id) ON DELETE CASCADE,
+          relation_kind TEXT NOT NULL,
+          chunk_id INTEGER
+        );
+        """
+    )
+    old_conn.execute("INSERT INTO meta (key, value) VALUES ('schema_version', '6')")
+    old_conn.commit()
+    old_conn.close()
+
+    conn = open_graph(tmp_path)
+
+    (schema_version,) = conn.execute(
+        "SELECT value FROM meta WHERE key = 'schema_version'"
+    ).fetchone()
+    assert schema_version == "7"
+
+    # Would raise sqlite3.IntegrityError under the pre-Phase-54c constraint.
+    conn.execute(
+        "INSERT INTO doc_artifacts (kind, origin, path) VALUES "
+        "('spec_doc', 'pinned_reference', 'dev-docs/hledger-reference/example.md')"
+    )
 
 
 def test_skills_index_lists_skill_artifacts_and_mentions(tmp_path) -> None:

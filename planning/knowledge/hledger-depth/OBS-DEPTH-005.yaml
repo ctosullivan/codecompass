@@ -1,0 +1,21 @@
+id: OBS-DEPTH-005
+kind: observation
+method: executable
+what_was_done: >
+  Ran `diff` between `hledger print`, `hledger print --depth 2`, and
+  `hledger print depth:2` output against the same hand-built test
+  journal, and separately read Hledger/Reports/EntriesReport.hs in full
+  (a short, self-contained module, used by print).
+tool: hledger
+tool_version: "1.52.4-g33fa849e7-20260910"
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+location: "hledger-lib/Hledger/Reports/EntriesReport.hs:42"
+raw_result: >
+  diff output was empty in all cases -- byte-identical regardless of
+  depth. Source: entriesReport's only query-filtering step is
+  filterJournalTransactions (filterQuery (not.queryIsDepth) ...) --
+  depth is stripped before filtering and never reapplied anywhere in
+  the file; no clip function is called at all.
+timestamp: "2026-09-18T00:00:00Z"
+performed_by: "context-evaluator (Phase 54b independent evaluation dispatch)"
+status: recorded

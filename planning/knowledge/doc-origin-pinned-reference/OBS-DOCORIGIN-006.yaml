@@ -1,0 +1,19 @@
+id: OBS-DOCORIGIN-006
+kind: observation
+method: source_read
+what_was_done: >
+  Read graph.py's spec_docs_without_relations and
+  vendor_docs_without_relations coverage-gap query functions to check
+  whether either filters on origin.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-18"
+location: "src/codecompass/graph.py:866-900"
+raw_result: >
+  Both functions filter their SQL WHERE clause on doc_artifacts.kind
+  only ('spec_doc' and 'vendor_doc' respectively) — neither references
+  the origin column at all. A new origin value on a kind='spec_doc' row
+  would not change either function's result set.
+timestamp: "2026-09-18T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

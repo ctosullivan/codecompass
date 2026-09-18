@@ -949,9 +949,40 @@ sufficiency log; the two proving cases are now explicitly framed as
 testing workflow mechanics and documentation fidelity respectively, not
 final proof of the methodology.
 
-Not started; plan awaiting review. Full plan:
-`planning/phase-54c-evidence-knowledge-workflow.md`. Full verbatim
-request: `planning/phase-54c-evidence-knowledge-workflow-prompt.md`.
+**Done (2026-09-18).** Both proving cases run for real. **Primary
+(`CG-005`, tests workflow mechanics):** the full loop — `context-researcher`
+(11 Observation/9 Evidence/4 Claim/4 Derivation records) →
+`documentation-agent` (`design.md`) → lead-as-reviewer (`DEC-DOCORIGIN-001`,
+3 Requirements, disclosed in the retro) → `documentation-agent`
+regeneration → `knowledge-curator`'s new packet-assembly mode
+(`context-packet.md`) → implementation (`doc_artifacts.origin` gains
+`pinned_reference`, `_SCHEMA_VERSION` 6→7; `spec_docs.py::scan_spec_docs`
+gains automatic frontmatter detection) → real end-to-end revalidation
+(confirmed via an actual `codecompass sync`, not just unit tests, that
+all 19 real Phase 54b-ingested files now correctly read
+`origin='pinned_reference'` while Ledgerkit's own hand-authored docs
+stay `project` — `CG-005`'s real motivating instance closed for real).
+`CG-005` promoted. **Secondary (`hledger-depth`, tests
+knowledge→documentation fidelity):** a retroactive `design.md`, built
+entirely from Phase 54b's already-verified evidence with no new
+dispatch, correctly and completely matches Ledgerkit's real, shipped
+Stage C Phase 5 outcome. **A real, independently-verified traceability
+test passed**: a fresh agent, given only one Claim's five-record
+citation chain, correctly reconstructed its reasoning without guessing.
+Two real, disclosed gaps found: newly-created agent types aren't
+immediately dispatchable mid-session (`L-023`, worked around, promoted
+into `agent-led-workflow.md`); the context packet's own "existing
+tests" section missed a whole test file (`L-024`, promoted into
+`context-researcher.md`'s own brief). **Two of the plan's own ten
+evaluation questions were honestly left unanswered, not answered
+positively by default**: `contradicting_evidence`/Claim-`supersedes`
+were never exercised with real content, and neither proving case
+presented a genuine pre-implementation misunderstanding for review to
+catch. Retro's own durable-vs-experimental recommendation, per
+piece: `planning/retros/phase-54c-evidence-knowledge-workflow.md`.
+**Whether this workflow improves development quality generally remains
+explicitly undecided** — deferred to Phase 60/61's own genuine-uncertainty
+test, exactly as this phase's own amended plan anticipated. No new ADR.
 
 ### Phase 55 — Decide on broader abstractions + refine the blueprint · EXPERIMENTAL → decision
 - **Exit / GATE DD (gate G7):** a written decision

@@ -1,0 +1,17 @@
+id: REQ-DOCORIGIN-003
+kind: requirement
+statement: >
+  A new test fixture (a frontmatter-bearing .md file under a test
+  project's dev-docs/ tree) MUST exercise scan_spec_docs's new
+  origin='pinned_reference' branch directly, closing the real,
+  currently-missing test-coverage gap CL-DOCORIGIN-002/EV-DOCORIGIN-008
+  identified. Every existing test asserting origin='project' for
+  frontmatter-free fixtures MUST continue to pass unchanged.
+example: |
+  Given the existing test_spec_docs.py test suite
+  When the new frontmatter-detection branch is added
+  Then a new test (e.g. test_scan_spec_docs_pinned_reference_frontmatter)
+    asserts origin='pinned_reference' for a frontmatter-bearing fixture,
+    and every pre-existing origin='project' assertion still passes.
+decision: DEC-DOCORIGIN-001
+status: verified

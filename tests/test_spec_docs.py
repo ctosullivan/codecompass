@@ -1,6 +1,11 @@
 from pathlib import Path
 
-from codecompass.spec_docs import _extract_title, _is_specific_enough, scan_spec_docs
+from codecompass.spec_docs import (
+    _extract_title,
+    _has_pinned_reference_frontmatter,
+    _is_specific_enough,
+    scan_spec_docs,
+)
 
 
 def _write(project_root: Path, rel_path: str, text: str = "content\n") -> Path:
@@ -267,3 +272,77 @@ def test_scan_spec_docs_populates_name_from_the_stem_when_no_h1(tmp_path: Path) 
 
     assert len(rows) == 1
     assert rows[0].name == "hledger-compatibility"
+
+
+# --- Phase 54c: origin='pinned_reference' detection (CG-005, REQ-DOCORIGIN-002/003) ---
+
+_PINNED_REFERENCE_FRONTMATTER = """---
+reference: hledger
+source_url: https://github.com/simonmichael/hledger
+requested_ref: 1.52.4
+resolved_commit: 33fa849e7ae841968bd21c427094c4fb4a4ec38d
+fetch_method: local_clone
+path: hledger-lib/Hledger/Query.hs
+lines: [868, 878]
+content_hash: sha256:deadbeef
+extracted_at: 2026-09-18T00:00:00+00:00
+---
+
+# some-excerpt
+
+Excerpt body.
+"""
+
+
+def test_scan_spec_docs_pinned_reference_frontmatter(tmp_path: Path) -> None:
+    """REQ-DOCORIGIN-002's own example: a file whose leading content is
+    ingestion-pipeline frontmatter (both `resolved_commit`/`source_url`
+    keys present) is classified `origin='pinned_reference'`, not
+    `'project'`.
+    """
+    _write(tmp_path, "dev-docs/hledger-reference/some-excerpt.md", _PINNED_REFERENCE_FRONTMATTER)
+
+    rows = scan_spec_docs(tmp_path)
+
+    assert len(rows) == 1
+    assert rows[0].origin == "pinned_reference"
+
+
+def test_scan_spec_docs_frontmatter_missing_one_key_stays_project(tmp_path: Path) -> None:
+    """REQ-DOCORIGIN-002: frontmatter missing either required key keeps
+    the existing `origin='project'` behaviour unchanged — both keys are
+    required, not either.
+    """
+    only_source_url = """---
+reference: hledger
+source_url: https://github.com/simonmichael/hledger
+---
+
+# partial
+"""
+    _write(tmp_path, "dev-docs/hledger-reference/partial.md", only_source_url)
+
+    rows = scan_spec_docs(tmp_path)
+
+    assert len(rows) == 1
+    assert rows[0].origin == "project"
+
+
+def test_scan_spec_docs_ordinary_file_without_frontmatter_stays_project(tmp_path: Path) -> None:
+    """The pre-existing behaviour for ordinary hand-authored content —
+    unaffected by Phase 54c's new detection branch.
+    """
+    _write(tmp_path, "dev-docs/hledger-compatibility.md", "# Compat notes\n\nOrdinary prose.\n")
+
+    rows = scan_spec_docs(tmp_path)
+
+    assert len(rows) == 1
+    assert rows[0].origin == "project"
+
+
+def test_has_pinned_reference_frontmatter_requires_both_keys() -> None:
+    assert _has_pinned_reference_frontmatter(_PINNED_REFERENCE_FRONTMATTER) is True
+    assert _has_pinned_reference_frontmatter("---\nsource_url: x\n---\nbody\n") is False
+    assert _has_pinned_reference_frontmatter("---\nresolved_commit: x\n---\nbody\n") is False
+    assert _has_pinned_reference_frontmatter("no frontmatter at all\n") is False
+    assert _has_pinned_reference_frontmatter("---\nunterminated: true\n") is False

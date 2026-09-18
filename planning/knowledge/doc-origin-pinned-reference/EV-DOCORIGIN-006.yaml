@@ -1,0 +1,19 @@
+id: EV-DOCORIGIN-006
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  The reference-ingestion pipeline's real output files each carry a
+  uniform YAML frontmatter provenance block (reference, source_url,
+  requested_ref, resolved_commit, fetch_method, path, lines,
+  content_hash, extracted_at) that is a genuine, mechanically-parseable
+  marker distinguishing this content's origin from hand-authored prose —
+  distinct from the file's body content (a title, prose, and a fenced
+  code excerpt), which by itself looks like an ordinary spec doc.
+observations: [OBS-DOCORIGIN-007]
+source_ref: >
+  planning/reference-projects/ledgerkit/reference-experiment/extracted/hledger-depth-query-manual-section.md:1-11;
+  .../hledger-query-hs-matchesaccount.md:1-10
+doc_ref: null
+test_ref: null
+repository_revision: "working tree, 2026-09-18"
+status: current

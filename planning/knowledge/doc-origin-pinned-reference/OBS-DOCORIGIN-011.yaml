@@ -1,0 +1,26 @@
+id: OBS-DOCORIGIN-011
+kind: observation
+method: source_read
+what_was_done: >
+  Re-read graph.py's DocArtifactRow dataclass and _insert_doc_artifacts
+  specifically to determine what happens if a doc_artifacts row's
+  vendor_name names a vendor with no corresponding vendors row (the
+  exact shape the CG-005 material would have if vendor_upstream were
+  reused for it without a vendor.toml entry).
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-18"
+location: "src/codecompass/graph.py:265-278,644-659"
+raw_result: >
+  _insert_doc_artifacts resolves `vendor_id = vendor_ids[d.vendor_name]
+  if d.vendor_name is not None else None`, where vendor_ids is a dict
+  keyed by vendor name built from vendors already inserted in the same
+  sync run (via _fetch_ids-style helpers read earlier in the same
+  function/module). This is a plain dict subscript with no .get()
+  default and no try/except around it — passing a vendor_name for a
+  vendor that isn't tracked (no vendor.toml entry, so never inserted
+  into `vendors`) raises an uncaught KeyError at sync time, not a silent
+  NULL or a soft failure.
+timestamp: "2026-09-18T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

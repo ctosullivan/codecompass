@@ -1,0 +1,20 @@
+id: EV-DOCORIGIN-009
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  The reference-ingestion pipeline's own references.toml `source` field
+  is an unvalidated free-text string accepting any value, but only
+  "git" is ever declared in the one existing references.toml, and the
+  pipeline code (resolve_ref, _read_source_root) implements exclusively
+  a Git-clone/tag-resolution flow with no conditional branch on
+  `reference.source`'s value at all — there is no working non-Git
+  ("url" or otherwise) fetch method anywhere in the pipeline today,
+  despite the field's type nominally allowing one to be declared.
+observations: [OBS-DOCORIGIN-010]
+source_ref: >
+  planning/reference-projects/ledgerkit/reference-experiment/references.toml:1-20;
+  .../reference_pipeline.py:61-190
+doc_ref: null
+test_ref: null
+repository_revision: "working tree, 2026-09-18"
+status: current

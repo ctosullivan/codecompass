@@ -1,0 +1,18 @@
+id: DE-DEPTH-001
+kind: derivation
+claim: CL-DEPTH-001
+method: >
+  Traced every real command module that consumes a Query value
+  (MultiBalanceReport.hs, PostingsReport.hs, Accounts.hs, Ledger.hs/
+  Stats.hs, EntriesReport.hs) rather than stopping at Query.hs's own
+  matchesAccount definition alone -- the specific trap Ledgerkit's real
+  Stage C Phase 1 fell into when it classified depth: as a pure
+  exclusion predicate from that one function's signature, without
+  checking whether any command actually invokes it that way (none of
+  balance/register/accounts/print do; stats is the one real exception).
+  Confirmed each source-level finding with a live binary run against a
+  fixture built to include a depth-4 nested account and a
+  regex-collision case.
+inputs: [EV-DEPTH-001, EV-DEPTH-002, EV-DEPTH-003]
+performed_by: "context-evaluator (Phase 54b independent evaluation dispatch)"
+timestamp: "2026-09-18T00:00:00Z"

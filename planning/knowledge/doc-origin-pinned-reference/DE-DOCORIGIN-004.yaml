@@ -1,0 +1,27 @@
+id: DE-DOCORIGIN-004
+kind: derivation
+claim: CL-DOCORIGIN-004
+method: >
+  The dispatching brief itself raised whether CG-005's "e.g.
+  pinned_reference" example name is the best choice, specifically asking
+  whether the name needs to also cover an externally-pinned reference
+  that is not Git-backed, citing the reference pipeline's own
+  references.toml schema as possibly "supporting a future source = url
+  variant." Rather than accepting that framing at face value, read
+  references.toml and reference_pipeline.py's ReferenceSource/resolve_ref/
+  _read_source_root directly. Found the `source` field is indeed an
+  unconstrained string (so a future "url" value could be *written* into
+  the TOML without a parse error) but that no code anywhere branches on
+  its value — the entire pipeline is hard-wired to Git semantics
+  (tag-to-commit resolution, a git clone or local_path). This means the
+  premise "the schema already supports a source=url variant" is only
+  true at the level of "the TOML parser wouldn't reject the string" —
+  it is not true at the level of "this pipeline can actually ingest a
+  non-Git reference today." Recorded as a claim about what the evidence
+  does and doesn't support, rather than resolving the naming question
+  outright, per this role's hard rule against resolving genuine design
+  choices itself.
+inputs:
+  - EV-DOCORIGIN-009
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-18T00:00:00Z"

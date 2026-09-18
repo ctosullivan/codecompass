@@ -1,0 +1,31 @@
+id: OBS-DOCORIGIN-001
+kind: observation
+method: doc_read
+what_was_done: >
+  Read the full CG-005 entry in planning/context-gaps/inbox.md
+  ("doc_artifacts.origin='project' is semantically wrong for
+  externally-sourced, pinned reference material"), including its own
+  Phase 54 knowledge-curator triage note, as the starting point for this
+  research rather than rediscovering the gap from scratch.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-18 (HEAD ae165e5 + uncommitted)"
+location: "planning/context-gaps/inbox.md:267-363"
+raw_result: >
+  CG-005 names: src/codecompass/spec_docs.py::scan_spec_docs line 82
+  (now line 159 in the current working tree) hard-codes origin="project"
+  for every kind='spec_doc' row; graph.py's origin CHECK enum (lines
+  111-115 in the entry's cited revision) is a closed five-value set
+  (codecompass_tool, codecompass_vendor, third_party, project,
+  vendor_upstream); reusing vendor_upstream was considered and rejected
+  by the entry's own reasoning because that value is tied to a tracked
+  vendors row via vendor_name, which this ingested material does not
+  have (no vendor.toml entry, by the Phase 54 plan's own design); the
+  entry's own "smallest candidate" suggests one new origin CHECK-enum
+  value (e.g. pinned_reference, explicitly flagged "e.g.") following the
+  Phase 17/21/(vendor_doc-introducing phase, i.e. Phase 27) precedent.
+  Status: candidate, first occurrence, classification graph-capability
+  (Stage E / GATE DD).
+timestamp: "2026-09-18T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

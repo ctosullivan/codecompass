@@ -1,0 +1,29 @@
+id: CL-DOCORIGIN-001
+kind: claim
+statement: >
+  The smallest correct schema-level fix for CG-005 is one new closed
+  doc_artifacts.origin CHECK-enum value, added through the existing
+  generic _migrate_doc_artifacts_constraints mechanism (one more
+  _SCHEMA_VERSION bump, following the exact Phase 17/21/27 precedent),
+  with no change required to any other origin consumer in
+  src/codecompass/ — every other write site is an unconditional
+  per-caller constant unaffected by adding a new option elsewhere, every
+  origin-reading branch (build_doc_relations_edges' skill preference,
+  cli.py's third_party filter/display/undo filter) is scoped to
+  Skill-kind rows or an explicit unrelated value list, and both
+  kind='spec_doc' coverage-gap queries filter on kind only. The open
+  part of the fix is not the schema change itself but *how*
+  scan_spec_docs decides when to assign the new value (see
+  CL-DOCORIGIN-002).
+derivation: DE-DOCORIGIN-001
+supporting_evidence:
+  - EV-DOCORIGIN-001
+  - EV-DOCORIGIN-003
+  - EV-DOCORIGIN-004
+  - EV-DOCORIGIN-005
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-18"
+timestamp: "2026-09-18T00:00:00Z"
+status: supported
+supersedes: null

@@ -1,0 +1,41 @@
+id: OBS-DOCORIGIN-004
+kind: observation
+method: source_read
+what_was_done: >
+  Grepped `origin` across every file in src/codecompass/*.py, then read
+  every real write and read site of doc_artifacts.origin found:
+  doc_mapping.py's collect_vendor_doc_artifacts,
+  collect_vendor_upstream_doc_artifacts, and the origin-branching logic
+  inside build_doc_relations_edges' skill-preference helper; also read
+  graph.py's DocArtifactRow dataclass and _insert_doc_artifacts to see
+  how vendor_name is actually persisted.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-18"
+location: >
+  src/codecompass/doc_mapping.py:49-131,240-260;
+  src/codecompass/graph.py:265-278,644-659
+raw_result: >
+  Two other origin-write call sites exist, both unconditional per-caller
+  constants like spec_docs.py's: collect_vendor_doc_artifacts always
+  writes origin="codecompass_vendor" for a tracked vendor's own
+  CodeCompass-generated CLAUDE.md/OVERVIEW.md;
+  collect_vendor_upstream_doc_artifacts always writes
+  origin="vendor_upstream" plus vendor_name=config.name for a doc file
+  found under vendor/<name>/src/ for a vendor already present in
+  `configs` (i.e. already in vendor.toml and already resolved/cloned).
+  build_doc_relations_edges' skill-preference branch (around line
+  257-259) reads `row.origin == "codecompass_vendor"` and
+  `row.origin == "codecompass_tool"` only to choose between two eligible
+  Skill-kind rows for the same match target — scoped to Skill/claude_md
+  rows, never spec_doc rows, and does not change behavior for any origin
+  value it doesn't explicitly name (falls through unchanged).
+  Separately, graph.py's DocArtifactRow.vendor_name is not a stored
+  column itself — _insert_doc_artifacts resolves it via
+  `vendor_ids[d.vendor_name]`, a plain dict lookup with no default,
+  against vendors already inserted this same sync run. A DocArtifactRow
+  with a vendor_name that has no corresponding vendors row raises
+  KeyError at insert time, uncaught.
+timestamp: "2026-09-18T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

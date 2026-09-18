@@ -1,0 +1,19 @@
+id: EV-DOCORIGIN-007
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  The only documented path that gets this material into a project
+  CodeCompass indexes is a plain filesystem copy of extracted/*.md into
+  a dev-docs/ subdirectory of a separate (scratch) project, followed by
+  an ordinary `codecompass sync`; the copy preserves the frontmatter
+  byte-for-byte, and nothing in the documented pipeline or in
+  CodeCompass's own sync path strips, transforms, or reads that
+  frontmatter — detection of the material is attributed entirely to the
+  pre-existing dev-docs/**/*.md glob, with no mention of any
+  provenance-aware handling.
+observations: [OBS-DOCORIGIN-008]
+source_ref: null
+doc_ref: "planning/reference-projects/ledgerkit/reference-experiment/README.md:1-60"
+test_ref: null
+repository_revision: "working tree, 2026-09-18"
+status: current

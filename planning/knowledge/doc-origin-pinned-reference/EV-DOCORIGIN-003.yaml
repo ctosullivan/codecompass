@@ -1,0 +1,25 @@
+id: EV-DOCORIGIN-003
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  Every other doc_artifacts.origin write site in src/codecompass/
+  (collect_vendor_doc_artifacts -> 'codecompass_vendor',
+  collect_vendor_upstream_doc_artifacts -> 'vendor_upstream') is likewise
+  an unconditional per-caller constant, and the one place that reads
+  origin to change behavior (build_doc_relations_edges' skill-preference
+  branch) matches only 'codecompass_vendor'/'codecompass_tool' and is
+  scoped to Skill/claude_md rows, not spec_doc rows — it falls through
+  unchanged for any other origin value, including a new one. Separately,
+  DocArtifactRow.vendor_name is resolved to a vendor_id via an
+  unguarded dict lookup (vendor_ids[d.vendor_name]) against vendors
+  already tracked in vendor.toml and inserted this same sync run; a
+  vendor_name with no matching vendors row raises an uncaught KeyError
+  at insert time.
+observations: [OBS-DOCORIGIN-004, OBS-DOCORIGIN-011]
+source_ref: >
+  src/codecompass/doc_mapping.py:49-131,240-260;
+  src/codecompass/graph.py:265-278,644-659
+doc_ref: null
+test_ref: null
+repository_revision: "working tree, 2026-09-18"
+status: current

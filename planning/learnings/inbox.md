@@ -8,6 +8,213 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-024 — a context-packet's (and its upstream research's) "existing tests" trace must explicitly check for a schema/migration mechanism's own dedicated test file, not just the feature's own code-path tests
+
+- **origin:** Phase 54c (evidence-backed, knowledge-based,
+  documentation-first workflow), `doc-origin-pinned-reference` feature,
+  discovered live during implementation, logged by whoever implemented
+  per §6.1's own convention, not by `knowledge-curator` at assembly time
+- **date:** 2026-09-18
+- **project_revision:** working tree at `ae165e5` (Phase 54c
+  implementation, uncommitted at filing time)
+- **observation:** `context-packet.md`'s "Existing tests" section named
+  only `tests/test_spec_docs.py` and `tests/test_doc_mapping.py` — both
+  genuinely correct for `REQ-DOCORIGIN-002`/`-003` (the `scan_spec_docs`
+  detection logic) — but never named `tests/test_graph.py`, which
+  contains 6 pre-existing tests hard-coding the expected
+  `_SCHEMA_VERSION` string. Implementing `REQ-DOCORIGIN-001` (the
+  `_SCHEMA_VERSION` 6→7 bump) broke all 6, discovered only by running the
+  full suite, not from anything in the packet. Root cause, per
+  `packet-sufficiency.md`'s own classification: the Context Researcher's
+  consumer-trace covered every real *code* consumer of `origin`
+  exhaustively but never inspected the *test* file asserting the schema
+  version literal — because no Observation/Evidence/Claim record had
+  ever looked at `tests/test_graph.py`. A second, related gap in the same
+  file: the established Phase 17/21/27/32 "fresh-DB acceptance test +
+  migration test" pair pattern lives in `tests/test_graph.py` and was
+  described narratively in the packet's "Relevant architecture" section
+  but never pointed at its own file, so writing the two new mirroring
+  tests required reading `tests/test_graph.py` directly to find the
+  pattern rather than the packet naming it.
+- **evidence:**
+  `planning/knowledge/doc-origin-pinned-reference/packet-sufficiency.md`
+  Gap 1 (`tests/test_graph.py`'s `test_init_schema_seeds_schema_version`,
+  `test_init_schema_is_idempotent`, and four
+  `test_open_graph_migrates_pre_phase_*` tests all hard-coding `"6"`) and
+  Gap 2 (the Phase 17/21/27 pattern's own test-file location never named);
+  `.claude/agents/context-researcher.md` step 6 ("Trace relevant tests,
+  documentation, dependencies...") as it read before this triage — no
+  language distinguishing a feature's own tests from a
+  schema/migration-mechanism's dedicated test file.
+- **classification:** scoped-rule (specific to `context-researcher`'s
+  research procedure — and, secondarily, to what the packet-assembly mode
+  can compact — when a Requirement touches a schema/migration/
+  versioned-constant mechanism specifically; not a project-wide rule,
+  since most features never touch such a mechanism)
+- **status:** promoted
+- **recurrence:** first occurrence
+- **curation (Phase 54c triage, 2026-09-18, knowledge-curator):**
+  provenance accepted — all required fields present (backfilled from the
+  task's own description of `packet-sufficiency.md`'s findings).
+  Independently re-read `packet-sufficiency.md` directly rather than
+  taking the summary on faith: both gaps are recorded exactly as
+  described, including the explicit classification "a one-off omission...
+  not a structural knowledge-base gap" for Gap 1, and the note tying both
+  gaps to the same generalisable lesson at the end of Gap 2. Independently
+  re-read `.claude/agents/context-researcher.md` step 6 and confirmed it
+  said nothing about schema/migration-specific test tracing before this
+  triage's edit. Checked for a merge/duplicate candidate: grepped this
+  inbox for "test_graph"/"migration test"/"schema" — no prior candidate
+  addresses packet/research test-tracing completeness; not a duplicate of
+  `L-021` (a *different* mechanism — a unit test bypassing a function's
+  real production call site — this is a *trace-completeness* gap during
+  research, not a wiring gap uncaught by an isolated unit test) or `L-016`
+  /`L-020` (both about a different research artifact's own boundary/
+  ambiguity, not about which test files get traced). Checked whether this
+  belongs in `context-gaps/`: no — this is "how the research role should
+  work" (what it traces), not a relationship CodeCompass's own graph is
+  missing; correctly stays in `planning/learnings/`. **Outcome:
+  promote.** Real, specific, evidenced by a genuine (if contained)
+  implementation-time cost, the root cause is precisely diagnosed in
+  `packet-sufficiency.md` itself (not speculative), and the fix is a
+  small, concrete, low-risk addition to an existing research step —
+  worth closing now, per the same reasoning `L-018`/`L-022` used for a
+  first, well-evidenced near-miss. Destination:
+  `.claude/agents/context-researcher.md` step 6 (the research role's own
+  test-tracing step) — not `agent-led-workflow.md` or `CLAUDE.md`, since
+  this is scoped to one experimental role's own research procedure, not a
+  project-wide planning discipline; not the packet-assembly mode
+  (`knowledge-curator`'s own brief) either, since packet assembly is
+  "mechanical compaction" of what the knowledge base already contains —
+  if no Claim/Evidence record ever inspected `tests/test_graph.py`, no
+  amount of packet-assembly care could have surfaced it; the fix belongs
+  upstream, at the point research traces are gathered. Per this task's own
+  explicit grant, `.claude/agents/*.md` is not one of this agent's
+  restricted files for this task — applying the edit directly rather than
+  drafting-only.
+
+  **Fix applied — `.claude/agents/context-researcher.md` step 6**, adding
+  explicit schema/migration test-file guidance (see the file itself for
+  the landed text; summary: when a Requirement touches a schema,
+  migration, or versioned-constant mechanism, explicitly search for and
+  inspect that mechanism's own dedicated test file — e.g. grep for the
+  literal being changed or the migration function's name — not just the
+  tests for the feature's own new code path, since a migration test
+  asserting the old literal is a real consumer of that mechanism exactly
+  as much as a code caller is).
+- **promoted_to:** `.claude/agents/context-researcher.md` step 6
+  (schema/migration-mechanism test-file check) @ (this phase's own
+  closeout commit)
+
+### L-023 — a newly-created `.claude/agents/*.md` file is not immediately dispatchable by its own type name
+
+- **origin:** Phase 54c (evidence-backed, knowledge-based,
+  documentation-first workflow), retro "What didn't work" + "Lessons
+  learnt"; filed at this triage's own initiative per the retro's own
+  "Candidate learnings filed" note deferring the decision to
+  `knowledge-curator`
+- **date:** 2026-09-18
+- **project_revision:** working tree at `ae165e5` (Phase 54c
+  implementation, uncommitted at filing time)
+- **observation:** two new `.claude/agents/*.md` files
+  (`context-researcher.md`, `documentation-agent.md`) were created and
+  committed to the working tree, then immediately dispatched via the
+  `Agent` tool using the new type names. The first dispatch
+  (`context-researcher`) failed outright with "Agent type
+  'context-researcher' not found" despite the file already existing on
+  disk — worked around by dispatching `general-purpose` with the role's
+  full brief embedded in the prompt instead. Later in the same session,
+  with no further action taken to cause it, a `documentation-agent`
+  dispatch using the real type succeeded, and both real types worked
+  correctly for every subsequent dispatch. The lead has no visibility
+  into what triggered the registry to refresh, and no way to force a
+  refresh on demand. This is an observation about the Agent-dispatch
+  mechanism itself (Claude Code tooling), not about CodeCompass's own
+  code, and is distinct in kind from every other `workflow`-classified
+  candidate in this queue (`L-006`/`L-013`/`L-018`), which are all about
+  *this project's own* dispatch-ordering/write-race discipline, not about
+  the dispatcher's own registry timing.
+- **evidence:** `planning/retros/phase-54c-evidence-knowledge-workflow.md`
+  "Agents used" line and "What didn't work" (first bullet), both
+  independently re-read rather than taken on the candidate's own
+  characterization alone — the retro's account matches this entry's
+  `observation` field exactly, including the explicit "for reasons this
+  session doesn't have visibility into (not something to guess at
+  further)" disclaimer.
+- **classification:** workflow (a repeatable dispatch-procedure gap, in
+  the same category `agent-led-workflow.md` already documents fixes for
+  — `L-006`/`L-013`/`L-018` — even though the underlying cause here is
+  outside this project's own control)
+- **status:** promoted
+- **recurrence:** first occurrence
+- **curation (Phase 54c triage, 2026-09-18, knowledge-curator):**
+  provenance accepted — all required fields present. Independently
+  re-read the retro's own "What didn't work" and "Lessons learnt"
+  sections directly rather than trusting only this task's summary of
+  them — both match, including the retro's own generalised framing ("A
+  phase that dogfoods its own newly-created infrastructure... should
+  have a disclosed fallback ready rather than treating the first dispatch
+  failure as a blocker"). Checked for a merge/duplicate candidate:
+  grepped this inbox for "registry"/"Agent type"/"not found" — no prior
+  candidate addresses agent-dispatch registry timing; not a duplicate of
+  `L-018` (a `Write`-race between two concurrently-dispatched agents — a
+  different mechanism entirely, file-clobbering vs. type-not-found) or
+  `L-006`/`L-013` (roadmap/`CONTEXT.md` reconciliation timing, not
+  dispatch availability). Checked whether this belongs in `context-gaps/`
+  or `context-observations/` instead: no to both — this is not a
+  relationship CodeCompass's own graph is missing, nor an experience with
+  an existing graph edge; it is a process-doc gap in how this project's
+  own agent-led workflow handles introducing a *new* agent type
+  mid-session, so it correctly stays in `planning/learnings/`. **Outcome:
+  promote (recommendation + draft; does not land here — the recommended
+  destination, `planning/agent-led-workflow.md`, is outside this agent's
+  write boundary — `planning/learnings/**` / `planning/context-gaps/**` /
+  `planning/context-observations/**` / `planning/knowledge/**` /
+  draft files under `planning/` only — and this task's explicit grant of
+  direct edit access was scoped to `.claude/agents/*.md` specifically,
+  for `L-024`, not to `planning/agent-led-workflow.md`).** Real,
+  specific, single-occurrence but fully evidenced with a concrete,
+  already-working fallback in hand (unlike a purely hypothetical
+  concern) — worth recording as a known, disclosed operational gap now,
+  per the same "close it while the fallback is fresh and evidenced"
+  reasoning `L-018` used, rather than waiting for a second phase to
+  independently rediscover the same failure and the same workaround.
+  Explicitly **not** recommending a fix to the dispatcher/tooling itself
+  (out of this project's control and out of scope for `planning/**`) —
+  only a process-doc note so a future session doesn't treat the first
+  dispatch failure as a blocker.
+
+  **Recommended fix — add a note near step 5 of
+  `planning/agent-led-workflow.md`** (draft, for the lead to review and
+  land; not applied here):
+
+  > **If this phase created a new `.claude/agents/*.md` file in this same
+  > session, its real type name may not be immediately dispatchable.**
+  > The dispatcher's own agent registry appears to load at some point
+  > other than "the moment the file exists," and there is no known way to
+  > force a refresh. Observed at Phase 54c: the first dispatch of a
+  > newly-created type failed with `Agent type '<name>' not found`
+  > despite the file already being committed to the working tree; the
+  > same type dispatched correctly later in the same session, for reasons
+  > not visible from within the session. Do not treat the first failure
+  > as a blocker — fall back to dispatching `general-purpose` with the
+  > new role's full brief embedded in the prompt for that first pass, and
+  > retry the real type name on a later dispatch; it has, so far, always
+  > become available later in the same session. (Phase 54c — L-023.)
+
+  Deliberately scoped to "a brand-new agent type created this session,"
+  not a general dispatch-reliability caveat — every already-established
+  roster entry (`.claude/agents/` files that predate the current session)
+  has never shown this failure. Revisit/withdraw if a future phase
+  creates a new agent type and it dispatches correctly on the first try
+  (suggesting this was a one-time artifact of this specific session
+  rather than a standing property of new-file registration), or if the
+  user judges a single, self-resolving incident with a working fallback
+  already in hand doesn't warrant a standing process-doc note.
+- **promoted_to:** — (pending; recommendation drafted above, awaiting
+  lead review — `agent-led-workflow.md` is outside this agent's write
+  boundary)
+
 ### L-022 — a hand-authored "authoring rationale" field in evaluation material is not internal commentary if the renderer writes it into the agent-visible output
 
 - **origin:** Phase 54b (Ledgerkit behavioural-understanding experiment),

@@ -1,0 +1,31 @@
+id: DE-DOCORIGIN-002
+kind: derivation
+claim: CL-DOCORIGIN-002
+method: >
+  Read spec_docs.py in full before assuming any particular detection
+  strategy, specifically checking whether _extract_title's regex-based
+  H1 search would incidentally also see a frontmatter block (it would
+  not usefully — YAML frontmatter lines don't match the H1 regex, so a
+  frontmatter-bearing file's title extraction silently falls through to
+  the body's real H1 or the filename stem, meaning frontmatter is inert
+  today, not merely unread). Then read two real ingested files
+  end-to-end to confirm the frontmatter's actual field set and that it
+  is present, structurally uniform, and would be trivially detectable by
+  a real parser (starts with a line of exactly '---', a recognizable key
+  set). Then read the ingestion pipeline's own README to check how this
+  content actually reaches a synced project — confirming the frontmatter
+  survives an ordinary file copy into dev-docs/ and that CodeCompass's
+  own sync path never reads it once there, which rules out the
+  possibility that some intermediate step already strips or converts the
+  signal into something scan_spec_docs could pick up implicitly. Checked
+  explicitly for a path-based alternative (could the directory name
+  alone signal external origin?) and found dev-docs/hledger-reference/
+  is not a name CodeCompass treats specially in any way — it only
+  matches because of the pre-existing generic dev-docs/**/*.md glob
+  (Phase 49), so path shape carries no provenance information by itself.
+inputs:
+  - EV-DOCORIGIN-002
+  - EV-DOCORIGIN-006
+  - EV-DOCORIGIN-007
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-18T00:00:00Z"

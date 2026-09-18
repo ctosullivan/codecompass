@@ -1,0 +1,35 @@
+id: DE-DOCORIGIN-001
+kind: derivation
+claim: CL-DOCORIGIN-001
+method: >
+  Started from CG-005's own filing (OBS-DOCORIGIN-001), which already
+  named the schema site and rejected vendor_upstream reuse but did not
+  itself trace every real origin consumer beyond spec_docs.py/graph.py.
+  Per this role's own "trace every real consumer, not just the
+  definition site" discipline, grepped `origin` across all of
+  src/codecompass/*.py (not just graph.py/spec_docs.py) and read every
+  hit: two more origin-write sites in doc_mapping.py, one
+  origin-branching read site in doc_mapping.py, three origin-reading
+  sites in cli.py, and two kind-filtered (not origin-filtered)
+  coverage-gap queries in graph.py. For each, checked specifically
+  whether introducing a sixth enum value could silently break it: the
+  write sites are unaffected because they never read the enum's current
+  value set; the cli.py/doc_mapping.py read sites are unaffected because
+  each names an explicit, closed value or value pair it checks for
+  equality, which a new value simply never matches (falls through
+  unchanged, does not error) — none pattern-matches "any origin other
+  than the ones I know." This is the same shape of check CG-004's own
+  Phase 55b closure used (confirm the real call site, not just that a
+  function exists) applied here to confirm the *absence* of a needed
+  change everywhere except the write site itself. Also checked the
+  precedent for how a new enum value's migration is actually performed
+  (OBS-DOCORIGIN-002) to confirm this is a one-line CHECK-list edit plus
+  a _SCHEMA_VERSION bump, not a new migration function, matching Phase
+  17/21/27 exactly.
+inputs:
+  - EV-DOCORIGIN-001
+  - EV-DOCORIGIN-003
+  - EV-DOCORIGIN-004
+  - EV-DOCORIGIN-005
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-18T00:00:00Z"

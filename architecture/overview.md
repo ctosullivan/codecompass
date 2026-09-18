@@ -935,7 +935,7 @@ tables:
   `doc_artifacts` (`kind` one of `claude_md`/`overview`/`skill`/
   `cursor_mdc`/`slash_command`/`spec_doc`/`vendor_doc`; `origin` one of
   `codecompass_tool`/`codecompass_vendor`/`third_party`/`project`/
-  `vendor_upstream` —
+  `vendor_upstream`/`pinned_reference` —
   `spec_doc`/`project` added in Phase 21 for a project's own
   human-authored docs, distinct from every generated/third-party kind;
   `vendor_doc`/`vendor_upstream` added in Phase 27 for a vendor's own
@@ -943,6 +943,14 @@ tables:
   siblings) — upstream-*authored* content codecompass merely indexes,
   distinct from both `codecompass_vendor` (codecompass-generated) and
   `project` (this project's own hand-authored docs);
+  `pinned_reference` added in Phase 54c (`CG-005`) for a `spec_doc` row
+  whose leading content is a YAML frontmatter block carrying both a
+  `resolved_commit` and a `source_url` key (`spec_docs.py::
+  _has_pinned_reference_frontmatter`) — externally-sourced,
+  revision-pinned reference material a tool materialized into the
+  project tree, distinct from `project` (hand-authored) and never
+  reusing `vendor_upstream` (which requires a tracked `vendors` row this
+  material deliberately has none of);
   `vendor_id` nullable for tool-level artifacts like the unconditional
   tool Skill, `decisions/0020`), `documents_edges` (a doc artifact
   documenting one symbol), `skill_mentions_edges` (a Skill mechanically

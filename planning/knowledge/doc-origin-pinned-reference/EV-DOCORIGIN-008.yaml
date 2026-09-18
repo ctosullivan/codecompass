@@ -1,0 +1,20 @@
+id: EV-DOCORIGIN-008
+kind: evidence
+evidence_kind: test
+what_it_shows: >
+  No test in the current suite exercises scan_spec_docs against a
+  frontmatter-bearing fixture file or asserts a specific origin value
+  for externally-ingested content. test_spec_docs.py's existing
+  origin=="project" assertions run against plain, frontmatter-free
+  fixture files (genuinely project-authored-shaped content), so they
+  would remain correct under a fix that branches on frontmatter
+  presence. test_doc_mapping.py's origin="project" occurrences are
+  hand-constructed DocArtifactRow test inputs for unrelated
+  doc_mapping.py matching behavior and do not exercise scan_spec_docs's
+  own origin-assignment logic at all.
+observations: [OBS-DOCORIGIN-003, OBS-DOCORIGIN-009]
+source_ref: null
+doc_ref: null
+test_ref: "tests/test_spec_docs.py:13-26; tests/test_doc_mapping.py (multiple lines)"
+repository_revision: "working tree, 2026-09-18"
+status: current

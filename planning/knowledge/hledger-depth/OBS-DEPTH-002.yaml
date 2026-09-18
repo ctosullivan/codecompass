@@ -1,0 +1,18 @@
+id: OBS-DEPTH-002
+kind: observation
+method: executable
+what_was_done: >
+  Ran `hledger balance --depth 2` against a hand-built nested test
+  journal (assets:bank:checking, :sub, :sub:deepest at depths 2-4) using
+  the pinned binary, and compared output to the unrestricted run.
+tool: hledger
+tool_version: "1.52.4-g33fa849e7-20260910"
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+location: null
+raw_result: >
+  balance --depth 2 produced one aggregated "assets:bank" row totalling
+  the sum of all deeper balances; no posting was excluded from the
+  computed total.
+timestamp: "2026-09-18T00:00:00Z"
+performed_by: "context-evaluator (Phase 54b independent evaluation dispatch)"
+status: recorded

@@ -1,0 +1,20 @@
+id: EV-DOCORIGIN-002
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  spec_docs.py::scan_spec_docs assigns origin="project" unconditionally
+  to every matched file (a literal string constant, no branch), and no
+  function in this module reads YAML frontmatter or any other structured
+  metadata — _extract_title only searches for a level-1 ATX heading or
+  falls back to the filename stem, treating a frontmatter block as
+  ordinary un-matched prose rather than parsing it. The only signal
+  currently used to decide whether a file becomes a spec_doc row at all
+  is its path (glob pattern + prune/exclude rules); no signal available
+  at this call site today distinguishes hand-authored content from
+  externally-ingested content within a matched file.
+observations: [OBS-DOCORIGIN-003]
+source_ref: "src/codecompass/spec_docs.py:107-163"
+doc_ref: null
+test_ref: null
+repository_revision: "working tree, 2026-09-18"
+status: current

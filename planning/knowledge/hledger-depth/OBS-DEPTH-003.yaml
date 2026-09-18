@@ -1,0 +1,23 @@
+id: OBS-DEPTH-003
+kind: observation
+method: source_read
+what_was_done: >
+  Read Hledger/Cli/Commands/Stats.hs (ledgerFromJournal call site) and
+  Hledger/Data/Ledger.hs:54-67 (ledgerFromJournal itself) directly
+  against the pinned hledger source.
+tool: null
+tool_version: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+location: "hledger-lib/Hledger/Data/Ledger.hs:54-67"
+raw_result: >
+  Stats.hs calls ledgerFromJournal with the FULL query (depth included,
+  not stripped). ledgerFromJournal's own doc comment states: "If the
+  query includes a depth limit, the ledger's journal will be depth
+  limited, but the ledger's account tree will not." j'' =
+  filterJournalPostings depthq j' drops postings whose account nesting
+  exceeds the limit from the journal stats reads its own counts from;
+  filterJournalPostings prunes postings, never whole transaction
+  records.
+timestamp: "2026-09-18T00:00:00Z"
+performed_by: "context-evaluator (Phase 54b independent evaluation dispatch)"
+status: recorded

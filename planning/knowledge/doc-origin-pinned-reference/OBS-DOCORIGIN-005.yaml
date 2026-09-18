@@ -1,0 +1,32 @@
+id: OBS-DOCORIGIN-005
+kind: observation
+method: source_read
+what_was_done: >
+  Read every cli.py call site that reads doc_artifacts.origin:
+  _print_coverage_gap_sections (third_party skill filter), query_skills
+  (table/JSON display), and _graph_backed_undo_paths (undo deletion
+  filter).
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-18"
+location: "src/codecompass/cli.py:491-514,675-714,1023-1044"
+raw_result: >
+  _print_coverage_gap_sections (line 498-507) filters skills_index rows
+  where entry["origin"] == "third_party" for an "orphaned third-party
+  skill mentions" report — scoped to Skill-kind rows from
+  graph.skills_index, which per its own docstring covers Skills/.mdc
+  rules/the discovery slash command, not spec_doc rows. query_skills
+  (line 684-714) prints origin verbatim as a table column or JSON field
+  for the same skills_index rows — again Skill-kind only, and would
+  simply print whatever string origin holds for any row it happened to
+  include. _graph_backed_undo_paths (line 1023-1044) deletes on-disk
+  paths for every doc_artifacts row whose origin is exactly
+  'codecompass_tool' or 'codecompass_vendor' (an explicit two-value IN
+  list, with a comment noting this is an exact-match choice given the
+  current five-value enum, not a LIKE/prefix match) — a spec_doc row
+  (origin='project' today, or a new value tomorrow) is never in that IN
+  list and is therefore never a candidate for undo-deletion regardless
+  of its origin string.
+timestamp: "2026-09-18T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

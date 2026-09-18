@@ -1,0 +1,22 @@
+id: EV-DOCORIGIN-001
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  doc_artifacts.origin is a closed, five-value CHECK enum
+  ('codecompass_tool','codecompass_vendor','third_party','project',
+  'vendor_upstream') with no value distinguishing hand-authored project
+  content from externally-pinned, tool-ingested content. This enum has
+  been widened exactly twice before via one generic,
+  version-comparison-driven migration function
+  (_migrate_doc_artifacts_constraints): Phase 21 added 'project'
+  (alongside kind gaining 'spec_doc'), Phase 27 added 'vendor_upstream'
+  (alongside kind gaining 'vendor_doc'). Each widening is a single
+  _SCHEMA_VERSION bump plus a drop-and-recreate of doc_artifacts (safe
+  because rebuild_deterministic repopulates it every sync), not a
+  bespoke per-value migration path.
+observations: [OBS-DOCORIGIN-001, OBS-DOCORIGIN-002]
+source_ref: "src/codecompass/graph.py:102-120,363-390"
+doc_ref: null
+test_ref: null
+repository_revision: "working tree, 2026-09-18"
+status: current

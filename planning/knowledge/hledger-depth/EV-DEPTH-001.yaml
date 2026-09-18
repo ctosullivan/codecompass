@@ -1,0 +1,14 @@
+id: EV-DEPTH-001
+kind: evidence
+evidence_kind: executable
+what_it_shows: >
+  hledger's balance/register/accounts commands strip depth from the
+  query used to select/gather underlying postings and accounts, and
+  re-derive depth only afterward as a display-time clip/aggregate
+  operation; no posting or account is excluded from the computation.
+observations: [OBS-DEPTH-001, OBS-DEPTH-002]
+source_ref: "hledger-lib/Hledger/Reports/MultiBalanceReport.hs:205-238"
+doc_ref: null
+test_ref: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+status: current

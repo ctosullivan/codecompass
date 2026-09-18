@@ -1,0 +1,27 @@
+id: CL-DOCORIGIN-004
+kind: claim
+statement: >
+  CG-005's own example name for the new value ("e.g. pinned_reference")
+  is not contradicted by any evidence gathered in this research, but the
+  broader idea that the name must also anticipate a non-Git,
+  URL-sourced-only pinned reference (i.e. something not commit-pinned)
+  is not supported by anything currently implemented: the only real
+  ingestion pipeline that exists is entirely Git-commit-pinned (every
+  frontmatter field observed is Git-shaped: resolved_commit,
+  fetch_method: local_clone, requested_ref as a Git tag), and the
+  pipeline's own references.toml `source` field, while typed as an
+  unvalidated free string, has zero working code path for any value
+  other than "git" — no "url" fetch method is implemented anywhere.
+  Whether the new origin value's name/semantics should be scoped
+  narrowly to "Git-commit-pinned" or written more generally to
+  anticipate a future non-Git source is a naming/scope judgment call
+  this research does not resolve.
+derivation: DE-DOCORIGIN-004
+supporting_evidence:
+  - EV-DOCORIGIN-009
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-18"
+timestamp: "2026-09-18T00:00:00Z"
+status: supported
+supersedes: null

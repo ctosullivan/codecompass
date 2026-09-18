@@ -1,0 +1,17 @@
+id: REQ-DOCORIGIN-001
+kind: requirement
+statement: >
+  doc_artifacts.origin's CHECK constraint MUST accept a new value,
+  'pinned_reference', added via the existing _migrate_doc_artifacts_constraints
+  mechanism (one more _SCHEMA_VERSION bump), following the exact
+  Phase 17/21/27 precedent. No other origin consumer in src/codecompass/
+  requires any change for this addition alone.
+example: |
+  Given a fresh context-graph.db at the previous schema version
+  When codecompass sync runs against a project containing at least one
+    file that will be classified with origin='pinned_reference'
+  Then the database migrates to the new schema version and the row is
+    inserted successfully, with no CHECK constraint violation.
+decision: DEC-DOCORIGIN-001
+status: verified
+

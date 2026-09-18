@@ -328,7 +328,33 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   `conditional-generalisation.md` §2.4's "first-class provenance"
   hypothesis (a claim's source class should be visible, not just its
   content).
-- **status:** candidate
+- **status:** promoted-to-roadmap — fix implemented Phase 54c (2026-09-18)
+  as that phase's primary proving case (evidence-backed, knowledge-based,
+  documentation-first workflow experiment,
+  `planning/phase-54c-evidence-knowledge-workflow.md`). New
+  `doc_artifacts.origin` CHECK-enum value `pinned_reference` added
+  (`_SCHEMA_VERSION` "6" → "7"), with automatic detection via YAML
+  frontmatter (`resolved_commit`+`source_url` keys) in
+  `src/codecompass/spec_docs.py::scan_spec_docs`
+  (`_has_pinned_reference_frontmatter`, `_detect_origin`). No other
+  `origin` consumer changed — confirmed by exhaustive consumer trace
+  before implementation, and by real-world verification after: a real
+  `codecompass sync` against Phase 54b's own scratch Ledgerkit copy
+  confirms all 19 real ingested `dev-docs/hledger-reference/*.md` files
+  (the exact material this entry's own filing named) now read
+  `origin='pinned_reference'`, while Ledgerkit's own hand-authored
+  `dev-docs/*.md` files correctly stayed `origin='project'` — this
+  entry's own motivating instance is closed for real, not merely by a
+  synthetic test. Full evidence trail:
+  `planning/knowledge/doc-origin-pinned-reference/` (11 Observation, 9
+  Evidence, 4 Claim, 4 Derivation, 1 Decision, 3 Requirement records,
+  `design.md`, `context-packet.md`, `packet-sufficiency.md`). **Pending
+  `promoted.md` line** (lead/`knowledge-curator` to add once this
+  phase's closeout commit lands, per the `CG-002`/`CG-004` precedent):
+  `CG-005 | 2026-09-18 | graph-capability |
+  src/codecompass/graph.py (origin CHECK enum, _SCHEMA_VERSION 7) +
+  src/codecompass/spec_docs.py::_has_pinned_reference_frontmatter/_detect_origin
+  + tests/test_spec_docs.py + tests/test_graph.py @ <real short SHA>`.
 - **recurrence:** first occurrence
 - **curation (Phase 54 triage, 2026-09-16, knowledge-curator):** template
   fields all present. Independently re-verified rather than taken on the

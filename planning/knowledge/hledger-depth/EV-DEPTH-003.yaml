@@ -1,0 +1,13 @@
+id: EV-DEPTH-003
+kind: evidence
+evidence_kind: executable
+what_it_shows: >
+  hledger's print command is fully depth-blind: depth is stripped from
+  its query before filtering and never consulted again anywhere in the
+  module; output is byte-identical with or without a depth term.
+observations: [OBS-DEPTH-005]
+source_ref: "hledger-lib/Hledger/Reports/EntriesReport.hs:42"
+doc_ref: null
+test_ref: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+status: current

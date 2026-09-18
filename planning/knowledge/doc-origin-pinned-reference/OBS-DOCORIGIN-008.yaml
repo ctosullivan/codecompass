@@ -1,0 +1,31 @@
+id: OBS-DOCORIGIN-008
+kind: observation
+method: doc_read
+what_was_done: >
+  Read
+  planning/reference-projects/ledgerkit/reference-experiment/README.md
+  in full to see how extracted/*.md files are actually materialized into
+  a project's dev-docs/ tree and synced by CodeCompass.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-18"
+location: "planning/reference-projects/ledgerkit/reference-experiment/README.md:1-60"
+raw_result: >
+  The documented "Reproducing" step is: copy a fresh Ledgerkit working
+  tree to a disposable scratch location (never the real clone, never
+  committed), copy extracted/hledger-tag-query-*.md into
+  dev-docs/hledger-reference/ inside it, then run `codecompass sync
+  --budget 0` and `codecompass query relations
+  dev-docs/hledger-reference/<file>.md` from that scratch copy. The
+  README's own "What this phase found" section states plainly:
+  "Detection of the ingested material works with zero CodeCompass code
+  changes — spec_docs.py's existing dev-docs/**/*.md glob (Phase 49)
+  already reaches it" — i.e. the copy is a plain filesystem copy (byte
+  content, including frontmatter, preserved) into an ordinary glob-
+  matched directory; nothing in the documented pipeline strips or
+  transforms the frontmatter before or during the copy, and nothing in
+  CodeCompass's own sync path reads it once there (consistent with
+  OBS-DOCORIGIN-003's direct reading of spec_docs.py).
+timestamp: "2026-09-18T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

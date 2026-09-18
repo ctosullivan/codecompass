@@ -1,0 +1,27 @@
+# Retroactive record (Phase 54c secondary proving case — tests
+# knowledge->documentation fidelity, not fresh research). Reconstructed
+# from Phase 54b's own already-completed, independently-verified work
+# (planning/reference-projects/ledgerkit/02-depth-behavioural-reconstruction-evaluation.md),
+# not from a new agent dispatch. See
+# planning/phase-54c-evidence-knowledge-workflow.md §7's own framing.
+
+id: OBS-DEPTH-001
+kind: observation
+method: source_read
+what_was_done: >
+  Read Hledger/Reports/MultiBalanceReport.hs:205-238 (getPostings,
+  generateMultiBalanceAccount), Hledger/Reports/PostingsReport.hs:66-176
+  (postingsReport, beforeandduringq), and Hledger/Cli/Commands/Accounts.hs:60-112
+  directly against the pinned hledger source.
+tool: null
+tool_version: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+location: "hledger-lib/Hledger/Reports/MultiBalanceReport.hs:205-238"
+raw_result: >
+  All three modules strip Depth/DepthAcct from the query used to select
+  postings/accounts (filterQuery (not . queryIsDepth)) before selection
+  happens, and re-derive a separate depth value used only afterward, for
+  display-name clipping/aggregation (clipPosting/clipAccountName).
+timestamp: "2026-09-18T00:00:00Z"
+performed_by: "context-evaluator (Phase 54b independent evaluation dispatch)"
+status: recorded

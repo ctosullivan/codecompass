@@ -1,0 +1,24 @@
+id: REQ-DOCORIGIN-002
+kind: requirement
+statement: >
+  scan_spec_docs MUST assign origin='pinned_reference' (instead of
+  'project') to a dev-docs/**/*.md-glob-matched file whose leading
+  content is a YAML frontmatter block (delimited by --- lines) that
+  contains both a `resolved_commit` key and a `source_url` key. A file
+  with no such frontmatter, or frontmatter missing either key, MUST
+  keep the existing origin='project' behaviour unchanged.
+example: |
+  Given a file under a project's dev-docs/ tree beginning with:
+    ---
+    reference: hledger
+    source_url: https://github.com/simonmichael/hledger
+    resolved_commit: 33fa849e7ae841968bd21c427094c4fb4a4ec38d
+    ---
+  When scan_spec_docs processes it
+  Then the resulting doc_artifacts row has origin='pinned_reference'.
+
+  Given an ordinary hand-authored dev-docs/*.md file with no frontmatter
+  When scan_spec_docs processes it
+  Then the resulting row has origin='project', exactly as today.
+decision: DEC-DOCORIGIN-001
+status: verified

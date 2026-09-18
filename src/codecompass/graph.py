@@ -29,7 +29,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 _DB_FILENAME = "context-graph.db"
-_SCHEMA_VERSION = "6"
+_SCHEMA_VERSION = "7"
 
 # Closed taxonomy for `doc_relation_enrichment.relation_label` (Phase 31,
 # decisions/0045). `'other'` is the required fallback for any label an AI
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS doc_artifacts (
   origin      TEXT CHECK (
                 origin IN (
                   'codecompass_tool','codecompass_vendor','third_party','project',
-                  'vendor_upstream'
+                  'vendor_upstream','pinned_reference'
                 )
               ),
   path        TEXT NOT NULL UNIQUE,
@@ -371,7 +371,14 @@ def _migrate_doc_artifacts_constraints(conn: sqlite3.Connection) -> None:
     `'vendor_upstream'`, "3" -> "4") for a vendor's own embedded upstream
     doc files (`vendor/<name>/src/README.md` and siblings); Phase 32 adds
     a nullable `chunk_id` column to `documents_edges`/`doc_relations_edges`
-    ("5" -> "6") — dropping `doc_artifacts` alone only cascades a DELETE of
+    ("5" -> "6"); Phase 54c widens `origin` again (adds `'pinned_reference'`,
+    "6" -> "7") for externally-sourced, revision-pinned reference material
+    a tool materializes into a project's tree — distinct from both
+    `'project'` (hand-authored) and `'vendor_upstream'` (tied to a tracked
+    `vendors` row, which this material deliberately has none of; see
+    `planning/context-gaps/inbox.md` `CG-005` and
+    `planning/knowledge/doc-origin-pinned-reference/`) — dropping
+    `doc_artifacts` alone only cascades a DELETE of
     those two tables' *rows* (`ON DELETE CASCADE`), it doesn't touch their
     own column set, so they need their own explicit drop for `chunk_id` to
     actually appear on an existing database. One generic, version-agnostic

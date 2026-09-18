@@ -1,0 +1,14 @@
+id: EV-DOCORIGIN-005
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  graph.py's spec_docs_without_relations and vendor_docs_without_relations
+  coverage-gap queries filter on doc_artifacts.kind only, never on
+  origin — a new origin value on a spec_doc row would not change either
+  function's output.
+observations: [OBS-DOCORIGIN-006]
+source_ref: "src/codecompass/graph.py:866-900"
+doc_ref: null
+test_ref: null
+repository_revision: "working tree, 2026-09-18"
+status: current

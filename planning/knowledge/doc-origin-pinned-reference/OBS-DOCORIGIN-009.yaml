@@ -1,0 +1,28 @@
+id: OBS-DOCORIGIN-009
+kind: observation
+method: test_run
+what_was_done: >
+  Grepped tests/test_spec_docs.py, tests/test_sync.py, and
+  tests/test_doc_mapping.py for `origin.*project`/`'project'`/`"project"`,
+  then read the matching lines in context in test_spec_docs.py.
+tool: "grep"
+tool_version: null
+repository_revision: "working tree, 2026-09-18"
+location: "tests/test_spec_docs.py:13-26; tests/test_doc_mapping.py (multiple lines: 486,507,525,538,549,633,643,663,679-680,817)"
+raw_result: >
+  test_spec_docs.py's test_scan_spec_docs_finds_root_level_named_files
+  writes plain fixture files (`content\n`, no frontmatter, no YAML
+  block) via a local _write() helper, calls the real scan_spec_docs, and
+  asserts row.origin == "project" for every resulting row alongside
+  row.kind == "spec_doc" and row.vendor_name is None. No test in
+  test_spec_docs.py constructs a fixture file containing YAML
+  frontmatter or any external-provenance marker. Every origin="project"
+  occurrence in test_doc_mapping.py is a hand-constructed
+  DocArtifactRow(path="README.md", kind="spec_doc", origin="project")
+  (or similar) passed directly into build_doc_relations_edges as test
+  input — these tests exercise doc_mapping.py's matching logic, not
+  scan_spec_docs's own origin-assignment behavior, and none of them
+  reads scan_spec_docs's output.
+timestamp: "2026-09-18T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

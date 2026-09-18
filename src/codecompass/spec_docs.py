@@ -20,6 +20,21 @@ other, in any project, regardless of content. No change to
 `build_doc_relations_edges` itself was needed — it already treats any
 named artifact as eligible; this module was the one place silently
 withholding names from an entire `kind`.
+
+Phase 54c adds `origin='pinned_reference'` detection
+(`_has_pinned_reference_frontmatter`): a `dev-docs/**/*.md`-glob-matched
+file whose leading content is a YAML frontmatter block carrying both a
+`resolved_commit` key and a `source_url` key — the two fields present in
+every file the reference-ingestion pipeline
+(`planning/reference-projects/ledgerkit/reference-experiment/`)
+produces, and structurally absent from ordinary hand-authored prose —
+is classified as externally-sourced, revision-pinned reference material
+rather than `origin='project'`. Hand-rolled `---`-delimited key scan, no
+new parsing dependency, matching this project's own
+`reference_pipeline.py::load_references_toml` precedent for a
+comparably simple format. See
+`planning/knowledge/doc-origin-pinned-reference/` (Phase 54c,
+`CG-005`).
 """
 
 from __future__ import annotations
@@ -131,6 +146,46 @@ def _extract_title(path: Path) -> str | None:
     return path.stem if _is_specific_enough(path.stem) else None
 
 
+def _has_pinned_reference_frontmatter(text: str) -> bool:
+    """True if `text` opens with a YAML frontmatter block (a `---` line,
+    followed by content, followed by a closing `---` line) containing
+    both a `resolved_commit:` key and a `source_url:` key — the two
+    fields present in every file
+    `reference_pipeline.py::render_extracted_markdown` produces and
+    structurally absent from ordinary hand-authored prose (see this
+    module's own docstring). Deliberately checks only for key presence,
+    not value shape — the classification question is "was this
+    materialized by the ingestion pipeline," not "is the pinned commit
+    well-formed," which is the pipeline's own concern
+    (`ReferencePipelineError`), not this detector's.
+    """
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return False
+    try:
+        closing = lines.index("---", 1)
+    except ValueError:
+        return False
+    frontmatter = lines[1:closing]
+    has_resolved_commit = any(line.startswith("resolved_commit:") for line in frontmatter)
+    has_source_url = any(line.startswith("source_url:") for line in frontmatter)
+    return has_resolved_commit and has_source_url
+
+
+def _detect_origin(path: Path) -> str:
+    """`'pinned_reference'` if `path` opens with ingestion-pipeline
+    frontmatter (`_has_pinned_reference_frontmatter`), else the
+    pre-existing `'project'` default. Never raises: an unreadable file
+    falls back to `'project'`, matching `_extract_title`'s own
+    "degrade to a safe default" posture for the same failure mode.
+    """
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return "project"
+    return "pinned_reference" if _has_pinned_reference_frontmatter(text) else "project"
+
+
 def scan_spec_docs(project_root: Path) -> list[DocArtifactRow]:
     """Globs the fixed default spec-doc pattern set rooted at
     `project_root`, excluding `CHANGELOG.md`/`CONTRIBUTING.md`/`LICENSE*`/
@@ -140,7 +195,9 @@ def scan_spec_docs(project_root: Path) -> list[DocArtifactRow]:
     first H1 heading, or its filename stem if it has none (`_extract_title`,
     Phase 55b) — populating `name` is what makes a `spec_doc` row an
     eligible `mentions_artifact` match target at all; see this module's
-    own docstring.
+    own docstring. Each row's `origin` is `'pinned_reference'` if the
+    file opens with ingestion-pipeline frontmatter, else `'project'`
+    (`_detect_origin`, Phase 54c).
     """
     matched: set[Path] = set()
     for pattern in _DEFAULT_GLOBS:
@@ -156,7 +213,7 @@ def scan_spec_docs(project_root: Path) -> list[DocArtifactRow]:
         DocArtifactRow(
             path=rel.as_posix(),
             kind="spec_doc",
-            origin="project",
+            origin=_detect_origin(project_root / rel),
             name=_extract_title(project_root / rel),
         )
         for rel in sorted(matched)

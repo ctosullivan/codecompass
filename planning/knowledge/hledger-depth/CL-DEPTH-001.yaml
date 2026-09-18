@@ -1,0 +1,22 @@
+id: CL-DEPTH-001
+kind: claim
+statement: >
+  hledger's depth:/--depth query term is not uniform across commands.
+  For balance, register, and accounts it is a display-only clip/
+  aggregate operation: postings/accounts deeper than the limit are
+  never excluded from the underlying computation, only clipped
+  (and, where names collide after clipping, aggregated/deduplicated)
+  for display. For stats it is a genuine, partial exclusion: postings
+  deeper than the limit are dropped from the journal stats reads its
+  own posting-derived counts (e.g. "Accounts") from, though whole
+  transactions are never dropped, so "Txns" stays unaffected. For print
+  it has no effect at all -- depth is stripped from the query before
+  filtering and never consulted again.
+derivation: DE-DEPTH-001
+supporting_evidence: [EV-DEPTH-001, EV-DEPTH-002, EV-DEPTH-003]
+contradicting_evidence: []
+derived_by: "context-evaluator (Phase 54b independent evaluation dispatch)"
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+timestamp: "2026-09-18T00:00:00Z"
+status: verified
+supersedes: null

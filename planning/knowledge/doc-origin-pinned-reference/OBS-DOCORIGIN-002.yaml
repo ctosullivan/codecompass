@@ -1,0 +1,31 @@
+id: OBS-DOCORIGIN-002
+kind: observation
+method: source_read
+what_was_done: >
+  Read src/codecompass/graph.py's doc_artifacts table definition and its
+  own _migrate_doc_artifacts_constraints docstring/comment describing
+  every prior widening of the kind/origin CHECK enums.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-18"
+location: "src/codecompass/graph.py:102-120,363-390"
+raw_result: >
+  doc_artifacts.origin is TEXT CHECK (origin IN ('codecompass_tool',
+  'codecompass_vendor','third_party','project','vendor_upstream')) —
+  exactly the closed five-value enum CG-005 names, unchanged since. The
+  migration comment states the enum's full history: Phase 17 widened
+  `kind` only (added 'slash_command', schema_version "1"->"2"); Phase 21
+  widened both `kind` (added 'spec_doc') and `origin` (added 'project'),
+  "2"->"3"; Phase 27 widened both again (`kind` gains 'vendor_doc',
+  `origin` gains 'vendor_upstream'), "3"->"4", for a vendor's own
+  embedded upstream doc files; Phase 32 added a nullable chunk_id column
+  to two edge tables, "5"->"6" (no further origin/kind change since).
+  One generic, version-agnostic function
+  (_migrate_doc_artifacts_constraints) handles any prior version by
+  dropping and recreating doc_artifacts (plus cascaded tables) rather
+  than a bespoke per-phase migration or ALTER TABLE — explicitly safe
+  because rebuild_deterministic fully repopulates these tables on every
+  whole-project sync, so no data-loss risk from the drop+recreate.
+timestamp: "2026-09-18T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

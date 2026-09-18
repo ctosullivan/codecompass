@@ -1,0 +1,18 @@
+id: EV-DOCORIGIN-004
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  Every cli.py consumer of doc_artifacts.origin
+  (_print_coverage_gap_sections' third_party filter, query_skills'
+  display table/JSON, _graph_backed_undo_paths' exact
+  codecompass_tool/codecompass_vendor undo-deletion filter) operates
+  only on Skill-kind rows sourced from graph.skills_index, or filters by
+  an explicit, unrelated two-value IN list — none reads or branches on
+  origin for kind='spec_doc' rows, and none would change behavior for a
+  spec_doc row regardless of what string its origin holds.
+observations: [OBS-DOCORIGIN-005]
+source_ref: "src/codecompass/cli.py:491-514,675-714,1023-1044"
+doc_ref: null
+test_ref: null
+repository_revision: "working tree, 2026-09-18"
+status: current

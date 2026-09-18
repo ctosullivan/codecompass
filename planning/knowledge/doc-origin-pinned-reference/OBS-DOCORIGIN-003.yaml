@@ -1,0 +1,32 @@
+id: OBS-DOCORIGIN-003
+kind: observation
+method: source_read
+what_was_done: >
+  Read src/codecompass/spec_docs.py in full (164 lines) — the module
+  docstring, _DEFAULT_GLOBS, _is_pruned/_is_excluded, _is_specific_enough,
+  _extract_title, and scan_spec_docs itself.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-18"
+location: "src/codecompass/spec_docs.py:1-164"
+raw_result: >
+  scan_spec_docs (lines 134-163) globs a fixed pattern list
+  (_DEFAULT_GLOBS, includes "dev-docs/**/*.md" since Phase 49),
+  excludes pruned/excluded paths, and for every matched file constructs
+  DocArtifactRow(path=..., kind="spec_doc", origin="project",
+  name=_extract_title(...)) — origin="project" is a literal, unconditional
+  string constant at line 159, with no branch of any kind (no path check
+  beyond the glob/exclude/prune logic already run, no frontmatter read,
+  no config lookup). _extract_title (lines 107-131) reads the file's raw
+  text only to find its first H1 heading via a regex (_H1_RE) or falls
+  back to the filename stem — it never parses YAML frontmatter or any
+  other structured metadata block; a file beginning with a YAML
+  frontmatter block (---...---) would have that block's raw text
+  searched by _H1_RE same as prose, and since frontmatter lines don't
+  match a level-1 ATX heading, the title extraction falls through to the
+  first real H1 inside the body (or the stem) exactly as for any other
+  file. No other signal (path shape, directory name, sibling
+  configuration file) is consulted anywhere in this module.
+timestamp: "2026-09-18T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

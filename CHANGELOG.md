@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 54c** (evidence-backed, knowledge-based, documentation-first
+  workflow, done): a bounded, reversible experiment introducing a
+  file-based Observation/Evidence/Claim/Derivation/Decision/Requirement
+  model (`planning/knowledge/<feature-slug>/`), two new agent roles
+  (`context-researcher`, `documentation-agent`) and a new
+  packet-assembly mode on the existing `knowledge-curator` — no
+  `context-graph.db` schema change beyond one incidental CHECK-enum
+  value. **`doc_artifacts.origin` gains `pinned_reference`**
+  (`_SCHEMA_VERSION` 6→7): `src/codecompass/spec_docs.py::scan_spec_docs`
+  now automatically detects externally-sourced, revision-pinned
+  reference material via a leading YAML frontmatter block carrying both
+  a `resolved_commit` and a `source_url` key
+  (`_has_pinned_reference_frontmatter`), instead of unconditionally
+  assigning `origin='project'`. Closes `CG-004`'s sibling gap `CG-005`
+  — verified via a real `codecompass sync` against Phase 54b's own
+  scratch Ledgerkit copy: all 19 real ingested
+  `dev-docs/hledger-reference/*.md` files now correctly read
+  `origin='pinned_reference'`, while Ledgerkit's own hand-authored docs
+  correctly stay `project`. Full research/design/review/packet trail
+  and a retroactive knowledge→documentation fidelity check (against
+  Phase 54b's `depth:` findings, matching Ledgerkit's real shipped
+  outcome) are recorded under `planning/knowledge/`; a fresh-agent
+  traceability test passed for real. Two real process gaps found and
+  promoted: `L-023` (a newly-created agent type may not be immediately
+  dispatchable mid-session) and `L-024` (a context packet's own
+  "existing tests" section must check for schema/migration-mechanism
+  test files, not just feature-code tests). The retro explicitly leaves
+  two of the plan's ten evaluation questions unanswered rather than
+  claiming untested success, and defers whether the workflow improves
+  development quality generally to Phase 60/61's own genuine-uncertainty
+  test. New tests: `tests/test_spec_docs.py` (4), `tests/test_graph.py`
+  (2, mirroring the established Phase 17/21/27 enum-widening pattern).
+  New tool: `scripts/check_knowledge_base.py`. No new ADR. See
+  `planning/phase-54c-evidence-knowledge-workflow.md` and
+  `planning/retros/phase-54c-evidence-knowledge-workflow.md`.
+
 - **Phase 54b** (LedgerKit behavioural-understanding experiment, done):
   extended Phase 54's reference-ingestion pipeline with 11 new
   manual/source selections (all line ranges reconfirmed live against the
