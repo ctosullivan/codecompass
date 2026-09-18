@@ -501,6 +501,42 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 60 is a plan, not started (2026-09-19) — minimal Haskell
+adapter.** Direct user request ("Plan next phase"): the next unstarted
+Stage F phase, gated on nothing (Stage F is a separate axis from Stage
+E/GATE DD, per `decisions/0056`). Full plan:
+`planning/phase-60-minimal-haskell-adapter.md`. Real environment
+re-verification (not assumed from the npm/Python/Cargo adapters' own
+JSON-tooling precedent) found `stack ls dependencies` has **no JSON
+output mode** — `stack dot`'s real GraphViz DOT graph output (checked
+live against the real hledger project this session: `"Cabal" ->
+"base";`-shaped edges, confirmed working) is the actual
+`dependency_tree()` source instead, cross-referenced against `stack ls
+dependencies`'s flat name→version map for each node's version. Every
+real touchpoint traced directly (not assumed): `core.py::Ecosystem`
+gains `HASKELL`; `graph.py`'s `vendors.ecosystem` CHECK widens
+(`_SCHEMA_VERSION` 7→8, mirroring Phase 54c's own just-completed
+`origin`-enum-widening precedent exactly); `discovery.py` gains a
+`package.yaml` (hpack) manifest entry; `symbols.py` gains
+`extract_haskell_symbols`; a new `adapters/haskell.py` implements all
+five `EcosystemAdapter` methods. `usage.py`'s Haskell import detection
+explicitly deferred to Phase 61 (not this phase's scope). Two judgment
+calls flagged for review, not decided unilaterally: (1) hand-roll
+`package.yaml` parsing vs. add a `PyYAML` dependency — recommendation:
+hand-roll, scoped narrowly, per this project's "smallest justified fix"
+discipline; (2) whether the one genuinely open design question
+(Haskell module export-list/API-surface extraction — a real ambiguity,
+unlike Rust's simpler `pub`-keyword precedent) should be routed through
+Phase 54c's evidence-backed workflow, scoped only to that sub-question
+— recommendation: yes, since Phase 54c's own retro explicitly named
+exactly this kind of genuinely-uncertain, real pre-implementation
+question as the methodology's next needed test. Testing strategy:
+fixture-based (primary, `decisions/0014`) plus `stack`-availability-gated
+live smoke tests — this environment has `stack` 3.11.1 confirmed
+working, making this the second adapter (after npm/Python) to get real
+toolchain coverage from day one, unlike Cargo's still-open gap. No `src/`
+change yet — this is planning only.
+
 **Phase 54c is `done` (2026-09-18) — evidence-backed, knowledge-based,
 documentation-first development workflow, implemented and run for
 real.** Full plan (amended once before implementation, per direct user
@@ -1414,24 +1450,20 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 54c is fully implemented and closed out** (pending only this
-session's own closeout commit + `release-phase-auditor` pass, both in
-flight). GATE DD (Phase 55's own gate, Stage E's precondition) now has
-this phase's own durable-vs-experimental recommendation as a concrete
-evidence input, alongside Phase 54b's own result — still not resolved,
-still not forced either way.
+**Phase 60's plan awaits review before implementation begins.** Two
+named judgment calls are flagged in the plan's own "Review gate"
+section: (1) hand-roll `package.yaml` parsing vs. add a `PyYAML`
+dependency; (2) whether the Haskell API-surface/export-list extraction
+question should be routed through Phase 54c's evidence-backed workflow
+(recommended: yes, scoped narrowly to that one sub-question). Once
+resolved, implementation proceeds per the plan's own §1-§5 (schema/
+dispatch widening → `HaskellAdapter`'s five methods → fixture + live
+smoke tests → a real end-to-end confirmation via `codecompass sync`).
 
-**Phase 60 (minimal Haskell adapter) is the next unstarted phase, not
-gated on anything** (Stage F is a separate axis from Stage E, per
-`decisions/0056`). It carries two open design questions now: (a) from
-Phase 54b — does the adapter need mechanical call-site/usage detection
-(not just module-export signatures) to avoid the curation-completeness
-gap Phase 54b hit by hand (`Stats.hs` omitted from a hand-curated set)?
-(b) from Phase 54c — if the evidence/knowledge workflow is reused for
-Phase 60/61's own real, genuinely-uncertain work, that is this
-methodology's first real test under uncertainty, not a retrospective or
-mechanics-only check. Phase 61 has both Phase 54b's own LOW-advantage
-result and Phase 54c's own mechanics/fidelity results as its baseline.
+GATE DD (Phase 55's own gate, Stage E's precondition) remains open,
+with Phase 54b's and Phase 54c's own results as evidence inputs — still
+not resolved, still not forced either way; Phase 60 is not gated on it
+(Stage F is a separate axis, per `decisions/0056`).
 
 `CG-006` (Phase 55b's own residual filename-matching gap) and `CG-007`
 (Phase 54b's own symbol-level cross-reference gap, not yet past the

@@ -1138,6 +1138,22 @@ drives this stage's or v1's architecture.
   needed for Haskell? Answered with real evidence once the adapter
   exists, not decided speculatively here.
 
+**Planned 2026-09-19** — full plan:
+`planning/phase-60-minimal-haskell-adapter.md`. Real environment
+re-verification this planning pass found `stack ls dependencies` has
+**no JSON output mode** (unlike npm/pipdeptree/cargo's own tooling) —
+`stack dot`'s real GraphViz DOT graph output (checked live against the
+real hledger project) is the actual dependency-tree source instead,
+cross-referenced against `stack ls dependencies`'s flat name→version
+map. `_SCHEMA_VERSION` widens "7" → "8" (`vendors.ecosystem` gains
+`'haskell'`), mirroring Phase 54c's own just-completed enum-widening
+precedent exactly. Two judgment calls flagged for review: hand-roll
+`package.yaml` parsing vs. add a `PyYAML` dependency; whether the one
+genuinely open design question (Haskell API-surface/export-list
+extraction) should be routed through Phase 54c's evidence-backed
+workflow, scoped narrowly to that one sub-question. Not started; plan
+awaiting review.
+
 ### Phase 61 — hledger cross-language experiment · EXPERIMENTAL
 - Track hledger itself (or `hledger-lib` specifically, the most directly
   relevant package to Ledgerkit's own compatibility work) as a real

@@ -83,6 +83,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
+- **Phase 60 plan: minimal Haskell adapter** (planning only, no code,
+  phase not started): the full `EcosystemAdapter` interface (5 methods)
+  for Haskell/Stack — the next unstarted Stage F phase, gated on
+  nothing. Real environment re-verification (not assumed from other
+  adapters' own precedent) found `stack ls dependencies` has **no JSON
+  output mode**, unlike npm/pipdeptree/cargo's own tooling; `stack dot`'s
+  real GraphViz DOT graph output (checked live against the real hledger
+  project) is the actual dependency-tree source instead, cross-referenced
+  against `stack ls dependencies`'s flat name→version map.
+  `vendors.ecosystem` gains `'haskell'` (`_SCHEMA_VERSION` 7→8, mirroring
+  Phase 54c's own just-completed enum-widening precedent exactly). Two
+  judgment calls flagged for review: hand-roll `package.yaml` (hpack)
+  parsing vs. add a `PyYAML` dependency; whether the one genuinely open
+  design question (Haskell export-list/API-surface extraction — a real
+  ambiguity, unlike Rust's simpler `pub`-keyword precedent) should be
+  routed through Phase 54c's evidence-backed workflow, scoped narrowly
+  to that one sub-question, as that methodology's first real test under
+  genuine uncertainty. Fixture-based tests (primary, `decisions/0014`)
+  plus `stack`-availability-gated live smoke tests (this environment has
+  `stack` — the second adapter, after npm/Python, to get this from day
+  one). `src/codecompass/usage.py`'s Haskell import detection explicitly
+  deferred to Phase 61. See `planning/phase-60-minimal-haskell-adapter.md`.
+
 - **Phase 54c plan: evidence-backed, knowledge-based,
   documentation-first workflow** (planning only, no code, phase not
   started): a minimal, file-based (not `context-graph.db`)
