@@ -501,6 +501,48 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 62 — adapter-interface consolidation — planned, not started
+(2026-09-19).** Direct user request ("Plan phase 62"). Full plan:
+`planning/phase-62-adapter-interface-consolidation.md`. Re-verified
+`CG-008` is still open (`extract_symbols_for_file`/`_collect_vendor_symbols`
+unchanged since Phase 60), and found two further real facts by reading
+the code fresh (not assumed from prior phases' own summaries):
+
+1. **A real, pre-existing duplication**: `NpmAdapter`/`PythonAdapter`/
+   `CargoAdapter`'s own `readme_and_api_surface()` implementations
+   already walk their own source files and call
+   `extract_npm_symbols`/`extract_python_symbols`/`extract_rust_symbols`
+   per file — the *same* walk-and-extract shape `_collect_vendor_symbols`
+   already does independently in `sync.py`, for the same three
+   ecosystems. Resolving `CG-008` via a new `EcosystemAdapter.symbols()`
+   method removes this duplication for all four ecosystems, not just
+   adds new code for Haskell's sake.
+2. **A real representational gap**: `decisions/0059` (Phase 60) already
+   added `kind`/`note` to the wire protocol's own `symbols` shape, but
+   `Symbol`/`SymbolRow`/the `symbols` table only ever had `name`/
+   `purpose` — even a fixed `_collect_vendor_symbols` would have nowhere
+   to put a Haskell `[reexport]`/`[undetermined]` marker without also
+   widening the core model.
+
+The plan resolves the roadmap's own open "structured-Symbol-list method
+vs. Haskell-specific in-process re-parse" question in favour of the
+former: a new, **concrete** (not abstract — default `[]`, so a future
+adapter that skips it isn't broken at construction) `symbols()` method;
+`Symbol`/`SymbolRow` widened with optional `kind`/`note`; a `symbols`
+table migration via `ADD COLUMN` (not a `vendors`-style rebuild —
+`symbol_enrichment`'s own cascade risk is avoidable without one, `ADD
+COLUMN` carries no such risk); `HaskellAdapter` also gains a
+per-instance `_analyze()` cache, closing a real, confirmed redundant
+external-process-spawn cost (`dependency_tree()`/`readme_and_api_surface()`
+each independently re-ran the *entire* external analysis before this
+fix). Explicitly, disclosedly **not fixed**: `build_symbol_index`/
+`purpose_for_file` (FILETREE.md's own flat symbol index) stay
+Haskell-blind — a real architectural mismatch (per-file, no-subprocess
+functions vs. a per-vendor, subprocess-backed adapter) judged materially
+bigger than "smallest justified fix." No broader plugin/packaging/
+licensing commitment is made. Still planning only — no `src/` change
+yet.
+
 **Phase 61 — hledger cross-language experiment — done (2026-09-19).**
 Fixed the one required prerequisite: `HaskellAdapter.repository_url()`
 now sets `RepositoryLocation.subdirectory` for a monorepo member
@@ -1745,38 +1787,33 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 61 is fully done.** All of the "Once reviewed, implementation
-proceeds..." steps this section used to describe have now actually
-happened: the fix, both fixture tests, the symmetry protocol
-(check-and-re-pin, plus an unplanned-but-necessary `FILETREE.md`
-regeneration), both agent dispatches, `context-evaluator`'s
-three-verdict-block evaluation, `reference-project-tester`'s friction
-filing, three learnings triaged, and the retro. Remaining before this
-phase's own commit: a `docs-reconstructor` drift audit (since `src/`
-changed) and `release-phase-auditor`'s independent DoD pass, then
-ROADMAP/CONTEXT/CHANGELOG are already updated and just need to land in
-the same commit.
+**Phase 62's plan awaits review before implementation begins.** Every
+review-gate item (`symbols()` as a new concrete interface method;
+widening `Symbol`/`SymbolRow` with `kind`/`note` at the core-model
+level; explicitly not fixing `build_symbol_index`/`purpose_for_file`; a
+per-instance-only `_analyze()` cache; marking `CG-008` resolved as part
+of this phase's own closeout) is a judgment call made during planning,
+not an open question needing the user's input first. Once reviewed,
+implementation proceeds per the plan's own §2-§4: `EcosystemAdapter.symbols()`
+(new, concrete, default `[]`) → refactor npm/Python/Cargo's own existing
+per-file walk-and-extract logic out of `readme_and_api_surface()` into
+`symbols()` → `Symbol`/`SymbolRow` gain `kind`/`note` → the `symbols`
+table migration (`ADD COLUMN`, `_SCHEMA_VERSION` 8→9) →
+`HaskellAdapter.symbols()` (wire → `Symbol` conversion) + the
+per-instance `_analyze()` cache → `sync.py::_collect_vendor_symbols` →
+`adapter.symbols()` (closes `CG-008`) → the vendor-detail query's own
+symbol listing gains `kind`/`note` → fixture tests throughout → a real,
+live, `stack`/submodule-gated re-confirmation that a real `codecompass
+sync` against `hledger-lib` now produces non-empty, `kind`-bearing
+`symbols` rows → retro/audit/closeout.
 
-Phase 62 (adapter-interface consolidation) now has a second real
-adapter-interface data point (two coexisting sibling Haskell vendors,
-correct cross-vendor dependency edges, a real disk-cost tradeoff for
-monorepo siblings sharing one URL) beyond Phase 60's own single-vendor
-validation, plus `CG-008`'s own still-open question. Phase 61's own
-Part 1 LOW rating traced to the generated digest's own real content
-limits (`L-026`), not to `CG-008`'s missing symbol table — so closing
-`CG-008` would not by itself have changed Phase 61's own result.
-
-Phase 60 itself is fully done, including release tagging: both new
-repositories are real, public, tagged `v0.1.0` (confirmed via
-`git ls-remote --tags` against each), after `release-phase-auditor`'s
-first pass FAILed on two real, narrow gaps (premature "tagged" claims;
-an untriaged learning, `L-025`) that were fixed before the re-audit.
-Phase 62 (adapter-interface consolidation) still has `CG-008`'s own
-named question waiting (does `EcosystemAdapter` need a structured-
-symbol-list method so `_collect_vendor_symbols` can reach an external
-adapter's own output, or does `symbols.py` need a Haskell-specific
-in-process re-parse) — unaffected by Phase 61's own plan, which doesn't
-depend on that gap being closed.
+Phase 61 itself is fully done: a real, symmetric two-agent comparison
+found LOW/effectively-NULL context advantage (outcome shape (b)),
+honestly reported; three learnings promoted; `CG-008` was confirmed
+still open and unaffected by Phase 61's own result (Part 1's LOW rating
+traced to the generated digest's own real content limits, `L-026`, not
+to the missing symbol table). Phase 60 is fully done including release
+tagging.
 
 GATE DD (Phase 55's own gate, Stage E's precondition) remains open,
 with Phase 54b's and Phase 54c's own results as evidence inputs — still

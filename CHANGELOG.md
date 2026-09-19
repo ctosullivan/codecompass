@@ -170,6 +170,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
+- **Phase 62 plan: adapter-interface consolidation** (planning only, no
+  code, phase not started): closes `CG-008` (the graph's `symbols` table
+  stays empty for Haskell vendors) via a new, concrete (not abstract,
+  default `[]`) `EcosystemAdapter.symbols()` method. `Symbol`/`SymbolRow`
+  widen with optional `kind`/`note`, generalizing `decisions/0059`'s
+  wire-level addition into CodeCompass's own core model; the `symbols`
+  table gains matching nullable columns via `ADD COLUMN`
+  (`_SCHEMA_VERSION` 8→9 — the lighter mechanism used for
+  `doc_relation_enrichment`, not the heavier `vendors`-style rebuild
+  Phase 61 needed, since `ADD COLUMN` carries no FK-cascade risk against
+  `symbol_enrichment`). A real, pre-existing duplication is removed for
+  all four ecosystems, not patched for Haskell alone: npm/Python/Cargo's
+  own `readme_and_api_surface()` already walks+extracts symbols the same
+  way `sync.py`'s own `_collect_vendor_symbols` did independently.
+  `HaskellAdapter` gains a per-instance `_analyze()` cache, closing a
+  real, confirmed redundant-external-process-spawn cost. Explicitly,
+  disclosedly **not fixed**: `build_symbol_index`/`purpose_for_file`
+  (FILETREE.md's own flat symbol index) stay Haskell-blind — a real
+  architectural mismatch judged materially bigger than "smallest
+  justified fix." No broader plugin-marketplace/packaging/licensing
+  commitment is made. See
+  `planning/phase-62-adapter-interface-consolidation.md`.
+
 - **Phase 54c plan: evidence-backed, knowledge-based,
   documentation-first workflow** (planning only, no code, phase not
   started): a minimal, file-based (not `context-graph.db`)

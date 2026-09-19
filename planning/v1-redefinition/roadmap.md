@@ -1415,6 +1415,39 @@ Evaluation: `planning/reference-projects/ledgerkit/03-hledger-cross-language-eva
   kind of ecosystem-specific logic this phase's own architecture was
   built to keep out of core. See `CG-008` (`planning/context-gaps/inbox.md`).
 
+**Planned 2026-09-19** — full plan:
+`planning/phase-62-adapter-interface-consolidation.md`. Resolves the
+former/latter question above **in favour of the former**: `EcosystemAdapter`
+gains a new, concrete (not abstract — a future adapter that skips it
+isn't broken at construction) `symbols()` method, default `[]`.
+`Symbol`/`SymbolRow` widen with optional `kind`/`note`, generalizing
+`decisions/0059`'s wire-level addition into CodeCompass's own core
+model; the `symbols` table gains matching nullable columns via `ADD
+COLUMN` (`_SCHEMA_VERSION` 8→9) — the lighter mechanism
+`_migrate_doc_relation_enrichment_relation_label` already established,
+not the heavier `vendors`-style table-rebuild Phase 61 needed (`ADD
+COLUMN` carries no FK-cascade risk against `symbol_enrichment`, unlike
+a `CHECK`-widening). `sync.py`'s own `_collect_vendor_symbols` becomes
+`adapter.symbols()`, closing `CG-008` with zero Haskell-specific logic
+re-entering `src/codecompass/`. A real, independently-confirmed
+pre-existing duplication (npm/Python/Cargo's own `readme_and_api_surface()`
+already walks+extracts symbols the same way `_collect_vendor_symbols`
+did separately) is removed for all four ecosystems, not patched for
+Haskell alone. `HaskellAdapter` gains a per-instance `_analyze()` cache,
+closing a real, confirmed redundant-external-process-spawn cost across
+`dependency_tree()`/`readme_and_api_surface()`/the new `symbols()`.
+Explicitly, disclosedly **not fixed**: `filetree.py::build_symbol_index`/
+`symbols.py::purpose_for_file` (FILETREE.md's own flat symbol index)
+stay Haskell-blind — a real architectural mismatch (per-file,
+no-subprocess, adapter-unaware functions vs. a per-vendor,
+subprocess-backed external adapter) judged materially bigger than this
+phase's own "smallest justified interface change" mandate; named
+plainly as a real, accepted scope boundary, not silently left. No
+broader plugin-marketplace/packaging/licensing commitment is made — this
+phase changes what the interface can express, not whether CodeCompass
+formally supports third-party/proprietary adapters. Not started; plan
+awaiting review.
+
 ### Phase 63 — Lightweight ordinary-project smoke test · EXPERIMENTAL
 - A deliberately small confirmation — not a full reference-project
   protocol run — that ordinary npm/Python/Cargo project support wasn't
