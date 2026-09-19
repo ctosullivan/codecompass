@@ -1285,7 +1285,39 @@ One combined baseline/treatment task covers both of Phase 54b's own
 named goals (Haskell-side reconstruction + cross-language relation to
 Ledgerkit's Python `DepthSpec`/`clip_account_name`), evaluated by a
 freshly-dispatched `context-evaluator` against Phase 54b's own real LOW
-baseline. Not started; plan awaiting review.
+baseline.
+
+**Amended 2026-09-19** (direct user instruction, before implementation
+began — methodology strengthened, scope and experiment design
+preserved, not replaced): (1) baseline and treatment inputs are now made
+**exactly symmetric** — recorded, verified commit hashes for both
+`hledger` and `ledgerkit`, quoted verbatim into the identical task text
+both agents receive; a real gap this amendment's own investigation
+found — `source_resolution._git_clone` has no commit-pinning support, so
+without mitigation the treatment's own vendor source could silently be a
+*different, newer* revision than the baseline's pinned checkout — closed
+via a manual post-sync `git checkout <sha>` in the experiment's own
+scratch directories (not a `resolve_and_clone` feature); identical tool
+access for both agents. (2) The evaluation is now explicitly **two-part
+plus overall**: Part 1 (`depth:` behavioural reconstruction, rated
+against Phase 54b's own real LOW baseline) and Part 2 (cross-language
+equivalence recognition) are scored independently as well as combined,
+so the specific outcome shape "helped navigation but not cross-language
+recognition" (or its reverse) is legible, not collapsed into one
+undifferentiated verdict. (3) Both agents must now report which files
+they read and why, so `context-evaluator` can compute a real, checked
+rediscovery comparison (reduced rediscovery / no measurable reduction /
+increased overhead) rather than infer CodeCompass's own contribution
+from the verdict alone. (4) A new §1.5 restates prominently that this
+phase tests adapter-derived context, dependency structure, and
+vendor-source grounding only — not graph-level Haskell symbol
+integration, which stays `CG-008`/Phase 62's own open question
+regardless of this phase's own result. The planned
+`HaskellAdapter.repository_url()` monorepo-subdirectory fix stays in
+scope, unchanged, and is now depended on even more directly (the
+symmetry protocol's own commit-pinning verification requires a
+correctly-scoped clone to check against). Not started; plan awaiting
+review.
 
 ### Phase 62 — Adapter-interface consolidation · EXPERIMENTAL
 - Assess `EcosystemAdapter`'s own contract (`decisions/0002`) against

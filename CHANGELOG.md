@@ -122,6 +122,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
+- **Phase 61 plan amended: symmetric methodology, two-part scoring**
+  (planning only, no code, phase not started; amends the Phase 61 plan
+  below, before implementation began): baseline and treatment inputs
+  made exactly symmetric — recorded, verified commit hashes embedded in
+  one identical task string both agents receive; a real gap found during
+  this amendment's own investigation (`resolve_and_clone` has no
+  commit-pinning support, so the treatment's own vendor source clone
+  could silently be a different revision of `hledger` than the
+  baseline's pinned checkout) closed via a manual post-sync
+  `git checkout <sha>` in the experiment's own scratch directories, not
+  a new `codecompass` feature; identical tool access for both agents.
+  Evaluation is now explicitly two-part-plus-overall (Part 1: `depth:`
+  reconstruction vs. Phase 54b's own real LOW baseline; Part 2:
+  cross-language equivalence recognition; Overall, naming which of four
+  outcome shapes occurred), not one undifferentiated verdict — so
+  "helped navigation, not cross-language recognition" is a legible,
+  distinct result. Both agents must now log which files they read and
+  why, so `context-evaluator` computes a real rediscovery comparison
+  (reduced / no change / increased overhead) instead of the contribution
+  being inferred from the verdict alone. A new §1.5 restates prominently
+  that this phase tests adapter-derived context, dependency structure,
+  and vendor-source grounding only — not graph-level Haskell symbol
+  integration (`CG-008` stays Phase 62's own question). The planned
+  `HaskellAdapter.repository_url()` monorepo-subdirectory fix stays in
+  scope, unchanged, and is now depended on even more directly. See the
+  amended `planning/phase-61-hledger-cross-language-experiment.md`.
+
 - **Phase 61 plan: hledger cross-language experiment** (planning only,
   no code, phase not started): re-runs Phase 54b's own `depth:`
   behavioural-reconstruction question using real Haskell-side structural

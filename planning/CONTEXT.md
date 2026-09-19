@@ -501,6 +501,34 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 61's plan amended, still not started (2026-09-19) — methodology
+strengthened, scope/design preserved.** Direct user instruction, before
+implementation began. Four changes: (1) baseline/treatment inputs made
+exactly symmetric — recorded, verified commit hashes embedded in one
+identical task string both agents receive; a real gap this amendment's
+own investigation found (`resolve_and_clone` has no commit-pinning
+support, so the treatment's own vendor source clone could silently be a
+different revision than the baseline's pinned checkout) closed via a
+manual post-sync `git checkout <sha>` in the experiment's own scratch
+directories, not a new `codecompass` feature; identical tool access for
+both agents. (2) Evaluation now explicitly two-part-plus-overall: Part 1
+(`depth:` reconstruction, vs. Phase 54b's own real LOW baseline) and
+Part 2 (cross-language equivalence recognition) scored independently as
+well as combined, so "helped navigation, not cross-language recognition"
+(or the reverse) is a legible, distinct outcome rather than collapsed
+into one verdict. (3) Both agents now required to log which files they
+read and why, so `context-evaluator` computes a real rediscovery
+comparison (reduced / no change / increased overhead) instead of
+inferring CodeCompass's contribution from the verdict alone. (4) A new
+§1.5 restates prominently that this phase tests adapter-derived context,
+dependency structure, and vendor-source grounding only — not graph-level
+Haskell symbol integration (`CG-008` stays Phase 62's own question
+regardless of this phase's result). The planned
+`HaskellAdapter.repository_url()` monorepo-subdirectory fix stays in
+scope unchanged, now depended on even more directly (the symmetry
+protocol's own commit-pinning check needs a correctly-scoped clone).
+Still planning only — no `src/` change yet.
+
 **Phase 61 — hledger cross-language experiment — planned, not started
 (2026-09-19).** Direct user request ("Plan phase 61"). Full plan:
 `planning/phase-61-hledger-cross-language-experiment.md`. Re-verified
@@ -1661,21 +1689,28 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 61's plan awaits review before implementation begins.** Every
-review-gate item is a judgment call made during planning (tracking both
+**Phase 61's twice-amended plan awaits review before implementation
+begins.** Every review-gate item (original: tracking both
 `hledger-lib`/`hledger`; fixing the `repository_url()` subdirectory bug
 in-phase; declining to build `usage.py`'s Haskell import detection; one
-combined baseline/treatment task), not an open question needing the
-user's input first — flagged for visibility per this project's own
-established pattern, not because implementation is blocked on an
-answer. Once reviewed, implementation proceeds per the plan's own §2-§4:
-fix `HaskellAdapter.repository_url()` (small, `decisions/0021`-mechanism-
+combined baseline/treatment task; amendment: manual post-sync re-pin
+over general ref-pinning support; a required per-file read log from
+both agents; three verdict blocks instead of one) is a judgment call
+made during planning, not an open question needing the user's input
+first — flagged for visibility per this project's own established
+pattern, not because implementation is blocked on an answer. Once
+reviewed, implementation proceeds per the amended plan's own §2-§4: fix
+`HaskellAdapter.repository_url()` (small, `decisions/0021`-mechanism-
 reuse only) → two new fixture tests → a real, live re-confirmation that
 `vendor/hledger-lib/src/` is correctly scoped after the fix → set up the
 disposable `ledgerkit-scratch-61` copy with the new two-vendor
-`vendor.toml` → a real `codecompass sync --yes --budget 0` → two fresh,
-independent agent dispatches on the combined task → `context-evaluator`'s
-independent rating against Phase 54b's own real LOW baseline →
+`vendor.toml` → a real `codecompass sync --yes --budget 0` → the
+symmetry protocol's own commit-pinning check-and-checkout (§2.1a) for
+both vendor clones and the scratch Ledgerkit copy → two fresh,
+independent agent dispatches on the combined, two-part task, each with
+a required file-read log (§2.7) → `context-evaluator`'s independent,
+three-verdict-block rating (§2.6) against Phase 54b's own real LOW Part
+1 baseline, plus the rediscovery-comparison computation (§2.7) →
 `reference-project-tester` friction filing → retro/audit/closeout.
 
 Phase 60 itself is fully done, including release tagging: both new
