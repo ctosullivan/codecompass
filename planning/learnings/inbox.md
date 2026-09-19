@@ -8,6 +8,340 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-028 — `resolve_and_clone`'s `subdirectory` field scopes the *rendered* view of a monorepo member, not the raw on-disk clone itself — a documentation gap, not a new bug
+
+- **origin:** Phase 61 (hledger cross-language experiment),
+  `reference-project-tester`'s own `OBS-015`
+  (`planning/context-observations/inbox.md`)
+- **date:** 2026-09-19
+- **project_revision:** `9f8b510` (the Phase 61
+  `HaskellAdapter.repository_url()` fix commit)
+- **observation:** Phase 61's own plan (`planning/phase-61-hledger-cross-language-experiment.md`,
+  §"Verification") stated the §4 fix would make
+  "`vendor/hledger-lib/src/` now contain only `hledger-lib`'s own real
+  files... no `hledger`/`hledger-ui`/`hledger-web` siblings." This is
+  **not what `resolve_and_clone` does, and never has been** — confirmed
+  by reading `source_resolution.py::resolve_and_clone`'s own docstring
+  directly: it clones the *whole* upstream repository into `dest`
+  unconditionally, and `subdirectory` only ever changes what
+  `tree_root` (the value it *returns*) points at — the raw `dest`
+  directory is never pruned, for any ecosystem, including npm's own
+  pre-existing monorepo case (`decisions/0021`). The plan's own
+  Verification wording overclaimed what the real, pre-existing mechanism
+  produces; the actually-correct, actually-fixed consumers are
+  `FILETREE.md`/the symbol index/`tree_root`-based rendering (confirmed
+  working, `reference-project-tester` found zero cross-contamination
+  there) — the raw on-disk `vendor/<name>/src/` clone being the whole
+  repo is expected, unrelated to this fix, and (for two siblings sharing
+  one URL) doubles real disk usage (136M × 2 in this real instance) — a
+  cost already disclosed and accepted in the plan's own review gate, but
+  not connected there to *this* specific symptom.
+- **evidence:** `planning/context-observations/inbox.md` `OBS-015`;
+  `src/codecompass/source_resolution.py::resolve_and_clone`'s own
+  docstring ("Returns the resolved source root within the clone — `dest`
+  itself, or `dest / subdirectory`...").
+- **classification:** architecture
+- **status:** promoted (landed by the lead, 2026-09-19).
+- **recurrence:** first occurrence as filed; the underlying mechanism
+  (`resolve_and_clone` never pruning `dest`) is pre-existing since Phase
+  7 (`decisions/0021`) and applies identically to npm's own monorepo
+  case — Phase 61 is simply the first real scenario to place two
+  siblings sharing one repository URL side by side, making the
+  duplication/cross-contamination directly observable for the first
+  time (`OBS-015`'s own root-cause trace, independently re-read).
+- **curation (Phase 61 triage, 2026-09-19, knowledge-curator):**
+  provenance accepted — all required fields present. Independently
+  re-verified rather than taking the entry's own account on faith: read
+  `src/codecompass/source_resolution.py::resolve_and_clone` directly and
+  confirmed its own docstring states the function returns `dest` or
+  `dest / subdirectory` as `source_root`, with no code path anywhere in
+  the function pruning, moving, or restricting what physically lands at
+  `dest` — the raw clone genuinely is always the whole upstream
+  repository, exactly as `OBS-015` traced. Cross-checked
+  `architecture/overview.md`'s current `RepositoryLocation(url,
+  subdirectory)` bullet (the closest existing description of this
+  mechanism) and confirmed it says nothing about which artifact
+  `subdirectory` scopes (rendered view vs. raw clone) — a real, present
+  gap this candidate's own "documentation gap, not a new bug" framing
+  correctly diagnoses; the "Known footguns" section already documents
+  the adjacent, but distinct, `vendor/<name>/src/` gitignore-and-
+  regenerate behavior (`decisions/0010`) without ever addressing
+  monorepo-sibling duplication, so this is a genuine gap in that
+  section, not a restatement of an existing bullet. Checked for a
+  merge/duplicate: this is the direct generalization of `OBS-015`
+  (already correctly filed as a context-observation, not a
+  context-gap, per that entry's own reasoning — "an implementation gap
+  in one function's own behaviour," not a missing graph relationship) —
+  `L-028` is this triage's own extraction of the generalizable lesson
+  from that instance, not a separate finding requiring independent
+  verification of the underlying mechanism. **Outcome: promote.**
+  Classification `architecture` (description of current architecture)
+  maps to an `architecture/` doc, finalised by `docs-maintainer`, per
+  `learning-lifecycle.md` §4 — reclassifying from a bug-shaped read to a
+  documentation-shaped one is correct here: nothing about
+  `resolve_and_clone`'s behavior is wrong or needs code changed (the
+  npm monorepo case has worked this way since Phase 7 without incident);
+  what's missing is a sentence stating what `subdirectory` actually
+  scopes, so a future reader (agent or human) doesn't repeat this same
+  plan-verification overclaim. Destination:
+  `architecture/overview.md`'s "Known footguns" section (not
+  `docs/external-adapters.md`, which contains no `subdirectory`/
+  monorepo content to attach this to, confirmed by grep — zero matches).
+
+  **Recommended fix — new bullet in `architecture/overview.md`'s "Known
+  footguns" section** (draft, for `docs-maintainer`/the lead to review
+  and land; not applied here):
+
+  > **`resolve_and_clone`'s `subdirectory` scopes the *rendered* view
+  > only, never the raw on-disk clone.** `_git_clone` always clones the
+  > *whole* upstream repository into `dest` (`vendor/<name>/src`);
+  > `subdirectory` only changes the function's *return value*
+  > (`source_root = dest / subdirectory`), which `sync_vendor` consumes
+  > as `tree_root` for rendering `FILETREE.md`/the symbol index. For a
+  > monorepo (npm's `repository.directory`, or two Haskell packages
+  > sharing one repository URL — Phase 61), every vendor backed by the
+  > same upstream repository gets its own full, duplicate, unscoped
+  > clone at `vendor/<name>/src/` — doubled disk cost per sibling, and a
+  > real misattribution risk for anyone who `grep`s/`find`s the raw
+  > clone directly instead of following `FILETREE.md`. Confirmed live at
+  > Phase 61 (`OBS-015`): `vendor/hledger-lib/src/` and
+  > `vendor/hledger/src/` are byte-identical top-level listings of the
+  > whole monorepo, while both packages' `FILETREE.md`s stay correctly
+  > scoped to their own package.
+
+  Revisit/withdraw only if a future phase actually prunes `dest` to
+  `subdirectory` (at which point this bullet describes stale behavior
+  and should be removed, not merely amended) — not expected to be
+  contested on the facts, since both this candidate and `OBS-015`
+  independently re-derived the same mechanism directly from source.
+- **promoted_to:** `architecture/overview.md`'s "Known footguns" section
+  (landed by the lead, 2026-09-19).
+
+### L-027 — a single-trial baseline/treatment agent comparison cannot cleanly separate "the tool's contribution" from "agent diligence variance"
+
+- **origin:** Phase 61 (hledger cross-language experiment),
+  `context-evaluator`'s own independent evaluation
+  (`planning/reference-projects/ledgerkit/03-hledger-cross-language-evaluation.md`)
+- **date:** 2026-09-19
+- **project_revision:** working tree (Phase 61 implementation,
+  uncommitted at filing time)
+- **observation:** Phase 61's Part 2 (cross-language equivalence
+  recognition) produced a materially better treatment report than
+  baseline — treatment found a real, previously-unrecorded divergence
+  (Ledgerkit's `stats()` under-excludes commodities under a depth limit,
+  independently confirmed live by `context-evaluator` against the real
+  pinned `hledger` binary and Ledgerkit's own CLI) that baseline missed
+  entirely. On its face this looks like CodeCompass helping. It isn't:
+  both agents' own file-read logs show they read the *exact same*
+  decisive raw source (`Stats.hs`, the same `reports.py` lines) — the
+  divergence is not tracked as a CodeCompass vendor at all (Ledgerkit's
+  own source has no generated digest in play), so both conditions had
+  byte-identical access to the evidence that actually revealed it. One
+  agent simply read more carefully than the other. Attributing this
+  quality delta to CodeCompass would have been a real, if easy,
+  evaluation error — the instrument's own report structure doesn't
+  automatically flag single-agent-diligence confounds in a two-run,
+  N=1-per-condition design.
+- **evidence:**
+  `planning/reference-projects/ledgerkit/03-hledger-cross-language-evaluation.md`
+  §"Part 2 context advantage" and §"Material gaps / failures" (the
+  "[Methodology]" bullet).
+- **classification:** workflow
+- **status:** promoted (landed by the lead, 2026-09-19).
+- **recurrence:** first occurrence
+- **curation (Phase 61 triage, 2026-09-19, knowledge-curator):**
+  provenance accepted — all required fields present. Independently
+  re-read
+  `planning/reference-projects/ledgerkit/03-hledger-cross-language-evaluation.md`
+  §"Part 2 context advantage" and the "[Methodology]" bullet under
+  "Material gaps / failures" directly rather than trusting the
+  candidate's own summary — confirmed both agents' file-read logs are
+  cited as showing identical access to `Stats.hs`/the decisive
+  `reports.py` lines, and confirmed the report frames this explicitly as
+  a methodology caveat `context-evaluator` itself surfaced, not
+  something this triage is inferring after the fact. This is a real,
+  specific, well-evidenced observation about the shared evaluation
+  instrument's own blind spot (a two-run, N=1-per-condition design has
+  no structural way to distinguish "the tool helped" from "one agent
+  read more carefully"), not a one-off. Checked for a merge/duplicate:
+  grepped this inbox for "single-trial"/"N=1"/"diligence" — no prior
+  candidate names this confound; distinct from `L-020` (an extraction-
+  boundary defect within one artifact, not an evaluation-design
+  confound) and from every `OBS-*` entry in the sibling
+  context-observations queue (those record *edge*-level experience, not
+  the shared *instrument's* own methodological gap). Checked whether
+  `planning/v1-redefinition/context-quality-evaluation.md` has ever been
+  edited directly by a prior `knowledge-curator` curation (as opposed to
+  amended by whoever ran the phase) before treating it as within reach:
+  grepped `promoted.md` and this inbox for the file's own name — zero
+  `promoted_to` pointers into it, and its own in-file "Amended
+  2026-09-12"/"Amended again 2026-09-17"/"Amended again 2026-09-18"
+  notes each read as the *phase's own* addition (Phase 54b's "execution-
+  path completeness" criterion, credited to that phase's plan
+  directly), not as a `knowledge-curator` triage outcome — no precedent
+  establishing this file is within this role's own write boundary, and
+  it is not one of the four directories this role's hard rules name as
+  writable. Per this task's own explicit instruction to treat this as an
+  unresolved boundary question rather than deciding it unilaterally:
+  **not editing the file** — recommending only. **Outcome: promote
+  (recommendation + draft; does not land here).** Destination:
+  `context-quality-evaluation.md`, following the exact precedent Phase
+  54b's own "execution-path completeness" addition set (a phase-driven
+  amendment to the shared instrument, landed by whoever runs the phase,
+  not by this role) — not `agent-led-workflow.md` (this is about what
+  the *evaluation instrument itself* must check, not agent-dispatch
+  procedure) and not a `.claude/` skill/rule (the classification-table's
+  literal "scoped rule → `.claude/` config" mapping doesn't fit a
+  methodological caution embedded in a shared spec document, the same
+  reasoning `L-022`'s curation used to land its own fix in
+  `reference-project-protocol.md` instead of a skill file).
+
+  **Recommended addition — `context-quality-evaluation.md` §1 (Ground
+  rules) or a new "Amended" note** (draft, for the lead to review and
+  land; not applied here):
+
+  > **Amended 2026-09-19** (Phase 61 — `L-027`): a single-trial (N=1-per-
+  > condition) baseline/treatment comparison cannot, by construction,
+  > separate "the tool's real contribution" from "one agent read more
+  > carefully than the other." Before crediting CodeCompass for a
+  > treatment-arm finding the baseline missed, explicitly check whether
+  > both arms had equal raw-source access to the decisive evidence (both
+  > agents' own file-read logs, not just the polish of the final
+  > report) — if they did, the quality delta is agent-diligence
+  > variance, not a context-quality result, regardless of how well the
+  > treatment report reads. Confirmed necessary at Phase 61: Part 2's
+  > real, independently-confirmed divergence discovery would have been
+  > misattributed to CodeCompass had `context-evaluator` not made this
+  > check explicitly (both agents had read the exact same decisive raw
+  > source, which was not itself a CodeCompass vendor).
+
+  Scoped to the specific confound this incident evidences (equal
+  raw-source access, unequal report quality), not a broader
+  "distrust every treatment result" restatement. Revisit/withdraw if the
+  lead judges §1's existing ground rules (particularly "a technically-
+  correct result that offers little advantage... is recorded honestly as
+  low-advantage") already close enough to this concern once pointed out,
+  or if the file is confirmed to be within a future `knowledge-curator`
+  dispatch's own write boundary, in which case land it directly rather
+  than re-drafting.
+- **promoted_to:** `planning/v1-redefinition/context-quality-evaluation.md`
+  §1 (landed by the lead, 2026-09-19) — write-boundary question resolved
+  in the lead's own favour for this file (matches the file's own
+  established convention of phase-driven "Amended" notes).
+
+### L-026 — an ecosystem adapter's generated API-surface digest answers "what exists and what's it called," not "what does it do" — a structural limit, not a per-instance gap
+
+- **origin:** Phase 61 (hledger cross-language experiment),
+  `context-evaluator`'s own independent evaluation and
+  `reference-project-tester`'s own `OBS-016`
+  (`planning/context-observations/inbox.md`)
+- **date:** 2026-09-19
+- **project_revision:** working tree (Phase 61 implementation,
+  uncommitted at filing time)
+- **observation:** the real, adapter-generated `vendor/hledger/CLAUDE.md`
+  (rendered from `readme_and_api_surface()`, already proven correct in
+  Phase 60) contains zero "depth"-related content anywhere across 44
+  rendered command modules, including the `Stats`/`Balance`/`Register`/
+  `Accounts`/`Print` entries the Phase 61 task specifically asked about
+  — each renders as a bare `name: one-line purpose` pair with no
+  control-flow or business-logic detail. `context-evaluator` confirmed
+  this is not a treatment-agent failure to look hard enough
+  (`grep -ci depth` on the file genuinely returns `0`) but a real,
+  structural property of what `readme_and_api_surface()` extracts for
+  *any* ecosystem — a symbol's own one-line doc comment, never its
+  body. `reference-project-tester`'s own `OBS-016` recorded the same
+  finding independently, framed as "recurs the same structural limit
+  `OBS-014` (Phase 54b) already recorded for the curated-corpus
+  condition, now reconfirmed against the live adapter-derived digest" —
+  i.e. this is the *third* independent occurrence of the same underlying
+  limit (curated docs, then live Haskell adapter output), not a one-off.
+- **evidence:**
+  `planning/reference-projects/ledgerkit/03-hledger-cross-language-evaluation.md`
+  §"Material gaps / failures"; `planning/context-observations/inbox.md`
+  `OBS-016`; `planning/context-gaps/inbox.md`'s prior `OBS-014` (Phase
+  54b).
+- **classification:** invariant (filed) — reclassified to **architecture**
+  at this triage (see curation note)
+- **status:** promoted (landed by the lead, 2026-09-19).
+- **recurrence:** third occurrence (curated `dev-docs/hledger-reference/`
+  content, Phase 54b, `OBS-014`; live Haskell adapter output, Phase 61,
+  `OBS-016` + this evaluation) — a real candidate for promotion.
+- **curation (Phase 61 triage, 2026-09-19, knowledge-curator):**
+  provenance accepted — all required fields present. Independently
+  re-verified rather than taking the entry's own account on faith: read
+  `planning/reference-projects/ledgerkit/03-hledger-cross-language-evaluation.md`'s
+  §"Material gaps / failures" directly and confirmed it states `grep -ci
+  depth vendor/hledger/CLAUDE.md` returns `0`; independently re-read
+  `OBS-016` and `OBS-014` in full rather than trusting this candidate's
+  paraphrase of either — both confirm the same shape (a symbol's
+  one-line declared purpose, never its body) via two structurally
+  different mechanisms (a hand-curated `.md` corpus at Phase 54b, a
+  live adapter-generated Haddock digest at Phase 61). Considered the
+  candidate's own explicit question — does the ≥2-occurrence bar this
+  project uses for `context-gaps/` promotion transfer to a *learning*
+  candidate — and judges yes, by analogy rather than by rule: the
+  `learning-lifecycle.md` §2 "candidate → evidence" step already treats
+  recurrence as exactly this kind of promotion signal ("it recurs, or a
+  second agent hits it... knowledge curation" following), and three
+  independent occurrences across two structurally different context
+  sources (curation-time human selection vs. mechanical live
+  generation) is stronger evidence of a structural, non-incidental limit
+  than either `OBS-014` or `OBS-016` had alone — each of which correctly
+  declined escalation on its own (a single instance is not yet a
+  pattern). **Reclassifying `invariant` → `architecture`**: this is not
+  a behavioral invariant a regression test could usefully encode (there
+  is no bug — `readme_and_api_surface()` extracting only declared
+  one-line purposes is working exactly as designed for every ecosystem,
+  confirmed by direct code reading of the Haddock-extraction path this
+  same phase already exercised for L-028/`OBS-015`'s adjacent finding);
+  it is a real, current, general property of the adapter architecture
+  that is not yet written down anywhere a future phase-planner would see
+  it before re-discovering it a fourth time. `architecture` classifi-
+  cation correctly maps to an `architecture/` doc (`learning-lifecycle.md`
+  §4), finalised by `docs-maintainer`. Checked for a merge/duplicate:
+  not a duplicate of `OBS-014`/`OBS-016` themselves (this candidate is
+  their generalization into a durable artifact, which is exactly what a
+  `planning/learnings/` candidate is for once a context-observation
+  recurs enough to justify one — matching the "an investigation
+  converges on... `detector_gap`/`graph_capability_gap` → file or link a
+  context-gaps entry" pattern this role's own charter describes for the
+  sibling queue, applied here to the learnings queue instead since
+  nothing about this finding is a missing graph relationship or a
+  detector defect). **Outcome: promote.** Destination:
+  `architecture/overview.md`'s "Known footguns" section, alongside the
+  existing per-ecosystem API-surface footguns already there (the npm
+  `.d.ts` cap, the Cargo line-based-scan miss) — this bullet documents a
+  cross-ecosystem structural ceiling common to all of them, not a
+  per-ecosystem quirk, so it belongs as its own bullet rather than
+  amending any single ecosystem's existing one.
+
+  **Recommended fix — new bullet in `architecture/overview.md`'s "Known
+  footguns" section** (draft, for `docs-maintainer`/the lead to review
+  and land; not applied here):
+
+  > **`readme_and_api_surface()` (any ecosystem adapter) extracts a
+  > symbol's declared one-line purpose (doc-comment/docstring/Haddock),
+  > never its body.** It answers "what exists and what's it called," not
+  > "what does it do" or "why does behaviour differ between two call
+  > sites of it." Confirmed three times independently across two
+  > structurally different context sources: a hand-curated
+  > `dev-docs/hledger-reference/` corpus (Phase 54b) and a live
+  > Haskell-adapter-generated `CLAUDE.md` digest (Phase 61 — `grep -ci
+  > depth` returns `0` across all 44 rendered command modules, including
+  > the ones the task specifically asked about). A task whose answer
+  > depends on control-flow/business-logic detail inside a function body
+  > is not answerable from the digest alone, regardless of ecosystem or
+  > whether the digest came from human curation or mechanical
+  > generation — direct source reading is required for that class of
+  > question by design, not by omission.
+
+  Revisit/withdraw only if a future phase adds real body-level
+  extraction (e.g. a summarization pass over function bodies) to
+  `readme_and_api_surface()`, at which point this bullet would need
+  removing or narrowing, not merely amending.
+- **promoted_to:** `architecture/overview.md`'s "Known footguns" section
+  (landed by the lead, 2026-09-19).
+
 ### L-025 — a monorepo-aware Stack command needs an explicit `TARGET` argument, or it silently reports the whole project's graph instead of one package's own closure
 
 - **origin:** Phase 60 (minimal external Haskell adapter), discovered

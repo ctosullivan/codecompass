@@ -9,6 +9,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 61** (hledger cross-language experiment, done): fixed a real
+  bug in already-tagged Phase 60 code —
+  `HaskellAdapter.repository_url()` now sets
+  `RepositoryLocation.subdirectory` for a monorepo member (previously it
+  never set this field, so `resolve_and_clone` silently cloned the
+  *whole* `hledger` monorepo into a single package's own
+  `vendor/<name>/src/`, confirmed live; two new fixture tests, the
+  existing live smoke test's own assertion updated). Tracked both
+  `hledger-lib` and `hledger` (not `hledger-lib` alone — the real
+  `balance`/`register`/`accounts`/`stats`/`print` command
+  implementations live in the sibling `hledger` package) as real Haskell
+  vendors in a disposable Ledgerkit scratch copy, via a real
+  `codecompass sync --yes --budget 0` — confirmed live: `depends_on_edges`
+  shows a real `hledger → hledger-lib` edge with zero new code.
+
+  Ran a real, symmetric (recorded/verified commit hashes, byte-identical
+  source, identical task/tools) two-agent comparison, scored
+  two-part-plus-overall: **Part 1** (`depth:` behavioural
+  reconstruction) — treatment PASS (Phase 54b's own was PASS WITH GAPS)
+  at **LOW** context advantage, traced to `hledger` now being tracked as
+  a vendor at all, not to anything the generated `CLAUDE.md`/`DEPTREE.md`
+  explained; **Part 2** (cross-language equivalence recognition to
+  Ledgerkit's own `DepthSpec`/`clip_account_name`) at **effectively
+  NULL** advantage — Ledgerkit isn't a tracked vendor, so both agents
+  worked from identical raw source. **Outcome shape (b)**: helped Part 1
+  navigation marginally, did not materially help Part 2. Rediscovery
+  comparison: **no measurable reduction**. A real, previously-unrecorded
+  Ledgerkit correctness gap was found and empirically confirmed
+  (`stats()`'s commodity count isn't depth-excluded the way hledger's
+  real one is) — Ledgerkit's own issue, not acted on here.
+
+  Three learnings filed and promoted: `L-026` (an adapter's generated
+  digest answers "what exists," not "what it does" — a third independent
+  occurrence) and `L-028` (`resolve_and_clone`'s `subdirectory` scopes
+  the rendered view, not the raw clone) landed as new
+  `architecture/overview.md` "Known footguns" bullets; `L-027` (a
+  single-trial baseline/treatment comparison can't separate a tool's
+  real contribution from agent-diligence variance) landed as a new
+  ground rule in `planning/v1-redefinition/context-quality-evaluation.md`
+  §1. Two context-observations filed (`OBS-015`, `OBS-016`). `usage.py`'s
+  Haskell import detection investigated and **not built** — no real
+  consumer in this phase's own task; the one relevant cross-vendor edge
+  is already free via `depends_on_edges`. **Does not resolve GATE DD,
+  does not complete or bypass Phases 55-59.** Retro:
+  `planning/retros/phase-61-hledger-cross-language-experiment.md`.
+  Evaluation:
+  `planning/reference-projects/ledgerkit/03-hledger-cross-language-evaluation.md`.
+
 - **Phase 60** (minimal external Haskell adapter, done): the reference
   implementation of a genuinely **external** CodeCompass adapter, built
   as two real, separate, publicly-hosted repositories —
@@ -121,56 +169,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   section and `planning/retros/phase-54b-ledgerkit-behavioural-understanding.md`.
 
 ### Planned
-
-- **Phase 61 plan amended: symmetric methodology, two-part scoring**
-  (planning only, no code, phase not started; amends the Phase 61 plan
-  below, before implementation began): baseline and treatment inputs
-  made exactly symmetric — recorded, verified commit hashes embedded in
-  one identical task string both agents receive; a real gap found during
-  this amendment's own investigation (`resolve_and_clone` has no
-  commit-pinning support, so the treatment's own vendor source clone
-  could silently be a different revision of `hledger` than the
-  baseline's pinned checkout) closed via a manual post-sync
-  `git checkout <sha>` in the experiment's own scratch directories, not
-  a new `codecompass` feature; identical tool access for both agents.
-  Evaluation is now explicitly two-part-plus-overall (Part 1: `depth:`
-  reconstruction vs. Phase 54b's own real LOW baseline; Part 2:
-  cross-language equivalence recognition; Overall, naming which of four
-  outcome shapes occurred), not one undifferentiated verdict — so
-  "helped navigation, not cross-language recognition" is a legible,
-  distinct result. Both agents must now log which files they read and
-  why, so `context-evaluator` computes a real rediscovery comparison
-  (reduced / no change / increased overhead) instead of the contribution
-  being inferred from the verdict alone. A new §1.5 restates prominently
-  that this phase tests adapter-derived context, dependency structure,
-  and vendor-source grounding only — not graph-level Haskell symbol
-  integration (`CG-008` stays Phase 62's own question). The planned
-  `HaskellAdapter.repository_url()` monorepo-subdirectory fix stays in
-  scope, unchanged, and is now depended on even more directly. See the
-  amended `planning/phase-61-hledger-cross-language-experiment.md`.
-
-- **Phase 61 plan: hledger cross-language experiment** (planning only,
-  no code, phase not started): re-runs Phase 54b's own `depth:`
-  behavioural-reconstruction question using real Haskell-side structural
-  information from Phase 60's adapter instead of the curated document
-  layer, plus a new cross-language half (does CodeCompass help relate
-  hledger's Haskell `depth:` handling to Ledgerkit's own Python
-  `DepthSpec`/`clip_account_name` as the same behavioural concept).
-  Tracks both `hledger-lib` and `hledger` (not `hledger-lib` alone — the
-  real `balance`/`register`/`accounts`/`stats`/`print` command
-  implementations live in the sibling `hledger` package, and tracking
-  only `hledger-lib` would silently reproduce Phase 54b's own exact
-  `Stats.hs` curation gap one layer down) as real vendors in a disposable
-  Ledgerkit scratch copy. Found and fixes, in-phase, a real bug in
-  already-tagged Phase 60 code: `HaskellAdapter.repository_url()` never
-  set `RepositoryLocation.subdirectory`, so `resolve_and_clone` silently
-  cloned the *whole* `hledger` monorepo into a single package's own
-  vendor source directory — confirmed live. Investigates and declines to
-  build `usage.py`'s Haskell import detection (named as "Phase 61's own
-  scope" by `decisions/0057`) — no real consumer for it in this phase's
-  own task; the one relevant cross-vendor relationship is already
-  produced free by the existing `depends_on_edges` mechanism. See
-  `planning/phase-61-hledger-cross-language-experiment.md`.
 
 - **Phase 54c plan: evidence-backed, knowledge-based,
   documentation-first workflow** (planning only, no code, phase not

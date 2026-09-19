@@ -501,8 +501,64 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
-**Phase 61's plan amended, still not started (2026-09-19) — methodology
-strengthened, scope/design preserved.** Direct user instruction, before
+**Phase 61 — hledger cross-language experiment — done (2026-09-19).**
+Fixed the one required prerequisite: `HaskellAdapter.repository_url()`
+now sets `RepositoryLocation.subdirectory` for a monorepo member
+(`9f8b510`) — two new fixture tests, the existing live smoke test's own
+assertion updated. Tracked both `hledger-lib` and `hledger` as real
+Haskell vendors in a disposable Ledgerkit scratch copy
+(`ledgerkit-scratch-61`), via a real `codecompass sync --yes --budget
+0`. Confirmed live: `depends_on_edges` shows a real `hledger →
+hledger-lib` edge with zero new code.
+
+Symmetry protocol executed and verified, not just designed: a real,
+live-confirmed gap (`resolve_and_clone` has no commit-pinning support —
+the network clone landed on the current upstream head, not the pinned
+tag) was closed via a manual post-sync `git checkout <sha>` in both
+vendor clones, with `FILETREE.md`/`filetree.json` regenerated afterward
+to match (a real extra step the plan anticipated in principle but didn't
+spell out this precisely — see the retro's own "What didn't work").
+Byte-for-byte `diff` confirmed the re-pinned vendor source matched the
+real local checkout exactly afterward.
+
+Two fresh, independent `general-purpose` agents ran the identical,
+symmetric, two-part task (`depth:` reconstruction + cross-language
+relation to Ledgerkit's `DepthSpec`/`clip_account_name`), each producing
+a required file-read log. `context-evaluator`'s independent evaluation
+(`planning/reference-projects/ledgerkit/03-hledger-cross-language-evaluation.md`) —
+including building a real fixture and running both the pinned `hledger`
+1.52.4 binary and Ledgerkit's own CLI live — scored two-part-plus-overall
+per the amended plan's §2.6: **Part 1** treatment PASS (Phase 54b's own
+was PASS WITH GAPS) at **LOW** advantage, traced to `hledger` now being
+tracked at all, not to anything the generated digest explained; **Part
+2** at **effectively NULL** advantage (Ledgerkit isn't a tracked vendor;
+both agents read identical raw source). **Outcome shape (b)**: helped
+Part 1 navigation marginally, did not materially help Part 2.
+Rediscovery comparison: **no measurable reduction**.
+
+A real, previously-unrecorded Ledgerkit correctness gap was found and
+empirically confirmed (`ledgerkit.reports.stats()`'s commodity count
+isn't depth-excluded the way hledger's real one is) — but
+`context-evaluator` explicitly traced *why* treatment's report was
+better here to agent-diligence variance, not CodeCompass (both agents
+had byte-identical raw-source access to the decisive evidence) — filed
+as `L-027`, a genuinely new methodological lesson. Two further learnings
+(`L-026`: the adapter digest answers "what exists," not "what it does" —
+a third independent occurrence of a known limit; `L-028`: the plan's own
+Verification wording overclaimed that the fix scopes the *raw*
+`vendor/<name>/src/` clone itself, when it only ever scopes the
+*rendered* view — a documentation gap in this phase's own plan, not a
+new code defect) plus two context-observations (`OBS-015`, `OBS-016`,
+filed by `reference-project-tester`) — all triaged by `knowledge-curator`.
+`usage.py`'s Haskell import detection: investigated, **not built**.
+
+**Explicitly, per this phase's own design: does not resolve GATE DD and
+does not complete or bypass Phases 55-59** — both remain exactly as open
+as before. Retro: `planning/retros/phase-61-hledger-cross-language-experiment.md`.
+
+**Phase 61's plan was amended before implementation (2026-09-19) —
+methodology strengthened, scope/design preserved, superseded by the
+"done" state above — history preserved for context.** Direct user instruction, before
 implementation began. Four changes: (1) baseline/treatment inputs made
 exactly symmetric — recorded, verified commit hashes embedded in one
 identical task string both agents receive; a real gap this amendment's
@@ -1689,29 +1745,26 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 61's twice-amended plan awaits review before implementation
-begins.** Every review-gate item (original: tracking both
-`hledger-lib`/`hledger`; fixing the `repository_url()` subdirectory bug
-in-phase; declining to build `usage.py`'s Haskell import detection; one
-combined baseline/treatment task; amendment: manual post-sync re-pin
-over general ref-pinning support; a required per-file read log from
-both agents; three verdict blocks instead of one) is a judgment call
-made during planning, not an open question needing the user's input
-first — flagged for visibility per this project's own established
-pattern, not because implementation is blocked on an answer. Once
-reviewed, implementation proceeds per the amended plan's own §2-§4: fix
-`HaskellAdapter.repository_url()` (small, `decisions/0021`-mechanism-
-reuse only) → two new fixture tests → a real, live re-confirmation that
-`vendor/hledger-lib/src/` is correctly scoped after the fix → set up the
-disposable `ledgerkit-scratch-61` copy with the new two-vendor
-`vendor.toml` → a real `codecompass sync --yes --budget 0` → the
-symmetry protocol's own commit-pinning check-and-checkout (§2.1a) for
-both vendor clones and the scratch Ledgerkit copy → two fresh,
-independent agent dispatches on the combined, two-part task, each with
-a required file-read log (§2.7) → `context-evaluator`'s independent,
-three-verdict-block rating (§2.6) against Phase 54b's own real LOW Part
-1 baseline, plus the rediscovery-comparison computation (§2.7) →
-`reference-project-tester` friction filing → retro/audit/closeout.
+**Phase 61 is fully done.** All of the "Once reviewed, implementation
+proceeds..." steps this section used to describe have now actually
+happened: the fix, both fixture tests, the symmetry protocol
+(check-and-re-pin, plus an unplanned-but-necessary `FILETREE.md`
+regeneration), both agent dispatches, `context-evaluator`'s
+three-verdict-block evaluation, `reference-project-tester`'s friction
+filing, three learnings triaged, and the retro. Remaining before this
+phase's own commit: a `docs-reconstructor` drift audit (since `src/`
+changed) and `release-phase-auditor`'s independent DoD pass, then
+ROADMAP/CONTEXT/CHANGELOG are already updated and just need to land in
+the same commit.
+
+Phase 62 (adapter-interface consolidation) now has a second real
+adapter-interface data point (two coexisting sibling Haskell vendors,
+correct cross-vendor dependency edges, a real disk-cost tradeoff for
+monorepo siblings sharing one URL) beyond Phase 60's own single-vendor
+validation, plus `CG-008`'s own still-open question. Phase 61's own
+Part 1 LOW rating traced to the generated digest's own real content
+limits (`L-026`), not to `CG-008`'s missing symbol table — so closing
+`CG-008` would not by itself have changed Phase 61's own result.
 
 Phase 60 itself is fully done, including release tagging: both new
 repositories are real, public, tagged `v0.1.0` (confirmed via

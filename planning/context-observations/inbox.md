@@ -8,6 +8,187 @@ Statuses: `recorded` → `investigating` → `resolved`.
 
 ---
 
+### OBS-016 — real Haskell-adapter `CLAUDE.md` digest is genuinely useful for `hledger-lib`'s own depth-primitives, but silent (zero mentions) for `hledger`'s own command-level depth handling, the half the task's own five commands actually live in
+
+- **origin:** Phase 61 (hledger cross-language experiment), direct
+  `reference-project-tester` inspection of the real, already-completed
+  `codecompass sync --yes --budget 0` output (no baseline/treatment agent
+  dispatch involved — pre-dispatch artifact inspection only, per this
+  task's own scoping)
+- **date:** 2026-09-19
+- **codecompass_revision:** `9f8b510`
+- **project:** ledgerkit, scratch copy `ledgerkit-scratch-61`; hledger
+  pinned at `33fa849e7ae841968bd21c427094c4fb4a4ec38d` (tag `1.52.4`)
+- **edge identity:** `vendor/hledger-lib/CLAUDE.md`'s "Public API surface"
+  section (`HaskellAdapter.readme_and_api_surface()`'s Haddock-derived
+  one-line symbol purposes) -- describes --> hledger-lib's real
+  depth-handling primitives, vs. the same mechanism applied to
+  `vendor/hledger/CLAUDE.md` -- describes --> hledger's real
+  `balance`/`register`/`accounts`/`stats`/`print` command
+  implementations.
+- **observation type:** split — EDGE_USEFUL for `hledger-lib`,
+  EDGE_UNHELPFUL for `hledger`, same underlying mechanism.
+- **edge correctness:** correct on both sides — both digests accurately
+  reflect their own real Haddock doc-comments; nothing false in either.
+- **task usefulness:** useful (hledger-lib) / irrelevant-to-this-task
+  (hledger), for the Part 1 `depth:` reconstruction task specifically.
+  Confirmed directly: `grep -ci depth vendor/hledger-lib/CLAUDE.md` = 7,
+  surfacing `clipAccounts` ("Remove all subaccounts below a certain
+  depth"), `clipOrEllipsifyAccountName`, `getAccountNameClippedDepth`,
+  `parseDepthSpec`, `queryIsDepth`, `queryDepth` ("The depth limit this
+  query specifies, if it has one") — real, accurate, directly on-point
+  primitives an agent could use to start Part 1 without opening any raw
+  source. `grep -ci depth vendor/hledger/CLAUDE.md` = 0, across all 44
+  rendered command modules including `Hledger.Cli.Commands.Balance`
+  (`Hledger/Cli/Commands/Balance.hs`, one of the task's own five named
+  commands) — its own rendered one-liners (`balanceReportAsText`,
+  `multiBalanceReportAsText`, etc.) describe *rendering*, never mention
+  that depth is a parameter at all. Since the task's own real crux (§1 of
+  this phase's plan: "does the behaviour vary across the five commands,
+  and why") is decided by *how* each command's own `Balance.hs`/
+  `Stats.hs`/etc. wires `queryDepth`/`ReportOpts` together — logic, not a
+  documented symbol purpose — the digest cannot answer Part 1's actual
+  question for the `hledger`-side half no matter how complete its symbol
+  list is; only direct reading of the five command files does that.
+- **default pathway:** direct `grep -rn "[Dd]epth" hledger/Hledger/Cli/Commands/*.hs`
+  against the real pinned monorepo checkout — exactly what an agent
+  without CodeCompass would do, and exactly what the generated digest
+  cannot substitute for on the `hledger`-package half of this task.
+- **advantage:** MODERATE for `hledger-lib`'s own half (real, accurate,
+  on-point navigation with zero source reading needed to *find* the
+  right primitives) / LOW for `hledger`'s own half (the digest adds
+  nothing beyond confirming which files exist — `context-evaluator`'s own
+  Part 1 rating, not yet filed at the time of this observation, is the
+  authoritative number; this entry is evidence for that rating, not a
+  replacement for it).
+- **wrong or misleading?** no — both digests are accurate; the gap is one
+  of inherent coverage (Haddock comments document *what a function does
+  structurally*, not *which of several call sites determines a
+  cross-command behavioural difference*), not a detection defect.
+- **status:** recorded
+- **investigation:** not escalated — this is the same structural limit
+  `OBS-014` already recorded for the curated-corpus condition (a
+  documentation/symbol-purpose layer answers "what exists" well and "why
+  does behaviour differ across call sites" poorly), now reconfirmed
+  against the real Haskell-adapter-derived digest rather than a
+  hand-curated `dev-docs/` excerpt — the same limitation recurring across
+  two structurally different context sources (curated docs, live
+  adapter-derived Haddock extraction) is itself worth `knowledge-curator`
+  noting as a recurrence, not a fresh mechanism to investigate.
+- **resolution:** no action — recorded as evidence for `context-evaluator`'s
+  own forthcoming Part 1 verdict (`03-hledger-cross-language-evaluation.md`,
+  not yet filed as of this observation). Not a `context-gaps/` candidate:
+  nothing here is a relationship the graph lacks a concept for — it is an
+  inherent property of what Haddock-comment extraction can capture,
+  already priced into this phase's own stated LOW-baseline expectation
+  (§0 of the phase plan).
+
+### OBS-015 — `vendor/hledger-lib/src/` and `vendor/hledger/src/` are both, unscoped, the *entire* hledger monorepo on disk, despite the Phase 61 `repository_url().subdirectory` fix and a correctly-populated `vendors.repository_subdirectory` DB column
+
+- **origin:** Phase 61 (hledger cross-language experiment), direct
+  `reference-project-tester` inspection of the real, already-completed
+  `codecompass sync --yes --budget 0` output
+- **date:** 2026-09-19
+- **codecompass_revision:** `9f8b510` (includes the Phase 61 §4
+  `repository_url()` fix, commit `9f8b510`)
+- **project:** ledgerkit, scratch copy `ledgerkit-scratch-61`; hledger
+  pinned at `33fa849e7ae841968bd21c427094c4fb4a4ec38d` (tag `1.52.4`)
+- **edge identity:** `vendors.repository_subdirectory` (`context-graph.db`,
+  correctly `'hledger-lib'` / `'hledger'` for the two rows, confirmed by
+  direct query) -- should scope --> the real on-disk snapshot at
+  `vendor/hledger-lib/src/` / `vendor/hledger/src/` that a fallback-reading
+  agent would `ls`/`find`/`grep` directly.
+- **observation type:** EDGE_MISLEADING.
+- **edge correctness:** incorrect, specifically for the raw-clone
+  artifact (the generated digests built from the same subdirectory value
+  — `FILETREE.md`, `readme_and_api_surface()`'s symbol index in
+  `CLAUDE.md` — are correctly scoped; only the physical `src/` snapshot
+  is not). Confirmed directly: `ls vendor/hledger-lib/src` and
+  `ls vendor/hledger/src` are byte-identical top-level listings (both
+  show `hledger`, `hledger-lib`, `hledger-ui`, `hledger-web`,
+  `azure-pipelines.yml`, etc. — the whole monorepo), `du -sh` reports
+  136M for each (272M total for what is really one checkout, cloned
+  twice), and `find vendor/hledger-lib/src -iname Stats.hs` finds
+  `vendor/hledger-lib/src/hledger/Hledger/Cli/Commands/Stats.hs` — a file
+  that is actually part of the sibling `hledger` package, sitting inside
+  what is nominally `hledger-lib`'s own vendor directory. By contrast,
+  `vendor/hledger-lib/FILETREE.md` (74 lines) and
+  `vendor/hledger/FILETREE.md` (168 lines) are each correctly scoped —
+  zero `Cli/Commands` entries in the former, zero `Hledger/Data` entries
+  in the latter — confirming the bug is specific to the raw clone
+  destination, not the generated digest.
+- **task usefulness:** n/a for an agent that only follows the generated
+  `CLAUDE.md`'s own "Quick links" to `FILETREE.md` (as this phase's own
+  plan §2.4 expects the treatment agent to do first) — those stay
+  correct. Real risk for the explicitly-allowed, explicitly-logged
+  fallback path (§2.4/§2.7 of this phase's own plan: "a fallback to
+  direct source reading is allowed... a required part of its own
+  report") — an agent that runs `find`/`grep` directly against
+  `vendor/hledger-lib/src/` rather than reading `FILETREE.md` first could
+  misattribute a `hledger`-owned file (like `Stats.hs`) as belonging to
+  `hledger-lib`, which matters directly here since this phase's own plan
+  (§1) singles out exactly this Stats.hs/command-ownership distinction
+  as the one Phase 54b got by curation, not detection.
+- **default pathway:** reading the single, real, pinned local
+  `/home/cormac/projects/hledger` monorepo checkout directly — one copy,
+  naturally showing `hledger-lib/`, `hledger/`, `hledger-ui/`,
+  `hledger-web/` as sibling top-level directories with no duplication and
+  no ambiguity about which package a given file belongs to. For this
+  specific mechanism, direct repository inspection is strictly better
+  than what `codecompass sync` produced (a single correctly-scoped copy
+  vs. two duplicate, unscoped, cross-contaminated copies).
+- **advantage:** LOW for the raw-clone artifact specifically (real,
+  measurable downside — doubled disk cost, a genuine misattribution risk
+  — not merely "no better than direct inspection"); does not by itself
+  invalidate the FILETREE.md/CLAUDE.md-mediated pathway, which stays
+  correctly scoped and is rated separately.
+- **wrong or misleading?** yes — this phase's own plan (Verification
+  section) explicitly claims "a real, live re-run of the exact
+  `codecompass sync` transcript in §1 confirms `vendor/hledger-lib/src/`
+  now contains only `hledger-lib`'s own real files... no
+  `hledger`/`hledger-ui`/`hledger-web` siblings — checked directly, not
+  assumed," and the fix's own commit message (`9f8b510`) states "Verified
+  live: FILETREE.md now lists only hledger-lib's own files" — the second,
+  narrower claim (about `FILETREE.md`) is true and independently
+  reconfirmed here; the first, broader claim (about `vendor/hledger-lib/src/`
+  itself) is not, checked directly against the real synced output rather
+  than assumed from the narrower claim holding.
+- **status:** recorded
+- **investigation:** root cause traced directly in
+  `src/codecompass/source_resolution.py::resolve_and_clone`:
+  `_git_clone(location.url, dest)` clones the *whole* repository straight
+  into `dest` (`vendor/<name>/src`) unconditionally; `location.subdirectory`
+  is used only to compute the function's *return value*
+  (`source_root = dest / location.subdirectory`), which `sync.py::sync_vendor`
+  consumes solely as `tree_root` for rendering `FILETREE.md`/the symbol
+  index — nothing in this path ever prunes, moves, or restricts what
+  physically lands at `dest` itself. This is not a Haskell-specific or
+  Phase-61-specific defect — the same non-pruning behaviour would apply
+  identically to the existing npm-adapter monorepo case
+  (`decisions/0021`); Phase 61 is simply the first real use to place two
+  sibling vendors sharing one repository URL side by side, which is what
+  makes the duplication and cross-contamination directly observable for
+  the first time. **Not filed as a `context-gaps/` entry**: this is not a
+  missing relationship the graph's model lacks a concept for (the
+  `repository_subdirectory` value is already correctly captured and
+  stored) — it is an implementation gap in one function's own behaviour,
+  a normal defect/candidate-learning shape per this queue's own README
+  ("What does NOT belong [in context-gaps]... Bugs in existing detection").
+- **resolution:** no action taken (no code touched, per role). Worth
+  `knowledge-curator` weighing against the Phase 61 plan's own
+  already-named learning #1 ("a new ecosystem adapter's `repository_url()`
+  must set `subdirectory`... or `resolve_and_clone` silently clones the
+  wrong scope") — that learning's own phrasing implies setting
+  `subdirectory` fixes the clone's scope; this observation shows it only
+  fixes the *digest's* scope, leaving the raw clone itself unscoped
+  regardless. A future `resolve_and_clone` fix (clone to a temp location,
+  then copy/move only `dest / subdirectory`'s contents into the real
+  `dest`) would resolve this for every monorepo-backed adapter, not just
+  Haskell — but deciding or building that fix is out of scope for this
+  role (a candidate for whoever next touches `resolve_and_clone`, not
+  built here).
+
+
 ### OBS-014 — curated `dev-docs/hledger-reference/` corpus omitted `Stats.hs` entirely, forcing the exact same raw-clone fallback the baseline run used for that one command
 
 - **origin:** Phase 54b (Ledgerkit behavioural-understanding experiment —

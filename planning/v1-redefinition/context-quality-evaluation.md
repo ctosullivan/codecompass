@@ -21,7 +21,13 @@ in `planning/phase-54b-ledgerkit-behavioural-understanding-experiment.md`
 §5. It is deliberately **not** added to §3's shared criteria table here —
 staying phase-scoped unless Phase 54b's own result justifies promoting
 it, the same evidence-before-generalisation discipline this file's own
-history already follows.
+history already follows. **Amended again 2026-09-19** (Phase 61 —
+`L-027`): a new ground rule (§1) on single-trial baseline/treatment
+comparisons, added to the shared instrument this time (not kept
+phase-scoped like Phase 54b's own addition) because the confound it
+names is a property of the *comparison design itself*, not of any one
+phase's own subject matter — it applies to every future two-run
+reference-project evaluation, not just Phase 61's own.
 
 ## 1. Ground rules
 
@@ -34,6 +40,19 @@ history already follows.
 - A technically-correct result that offers little advantage over a couple
   of cheap searches is recorded **honestly as low-advantage** — not
   rounded up because it wasn't *wrong*.
+- **A single-trial (N=1-per-condition) baseline/treatment comparison
+  cannot, by construction, separate "the tool's real contribution" from
+  "one agent read more carefully than the other."** Before crediting
+  CodeCompass for a treatment-arm finding the baseline missed,
+  explicitly check whether both arms had equal raw-source access to the
+  decisive evidence (both agents' own file-read logs, not just the
+  polish of the final report) — if they did, the quality delta is
+  agent-diligence variance, not a context-quality result, regardless of
+  how well the treatment report reads. Confirmed necessary at Phase 61
+  (`L-027`): a real, independently-confirmed divergence discovery would
+  have been misattributed to CodeCompass had this check not been made
+  explicitly — both agents had read the exact same decisive raw source,
+  which was not itself a CodeCompass vendor.
 
 ## 2. Report structure
 

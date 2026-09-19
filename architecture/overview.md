@@ -2065,6 +2065,37 @@ Anthropic-API money.
 
 ## Known footguns
 
+- **`resolve_and_clone`'s `subdirectory` scopes the *rendered* view
+  only, never the raw on-disk clone** (Phase 61). `_git_clone` always
+  clones the *whole* upstream repository into `dest`
+  (`vendor/<name>/src`); `subdirectory` only changes the function's
+  *return value* (`source_root = dest / subdirectory`), which
+  `sync_vendor` consumes as `tree_root` for rendering `FILETREE.md`/the
+  symbol index. For a monorepo (npm's `repository.directory`, or two
+  Haskell packages sharing one repository URL — Phase 61's own
+  `hledger-lib`/`hledger`), every vendor backed by the same upstream
+  repository gets its own full, duplicate, unscoped clone at
+  `vendor/<name>/src/` — doubled disk cost per sibling, and a real
+  misattribution risk for anyone who `grep`s/`find`s the raw clone
+  directly instead of following `FILETREE.md`. Confirmed live at Phase
+  61: `vendor/hledger-lib/src/` and `vendor/hledger/src/` are
+  byte-identical top-level listings of the whole monorepo, while both
+  packages' `FILETREE.md`s stay correctly scoped to their own package.
+- **`readme_and_api_surface()` (any ecosystem adapter) extracts a
+  symbol's declared one-line purpose (doc-comment/docstring/Haddock),
+  never its body.** It answers "what exists and what's it called," not
+  "what does it do" or "why does behaviour differ between two call
+  sites of it." Confirmed three times independently across two
+  structurally different context sources: a hand-curated
+  `dev-docs/hledger-reference/` corpus (Phase 54b) and a live
+  Haskell-adapter-generated `CLAUDE.md` digest (Phase 61 — `grep -ci
+  depth` returns `0` across all 44 rendered command modules, including
+  the ones the task specifically asked about). A task whose answer
+  depends on control-flow/business-logic detail inside a function body
+  is not answerable from the digest alone, regardless of ecosystem or
+  whether the digest came from human curation or mechanical generation
+  — direct source reading is required for that class of question by
+  design, not by omission.
 - **`VendorDigest.is_stale` was removed in Phase 6**, not left as a stub —
   `check` never builds a `VendorDigest` (same reasoning `index.py`
   established for staying cheap), so the Phase-1 stub had no code path

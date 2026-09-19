@@ -1316,8 +1316,59 @@ regardless of this phase's own result. The planned
 `HaskellAdapter.repository_url()` monorepo-subdirectory fix stays in
 scope, unchanged, and is now depended on even more directly (the
 symmetry protocol's own commit-pinning verification requires a
-correctly-scoped clone to check against). Not started; plan awaiting
-review.
+correctly-scoped clone to check against).
+
+**Done 2026-09-19.** The fix landed (`9f8b510`) and is independently
+confirmed working: `FILETREE.md`/the symbol index/dependency tree are
+all correctly scoped for both `hledger-lib` and `hledger` (real,
+publicly-visible `vendors.repository_subdirectory` values,
+`hledger-lib`/`hledger`). The symmetry protocol held, verified via real
+`git rev-parse HEAD` equality between the treatment's vendor source and
+the baseline's real local checkout, after a real, live-confirmed gap
+(`resolve_and_clone` has no commit-pinning support — the network clone
+initially landed on the current upstream head, not the pinned tag) was
+closed via a manual post-sync re-pin, with `FILETREE.md`/`filetree.json`
+regenerated to match afterward.
+
+Two fresh, independent agents ran the identical, symmetric, two-part
+task; `context-evaluator` independently re-derived ground truth
+(including building a real fixture and running both the pinned
+`hledger` 1.52.4 binary and Ledgerkit's own CLI live) and scored
+two-part-plus-overall per §2.6: **Part 1** treatment PASS (vs. Phase
+54b's own PASS WITH GAPS) at **LOW** context advantage — traced to
+`hledger` now being tracked as a vendor at all (a scope decision this
+phase made), not to anything the generated `CLAUDE.md`/`DEPTREE.md`
+explained; **Part 2** at **effectively NULL** advantage — Ledgerkit
+itself is not a tracked vendor, so both agents worked from identical raw
+source. **Outcome shape (b)**: helped Part 1 navigation marginally,
+did not materially help Part 2. Rediscovery comparison (§2.7): **no
+measurable reduction** — treatment read essentially the same raw files
+as baseline, plus three generated artifacts, one of which it itself
+disclosed as contributing nothing.
+
+A genuinely important methodological finding, filed as `L-027`:
+`context-evaluator` found treatment's own report materially better on
+Part 2 (it caught a real, previously-unrecorded Ledgerkit correctness
+gap — `stats()`'s commodity count isn't depth-excluded the way
+hledger's real one is, confirmed live) but explicitly traced this
+*not* to CodeCompass — both agents had byte-identical raw-source access
+to the decisive evidence; one simply read more carefully. A single-trial
+baseline/treatment design cannot cleanly separate a tool's real
+contribution from agent-diligence variance without this kind of explicit
+check. Two further learnings filed: `L-026` (the adapter-generated
+digest answers "what exists," not "what it does" — a third independent
+occurrence of the same limit Phase 54b's curated docs already showed)
+and `L-028` (the plan's own Verification wording overclaimed that the
+`repository_url()` fix would scope the *raw* `vendor/<name>/src/` clone
+itself — it scopes the *rendered* view; the raw clone has always
+contained the whole monorepo, for any ecosystem, per `resolve_and_clone`'s
+own pre-existing contract). All three triaged by `knowledge-curator`.
+`usage.py`'s Haskell import detection: investigated, **not built** — no
+real consumer in this phase's own task; `hledger → hledger-lib` is
+already a real `depends_on_edges` row with zero new code. **Does not
+resolve GATE DD, does not complete or bypass Phases 55-59.** Retro:
+`planning/retros/phase-61-hledger-cross-language-experiment.md`.
+Evaluation: `planning/reference-projects/ledgerkit/03-hledger-cross-language-evaluation.md`.
 
 ### Phase 62 — Adapter-interface consolidation · EXPERIMENTAL
 - Assess `EcosystemAdapter`'s own contract (`decisions/0002`) against
