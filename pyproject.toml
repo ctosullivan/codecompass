@@ -22,6 +22,7 @@ dependencies = [
     "rich>=15",
     "anthropic>=0.109",
     "pipdeptree>=4.2",
+    "pyyaml>=6.0",
 ]
 # Note: no `tomli` dependency — requires-python >=3.11 means `tomllib` is
 # available in the standard library (see decisions/0009).
@@ -35,6 +36,7 @@ Issues = "https://github.com/ctosullivan/codecompass/issues"
 dev = [
     "pytest",
     "ruff",
+    "jsonschema",
 ]
 
 [project.scripts]

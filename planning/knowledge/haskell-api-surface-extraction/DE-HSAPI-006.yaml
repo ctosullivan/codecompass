@@ -1,0 +1,25 @@
+id: DE-HSAPI-006
+kind: derivation
+claim: CL-HSAPI-006
+method: >
+  Initially classified hledger-lib alone and found zero no-export-list
+  files (OBS-HSAPI-004) -- rather than concluding this form doesn't
+  really occur in practice and is safe to under-support, treated the
+  zero result as a reason to widen the search (the task's own explicit
+  instruction to look for this shape "if any exist"), re-ran the same
+  classifier across the whole pinned checkout, and found 17 real
+  instances, confirming the form is genuinely real and must be handled,
+  just not representatively sampled by hledger-lib alone. Read two
+  instances directly to rule out a classifier false positive (e.g. an
+  export list hidden inside a preceding block comment that the naive
+  window-scan might miscount) -- both confirmed genuinely bare. Then
+  separately reasoned (from general knowledge of Haskell's layout rule,
+  not from a further real test run) about what a fallback "list every
+  top-level name" scan would need to do differently from the
+  export-list-present case, and deliberately did not build or test that
+  fallback -- flagging it explicitly as unresolved rather than
+  presenting an untested heuristic as a settled finding.
+inputs:
+  - EV-HSAPI-004
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-19T00:00:00Z"

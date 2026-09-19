@@ -1,0 +1,52 @@
+id: OBS-HSAPI-005
+kind: observation
+method: executable
+what_was_done: >
+  Re-ran the same classifier as OBS-HSAPI-004 (this time across the
+  whole pinned hledger checkout, not just hledger-lib/, since
+  hledger-lib alone happened to have zero no-export-list files) to
+  check whether the "no export list at all" form (`module Foo where`,
+  no parenthesised list) is real anywhere in this codebase rather than
+  only a documented-but-unobserved possibility. Then read the exact
+  module-declaration line of two of the matches directly:
+  hledger-ui/Hledger/UI/UITypes.hs:41 and
+  hledger/Hledger/Cli/Commands/Activity.hs:9-10.
+tool: python3
+tool_version: "3.x (system interpreter, one-off classifier)"
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+location: "hledger/Hledger/Cli/Commands/Activity.hs:9-10, hledger-ui/Hledger/UI/UITypes.hs:41"
+raw_result: |
+  total .hs files scanned with a module declaration: 147
+  NO EXPORT LIST (count): 17, including (first 17 shown):
+    hledger-ui/Hledger/UI/UIOptions.hs
+    hledger-ui/Hledger/UI/UITypes.hs
+    hledger-ui/Hledger/UI/Main.hs
+    hledger/Hledger/Cli/Commands/Activity.hs
+    bin/hledger-check-fancyassertions.hs
+    bin/gsheet-csv.hs
+    tools/generatejournal.hs
+    tools/_docshelltest.hs
+    tools/generatetimeclock.hs
+    hledger-web/Hledger/Web/App.hs
+    hledger-web/Hledger/Web/Settings.hs
+    hledger-web/Hledger/Web/WebOptions.hs
+    hledger-web/Hledger/Web/Main.hs
+    hledger-web/Hledger/Web/Handler/JournalR.hs
+    hledger-web/Hledger/Web/Handler/RegisterR.hs
+    hledger-web/Hledger/Web/Settings/StaticFiles.hs
+    hledger-web/test/test.hs
+
+  Direct read confirms both are genuinely bare, single-line module
+  declarations with no parenthesised list at all:
+    hledger/Hledger/Cli/Commands/Activity.hs:9-10 reads literally
+      module Hledger.Cli.Commands.Activity
+      where
+    hledger-ui/Hledger/UI/UITypes.hs:41 reads literally
+      module Hledger.UI.UITypes where
+  (UITypes.hs's module line is preceded, much earlier in the file, by an
+  unrelated top-of-file {-| ... -} Haddock module-doc comment -- that
+  comment sits BEFORE `module`, not between `module` and `where`, and
+  plays no role in the export-list question.)
+timestamp: "2026-09-19T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

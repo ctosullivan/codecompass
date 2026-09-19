@@ -1,0 +1,58 @@
+id: OBS-HSAPI-010
+kind: observation
+method: executable
+what_was_done: >
+  In the same `stack ghci hledger-lib:lib` session as OBS-HSAPI-009,
+  ran `:m Hledger.Query` then `:browse Hledger.Query`, to independently
+  confirm (by real compiler behaviour) what `Query(..)`, `OrdPlus(..)`,
+  and `QueryOpt(..)` (Hledger/Query.hs:15-16, plus `QueryOpt(..)` found
+  further in the same list) actually export -- specifically, whether
+  `(..)` really does expose every data constructor of the named type, as
+  the task's own framing states, verified against a real, non-trivial
+  type (`Query` has many constructors, not a toy two-constructor
+  example).
+tool: stack
+tool_version: "3.11.1, GHC 9.12.4, aarch64, resolver lts-24.59"
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+location: "hledger-lib/Hledger/Query.hs:13-78"
+raw_result: |
+  `:browse Hledger.Query` output includes, verbatim:
+    type Query :: *
+    data Query
+      = Any
+      | None
+      | Date Hledger.Data.Types.DateSpan
+      | Date2 Hledger.Data.Types.DateSpan
+      | StatusQ Hledger.Data.Types.Status
+      | Code Hledger.Utils.Regex.Regexp
+      | Desc Hledger.Utils.Regex.Regexp
+      | Tag Hledger.Utils.Regex.Regexp (Maybe Hledger.Utils.Regex.Regexp)
+      | Acct Hledger.Utils.Regex.Regexp
+      | Type [Hledger.Data.Types.AccountType]
+      | Depth Int
+      | DepthAcct Hledger.Utils.Regex.Regexp Int
+      | Real Bool
+      | Amt OrdPlus Hledger.Data.Types.Quantity
+      | Sym Hledger.Utils.Regex.Regexp
+      | Not Query
+      | And [Query]
+      | Or [Query]
+      | AnyPosting [Query]
+      | AllPostings [Query]
+    ...
+    type OrdPlus :: *
+    data OrdPlus = Lt | LtEq | Gt | GtEq | Eq | AbsLt | AbsLtEq | AbsGt
+      | AbsGtEq | AbsEq
+    ...
+    type QueryOpt :: *
+    data QueryOpt
+      = QueryOptInAcctOnly Hledger.Data.Types.AccountName
+      | QueryOptInAcct Hledger.Data.Types.AccountName
+      | QueryOptInterval Hledger.Data.Types.Interval
+  i.e. all 18 `Query` constructors, all 10 `OrdPlus` constructors, and
+  all 3 `QueryOpt` constructors are visible -- confirming `(..)` in a
+  real, moderately complex export exposes every constructor of that
+  type, not merely the type name itself.
+timestamp: "2026-09-19T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

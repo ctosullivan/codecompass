@@ -1,0 +1,35 @@
+id: OBS-HSAPI-011
+kind: observation
+method: source_read
+what_was_done: >
+  Read hledger-lib/Hledger/Data/Types.hs's module header (lines 29-34).
+  The export list is:
+    module Hledger.Data.Types (
+      module Hledger.Data.Types,
+    #if MIN_VERSION_time(1,11,0)
+      Year
+    #endif
+    )
+    where
+  Two things confirmed here that neither Query.hs nor AccountName.hs
+  showed: (1) `module Hledger.Data.Types,` re-exports the module's OWN
+  name back at itself -- a self-re-export, which (per GHC's own module
+  export rules) means "export every top-level name defined or imported
+  by this module," functionally very close to omitting the export list
+  entirely (OBS-HSAPI-005) but spelled out explicitly, and combinable
+  with additional named exports (here, one more: `Year`). (2) A literal
+  C-preprocessor conditional (`#if MIN_VERSION_time(1,11,0)` /
+  `#endif`) sits inside the export-list's own line range, gating
+  whether `Year` is exported at all -- this is only meaningful because
+  `{-# LANGUAGE CPP #-}` is active for this file (confirmed present
+  earlier in the same file, line 1 area) and GHC runs the file through
+  a real C preprocessor before parsing.
+tool: null
+tool_version: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+location: "hledger-lib/Hledger/Data/Types.hs:29-34"
+raw_result: >
+  Verbatim header block read; see location for exact line numbers.
+timestamp: "2026-09-19T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

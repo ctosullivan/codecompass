@@ -1,0 +1,18 @@
+id: REQ-HSAPI-001
+kind: requirement
+statement: >
+  codecompass-adaptor-haskell's export-list scanner MUST, for the
+  baseline shapes (bare identifiers in either leading- or
+  trailing-comma style, `Type(..)` all-constructors expansion, Haddock
+  `-- * Section` grouping headers, and whole-line commented-out
+  entries), produce exactly the exported-name set a real GHC `:browse`
+  would report for that module -- comment-stripping and tokenising the
+  export-list span between `module <Name> (` and its own `where`.
+example: |
+  Given hledger-lib/Hledger/Data/AccountName.hs's real export list
+    (leading-comma style, one commented-out entry)
+  When the scanner runs over it
+  Then it produces the same 48-name set `stack ghci`'s own `:browse
+    AccountName` confirms, correctly excluding the commented-out name.
+decision: DEC-HSAPI-001
+status: verified

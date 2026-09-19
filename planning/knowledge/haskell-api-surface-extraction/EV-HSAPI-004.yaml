@@ -1,0 +1,18 @@
+id: EV-HSAPI-004
+kind: evidence
+evidence_kind: executable
+what_it_shows: >
+  The "no export list at all" form (`module Foo where`, meaning every
+  top-level name is exported) does not occur anywhere in hledger-lib's
+  own 65 real modules, but is real and confirmed present in 17 files
+  across the wider pinned hledger checkout (hledger-ui, hledger,
+  hledger-web, and standalone tool/bin scripts), including at least two
+  directly read and confirmed genuinely bare (no parenthesised list at
+  all, not even an empty `()`): hledger/Hledger/Cli/Commands/
+  Activity.hs:9-10 and hledger-ui/Hledger/UI/UITypes.hs:41.
+observations: [OBS-HSAPI-004, OBS-HSAPI-005]
+source_ref: null
+doc_ref: null
+test_ref: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+status: current

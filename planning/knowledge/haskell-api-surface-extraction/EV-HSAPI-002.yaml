@@ -1,0 +1,17 @@
+id: EV-HSAPI-002
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  A real, non-trivial hledger-lib module's export list
+  (Hledger/Query.hs) spans many lines and mixes: bare comma-separated
+  identifiers; `Type(..)` entries (`Query(..)`, `QueryOpt(..)`); Haddock
+  `-- * Section` grouping-header comments that contain no identifier at
+  all; and at least one whole-line commented-out candidate export
+  (`-- patternsMatchTags,`) using the same textual shape as a live
+  entry, distinguished only by its leading `--`.
+observations: [OBS-HSAPI-002]
+source_ref: "hledger-lib/Hledger/Query.hs:13-78"
+doc_ref: null
+test_ref: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+status: current

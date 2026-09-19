@@ -19,7 +19,7 @@ Two phases, back to back:
 
 - **Phase A** (always free, no prompts): auto-discovers manifests at the
   project root (`package.json`, `pyproject.toml`, `requirements.txt`,
-  `Cargo.toml`), writes every discovered dependency into `vendor.toml`,
+  `Cargo.toml`, `package.yaml`), writes every discovered dependency into `vendor.toml`,
   clones every vendor's source, regenerates `FILETREE.md`/`DEPTREE.md`/
   `CLAUDE.md` for any newly-discovered vendor, refreshes the root
   `CLAUDE.md` routing table, writes the tool-level Skill
@@ -63,8 +63,8 @@ useful when you want to name specific manifest files rather than rely on
 root-level auto-discovery.
 
 Bulk-discovers dependencies from the given manifest files (`package.json`,
-`pyproject.toml`, `requirements.txt`, `Cargo.toml` — dispatched by
-filename) and writes a draft `vendor.toml` with every discovered
+`pyproject.toml`, `requirements.txt`, `Cargo.toml`, `package.yaml` —
+dispatched by filename) and writes a draft `vendor.toml` with every discovered
 dependency listed as a bare `name`/`ecosystem` entry. Free to run — no AI
 call, and no cloning either (that's a bare `codecompass`/whole-project
 `sync` trigger point, not `init --scan`'s job).

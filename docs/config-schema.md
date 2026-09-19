@@ -15,7 +15,7 @@ per tracked dependency.
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `name` | string | yes | Dependency name, as published (e.g. `turndown`, `requests`, `serde`). |
-| `ecosystem` | string, one of `npm` \| `python` \| `cargo` | yes | Which `EcosystemAdapter` handles this vendor. |
+| `ecosystem` | string, one of `npm` \| `python` \| `cargo` \| `haskell` | yes | Which `EcosystemAdapter` handles this vendor. `haskell` (Phase 60) is handled by an **external adapter process**, not in-process Python — see [`docs/external-adapters.md`](external-adapters.md). |
 
 No other fields are read. `context_path` (a Phase 5 field) was removed in
 Phase 7 ([`decisions/0019`](../decisions/0019-grounded-description-replaces-gap-analysis.md)).
@@ -62,6 +62,10 @@ ecosystem = "python"
 [[vendor]]
 name = "serde"
 ecosystem = "cargo"
+
+[[vendor]]
+name = "hledger-lib"
+ecosystem = "haskell"
 ```
 
 ## Validation

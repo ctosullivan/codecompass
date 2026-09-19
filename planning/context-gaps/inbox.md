@@ -8,6 +8,125 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
 
 ---
 
+### CG-008 — `context-graph.db`'s `symbols` table has no path for an external-process adapter's own structured symbol output
+
+- **origin:** Phase 60 (minimal external Haskell adapter), real end-to-end
+  validation (`codecompass sync` against `hledger-lib`, run by the lead
+  directly, not a subagent)
+- **date:** 2026-09-19
+- **codecompass_revision:** `886dc6e` (working tree; Phase 60's own
+  implementation uncommitted at filing time)
+- **project:** codecompass (own dev) — real target: `hledger-lib` inside
+  the pinned `hledger` monorepo (`33fa849e7ae841968bd21c427094c4fb4a4ec38d`),
+  registered as a real vendor in a scratch project's `vendor.toml`
+- **the edge:** A = `codecompass-adaptor-haskell`'s own real
+  `analyze_project` wire output for `hledger-lib` (1347 `symbols` entries,
+  independently confirmed correct against real `stack ghci :browse`
+  output), B = `context-graph.db`'s own `symbols` table for the
+  `hledger-lib` vendor row
+- **edge kind:** other (not a doc↔code or dependency↔dependency relation
+  in the usual sense — this is a missing *ingestion path* between a real,
+  correct, already-computed structured result and the graph table meant
+  to hold exactly that kind of content)
+- **agent's reasoning:** ran a real `codecompass sync --yes --budget 0`
+  against a scratch project tracking `hledger-lib` (ecosystem="haskell")
+  to satisfy Phase 60's own plan verification step (a real end-to-end
+  confirmation with the resulting `context-graph.db` row's content
+  independently checked). The `vendors` row came back fully correct
+  (name/ecosystem/installed_version/repository_url all real, matching
+  independently-verified values) and the per-vendor `vendor/hledger-lib/
+  CLAUDE.md` correctly rendered all 1347 real symbols (via
+  `HaskellAdapter.readme_and_api_surface()`, which does call the external
+  adapter). But a direct SQLite query
+  (`SELECT COUNT(*) FROM symbols WHERE vendor_id = ...`) returned `0`.
+  Traced the cause: `sync.py::rebuild_project_graph`'s
+  `_collect_vendor_symbols` does **not** call `adapter.readme_and_api_surface()`
+  at all — it independently walks `adapter.source_location()`'s own files
+  and calls `symbols.py::extract_symbols_for_file(path, ecosystem)`,
+  which dispatches by a hard-coded per-ecosystem `if` chain
+  (Python/Cargo/npm) with no Haskell branch, silently returning `[]` for
+  every `.hs` file regardless of what the adapter itself would report.
+- **what the graph shows instead:** zero `symbols` rows for the
+  `hledger-lib` vendor, always, for any Haskell vendor — a structural gap
+  in `_collect_vendor_symbols`/`extract_symbols_for_file`, not a
+  per-project or per-file detection miss.
+- **could mechanical detection ever catch this?** yes-with-better-heuristics
+  is the wrong frame here — this isn't a missing pattern-matching
+  heuristic, it's a missing dispatch branch/architecture decision: either
+  `EcosystemAdapter` gains a structured-symbol-list method
+  `_collect_vendor_symbols` can call polymorphically for every ecosystem
+  (in-process and external alike), or `symbols.py` grows a Haskell-
+  specific in-process consumer of the external adapter's own output —
+  the former keeps external-process adapters' own logic out of
+  `src/codecompass/` entirely (matching `decisions/0057`'s whole point);
+  the latter is smaller but re-admits ecosystem-specific branching into
+  core.
+- **smallest candidate that would fix it:** unclear — genuinely Phase 62's
+  own question ("assess `EcosystemAdapter`'s own contract against what
+  building and using the Haskell adapter actually required"), not decided
+  here by direct instruction (avoid expanding Phase 60 to solve it).
+- **classification:** graph-capability (Stage E / GATE DD) — though
+  routed operationally through Phase 62 (Stage F), since it was Phase 60's
+  own adapter-interface experience that surfaced it, not a Ledgerkit/
+  Stage D finding.
+- **status:** promoted-to-roadmap — Phase 62 (Stage F,
+  `planning/v1-redefinition/roadmap.md`) already names this exact gap as
+  one of its own open questions, per the lead's same-session roadmap
+  update.
+- **recurrence:** first occurrence
+- **curation (triage, 2026-09-19, knowledge-curator):** template fields
+  all present (origin, date, `codecompass_revision`, project, the edge,
+  edge kind, agent's reasoning, what-the-graph-shows-instead, "could
+  mechanical detection ever catch this?", smallest candidate,
+  classification, status, recurrence). Independently re-verified rather
+  than taken on the entry's own word: read
+  `src/codecompass/symbols.py::extract_symbols_for_file` directly
+  (lines 127-138) and confirmed it is exactly the closed `if`/`if`/`if`
+  chain the entry describes (`Ecosystem.PYTHON`, `Ecosystem.CARGO`,
+  `Ecosystem.NPM`), falling through to `return []` for any other
+  ecosystem, including Haskell — no Haskell branch exists anywhere in
+  that function. Read `src/codecompass/sync.py::_collect_vendor_symbols`
+  directly (lines 365-373) and confirmed it walks
+  `adapter.source_location()` via `iter_source_files` and calls
+  `extract_symbols_for_file(path, config.ecosystem)` — a genuinely
+  separate code path from `adapter.readme_and_api_surface()` (called
+  earlier in `rebuild_project_graph`, line 134), exactly as claimed. This
+  is a real, evidenced `symbols`-table population gap, not a false
+  positive or a retrieval artifact — checked against the template's
+  controlled vocabulary: not `unsupported` (the claim holds under direct
+  code reading), not `duplicate` (no other `CG-NNN` entry names this
+  edge — `CG-001` through `CG-007` are all doc/spec-doc/dependency
+  concerns, none touches `symbols` table population for an
+  external-process adapter), not `already_represented` (the `symbols`
+  table genuinely holds zero rows for the vendor, confirmed by the
+  entry's own live SQLite query, not merely unfound by the agent), not
+  `retrieval_issue` (there is no edge to surface — the rows don't
+  exist). Correctly a `graph_capability_gap`: the fix is a missing
+  dispatch branch/interface contract (either `EcosystemAdapter` gaining
+  a structured-symbol-list method `_collect_vendor_symbols` can call
+  polymorphically, or `symbols.py` growing ecosystem-specific
+  in-process consumption of external adapter output) — an architecture
+  decision needing its own ADR per Stage E/GATE DD
+  (`conditional-generalisation.md` §3), not a tunable heuristic
+  Stage C/GATE DB could absorb. `status: promoted-to-roadmap` is
+  therefore correct and already effected: Phase 62
+  (`planning/v1-redefinition/roadmap.md`, "Adapter-interface
+  consolidation") already names this exact gap as one of its own open
+  questions and cross-references `CG-008` by id, in this same session,
+  before this triage ran — no new roadmap phase needed from this queue;
+  this triage only confirms the classification/status the roadmap
+  update already assumed. First occurrence — no prior `CG-NNN` entry
+  concerns vendor-symbol-table ingestion for an external-process
+  adapter, so no recurrence bump. **Pending `promoted.md` line** (lead/
+  `roadmap-context-curator` to add once Phase 62's own resolution — an
+  ADR plus the interface/detection change it selects — lands):
+  `CG-008 | 2026-09-19 | graph-capability | <Phase 62 ADR + implementing
+  diff @ <real short SHA>>` — not added yet since Phase 62 hasn't run.
+  No entry made to `context-graph.db` — this queue never writes there,
+  per `decisions/0051`.
+
+---
+
 ### CG-007 — symbol-level (function-call) cross-references between externally-sourced, pinned reference-doc code excerpts have no representable relation kind
 
 - **origin:** Phase 54b (Ledgerkit behavioural-understanding experiment —

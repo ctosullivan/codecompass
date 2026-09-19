@@ -1,0 +1,28 @@
+id: CL-HSAPI-001
+kind: claim
+statement: >
+  For a Haskell module's export list, the baseline mechanical shapes --
+  a bare comma-separated identifier list (leading- or trailing-comma
+  style, both real), `Type(..)` (exports the type plus every one of its
+  real data constructors), whole-line `--`-prefixed comments including
+  commented-out disabled entries, and Haddock `-- * Section` grouping
+  headers that carry no identifier -- are correctly and completely
+  handled by a simple comment-stripping-then-tokenising scan, with no
+  need for a full parser. This was independently confirmed against a
+  real compiler, not merely re-derived from reading the same source
+  text: a naive comment-aware scan over AccountName.hs produced exactly
+  the same 48-name set as GHC's own `:browse` output, and Query.hs's
+  `Query(..)`/`OrdPlus(..)`/`QueryOpt(..)` were confirmed via `:browse`
+  to expand to all 18/10/3 real constructors respectively.
+derivation: DE-HSAPI-001
+supporting_evidence:
+  - EV-HSAPI-002
+  - EV-HSAPI-003
+  - EV-HSAPI-007
+  - EV-HSAPI-008
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+timestamp: "2026-09-19T00:00:00Z"
+status: supported
+supersedes: null

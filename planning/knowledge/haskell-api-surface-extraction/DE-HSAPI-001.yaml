@@ -1,0 +1,28 @@
+id: DE-HSAPI-001
+kind: derivation
+claim: CL-HSAPI-001
+method: >
+  Started from the Rust adapter's own precedent (EV-HSAPI-001) as the
+  "what does mechanical, non-AI extraction look like here" baseline,
+  then deliberately read two real, already-referenced-in-this-project
+  hledger-lib modules with visibly different export-list textual styles
+  (Query.hs: trailing-comma, section headers, a whole-line commented
+  entry; AccountName.hs: leading-comma, no section headers, a
+  commented-out entry in the SAME leading-comma shape as live entries)
+  rather than assuming one file's style generalises. Rather than trust
+  a source-level reading of what `(..)` or a comment-stripped scan
+  "should" produce, ran a real, independent verification against GHC
+  itself (`stack ghci` + `:browse`) for both files and compared the set
+  of names a naive Python scan would produce against the compiler's own
+  output -- exact match both times, including correctly excluding the
+  one commented-out name and correctly expanding `(..)` to its full,
+  real constructor list. This is the same "run it, don't just read
+  about it" discipline this role's own brief requires, applied for real
+  rather than only read from the plan document.
+inputs:
+  - EV-HSAPI-002
+  - EV-HSAPI-003
+  - EV-HSAPI-007
+  - EV-HSAPI-008
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-19T00:00:00Z"

@@ -1,0 +1,6 @@
+[submodule "protocol/codecompass-adaptor-protocol"]
+	path = protocol/codecompass-adaptor-protocol
+	url = git@github.com:ctosullivan/codecompass-adaptor-protocol.git
+[submodule "adapters/haskell"]
+	path = adapters/haskell
+	url = git@github.com:ctosullivan/codecompass-adaptor-haskell.git

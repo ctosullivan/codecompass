@@ -1,0 +1,29 @@
+id: OBS-HSAPI-002
+kind: observation
+method: source_read
+what_was_done: >
+  Read the module header (lines 1-79) of hledger-lib/Hledger/Query.hs, a
+  real, non-trivial hledger-lib module already used as evidence in prior
+  Phase 54 work. The `module Hledger.Query (` ... `where` block spans
+  lines 13-78 (65 lines), well past a single line/short block. Within
+  it: `-- * Query and QueryOpt`, `-- * parsing`, `-- * modifying`,
+  `-- * predicates`, `-- * accessors`,
+  `-- * matching things with queries`, and `-- * tests` are Haddock
+  section-header comments (lines 14, 21, 27, 32, 50, 58, 74) grouping
+  the list into subsections -- they contain no exported identifier.
+  `Query(..)` and `QueryOpt(..)` (lines 15-16) use the `(..)` suffix.
+  Line 72, `-- patternsMatchTags,`, is a whole-line comment disabling
+  what looks like a real export candidate -- the name never appears
+  live in the list. All other entries are bare, comma-separated
+  identifiers (functions/values), one per line, trailing-comma style
+  (comma after each name, not before).
+tool: null
+tool_version: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+location: "hledger-lib/Hledger/Query.hs:1-79"
+raw_result: >
+  Verbatim header block read; see location for exact line numbers of
+  each feature named above.
+timestamp: "2026-09-19T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

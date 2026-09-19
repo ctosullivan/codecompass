@@ -1,0 +1,19 @@
+id: EV-HSAPI-005
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  A `module <Name>` entry inside an export list does not always name a
+  real, independently-resolvable module. hledger-lib/Hledger.hs exports
+  `module X`, where `X` is an import ALIAS shared by five distinct real
+  imports (`import Hledger.Data as X`, `... Read as X`, `... Reports as
+  X`, `... Query as X`, `... Utils as X`) -- the entry re-exports the
+  union of everything visible under that shared alias, not a single
+  module's own surface. Resolving what `module X` actually contributes
+  requires reading this same file's own `import ... as X` lines, not
+  just the export list text itself.
+observations: [OBS-HSAPI-006]
+source_ref: "hledger-lib/Hledger.hs:22-33"
+doc_ref: null
+test_ref: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+status: current

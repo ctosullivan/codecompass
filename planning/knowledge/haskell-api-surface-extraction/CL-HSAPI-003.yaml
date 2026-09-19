@@ -1,0 +1,33 @@
+id: CL-HSAPI-003
+kind: claim
+statement: >
+  A real export list can contain a literal C-preprocessor conditional
+  (`#if MIN_VERSION_<pkg>(x,y,z)` / `#endif`) gating whether a
+  particular name is exported at all (confirmed real:
+  hledger-lib/Hledger/Data/Types.hs gates `Year` behind
+  `#if MIN_VERSION_time(1,11,0)`). A purely mechanical, non-preprocessing
+  line/text scanner (the Rust-adapter tier this feature is meant to
+  match) has no way to evaluate that condition from the file's own text
+  alone, since the condition depends on which version of an external
+  package (`time`, in this instance) the file is actually compiled
+  against -- information not present anywhere in the .hs file itself.
+  Any such scanner will therefore either (a) always treat `#if`-gated
+  names as exported (an over-approximation, silently wrong whenever the
+  condition would in fact be false for the target build), or (b) always
+  skip/ignore lines starting with `#` while scanning for names (an
+  under-approximation, silently dropping a real, sometimes-exported name
+  like `Year`), or (c) treat the presence of a `#`-line as reason to fall
+  back to a coarser "cannot determine, flag for manual/AI follow-up"
+  result for that specific entry. This research does not resolve which
+  of (a)/(b)/(c) is correct -- it depends on how much precision the
+  adapter's whole purpose actually needs, a design choice, not a fact
+  about hledger's own source.
+derivation: DE-HSAPI-003
+supporting_evidence:
+  - EV-HSAPI-009
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+timestamp: "2026-09-19T00:00:00Z"
+status: supported
+supersedes: null

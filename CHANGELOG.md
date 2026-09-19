@@ -9,6 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 60** (minimal external Haskell adapter, done): the reference
+  implementation of a genuinely **external** CodeCompass adapter, built
+  as two real, separate, publicly-hosted repositories —
+  `codecompass-adaptor-protocol` (MIT — schemas/`SCHEMA.md`/examples/
+  conformance vectors only, no code) and `codecompass-adaptor-haskell`
+  (GPL-3.0-or-later, a real Stack project) — checked out as git
+  submodules at `protocol/codecompass-adaptor-protocol/` and
+  `adapters/haskell/` (`decisions/0057`, `decisions/0058`, `decisions/0059`).
+  CodeCompass core gains `Ecosystem.HASKELL`, `discovery.py`'s
+  `package.yaml` discoverer (real `PyYAML`), `external_process.py` (a
+  fully generic JSON-Lines protocol client, zero ecosystem-specific
+  knowledge), and `adapters/haskell.py` (a thin dispatcher — manifest
+  reads plus monorepo package-root resolution, e.g. `hledger-lib/`
+  inside the `hledger` monorepo — delegating dependency-tree/API-surface
+  logic to the external process). `vendors.ecosystem` gains `'haskell'`
+  via a new **non-destructive** migration (`_SCHEMA_VERSION` 7→8,
+  table-rebuilt in place rather than dropped, protecting FK'd
+  `vendor_enrichment`/`symbol_enrichment` rows). Phase 54c's
+  evidence-backed workflow ran in full for Haskell API-surface
+  extraction (`planning/knowledge/haskell-api-surface-extraction/`): the
+  export-list scanner (`codecompass-adaptor-haskell`'s own
+  `Adapter.Scanner`) handles bare/`Type(..)`/section-header/
+  commented-out entries, `module <Name>` re-exports (with file-local
+  alias resolution), CPP-gated entries (flagged `undetermined`, never
+  guessed), the package's own `exposed-modules` filter, no-export-list
+  detection, and two-pass purpose-pairing by body location — all six
+  `REQ-HSAPI-*` records `verified` against real, live output. A real
+  `codecompass sync` against `hledger-lib` (the pinned reference corpus)
+  independently confirmed correct: its 48-name `Hledger.Data.AccountName`
+  export set matches live `stack ghci :browse` output exactly. One real,
+  disclosed gap found and routed, not fixed here by direct instruction:
+  `sync.py::_collect_vendor_symbols` doesn't yet ingest an external
+  adapter's own structured symbols into `context-graph.db`'s `symbols`
+  table (`CG-008`, routed to Phase 62). New docs:
+  `docs/external-adapters.md` (clone/submodule setup, version-
+  compatibility matrix). **Does not resolve GATE DD and does not
+  complete or bypass Phases 55-59**, which remain open. Retro:
+  `planning/retros/phase-60-minimal-haskell-adapter.md`.
+
 - **Phase 54c** (evidence-backed, knowledge-based, documentation-first
   workflow, done): a bounded, reversible experiment introducing a
   file-based Observation/Evidence/Claim/Derivation/Decision/Requirement
@@ -82,102 +121,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   section and `planning/retros/phase-54b-ledgerkit-behavioural-understanding.md`.
 
 ### Planned
-
-- **Phase 60 plan amended again: separate public repositories for the
-  protocol and the Haskell adapter** (planning only, no code, phase not
-  started; amends the external-process amendment below, before
-  implementation began): the protocol and the Haskell adapter are no
-  longer just an external process living inside this repository — they
-  are now separate, differently-licensed, independently-versioned
-  **public repositories**, checked out as git submodules inside the
-  local `codecompass` workspace at
-  `protocol/codecompass-adapter-protocol/` and `adapters/haskell/` (new
-  ADR: `decisions/0058`). `codecompass-adapter-protocol` is **MIT**
-  (schemas/`SCHEMA.md`/examples/conformance tests only, no CodeCompass
-  internals, no Haskell code); `codecompass-adapter-haskell` is
-  **GPL-3.0-or-later** (matching CodeCompass) and is now a real Stack
-  project (`package.yaml`/`stack.yaml`/`app/Main.hs`), superseding the
-  prior amendment's bare single-file `stack script` sketch — that
-  sketch's own real `stack`+`aeson` build/run confirmation remains valid
-  technical grounding, only the packaging changed. `codecompass`'s own
-  `.gitmodules` and gitlink commits are the only place these two
-  repositories' existence is recorded in CodeCompass's own history;
-  their file content is never committed directly, and commits to each
-  repository stay independent. A version-compatibility matrix
-  (CodeCompass version ↔ protocol version ↔ adapter version) is now
-  required documentation, distinct from the wire-level
-  `protocol_version` integer `decisions/0057` already defined. Closes a
-  real gap `decisions/0057`'s own non-claim left open (an adapter file
-  merely living inside CodeCompass's own working tree had ambiguous
-  licensing status); restates with more force, not weakened: none of
-  this settles whether a future *proprietary* adapter distributed the
-  same way would be lawfully independent of CodeCompass's GPL
-  obligations — that still needs real specialist legal review. New
-  review-gate item: exactly which git hosting provider/account is used
-  for the two new public repositories is explicitly not decided by this
-  plan. See `decisions/0058-adapter-protocol-and-haskell-adapter-as-separate-repositories.md`
-  and the twice-amended `planning/phase-60-minimal-haskell-adapter.md`
-  (first amendment's single-repository design preserved at that file's
-  own §B, original in-process design preserved at §A — neither deleted).
-
-- **Phase 60 plan amended: external-process adapter architecture**
-  (planning only, no code, phase not started; amends the Phase 60 plan
-  below, before implementation began): the Haskell adapter is no longer
-  an in-process Python class — it is now the **reference implementation
-  of a genuinely external adapter**, a separate OS process
-  communicating over a small, versioned JSON-Lines protocol on
-  stdin/stdout (new ADR: `decisions/0057`), so CodeCompass core never
-  imports ecosystem-specific implementation code for a new adapter.
-  Motivated by a real future case named directly: a potentially
-  proprietary COBOL/mainframe adapter suite that could never ship as
-  importable GPL Python code inside `src/codecompass/`. A real smoke
-  test this session confirmed the mechanism is genuinely buildable, not
-  just theoretically sound: a single-file `stack script` using `aeson`
-  compiles and runs against the pinned snapshot resolver (~5 min cold,
-  ~3s warm). Protocol: `initialize` (capability negotiation),
-  `analyze_project` (returns `dependencies`/`symbols`/`observations`/
-  `diagnostics` sections), `shutdown` — deliberately not gRPC, a network
-  service, a plugin marketplace, remote execution, or a versioned SDK.
-  Real findings from the original plan carry forward unchanged (`stack
-  ls dependencies` has no JSON mode; `stack dot`'s DOT graph is the tree
-  source instead). Per direct instruction, two prior review-gate
-  judgment calls are now settled: `package.yaml` is parsed via real
-  `PyYAML` (`yaml.safe_load()`), not hand-rolled; the Haskell
-  API-surface/export-list extraction question is **mandatorily** routed
-  through Phase 54c's evidence-backed workflow, scoped to that one
-  sub-question — its own first real test under genuine uncertainty.
-  Monorepo package-root resolution (`hledger-lib/` within the `hledger`
-  repo, never the whole repo) is now an explicit, tested requirement.
-  Includes an explicit, disclosed non-claim: process/protocol separation
-  is an architectural property, not a legal conclusion about GPL
-  compatibility for a future proprietary adapter — real specialist legal
-  review is named as necessary before relying on it. See
-  `decisions/0057-external-process-adapter-protocol.md` and the amended
-  `planning/phase-60-minimal-haskell-adapter.md` (original in-process
-  version preserved at that file's own §A, not deleted).
-
-- **Phase 60 plan: minimal Haskell adapter** (planning only, no code,
-  phase not started): the full `EcosystemAdapter` interface (5 methods)
-  for Haskell/Stack — the next unstarted Stage F phase, gated on
-  nothing. Real environment re-verification (not assumed from other
-  adapters' own precedent) found `stack ls dependencies` has **no JSON
-  output mode**, unlike npm/pipdeptree/cargo's own tooling; `stack dot`'s
-  real GraphViz DOT graph output (checked live against the real hledger
-  project) is the actual dependency-tree source instead, cross-referenced
-  against `stack ls dependencies`'s flat name→version map.
-  `vendors.ecosystem` gains `'haskell'` (`_SCHEMA_VERSION` 7→8, mirroring
-  Phase 54c's own just-completed enum-widening precedent exactly). Two
-  judgment calls flagged for review: hand-roll `package.yaml` (hpack)
-  parsing vs. add a `PyYAML` dependency; whether the one genuinely open
-  design question (Haskell export-list/API-surface extraction — a real
-  ambiguity, unlike Rust's simpler `pub`-keyword precedent) should be
-  routed through Phase 54c's evidence-backed workflow, scoped narrowly
-  to that one sub-question, as that methodology's first real test under
-  genuine uncertainty. Fixture-based tests (primary, `decisions/0014`)
-  plus `stack`-availability-gated live smoke tests (this environment has
-  `stack` — the second adapter, after npm/Python, to get this from day
-  one). `src/codecompass/usage.py`'s Haskell import detection explicitly
-  deferred to Phase 61. See `planning/phase-60-minimal-haskell-adapter.md`.
 
 - **Phase 54c plan: evidence-backed, knowledge-based,
   documentation-first workflow** (planning only, no code, phase not

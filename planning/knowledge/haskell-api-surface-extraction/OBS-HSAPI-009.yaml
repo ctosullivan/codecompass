@@ -1,0 +1,40 @@
+id: OBS-HSAPI-009
+kind: observation
+method: executable
+what_was_done: >
+  Built hledger-lib with `stack build hledger-lib --fast`, then ran
+  `stack ghci hledger-lib:lib` and issued `:m Hledger.Data.AccountName`
+  followed by `:browse Hledger.Data.AccountName`, to independently
+  confirm (by real compiler behaviour, not by re-reading the source
+  text) exactly which names hledger-lib/Hledger/Data/AccountName.hs's
+  export list actually makes visible -- including whether the
+  commented-out `--  ,isAccountRegex` entry (OBS-HSAPI-003) is truly
+  excluded. Separately ran a comment-aware Python regex extraction
+  (stripping any line starting with `--`, then extracting `\w+`/`\w+'`
+  tokens) directly over the same file's export-list text, to compare a
+  naive-but-comment-aware mechanical scan's result against the real
+  compiler's own `:browse` output.
+tool: stack
+tool_version: "3.11.1 (Git revision 979bf6339fd4d5837c4d2fa8166dc715eef30ee2), GHC 9.12.4, aarch64, resolver lts-24.59"
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+location: "hledger-lib/Hledger/Data/AccountName.hs:11-62"
+raw_result: |
+  `stack build hledger-lib --fast` exited 0 (already built).
+  `:browse Hledger.Data.AccountName` printed 48 top-level bindings (one
+  `name :: Type` line per exported value/function, plus `tests_AccountName
+  :: tasty-1.5.4:Test.Tasty.Core.TestTree`), e.g.:
+    acctsepchar :: Char
+    acctsep :: Data.Text.Internal.Text
+    accountNameInferType :: Hledger.Data.Types.AccountName ->
+      Maybe Hledger.Data.Types.AccountType
+    ...
+    tests_AccountName :: tasty-1.5.4:Test.Tasty.Core.TestTree
+  `isAccountRegex` does NOT appear anywhere in the :browse output.
+  The comment-aware Python regex extraction over the same file's export
+  list text also produced exactly 48 names, and (after sorting both
+  lists) the two 48-name sets are IDENTICAL -- every name the naive
+  comment-stripping scan found matches a real `:browse`-confirmed
+  exported binding, and `isAccountRegex` is correctly absent from both.
+timestamp: "2026-09-19T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

@@ -1,0 +1,36 @@
+id: CL-HSAPI-005
+kind: claim
+statement: >
+  A package's own `exposed-modules` list (hpack `package.yaml` /
+  generated `.cabal` file) is a real, separate visibility boundary, one
+  level above a module's own export list -- only a module named in
+  `exposed-modules` is visible to code outside the package at all, so a
+  correct "public API surface" extractor for a Haskell package should
+  filter candidate `.hs` files against this list (or the hpack default
+  documented at package.yaml:122, "all modules in source-dirs less
+  other-modules") before running any per-file export-list scan,
+  matching the task's own framing that a module's own export list "only
+  matters if the module itself is exposed by the package in the first
+  place." HOWEVER, this specific reference package (hledger-lib, and
+  likewise the sibling hledger package) does not actually exercise this
+  filter in a way that would catch a scanner that skipped it entirely:
+  every real, hand-authored source module in both packages IS exposed;
+  the only excluded entries are Setup.hs and generated Paths_/
+  PackageInfo_ modules a filesystem walk would exclude for other reasons
+  anyway (no `module ... where` matching the package's own namespace, or
+  simply not being real source). Testing this mechanism against
+  hledger-lib/hledger alone, as this research did, cannot demonstrate
+  the filter actually changes which files get scanned -- an honest gap,
+  not a settled confirmation that the mechanism matters in practice for
+  THIS reference project, even though it is real Haskell/Cabal
+  machinery that will matter for other, differently-structured Haskell
+  packages.
+derivation: DE-HSAPI-005
+supporting_evidence:
+  - EV-HSAPI-006
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+timestamp: "2026-09-19T00:00:00Z"
+status: supported
+supersedes: null

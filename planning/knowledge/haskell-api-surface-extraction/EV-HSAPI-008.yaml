@@ -1,0 +1,17 @@
+id: EV-HSAPI-008
+kind: evidence
+evidence_kind: executable
+what_it_shows: >
+  `Type(..)` in a real, moderately complex export list (Query.hs's
+  `Query(..)`, `OrdPlus(..)`, `QueryOpt(..)`) makes every one of that
+  type's real data constructors visible -- confirmed directly against
+  GHC's own compiled `:browse` output (18 Query constructors, 10
+  OrdPlus constructors, 3 QueryOpt constructors, all listed), not merely
+  inferred from reading the `data Query = ...` declaration's own source
+  text.
+observations: [OBS-HSAPI-010]
+source_ref: "hledger-lib/Hledger/Query.hs:13-78"
+doc_ref: null
+test_ref: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+status: current

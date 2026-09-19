@@ -1,0 +1,18 @@
+id: EV-HSAPI-011
+kind: evidence
+evidence_kind: executable
+what_it_shows: >
+  Two further export-list shapes named in the task's own framing --
+  a same-line trailing comment attached directly after an identifier,
+  and a named-constructor-subset export (`Type(Ctor1, Ctor2)` rather
+  than full `Type(..)`) -- were searched for by targeted grep across the
+  entire pinned hledger-lib/hledger/hledger-ui/hledger-web corpus and
+  found zero times. Both remain valid, real Haskell grammar per general
+  language knowledge and the task's own description, but this specific
+  reference corpus does not happen to exercise either shape.
+observations: [OBS-HSAPI-013]
+source_ref: null
+doc_ref: null
+test_ref: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+status: current

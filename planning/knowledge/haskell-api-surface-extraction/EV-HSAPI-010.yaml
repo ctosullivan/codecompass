@@ -1,0 +1,27 @@
+id: EV-HSAPI-010
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  The `module <Name>` export-list entry occurs in this codebase in at
+  least four textually-identical-looking but semantically distinct real
+  shapes: (1) re-exporting a genuinely different, unaliased, directly
+  named other module (Hledger/Utils.hs's six `module Hledger.Utils.*`
+  entries, matched one-to-one by plain unaliased `import
+  Hledger.Utils.*` lines in the same file); (2) re-exporting an alias
+  that stands for several distinct real modules imported `as` that one
+  alias (Hledger.hs's `module X` covering five modules, EV-HSAPI-005;
+  Hledger/Cli/Script.hs's `module M` covering a dozen-plus modules);
+  (3) re-exporting another package's own root aggregation module by its
+  real name (Hledger/Cli.hs's `module Hledger`, itself hledger-lib's own
+  Hledger.hs); (4) a self-re-export of the current module's own name
+  (Types.hs, EV-HSAPI-009). A single export list (Hledger/Cli.hs) can
+  mix several of these shapes together with plain bare names and a
+  Haddock section header in the same list.
+observations: [OBS-HSAPI-012]
+source_ref: >
+  hledger-lib/Hledger/Utils.hs:1-75; hledger/Hledger/Cli.hs:83-99;
+  hledger/Hledger/Cli/Script.hs:1-20
+doc_ref: null
+test_ref: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+status: current

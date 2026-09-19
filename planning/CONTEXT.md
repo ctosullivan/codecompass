@@ -501,6 +501,85 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 60 — minimal external Haskell adapter — done (2026-09-19).**
+Implemented the fully-amended plan: two new real, separate, public
+repositories — `codecompass-adaptor-protocol` (MIT — the actual repo
+name uses "adaptor" spelling, per the account owner's own repo-creation
+choice, not "adapter" as the plan text assumed) and
+`codecompass-adaptor-haskell` (GPL-3.0-or-later, a real Stack project) —
+checked out as git submodules at `protocol/codecompass-adaptor-protocol/`
+and `adapters/haskell/`. CodeCompass core: `Ecosystem.HASKELL`,
+`vendors.ecosystem` CHECK widened via a new **non-destructive**
+table-rebuild migration (`_migrate_vendors_ecosystem_constraint`,
+`_SCHEMA_VERSION` 7→8 — never drop-and-recreate, since `vendor_enrichment`/
+`symbol_enrichment` are FK'd to `vendors.id` with `ON DELETE CASCADE` and
+would otherwise lose paid AI enrichment on migration), `discovery.py`'s
+`package.yaml` discoverer (real `PyYAML`), `external_process.py` (generic
+JSON-Lines protocol client), `haskell.py` (thin dispatcher).
+
+Ran Phase 54c's evidence-backed workflow in full for the one genuinely
+open design question (Haskell API-surface extraction):
+`context-researcher` → `documentation-agent` (`design.md`) → lead review
+(`DEC-HSAPI-001`, adopting all six recommendations) → 6 `REQ-` records,
+all now `verified` — `planning/knowledge/haskell-api-surface-extraction/`.
+The `knowledge-curator`'s own context-packet-sufficiency check caught a
+real, load-bearing gap before implementation: the protocol's wire schema
+had no field for a `module <Name>` re-export or a CPP-gated
+"undetermined" entry. Fixed via `decisions/0059` — an additive
+`kind`/`note` extension to `analyze_project-response.json`'s `symbols`
+items, landed in the still-pre-`0.1.0`-tag protocol repo before
+`codecompass-adaptor-haskell`'s own scanner was written against it.
+
+The Haskell scanner (`codecompass-adaptor-haskell/src/Adapter/Scanner.hs`)
+implements all 6 `REQ-HSAPI-*` records: baseline export-list scanning
+(bare/`Type(..)`/section-headers/commented-out entries), `module <Name>`
+re-export detection with file-local `import ... as X` alias resolution,
+CPP-gated entries flagged `undetermined` (never guessed), the package's
+own `exposed-modules` filter (from the generated `.cabal` or the hpack
+default), no-export-list detection without enumeration, and two-pass
+purpose-pairing by body location (not export-list order). Also found and
+recorded, not fixed here by direct instruction: `stack dot`/`stack ls
+dependencies` need an explicit `TARGET` argument or they report the
+*whole* enclosing Stack project's graph in a monorepo, not one package's
+own closure (`L-025`).
+
+**Real, live end-to-end validation, not merely "tests pass"**: a real
+`codecompass sync --yes --budget 0` against a scratch project tracking
+`hledger-lib` (symlinked into the pinned `hledger` monorepo, never
+copied or modified) produced a correct `vendors` row and a per-vendor
+`CLAUDE.md` correctly rendering all 1347 real symbols. The 48-name
+`Hledger.Data.AccountName` export set was independently re-confirmed
+against a **live** `stack ghci :browse` run during this phase's own
+closeout (not merely trusted from the earlier research pass) — exact set
+match, zero diff. One further real, disclosed gap found this way and
+explicitly **not** fixed here, per direct instruction ("record ... as an
+explicit question for Phase 62 rather than expanding Phase 60 to solve
+it"): `sync.py::_collect_vendor_symbols` populates `context-graph.db`'s
+`symbols` table via a separate code path from `readme_and_api_surface()`
+and has no Haskell branch, so the graph's own `symbols` table stays at
+zero rows for any Haskell vendor even though the adapter's own output is
+correct — filed as `CG-008` (`graph_capability_gap`,
+`promoted-to-roadmap`, triaged by `knowledge-curator`), routed to
+Phase 62.
+
+`docs-reconstructor`'s independent, phase-scoped drift audit found 9
+real findings (4 blocking): stale "npm, PyPI, Cargo"-only enumerations
+in `README.md` (×3), `docs/cli-reference.md` (×2 manifest lists), and
+`ai-docs/README.md`, plus an `architecture/overview.md` sentence made
+newly misleading by this phase's own new content — all fixed by the lead
+before the DoD audit ran. `609`→`613` tests passing (2 pre-existing
+skips, unrelated to this phase), `ruff check .` clean,
+`check_user_docs.py --strict` clean.
+
+**Explicitly, per direct instruction: this does not resolve GATE DD and
+does not complete or bypass Phases 55-59** — both remain exactly as open
+as they were before this phase started; this phase's own real findings
+are additional evidence for GATE DD's eventual decision, not a
+substitute for it. Retro: `planning/retros/phase-60-minimal-haskell-adapter.md`.
+
+**Phase 60's plan was amended twice before implementation, all
+superseded by the "done" state above — history preserved for context:**
+
 **Phase 60's plan is amended again, still not started (2026-09-19) —
 separate public repositories for the protocol and the Haskell adapter.**
 Direct user instruction, before implementation began: the protocol and
@@ -1542,34 +1621,22 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 60's twice-amended plan awaits review before implementation
-begins.** Every prior review-gate judgment call is now settled by direct
-instruction (`PyYAML`; mandatory Phase 54c workflow routing;
-external-process architecture; real Stack project over a bare `stack
-script`; two separate public repositories over one) — the plan's own
-"Review gate" section now flags scope/visibility points rather than open
-decisions, with one genuine exception: **exactly which git hosting
-provider/account/organization `codecompass-adapter-protocol` and
-`codecompass-adapter-haskell` are actually created under is not decided
-by the plan itself** and needs the user's own input before
-implementation, since creating public repositories is a hard-to-reverse
-action. Once that's answered and the plan is reviewed, implementation
-proceeds per the amended plan's own §2-§8: create
-`codecompass-adapter-protocol` (MIT, schemas/examples/conformance) and
-`codecompass-adapter-haskell` (GPL-3.0-or-later, real Stack project)
-as real standalone repositories with their own `0.1.0` releases → wire
-them in as git submodules at `protocol/codecompass-adapter-protocol/`
-and `adapters/haskell/` (`.gitmodules` + pinned gitlinks) → build
-`external_process.py` (generic protocol client) → `adapters/haskell.py`
-(thin dispatcher invoking the submodule's built executable) → the real
-adapter logic inside `codecompass-adapter-haskell`'s own `app/Main.hs`
-(its API-surface logic specified by Phase 54c's own workflow output) →
-write `docs/external-adapters.md` (clone/submodule setup, version
-compatibility) → fixture + submodule-and-`stack`-gated live smoke tests
-→ a real end-to-end confirmation via `codecompass sync`, checking all
-seven capabilities the governing instruction named explicitly, plus a
-fresh `git clone --recurse-submodules` actually working and each
-repository's own commit independence demonstrated, not just designed.
+**Phase 60 is fully done, including release tagging.** `release-phase-auditor`'s
+first pass returned **FAIL** on two real, narrow gaps: `0.1.0` had not
+actually been tagged yet despite `planning/ROADMAP.md`/`docs/external-adapters.md`
+stating it had, and `L-025` (this phase's own candidate learning about
+`stack dot`/`stack ls dependencies` needing an explicit `TARGET`) hadn't
+been triaged. Both fixed: `v0.1.0` is now a real, pushed, annotated tag
+in both `codecompass-adaptor-protocol` and `codecompass-adaptor-haskell`
+(confirmed via `git ls-remote --tags` against both), each repo's own
+`CHANGELOG.md` dated; `knowledge-curator` triaged `L-025`. Phase 61
+(hledger cross-language experiment) can now register `hledger-lib` as a
+real tracked vendor using the now-working, now-tagged adapter, and
+Phase 62 (adapter-interface consolidation) has real evidence to assess,
+including `CG-008`'s own named question (does `EcosystemAdapter` need a
+structured-symbol-list method so `_collect_vendor_symbols` can reach an
+external adapter's own output, or does `symbols.py` need a Haskell-
+specific in-process re-parse — Phase 62's own call, not decided here).
 
 GATE DD (Phase 55's own gate, Stage E's precondition) remains open,
 with Phase 54b's and Phase 54c's own results as evidence inputs — still

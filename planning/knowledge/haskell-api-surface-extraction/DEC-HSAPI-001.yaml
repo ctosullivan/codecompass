@@ -1,0 +1,74 @@
+# Reviewed by the lead, standing in for the user/project-owner role for
+# this Phase 60 run of the Phase 54c workflow (disclosed explicitly in
+# the phase retro, matching planning/knowledge/doc-origin-pinned-reference/
+# DEC-DOCORIGIN-001.yaml's own precedent for this project). This Decision
+# does not question or revise CL-HSAPI-001 through -006, or design.md's
+# own observations -- it adopts design.md's own §15 recommendations,
+# all six, as written, since each recommendation's reasoning is directly
+# traceable to a specific, cited piece of real evidence and none of them
+# conflicts with this project's own governing "smallest useful move,
+# disclose gaps rather than guess" discipline.
+
+id: DEC-HSAPI-001
+kind: decision
+decides: >
+  Adopts all six of design.md §15's recommended answers, unchanged:
+  1) `module <Name>` re-export entries get file-local partial
+  resolution -- record the occurrence, and where it is a same-file
+  `import ... as <Name>` alias, which real modules that alias covers in
+  this file; never cross-file expansion (§15.1, option b).
+  2) A CPP conditional (`#if`/`#endif`) found inside an export list's
+  own parentheses causes the enclosed entry/entries to be flagged
+  undetermined, never silently included or excluded (§15.2, option c).
+  3) The package-level `exposed-modules` filter (from `package.yaml`'s
+  own explicit list, or hpack's "all modules in source-dirs less
+  other-modules" default when no explicit list exists) IS implemented:
+  a module not in a package's own exposed set is not scanned for its
+  export surface at all, regardless of what its own export list says
+  (§15.3, option a).
+  4) A module with no export list (`module Foo where`, no parenthesised
+  list) is reliably detected as such, but its top-level bindings are
+  NOT enumerated in this version -- return an empty symbol list plus a
+  diagnostic for such a module (§15.4, option b).
+  5) The two-pass purpose-pairing algorithm (collect exported names from
+  the header, then separately locate each name's own definition site in
+  the file body and check its preceding `-- | ...` comment) IS built in
+  this first version, not deferred (§15.5, option a).
+  6) No explicit handling is added for the two grammar-valid,
+  zero-observed-instance shapes (same-line trailing comment;
+  `Type(Ctor1, Ctor2)` named-constructor-subset) -- left unhandled until
+  real evidence of occurrence surfaces (§15.6, option b).
+
+  Additionally ratifies design.md §11's baseline mechanism (a
+  comment-stripping, identifier-tokenising scan over each module's
+  export-list span, handling both comma styles, `Type(..)`, section
+  headers, and commented-out entries) as the extractor's core, per
+  CL-HSAPI-001's own compiler-verified sufficiency.
+rationale: >
+  Every one of the six recommendations traces to a specific cited Claim
+  with real, disclosed supporting evidence (compiler-verified where
+  possible: CL-HSAPI-001's baseline scan was checked byte-for-byte
+  against real `stack ghci :browse` output, not merely inferred from
+  text). Where the research found genuine residual uncertainty (the CPP
+  case, the module<Name> case), the adopted option is consistently the
+  one that discloses an honest gap (flag as undetermined / record
+  file-local-only resolution) over one that would produce a
+  confident-looking but sometimes-silently-wrong result -- matching
+  this project's own established governing rule, not a new standard
+  invented for this feature. Recommendation 3 (implement the
+  exposed-modules filter despite this corpus not exercising it) is
+  accepted specifically because it is cheap (the manifest is already
+  being read for other reasons) and its absence would be a silent
+  correctness gap for packages this corpus simply didn't happen to
+  test, not because of any evidence internal to hledger-lib itself.
+agrees_with_claim:
+  - CL-HSAPI-001
+  - CL-HSAPI-002
+  - CL-HSAPI-003
+  - CL-HSAPI-004
+  - CL-HSAPI-005
+  - CL-HSAPI-006
+supersedes: null
+decided_by: "project owner (lead standing in for this dogfooding run — see retro)"
+timestamp: "2026-09-19T00:00:00Z"
+status: approved

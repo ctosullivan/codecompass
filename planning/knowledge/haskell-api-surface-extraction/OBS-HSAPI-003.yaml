@@ -1,0 +1,33 @@
+id: OBS-HSAPI-003
+kind: observation
+method: source_read
+what_was_done: >
+  Read the module header (lines 1-62) and the full body (lines 63-230+)
+  of hledger-lib/Hledger/Data/AccountName.hs. The export list (lines
+  11-62, `module Hledger.Data.AccountName (` ... `)` `where`) uses
+  leading-comma style (first item bare, each subsequent item prefixed
+  with `,` at line-start) and spans 51 lines for 48 live entries. Line
+  45, `--  ,isAccountRegex`, is a commented-out entry using the SAME
+  leading-comma style as the live entries around it, distinguished from
+  them only by the leading `--`. No `-- *` Haddock section headers are
+  used in this file's export list (unlike Query.hs, OBS-HSAPI-002),
+  confirming section headers are a per-module stylistic choice, not a
+  universal structural feature of every export list. Separately, in the
+  file body: `accountLeafName` (listed FIRST in the export list, line
+  12) is defined at line 144 with NO preceding Haddock `-- |` comment,
+  while `accountNameComponents` and `accountNameFromComponents` (listed
+  SECOND and THIRD in the export list) are defined earlier in the body,
+  at lines 138 and 141 respectively -- i.e. export-list order and
+  body-definition order do not match. Many other exported names DO carry
+  a preceding `-- | ...` Haddock doc comment at their own definition
+  site (e.g. lines 95, 106, 119, 147, 157, 169, 192, 197, 204, 216).
+tool: null
+tool_version: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+location: "hledger-lib/Hledger/Data/AccountName.hs:1-230"
+raw_result: >
+  Verbatim header and body read; see location for exact line numbers of
+  each feature named above.
+timestamp: "2026-09-19T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

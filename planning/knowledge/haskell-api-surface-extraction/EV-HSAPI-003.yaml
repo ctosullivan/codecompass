@@ -1,0 +1,23 @@
+id: EV-HSAPI-003
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  In a real, non-trivial hledger-lib module (AccountName.hs): (a) the
+  export list uses leading-comma style, a different textual shape from
+  Query.hs's trailing-comma style, and includes a commented-out entry
+  (`--  ,isAccountRegex`) using that same leading-comma shape; (b) no
+  Haddock `-- *` section headers appear at all, confirming section
+  headers are optional per-module style rather than a structural
+  constant of every export list; (c) export-list order does not match
+  file-body definition order (accountLeafName is listed first but
+  defined after accountNameComponents/accountNameFromComponents); (d)
+  some exported names carry a Haddock `-- | ...` doc comment
+  immediately preceding their own definition elsewhere in the file
+  body, and at least one exported name (accountLeafName) has no such
+  comment at all despite being exported.
+observations: [OBS-HSAPI-003]
+source_ref: "hledger-lib/Hledger/Data/AccountName.hs:1-230"
+doc_ref: null
+test_ref: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+status: current

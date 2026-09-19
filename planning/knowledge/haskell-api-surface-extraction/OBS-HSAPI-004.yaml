@@ -1,0 +1,19 @@
+id: OBS-HSAPI-004
+kind: observation
+method: executable
+what_was_done: >
+  Ran a small Python script (not part of codecompass; a scratch
+  classifier) over every `**/*.hs` file under hledger-lib/, extracting
+  the text between each file's `module <Name>` declaration and its next
+  `where` keyword, and classifying the file as "has an export list" if
+  a `(` appears anywhere in that span, else "no export list".
+tool: python3
+tool_version: "3.x (system interpreter, exact patch version not pinned since this is a one-off classifier, not a CI-relevant tool)"
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+location: null
+raw_result: |
+  NO EXPORT LIST (count): 0
+  HAS EXPORT LIST (count): 65
+timestamp: "2026-09-19T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

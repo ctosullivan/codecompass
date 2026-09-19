@@ -1,0 +1,19 @@
+id: EV-HSAPI-009
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  A real export list can contain a self-referential `module <OwnName>`
+  re-export entry (Hledger/Data/Types.hs re-exports `module
+  Hledger.Data.Types` from inside its own export list, functionally
+  close to omitting the export list entirely but written explicitly)
+  combined with a literal CPP preprocessor conditional
+  (`#if MIN_VERSION_time(1,11,0)` / `#endif`) gating whether one further
+  named export (`Year`) is included -- a purely textual/mechanical
+  scanner with no preprocessor pass has no way to evaluate that
+  condition from the file's own text alone.
+observations: [OBS-HSAPI-011]
+source_ref: "hledger-lib/Hledger/Data/Types.hs:29-34"
+doc_ref: null
+test_ref: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+status: current

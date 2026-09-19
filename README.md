@@ -27,7 +27,8 @@ held until then — the first PyPI release will be that redefined v1
 AI coding agents (Claude Code, Cursor) tend to answer questions about your
 dependencies from training-data memory, which drifts out of date the moment
 a library ships a new release. codecompass closes that gap: it inspects the
-dependencies actually installed in your project (npm, PyPI, crates.io),
+dependencies actually installed in your project (npm, PyPI, crates.io,
+and — via a separate external adapter — Haskell/Stack),
 clones each one's upstream source, and generates per-vendor `CLAUDE.md`
 digests — grounded in the exact pinned version you're running — that an
 agent can consult instead of guessing. It also builds a SQLite context
@@ -139,6 +140,10 @@ Running codecompass gets you, for every tracked dependency:
 
 npm, PyPI, and Cargo — all three ship from day one (see
 [`decisions/0008`](decisions/0008-mvp-ships-three-adapters-day-one.md)).
+Haskell/Stack is a fourth, added in Phase 60 — handled differently from
+the other three: it runs as a separate external adapter process rather
+than in-process Python code, checked out as git submodules (see
+[`docs/external-adapters.md`](docs/external-adapters.md)).
 
 ## Quick example
 
@@ -149,7 +154,7 @@ codecompass
 ```
 
 That auto-discovers manifests (`package.json`, `pyproject.toml`,
-`requirements.txt`, `Cargo.toml`), writes `vendor.toml`, clones every
+`requirements.txt`, `Cargo.toml`, `package.yaml`), writes `vendor.toml`, clones every
 vendor's source, and generates trees + the root `CLAUDE.md` routing table
 + the tool-level Skill + `/discovery` — no prompts, no AI calls. If any
 tracked vendor is actually imported by your project's source and isn't

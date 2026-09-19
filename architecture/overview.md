@@ -9,7 +9,9 @@ you want to know *what exists now*, check here.
 
 As of Phase 19, the core data model (`codecompass.core`), `vendor.toml`
 parsing (`codecompass.config`), all three ecosystem adapters
-(`codecompass.adapters`), per-ecosystem symbol/purpose extraction
+(`codecompass.adapters`) — a fourth, Haskell, was added in Phase 60, as
+an external adapter rather than in-process Python, see "External
+adapters" below — per-ecosystem symbol/purpose extraction
 (`codecompass.symbols`), deterministic tree generation
 (`codecompass.deptree`, `codecompass.filetree`), per-vendor `CLAUDE.md`
 templating (`codecompass.claude_md`), per-vendor sync orchestration
@@ -120,12 +122,18 @@ the underlying tool reports it — no diamond-dependency dedup. Dedup into
 "see X above" back-references is Phase 3's tree-*rendering* concern, not
 this method's tree-*construction* concern.
 
-All three adapters call subprocesses through a shared `_run_json(cmd,
-cwd)` seam in `base.py`, which resolves `cmd[0]` via `shutil.which` before
-invoking it (needed cross-platform — see **Known footguns**) and wraps
-failures into `AdapterError`. Tests monkeypatch this seam per-module to
-inject fixture JSON rather than requiring a real toolchain — see
+The npm/Python/Cargo adapters call subprocesses through a shared
+`_run_json(cmd, cwd)` seam in `base.py`, which resolves `cmd[0]` via
+`shutil.which` before invoking it (needed cross-platform — see **Known
+footguns**) and wraps failures into `AdapterError`. Tests monkeypatch
+this seam per-module to inject fixture JSON rather than requiring a real
+toolchain — see
 [`decisions/0014`](../decisions/0014-adapter-tests-use-fixture-mocking-not-live-subprocesses.md).
+The Haskell adapter (Phase 60) does **not** use this seam — its own
+subprocess calls happen entirely inside the separate
+`codecompass-adaptor-haskell` process; `HaskellAdapter` on the Python
+side only ever speaks the JSON-Lines protocol via `external_process.py`,
+never invoking a tool directly itself.
 
 MVP ships three adapters on day one — npm, Python, Cargo — rather than
 starting npm-only. See
@@ -167,8 +175,108 @@ starting npm-only. See
   toolchain is available locally to validate its shape against.
   **Unverified against real cargo output** — built and tested entirely
   against hand-written fixture JSON (see **Known footguns**).
+- **Haskell adapter** (Phase 60) — the first adapter that is **not** an
+  in-process Python class implementing ecosystem-specific logic
+  directly. `HaskellAdapter` (`src/codecompass/adapters/haskell.py`) is a
+  thin dispatcher: it reads `package.yaml` directly via real
+  `yaml.safe_load()` for `installed_version()`/`repository_url()` (the
+  hpack `github:` shorthand), resolves a monorepo package root itself
+  (searching immediate subdirectories of `project_root` for the one
+  whose own `package.yaml` declares the matching `name`, so e.g.
+  `hledger-lib` resolves inside the `hledger` monorepo without ever
+  handing the whole monorepo root to anything downstream), and delegates
+  `dependency_tree()`/`readme_and_api_surface()`'s real logic to an
+  **external adapter process** — see **External adapters** below. See
+  [`decisions/0057`](../decisions/0057-external-process-adapter-protocol.md)
+  and
+  [`decisions/0058`](../decisions/0058-adapter-protocol-and-haskell-adapter-as-separate-repositories.md).
 
-See [`decisions/0002`](../decisions/0002-adapter-approach-differs-per-ecosystem.md).
+See [`decisions/0002`](../decisions/0002-adapter-approach-differs-per-ecosystem.md)
+for the in-process adapters above, and **External adapters** below for
+the Haskell adapter's own second strategy.
+
+## External adapters (`codecompass.adapters.external_process`)
+
+A second `EcosystemAdapter` implementation strategy, alongside the
+in-process one above: an adapter runs as an independent OS process,
+speaking a small, versioned, language-neutral JSON protocol over
+stdin/stdout, rather than being importable Python code inside
+`src/codecompass/`. Exists specifically for ecosystems where in-process
+Python code is the wrong distribution model — a hypothetical future
+proprietary COBOL/mainframe adapter suite is the motivating case; it
+could never ship as importable GPL-licensed Python code inside this
+repository even if CodeCompass wanted to bundle one.
+
+**Three real repositories, one local workspace**, checked out as git
+submodules:
+
+```
+codecompass/                                  (this repository)
+├── protocol/
+│   └── codecompass-adaptor-protocol/         (git submodule — MIT)
+└── adapters/
+    └── haskell/                              (git submodule — GPL-3.0-or-later)
+```
+
+- **`codecompass-adaptor-protocol`** — the language-neutral contract
+  only: `SCHEMA.md`, JSON Schema documents, worked examples, and
+  conformance test vectors. No CodeCompass code, no Haskell code, MIT
+  licensed so any future adapter, in any language or license, can
+  depend on the contract alone.
+- **`codecompass-adaptor-haskell`** — the real reference adapter, a
+  Stack project implementing the protocol against `hledger`-style
+  `stack`-managed Haskell projects. GPL-3.0-or-later, matching
+  CodeCompass's own license.
+- **`src/codecompass/adapters/external_process.py`** — a fully generic
+  JSON-Lines subprocess client (`initialize` → `analyze_project` →
+  `shutdown`). Zero ecosystem-specific knowledge; reusable by any future
+  external-process adapter without modification.
+
+**Protocol shape** (full spec:
+`protocol/codecompass-adaptor-protocol/SCHEMA.md` once checked out, or
+`decisions/0057`): JSON Lines framing, one outstanding request at a
+time, an `id`-correlated request/response pair, a closed method set
+(`initialize`, `analyze_project`, `shutdown`), a closed capability list
+(`dependencies`, `symbols`, `observations`, `diagnostics`), a closed
+error-code set (`not_found`, `parse_error`, `unsupported_capability`,
+`internal_error`). `analyze_project`'s `observations` section mirrors
+Phase 54c's own Observation record field vocabulary, expressed as JSON
+on the wire, so provenance survives the process boundary losslessly.
+
+**Real command shape, verified live against the real `hledger-lib`
+package inside the `hledger` monorepo**: `stack dot --external
+<package-name>` and `stack ls dependencies --external <package-name>`
+(both take an explicit `TARGET` positional argument) scope their output
+to exactly that package's own dependency closure — bare `stack dot
+--external`/`stack ls dependencies --external` (no target) instead
+walks *every* project package declared in the enclosing `stack.yaml`
+(all four of `hledger`/`hledger-lib`/`hledger-ui`/`hledger-web` in the
+real monorepo), which is the wrong scope for a single-package analysis.
+`codecompass-adaptor-haskell` always passes the resolved package name as
+`TARGET` for both commands.
+
+**Where the boundary falls**: simple manifest-key reads
+(`package.yaml`'s `name`/`version`/`github` fields) stay on the
+CodeCompass/Python side — that's the same class of generic,
+ecosystem-adjacent code `discovery.py` already does for every other
+ecosystem's manifest, not "Haskell-specific implementation code."
+`stack`'s own dependency-tree resolution and real `.hs`-source
+API-surface extraction are genuine ecosystem-specific *logic* — those
+live entirely inside `codecompass-adaptor-haskell`'s own `app/Main.hs`,
+never in this repository's own tracked content.
+
+**Local development**: see
+[`docs/external-adapters.md`](../docs/external-adapters.md) for
+clone/submodule setup, building the adapter locally, and the
+version-compatibility matrix between CodeCompass, the protocol, and the
+adapter.
+
+**Explicit non-claim**: process/repository/license separation is an
+architectural property, not a legal conclusion about GPL compatibility
+for a future proprietary adapter distributed this way — see
+`decisions/0057`'s and `decisions/0058`'s own closing sections. Any real
+future proprietary adapter distribution model needs review from a
+qualified open-source/IP legal specialist first.
 
 ## Module tiers: CORE, AGENT, HOST-OUTPUT ADAPTERS
 

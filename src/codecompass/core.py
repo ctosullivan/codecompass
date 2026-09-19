@@ -16,6 +16,7 @@ class Ecosystem(StrEnum):
     NPM = "npm"
     PYTHON = "python"
     CARGO = "cargo"
+    HASKELL = "haskell"
 
 
 @dataclass(frozen=True)

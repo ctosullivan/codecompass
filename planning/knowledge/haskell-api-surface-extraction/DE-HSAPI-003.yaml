@@ -1,0 +1,24 @@
+id: DE-HSAPI-003
+kind: derivation
+claim: CL-HSAPI-003
+method: >
+  Noticed the `#if`/`#endif` lines inside Types.hs's own export list
+  while reading it for the `module Hledger.Data.Types` self-re-export
+  finding (a targeted follow-up this same research session's own
+  mid-investigation revision, not planned from the start) and, rather
+  than assume this was a one-off oddity, grepped the wider checkout for
+  `^#if`/`^#ifdef`/`^#ifndef` near module headers to check how common
+  CPP-in-headers is generally (OBS-HSAPI-012). Found CPP is common near
+  module headers in this codebase, but on closer per-file inspection
+  most instances sit in the file BODY after `where`, not literally
+  inside the export-list parentheses -- Types.hs remains the single
+  confirmed case of a conditional gating an export-list entry
+  specifically. Reasoned from general knowledge of how GHC's `-XCPP`
+  extension works (a real C preprocessor pass happens before GHC's own
+  parser ever sees the file) to conclude a pure text/line scanner
+  categorically cannot evaluate the condition, rather than assuming a
+  regex trick could approximate it.
+inputs:
+  - EV-HSAPI-009
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-19T00:00:00Z"

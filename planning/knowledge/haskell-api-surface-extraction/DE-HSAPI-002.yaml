@@ -1,0 +1,31 @@
+id: DE-HSAPI-002
+kind: derivation
+claim: CL-HSAPI-002
+method: >
+  Initially treated Hledger.hs's `module X` (OBS-HSAPI-006) as if it
+  might be a one-off, unusual case -- the task's own framing only names
+  `module Foo (module Bar)` as one example shape, suggesting a single
+  simple form. Rather than stop at that first real instance, grepped
+  the whole pinned checkout for further CPP/module-related header
+  patterns (OBS-HSAPI-012) specifically to check whether more instances
+  existed and whether they were textually uniform. They were not: found
+  four distinguishable real sub-shapes across four different files
+  (Hledger.hs's alias-for-five; Hledger/Utils.hs's six genuinely
+  unaliased other-module re-exports; Hledger/Cli.hs's mix of unaliased,
+  root-module, and alias-for-one re-exports in a single list;
+  Hledger/Cli/Script.hs's alias-for-a-dozen-plus). This directly
+  mirrors this role's own "trace every real implementation path, not
+  just the first plausible one" discipline -- the first real example
+  found (Hledger.hs) would have understated the problem's real shape if
+  treated as exhaustive. Confirmed the self-re-export sub-case
+  separately via Types.hs (EV-HSAPI-009). Did not attempt to resolve
+  cross-file expansion for real (out of scope for a per-file research
+  pass and, per the task's own instruction, not this role's job to
+  decide adapter scope) -- named explicitly as an open design question
+  for design.md rather than silently assuming an answer.
+inputs:
+  - EV-HSAPI-005
+  - EV-HSAPI-009
+  - EV-HSAPI-010
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-19T00:00:00Z"

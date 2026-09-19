@@ -1,0 +1,24 @@
+id: DE-HSAPI-004
+kind: derivation
+claim: CL-HSAPI-004
+method: >
+  Started from the Rust adapter's own precedent (EV-HSAPI-001), which
+  pairs an item with a doc comment on the strength of textual adjacency
+  alone (preceding lines, same file, same location). Checked whether
+  that same adjacency assumption holds for a Haskell export list by
+  reading a real module's export list AND its full body together
+  (AccountName.hs) rather than the header alone, specifically looking
+  up where each of the first three exported names' own definitions
+  actually live in the body and whether the export-list's own ordering
+  predicted body order or doc-comment presence. It did not: order
+  differed, and the first-listed name had no attached doc comment at
+  its own definition site at all, while others later in export order
+  did. This directly falsifies a naive "reuse the Rust pairing logic
+  unchanged" assumption -- exactly the kind of documentation-vs-
+  behaviour mismatch this role's own brief warns against accepting on a
+  first read.
+inputs:
+  - EV-HSAPI-002
+  - EV-HSAPI-003
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-19T00:00:00Z"

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from codecompass.adapters.base import AdapterError, EcosystemAdapter
 from codecompass.adapters.cargo import CargoAdapter
+from codecompass.adapters.haskell import HaskellAdapter
 from codecompass.adapters.npm import NpmAdapter
 from codecompass.adapters.python import PythonAdapter
 from codecompass.core import Ecosystem, VendorConfig
@@ -18,6 +19,7 @@ _ADAPTER_BY_ECOSYSTEM: dict[Ecosystem, type[EcosystemAdapter]] = {
     Ecosystem.NPM: NpmAdapter,
     Ecosystem.PYTHON: PythonAdapter,
     Ecosystem.CARGO: CargoAdapter,
+    Ecosystem.HASKELL: HaskellAdapter,
 }
 
 

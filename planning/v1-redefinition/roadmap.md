@@ -1205,6 +1205,32 @@ marketplace, registry, or generalized SDK. Not started; plan awaiting
 review. Full amended plan:
 `planning/phase-60-minimal-haskell-adapter.md`.
 
+**Done 2026-09-19.** Both repositories real, public, pushed, tagged
+`0.1.0` after this phase's own DoD audit passed: `codecompass-adaptor-protocol`
+(the actual repo name uses "adaptor" spelling, per the account owner's
+own repo-creation choice — not "adapter" as earlier drafts of this plan
+assumed) and `codecompass-adaptor-haskell`, checked out as git submodules
+at `protocol/codecompass-adaptor-protocol/` and `adapters/haskell/`. A
+third ADR, `decisions/0059`, was needed mid-implementation: the
+`knowledge-curator`'s own context-packet-sufficiency check (Phase 54c's
+workflow, run in full for the Haskell API-surface-extraction question)
+caught that the wire schema had no field for a `module <Name>` re-export
+or a CPP-gated "undetermined" entry — `symbols` gained optional
+`kind`/`note` fields, additive, before the `0.1.0` tag existed. Real,
+live validation: a `codecompass sync` against a scratch project tracking
+`hledger-lib` (symlinked into the pinned `hledger` monorepo, not copied)
+correctly populated the `vendors` row and the vendor's own `CLAUDE.md`
+(1347 real symbols); the 48-name `Hledger.Data.AccountName` export set
+was independently re-confirmed against a live `stack ghci :browse` run,
+exact set match. One real, disclosed gap found and *not* fixed here, by
+direct instruction: `sync.py::_collect_vendor_symbols` doesn't ingest an
+external adapter's own structured symbols into `context-graph.db`'s
+`symbols` table (a separate code path from `readme_and_api_surface()`) —
+filed as `CG-008`, routed to Phase 62 (already named in that phase's own
+stanza below). Retro: `planning/retros/phase-60-minimal-haskell-adapter.md`.
+**Does not resolve GATE DD, does not complete or bypass Phases 55-59** —
+both remain exactly as open as before this phase.
+
 ### Phase 61 — hledger cross-language experiment · EXPERIMENTAL
 - Track hledger itself (or `hledger-lib` specifically, the most directly
   relevant package to Ledgerkit's own compatibility work) as a real
@@ -1247,6 +1273,37 @@ review. Full amended plan:
   adapters coexisting behind one stable interface) — this phase produces
   the *evidence*, it does not itself commit to that broader packaging/
   licensing model.
+- **A concrete, real gap Phase 60's own end-to-end validation surfaced,
+  named here rather than fixed there (per direct instruction — "record
+  the remaining ecosystem-specific CodeCompass-side discovery/shim logic
+  as an explicit question for Phase 62 rather than expanding Phase 60 to
+  solve it")**: `sync.py::rebuild_project_graph`'s own
+  `_collect_vendor_symbols` populates `context-graph.db`'s `symbols`
+  table via a *separate* code path from `adapter.readme_and_api_surface()`
+  — it walks `adapter.source_location()` itself and calls
+  `symbols.py::extract_symbols_for_file(path, ecosystem)`, which has a
+  branch per in-process ecosystem (Python/Cargo/npm) but **no Haskell
+  branch**, so it silently returns `[]` for every `.hs` file. Confirmed
+  live: a real `codecompass sync` against `hledger-lib` correctly
+  populates the `vendors` row (name/ecosystem/version/repository_url)
+  and the per-vendor `CLAUDE.md` (all 1347 real symbols, via
+  `readme_and_api_surface()`, correct `[reexport]`/`[undetermined]`
+  markers and real purposes), but the graph's own `symbols` table stays
+  at zero rows for this vendor — meaning `usage.py`'s cross-reference
+  detection and any `query` subcommand reading the `symbols` table can
+  never see a Haskell vendor's API surface, even though the adapter
+  itself reports it correctly. Phase 62's own interface-consolidation
+  question directly covers this: should `EcosystemAdapter` gain a
+  structured-`Symbol`-list method distinct from `readme_and_api_surface`'s
+  rendered string (so `_collect_vendor_symbols` could call adapters
+  polymorphically instead of ecosystem-dispatching through
+  `symbols.py`), or should `symbols.py` gain a Haskell-specific
+  in-process re-parse of the adapter's own already-computed
+  `kind`/`note`-bearing output — the former keeps the external-process
+  boundary clean (no Haskell-specific logic re-entering
+  `src/codecompass/`), the latter is smaller but reintroduces exactly the
+  kind of ecosystem-specific logic this phase's own architecture was
+  built to keep out of core. See `CG-008` (`planning/context-gaps/inbox.md`).
 
 ### Phase 63 — Lightweight ordinary-project smoke test · EXPERIMENTAL
 - A deliberately small confirmation — not a full reference-project

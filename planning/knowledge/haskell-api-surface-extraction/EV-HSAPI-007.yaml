@@ -1,0 +1,20 @@
+id: EV-HSAPI-007
+kind: evidence
+evidence_kind: executable
+what_it_shows: >
+  A minimal, comment-aware mechanical scan (strip lines starting with
+  `--`, then extract identifier tokens from the remaining export-list
+  text) produces a name set that exactly matches GHC's own real,
+  compiled `:browse` output for a real, non-trivial module
+  (AccountName.hs, 48 names both ways, identical sets), including
+  correctly excluding the one commented-out entry
+  (`--  ,isAccountRegex`). This is a real, independent, executable
+  confirmation -- not merely a re-reading of the same source text -- that
+  the basic bare-name/`--`-comment-stripping approach is sufficient for
+  at least this real file's export-list shape.
+observations: [OBS-HSAPI-009]
+source_ref: "hledger-lib/Hledger/Data/AccountName.hs:11-62"
+doc_ref: null
+test_ref: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+status: current

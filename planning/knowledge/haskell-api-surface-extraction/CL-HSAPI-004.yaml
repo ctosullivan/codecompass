@@ -1,0 +1,35 @@
+id: CL-HSAPI-004
+kind: claim
+statement: >
+  The Rust adapter's "pair each exported item with an immediately
+  preceding doc comment" pattern does not transfer directly to Haskell,
+  because Haskell structurally decouples WHERE a name is declared
+  exported (the module-header export list, which in every real file
+  read carries no attached per-item doc text of its own beyond optional
+  Haddock `-- * Section` grouping headers) from WHERE that name's own
+  documentation lives (a `-- | ...` Haddock comment immediately
+  preceding that name's own type-signature/definition, physically
+  elsewhere in the same file's body, in body-declaration order rather
+  than export-list order). Confirmed directly and concretely:
+  AccountName.hs lists `accountLeafName` first in its export list, but
+  that name's own definition (with no attached Haddock comment at all)
+  appears in the body AFTER accountNameComponents/
+  accountNameFromComponents's own definitions, which are listed second
+  and third in the export list. A Haskell equivalent of Rust's "purpose"
+  field therefore requires a structurally different, two-pass algorithm
+  (first collect exported names from the header, then for each name
+  separately locate its own `<name> ::`/definition line anywhere later
+  in the same file body and check THAT site's own preceding comment) --
+  not a single forward scan -- and `purpose: None` is an expected,
+  common, correct outcome for many real exported names (accountLeafName
+  being a direct, confirmed example), not a sign of scanner failure.
+derivation: DE-HSAPI-004
+supporting_evidence:
+  - EV-HSAPI-002
+  - EV-HSAPI-003
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+timestamp: "2026-09-19T00:00:00Z"
+status: supported
+supersedes: null

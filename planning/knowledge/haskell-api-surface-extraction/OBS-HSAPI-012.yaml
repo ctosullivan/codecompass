@@ -1,0 +1,64 @@
+id: OBS-HSAPI-012
+kind: observation
+method: executable
+what_was_done: >
+  Grepped the whole pinned hledger checkout (`grep -rln '^#if\|^#ifdef\|
+  ^#ifndef' --include='*.hs' .`, then, per match, printed the file's own
+  module-header-to-`where` span) to find how common a CPP conditional
+  actually appearing inside or near an export list is beyond the single
+  Types.hs instance (OBS-HSAPI-011), and to find further real
+  `module <Name>` self/cross re-export instances. Then read the
+  relevant headers directly: hledger-lib/Hledger/Utils.hs (full,
+  1-75), hledger/Hledger/Cli.hs:83-99, and
+  hledger/Hledger/Cli/Script.hs:1-20 with its import block.
+tool: bash (grep + awk), then direct file reads
+tool_version: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+location: >
+  hledger-lib/Hledger/Utils.hs:1-75; hledger/Hledger/Cli.hs:83-99;
+  hledger/Hledger/Cli/Script.hs:1-20
+raw_result: |
+  Grep found #if/#ifdef in module-header spans of (non-exhaustive):
+  Hledger/Utils.hs, Hledger/Data/Journal.hs, Hledger/Data/Amount.hs,
+  Hledger/Data/PeriodData.hs, Hledger/Data/Account.hs,
+  Hledger/Data/Types.hs, Hledger/Data/Json.hs, hledger-ui/.../Main.hs,
+  hledger/Hledger/Cli/Commands/Aregister.hs -- i.e. CPP conditionals
+  near a module header/export list are not a one-off oddity in this
+  codebase, though on closer read most (e.g. Amount.hs's
+  `#if !MIN_VERSION_base(4,20,0)`, PeriodData.hs's two `#if` lines) sit
+  in the file BODY after `where`, not literally inside the export-list
+  parens the way Types.hs's does -- Types.hs remains the one confirmed
+  case of a CPP conditional gating an export-list ENTRY specifically.
+
+  hledger-lib/Hledger/Utils.hs's export list (lines 8-69) mixes plain
+  bare names, `-- * Section` headers, AND six real `module <Name>`
+  re-export entries naming actual OTHER modules imported without an
+  alias:
+    module Hledger.Utils.Debug,
+    module Hledger.Utils.Parse,
+    module Hledger.Utils.IO,
+    module Hledger.Utils.Regex,
+    module Hledger.Utils.String,
+    module Hledger.Utils.Text,
+    ... tests_Utils,
+    module Hledger.Utils.Test,
+  matched by plain `import Hledger.Utils.Debug` / `import
+  Hledger.Utils.Parse` / etc. (no `as` clause) at lines 91-97 -- i.e. a
+  DIFFERENT, simpler re-export shape than Hledger.hs's alias-based one
+  (OBS-HSAPI-006): here `module Hledger.Utils.Debug` really does name a
+  real, unaliased, directly-resolvable other module.
+
+  hledger/Hledger/Cli.hs:83-99 combines bare names, an
+  `-- * Re-exports` section header, six real-module re-exports
+  (`module Hledger.Cli.CliOptions` etc.), one re-export of the whole
+  `Hledger` module (hledger-lib's own root, OBS-HSAPI-006), AND one
+  aliased re-export (`module CmdArgsWithoutName`) in the same list.
+
+  hledger/Hledger/Cli/Script.hs's entire export list is just
+  `( module M )`, where `M` is an import alias shared by roughly a
+  dozen+ `import X as M` lines (Control.Applicative, Control.Monad,
+  Data.Char, Data.Either, Data.Functor, ...) -- an extreme, real
+  instance of one alias standing in for many real modules at once.
+timestamp: "2026-09-19T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

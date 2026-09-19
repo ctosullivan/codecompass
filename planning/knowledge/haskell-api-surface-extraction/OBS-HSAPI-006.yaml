@@ -1,0 +1,35 @@
+id: OBS-HSAPI-006
+kind: observation
+method: source_read
+what_was_done: >
+  Read hledger-lib/Hledger.hs in full (389 lines; the root module of the
+  hledger-lib package's own module hierarchy). Its export list (lines
+  22-26) is:
+    module Hledger (
+      -- $DOCS
+      module X
+     ,tests_Hledger
+    )
+    where
+  and its import block (lines 29-33) is:
+    import           Hledger.Data    as X
+    import           Hledger.Read    as X
+    import           Hledger.Reports as X
+    import           Hledger.Query   as X
+    import           Hledger.Utils   as X
+  i.e. `module X` in the export list does not name a real module called
+  `X` at all -- `X` is a shared IMPORT ALIAS given to five distinct real
+  modules, and the export list entry re-exports the union of everything
+  visible under that shared alias (effectively hledger-lib's entire
+  public surface). `-- $DOCS` (line 23) is a Haddock named-chunk
+  reference, not an exported identifier either.
+tool: null
+tool_version: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+location: "hledger-lib/Hledger.hs:22-33"
+raw_result: >
+  Verbatim header and import block read; see location for exact line
+  numbers.
+timestamp: "2026-09-19T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

@@ -1,0 +1,19 @@
+id: REQ-HSAPI-005
+kind: requirement
+statement: >
+  The scanner MUST reliably detect a module with no export list at all
+  (`module <Name> where`, with no `(`-delimited list before `where`) as
+  a distinct case, without false positives or false negatives, but MUST
+  NOT attempt to enumerate that module's top-level bindings in this
+  version — such a module contributes zero symbols plus one diagnostic
+  noting the undetermined-surface condition.
+example: |
+  Given a module written as `module Foo where` with no parenthesised
+    export list
+  When the scanner processes this module
+  Then it is detected as an export-list-free module (matching the
+    147-module real-corpus discriminator with zero false
+    positives/negatives) and reported with an empty symbol list plus a
+    diagnostic, never a guessed enumeration of its top-level bindings.
+decision: DEC-HSAPI-001
+status: verified

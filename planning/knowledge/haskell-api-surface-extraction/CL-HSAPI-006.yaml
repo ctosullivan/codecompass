@@ -1,0 +1,35 @@
+id: CL-HSAPI-006
+kind: claim
+statement: >
+  A module with no export list at all (`module Foo where`, no
+  parenthesised list, not even an empty `()`) is real and confirmed
+  present 17 times across the pinned hledger checkout (though never
+  inside hledger-lib itself), and per Haskell's own semantics means
+  every top-level binding/type/class the module defines is exported.
+  Detecting the ABSENCE of an export list mechanically is straightforward
+  (no `(` between `module <Name>` and the module's own `where`,
+  confirmed as a reliable discriminator across a 147-module real sample
+  with zero false positives/negatives found). However, correctly
+  ENUMERATING "every top-level binding" in that case is a materially
+  harder problem than anything the export-list-present case requires: unlike
+  Rust's `pub fn`/`pub struct` (a keyword physically at the start of the
+  declaration), a bare Haskell top-level binding has no uniform
+  single-token marker -- recognising where one top-level declaration
+  ends and the next begins in general depends on Haskell's own
+  column/layout rule, which a coarse line-based scan (the Rust adapter's
+  own tier) does not attempt. This research did not build or test such
+  a fallback scan against a real no-export-list file's own actual
+  top-level bindings, so whether a Rust-adapter-tier heuristic (e.g.
+  "a line starting at column 0 that isn't `import`/`{-`/a pragma/an
+  operator-continuation is a new top-level name") is good enough in
+  practice remains untested and is named here as an open question, not
+  quietly assumed solved.
+derivation: DE-HSAPI-006
+supporting_evidence:
+  - EV-HSAPI-004
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+timestamp: "2026-09-19T00:00:00Z"
+status: supported
+supersedes: null

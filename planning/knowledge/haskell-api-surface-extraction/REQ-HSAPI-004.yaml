@@ -1,0 +1,21 @@
+id: REQ-HSAPI-004
+kind: requirement
+statement: >
+  Before scanning any module's own export list, the adapter MUST
+  determine whether that module is part of the package's own exposed
+  surface (an explicit `exposed-modules` list in the generated
+  `.cabal`, or hpack's own "all modules in source-dirs less
+  other-modules" default when no explicit list is present). A module
+  not in the package's exposed set MUST NOT contribute any symbols to
+  the reported API surface, regardless of what its own export list
+  says.
+example: |
+  Given a package whose package.yaml declares no explicit
+    exposed-modules (hpack default: all source-dir modules except
+    other-modules), and hledger-lib's own real other-modules exclusions
+    (Setup.hs, generated Paths_*/PackageInfo_* files)
+  When the adapter analyzes the package
+  Then Setup.hs and any generated Paths_*/PackageInfo_* module
+    contribute no symbols, and every other real source module does.
+decision: DEC-HSAPI-001
+status: verified

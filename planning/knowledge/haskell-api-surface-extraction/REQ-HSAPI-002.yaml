@@ -1,0 +1,19 @@
+id: REQ-HSAPI-002
+kind: requirement
+statement: >
+  When the scanner encounters a `module <Name>` entry inside an export
+  list, it MUST record that a re-export entry named `<Name>` occurred,
+  and MUST NOT assert a flattened, fully-resolved list of real exported
+  names for it. If `<Name>` matches this same file's own
+  `import ... as <Name>` line, the scanner additionally records which
+  real module(s) that alias covers in this file. No cross-file read is
+  performed to resolve any `module <Name>` entry.
+example: |
+  Given hledger-lib/Hledger.hs's `module X` entry, where `X` is a
+    file-local alias (via `import ... as X`) for five real imports
+  When the scanner encounters this entry
+  Then it records a re-export occurrence named `X` plus the five real
+    module names `X` aliases in this file, without attempting to expand
+    `X` into a flat list of the real names those five modules export.
+decision: DEC-HSAPI-001
+status: verified

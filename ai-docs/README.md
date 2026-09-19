@@ -12,7 +12,8 @@ codecompass generates grounded, version-pinned reference docs for a
 project's actual dependencies, so an agent doesn't have to answer questions
 about them from training-data memory (which drifts the moment a library
 ships a new release). It inspects what's really installed (npm, PyPI,
-Cargo), clones each dependency's own upstream source, and produces
+Cargo, and — via a separate external adapter process — Haskell/Stack),
+clones each dependency's own upstream source, and produces
 per-vendor digests plus a SQLite context graph of vendors, symbols, usage,
 and how a project's own docs relate to them.
 

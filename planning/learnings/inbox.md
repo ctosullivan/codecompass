@@ -8,6 +8,104 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-025 — a monorepo-aware Stack command needs an explicit `TARGET` argument, or it silently reports the whole project's graph instead of one package's own closure
+
+- **origin:** Phase 60 (minimal external Haskell adapter), discovered
+  live while implementing `Adapter.Deps` (checked directly against the
+  real `hledger`/`hledger-lib` monorepo, not assumed)
+- **date:** 2026-09-19
+- **project_revision:** working tree (Phase 60 implementation,
+  uncommitted at filing time)
+- **observation:** `decisions/0057`'s own original inline description of
+  `stack dot --external`/`stack ls dependencies` (and this phase's own
+  early plan text) named the bare commands with no target. Run bare
+  (`stack dot --external`, no package name) inside `hledger-lib/`, both
+  commands report the **whole enclosing multi-package Stack project's**
+  dependency graph (all of `hledger`/`hledger-lib`/`hledger-ui`/
+  `hledger-web`'s combined closure) — real, live output confirmed
+  `hledger`'s own edges appear in the result even when only `hledger-lib`
+  was wanted. Passing the package name as an explicit positional
+  `TARGET` argument (`stack dot --external hledger-lib`, `stack ls
+  dependencies --external hledger-lib`) correctly scopes both commands to
+  exactly that one package's own dependency closure — confirmed by a real
+  edge-count diff (594 lines vs. 2046 lines for the bare form; zero
+  `"hledger" ->` edges in the scoped output vs. 42 in the unscoped one).
+- **evidence:** live shell transcript (`stack dot --external
+  hledger-lib` vs. bare `stack dot --external`, both run inside
+  `/home/cormac/projects/hledger/hledger-lib`), `stack dot --help`/`stack
+  ls dependencies --help`'s own documented `TARGET` argument ("If none
+  specified, use all project packages").
+- **classification:** invariant
+- **status:** retained
+- **recurrence:** first occurrence
+- **curation (Phase 60 triage, 2026-09-19, knowledge-curator):** provenance
+  accepted — all required fields present. Independently re-verified rather
+  than taking the entry's own account on faith: read
+  `adapters/haskell/src/Adapter/Deps.hs` directly (a separate repository,
+  checked out at `adapters/haskell/`) and confirmed both `stack`
+  invocations already hardcode `packageName` as the explicit positional
+  `TARGET` — `runStack projectRoot ["dot", "--external", packageName]`
+  (line 43) and `runStack projectRoot ["ls", "dependencies", "--external",
+  packageName]` (line 47) — so the fix this candidate names is genuinely
+  live, not merely claimed. Also confirmed the module's own header haddock
+  comment (lines 4-12) already states the exact invariant this candidate
+  documents, in matching detail and almost matching wording ("without it,
+  a package inside a multi-package Stack project (a monorepo like
+  `hledger`) reports the *whole project's* dependency graph, not the one
+  target package's own closure (confirmed live against the real
+  `hledger`/`hledger-lib` checkout)") — the invariant already has a
+  durable, correctly-scoped home at the exact file whose logic it governs,
+  written before this triage touched it. Checked `decisions/0057` directly
+  for overlap: its own "Monorepo package roots" section documents a
+  related but distinct concern — which *directory* CodeCompass resolves
+  and hands to the adapter as `project_root` before invocation — and says
+  nothing about the `TARGET` argument `stack dot`/`stack ls dependencies`
+  themselves require once already inside that directory; not a duplicate,
+  and not a gap this ADR needs amending to close, since the ADR's own
+  scope (protocol-level `project_root` resolution) never claimed to cover
+  a downstream command's own argument requirements. Checked
+  `adapters/haskell/test/Spec.hs`: it exercises `buildTreeFromOutputs`
+  (the pure parsing core) against recorded real-shaped text, matching
+  `decisions/0014`'s fixture-based-primary-strategy precedent applied on
+  the Haskell side — it does not, and structurally cannot without a live
+  `stack` subprocess against a real multi-package monorepo, exercise
+  `runStack`'s own argument construction. Considered whether classification
+  `invariant`'s standard destination (a regression test, per
+  `learning-lifecycle.md` §4) still applies here and concluded no: unlike
+  `L-020` (a content-extraction boundary, cheaply testable against static
+  text with no external dependency), this invariant is a fact about an
+  external tool's own CLI behavior, and the only call site
+  (`buildDependencyTree`) already hardcodes `packageName` as a literal
+  inline element of both argument lists — there is no code path through
+  which this could silently regress without visibly rewriting that
+  literal, and a test that actually caught a future regression here would
+  need either a live `stack` invocation against a real monorepo fixture
+  (a dependency this project's own established Haskell-adapter test
+  posture deliberately avoids) or a refactor extracting args-construction
+  into its own testable pure function (matching the precedent
+  `buildTreeFromOutputs` already sets, but a new piece of production code
+  this triage has no mandate to write or request unprompted). **Outcome:
+  retain, not promote, not discard.** Real, specific, evidenced, and
+  already fully resolved in the artifact it concerns — the fix is live,
+  and the invariant is already recorded exactly where a future maintainer
+  extending or debugging `Adapter.Deps`'s own logic would look, matching
+  the same "a complete, sufficient record already exists at the source;
+  no generalised destination is needed or exists" reasoning `L-019` used,
+  not the "a wrong artifact would ship silently absent a promotion"
+  reasoning that justified `L-020`/`L-021`/`L-024`. Revisit if: (a) a
+  second external adapter (or a second Haskell command) shows the same
+  bare-vs-explicit-`TARGET` shape, recurring the pattern generally enough
+  to justify a `reference-project-protocol.md`- or `decisions/0057`-level
+  note about external-CLI-tool argument scoping; or (b) `runStack`'s call
+  sites are ever refactored to build args separately from the subprocess
+  call, at which point a mocked-subprocess regression test asserting
+  `packageName` is present in the constructed `TARGET` position becomes
+  cheap and worth adding.
+- **promoted_to:** — (retained; already documented in
+  `adapters/haskell/src/Adapter/Deps.hs`'s own module-level haddock
+  comment, lines 4-12, and the fix is already live at lines 43/47 — see
+  curation note; no further artifact exists to promote into)
+
 ### L-024 — a context-packet's (and its upstream research's) "existing tests" trace must explicitly check for a schema/migration mechanism's own dedicated test file, not just the feature's own code-path tests
 
 - **origin:** Phase 54c (evidence-backed, knowledge-based,

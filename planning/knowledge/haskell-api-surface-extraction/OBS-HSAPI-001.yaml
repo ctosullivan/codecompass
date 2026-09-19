@@ -1,0 +1,29 @@
+id: OBS-HSAPI-001
+kind: observation
+method: source_read
+what_was_done: >
+  Read src/codecompass/symbols.py in full to establish the Rust/Cargo
+  adapter's own precedent before researching a Haskell equivalent, per
+  this role's own "trace prior implementation paths first" discipline.
+  extract_rust_symbols (line 34) is a coarse, line-based scan: for each
+  source line, strip whitespace; if it starts with "///" accumulate it
+  as a pending doc-comment line; if it starts with one of
+  _RUST_PUB_PREFIXES (line 18: "pub fn ", "pub struct ", "pub enum ",
+  "pub trait ") emit a Symbol whose name is the first \w+ token after
+  the matched prefix (_rust_item_name, line 63) and whose purpose is the
+  joined pending doc-comment lines (or None); any other line clears the
+  pending doc-comment buffer. Visibility is a per-declaration keyword
+  ("pub") physically adjacent to both the declaration and its doc
+  comment on consecutive lines -- no separate module-level export list
+  exists in Rust's own syntax for this construct.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-19 (HEAD 886dc6e + unrelated uncommitted changes to pyproject.toml/core.py/discovery.py/.gitmodules)"
+location: "src/codecompass/symbols.py:18,34-70"
+raw_result: >
+  Confirmed exact mechanism described above by direct reading; no
+  execution needed since this is inspection of a static extraction
+  algorithm rather than a claim about program behaviour on input.
+timestamp: "2026-09-19T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

@@ -1,0 +1,16 @@
+id: REQ-HSAPI-003
+kind: requirement
+statement: >
+  If a `#if`/`#endif` (or other CPP conditional directive) span appears
+  within an export list's own parentheses, the scanner MUST flag the
+  entry/entries enclosed by that span as undetermined rather than
+  silently treating them as exported or silently dropping them.
+example: |
+  Given hledger-lib/Hledger/Data/Types.hs's export list, where `Year`
+    sits inside a `#if MIN_VERSION_time(1,11,0)` / `#endif` span
+  When the scanner processes this export list
+  Then `Year` is reported with an undetermined/flagged status rather
+    than being silently included in or silently omitted from the
+    confirmed exported-name set.
+decision: DEC-HSAPI-001
+status: verified

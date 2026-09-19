@@ -1,0 +1,29 @@
+id: OBS-HSAPI-013
+kind: observation
+method: executable
+what_was_done: >
+  Ran two targeted, whole-repository greps to check for two further
+  export-list shapes named in the task's own framing that had not yet
+  turned up in any file read so far: (1) a same-line trailing `--`
+  comment attached after an export-list identifier (as opposed to a
+  whole standalone commented-out line, OBS-HSAPI-002/003); (2) a
+  named-constructor-subset export, `Type(Ctor1, Ctor2)` (as opposed to
+  the full `Type(..)` form confirmed in OBS-HSAPI-002/010).
+tool: bash (grep -rn with two targeted patterns across hledger-lib,
+  hledger, hledger-ui, hledger-web)
+tool_version: null
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+location: null
+raw_result: |
+  Pattern 1 (`grep -rn "^\s*[A-Za-z_][A-Za-z0-9_']*\s*(\.\.)\?\s*,\?\s*--"
+  --include="*.hs" .`, excluding test/): zero matches anywhere in the
+  checked packages.
+  Pattern 2 (`grep -rnE "^\s*,?\s*[A-Z][A-Za-z0-9_']*\([A-Z][A-Za-z0-9_'
+  ,]*\)\s*,?\s*$" --include="*.hs" hledger-lib hledger hledger-ui
+  hledger-web`, excluding lines matching `(\.\.)`): zero matches.
+  Neither shape was found anywhere in the sampled real corpus, despite
+  both being valid, real Haskell export-list grammar per the task's own
+  framing and general language knowledge.
+timestamp: "2026-09-19T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

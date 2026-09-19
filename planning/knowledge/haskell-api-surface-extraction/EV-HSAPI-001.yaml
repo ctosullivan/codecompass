@@ -1,0 +1,17 @@
+id: EV-HSAPI-001
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  CodeCompass's existing Rust/Cargo adapter precedent
+  (extract_rust_symbols) is a single-pass, line-based scanner keyed on a
+  per-declaration visibility keyword ("pub ...") physically adjacent, on
+  consecutive lines, to both the declaration itself and its own
+  preceding doc comment (`///`). Symbol name is the first identifier
+  token after the matched prefix; purpose is the joined preceding
+  comment lines, or None if absent.
+observations: [OBS-HSAPI-001]
+source_ref: "src/codecompass/symbols.py:18,34-70"
+doc_ref: null
+test_ref: null
+repository_revision: "working tree, 2026-09-19 (HEAD 886dc6e + unrelated uncommitted changes)"
+status: current

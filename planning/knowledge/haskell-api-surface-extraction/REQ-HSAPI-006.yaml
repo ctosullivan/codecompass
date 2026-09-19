@@ -1,0 +1,23 @@
+id: REQ-HSAPI-006
+kind: requirement
+statement: >
+  Purpose-pairing MUST use a two-pass algorithm: pass 1 collects the
+  exported-name set from the module header (per REQ-HSAPI-001); pass 2
+  walks the file body once and, for each exported name, records the
+  nearest preceding `-- | ...` Haddock comment at that name's own
+  definition site, independent of the name's position in the export
+  list. An exported name with no such comment at its definition site
+  MUST be reported with `purpose: null`, which is a correct, expected
+  outcome, not an error condition.
+example: |
+  Given AccountName.hs, where `accountLeafName` is listed first in the
+    export list but its own definition (no preceding Haddock comment)
+    appears in the body after `accountNameComponents`/
+    `accountNameFromComponents` (listed second/third, each with real
+    Haddock text at their own definition sites)
+  When the scanner runs its two-pass algorithm
+  Then `accountLeafName` is reported with `purpose: null` and the other
+    two are reported with their own real Haddock text, matching body
+    location rather than export-list order.
+decision: DEC-HSAPI-001
+status: verified

@@ -1,0 +1,35 @@
+id: CL-HSAPI-002
+kind: claim
+statement: >
+  A `module <Name>` entry inside an export list cannot be resolved into
+  a flat set of exported names by reading that one line's text alone,
+  and no single fixed strategy handles every real instance found in
+  this codebase: it can name a genuinely different, unaliased, directly
+  importable other module (requires reading THAT module's own export
+  list -- a cross-file read); it can name an import alias standing for
+  one or many distinct real modules at once (requires first scanning
+  THIS SAME FILE's own `import ... as <Name>` lines, then, to fully
+  expand, still requires cross-file reads of each aliased module); it
+  can name another package's own aggregation module by its real name
+  (same as the first case, one level removed); or it can self-reference
+  the current module's own name (resolves to "this module's own
+  complete export surface," close to but not textually the same as
+  having no export list at all). A minimal, per-file, no-full-parser
+  extractor (matching the Rust adapter's own single-file scope) can
+  mechanically detect and record a `module <Name>` entry as occurring,
+  and can do the one file-local step of matching it against this same
+  file's own `import ... as <Name>` lines when the alias case applies,
+  but cannot fully expand it to real names without reading other files
+  -- a scope decision the next design step must make explicitly, not an
+  ambiguity this research can resolve on its own.
+derivation: DE-HSAPI-002
+supporting_evidence:
+  - EV-HSAPI-005
+  - EV-HSAPI-009
+  - EV-HSAPI-010
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"
+timestamp: "2026-09-19T00:00:00Z"
+status: supported
+supersedes: null

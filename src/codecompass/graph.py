@@ -29,7 +29,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 _DB_FILENAME = "context-graph.db"
-_SCHEMA_VERSION = "7"
+_SCHEMA_VERSION = "8"
 
 # Closed taxonomy for `doc_relation_enrichment.relation_label` (Phase 31,
 # decisions/0045). `'other'` is the required fallback for any label an AI
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS meta (
 CREATE TABLE IF NOT EXISTS vendors (
   id                      INTEGER PRIMARY KEY,
   name                    TEXT NOT NULL UNIQUE,
-  ecosystem               TEXT NOT NULL CHECK (ecosystem IN ('npm','python','cargo')),
+  ecosystem               TEXT NOT NULL CHECK (ecosystem IN ('npm','python','cargo','haskell')),
   installed_version       TEXT,
   repository_url          TEXT,
   repository_subdirectory TEXT,
@@ -460,6 +460,93 @@ def _migrate_doc_relation_enrichment_relation_label(conn: sqlite3.Connection) ->
         )
 
 
+def _migrate_vendors_ecosystem_constraint(conn: sqlite3.Connection) -> None:
+    """Widens `vendors.ecosystem`'s CHECK constraint to accept `'haskell'`
+    (Phase 60) on a database whose `vendors` table predates it —
+    **without** `_migrate_doc_artifacts_constraints`'s drop-and-recreate
+    approach. `vendors.id` is referenced by `vendor_enrichment`/
+    `symbol_enrichment` via `ON DELETE CASCADE` foreign keys, and those
+    tables hold paid AI enrichment output that survives every ordinary
+    sync specifically because `vendors` rows are *upserted* in place,
+    never deleted and recreated (`rebuild_deterministic`'s own
+    docstring). Dropping `vendors` here would cascade-delete that
+    enrichment — exactly the outcome every other migration in this file
+    goes out of its way to avoid.
+
+    Checked directly via `sqlite_master.sql` (does the stored `CREATE
+    TABLE` text already mention `'haskell'`?), not `meta.schema_version`
+    — self-contained and idempotent regardless of what other migrations
+    already advanced the version this call, matching `_migrate_doc_
+    relation_enrichment_relation_label`'s own "introspect the real thing"
+    style rather than `_migrate_doc_artifacts_constraints`'s
+    version-difference style.
+
+    Recreates the table in place: SQLite has no `ALTER TABLE` form for
+    changing a `CHECK` constraint. A new `vendors_new` table is created
+    with the widened `CHECK`, every existing row is copied verbatim
+    (preserving `id`), the old table is dropped, and the new one is
+    renamed into its place — every foreign key referencing `vendors(id)`
+    keeps working after the rename since SQLite resolves a foreign key
+    against a table by *name*, and `vendors` is that name again as soon
+    as the rename completes. Run with `PRAGMA foreign_keys = OFF` for the
+    duration, since SQLite would otherwise reject dropping `vendors`
+    while `symbols`/`vendor_enrichment`/etc. still reference it by name —
+    re-enabled unconditionally in a `finally` block, matching
+    `open_graph`'s own per-connection setting.
+
+    Copies only the columns the on-disk table actually has (via `PRAGMA
+    table_info`), by name — an on-disk `vendors` table from well before
+    this migration may predate columns added by later phases
+    (`repository_url` and friends), and `CREATE TABLE ... DEFAULT`/
+    nullability rules fill in the rest exactly as they would for a
+    genuinely new row, rather than this migration hard-coding an
+    assumption about every column that has ever existed.
+
+    A brand-new database (no `vendors` table yet) has nothing to
+    migrate; `init_schema`'s own `CREATE TABLE IF NOT EXISTS`, called
+    right after this function returns, creates it with the widened
+    `CHECK` already in place.
+    """
+    table_exists = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'vendors'"
+    ).fetchone()
+    if not table_exists:
+        return
+    row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'vendors'"
+    ).fetchone()
+    if row is not None and "haskell" in row[0]:
+        return
+    existing_columns = [r[1] for r in conn.execute("PRAGMA table_info(vendors)")]
+    columns_sql = ", ".join(existing_columns)
+    conn.execute("PRAGMA foreign_keys = OFF")
+    try:
+        with conn:
+            conn.execute(
+                """
+                CREATE TABLE vendors_new (
+                  id                      INTEGER PRIMARY KEY,
+                  name                    TEXT NOT NULL UNIQUE,
+                  ecosystem               TEXT NOT NULL
+                    CHECK (ecosystem IN ('npm','python','cargo','haskell')),
+                  installed_version       TEXT,
+                  repository_url          TEXT,
+                  repository_subdirectory TEXT,
+                  source_resolved         INTEGER NOT NULL DEFAULT 0,
+                  source_resolution_error TEXT,
+                  last_synced_at          TEXT
+                )
+                """
+            )
+            conn.execute(
+                f"INSERT INTO vendors_new ({columns_sql}) SELECT {columns_sql} FROM vendors"
+            )
+            conn.execute("DROP TABLE vendors")
+            conn.execute("ALTER TABLE vendors_new RENAME TO vendors")
+    finally:
+        conn.execute("PRAGMA foreign_keys = ON")
+
+
 def open_graph(project_root: Path) -> sqlite3.Connection:
     """Resolve `context-graph.db` at `project_root`, connect (creating the
     file if absent), enable foreign keys (SQLite defaults this off, so it
@@ -472,6 +559,7 @@ def open_graph(project_root: Path) -> sqlite3.Connection:
     conn.execute("PRAGMA foreign_keys = ON")
     _migrate_doc_artifacts_constraints(conn)
     _migrate_doc_relation_enrichment_relation_label(conn)
+    _migrate_vendors_ecosystem_constraint(conn)
     init_schema(conn)
     return conn
 

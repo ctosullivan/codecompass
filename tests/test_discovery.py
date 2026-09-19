@@ -10,6 +10,7 @@ from codecompass.discovery import (
     append_vendor_toml,
     discover_all,
     discover_cargo,
+    discover_haskell,
     discover_manifest_paths,
     discover_npm,
     discover_python,
@@ -76,6 +77,43 @@ def test_discover_cargo_reads_dependencies_and_dev_dependencies(tmp_path: Path) 
     assert discover_cargo(manifest) == ["serde", "serde_test"]
 
 
+def test_discover_haskell_reads_dependencies_list_stripping_version_constraints(
+    tmp_path: Path,
+) -> None:
+    manifest = tmp_path / "package.yaml"
+    manifest.write_text(
+        "name: example\n"
+        "version: 1.0.0\n"
+        "dependencies:\n"
+        "- base >=4.18 && <4.23\n"
+        "- aeson\n"
+        "- name: bytestring\n"
+        "  version: '>=0.10'\n",
+        encoding="utf-8",
+    )
+    assert discover_haskell(manifest) == ["aeson", "base", "bytestring"]
+
+
+def test_discover_haskell_no_dependencies_key_returns_empty(tmp_path: Path) -> None:
+    manifest = tmp_path / "package.yaml"
+    manifest.write_text("name: example\nversion: 1.0.0\n", encoding="utf-8")
+    assert discover_haskell(manifest) == []
+
+
+def test_discover_haskell_malformed_yaml_raises_discovery_error(tmp_path: Path) -> None:
+    manifest = tmp_path / "package.yaml"
+    manifest.write_text("name: [unterminated\n", encoding="utf-8")
+    with pytest.raises(DiscoveryError, match="not valid YAML"):
+        discover_haskell(manifest)
+
+
+def test_discover_haskell_non_mapping_top_level_raises_discovery_error(tmp_path: Path) -> None:
+    manifest = tmp_path / "package.yaml"
+    manifest.write_text("- just\n- a\n- list\n", encoding="utf-8")
+    with pytest.raises(DiscoveryError, match="expected a YAML mapping"):
+        discover_haskell(manifest)
+
+
 def test_discover_all_dispatches_by_manifest_filename(tmp_path: Path) -> None:
     (tmp_path / "package.json").write_text(
         json.dumps({"dependencies": {"lodash": "^4.0.0"}}), encoding="utf-8"
@@ -84,15 +122,24 @@ def test_discover_all_dispatches_by_manifest_filename(tmp_path: Path) -> None:
         '[project]\ndependencies = ["requests"]\n', encoding="utf-8"
     )
     (tmp_path / "Cargo.toml").write_text('[dependencies]\nserde = "1.0"\n', encoding="utf-8")
+    (tmp_path / "package.yaml").write_text(
+        "name: example\nversion: 1.0.0\ndependencies:\n- aeson\n", encoding="utf-8"
+    )
 
     result = discover_all(
-        [tmp_path / "package.json", tmp_path / "pyproject.toml", tmp_path / "Cargo.toml"]
+        [
+            tmp_path / "package.json",
+            tmp_path / "pyproject.toml",
+            tmp_path / "Cargo.toml",
+            tmp_path / "package.yaml",
+        ]
     )
 
     assert result == {
         Ecosystem.NPM: ["lodash"],
         Ecosystem.PYTHON: ["requests"],
         Ecosystem.CARGO: ["serde"],
+        Ecosystem.HASKELL: ["aeson"],
     }
 
 
@@ -119,11 +166,12 @@ def test_discover_all_rejects_unrecognized_manifest_filename(tmp_path: Path) -> 
 def test_discover_manifest_paths_finds_known_filenames_at_root(tmp_path: Path) -> None:
     (tmp_path / "package.json").write_text("{}", encoding="utf-8")
     (tmp_path / "Cargo.toml").write_text("", encoding="utf-8")
+    (tmp_path / "package.yaml").write_text("name: example\n", encoding="utf-8")
     (tmp_path / "unrelated.txt").write_text("", encoding="utf-8")
 
     found = discover_manifest_paths(tmp_path)
 
-    assert sorted(p.name for p in found) == ["Cargo.toml", "package.json"]
+    assert sorted(p.name for p in found) == ["Cargo.toml", "package.json", "package.yaml"]
 
 
 def test_discover_manifest_paths_ignores_nested_manifests(tmp_path: Path) -> None:

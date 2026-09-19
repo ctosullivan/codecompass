@@ -14,6 +14,8 @@ import tomllib
 from collections.abc import Callable
 from pathlib import Path
 
+import yaml
+
 from codecompass.core import Ecosystem, VendorConfig
 
 
@@ -85,6 +87,54 @@ def discover_cargo(manifest: Path) -> list[str]:
     return sorted(names)
 
 
+def discover_haskell(manifest: Path) -> list[str]:
+    """`package.yaml`'s (hpack format) top-level `dependencies:` list —
+    bare package names only, version-constraint shorthand
+    (`"base >=4.18 && <4.23"`) and the `{name: ..., version: ...}` object
+    form both stripped down to the bare name, matching
+    `discover_npm`/`discover_python`/`discover_cargo`'s own "manifest
+    declares intent, not what's installed" precedent. A conditional
+    `when:`-block dependency (hpack's own flag-gated dependency
+    mechanism) is not expanded — out of scope for this minimal adapter,
+    same posture as every other discoverer's own real, disclosed
+    limitations.
+
+    Real `PyYAML` (`yaml.safe_load()`), per direct instruction
+    (`decisions/0057`) — hpack's real shape (nested `dependencies:`
+    lists mixing bare-name and name+constraint shorthand, multi-line
+    `description: |` blocks, `flags:` sub-maps, all visible in the real
+    `hledger-lib/package.yaml` this was verified against) is genuinely
+    more than a hand-rolled parser scoped to a handful of flat keys can
+    safely claim to handle.
+    """
+    data = _load_yaml(manifest)
+    names: set[str] = set()
+    for entry in data.get("dependencies") or []:
+        if isinstance(entry, str):
+            parts = entry.split()
+            name = parts[0] if parts else ""
+        elif isinstance(entry, dict):
+            name = entry.get("name", "")
+        else:
+            continue
+        if name:
+            names.add(name)
+    return sorted(names)
+
+
+def _load_yaml(manifest: Path) -> dict:
+    try:
+        with manifest.open("r", encoding="utf-8") as fp:
+            data = yaml.safe_load(fp)
+    except OSError as exc:
+        raise DiscoveryError(f"{manifest}: could not read: {exc}") from exc
+    except yaml.YAMLError as exc:
+        raise DiscoveryError(f"{manifest}: not valid YAML: {exc}") from exc
+    if not isinstance(data, dict):
+        raise DiscoveryError(f"{manifest}: expected a YAML mapping at top level")
+    return data
+
+
 def _load_toml(manifest: Path) -> dict:
     try:
         with manifest.open("rb") as fp:
@@ -100,6 +150,7 @@ _MANIFEST_HANDLERS: dict[str, tuple[Ecosystem, Callable[[Path], list[str]]]] = {
     "pyproject.toml": (Ecosystem.PYTHON, discover_python),
     "requirements.txt": (Ecosystem.PYTHON, discover_requirements_txt),
     "Cargo.toml": (Ecosystem.CARGO, discover_cargo),
+    "package.yaml": (Ecosystem.HASKELL, discover_haskell),
 }
 
 
