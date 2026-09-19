@@ -55,12 +55,31 @@ class HaskellAdapter(EcosystemAdapter):
         — resolved into a full URL the same way every other adapter
         resolves locally-available metadata only, never a network call
         (`decisions/0021`).
+
+        `subdirectory` is set whenever `_resolve_package_dir()` resolves
+        somewhere other than `self.project_root` itself — the monorepo
+        case (e.g. `hledger-lib` inside the `hledger` monorepo, per
+        `decisions/0057` §"Monorepo package roots"). Without it,
+        `source_resolution.resolve_and_clone` (which honours this field
+        exactly the way the npm adapter's own monorepo case already
+        relies on) has no way to know the cloned repository root isn't
+        itself the package's own source — it would silently treat the
+        whole monorepo clone as `self.config.name`'s own source tree.
+        Found live, during Phase 61's own planning, as a real
+        pre-existing gap in this method (Phase 60 never set this field
+        at all): a real `codecompass sync` produced a
+        `vendor/hledger-lib/src/` containing `hledger`/`hledger-ui`/
+        `hledger-web` too, not scoped to `hledger-lib`.
         """
         manifest = self._resolve_package_yaml()
         github = manifest.get("github")
         if not github:
             return None
-        return RepositoryLocation(url=f"https://github.com/{github}")
+        resolved_dir = self._resolve_package_dir()
+        subdirectory = None
+        if resolved_dir != self.project_root:
+            subdirectory = str(resolved_dir.relative_to(self.project_root))
+        return RepositoryLocation(url=f"https://github.com/{github}", subdirectory=subdirectory)
 
     def dependency_tree(self) -> DepNode:
         result = self._analyze()

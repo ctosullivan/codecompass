@@ -77,6 +77,44 @@ def test_repository_url_none_when_github_field_absent(tmp_path: Path) -> None:
     assert adapter.repository_url() is None
 
 
+def test_repository_url_sets_subdirectory_for_monorepo_member(tmp_path: Path) -> None:
+    """Phase 61: a monorepo member's `repository_url()` must set
+    `subdirectory` — without it, `resolve_and_clone` has no way to know
+    the cloned repository root isn't itself the package's own source
+    (found live: a real `codecompass sync` against `hledger-lib`
+    produced a `vendor/hledger-lib/src/` containing the whole `hledger`
+    monorepo, not scoped to `hledger-lib`, before this fix).
+    """
+    (tmp_path / "hledger").mkdir()
+    (tmp_path / "hledger" / "package.yaml").write_text(
+        "name: hledger\nversion: 1.52.4\ngithub: simonmichael/hledger\n", encoding="utf-8"
+    )
+    (tmp_path / "hledger-lib").mkdir()
+    (tmp_path / "hledger-lib" / "package.yaml").write_text(
+        "name: hledger-lib\nversion: 1.52.4\ngithub: simonmichael/hledger\n", encoding="utf-8"
+    )
+    adapter = _adapter("hledger-lib", tmp_path)
+
+    assert adapter.repository_url() == RepositoryLocation(
+        url="https://github.com/simonmichael/hledger", subdirectory="hledger-lib"
+    )
+
+
+def test_repository_url_no_subdirectory_when_project_root_is_the_package(
+    tmp_path: Path,
+) -> None:
+    """Regression guard: the existing non-monorepo case (project root
+    *is* the package) must keep `subdirectory=None`, unchanged."""
+    (tmp_path / "package.yaml").write_text(
+        "name: demo-package\nversion: 1.0.0\ngithub: example/demo\n", encoding="utf-8"
+    )
+    adapter = _adapter("demo-package", tmp_path)
+
+    result = adapter.repository_url()
+    assert result is not None
+    assert result.subdirectory is None
+
+
 def test_source_location_is_project_root_when_not_a_monorepo(tmp_path: Path) -> None:
     (tmp_path / "package.yaml").write_text(
         "name: demo-package\nversion: 1.0.0\n", encoding="utf-8"
@@ -193,7 +231,7 @@ def test_live_smoke_real_hledger_lib_end_to_end() -> None:
     assert adapter.installed_version() == "1.52.4"
     assert adapter.source_location() == _SIBLING_HLEDGER_CHECKOUT / "hledger-lib"
     assert adapter.repository_url() == RepositoryLocation(
-        url="https://github.com/simonmichael/hledger"
+        url="https://github.com/simonmichael/hledger", subdirectory="hledger-lib"
     )
 
     tree = adapter.dependency_tree()
