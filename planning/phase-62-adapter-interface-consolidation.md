@@ -1,7 +1,10 @@
 # Phase 62: Adapter-interface consolidation — plan
 
-**Status:** plan only, not started. Do not begin implementation until
-this plan is reviewed (`CLAUDE.md` §1).
+**Status:** done (2026-09-19). `CG-008` closed. Implemented per the
+amendment below; see `planning/retros/phase-62-adapter-interface-consolidation.md`
+(retro), `planning/retros/_drift-audit-phase-62.md` (docs-reconstructor:
+NO DRIFT), and `planning/retros/_audit-phase-62.md` (release-phase-auditor:
+PASS WITH NON-BLOCKING OBSERVATIONS) for the full closeout record.
 
 **Amended 2026-09-19** (direct user instruction, before implementation
 began — scope, acceptance criteria, migration approach, caching design,

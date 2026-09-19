@@ -564,7 +564,24 @@ licensing commitment is made. No new ADR was needed (the resolution
 matched `decisions/0002`'s existing precedent closely enough that no
 new non-obvious tradeoff surfaced). `CG-008` marked resolved in
 `planning/context-gaps/inbox.md`; promoted line added to
-`planning/learnings/promoted.md`. Retro:
+`planning/learnings/promoted.md`.
+
+**Closeout audits**: `docs-reconstructor` per-phase drift audit →
+**NO DRIFT** (`planning/retros/_drift-audit-phase-62.md`).
+`release-phase-auditor` (`planning/retros/_audit-phase-62.md`) → **PASS
+WITH NON-BLOCKING OBSERVATIONS**, after independently re-running the
+full test suite/`ruff`/`check_user_docs.py --strict` and, notably,
+independently reproducing the `CG-008` closure claim live in its own
+fresh scratch sync (not trusting the lead's report) — same 1305/1256/
+48/1 split. Two non-blocking observations were fixed before final push:
+`knowledge-curator` was dispatched for the triage step the retro had
+skipped unilaterally (filed `L-029`, merged into `L-014` as a second
+occurrence of the same "a plan's own claim about existing code goes
+stale by implementation time" pattern — see
+`planning/learnings/inbox.md`), and the drift-audit file was committed.
+A third observation (the plan's own Files section not naming
+`cli.py`/`test_cli.py`) was accepted as a plan-documentation omission,
+not scope creep, and left as-is. Retro:
 `planning/retros/phase-62-adapter-interface-consolidation.md`.
 
 **Phase 61 — hledger cross-language experiment — done (2026-09-19).**

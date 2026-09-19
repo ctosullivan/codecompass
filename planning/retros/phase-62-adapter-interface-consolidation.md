@@ -134,6 +134,17 @@ No `usage.py` changes. No general symbol-type/ontology field.
   `codecompass-adaptor-haskell` executable in 38s.
 - `CG-008` marked resolved in `planning/context-gaps/inbox.md`; a
   `promoted.md` line added to `planning/learnings/promoted.md`.
+- `docs-reconstructor` per-phase drift audit → **NO DRIFT**
+  (`planning/retros/_drift-audit-phase-62.md`). `release-phase-auditor`
+  → **PASS WITH NON-BLOCKING OBSERVATIONS**
+  (`planning/retros/_audit-phase-62.md`), after independently
+  reproducing the `CG-008` closure claim live in its own fresh scratch
+  sync (not trusting this retro's own numbers) and getting the same
+  1305/1256/48/1 split. Its two actionable observations (missing
+  `knowledge-curator` triage; the drift-audit file left uncommitted)
+  were fixed before the final push; a third (the plan's own Files
+  section not naming `cli.py`/`test_cli.py`) was accepted as a
+  plan-documentation omission, not scope creep.
 
 ## What worked
 
