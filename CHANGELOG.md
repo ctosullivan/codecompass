@@ -122,6 +122,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
+- **Phase 61 plan: hledger cross-language experiment** (planning only,
+  no code, phase not started): re-runs Phase 54b's own `depth:`
+  behavioural-reconstruction question using real Haskell-side structural
+  information from Phase 60's adapter instead of the curated document
+  layer, plus a new cross-language half (does CodeCompass help relate
+  hledger's Haskell `depth:` handling to Ledgerkit's own Python
+  `DepthSpec`/`clip_account_name` as the same behavioural concept).
+  Tracks both `hledger-lib` and `hledger` (not `hledger-lib` alone — the
+  real `balance`/`register`/`accounts`/`stats`/`print` command
+  implementations live in the sibling `hledger` package, and tracking
+  only `hledger-lib` would silently reproduce Phase 54b's own exact
+  `Stats.hs` curation gap one layer down) as real vendors in a disposable
+  Ledgerkit scratch copy. Found and fixes, in-phase, a real bug in
+  already-tagged Phase 60 code: `HaskellAdapter.repository_url()` never
+  set `RepositoryLocation.subdirectory`, so `resolve_and_clone` silently
+  cloned the *whole* `hledger` monorepo into a single package's own
+  vendor source directory — confirmed live. Investigates and declines to
+  build `usage.py`'s Haskell import detection (named as "Phase 61's own
+  scope" by `decisions/0057`) — no real consumer for it in this phase's
+  own task; the one relevant cross-vendor relationship is already
+  produced free by the existing `depends_on_edges` mechanism. See
+  `planning/phase-61-hledger-cross-language-experiment.md`.
+
 - **Phase 54c plan: evidence-backed, knowledge-based,
   documentation-first workflow** (planning only, no code, phase not
   started): a minimal, file-based (not `context-graph.db`)

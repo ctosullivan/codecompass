@@ -501,6 +501,46 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 61 — hledger cross-language experiment — planned, not started
+(2026-09-19).** Direct user request ("Plan phase 61"). Full plan:
+`planning/phase-61-hledger-cross-language-experiment.md`. Re-verified
+Phase 54b's own baseline is unchanged (both `/home/cormac/projects/hledger`
+and `/home/cormac/projects/ledgerkit` still at the exact commits Phase
+54b's retro recorded) and confirmed `ledgerkit/query/depth.py`'s
+`DepthSpec`/`clip_account_name` still exist exactly as `decisions/0057`
+named them. Real planning-time investigation (not implementation) found
+two things worth surfacing now, not at implementation time:
+
+1. **A real, disclosed bug in already-tagged Phase 60 code**: ran the
+   exact `codecompass sync hledger-lib` transcript Phase 60's own e2e
+   test used, and confirmed live that `vendor/hledger-lib/src/` actually
+   contains the *entire* `hledger` monorepo (`hledger`/`hledger-ui`/
+   `hledger-web` siblings included), not scoped to `hledger-lib` at all.
+   Root cause: `HaskellAdapter.repository_url()` never sets
+   `RepositoryLocation.subdirectory` (the exact field `decisions/0021`
+   already introduced for an npm monorepo package), so
+   `resolve_and_clone` clones the whole upstream repo and treats the
+   clone root as the vendor's own source. Phase 61's plan fixes this
+   in-phase (small, mechanism-reuse-only) since its own treatment
+   condition is invalid without a correctly-scoped clone.
+2. **Reconciled `decisions/0057`'s own "Phase 61's own scope" framing
+   for `usage.py`'s Haskell import detection** — real analysis found no
+   actual consumer for it inside Phase 61's own task (Ledgerkit's Python
+   source can't import Haskell code; the one relevant relationship,
+   `hledger` depending on `hledger-lib`, is already produced for free by
+   the existing, ecosystem-agnostic `depends_on_edges`/`deptree.json`
+   mechanism — confirmed by reading `build_depends_on_edges` directly).
+   The plan declines to build it and leaves it genuinely unscheduled
+   rather than re-deferring to a named phase — flagged in the plan's own
+   review gate since it reverses a prior phase's stated deferral target.
+
+Also confirmed: tracking `hledger-lib` alone (the roadmap's original,
+one-line framing) would silently reproduce Phase 54b's own exact
+`Stats.hs` curation gap one layer down, since the five real command
+implementations (`Balance.hs`/`Register.hs`/`Accounts.hs`/`Stats.hs`/
+`Print.hs`) live in the sibling `hledger` package, not `hledger-lib` —
+the plan tracks both. Still planning only — no `src/` change yet.
+
 **Phase 60 — minimal external Haskell adapter — done (2026-09-19).**
 Implemented the fully-amended plan: two new real, separate, public
 repositories — `codecompass-adaptor-protocol` (MIT — the actual repo
@@ -1621,22 +1661,34 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 60 is fully done, including release tagging.** `release-phase-auditor`'s
-first pass returned **FAIL** on two real, narrow gaps: `0.1.0` had not
-actually been tagged yet despite `planning/ROADMAP.md`/`docs/external-adapters.md`
-stating it had, and `L-025` (this phase's own candidate learning about
-`stack dot`/`stack ls dependencies` needing an explicit `TARGET`) hadn't
-been triaged. Both fixed: `v0.1.0` is now a real, pushed, annotated tag
-in both `codecompass-adaptor-protocol` and `codecompass-adaptor-haskell`
-(confirmed via `git ls-remote --tags` against both), each repo's own
-`CHANGELOG.md` dated; `knowledge-curator` triaged `L-025`. Phase 61
-(hledger cross-language experiment) can now register `hledger-lib` as a
-real tracked vendor using the now-working, now-tagged adapter, and
-Phase 62 (adapter-interface consolidation) has real evidence to assess,
-including `CG-008`'s own named question (does `EcosystemAdapter` need a
-structured-symbol-list method so `_collect_vendor_symbols` can reach an
-external adapter's own output, or does `symbols.py` need a Haskell-
-specific in-process re-parse — Phase 62's own call, not decided here).
+**Phase 61's plan awaits review before implementation begins.** Every
+review-gate item is a judgment call made during planning (tracking both
+`hledger-lib`/`hledger`; fixing the `repository_url()` subdirectory bug
+in-phase; declining to build `usage.py`'s Haskell import detection; one
+combined baseline/treatment task), not an open question needing the
+user's input first — flagged for visibility per this project's own
+established pattern, not because implementation is blocked on an
+answer. Once reviewed, implementation proceeds per the plan's own §2-§4:
+fix `HaskellAdapter.repository_url()` (small, `decisions/0021`-mechanism-
+reuse only) → two new fixture tests → a real, live re-confirmation that
+`vendor/hledger-lib/src/` is correctly scoped after the fix → set up the
+disposable `ledgerkit-scratch-61` copy with the new two-vendor
+`vendor.toml` → a real `codecompass sync --yes --budget 0` → two fresh,
+independent agent dispatches on the combined task → `context-evaluator`'s
+independent rating against Phase 54b's own real LOW baseline →
+`reference-project-tester` friction filing → retro/audit/closeout.
+
+Phase 60 itself is fully done, including release tagging: both new
+repositories are real, public, tagged `v0.1.0` (confirmed via
+`git ls-remote --tags` against each), after `release-phase-auditor`'s
+first pass FAILed on two real, narrow gaps (premature "tagged" claims;
+an untriaged learning, `L-025`) that were fixed before the re-audit.
+Phase 62 (adapter-interface consolidation) still has `CG-008`'s own
+named question waiting (does `EcosystemAdapter` need a structured-
+symbol-list method so `_collect_vendor_symbols` can reach an external
+adapter's own output, or does `symbols.py` need a Haskell-specific
+in-process re-parse) — unaffected by Phase 61's own plan, which doesn't
+depend on that gap being closed.
 
 GATE DD (Phase 55's own gate, Stage E's precondition) remains open,
 with Phase 54b's and Phase 54c's own results as evidence inputs — still

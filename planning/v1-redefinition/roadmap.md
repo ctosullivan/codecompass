@@ -1260,6 +1260,33 @@ both remain exactly as open as before this phase.
   much better does real structural information do, compared to the
   document-ingestion layer alone."
 
+**Planned 2026-09-19** — full plan:
+`planning/phase-61-hledger-cross-language-experiment.md`. Tracks both
+`hledger-lib` and `hledger` (not `hledger-lib` alone — the real
+`balance`/`register`/`accounts`/`stats`/`print` command implementations
+Phase 54b's own `depth:` question spans live in `hledger`, not
+`hledger-lib`; tracking only the latter would silently reproduce Phase
+54b's own exact `Stats.hs` curation gap one layer down) in a disposable
+Ledgerkit scratch copy, via a real `codecompass sync`. Found and fixes,
+in-phase, a real pre-existing bug in already-tagged Phase 60 code:
+`HaskellAdapter.repository_url()` never set
+`RepositoryLocation.subdirectory` (the exact mechanism `decisions/0021`
+already provides for this), so `resolve_and_clone` silently cloned the
+*whole* `hledger` monorepo into a single package's own vendor source
+directory — confirmed live, not theoretical. Investigates and
+**declines** to build `usage.py`'s Haskell import/call-site detection
+(`decisions/0057`'s own stated "Phase 61 scope") — real analysis found
+no actual consumer for it in this phase's own task (Ledgerkit's Python
+source can't import Haskell code; the one relevant relationship,
+`hledger` depending on `hledger-lib`, is already produced free by the
+existing, ecosystem-agnostic `depends_on_edges` mechanism) — left
+genuinely unscheduled rather than re-deferred to a named future phase.
+One combined baseline/treatment task covers both of Phase 54b's own
+named goals (Haskell-side reconstruction + cross-language relation to
+Ledgerkit's Python `DepthSpec`/`clip_account_name`), evaluated by a
+freshly-dispatched `context-evaluator` against Phase 54b's own real LOW
+baseline. Not started; plan awaiting review.
+
 ### Phase 62 — Adapter-interface consolidation · EXPERIMENTAL
 - Assess `EcosystemAdapter`'s own contract (`decisions/0002`) against
   what building and using the Haskell adapter actually required —
