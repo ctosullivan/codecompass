@@ -3,6 +3,33 @@
 **Status:** plan only, not started. Do not begin implementation until
 this plan is reviewed (`CLAUDE.md` §1).
 
+**Amended 2026-09-19** (direct user instruction, before implementation
+began — scope, acceptance criteria, migration approach, caching design,
+real `hledger` validation, and the `CG-008` objective are all preserved
+unchanged; this amendment is one targeted semantic refinement, not a
+redesign): the new core-model field this plan widens `Symbol`/`SymbolRow`
+with is **renamed from `kind` to `export_kind`**, and is documented as
+holding **export/exposure status**, deliberately distinct from a
+symbol's own **intrinsic type**. `"export"`/`"reexport"`/`"undetermined"`
+describe *how confidently an entry is known to be part of the public
+surface*, not *what kind of thing the symbol is* — a distinction that
+matters the moment a future adapter (the COBOL/mainframe case
+`decisions/0056`/`0057` already name as this architecture's own
+motivating future scenario) needs to represent real intrinsic-type
+values (`program`, `paragraph`, `section`, `copybook`, and so on).
+Reserving the generic name `kind` for export status now would leave no
+good name free for that real future need, forcing an awkward rename or
+a second, confusingly-named field later. The **external wire protocol's
+own `kind` field is unchanged** (`codecompass-adaptor-protocol`,
+`decisions/0059`) — no change to the two separate repositories, fully
+backward compatible; `HaskellAdapter.symbols()` simply maps the wire's
+`kind` value into the core model's `export_kind` field at the one point
+they meet. See §2's own updated field definition for the full
+documented semantics. Every other design choice in this plan (the
+concrete-not-abstract `symbols()` method, the `ADD COLUMN` migration
+shape, the per-instance cache, the `build_symbol_index` non-fix, the
+`CG-008` closure criteria) is unchanged.
+
 ## 0. Why this phase, and why now
 
 Stage F (`decisions/0056`), gated on nothing (a separate axis from Stage
@@ -61,6 +88,27 @@ for this richer, already-computed information to reach
 `context-graph.db` at all, even once `_collect_vendor_symbols` is fixed
 to call the adapter, unless the core model is widened to hold it.
 
+**Amendment: the core-model field is named `export_kind`, not `kind` —
+a deliberate, narrower semantic than the wire's own field name.** The
+wire's three values describe **export/exposure status** — how
+confidently an entry is known to belong to the public surface — never
+the symbol's own **intrinsic type** (function vs. type vs. module,
+or, for a genuinely different future ecosystem, `program`/`paragraph`/
+`section`/`copybook` for a COBOL/mainframe adapter, the exact future
+case `decisions/0056`/`0057` already name as this architecture's own
+motivating scenario). A generic core field literally named `kind` would
+read, to any future adapter author, as "the symbol's type" — the far
+more natural reading of that word — and would already be occupied by a
+narrower export-status concept by the time a real intrinsic-type need
+arrived, forcing an awkward rename or a second, confusingly-adjacent
+field. Naming it `export_kind` now costs nothing (it's a brand-new
+field, nothing depends on the name yet) and keeps `kind` itself free for
+whatever a future adapter genuinely needs it to mean. The external wire
+protocol's own field name is unchanged — this is a CodeCompass-core-only
+naming choice, made at the one translation point
+(`HaskellAdapter.symbols()`) where the wire's `kind` value is read and
+placed into the core model's `export_kind` field.
+
 **Migration shape, confirmed by reading the real schema**:
 `symbol_enrichment.symbol_id REFERENCES symbols(id) ON DELETE CASCADE`
 (`UNIQUE`) — the same "must never drop-and-recreate" concern
@@ -68,8 +116,8 @@ to call the adapter, unless the core model is widened to hold it.
 `_sync_symbols` already upserts by `(vendor_id, name)` natural key,
 preserving `id` (confirmed: `rebuild_deterministic`'s own docstring,
 independently re-verified by reading `_sync_symbols` directly) — so a
-plain `ALTER TABLE symbols ADD COLUMN kind TEXT` / `ADD COLUMN note
-TEXT` is safe and sufficient, mirroring
+plain `ALTER TABLE symbols ADD COLUMN export_kind TEXT` / `ADD COLUMN
+note TEXT` is safe and sufficient, mirroring
 `_migrate_doc_relation_enrichment_relation_label`'s own precedent
 exactly, **not** the heavier `vendors`-table-rebuild precedent (no
 FK-cascade risk from an `ADD COLUMN`, unlike a `CHECK`-constraint
@@ -130,41 +178,59 @@ than adding it (§1):
   continuing to pass unchanged.
 - `HaskellAdapter.symbols()` calls the (now-cached, §3) `_analyze()`
   result's wire `symbols` list and converts each entry into
-  `Symbol(name, purpose, kind, note)` — real, already-computed data,
-  no new Haskell-specific logic added to `src/codecompass/` (the
-  conversion is a plain dict-to-dataclass mapping, the same class of
-  "manifest-key reads aren't ecosystem logic" reasoning `decisions/0057`
-  already established for `package.yaml`).
+  `Symbol(name, purpose, export_kind=entry["kind"], note=entry["note"])`
+  — real, already-computed data, no new Haskell-specific logic added to
+  `src/codecompass/` (the conversion is a plain dict-to-dataclass
+  mapping, the same class of "manifest-key reads aren't ecosystem logic"
+  reasoning `decisions/0057` already established for `package.yaml`).
+  This is the one place the wire's `kind` field name and the core's
+  `export_kind` field name meet — read one, write the other, no other
+  translation needed anywhere else in this phase.
 
 **`Symbol`/`SymbolRow` gain two new optional fields**, generalizing
 `decisions/0059`'s wire-level addition into CodeCompass's own core
-model:
+model — **named `export_kind`, not `kind`** (amendment; see §1's own
+full reasoning):
 
 ```python
 @dataclass
 class Symbol:
     name: str
     purpose: str | None = None
-    kind: str = "export"          # "export" | "reexport" | "undetermined"
+    export_kind: str = "export"   # "export" | "reexport" | "undetermined"
     note: str | None = None
 ```
+
+**Deliberately narrow, documented semantics — not a general symbol
+ontology.** `export_kind` records only how confidently an entry is
+known to belong to the analyzed package's own public surface. It is
+**not** a symbol-type/kind field (function vs. class vs. module, or any
+future ecosystem's own intrinsic categories) — that concept, if
+CodeCompass ever needs it, deserves its own separate field (a real
+future name, `kind` itself among the candidates, is deliberately left
+free by this choice) and its own real evidence before being designed,
+matching this phase's own "smallest justified change, not a speculative
+redesign" mandate. This phase does not attempt to anticipate what a
+symbol-type field would look like for COBOL or any other future
+ecosystem — it only avoids naming today's narrower field in a way that
+would collide with that unbuilt future concept.
 
 Additive and backward compatible: every existing extractor
 (`extract_rust_symbols`/`extract_python_symbols`/`extract_npm_symbols`)
 never sets anything but the default — their own call sites and tests
 are unaffected.
 
-**`symbols` table gains nullable `kind`/`note` columns** via
-`ALTER TABLE symbols ADD COLUMN kind TEXT DEFAULT 'export'` / `ADD
-COLUMN note TEXT` (new migration function,
-`_migrate_symbols_kind_note_columns`, checked via `PRAGMA table_info`
-the same way `_migrate_doc_relation_enrichment_relation_label` is,
-`_SCHEMA_VERSION` 8→9). `_sync_symbols`'s own `INSERT ... ON CONFLICT`
-widened to carry both columns through.
+**`symbols` table gains nullable `export_kind`/`note` columns** via
+`ALTER TABLE symbols ADD COLUMN export_kind TEXT DEFAULT 'export'` /
+`ADD COLUMN note TEXT` (new migration function,
+`_migrate_symbols_export_kind_note_columns`, checked via `PRAGMA
+table_info` the same way `_migrate_doc_relation_enrichment_relation_label`
+is, `_SCHEMA_VERSION` 8→9). `_sync_symbols`'s own `INSERT ... ON
+CONFLICT` widened to carry both columns through.
 
 **`sync.py::rebuild_project_graph`'s own `_collect_vendor_symbols`
 becomes `adapter.symbols()`** (converted to `SymbolRow`s, carrying
-`kind`/`note` through) — this is the change that actually closes
+`export_kind`/`note` through) — this is the change that actually closes
 `CG-008`: a real `codecompass sync` against a Haskell vendor now
 produces real `symbols` table rows, with zero Haskell-specific logic
 anywhere in `src/codecompass/` outside `adapters/haskell.py`'s own thin
@@ -172,10 +238,10 @@ conversion.
 
 **`codecompass query vendor <name>`'s own symbol listing** (the
 vendor-detail query in `graph.py`, `SELECT id, name, purpose FROM
-symbols ...`) gains `kind`/`note` in its own output dict — completing
-the fix end-to-end (database has it, the one real CLI surface that
-already renders a vendor's own symbols shows it) rather than leaving it
-half-wired.
+symbols ...`) gains `export_kind`/`note` in its own output dict —
+completing the fix end-to-end (database has it, the one real CLI
+surface that already renders a vendor's own symbols shows it) rather
+than leaving it half-wired.
 
 ## 3. Design: `HaskellAdapter`'s own internal analyze-result caching
 
@@ -279,8 +345,12 @@ this phase does fix) actually matters.
   already-settled non-scope (no real consumer found), unaffected and
   not reopened here.
 - **No change to `Symbol`/`SymbolRow`'s `name`/`purpose` semantics** for
-  the three existing in-process ecosystems — `kind`/`note` are pure
-  additions, defaulted to today's implicit behaviour.
+  the three existing in-process ecosystems — `export_kind`/`note` are
+  pure additions, defaulted to today's implicit behaviour.
+- **No general symbol-type/ontology field** (amendment, §2) — only the
+  narrower export/exposure-status concept the wire protocol already
+  reports is added; a future intrinsic-type field is left unbuilt and
+  unnamed.
 
 ## Scope
 
@@ -288,9 +358,9 @@ this phase does fix) actually matters.
 
 - `EcosystemAdapter.symbols()` (new, concrete, default `[]`) —
   `src/codecompass/adapters/base.py`.
-- `Symbol` gains `kind`/`note` (`src/codecompass/symbols.py`);
+- `Symbol` gains `export_kind`/`note` (`src/codecompass/symbols.py`);
   `SymbolRow` gains matching fields (`src/codecompass/graph.py`).
-- `symbols` table migration (`ADD COLUMN kind`/`ADD COLUMN note`,
+- `symbols` table migration (`ADD COLUMN export_kind`/`ADD COLUMN note`,
   `_SCHEMA_VERSION` 8→9); `_sync_symbols` widened.
 - `NpmAdapter`/`PythonAdapter`/`CargoAdapter.symbols()` — refactored out
   of each one's own existing `readme_and_api_surface()`, which then
@@ -301,8 +371,8 @@ this phase does fix) actually matters.
   per-instance `_analyze()` cache (§3).
 - `sync.py::rebuild_project_graph`'s `_collect_vendor_symbols` →
   `adapter.symbols()` (closes `CG-008`).
-- `graph.py`'s vendor-detail query's symbol listing gains `kind`/`note`.
-- Fixture tests for all of the above (new `Symbol(kind=..., note=...)`
+- `graph.py`'s vendor-detail query's symbol listing gains `export_kind`/`note`.
+- Fixture tests for all of the above (new `Symbol(export_kind=..., note=...)`
   cases; a migration test mirroring the existing
   `_migrate_doc_relation_enrichment_relation_label` test shape; a
   `_collect_vendor_symbols`→`adapter.symbols()` wiring test using a fake
@@ -310,7 +380,7 @@ this phase does fix) actually matters.
   `test_rebuild_project_graph_records_vendor_and_resolved_symbol_usage`
   shape); a real, `stack`/submodule-gated live re-confirmation that a
   real `codecompass sync` against `hledger-lib` now produces non-empty
-  `symbols` table rows with correct `kind`/`note` values (the same
+  `symbols` table rows with correct `export_kind`/`note` values (the same
   scratch-symlink setup Phase 60/61 already established).
 - `CG-008` marked resolved in `planning/context-gaps/inbox.md`
   (`curation` outcome updated, not re-triaged from scratch — the
@@ -357,7 +427,7 @@ this phase does fix) actually matters.
   files); fixing Haskell's own gap is the trigger, but removing the
   pre-existing duplication for the other three ecosystems is the same
   change, not extra scope.
-- **`kind`/`note` widen the core `Symbol`/`SymbolRow` model, not just
+- **`export_kind`/`note` widen the core `Symbol`/`SymbolRow` model, not just
   the Haskell adapter's own conversion step** — generalizing
   `decisions/0059`'s wire-level addition into core matches this
   project's own precedent of core types staying ecosystem-agnostic
@@ -390,29 +460,29 @@ this phase does fix) actually matters.
   `symbols()` added (refactored out of `readme_and_api_surface()`).
 - `src/codecompass/adapters/haskell.py` — `symbols()` added; `_analyze()`
   gains the per-instance cache; `__init__` override.
-- `src/codecompass/symbols.py` — `Symbol` gains `kind`/`note`.
-- `src/codecompass/graph.py` — `SymbolRow` gains `kind`/`note`;
+- `src/codecompass/symbols.py` — `Symbol` gains `export_kind`/`note`.
+- `src/codecompass/graph.py` — `SymbolRow` gains `export_kind`/`note`;
   `_migrate_symbols_kind_note_columns` (new); `_SCHEMA_VERSION` 8→9;
   `_sync_symbols` widened; vendor-detail query's symbol listing gains
-  `kind`/`note`.
+  `export_kind`/`note`.
 - `src/codecompass/sync.py` — `_collect_vendor_symbols` →
   `adapter.symbols()`.
 - `tests/test_adapter_npm.py`, `test_adapter_python.py`,
   `test_adapter_cargo.py` — confirm `symbols()`/`readme_and_api_surface()`
   behaviour unchanged after the refactor.
-- `tests/test_adapter_haskell.py` — `symbols()` fixture tests (kind/note
-  passthrough); the per-instance cache (a fake/counting
+- `tests/test_adapter_haskell.py` — `symbols()` fixture tests
+  (export_kind/note passthrough); the per-instance cache (a fake/counting
   `ExternalAdapterProcess` confirming exactly one `initialize`/
   `analyze_project` call across multiple method calls on one instance);
   the existing live smoke test extended to also assert on `symbols()`'s
-  own kind/note values and, separately, a real post-sync
+  own export_kind/note values and, separately, a real post-sync
   `context-graph.db` check that `symbols` rows exist for `hledger-lib`.
 - `tests/test_graph.py` — the new migration's own fresh-DB +
   pre-existing-DB test pair (mirroring the `doc_relation_enrichment`
-  precedent); `_sync_symbols`'s own kind/note round-trip.
+  precedent); `_sync_symbols`'s own export_kind/note round-trip.
 - `tests/test_sync.py` — `_collect_vendor_symbols`/`rebuild_project_graph`'s
   own symbol-population test extended or added for a fake adapter
-  reporting `kind`/`note`.
+  reporting `export_kind`/`note`.
 - `planning/context-gaps/inbox.md` — `CG-008` marked resolved.
 - `architecture/overview.md` — Adapter interface section, External
   adapters section, Known footguns (if the `build_symbol_index` gap
@@ -428,7 +498,7 @@ this phase does fix) actually matters.
   "new tests pass").
 - A fake-adapter-based test confirms `_collect_vendor_symbols`'s
   replacement (`adapter.symbols()`) actually reaches
-  `rebuild_project_graph`'s own `SymbolRow` construction with `kind`/
+  `rebuild_project_graph`'s own `SymbolRow` construction with `export_kind`/
   `note` intact.
 - The new migration has both a fresh-DB acceptance test and a
   pre-existing-DB migration test (the established two-test pattern every
@@ -439,9 +509,9 @@ this phase does fix) actually matters.
   `codecompass sync` against `hledger-lib` (the same scratch-symlink
   setup Phase 60/61 established) produces real, non-empty `symbols`
   table rows in the resulting `context-graph.db`, with at least one row
-  showing `kind='reexport'` or `kind='undetermined'` (not just plain
-  `'export'` rows) — checked directly via SQL, not assumed from the
-  fixture tests passing.
+  showing `export_kind='reexport'` or `export_kind='undetermined'` (not
+  just plain `'export'` rows) — checked directly via SQL, not assumed
+  from the fixture tests passing.
 - A real check that `HaskellAdapter._analyze()` is called at most once
   per adapter instance across a real `installed_version()` +
   `dependency_tree()` + `readme_and_api_surface()` + `symbols()` call
@@ -467,7 +537,7 @@ was chartered to produce, stated honestly either way.
 
 **Not done merely because `symbols()` exists and one test passes** —
 done only once the real, live `hledger-lib` re-confirmation shows actual
-`kind`/`note`-bearing rows in a real database, and the retro can state
+`export_kind`/`note`-bearing rows in a real database, and the retro can state
 plainly what, if anything, in `EcosystemAdapter`'s own contract still
 doesn't fit a genuinely different (external-process) adapter shape.
 
@@ -482,7 +552,7 @@ Presented for review before implementation starts.
    instruction; flagged since it's the one actual interface surface
    change this phase makes, and the whole "does the interface generalise"
    question this phase exists to answer turns on it.
-2. **Widening `Symbol`/`SymbolRow` with `kind`/`note` at the core-model
+2. **Widening `Symbol`/`SymbolRow` with `export_kind`/`note` at the core-model
    level**, not just inside `HaskellAdapter`'s own conversion step — a
    judgment call that the wire protocol's own confidence-marking concept
    is generalizable, not Haskell-specific; flagged since it touches
