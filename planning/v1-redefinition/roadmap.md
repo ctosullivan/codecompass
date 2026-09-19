@@ -1139,20 +1139,37 @@ drives this stage's or v1's architecture.
   exists, not decided speculatively here.
 
 **Planned 2026-09-19** — full plan:
-`planning/phase-60-minimal-haskell-adapter.md`. Real environment
-re-verification this planning pass found `stack ls dependencies` has
-**no JSON output mode** (unlike npm/pipdeptree/cargo's own tooling) —
-`stack dot`'s real GraphViz DOT graph output (checked live against the
-real hledger project) is the actual dependency-tree source instead,
-cross-referenced against `stack ls dependencies`'s flat name→version
-map. `_SCHEMA_VERSION` widens "7" → "8" (`vendors.ecosystem` gains
-`'haskell'`), mirroring Phase 54c's own just-completed enum-widening
-precedent exactly. Two judgment calls flagged for review: hand-roll
-`package.yaml` parsing vs. add a `PyYAML` dependency; whether the one
-genuinely open design question (Haskell API-surface/export-list
-extraction) should be routed through Phase 54c's evidence-backed
-workflow, scoped narrowly to that one sub-question. Not started; plan
-awaiting review.
+`planning/phase-60-minimal-haskell-adapter.md`.
+
+**Amended 2026-09-19** (direct user instruction, before implementation;
+original in-process version preserved at that plan's own §A): the
+Haskell adapter is no longer an in-process Python class — it is now the
+**reference implementation of a genuinely external adapter**, a
+separate OS process communicating over a small, versioned JSON-Lines
+protocol on stdin/stdout (new ADR: `decisions/0057`), validating that
+CodeCompass's core never needs to import ecosystem-specific
+implementation code for a new adapter — motivated by a real future case:
+a potentially proprietary COBOL/mainframe adapter suite that could never
+ship as importable GPL Python code inside `src/codecompass/`. A real
+smoke test this session confirmed the mechanism is genuinely buildable
+here, not just theoretically sound: a single-file `stack script` using
+`aeson` compiles and runs against the pinned snapshot resolver, ~3s warm
+per-invocation. Real findings from the original planning pass carry
+forward unchanged: `stack ls dependencies` has no JSON mode; `stack
+dot`'s real GraphViz output is the dependency-tree source instead;
+`_SCHEMA_VERSION` widens "7" → "8". Per direct instruction (no longer
+open judgment calls): `package.yaml` is parsed via real `PyYAML`
+(`yaml.safe_load()`), not hand-rolled; the Haskell API-surface/
+export-list extraction question is **mandatorily** routed through Phase
+54c's evidence-backed workflow, scoped to that one sub-question — its
+own first real test under genuine uncertainty. Monorepo package-root
+resolution (`hledger-lib/` within the `hledger` repo, never the whole
+repo) is now an explicit, tested requirement. Includes an explicit,
+disclosed non-claim: process/protocol separation is an architectural
+property, not a legal conclusion about GPL compatibility for a future
+proprietary adapter — that needs real specialist legal review
+(`decisions/0057`'s own closing section). Not started; plan awaiting
+review.
 
 ### Phase 61 — hledger cross-language experiment · EXPERIMENTAL
 - Track hledger itself (or `hledger-lib` specifically, the most directly

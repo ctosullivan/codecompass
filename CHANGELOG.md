@@ -83,6 +83,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
+- **Phase 60 plan amended: external-process adapter architecture**
+  (planning only, no code, phase not started; amends the Phase 60 plan
+  below, before implementation began): the Haskell adapter is no longer
+  an in-process Python class — it is now the **reference implementation
+  of a genuinely external adapter**, a separate OS process
+  communicating over a small, versioned JSON-Lines protocol on
+  stdin/stdout (new ADR: `decisions/0057`), so CodeCompass core never
+  imports ecosystem-specific implementation code for a new adapter.
+  Motivated by a real future case named directly: a potentially
+  proprietary COBOL/mainframe adapter suite that could never ship as
+  importable GPL Python code inside `src/codecompass/`. A real smoke
+  test this session confirmed the mechanism is genuinely buildable, not
+  just theoretically sound: a single-file `stack script` using `aeson`
+  compiles and runs against the pinned snapshot resolver (~5 min cold,
+  ~3s warm). Protocol: `initialize` (capability negotiation),
+  `analyze_project` (returns `dependencies`/`symbols`/`observations`/
+  `diagnostics` sections), `shutdown` — deliberately not gRPC, a network
+  service, a plugin marketplace, remote execution, or a versioned SDK.
+  Real findings from the original plan carry forward unchanged (`stack
+  ls dependencies` has no JSON mode; `stack dot`'s DOT graph is the tree
+  source instead). Per direct instruction, two prior review-gate
+  judgment calls are now settled: `package.yaml` is parsed via real
+  `PyYAML` (`yaml.safe_load()`), not hand-rolled; the Haskell
+  API-surface/export-list extraction question is **mandatorily** routed
+  through Phase 54c's evidence-backed workflow, scoped to that one
+  sub-question — its own first real test under genuine uncertainty.
+  Monorepo package-root resolution (`hledger-lib/` within the `hledger`
+  repo, never the whole repo) is now an explicit, tested requirement.
+  Includes an explicit, disclosed non-claim: process/protocol separation
+  is an architectural property, not a legal conclusion about GPL
+  compatibility for a future proprietary adapter — real specialist legal
+  review is named as necessary before relying on it. See
+  `decisions/0057-external-process-adapter-protocol.md` and the amended
+  `planning/phase-60-minimal-haskell-adapter.md` (original in-process
+  version preserved at that file's own §A, not deleted).
+
 - **Phase 60 plan: minimal Haskell adapter** (planning only, no code,
   phase not started): the full `EcosystemAdapter` interface (5 methods)
   for Haskell/Stack — the next unstarted Stage F phase, gated on

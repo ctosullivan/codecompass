@@ -501,6 +501,48 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 60's plan is amended, still not started (2026-09-19) —
+external-process adapter architecture.** Direct user instruction, before
+implementation began: the Haskell adapter is no longer an in-process
+Python class — it is now the **reference implementation of a genuinely
+external adapter**, a separate OS process communicating over a small,
+versioned JSON-Lines protocol on stdin/stdout, so CodeCompass core never
+imports ecosystem-specific implementation code. Motivated by a real
+future case: a potentially proprietary COBOL/mainframe adapter suite
+that could never ship as importable GPL Python code inside
+`src/codecompass/`. New ADR: `decisions/0057-external-process-adapter-protocol.md`
+— protocol shape (`initialize`/`analyze_project`/`shutdown`, a
+`capabilities` list, `result`/`error` response shapes), where the
+boundary actually falls (simple manifest-key reads stay in
+CodeCompass-core via real `PyYAML`; only `stack`'s own dependency-tree
+resolution and real `.hs`-source API-surface extraction move into the
+external process), and an explicit, disclosed non-claim that
+process/protocol separation is architectural, not a legal conclusion
+about GPL compatibility for a future proprietary adapter — real
+specialist legal review named as necessary before relying on it. **A
+real smoke test this session confirmed the mechanism is genuinely
+buildable, not just theoretically sound**: a single-file `stack script`
+(no separate `package.yaml`/`stack.yaml` needed for the adapter itself)
+using `aeson` compiled and ran successfully against the pinned snapshot
+resolver this environment already uses (`nightly-2026-09-01`) — ~5 min
+cold (compiling `aeson` from source), ~3s warm. Per direct instruction,
+two prior review-gate judgment calls are now settled, not open: hand-
+rolled `package.yaml` parsing is replaced by real `PyYAML`
+(`yaml.safe_load()`); the Haskell API-surface/export-list extraction
+question is **mandatorily** routed through Phase 54c's evidence-backed
+workflow (its own first real test under genuine uncertainty), not left
+as a recommendation. Monorepo package-root resolution (`hledger-lib/`
+within the `hledger` repo, resolved on the CodeCompass side before the
+adapter is ever invoked, never the whole repo) is now an explicit,
+tested requirement. Explicitly avoids gRPC, network services, a plugin
+marketplace, remote execution, or a versioned SDK — a local subprocess
+exchanging JSON Lines is the whole of this phase's own protocol. The
+original in-process plan is preserved at the plan file's own §A, not
+deleted, available as a fallback if the external-process architecture's
+real overhead proves not worth it. Full amended plan:
+`planning/phase-60-minimal-haskell-adapter.md`. Still planning only —
+no `src/` change.
+
 **Phase 60 is a plan, not started (2026-09-19) — minimal Haskell
 adapter.** Direct user request ("Plan next phase"): the next unstarted
 Stage F phase, gated on nothing (Stage F is a separate axis from Stage
@@ -1450,15 +1492,20 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 60's plan awaits review before implementation begins.** Two
-named judgment calls are flagged in the plan's own "Review gate"
-section: (1) hand-roll `package.yaml` parsing vs. add a `PyYAML`
-dependency; (2) whether the Haskell API-surface/export-list extraction
-question should be routed through Phase 54c's evidence-backed workflow
-(recommended: yes, scoped narrowly to that one sub-question). Once
-resolved, implementation proceeds per the plan's own §1-§5 (schema/
-dispatch widening → `HaskellAdapter`'s five methods → fixture + live
-smoke tests → a real end-to-end confirmation via `codecompass sync`).
+**Phase 60's amended plan awaits review before implementation begins.**
+The former two review-gate judgment calls are now settled by direct
+instruction (`PyYAML`, mandatory Phase 54c workflow routing) — the
+plan's own "Review gate" section now mostly flags scope/architecture
+points for visibility rather than open decisions (the external-process
+architecture itself; `stack script` vs. a full Stack project for the
+reference adapter; the GPL/legal-separation non-claim). Once reviewed,
+implementation proceeds per the amended plan's own §2-§7: build
+`external_process.py` (generic protocol client) → `adapters/haskell.py`
+(thin dispatcher) → `adapters/haskell/adapter.hs` (the real external
+adapter, its API-surface logic specified by Phase 54c's own workflow
+output) → fixture + `stack`-gated live smoke tests → a real end-to-end
+confirmation via `codecompass sync`, checking all seven capabilities the
+governing instruction named explicitly.
 
 GATE DD (Phase 55's own gate, Stage E's precondition) remains open,
 with Phase 54b's and Phase 54c's own results as evidence inputs — still
