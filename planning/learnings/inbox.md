@@ -8,6 +8,123 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-029 — a plan's own claim that several files already duplicate a piece of logic should be re-verified against each real file at implementation time before executing the plan's literal per-file refactor prescription
+
+- **origin:** Phase 62 (adapter-interface consolidation), retro "What
+  didn't work" + "Lessons learnt" + "Candidate learnings filed" (the
+  retro explicitly declined to file this as an `L-NNN`, reasoning it
+  "doesn't generalize past 'read the code you're about to change,'...
+  not a new rule"); filed at this triage's own initiative, dispatched
+  specifically because a `release-phase-auditor` DoD audit of Phase 62
+  flagged the retro's own non-filing decision as itself a curation
+  judgment `CLAUDE.md` §8 reserves for `knowledge-curator`, not
+  something the implementing lead should resolve unilaterally — every
+  other recently-audited phase (49, 53, 43b, 42, 60) dispatched
+  `knowledge-curator` even when the eventual disposition was "nothing
+  new."
+- **date:** 2026-09-19
+- **project_revision:** `96428a8` (Phase 62's own implementation
+  closeout commit)
+- **observation:** `planning/phase-62-adapter-interface-consolidation.md`'s
+  own design section described refactoring each of
+  `NpmAdapter`/`PythonAdapter`/`CargoAdapter`'s own
+  `readme_and_api_surface()` to call a new `self.symbols()` method,
+  premised on a planning-time claim that all three adapters already
+  duplicated a per-file walk+extract loop inside their own
+  `readme_and_api_surface()`. This was true for `CargoAdapter`/
+  `PythonAdapter` but factually wrong for `NpmAdapter` — independently
+  re-confirmed by reading `src/codecompass/adapters/npm.py`'s current
+  `readme_and_api_surface()` (lines 58-66) directly: it globs `README*`
+  and `*.d.ts` files and dumps their raw text; it never calls
+  `extract_npm_symbols` or performs any per-file symbol extraction. The
+  lead caught this only by reading all three adapter files closely again
+  at implementation time (not trusting the plan's own summary of "what
+  the three adapters do"), and adjusted the design to a base-class
+  concrete default (`EcosystemAdapter.symbols()`, confirmed live at
+  `src/codecompass/adapters/base.py` lines 72-96, using
+  `iter_source_files`/`extract_symbols_for_file`) rather than executing
+  the plan's literal per-adapter refactor. The retro itself further notes
+  that following the plan's literal prescription for Cargo/Python would
+  *also* have silently changed their rendered `readme_and_api_surface()`
+  output (losing per-file grouping headers, since `Symbol` carries no
+  file-path field) — a real, avoidable regression the base-class-default
+  design sidesteps entirely, not a purely cosmetic difference from what
+  was planned.
+- **evidence:**
+  `planning/retros/phase-62-adapter-interface-consolidation.md` "What
+  didn't work" + "Lessons learnt" (both independently re-read, not taken
+  on the retro's own summary alone);
+  `src/codecompass/adapters/npm.py::NpmAdapter.readme_and_api_surface`
+  (lines 58-66, read directly at this triage — confirmed it never calls
+  `extract_npm_symbols`); `src/codecompass/adapters/base.py::EcosystemAdapter.symbols`
+  (lines 72-96, read directly at this triage — confirmed it is the new
+  concrete base-class default the retro describes).
+- **classification:** scoped-rule
+- **status:** merged:L-014
+- **recurrence:** second occurrence of the same underlying pattern
+  L-014 (Phase 44) already covers — a plan's own claim about current
+  code state (there, which agent briefs still had placeholder sections;
+  here, which adapters duplicated a walk+extract loop) turns out partly
+  stale/wrong by implementation time, and this project's own standing
+  practice (`CLAUDE.md` §1's planning discipline plus
+  `agent-led-workflow.md`'s "verify independently, every time" opening
+  line, both already cited in L-014's own curation note) catches it
+  before any wrong artifact ships.
+- **curation (Phase 62 triage, 2026-09-19, knowledge-curator):**
+  provenance accepted — assigned this id, all required fields now
+  present. Independently re-derived the central claim rather than taking
+  the retro's own account on faith: read
+  `planning/retros/phase-62-adapter-interface-consolidation.md`'s "What
+  didn't work"/"Lessons learnt" sections directly, then independently
+  read `src/codecompass/adapters/npm.py` (confirmed `readme_and_api_surface`
+  never touches `extract_npm_symbols`) and `src/codecompass/adapters/base.py`
+  (confirmed `EcosystemAdapter.symbols()` is a real, concrete, already-
+  landed base-class default at the exact call sites the retro names) —
+  both hold exactly as described, not merely as claimed. Considered the
+  retro's own "doesn't generalize past 'read the code you're about to
+  change'" reasoning on its merits rather than deferring to it: agreed
+  that framed at that level of generality this is not a new rule, but
+  disagreed that this makes the observation not candidate-worthy —
+  `CLAUDE.md` §8 is explicit that "the lead deciding unilaterally that
+  something isn't candidate-worthy" is not itself how this project
+  resolves that question; only `knowledge-curator`'s own triage is.
+  Checked for a merge/duplicate candidate first, per this queue's own
+  established practice: **this is the same shape L-014 (Phase 44,
+  status: discarded) already triaged** — a plan document's own factual
+  claim about current code state (not its scope list) goes stale/wrong
+  between writing and implementation, caught by this project's already-
+  standing "read the code, verify independently" discipline before any
+  wrong artifact shipped, with zero resulting harm. L-014's own curation
+  note explicitly reserved exactly this scenario for future handling:
+  "If a future phase's *background claim* being stale actually causes a
+  wrong edit (not just a wasted-but-caught assumption), that would be a
+  new, stronger candidate — not a recurrence of this one, since this one
+  caused no harm." Applying that test here: Phase 62's stale claim was
+  caught *before* any `npm.py`/`cargo.py`/`python.py` edit was made (the
+  retro's own "Scope delivered vs planned" states "zero changes to
+  `adapters/npm.py`/`cargo.py`/`python.py`") — this is a "wasted-but-
+  caught assumption" exactly like L-014's instance, not the "actually
+  caused a wrong edit" case L-014 reserved for a stronger, independently-
+  promotable candidate. The regression risk the retro flags (losing
+  per-file grouping headers for Cargo/Python) was avoided by the design
+  change, not realized — a near-miss on top of a near-miss, not an actual
+  incident. **Outcome: merge into L-014, not a fresh discard and not a
+  promotion.** This is not the same as rubber-stamping the lead's
+  original non-filing call: the *substantive* conclusion (this doesn't
+  yet warrant a new standing rule) happens to match the lead's own, but
+  it is now reached via the process `CLAUDE.md` §8 actually requires —
+  an explicit `knowledge-curator` judgment, filed, evidenced, and
+  checked against the one directly-relevant precedent — rather than the
+  implementing agent's own say-so, closing exactly the gap the
+  `release-phase-auditor` flagged. Recorded here as a second occurrence
+  so recurrence counts aggregate on `L-014` correctly, per
+  `learning-lifecycle.md` §4's `merge` semantics: a *third* occurrence,
+  or one that actually reaches production (a wrong edit, not just a
+  wrong plan sentence), would be the trigger to revisit L-014's own
+  discarded status rather than adding a fourth independent entry.
+- **promoted_to:** — (merged into L-014; not independently promoted —
+  see curation note)
+
 ### L-028 — `resolve_and_clone`'s `subdirectory` field scopes the *rendered* view of a monorepo member, not the raw on-disk clone itself — a documentation gap, not a new bug
 
 - **origin:** Phase 61 (hledger cross-language experiment),
@@ -1429,7 +1546,15 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 - **evidence:** `planning/phase-44-reference-project-protocol.md` line 38 ("finalise the `context-evaluator` and `reference-project-tester` agent briefs against these templates (they were created in Phase 40 with placeholder method sections)"); `planning/retros/phase-44-reference-project-protocol.md` "Scope delivered vs planned" and "What didn't work"/"Lessons learnt" #1 (independently re-read, not taken on the retro's word alone — the retro itself already cites the specific verification method used, grepping for placeholder markers, and names Phase 43c as the likely cause).
 - **classification:** scoped-rule
 - **status:** discarded
-- **recurrence:**
+- **recurrence:** second occurrence merged here — `L-029` (Phase 62,
+  2026-09-19): the plan's own claim that all three of
+  `NpmAdapter`/`PythonAdapter`/`CargoAdapter` duplicated a walk+extract
+  loop turned out wrong for `NpmAdapter` specifically; caught before any
+  adapter file was edited, so still a "wasted-but-caught assumption,"
+  not the "actually caused a wrong edit" case this entry's own curation
+  note below reserved as the trigger for a stronger, independently-
+  promotable candidate. Still discarded; revisit if a third occurrence
+  appears, or if one actually reaches a shipped wrong edit.
 - **curation (Phase 44 triage, 2026-09-12, knowledge-curator):** provenance
   accepted — both the plan file's claim and the retro's account of finding
   it stale are independently re-read and confirmed accurate. **Outcome:
