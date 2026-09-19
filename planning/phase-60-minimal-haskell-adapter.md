@@ -10,14 +10,31 @@ reference, never deleted, per this project's own "retarget, don't
 delete" convention): the Haskell adapter is no longer an in-process
 Python class. It is now the **reference implementation of a genuinely
 external adapter** — a separate OS process, communicating over a small,
-versioned, JSON-based protocol (`decisions/0057`, new this amendment) —
-validating that CodeCompass's core never needs to import
-ecosystem-specific implementation code for a new adapter, motivated by a
-real future case named directly: a potentially proprietary COBOL/
-mainframe adapter suite that could never ship as importable GPL Python
-code inside `src/codecompass/`. The behavioural goals (§0-§1, §4's own
-open design question, the monorepo/testing scope) are preserved; the
-*mechanism* changes throughout §2 onward.
+versioned, JSON-based protocol (`decisions/0057`) — validating that
+CodeCompass's core never needs to import ecosystem-specific
+implementation code for a new adapter, motivated by a real future case
+named directly: a potentially proprietary COBOL/mainframe adapter suite
+that could never ship as importable GPL Python code inside
+`src/codecompass/`. The behavioural goals (§0-§1, §5's own open design
+question, the monorepo/testing scope) are preserved; the *mechanism*
+changes throughout §2 onward.
+
+**Amended again 2026-09-19** (second direct instruction, same day,
+before implementation began — `decisions/0058`, new): the protocol and
+the Haskell adapter are no longer even files inside this repository's
+own `adapters/haskell/` directory (this amendment's own first version,
+preserved at §A alongside the original in-process plan) — they are now
+**two separate, standalone, publicly-hosted repositories**,
+`codecompass-adapter-protocol` (MIT) and `codecompass-adapter-haskell`
+(GPL-3.0-or-later, matching CodeCompass's own license), checked out as
+git submodules inside this repository's own workspace. §2 onward is
+rewritten again to reflect this; the protocol *shape* itself
+(`decisions/0057`) and every real technical finding (the `stack
+ls dependencies`/`stack dot` distinction, the `stack script`+`aeson`
+smoke test, the monorepo package-root resolution rule, the mandatory
+Phase 54c workflow routing for API-surface extraction) are all
+**unchanged** by this second amendment — only *where the code lives and
+how it is licensed/versioned* changes again.
 
 ## 0. Why this phase, and why now
 
@@ -117,51 +134,78 @@ resolver hledger itself uses; and warm-cache per-invocation overhead
 cache a compiled executable for lower latency still, if real usage ever
 shows this matters — not needed for correctness, named for later.
 
-## 2. Architecture: an external process, not an in-process class
+## 2. Architecture: three repositories, one local workspace
 
-Per `decisions/0057` (new this amendment — read it in full before
-implementing). Three real, separate pieces:
+Per `decisions/0057` (protocol shape) and `decisions/0058` (the
+multi-repository/licensing/submodule decision — new this second
+amendment, read both in full before implementing). Four real, separate
+pieces now, not three:
 
-1. **`src/codecompass/adapters/external_process.py`** (new) — a fully
-   generic JSON-Lines subprocess client. Zero ecosystem-specific
-   knowledge: `spawn(command)`, `initialize()`, `analyze_project(root,
-   package_name)`, `shutdown()`. Reusable by any future external-process
-   adapter, not rewritten per ecosystem. This is the piece that actually
-   satisfies "CodeCompass core must not import Haskell-specific
-   implementation code" — it never mentions Haskell, `stack`, or
-   `package.yaml` anywhere in its own source.
-2. **`src/codecompass/adapters/haskell.py`** (new, but now *thin*) — the
-   `HaskellAdapter(EcosystemAdapter)` class. Reads `package.yaml`
-   directly via `yaml.safe_load()` for `installed_version()`/
-   `repository_url()` (simple manifest-key lookups — the same class of
-   generic, ecosystem-adjacent code `discovery.py` already does for
-   every other ecosystem's own manifest, not "Haskell-specific
-   implementation code" in the sense `decisions/0057` draws the line
-   around); resolves the monorepo package root (§6); constructs an
-   `external_process.ExternalAdapterProcess` pointed at the reference
-   adapter script (§3) and delegates `dependency_tree()`/
+1. **`codecompass-adapter-protocol`** (new, standalone, public
+   repository, **MIT license**) — the language-neutral contract only:
+   `SCHEMA.md`, `schemas/*.json` (real JSON Schema documents for every
+   message shape), `examples/`, `conformance/` (a small, standalone
+   schema-validation test harness). **No CodeCompass code, no Haskell
+   code.** Checked out locally at `protocol/codecompass-adapter-protocol/`
+   as a git submodule.
+2. **`codecompass-adapter-haskell`** (new, standalone, public
+   repository, **GPL-3.0-or-later**, matching CodeCompass's own
+   license) — the actual reference adapter, now a real minimal Stack
+   project (`package.yaml`/`stack.yaml`/`app/Main.hs` — superseding this
+   plan's own first-amendment "bare `stack script`" sketch, whose real,
+   confirmed-working `stack`+`aeson` finding, §1, remains valid technical
+   grounding, just packaged properly now since a real standalone public
+   repository needs its own `LICENSE`, `README.md`, and CI, not one
+   script file). Implements the protocol repository's own schemas —
+   validated by running that repository's own conformance tests against
+   this adapter's real output in this repository's own CI, not by a
+   Haskell-code-level library dependency (the protocol repo ships no
+   Haskell code to depend on). Runs as an independent executable/
+   process, per `decisions/0057`, unchanged. Checked out locally at
+   `adapters/haskell/` as a git submodule.
+3. **`src/codecompass/adapters/external_process.py`** (new, inside this
+   repository) — a fully generic JSON-Lines subprocess client. Zero
+   ecosystem-specific knowledge: `spawn(command)`, `initialize()`,
+   `analyze_project(root, package_name)`, `shutdown()`. This is the
+   piece that actually satisfies "CodeCompass core must not import
+   Haskell-specific implementation code" — it never mentions Haskell,
+   `stack`, or `package.yaml` anywhere in its own source, and has no
+   dependency (Python import or otherwise) on either submodule's own
+   content — it invokes whatever executable it's configured to invoke
+   (the adapter submodule's own built binary, once implementation
+   builds it) purely as an opaque subprocess.
+4. **`src/codecompass/adapters/haskell.py`** (new, thin, inside this
+   repository) — the `HaskellAdapter(EcosystemAdapter)` class. Reads
+   `package.yaml` directly via `yaml.safe_load()` for
+   `installed_version()`/`repository_url()`; resolves the monorepo
+   package root (§6); constructs an
+   `external_process.ExternalAdapterProcess` pointed at the built
+   adapter executable and delegates `dependency_tree()`/
    `readme_and_api_surface()`'s API-surface half to it.
-3. **`adapters/haskell/`** (new **top-level** directory, sibling to
-   `src/`, **outside** `src/codecompass/` entirely) — the actual
-   reference adapter: a single-file `stack script` (`adapter.hs`, using
-   `aeson`, confirmed buildable above) that reads one JSON request line
-   from stdin, dispatches on `method`, and for `analyze_project`: runs
-   `stack dot --external`/`stack ls dependencies` inside the given
-   project root and parses their real, verified text output (§4 below —
-   same parsing job the original in-process plan had, now living here
-   instead), plus a real `.hs`-source export-list scan for API surface
-   (§5). Writes one JSON response line to stdout. **No Python code
-   anywhere imports from this directory**, and nothing in
-   `src/codecompass/`'s own test suite depends on this directory
-   existing to pass (its own tests are `stack`-availability-gated,
-   skip-if-unavailable, matching `decisions/0014`'s existing posture).
-   This directory could be extracted into its own repository with no
-   CodeCompass-core change required — the real, checkable property
-   behind "independently versionable and distributable."
+
+**Local workspace layout** (git submodules — `decisions/0058`):
+
+```
+codecompass/                              (this repository, main)
+├── protocol/
+│   └── codecompass-adapter-protocol/     (git submodule)
+└── adapters/
+    └── haskell/                          (git submodule)
+```
+
+`codecompass`'s own `.gitmodules` records each submodule's remote URL;
+CodeCompass's own git history commits only a pinned commit SHA per
+submodule (a gitlink), never the submodules' own file content. **No
+Python code anywhere imports from either submodule's own directory**,
+and nothing in `src/codecompass/`'s own test suite depends on either
+submodule being checked out to pass (their own tests are gated on
+`git submodule status` reporting them initialized *and* `stack`
+availability, skip-if-either-is-missing, matching `decisions/0014`'s
+existing posture for the Cargo adapter).
 
 **Every real touchpoint still needed on the CodeCompass-core side**
-(unchanged in *kind* from the original plan, changed in *content* —
-`adapters/haskell.py` is now thin, and `external_process.py` is new):
+(unchanged in *kind* from the prior amendment, paths updated for the
+submodule layout):
 
 | File | What widens | Precedent |
 |---|---|---|
@@ -169,25 +213,29 @@ implementing). Three real, separate pieces:
 | `src/codecompass/graph.py`'s `vendors.ecosystem` CHECK constraint | widen to include `'haskell'`; bump `_SCHEMA_VERSION` (currently `"7"`, per Phase 54c → `"8"`) | The exact same `_migrate_doc_artifacts_constraints`-style widening Phase 54c just did for `doc_artifacts.origin` |
 | `src/codecompass/discovery.py`'s manifest-discoverer table | add `"package.yaml": (Ecosystem.HASKELL, discover_haskell)`, parsed via `yaml.safe_load()` | Mirrors `"package.json"`/`"pyproject.toml"`/`"Cargo.toml"`'s own entries |
 | `src/codecompass/adapters/external_process.py` (new) | the generic protocol client | New — no direct precedent, deliberately generic |
-| `src/codecompass/adapters/haskell.py` (new, thin) | manifest reads + protocol-client dispatch | Structurally unlike `cargo.py` now — thinner, since the real logic moved out-of-process |
+| `src/codecompass/adapters/haskell.py` (new, thin) | manifest reads + protocol-client dispatch, configured to invoke the submodule's own built executable | Structurally unlike `cargo.py` now — thinner, since the real logic moved out-of-process and out-of-repository |
 | `src/codecompass/adapters/__init__.py::_ADAPTER_BY_ECOSYSTEM` | add `Ecosystem.HASKELL: HaskellAdapter` | One-line dict addition, unchanged |
-| `adapters/haskell/adapter.hs` (new, outside `src/`) | the actual `stack dot`/`stack ls dependencies`/`.hs`-export-scan logic | New |
+| `.gitmodules` (new, repo root) | two submodule entries | New — this repository's first submodule use |
+| `protocol/codecompass-adapter-protocol/` (submodule, separate repo) | the schemas/conformance tests | New, external |
+| `adapters/haskell/` (submodule, separate repo) | the real Stack project implementing the protocol | New, external |
 
-**`src/codecompass/symbols.py`'s planned `extract_haskell_symbols`
-(the original plan's own §"What minimal means here") is now removed
-from this list** — Haskell source parsing for API surface happens
-inside the external adapter process (§5), not in CodeCompass's own
-`symbols.py`, per the whole point of this amendment. `symbols.py`
-itself is untouched by this phase.
+**`src/codecompass/symbols.py`'s planned `extract_haskell_symbols` is
+still not touched this phase** — unchanged from the first amendment;
+Haskell source parsing for API surface happens inside the (now
+separately-repositoried) adapter, per its own `REQ-`-backed
+specification (§5).
 
-**Explicitly not touched this phase** (unchanged from the original
-plan): `src/codecompass/usage.py`'s `detect_imports_for_file` — Phase
-61's own scope, not this phase's.
+**Explicitly not touched this phase** (unchanged from every prior
+version of this plan): `src/codecompass/usage.py`'s
+`detect_imports_for_file` — Phase 61's own scope, not this phase's.
 
 ## 3. The protocol, restated concretely for this phase's own use
 
-Full protocol definition: `decisions/0057`. For Phase 60 specifically,
-exactly two request types are ever sent:
+Full protocol definition: `decisions/0057` (its own inline description
+remains a valid, accurate summary) — the **canonical, versioned source
+becomes `protocol/codecompass-adapter-protocol/SCHEMA.md` and its own
+`schemas/*.json`** once that repository exists, per `decisions/0058`.
+For Phase 60 specifically, exactly two request types are ever sent:
 
 ```jsonc
 // CodeCompass -> adapter
@@ -216,12 +264,13 @@ exactly two request types are ever sent:
 ```
 
 **Parsing `stack dot`/`stack ls dependencies`'s real, verified text
-output happens inside the adapter process now** (not in Python) — a
-small, mechanical, hand-rolled job in Haskell (a regex/line-split over
-known-shape text, no new Haskell library needed beyond `aeson` for the
-JSON output itself): a pattern for `"(\S+)"\s*->\s*"(\S+)";` edge lines,
-and a plain space-split for `stack ls dependencies`'s `NAME VERSION`
-lines.
+output happens inside the adapter process now** (not in Python, and now
+not even in this repository) — a small, mechanical, hand-rolled job in
+Haskell, living in `codecompass-adapter-haskell`'s own
+`app/Main.hs` (a regex/line-split over known-shape text, no new Haskell
+library needed beyond `aeson` for the JSON output itself): a pattern for
+`"(\S+)"\s*->\s*"(\S+)";` edge lines, and a plain space-split for `stack
+ls dependencies`'s `NAME VERSION` lines.
 
 ## 4. `package.yaml` parsing: real `PyYAML`, per direct instruction
 
@@ -271,9 +320,10 @@ evidence-backed workflow (`context-researcher` → `documentation-agent` →
 review → `REQ-`-backed implementation), scoped only to this one
 question — `planning/knowledge/haskell-api-surface-extraction/`. The
 resulting `REQ-` records specify exactly what the external adapter's own
-export-list-scanning code must do; the adapter script implements that
-specification, in Haskell, inside `adapters/haskell/adapter.hs` — not in
-any Python module.
+export-list-scanning code must do; `codecompass-adapter-haskell`
+(checked out locally at `adapters/haskell/`) implements that
+specification, in Haskell, inside its own `app/Main.hs` — not in any
+Python module, and not in this repository's own tracked content at all.
 
 ## 6. Monorepo package roots (now an explicit, tested requirement)
 
@@ -308,54 +358,128 @@ present) — now applied across the process boundary:
   `package.yaml`-reading half (a real `yaml.safe_load()` call against
   fixture text, not mocked); the monorepo-resolution logic (§6) gets its
   own fixture test using a small synthetic two-package directory tree.
-- **`adapters/haskell/adapter.hs`**: this is real Haskell code with its
-  own test needs. Given `stack` **is** available in this environment,
-  this phase gets real live tests — `pytest.mark.skipif(shutil.which("stack")
-  is None, ...)`-guarded from the Python test suite's own side, invoking
-  the real adapter script against the real `hledger-lib` directory and
-  asserting on its real JSON output — the second adapter (after npm/
-  Python) to get this from day one, unlike Cargo's still-outstanding
-  gap. A small number of the adapter script's own internal parsing
-  functions (the DOT-edge regex, the `stack ls dependencies` line split)
-  may also get direct Haskell-side unit tests if `adapter.hs` is
-  structured to expose them separately from `main` — a real
-  implementation-time decision, not fixed in this plan.
+- **`codecompass-adapter-protocol`'s own conformance tests**: schema
+  validation against the repository's own recorded example messages —
+  entirely standalone, no CodeCompass or Haskell dependency, run in that
+  repository's own CI.
+- **`codecompass-adapter-haskell`'s own tests** (in its own repository,
+  its own CI): real Haskell code with its own test needs, run against
+  `codecompass-adapter-protocol`'s conformance suite (a real dependency
+  on the protocol repo's own conformance tests, not its code — there is
+  none to depend on) to confirm its real output actually validates
+  against the schemas, plus its own internal unit tests for the
+  DOT-edge-parsing/`stack ls dependencies`-line-parsing functions if
+  `app/Main.hs` is structured to expose them separately from `main`.
+- **From `codecompass`'s own test suite** (this repository):
+  `external_process.py` (generic protocol client) is fixture-tested
+  against a small, hand-written fake adapter process (a tiny script
+  printing canned JSON-Lines responses) — no real Haskell toolchain
+  needed, matching every prior adapter's own primary-strategy precedent.
+  `HaskellAdapter` (thin dispatcher) is fixture-tested for the
+  `package.yaml`-reading half (a real `yaml.safe_load()` call against
+  fixture text) and the monorepo-resolution logic (§6, a small synthetic
+  two-package directory tree). Given `stack` **is** available in this
+  environment and both submodules are checked out, this repository also
+  gets real, `pytest.mark.skipif`-guarded (on both `stack` availability
+  and submodule initialization) live smoke tests invoking the real,
+  submodule-built adapter executable against the real `hledger-lib`
+  directory and asserting on its real JSON output — the second adapter
+  (after npm/Python) to get this from day one, unlike Cargo's
+  still-outstanding gap.
 - **End-to-end**: register `hledger-lib` in a scratch project's
   `vendor.toml` with `ecosystem = "haskell"`, run a real `codecompass
   sync`, and confirm the resulting `context-graph.db` row's
   `installed_version`/dependency-tree/API-surface content matches real,
-  independently checked values — the whole protocol round-trip, not
-  just the adapter script in isolation.
+  independently checked values — the whole three-repository protocol
+  round-trip, not just the adapter script in isolation.
+
+## 8. Local development, clone/submodule setup, and version compatibility
+
+New documentation, `docs/external-adapters.md` (mandated by direct
+instruction, not optional), must cover:
+
+- **Cloning**: `git clone --recurse-submodules <codecompass-url>` for a
+  fresh clone; `git submodule update --init --recursive` for an
+  already-existing clone that predates this phase. A plain `git clone`
+  with no submodule flag leaves `protocol/codecompass-adapter-protocol/`
+  and `adapters/haskell/` as empty directories — documented explicitly
+  as the single most likely point of confusion for a new contributor,
+  not left to be discovered by trial and error.
+- **Building the adapter locally**: `cd adapters/haskell && stack
+  build` (once its own `package.yaml`/`stack.yaml` exist) — a real,
+  runnable set of steps, not a placeholder.
+- **Updating a submodule to a new release**: `cd
+  protocol/codecompass-adapter-protocol && git checkout <tag>`, back out
+  to the main repository, `git add protocol/codecompass-adapter-protocol`,
+  commit — a real, disclosed gitlink-bump workflow (`decisions/0058`),
+  distinguished explicitly from *editing* the submodule's own content
+  from the parent repository, which this workflow never does.
+- **Commit independence** (`decisions/0058`): a change to the protocol's
+  own schemas is a commit in `codecompass-adapter-protocol`'s own
+  history; a change to the adapter's own Haskell code is a commit in
+  `codecompass-adapter-haskell`'s own history; a change to CodeCompass
+  core (including a submodule gitlink bump) is a commit in
+  `codecompass`'s own history. Stated as a hard rule for contributors,
+  not merely a description of what happens to be true.
+- **Version-compatibility matrix**: a table (CodeCompass version ↔
+  minimum `codecompass-adapter-protocol` version ↔ tested
+  `codecompass-adapter-haskell` version(s)) — for Phase 60 itself, a
+  single row (this phase's own CodeCompass commit ↔ protocol `0.1.0`
+  ↔ adapter `0.1.0`), with the table's own existence and format
+  established for future phases/releases to extend, not populated
+  speculatively beyond what Phase 60 itself actually produces.
+- **What `protocol_version` (the wire-level integer,
+  `decisions/0057`/`0058`) is not**: explicitly distinguished from each
+  repository's own semver release version, so a contributor doesn't
+  conflate "protocol version 1" with "protocol repo version 1.0.0."
 
 ## Scope
 
 **In scope:**
 
+- Two new, standalone, public repositories created:
+  `codecompass-adapter-protocol` (MIT) and `codecompass-adapter-haskell`
+  (GPL-3.0-or-later) — each with its own `LICENSE`, `README.md`,
+  `CHANGELOG.md`, CI configuration, and an initial `0.1.0` release tag.
+- Both checked out as git submodules in this repository at
+  `protocol/codecompass-adapter-protocol/` and `adapters/haskell/`;
+  `.gitmodules` added to this repository's own root.
+- `codecompass-adapter-protocol`'s own content: `SCHEMA.md`,
+  `schemas/*.json`, `examples/`, `conformance/`.
+- `codecompass-adapter-haskell`'s own content: `package.yaml`/
+  `stack.yaml`/`app/Main.hs`, implementing `analyze_project`'s
+  dependency-tree (`stack dot`/`stack ls dependencies` parsing, §3) and
+  API-surface extraction (per §5's `REQ-`-backed specification), its own
+  tests run against the protocol repo's conformance suite.
 - `src/codecompass/core.py::Ecosystem` gains `HASKELL`.
 - `src/codecompass/graph.py`: `vendors.ecosystem` CHECK widened;
   `_SCHEMA_VERSION` "7" → "8"; migration docstring updated.
 - `src/codecompass/discovery.py`: `package.yaml` manifest discovery via
   `yaml.safe_load()`.
 - `pyproject.toml`: `PyYAML` added as a real, declared dependency.
-- `src/codecompass/adapters/external_process.py` (new) — the generic
-  JSON-Lines protocol client.
-- `src/codecompass/adapters/haskell.py` (new, thin) — manifest reads,
-  monorepo resolution, protocol-client delegation.
+- `src/codecompass/adapters/external_process.py` (new, this repository)
+  — the generic JSON-Lines protocol client, invoking the submodule's own
+  built executable as an opaque subprocess.
+- `src/codecompass/adapters/haskell.py` (new, thin, this repository) —
+  manifest reads, monorepo resolution, protocol-client delegation.
 - `src/codecompass/adapters/__init__.py` — dispatch table entry.
-- `adapters/haskell/adapter.hs` (new, **outside** `src/codecompass/`) —
-  the reference external adapter, per §5's own `REQ-`-backed
-  specification for API-surface extraction.
 - `planning/knowledge/haskell-api-surface-extraction/` (new feature
-  directory, Phase 54c's own model) — mandated, not optional, per direct
-  instruction (§5).
-- Fixture tests (primary) + `stack`-gated live smoke tests, both for the
-  Python-side protocol client and the real adapter script.
+  directory, Phase 54c's own model, in this repository) — mandated, not
+  optional, per direct instruction (§5); its own `REQ-` records specify
+  what `codecompass-adapter-haskell`'s own `app/Main.hs` must implement.
+- `docs/external-adapters.md` (new, this repository) — clone/submodule
+  setup, commit-independence rules, version-compatibility matrix (§8),
+  mandated, not optional.
+- Fixture tests (primary) + `stack`/submodule-gated live smoke tests, in
+  this repository's own suite, for the Python-side protocol client and
+  the real submodule-built adapter.
 - `architecture/overview.md`/`docs/` updated: the adapter section gains
-  a description of the external-process strategy alongside the
-  in-process one, and the npm/Python/Cargo trio no longer described as
-  the complete adapter set.
-- `decisions/0057` (already written this amendment) — no further new
-  ADR expected unless implementation surfaces a real need for one.
+  a description of the external-process, multi-repository strategy
+  alongside the in-process one, and the npm/Python/Cargo trio no longer
+  described as the complete adapter set.
+- `decisions/0057` and `decisions/0058` (both already written) — no
+  further new ADR expected unless implementation surfaces a real need
+  for one.
 
 **Explicitly deferred / out of scope:**
 
@@ -372,28 +496,45 @@ present) — now applied across the process boundary:
   (Phase 61's own scope).
 - **gRPC, network services, a plugin marketplace/registry, remote
   execution, or a versioned SDK** — explicitly named as premature by
-  direct instruction; the local-subprocess, JSON-Lines-on-stdio protocol
-  is the whole of this phase's own communication mechanism.
-- A distribution/versioning/discovery mechanism for the external adapter
-  beyond it existing as a file in this same repository, invoked by a
-  fixed, known path — "independently versionable and distributable" is
-  validated as an **architectural property** (no Python import
-  dependency on the adapter directory) this phase, not built out as a
-  real separate-repository/package-registry mechanism yet.
+  direct instruction, restated by this second amendment; the
+  local-subprocess, JSON-Lines-on-stdio protocol, checked out via git
+  submodules at a fixed, hand-configured path, is the whole of this
+  phase's own distribution/communication mechanism.
+- Any *automatic* discovery/registry of adapters beyond the two fixed
+  submodule paths this phase actually uses — "independently
+  versionable and distributable" is now realized as two real separate
+  repositories (`decisions/0058`), not merely an architectural property
+  of one repository's own internal layout, but discovery stays fixed
+  and hand-configured, not dynamic.
 - Resolving whether a future proprietary adapter distribution model is
   actually GPL-compatible — explicitly named as a legal question outside
-  this project's own competence (`decisions/0057`'s own closing section).
+  this project's own competence (`decisions/0057`/`0058`'s own closing
+  sections).
 
 ## Design decisions
 
 - **External process + JSON-Lines-on-stdio, not in-process** — per
   direct instruction; full rationale and protocol shape in
   `decisions/0057`.
-- **`stack script` (a single `.hs` file), not a separate Stack project**
-  for the reference adapter — confirmed buildable this session (§1);
-  the smallest-footprint way to ship a real, independently-versionable
-  Haskell program without a second `package.yaml`/`stack.yaml` pair to
-  maintain.
+- **Two separate repositories, differently licensed, checked out as git
+  submodules** — per direct instruction; full rationale in
+  `decisions/0058`, including why submodules (not subtree, not a
+  build-time-only fetch) are the mechanism.
+- **A real Stack project (`package.yaml`/`stack.yaml`/`app/Main.hs`),
+  not a bare `stack script`, for `codecompass-adapter-haskell`** — this
+  amendment's own refinement of the prior amendment's "single-file"
+  sketch: a real, standalone public repository needs its own `LICENSE`,
+  `README.md`, and CI, which a bare script doesn't naturally host. The
+  prior amendment's own confirmed-working `stack`+`aeson` smoke test
+  (§1) remains the valid technical grounding that this is buildable
+  here — only the packaging changed, not the underlying feasibility
+  finding.
+- **The protocol repository ships schemas and documentation only, no
+  code in any language** — keeps it genuinely language-neutral and
+  license-neutral (MIT, so a future differently-licensed adapter can
+  depend on the *contract* without inheriting anything from either
+  CodeCompass's GPL or a hypothetical adapter's own license,
+  `decisions/0058`).
 - **`stack dot`, not `stack ls dependencies`, is the tree source** —
   unchanged real finding from the original planning pass.
 - **Real `PyYAML` (`yaml.safe_load()`), not a hand-rolled parser, for
@@ -406,18 +547,22 @@ present) — now applied across the process boundary:
   simpler and this capability reusable by any future external adapter
   without reimplementation.
 - **No new ecosystem-agnostic core change beyond the exact touchpoints
-  named in §2's table** — the external-process *boundary* itself is the
-  one deliberate addition beyond the original plan's own scope, per the
-  user's own "preserve current Phase 60 scope limits unless the
-  external-process boundary itself requires a minimal additional
-  component" instruction; `external_process.py` and
-  `adapters/haskell/adapter.hs` are exactly that minimal addition, not a
+  named in §2's table** — the external-process/multi-repository
+  *boundary* itself is the one deliberate addition beyond the original
+  plan's own scope, per the user's own repeated "preserve current Phase
+  60 scope limits unless the external-process boundary itself requires
+  a minimal additional component" instruction; `external_process.py`
+  and the two new repositories are exactly that minimal addition, not a
   broader rearchitecture of the adapter system.
 
 ## Files
 
-- `decisions/0057-external-process-adapter-protocol.md` — written this
-  amendment.
+**In `codecompass` (this repository):**
+
+- `decisions/0057-external-process-adapter-protocol.md`,
+  `decisions/0058-adapter-protocol-and-haskell-adapter-as-separate-repositories.md`
+  — both already written.
+- `.gitmodules` (new) — two submodule entries.
 - `src/codecompass/core.py` — `Ecosystem.HASKELL`.
 - `src/codecompass/graph.py` — CHECK-enum widening, `_SCHEMA_VERSION` 8.
 - `src/codecompass/discovery.py` — `package.yaml` discoverer entry (via
@@ -426,69 +571,125 @@ present) — now applied across the process boundary:
 - `src/codecompass/adapters/external_process.py` (new).
 - `src/codecompass/adapters/haskell.py` (new, thin).
 - `src/codecompass/adapters/__init__.py` — dispatch entry.
-- `adapters/haskell/adapter.hs` (new, top-level, outside `src/`).
 - `planning/knowledge/haskell-api-surface-extraction/*.yaml`,
   `design.md`, `context-packet.md` (new — Phase 54c's model, mandated).
+- `docs/external-adapters.md` (new — §8, mandated).
 - `tests/test_core.py`, `tests/test_graph.py`, `tests/test_discovery.py`,
   `tests/test_adapters_external_process.py` (new),
-  `tests/test_adapters_haskell.py` (new) — fixture tests + `stack`-gated
-  live smoke tests. `tests/test_symbols.py` is **not** touched this
-  phase (§2's own removal note).
-- `architecture/overview.md`, `docs/` — updated: external-process
-  adapter strategy documented alongside the in-process one.
+  `tests/test_adapters_haskell.py` (new) — fixture tests + submodule-
+  and `stack`-gated live smoke tests. `tests/test_symbols.py` is **not**
+  touched this phase.
+- `architecture/overview.md`, `docs/` — updated: external-process,
+  multi-repository adapter strategy documented alongside the in-process
+  one.
 - `planning/retros/phase-60-minimal-haskell-adapter.md` — the retro.
+
+**In `codecompass-adapter-protocol` (new, separate repository, MIT):**
+
+- `LICENSE` (MIT), `README.md`, `CHANGELOG.md`.
+- `SCHEMA.md` — the canonical protocol specification.
+- `schemas/*.json` — one JSON Schema document per message shape.
+- `examples/*.json` — worked request/response pairs.
+- `conformance/` — the standalone schema-validation test harness.
+- CI configuration validating the repo's own examples against its own
+  schemas.
+
+**In `codecompass-adapter-haskell` (new, separate repository,
+GPL-3.0-or-later):**
+
+- `LICENSE` (GPL-3.0-or-later), `README.md`, `CHANGELOG.md`.
+- `package.yaml`, `stack.yaml`, `app/Main.hs` — the real adapter,
+  implementing §3's protocol messages and §5's `REQ-`-backed
+  API-surface-extraction specification.
+- Its own tests, run in its own CI against
+  `codecompass-adapter-protocol`'s conformance suite (a real Git
+  dependency on that repository, declared however Stack/CI most
+  naturally expresses it — an implementation-time detail, not fixed
+  here).
 
 ## Verification
 
-- Every new function/method (both Python-side and the adapter script's
-  own internal parsing functions, where feasible) has fixture-based unit
-  test coverage.
-- `stack`-availability-gated live smoke tests actually run in this
-  environment (not merely written and skipped) and pass against the
-  real `hledger-lib` package, including the monorepo-root-resolution
-  case (§6).
+- Both `codecompass-adapter-protocol` and `codecompass-adapter-haskell`
+  exist as real, separate, publicly hosted repositories, each with its
+  own real commit history, its own `LICENSE` matching this plan's own
+  licensing decision, its own CI passing, and at least one real release
+  tag (`0.1.0`) — checked directly (a real `git log`/`git remote` inside
+  each submodule, a real license-file read), not assumed from having
+  written the plan for them.
+- `codecompass`'s own `.gitmodules` and gitlink commits correctly
+  reference both repositories at real, resolvable commits; a fresh
+  `git clone --recurse-submodules` of `codecompass` actually checks out
+  working copies of both.
+- **Commit independence is real, not just documented**: the phase's own
+  implementation history shows commits landing in three genuinely
+  separate repositories (checked via each repository's own `git log`),
+  never one commit touching tracked content in more than one.
+- Every new function/method (Python-side, and the adapter's own internal
+  parsing functions, where feasible) has fixture-based unit test
+  coverage, in the repository that owns it.
+- `stack`- and submodule-availability-gated live smoke tests actually
+  run in this environment (not merely written and skipped) and pass
+  against the real `hledger-lib` package, including the
+  monorepo-root-resolution case (§6).
 - A real, end-to-end confirmation: the full protocol round-trip
-  (`initialize` → `analyze_project` → `shutdown`) against the real
-  adapter process, feeding a real `codecompass sync`, with the resulting
-  `context-graph.db` row's content independently checked against real
-  values — not just that the sync command exits zero.
+  (`initialize` → `analyze_project` → `shutdown`) against the real,
+  submodule-built adapter process, feeding a real `codecompass sync`,
+  with the resulting `context-graph.db` row's content independently
+  checked against real values — not just that the sync command exits
+  zero.
 - The seven capabilities named in the governing prompt are each checked
   explicitly, not merely implied: (1) discover/invoke the external
-  adapter; (2) negotiate/inspect its capabilities via `initialize`; (3)
-  request project analysis; (4) receive language-neutral structured
-  results; (5) ingest those results with zero Haskell-specific logic in
-  `src/codecompass/` outside `adapters/haskell.py`'s own thin dispatch;
-  (6) preserve evidence/provenance across the process boundary (the
-  `observations` section becoming real `planning/knowledge/` records);
-  (7) the existing real hledger validation (the end-to-end confirmation
-  above) succeeds.
-- `pytest`/`ruff check .`/`check_user_docs.py --strict` all clean.
+  adapter (via the submodule's own known, built-executable path); (2)
+  negotiate/inspect its capabilities via `initialize`; (3) request
+  project analysis; (4) receive language-neutral structured results;
+  (5) ingest those results with zero Haskell-specific logic anywhere in
+  `src/codecompass/` outside `adapters/haskell.py`'s own thin dispatch,
+  and zero Haskell-specific logic in this repository's own tracked
+  content at all (it all lives in the separate `codecompass-adapter-haskell`
+  repository); (6) preserve evidence/provenance across the process
+  boundary (the `observations` section becoming real
+  `planning/knowledge/` records); (7) the existing real hledger
+  validation (the end-to-end confirmation above) succeeds.
+- `docs/external-adapters.md`'s own documented clone/setup steps are
+  followed literally, from a fresh clone, and actually work.
+- `pytest`/`ruff check .`/`check_user_docs.py --strict` all clean (this
+  repository); each submodule's own CI clean (independently, in its own
+  repository).
 - `release-phase-auditor` PASS or PASS WITH NON-BLOCKING OBSERVATIONS.
 
 ## Done when
 
-Standard DoD (`CLAUDE.md` §5) + all five `EcosystemAdapter` methods
-implemented (via the thin dispatcher + external process) and both
-fixture-tested and live-smoke-tested + the real end-to-end confirmation
-passes + all seven named capabilities independently verified, not
-asserted + Phase 54c's evidence-backed workflow actually run for the
-API-surface-extraction sub-question, with its own `REQ-` records folded
-into this phase's own retro + `architecture/overview.md`/`docs/` updated
-to describe both adapter strategies + a retro that states plainly
-whether the protocol design held up against real `hledger-lib` output
-without surprises, whether `stack script`'s own build/cache behaviour
-was practical at real usage cadence, and — explicitly — whether this
-phase's own experience suggests the external-process strategy should
+Standard DoD (`CLAUDE.md` §5) + both new repositories real, public,
+independently licensed, and independently releasing (`0.1.0`) + checked
+out cleanly as submodules with `docs/external-adapters.md`'s own
+documented setup steps actually working from a fresh clone + all five
+`EcosystemAdapter` methods implemented (via the thin dispatcher +
+external, submodule-hosted process) and both fixture-tested and
+live-smoke-tested + the real end-to-end confirmation passes + all seven
+named capabilities independently verified, not asserted + Phase 54c's
+evidence-backed workflow actually run for the API-surface-extraction
+sub-question, with its own `REQ-` records folded into this phase's own
+retro + commit independence across all three repositories demonstrated,
+not merely designed + the version-compatibility matrix (§8) populated
+with this phase's own real row + `architecture/overview.md`/`docs/`
+updated to describe both adapter strategies + a retro that states
+plainly whether the protocol design held up against real `hledger-lib`
+output without surprises, whether the real multi-repository/submodule
+workflow was practical at real development cadence (not just at
+one-time setup), and — explicitly — whether this phase's own experience
+suggests the external-process, separate-repository strategy should
 become the *default* for future adapters or stay a deliberate exception
 for cases (like a future COBOL adapter) that specifically need it.
 
 **Not done merely because the protocol works and one round-trip
-succeeds** — done only once the real hledger validation this phase's
-own governing instruction names (capability 7) passes for real, and the
-retro can honestly answer whether the architecture is worth its real,
-measured overhead (process-spawn latency, a second language's own
-toolchain to maintain) relative to what an in-process adapter would have
-cost.
+succeeds, and not done merely because two repositories exist** — done
+only once the real hledger validation this phase's own governing
+instruction names (capability 7) passes for real, and the retro can
+honestly answer whether the architecture is worth its real, measured
+overhead (process-spawn latency, a second language's own toolchain to
+maintain, three repositories' worth of real maintenance burden instead
+of one) relative to what an in-process, single-repository adapter would
+have cost.
 
 ---
 
@@ -497,36 +698,47 @@ cost.
 Presented for review before implementation starts.
 
 1. **The external-process architecture itself** (§2, `decisions/0057`)
-   — this is a direct instruction, not a judgment call being presented
-   for a decision; flagged here only so its scope is visible before
-   implementation starts, not because it's still open.
-2. **`stack script` (single-file), not a separate Stack project, for the
-   reference adapter** — confirmed buildable this session; if a real
-   implementation need later shows a full Stack project is warranted
-   (e.g. the adapter's own logic outgrows one file, or its own test
-   suite needs Haskell-side unit tests that `stack script` can't host
-   cleanly), that's a small, disclosed scope growth to make at that
-   point, not a reason to over-build the skeleton now.
+   and **the two-separate-repositories/submodule architecture**
+   (§2, `decisions/0058`) — both direct instructions, not judgment calls
+   being presented for a decision; flagged here only so their combined
+   scope is visible before implementation starts, not because either is
+   still open.
+2. **A real Stack project, not a bare `stack script`, for
+   `codecompass-adapter-haskell`** — this amendment's own refinement,
+   made necessary by the repository-separation requirement itself (a
+   real public repo needs its own `LICENSE`/CI/release process); the
+   underlying `stack`+`aeson` feasibility finding stays the same, only
+   the packaging grew slightly. Flagged for visibility as a real, if
+   small, scope consequence of this amendment, not an open question.
 3. **`PyYAML` as a real, declared dependency** — per direct instruction;
-   flagged for visibility (a new runtime dependency is always worth a
-   moment's explicit notice) rather than as an open question.
+   flagged for visibility rather than as an open question.
 4. **Phase 54c's workflow, mandated for the API-surface-extraction
-   question** — per direct instruction; this is also that methodology's
-   own first real test under genuine uncertainty (per its own retro's
-   explicit recommendation), so the two decisions reinforce each other
-   rather than being independent choices.
-5. **The GPL/legal-separation caveat** (`decisions/0057`'s own closing
-   section) — presented as a disclosed, deliberate non-claim, not a
-   question needing a decision here; flagged so it isn't read past
-   silently, since it directly bears on whether this architecture
-   actually delivers what motivates it (a future proprietary adapter
-   option) once a real one is ever built.
+   question** — per direct instruction; also that methodology's own
+   first real test under genuine uncertainty.
+5. **The GPL/legal-separation caveat** (`decisions/0057`/`0058`'s own
+   closing sections) — presented as a disclosed, deliberate non-claim,
+   not a question needing a decision here; now more concrete, since real
+   separate repositories and real separate `LICENSE` files are actually
+   being created, which strengthens the architecture's own real-world
+   realization of "separately licensed" without resolving whether that
+   is legally sufficient for an actual future proprietary adapter.
+6. **Where exactly `codecompass-adapter-protocol` and
+   `codecompass-adapter-haskell` are actually hosted** (which forge,
+   which account/organisation, what "public" concretely means for this
+   project's own practice) is an operational detail this plan does not
+   fix — flagged explicitly as needing a real answer at implementation
+   time, not because the *architecture* (separate repos, submodules,
+   differing licenses) is in question, but because "create two public
+   repositories" is itself an action with real, hard-to-reverse
+   consequences (a public commit history, once pushed, is not easily
+   un-published) that this planning-only phase should not decide
+   silently on the user's behalf.
 
 ---
 
-## §A. Original in-process plan (preserved, superseded by this amendment — not deleted)
+## §A. Original in-process plan (preserved, superseded by the first amendment — not deleted)
 
-The original Phase 60 plan (before this amendment) specified an
+The original Phase 60 plan (before any amendment) specified an
 in-process `HaskellAdapter(EcosystemAdapter)` class living entirely
 inside `src/codecompass/adapters/haskell.py`, implementing all five
 `EcosystemAdapter` methods directly against `stack`/`package.yaml`, with
@@ -535,9 +747,25 @@ directly, and `discovery.py`'s `package.yaml` parsing hand-rolled rather
 than using `PyYAML`. Its own real findings (the `stack ls dependencies`
 JSON-mode gap, `stack dot`'s real DOT-graph output, the monorepo
 source-location scope boundary, the API-surface-extraction open
-question) all carry forward into this amendment unchanged — only *where*
-the Haskell-specific logic lives, and *how* `package.yaml` gets parsed,
-changed. Available as the basis for a future in-process fallback if the
-external-process architecture's own real overhead (§"Done when") proves
-not worth it — superseded as this phase's *required* architecture, not
-discarded.
+question) all carry forward into every later amendment unchanged — only
+*where* the Haskell-specific logic lives, and *how* `package.yaml` gets
+parsed, changed. Available as the basis for a future in-process fallback
+if the external-process architecture's own real overhead (§"Done when")
+proves not worth it — superseded as this phase's *required*
+architecture, not discarded.
+
+## §B. First-amendment single-repository design (preserved, superseded by the second amendment — not deleted)
+
+The first amendment (this file's own earlier revision, same day)
+specified the external-process architecture correctly (unchanged by the
+second amendment) but located the actual reference adapter *inside this
+repository*, at `adapters/haskell/adapter.hs` — a single self-contained
+`stack script` file, no separate `package.yaml`/`stack.yaml`, no
+separate repository, no submodule. `decisions/0057` (still valid in
+full for the protocol shape) originally described this single-repository
+layout in its own "Consequences" section before `decisions/0058`
+superseded that specific part. The real, confirmed-working `stack`+
+`aeson` smoke test this first amendment ran (§1) remains the technical
+grounding both this amendment and the second amendment rely on —
+nothing about *whether the mechanism works* changed between amendments,
+only *where the resulting code is committed and how it is licensed*.

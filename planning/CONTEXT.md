@@ -501,8 +501,58 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
-**Phase 60's plan is amended, still not started (2026-09-19) —
-external-process adapter architecture.** Direct user instruction, before
+**Phase 60's plan is amended again, still not started (2026-09-19) —
+separate public repositories for the protocol and the Haskell adapter.**
+Direct user instruction, before implementation began: the protocol and
+the Haskell adapter are no longer just an external *process* living
+inside this repository — they are now separate, differently-licensed,
+independently-versioned **public repositories**, checked out as git
+submodules inside the local `codecompass` workspace at
+`protocol/codecompass-adapter-protocol/` and `adapters/haskell/`. Three
+repositories result: `codecompass` (this repository, GPL-3.0-or-later,
+unchanged), `codecompass-adapter-protocol` (new, **MIT** — `SCHEMA.md`,
+`schemas/*.json`, `examples/`, a standalone `conformance/` test harness;
+no CodeCompass internals, no Haskell code, so any future adapter in any
+language/license can depend on the contract alone), and
+`codecompass-adapter-haskell` (new, **GPL-3.0-or-later**, matching
+CodeCompass — a real Stack project with its own `package.yaml`/
+`stack.yaml`/`app/Main.hs`, superseding the first amendment's bare
+single-file `stack script` sketch; that sketch's own real `stack`+
+`aeson` build/run confirmation remains valid technical grounding, only
+the packaging changed). New ADR: `decisions/0058-adapter-protocol-and-haskell-adapter-as-separate-repositories.md`
+— git submodules chosen over git subtree (rejected: merges history,
+undermining separation), a build-time-only dependency fetch (rejected as
+the *primary* mechanism for this phase, though noted as legitimate for
+the adapter's own internal use), and a custom monorepo tool (rejected:
+unjustified complexity). `codecompass`'s own `.gitmodules` and gitlink
+commits are the only place these two repositories' existence is recorded
+in CodeCompass's own history; their file content is never committed
+directly. Commits to each repository stay independent — no single commit
+spans more than one repository's own tracked content. A new
+version-compatibility matrix (CodeCompass version ↔ protocol version ↔
+adapter version) is now required, distinct from the wire-level
+`protocol_version` integer `decisions/0057` already defined. This closes
+a real gap `decisions/0057`'s own non-claim left open: an adapter file
+merely living inside CodeCompass's own working tree had genuinely
+ambiguous licensing status; a real separate repository under its own
+`LICENSE` is a materially stronger realization of "separately licensed
+component" — restated with more force, not weakened: none of this by
+itself settles whether a future *proprietary* adapter distributed the
+same way would be lawfully independent of CodeCompass's GPL obligations,
+which still needs real specialist open-source/IP legal review. New
+review-gate item: exactly which git hosting provider/account/
+organization the two new public repositories are created under is
+**not** decided by this plan — flagged as an operational decision
+needing the user's own input before implementation, since creating
+public repositories is hard to reverse. The first amendment's own
+content is preserved at the plan's own §B (not deleted); the original
+in-process design remains preserved at §A. Full amended plan:
+`planning/phase-60-minimal-haskell-adapter.md`. Still planning only — no
+`src/` change, no repository created, no submodule added, per explicit
+instruction not to begin implementation during this planning task.
+
+**Phase 60's plan was previously amended, still not started
+(2026-09-19) — external-process adapter architecture.** Direct user instruction, before
 implementation began: the Haskell adapter is no longer an in-process
 Python class — it is now the **reference implementation of a genuinely
 external adapter**, a separate OS process communicating over a small,
@@ -1492,20 +1542,34 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 60's amended plan awaits review before implementation begins.**
-The former two review-gate judgment calls are now settled by direct
-instruction (`PyYAML`, mandatory Phase 54c workflow routing) — the
-plan's own "Review gate" section now mostly flags scope/architecture
-points for visibility rather than open decisions (the external-process
-architecture itself; `stack script` vs. a full Stack project for the
-reference adapter; the GPL/legal-separation non-claim). Once reviewed,
-implementation proceeds per the amended plan's own §2-§7: build
+**Phase 60's twice-amended plan awaits review before implementation
+begins.** Every prior review-gate judgment call is now settled by direct
+instruction (`PyYAML`; mandatory Phase 54c workflow routing;
+external-process architecture; real Stack project over a bare `stack
+script`; two separate public repositories over one) — the plan's own
+"Review gate" section now flags scope/visibility points rather than open
+decisions, with one genuine exception: **exactly which git hosting
+provider/account/organization `codecompass-adapter-protocol` and
+`codecompass-adapter-haskell` are actually created under is not decided
+by the plan itself** and needs the user's own input before
+implementation, since creating public repositories is a hard-to-reverse
+action. Once that's answered and the plan is reviewed, implementation
+proceeds per the amended plan's own §2-§8: create
+`codecompass-adapter-protocol` (MIT, schemas/examples/conformance) and
+`codecompass-adapter-haskell` (GPL-3.0-or-later, real Stack project)
+as real standalone repositories with their own `0.1.0` releases → wire
+them in as git submodules at `protocol/codecompass-adapter-protocol/`
+and `adapters/haskell/` (`.gitmodules` + pinned gitlinks) → build
 `external_process.py` (generic protocol client) → `adapters/haskell.py`
-(thin dispatcher) → `adapters/haskell/adapter.hs` (the real external
-adapter, its API-surface logic specified by Phase 54c's own workflow
-output) → fixture + `stack`-gated live smoke tests → a real end-to-end
-confirmation via `codecompass sync`, checking all seven capabilities the
-governing instruction named explicitly.
+(thin dispatcher invoking the submodule's built executable) → the real
+adapter logic inside `codecompass-adapter-haskell`'s own `app/Main.hs`
+(its API-surface logic specified by Phase 54c's own workflow output) →
+write `docs/external-adapters.md` (clone/submodule setup, version
+compatibility) → fixture + submodule-and-`stack`-gated live smoke tests
+→ a real end-to-end confirmation via `codecompass sync`, checking all
+seven capabilities the governing instruction named explicitly, plus a
+fresh `git clone --recurse-submodules` actually working and each
+repository's own commit independence demonstrated, not just designed.
 
 GATE DD (Phase 55's own gate, Stage E's precondition) remains open,
 with Phase 54b's and Phase 54c's own results as evidence inputs — still

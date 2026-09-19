@@ -1171,6 +1171,40 @@ proprietary adapter — that needs real specialist legal review
 (`decisions/0057`'s own closing section). Not started; plan awaiting
 review.
 
+**Amended again 2026-09-19** (direct user instruction, before
+implementation; first amendment's single-repository design preserved at
+the plan's own §B, not deleted): the protocol and the Haskell adapter
+are no longer merely an external *process* — they are now separate,
+differently-licensed, independently-versioned **public repositories**,
+checked out as git submodules inside the local `codecompass` workspace
+(new ADR: `decisions/0058`). Three repositories: `codecompass` (this
+repository, GPL-3.0-or-later, unchanged), `codecompass-adapter-protocol`
+(new, MIT — schemas/`SCHEMA.md`/examples/conformance tests only, no
+CodeCompass internals, no Haskell code), `codecompass-adapter-haskell`
+(new, GPL-3.0-or-later — a real Stack project, superseding the first
+amendment's bare single-file `stack script` sketch, whose own real
+`stack`+`aeson` build/run result remains valid technical grounding).
+Checked out at `protocol/codecompass-adapter-protocol/` and
+`adapters/haskell/` via `.gitmodules`; `codecompass`'s own history
+records only a pinned commit SHA per submodule, never their file content
+directly. Commits to each repository stay independent — no single
+commit spans more than one repository's own tracked content. A
+version-compatibility matrix (CodeCompass version ↔ protocol version ↔
+adapter version) is now required documentation, distinct from the
+wire-level `protocol_version` integer `decisions/0057` already defined.
+Restates, with more force now that real separate licenses exist, that
+none of this by itself settles whether a future *proprietary* adapter
+distributed the same way would be lawfully independent of CodeCompass's
+GPL obligations — that remains a question for real specialist legal
+review. New review-gate item: exactly which git hosting
+provider/account/organization the two new public repositories are
+created under is **not** decided by this plan — flagged as an
+operational decision needing the user's own input before implementation,
+since creating public repositories is hard to reverse. Still no plugin
+marketplace, registry, or generalized SDK. Not started; plan awaiting
+review. Full amended plan:
+`planning/phase-60-minimal-haskell-adapter.md`.
+
 ### Phase 61 — hledger cross-language experiment · EXPERIMENTAL
 - Track hledger itself (or `hledger-lib` specifically, the most directly
   relevant package to Ledgerkit's own compatibility work) as a real

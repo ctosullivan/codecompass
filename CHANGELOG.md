@@ -83,6 +83,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
+- **Phase 60 plan amended again: separate public repositories for the
+  protocol and the Haskell adapter** (planning only, no code, phase not
+  started; amends the external-process amendment below, before
+  implementation began): the protocol and the Haskell adapter are no
+  longer just an external process living inside this repository — they
+  are now separate, differently-licensed, independently-versioned
+  **public repositories**, checked out as git submodules inside the
+  local `codecompass` workspace at
+  `protocol/codecompass-adapter-protocol/` and `adapters/haskell/` (new
+  ADR: `decisions/0058`). `codecompass-adapter-protocol` is **MIT**
+  (schemas/`SCHEMA.md`/examples/conformance tests only, no CodeCompass
+  internals, no Haskell code); `codecompass-adapter-haskell` is
+  **GPL-3.0-or-later** (matching CodeCompass) and is now a real Stack
+  project (`package.yaml`/`stack.yaml`/`app/Main.hs`), superseding the
+  prior amendment's bare single-file `stack script` sketch — that
+  sketch's own real `stack`+`aeson` build/run confirmation remains valid
+  technical grounding, only the packaging changed. `codecompass`'s own
+  `.gitmodules` and gitlink commits are the only place these two
+  repositories' existence is recorded in CodeCompass's own history;
+  their file content is never committed directly, and commits to each
+  repository stay independent. A version-compatibility matrix
+  (CodeCompass version ↔ protocol version ↔ adapter version) is now
+  required documentation, distinct from the wire-level
+  `protocol_version` integer `decisions/0057` already defined. Closes a
+  real gap `decisions/0057`'s own non-claim left open (an adapter file
+  merely living inside CodeCompass's own working tree had ambiguous
+  licensing status); restates with more force, not weakened: none of
+  this settles whether a future *proprietary* adapter distributed the
+  same way would be lawfully independent of CodeCompass's GPL
+  obligations — that still needs real specialist legal review. New
+  review-gate item: exactly which git hosting provider/account is used
+  for the two new public repositories is explicitly not decided by this
+  plan. See `decisions/0058-adapter-protocol-and-haskell-adapter-as-separate-repositories.md`
+  and the twice-amended `planning/phase-60-minimal-haskell-adapter.md`
+  (first amendment's single-repository design preserved at that file's
+  own §B, original in-process design preserved at §A — neither deleted).
+
 - **Phase 60 plan amended: external-process adapter architecture**
   (planning only, no code, phase not started; amends the Phase 60 plan
   below, before implementation began): the Haskell adapter is no longer
