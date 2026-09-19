@@ -166,7 +166,7 @@ def test_init_schema_seeds_schema_version(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "8"
+    assert value == "9"
 
 
 def test_init_schema_is_idempotent(tmp_path) -> None:
@@ -176,7 +176,7 @@ def test_init_schema_is_idempotent(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "8"
+    assert value == "9"
 
 
 def test_doc_artifacts_accepts_slash_command_kind(tmp_path) -> None:
@@ -289,7 +289,7 @@ def test_open_graph_migrates_pre_phase_17_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "8"
+    assert schema_version == "9"
 
     # Would raise sqlite3.IntegrityError under the pre-migration constraint.
     conn.execute(
@@ -326,7 +326,7 @@ def test_open_graph_migrates_pre_phase_21_schema(tmp_path) -> None:
     """Simulates a `context-graph.db` created at Phase 17-20's schema
     (`schema_version` "2", `doc_artifacts.kind`/`origin` CHECK constraints
     not yet widened for spec docs) — `open_graph` must migrate it in place:
-    bump `schema_version` (now "8", since this simulated db's stored
+    bump `schema_version` (now "9", since this simulated db's stored
     version is older than every widening since) and accept
     `kind='spec_doc'`, `origin='project'` afterward. `doc_relations_edges`
     itself needs no migration (a brand-new table `init_schema`'s `CREATE
@@ -363,7 +363,7 @@ def test_open_graph_migrates_pre_phase_21_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "8"
+    assert schema_version == "9"
 
     # Would raise sqlite3.IntegrityError under the pre-Phase-21 constraints.
     conn.execute(
@@ -385,7 +385,7 @@ def test_open_graph_migrates_pre_phase_27_schema(tmp_path) -> None:
     """Simulates a `context-graph.db` created at Phase 21-26's schema
     (`schema_version` "3", `doc_artifacts.kind`/`origin` CHECK constraints
     not yet widened for vendor-embedded upstream docs) — `open_graph` must
-    migrate it in place: bump `schema_version` to "8" (current, since this
+    migrate it in place: bump `schema_version` to "9" (current, since this
     simulated db's stored version is older than every widening since) and
     accept `kind='vendor_doc'`, `origin='vendor_upstream'` afterward.
     """
@@ -421,7 +421,7 @@ def test_open_graph_migrates_pre_phase_27_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "8"
+    assert schema_version == "9"
 
     # Would raise sqlite3.IntegrityError under the pre-Phase-27 constraints.
     conn.execute(
@@ -954,7 +954,7 @@ def test_open_graph_migrates_pre_phase_32_schema_adds_chunk_id_columns(tmp_path)
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "8"
+    assert schema_version == "9"
 
     documents_edges_columns = {row[1] for row in conn.execute("PRAGMA table_info(documents_edges)")}
     doc_relations_edges_columns = {
@@ -973,7 +973,7 @@ def test_open_graph_migrates_pre_phase_54c_schema(tmp_path) -> None:
     """Simulates a `context-graph.db` created at Phase 32-53's schema
     (`schema_version` "6", `doc_artifacts.origin`'s CHECK constraint not
     yet widened for `'pinned_reference'`) — `open_graph` must migrate it
-    in place: bump `schema_version` to "8" and accept
+    in place: bump `schema_version` to "9" and accept
     `origin='pinned_reference'` afterward.
     """
     db_path = tmp_path / "context-graph.db"
@@ -1032,7 +1032,7 @@ def test_open_graph_migrates_pre_phase_54c_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "8"
+    assert schema_version == "9"
 
     # Would raise sqlite3.IntegrityError under the pre-Phase-54c constraint.
     conn.execute(
@@ -1111,6 +1111,124 @@ def test_open_graph_migrates_pre_phase_60_vendors_constraint(tmp_path) -> None:
         "SELECT COUNT(*) FROM vendor_enrichment WHERE vendor_id = 1"
     ).fetchone()
     assert enrichment_count == 1
+
+
+def test_open_graph_migrates_pre_phase_62_symbols_schema_preserves_enrichment(
+    tmp_path,
+) -> None:
+    """Simulates a `context-graph.db` created before Phase 62 (`symbols`
+    with no `export_kind`/`note` columns) with one real paid-enrichment
+    row already on disk — `open_graph` must add both columns via `ALTER
+    TABLE ADD COLUMN`, not `_migrate_doc_artifacts_constraints`'s
+    drop-and-recreate approach: `symbol_enrichment` holds paid AI spend
+    that must survive the migration, unlike `doc_artifacts`, which is
+    safe to drop because it's always fully rewritten by the next
+    `rebuild_deterministic` anyway. Pre-existing symbol rows must
+    backfill `export_kind = 'export'`, matching what every symbol
+    extracted before this phase implicitly already was.
+    """
+    db_path = tmp_path / "context-graph.db"
+    old_conn = sqlite3.connect(db_path)
+    old_conn.execute("PRAGMA foreign_keys = ON")
+    old_conn.executescript(
+        """
+        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE vendors (
+          id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE,
+          ecosystem TEXT NOT NULL CHECK (ecosystem IN ('npm','python','cargo','haskell')),
+          installed_version TEXT, repository_url TEXT,
+          repository_subdirectory TEXT, source_resolved INTEGER NOT NULL DEFAULT 0,
+          source_resolution_error TEXT, last_synced_at TEXT
+        );
+        CREATE TABLE symbols (
+          id INTEGER PRIMARY KEY,
+          vendor_id INTEGER NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+          name TEXT NOT NULL, purpose TEXT,
+          UNIQUE (vendor_id, name)
+        );
+        CREATE TABLE symbol_enrichment (
+          id INTEGER PRIMARY KEY,
+          symbol_id INTEGER NOT NULL UNIQUE REFERENCES symbols(id) ON DELETE CASCADE,
+          purpose TEXT NOT NULL, generated_at TEXT NOT NULL
+        );
+        """
+    )
+    old_conn.execute(
+        "INSERT INTO vendors (id, name, ecosystem, installed_version) "
+        "VALUES (1, 'used-lib', 'npm', '1.0.0')"
+    )
+    old_conn.execute(
+        "INSERT INTO symbols (id, vendor_id, name, purpose) "
+        "VALUES (1, 1, 'doThing', 'does the thing')"
+    )
+    old_conn.execute(
+        "INSERT INTO symbol_enrichment (symbol_id, purpose, generated_at) "
+        "VALUES (1, 'enriched purpose', '2026-01-01T00:00:00Z')"
+    )
+    old_conn.execute("INSERT INTO meta (key, value) VALUES ('schema_version', '8')")
+    old_conn.commit()
+    old_conn.close()
+
+    conn = open_graph(tmp_path)
+
+    row = conn.execute(
+        "SELECT name, purpose, export_kind, note FROM symbols WHERE id = 1"
+    ).fetchone()
+    assert row == ("doThing", "does the thing", "export", None)
+
+    (enrichment_count,) = conn.execute(
+        "SELECT COUNT(*) FROM symbol_enrichment WHERE symbol_id = 1"
+    ).fetchone()
+    assert enrichment_count == 1
+
+
+def test_open_graph_symbols_migration_is_idempotent(tmp_path) -> None:
+    """A second `open_graph` call against an already-migrated database must
+    not attempt `ALTER TABLE ADD COLUMN` again, which would raise
+    `sqlite3.OperationalError: duplicate column name`.
+    """
+    conn = open_graph(tmp_path)
+    conn.close()
+
+    conn = open_graph(tmp_path)  # must not raise
+
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(symbols)")}
+    assert {"export_kind", "note"} <= columns
+
+
+def test_sync_symbols_round_trips_export_kind_and_note(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(
+        conn,
+        vendors=[VendorRow(name="used-lib", ecosystem="npm", installed_version="1.2.3")],
+        source_files=[],
+        symbols=[
+            SymbolRow(vendor_name="used-lib", name="doThing", purpose="does the thing"),
+            SymbolRow(
+                vendor_name="used-lib",
+                name="X",
+                purpose=None,
+                export_kind="reexport",
+                note="alias for Internal.A",
+            ),
+        ],
+        uses_edges=[],
+        doc_artifacts=[],
+        documents_edges=[],
+        skill_mentions_edges=[],
+        routes_via_edges=[],
+        depends_on_edges=[],
+        doc_relations_edges=[],
+    )
+
+    rows = {
+        name: (export_kind, note)
+        for name, export_kind, note in conn.execute(
+            "SELECT name, export_kind, note FROM symbols ORDER BY name"
+        )
+    }
+    assert rows["doThing"] == ("export", None)
+    assert rows["X"] == ("reexport", "alias for Internal.A")
 
 
 def test_skills_index_lists_skill_artifacts_and_mentions(tmp_path) -> None:

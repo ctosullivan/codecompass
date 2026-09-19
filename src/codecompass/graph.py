@@ -29,7 +29,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 _DB_FILENAME = "context-graph.db"
-_SCHEMA_VERSION = "8"
+_SCHEMA_VERSION = "9"
 
 # Closed taxonomy for `doc_relation_enrichment.relation_label` (Phase 31,
 # decisions/0045). `'other'` is the required fallback for any label an AI
@@ -70,10 +70,12 @@ CREATE TABLE IF NOT EXISTS source_files (
 );
 
 CREATE TABLE IF NOT EXISTS symbols (
-  id        INTEGER PRIMARY KEY,
-  vendor_id INTEGER NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
-  name      TEXT NOT NULL,
-  purpose   TEXT,
+  id          INTEGER PRIMARY KEY,
+  vendor_id   INTEGER NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  purpose     TEXT,
+  export_kind TEXT NOT NULL DEFAULT 'export',
+  note        TEXT,
   UNIQUE (vendor_id, name)
 );
 CREATE INDEX IF NOT EXISTS idx_symbols_vendor ON symbols(vendor_id);
@@ -227,11 +229,20 @@ class SourceFileRow:
 
 @dataclass(frozen=True)
 class SymbolRow:
-    """One `symbols` row, keyed by `(vendor_name, name)`."""
+    """One `symbols` row, keyed by `(vendor_name, name)`.
+
+    `export_kind`/`note` (Phase 62) generalize `decisions/0059`'s
+    external-wire-protocol addition into this table — deliberately
+    narrow **export/exposure status** fields (`"export"` |
+    `"reexport"` | `"undetermined"`), not a symbol-type/kind field; see
+    `codecompass.symbols.Symbol`'s own docstring for the full reasoning.
+    """
 
     vendor_name: str
     name: str
     purpose: str | None = None
+    export_kind: str = "export"
+    note: str | None = None
 
 
 @dataclass(frozen=True)
@@ -460,6 +471,47 @@ def _migrate_doc_relation_enrichment_relation_label(conn: sqlite3.Connection) ->
         )
 
 
+def _migrate_symbols_export_kind_note_columns(conn: sqlite3.Connection) -> None:
+    """Adds `symbols.export_kind`/`symbols.note` (Phase 62) to a
+    pre-Phase-62 on-disk database via `ALTER TABLE ... ADD COLUMN`, not
+    `_migrate_doc_artifacts_constraints`'s drop-and-recreate approach:
+    `symbols.id` is referenced by `symbol_enrichment` via an `ON DELETE
+    CASCADE` foreign key, and `symbol_enrichment` holds paid AI
+    enrichment output that survives every `rebuild_deterministic` call —
+    dropping `symbols` here would cascade-delete that enrichment, exactly
+    the outcome every other migration in this file goes out of its way
+    to avoid (mirrors `_migrate_doc_relation_enrichment_relation_label`'s
+    own reasoning and shape precisely).
+
+    `export_kind` backfills existing rows to `'export'` (via `DEFAULT`)
+    rather than `NULL` — every symbol that existed before this phase was,
+    by construction, an unconditional top-level extraction with no
+    export/exposure-status concept of its own, i.e. exactly what
+    `'export'` (the type's own default) already means. `note` has no
+    such natural default and backfills `NULL`.
+
+    Checked directly via `PRAGMA table_info`, not `meta.schema_version` —
+    self-contained and idempotent regardless of whether some other
+    migration already advanced the stored version this call. A brand-new
+    database has no `symbols` table yet at all — `init_schema`'s own
+    `CREATE TABLE IF NOT EXISTS`, called right after this function
+    returns, creates it with both columns already present.
+    """
+    table_exists = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'symbols'"
+    ).fetchone()
+    if not table_exists:
+        return
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(symbols)")}
+    with conn:
+        if "export_kind" not in columns:
+            conn.execute(
+                "ALTER TABLE symbols ADD COLUMN export_kind TEXT NOT NULL DEFAULT 'export'"
+            )
+        if "note" not in columns:
+            conn.execute("ALTER TABLE symbols ADD COLUMN note TEXT")
+
+
 def _migrate_vendors_ecosystem_constraint(conn: sqlite3.Connection) -> None:
     """Widens `vendors.ecosystem`'s CHECK constraint to accept `'haskell'`
     (Phase 60) on a database whose `vendors` table predates it —
@@ -560,6 +612,7 @@ def open_graph(project_root: Path) -> sqlite3.Connection:
     _migrate_doc_artifacts_constraints(conn)
     _migrate_doc_relation_enrichment_relation_label(conn)
     _migrate_vendors_ecosystem_constraint(conn)
+    _migrate_symbols_export_kind_note_columns(conn)
     init_schema(conn)
     return conn
 
@@ -702,11 +755,14 @@ def _sync_symbols(
     for s in symbols:
         conn.execute(
             """
-            INSERT INTO symbols (vendor_id, name, purpose)
-            VALUES (?, ?, ?)
-            ON CONFLICT(vendor_id, name) DO UPDATE SET purpose = excluded.purpose
+            INSERT INTO symbols (vendor_id, name, purpose, export_kind, note)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(vendor_id, name) DO UPDATE SET
+                purpose = excluded.purpose,
+                export_kind = excluded.export_kind,
+                note = excluded.note
             """,
-            (vendor_ids[s.vendor_name], s.name, s.purpose),
+            (vendor_ids[s.vendor_name], s.name, s.purpose, s.export_kind, s.note),
         )
 
 
@@ -1077,9 +1133,16 @@ def vendor_profile(conn: sqlite3.Connection, name: str) -> dict | None:
     }
 
     symbols = [
-        {"id": sid, "name": sname, "purpose": purpose}
-        for sid, sname, purpose in conn.execute(
-            "SELECT id, name, purpose FROM symbols WHERE vendor_id = ? ORDER BY name",
+        {
+            "id": sid,
+            "name": sname,
+            "purpose": purpose,
+            "export_kind": export_kind,
+            "note": note,
+        }
+        for sid, sname, purpose, export_kind, note in conn.execute(
+            "SELECT id, name, purpose, export_kind, note FROM symbols "
+            "WHERE vendor_id = ? ORDER BY name",
             (vendor_id,),
         )
     ]

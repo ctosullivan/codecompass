@@ -12,6 +12,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 from codecompass.core import DepNode, RepositoryLocation, VendorConfig
+from codecompass.filetree import iter_source_files
+from codecompass.symbols import Symbol, extract_symbols_for_file
 
 
 class AdapterError(Exception):
@@ -66,6 +68,33 @@ class EcosystemAdapter(ABC):
         "see X above" back-references is Phase 3's tree-rendering
         concern, not this method's tree-construction concern.
         """
+
+    def symbols(self) -> list[Symbol]:
+        """Structured public-API-surface symbols for this vendor, for
+        `context-graph.db`'s own `symbols` table (Phase 62). **Concrete,
+        not abstract** — a future adapter that doesn't implement
+        structured extraction isn't forced to (no `TypeError` at
+        construction), matching this project's own "safe default over
+        forced complexity" posture elsewhere (`RELATION_LABELS`' `'other'`
+        fallback, `dev_only` defaulting `False` for pipdeptree, etc.).
+
+        The default walks this vendor's own source tree and dispatches
+        each file through `extract_symbols_for_file` by ecosystem — the
+        exact walk+extract pairing `sync.py::rebuild_project_graph` used
+        to perform itself (as `_collect_vendor_symbols`) for every
+        in-process ecosystem (npm/Python/Cargo); relocated here so the
+        caller no longer needs to know which ecosystems support
+        structured extraction and which don't. `HaskellAdapter` (an
+        **external-process** adapter — `extract_symbols_for_file` has no
+        Haskell branch, and never will: real Haskell symbol extraction
+        lives in `codecompass-adaptor-haskell`, not `src/codecompass/`)
+        overrides this with its own conversion from the external
+        adapter's already-computed `symbols` wire data.
+        """
+        result: list[Symbol] = []
+        for path in iter_source_files(self.source_location()):
+            result.extend(extract_symbols_for_file(path, self.config.ecosystem))
+        return result
 
 
 def _run_json(cmd: list[str], cwd: Path) -> dict | list:

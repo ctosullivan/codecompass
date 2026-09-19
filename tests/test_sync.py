@@ -5,6 +5,7 @@ import pytest
 
 import codecompass.sync as sync_module
 from codecompass.core import DepNode, Ecosystem, RepositoryLocation, VendorConfig
+from codecompass.filetree import iter_source_files
 from codecompass.graph import (
     doc_relations,
     open_graph,
@@ -13,6 +14,7 @@ from codecompass.graph import (
     vendor_profile,
 )
 from codecompass.source_resolution import SourceResolutionError
+from codecompass.symbols import Symbol, extract_symbols_for_file
 from codecompass.sync import rebuild_project_graph, sync_all, sync_vendor
 
 
@@ -27,6 +29,7 @@ class _FakeAdapter:
         tree: DepNode | None = None,
         source_dir: Path | None = None,
         repository: RepositoryLocation | None = None,
+        symbols: list[Symbol] | None = None,
     ) -> None:
         self.config = config
         self.project_root = project_root
@@ -35,6 +38,7 @@ class _FakeAdapter:
         self._tree = tree or DepNode(name=config.name, version=version)
         self._source_dir = source_dir or project_root
         self._repository = repository
+        self._symbols = symbols
 
     def installed_version(self) -> str:
         return self._version
@@ -50,6 +54,19 @@ class _FakeAdapter:
 
     def repository_url(self) -> RepositoryLocation | None:
         return self._repository
+
+    def symbols(self) -> list[Symbol]:
+        """Mirrors `EcosystemAdapter.symbols()`'s own default (a plain
+        walk+extract), unless a test supplies an explicit list — e.g. to
+        exercise `export_kind`/`note` passthrough (Phase 62), which no
+        real extractor in `codecompass.symbols` produces on its own.
+        """
+        if self._symbols is not None:
+            return self._symbols
+        result: list[Symbol] = []
+        for path in iter_source_files(self.source_location()):
+            result.extend(extract_symbols_for_file(path, self.config.ecosystem))
+        return result
 
 
 def _build_source_tree(root: Path) -> Path:
@@ -424,6 +441,48 @@ def test_rebuild_project_graph_records_vendor_and_resolved_symbol_usage(
     assert profile["vendor"]["ecosystem"] == "python"
     assert profile["usage_count"] == 1
     assert [s["name"] for s in profile["symbols"]] == ["greet"]
+
+
+def test_rebuild_project_graph_carries_export_kind_and_note_through_adapter_symbols(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """`rebuild_project_graph` calls `adapter.symbols()` polymorphically
+    (Phase 62) — this is the generic wiring that, for a real
+    `HaskellAdapter`, closes `CG-008`. Exercised here with a fake adapter
+    supplying `export_kind`/`note` values no real in-process extractor
+    produces on its own, confirming the whole path (adapter → `SymbolRow`
+    → `symbols` table → `vendor_profile`'s own output dict) carries both
+    fields through end to end.
+    """
+    monkeypatch.setattr(
+        sync_module,
+        "get_adapter",
+        lambda config, project_root: _FakeAdapter(
+            config,
+            project_root,
+            symbols=[
+                Symbol(name="doThing", purpose="does the thing"),
+                Symbol(
+                    name="X",
+                    purpose=None,
+                    export_kind="reexport",
+                    note="alias for Internal.A",
+                ),
+            ],
+        ),
+    )
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.HASKELL)
+
+    rebuild_project_graph([config], tmp_path)
+
+    conn = open_graph(tmp_path)
+    profile = vendor_profile(conn, "demo")
+    assert profile is not None
+    by_name = {s["name"]: s for s in profile["symbols"]}
+    assert by_name["doThing"]["export_kind"] == "export"
+    assert by_name["doThing"]["note"] is None
+    assert by_name["X"]["export_kind"] == "reexport"
+    assert by_name["X"]["note"] == "alias for Internal.A"
 
 
 def test_rebuild_project_graph_includes_unused_vendor_with_zero_usage(

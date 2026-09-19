@@ -92,13 +92,50 @@ HOST-OUTPUT ADAPTERS** below (Claude Skills, `/discovery`, the root
 tool-specific formats rather than abstracting a package manager.
 
 `EcosystemAdapter` (ABC, `src/codecompass/adapters/base.py`) is constructed
-with `(config: VendorConfig, project_root: Path)` and defines five methods
-every ecosystem implements: `installed_version() -> str`,
+with `(config: VendorConfig, project_root: Path)` and defines five
+abstract methods every ecosystem implements: `installed_version() -> str`,
 `source_location() -> Path`, `readme_and_api_surface() -> str`,
 `repository_url() -> RepositoryLocation | None` (Phase 7 —
-`decisions/0021`), `dependency_tree() -> DepNode`. Adding a new ecosystem
-means writing one adapter class against this interface, not touching
-core logic.
+`decisions/0021`), `dependency_tree() -> DepNode`; plus one **concrete**
+method, `symbols() -> list[Symbol]` (Phase 62), described below. Adding a
+new ecosystem means writing one adapter class against this interface, not
+touching core logic.
+
+`symbols()` is `context-graph.db`'s own `symbols` table's real data
+source — deliberately **not** abstract, so a future adapter that doesn't
+implement structured extraction isn't forced to (no `TypeError` at
+construction). Its default implementation walks the vendor's own source
+tree (`iter_source_files`) and dispatches each file through
+`codecompass.symbols.extract_symbols_for_file` by ecosystem — the exact
+walk+extract pairing `sync.py::rebuild_project_graph` used to perform
+itself before Phase 62 (as a private `_collect_vendor_symbols` helper,
+now removed); npm/Python/Cargo all get correct behavior for free by
+inheriting this default, unchanged from before. `HaskellAdapter`
+overrides it: `extract_symbols_for_file` has no Haskell branch and never
+will (real Haskell symbol extraction lives in the external
+`codecompass-adaptor-haskell` process, not `src/codecompass/`), so
+`HaskellAdapter.symbols()` instead converts its own already-computed
+external-process `symbols` wire data into `Symbol` objects — this is what
+closes `CG-008` (`context-graph.db`'s `symbols` table stayed empty for
+every Haskell vendor before this phase).
+
+`Symbol` (`codecompass.symbols`) carries two Phase-62 fields beyond
+`name`/`purpose`: `export_kind` (`"export"` | `"reexport"` |
+`"undetermined"`, default `"export"`) and `note` (`str | None`) —
+generalizing `decisions/0059`'s external-wire-protocol addition into
+CodeCompass's own core model. **Deliberately named `export_kind`, not
+`kind`**: these values describe **export/exposure status** (how
+confidently a symbol is known to belong to its package's own public
+surface), never a symbol's own **intrinsic type** — a distinct concept a
+future adapter may need its own field for (e.g. a hypothetical COBOL
+adapter's program/paragraph/section/copybook categories), which a
+generic `kind` field would have foreclosed. `HaskellAdapter.symbols()` is
+the one place the wire's own `kind` field and the core's own
+`export_kind` field meet — read one, write the other; no other
+translation exists anywhere else in the codebase. Every in-process
+extractor (npm/Python/Cargo) only ever produces the default
+(`export_kind="export"`, `note=None`) — none of them has a confidence-
+tiering concept of its own.
 
 `repository_url()` resolves the vendor's upstream repository from
 locally-available package metadata only — never a network call, unlike
@@ -265,6 +302,23 @@ API-surface extraction are genuine ecosystem-specific *logic* — those
 live entirely inside `codecompass-adaptor-haskell`'s own `app/Main.hs`,
 never in this repository's own tracked content.
 
+**Per-instance analysis cache** (Phase 62): `HaskellAdapter.dependency_tree()`,
+`readme_and_api_surface()`, and `symbols()` each independently call an
+internal `_analyze()` method, which used to spawn a fresh external
+subprocess and re-run the **entire** `analyze_project` request (computing
+both `dependencies` and `symbols` server-side) every single call, even
+though each caller only ever reads one of the two fields. `_analyze()`
+now caches its result on `self._cached_analysis`, populated once and
+reused by whichever of the three methods a caller invokes on that
+instance — at most one real external-process round trip per
+`HaskellAdapter` instance. **Deliberately not a cross-instance cache**:
+`sync.py`'s `sync_vendor` and `rebuild_project_graph` each construct
+their own separate `HaskellAdapter` via `get_adapter(...)`, and that
+remaining cross-instance redundancy is an accepted, disclosed
+inefficiency this phase doesn't chase further (would require
+restructuring `sync.py`'s own two-pass orchestration to share adapter
+instances across both passes).
+
 **Local development**: see
 [`docs/external-adapters.md`](../docs/external-adapters.md) for
 clone/submodule setup, building the adapter locally, and the
@@ -315,16 +369,24 @@ hand; there is no structural safeguard against one being missed.
 
 ## Symbol/purpose extraction (`codecompass.symbols`)
 
-`Symbol(name, purpose)` plus one no-AI, no-subprocess extractor per
-ecosystem, each `Path -> list[Symbol]`: `extract_python_symbols` (`ast`-
-based top-level `def`/`class` + docstring), `extract_rust_symbols`
-(line-based `pub fn`/`struct`/`enum`/`trait` + `///` doc-comment scan),
-`extract_npm_symbols` (regex scan of `.d.ts` `export function/class/
-interface/const/type/enum <name>` + a leading JSDoc line). `purpose_for_file(path,
-ecosystem)` dispatches to the matching extractor by ecosystem *and* file
-suffix, falling back to a generic leading-comment-marker scan (`#`, `//`,
-`/*`, `"""`, `'''`) for files no ecosystem parser claims. Extraction
-functions never raise — a file that fails to parse returns `[]`/`None`.
+`Symbol(name, purpose, export_kind="export", note=None)` plus one no-AI,
+no-subprocess extractor per ecosystem, each `Path -> list[Symbol]`:
+`extract_python_symbols` (`ast`-based top-level `def`/`class` +
+docstring), `extract_rust_symbols` (line-based `pub fn`/`struct`/`enum`/
+`trait` + `///` doc-comment scan), `extract_npm_symbols` (regex scan of
+`.d.ts` `export function/class/interface/const/type/enum <name>` + a
+leading JSDoc line) — none of these three sets anything but `export_kind`'s
+default, since none has a confidence-tiering concept of its own.
+`purpose_for_file(path, ecosystem)` dispatches to the matching extractor
+by ecosystem *and* file suffix, falling back to a generic leading-
+comment-marker scan (`#`, `//`, `/*`, `"""`, `'''`) for files no
+ecosystem parser claims. Extraction functions never raise — a file that
+fails to parse returns `[]`/`None`.
+
+`export_kind`/`note` (Phase 62) generalize `decisions/0059`'s external-
+wire-protocol addition — see **Adapter interface**'s own `symbols()`
+writeup for the full reasoning behind the deliberately narrow, non-
+`kind` naming.
 
 This module is shared: `adapters/cargo.py` and `adapters/python.py` call
 into it for their `readme_and_api_surface()` output (generalized from
@@ -383,6 +445,18 @@ renderers are wired into `sync.py` (Phase 4), which writes their output to
   shown` notice if exceeded — same never-silent-truncation rule as the
   depth cap above. Renders as a `## Symbol index` section within
   `FILETREE.md` itself (`sync.py`), not a separate sidecar file.
+  **Known gap, disclosed, not fixed by Phase 62**: this function and
+  `purpose_for_file` are per-file, synchronous, no-subprocess, with zero
+  adapter awareness — they take `(path, ecosystem)`, not an adapter
+  instance, so a Haskell vendor's `FILETREE.md` still shows no
+  symbol-index entries, even though `context-graph.db`'s own `symbols`
+  table (via `adapter.symbols()`) now correctly holds its real symbols.
+  Retrofitting this would mean either spawning the external process once
+  *per file* during the tree walk (a severe regression, the opposite of
+  the per-instance cache fix above), or threading a pre-fetched `Symbol`
+  list through the whole `FILETREE.md`-rendering call chain — a
+  materially larger change than Phase 62's own "smallest justified
+  interface change" scope covers.
 - **Cross-linking FILETREE entries to description action pointers**
   (e.g. `src/commonmark-rules.js  ← ACTION TARGET: override
   fencedCodeBlock here`) — implemented in Phase 5 via the
@@ -1388,10 +1462,14 @@ None`, added to `sync.py` in Phase 11: for **every** tracked vendor in
 must reflect the full current state regardless of which vendors were just
 resynced), reads `installed_version()`/`repository_url()` (both
 already-existing, no-network adapter methods) and collects that vendor's
-own symbol list via the same `iter_source_files` + `extract_symbols_for_file`
-pairing `build_symbol_index` already uses internally — reused, not
-duplicated, just captured as structured `Symbol` objects instead of a
-rendered string. Then `usage.resolve_project_usage` detects the project's
+own symbol list via `adapter.symbols()` (Phase 62's generic adapter
+capability — see **Adapter interface**'s own `symbols()` writeup — which
+replaced a private `_collect_vendor_symbols` helper that performed this
+same walk itself). This is also what makes a Haskell vendor's own real
+symbols reach `context-graph.db` at all — `HaskellAdapter.symbols()`
+converts its own external-process result, closing a gap Phase 60 left
+open (`CG-008`) where this call site produced nothing for Haskell. Then
+`usage.resolve_project_usage` detects the project's
 imports, and each `DetectedImport.symbol_name` is resolved against the
 matching vendor's just-collected symbol names: a match becomes a
 symbol-level `UsesEdgeRow`, no match (or `symbol_name=None` to begin with)

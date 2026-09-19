@@ -29,6 +29,7 @@ L-024 | 2026-09-18 | scoped-rule | .claude/agents/context-researcher.md step 6 (
 L-028 | 2026-09-19 | architecture | architecture/overview.md "Known footguns" (resolve_and_clone's subdirectory scopes the rendered view, not the raw clone) @ (this phase's own closeout commit)
 L-027 | 2026-09-19 | workflow | planning/v1-redefinition/context-quality-evaluation.md §1 (single-trial baseline/treatment comparisons can't separate tool contribution from agent-diligence variance) @ (this phase's own closeout commit)
 L-026 | 2026-09-19 | architecture | architecture/overview.md "Known footguns" (readme_and_api_surface() extracts declared one-line purpose only, never function body) @ (this phase's own closeout commit)
+CG-008 | 2026-09-19 | graph-capability | src/codecompass/adapters/base.py::EcosystemAdapter.symbols() + src/codecompass/adapters/haskell.py::HaskellAdapter.symbols() + src/codecompass/graph.py (symbols.export_kind/note migration) + src/codecompass/sync.py::rebuild_project_graph (adapter.symbols() wiring) @ (this phase's own closeout commit)
 
 <!-- L-002 and prior L-005 (project-rule half) landed in the Phase 43
      commit; replace `d34a486` if it's not the actual Phase 43 commit hash.

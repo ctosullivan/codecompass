@@ -32,7 +32,7 @@ import sqlite3
 from pathlib import Path
 
 from codecompass import skill_scan, spec_docs, usage
-from codecompass.adapters import EcosystemAdapter, get_adapter
+from codecompass.adapters import get_adapter
 from codecompass.claude_md import render_vendor_claude_md
 from codecompass.core import VendorConfig, VendorDigest
 from codecompass.deptree import render_deptree_json, render_deptree_markdown
@@ -47,7 +47,6 @@ from codecompass.doc_mapping import (
 )
 from codecompass.filetree import (
     build_symbol_index,
-    iter_source_files,
     render_filetree_json,
     render_filetree_markdown,
 )
@@ -60,7 +59,6 @@ from codecompass.graph import (
     rebuild_deterministic,
 )
 from codecompass.source_resolution import SourceResolutionError, resolve_and_clone
-from codecompass.symbols import Symbol, extract_symbols_for_file
 
 _SNAPSHOT_PRUNE_NAMES = ("node_modules", "dist", "build", ".git", "__pycache__", ".venv", "venv")
 _GRAPH_DB_FILENAME = "context-graph.db"
@@ -242,9 +240,11 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
 
     For each config: read `installed_version()`/`repository_url()` (both
     already-existing, no-network-call adapter methods) and collect that
-    vendor's own symbol list via the same walk+extract pairing
-    `build_symbol_index` already does internally, just captured as
-    structured `Symbol` objects instead of a rendered string. Then
+    vendor's own symbol list via `adapter.symbols()` (Phase 62) — the
+    generic adapter capability every ecosystem now implements (in-process
+    ecosystems inherit `EcosystemAdapter.symbols()`'s own walk+extract
+    default; `HaskellAdapter` overrides it with real data from its
+    already-computed external-process result, closing `CG-008`). Then
     `usage.resolve_project_usage` detects the project's imports, and each
     `DetectedImport.symbol_name` is resolved against the matching vendor's
     collected symbol list by name — unresolved or no match stays a
@@ -297,11 +297,17 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
                 repository_subdirectory=repository.subdirectory if repository else None,
             )
         )
-        symbols = _collect_vendor_symbols(adapter, config)
+        symbols = adapter.symbols()
         vendor_symbol_names[config.name] = {s.name for s in symbols}
         for symbol in symbols:
             symbol_rows.append(
-                SymbolRow(vendor_name=config.name, name=symbol.name, purpose=symbol.purpose)
+                SymbolRow(
+                    vendor_name=config.name,
+                    name=symbol.name,
+                    purpose=symbol.purpose,
+                    export_kind=symbol.export_kind,
+                    note=symbol.note,
+                )
             )
 
     source_file_paths: set[str] = set()
@@ -360,17 +366,6 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
         )
     finally:
         conn.close()
-
-
-def _collect_vendor_symbols(adapter: EcosystemAdapter, config: VendorConfig) -> list[Symbol]:
-    """Same walk+extract pairing `build_symbol_index` uses internally,
-    reused rather than duplicated — captured as structured `Symbol`
-    objects instead of a rendered string.
-    """
-    symbols: list[Symbol] = []
-    for path in iter_source_files(adapter.source_location()):
-        symbols.extend(extract_symbols_for_file(path, config.ecosystem))
-    return symbols
 
 
 def _copy_source_snapshot(source: Path, dest: Path) -> None:

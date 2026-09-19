@@ -199,6 +199,112 @@ def test_readme_and_api_surface_renders_symbols_grouped_by_module(
     assert "Year [undetermined] — gated by a CPP conditional" in surface
 
 
+def test_symbols_converts_wire_kind_to_core_export_kind(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The one place the external wire protocol's own `kind` field
+    (`decisions/0059`) and CodeCompass-core's own `export_kind` field
+    (Phase 62 — deliberately not named `kind`) meet: read one, write the
+    other.
+    """
+    (tmp_path / "package.yaml").write_text(
+        "name: demo-package\nversion: 1.0.0\n", encoding="utf-8"
+    )
+    adapter = _adapter("demo-package", tmp_path)
+    monkeypatch.setattr(
+        adapter,
+        "_analyze",
+        lambda: {
+            "symbols": [
+                {"name": "doThing", "purpose": "does the thing", "module": "Demo.Core"},
+                {
+                    "name": "X",
+                    "purpose": None,
+                    "module": "Demo.Core",
+                    "kind": "reexport",
+                    "note": "alias for Demo.Internal.A, Demo.Internal.B",
+                },
+                {
+                    "name": "Year",
+                    "purpose": None,
+                    "module": "Demo.Types",
+                    "kind": "undetermined",
+                    "note": "gated by a CPP conditional",
+                },
+            ]
+        },
+    )
+
+    symbols = adapter.symbols()
+
+    by_name = {s.name: s for s in symbols}
+    assert by_name["doThing"].export_kind == "export"
+    assert by_name["doThing"].note is None
+    assert by_name["X"].export_kind == "reexport"
+    assert by_name["X"].note == "alias for Demo.Internal.A, Demo.Internal.B"
+    assert by_name["Year"].export_kind == "undetermined"
+    assert by_name["Year"].note == "gated by a CPP conditional"
+
+
+def test_symbols_empty_when_analyze_reports_no_symbols_capability(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    (tmp_path / "package.yaml").write_text(
+        "name: demo-package\nversion: 1.0.0\n", encoding="utf-8"
+    )
+    adapter = _adapter("demo-package", tmp_path)
+    monkeypatch.setattr(adapter, "_analyze", lambda: {})
+
+    assert adapter.symbols() == []
+
+
+def test_analyze_result_cached_across_multiple_method_calls(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Phase 62 §3: `dependency_tree()`, `readme_and_api_surface()`, and
+    `symbols()` each independently called `_analyze()` before this phase
+    — spawning a fresh external subprocess, and re-running the *entire*
+    `analyze_project` request, every single time. This must now happen
+    at most once per adapter instance, however many of those three
+    methods a caller invokes on it.
+    """
+    (tmp_path / "package.yaml").write_text(
+        "name: demo-package\nversion: 1.0.0\n", encoding="utf-8"
+    )
+    adapter = _adapter("demo-package", tmp_path)
+
+    call_count = {"analyze_project": 0}
+
+    class _FakeProcess:
+        def __init__(self, command: list[str]) -> None:
+            del command
+
+        def initialize(self) -> None:
+            pass
+
+        def analyze_project(self, package_dir: Path, name: str) -> dict:
+            del package_dir, name
+            call_count["analyze_project"] += 1
+            return {
+                "dependencies": {"name": "demo-package", "version": "1.0.0", "children": []},
+                "symbols": [{"name": "doThing", "purpose": None, "module": "Demo.Core"}],
+            }
+
+        def shutdown(self) -> None:
+            pass
+
+    monkeypatch.setattr(
+        "codecompass.adapters.haskell._adapter_executable", lambda project_root: Path("fake-exe")
+    )
+    monkeypatch.setattr("codecompass.adapters.haskell.ExternalAdapterProcess", _FakeProcess)
+
+    adapter.dependency_tree()
+    adapter.readme_and_api_surface()
+    adapter.symbols()
+
+    assert call_count["analyze_project"] == 1
+
+
 def test_malformed_package_yaml_raises_adapter_error(tmp_path: Path) -> None:
     (tmp_path / "package.yaml").write_text("name: [unterminated\n", encoding="utf-8")
     adapter = _adapter("demo-package", tmp_path)
@@ -244,3 +350,9 @@ def test_live_smoke_real_hledger_lib_end_to_end() -> None:
     assert "accountSummarisedName: Truncate all account name" in surface
     assert "[undetermined]" in surface  # Hledger/Data/Types.hs's CPP-gated `Year`
     assert "[reexport]" in surface  # e.g. Hledger.hs's `module X` alias
+
+    symbols = adapter.symbols()
+    by_name = {s.name: s for s in symbols}
+    assert "accountLeafName" in by_name
+    export_kinds = {s.export_kind for s in symbols}
+    assert "reexport" in export_kinds or "undetermined" in export_kinds

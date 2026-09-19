@@ -501,47 +501,71 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
-**Phase 62 — adapter-interface consolidation — planned, not started
-(2026-09-19).** Direct user request ("Plan phase 62"). Full plan:
-`planning/phase-62-adapter-interface-consolidation.md`. Re-verified
-`CG-008` is still open (`extract_symbols_for_file`/`_collect_vendor_symbols`
-unchanged since Phase 60), and found two further real facts by reading
-the code fresh (not assumed from prior phases' own summaries):
+**Phase 62 — adapter-interface consolidation — done (2026-09-19).**
+Direct user request ("Plan phase 62", then, in the same session, "Amend
+the Phase 62 plan and then proceed with implementation"). Full plan:
+`planning/phase-62-adapter-interface-consolidation.md`. Closes `CG-008`
+(`context-graph.db`'s `symbols` table stayed empty for every Haskell
+vendor).
 
-1. **A real, pre-existing duplication**: `NpmAdapter`/`PythonAdapter`/
-   `CargoAdapter`'s own `readme_and_api_surface()` implementations
-   already walk their own source files and call
-   `extract_npm_symbols`/`extract_python_symbols`/`extract_rust_symbols`
-   per file — the *same* walk-and-extract shape `_collect_vendor_symbols`
-   already does independently in `sync.py`, for the same three
-   ecosystems. Resolving `CG-008` via a new `EcosystemAdapter.symbols()`
-   method removes this duplication for all four ecosystems, not just
-   adds new code for Haskell's sake.
-2. **A real representational gap**: `decisions/0059` (Phase 60) already
-   added `kind`/`note` to the wire protocol's own `symbols` shape, but
-   `Symbol`/`SymbolRow`/the `symbols` table only ever had `name`/
-   `purpose` — even a fixed `_collect_vendor_symbols` would have nowhere
-   to put a Haskell `[reexport]`/`[undetermined]` marker without also
-   widening the core model.
+**Amended before coding** (direct instruction — scope, acceptance
+criteria, migration approach, caching design, real `hledger` validation,
+and the `CG-008` objective all preserved unchanged): the new core field
+is named **`export_kind`, not `kind`** — the wire's three values
+(`decisions/0059`) describe export/exposure status, not a symbol's own
+intrinsic type, and a generic `kind` field would foreclose a future
+adapter's own type concept (e.g. a hypothetical COBOL adapter's
+program/paragraph/section/copybook categories). The wire protocol
+itself is unchanged; `HaskellAdapter.symbols()` is the one place its
+`kind` field and the core's `export_kind` field meet.
 
-The plan resolves the roadmap's own open "structured-Symbol-list method
-vs. Haskell-specific in-process re-parse" question in favour of the
-former: a new, **concrete** (not abstract — default `[]`, so a future
-adapter that skips it isn't broken at construction) `symbols()` method;
-`Symbol`/`SymbolRow` widened with optional `kind`/`note`; a `symbols`
-table migration via `ADD COLUMN` (not a `vendors`-style rebuild —
-`symbol_enrichment`'s own cascade risk is avoidable without one, `ADD
-COLUMN` carries no such risk); `HaskellAdapter` also gains a
-per-instance `_analyze()` cache, closing a real, confirmed redundant
-external-process-spawn cost (`dependency_tree()`/`readme_and_api_surface()`
+**Implemented in full**: `EcosystemAdapter` gained a new, concrete (not
+abstract, default `[]`) `symbols()` method — its default is the exact
+walk+extract pairing `sync.py`'s own private `_collect_vendor_symbols`
+used to perform (now removed and replaced by this call), so
+npm/Python/Cargo inherit correct behavior for free with zero changes to
+any of their three adapter files. **Implementation-time refinement to
+the plan's own literal text**: the plan described refactoring each of
+npm/Python/Cargo's own `readme_and_api_surface()` to call
+`self.symbols()` internally; on closer reading this proved unnecessary
+(the shared base-class default achieves the same "no duplication"
+outcome without touching three files or risking a change to
+`readme_and_api_surface()`'s own curated rendering) and factually wrong
+for npm specifically (its `readme_and_api_surface()` dumps raw `.d.ts`
+file contents and never called `extract_npm_symbols` at all — no
+duplication existed there to remove). `HaskellAdapter.symbols()`
+overrides the default, converting its own already-computed
+external-process result into `Symbol` objects. `Symbol`/`SymbolRow`
+widened with `export_kind`/`note`; `symbols` table migration via `ADD
+COLUMN` (`_SCHEMA_VERSION` 8→9, not a `vendors`-style rebuild —
+`symbol_enrichment`'s own cascade risk is avoidable without one).
+`HaskellAdapter` also gained a per-instance `_analyze()` cache, closing
+a real, confirmed redundant external-process-spawn cost
+(`dependency_tree()`/`readme_and_api_surface()`/the new `symbols()`
 each independently re-ran the *entire* external analysis before this
-fix). Explicitly, disclosedly **not fixed**: `build_symbol_index`/
+fix) — deliberately not a cross-instance cache. `codecompass query
+vendor`'s Rich table and `--json` output both show `export_kind`/`note`.
+
+**Real, live re-confirmation**: a real `codecompass sync --yes --budget
+0` against `hledger-lib` (scratch project, `hledger-lib` symlinked
+directly into the pinned `hledger` monorepo checkout) produced **1305**
+real `symbols` table rows — **1256** `export`, **48** `reexport`, **1**
+`undetermined` — checked directly via SQL against the resulting
+`context-graph.db`, and independently re-confirmed via `codecompass
+query vendor hledger-lib --json`. Full test suite (623 tests) and
+`ruff check .` both pass; `check_user_docs.py --strict` clean.
+
+Explicitly, disclosedly **not fixed**: `build_symbol_index`/
 `purpose_for_file` (FILETREE.md's own flat symbol index) stay
 Haskell-blind — a real architectural mismatch (per-file, no-subprocess
 functions vs. a per-vendor, subprocess-backed adapter) judged materially
 bigger than "smallest justified fix." No broader plugin/packaging/
-licensing commitment is made. Still planning only — no `src/` change
-yet.
+licensing commitment is made. No new ADR was needed (the resolution
+matched `decisions/0002`'s existing precedent closely enough that no
+new non-obvious tradeoff surfaced). `CG-008` marked resolved in
+`planning/context-gaps/inbox.md`; promoted line added to
+`planning/learnings/promoted.md`. Retro:
+`planning/retros/phase-62-adapter-interface-consolidation.md`.
 
 **Phase 61 — hledger cross-language experiment — done (2026-09-19).**
 Fixed the one required prerequisite: `HaskellAdapter.repository_url()`
@@ -1787,25 +1811,14 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 62's plan awaits review before implementation begins.** Every
-review-gate item (`symbols()` as a new concrete interface method;
-widening `Symbol`/`SymbolRow` with `kind`/`note` at the core-model
-level; explicitly not fixing `build_symbol_index`/`purpose_for_file`; a
-per-instance-only `_analyze()` cache; marking `CG-008` resolved as part
-of this phase's own closeout) is a judgment call made during planning,
-not an open question needing the user's input first. Once reviewed,
-implementation proceeds per the plan's own §2-§4: `EcosystemAdapter.symbols()`
-(new, concrete, default `[]`) → refactor npm/Python/Cargo's own existing
-per-file walk-and-extract logic out of `readme_and_api_surface()` into
-`symbols()` → `Symbol`/`SymbolRow` gain `kind`/`note` → the `symbols`
-table migration (`ADD COLUMN`, `_SCHEMA_VERSION` 8→9) →
-`HaskellAdapter.symbols()` (wire → `Symbol` conversion) + the
-per-instance `_analyze()` cache → `sync.py::_collect_vendor_symbols` →
-`adapter.symbols()` (closes `CG-008`) → the vendor-detail query's own
-symbol listing gains `kind`/`note` → fixture tests throughout → a real,
-live, `stack`/submodule-gated re-confirmation that a real `codecompass
-sync` against `hledger-lib` now produces non-empty, `kind`-bearing
-`symbols` rows → retro/audit/closeout.
+**Phase 62 is done (2026-09-19)** — see "What was just completed" above
+for the full account (amendment, implementation, real live
+re-confirmation, `CG-008` closure). Phase 63 (Stage F, lightweight
+ordinary-project smoke test — `planning/ROADMAP.md` row 63,
+`planning/v1-redefinition/roadmap.md`) is next and depends on Phase 62's
+own output; it is **not yet planned**. GATE DD remains open and
+unaffected by Phase 62 (Stage F is a separate axis from Stage E, per
+`decisions/0056`) — no new work resolves or is forced by it here.
 
 Phase 61 itself is fully done: a real, symmetric two-agent comparison
 found LOW/effectively-NULL context advantage (outcome shape (b)),

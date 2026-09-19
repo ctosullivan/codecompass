@@ -1040,6 +1040,52 @@ def test_query_vendor_returns_profile(tmp_path: Path, monkeypatch: pytest.Monkey
     assert "doStuff" in result.output
 
 
+def test_query_vendor_shows_export_kind_and_note(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Phase 62: `export_kind`/`note` complete the fix end-to-end — the
+    database has them (the `symbols` table migration), and this, the one
+    real CLI surface that already renders a vendor's own symbols, must
+    show them too, not leave the fix half-wired.
+    """
+    monkeypatch.chdir(tmp_path)
+    conn = graph.open_graph(tmp_path)
+    graph.rebuild_deterministic(
+        conn,
+        vendors=[graph.VendorRow(name="hledger-lib", ecosystem="haskell")],
+        source_files=[],
+        symbols=[
+            graph.SymbolRow(vendor_name="hledger-lib", name="doThing", purpose="does the thing"),
+            graph.SymbolRow(
+                vendor_name="hledger-lib",
+                name="X",
+                export_kind="reexport",
+                note="alias for Internal.A",
+            ),
+        ],
+        uses_edges=[],
+        doc_artifacts=[],
+        documents_edges=[],
+        skill_mentions_edges=[],
+        routes_via_edges=[],
+        depends_on_edges=[],
+        doc_relations_edges=[],
+    )
+    conn.close()
+
+    result = runner.invoke(app, ["query", "vendor", "hledger-lib"])
+    assert result.exit_code == 0, result.output
+    assert "reexport" in result.output
+    assert "alias for Internal.A" in result.output
+
+    json_result = runner.invoke(app, ["query", "vendor", "hledger-lib", "--json"])
+    payload = json.loads(json_result.output)
+    by_name = {s["name"]: s for s in payload["symbols"]}
+    assert by_name["doThing"]["export_kind"] == "export"
+    assert by_name["X"]["export_kind"] == "reexport"
+    assert by_name["X"]["note"] == "alias for Internal.A"
+
+
 def test_query_vendor_json_includes_used_at(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

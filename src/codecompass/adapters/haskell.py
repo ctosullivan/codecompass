@@ -27,7 +27,8 @@ import yaml
 
 from codecompass.adapters.base import AdapterError, EcosystemAdapter
 from codecompass.adapters.external_process import ExternalAdapterProcess
-from codecompass.core import DepNode, RepositoryLocation
+from codecompass.core import DepNode, RepositoryLocation, VendorConfig
+from codecompass.symbols import Symbol
 
 # Where the built adapter executable is expected once
 # `codecompass-adaptor-haskell` (checked out at this path as a git
@@ -37,6 +38,20 @@ _ADAPTER_SUBMODULE_DIR = "adapters/haskell"
 
 
 class HaskellAdapter(EcosystemAdapter):
+    def __init__(self, config: VendorConfig, project_root: Path) -> None:
+        super().__init__(config, project_root)
+        # Per-instance-only cache (Phase 62, §3 of the phase plan):
+        # `dependency_tree()`, `readme_and_api_surface()`, and `symbols()`
+        # each independently called `_analyze()`, spawning a full external
+        # subprocess and re-running the *entire* `analyze_project` request
+        # (computing both `dependencies` and `symbols` server-side) every
+        # time, even though each caller only ever reads one of the two
+        # fields. Deliberately not a cross-instance cache — `sync_vendor`
+        # and `rebuild_project_graph` each construct their own separate
+        # `HaskellAdapter`, and that redundancy is out of this phase's
+        # scope (accepted, disclosed inefficiency).
+        self._cached_analysis: dict | None = None
+
     def installed_version(self) -> str:
         manifest = self._resolve_package_yaml()
         version = manifest.get("version")
@@ -106,6 +121,34 @@ class HaskellAdapter(EcosystemAdapter):
                 parts.append(f"# {module}\n\n" + "\n\n".join(lines))
         return "\n\n".join(parts)
 
+    def symbols(self) -> list[Symbol]:
+        """Overrides `EcosystemAdapter.symbols()`'s own default (a local
+        source-file walk through `extract_symbols_for_file`, which has no
+        Haskell branch and never will — see that method's own docstring).
+        Converts the (now-cached) `_analyze()` result's own wire `symbols`
+        list into `Symbol` objects — real, already-computed data, no new
+        Haskell-specific logic added to `src/codecompass/` beyond this
+        plain dict-to-dataclass mapping.
+
+        This is the one place the external wire protocol's own `kind`
+        field (`decisions/0059`) and CodeCompass-core's own `export_kind`
+        field (Phase 62 — deliberately not named `kind`; see `Symbol`'s
+        own docstring) meet: read one, write the other.
+        """
+        result = self._analyze()
+        symbols_wire = result.get("symbols")
+        if not symbols_wire:
+            return []
+        return [
+            Symbol(
+                name=entry["name"],
+                purpose=entry.get("purpose"),
+                export_kind=entry.get("kind", "export"),
+                note=entry.get("note"),
+            )
+            for entry in symbols_wire
+        ]
+
     # --- internals ---------------------------------------------------
 
     def _resolve_package_dir(self) -> Path:
@@ -139,13 +182,17 @@ class HaskellAdapter(EcosystemAdapter):
         return _safe_load_yaml(self._resolve_package_dir() / "package.yaml")
 
     def _analyze(self) -> dict:
-        executable = _adapter_executable(self.project_root)
-        process = ExternalAdapterProcess([str(executable)])
-        process.initialize()
-        try:
-            return process.analyze_project(self._resolve_package_dir(), self.config.name)
-        finally:
-            process.shutdown()
+        if self._cached_analysis is None:
+            executable = _adapter_executable(self.project_root)
+            process = ExternalAdapterProcess([str(executable)])
+            process.initialize()
+            try:
+                self._cached_analysis = process.analyze_project(
+                    self._resolve_package_dir(), self.config.name
+                )
+            finally:
+                process.shutdown()
+        return self._cached_analysis
 
 
 def _render_symbol_line(entry: dict) -> str:

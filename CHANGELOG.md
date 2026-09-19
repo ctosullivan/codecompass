@@ -9,6 +9,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 62** (adapter-interface consolidation, done): closes `CG-008` —
+  `context-graph.db`'s `symbols` table stayed empty for every Haskell
+  vendor before this phase. `EcosystemAdapter` gains a new, concrete
+  (not abstract, default `[]`) `symbols() -> list[Symbol]` method; its
+  default implementation is the exact walk+extract pairing `sync.py`'s
+  own private `_collect_vendor_symbols` used to perform (now removed) —
+  npm/Python/Cargo inherit correct behavior for free, no per-adapter
+  changes needed. `HaskellAdapter.symbols()` overrides it, converting
+  its own already-computed external-process result into `Symbol`
+  objects — the real fix, with zero Haskell-specific logic re-entering
+  `src/codecompass/` beyond a plain dict-to-dataclass mapping.
+
+  `Symbol`/`SymbolRow` widen with two new fields, `export_kind` (default
+  `"export"`) and `note`, generalizing `decisions/0059`'s external-wire-
+  protocol addition into CodeCompass's own core model. **Amended before
+  coding** (direct instruction): named `export_kind`, not `kind` — the
+  wire's three values describe export/exposure status, not a symbol's
+  own intrinsic type, and a generic `kind` field would foreclose a
+  future adapter's own type concept (e.g. a hypothetical COBOL adapter's
+  program/paragraph/section/copybook categories); the wire protocol
+  itself is unchanged, and `HaskellAdapter.symbols()` is the one place
+  its `kind` field and the core's `export_kind` field meet. The
+  `symbols` table gains matching nullable columns via `ALTER TABLE ...
+  ADD COLUMN` (`_SCHEMA_VERSION` 8→9) — the lighter mechanism already
+  established for `doc_relation_enrichment.relation_label`, not a
+  `vendors`-style table rebuild, since `symbol_enrichment`'s own `ON
+  DELETE CASCADE` foreign key makes dropping `symbols` unacceptable.
+  `codecompass query vendor`'s Rich table and `--json` output both show
+  `export_kind`/`note`.
+
+  `HaskellAdapter` also gains a per-instance `_analyze()` cache:
+  `dependency_tree()`, `readme_and_api_surface()`, and the new
+  `symbols()` each independently called it before this phase, spawning a
+  fresh external subprocess and re-running the entire `analyze_project`
+  request every time even though each caller only reads one of its two
+  fields — now at most one real external-process round trip per adapter
+  instance (deliberately not a cross-instance cache; `sync_vendor` and
+  `rebuild_project_graph` still construct separate instances).
+
+  Real, live re-confirmation: a real `codecompass sync --yes --budget 0`
+  against `hledger-lib` produced 1305 real `symbols` table rows (1256
+  `export`, 48 `reexport`, 1 `undetermined`), checked directly via SQL
+  and via `codecompass query vendor hledger-lib --json`.
+
+  Explicitly, disclosedly **not fixed**: `filetree.py::build_symbol_index`/
+  `symbols.py::purpose_for_file` (`FILETREE.md`'s own flat symbol index)
+  stay Haskell-blind — a real architectural mismatch (per-file,
+  no-subprocess, adapter-unaware functions vs. a per-vendor,
+  subprocess-backed external adapter) judged materially bigger than this
+  phase's own "smallest justified interface change" mandate.
+
 - **Phase 61** (hledger cross-language experiment, done): fixed a real
   bug in already-tagged Phase 60 code —
   `HaskellAdapter.repository_url()` now sets

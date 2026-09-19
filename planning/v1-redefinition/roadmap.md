@@ -1415,12 +1415,23 @@ Evaluation: `planning/reference-projects/ledgerkit/03-hledger-cross-language-eva
   kind of ecosystem-specific logic this phase's own architecture was
   built to keep out of core. See `CG-008` (`planning/context-gaps/inbox.md`).
 
-**Planned 2026-09-19** — full plan:
+**Planned 2026-09-19, done 2026-09-19** — full plan:
 `planning/phase-62-adapter-interface-consolidation.md`. Resolves the
 former/latter question above **in favour of the former**: `EcosystemAdapter`
 gains a new, concrete (not abstract — a future adapter that skips it
 isn't broken at construction) `symbols()` method, default `[]`.
-`Symbol`/`SymbolRow` widen with optional `kind`/`note`, generalizing
+
+**Amended before coding** (direct instruction, scope/acceptance-criteria/
+migration-approach/caching-design/real-validation/`CG-008`-objective all
+preserved): the new core field is named **`export_kind`, not `kind`** —
+the wire's three values (`decisions/0059`) describe export/exposure
+status, not a symbol's own intrinsic type, and a generic `kind` field
+would foreclose a future adapter's own type concept (e.g. a hypothetical
+COBOL adapter's program/paragraph/section/copybook categories). The wire
+protocol itself is unchanged; `HaskellAdapter.symbols()` is the one
+place its `kind` field and the core's `export_kind` field meet.
+
+`Symbol`/`SymbolRow` widen with `export_kind`/`note`, generalizing
 `decisions/0059`'s wire-level addition into CodeCompass's own core
 model; the `symbols` table gains matching nullable columns via `ADD
 COLUMN` (`_SCHEMA_VERSION` 8→9) — the lighter mechanism
@@ -1428,14 +1439,38 @@ COLUMN` (`_SCHEMA_VERSION` 8→9) — the lighter mechanism
 not the heavier `vendors`-style table-rebuild Phase 61 needed (`ADD
 COLUMN` carries no FK-cascade risk against `symbol_enrichment`, unlike
 a `CHECK`-widening). `sync.py`'s own `_collect_vendor_symbols` becomes
-`adapter.symbols()`, closing `CG-008` with zero Haskell-specific logic
-re-entering `src/codecompass/`. A real, independently-confirmed
-pre-existing duplication (npm/Python/Cargo's own `readme_and_api_surface()`
-already walks+extracts symbols the same way `_collect_vendor_symbols`
-did separately) is removed for all four ecosystems, not patched for
-Haskell alone. `HaskellAdapter` gains a per-instance `_analyze()` cache,
-closing a real, confirmed redundant-external-process-spawn cost across
+`EcosystemAdapter.symbols()`'s own default implementation (the exact
+same walk+extract pairing, relocated rather than rewritten), closing
+`CG-008` with zero Haskell-specific logic re-entering
+`src/codecompass/`. **Implementation-time refinement to the plan's own
+literal text**: rather than refactoring each of npm/Python/Cargo's own
+`readme_and_api_surface()` to call `self.symbols()` internally (as
+originally described), the walk+extract logic moved to the *base
+class's* own concrete default — npm/Python/Cargo inherit correct
+`symbols()` behaviour for free, with zero changes to any of their three
+adapter files, and no risk to `readme_and_api_surface()`'s own curated
+rendering (which caps/dumps differently per ecosystem and isn't a
+simple flattening of `symbols()`'s own output). The originally-planned
+per-adapter refactor also turned out factually wrong for npm
+specifically on closer reading — its `readme_and_api_surface()` dumps
+raw `.d.ts` file contents and never called `extract_npm_symbols` at all,
+so there was no duplication there to remove. `HaskellAdapter` gains a
+per-instance `_analyze()` cache, closing a real, confirmed
+redundant-external-process-spawn cost across
 `dependency_tree()`/`readme_and_api_surface()`/the new `symbols()`.
+`codecompass query vendor`'s Rich table and `--json` output both show
+`export_kind`/`note`, completing the fix end to end.
+
+**Real, live re-confirmation**: a real `codecompass sync --yes --budget
+0` against `hledger-lib` (scratch project, `hledger-lib` symlinked
+directly into the pinned `hledger` monorepo checkout — the same
+approach Phase 60/61 used) produced **1305** real `symbols` table rows
+for the vendor — **1256** `export`, **48** `reexport`, **1**
+`undetermined` — checked directly via SQL against the resulting
+`context-graph.db`, and independently confirmed again via
+`codecompass query vendor hledger-lib --json`. `CG-008` is genuinely
+closed: this call site produced zero Haskell rows before this phase.
+
 Explicitly, disclosedly **not fixed**: `filetree.py::build_symbol_index`/
 `symbols.py::purpose_for_file` (FILETREE.md's own flat symbol index)
 stay Haskell-blind — a real architectural mismatch (per-file,
@@ -1445,8 +1480,8 @@ phase's own "smallest justified interface change" mandate; named
 plainly as a real, accepted scope boundary, not silently left. No
 broader plugin-marketplace/packaging/licensing commitment is made — this
 phase changes what the interface can express, not whether CodeCompass
-formally supports third-party/proprietary adapters. Not started; plan
-awaiting review.
+formally supports third-party/proprietary adapters. Retro:
+`planning/retros/phase-62-adapter-interface-consolidation.md`.
 
 ### Phase 63 — Lightweight ordinary-project smoke test · EXPERIMENTAL
 - A deliberately small confirmation — not a full reference-project

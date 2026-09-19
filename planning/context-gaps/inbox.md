@@ -69,10 +69,7 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   routed operationally through Phase 62 (Stage F), since it was Phase 60's
   own adapter-interface experience that surfaced it, not a Ledgerkit/
   Stage D finding.
-- **status:** promoted-to-roadmap — Phase 62 (Stage F,
-  `planning/v1-redefinition/roadmap.md`) already names this exact gap as
-  one of its own open questions, per the lead's same-session roadmap
-  update.
+- **status:** promoted-to-roadmap — fix implemented Phase 62 (2026-09-19).
 - **recurrence:** first occurrence
 - **curation (triage, 2026-09-19, knowledge-curator):** template fields
   all present (origin, date, `codecompass_revision`, project, the edge,
@@ -117,13 +114,28 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   this triage only confirms the classification/status the roadmap
   update already assumed. First occurrence — no prior `CG-NNN` entry
   concerns vendor-symbol-table ingestion for an external-process
-  adapter, so no recurrence bump. **Pending `promoted.md` line** (lead/
-  `roadmap-context-curator` to add once Phase 62's own resolution — an
-  ADR plus the interface/detection change it selects — lands):
-  `CG-008 | 2026-09-19 | graph-capability | <Phase 62 ADR + implementing
-  diff @ <real short SHA>>` — not added yet since Phase 62 hasn't run.
-  No entry made to `context-graph.db` — this queue never writes there,
-  per `decisions/0051`.
+  adapter, so no recurrence bump.
+
+  **Resolved 2026-09-19, Phase 62.** No new ADR was needed — the
+  resolution matched `decisions/0002`'s existing "core types stay
+  ecosystem-agnostic" precedent closely enough that it didn't surface a
+  new non-obvious tradeoff (the plan's own "expected: none, but not
+  ruled out in advance" call held). `EcosystemAdapter` gained a
+  concrete `symbols()` method (default: the exact walk+extract pairing
+  `_collect_vendor_symbols` used to perform, now removed);
+  `HaskellAdapter.symbols()` overrides it with real data from its own
+  already-computed external-process result. Real, live re-confirmation:
+  a `codecompass sync` against `hledger-lib` produced 1305 real
+  `symbols` rows (1256 `export`, 48 `reexport`, 1 `undetermined`),
+  checked directly via SQL and via `codecompass query vendor --json`.
+  `promoted.md` line added to `planning/learnings/promoted.md`:
+  `CG-008 | 2026-09-19 | graph-capability | src/codecompass/adapters/base.py::EcosystemAdapter.symbols()
+  + src/codecompass/adapters/haskell.py::HaskellAdapter.symbols() +
+  src/codecompass/graph.py (symbols.export_kind/note migration) +
+  src/codecompass/sync.py::rebuild_project_graph (adapter.symbols()
+  wiring) @ (this phase's own closeout commit)`. No entry made to
+  `context-graph.db` — this queue never writes there, per
+  `decisions/0051`.
 
 ---
 

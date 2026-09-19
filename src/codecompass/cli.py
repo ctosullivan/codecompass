@@ -610,9 +610,15 @@ def query_vendor(
         # Section headings print as plain text, not `Table(title=...)` —
         # see `_print_name_list_table`'s comment on why.
         console.print("[bold]Symbols[/bold]")
-        symbols_table = Table("Symbol", "Purpose")
+        symbols_table = Table("Symbol", "Purpose", "Export kind", "Note")
         for symbol in profile["symbols"]:
-            symbols_table.add_row(symbol["name"], symbol["purpose"] or "")
+            export_kind = symbol["export_kind"]
+            symbols_table.add_row(
+                symbol["name"],
+                symbol["purpose"] or "",
+                export_kind if export_kind != "export" else "",
+                symbol["note"] or "",
+            )
         console.print(symbols_table)
         console.print("[bold]Documenting artifacts[/bold]")
         docs_table = Table("Path", "Kind")

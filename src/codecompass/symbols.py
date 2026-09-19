@@ -25,10 +25,26 @@ _GENERIC_COMMENT_MARKERS = ("#", "//", "/*", '"""', "'''")
 
 @dataclass
 class Symbol:
-    """One top-level, no-AI-extracted symbol from a single source file."""
+    """One top-level, no-AI-extracted symbol from a single source file.
+
+    `export_kind`/`note` (Phase 62) generalize `decisions/0059`'s
+    external-wire-protocol addition into CodeCompass's own core model —
+    deliberately narrow, **export/exposure status** fields, not a
+    symbol-type/kind field. `export_kind` records only how confidently a
+    symbol is known to belong to its package's own public surface
+    (`"export"` | `"reexport"` | `"undetermined"`); it is not, and must
+    not become, a stand-in for a future intrinsic symbol-type concept
+    (function vs. class vs. module, or a future ecosystem's own
+    categories, e.g. a COBOL adapter's program/paragraph/section/
+    copybook). Every existing extractor in this module only ever sets
+    the default (`"export"`, no note) — they have no confidence-tiering
+    concept of their own today.
+    """
 
     name: str
     purpose: str | None = None
+    export_kind: str = "export"
+    note: str | None = None
 
 
 def extract_rust_symbols(path: Path) -> list[Symbol]:
