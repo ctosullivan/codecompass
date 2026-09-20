@@ -1748,11 +1748,24 @@ identical.)
   phase's own report — a partial pass (e.g. found the process, missed
   the domain material) is a real finding about the reconstructed docs'
   own discoverability, not a reason to soften the criteria retroactively.
-  A FAIL on any criterion does not block v1 by itself (this is an
-  acceptance *signal* for the methodology's own documentation, not a
-  release gate the way GATE DF/DD are) but must be reported honestly,
-  matching this phase's own existing "no FAIL verdicts... or an explicit
-  written justification for shipping below that bar" posture above.
+  **Clarified 2026-09-20 (direct user instruction) — two separate
+  claims, two separate consequences**: "CodeCompass v1" bundles (a) a
+  **software release** (the package, its capabilities, gated by GATE
+  DF/DD/G9 as already specified) and (b) a **reference/model-project
+  claim** — that CodeCompass by v1 also demonstrates a validated,
+  discoverable agent-led development methodology
+  (`development-methodology.md`'s own framing). This test verifies only
+  (b). A FAIL on any criterion **does not block (a)** — the software may
+  still ship as `1.0.0` on its own merits, exactly as GATE DF/DD/G9
+  already govern, unaffected by this test. A FAIL **does block (b)**:
+  CodeCompass must not be described, marketed, or represented — in
+  `README.md`, release notes, or anywhere else — as a validated
+  reference/model project for this methodology until the specific
+  discoverability failure is fixed and the test is re-run and passes.
+  Every FAIL must still be reported honestly (matching this phase's own
+  existing "no FAIL verdicts... or an explicit written justification"
+  posture above) — the distinction is which claim a FAIL withholds, not
+  whether it gets disclosed.
 
 ### Phase 68 — Independent release audit · COMMITTED (FAIL blocks)
 - `release-phase-auditor`, read-only, full Definition-of-Done audit

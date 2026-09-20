@@ -209,6 +209,14 @@ reconsidered. Resolved candidates produce a new Claim (`supersedes` the
 stale one); unresolved genuine ambiguities go to the actual user/domain
 owner, never to the lead standing in.
 
+**Phase 65 is one-time, not a recurring post-v1 process** — after v1
+ships there is no future "Phase 65" to catch a staleness candidate a
+new feature happens to rely on. `development-methodology.md`'s own
+"Post-v1: per-feature freshness gate" is the ongoing continuation: a
+future feature's Domain stage must resolve any staleness candidate
+against a concept it relies on before that feature's own Design stage
+may proceed.
+
 ## 5. Milestone documentation closeout gate — Phase 69
 
 The operational form is **`planning/milestone-closeout-checklist.md`**

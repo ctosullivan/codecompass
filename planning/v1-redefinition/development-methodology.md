@@ -200,10 +200,12 @@ fix.
 | The chosen approach or work breakdown turns out wrong (a migration strategy, a file layout, a tooling assumption) but the objective and domain understanding still hold | **Plan** | This project's own repeatedly-exercised practice, formalized here — Phase 61 amended its plan twice, Phase 62 once, Phase 63D twice, all before implementation completed, each replacing a plan section known to be wrong rather than proceeding on it |
 | The objective or boundary itself was mistaken — what looked like the right thing to build turns out not to be | **Scope** | Rare. Matches this project's own "retargets this slot" precedent (Phases 53/54) and its GATE-style re-decisions — pause, restate Scope, get it re-approved, don't force a wrong objective through |
 
-A Domain re-entry that supersedes a Claim also puts every Requirement
-that cited it back under review — the traceability spine below (via
-each record's own citation fields) is what makes "what else does this
-affect" answerable without re-reading everything.
+A Domain re-entry that supersedes a Claim also puts every Decision built
+on it — and, through each such Decision's own citing Requirements — back
+under review, even though neither the Decision nor the Requirement was
+itself edited. The traceability spine below (via each record's own
+citation fields, walked forward from the superseded Claim) is what makes
+"what else does this affect" answerable without re-reading everything.
 
 ### Traceability without silent rewriting
 
@@ -233,15 +235,27 @@ be answerable, each mapping onto an existing record or artifact — no new
 core schema:
 
 ```
-Evidence → Claim/Invariant → Requirement → Design Decision → Implementation → Test
+Evidence → Claim/Invariant → Design Decision → Requirement → Implementation → Test
 ```
+
+**Corrected 2026-09-20** — the original version of this section listed
+Requirement before Design Decision, backwards relative to Phase 54c's
+own actual citation direction: a Requirement's own `decision:` field
+points *at* the Decision that authorizes it (§2.2 — "always traceable
+back to the Decision... that justifies it"), so the Decision is
+upstream of the Requirement it grounds, not downstream of it. The "why
+this is enough" walk-backward example further down already had the
+correct order (`Test → Requirement → Decision → Claim → Evidence`);
+only the diagram and table above it were wrong. Fixed here to match
+Phase 54c's own model exactly — no change to what any record cites, only
+to how this document describes the chain.
 
 | Link | Where it lives | Mechanism |
 |---|---|---|
 | Evidence | `EV-<slug>-NNN` (Phase 54c §2.2) | unchanged |
 | Claim / Invariant | `CL-<slug>-NNN`; or a `docs/domain/invariants.md` entry citing the Claim it was pulled from | unchanged — "Invariant" is not a separate record kind, it is a Claim (or a cross-cutting rule drawn from several Claims) that domain documentation surfaces prominently, per Phase 63D's own `docs/domain/` layout |
-| Requirement | `REQ-<slug>-NNN`, `decision:` field pointing at the Design Decision (Phase 54c §2.2) | unchanged |
-| Design Decision | `DEC-<slug>-NNN` (Phase 54c §2.2) | unchanged |
+| Design Decision | `DEC-<slug>-NNN`, `agrees_with_claim:` field pointing at the Claim it builds on (Phase 54c §2.2) | unchanged |
+| Requirement | `REQ-<slug>-NNN`, `decision:` field pointing at the Design Decision that authorizes it (Phase 54c §2.2) | unchanged |
 | Implementation | the Requirement's own `implemented_at` field | **new, optional field** on the existing Requirement record — a file:line or commit reference |
 | Test | the Requirement's own `test_ref` field | **new, optional field** on the existing Requirement record — a test id/path |
 
@@ -362,8 +376,8 @@ invalidation.** A change to implementation, tests, an ADR, a reference
 the corpus cites, or newly observed behaviour does not itself make a
 domain claim wrong — it makes it worth asking whether it might have.
 Three checkpoints already in this project's workflow are where that
-question gets asked; no fourth, standing "domain watcher" process is
-added:
+question gets asked pre-v1, reusing existing mechanisms rather than
+adding a new standing "domain watcher" process:
 
 1. **Per-phase verification** (`CLAUDE.md` §5's own DoD, unchanged
    mechanism): `docs-reconstructor`'s existing per-phase drift audit
@@ -389,10 +403,39 @@ added:
    user/domain owner — the same no-stand-in rule Phase 63D itself
    established, unchanged here.
 
-**What does not change**: `docs/domain/` is not re-derived from scratch
-at every phase — that would defeat the point of having done Phase 63D
-at all. Only the specific concepts a real, flagged change touches are
-ever reconsidered, and only at the three checkpoints above.
+**What does not change pre-v1**: `docs/domain/` is not re-derived from
+scratch at every phase — that would defeat the point of having done
+Phase 63D at all. Only the specific concepts a real, flagged change
+touches are ever reconsidered, and only at the three checkpoints above.
+
+### Post-v1: per-feature freshness gate (added 2026-09-20)
+
+Phase 65 is a **one-time, milestone-scoped** event — it does not recur
+for every feature built after v1 ships. Relying on "checkpoint 3 will
+catch it eventually" stops being true the moment there is no more
+"Phase 65" coming. This is the ongoing, per-feature equivalent, so a
+staleness candidate flagged once does not sit unresolved indefinitely
+for lack of a future reconciliation phase:
+
+**Before a future feature's own Design stage relies on a domain concept
+that has an outstanding staleness candidate against it, that candidate
+must be resolved during the same feature's own Domain stage — not
+deferred, and not built on top of as though it were settled.**
+"Resolved" means what it always has in this section: either fixed with
+fresh evidence (a new Claim that `supersedes` the stale one) or
+explicitly escalated to the actual user/domain owner and ruled on —
+never silently built on, and never quietly dropped.
+
+This needs no new machinery, only a rule about *when Design may
+proceed*: a feature's own `context-researcher`, investigating that
+feature's Domain stage, already reads the `docs/domain/` concepts it is
+about to rely on — checking each one's own open-staleness status
+(`docs/domain/open-questions.md`, or wherever a per-phase drift-audit
+candidate was last recorded) is one more thing it checks while already
+there, not a separate pass. If a relied-on concept is currently stale,
+that feature's Domain stage is not done, and its Design stage does not
+start, until the candidate is resolved or the actual user has ruled on
+it.
 
 ## Where this gets exercised before v1
 
@@ -425,7 +468,13 @@ Named as evidence, not yet claimed as proven:
   produce a sensible design for one small, realistic change. This is
   the closest thing to an outside-observer test the methodology gets
   before v1 — everyone else exercising it up to that point is someone
-  who already knows it exists.
+  who already knows it exists. **Its FAIL consequence is scoped
+  narrowly** (`roadmap.md`'s own Phase 67 entry, clarified 2026-09-20):
+  it does not block the software release, which GATE DF/DD/G9 already
+  govern independently — it blocks only the separate claim that
+  CodeCompass v1 is itself a validated reference/model project for this
+  methodology, until the specific discoverability gap is fixed and the
+  test passes.
 
 Whether this methodology **improves development quality** generally
 remains an open question, exactly as Phase 54c's own retro left it —

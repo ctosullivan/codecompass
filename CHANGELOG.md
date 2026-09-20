@@ -283,8 +283,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     Scope/Plan re-entries may edit the plan file directly, provenance in
     git history, matching this project's own already-exercised practice
     (Phase 61/62/63D's own plan amendments).
-  - **A traceability spine**, Evidence → Claim/Invariant → Requirement →
-    Design Decision → Implementation → Test, reusing Phase 54c's own
+  - **A traceability spine**, Evidence → Claim/Invariant → Design
+    Decision → Requirement → Implementation → Test, reusing Phase 54c's own
     record ids unchanged except two new optional fields on the existing
     Requirement record (`implemented_at`, `test_ref`) — additive
     widening of one record kind, not a new schema.
@@ -293,16 +293,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     the development process, locate domain/evidence material, recognise
     genuinely unresolved uncertainty, and produce a sensible design for
     one small realistic change — PASS/FAIL per criterion, reported
-    honestly, not a release-blocking gate by itself.
+    honestly. A FAIL does not block the software release (GATE
+    DF/DD/G9 govern that independently) but does block describing
+    CodeCompass v1 as a validated reference/model project until the
+    specific discoverability failure is fixed and the test passes.
   - **Domain-corpus freshness and reconciliation semantics**: a material
     change to implementation/tests/ADRs/references/observed behaviour
     triggers *consideration*, not automatic invalidation, at three
     existing checkpoints (per-phase verification via one new
     `docs-reconstructor` check, retro, and Phase 65's own reconciliation,
     which re-invokes `domain-skeptic` — the same role, not a new one).
+    A fourth, ongoing rule covers what Phase 65's one-time reconciliation
+    cannot: post-v1, a future feature's Design stage may not rely on a
+    domain concept with an outstanding staleness candidate until that
+    feature's own Domain stage resolves it.
   See `planning/v1-redefinition/development-methodology.md`,
   `planning/v1-redefinition/roadmap.md`'s Phase 63D/65/67 entries, and
   `planning/phase-63d-domain-reconstruction.md`.
+
+  **Amended a third time, 2026-09-20**: corrected the traceability
+  spine's own ordering above — it had listed Requirement before Design
+  Decision, backwards relative to Phase 54c's actual citation direction
+  (a Requirement's `decision:` field points at the Decision that
+  authorizes it, so Decision is upstream); now reads
+  `Evidence → Claim/Invariant → Design Decision → Requirement →
+  Implementation → Test` throughout.
 
 - **Phase 62 plan: adapter-interface consolidation** (planning only, no
   code, phase not started): closes `CG-008` (the graph's `symbols` table

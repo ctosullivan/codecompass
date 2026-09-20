@@ -501,6 +501,46 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Methodology amendment #3 — traceability-spine order fix, Phase 67
+FAIL-scope clarification, post-v1 freshness gate (2026-09-20, direct
+user instruction, no roadmap structure/scope change).** Planning-only,
+no `src/` change, no new ADR. Three targeted corrections/additions:
+
+1. **Traceability spine ordering corrected**: the diagram and table in
+   `development-methodology.md`'s own "Traceability spine" section had
+   listed Requirement before Design Decision — backwards relative to
+   Phase 54c's own actual citation direction (`REQ-...decision:` points
+   *at* the Decision that authorizes it, per Phase 54c §2.2, so Decision
+   is upstream). Corrected to
+   `Evidence → Claim/Invariant → Design Decision → Requirement →
+   Implementation → Test` throughout — the table row order, the
+   "Re-entry" section's own Domain-re-entry-propagation sentence
+   (previously said a Claim supersession puts Requirements "that cited
+   it" under review, which skipped the intermediate Decision hop; now
+   correctly says Decisions built on it, and Requirements citing those
+   Decisions, come under review), `CHANGELOG.md`'s and this section's
+   own prior restatement. The "why this is enough" walk-backward example
+   (`Test → Requirement → Decision → Claim → Evidence`) was already
+   correct and is unchanged — only the diagram/table/prose that
+   disagreed with it were fixed.
+2. **Phase 67 fresh-agent test — FAIL scope clarified**: "CodeCompass
+   v1" bundles two separate claims — (a) the software release itself
+   (gated by GATE DF/DD/G9, unaffected by this test) and (b) a
+   reference/model-project claim that the methodology is validated and
+   discoverable. A FAIL does not block (a) — the software may still
+   ship on its own merits — but does block (b): CodeCompass must not be
+   described as a validated reference/model project anywhere until the
+   specific discoverability failure is fixed and the test passes.
+3. **New post-v1 per-feature freshness gate**: Phase 65's own
+   reconciliation is one-time, milestone-scoped — it will not recur for
+   features built after v1 ships. Added to `development-methodology.md`'s
+   own freshness section: before a future feature's Design stage relies
+   on a domain concept with an outstanding staleness candidate, that
+   candidate must be resolved during the same feature's own Domain
+   stage first — no new machinery, just a rule about when Design may
+   proceed, checked by the same `context-researcher` investigation that
+   Domain stage already runs.
+
 **Methodology amendment #2 — re-entry rules, traceability spine,
 fresh-agent test, domain-freshness reconciliation (2026-09-20, direct
 user instruction, no new phases, no roadmap renumbering).**
@@ -523,8 +563,8 @@ and `planning/phase-63d-domain-reconstruction.md`:
    edit in place), while Scope/Plan re-entries may edit the plan file
    directly (git history is the provenance — a plan is disposable
    scaffolding, unlike a Claim or Decision).
-2. **Traceability spine**: Evidence → Claim/Invariant → Requirement →
-   Design Decision → Implementation → Test, reusing Phase 54c's own
+2. **Traceability spine**: Evidence → Claim/Invariant → Design Decision
+   → Requirement → Implementation → Test, reusing Phase 54c's own
    record ids unchanged, plus two new **optional** fields on the
    existing Requirement record (`implemented_at`, `test_ref`) — the only
    schema change, judged (matching Phase 62's own precedent for a
