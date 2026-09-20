@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Contributor License Agreement wording made explicit** (direct user
+  instruction; no new ADR — refines, does not revise, `decisions/0055`):
+  `CONTRIBUTING.md`'s existing contributor-grant paragraph (added by
+  `decisions/0055`/commit `65afede`, unaltered here — same verbatim
+  text) now sits under its own clearly-titled `### Contributor License
+  Agreement` heading within the `## License` section, rather than
+  running on directly from the surrounding prose. `README.md`'s
+  `## License` section note is rewritten to state all five points
+  explicitly rather than some implicitly: CodeCompass remains
+  GPL-3.0-or-later; contributors retain copyright in their own
+  contributions; contributions are subject to the CLA in
+  `CONTRIBUTING.md`; the CLA permits the project owner to relicense
+  contributed material under alternative or proprietary terms in
+  future; none of this removes or restricts anyone's rights to existing
+  GPL-licensed versions of CodeCompass. The README's own link now
+  points directly at the new `#contributor-license-agreement` anchor
+  rather than the parent `#license` section. Documentation-only; no
+  `src/`, licence, architecture, or other contributor-policy change.
+
 ### Added
 
 - **Phase 62** (adapter-interface consolidation, done): closes `CG-008` —

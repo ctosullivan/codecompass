@@ -501,6 +501,21 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Contributor License Agreement wording made explicit (2026-09-21,
+direct user instruction).** Documentation-only, no `src/`/licence/
+architecture change, no new ADR. The CLA's own substance was already
+correct and already present — `decisions/0055` (2026-09-15) added the
+exact verbatim grant paragraph to `CONTRIBUTING.md`'s `## License`
+section back in commit `65afede`; it had just never been placed under
+its own clearly-titled heading, and `README.md`'s own summary note
+covered the relicensing-permission and no-GPL-rights-affected points but
+not the "contributors retain copyright" one explicitly. Fixed both:
+`CONTRIBUTING.md` gains a `### Contributor License Agreement` heading
+directly above the unaltered verbatim paragraph; `README.md`'s note is
+rewritten to state all five required points explicitly and links
+directly to the new `#contributor-license-agreement` anchor rather than
+the parent `#license` section. `check_user_docs.py --strict` clean.
+
 **Methodology amendment #3 — traceability-spine order fix, Phase 67
 FAIL-scope clarification, post-v1 freshness gate (2026-09-20, direct
 user instruction, no roadmap structure/scope change).** Planning-only,

@@ -200,6 +200,8 @@ individually after the fact. This does not affect existing users' rights
 under the GPL — CodeCompass itself remains, and continues to be
 distributed as, GPL-3.0-or-later.
 
+### Contributor License Agreement
+
 By submitting a contribution to CodeCompass, you retain copyright in
 your contribution and grant the CodeCompass project owner an
 irrevocable, worldwide, royalty-free licence to use, reproduce, modify,
