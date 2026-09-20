@@ -459,6 +459,7 @@ blocks the *phase* that acts on it. Ordered by when they first bite.
 | **G11** | ✅ **DECIDED 2026-09-12** ("Proceed as recommended") — roadmap restructuring: Ledgerkit is Stage B, Technical Clipper is a new Stage F; phases 45–70 renumbered (none started); `decisions/0052` Accepted | Phase 44's retarget / any Phase 45+ work | done |
 | **G12** | ✅ **DECIDED 2026-09-12** ("Proceed as recommended") — GPL-3.0-or-later relicensing implemented: `LICENSE`, `pyproject.toml`, `README.md`, `CONTRIBUTING.md` updated; `decisions/0053` Accepted | Phase 43d's mechanical step | done |
 | **G13** | ✅ **DECIDED 2026-09-12** ("Proceed as recommended") — `adoption-blueprint.md` approved as the version handed to Ledgerkit | Phase 43e completion / before Ledgerkit applies it | done |
+| **G14** | ✅ **DECIDED 2026-09-20** (direct user instruction) — insert Phase 63D (Domain reconstruction) as a non-disruptive, letter-suffixed bridge phase immediately before Phase 64; formalize "Scope → Plan → Domain → Design → Implement" as CodeCompass's own intended v1 development methodology, built on Phase 54c's already-recommended-durable machinery; add an independent `domain-skeptic` review role; `docs/domain/` as the durable domain-corpus location, Markdown-primary — `decisions/0060` Accepted | Phase 63D's own start | done |
 
 ### Success criteria for *this planning session* (all met)
 

@@ -221,6 +221,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
+- **Phase 63D plan: Domain reconstruction** (planning only, no code,
+  phase not started; roadmap/methodology restructuring only —
+  `decisions/0060`): inserts a new bridge phase, non-disruptively
+  numbered (matching 43b-e/55b precedent), immediately before Phase 64
+  (blank-slate documentation reconstruction). Dogfoods CodeCompass
+  against its own repository to build an evidence-backed domain corpus
+  (`docs/domain/`) for core concepts (evidence, observation, claim,
+  derivation, provenance, relationship/edge, context, context packet,
+  adapter, connector, protocol, reference, decision, invariant, and
+  others found along the way), reusing Phase 54c's own
+  Observation/Evidence/Claim/Derivation/Decision record model
+  project-wide rather than per-feature. Adds one genuinely new
+  mechanism Phase 54c's own model didn't have: an independent
+  adversarial reviewer (`domain-skeptic`, planned, not yet created)
+  that challenges unsupported claims, hunts for contradictions and
+  missing edge cases, resolves what it can through further evidence,
+  and escalates only genuine domain/product ambiguities to the user.
+  Formalizes **Scope → Plan → Domain → Design → Implement** as
+  CodeCompass's own named v1 development methodology
+  (`planning/v1-redefinition/development-methodology.md`) — naming and
+  organizing Phase 54c's already-recommended-durable machinery, not
+  replacing it. Phase 64 is re-scoped to consume this phase's own
+  approved domain corpus rather than independently rediscovering
+  terminology, and to separate six documentation categories: domain,
+  architecture, user, developer, protocol/adapter, and
+  development-process. Two stale phase-number references, predating
+  the Stage F/G +4 renumbering (`decisions/0056`), corrected as
+  directly-adjacent bookkeeping: `.claude/agents/release-phase-auditor.md`
+  and `.claude/agents/docs-reconstructor.md`. See `decisions/0060`,
+  `planning/phase-63d-domain-reconstruction.md`.
+
 - **Phase 62 plan: adapter-interface consolidation** (planning only, no
   code, phase not started): closes `CG-008` (the graph's `symbols` table
   stays empty for Haskell vendors) via a new, concrete (not abstract,

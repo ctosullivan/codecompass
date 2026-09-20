@@ -32,8 +32,10 @@ Implemented by Phase 40 (roster + workflow) and proven by Phase 43
 
 ## 2. The roster
 
-Nine agent definitions, but only 4–5 are active in a typical phase. All
-are `.claude/agents/<name>.md` with model/tools/isolation frontmatter.
+Eleven agent definitions exist; a twelfth (`domain-skeptic`, §2.13) is
+planned for Phase 63D and not yet created. Only 4–5 are active in a
+typical internal phase. All are `.claude/agents/<name>.md` with
+model/tools/isolation frontmatter.
 
 Started at seven, "prune at GATE DA". GATE DA (Phase 43) kept all seven
 with no pruning; Phase 43c added the eighth (`context-health-planner`)
@@ -43,7 +45,12 @@ reverse a fixed point, and GATE DA's "roster stays at 7" was about not
 (`context-enrichment-agent`), same rationale, cause named in
 `decisions/0054` — a narrow content-authoring role kept deliberately
 separate from `knowledge-curator`'s investigation-only remit, not an
-expansion of any existing agent's scope.
+expansion of any existing agent's scope. Phase 54c added a tenth and
+eleventh (`context-researcher`, `documentation-agent`, §2.11–2.12) —
+never previously catalogued in this document, a gap corrected here
+(`decisions/0060`), not a new addition at time of correction. Phase 63D
+plans a twelfth (`domain-skeptic`, §2.13), same "narrow role for a job
+no existing brief naturally covers" rationale as `decisions/0054`'s own.
 
 ### 2.1 Lead Claude session (not an agent file — the human-facing session)
 Responsible for: understanding the requested phase; coordinating and
@@ -141,7 +148,7 @@ docs and self-certifies them.
   / `DRIFT — n findings`; findings go back to `docs-maintainer`, then
   re-audit. Report at `planning/retros/_drift-audit-phase-NN.md`.
   `NO DRIFT` is fine and common for a `planning/`- / internal-only phase.
-- **Blank-slate reconstruction (milestones only — Phase 60).**
+- **Blank-slate reconstruction (milestones only — Phase 64).**
   Independently reconstruct the documentation that *ought* to exist, from
   authoritative project reality (source, tests, CLI `--help`,
   config/schema, generated outputs, ADRs, current planning state) —
@@ -153,7 +160,7 @@ docs and self-certifies them.
   `CLAUDE.md` / `decisions/*` / `src/`. Findings and proposals only.
 - **Tools:** read/search + Bash (read-only) + Write to its own report /
   `planning/v1-docs-reconstruction/`.
-- **Active in:** every phase (drift audit); Phase 60 + future milestones
+- **Active in:** every phase (drift audit); Phase 64 + future milestones
   (blank-slate).
 
 ### 2.8 `release-phase-auditor` — independent Definition-of-Done audit
@@ -231,7 +238,82 @@ docs and self-certifies them.
   `ANTHROPIC_API_KEY` is available or the automated path isn't desired
   (Phase 52 on).
 
-### 2.11 Roles deliberately NOT created
+### 2.11 `context-researcher` — behaviour-first primary research (added Phase 54c; catalogued here `decisions/0060`)
+- **Question:** for one named feature or behavioural question, what is
+  actually true — derived from evidence, not assumed from documentation?
+- **Method:** behaviour-first — when executable behaviour exists, runs
+  representative examples/edge cases itself before reading
+  documentation, then traces every real implementation path that could
+  explain what was observed, never stopping at the first plausible one.
+  Iterates (observe ↔ trace ↔ test ↔ refine) rather than running once.
+- **Writes** structured Observation/Evidence/Claim/Derivation records
+  under `planning/knowledge/<feature-slug>/` (Phase 54c's own six record
+  kinds, `phase-54c-evidence-knowledge-workflow.md` §2.2) — never a
+  graph fact, never a Decision (only the human/lead makes those).
+- **Two applications** (`development-methodology.md`): feature-scoped
+  (Phase 54c's original shape) and, from Phase 63D, project-scoped —
+  investigating CodeCompass's own domain concepts for `docs/domain/`.
+- **Tools:** Read, Grep, Glob, Bash, Write.
+- **Active in:** any phase running the Domain stage of
+  Scope→Plan→Domain→Design→Implement (Phase 60, 63D on).
+
+### 2.12 `documentation-agent` — pre-implementation design proposal (added Phase 54c; catalogued here `decisions/0060`)
+- **Question:** given an `APPROVED`-reachable knowledge base for one
+  feature, what design should a human review before any code is
+  written?
+- **Method:** projects `design.md` — a human-readable, ordinary-language
+  design document — from whatever `planning/knowledge/<feature-slug>/`
+  records already exist. Never invents content the knowledge base
+  doesn't already support; never softens an honest "we don't know" into
+  a confident-sounding guess.
+- **Distinct from `docs-maintainer`**: `docs-maintainer` reconciles
+  EXISTING current-truth docs against VERIFIED implementation, post-hoc;
+  this role authors a proposal FROM research, before implementation, at
+  a different point in the lifecycle. `design.md` is a projection of the
+  knowledge base, never an independent source of truth — it is
+  regenerated from the knowledge base as that base is corrected, never
+  hand-edited out of step with it (`phase-54c-evidence-knowledge-workflow.md` §5.2).
+- **Tools:** Read, Grep, Glob, Write.
+- **Active in:** the Design stage of Scope→Plan→Domain→Design→Implement,
+  for any feature with an `APPROVED`-reachable knowledge base.
+
+### 2.13 `domain-skeptic` — independent adversarial domain review (planned Phase 63D, `decisions/0060`)
+- **Question:** does a domain-corpus (or `design.md`) draft actually
+  hold up — every material claim evidenced, no internal contradiction,
+  no missing edge case — before it reaches the human?
+- **Method:** reads a draft with no obligation to agree with it;
+  challenges every claim lacking a citable Observation/Evidence record;
+  actively searches for contradictions between concepts and for missing
+  edge cases/counterexamples; attempts to resolve what it finds through
+  further evidence or a real behavioural experiment (pointing
+  `context-researcher` at a specific check, or running one itself)
+  before treating anything as escalation-worthy; escalates to the human
+  only genuine, unresolved domain/product ambiguities, each with the
+  evidence gathered, the real alternatives, and their consequences.
+- **Distinct from `context-evaluator`/`docs-reconstructor`/
+  `release-phase-auditor`**: those three independently verify,
+  respectively, task-context quality against a real target, documentation
+  drift against verified behaviour, and Definition-of-Done conditions —
+  none is scoped to "argue against a concept's own stated definition for
+  internal contradiction," the job this role exists for
+  (`decisions/0060`'s own "separation of concerns" reasoning, reapplied
+  from `decisions/0054`).
+- **Rule:** never repairs what it reviews — reports findings back,
+  matching every other independent-review role's own posture. When it
+  resolves a finding itself (a grep, a real command, a test), it writes
+  new Observation/Evidence records exactly like `context-researcher`
+  would — no separate record format for skeptic-run checks.
+- **Tools:** Read, Grep, Glob, Bash (read-only: `codecompass query`,
+  tests, greps — no `sync`/`--yes`, no `enrich apply`, no
+  `src/codecompass/` writes), Write (its own review report;
+  `planning/knowledge/**` records when resolving a finding itself).
+- **Not created by `decisions/0060` itself** — planned for Phase 63D's
+  own implementation, per that phase's own Files section, matching how
+  Phase 52 planned `context-enrichment-agent` before creating it.
+- **Active in:** the Domain stage of Scope→Plan→Domain→Design→Implement,
+  from Phase 63D on.
+
+### 2.14 Roles deliberately NOT created
 - No "implementer" agent — the lead implements or delegates ad hoc to a
   general-purpose subagent per the existing
   `v0.2-implementation-execution-plan.md` pattern; a standing role adds
@@ -255,6 +337,9 @@ docs and self-certifies them.
 | `release-phase-auditor` | everything | its audit report only | tests/lint, re-runs plan verification | **yes** — read-only, no repair |
 | `context-health-planner` | `context-graph.db`, `codecompass query` output, `ROADMAP.md` | `planning/context-health.md` only | read-only `codecompass query` (no `sync`/`--yes`) | partial — uses CodeCompass, writes one planning file |
 | `context-enrichment-agent` | source doc excerpts, `codecompass query relations` output | nothing directly — `context-graph.db` only via `codecompass enrich apply` | `codecompass query`, `codecompass enrich apply` | no — participant, but the CLI itself enforces its trust boundary mechanically |
+| `context-researcher` | everything (behaviour-first: runs real examples/commands before reading docs) | `planning/knowledge/<slug>/**` only | real examples/commands/tests as evidence | partial — independent investigation, but not adversarial toward its own findings |
+| `documentation-agent` | `planning/knowledge/<slug>/**` | `planning/knowledge/<slug>/design.md` only | — | no — participant, projects from the knowledge base only |
+| `domain-skeptic` (planned, Phase 63D) | everything (adversarial review of a domain-corpus/`design.md` draft) | its review report / `planning/knowledge/**` (only when resolving a finding itself) | read-only `codecompass query`, tests, greps | **yes** — independent of `context-researcher`/`documentation-agent`, never repairs what it reviews |
 
 **No agent** writes `CLAUDE.md`, `decisions/*` (except the lead via the
 ADR process), or `src/` (except the lead / ad-hoc implementer subagent).

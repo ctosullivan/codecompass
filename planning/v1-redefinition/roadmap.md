@@ -1046,6 +1046,31 @@ implemented the one item that didn't require resolving it first.
 Only the abstractions GATE DD names. `conditional-generalisation.md`
 carries candidate designs; none is committed here.
 
+**If funded, Stage E should explicitly exercise Scope → Plan → Domain →
+Design → Implement in full** (`decisions/0060`,
+`development-methodology.md`) — a design-bearing generalisation
+decision is exactly the shape of work this methodology targets, and
+running it for real before v1 is what turns "documented methodology"
+into "validated methodology," per that document's own "where this gets
+exercised before v1" section. Concretely: a `context-researcher`-led
+Domain stage before Phase 56's own ADR, and a `documentation-agent`
+`design.md` reviewed before implementation, not proceeding straight
+from `conditional-generalisation.md`'s candidate sketches to code.
+
+**A specific naming collision to resolve during that Domain stage, not
+before**: Phase 57's own candidate design already names `Evidence`/
+`Observation`/`Claim`/`Decision` as possible **graph-level**
+(`context-graph.db`) entity kinds for representing provenance about
+*other projects'* dependencies — the same names Phase 54c's file-based
+model (`planning/knowledge/`) already uses for CodeCompass's own
+development-process records, for an entirely different purpose. Phase
+63D's own domain corpus (`docs/domain/concepts/evidence.md` etc.)
+should document this collision explicitly rather than let it stay an
+implicit trap for whoever plans Phase 56/57 — if Stage E is funded, its
+own Domain stage should either pick genuinely distinct names for the
+graph-level concepts or explicitly justify sharing the terms with a
+stated disambiguation rule, not silently overload them.
+
 ### Phase 56 — Technical-dependency abstraction · CONDITIONAL
 - Introduce the minimal generalisation (e.g. a `technical_dependency`
   concept with a small closed `kind` set — `package` + whatever else
@@ -1501,6 +1526,57 @@ formally supports third-party/proprietary adapters. Retro:
 
 ---
 
+### Phase 63D — Domain reconstruction (new bridge phase, `decisions/0060`, 2026-09-20)
+
+**Non-disruptive, letter-suffixed numbering** (matching 43b/43c/43d/43e,
+55b precedent) — sits between Phase 63 (above) and Phase 64 (Stage G,
+below), without renumbering Stage G's own 64–70. Gated on Phase
+63/GATE DF completing (sequential, not parallel — "immediately before"
+Phase 64, literally); **not** gated on GATE DD, exactly like Phases
+60–63 before it.
+
+Full plan: `planning/phase-63d-domain-reconstruction.md`. Full
+methodology definition: `planning/v1-redefinition/development-methodology.md`.
+
+CodeCompass dogfoods itself: an evidence-backed domain corpus
+(`docs/domain/`) for core concepts — evidence, observation, claim,
+derivation, provenance, relationship/edge, context, context packet,
+adapter, connector, protocol, reference, decision, invariant, and
+others `context-researcher`'s own investigation surfaces (candidates
+already named in the plan's own §1: vendor vs. adapter vs. ecosystem;
+`context-gaps` vs. `context-observations` vs. `learnings`; digest vs.
+context packet; capability vs. feature; enrichment vs.
+observation/claim). Reuses Phase 54c's own Observation/Evidence/Claim/
+Derivation/Decision record model unchanged, generalized here from a
+single feature's own knowledge folder to a project-wide application,
+published as durable Markdown (glossary, per-concept docs, invariants,
+examples/counterexamples, references, open questions) — Markdown
+primary, the existing YAML record shapes secondary/machine-readable.
+
+**New mechanism, not present in Phase 54c's own model**: an
+independent adversarial reviewer, `domain-skeptic`
+(`agent-led-development.md` §2.13), challenges every claim lacking
+citable evidence, hunts for contradictions and missing edge cases,
+resolves what it can through further evidence or a behavioural
+experiment, and escalates only genuine, unresolved domain/product
+ambiguities to the user — each with the evidence gathered, the real
+alternatives, and their consequences.
+
+This is the first **project-scoped** application of the newly-named
+**Scope → Plan → Domain → Design → Implement** v1 development
+methodology (`decisions/0060`) — naming and organizing Phase 54c's
+already-recommended-durable machinery, not replacing it. Its own
+approved output is Phase 64's own required input (below), which no
+longer independently rediscovers CodeCompass's own domain terminology.
+
+**Exit:** the corpus is approved (`domain-skeptic` finds no unresolved
+contradiction it cannot either fix or correctly characterize as an
+open question; every escalation has a recorded human ruling); the
+standard DoD (drift audit, retro, learning triage, `release-phase-auditor`
+pass) all hold, per the plan's own Verification/Done-when sections.
+
+---
+
 ### Original Stage F content (preserved, superseded as this stage's target — `decisions/0056`)
 
 **New stage (2026-09-12 realignment).** Technical Clipper was the old
@@ -1540,14 +1616,16 @@ or later ecosystem-expansion work) — it is superseded as Stage F's
 
 ---
 
-## STAGE G — v1 consolidation  · COMMITTED once F completes
+## STAGE G — v1 consolidation  · COMMITTED once F and 63D complete
 
 **Renumbered from the old Stage F** (was Phases 60–67; now 64–70) to make
-room for the new Stage F above. Content unchanged except one addition
-(an explicit self-dogfood confirmation folded into Phase 67, not a
+room for the new Stage F above. Content unchanged except two additions:
+(1) an explicit self-dogfood confirmation folded into Phase 67, not a
 separate phase — Stages D and F already did the heavy Ledgerkit/Technical
 Clipper re-validation work, so this stage's version is a final
-confirmation, not a repeat). (If Stage D/E were skipped per GATE DD,
+confirmation, not a repeat; (2) Phase 63D (`decisions/0060`, 2026-09-20)
+now precedes Phase 64, supplying an approved domain corpus Phase 64
+consumes rather than rediscovers. (If Stage D/E were skipped per GATE DD,
 Stage G runs against the Stage C product instead — the checklist is
 identical.)
 
@@ -1556,6 +1634,22 @@ identical.)
   (`documentation-lifecycle.md` §"Blank-slate reconstruction"). Produces a
   **shadow doc proposal** under `planning/v1-docs-reconstruction/`, not an
   overwrite.
+- **Consumes Phase 63D's own approved `docs/domain/` corpus as an input**
+  (`decisions/0060`) — domain terminology (what CodeCompass's own
+  concepts mean) is not independently rediscovered here; this phase's
+  own reconstruction work builds on it. The shadow proposal separates
+  six documentation categories, not one undifferentiated set: **domain**
+  documentation (what concepts mean — sourced from `docs/domain/`
+  directly, reorganized for presentation if needed, not re-derived from
+  scratch), **architecture** documentation (how those concepts are
+  implemented), **user** documentation (how CodeCompass is used),
+  **developer** documentation (how it is extended), **protocol/adapter**
+  documentation (how external components integrate — `decisions/0057`-
+  `0059`, `docs/external-adapters.md`), and **development-process**
+  documentation (how Scope → Plan → Domain → Design → Implement itself
+  operates — `development-methodology.md`, made durable and
+  user-facing here rather than staying a `planning/v1-redefinition/`-scoped
+  internal doc).
 
 ### Phase 65 — Architecture + ADR reconciliation · COMMITTED
 - Reconcile `architecture/overview.md` against current reality; ADR
@@ -1588,6 +1682,14 @@ identical.)
   FAIL verdicts on either; advantage MODERATE+ on the majority of tasks
   across both, or an explicit written justification for shipping below
   that bar.
+- **Added (`decisions/0060`, 2026-09-20)**: state plainly, as part of
+  this phase's own report, how many real times
+  Scope → Plan → Domain → Design → Implement (`development-methodology.md`)
+  was exercised pre-v1 (Phase 60's record-model reuse; Phase 63D itself;
+  Stage E in full, if funded — see that stage's own note) and what was
+  found each time — not merely that the methodology is documented. If
+  it was exercised zero or only one real time by this point, that is
+  itself a finding to report honestly here, not a gap to paper over.
 
 ### Phase 68 — Independent release audit · COMMITTED (FAIL blocks)
 - `release-phase-auditor`, read-only, full Definition-of-Done audit

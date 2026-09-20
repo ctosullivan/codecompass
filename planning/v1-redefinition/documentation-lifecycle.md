@@ -4,9 +4,13 @@ Redefines documentation management as a **lifecycle** — incremental
 maintenance during development *plus* blank-slate renewal at milestones —
 rather than perpetual incremental patching that accretes caveats.
 
-Implemented by Phase 42 (incremental + closeout gate) and Phase 60–61
-(blank-slate reconstruction + reconciliation). Owned by `docs-maintainer`
-(incremental) and `docs-reconstructor` (blank-slate).
+Implemented by Phase 42 (incremental + closeout gate) and Phase 64–65
+(blank-slate reconstruction + reconciliation; corrected here from this
+document's own original "Phase 60–61" — those numbers predate the Stage
+F/G +4 renumbering `decisions/0056` performed). Preceded by Phase 63D
+(`decisions/0060`), which supplies the domain corpus §3 now consumes.
+Owned by `docs-maintainer` (incremental) and `docs-reconstructor`
+(blank-slate).
 
 ## 1. Three distinct documentation roles
 
@@ -37,6 +41,41 @@ documentation state. The active repo does **not** carry full duplicate
 documentation trees to preserve history. Where useful, a milestone may
 add a concise closeout artifact (see §5): a closeout report, an
 architecture summary, a release-doc bundle, a retired-concept note.
+
+### 1.4 Six documentation categories, by content type (added `decisions/0060`, 2026-09-20)
+
+Orthogonal to the freshness-based split above (§1.1–1.3), current-truth
+documentation itself separates into six categories by *what kind of
+content* it holds — a distinction Phase 64's own blank-slate
+reconstruction now makes explicit in its own output structure:
+
+1. **Domain** — what CodeCompass's own concepts mean (evidence,
+   observation, adapter, context packet, etc.). Lives at `docs/domain/`
+   (Phase 63D's own deliverable, `decisions/0060`). Answers "what is an
+   adapter," never "how is `NpmAdapter` implemented."
+2. **Architecture** — how those concepts are implemented. Lives at
+   `architecture/`. Answers "how does `sync.py` wire an adapter into the
+   graph," assuming the reader already knows what an adapter *is* (from
+   §1's own domain docs).
+3. **User** — how CodeCompass is used. Lives at `docs/` (CLI reference,
+   config schema, quickstart).
+4. **Developer** — how CodeCompass is extended (writing a new adapter,
+   the test/lint/release workflow). Lives at `CONTRIBUTING.md` and
+   developer-facing sections of `docs/`/`architecture/`.
+5. **Protocol/adapter** — how external components integrate
+   (`docs/external-adapters.md`, the external-process wire protocol,
+   `decisions/0057`-`0059`).
+6. **Development-process** — how Scope → Plan → Domain → Design →
+   Implement itself operates (`development-methodology.md`, made
+   durable and user-facing at Phase 64 rather than staying a
+   `planning/v1-redefinition/`-scoped internal doc).
+
+A single physical file may still serve more than one category
+economically (e.g. `architecture/overview.md` mixing architecture and
+some protocol/adapter content is fine) — the point of naming these six
+is to make sure Phase 64's own reconstruction *considers* each
+category deliberately, not that every category needs its own
+dedicated file from day one.
 
 ## 2. Incremental maintenance during development (the everyday half)
 
@@ -92,28 +131,42 @@ This is **not** the blank-slate reconstruction (§3) — it is scoped, per
 phase, and never proposes a rewrite. It is the everyday independent
 counterweight; §3 is the milestone renewal.
 
-## 3. Blank-slate reconstruction (the milestone half) — Phase 60
+## 3. Blank-slate reconstruction (the milestone half) — Phase 64
 
 At major milestones, `docs-reconstructor` approaches CodeCompass **as
-though the current narrative documentation did not exist**.
+though the current narrative documentation did not exist** — with one
+deliberate exception, added `decisions/0060` (2026-09-20): **domain
+terminology is not rederived from scratch here.** Phase 63D
+(`planning/phase-63d-domain-reconstruction.md`) already ran a dedicated,
+evidence-backed, adversarially-reviewed investigation of CodeCompass's
+own core concepts specifically, and its approved output is authoritative
+for what those concepts mean — this phase consumes it rather than
+guessing at terminology a prior, more careful pass already settled.
 
 - **Inputs (authoritative project reality only):** current `src/`;
   tests; CLI behaviour / `--help`; config / schema; generated outputs
   (a real `vendor/`, a real `context-graph.db`, generated Skills,
   `/discovery`); ADRs; current `architecture/` *(read for facts, not for
-  narrative structure)*; current planning/project state.
+  narrative structure)*; current planning/project state; **Phase 63D's
+  own approved `docs/domain/` corpus** (the one deliberate exception to
+  "ignore existing docs" — domain meaning, not documentation structure,
+  is out of scope for re-derivation here).
 - **It does not read `README.md` / `architecture/overview.md` as a
   starting structure** — the point is a fresh derivation of what a new
   user, contributor, maintainer, and AI coding agent each need, and how
   the current system should be explained from scratch.
 - **Output:** a temporary/shadow proposal under
-  `planning/v1-docs-reconstruction/` — proposed `README.md`, proposed
-  `docs/` set, proposed `architecture/` set, an explicit list of concepts
-  the current docs spend words on that the current *system* no longer
-  justifies.
+  `planning/v1-docs-reconstruction/`, organized by the six documentation
+  categories (§1.4): a domain section (built from `docs/domain/`,
+  reorganized for presentation if needed, not re-derived), proposed
+  `architecture/` set, proposed `docs/` set (user + developer content),
+  a protocol/adapter section, and a development-process section
+  (`development-methodology.md`, made durable/user-facing here) — plus
+  an explicit list of concepts the current docs spend words on that the
+  current *system* no longer justifies.
 - **It does not overwrite anything.**
 
-## 4. Reconciliation — Phase 61
+## 4. Reconciliation — Phase 65
 
 Compare, deliberately:
 
@@ -142,34 +195,35 @@ split into a lean current-state document + the historical/superseded
 narration moved out (to ADR addenda where it's rationale, or simply
 dropped where git history already covers it).
 
-## 5. Milestone documentation closeout gate — Phase 66
+## 5. Milestone documentation closeout gate — Phase 69
 
 The operational form is **`planning/milestone-closeout-checklist.md`**
 (created in Phase 42) — a per-step checklist with owners and "done"
-signals, executed at Phase 66. In outline:
+signals, executed at Phase 69. In outline:
 
 1. deterministic documentation checks pass;
-2. blank-slate reconstruction done (Phase 60);
-3. comparison / reconciliation done (Phase 61);
-4. obsolete current documentation deleted (not annotated);
-5. link / example / reference validation passes;
-6. architecture documentation review — current-state only, history
+2. domain reconstruction done (Phase 63D);
+3. blank-slate reconstruction done (Phase 64);
+4. comparison / reconciliation done (Phase 65);
+5. obsolete current documentation deleted (not annotated);
+6. link / example / reference validation passes;
+7. architecture documentation review — current-state only, history
    removed;
-7. ADR status review — superseded ADRs marked (not rewritten); any
+8. ADR status review — superseded ADRs marked (not rewritten); any
    decision made during the milestone that lacks an ADR gets one;
-8. final current-doc freeze for the milestone (no further current-doc
+9. final current-doc freeze for the milestone (no further current-doc
    edits until after the tag, except fixes to what the freeze itself
    surfaces);
-9. **phase retros for the milestone's phases reviewed in bulk** — the
-   `planning/retros/` entries since the last milestone are read for
-   recurring process feedback; anything actionable becomes a
-   `knowledge-curator` promotion (a workflow edit, a roster change, a
-   `CLAUDE.md` proposal) and is noted in the closeout artifact;
-10. milestone closeout artifact written where useful
+10. **phase retros for the milestone's phases reviewed in bulk** — the
+    `planning/retros/` entries since the last milestone are read for
+    recurring process feedback; anything actionable becomes a
+    `knowledge-curator` promotion (a workflow edit, a roster change, a
+    `CLAUDE.md` proposal) and is noted in the closeout artifact;
+11. milestone closeout artifact written where useful
     (`planning/v1-closeout.md`: architecture summary, what shipped, what
     deferred + revisit triggers, key ADRs, reference-project evaluation
     results, distilled process lessons from the retros);
-11. git tag / release preserving the complete historical state.
+12. git tag / release preserving the complete historical state.
 
 ## 6. ADR lifecycle (unchanged mechanism, explicit here)
 
@@ -178,7 +232,7 @@ signals, executed at Phase 66. In outline:
   only ones known up front.
 - Reversal → new numbered ADR + addendum on the old one. Never edit a
   past ADR's original content.
-- Phase 61 step 7 is a *review*, not a rewrite — it checks that every
+- Phase 65 step 7 is a *review*, not a rewrite — it checks that every
   superseded ADR carries its pointer and every milestone decision has a
   record.
 

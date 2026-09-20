@@ -1,25 +1,25 @@
-# `architecture/overview.md` split candidates — input for Phase 61
+# `architecture/overview.md` split candidates — input for Phase 65
 
-**Status: input for Phase 61 (the `architecture/overview.md`
+**Status: input for Phase 65 (the `architecture/overview.md`
 reconciliation / split), NOT a Phase 42 deliverable to action.**
 
 Phase 42 (documentation-lifecycle, Stage A) does not restructure
-`architecture/overview.md` — that is Phase 61's job. This note is the raw
+`architecture/overview.md` — that is Phase 65's job. This note is the raw
 material: a catalogue of passages in the current `architecture/overview.md`
 (~1,954 lines) that narrate *decision history* or *"how it got here"*
 rather than describe *current state*, produced by the `docs-maintainer`
 while reconciling the Phase 42 diff.
 
 Line numbers are as of commit `cd433f9` + the Phase 42 working tree and
-**will drift**; each item quotes an anchor phrase so Phase 61 can relocate
+**will drift**; each item quotes an anchor phrase so Phase 65 can relocate
 it. Nothing here has been edited.
 
 **Update (Phase 43b):** Section C's 4 now-self-contradictory items
 (33-36) were fixed directly — L-004's Phase-61 obligation for *those
 specific 4 items* is closed early; see §C below for the resolution. The
-broader §A/§B history-shaped trims remain Phase 61's job, unedited.
+broader §A/§B history-shaped trims remain Phase 65's job, unedited.
 
-## How Phase 61 should use this
+## How Phase 65 should use this
 
 Per `planning/v1-redefinition/documentation-lifecycle.md` §1.1
 (current-truth principle) and the `docs-maintainer` / `docs-reconstructor`
@@ -34,7 +34,7 @@ briefs:
   14", "not yet CLI-visible") should be deleted outright once the
   transition is complete.
 - A few passages are not merely historical but **now inconsistent with
-  the rest of the same file** (see section C) — Phase 61 should treat
+  the rest of the same file** (see section C) — Phase 65 should treat
   those as corrections, not just trimming.
 
 ## A. Section-level candidates (whole sections that are history-shaped)
@@ -69,7 +69,7 @@ briefs:
    (currently ~L657–710).** ~55 lines describing an explicitly
    *unimplemented* feature ("**not yet implemented (post-MVP Phase 20)**,
    renumbered from the original Phase 9 during this rework"). Future
-   design, not current architecture. Phase 61 should decide whether
+   design, not current architecture. Phase 65 should decide whether
    unbuilt design lives in `architecture/overview.md` at all or moves to
    the phase plan / a dedicated design doc.
 
@@ -334,7 +334,7 @@ item 35 had its `depth = full`/`FULL` qualifier removed (the underlying
 full-overwrite behaviour is unconditional, universal per Phase 13); item
 36 rewritten to match `enrichment.py`'s own already-correct docstring
 (`VendorConfig` no longer has a `depth` field at all). Kept below as the
-historical record of what was wrong and why — Phase 61 needs no further
+historical record of what was wrong and why — Phase 65 needs no further
 action on these 4.
 
 33. **Known footguns — "Grounded description is fully regenerated
@@ -360,10 +360,10 @@ action on these 4.
     value `skill.py` never actually reads" (currently ~L1157–1160).**
     References `VendorConfig.depth` / `Depth.FULL` as live code, while
     Core data model says the `depth` toggle "was removed in Phase 16".
-    Phase 61 should confirm against `src/` which is accurate and reconcile.
+    Phase 65 should confirm against `src/` which is accurate and reconcile.
 
 ## Count
 
 **36 candidate passages** (5 section-level, 27 passage-level trims, 4
 now-self-contradictory corrections — **the 4 corrections were resolved in
-Phase 43b**, leaving 32 still outstanding for Phase 61).
+Phase 43b**, leaving 32 still outstanding for Phase 65).

@@ -7,7 +7,7 @@ description: >-
   triaged. Verdict: PASS / PASS WITH NON-BLOCKING OBSERVATIONS / FAIL — a
   FAIL prevents completion. Never repairs what it audits. Use on any
   phase the lead wants independently checked, and mandatorily at Phase
-  65.
+  68.
 tools: Read, Grep, Glob, Bash, Write
 ---
 
@@ -20,9 +20,9 @@ without fixing anything — that a phase is actually done.
   files).
 - The phase's own `planning/phase-N-*.md` (its Verification section).
 - `planning/v1-redefinition/agent-led-development.md` §2.8 and §6.
-- At Phase 65 (the milestone release audit): confirm
+- At Phase 68 (the milestone release audit): confirm
   `planning/milestone-closeout-checklist.md` has been executed
-  (it runs at Phase 66) before Phase 66/67 proceed.
+  (it runs at Phase 69) before Phase 69/70 proceed.
 
 ## What to check
 

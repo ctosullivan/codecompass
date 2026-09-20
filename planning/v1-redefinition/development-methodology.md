@@ -1,0 +1,229 @@
+# Development methodology: Scope → Plan → Domain → Design → Implement
+
+`decisions/0060`. Names, organizes, and extends Phase 54c's own
+already-recommended-durable machinery
+(`planning/phase-54c-evidence-knowledge-workflow.md`,
+`planning/retros/phase-54c-evidence-knowledge-workflow.md`) into a single
+five-stage development methodology — the process CodeCompass intends to
+both **use** and **document itself using**, by v1.
+
+This document defines *what the stages are and what each one produces*.
+It does not restate Phase 54c's own detailed record shapes, agent
+briefs, or lifecycle mechanics — those stay defined once, in that plan
+and in `.claude/agents/*.md`, and are only pointed to here.
+
+## Why five stages, not the existing two
+
+`CLAUDE.md` §1 already requires two of these (Scope is implicit in a
+phase's own opening problem statement; Plan is the
+`planning/phase-N-*.md` file itself). What was missing, until Phase 54c
+built it experimentally, was an explicit place for **Domain**
+(reconstructing what is actually true about the relevant subject matter,
+with evidence) and **Design** (a reviewed proposal built on that domain
+knowledge, not on an implementer's own untested assumptions) between
+planning and coding. Phase 54c proved the mechanics work for a single
+feature; this document promotes the same shape to a named, general
+methodology and adds the one piece that was still missing — an
+independent, adversarial review step before anything reaches the human
+project owner.
+
+## The five stages
+
+### 1. Scope
+
+Establish the objective, boundaries, desired outcome, and acceptance
+criteria for a unit of work. Not a new artifact — this is what a phase's
+own opening paragraph, or a feature request's own first exchange,
+already does. **Output:** a stated goal and explicit non-goals, testable
+enough that "is this done" has an answer.
+
+### 2. Plan
+
+Determine the research and delivery approach: what evidence sources are
+relevant, what the real risks are, and how the work breaks down.
+**Output:** `planning/phase-N-<name>.md` (`CLAUDE.md` §1) — scope,
+what's explicitly deferred, files to be created/changed, and how the
+phase will be verified as done. Unchanged from existing practice.
+
+### 3. Domain
+
+Reconstruct the relevant domain knowledge before any design is
+attempted: terminology, concepts, rules, invariants, examples,
+counterexamples, edge cases, references, and current uncertainties —
+derived from evidence (source, tests, ADRs, plans, retros, and observed
+behaviour), never from existing documentation treated as authoritative
+by default.
+
+**Mechanism — reuses Phase 54c's own six record kinds unchanged**
+(Observation, Evidence, Claim, Derivation, Decision, Requirement;
+`phase-54c-evidence-knowledge-workflow.md` §2.2), produced by
+`context-researcher` (behaviour-first: runs real examples/experiments
+before reading documentation, traces every real implementation path,
+never stops at the first plausible one) under
+`planning/knowledge/<slug>/`. Two applications, not two mechanisms:
+
+- **Feature-scoped** (Phase 54c's original shape): one feature's own
+  `planning/knowledge/<feature-slug>/`, feeding that feature's own
+  Design stage. Unchanged.
+- **Project-scoped** (new, Phase 63D): CodeCompass's own core domain
+  concepts, evidence-backed the same way, but published as durable
+  Markdown under `docs/domain/` (glossary, per-concept docs, invariants,
+  examples/counterexamples, references, open questions) rather than
+  staying inside one feature's own knowledge folder — because the
+  concepts in scope (evidence, observation, claim, derivation,
+  provenance, relationship/edge, context, context packet, adapter,
+  connector, protocol, reference, decision, invariant, and others found
+  along the way) are used across many features, not one.
+
+**New: independent adversarial review**, before anything reaches the
+human. `domain-skeptic` (`agent-led-development.md` §2.13) reads a
+domain-corpus (or feature-knowledge) draft with no obligation to agree
+with it, and:
+
+- challenges every claim that lacks a citable Observation/Evidence
+  record;
+- searches for internal contradictions between concepts, and for edge
+  cases/counterexamples the draft doesn't address;
+- attempts to resolve what it finds through further evidence or a real
+  behavioural experiment (re-dispatching `context-researcher` or running
+  a check itself) rather than simply flagging and stopping;
+- escalates to the human **only** genuine, unresolved domain/product
+  ambiguities — each presented with the evidence gathered, the real
+  alternatives, and their consequences, concisely.
+
+This is the one genuinely new mechanism this document adds to Phase
+54c's own model — that model's own §5 "user review" step was filled by
+the lead standing in for the user during CodeCompass's own dogfooding
+(`phase-54c-evidence-knowledge-workflow.md` §5.1), never by an
+independent agent. `domain-skeptic` sits **before** that human/lead
+review step, not instead of it — it exists to make sure what reaches the
+human is already argued-over, not merely asserted.
+
+**Output:** an approved domain baseline — for a feature, the existing
+`APPROVED`-state knowledge folder; for the project as a whole, an
+approved `docs/domain/` corpus (Phase 63D's own deliverable). "Approved"
+means: `domain-skeptic` found no unresolved contradiction it could not
+either fix with evidence or correctly characterize as a genuine open
+question, and the human (or, during dogfooding, the lead standing in
+and saying so plainly) has signed off on whatever open questions remain.
+
+**Distinguishing what kind of claim something is** (Phase 54c's own
+§5.3, reused unchanged): documented intent (what a doc says should
+happen) ≠ implemented behaviour (what the code and tests actually do) ≠
+historical decision (an ADR's own record of what was chosen and why, at
+the time) ≠ current intended meaning (what the term means going
+forward, per this stage's own approved output) ≠ unresolved uncertainty
+(honestly left open, not guessed at). Each maps to a different evidence
+trail — a documentation citation, a source/test citation, an ADR
+citation, a Claim/Decision record, or an explicit open-questions entry
+— never collapsed into one undifferentiated "current understanding."
+
+### 4. Design
+
+Produce a reviewed design based explicitly on the approved domain
+knowledge and current-system evidence.
+
+**Mechanism — reuses Phase 54c's own `documentation-agent` → `design.md`
+→ review-gate lifecycle unchanged** (`DRAFT → RESEARCHED → USER REVIEW →
+APPROVED → IMPLEMENTING → VERIFIED`,
+`phase-54c-evidence-knowledge-workflow.md` §4, §5.1). A design
+document: summarizes the domain context relevant to the change
+(pointing at the approved Domain-stage output, not re-deriving it);
+identifies requirements and decisions (Requirement/Decision records);
+proposes tests; and preserves unresolved uncertainty explicitly rather
+than silently inventing an answer where the Domain stage left one open.
+
+**Output:** an `APPROVED` `design.md` plus its Requirement/Decision
+records.
+
+### 5. Implement
+
+Provide the coding agent with a curated context packet based on the
+approved Scope, Plan, Domain, and Design; implement and verify the
+change; then reconcile any new evidence back into the project's
+knowledge.
+
+**Mechanism — reuses Phase 54c's own `knowledge-curator` packet-assembly
+mode unchanged** (`phase-54c-evidence-knowledge-workflow.md` §6):
+`context-packet.md`, smaller than the full research trail, reachable
+only from `APPROVED` records. The coding agent (the lead, or a
+delegated implementer) implements against it, logs any real gap in
+`packet-sufficiency.md` (§6.1), and verifies per the plan's own
+Verification section. **Downstream workflow is unchanged and preserved
+in full**: the normal `CLAUDE.md` §5 Definition of Done (docs-drift
+audit, retro, learning triage, `release-phase-auditor` pass) still
+applies exactly as it does today — Scope→Plan→Domain→Design→Implement
+adds two upstream stages (Domain, Design) before coding starts; it does
+not replace or shorten anything downstream of "code implemented."
+
+## Stage → artifact map (summary)
+
+| Stage | Primary artifact | Owner/role |
+|---|---|---|
+| Scope | A phase's own stated goal + acceptance criteria | lead (or the requester) |
+| Plan | `planning/phase-N-*.md` | lead |
+| Domain | `planning/knowledge/<slug>/` records; `docs/domain/` for project-wide concepts | `context-researcher`, reviewed by `domain-skeptic` |
+| Design | `design.md` (+ Requirement/Decision records) | `documentation-agent`, reviewed by the human/lead |
+| Implement | `context-packet.md` → code + tests | `knowledge-curator` (packet), coding agent (lead/implementer) |
+| *(downstream, unchanged)* | drift audit, retro, learning triage, DoD audit | `docs-reconstructor`, lead, `knowledge-curator`, `release-phase-auditor` |
+
+## Portability — a hard property, not an aspiration
+
+Another project must be able to adopt this process without depending on
+any CodeCompass-specific domain concept (vendor, adapter, symbol, etc.)
+or on Claude Code's own Skill mechanism specifically. What travels:
+
+- The **five named stages** and what each one produces, as described
+  above — tool-agnostic by construction.
+- The **record shapes** (Observation/Evidence/Claim/Derivation/
+  Decision/Requirement) — plain, closed-field data, storable as YAML,
+  JSON, or any structured text; nothing about them names a CodeCompass
+  concept.
+- The **review posture** (an independent skeptic before the human;
+  preserve rather than silently resolve unresolved uncertainty;
+  distinguish documented intent from implemented behaviour from
+  historical decision from current meaning from open question) — a
+  general evidentiary discipline, not a CodeCompass-domain rule.
+
+What does **not** travel, and is not meant to: the specific agent
+*names* (`context-researcher`, `domain-skeptic`, etc.) are this
+project's own expression of the process using Claude Code's own
+subagent mechanism. A project without that tooling implements the same
+five stages with whatever review/delegation mechanism it has — a human
+reviewer standing in for `domain-skeptic`, a plain markdown file
+standing in for a YAML record, and so on. **Skills or agent instructions
+express *how* to perform the process with a given toolset; the durable
+project artifacts (plans, domain corpus, ADRs, designs, evidence
+records) remain the canonical source of domain knowledge, architecture,
+decisions, evidence, and design** — a project reading only those
+artifacts, with no access to this project's own `.claude/agents/`
+directory, can still reconstruct what was known, decided, and why.
+
+## Where this gets exercised before v1
+
+Named as evidence, not yet claimed as proven:
+
+- **Phase 60** already reused the underlying record model for real
+  (Haskell API-surface extraction), independently confirmed correct.
+- **Phase 63D** (this document's own trigger) is the first
+  **project-scoped** Domain-stage application, and the first real use
+  of `domain-skeptic`.
+- **Stage E (Phases 56–59)**, if GATE DD funds it, is recommended
+  (`planning/v1-redefinition/roadmap.md`'s own Stage E entry) to
+  explicitly run Scope→Plan→Domain→Design→Implement in full — a
+  design-bearing generalisation decision is exactly the shape of work
+  this methodology targets, and running it for real before v1 is what
+  turns "documented methodology" into "validated methodology."
+- **Phase 64** consumes Phase 63D's own domain corpus directly (see
+  `planning/v1-redefinition/roadmap.md`'s Phase 64 entry and
+  `documentation-lifecycle.md` §3) — the methodology's own first
+  downstream consumer.
+- **Phase 67** (final validation) is the place to state plainly, at
+  v1, how many real times this methodology was exercised pre-release
+  and what was found — not merely that it exists as a document.
+
+Whether this methodology **improves development quality** generally
+remains an open question, exactly as Phase 54c's own retro left it —
+this document formalizes the *shape* of the process CodeCompass intends
+to both use and demonstrate; it does not claim, in advance of further
+evidence, that the shape is proven optimal.

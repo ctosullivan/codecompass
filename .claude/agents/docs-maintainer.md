@@ -45,8 +45,8 @@ documentation accurate as the system changes.
 4. If `architecture/overview.md` (or any current-truth doc) is carrying
    history-narration inline — "Phase N added… later Phase M changed…",
    "superseded by", "historical note" — **flag the specific sections to
-   the lead** as candidates for the Phase 61 reconciliation. Do **not**
-   restructure `architecture/overview.md` yourself (that is Phase 61).
+   the lead** as candidates for the Phase 65 reconciliation. Do **not**
+   restructure `architecture/overview.md` yourself (that is Phase 65).
 
 ## Hard rules
 
@@ -67,7 +67,7 @@ documentation accurate as the system changes.
 - **Do not do blank-slate reconstruction** — that is the
   `docs-reconstructor`, milestones only.
 - **Do not restructure `architecture/overview.md`** — flag split
-  candidates, leave the surgery to Phase 61.
+  candidates, leave the surgery to Phase 65.
 - Preserve decision history where it belongs: rationale goes in an ADR
   (flag it to the lead), not narrated inline in a current-truth doc.
 - A phase that changed no observable product behaviour (only `planning/`,
@@ -78,5 +78,5 @@ documentation accurate as the system changes.
 
 Return to the lead: the list of files changed with a one-line reason
 each (or "no current-truth doc affected"), any
-`architecture/overview.md` split candidates for Phase 61, and
+`architecture/overview.md` split candidates for Phase 65, and
 confirmation the deterministic doc checks pass.

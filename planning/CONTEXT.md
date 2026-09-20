@@ -501,6 +501,87 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Roadmap/methodology restructuring — Phase 63D inserted, Scope → Plan
+→ Domain → Design → Implement formalized (2026-09-20, `decisions/0060`,
+direct user instruction).** Planning-only — no `src/` change. A new
+bridge phase, **Phase 63D — Domain reconstruction**, is inserted
+non-disruptively (letter-suffixed, matching 43b-e/55b precedent, Stage
+G's 64–70 undisturbed) immediately before Phase 64 (blank-slate
+documentation reconstruction). Full plan:
+`planning/phase-63d-domain-reconstruction.md`. It dogfoods CodeCompass
+against its own repository to build an evidence-backed domain corpus
+(`docs/domain/`) for core concepts (evidence, observation, claim,
+derivation, provenance, relationship/edge, context, context packet,
+adapter, connector, protocol, reference, decision, invariant, and
+others `context-researcher` is expected to surface — vendor vs. adapter
+vs. ecosystem; `context-gaps` vs. `context-observations` vs.
+`learnings`; digest vs. context packet; and a specific, already-found
+naming collision between Stage E's own candidate graph-level
+`Evidence`/`Observation`/`Claim`/`Decision` entity kinds and Phase
+54c's file-based records of the same names, for an entirely different
+purpose). Reuses Phase 54c's own Observation/Evidence/Claim/Derivation/
+Decision record model unchanged, generalized here from a single
+feature's own knowledge folder to a project-wide application. Adds one
+genuinely new mechanism: an independent adversarial reviewer,
+`domain-skeptic` (planned, not yet created — `agent-led-development.md`
+§2.13), which challenges unsupported claims, hunts for contradictions
+and missing edge cases, resolves what it can through further evidence
+or a behavioural experiment, and escalates only genuine, unresolved
+domain/product ambiguities to the user.
+
+This names and formalizes **Scope → Plan → Domain → Design →
+Implement** as CodeCompass's own intended v1 development methodology
+(`planning/v1-redefinition/development-methodology.md`) — not a new
+invention, but naming and organizing Phase 54c's already-recommended-
+durable machinery (its own retro recommended nearly all of it durable,
+though GATE DD/Stage E's own separate, unrelated question was never
+formally resolved either way) and extending it with the project-scoped
+Domain application and the `domain-skeptic` role. Phase 64 is re-scoped
+to consume Phase 63D's own approved corpus rather than independently
+rediscovering CodeCompass's own terminology, and to separate six
+documentation categories (domain/architecture/user/developer/
+protocol-adapter/development-process) in its own shadow-proposal
+output. Stage E (56–59, if GATE DD funds it) gained a note recommending
+it explicitly exercise the full methodology, and to resolve the
+Evidence/Observation/Claim/Decision naming collision found above rather
+than silently overloading those terms a second time. Phase 67's own
+final-validation section gained a requirement to state plainly how many
+real times the methodology was exercised pre-v1, not merely that it is
+documented.
+
+Also fixed as directly-adjacent bookkeeping (found while inserting the
+new phase, not the trigger for it): `documentation-lifecycle.md`'s own
+stale "Phase 60/61/66" references (predating the Stage F/G +4
+renumbering, `decisions/0056`) corrected to 64/65/69;
+`.claude/agents/release-phase-auditor.md`'s "mandatorily at Phase 65"
+corrected to Phase 68; `.claude/agents/docs-reconstructor.md`'s
+"MILESTONE (Phase 60 only)" corrected to Phase 64;
+`.claude/agents/docs-maintainer.md`'s four "Phase 61" reconciliation
+references corrected to Phase 65; `architecture-split-candidates.md`'s
+ten "Phase 61" references corrected to Phase 65 (one historical
+citation of `L-004`'s own original wording, "Phase-61 obligation," left
+untouched — it quotes a past record, not a forward pointer).
+`agent-led-development.md` also gained §2.11 `context-researcher` and
+§2.12 `documentation-agent` — both real, already-existing roles from
+Phase 54c that were never catalogued in this "full model" document
+until now, a gap `decisions/0060` closed while adding §2.13
+`domain-skeptic`; the roster count ("nine agent definitions") corrected
+to eleven-plus-a-planned-twelfth. `planning/v1-redefinition/README.md`
+gained gate **G14** recording this restructuring as decided.
+
+**Found but explicitly NOT fixed this session**: `CLAUDE.md` §6 and
+`CONTRIBUTING.md` both still say "Phase 67" for the redefined-v1
+milestone-completion/release phase — stale since the same 2026-09-17
+renumbering (the current number is Phase 70, per
+`planning/v1-redefinition/roadmap.md`). `CLAUDE.md` is protected
+(`CLAUDE.md` §0 — any change, however small, needs an explicit
+user-approved diff before it is written or committed), so this was
+deliberately left alone rather than fixed piecemeal in a way that would
+leave `CLAUDE.md` itself newly inconsistent with a corrected
+`CONTRIBUTING.md`. Flagged here for whenever the user wants to approve
+that specific, narrow `CLAUDE.md` diff — not blocking anything else in
+this restructuring.
+
 **Phase 62 — adapter-interface consolidation — done (2026-09-19).**
 Direct user request ("Plan phase 62", then, in the same session, "Amend
 the Phase 62 plan and then proceed with implementation"). Full plan:
@@ -1828,14 +1909,19 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 62 is done (2026-09-19)** — see "What was just completed" above
-for the full account (amendment, implementation, real live
-re-confirmation, `CG-008` closure). Phase 63 (Stage F, lightweight
-ordinary-project smoke test — `planning/ROADMAP.md` row 63,
-`planning/v1-redefinition/roadmap.md`) is next and depends on Phase 62's
-own output; it is **not yet planned**. GATE DD remains open and
-unaffected by Phase 62 (Stage F is a separate axis from Stage E, per
-`decisions/0056`) — no new work resolves or is forced by it here.
+**Phase 62 is done (2026-09-19)**; the roadmap/methodology
+restructuring above (Phase 63D inserted, `decisions/0060`) is also done
+as of 2026-09-20 — both planning-only, no `src/` change from the
+restructuring itself. Phase 63 (Stage F, lightweight ordinary-project
+smoke test — `planning/ROADMAP.md` row 63,
+`planning/v1-redefinition/roadmap.md`) is still next and still depends
+on Phase 62's own output; it is **not yet planned**. **Phase 63D
+(Domain reconstruction) follows Phase 63**, gated on Phase 63/GATE DF
+completing (sequential — "immediately before" Phase 64, literally), not
+on GATE DD. GATE DD remains open and unaffected by either Phase 62 or
+this restructuring (Stage F/the new bridge phase are a separate axis
+from Stage E, per `decisions/0056`/`decisions/0060`) — no new work
+resolves or is forced by it here.
 
 Phase 61 itself is fully done: a real, symmetric two-agent comparison
 found LOW/effectively-NULL context advantage (outcome shape (b)),

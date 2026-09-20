@@ -5,7 +5,7 @@ description: >-
   docs-drift audit — given the phase's diff, does any current-truth doc
   (README.md, docs/, architecture/, ai-docs/) now misdescribe the
   system? Scoped to what changed; verdict feeds the DoD gate. MILESTONE
-  (Phase 60 only): full blank-slate reconstruction of the docs that ought
+  (Phase 64 only): full blank-slate reconstruction of the docs that ought
   to exist, from authoritative project reality, as a shadow proposal.
   Never overwrites docs/. Never edits — findings go back to docs-maintainer.
 tools: Read, Grep, Glob, Bash, Write
@@ -67,7 +67,7 @@ lead gives) + its plan file.
 
 ---
 
-## MODE 2 — Blank-slate reconstruction (milestones only — Phase 60)
+## MODE 2 — Blank-slate reconstruction (milestones only — Phase 64)
 
 **Governing doc:** `planning/v1-redefinition/documentation-lifecycle.md`
 §3.
