@@ -358,6 +358,14 @@ no `enrich apply`, no `src/codecompass/` writes, no edits to
   `docs/domain/examples.md`, `docs/domain/open-questions.md`,
   `docs/domain/references.md` (new).
 - `.claude/agents/domain-skeptic.md` (new).
+- `.claude/agents/docs-reconstructor.md` (extended — its own per-phase
+  drift audit gains one additional check, flagging a **domain-claim
+  staleness candidate** when a phase's diff touches a file/symbol/
+  behaviour a `docs/domain/concepts/*.md` page's own references block
+  cites; full mechanism: `development-methodology.md`'s own
+  "Domain-corpus freshness and reconciliation" section, added
+  2026-09-20). Not active until `docs/domain/` exists — this phase is
+  where both land together.
 - `planning/retros/_domain-skeptic-review-phase-63d.md` (new).
 - `planning/retros/phase-63d-domain-reconstruction.md` (new, the phase
   retro).

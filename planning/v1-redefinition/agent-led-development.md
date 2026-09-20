@@ -328,7 +328,10 @@ docs and self-certifies them.
   own implementation, per that phase's own Files section, matching how
   Phase 52 planned `context-enrichment-agent` before creating it.
 - **Active in:** the Domain stage of Scope→Plan→Domain→Design→Implement,
-  from Phase 63D on.
+  from Phase 63D on; re-invoked at **Phase 65** against any domain-claim
+  staleness candidate accumulated since (`documentation-lifecycle.md`
+  §4.1, added 2026-09-20) — the same role and write boundary, not a
+  second one.
 
 ### 2.14 Roles deliberately NOT created
 - No "implementer" agent — the lead implements or delegates ad hoc to a

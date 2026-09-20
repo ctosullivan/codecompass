@@ -174,6 +174,106 @@ applies exactly as it does today — Scope→Plan→Domain→Design→Implement
 adds two upstream stages (Domain, Design) before coding starts; it does
 not replace or shorten anything downstream of "code implemented."
 
+## Re-entry and replanning
+
+Scope→Plan→Domain→Design→Implement is not strictly linear. Real work
+surfaces new evidence, contradicted assumptions, infeasible designs, and
+implementation findings after an earlier stage's own output was already
+approved. This section defines when to go back, to which stage, and how
+the superseded material stays traceable rather than silently rewritten
+— added because the first three real uses of this methodology (Phase
+54c, Phase 60, and this document's own three same-week amendments) all
+needed exactly this and were handled ad hoc each time, without a stated
+rule.
+
+### When to re-enter, and where
+
+Go back to the **earliest stage whose own output is now known to be
+wrong** — no further than that, and once there, come back down through
+the later stages again rather than resuming them unchanged around the
+fix.
+
+| Trigger | Re-enter | Why |
+|---|---|---|
+| New Observation/Evidence contradicts a Claim or invariant the current work relies on | **Domain** | The underlying understanding is now suspect, not just what was built on it — Phase 54c's own §5.2 "tests an example, finds it factually wrong" row, reused unchanged |
+| An approved Design's own requirement turns out infeasible, or implementation reveals the design solved the wrong problem, while the domain understanding it was built on still holds | **Design** | Phase 54c's own `IMPLEMENTING → RESEARCHED` backward transition (§5.1), generalized: re-enter Design specifically (not Domain) when the domain understanding itself isn't in question |
+| The chosen approach or work breakdown turns out wrong (a migration strategy, a file layout, a tooling assumption) but the objective and domain understanding still hold | **Plan** | This project's own repeatedly-exercised practice, formalized here — Phase 61 amended its plan twice, Phase 62 once, Phase 63D twice, all before implementation completed, each replacing a plan section known to be wrong rather than proceeding on it |
+| The objective or boundary itself was mistaken — what looked like the right thing to build turns out not to be | **Scope** | Rare. Matches this project's own "retargets this slot" precedent (Phases 53/54) and its GATE-style re-decisions — pause, restate Scope, get it re-approved, don't force a wrong objective through |
+
+A Domain re-entry that supersedes a Claim also puts every Requirement
+that cited it back under review — the traceability spine below (via
+each record's own citation fields) is what makes "what else does this
+affect" answerable without re-reading everything.
+
+### Traceability without silent rewriting
+
+- **Domain and Design artifacts are never edited in place once
+  approved.** A superseded Claim, Derivation, Decision, or Requirement
+  gets a **new** record whose own `supersedes` field names the old one
+  (Phase 54c §2.2/§2.4/§5.2, reused unchanged, not a new rule) — the old
+  record stays on disk, `status: superseded`, permanently citable. This
+  section names Phase 54c's existing mechanism as *the* answer to "how
+  do I re-enter Domain/Design without losing the trail," rather than
+  inventing a second one.
+- **Scope and Plan re-entry may edit the plan file directly** — the
+  pattern this project already uses (Phase 61/62/63D's own plan
+  amendments). Git history, not an in-document `supersedes` chain, is
+  the provenance for a pre-implementation plan: a plan file is
+  disposable scaffolding once its phase ships, not a long-lived citable
+  evidence record the way a Claim or Decision is. A genuine re-scope
+  still gets a stated amendment note at the point of change (matching
+  every amendment made under this methodology so far), so a reader
+  mid-document sees that something changed and why — the mechanism is
+  prose-plus-git-blame, deliberately not a new record kind.
+
+## Traceability spine
+
+For any behaviour that matters enough to argue about, six things should
+be answerable, each mapping onto an existing record or artifact — no new
+core schema:
+
+```
+Evidence → Claim/Invariant → Requirement → Design Decision → Implementation → Test
+```
+
+| Link | Where it lives | Mechanism |
+|---|---|---|
+| Evidence | `EV-<slug>-NNN` (Phase 54c §2.2) | unchanged |
+| Claim / Invariant | `CL-<slug>-NNN`; or a `docs/domain/invariants.md` entry citing the Claim it was pulled from | unchanged — "Invariant" is not a separate record kind, it is a Claim (or a cross-cutting rule drawn from several Claims) that domain documentation surfaces prominently, per Phase 63D's own `docs/domain/` layout |
+| Requirement | `REQ-<slug>-NNN`, `decision:` field pointing at the Design Decision (Phase 54c §2.2) | unchanged |
+| Design Decision | `DEC-<slug>-NNN` (Phase 54c §2.2) | unchanged |
+| Implementation | the Requirement's own `implemented_at` field | **new, optional field** on the existing Requirement record — a file:line or commit reference |
+| Test | the Requirement's own `test_ref` field | **new, optional field** on the existing Requirement record — a test id/path |
+
+**The two new optional Requirement fields are the only schema change
+this section makes**, and both default to unset until the Implement
+stage actually reaches them — populate `implemented_at` when a
+Requirement's own `status` moves to `implemented`, `test_ref` when it
+moves to `verified` (Phase 54c's own existing `proposed | approved |
+implemented | verified` progression, unchanged). This is additive
+widening of one already-existing record kind, the same shape of change
+this project already makes routinely elsewhere (e.g. `Symbol`/
+`SymbolRow` gaining `export_kind`/`note`, Phase 62) — not a new schema,
+and, matching that same phase's own precedent, not judged to need a
+dedicated ADR: it fits `decisions/0060`'s own already-stated "reuse
+Phase 54c's record shapes unchanged" design decision closely enough
+that no new non-obvious tradeoff is introduced.
+
+Populating the two fields is the Implement stage's own existing
+"reconcile new evidence back into the project's knowledge" step (this
+document's own Implement-stage section, above) — not a new activity,
+just two fields recording where that reconciliation already lands.
+
+**Why this is enough, and why it isn't more**: the spine answers "why
+does this code exist" (walk backward: Test → Requirement → Decision →
+Claim → Evidence) and "what does this evidence justify" (walk forward)
+using only identifiers this project already produces. It does not
+require a graph, a database, or a new query surface — `grep` for an id
+across `planning/knowledge/<slug>/` and `docs/domain/` is sufficient at
+this project's current scale. If that stops being true, a future phase
+can propose an indexed version with real evidence for why `grep` no
+longer suffices — not before.
+
 ## Stage → artifact map (summary)
 
 | Stage | Primary artifact | Owner/role |
@@ -250,6 +350,50 @@ distinguish "I read this in the docs" from "I tested this myself" from
 "we decided to do X anyway" — that distinction, not the tooling around
 it, is what the methodology actually protects.
 
+## Domain-corpus freshness and reconciliation
+
+`docs/domain/`'s own approved content (Phase 63D) is a point-in-time
+conclusion, not a fact that stays true forever. This section defines
+when it should be reconsidered — reusing existing checkpoints, not
+adding a new standing process.
+
+**A material change triggers consideration, not automatic
+invalidation.** A change to implementation, tests, an ADR, a reference
+the corpus cites, or newly observed behaviour does not itself make a
+domain claim wrong — it makes it worth asking whether it might have.
+Three checkpoints already in this project's workflow are where that
+question gets asked; no fourth, standing "domain watcher" process is
+added:
+
+1. **Per-phase verification** (`CLAUDE.md` §5's own DoD, unchanged
+   mechanism): `docs-reconstructor`'s existing per-phase drift audit
+   gains one more check, at the same cost its existing checks already
+   run at — if a phase's diff touches a file, symbol, or behaviour a
+   `docs/domain/concepts/*.md` page's own references block cites, the
+   audit report names it as a **domain-claim staleness candidate**,
+   alongside its existing `NO DRIFT` / `DRIFT — n findings` verdict. A
+   candidate is not a finding that something is wrong — only that it is
+   now worth `domain-skeptic` looking again (below).
+2. **Retro** (unchanged mechanism): a phase's own retro already reports
+   what was found; a real staleness candidate from (1) gets named there
+   exactly like any other honestly-disclosed finding, not silently
+   dropped.
+3. **Knowledge reconciliation — Phase 65** (`documentation-lifecycle.md`
+   §4, amended): alongside comparing the blank-slate reconstruction
+   against existing docs, Phase 65 re-invokes `domain-skeptic` — the
+   same role Phase 63D introduces, not a new one — against every
+   staleness candidate accumulated since the corpus was last approved.
+   It resolves what it can with fresh evidence (a new Claim that
+   `supersedes` the stale one, per the traceability spine above) and
+   escalates only what remains a genuine ambiguity to the actual
+   user/domain owner — the same no-stand-in rule Phase 63D itself
+   established, unchanged here.
+
+**What does not change**: `docs/domain/` is not re-derived from scratch
+at every phase — that would defeat the point of having done Phase 63D
+at all. Only the specific concepts a real, flagged change touches are
+ever reconsidered, and only at the three checkpoints above.
+
 ## Where this gets exercised before v1
 
 Named as evidence, not yet claimed as proven:
@@ -271,7 +415,17 @@ Named as evidence, not yet claimed as proven:
   downstream consumer.
 - **Phase 67** (final validation) is the place to state plainly, at
   v1, how many real times this methodology was exercised pre-release
-  and what was found — not merely that it exists as a document.
+  and what was found — not merely that it exists as a document. Phase
+  67 also gains a **fresh-agent acceptance test**
+  (`planning/v1-redefinition/roadmap.md`'s own Phase 67 entry): a
+  genuinely fresh agent, given repository access and no prior
+  conversational context, must be able to discover this development
+  process, locate the relevant domain and evidence material, recognise
+  genuinely unresolved uncertainty as such (not guess past it), and
+  produce a sensible design for one small, realistic change. This is
+  the closest thing to an outside-observer test the methodology gets
+  before v1 — everyone else exercising it up to that point is someone
+  who already knows it exists.
 
 Whether this methodology **improves development quality** generally
 remains an open question, exactly as Phase 54c's own retro left it —

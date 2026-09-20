@@ -1586,6 +1586,18 @@ ruling or an honest, still-open entry in `docs/domain/open-questions.md`
 DoD (drift audit, retro, learning triage, `release-phase-auditor` pass)
 all hold, per the plan's own Verification/Done-when sections.
 
+**Added (2026-09-20, direct user instruction)**: this phase's own
+`docs/domain/invariants.md` and per-concept references blocks are the
+first real population of `development-methodology.md`'s own
+traceability spine (Evidence → Claim/Invariant → Requirement → Design
+Decision → Implementation → Test) at project scope, not just per-
+feature. It is also the first phase already known to need this same
+document's own "Re-entry and replanning" rules — its own plan has
+already been amended twice (this session, before implementation) via
+that section's own Plan-re-entry mechanism (a direct plan-file edit,
+provenance in git history), named retroactively rather than invented
+for this phase specifically.
+
 ---
 
 ### Original Stage F content (preserved, superseded as this stage's target — `decisions/0056`)
@@ -1671,6 +1683,15 @@ identical.)
   (the `docs-maintainer`'s Phase 42 catalogue). **§C's 4
   self-contradictory items were already fixed at Phase 43b** — only
   §A/§B's 32 remaining history-shaped passages are this phase's job.
+- **Added (2026-09-20, direct user instruction)**: domain-corpus
+  freshness reconciliation (`development-methodology.md`'s own
+  "Domain-corpus freshness and reconciliation" section) — `domain-skeptic`
+  re-checks every staleness candidate `docs-reconstructor`'s per-phase
+  drift audits accumulated since Phase 63D's corpus was approved,
+  resolving what it can with fresh evidence and escalating only genuine
+  remaining ambiguities to the actual user/domain owner. Not a repeat of
+  Phase 63D's own full investigation — scoped to what real, flagged
+  changes since then actually touched.
 
 ### Phase 66 — Roadmap + context reconciliation · COMMITTED
 - `roadmap-context-curator`: `ROADMAP.md` + `CONTEXT.md` reflect the
@@ -1701,6 +1722,37 @@ identical.)
   found each time — not merely that the methodology is documented. If
   it was exercised zero or only one real time by this point, that is
   itself a finding to report honestly here, not a gap to paper over.
+- **Added (2026-09-20, direct user instruction)**: a **fresh-agent
+  acceptance test**, run once, late in this phase (after Phase 65's own
+  reconciliation, so the docs it reads are the reconciled ones, not a
+  pre-reconciliation snapshot). A genuinely fresh agent — new
+  conversation, no prior context, repository access only, not told what
+  this task is testing — is given one small, realistic change request
+  (not invented for the test; a real, small, currently-undone item from
+  `planning/ROADMAP.md`/`planning/context-gaps/inbox.md` is preferred)
+  and, unassisted, must:
+  1. discover that this project has a development process at all, and
+     find where it's described (`development-methodology.md` or
+     wherever Phase 64 relocated it);
+  2. locate the domain/evidence material relevant to the change
+     (`docs/domain/`, `planning/knowledge/`) without being pointed at
+     it;
+  3. correctly recognise at least one genuinely unresolved uncertainty
+     if the chosen task has one, rather than guessing past it or
+     inventing false confidence;
+  4. produce a sensible, evidence-grounded design for the change (not
+     necessarily a perfect one — "sensible" means: grounded in what it
+     found, not contradicted by it, and honest about what it didn't
+     resolve).
+  **Verdict is PASS/FAIL per criterion**, reported plainly in this
+  phase's own report — a partial pass (e.g. found the process, missed
+  the domain material) is a real finding about the reconstructed docs'
+  own discoverability, not a reason to soften the criteria retroactively.
+  A FAIL on any criterion does not block v1 by itself (this is an
+  acceptance *signal* for the methodology's own documentation, not a
+  release gate the way GATE DF/DD are) but must be reported honestly,
+  matching this phase's own existing "no FAIL verdicts... or an explicit
+  written justification for shipping below that bar" posture above.
 
 ### Phase 68 — Independent release audit · COMMITTED (FAIL blocks)
 - `release-phase-auditor`, read-only, full Definition-of-Done audit

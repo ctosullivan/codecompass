@@ -271,6 +271,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sentences, plus `CLAUDE.md` §6/`CONTRIBUTING.md` (protected file,
   fixed via an explicit user-approved diff per `CLAUDE.md` §0).
 
+  **Amended again 2026-09-20**, before implementation, four further
+  pre-v1 additions to `development-methodology.md` (roadmap structure
+  and phase numbering unchanged; no new ADR — none of this reverses
+  `decisions/0060`'s own Decision section):
+  - **Re-entry and replanning rules**: which stage to return to when new
+    evidence, a contradicted Claim, an infeasible design, or a wrong
+    approach surfaces after an earlier stage's output was approved —
+    Domain/Design re-entries use Phase 54c's own existing
+    `supersedes`/`status: superseded` mechanism (never edited in place);
+    Scope/Plan re-entries may edit the plan file directly, provenance in
+    git history, matching this project's own already-exercised practice
+    (Phase 61/62/63D's own plan amendments).
+  - **A traceability spine**, Evidence → Claim/Invariant → Requirement →
+    Design Decision → Implementation → Test, reusing Phase 54c's own
+    record ids unchanged except two new optional fields on the existing
+    Requirement record (`implemented_at`, `test_ref`) — additive
+    widening of one record kind, not a new schema.
+  - **A fresh-agent acceptance test added to Phase 67**: a genuinely
+    fresh agent, given repo access and no prior context, must discover
+    the development process, locate domain/evidence material, recognise
+    genuinely unresolved uncertainty, and produce a sensible design for
+    one small realistic change — PASS/FAIL per criterion, reported
+    honestly, not a release-blocking gate by itself.
+  - **Domain-corpus freshness and reconciliation semantics**: a material
+    change to implementation/tests/ADRs/references/observed behaviour
+    triggers *consideration*, not automatic invalidation, at three
+    existing checkpoints (per-phase verification via one new
+    `docs-reconstructor` check, retro, and Phase 65's own reconciliation,
+    which re-invokes `domain-skeptic` — the same role, not a new one).
+  See `planning/v1-redefinition/development-methodology.md`,
+  `planning/v1-redefinition/roadmap.md`'s Phase 63D/65/67 entries, and
+  `planning/phase-63d-domain-reconstruction.md`.
+
 - **Phase 62 plan: adapter-interface consolidation** (planning only, no
   code, phase not started): closes `CG-008` (the graph's `symbols` table
   stays empty for Haskell vendors) via a new, concrete (not abstract,

@@ -501,6 +501,60 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Methodology amendment #2 — re-entry rules, traceability spine,
+fresh-agent test, domain-freshness reconciliation (2026-09-20, direct
+user instruction, no new phases, no roadmap renumbering).**
+Planning-only, no `src/` change, no new ADR (nothing here reverses
+`decisions/0060`'s own Decision section). Four additions to
+`planning/v1-redefinition/development-methodology.md`, cross-referenced
+from `planning/v1-redefinition/roadmap.md`'s Phase 63D/65/67 entries,
+`documentation-lifecycle.md` §4.1, `agent-led-development.md` §2.13,
+and `planning/phase-63d-domain-reconstruction.md`:
+
+1. **Re-entry and replanning**: a table mapping four trigger kinds (new
+   evidence contradicting a Claim; an infeasible Design; a wrong
+   approach; a wrong objective) to which stage to re-enter (Domain,
+   Design, Plan, Scope respectively) and why, derived from this
+   project's own real history (Phase 54c's `IMPLEMENTING → RESEARCHED`
+   backward transition; Phase 61/62/63D's own repeated plan amendments;
+   Phases 53/54's "retargets this slot" precedent) rather than invented
+   fresh. States plainly that Domain/Design re-entries must use Phase
+   54c's existing `supersedes`/`status: superseded` mechanism (never
+   edit in place), while Scope/Plan re-entries may edit the plan file
+   directly (git history is the provenance — a plan is disposable
+   scaffolding, unlike a Claim or Decision).
+2. **Traceability spine**: Evidence → Claim/Invariant → Requirement →
+   Design Decision → Implementation → Test, reusing Phase 54c's own
+   record ids unchanged, plus two new **optional** fields on the
+   existing Requirement record (`implemented_at`, `test_ref`) — the only
+   schema change, judged (matching Phase 62's own precedent for a
+   similar-shape decision) not to need a new ADR since it fits
+   `decisions/0060`'s own "reuse Phase 54c's shapes unchanged" design
+   decision closely enough.
+3. **Fresh-agent acceptance test added to Phase 67**: a genuinely fresh
+   agent, repo access only, no prior context, must discover the dev
+   process, locate domain/evidence material, recognise genuinely
+   unresolved uncertainty, and produce a sensible design for one small
+   realistic change (preferably a real item off `planning/ROADMAP.md`/
+   `context-gaps/inbox.md`, not an invented test case) — PASS/FAIL per
+   criterion, reported honestly; not a release-blocking gate by itself,
+   run late in Phase 67 after Phase 65's own reconciliation so it reads
+   the reconciled docs.
+4. **Domain-corpus freshness and reconciliation**: a material change to
+   implementation/tests/ADRs/references/observed behaviour triggers
+   *consideration*, not automatic invalidation, at three existing
+   checkpoints — one new `docs-reconstructor` per-phase-drift-audit
+   check (flagging a "domain-claim staleness candidate," not itself a
+   finding), the phase's own retro, and Phase 65's own reconciliation
+   (which re-invokes `domain-skeptic` — the same role Phase 63D
+   introduces, not a second one — against accumulated candidates,
+   subject to the same no-stand-in escalation rule). `docs/domain/` is
+   never re-derived from scratch outside Phase 63D itself.
+
+All four attach to existing, not-yet-started phases (63D, 65, 67) —
+no new phase created, no roadmap renumbering, matching the user's own
+explicit instruction not to expand scope unnecessarily.
+
 **Phase 63D plan amendment — tightened execution semantics
 (2026-09-20, direct user instruction, no structural change).**
 Planning-only, no `src/` change. Four targeted clarifications applied

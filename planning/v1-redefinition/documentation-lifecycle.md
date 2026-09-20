@@ -195,6 +195,20 @@ split into a lean current-state document + the historical/superseded
 narration moved out (to ADR addenda where it's rationale, or simply
 dropped where git history already covers it).
 
+### 4.1 Domain-corpus freshness reconciliation (added `decisions/0060`'s
+own methodology, 2026-09-20)
+
+A fourth reconciliation, alongside the doc-by-doc table above:
+`domain-skeptic` (Phase 63D) re-checks every **domain-claim staleness
+candidate** `docs-reconstructor`'s own per-phase drift audits flagged
+since Phase 63D's corpus was last approved (full mechanism:
+`development-methodology.md` §"Domain-corpus freshness and
+reconciliation"). This is not a repeat of Phase 63D's own investigation
+— only concepts a real, flagged change actually touched are
+reconsidered. Resolved candidates produce a new Claim (`supersedes` the
+stale one); unresolved genuine ambiguities go to the actual user/domain
+owner, never to the lead standing in.
+
 ## 5. Milestone documentation closeout gate — Phase 69
 
 The operational form is **`planning/milestone-closeout-checklist.md`**
