@@ -501,6 +501,56 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 63D plan amendment — tightened execution semantics
+(2026-09-20, direct user instruction, no structural change).**
+Planning-only, no `src/` change. Four targeted clarifications applied
+to `planning/phase-63d-domain-reconstruction.md`,
+`planning/v1-redefinition/development-methodology.md`,
+`planning/v1-redefinition/agent-led-development.md` §2.13, and
+`planning/v1-redefinition/roadmap.md`'s/`planning/ROADMAP.md`'s own
+Phase 63D entries:
+
+1. **No lead/agent stand-in on genuine escalations** — narrows Phase
+   54c's own §5.1 precedent (which allowed the lead to stand in for the
+   user during CodeCompass's own dogfooding). From this amendment on, a
+   genuine unresolved domain/product ambiguity must go to the actual
+   user/domain owner; an agent (lead included) may only fully resolve an
+   item with evidence or leave it explicitly open in
+   `docs/domain/open-questions.md` — never rule on it itself.
+2. **`domain-skeptic`'s write boundary stated precisely**: read-only
+   toward source, implementation, design, and the approved domain
+   corpus (`docs/domain/`) — never edits any of them. May only append
+   new Observation/Evidence records for checks it resolves itself
+   (never a Claim/Derivation/Decision) and write its own review report.
+3. **Stale "Phase 67 = release" references corrected.** Found and fixed
+   directly (non-protected files): `planning/ROADMAP.md`,
+   `planning/v1-redefinition/README.md` (also "stages A–F" → "A–G"
+   throughout), `planning/v1-redefinition/context-quality-evaluation.md`,
+   and two of `planning/v1-redefinition/migration.md`'s own forward-
+   looking sentences (its two Phase-39-mechanical-step table rows left
+   as historical text, matching this project's own preserve-history
+   convention; `proposed-governance-changes.md`'s own "all applied...
+   historical record" content likewise left untouched). `CLAUDE.md` §6
+   and `CONTRIBUTING.md`'s matching sentence — both protected/mirrored —
+   were presented to the user as an explicit diff per `CLAUDE.md` §0,
+   approved, and applied in the same commit: "stages A–F"/"Phase 67" →
+   "stages A–G"/"Phase 70".
+4. **New "Minimum viable adoption" section** added to
+   `development-methodology.md`, showing a five-row table mapping each
+   Scope→Plan→Domain→Design→Implement stage to a lightweight equivalent
+   a solo/small-team project can use without any CodeCompass-specific
+   agent roster, ADR process, or roadmap machinery — what must not be
+   dropped (order, written form, an independent second look before a
+   genuine ambiguity is decided) versus what may be (agent roles, YAML
+   shapes, formal lifecycle states).
+
+No `decisions/0060` content change — its own Decision section never
+explicitly authorized a lead stand-in or a looser write boundary, so
+nothing in it needed reversing; only the plan/methodology/roster
+documents that spelled out execution detail needed tightening, matching
+this project's own precedent (Phase 61/62) of amending a plan before
+implementation without touching its own ADR.
+
 **Roadmap/methodology restructuring — Phase 63D inserted, Scope → Plan
 → Domain → Design → Implement formalized (2026-09-20, `decisions/0060`,
 direct user instruction).** Planning-only — no `src/` change. A new
@@ -569,18 +619,11 @@ until now, a gap `decisions/0060` closed while adding §2.13
 to eleven-plus-a-planned-twelfth. `planning/v1-redefinition/README.md`
 gained gate **G14** recording this restructuring as decided.
 
-**Found but explicitly NOT fixed this session**: `CLAUDE.md` §6 and
-`CONTRIBUTING.md` both still say "Phase 67" for the redefined-v1
-milestone-completion/release phase — stale since the same 2026-09-17
-renumbering (the current number is Phase 70, per
-`planning/v1-redefinition/roadmap.md`). `CLAUDE.md` is protected
-(`CLAUDE.md` §0 — any change, however small, needs an explicit
-user-approved diff before it is written or committed), so this was
-deliberately left alone rather than fixed piecemeal in a way that would
-leave `CLAUDE.md` itself newly inconsistent with a corrected
-`CONTRIBUTING.md`. Flagged here for whenever the user wants to approve
-that specific, narrow `CLAUDE.md` diff — not blocking anything else in
-this restructuring.
+**`CLAUDE.md` §6/`CONTRIBUTING.md`'s own stale "Phase 67"/"stages A–F"
+wording, found this session, was fixed in a later same-day follow-up
+turn** (see the amendment entry directly below) — presented to the user
+as an explicit diff per `CLAUDE.md` §0, approved, then applied to both
+files in the same commit. Not left open.
 
 **Phase 62 — adapter-interface consolidation — done (2026-09-19).**
 Direct user request ("Plan phase 62", then, in the same session, "Amend

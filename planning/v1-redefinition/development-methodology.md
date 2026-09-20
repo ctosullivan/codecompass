@@ -76,7 +76,7 @@ never stops at the first plausible one) under
   along the way) are used across many features, not one.
 
 **New: independent adversarial review**, before anything reaches the
-human. `domain-skeptic` (`agent-led-development.md` §2.13) reads a
+user. `domain-skeptic` (`agent-led-development.md` §2.13) reads a
 domain-corpus (or feature-knowledge) draft with no obligation to agree
 with it, and:
 
@@ -87,25 +87,43 @@ with it, and:
 - attempts to resolve what it finds through further evidence or a real
   behavioural experiment (re-dispatching `context-researcher` or running
   a check itself) rather than simply flagging and stopping;
-- escalates to the human **only** genuine, unresolved domain/product
-  ambiguities — each presented with the evidence gathered, the real
+- escalates to **the actual user/domain owner** — never the lead, never
+  any agent standing in — **only** genuine, unresolved domain/product
+  ambiguities: each presented with the evidence gathered, the real
   alternatives, and their consequences, concisely.
+
+**Write boundary**: `domain-skeptic` is read-only toward source,
+implementation, design content, and the approved domain corpus itself
+— it never edits any of them. It may append new Observation/Evidence
+records for checks it runs itself (same shapes and write boundary
+`context-researcher` already has — never a Claim, Derivation, or
+Decision, which require fuller derivation work or the user's own
+ruling) and write its own review-findings report. Nothing else.
 
 This is the one genuinely new mechanism this document adds to Phase
 54c's own model — that model's own §5 "user review" step was filled by
 the lead standing in for the user during CodeCompass's own dogfooding
 (`phase-54c-evidence-knowledge-workflow.md` §5.1), never by an
-independent agent. `domain-skeptic` sits **before** that human/lead
-review step, not instead of it — it exists to make sure what reaches the
-human is already argued-over, not merely asserted.
+independent agent. **`domain-skeptic` sits before that review step, not
+instead of it, and — amendment, 2026-09-20 — the review step itself no
+longer permits a lead/agent stand-in**: a genuine ambiguity can only be
+ruled on by the actual user/domain owner. An agent (the lead included)
+may fully resolve an item with evidence, or leave it explicitly
+unresolved; ruling on it in the user's place is not a third option,
+including during CodeCompass's own dogfooding. This narrows Phase 54c's
+own §5.1 precedent, which allowed exactly that stand-in for
+CodeCompass's own dogfooding case; that allowance does not carry
+forward past this document.
 
 **Output:** an approved domain baseline — for a feature, the existing
 `APPROVED`-state knowledge folder; for the project as a whole, an
 approved `docs/domain/` corpus (Phase 63D's own deliverable). "Approved"
 means: `domain-skeptic` found no unresolved contradiction it could not
 either fix with evidence or correctly characterize as a genuine open
-question, and the human (or, during dogfooding, the lead standing in
-and saying so plainly) has signed off on whatever open questions remain.
+question, and every such question is either ruled on by the actual
+user/domain owner or honestly recorded as still open — approval never
+requires an agent to have quietly answered a question only the user can
+answer.
 
 **Distinguishing what kind of claim something is** (Phase 54c's own
 §5.3, reused unchanged): documented intent (what a doc says should
@@ -179,18 +197,22 @@ or on Claude Code's own Skill mechanism specifically. What travels:
   Decision/Requirement) — plain, closed-field data, storable as YAML,
   JSON, or any structured text; nothing about them names a CodeCompass
   concept.
-- The **review posture** (an independent skeptic before the human;
-  preserve rather than silently resolve unresolved uncertainty;
-  distinguish documented intent from implemented behaviour from
-  historical decision from current meaning from open question) — a
-  general evidentiary discipline, not a CodeCompass-domain rule.
+- The **review posture** (an independent skeptic before the actual
+  user/domain owner; preserve rather than silently resolve unresolved
+  uncertainty; distinguish documented intent from implemented
+  behaviour from historical decision from current meaning from open
+  question; **no agent or lead stand-in for the user on a genuine
+  ambiguity**) — a general evidentiary discipline, not a
+  CodeCompass-domain rule.
 
 What does **not** travel, and is not meant to: the specific agent
 *names* (`context-researcher`, `domain-skeptic`, etc.) are this
 project's own expression of the process using Claude Code's own
 subagent mechanism. A project without that tooling implements the same
 five stages with whatever review/delegation mechanism it has — a human
-reviewer standing in for `domain-skeptic`, a plain markdown file
+reviewer standing in for `domain-skeptic`'s own adversarial-review
+*function* (never for the actual user's own decision authority — that
+distinction holds regardless of tooling), a plain markdown file
 standing in for a YAML record, and so on. **Skills or agent instructions
 express *how* to perform the process with a given toolset; the durable
 project artifacts (plans, domain corpus, ADRs, designs, evidence
@@ -198,6 +220,35 @@ records) remain the canonical source of domain knowledge, architecture,
 decisions, evidence, and design** — a project reading only those
 artifacts, with no access to this project's own `.claude/agents/`
 directory, can still reconstruct what was known, decided, and why.
+
+## Minimum viable adoption
+
+A smaller project — one person, no agent roster, no `decisions/`-style
+ADR process, no `ROADMAP.md`/`CONTEXT.md` machinery — can still run
+Scope → Plan → Domain → Design → Implement without adopting any of
+CodeCompass's own governance structure. The five stages are the
+portable part (per Portability, above); everything CodeCompass adds on
+top is optional scaffolding, not a precondition. A minimum viable
+profile:
+
+| Stage | CodeCompass's own expression | Minimum viable equivalent |
+|---|---|---|
+| Scope | A phase's own opening problem statement | One paragraph, anywhere durable (an issue, a commit message, the top of the plan file below) — the goal and what's explicitly out |
+| Plan | `planning/phase-N-*.md` | One short file (or the top of a design doc) naming what will change and how it'll be checked |
+| Domain | `context-researcher` → `planning/knowledge/<slug>/` records, reviewed by `domain-skeptic` | A short "what I found, and how I know" note — even a few bullet points citing a real file/line/command output — plus a second look by anyone else available (a colleague, or the same person coming back to it later with fresh eyes) who is deliberately asked to poke holes in it, not just skim it |
+| Design | `documentation-agent` → `design.md`, reviewed by the user | A short written proposal (a paragraph is enough for a small change) that says what the Domain stage found, what will be built, and what's still unknown — read by the person who actually owns the decision before code is written |
+| Implement | `knowledge-curator` → `context-packet.md` → coding agent → revalidation | Whoever writes the code reads the Domain note and the Design proposal first (not just the Plan), and after shipping, updates the Domain note with anything new that was learned — the "reconcile new evidence back" step, done by hand |
+
+**What must not be dropped, even at this minimum**: the *order*
+(domain understanding before design; design before code), the written
+form (even one paragraph — not "it's in my head"), and the
+independent-second-look step before a genuine ambiguity gets decided.
+**What may be dropped**: dedicated agent roles, YAML record shapes
+(plain prose is fine), a formal review-gate lifecycle with named
+states, and any CodeCompass-specific concept. A team of one can still
+distinguish "I read this in the docs" from "I tested this myself" from
+"we decided to do X anyway" — that distinction, not the tooling around
+it, is what the methodology actually protects.
 
 ## Where this gets exercised before v1
 

@@ -1559,8 +1559,17 @@ independent adversarial reviewer, `domain-skeptic`
 citable evidence, hunts for contradictions and missing edge cases,
 resolves what it can through further evidence or a behavioural
 experiment, and escalates only genuine, unresolved domain/product
-ambiguities to the user — each with the evidence gathered, the real
-alternatives, and their consequences.
+ambiguities to **the actual user/domain owner** — each with the
+evidence gathered, the real alternatives, and their consequences.
+**Amended 2026-09-20**: no agent or lead may stand in for the user on
+such an escalation, including during CodeCompass's own dogfooding —
+narrower than Phase 54c's own §5.1 precedent, which allowed exactly
+that stand-in. An agent may only fully resolve an item with evidence or
+leave it explicitly open; it is never a third option to rule on it
+itself. `domain-skeptic`'s own write boundary is read-only toward
+source, implementation, design, and the approved domain corpus — it
+may only append Observation/Evidence records for checks it resolves
+itself, and write its own review findings.
 
 This is the first **project-scoped** application of the newly-named
 **Scope → Plan → Domain → Design → Implement** v1 development
@@ -1571,9 +1580,11 @@ longer independently rediscovers CodeCompass's own domain terminology.
 
 **Exit:** the corpus is approved (`domain-skeptic` finds no unresolved
 contradiction it cannot either fix or correctly characterize as an
-open question; every escalation has a recorded human ruling); the
-standard DoD (drift audit, retro, learning triage, `release-phase-auditor`
-pass) all hold, per the plan's own Verification/Done-when sections.
+open question; every escalation has either a recorded actual-user
+ruling or an honest, still-open entry in `docs/domain/open-questions.md`
+— never a ruling by the lead or any agent standing in); the standard
+DoD (drift audit, retro, learning triage, `release-phase-auditor` pass)
+all hold, per the plan's own Verification/Done-when sections.
 
 ---
 

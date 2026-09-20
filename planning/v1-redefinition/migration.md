@@ -14,7 +14,7 @@ capability-preservation one; cross-referenced here for completeness.
 
 Gate G2 → **G2-b (hold all publishing until redefined v1)**. So Phase 39
 does steps 1–5 only; **no build, no `twine`, no tag, no dated CHANGELOG
-section** until Phase 67.
+section** until Phase 70.
 
 | Step | Action | Reversible? |
 |---|---|---|
@@ -24,7 +24,7 @@ section** until Phase 67.
 | 4 | `CHANGELOG.md` — `[Unreleased]` content stays, **not** promoted to a dated section (G2-b — nothing is released) | n/a |
 | 5 | move approved ADR drafts `0048`/`0049` from `proposed-governance-changes.md` into `decisions/` (`Status: Accepted`) | append-only |
 
-The first-ever publish is Phase 67: `1.0.0.dev0` → `1.0.0`, `twine
+The first-ever publish is Phase 70: `1.0.0.dev0` → `1.0.0`, `twine
 upload`, `v1.0.0` tag, `[Unreleased]` → dated `1.0.0` section (gate G9).
 **PyPI upload is irreversible** — same pause posture the old Phase 23
 Part B had.

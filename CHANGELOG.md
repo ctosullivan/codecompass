@@ -252,6 +252,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `.claude/agents/docs-reconstructor.md`. See `decisions/0060`,
   `planning/phase-63d-domain-reconstruction.md`.
 
+  **Amended 2026-09-20**, before implementation, tightening execution
+  semantics (roadmap structure unchanged): no lead/agent stand-in for
+  the user on a genuine domain/product escalation (narrows Phase 54c's
+  own §5.1 precedent, which permitted it during CodeCompass's own
+  dogfooding — an agent may only fully resolve an item with evidence or
+  leave it explicitly open, never rule on it itself);
+  `domain-skeptic`'s write boundary stated precisely (read-only toward
+  source/implementation/design/the approved corpus; may append
+  Observation/Evidence records and write its own review report, nothing
+  else); a new "minimum viable adoption" profile added to
+  `development-methodology.md` for smaller projects adopting the five
+  stages without CodeCompass's own governance structure; stale "Phase
+  67 = release"/"stages A–F" wording (superseded by the same
+  `decisions/0056` renumbering) corrected across
+  `planning/ROADMAP.md`, `planning/v1-redefinition/README.md`,
+  `context-quality-evaluation.md`, and `migration.md`'s forward-looking
+  sentences, plus `CLAUDE.md` §6/`CONTRIBUTING.md` (protected file,
+  fixed via an explicit user-approved diff per `CLAUDE.md` §0).
+
 - **Phase 62 plan: adapter-interface consolidation** (planning only, no
   code, phase not started): closes `CG-008` (the graph's `symbols` table
   stays empty for Haskell vendors) via a new, concrete (not abstract,

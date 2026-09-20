@@ -32,7 +32,7 @@ evidence gates ahead of them resolve.
 | File | Covers (required output #) |
 |---|---|
 | `README.md` (this file) | Redefined v1 overview (1); current-state & versioning assessment (2); risk analysis (13); human-decision gates (14) |
-| [`roadmap.md`](roadmap.md) | Ordered redefined-v1 roadmap, stages A–F (3) |
+| [`roadmap.md`](roadmap.md) | Ordered redefined-v1 roadmap, stages A–G (3) |
 | [`agent-led-development.md`](agent-led-development.md) | Specialist agents, boundaries, DoD integration (4) |
 | [`learning-lifecycle.md`](learning-lifecycle.md) | Project-learning capture/curation/promotion (5) |
 | [`documentation-lifecycle.md`](documentation-lifecycle.md) | Incremental maintenance + blank-slate reconstruction + closeout (6, 12) |
@@ -290,7 +290,7 @@ version parser has no real PEP 440/semver correctness; no
 Skill-trigger-accuracy harness; `query skills` doesn't surface
 `slash_command` rows; `/discovery` whole-project `sync` trigger gap.
 
-**Remains (redefined v1, this package):** everything in Stages A–F.
+**Remains (redefined v1, this package):** everything in Stages A–G.
 
 ### 2.4 Does public release history constrain redefinition? No.
 
@@ -310,25 +310,25 @@ two different things (the published wheel vs. the internal milestone).
 
 1. **Separate the two meanings explicitly.** "**CodeCompass v1**" =
    the internal *product-validation milestone* defined by this package
-   (Stage F, Phase 67). The `pyproject.toml` version string tracks the
+   (Stage F, Phase 70). The `pyproject.toml` version string tracks the
    package's own release state under PEP 440 / SemVer.
 2. **Publishing is held until redefined v1 (gate G2 → G2-b).** No PyPI
-   upload, no git tag during Stages A–F. The first-ever public release is
-   the redefined v1, published as `1.0.0` at Phase 67, legitimately
+   upload, no git tag during Stages A–G. The first-ever public release is
+   the redefined v1, published as `1.0.0` at Phase 70, legitimately
    earning the "validated" claim. The rejected alternative (G2-a —
    publish a `0.4.0` foundation release now for early external signal) is
    recorded in `decisions/0048`.
 3. **Because no intermediate release will exist, `pyproject.toml` moves
    `1.0.0` → `1.0.0.dev0`** (gate G1) — accurately "in development toward
-   the 1.0.0 that Phase 67 ships", not a phantom `0.4.0` that never gets
+   the 1.0.0 that Phase 70 ships", not a phantom `0.4.0` that never gets
    released. Consistent with the project's prior practice
    (`version = "0.1.0.dev0"` before Phase 23, per `decisions/0047`).
-   Keep `Development Status :: 4 - Beta`. Phase 67 drops the `.dev0`.
+   Keep `Development Status :: 4 - Beta`. Phase 70 drops the `.dev0`.
 4. **`CHANGELOG.md`'s `[Unreleased]` section is not promoted** to a
-   dated section until Phase 67.
+   dated section until Phase 70.
 5. **Milestone-grouping convention is preserved** (`CLAUDE.md` §6,
    `decisions/0022`/`0030`): tags are cut on *milestone-group*
-   completion, not per phase. The redefined-v1 stages A–F are one
+   completion, not per phase. The redefined-v1 stages A–G are one
    milestone group.
 
 `migration.md` §1 covers the mechanical steps; `proposed-governance-changes.md`
@@ -432,7 +432,7 @@ Stage C candidates if reference-project evidence supports them."
 | R11 | **Overfitting to Ledgerkit** | Low-Medium | GATE DD demands the *minimum* generalisation; `conditional-generalisation.md` forbids a universal ontology adopted for elegance; Phase 58 migration must keep npm/PyPI/Cargo first-class. |
 | R12 | **Speculative generalisation** (build the ontology anyway) | Medium | Every abstraction in Stage E is gated on a *recurring* finding with an ADR arguing the specific gap; `conditional-generalisation.md` separates "evidence exists" / "hypothesis" / "deferred" explicitly. |
 | R13 | **Architectural rewrite risk** | Medium-High | `migration.md`: prefer migration over rewrite; the context graph rebuilds deterministically so schema change is additive-then-migrate, not big-bang; each Stage E phase is independently verifiable and revertible (the phase-per-commit property from `v0.2-implementation-execution-plan.md`). |
-| R14 | **Indefinitely delaying a meaningful v1 release** | **High — the central risk (heightened by G2-b: nothing is published until Phase 67)** | (a) Every gate has an explicit "defer / stop" branch — the plan can conclude at GATE DC with a modest, real, measured improvement over the phases-0–38 baseline and ship *that* as `1.0.0` if Stage D evidence is weak. (b) `roadmap.md` §"Minimum viable redefined v1" defines the smallest shippable version and instructs the plan to take it rather than chase the broader hypothesis. (c) Time/phase tripwires are noted per stage. (d) If the hold starts to bite, gate G2 can be revisited to cut an interim `0.x` release — it was a preference, not a one-way door. |
+| R14 | **Indefinitely delaying a meaningful v1 release** | **High — the central risk (heightened by G2-b: nothing is published until Phase 70)** | (a) Every gate has an explicit "defer / stop" branch — the plan can conclude at GATE DC with a modest, real, measured improvement over the phases-0–38 baseline and ship *that* as `1.0.0` if Stage D evidence is weak. (b) `roadmap.md` §"Minimum viable redefined v1" defines the smallest shippable version and instructs the plan to take it rather than chase the broader hypothesis. (c) Time/phase tripwires are noted per stage. (d) If the hold starts to bite, gate G2 can be revisited to cut an interim `0.x` release — it was a preference, not a one-way door. |
 | R15 | **Reference-project work distorts Technical Clipper / Ledgerkit** | Medium | Protocol rule (task instruction + `reference-project-protocol.md`): reference work is subordinate to each project's own roadmap; no feature is added to them to make CodeCompass easier to evaluate; the reference-project-tester never silently repairs CodeCompass to make its own eval pass. |
 | R16 | **Governance drift** (silent CLAUDE.md / ADR edits by agents) | Medium | `CLAUDE.md` §0 preserved; `proposed-governance-changes.md` is the only route; docs-reconstructor and every agent are explicitly barred from editing protected files; DoD audit checks for it. |
 | R17–R22 | *(added 2026-09-12)* Relicensing regret; over-copying hledger source under a licence-alignment misreading; treating the reorder as license to redesign CodeCompass before Ledgerkit baseline evidence exists; the adoption blueprint becoming a large framework; the feedback-ingestion process becoming Ledgerkit's roadmap remote control; Technical Clipper going stale in its later slot | See `realignment-2026-09.md` §8 for the full table and mitigations. |
@@ -446,15 +446,15 @@ blocks the *phase* that acts on it. Ordered by when they first bite.
 
 | Gate | Decision | Needed before | Recommendation |
 |---|---|---|---|
-| **G1** | ✅ **DECIDED 2026-09-09** — bump `pyproject.toml` `1.0.0` → `1.0.0.dev0`; "CodeCompass v1" = internal validation milestone (Phase 67); Phase 67 drops `.dev0` and ships `1.0.0` | Phase 39 | done |
-| **G2** | ✅ **DECIDED 2026-09-09 → G2-b** — hold all publishing until redefined v1; no PyPI upload, no git tag during Stages A–F; `[Unreleased]` stays undated until Phase 67 | Phase 39 | done |
+| **G1** | ✅ **DECIDED 2026-09-09** — bump `pyproject.toml` `1.0.0` → `1.0.0.dev0`; "CodeCompass v1" = internal validation milestone (Phase 70); Phase 70 drops `.dev0` and ships `1.0.0` | Phase 39 | done |
+| **G2** | ✅ **DECIDED 2026-09-09 → G2-b** — hold all publishing until redefined v1; no PyPI upload, no git tag during Stages A–G; `[Unreleased]` stays undated until Phase 70 | Phase 39 | done |
 | **G3** | Roadmap restructuring: add the Stage A–F milestone group to `ROADMAP.md`; retitle the existing "v1.0 scope notes" as "foundation-release scope"; keep historical tables intact; do **not** renumber phases 0–38 or 24–25 | Phase 39 | Yes — as specified in `roadmap.md` |
 | **G4** | `CLAUDE.md` governance changes: new §8 (agent-led development model + learning lifecycle), amended §5 (DoD gains: independent audit PASS; candidate-learning triage; context-eval for reference-project phases), amended §1 (curator/auditor touchpoints). Full proposed diff in `proposed-governance-changes.md` | Phase 40 (agents) / Phase 41 (§8 learning) / Phase 42 | Review the diff; approve incrementally is fine |
 | **G5** | Approve `decisions/0048` (redefined-v1 milestone) and `decisions/0049` (agent-led development model) — drafts in `proposed-governance-changes.md` | Phase 39 / 40 | Yes |
 | **G6** | ✅ **DECIDED 2026-09-13** ("Ratify as recommended") — GATE DB outcome: fund one narrow Stage C phase (49) closing `CG-002`/`L-016`; Phase 48 (task-oriented context retrieval) and Phase 50 (shared-agent context) **not funded** — no corroborating evidence in the Phase 44–46 dataset | Phase 47 | done |
 | **G7** | GATE DD outcome: whether Stage E generalisation happens at all, and its exact minimum scope; approve the abstraction ADR(s) | Phase 56 | Decided from evidence at that point |
 | **G8** | Any CLI breaking change introduced by Stage C or E migration (`migration.md` flags each) | The specific phase | Prefer additive; breaking changes need their own ADR + this gate |
-| **G9** | Redefined-v1 release: drop `.dev0` → `1.0.0`, `twine upload` (first-ever publish), `v1.0.0` tag, `[Unreleased]` → dated section, public positioning change | Phase 67 | The terminal gate; same irreversibility posture as the old Phase 23 Part B |
+| **G9** | Redefined-v1 release: drop `.dev0` → `1.0.0`, `twine upload` (first-ever publish), `v1.0.0` tag, `[Unreleased]` → dated section, public positioning change | Phase 70 | The terminal gate; same irreversibility posture as the old Phase 23 Part B |
 | **G10** | Public product positioning / messaging change (README "what it is", `ai-docs/`) from "dependency reference docs" to "task context map for agents" | Phase 64–70 | Decided at closeout with the reconstructed docs in hand |
 | **G11** | ✅ **DECIDED 2026-09-12** ("Proceed as recommended") — roadmap restructuring: Ledgerkit is Stage B, Technical Clipper is a new Stage F; phases 45–70 renumbered (none started); `decisions/0052` Accepted | Phase 44's retarget / any Phase 45+ work | done |
 | **G12** | ✅ **DECIDED 2026-09-12** ("Proceed as recommended") — GPL-3.0-or-later relicensing implemented: `LICENSE`, `pyproject.toml`, `README.md`, `CONTRIBUTING.md` updated; `decisions/0053` Accepted | Phase 43d's mechanical step | done |

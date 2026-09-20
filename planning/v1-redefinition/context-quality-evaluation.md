@@ -134,7 +134,7 @@ Across all evaluated tasks:
   findings);
 - recurring gap categories (the input to GATE DB / GATE DD).
 
-**Shipping bar for redefined v1 (Phase 67):** zero FAIL verdicts on the
+**Shipping bar for redefined v1 (Phase 70):** zero FAIL verdicts on the
 final suite; MODERATE-or-higher advantage on the majority of tasks — or a
 written, explicit justification for shipping below that bar (e.g. "LOW
 advantage is the honest result for repos this small; the value case is

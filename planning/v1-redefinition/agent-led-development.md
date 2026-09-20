@@ -277,19 +277,29 @@ docs and self-certifies them.
 - **Active in:** the Design stage of Scope→Plan→Domain→Design→Implement,
   for any feature with an `APPROVED`-reachable knowledge base.
 
-### 2.13 `domain-skeptic` — independent adversarial domain review (planned Phase 63D, `decisions/0060`)
+### 2.13 `domain-skeptic` — independent adversarial domain review (planned Phase 63D, `decisions/0060`, amended 2026-09-20)
 - **Question:** does a domain-corpus (or `design.md`) draft actually
   hold up — every material claim evidenced, no internal contradiction,
-  no missing edge case — before it reaches the human?
+  no missing edge case — before it reaches the actual user/domain owner?
 - **Method:** reads a draft with no obligation to agree with it;
   challenges every claim lacking a citable Observation/Evidence record;
   actively searches for contradictions between concepts and for missing
   edge cases/counterexamples; attempts to resolve what it finds through
   further evidence or a real behavioural experiment (pointing
   `context-researcher` at a specific check, or running one itself)
-  before treating anything as escalation-worthy; escalates to the human
-  only genuine, unresolved domain/product ambiguities, each with the
-  evidence gathered, the real alternatives, and their consequences.
+  before treating anything as escalation-worthy; escalates to **the
+  actual user/domain owner** only genuine, unresolved domain/product
+  ambiguities, each with the evidence gathered, the real alternatives,
+  and their consequences.
+- **Escalation rule (amended 2026-09-20): no stand-in.** Neither
+  `domain-skeptic` nor the lead nor any other agent may rule on a
+  genuine ambiguity in the user's place, including during CodeCompass's
+  own dogfooding. `domain-skeptic` has exactly two outcomes per finding:
+  resolve it fully with evidence (no longer an ambiguity), or escalate
+  it and leave it explicitly open pending the actual user — never a
+  third option of deciding it itself. This narrows Phase 54c's own §5.1
+  precedent (which permitted the lead to stand in for CodeCompass's own
+  dogfooding); that allowance does not extend to this role.
 - **Distinct from `context-evaluator`/`docs-reconstructor`/
   `release-phase-auditor`**: those three independently verify,
   respectively, task-context quality against a real target, documentation
@@ -299,14 +309,21 @@ docs and self-certifies them.
   (`decisions/0060`'s own "separation of concerns" reasoning, reapplied
   from `decisions/0054`).
 - **Rule:** never repairs what it reviews — reports findings back,
-  matching every other independent-review role's own posture. When it
-  resolves a finding itself (a grep, a real command, a test), it writes
-  new Observation/Evidence records exactly like `context-researcher`
-  would — no separate record format for skeptic-run checks.
+  matching every other independent-review role's own posture. **Write
+  boundary, stated precisely**: read-only toward source code,
+  implementation, design content, and the approved domain corpus itself
+  (`docs/domain/`) — never edits any of them, under any circumstance.
+  May **only** append new Observation/Evidence records for checks it
+  resolves itself (a grep, a real command, a test) — exactly like
+  `context-researcher`'s own record shapes and write boundary, never a
+  Claim/Derivation/Decision (those need fuller derivation work or the
+  user's own ruling) — and write its own review-findings report.
+  Nothing else.
 - **Tools:** Read, Grep, Glob, Bash (read-only: `codecompass query`,
   tests, greps — no `sync`/`--yes`, no `enrich apply`, no
-  `src/codecompass/` writes), Write (its own review report;
-  `planning/knowledge/**` records when resolving a finding itself).
+  `src/codecompass/` writes, no edits to `docs/domain/`), Write (scoped
+  to exactly its own review report and `planning/knowledge/**` records
+  when resolving a finding itself).
 - **Not created by `decisions/0060` itself** — planned for Phase 63D's
   own implementation, per that phase's own Files section, matching how
   Phase 52 planned `context-enrichment-agent` before creating it.
@@ -339,7 +356,7 @@ docs and self-certifies them.
 | `context-enrichment-agent` | source doc excerpts, `codecompass query relations` output | nothing directly — `context-graph.db` only via `codecompass enrich apply` | `codecompass query`, `codecompass enrich apply` | no — participant, but the CLI itself enforces its trust boundary mechanically |
 | `context-researcher` | everything (behaviour-first: runs real examples/commands before reading docs) | `planning/knowledge/<slug>/**` only | real examples/commands/tests as evidence | partial — independent investigation, but not adversarial toward its own findings |
 | `documentation-agent` | `planning/knowledge/<slug>/**` | `planning/knowledge/<slug>/design.md` only | — | no — participant, projects from the knowledge base only |
-| `domain-skeptic` (planned, Phase 63D) | everything (adversarial review of a domain-corpus/`design.md` draft) | its review report / `planning/knowledge/**` (only when resolving a finding itself) | read-only `codecompass query`, tests, greps | **yes** — independent of `context-researcher`/`documentation-agent`, never repairs what it reviews |
+| `domain-skeptic` (planned, Phase 63D) | source, implementation, design, approved domain corpus (read-only toward all four — never edits any) | its review report / `planning/knowledge/**` Observation-Evidence only (only when resolving a finding itself; never a Claim/Derivation/Decision) | read-only `codecompass query`, tests, greps | **yes** — independent of `context-researcher`/`documentation-agent`, never repairs what it reviews, never rules on a genuine ambiguity in the user's place |
 
 **No agent** writes `CLAUDE.md`, `decisions/*` (except the lead via the
 ADR process), or `src/` (except the lead / ad-hoc implementer subagent).

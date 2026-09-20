@@ -132,21 +132,40 @@ Clipper) — this phase is CodeCompass's own self-dogfood only.
    specific further check, or running one itself (a grep, a test run,
    a `codecompass query` invocation) — it does, and the corpus is
    revised. Where it genuinely cannot (a real product/domain ambiguity,
-   not a researchable fact), it escalates to the human: the concept in
-   question, the evidence gathered so far, the real alternative
-   readings, and the consequence of picking each.
-5. The human (in CodeCompass's own dogfooding case, the lead standing
-   in and saying so plainly, per Phase 54c's own §5.1 precedent) rules
-   on any escalated ambiguities. Each ruling becomes a Decision record,
-   never a silent edit to a Claim (Phase 54c's own hard rule, §5.2,
-   reused unchanged: a Decision never supersedes a Claim about what is
-   factually true; it only says what the project's own current
-   intended meaning is, agreeing with or deliberately diverging from an
-   unchanged Claim).
+   not a researchable fact), it escalates to **the actual user/domain
+   owner**: the concept in question, the evidence gathered so far, the
+   real alternative readings, and the consequence of picking each.
+   **Amendment (2026-09-20): neither the lead nor any agent may stand
+   in for the user on a genuine escalation, including during
+   CodeCompass's own dogfooding.** This narrows Phase 54c's own §5.1
+   precedent (which explicitly allowed the lead to stand in "for
+   CodeCompass's own dogfooding case") — that allowance is not carried
+   forward here. An agent (the lead included) may only: (a) resolve an
+   item itself, by producing enough Observation/Evidence to make it no
+   longer a genuine ambiguity (a fully evidence-resolved Claim, not an
+   escalation at all), or (b) leave it **explicitly unresolved** in
+   `docs/domain/open-questions.md`, awaiting the actual user. Neither
+   option involves an agent or the lead *ruling* on a real
+   domain/product ambiguity in the user's place.
+5. **The actual user/domain owner** — never the lead standing in —
+   rules on any escalated ambiguity. If the user is genuinely
+   unavailable when this phase runs, the escalation stays open in
+   `docs/domain/open-questions.md` rather than being decided by anyone
+   else; the corpus can still be approved with open questions recorded
+   honestly (§6), it just cannot be approved by having an agent quietly
+   answer a question only the user can answer. Each real ruling becomes
+   a Decision record, never a silent edit to a Claim (Phase 54c's own
+   hard rule, §5.2, reused unchanged: a Decision never supersedes a
+   Claim about what is factually true; it only says what the project's
+   own current intended meaning is, agreeing with or deliberately
+   diverging from an unchanged Claim).
 6. Once `domain-skeptic` finds no unresolved contradiction it cannot
    either fix or correctly characterize as a genuine open question, and
-   the human has ruled on every escalation, the corpus is **approved**
-   and published as durable Markdown under `docs/domain/`.
+   every escalation has either a recorded user ruling or an honest,
+   still-open entry in `docs/domain/open-questions.md`, the corpus is
+   **approved** and published as durable Markdown under `docs/domain/`
+   — approval never requires every open question to be closed, only
+   that none was silently closed by the wrong party.
 
 ## 3. `docs/domain/` layout
 
@@ -212,10 +231,10 @@ same "projection, not the same file, but never contradicting it" stance
 
 ## 4. New role: `domain-skeptic`
 
-Independent, read-only. Never produces or repairs the corpus it
-reviews — reports findings back (mirrors `docs-reconstructor`/
-`release-phase-auditor`'s own posture). Given a domain-corpus draft
-(or, in later Design-stage use, a `design.md`):
+Independent. Never produces or repairs the corpus it reviews — reports
+findings back (mirrors `docs-reconstructor`/`release-phase-auditor`'s
+own posture). Given a domain-corpus draft (or, in later Design-stage
+use, a `design.md`):
 
 - Checks every material claim for a citable Observation/Evidence
   record; flags any that has none.
@@ -230,20 +249,38 @@ reviews — reports findings back (mirrors `docs-reconstructor`/
   directly — a grep, a real command, a test) before treating it as
   something to escalate.
 - Escalates only what genuinely cannot be resolved by more evidence —
-  a real domain/product ambiguity — presented concisely: the concept,
-  the evidence so far, the real alternatives, and the consequence of
-  each.
+  a real domain/product ambiguity — presented concisely to **the
+  actual user/domain owner**: the concept, the evidence so far, the
+  real alternatives, and the consequence of each. **`domain-skeptic`
+  itself never rules on a genuine ambiguity** — it either resolves an
+  item fully with evidence (at which point it is no longer an
+  ambiguity) or escalates it and leaves it open pending the user; it
+  has no third option of deciding on the user's behalf.
 
-Tools: Read, Grep, Glob, Bash (read-only invocations: `codecompass
-query`, tests, greps — no `sync`/`--yes`, no `enrich apply`, no
-`src/codecompass/` writes). Writes: its own review report only
-(`planning/retros/_domain-skeptic-review-phase-63d.md`, mirroring
-`docs-reconstructor`'s own `_drift-audit-phase-N.md` naming) plus, when
-resolving a finding itself, new records under
-`planning/knowledge/codecompass-domain/` exactly like `context-researcher`
-would (same record shapes, same write boundary — `domain-skeptic` does
-not get a different Observation/Evidence format for the checks it runs
-itself).
+**Write boundary, stated precisely (amendment, 2026-09-20)**:
+`domain-skeptic` is **read-only with respect to source code, `src/`
+implementation, `design.md`/design content, and the approved domain
+corpus itself (`docs/domain/`)** — it never edits any of these, under
+any circumstance, including to fix something it finds wrong. It may
+**only**:
+
+1. **Append** new Observation/Evidence records under
+   `planning/knowledge/codecompass-domain/` when it resolves a finding
+   through a check it runs itself (a grep, a real command, a test) —
+   same record shapes, same write boundary `context-researcher` already
+   has; `domain-skeptic` gets no different Observation/Evidence format
+   for checks it runs itself, and never writes a Claim, Derivation, or
+   Decision record (those require either `context-researcher`'s own
+   fuller derivation work or the actual user's own ruling, never
+   `domain-skeptic`'s unilateral say-so).
+2. **Write its own review findings**:
+   `planning/retros/_domain-skeptic-review-phase-63d.md` (mirroring
+   `docs-reconstructor`'s own `_drift-audit-phase-N.md` naming).
+
+Tools: Read, Grep, Glob, Bash (read-only invocations against source/
+implementation: `codecompass query`, tests, greps — no `sync`/`--yes`,
+no `enrich apply`, no `src/codecompass/` writes, no edits to
+`docs/domain/`), Write (scoped to exactly the two outputs above).
 
 ## Scope
 
@@ -299,8 +336,17 @@ itself).
   correctly marked `contradicted` or left with an honestly-unresolved
   edge case is not automatically an escalation — only cases
   `domain-skeptic` cannot make further evidence-based progress on
-  reach the human, matching Phase 54c's own "don't paper over a real
-  gap, but don't manufacture escalations either" posture.
+  reach the actual user/domain owner, matching Phase 54c's own "don't
+  paper over a real gap, but don't manufacture escalations either"
+  posture.
+- **No agent or lead stand-in for the user on a genuine escalation**
+  (amendment, 2026-09-20 — narrows Phase 54c's own §5.1 precedent,
+  which allowed the lead to stand in during CodeCompass's own
+  dogfooding; that allowance does not carry forward to this phase). An
+  agent may only fully resolve an item with evidence (making it no
+  longer an escalation) or leave it explicitly open
+  (`docs/domain/open-questions.md`) — never rule on it in the user's
+  place.
 
 ## Files
 
@@ -335,7 +381,10 @@ itself).
 - `domain-skeptic`'s own review report exists, names what it checked,
   what it resolved itself (with the new Observation/Evidence it
   produced), and what it escalated (if anything) — and every escalation
-  has a corresponding human ruling recorded as a Decision record.
+  either has a corresponding **actual user/domain owner** ruling
+  recorded as a Decision record, or is honestly recorded as still open
+  in `docs/domain/open-questions.md` — never a ruling made by the lead
+  or any agent standing in for the user.
 - No concept page's own Claims rest solely on "a doc says so" —
   independently confirm at least one concept page's own central claim
   by checking its cited source/test directly, not merely trusting the
@@ -357,7 +406,9 @@ itself).
 - `docs/domain/` exists, approved, with every concept in §1 (plus
   whatever `context-researcher` genuinely found along the way)
   documented per the Verification section above.
-- Every escalated ambiguity has a recorded human ruling.
+- Every escalated ambiguity has either a recorded actual-user ruling or
+  an honest, still-open entry in `docs/domain/open-questions.md` — none
+  was resolved by the lead or any agent standing in for the user.
 - `domain-skeptic`'s review found no remaining unresolved contradiction
   it could not either fix or correctly characterize as an open
   question.

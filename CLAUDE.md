@@ -114,8 +114,8 @@ linked from the phase's exit note. Not done until all of these.
   `[Unreleased]` to a dated release section and cut a version tag for
   that milestone. Not after every phase.
 - The redefined-CodeCompass-v1 effort (`planning/v1-redefinition/`) is one
-  further milestone group; its stages A–F tag/release only on group
-  completion (Phase 67). "CodeCompass v1" as a product milestone is
+  further milestone group; its stages A–G tag/release only on group
+  completion (Phase 70). "CodeCompass v1" as a product milestone is
   distinct from the `pyproject.toml` version string.
 - `planning/CONTEXT.md` is the tie-breaker if commits, changelog, and
   milestones ever drift.
