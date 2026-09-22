@@ -1,0 +1,22 @@
+id: EV-ADPT-007
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  architecture/overview.md explicitly documents that "adapter" is used
+  in two distinct senses within this project's own prose: the
+  "ecosystem adapter" (EcosystemAdapter, a real ABC in
+  src/codecompass/adapters/) and "host-output adapters" (skill.py,
+  commands.py, index.py -- format-specific renderers grouped under a
+  "HOST-OUTPUT ADAPTERS" module-tier label). Only the first sense
+  corresponds to an actual class/interface in source; a direct grep of
+  all three "host-output adapter" modules' own source for the word
+  "adapter" returns zero matches -- the second sense exists only as an
+  architecture-doc classification label, with no corresponding
+  definition, base class, or shared interface anywhere in
+  src/codecompass/.
+observations: [OBS-ADPT-012, OBS-ADPT-013]
+source_ref: "src/codecompass/skill.py; src/codecompass/commands.py; src/codecompass/index.py"
+doc_ref: "architecture/overview.md:87-92, 344-359"
+test_ref: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+status: current

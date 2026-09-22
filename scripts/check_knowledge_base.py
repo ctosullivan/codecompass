@@ -224,11 +224,22 @@ def check_status_enums(feature_dir: Path) -> list[Finding]:
     return findings
 
 
-def check_cross_references_resolve(feature_dir: Path) -> list[Finding]:
+def check_cross_references_resolve(
+    feature_dir: Path, all_known_ids: set[str] | None = None
+) -> list[Finding]:
     """Every id mentioned in another record's own fields must exist as a
-    real `<id>.yaml`-derived file in the same feature directory (the
-    naming convention this phase uses: one file per record, named
-    however is convenient, but always containing `id: <the same id>`).
+    real `<id>.yaml`-derived file — normally in the same feature
+    directory (the naming convention this phase uses: one file per
+    record, named however is convenient, but always containing
+    `id: <the same id>`), but a project-scoped corpus (Phase 63D's own
+    `codecompass-domain/`, which deliberately cites real examples from
+    other features' own knowledge folders as required "at least one
+    concrete example" evidence) may legitimately cite an id that only
+    exists in a *different* feature directory. `all_known_ids`, when
+    given, is the union of every record id across all of
+    `planning/knowledge/*/` — checked as a fallback only after the
+    local (same-directory) scope fails to resolve, so a genuinely
+    dangling reference is still reported exactly as before.
     """
     findings: list[Finding] = []
     known_ids: set[str] = set()
@@ -247,15 +258,21 @@ def check_cross_references_resolve(feature_dir: Path) -> list[Finding]:
             for referenced_id in _extract_id_strings(value):
                 if referenced_id == this_id:
                     continue  # a self-mention in prose, not a dangling reference
-                if referenced_id not in known_ids:
-                    findings.append(
-                        Finding(
-                            "knowledge-base-dangling-reference",
-                            f"{yaml_path.relative_to(ROOT)}: field {key!r} "
-                            f"references {referenced_id!r}, which has no "
-                            f"matching record in {feature_dir.relative_to(ROOT)}",
-                        )
+                if referenced_id in known_ids:
+                    continue
+                if all_known_ids is not None and referenced_id in all_known_ids:
+                    # Resolves in another feature directory — a legitimate
+                    # cross-directory citation.
+                    continue
+                findings.append(
+                    Finding(
+                        "knowledge-base-dangling-reference",
+                        f"{yaml_path.relative_to(ROOT)}: field {key!r} "
+                        f"references {referenced_id!r}, which has no "
+                        f"matching record in {feature_dir.relative_to(ROOT)} "
+                        "or any other planning/knowledge/ directory",
                     )
+                )
     return findings
 
 
@@ -335,9 +352,19 @@ def run_all(root: Path) -> list[Finding]:
     knowledge_dir = root / "planning" / "knowledge"
     if not knowledge_dir.is_dir():
         return findings
-    for feature_dir in sorted(p for p in knowledge_dir.iterdir() if p.is_dir()):
+    feature_dirs = sorted(p for p in knowledge_dir.iterdir() if p.is_dir())
+    all_known_ids: set[str] = set()
+    for feature_dir in feature_dirs:
+        for yaml_path in feature_dir.glob("*.yaml"):
+            record_id = parse_record(yaml_path).get("id")
+            if record_id:
+                all_known_ids.add(record_id)
+    for feature_dir in feature_dirs:
         for check in CHECKS:
-            findings.extend(check(feature_dir))
+            if check is check_cross_references_resolve:
+                findings.extend(check(feature_dir, all_known_ids))
+            else:
+                findings.extend(check(feature_dir))
     return findings
 
 

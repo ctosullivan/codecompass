@@ -1,0 +1,20 @@
+id: DE-ADPT-001
+kind: derivation
+claim: CL-ADPT-001
+method: >
+  Read base.py's EcosystemAdapter class directly rather than trusting
+  architecture/overview.md's own prose description of it first (per this
+  role's own behaviour-first discipline) -- confirmed the ABC's exact
+  method set and that symbols() is deliberately concrete, not abstract
+  (its docstring explains why: a future adapter without structured
+  extraction shouldn't be forced to implement it). Then read
+  adapters/__init__.py to confirm dispatch is a closed, total mapping
+  over Ecosystem's four members, not a fallback/registry mechanism. Only
+  after both source reads did I cross-check architecture/overview.md's
+  "Adapter interface" section, which matched exactly -- no discrepancy
+  found, so no follow-up experiment was needed for this claim
+  specifically. Ran the real adapter test suite (OBS-ADPT-011) as final
+  confirmation that this contract is exercised, not merely declared.
+inputs: [EV-ADPT-001, EV-ADPT-006]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

@@ -1,0 +1,31 @@
+id: DE-CTXT-003
+kind: derivation
+claim: CL-CTXT-003
+method: >
+  Started from the graph schema itself (graph.py, OBS-CTXT-004) rather
+  than architecture/overview.md's prose, to establish exactly which six
+  tables are real edges and how each is rebuilt/preserved. Cross-checked
+  the prose against source and found no discrepancy (OBS-CTXT-005).
+  Per this role's own "trace every real path, don't stop at the first
+  plausible one" discipline, did not stop at "edges exist in the graph"
+  -- actively looked for other places the project uses relationship-like
+  language and checked whether they are also graph edges. Found two
+  genuine near-neighbours that are explicitly NOT edges: decisions/0051
+  (agent-suggested relationships, OBS-CTXT-014) and
+  doc_relation_enrichment (AI commentary about an edge, OBS-CTXT-013,
+  confirmed by a real test rather than only by the decision's own
+  prose, per this role's "run/read the real thing, don't trust
+  documentation alone" discipline). This three-tier structure
+  (mechanically-proven edge / agent-suggested candidate / enrichment-
+  about-an-edge) was not stated as a single unified taxonomy anywhere
+  in the source repository before this derivation -- it is assembled
+  here from three separately-documented mechanisms, which is itself
+  worth naming plainly in the concept page rather than presenting as if
+  the project already had one canonical three-tier model.
+inputs:
+  - EV-CTXT-003
+  - EV-CTXT-004
+  - EV-CTXT-011
+  - EV-CTXT-012
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

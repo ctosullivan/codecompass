@@ -1,0 +1,19 @@
+id: EV-ADPT-005
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  Ecosystem (src/codecompass/core.py) is a closed 4-member StrEnum
+  (npm, python, cargo, haskell). VendorConfig is a frozen dataclass with
+  exactly (name: str, ecosystem: Ecosystem) -- one tracked dependency,
+  belonging to exactly one Ecosystem. decisions/0002 establishes that
+  each ecosystem's adapter uses "whatever native tooling its ecosystem
+  already provides," explicitly rejecting a single unified
+  cross-ecosystem parsing strategy -- i.e. the adapter is where
+  per-ecosystem judgment calls live, not the vendor record or the
+  ecosystem enum itself.
+observations: [OBS-ADPT-010]
+source_ref: "src/codecompass/core.py:13-35"
+doc_ref: "decisions/0002-adapter-approach-differs-per-ecosystem.md"
+test_ref: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+status: current

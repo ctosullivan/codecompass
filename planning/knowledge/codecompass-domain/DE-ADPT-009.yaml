@@ -1,0 +1,21 @@
+id: DE-ADPT-009
+kind: derivation
+claim: CL-ADPT-009
+method: >
+  Noticed SCHEMA.md's own explicit "free text, no closed enum"
+  disclaimer for the wire `ecosystem` field while reading it for
+  CL-ADPT-003, and treated the contrast with core.py's closed 4-member
+  Ecosystem enum as worth a real follow-up check rather than a passing
+  observation -- ran a targeted grep for every `.ecosystem` attribute
+  read anywhere in src/codecompass/adapters/*.py and sync.py, then
+  manually excluded every hit that was actually `config.ecosystem`/
+  `self.config.ecosystem` (a different attribute, VendorConfig's own
+  field) to isolate genuine reads of the wire-reported value
+  specifically. Found zero genuine reads. This is exactly the kind of
+  "run a targeted follow-up experiment when source inspection raises a
+  new question" iteration this role's own brief calls for, rather than
+  treating the SCHEMA.md disclaimer as sufficient evidence on its own
+  for a claim about current *implementation* behaviour.
+inputs: [EV-ADPT-010]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

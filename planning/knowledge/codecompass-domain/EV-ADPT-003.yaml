@@ -1,0 +1,24 @@
+id: EV-ADPT-003
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  The external adapter wire protocol (v1) is: JSON Lines framing on
+  stdin/stdout, one outstanding request at a time, a closed 3-method set
+  (initialize, analyze_project, shutdown -- "an adapter must reject any
+  other method value with an unsupported_capability error"), a closed
+  4-value capabilities set (dependencies, symbols, observations,
+  diagnostics) declared once at initialize and gating which of
+  analyze_project's four result sections may be present, and a closed
+  4-value error-code set (not_found, parse_error,
+  unsupported_capability, internal_error). protocol/codecompass-adaptor-protocol/SCHEMA.md
+  is the canonical spec and explicitly supersedes decisions/0057's own
+  original inline description (which remains a valid historical
+  snapshot). A hand-written fake adapter process
+  (tests/fixtures/fake_adapter.py) implements this shape for real and is
+  exercised by a passing test suite (OBS-ADPT-011).
+observations: [OBS-ADPT-006, OBS-ADPT-007, OBS-ADPT-008, OBS-ADPT-015]
+source_ref: "src/codecompass/adapters/external_process.py:28-34"
+doc_ref: "decisions/0057-external-process-adapter-protocol.md; protocol/codecompass-adaptor-protocol/SCHEMA.md:1-172"
+test_ref: "tests/test_adapters_external_process.py"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+status: current

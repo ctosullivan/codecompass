@@ -1,0 +1,24 @@
+id: DE-ADPT-002
+kind: derivation
+claim: CL-ADPT-002
+method: >
+  Traced both real implementation paths rather than stopping at the
+  first plausible one: read haskell.py in full (the one adapter that
+  actually implements the second strategy) to see exactly which methods
+  stay in-process (manifest-key lookups, matching decisions/0057's own
+  "not Haskell-specific implementation code" reasoning by analogy to
+  yaml.safe_load being no more ecosystem-specific than tomllib.load) and
+  which delegate to the external process (dependency_tree,
+  readme_and_api_surface, symbols -- all real ecosystem-specific logic).
+  Cross-checked against decisions/0057's own "Where the boundary
+  actually falls" section, which states this distinction explicitly and
+  matched what the source actually does. Read external_process.py
+  separately to confirm it genuinely carries zero ecosystem-specific
+  knowledge (grep for "Haskell"/"stack"/"package.yaml" inside that one
+  file returns nothing beyond its own docstring's explicit disclaimer),
+  supporting the "reusable by any future external adapter" claim rather
+  than merely asserting it. Ran the real test suite as final
+  confirmation both strategies are exercised and green on this revision.
+inputs: [EV-ADPT-002, EV-ADPT-003, EV-ADPT-006]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

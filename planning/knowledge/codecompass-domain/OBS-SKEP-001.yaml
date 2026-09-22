@@ -1,0 +1,36 @@
+id: OBS-SKEP-001
+kind: observation
+method: executable
+what_was_done: >
+  Ran `git log --follow --format='%H %ad %s' --date=iso -- .gitmodules
+  decisions/0058-adapter-protocol-and-haskell-adapter-as-separate-repositories.md`
+  to establish the real commit order and timestamps of the ADR's own
+  text versus the actual creation of the "adaptor"-spelled submodule
+  configuration, in order to test whether CL-ADPT-008's disclosed
+  adapter/adaptor naming contradiction is a simple pre-implementation
+  drafting typo or a genuine live ambiguity.
+tool: git
+tool_version: "system git"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: ".gitmodules; decisions/0058-adapter-protocol-and-haskell-adapter-as-separate-repositories.md"
+raw_result: >
+  Exactly one commit touches each file (neither was ever renamed or
+  amended afterward). decisions/0058's own commit,
+  886dc6ef7772ea64154a3f03b9225b5c4bbb280d ("docs: amend Phase 60 to
+  separate public protocol/adapter repositories"), is dated
+  2026-09-19 09:29:33 +0800. .gitmodules' own commit,
+  41bae2573c6be9811208adc06892845270872d8f ("feat(phase-60): minimal
+  external Haskell adapter"), is dated 2026-09-19 14:29:49 +0800 -- five
+  hours later, same day. `git show 41bae257... --stat` confirms this
+  second commit is the real Phase 60 implementation commit that actually
+  created the two external repositories, checked them out as submodules,
+  and added the adapters/haskell.py, external_process.py source. Both
+  commits are from the same author (Cormac O'Sullivan) on the same
+  calendar day. This establishes decisions/0058's own "adapter"-spelled
+  prose was written before the real repositories existed, and the
+  "adaptor" spelling was introduced when the repositories were actually
+  created, five hours later -- not the other way around, and not a
+  later, separate rename event.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "domain-skeptic agent dispatch"
+status: recorded

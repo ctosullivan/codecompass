@@ -1,0 +1,18 @@
+id: EV-CTXT-013
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  index.py's own module docstring self-describes as "Idempotent
+  routing-table injection into the project root CLAUDE.md" -- a
+  string-injection mechanism that lists each tracked vendor and links
+  to its already-written digest, never itself constructing or
+  rendering a VendorDigest. The project-root CLAUDE.md's vendor table
+  and a per-vendor vendor/<name>/CLAUDE.md are two different
+  mechanisms that happen to share a filename; only the latter is ever
+  called a "digest" in source or architecture/overview.md.
+observations: [OBS-CTXT-015]
+source_ref: "src/codecompass/index.py:1,77,117; src/codecompass/cli.py:943"
+doc_ref: null
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

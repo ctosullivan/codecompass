@@ -1,0 +1,36 @@
+id: DE-CTXT-005
+kind: derivation
+claim: CL-CTXT-005
+method: >
+  The dispatch brief pointed at architecture/overview.md's "Tree
+  generation"/"Per-vendor CLAUDE.md structure" sections and at
+  sync.py/filetree.py/deptree.py as the mechanism to check, per the
+  project's own "check the real thing, don't trust a doc's own
+  description of it" discipline. Rather than stop at the architecture
+  doc's prose, traced the real code: found VendorDigest is a literal,
+  named dataclass (core.py:66-103), found sync_vendor is the one real
+  call site constructing it (sync.py:160-202), and confirmed the
+  rendered output is real by reading an actual on-disk generated file
+  for a tracked vendor in this very repository (vendor/typer/
+  CLAUDE.md), matching the described six-section structure exactly.
+  While tracing this, noticed "digest" is also used informally beyond
+  the VendorDigest object itself -- in this session's own governing
+  root CLAUDE.md ("generated reference digest") and in
+  docs/cli-reference.md ("digest-only" tool, "digest files",
+  "digest text") -- and traced each usage back to its own real
+  referent (the object; the whole per-vendor file set; the CLAUDE.md
+  text specifically) rather than assuming they were all the same claim.
+  Also confirmed, by reading index.py's own module docstring, that the
+  project-root CLAUDE.md's vendor routing table is a materially
+  different mechanism (string injection, not VendorDigest rendering)
+  that happens to share a filename with the per-vendor digest -- a real
+  risk of conflation this concept page states explicitly rather than
+  leaving implicit.
+inputs:
+  - EV-CTXT-006
+  - EV-CTXT-009
+  - EV-CTXT-010
+  - EV-CTXT-013
+  - EV-CTXT-014
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

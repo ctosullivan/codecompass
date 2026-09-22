@@ -1,0 +1,35 @@
+id: OBS-EVID-002
+kind: observation
+method: doc_read
+what_was_done: >
+  Read every real record file in planning/knowledge/hledger-depth/
+  (5 Observation, 3 Evidence, 1 Claim, 1 Derivation, design.md) and
+  planning/knowledge/doc-origin-pinned-reference/ (11 Observation, 9
+  Evidence, 4 Claim, 4 Derivation, 1 Decision, 3 Requirement,
+  packet-sufficiency.md, design.md), in full, to check the schema from
+  OBS-EVID-001 against real, already-committed usage rather than
+  trusting the schema prose alone.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "planning/knowledge/hledger-depth/*.yaml; planning/knowledge/doc-origin-pinned-reference/*.yaml"
+raw_result: >
+  Every real record's fields match OBS-EVID-001's schema exactly (no
+  drift). Every Claim's `derivation` field names exactly one Derivation
+  id, and every Derivation's own `claim` field names exactly that same
+  Claim id back -- a 1:1 pairing in all 5 real Claim/Derivation pairs
+  checked (CL-DEPTH-001/DE-DEPTH-001, CL-DOCORIGIN-001..004/
+  DE-DOCORIGIN-001..004), with no observed instance of one Derivation
+  feeding two Claims or a Claim citing zero/multiple Derivations.
+  `contradicting_evidence: []` and `supersedes: null` on every single
+  Claim across both directories -- neither field has real content in
+  either corpus. DEC-DOCORIGIN-001 uses only `agrees_with_claim`
+  (pointing at CL-DOCORIGIN-001), never `supersedes` or a
+  cross-kind reference to a Claim id in its own `supersedes` field
+  (which is `null`). `decided_by` on DEC-DOCORIGIN-001 reads literally
+  "project owner (lead standing in for this dogfooding run — see
+  retro)", with an explanatory YAML comment directly above the record
+  disclosing the stand-in.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

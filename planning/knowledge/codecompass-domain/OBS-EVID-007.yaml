@@ -1,0 +1,32 @@
+id: OBS-EVID-007
+kind: observation
+method: executable
+what_was_done: >
+  Ran `grep -rn "status: contradicted" planning/knowledge/` and
+  `grep -rln "status: verified" planning/knowledge/` against the
+  working tree, to check OBS-EVID-006's retro claim empirically rather
+  than trusting the retro's own prose, and to find every real instance
+  of a Claim reaching `verified` and who performed it.
+tool: grep (GNU grep)
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: null
+raw_result: >
+  `grep -rn "status: contradicted" planning/knowledge/` returned zero
+  hits from any *.yaml record file (three hits, all in prose inside
+  design.md files explicitly stating "No Claim in this knowledge base
+  carries status: contradicted" for hledger-depth and
+  haskell-api-surface-extraction). `grep -rln "status: verified"`
+  matched exactly one Claim record,
+  planning/knowledge/hledger-depth/CL-DEPTH-001.yaml, whose own
+  `derived_by` field reads "context-evaluator (Phase 54b independent
+  evaluation dispatch)" -- not "context-researcher agent dispatch"
+  (the value on every `supported`-status Claim in the other two
+  directories). This is the one real, current instance of a Claim at
+  `verified`, and it was reached exactly the way
+  phase-54c-evidence-knowledge-workflow.md §3 requires: independent
+  re-derivation (context-evaluator), never context-researcher's own
+  say-so.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

@@ -1,0 +1,21 @@
+id: DE-ADPT-006
+kind: derivation
+claim: CL-ADPT-006
+method: >
+  Grepped every "capabilit*" occurrence in src/ and tests/ by hand and
+  classified each as either a direct reference to the protocol's own
+  closed term (external_process.py's CAPABILITIES constant and its
+  consumers) or a looser English use (sync.py:244's "the generic adapter
+  capability every ecosystem now implements," which does NOT refer to
+  the wire protocol's own closed set at all -- symbols() applies to
+  every in-process adapter too, which never speaks this protocol).
+  Deliberately included that looser hit rather than omitting it, since
+  it shows even "capability" itself is sometimes used informally in
+  this project's own prose -- the claim is scoped specifically to the
+  wire-protocol sense, not a blanket assertion that every English use of
+  the word "capability" in this codebase is the closed-set one.
+  Separately grepped "feature" across several ADRs/plans to confirm no
+  comparable closed enumeration exists for it anywhere.
+inputs: [EV-ADPT-009]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

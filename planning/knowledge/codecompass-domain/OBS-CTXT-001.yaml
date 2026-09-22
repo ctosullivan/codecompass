@@ -1,0 +1,26 @@
+id: OBS-CTXT-001
+kind: observation
+method: doc_read
+what_was_done: >
+  Read planning/phase-63d-domain-reconstruction.md in full, and
+  planning/v1-redefinition/development-methodology.md's "Domain" stage
+  section (lines 1-110ish), as the governing brief for this
+  project-scoped context-researcher run, per this role's own dispatch
+  instructions.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23 (HEAD fef153b + uncommitted agent-file edits)"
+location: "planning/phase-63d-domain-reconstruction.md:1-320; planning/v1-redefinition/development-methodology.md:1-110"
+raw_result: >
+  Phase 63D scopes a project-wide (not single-feature) application of
+  Phase 54c's six record kinds, published as durable Markdown under
+  docs/domain/ once domain-skeptic review + actual-user ruling on any
+  escalation completes. My own dispatch brief further narrows this to
+  one cluster: context, context packet, relationship/edge, reference
+  (three senses), and digest (explicitly required, contrasted with
+  context packet). Confirmed: I never write a Decision record; I never
+  write a Claim directly to status: verified; concept pages are DRAFT
+  pending domain-skeptic + actual-user approval.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

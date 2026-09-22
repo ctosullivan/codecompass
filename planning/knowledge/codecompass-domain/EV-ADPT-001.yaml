@@ -1,0 +1,20 @@
+id: EV-ADPT-001
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  EcosystemAdapter (src/codecompass/adapters/base.py) is an ABC
+  constructed with (config: VendorConfig, project_root: Path), defining
+  five abstract methods (installed_version, source_location,
+  readme_and_api_surface, repository_url, dependency_tree) and one
+  concrete method (symbols(), Phase 62, with a default walk+extract
+  implementation any subclass may override). get_adapter()
+  (src/codecompass/adapters/__init__.py) is the single dispatch point:
+  a closed, total dict mapping each of Ecosystem's four members to
+  exactly one adapter class (NpmAdapter, PythonAdapter, CargoAdapter,
+  HaskellAdapter).
+observations: [OBS-ADPT-002, OBS-ADPT-003]
+source_ref: "src/codecompass/adapters/base.py:25-97; src/codecompass/adapters/__init__.py:1-32"
+doc_ref: null
+test_ref: "tests/test_adapters_base.py; tests/test_adapters_dispatch.py"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+status: current

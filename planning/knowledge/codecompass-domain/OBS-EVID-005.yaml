@@ -1,0 +1,31 @@
+id: OBS-EVID-005
+kind: observation
+method: doc_read
+what_was_done: >
+  Read planning/v1-redefinition/development-methodology.md in full,
+  focusing on the "Domain" stage section (lines 48-137), the
+  "Stage → artifact map" table (lines 290-300), and the "Re-entry and
+  replanning" section (lines 177-230, especially the traceability
+  spine "Domain and Design artifacts are never edited in place once
+  approved" and the Claim/Decision-only-supersedes-same-kind rule
+  restated there).
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "planning/v1-redefinition/development-methodology.md:48-230"
+raw_result: >
+  Confirms Phase 54c's six record kinds are reused unchanged for both
+  the feature-scoped and project-scoped (Phase 63D) applications; the
+  four/five-way distinction (documented intent / implemented behaviour
+  / historical decision / current intended meaning / unresolved
+  uncertainty) each maps to a different evidence trail, never
+  collapsed into one "current understanding". Confirms the citation
+  direction named in this cluster's own dispatch brief: "Evidence →
+  Claim/Invariant → Requirement → Design Decision → Implementation →
+  Test" (the phrase "Claim/Invariant" here treats invariant as
+  something that rides alongside a Claim in the citation chain, not as
+  its own separate record kind -- consistent with OBS-EVID-001/004
+  finding no dedicated Invariant record kind).
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

@@ -1,0 +1,24 @@
+id: EV-CTXT-005
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  The project already distinguishes, in its own docs, at least four
+  "context"-adjacent artifacts/roles by name and purpose: (1)
+  context-health.md -- forward-looking, whole-graph readiness
+  assessment (context-health-planner); (2) context-use-log.md
+  (superseded by planning/context-observations/) -- a high-volume log
+  of whether a real retrieval beat the default pathway; (3)
+  context-quality-evaluation.md -- context-evaluator's per-task,
+  retrospective "did this help" judgment against a target repository,
+  covering whatever CodeCompass artifact a task actually used; (4)
+  roadmap-context-curator -- planning-doc truth, not runtime context at
+  all despite the shared name fragment "context." None of these four
+  is the context graph (context-graph.db) or a context-packet.md
+  itself; all four are about *evaluating or logging the use of*
+  context CodeCompass already produced.
+observations: [OBS-CTXT-006, OBS-CTXT-007]
+source_ref: null
+doc_ref: ".claude/agents/context-health-planner.md:1-40; planning/context-health.md:1-30; planning/context-use-log.md:1-30; planning/v1-redefinition/context-quality-evaluation.md:1-60"
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

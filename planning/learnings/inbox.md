@@ -8,6 +8,72 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-031 — `symbol_enrichment` has no provenance column, unlike its two sibling enrichment tables
+
+- **origin:** Phase 63D (Domain reconstruction), `domain-skeptic`'s own
+  independent review of the draft domain corpus, cluster `EVID`'s
+  `provenance.md` concept page
+- **date:** 2026-09-23
+- **project_revision:** `fef153b`
+- **observation:** `src/codecompass/graph.py`'s `symbol_enrichment`
+  table has exactly four columns (`id`, `symbol_id`, `purpose`,
+  `generated_at`) — no `model` column at all, unlike
+  `vendor_enrichment`/`doc_relation_enrichment`, which both carry
+  `model TEXT NOT NULL`. `decisions/0054`'s own claim that all three
+  enrichment tables uniformly distinguish producers "using a column
+  that has existed since Phase 14" is factually wrong for
+  `symbol_enrichment` specifically — confirmed by reading the real
+  schema directly (`graph.py:176-181`) and `graph.record_symbol_enrichment`'s
+  own signature (`graph.py:1545-1556`), which has no `model` parameter
+  anywhere. `symbol_enrichment` rows currently cannot be attributed to a
+  specific producer (agent or automated API call) at all.
+- **evidence:** `src/codecompass/graph.py:176-181` (schema),
+  `:1545-1556` (`record_symbol_enrichment`);
+  `decisions/0054-agent-driven-enrichment-is-a-second-non-authoritative-producer.md`
+  (the "uniform column since Phase 14" claim, contradicted for this one
+  table); `docs/domain/concepts/provenance.md`'s own counterexample
+  section (`OBS-EVID-011`, `CL-EVID-008`), independently re-verified by
+  `domain-skeptic` against the real schema
+  (`planning/retros/_domain-skeptic-review-phase-63d.md` §3).
+- **classification:** future-improvement
+- **status:** candidate
+- **recurrence:**
+- **promoted_to:**
+
+### L-032 — the external adapter protocol's wire-level `ecosystem` field and `capabilities` list are received but never validated
+
+- **origin:** Phase 63D (Domain reconstruction), `domain-skeptic`'s own
+  independent review of the draft domain corpus, cluster `ADPT`'s
+  `ecosystem.md`/`capability.md` concept pages
+- **date:** 2026-09-23
+- **project_revision:** `fef153b`
+- **observation:** `ExternalAdapterProcess.ecosystem`
+  (`external_process.py:51,83`) is assigned from an external adapter's
+  `initialize` response and never subsequently read, compared against
+  `core.Ecosystem`, or used for any dispatch/validation decision
+  anywhere in `src/codecompass/adapters/*.py` or `sync.py` — confirmed
+  by direct grep of every `.ecosystem` attribute access. Separately,
+  `self.capabilities = tuple(response.get("capabilities", []))`
+  (`external_process.py:84`) performs no membership check against the
+  protocol's own closed 4-value set (`dependencies`/`symbols`/
+  `observations`/`diagnostics`) — an adapter reporting a fifth,
+  unrecognized capability string would be accepted uncomplainingly.
+  Both are real, currently-inert implementation gaps: nothing in the
+  current implementation would detect or surface an external adapter
+  reporting an `ecosystem` string that disagrees with the `Ecosystem`
+  value CodeCompass configured it under, or a bogus capability string.
+- **evidence:** `src/codecompass/adapters/external_process.py:51,53-84`
+  (both fields, no validation); `docs/domain/concepts/ecosystem.md`'s
+  own counterexample section (`OBS-ADPT-017`, `EV-ADPT-010`) and
+  `docs/domain/concepts/capability.md`'s own counterexample section
+  (`OBS-ADPT-005`), both independently re-verified by `domain-skeptic`
+  against the real source
+  (`planning/retros/_domain-skeptic-review-phase-63d.md` §3).
+- **classification:** future-improvement
+- **status:** candidate
+- **recurrence:**
+- **promoted_to:**
+
 ### L-030 — a live check's "realness" is not, by itself, evidence that it adds more informative signal than an already-passing fixture suite covering the same surface
 
 - **origin:** Phase 63 (lightweight ordinary-project smoke test), retro

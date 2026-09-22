@@ -1,0 +1,31 @@
+id: OBS-ADPT-017
+kind: observation
+method: executable
+what_was_done: >
+  Ran `grep -rn "\.ecosystem\b" src/codecompass/adapters/*.py
+  src/codecompass/sync.py` and manually inspected every hit, to check
+  whether ExternalAdapterProcess's own wire-reported `ecosystem`
+  attribute (set in initialize(), OBS-ADPT-005) is ever read/validated
+  anywhere else in the codebase.
+tool: grep (GNU grep)
+tool_version: "not captured explicitly"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: null
+raw_result: >
+  Every remaining hit after excluding the assignment site itself and
+  `config.ecosystem`/`self.config.ecosystem` (VendorConfig's own field,
+  a different attribute entirely) is empty -- no code anywhere in
+  src/codecompass/ reads ExternalAdapterProcess.ecosystem (the wire
+  response's free-text "ecosystem" field, distinct from
+  core.Ecosystem/VendorConfig.ecosystem) after it is set in
+  initialize(). HaskellAdapter never references self-process.ecosystem;
+  get_adapter's dispatch is driven entirely by VendorConfig.ecosystem
+  (a closed 4-member Ecosystem enum, fixed on the CodeCompass side
+  before any adapter process is even invoked). The wire-level
+  "ecosystem" field is therefore currently write-only telemetry from
+  CodeCompass's own perspective -- stored on the ExternalAdapterProcess
+  instance but never consulted for dispatch, validation, or any other
+  decision.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

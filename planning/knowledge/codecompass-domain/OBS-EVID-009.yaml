@@ -1,0 +1,29 @@
+id: OBS-EVID-009
+kind: observation
+method: doc_read
+what_was_done: >
+  Read decisions/0051-agent-suggested-context-is-captured-not-graphed.md
+  in full.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "decisions/0051-agent-suggested-context-is-captured-not-graphed.md:1-115"
+raw_result: >
+  The ADR's own Decision text states: "An agent's suggested
+  relationship is an observation with provenance. It is captured in
+  `planning/context-gaps/` and nowhere else... It never enters
+  `context-graph.db`... It becomes authoritative only by promotion
+  through the learning lifecycle" into either a Stage C
+  mechanical-detection improvement (GATE DB) or a Stage E graph
+  capability (GATE DD). Also states `planning/context-gaps/` is "a
+  sibling of `planning/learnings/`, not part of it... a learning is
+  'how we should work'; a context-gap is 'what the graph cannot
+  represent'." This ADR's own use of the word "observation" (lower-case,
+  ordinary English -- "an observation with provenance") predates Phase
+  54c's own formal `kind: observation` record (Phase 43c vs. Phase 54c)
+  and is not the same schema, though it is a direct conceptual
+  ancestor cited by phase-54c-evidence-knowledge-workflow.md's own §0
+  and §1 table.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

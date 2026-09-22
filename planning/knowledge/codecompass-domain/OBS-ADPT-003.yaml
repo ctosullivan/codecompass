@@ -1,0 +1,24 @@
+id: OBS-ADPT-003
+kind: observation
+method: source_read
+what_was_done: >
+  Read src/codecompass/adapters/__init__.py in full (32 lines): the
+  _ADAPTER_BY_ECOSYSTEM dispatch table and get_adapter() function.
+tool: null
+tool_version: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: "src/codecompass/adapters/__init__.py:1-32"
+raw_result: >
+  _ADAPTER_BY_ECOSYSTEM is a dict[Ecosystem, type[EcosystemAdapter]]
+  mapping exactly the four Ecosystem enum members (NPM, PYTHON, CARGO,
+  HASKELL) to exactly one adapter class each (NpmAdapter, PythonAdapter,
+  CargoAdapter, HaskellAdapter). get_adapter(config, project_root)
+  constructs and returns
+  _ADAPTER_BY_ECOSYSTEM[config.ecosystem](config, project_root) -- the
+  single dispatch point sync.py uses instead of any call site
+  constructing an adapter class directly. No conditional/fallback logic:
+  every VendorConfig.ecosystem value maps to exactly one adapter class,
+  a closed, total mapping over the four-member Ecosystem enum.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

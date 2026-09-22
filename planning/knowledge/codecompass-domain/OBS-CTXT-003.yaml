@@ -1,0 +1,27 @@
+id: OBS-CTXT-003
+kind: observation
+method: doc_read
+what_was_done: >
+  Read the real, already-shipped example of a context packet:
+  planning/knowledge/doc-origin-pinned-reference/context-packet.md in
+  full, plus its sibling records (CL-DOCORIGIN-001, OBS-DOCORIGIN-001,
+  EV-DOCORIGIN-001, DE-DOCORIGIN-001) to see the record kinds populated
+  with real content rather than only the template in the plan.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "planning/knowledge/doc-origin-pinned-reference/context-packet.md:1-80; CL-DOCORIGIN-001.yaml; OBS-DOCORIGIN-001.yaml; EV-DOCORIGIN-001.yaml; DE-DOCORIGIN-001.yaml"
+raw_result: >
+  context-packet.md opens by explicitly naming itself "a compacted
+  implementation input, not a copy of design.md" and instructs the
+  reader to consult design.md only if the packet proves insufficient,
+  logging the gap in packet-sufficiency.md. Every substantive bullet
+  ends with parenthetical citations back to specific CL-/EV-/DE-/OBS-
+  ids (e.g. "(CL-DOCORIGIN-001, EV-DOCORIGIN-001)"). This is a
+  feature-scoped artifact living inside one feature's own knowledge
+  folder, never a project-wide or per-vendor artifact, and it cites
+  context-graph.db read-only (never writes to it) when relevant symbols
+  are needed.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

@@ -1,0 +1,20 @@
+id: EV-CTXT-010
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  This project's own root CLAUDE.md literally uses the phrase
+  "generated reference digest" for the per-vendor artifact set, and
+  docs/cli-reference.md independently calls `codecompass chat` a
+  "digest-only" tool "grounded on persisted digest files
+  (vendor/<name>/CLAUDE.md, plus OVERVIEW.md...)". Across CLAUDE.md,
+  cli-reference.md, and architecture/overview.md, "digest" is used
+  informally in three overlapping senses with no single passage
+  defining all three side by side: (1) the VendorDigest dataclass
+  itself; (2) the full persisted per-vendor file set collectively; (3)
+  specifically the vendor's own CLAUDE.md file text ("digest text").
+observations: [OBS-CTXT-012]
+source_ref: null
+doc_ref: "CLAUDE.md:167; docs/cli-reference.md:9,320-330; architecture/overview.md:1526,1728"
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

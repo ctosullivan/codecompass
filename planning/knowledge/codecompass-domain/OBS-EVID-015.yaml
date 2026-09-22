@@ -1,0 +1,37 @@
+id: OBS-EVID-015
+kind: observation
+method: executable
+what_was_done: >
+  Ran `grep -n "invariant" planning/phase-54c-evidence-knowledge-workflow.md`
+  and separately checked every real design.md/context-packet.md file
+  under planning/knowledge/ for an "invariants" section, to find every
+  place "invariant" is used as a structured artifact (not just a
+  passing English word) across the whole evidentiary-model corpus, and
+  confirm whether any of the six record kinds is itself named
+  `invariant`.
+tool: grep (GNU grep)
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: null
+raw_result: >
+  planning/phase-54c-evidence-knowledge-workflow.md's only structured
+  use of "invariant" is line 584: "invariants (things that must stay
+  true — a `design.md` subset)" -- one bullet in §6's context-packet
+  section list, not a record kind, not a required design.md section
+  (§4's design.md section list does not itself name "invariants" as a
+  heading; §6's context-packet does). No planning/knowledge/*/design.md
+  file in the current corpus (hledger-depth, doc-origin-pinned-
+  reference, haskell-api-surface-extraction) has its own "## Invariants"
+  heading -- each design.md instead folds invariant-like statements
+  into its "Behavioural rules and precedence" section. This confirms
+  "invariant" in Phase 54c's own model is a narrative label for content
+  that lives inside a Claim/design.md/context-packet, never a citable
+  record id of its own -- distinct from this phase's own new
+  docs/domain/invariants.md, which planning/phase-63d-domain-
+  reconstruction.md §3 defines as "cross-cutting rules that hold
+  across multiple concepts (pulled up from individual concept docs
+  where a rule isn't concept-local)" -- a durable, project-wide
+  Markdown file, not a per-feature design.md subsection.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

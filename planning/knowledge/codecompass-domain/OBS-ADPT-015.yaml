@@ -1,0 +1,32 @@
+id: OBS-ADPT-015
+kind: observation
+method: source_read
+what_was_done: >
+  Read tests/fixtures/fake_adapter.py (103 lines) and
+  tests/test_adapters_external_process.py (first ~60 of its lines) in
+  full, to see the closed method/capability/error sets exercised by a
+  real (if hand-written, non-Haskell) implementation of the protocol.
+tool: null
+tool_version: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: "tests/fixtures/fake_adapter.py:1-103; tests/test_adapters_external_process.py:1-60"
+raw_result: >
+  fake_adapter.py's own docstring calls itself "a real, minimal
+  implementation of the codecompass-adaptor-protocol wire shape, not a
+  mock of ExternalAdapterProcess itself." Its initialize response
+  reports all four capabilities (dependencies, symbols, observations,
+  diagnostics); its analyze_project response returns all four sections
+  including a two-level dependency tree and one symbols entry
+  ({"name": "doThing", "purpose": None, "module": "Demo.Core"}, no
+  "kind"/"note" -- i.e. exercising only the default/omitted case for
+  those two optional fields, not the reexport/undetermined case);
+  unknown methods get {"error": {"code": "unsupported_capability", ...}}.
+  test_adapters_external_process.py::test_initialize_reads_capabilities_and_metadata
+  asserts process.capabilities == the exact 4-tuple; a separate
+  test_protocol_version_mismatch_raises_adapter_error test (mode
+  "bad_version") confirms initialize() hard-errors on a
+  protocol_version mismatch, matching decisions/0057's "no negotiation
+  range" statement.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

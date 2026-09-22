@@ -1,0 +1,23 @@
+id: CL-ADPT-002
+kind: claim
+statement: >
+  Two EcosystemAdapter implementation strategies coexist by deliberate
+  design, not as one superseding the other: (1) in-process (npm,
+  Python, Cargo) -- an importable Python class inside src/codecompass/
+  shelling out to native ecosystem tooling; (2) external-process
+  (Haskell, the reference implementation) -- a thin in-process
+  dispatcher for simple manifest reads, delegating all real
+  ecosystem-specific logic to an independent OS process speaking a
+  small JSON-Lines protocol, motivated by ecosystems (e.g. a
+  hypothetical proprietary COBOL adapter) whose implementation cannot or
+  should not be in-process, GPL-covered Python code. decisions/0002 (the
+  first strategy) is explicitly "not superseded" by decisions/0057 (the
+  second) -- in-process remains the default, lower-overhead strategy.
+derivation: DE-ADPT-002
+supporting_evidence: [EV-ADPT-002, EV-ADPT-003, EV-ADPT-006]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

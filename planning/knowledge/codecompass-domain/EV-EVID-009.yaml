@@ -1,0 +1,19 @@
+id: EV-EVID-009
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  A planning/context-gaps/ entry (e.g. CG-001) has a fixed field set
+  (origin, date, codecompass_revision, project, "the edge", edge kind,
+  reasoning, "what the graph shows instead", detectability assessment,
+  smallest candidate, classification, status, recurrence) that shares
+  no field names with Phase 54c's Observation or Evidence records, is
+  filed as growing inline prose in one inbox.md rather than one YAML
+  file per record, and is never itself promoted into an Evidence or
+  Claim record -- its own promotion path is a Stage C/E gated roadmap
+  decision (GATE DB/GATE DD), not a Decision/Requirement pair.
+observations: [OBS-EVID-012]
+source_ref: "planning/context-gaps/README.md:1-83"
+doc_ref: null
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

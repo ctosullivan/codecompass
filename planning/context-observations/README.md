@@ -88,3 +88,14 @@ forever — that's expected, not a backlog.
 directory as of Phase 52 — its historical entries were migrated in
 verbatim (reshaped into this format, no content lost), and it now
 carries a pointer here rather than accepting new entries.
+
+**Naming note (found during Phase 63D's domain reconstruction,
+`docs/domain/concepts/observation.md`):** this directory's own entries
+are id-prefixed `OBS-NNN` (`TEMPLATE.md`), which textually collides with
+Phase 54c's own `OBS-<feature>-NNN` Observation record prefix
+(`planning/knowledge/<feature-slug>/`) — a completely different record
+shape and purpose (experience with an edge that already exists, vs. a
+primary-research act of looking at a feature's own behaviour). The
+collision is surface-level only; see
+`docs/domain/concepts/observation.md`'s own "What Observation is NOT"
+section for the full disambiguation.

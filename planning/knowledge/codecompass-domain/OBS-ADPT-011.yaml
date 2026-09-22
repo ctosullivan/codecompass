@@ -1,0 +1,27 @@
+id: OBS-ADPT-011
+kind: observation
+method: test_run
+what_was_done: >
+  Ran `.venv/bin/python -m pytest tests/test_adapters_base.py
+  tests/test_adapters_dispatch.py tests/test_adapters_external_process.py
+  tests/test_adapter_haskell.py -q` from the repository root, against
+  the checked-out working tree (no code changes made).
+tool: pytest
+tool_version: "9.1.1 (per __pycache__ filename tags observed; not independently re-queried via --version due to environment's bare `python` lacking pytest)"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: null
+raw_result: >
+  `30 passed in 35.25s`, zero failures, zero errors, zero skips. This
+  covers EcosystemAdapter's abstract/concrete method contract
+  (test_adapters_base.py), get_adapter's dispatch table
+  (test_adapters_dispatch.py), the generic JSON-Lines protocol client
+  against a hand-written fake adapter process
+  (test_adapters_external_process.py), and HaskellAdapter's own
+  manifest-reading + external-process-delegation behaviour
+  (test_adapter_haskell.py) -- i.e. real, currently-passing executable
+  confirmation that both adapter strategies (in-process ABC contract,
+  external-process wire protocol) behave as decisions/0057/0058 and
+  architecture/overview.md describe them, on this exact revision.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

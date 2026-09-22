@@ -1,0 +1,15 @@
+id: EV-EVID-002
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  Real records across three independent feature directories
+  (hledger-depth, doc-origin-pinned-reference, haskell-api-surface-
+  extraction) conform structurally to the six-kind schema with no
+  drift, and every Claim/Derivation pair observed is 1:1 (one
+  Derivation per Claim, each citing the other back).
+observations: [OBS-EVID-002, OBS-EVID-003]
+source_ref: "planning/knowledge/hledger-depth/*.yaml; planning/knowledge/doc-origin-pinned-reference/*.yaml; planning/knowledge/haskell-api-surface-extraction/*.yaml"
+doc_ref: null
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

@@ -1,0 +1,24 @@
+id: CL-ADPT-006
+kind: claim
+statement: >
+  "capability" and "feature" are not interchangeable in this project.
+  capability is the external adapter wire protocol's own specific,
+  closed term: one of exactly four strings (dependencies, symbols,
+  observations, diagnostics), declared by an adapter once at
+  initialize, gating which of analyze_project's result sections that
+  adapter may legitimately return. "feature" has no such role anywhere
+  in this project -- it is ordinary, unscoped English used throughout
+  ADRs/plans/roadmap prose for "a thing CodeCompass does or delivers,"
+  with no enumeration, no handshake, and no schema constraint attached
+  to it. Casually calling something a CodeCompass "feature" (e.g. "the
+  symbols() feature") is not wrong English, but it is never the same
+  claim as declaring a protocol "capability" -- only the external
+  adapter protocol has capabilities in this closed-set sense.
+derivation: DE-ADPT-006
+supporting_evidence: [EV-ADPT-009]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

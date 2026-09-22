@@ -1,0 +1,16 @@
+id: EV-CTXT-004
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  architecture/overview.md's "Context graph" section's prose
+  description of every edge table, the origin enum, and
+  doc_relation_enrichment's deliberate no-FK design matches the real
+  CREATE TABLE statements in src/codecompass/graph.py exactly --
+  independently checked against source (EV-CTXT-003), no discrepancy
+  found for any of the six edge tables or the origin enum.
+observations: [OBS-CTXT-005]
+source_ref: null
+doc_ref: "architecture/overview.md:1050-1320"
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

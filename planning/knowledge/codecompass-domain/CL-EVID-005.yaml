@@ -1,0 +1,33 @@
+id: CL-EVID-005
+kind: claim
+statement: >
+  A "Decision" record (DEC-<feature>-NNN), in Phase 54c's own model,
+  is the ONE record kind only a human/project-owner authors or
+  explicitly ratifies -- it records CHOSEN target-project behaviour,
+  never a revision of factually observed upstream behaviour, and its
+  own `supersedes` field only ever names a prior Decision, never a
+  Claim (the same structural hard rule as CL-EVID-003, enforced
+  mechanically). A significant, currently-real edge case: EVERY
+  Decision record produced under this model to date (DEC-DOCORIGIN-001,
+  DEC-HSAPI-001) was authored by the lead explicitly standing in for
+  the actual user/project-owner role, disclosed plainly in each
+  record's own `decided_by` field and in that phase's own retro -- this
+  model's own "only a human authors this" property has therefore never
+  yet been tested against a real, independent, non-standing-in human
+  decision-maker anywhere in this repository's history as of this
+  research. This matters going forward specifically because Phase 63D
+  itself (development-methodology.md, amended 2026-09-20) explicitly
+  withdraws the lead's stand-in permission for genuine domain/product
+  ambiguities from this point on: any new Decision produced under this
+  methodology from Phase 63D onward must be either a real ruling by the
+  actual user, or the ambiguity stays an open question rather than
+  becoming a Decision record at all -- a stricter bar than every real
+  Decision record on file currently meets.
+derivation: DE-EVID-005
+supporting_evidence: [EV-EVID-003, EV-EVID-006]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-23"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

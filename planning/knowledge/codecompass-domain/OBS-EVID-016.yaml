@@ -1,0 +1,36 @@
+id: OBS-EVID-016
+kind: observation
+method: executable
+what_was_done: >
+  Ran `grep -n "provenance" planning/phase-54c-evidence-knowledge-workflow.md`
+  to enumerate every structured (not merely incidental prose) use of
+  "provenance" in the governing plan, and cross-checked against
+  OBS-EVID-010/011's enrichment-table findings and OBS-EVID-012's
+  context-gap field-shape findings, to determine whether "provenance"
+  is ever itself a record kind or a single unified mechanism anywhere
+  in this codebase.
+tool: grep (GNU grep)
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: null
+raw_result: >
+  Every hit is either (a) §2.3's table heading "Provenance fields
+  actually adopted (from the prompt's candidate list)" -- listing
+  seven *fields* (source/artifact, repository revision/commit,
+  location/symbol, method of observation, tool/adapter, timestamp,
+  agent/process responsible, parent evidence/claims, status) spread
+  across the six existing record kinds, never a standalone
+  `kind: provenance` record; or (b) prose describing context-gaps
+  ("reviewable, provenance-carrying prose observations",
+  decisions/0051) or enrichment (the `model` column, decisions/0054)
+  as each having "a" provenance mechanism of their own, different in
+  shape from each other and from Phase 54c's own field set (confirmed
+  directly: OBS-EVID-011 found enrichment's whole provenance mechanism
+  is one TEXT column; OBS-EVID-012 found context-gaps' provenance is
+  four narrative fields — origin/date/codecompass_revision/project).
+  No single schema, table, or record kind named "provenance" unifies
+  these three mechanisms anywhere in the repository as of this
+  research.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

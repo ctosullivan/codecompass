@@ -1,0 +1,26 @@
+id: OBS-CTXT-016
+kind: observation
+method: source_read
+what_was_done: >
+  Read a real, on-disk generated digest (vendor/typer/CLAUDE.md, this
+  actual repository's own vendored typer dependency) to use as a
+  concrete worked example rather than only the template architecture/
+  overview.md describes.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "vendor/typer/CLAUDE.md:1-25"
+raw_result: >
+  Real file content: "# typer" header, "## Metadata" (Ecosystem:
+  python, Installed version: 0.27.2), "## Grounding" (fixed
+  instructional preamble: prefer this file's pinned-version content
+  over training knowledge), "## Public API surface" ("_No API surface
+  extracted._" -- this vendor has no enrichment/extracted surface at
+  this revision), "## Known gotchas" ("No known side effects
+  detected."), "## Quick links" (relative links to ./FILETREE.md,
+  ./DEPTREE.md, and ../../CLAUDE.md). Matches architecture/
+  overview.md's six-section description exactly, section-by-section,
+  in the same order, for a real vendor with no enrichment yet.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

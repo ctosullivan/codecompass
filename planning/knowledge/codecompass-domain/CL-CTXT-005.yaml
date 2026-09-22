@@ -1,0 +1,36 @@
+id: CL-CTXT-005
+kind: claim
+statement: >
+  "Digest" is a real, named code concept (VendorDigest,
+  src/codecompass/core.py) -- a per-vendor aggregate combining
+  deterministic, always-free output (file tree, dependency tree, API
+  surface) with a read-only lookup of that vendor's existing AI
+  enrichment (technical description, conversational overview, action
+  pointer) -- rendered by sync_vendor into DEPTREE.md/deptree.json,
+  FILETREE.md/filetree.json, OVERVIEW.md (conditionally), and CLAUDE.md
+  under vendor/<name>/, unconditionally on every whole-project sync for
+  every tracked vendor. This is confirmed as real, currently-produced
+  output (not only a design description) by a real generated file on
+  disk in this exact repository (vendor/typer/CLAUDE.md) matching the
+  described rendering section-by-section. The word "digest" is,
+  however, used informally in the project's own prose in three
+  overlapping ways that are never explicitly distinguished in one
+  place: the VendorDigest object itself, the full persisted per-vendor
+  file set collectively, and specifically a vendor's own CLAUDE.md
+  text ("digest text"). None of these three informal usages
+  contradicts another -- they are nested, not competing -- but the
+  looseness is real and worth naming rather than silently smoothing
+  over.
+derivation: DE-CTXT-005
+supporting_evidence:
+  - EV-CTXT-006
+  - EV-CTXT-009
+  - EV-CTXT-010
+  - EV-CTXT-013
+  - EV-CTXT-014
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-23"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

@@ -1,0 +1,46 @@
+id: OBS-SKEP-002
+kind: observation
+method: executable
+what_was_done: >
+  Ran `git ls-remote` against four URLs to test which spelling of the
+  two new repository names ("adapter" per decisions/0058's own prose,
+  "adaptor" per .gitmodules/every checked-out artifact) corresponds to
+  a real, live, public GitHub repository:
+  https://github.com/ctosullivan/codecompass-adaptor-protocol.git,
+  https://github.com/ctosullivan/codecompass-adapter-protocol.git,
+  https://github.com/ctosullivan/codecompass-adaptor-haskell.git, and,
+  as a control, a deliberately fabricated, near-certainly-nonexistent
+  URL (https://github.com/ctosullivan/this-repo-should-not-exist-xyz123.git)
+  to characterize what anonymous git's own error output looks like for a
+  repository that does not exist, so a null result on the "adapter"
+  spelling could be interpreted correctly.
+tool: git
+tool_version: "system git"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: null
+raw_result: >
+  `codecompass-adaptor-protocol.git` (adaptor spelling): resolves, real
+  refs returned -- HEAD and refs/heads/main both at
+  596fb94fae9972739f016968dee320160a803175, plus a real
+  refs/tags/v0.1.0 (2aad62d8d1408fbccfab9f4293ba53f03fcaf958,
+  dereferencing to 89126860fa7daa3245eb92b0cb4bebac077b43a2). Exit 0.
+  `codecompass-adaptor-haskell.git` (adaptor spelling): resolves
+  identically -- HEAD/refs/heads/main at
+  dfd7a783667a91ba5a55a9f2b534cc0c1eb746ae, refs/tags/v0.1.0 at
+  130618cb9278a20350a856d4495fda00cc41076b. Exit 0.
+  `codecompass-adapter-protocol.git` (adapter spelling, matching
+  decisions/0058's own prose): `fatal: could not read Username for
+  'https://github.com': No such device or address`. Exit 128.
+  Control (`this-repo-should-not-exist-xyz123.git`, known-fabricated,
+  near-certainly-never-registered): identical error text and exit code
+  128 as the "adapter"-spelled URL. Anonymous, non-interactive git
+  cannot distinguish "repository does not exist" from "repository is
+  private" -- both produce this same generic credential-prompt failure
+  -- so this test cannot prove the "adapter"-spelled repository does not
+  exist, but it does prove the "adaptor"-spelled repositories are real,
+  live, public, and tagged v0.1.0, while the "adapter"-spelled protocol
+  URL behaves identically to a repository that was never created, not
+  like a real, reachable public repository.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "domain-skeptic agent dispatch"
+status: recorded

@@ -1,0 +1,20 @@
+id: EV-ADPT-002
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  Two genuinely different EcosystemAdapter implementation strategies
+  coexist: an in-process strategy (npm/Python/Cargo -- native tooling
+  shelled out to from within CodeCompass's own process, e.g. `npm ls
+  --json`, `pipdeptree --json`), and an external-process strategy
+  (HaskellAdapter -- a thin in-process dispatcher for simple manifest
+  reads, delegating everything that embodies real ecosystem-specific
+  logic to a separate OS process at adapters/haskell/, spoken to only
+  through the generic external_process.py JSON-Lines client, which
+  itself has zero ecosystem-specific knowledge and is reusable by any
+  future external adapter unmodified).
+observations: [OBS-ADPT-004, OBS-ADPT-005]
+source_ref: "src/codecompass/adapters/haskell.py:1-288; src/codecompass/adapters/external_process.py:1-171"
+doc_ref: null
+test_ref: "tests/test_adapter_haskell.py"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+status: current

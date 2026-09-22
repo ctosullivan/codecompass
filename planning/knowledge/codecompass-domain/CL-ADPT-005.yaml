@@ -1,0 +1,33 @@
+id: CL-ADPT-005
+kind: claim
+statement: >
+  Ecosystem, vendor, and adapter are three related but distinct
+  concepts. Ecosystem is a fixed, closed 4-member enum (npm, python,
+  cargo, haskell) -- a category, not a thing you configure per project.
+  A vendor is one tracked dependency: a VendorConfig(name, ecosystem)
+  entry from vendor.toml, belonging to exactly one Ecosystem (e.g.
+  VendorConfig(name="hledger-lib", ecosystem=Ecosystem.HASKELL)). An
+  adapter is the EcosystemAdapter subclass implementing
+  ecosystem-specific logic for one Ecosystem value (e.g. HaskellAdapter
+  for Ecosystem.HASKELL) -- constructed fresh per (VendorConfig,
+  project_root) via get_adapter, not itself configured or tracked as
+  project state the way a vendor is. Concretely: many vendors can share
+  one Ecosystem (multiple Haskell vendors all use Ecosystem.HASKELL) and
+  therefore share one adapter *class*, but each vendor still gets its
+  own adapter *instance*, scoped to that vendor's own config and
+  project_root. Edge case: the "one vendor, one adapter instance"
+  relationship is not a structural filesystem guarantee -- HaskellAdapter's
+  own monorepo resolution (_resolve_package_dir) shows a single
+  project_root can host multiple vendors' worth of source (e.g.
+  hledger-lib/hledger/hledger-ui all inside one `hledger` checkout), and
+  the adapter instance itself is responsible for narrowing project_root
+  down to the one subdirectory matching its own vendor's name before any
+  other method call is meaningful.
+derivation: DE-ADPT-005
+supporting_evidence: [EV-ADPT-005, EV-ADPT-002]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

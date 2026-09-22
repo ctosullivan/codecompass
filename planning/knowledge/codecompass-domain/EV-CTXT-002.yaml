@@ -1,0 +1,17 @@
+id: EV-CTXT-002
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  A real, already-shipped context-packet.md instance
+  (doc-origin-pinned-reference) opens by explicitly disclaiming that it
+  is a copy of design.md, instructs the reader to fall back to
+  design.md only if insufficient (logging the gap), and cites CL-/EV-/
+  DE-/OBS- ids inline for every substantive bullet -- confirming the
+  packet is a citation-carrying projection of already-APPROVED
+  knowledge, not an independent or free-form document.
+observations: [OBS-CTXT-003]
+source_ref: null
+doc_ref: "planning/knowledge/doc-origin-pinned-reference/context-packet.md:1-80"
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

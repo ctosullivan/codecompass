@@ -1,0 +1,15 @@
+id: EV-EVID-001
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  Phase 54c's evidentiary model defines exactly six record kinds
+  (Observation, Evidence, Claim, Derivation, Decision, Requirement),
+  each a small closed-field record, not a class hierarchy -- with no
+  seventh kind for "invariant" or "provenance", and no confidence-score
+  field on any kind.
+observations: [OBS-EVID-001, OBS-EVID-004]
+source_ref: "planning/phase-54c-evidence-knowledge-workflow.md:108-349"
+doc_ref: null
+test_ref: "scripts/check_knowledge_base.py"
+repository_revision: "working tree, 2026-09-23"
+status: current

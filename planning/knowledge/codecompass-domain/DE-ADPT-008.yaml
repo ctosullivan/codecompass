@@ -1,0 +1,25 @@
+id: DE-ADPT-008
+kind: derivation
+claim: CL-ADPT-008
+method: >
+  Noticed the "adaptor" spelling while reading external_process.py's own
+  module docstring and CAPABILITIES comment (both cite
+  "codecompass-adaptor-protocol"), which read oddly next to
+  decisions/0058's "adapter" spelling I had just read minutes earlier --
+  followed up rather than assuming one was a typo I could silently
+  normalize past. Read .gitmodules directly (the one place a real,
+  externally-verifiable fact -- the actual git remote URL -- is
+  recorded) and confirmed the "adaptor" spelling is what is actually
+  configured and checked out, not merely what one docstring happens to
+  say. Checked every other file that names these repositories in prose
+  (base.py, haskell.py, SCHEMA.md itself) and found "adaptor" used
+  consistently everywhere except decisions/0058's own body text. Did not
+  attempt to resolve which spelling is "correct" myself -- this is a
+  factual/documentation-accuracy question about an existing ADR's own
+  content, and per this role's own hard rule I do not edit
+  decisions/*.md, so I record the contradiction as a Claim rather than
+  silently treating one spelling as authoritative or quietly picking a
+  side in the docs/domain corpus.
+inputs: [EV-ADPT-008]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

@@ -1,0 +1,24 @@
+id: DE-EVID-007
+kind: derivation
+claim: CL-EVID-007
+method: >
+  Initially assumed, before checking, that "invariant" would turn out
+  to be a seventh, slightly-less-formal record kind alongside Phase
+  54c's six (plausible, since planning/phase-63d-domain-
+  reconstruction.md §1 lists "invariant" in the same in-scope concept
+  list as "evidence, observation, claim, derivation... decision" with
+  no visual distinction). Caught this assumption by grepping the
+  governing plan directly (OBS-EVID-015) rather than trusting the
+  plan's own list ordering as evidence of schema parity -- found zero
+  `kind: invariant` anywhere, and zero required design.md "Invariants"
+  heading in any real design.md on file. Then traced every real,
+  structured use of the word across planning/learnings/,
+  planning/phase-54c-evidence-knowledge-workflow.md §6, and
+  planning/phase-63d-domain-reconstruction.md §3 to enumerate the three
+  senses found, rather than stopping at the first ("invariant → test")
+  and assuming it was the only one -- this directly follows this role's
+  own step-5 discipline ("trace every real path... not just the first
+  plausible-looking one").
+inputs: [EV-EVID-011, EV-EVID-012]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

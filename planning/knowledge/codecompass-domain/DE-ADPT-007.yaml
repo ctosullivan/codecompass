@@ -1,0 +1,22 @@
+id: DE-ADPT-007
+kind: derivation
+claim: CL-ADPT-007
+method: >
+  While reading architecture/overview.md's "Adapter interface" section
+  (for CL-ADPT-001), noticed its own opening disclaimer naming a second
+  sense of "adapter" and treated that as a lead worth following rather
+  than skimming past it as boilerplate. Verified the disclaimer's own
+  factual claim ("host-output adapters ... render already-computed
+  content ... rather than abstracting a package manager") by directly
+  grepping the three named modules' own source for the word "adapter"
+  -- zero hits, confirming this second sense really does exist only as
+  documentation prose, with no source-level artifact backing it the way
+  EcosystemAdapter backs the first sense. This distinction is recorded
+  as a Claim in its own right (not folded silently into CL-ADPT-001)
+  because it is exactly the kind of "boundary is genuinely fuzzy" edge
+  case the phase brief requires each concept page to surface explicitly,
+  and because it would be easy for a docs/domain reader to miss if the
+  adapter concept page only ever discussed EcosystemAdapter.
+inputs: [EV-ADPT-007]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

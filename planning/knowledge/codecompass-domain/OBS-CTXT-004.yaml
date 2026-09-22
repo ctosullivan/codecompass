@@ -1,0 +1,33 @@
+id: OBS-CTXT-004
+kind: observation
+method: source_read
+what_was_done: >
+  Read src/codecompass/graph.py's real schema verbatim: the full
+  CREATE TABLE block (lines 50-203) for all ten deterministic tables,
+  three enrichment tables, and meta, plus the row dataclasses (lines
+  206-360) and init_schema/open_graph (lines 361-620+). Cross-checked
+  every edge-table name and column list against architecture/
+  overview.md's "Context graph" section's own prose description.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "src/codecompass/graph.py:50-360"
+raw_result: >
+  Six real edge tables exist exactly as architecture/overview.md
+  describes them: uses_edges (source_file->vendor/symbol, symbol_id
+  nullable), documents_edges (doc_artifact->symbol, nullable chunk_id),
+  skill_mentions_edges (doc_artifact->vendor/source_file, both
+  nullable), routes_via_edges (vendor->doc_artifact, UNIQUE pair),
+  depends_on_edges (vendor->vendor, UNIQUE pair), doc_relations_edges
+  (doc_artifact-> vendor/doc_artifact, relation_kind CHECK'd to
+  'mentions_dependency'|'mentions_artifact', UNIQUE triple, nullable
+  chunk_id). doc_artifacts.origin is a CHECK enum with six values as of
+  this revision: codecompass_tool, codecompass_vendor, third_party,
+  project, vendor_upstream, pinned_reference (the sixth, Phase 54c/
+  CG-005's addition, already landed in the working schema at this
+  revision). No discrepancy found between the architecture doc's prose
+  and the real CREATE TABLE statements for any of these six edge
+  tables or the origin enum.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

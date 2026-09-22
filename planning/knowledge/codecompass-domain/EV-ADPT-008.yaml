@@ -1,0 +1,22 @@
+id: EV-ADPT-008
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  decisions/0058's own Decision-section prose consistently names the new
+  repositories "codecompass-adapter-protocol" and
+  "codecompass-adapter-haskell" (adapter spelling), but the actually
+  implemented/checked-out artifacts -- .gitmodules' own submodule names
+  and remote URLs, the real checked-out directory
+  (protocol/codecompass-adaptor-protocol/), and every module-level
+  docstring in base.py/external_process.py/haskell.py that names these
+  repositories in prose -- consistently use "adaptor" spelling
+  ("codecompass-adaptor-protocol", "codecompass-adaptor-haskell").
+  This is a literal, verifiable spelling mismatch between the governing
+  ADR's own stated repository names and the real, implemented
+  repository names, present at this revision.
+observations: [OBS-ADPT-007, OBS-ADPT-014]
+source_ref: ".gitmodules:1-6; src/codecompass/adapters/base.py; src/codecompass/adapters/external_process.py:1-14; src/codecompass/adapters/haskell.py:1-18"
+doc_ref: "decisions/0058-adapter-protocol-and-haskell-adapter-as-separate-repositories.md:34-80"
+test_ref: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+status: current

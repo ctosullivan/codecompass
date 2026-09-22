@@ -1,0 +1,27 @@
+id: OBS-CTXT-007
+kind: observation
+method: doc_read
+what_was_done: >
+  Read planning/v1-redefinition/context-quality-evaluation.md's
+  opening and §1 Ground rules, the fifth "context"-related mechanism
+  found (context-evaluator's own per-task report specification).
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "planning/v1-redefinition/context-quality-evaluation.md:1-60"
+raw_result: >
+  "Context-quality evaluation" is the context-evaluator agent's report
+  template judging whether CodeCompass's context gave a real advantage
+  on one reference-project task, by having the evaluator inspect the
+  target repository directly (never using CodeCompass to validate
+  CodeCompass) and comparing against a stated LOW/MODERATE/HIGH
+  advantage scale. This is a per-task, retrospective judgment of
+  "context" as *whatever CodeCompass surfaced for that task* (digests,
+  graph query output, packets, etc. -- not scoped to one artifact
+  type), distinct from context-health.md's forward-looking, whole-graph
+  assessment (OBS-CTXT-006) and distinct from a context-packet.md
+  (OBS-CTXT-003), which is Phase 54c's own specific Implement-stage
+  artifact, not a general term for "whatever context a task used."
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

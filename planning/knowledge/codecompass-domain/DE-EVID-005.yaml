@@ -1,0 +1,24 @@
+id: DE-EVID-005
+kind: derivation
+claim: CL-EVID-005
+method: >
+  Initially read DEC-DOCORIGIN-001 alone and nearly concluded "Decision
+  records are user-authored, per the schema's own comment" without
+  checking who actually authored the one real instance on file --
+  caught this by re-reading the record's own leading YAML comment
+  block and `decided_by` field literally, which explicitly discloses
+  the lead-standing-in fact. Deliberately then checked the second real
+  Decision (DEC-HSAPI-001, a different phase, a different feature) to
+  see whether this was a one-off caveat or the actual pattern for every
+  real Decision on file -- found the identical disclosure wording,
+  confirming it is the pattern, not an exception. Cross-referenced
+  development-methodology.md's own 2026-09-20 amendment (already read
+  during OBS-EVID-005/the governing plan itself) to confirm this
+  stand-in allowance is explicitly withdrawn going forward for Phase
+  63D's own genuine escalations -- meaning this claim's finding is not
+  just historical trivia but a live constraint on how any *new*
+  Decision record produced under this exact research effort would be
+  allowed to come into existence.
+inputs: [EV-EVID-003, EV-EVID-006]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

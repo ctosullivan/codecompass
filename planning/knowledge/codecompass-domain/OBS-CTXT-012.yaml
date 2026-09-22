@@ -1,0 +1,35 @@
+id: OBS-CTXT-012
+kind: observation
+method: doc_read
+what_was_done: >
+  Read this project's own root CLAUDE.md (the file governing this very
+  session) and docs/cli-reference.md's "chat" section for real,
+  in-the-wild usage of the word "digest" outside architecture/
+  overview.md, to check whether the term is used consistently.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "CLAUDE.md:167 (vendor table preamble); docs/cli-reference.md:9,320-330"
+raw_result: >
+  Root CLAUDE.md's own vendor-table preamble reads verbatim: "The table
+  below lists dependencies with a generated reference digest under
+  vendor/<name>/. Consult the linked digest before relying on training
+  knowledge for these libraries." -- this is a real, literal
+  co-occurrence of "reference" and "digest" describing the exact same
+  artifact this cluster is asked to disambiguate. docs/cli-reference.md
+  independently describes `codecompass chat` as "a secondary,
+  digest-only terminal Q&A tool" that is "grounded on persisted digest
+  files (vendor/<name>/CLAUDE.md, plus OVERVIEW.md if a grounded
+  description exists)" and is explicitly "narrower (only knows what's
+  in the digest, not the full pinned source)". Across CLAUDE.md,
+  cli-reference.md, and architecture/overview.md, "digest" is used
+  informally in three overlapping but not identical ways: (1) the
+  VendorDigest dataclass itself (a Python object, in-memory); (2) the
+  full persisted per-vendor file set (CLAUDE.md+FILETREE.md+
+  DEPTREE.md+OVERVIEW.md+json sidecars) collectively; (3) specifically
+  the vendor's own CLAUDE.md file's text ("digest text",
+  "vendor's own digest text", architecture/overview.md:1526,1728). No
+  single passage defines all three usages side by side.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

@@ -1,0 +1,28 @@
+id: OBS-EVID-003
+kind: observation
+method: doc_read
+what_was_done: >
+  Read every real record in
+  planning/knowledge/haskell-api-surface-extraction/ (13 Observation,
+  11 Evidence, 6 Claim, 6 Derivation, 1 Decision, 6 Requirement,
+  design.md, context-packet.md, packet-sufficiency.md) -- a second,
+  independent real instance of the model (Phase 60), to check whether
+  OBS-EVID-002's findings hold across more than one feature directory.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "planning/knowledge/haskell-api-surface-extraction/*.yaml"
+raw_result: >
+  Same findings as OBS-EVID-002 hold here too: DEC-HSAPI-001 uses only
+  `agrees_with_claim` (a list of 6 Claim ids this time, all six
+  CL-HSAPI-001..006), never `supersedes`; its `decided_by` field is
+  again literally "project owner (lead standing in for this dogfooding
+  run — see retro)", with an explanatory comment above the record
+  citing DEC-DOCORIGIN-001 as precedent for the same disclosure. No
+  Claim in this directory has `status: contradicted` or a non-empty
+  `contradicting_evidence`; design.md's own "Known uncertainties"
+  section (line 297) states this explicitly: "No Claim in this
+  knowledge base carries `status: contradicted`."
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

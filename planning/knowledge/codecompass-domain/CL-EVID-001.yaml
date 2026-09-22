@@ -1,0 +1,28 @@
+id: CL-EVID-001
+kind: claim
+statement: >
+  An "Evidence" record (EV-<feature>-NNN), in Phase 54c's own model, is
+  a strictly NEUTRAL package of one or more Observations (or a direct
+  source/doc/test citation) describing what was found -- it never
+  itself asserts that it supports or contradicts anything. That
+  relationship belongs only to whichever Claim later cites it via
+  `supporting_evidence`/`contradicting_evidence`, and the same Evidence
+  record may legitimately support one Claim while contradicting a
+  different, competing Claim without being rewritten either way. This
+  is the current, deliberately-amended intended meaning (the original
+  pre-amendment design let Evidence itself carry a support/contradict
+  tag; the 2026-09-18 amendment made it structurally neutral before any
+  implementation began). "Evidence" in this specific formal sense is
+  distinct from the loose, ordinary-English use of "evidence" elsewhere
+  in this repository (e.g. decisions/0051's "reviewable,
+  provenance-carrying prose observations" or context-gaps' own
+  "evidence trail" language), which predates and is not built from this
+  schema.
+derivation: DE-EVID-001
+supporting_evidence: [EV-EVID-001, EV-EVID-002, EV-EVID-013]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-23"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

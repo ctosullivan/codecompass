@@ -1,0 +1,17 @@
+id: EV-CTXT-008
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  Every EV-DOCORIGIN-*.yaml record under
+  planning/knowledge/doc-origin-pinned-reference/ populates the
+  source_ref/doc_ref/test_ref triple with a real file:line citation in
+  exactly one or two of the three fields, the rest explicitly null --
+  proving this citation-field sense of "reference" is real, populated,
+  load-bearing schema content in an already-shipped feature-knowledge
+  folder, not merely a template field.
+observations: [OBS-CTXT-010]
+source_ref: null
+doc_ref: "planning/knowledge/doc-origin-pinned-reference/EV-DOCORIGIN-001.yaml; EV-DOCORIGIN-008.yaml"
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

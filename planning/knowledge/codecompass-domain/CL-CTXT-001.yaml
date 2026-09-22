@@ -1,0 +1,36 @@
+id: CL-CTXT-001
+kind: claim
+statement: >
+  "Context" has no single canonical meaning in this project -- it names
+  at least five genuinely distinct, related-but-not-interchangeable
+  things, none of which is reducible to another: (1) context-graph.db,
+  the deterministic SQLite persistence layer of vendors/symbols/edges;
+  (2) "the context CodeCompass supplies to an agent" generally --
+  digests, graph query output, generated Skills, /discovery, chat
+  answers, i.e. everything a consuming agent might read, an informal
+  umbrella rather than one artifact; (3) a "context packet"
+  (context-packet.md), Phase 54c's own specific, curated,
+  feature-scoped Implement-stage artifact; (4) context-health.md /
+  context-use-log.md and the context-quality-evaluation.md report --
+  three distinct instruments for assessing or logging how well (2) is
+  working, none of which is (2) itself; (5) "context" as a plain
+  English word inside unrelated agent names (roadmap-context-curator)
+  where it means planning-doc state, not runtime context at all. The
+  project's own closest-to-canonical top-level statement (ai-docs/
+  README.md) already treats "context graph" and "digest" as two
+  separate, coordinate outputs rather than collapsing them into one
+  "context" concept, which is consistent with, not contradicted by,
+  this five-way split.
+derivation: DE-CTXT-001
+supporting_evidence:
+  - EV-CTXT-001
+  - EV-CTXT-003
+  - EV-CTXT-004
+  - EV-CTXT-005
+  - EV-CTXT-006
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-23"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

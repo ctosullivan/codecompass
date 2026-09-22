@@ -1,0 +1,32 @@
+id: OBS-ADPT-014
+kind: observation
+method: source_read
+what_was_done: >
+  Read .gitmodules in full and cross-referenced its submodule paths/URLs
+  against decisions/0058's own stated repository names (OBS-ADPT-007)
+  and the module-level docstrings in base.py/external_process.py/
+  haskell.py that name the same repositories in prose.
+tool: null
+tool_version: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: ".gitmodules:1-6; src/codecompass/adapters/base.py (module docstring, HaskellAdapter references); src/codecompass/adapters/external_process.py:1-14,28-32; src/codecompass/adapters/haskell.py:1-18,37"
+raw_result: >
+  .gitmodules records two submodules, both spelled with "adaptor":
+  `[submodule "protocol/codecompass-adaptor-protocol"]` pointing at
+  `git@github.com:ctosullivan/codecompass-adaptor-protocol.git`, and
+  `[submodule "adapters/haskell"]` pointing at
+  `git@github.com:ctosullivan/codecompass-adaptor-haskell.git`. The
+  actual checked-out directory is protocol/codecompass-adaptor-protocol/
+  (confirmed by `ls`). external_process.py's own module docstring (line
+  3) and its CAPABILITIES comment (line 28) both say
+  "codecompass-adaptor-protocol". haskell.py's module docstring (line 12)
+  says "codecompass-adaptor-haskell". This "adaptor" spelling is used
+  consistently everywhere the actual repositories/submodules/code
+  comments name them. decisions/0058's own Decision section (OBS-ADPT-007),
+  by contrast, names both repositories with "adapter" spelling
+  throughout ("codecompass-adapter-protocol", "codecompass-adapter-haskell")
+  -- a literal spelling mismatch between the ADR's own stated repository
+  names and the actually-implemented/checked-out repository names.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

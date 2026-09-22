@@ -1,0 +1,25 @@
+id: OBS-EVID-010
+kind: observation
+method: doc_read
+what_was_done: >
+  Read decisions/0054-agent-driven-enrichment-is-a-second-non-authoritative-producer.md
+  in full.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "decisions/0054-agent-driven-enrichment-is-a-second-non-authoritative-producer.md:1-146"
+raw_result: >
+  Confirms enrichment (vendor_enrichment/symbol_enrichment/
+  doc_relation_enrichment) is explicitly "content an AI *produces*,
+  never a fact CodeCompass *proves*" (§0/decision text), distinguished
+  from other producers purely by the existing `model` TEXT column's
+  value: an agent-driven producer writes `agent:<agent-name>` (e.g.
+  `agent:context-enrichment-agent`), a direct API call writes a real
+  Anthropic model identifier. No new schema, no Observation/Evidence/
+  Claim chain of any kind backs this content -- it is written directly
+  through `apply_results()` as a single row per (vendor|symbol|doc
+  relation), with no separate provenance-record trail the way Phase
+  54c's model has one.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

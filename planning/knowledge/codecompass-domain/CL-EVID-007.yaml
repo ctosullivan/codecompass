@@ -1,0 +1,32 @@
+id: CL-EVID-007
+kind: claim
+statement: >
+  "Invariant" is NOT one of Phase 54c's six formal record kinds and has
+  no dedicated schema anywhere in this repository. As used across this
+  codebase today, it names at least three distinct artifacts with three
+  different promotion/citation mechanisms and no requirement that they
+  ever coincide for a given rule: (a) `planning/learnings/`'s own
+  `invariant` classification value, meaning "a required behavioural
+  invariant of CodeCompass's own code," whose correct promotion
+  destination is a regression test (learning-lifecycle.md §4); (b) a
+  narrative "things that must stay true" subsection inside a
+  per-feature `design.md`/`context-packet.md`, which is a subset of
+  that document's own content and never itself a separately-citable
+  record id; (c) the project-wide `docs/domain/invariants.md` file this
+  very phase (63D) produces, explicitly defined as cross-cutting rules
+  "pulled up from individual concept docs where a rule isn't
+  concept-local." All three share the ordinary-English sense of "a rule
+  that must stay true," but a rule recorded in one is not automatically
+  present, or even expected to be present, in either of the other two.
+  This is a genuinely fuzzy concept boundary this research surfaces
+  rather than resolves: whether these three senses should eventually be
+  unified, cross-referenced, or deliberately kept separate is a real,
+  open documentation-design question this Claim does not settle.
+derivation: DE-EVID-007
+supporting_evidence: [EV-EVID-011, EV-EVID-012]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-23"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

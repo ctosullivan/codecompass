@@ -1,0 +1,21 @@
+id: DE-EVID-004
+kind: derivation
+claim: CL-EVID-004
+method: >
+  Read every Derivation record across all three feature directories in
+  full (not just their own headline `method` field) specifically
+  looking for a real example of a Derivation naming its own researcher
+  error and correction, per this role's own step 6/7 discipline; found
+  DE-DEPTH-001's own text names exactly this pattern ("the specific
+  trap Ledgerkit's real Stage C Phase 1 fell into") and DE-DOCORIGIN-001
+  names a comparably thorough consumer-trace discipline. Then
+  deliberately checked the Claim/Derivation id pairing across all 11
+  real Claim records found (1 hledger-depth + 4 doc-origin-pinned-
+  reference + 6 haskell-api-surface-extraction) for a counterexample to
+  1:1 pairing; found none, and explicitly recorded this as an open,
+  untested question rather than asserting 1:1 as a proven invariant --
+  the schema does not enforce it, small sample size (11 pairs, three
+  proving cases) does not prove it holds generally.
+inputs: [EV-EVID-002]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

@@ -1,0 +1,30 @@
+id: CL-EVID-004
+kind: claim
+statement: >
+  A "Derivation" record (DE-<feature>-NNN) records the reasoning
+  PROCESS that produced a Claim -- which files/paths were traced, in
+  what order, and (per this role's own governing brief and the real
+  L-024 learning it produced) what a researcher initially got wrong
+  and how the mistake was caught -- not merely the Claim's own
+  conclusion restated. It is deliberately a narrative field, not a
+  formal proof object, and cites Evidence ids via `inputs`, never
+  Observation ids directly. In every real instance found in this
+  corpus so far, the Claim↔Derivation relationship is exactly 1:1 (one
+  Derivation per Claim, each record naming the other back) -- the
+  schema's own singular `derivation:`/`claim:` fields imply this, but
+  nothing in the schema or the validator actually forbids a future
+  Derivation from being cited as the reasoning behind more than one
+  Claim if two Claims genuinely shared the same reasoning process; no
+  such instance has ever occurred, so whether 1:1 is a real invariant
+  of this model or simply an untested coincidence of small proving
+  cases is a genuine, currently-unresolved boundary question -- an
+  honest "none found yet" for a real N:1 or 1:N counterexample, not a
+  confirmed rule.
+derivation: DE-EVID-004
+supporting_evidence: [EV-EVID-002]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-23"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

@@ -1,0 +1,29 @@
+id: CL-ADPT-009
+kind: claim
+statement: >
+  The external adapter protocol's own `ecosystem` field (returned in an
+  adapter's initialize response) is deliberately unconstrained free
+  text at the protocol-specification level (SCHEMA.md states outright
+  "this protocol does not define a closed ecosystem enum"), in contrast
+  to CodeCompass's own internal Ecosystem enum (a closed 4-member set).
+  In the current implementation this is not merely a specification
+  looseness but an observed, currently-inert gap: the wire-reported
+  value is stored on ExternalAdapterProcess.ecosystem after
+  initialize() but is never subsequently read, compared against
+  core.Ecosystem, or used for any dispatch or validation decision
+  anywhere in src/codecompass/ -- dispatch is driven entirely by
+  VendorConfig.ecosystem, fixed on the CodeCompass side before the
+  adapter process is even spawned. This is a genuine edge case worth
+  naming on the ecosystem/protocol concept pages: nothing currently
+  prevents an external adapter from reporting an `ecosystem` string that
+  disagrees with the Ecosystem value CodeCompass configured it under,
+  and no observed behaviour would currently detect or surface that
+  disagreement.
+derivation: DE-ADPT-009
+supporting_evidence: [EV-ADPT-010]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

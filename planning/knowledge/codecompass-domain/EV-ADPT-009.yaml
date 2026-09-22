@@ -1,0 +1,22 @@
+id: EV-ADPT-009
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  "capability" is used in this project's own source strictly as the
+  external adapter wire protocol's own specific term: a value drawn
+  from the closed 4-member set (dependencies, symbols, observations,
+  diagnostics), declared once by an adapter in its initialize response
+  and consulted by CodeCompass-side code (e.g. HaskellAdapter.dependency_tree's
+  own error message citing "a 'dependencies' capability") to know what
+  analyze_project may return. "feature" is used throughout this
+  project's ADRs and plans as ordinary, unscoped English for "a thing
+  CodeCompass does or delivers" (e.g. decisions/0051, decisions/0054,
+  decisions/0059, and routine planning/ROADMAP.md phase descriptions),
+  with no closed enumeration, no protocol handshake, and no schema
+  constraint gating its use anywhere.
+observations: [OBS-ADPT-016]
+source_ref: "src/codecompass/adapters/external_process.py:28-34; src/codecompass/adapters/haskell.py:100-107; src/codecompass/sync.py:244"
+doc_ref: "decisions/0051-agent-suggested-context-is-captured-not-graphed.md:21; decisions/0054-agent-driven-enrichment-is-a-second-non-authoritative-producer.md:117; decisions/0059-symbol-kind-field-for-reexport-and-undetermined-entries.md:25"
+test_ref: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+status: current

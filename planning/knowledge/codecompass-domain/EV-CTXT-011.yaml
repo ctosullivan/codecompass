@@ -1,0 +1,20 @@
+id: EV-CTXT-011
+kind: evidence
+evidence_kind: test
+what_it_shows: >
+  test_doc_relation_enrichment_has_no_foreign_key asserts (via a real
+  PRAGMA foreign_key_list query against a freshly opened graph) that
+  doc_relation_enrichment carries no foreign key to doc_artifacts at
+  all, with an inline docstring naming this the deliberate Phase
+  22/decisions/0038 design point: a relationship row
+  (doc_relations_edges, wiped every sync) and an enrichment row
+  commenting on that relationship (doc_relation_enrichment,
+  natural-key-only, survives every sync) are structurally different
+  kinds of row with different lifecycles -- proven by a dedicated test,
+  not only asserted in prose.
+observations: [OBS-CTXT-013]
+source_ref: null
+doc_ref: null
+test_ref: "tests/test_graph.py:1426-1436"
+repository_revision: "working tree, 2026-09-23"
+status: current

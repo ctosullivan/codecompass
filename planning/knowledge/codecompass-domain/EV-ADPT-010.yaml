@@ -1,0 +1,25 @@
+id: EV-ADPT-010
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  ExternalAdapterProcess.ecosystem (the wire-reported, protocol-defined
+  free-text `ecosystem` field returned by an adapter's initialize
+  response, explicitly documented by SCHEMA.md as carrying no closed
+  enum) is set once during initialize() but never read anywhere else in
+  src/codecompass/ -- not compared against core.Ecosystem, not used for
+  dispatch, not validated. Adapter dispatch (get_adapter,
+  EV-ADPT-001) is driven entirely by VendorConfig.ecosystem, a closed
+  4-member Ecosystem enum fixed on the CodeCompass side (via
+  vendor.toml configuration) before any adapter process is even
+  spawned. The wire-level `ecosystem` string and CodeCompass's own
+  internal Ecosystem enum are two independent, unreconciled values
+  describing "which ecosystem" -- one is free text supplied by
+  whatever process CodeCompass invokes, the other is a fixed, closed,
+  CodeCompass-side configuration value; nothing in the current
+  implementation checks the two agree.
+observations: [OBS-ADPT-005, OBS-ADPT-017]
+source_ref: "src/codecompass/adapters/external_process.py:49-84"
+doc_ref: "protocol/codecompass-adaptor-protocol/SCHEMA.md:48-54"
+test_ref: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+status: current

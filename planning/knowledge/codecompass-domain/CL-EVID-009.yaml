@@ -1,0 +1,37 @@
+id: CL-EVID-009
+kind: claim
+statement: >
+  A real, already-named naming collision exists, and is deliberately
+  unresolved, between Phase 54c's file-based Evidence/Observation/
+  Claim/Decision records (planning/knowledge/<slug>/, CodeCompass's own
+  development-process knowledge, the subject of this whole cluster) and
+  Phase 57's own candidate GRAPH-LEVEL (context-graph.db) entity-kind
+  proposal using the identical names to represent provenance about
+  OTHER PROJECTS' technical dependencies (v1-redefinition/roadmap.md's
+  Stage E section, conditional on GATE DD). These are genuinely
+  different concepts sharing four words: the file-based kinds are
+  narrative YAML records about CodeCompass's own reasoning process,
+  written by context-researcher/documentation-agent/knowledge-curator,
+  never queryable via `codecompass query`; the graph-level candidate
+  kinds (not yet built, not funded, conditional on a gate that has not
+  been decided) would be structured, queryable database rows about a
+  target project's own dependency provenance, built by a future Stage
+  E schema change. The roadmap itself already states the correct
+  resolution path: Stage E's own future Domain stage must either pick
+  genuinely distinct names or explicitly justify sharing the terms with
+  a stated disambiguation rule -- NOT a decision this research makes,
+  since resolving it requires GATE DD funding decisions explicitly out
+  of Phase 63D's own scope (per that phase's plan §1's own "out of
+  scope" list: "resolving GATE DD or Stage E's own generalisation
+  question"). This Claim documents the collision as real, evidenced,
+  and open -- it is this cluster's single most important open question
+  and is carried forward to docs/domain/open-questions.md verbatim,
+  not silently resolved by naming a preference here.
+derivation: DE-EVID-009
+supporting_evidence: [EV-EVID-006]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-23"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

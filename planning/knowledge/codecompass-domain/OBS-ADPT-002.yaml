@@ -1,0 +1,32 @@
+id: OBS-ADPT-002
+kind: observation
+method: source_read
+what_was_done: >
+  Read src/codecompass/adapters/base.py in full (139 lines): the
+  AdapterError exception, the EcosystemAdapter ABC (constructor,
+  abstractmethods installed_version/source_location/
+  readme_and_api_surface/repository_url/dependency_tree, and the one
+  concrete method symbols(), added Phase 62), and the shared _run_json
+  subprocess seam used by in-process adapters.
+tool: null
+tool_version: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: "src/codecompass/adapters/base.py:1-139"
+raw_result: >
+  EcosystemAdapter.__init__ takes (config: VendorConfig, project_root:
+  Path) and stores both verbatim. Five methods are abstract
+  (installed_version, source_location, readme_and_api_surface,
+  repository_url, dependency_tree); symbols() is concrete, not abstract,
+  with a default implementation (lines 94-97) that walks
+  self.source_location() via iter_source_files and dispatches each file
+  through extract_symbols_for_file(path, self.config.ecosystem) -- the
+  same walk+extract pairing sync.py::rebuild_project_graph used to
+  perform itself before Phase 62. The docstring (lines 72-93) states
+  this default is deliberately concrete so "a future adapter that
+  doesn't implement structured extraction isn't forced to (no TypeError
+  at construction)" and names HaskellAdapter as the one adapter that
+  overrides symbols() because extract_symbols_for_file "has no Haskell
+  branch, and never will."
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

@@ -1,0 +1,25 @@
+id: OBS-ADPT-013
+kind: observation
+method: executable
+what_was_done: >
+  Ran `grep -n "adapter" src/codecompass/skill.py
+  src/codecompass/commands.py src/codecompass/index.py` to check whether
+  the "host-output adapter" label architecture/overview.md applies to
+  these three modules (OBS-ADPT-012) appears anywhere in their own
+  source.
+tool: grep (GNU grep)
+tool_version: "not captured explicitly"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: null
+raw_result: >
+  Zero matches in all three files. Neither the word "adapter" nor any
+  class/function named with it appears in skill.py, commands.py, or
+  index.py's own source -- "host-output adapter" is a classification
+  label architecture/overview.md's own prose applies to these modules
+  for expository purposes, with no corresponding class, ABC, or
+  interface definition anywhere in src/codecompass/ (unlike
+  EcosystemAdapter, a real ABC these three modules have no equivalent
+  of).
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

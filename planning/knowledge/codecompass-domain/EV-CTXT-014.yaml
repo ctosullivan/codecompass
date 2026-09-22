@@ -1,0 +1,17 @@
+id: EV-CTXT-014
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  A real, currently-generated digest on disk in this exact repository
+  (vendor/typer/CLAUDE.md) matches architecture/overview.md's
+  six-section description of render_vendor_claude_md's output exactly,
+  section order and content included, for a vendor with no enrichment
+  record yet ("_No API surface extracted._", "No known side effects
+  detected."). Confirms the described rendering behaviour is real,
+  currently-produced output, not merely a design intention.
+observations: [OBS-CTXT-016]
+source_ref: "vendor/typer/CLAUDE.md:1-25"
+doc_ref: null
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

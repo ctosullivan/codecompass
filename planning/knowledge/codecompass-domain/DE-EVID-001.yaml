@@ -1,0 +1,22 @@
+id: DE-EVID-001
+kind: derivation
+claim: CL-EVID-001
+method: >
+  Started from phase-54c-evidence-knowledge-workflow.md's own §2.2
+  comment block on the Evidence record (which states the neutrality
+  rule explicitly), then checked it against every real Evidence record
+  in all three feature directories (EV-EVID-002's own observations) to
+  confirm no Evidence record anywhere actually carries a support/
+  contradict tag in practice, not just in the schema comment. Initially
+  considered treating decisions/0051's "provenance-carrying prose
+  observations" language as the same "Evidence" concept, since both use
+  the word loosely interchangeably in places; caught this by reading
+  0051's own date (Phase 43c, 2026-09-11) against phase-54c's own §0
+  table row explicitly listing 0051 as "Direct precedent for the
+  storage boundary... but scoped to graph edges specifically" -- i.e.
+  0051 predates and is a conceptual ancestor of, not the same schema
+  as, the formal EV- record kind. Corrected the claim to state this
+  distinction explicitly rather than silently conflating the two.
+inputs: [EV-EVID-001, EV-EVID-002, EV-EVID-013]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

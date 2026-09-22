@@ -1,0 +1,19 @@
+id: EV-EVID-003
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  In both real Decision records currently on file
+  (DEC-DOCORIGIN-001, DEC-HSAPI-001), the Decision-never-supersedes-
+  a-Claim hard rule holds structurally (each uses only
+  agrees_with_claim, `supersedes: null`), and both records' own
+  `decided_by` field discloses, in identical wording, that the lead
+  stood in for the actual user/project-owner role for that dogfooding
+  run -- meaning every Decision record created under this model to
+  date was lead-authored-as-stand-in, not authored by an independent
+  human reviewer.
+observations: [OBS-EVID-002, OBS-EVID-003]
+source_ref: "planning/knowledge/doc-origin-pinned-reference/DEC-DOCORIGIN-001.yaml; planning/knowledge/haskell-api-surface-extraction/DEC-HSAPI-001.yaml"
+doc_ref: null
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

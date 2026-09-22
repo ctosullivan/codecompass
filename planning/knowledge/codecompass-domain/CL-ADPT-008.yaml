@@ -1,0 +1,27 @@
+id: CL-ADPT-008
+kind: claim
+statement: >
+  There is an unresolved naming contradiction between decisions/0058's
+  own stated repository names for the two new external-adapter
+  repositories ("codecompass-adapter-protocol",
+  "codecompass-adapter-haskell" -- adapter spelling, used consistently
+  throughout that ADR's Decision/Consequences sections) and the actually
+  implemented, checked-out artifacts (.gitmodules' own submodule
+  names/remote URLs, the real checked-out directory path, and every
+  in-repository code comment naming these repositories -- all
+  consistently "codecompass-adaptor-protocol"/"codecompass-adaptor-haskell",
+  adaptor spelling). This is a real documentation-vs-implementation
+  mismatch on a simple factual question (what is this repository
+  actually called), not a matter of interpretation -- I could not
+  determine from evidence available inside this repository alone which
+  spelling is the intended/canonical one going forward, or whether
+  decisions/0058 itself needs a correcting amendment or a new ADR
+  entry recording the rename. Left open rather than guessed at.
+derivation: DE-ADPT-008
+supporting_evidence: [EV-ADPT-008]
+contradicting_evidence: [EV-ADPT-008]
+derived_by: "context-researcher agent dispatch"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+timestamp: "2026-09-23T00:00:00Z"
+status: superseded
+supersedes: null

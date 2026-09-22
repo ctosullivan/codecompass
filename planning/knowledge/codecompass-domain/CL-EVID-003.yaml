@@ -1,0 +1,37 @@
+id: CL-EVID-003
+kind: claim
+statement: >
+  A "Claim" record (CL-<feature>-NNN), in Phase 54c's own model, is an
+  agent's interpretation built from one or more Evidence records --
+  the ONLY place a support/contradict relationship is recorded (never
+  on Evidence itself, CL-EVID-001). Its `status` enum
+  (proposed|supported|contradicted|superseded|verified) is the only
+  place "how sure are we" is recorded, with no numeric confidence
+  score anywhere. Its `supersedes` field only ever names a prior Claim,
+  never a Decision (structural hard rule, mechanically enforced by
+  scripts/check_knowledge_base.py); a Claim about observed behaviour is
+  revised only by a new Claim backed by new/reinterpreted Evidence or
+  Derivation, never by a Decision. As a genuinely fuzzy, currently-
+  unresolved boundary: every real Claim produced under this model to
+  date (across all three feature directories) has `contradicting_
+  evidence: []` and `supersedes: null` -- the mechanism for retaining
+  a real contradiction, or for one Claim genuinely revising a prior
+  one, is structurally checked but has never yet been exercised with
+  real content (EV-EVID-004), so this claim's own account of how that
+  mechanism behaves under real disagreement is honestly untested, not
+  merely theoretical. This formal "Claim" is also a distinct concept
+  from the same word used as a candidate GRAPH-LEVEL entity kind in
+  Phase 57's own Stage E design sketch (CL-EVID-009 documents that
+  collision directly) -- both represent "an interpretation with
+  provenance" in the abstract, but at different scopes (file-based
+  development-process record vs. a proposed context-graph.db table
+  about a target project's own dependencies) and neither is built from
+  or reducible to the other.
+derivation: DE-EVID-003
+supporting_evidence: [EV-EVID-002, EV-EVID-003, EV-EVID-004, EV-EVID-005, EV-EVID-006]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-23"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

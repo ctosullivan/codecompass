@@ -1,0 +1,27 @@
+id: OBS-CTXT-005
+kind: observation
+method: doc_read
+what_was_done: >
+  Read architecture/overview.md's "Context graph" section in full
+  (lines 1050-1320) describing the same schema OBS-CTXT-004 read
+  directly from source, to check the prose description against the
+  real schema rather than trusting it by default.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "architecture/overview.md:1050-1320"
+raw_result: >
+  The prose matches the source exactly for table names, column
+  nullability, CASCADE behaviour, and the six-value origin enum
+  (including the pinned_reference addition's own rationale — distinct
+  from 'project' because it's not hand-authored, distinct from
+  'vendor_upstream' because that value requires a tracked vendors row
+  this material has none of). Also documents doc_relation_enrichment's
+  deliberate no-FK design (natural-key TEXT columns only, because
+  doc_artifacts is fully deleted/reinserted every rebuild_deterministic
+  call and an FK here would cascade away paid AI enrichment spend on
+  every sync) -- confirmed independently by source (OBS-CTXT-004) and
+  by a real test (OBS-CTXT-013).
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

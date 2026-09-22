@@ -1,0 +1,31 @@
+id: OBS-CTXT-013
+kind: observation
+method: test_run
+what_was_done: >
+  Read tests/test_graph.py's real doc_relation_enrichment/
+  doc_relations_edges test coverage directly (not just the
+  architecture doc's description of the design) -- specifically
+  test_doc_relation_enrichment_has_no_foreign_key and the surrounding
+  edge/relation tests -- as the "relationship vs enrichment-about-a-
+  relationship" boundary's own dedicated test evidence.
+tool: pytest (read, not executed this session -- test source read directly)
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "tests/test_graph.py:1426-1436"
+raw_result: >
+  test_doc_relation_enrichment_has_no_foreign_key asserts
+  `PRAGMA foreign_key_list(doc_relation_enrichment)` returns an empty
+  list, with an inline docstring naming this "the central design point
+  of Phase 22 (decisions/0038)": unlike vendor_enrichment/
+  symbol_enrichment (FK to an upserted-by-natural-key row),
+  doc_relation_enrichment must have no FK to doc_artifacts because that
+  table is fully deleted/reinserted every rebuild_deterministic call.
+  This is a real, dedicated test proving that a *relationship*
+  (doc_relations_edges, a deterministic edge row, wiped every sync) and
+  an *enrichment record commenting on that relationship*
+  (doc_relation_enrichment, natural-key-only, survives every sync) are
+  structurally different kinds of row with different lifecycles, not
+  merely described differently in prose.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

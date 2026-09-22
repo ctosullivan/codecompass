@@ -1,0 +1,34 @@
+id: OBS-ADPT-006
+kind: observation
+method: doc_read
+what_was_done: >
+  Read decisions/0057-external-process-adapter-protocol.md in full
+  (204 lines): context, decision (protocol shape v1: framing, methods,
+  errors, monorepo package roots), alternatives considered, consequences,
+  and the explicit non-claim about GPL licensing.
+tool: null
+tool_version: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: "decisions/0057-external-process-adapter-protocol.md:1-204"
+raw_result: >
+  Accepted 2026-09-19. Establishes a second EcosystemAdapter
+  implementation strategy: an adapter as an independent OS process,
+  speaking JSON Lines on stdin/stdout, motivated by a hypothetical
+  future proprietary COBOL/mainframe adapter that could never ship as
+  importable GPL Python code. Protocol v1: one JSON object per line, no
+  length-prefixing; every message carries an id; methods are a small
+  closed set (initialize, analyze_project, shutdown) -- not open-ended
+  RPC; initialize's capabilities list is drawn from a closed set
+  (dependencies, symbols, observations, diagnostics); errors carry a
+  code from a closed set (not_found, parse_error,
+  unsupported_capability, internal_error). Explicitly not gRPC, not a
+  network service, not a plugin marketplace, not remote execution, not a
+  versioned SDK. decisions/0002 is "not superseded" -- in-process
+  native-tooling adapters remain the default strategy; this ADR adds a
+  second, coexisting strategy for a specific case. Closing section
+  states process separation over a documented wire protocol is "an
+  architectural property, not a legal conclusion" about GPL
+  compatibility for a hypothetical proprietary adapter.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

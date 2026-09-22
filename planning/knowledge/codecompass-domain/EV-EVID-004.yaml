@@ -1,0 +1,17 @@
+id: EV-EVID-004
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  Across every real feature directory produced under this model so
+  far, no Claim has ever carried non-empty contradicting_evidence or a
+  non-null supersedes pointing at a real prior Claim -- the phase 54c
+  retro discloses this as a real, honest gap ("Not tested with real
+  content"), and a direct grep against the current working tree
+  confirms zero YAML records anywhere under planning/knowledge/ carry
+  `status: contradicted` as of this research.
+observations: [OBS-EVID-006, OBS-EVID-007]
+source_ref: "planning/retros/phase-54c-evidence-knowledge-workflow.md:164-178,249-261,297"
+doc_ref: null
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

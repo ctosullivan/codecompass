@@ -1,0 +1,22 @@
+id: DE-EVID-003
+kind: derivation
+claim: CL-EVID-003
+method: >
+  Cross-checked phase-54c-evidence-knowledge-workflow.md §2.2's Claim
+  schema and §5.2's hard rule against every real Claim record in all
+  three feature directories (OBS-EVID-002/003) and against
+  scripts/check_knowledge_base.py's own mechanical enforcement
+  (OBS-EVID-004) -- confirming the rule is not merely stated in prose
+  but actually checked by running code. Separately traced the retro's
+  own honest disclosure (OBS-EVID-006/007) that contradicting_evidence
+  and Claim-supersedes have never been exercised with real content, and
+  deliberately included that as part of this claim's own statement
+  rather than describing the mechanism only in its untested, idealized
+  form -- matching this role's own instruction to name gaps rather than
+  paper over them. Finally cross-referenced the Stage E graph-level
+  "Claim" naming collision (OBS-EVID-008) explicitly, since a reader of
+  this concept page could otherwise conflate the two without ever being
+  told they are different things sharing one word.
+inputs: [EV-EVID-002, EV-EVID-003, EV-EVID-004, EV-EVID-005, EV-EVID-006]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

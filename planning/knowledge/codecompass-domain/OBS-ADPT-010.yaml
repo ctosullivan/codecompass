@@ -1,0 +1,29 @@
+id: OBS-ADPT-010
+kind: observation
+method: source_read
+what_was_done: >
+  Read src/codecompass/core.py's Ecosystem and VendorConfig definitions
+  (lines 13-35), and decisions/0002-adapter-approach-differs-per-ecosystem.md
+  in full.
+tool: null
+tool_version: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: "src/codecompass/core.py:13-35; decisions/0002-adapter-approach-differs-per-ecosystem.md:1-40"
+raw_result: >
+  Ecosystem is a StrEnum with exactly four members: NPM="npm",
+  PYTHON="python", CARGO="cargo", HASKELL="haskell" -- "Package
+  ecosystem a vendor belongs to" (its own one-line docstring).
+  VendorConfig is a frozen dataclass with exactly two fields, name: str
+  and ecosystem: Ecosystem -- "One [[vendor]] entry from vendor.toml,"
+  narrowed to just this pair in Phase 16 (decisions/0031/0035) when the
+  per-vendor depth (SURFACE/FULL) toggle was retired. decisions/0002
+  states each EcosystemAdapter "implements the common interface using
+  whatever native tooling its ecosystem already provides" (npm ->
+  package.json + npm ls --json; Python -> pip show + pipdeptree; Cargo
+  -> cargo tree/cargo metadata), explicitly rejecting "a single unified
+  API surface extraction heuristic" across ecosystems -- "adding a
+  fourth ecosystem later means writing a new adapter from scratch's
+  ecosystem-native tooling, not extending a generic parser."
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

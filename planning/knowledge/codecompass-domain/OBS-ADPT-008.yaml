@@ -1,0 +1,32 @@
+id: OBS-ADPT-008
+kind: observation
+method: doc_read
+what_was_done: >
+  Read protocol/codecompass-adaptor-protocol/SCHEMA.md in full (172
+  lines) -- the checked-out submodule's own canonical protocol
+  specification, which states it "supersedes the inline description
+  originally written in ... decisions/0057-external-process-adapter-protocol.md".
+tool: null
+tool_version: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac (submodule pinned commit, protocol/codecompass-adaptor-protocol/)"
+location: "protocol/codecompass-adaptor-protocol/SCHEMA.md:1-172"
+raw_result: >
+  Confirms transport (JSON Lines, one outstanding request at a time in
+  v1), a closed 3-method set (initialize, analyze_project, shutdown --
+  "an adapter must reject any other method value with an
+  unsupported_capability error"), the closed 4-value capabilities set,
+  the closed 4-value error-code set, and the four analyze_project result
+  sections. Notably states the initialize response's own "ecosystem"
+  field is "Free text -- this protocol does not define a closed
+  ecosystem enum" (line 53), in contrast to CodeCompass's own internal
+  Ecosystem enum (core.py) which is a closed 4-value set. Also documents
+  two optional symbols-entry fields not mentioned in decisions/0057's
+  original inline text: "kind" (export|reexport|undetermined,
+  decisions/0059) and "note" -- added for the reference Haskell adapter.
+  Repository/path is spelled "codecompass-adaptor-protocol" throughout
+  this file's own directory location and its own README references (per
+  OBS-ADPT-014 below), i.e. "adaptor", not decisions/0058's "adapter"
+  spelling.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

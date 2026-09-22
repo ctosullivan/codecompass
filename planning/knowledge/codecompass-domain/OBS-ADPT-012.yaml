@@ -1,0 +1,29 @@
+id: OBS-ADPT-012
+kind: observation
+method: doc_read
+what_was_done: >
+  Read architecture/overview.md's "Adapter interface" section (lines
+  85-125ish) and "External adapters" section (lines 226-275ish) in full,
+  including the section's own explicit note distinguishing "ecosystem
+  adapter" from "host-output adapters".
+tool: null
+tool_version: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: "architecture/overview.md:85-125, 226-275, 344-359"
+raw_result: >
+  Lines 87-92 state verbatim: "This section covers the ecosystem
+  adapter package (src/codecompass/adapters/) -- a different sense of
+  'adapter' from the host-output adapters described in Module tiers:
+  CORE, AGENT, HOST-OUTPUT ADAPTERS below (Claude Skills, /discovery,
+  the root CLAUDE.md routing table), which render already-computed
+  content into tool-specific formats rather than abstracting a package
+  manager." The "Module tiers" section (lines 344-359) lists
+  skill.py/commands.py/index.py under the "HOST-OUTPUT ADAPTERS" tier
+  label as "format-specific renderers with no logic of their own beyond
+  templating content CORE/AGENT already computed." The "External
+  adapters" section matches decisions/0057/0058's content closely
+  (protocol shape, three-repo submodule layout, capability list) with
+  no discrepancy found against those ADRs or SCHEMA.md.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

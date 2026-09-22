@@ -1,0 +1,24 @@
+id: DE-ADPT-004
+kind: derivation
+claim: CL-ADPT-004
+method: >
+  Per the dispatch brief's explicit instruction, ran a repository-wide
+  grep for "connector" (case-insensitive) across every relevant file
+  extension before assuming any definition, rather than guessing a
+  plausible meaning from general Claude/MCP-ecosystem knowledge and
+  writing it up as though it were CodeCompass's own term. Manually
+  classified every hit by hand (not just counted them) to confirm none
+  was a false negative for a real usage hiding inside prose. Separately
+  confirmed MCP itself (the ecosystem context where "connector" is a
+  real, distinct term) has no implementation in this repository at this
+  revision (Phase 25 "MCP" is listed everywhere as deferred/not started;
+  no MCP-related source file exists), which further supports that
+  "connector" cannot be a real CodeCompass-internal term borrowed from
+  that context, since that context isn't implemented here. Concluded the
+  honest, evidence-backed answer is "not a term this project uses for
+  anything specific" rather than inventing a definition to fill the
+  concept page's required template -- exactly the posture the phase
+  brief asks for.
+inputs: [EV-ADPT-004]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

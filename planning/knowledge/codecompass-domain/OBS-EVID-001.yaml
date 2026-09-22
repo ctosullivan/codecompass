@@ -1,0 +1,33 @@
+id: OBS-EVID-001
+kind: observation
+method: doc_read
+what_was_done: >
+  Read planning/phase-54c-evidence-knowledge-workflow.md section 2.2 in
+  full (the six record kinds' own verbatim YAML field definitions:
+  Observation, Evidence, Claim, Derivation, Decision, Requirement),
+  plus section 2.3 (provenance fields actually adopted) and section 2.4
+  (historical preservation / supersedes convention), as the primary
+  schema source for this project-scoped Domain-stage cluster
+  ("evidence, observation, claim, derivation, decision, requirement,
+  invariant, provenance").
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "planning/phase-54c-evidence-knowledge-workflow.md:108-349"
+raw_result: >
+  Confirmed the exact field shape and closed status enum for each of
+  the six kinds (Observation: status=recorded only; Evidence:
+  current|superseded, never a support/contradict flag; Claim:
+  proposed|supported|contradicted|superseded|verified, owns
+  supporting_evidence/contradicting_evidence/derivation/supersedes
+  (Claim-only); Decision: proposed|approved|rejected|superseded, owns
+  decides/rationale/agrees_with_claim/supersedes (Decision-only);
+  Requirement: proposed|approved|implemented|verified, owns
+  decision/example). No seventh kind for "invariant" or "provenance"
+  exists anywhere in this section -- both words appear only as
+  ordinary prose/field content, never as a kind: value. No confidence
+  score field anywhere; §2.2's own closing paragraph explicitly rules
+  one out.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

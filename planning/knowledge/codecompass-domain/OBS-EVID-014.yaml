@@ -1,0 +1,32 @@
+id: OBS-EVID-014
+kind: observation
+method: doc_read
+what_was_done: >
+  Read planning/learnings/README.md in full and
+  planning/v1-redefinition/learning-lifecycle.md's §4
+  classification→destination table, specifically the row for the
+  `invariant` classification value, to check whether "invariant" as
+  used in the learning lifecycle is the same concept as an "invariant"
+  in a Domain-stage design.md/context-packet.md or in this phase's own
+  docs/domain/invariants.md deliverable.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "planning/learnings/README.md:1-57; planning/v1-redefinition/learning-lifecycle.md:63-81"
+raw_result: >
+  learning-lifecycle.md §4's table row reads: "required behavioural
+  **invariant** | a regression **test** | lead / ad-hoc implementer" --
+  i.e. within planning/learnings/, "invariant" is one of eleven closed
+  `classification` values a candidate learning can take
+  (invariant/decision/architecture/project-rule/scoped-rule/workflow/
+  future-improvement/open-work/user-visible/uncertain/unsupported),
+  meaning specifically "this is a required behavioural invariant of
+  CodeCompass's own code, and its correct promotion destination is a
+  regression test." This is a classification of a *learning* (a
+  process/behavioural observation about CodeCompass's own development),
+  not a statement about a researched feature's own domain behaviour,
+  and is unrelated in scope to Phase 54c's design.md "invariants"
+  section or this phase's own project-wide docs/domain/invariants.md.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

@@ -1,0 +1,31 @@
+id: DE-EVID-010
+kind: derivation
+claim: CL-EVID-010
+method: >
+  Read all five mechanisms' own README/ADR/schema sources directly
+  (decisions/0051 for context-gaps, planning/context-observations/
+  README.md+TEMPLATE.md for context-observations, planning/learnings/
+  README.md+learning-lifecycle.md §4 for learnings, decisions/0054 plus
+  the real graph.py schema for enrichment, and phase-54c's own §2.2 for
+  Observation) rather than relying on any one document's own summary of
+  the other four -- each README explicitly cross-references its
+  siblings' "what does NOT belong here" sections, which was the
+  fastest reliable way to confirm the boundaries these five queues
+  themselves already draw, rather than this research inventing new
+  boundaries. Initially treated (2) and (3) as effectively "the same
+  queue, one for missing edges and one for existing ones" -- refined
+  after reading both READMEs' own "what does NOT belong here" sections
+  side by side, which state the boundary explicitly and use each other
+  as the counter-example ("that's context-gaps/, a sibling queue with a
+  different destination" / "this file is about experience with edges
+  that exist, not about edges that should exist but don't") --
+  confirming they are correctly understood as two deliberately
+  designed, complementary queues rather than a redundant pair. Named
+  the (1)/(3) id-prefix collision explicitly in the resulting Claim
+  rather than treating it as resolved by the two queues' different
+  purposes -- purpose and identifier syntax are separate properties,
+  and this research found the syntax genuinely collides even though
+  the purposes do not.
+inputs: [EV-EVID-007, EV-EVID-008, EV-EVID-009, EV-EVID-010, EV-EVID-011]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

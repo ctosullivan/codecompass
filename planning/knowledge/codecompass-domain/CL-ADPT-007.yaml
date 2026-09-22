@@ -1,0 +1,24 @@
+id: CL-ADPT-007
+kind: claim
+statement: >
+  "adapter" is itself a genuinely fuzzy boundary inside this project's
+  own documentation, not just relative to neighbouring terms: this
+  project's own architecture doc names two distinct senses sharing the
+  bare word "adapter" -- the ecosystem adapter (EcosystemAdapter, a
+  real ABC with real subclasses in src/codecompass/adapters/) and the
+  "host-output adapter" (skill.py/commands.py/index.py, a purely
+  expository classification label with no corresponding class,
+  interface, or shared base anywhere in source). A reader who
+  encounters the bare word "adapter" in this project without a
+  qualifying phrase cannot tell which sense is meant from the word
+  alone; architecture/overview.md itself already flags this explicitly,
+  which is independent confirmation this is a known, real ambiguity in
+  this project's own vocabulary, not one this research invented.
+derivation: DE-ADPT-007
+supporting_evidence: [EV-ADPT-007]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

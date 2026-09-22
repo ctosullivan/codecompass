@@ -1,0 +1,32 @@
+id: CL-CTXT-002
+kind: claim
+statement: >
+  A "context packet" (context-packet.md) is a narrowly-defined,
+  feature-scoped, curated Markdown artifact -- produced once per
+  feature by a knowledge-curator mode, only after that feature's
+  design.md reaches status APPROVED, deliberately smaller than
+  design.md, living at planning/knowledge/<feature-slug>/
+  context-packet.md, and citing every substantive assertion back to a
+  CL-/EV-/DE-/REQ- id. It is mechanically and purposively distinct from
+  a "digest" (VendorDigest, see CL-CTXT-005): a digest is generated
+  unconditionally on every whole-project sync, for every tracked
+  vendor, by deterministic rendering plus a read-only lookup of
+  existing AI enrichment, and lives under vendor/<name>/; a context
+  packet is generated once, by a curation step gated on human/lead
+  APPROVED-status review, and lives under planning/knowledge/. No
+  context-packet.md is ever produced automatically the way a digest is,
+  and no digest is ever gated on a design.md's own APPROVED status.
+derivation: DE-CTXT-002
+supporting_evidence:
+  - EV-CTXT-001
+  - EV-CTXT-002
+  - EV-CTXT-009
+  - EV-CTXT-010
+  - EV-CTXT-013
+  - EV-CTXT-014
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-23"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

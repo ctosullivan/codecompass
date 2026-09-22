@@ -1,0 +1,34 @@
+id: DE-CTXT-002
+kind: derivation
+claim: CL-CTXT-002
+method: >
+  Read Phase 54c's own §6 spec for context-packet.md (OBS-CTXT-002),
+  then verified it is not merely an aspirational template by reading a
+  real, already-shipped instance in full (doc-origin-pinned-reference/
+  context-packet.md, OBS-CTXT-003) -- confirming the self-disclaiming
+  opening line and inline citation discipline described in the spec are
+  actually present in real output, not only promised. To establish the
+  contrast this phase's own brief explicitly requires (digest vs
+  context packet), traced the digest side of the comparison
+  independently rather than assuming architecture/overview.md's prose
+  was sufficient: read VendorDigest's real dataclass definition and
+  sync_vendor's real call site (OBS-CTXT-011), confirmed the rendering
+  is real by reading an actual generated file on disk
+  (vendor/typer/CLAUDE.md, OBS-CTXT-016), and confirmed the project's
+  own root CLAUDE.md literally uses the phrase "generated reference
+  digest" for this artifact (OBS-CTXT-012), and that the project-root
+  CLAUDE.md's own vendor table is a *different* mechanism
+  (routing-table injection, OBS-CTXT-015) that must not be confused
+  with either a per-vendor digest or a context packet despite sharing
+  the CLAUDE.md filename. No contradiction found between the two
+  mechanisms' own described purposes and their real trigger
+  points/storage locations.
+inputs:
+  - EV-CTXT-001
+  - EV-CTXT-002
+  - EV-CTXT-009
+  - EV-CTXT-010
+  - EV-CTXT-013
+  - EV-CTXT-014
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

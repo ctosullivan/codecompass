@@ -1,0 +1,18 @@
+id: EV-EVID-007
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  decisions/0051 establishes planning/context-gaps/ as the sole
+  capture point for "an agent's suggested relationship" -- an
+  observation with provenance, held only in planning/, explicitly
+  never written into context-graph.db, and promoted to authoritative
+  status only through the learning lifecycle into a Stage C
+  (GATE DB) or Stage E (GATE DD) decision. This ADR's own informal use
+  of the word "observation" predates and is not the same schema as
+  Phase 54c's later, formal `kind: observation` record.
+observations: [OBS-EVID-009]
+source_ref: "decisions/0051-agent-suggested-context-is-captured-not-graphed.md:39-73"
+doc_ref: null
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

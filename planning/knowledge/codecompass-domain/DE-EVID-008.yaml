@@ -1,0 +1,21 @@
+id: DE-EVID-008
+kind: derivation
+claim: CL-EVID-008
+method: >
+  Grepped "provenance" across phase-54c-evidence-knowledge-workflow.md
+  directly (OBS-EVID-016) rather than assuming its §2.3 table heading
+  ("Provenance fields actually adopted") implied a formal `provenance`
+  concept with its own schema -- read the actual table content and
+  confirmed it lists fields distributed across the six existing record
+  kinds, not a new kind. Cross-checked this against the two other real
+  provenance mechanisms already traced for other Claims in this cluster
+  (enrichment's `model` column, EV-EVID-011/014; context-gaps' four
+  narrative fields, EV-EVID-009) specifically to check whether any of
+  the three shares real field names or a real schema with either of the
+  other two -- found none do, confirming "provenance" names a shared
+  *concern* (who produced this, from what, when) implemented three
+  separate, structurally incompatible ways, not one mechanism used
+  three places.
+inputs: [EV-EVID-013, EV-EVID-014]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

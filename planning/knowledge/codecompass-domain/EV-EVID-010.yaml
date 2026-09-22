@@ -1,0 +1,22 @@
+id: EV-EVID-010
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  planning/context-observations/inbox.md entries reuse the literal
+  string "OBS-" as an id prefix (e.g. "OBS-016") for a record shape
+  (edge identity, observation type EDGE_USEFUL/UNHELPFUL/MISLEADING/
+  STALE/REDUNDANT, edge correctness vs. task usefulness, advantage
+  rating, default pathway) that shares zero field names with Phase
+  54c's own `kind: observation` record, serves a different purpose
+  ("how real context experience went" with an edge that already
+  exists, feeding context-gaps/learnings triage), and is not named as
+  a collision anywhere in the Phase 63D plan or the Stage E
+  roadmap collision note (which names only the graph-level
+  Evidence/Observation/Claim/Decision collision, a separate one from
+  this id-prefix collision).
+observations: [OBS-EVID-013]
+source_ref: "planning/context-observations/README.md:1-91; planning/context-observations/TEMPLATE.md:1-42; planning/context-observations/inbox.md:11-85"
+doc_ref: null
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

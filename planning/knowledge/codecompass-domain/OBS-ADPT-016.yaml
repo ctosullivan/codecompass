@@ -1,0 +1,33 @@
+id: OBS-ADPT-016
+kind: observation
+method: executable
+what_was_done: >
+  Ran `grep -rn "capabilit" src/codecompass/ tests/` and
+  `grep -rn "\bfeature\b" decisions/005*.md planning/phase-62*.md` to
+  compare how narrowly/formally "capability" is used against how
+  "feature" is used elsewhere in this project's own prose.
+tool: grep (GNU grep)
+tool_version: "not captured explicitly"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: null
+raw_result: >
+  "capabilit*" hits are confined to: sync.py:244 ("the generic adapter
+  capability every ecosystem now implements" -- referring to symbols(),
+  a looser English use), adapters/haskell.py:105 ("did not report a
+  'dependencies' capability" -- directly citing the wire protocol's own
+  term), adapters/external_process.py:28,48,84 (the CAPABILITIES
+  constant and its storage), and the test files exercising the
+  initialize response's capabilities list (OBS-ADPT-015). By contrast,
+  "feature" appears used generically and repeatedly throughout ADRs and
+  plans with no closed enumeration or gating mechanism at all -- e.g.
+  decisions/0051:21 ("as one feature spread across three modules"),
+  decisions/0054:117 ("one well-meaning feature away from unproven
+  content look like fact"), decisions/0059:25 ("feature (packet-sufficiency.md)
+  flagged this as a real, structural gap"), and routinely in
+  planning/ROADMAP.md phase descriptions -- always ordinary English for
+  "a thing CodeCompass does or delivers," never a value drawn from any
+  closed set, never checked by any protocol handshake or CHECK
+  constraint.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

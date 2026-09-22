@@ -1,0 +1,19 @@
+id: EV-EVID-011
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  planning/learnings/ is a third, distinct "noticing" queue (process/
+  workflow lessons about how CodeCompass's own development should
+  proceed), with its own classification→destination table separate
+  from context-gaps'/context-observations' own destinations; its
+  `invariant` classification value means specifically "a required
+  behavioural invariant of CodeCompass's own code, to be promoted to a
+  regression test" -- a classification of a learning, unrelated in
+  scope to a Domain-stage per-feature design.md "invariants" narrative
+  section or this phase's own project-wide docs/domain/invariants.md.
+observations: [OBS-EVID-014]
+source_ref: "planning/learnings/README.md:1-57"
+doc_ref: "planning/v1-redefinition/learning-lifecycle.md:63-81"
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

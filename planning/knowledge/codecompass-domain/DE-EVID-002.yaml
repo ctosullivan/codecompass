@@ -1,0 +1,26 @@
+id: DE-EVID-002
+kind: derivation
+claim: CL-EVID-002
+method: >
+  Read phase-54c-evidence-knowledge-workflow.md §2.2's Observation
+  schema and §3's "user-run tests are first-class" rule together, then
+  deliberately went looking for every other place in the repository
+  using the word "observation" or the id-prefix "OBS-" to check for
+  collisions rather than assuming the concept was unique to Phase 54c
+  -- this cluster's own dispatch brief explicitly named
+  context-gaps/context-observations/learnings/enrichment as required
+  disambiguation targets. Found the context-observations id-prefix
+  collision (EV-EVID-010) only by reading its real inbox.md content
+  directly, not by title/README skimming -- the README itself never
+  states its own entries share an id-prefix with Phase 54c's
+  Observation kind, so this had to be confirmed by direct comparison of
+  a real OBS-016 entry's field list against OBS-DEPTH-001's field list.
+  This is a genuinely new finding beyond what
+  planning/phase-63d-domain-reconstruction.md's own §1 and
+  v1-redefinition/roadmap.md's Stage E section already name (both name
+  only the graph-level Evidence/Observation/Claim/Decision collision,
+  never this id-prefix one) -- flagged explicitly in this claim rather
+  than silently folded into the already-known collision.
+inputs: [EV-EVID-001, EV-EVID-009, EV-EVID-010, EV-EVID-014]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

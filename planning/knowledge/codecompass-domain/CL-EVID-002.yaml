@@ -1,0 +1,30 @@
+id: CL-EVID-002
+kind: claim
+statement: >
+  An "Observation" record (OBS-<feature>-NNN), in Phase 54c's own
+  model, is a single, dated, reproducible act of looking -- running a
+  command, reading a specific file, fetching a specific URL -- never
+  itself a claim about behaviour; its own `status` field is always
+  `recorded` (it is never itself promoted or contradicted; only the
+  Evidence/Claims built on it can be). A user or reviewer who runs an
+  example themselves and records the result produces the identical
+  record shape, differing only in the `performed_by` field's value,
+  never a different record kind and never routed through a Decision
+  instead. This formal, schema'd sense of "Observation" is genuinely
+  different from three other things in this repository that could be
+  mistaken for it: (1) planning/context-observations/inbox.md entries,
+  which reuse the literal id-prefix "OBS-" for an unrelated record
+  shape (logging experience with an already-existing graph edge, not a
+  primary-research act of looking); (2) planning/context-gaps/ entries,
+  which record a believed-missing relationship, not an act of looking;
+  (3) AI-authored graph enrichment, which is interpretive content an
+  agent produces about an already-proven fact, not a record of having
+  looked at something.
+derivation: DE-EVID-002
+supporting_evidence: [EV-EVID-001, EV-EVID-009, EV-EVID-010, EV-EVID-014]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-23"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

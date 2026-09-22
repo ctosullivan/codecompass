@@ -1,0 +1,26 @@
+id: CL-EVID-006
+kind: claim
+statement: >
+  A "Requirement" record (REQ-<feature>-NNN), in Phase 54c's own
+  model, is implementation-facing and testable -- the thing a coding
+  agent actually implements against -- always citing the Decision that
+  authorises it (and, through it, the Claim/Evidence chain behind that
+  Decision), with a Given/When/Then `example` field and a closed
+  `status` enum (proposed|approved|implemented|verified). It is a
+  narrower, more specific concept than "invariant": a Requirement is
+  one single testable statement traceable to exactly one Decision
+  (REQ-DOCORIGIN-001 → DEC-DOCORIGIN-001), whereas a project-wide
+  invariant (docs/domain/invariants.md, this phase's own deliverable)
+  is a cross-cutting rule that need not trace to any single Decision or
+  Requirement at all -- the two concepts overlap (a Requirement's own
+  behaviour, once implemented, often amounts to enforcing something
+  that could also be phrased as an invariant) but are not the same
+  record kind and are not interchangeable citations.
+derivation: DE-EVID-006
+supporting_evidence: [EV-EVID-002, EV-EVID-012]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-23"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

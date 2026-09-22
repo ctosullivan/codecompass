@@ -1,0 +1,24 @@
+id: DE-EVID-009
+kind: derivation
+claim: CL-EVID-009
+method: >
+  This collision was already explicitly named in this research's own
+  governing dispatch brief (planning/phase-63d-domain-reconstruction.md
+  §1's "specific, already-found collision, not hypothetical" paragraph)
+  and in v1-redefinition/roadmap.md's Stage E section -- so the
+  derivation task here was not discovery but independent confirmation:
+  read the roadmap's own Stage E section directly (OBS-EVID-008) rather
+  than trusting the dispatch brief's own paraphrase of it, to check the
+  brief accurately represents the source. Confirmed it does, word for
+  word on the substantive claim (four shared names, different purpose,
+  deliberately deferred resolution). Explicit open question, left open
+  rather than resolved by this research: which names Stage E should
+  eventually use, or whether a stated disambiguation rule allowing
+  shared terms would be acceptable instead -- this is a real,
+  currently-undecided product/architecture question, not a fact
+  discoverable by more source-reading, and per this phase's own hard
+  rule this agent never writes a Decision record or picks an answer on
+  the user's behalf; it is named here, plainly, as unresolved.
+inputs: [EV-EVID-006]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

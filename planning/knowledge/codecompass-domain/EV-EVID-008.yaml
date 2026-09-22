@@ -1,0 +1,20 @@
+id: EV-EVID-008
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  decisions/0054 and the real schema at src/codecompass/graph.py:165-203
+  together show that AI-authored graph enrichment
+  (vendor_enrichment/symbol_enrichment/doc_relation_enrichment) is
+  content an AI produces about an already-proven graph fact, never a
+  fact CodeCompass proves, distinguished from other producers purely
+  by a single `model` TEXT column's string value (a real Anthropic
+  model id, or `agent:<agent-name>` for agent-driven output) -- with no
+  Observation/Evidence/Claim/Derivation chain, no `status` lifecycle
+  field, and (on symbol_enrichment specifically) no `model` column at
+  all.
+observations: [OBS-EVID-010, OBS-EVID-011]
+source_ref: "src/codecompass/graph.py:165-203"
+doc_ref: "decisions/0054-agent-driven-enrichment-is-a-second-non-authoritative-producer.md:42-77"
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

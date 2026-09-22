@@ -1,0 +1,17 @@
+id: EV-CTXT-006
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  The project's own highest-level, agent-facing definition (ai-docs/
+  README.md) describes CodeCompass's output as "per-vendor digests
+  plus a SQLite context graph" -- treating "digest" and "context graph"
+  as two named, coordinate outputs joined by "plus," not one undivided
+  concept called "context." "Context" in this canonical sentence names
+  the graph specifically, not an umbrella for every artifact
+  CodeCompass produces.
+observations: [OBS-CTXT-008]
+source_ref: null
+doc_ref: "ai-docs/README.md:1-40"
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

@@ -1,0 +1,29 @@
+id: DE-CTXT-004
+kind: derivation
+claim: CL-CTXT-004
+method: >
+  The dispatch brief named all three senses explicitly in advance
+  (pinned_reference row, reference project, citation field) with
+  pointers into specific governing docs; rather than restate the
+  brief's own framing as already-verified, independently read each
+  named source directly: the real CHECK-enum value in graph.py
+  (OBS-CTXT-004, already confirmed live in the working schema, not
+  merely proposed), reference-project-protocol.md's own registration/
+  task-pool shape (OBS-CTXT-009), and a live grep across every
+  EV-DOCORIGIN-*.yaml file to confirm source_ref/doc_ref/test_ref are
+  actually populated in shipped records, not just declared fields in a
+  template nobody fills in (OBS-CTXT-010). Checked for a fourth
+  candidate sense the brief didn't name -- the Ledgerkit
+  "reference-experiment" resolve/lock/extract ingestion pipeline
+  (planning/reference-projects/ledgerkit/reference-experiment/) --
+  and concluded it is not a fourth distinct sense but the mechanism
+  that *produces* material later classified under sense (a)
+  (pinned_reference); noted as a relationship, not a new sense, in the
+  concept page rather than silently omitted or wrongly promoted to a
+  fourth co-equal meaning.
+inputs:
+  - EV-CTXT-003
+  - EV-CTXT-007
+  - EV-CTXT-008
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

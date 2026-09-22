@@ -1,0 +1,37 @@
+id: OBS-ADPT-004
+kind: observation
+method: source_read
+what_was_done: >
+  Read src/codecompass/adapters/haskell.py in full (288 lines): the
+  external-process adapter's own docstring rationale, installed_version/
+  source_location/repository_url (manifest-only, in-process), the
+  monorepo _resolve_package_dir search, and dependency_tree/
+  readme_and_api_surface/symbols, each delegating to _analyze() ->
+  ExternalAdapterProcess.
+tool: null
+tool_version: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: "src/codecompass/adapters/haskell.py:1-288"
+raw_result: >
+  HaskellAdapter's own module docstring (lines 1-18) states it is
+  "deliberately thin": it reads package.yaml directly via yaml.safe_load
+  for simple manifest-key lookups (installed_version, repository_url)
+  entirely in-process, but delegates "everything that embodies real
+  ecosystem-specific logic" (stack's dependency-tree semantics, .hs
+  source API-surface extraction) to an external adapter process at
+  adapters/haskell/ (a separate GPL-3.0-or-later repository, never
+  imported from here). _analyze() (lines 184-195) lazily spawns one
+  ExternalAdapterProcess per instance, caches the result
+  (self._cached_analysis), and shuts it down after one analyze_project
+  call -- dependency_tree(), readme_and_api_surface(), and symbols() all
+  read from this single cached result rather than re-invoking the
+  subprocess. symbols() (lines 124-150) overrides EcosystemAdapter's
+  default, converting the wire result's "symbols" list into Symbol
+  objects, reading the wire "kind" field into export_kind (default
+  "export" if absent). repository_url() sets a subdirectory field
+  whenever _resolve_package_dir() resolves somewhere other than
+  project_root itself -- the monorepo case (e.g. hledger-lib inside the
+  hledger monorepo).
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

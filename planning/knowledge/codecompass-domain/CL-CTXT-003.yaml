@@ -1,0 +1,34 @@
+id: CL-CTXT-003
+kind: claim
+statement: >
+  "Relationship" and "edge" are used precisely in context-graph.db's
+  own schema (a real, typed row in one of six edge tables --
+  uses_edges, documents_edges, skill_mentions_edges, routes_via_edges,
+  depends_on_edges, doc_relations_edges -- each deterministically
+  detected and rebuilt on every whole-project sync) but are
+  deliberately NOT used for two neighbouring things this project keeps
+  structurally separate: (a) an agent-suggested relationship
+  (planning/context-gaps/) is explicitly never written into
+  context-graph.db at all (decisions/0051) -- it is an "observation
+  with provenance," promoted to a real edge (or a new graph capability)
+  only through a separately-gated ADR process, never silently; (b) an
+  enrichment record commenting on an already-real relationship
+  (doc_relation_enrichment, describing a doc_relations_edges row) is
+  not itself an edge and carries no foreign key to doc_artifacts at
+  all, by deliberate design (decisions/0038), proven by a dedicated
+  test. A "relationship" in casual project language can mean any of
+  these three tiers (mechanically-proven edge; agent-suggested
+  candidate; AI commentary about an edge), and only the first is ever a
+  context-graph.db row.
+derivation: DE-CTXT-003
+supporting_evidence:
+  - EV-CTXT-003
+  - EV-CTXT-004
+  - EV-CTXT-011
+  - EV-CTXT-012
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-23"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

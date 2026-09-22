@@ -1,0 +1,33 @@
+id: DE-ADPT-010
+kind: derivation
+claim: CL-ADPT-010
+method: >
+  CL-ADPT-008 (context-researcher, cluster ADPT) found a real
+  documentation-vs-implementation spelling mismatch but could not
+  determine which spelling was canonical from static inspection alone,
+  and correctly left it as status: contradicted rather than guessing.
+  domain-skeptic's own review dispatch then attempted resolution rather
+  than accepting the contradiction as permanent: (1) ran `git log
+  --follow` against both decisions/0058's own file and .gitmodules to
+  establish which was written first and whether either was ever renamed
+  (OBS-SKEP-001) -- found decisions/0058's commit predates the real
+  repository-creation commit by five hours the same day, meaning the
+  ADR's "adapter" spelling was written before the real repositories
+  existed, not after a later rename; (2) ran `git ls-remote` against
+  both spellings of the protocol repository plus a deliberately
+  fabricated control URL, to distinguish "this repository doesn't
+  exist" from "this URL is simply wrong" (OBS-SKEP-002) -- found the
+  "adaptor"-spelled repositories are real, live, and tagged, while the
+  "adapter"-spelled URL is indistinguishable from a never-created
+  repository. Synthesized into EV-SKEP-001: the mismatch is a
+  pre-implementation drafting typo in decisions/0058's own prose, not a
+  live product question -- the real, functioning repositories this
+  project depends on are unambiguously "adaptor"-spelled. The lead then
+  wrote this Claim, since domain-skeptic's own write boundary excludes
+  Claim records -- a Claim needs the fuller synthesis step
+  context-researcher's role (or, here, the lead acting in that
+  capacity) performs, not domain-skeptic's own read-only adversarial
+  review.
+inputs: [EV-ADPT-008, EV-SKEP-001]
+performed_by: "lead, from domain-skeptic's own OBS-SKEP-001/002 and EV-SKEP-001"
+timestamp: "2026-09-23T00:00:00Z"

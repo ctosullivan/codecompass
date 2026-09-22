@@ -1,0 +1,32 @@
+id: CL-CTXT-004
+kind: claim
+statement: >
+  "Reference" is used in at least three genuinely distinct senses in
+  this project, none of which is reducible to another, and never
+  cross-linked or disambiguated in one place before this phase: (a) a
+  doc_artifacts.origin='pinned_reference' row -- a graph-level
+  provenance CHECK-enum value (Phase 54c/CG-005/decisions-adjacent,
+  added via the same generic migration mechanism as 'project'/
+  'vendor_upstream') classifying externally-sourced, revision-pinned
+  material a tool materialized into the project tree; (b) a "reference
+  project" (Ledgerkit, Technical Clipper) -- a whole external, real,
+  registered codebase used as ground truth for context-quality
+  evaluation, per a repeatable registration/task-pool protocol; (c) a
+  citation/pointer field (source_ref/doc_ref/test_ref on an Evidence
+  record, or the "references block" required on every docs/domain
+  concept page) resolving to a real file:line location so a claim can
+  be walked back to primary evidence. All three are real, currently
+  populated with real content, and a newcomer reading "reference" cold
+  in this repository has no single place that names all three
+  side-by-side before this concept page.
+derivation: DE-CTXT-004
+supporting_evidence:
+  - EV-CTXT-003
+  - EV-CTXT-007
+  - EV-CTXT-008
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-23"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

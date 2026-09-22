@@ -1,0 +1,29 @@
+id: OBS-CTXT-014
+kind: observation
+method: doc_read
+what_was_done: >
+  Read decisions/0051-agent-suggested-context-is-captured-not-graphed.md
+  in full to ground the "relationship/edge" concept's own hardest
+  invariant: which relationships are allowed to become real
+  context-graph.db edges, and which are deliberately kept out.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "decisions/0051-agent-suggested-context-is-captured-not-graphed.md:1-60"
+raw_result: >
+  Decision text, verbatim intent: "An agent's suggested relationship is
+  an observation with provenance. It is captured in
+  planning/context-gaps/ and nowhere else." It never enters
+  context-graph.db -- no agent_suggested_edges table, no
+  source='agent_inference' column, no write path from a context-gaps/
+  entry into any graph table -- and becomes an actual graph edge (or a
+  Stage E graph capability) only by promotion through the learning
+  lifecycle, each with its own separately-gated ADR. This is the
+  project's own explicit statement that "a relationship someone
+  plausibly noticed" and "a relationship/edge is a mechanically-proven
+  context-graph.db row" are not the same concept, and conflating them
+  was named as a real risk ("indistinguishable, three phases later,
+  from a mechanically-proven one").
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

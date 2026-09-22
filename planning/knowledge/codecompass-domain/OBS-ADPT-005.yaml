@@ -1,0 +1,35 @@
+id: OBS-ADPT-005
+kind: observation
+method: source_read
+what_was_done: >
+  Read src/codecompass/adapters/external_process.py in full (171 lines):
+  the CAPABILITIES/PROTOCOL_VERSION module constants and the
+  ExternalAdapterProcess class (initialize/analyze_project/shutdown/
+  _request/_stderr_tail).
+tool: null
+tool_version: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: "src/codecompass/adapters/external_process.py:1-171"
+raw_result: >
+  Module docstring (lines 1-14) states this module has "zero
+  ecosystem-specific knowledge" and "never mentions Haskell, stack, or
+  package.yaml anywhere in its own source". CAPABILITIES (line 32) is
+  the closed 4-tuple ("dependencies", "symbols", "observations",
+  "diagnostics"), hard-coded here rather than imported from the protocol
+  submodule "so this module has zero file-system dependency on the
+  submodule being checked out to be importable." PROTOCOL_VERSION = 1
+  (line 34). initialize() (lines 53-84) spawns the subprocess, sends
+  {"protocol_version": 1}, hard-errors (AdapterError) on any mismatch
+  ("no negotiation range"), and stores adapter_name/adapter_version/
+  ecosystem/capabilities from the response -- capabilities parsed via
+  tuple(response.get("capabilities", [])), i.e. not itself checked
+  against the CAPABILITIES closed set at parse time (an adapter could in
+  principle report an unrecognized capability string and
+  ExternalAdapterProcess would store it uncomplainingly; nothing in this
+  file validates it). _request() (lines 116-162) enforces: matching
+  response id, exactly one of result/error present, and raises
+  AdapterError with the protocol's own error code/message on an "error"
+  response.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

@@ -1,0 +1,25 @@
+id: CL-ADPT-003
+kind: claim
+statement: >
+  "protocol" (in this cluster's specific referent) names the external
+  adapter wire protocol defined by decisions/0057 and canonicalized by
+  protocol/codecompass-adaptor-protocol/SCHEMA.md: JSON-Lines framing,
+  one outstanding request at a time (v1), a closed 3-method set
+  (initialize, analyze_project, shutdown), a closed 4-value capability
+  set gating what analyze_project may return, and a closed 4-value
+  error-code set. It is deliberately not gRPC, not a network service,
+  not a plugin registry, and not a versioned SDK -- explicitly named as
+  premature by decisions/0057 itself. `protocol_version` (an integer
+  negotiated at initialize) is a distinct concept from the protocol
+  repository's own semver release version -- the former is the wire
+  contract identifier, the latter can advance independently
+  (documentation/example/conformance-test changes) without the wire
+  contract itself changing.
+derivation: DE-ADPT-003
+supporting_evidence: [EV-ADPT-003, EV-ADPT-006]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

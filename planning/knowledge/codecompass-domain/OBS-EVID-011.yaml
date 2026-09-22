@@ -1,0 +1,33 @@
+id: OBS-EVID-011
+kind: observation
+method: source_read
+what_was_done: >
+  Read src/codecompass/graph.py lines 165-203 directly (the real
+  CREATE TABLE statements for vendor_enrichment, symbol_enrichment,
+  and doc_relation_enrichment) to confirm OBS-EVID-010's ADR-level
+  description against the actual schema, rather than trusting the ADR
+  prose alone.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "src/codecompass/graph.py:165-203"
+raw_result: >
+  vendor_enrichment: id, vendor_id (UNIQUE FK), technical_description,
+  conversational_overview, action_pointer_file, action_pointer_note,
+  symbol_set_hash, model (TEXT NOT NULL), generated_at. symbol_enrichment:
+  id, symbol_id (UNIQUE FK), purpose (TEXT NOT NULL), generated_at --
+  no `model` column on this table at all (confirmed by re-reading the
+  CREATE TABLE statement directly: only 4 columns besides id).
+  doc_relation_enrichment: id, source_doc_path, target_vendor_name,
+  target_doc_path, ai_summary (TEXT NOT NULL), relation_label (CHECK
+  enum), content_hash, model (TEXT NOT NULL), generated_at, with a
+  UNIQUE natural-key constraint (not a foreign key, per the comment
+  immediately above the table explaining why: doc_artifacts is fully
+  deleted and reinserted every sync). None of the three tables has a
+  `status` column, a `supersedes` column, or any field resembling
+  Evidence's `observations` list or Claim's `supporting_evidence`/
+  `contradicting_evidence` -- each row is a flat, single interpretive
+  value plus its one provenance string, not a chain of records.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

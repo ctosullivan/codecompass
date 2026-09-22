@@ -1,0 +1,32 @@
+id: OBS-CTXT-002
+kind: observation
+method: doc_read
+what_was_done: >
+  Read planning/phase-54c-evidence-knowledge-workflow.md sections 1-6 in
+  full: the six record kinds' exact field shapes (§2.2), the
+  context-researcher role's own original brief (§3), the
+  documentation-agent/design.md gate (§4), user review/knowledge
+  correction (§5), and the approved context-packet spec for coding
+  agents (§6/§6.1).
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "planning/phase-54c-evidence-knowledge-workflow.md:1-620"
+raw_result: >
+  Confirmed the exact YAML shape for Observation/Evidence/Claim/
+  Derivation/Decision/Requirement records (verbatim field names, closed
+  status enums, none of which is a float/confidence score). Confirmed
+  §6's context-packet definition: an approved, feature-scoped,
+  deliberately-smaller-than-design.md Markdown compaction, produced by a
+  new mode of knowledge-curator (not context-researcher, not a new
+  agent), reachable only from an APPROVED design.md, living at
+  planning/knowledge/<feature-slug>/context-packet.md, with a defined
+  section list (goal, approved semantics, requirements, examples,
+  invariants, architecture pointers, relevant symbols/files, existing
+  tests, non-goals, deliberate upstream differences, unresolved
+  questions, provenance references) and an explicit exclusion list (no
+  full research narrative, no rejected alternatives, no raw
+  Observation/Evidence detail).
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

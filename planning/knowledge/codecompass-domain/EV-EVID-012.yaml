@@ -1,0 +1,20 @@
+id: EV-EVID-012
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  No dedicated "Invariant" record kind exists anywhere in Phase 54c's
+  six-kind model or its mechanical validator; "invariant" is used in
+  this codebase in at least three distinct, non-coincident senses: (a)
+  a planning/learnings/ classification value routing a process lesson
+  to a regression test; (b) a narrative "things that must stay true"
+  subsection inside a per-feature design.md/context-packet.md,
+  referenced but never itself a citable record id; (c) the project-wide
+  docs/domain/invariants.md file this very phase produces, pulling
+  cross-cutting rules up from individual concept pages. Nothing in the
+  corpus requires these three to coincide for a given rule.
+observations: [OBS-EVID-005, OBS-EVID-014, OBS-EVID-015]
+source_ref: "planning/phase-54c-evidence-knowledge-workflow.md:584"
+doc_ref: "planning/phase-63d-domain-reconstruction.md:196-198; planning/v1-redefinition/learning-lifecycle.md:76"
+test_ref: null
+repository_revision: "working tree, 2026-09-23"
+status: current

@@ -1,0 +1,22 @@
+id: DE-ADPT-003
+kind: derivation
+claim: CL-ADPT-003
+method: >
+  Read decisions/0057 first (the original inline description), then
+  deliberately re-read the checked-out submodule's own SCHEMA.md, since
+  SCHEMA.md itself states it supersedes 0057's inline text as the
+  canonical source -- treating the newer, more authoritative document as
+  the primary citation for the Claim rather than the ADR, while still
+  citing both so a reader can see the historical origin. Cross-checked
+  both documents' method/capability/error lists against the actual
+  running code (external_process.py's CAPABILITIES constant, the
+  _request() method's result/error handling) and against a real,
+  passing test exercising a hand-written fake adapter process
+  (fake_adapter.py) -- source, documentation, and test all agree, with
+  one caveat recorded separately (EV-ADPT-005/CL-ADPT-009: the
+  capabilities list received over the wire is not itself validated
+  against the closed set by external_process.py at parse time, only
+  consulted informally by callers like haskell.py).
+inputs: [EV-ADPT-003, EV-ADPT-006]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

@@ -1,0 +1,22 @@
+id: DE-EVID-006
+kind: derivation
+claim: CL-EVID-006
+method: >
+  Read REQ-DOCORIGIN-001 in full as the concrete example, confirmed its
+  citation chain (REQ → DEC-DOCORIGIN-001 → CL-DOCORIGIN-001 →
+  DE-DOCORIGIN-001 → EV-DOCORIGIN-001/003/004/005 → OBS-DOCORIGIN-*)
+  resolves cleanly end to end with `check_knowledge_base.py`-style
+  cross-referencing (each id exists, each points the direction the
+  schema requires). Then deliberately asked "is this the same thing as
+  a domain-wide invariant this same phase is producing" rather than
+  assuming they're synonyms just because both are "a rule that must
+  hold" -- traced the phase-63d plan's own §3 definition of
+  docs/domain/invariants.md ("cross-cutting rules... pulled up from
+  individual concept docs where a rule isn't concept-local") and found
+  no requirement anywhere that an invariant trace to a Decision the way
+  a Requirement structurally must -- concluded they are related but
+  distinct, and said so explicitly rather than treating "invariant" as
+  a synonym for "Requirement".
+inputs: [EV-EVID-002, EV-EVID-012]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

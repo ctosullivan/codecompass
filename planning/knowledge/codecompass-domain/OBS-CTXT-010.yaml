@@ -1,0 +1,27 @@
+id: OBS-CTXT-010
+kind: observation
+method: source_read
+what_was_done: >
+  Grepped source_ref/doc_ref/test_ref across every EV-DOCORIGIN-*.yaml
+  record under planning/knowledge/doc-origin-pinned-reference/ to
+  confirm the third sense of "reference" (a citation/pointer field
+  inside an Evidence record) is real, populated, load-bearing content,
+  not merely a schema field that goes unused in practice.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "planning/knowledge/doc-origin-pinned-reference/EV-DOCORIGIN-001.yaml through EV-DOCORIGIN-009.yaml"
+raw_result: >
+  Every EV-DOCORIGIN-*.yaml record has all three fields
+  (source_ref/doc_ref/test_ref), exactly one or two populated per
+  record and the rest explicitly null (e.g. EV-DOCORIGIN-001:
+  source_ref="src/codecompass/graph.py:102-120,363-390", doc_ref=null,
+  test_ref=null; EV-DOCORIGIN-008: source_ref=null, doc_ref=null,
+  test_ref="tests/test_spec_docs.py:13-26; tests/test_doc_mapping.py
+  (multiple lines)"). This is the record-schema sense of "reference":
+  a pointer resolving to a real file:line location, used by Phase
+  63D's own §3 layout plan (docs/domain/references.md) and by every
+  concept page's own "references block" requirement.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

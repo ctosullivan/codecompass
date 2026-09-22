@@ -1,0 +1,26 @@
+id: OBS-EVID-004
+kind: observation
+method: source_read
+what_was_done: >
+  Read scripts/check_knowledge_base.py in full, focusing on
+  _REQUIRED_FIELDS (per-kind required field sets) and the mechanical
+  check for the Claim/Decision supersedes hard rule, to confirm the
+  six-kind schema and the Decision-never-supersedes-a-Claim rule are
+  enforced by a real, running mechanism, not merely stated in prose.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "scripts/check_knowledge_base.py:1-120 (docstring, _REQUIRED_FIELDS)"
+raw_result: >
+  The script defines exactly six `kind` values (observation, evidence,
+  claim, derivation, decision, requirement) with their own required
+  field sets, matching OBS-EVID-001's findings verbatim. No `invariant`
+  or `provenance` kind is defined. The script's own docstring names,
+  as one of its checks, "the structural hard rule (§5.2): a Claim's
+  `supersedes` only ever names another Claim; a Decision's `supersedes`
+  only ever names another Decision — never across kinds" -- confirming
+  this rule is mechanically checked, not merely a convention agents are
+  trusted to follow.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

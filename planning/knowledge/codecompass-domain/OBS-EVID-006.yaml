@@ -1,0 +1,27 @@
+id: OBS-EVID-006
+kind: observation
+method: doc_read
+what_was_done: >
+  Read planning/retros/phase-54c-evidence-knowledge-workflow.md in
+  full, focusing on "What didn't work", the "Answers to the plan's §10
+  questions" section (questions 5 and 7 specifically), and the
+  "Durable-vs-experimental recommendation" table's row on
+  contradicting_evidence/Claim-supersedes.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "planning/retros/phase-54c-evidence-knowledge-workflow.md:164-178,249-261,297"
+raw_result: >
+  The retro states directly: "Neither proving case exercised
+  `contradicting_evidence` or a real Claim-level `supersedes` with
+  actual content... a real, disclosed gap in what this phase's own
+  evidence can support, not a claim of untested success," and answers
+  its own question 5 ("Can contradictory evidence be retained without
+  silently resolving it?") as "Not tested with real content." Its own
+  durable-vs-experimental table recommends this specific machinery be
+  kept "structurally-checked but experimentally unproven... the next
+  phase using this model should deliberately pick a case likely to
+  produce a real contradiction."
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

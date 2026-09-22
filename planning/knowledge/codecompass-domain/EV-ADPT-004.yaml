@@ -1,0 +1,20 @@
+id: EV-ADPT-004
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  "connector" is not used anywhere in this project's own src/,
+  docs/, architecture/, ai-docs/, decisions/*.md ADR body content, or
+  tests/ to name any real CodeCompass mechanism, class, or concept. Its
+  only appearances in the whole repository are (a) inside this Phase
+  63D research effort's own planning-document lists of candidate
+  concepts to investigate (never as a used or defined term), and (b)
+  one unrelated occurrence inside a vendored third-party dependency's
+  generated reference digest (Anthropic SDK's own "tunnel connector
+  token" field description), which describes Anthropic's own SDK, not
+  CodeCompass.
+observations: [OBS-ADPT-009]
+source_ref: null
+doc_ref: null
+test_ref: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+status: current

@@ -1,0 +1,27 @@
+id: OBS-ADPT-007
+kind: observation
+method: doc_read
+what_was_done: >
+  Read decisions/0058-adapter-protocol-and-haskell-adapter-as-separate-repositories.md
+  in full (180 lines): the three-repository/three-license decision, the
+  local git-submodule workspace layout, alternatives considered, and the
+  restated non-settlement of the GPL question.
+tool: null
+tool_version: null
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: "decisions/0058-adapter-protocol-and-haskell-adapter-as-separate-repositories.md:1-180"
+raw_result: >
+  Accepted 2026-09-19. Names three repositories: "codecompass" (this
+  repo, GPL-3.0-or-later), "codecompass-adapter-protocol" (new,
+  standalone, MIT -- schemas/examples/conformance only, no CodeCompass
+  or Haskell code), "codecompass-adapter-haskell" (new, standalone,
+  GPL-3.0-or-later, a real Stack project implementing the protocol).
+  Note the ADR's own prose spells both new repositories with "adapter"
+  (not "adaptor"). Local workspace layout diagram (lines 82-90) shows
+  codecompass/protocol/codecompass-adapter-protocol/ and
+  codecompass/adapters/haskell/ as git submodules, pinned via gitlink
+  commit SHAs in .gitmodules, never merged content (subtree explicitly
+  rejected as an alternative).
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

@@ -1,0 +1,26 @@
+id: CL-EVID-008
+kind: claim
+statement: >
+  "Provenance" is never a record kind of its own anywhere in this
+  codebase -- it is a cross-cutting property, realized with a
+  structurally different concrete shape in each of at least three
+  mechanisms: Phase 54c's own records carry a named, method-conditional
+  set of provenance fields (repository_revision; source_ref/doc_ref/
+  test_ref; performed_by/derived_by/decided_by; tool/tool_version;
+  timestamp -- §2.3's own adopted list); the three enrichment tables
+  carry a single `model` TEXT column each (absent entirely on
+  symbol_enrichment); context-gaps/context-observations entries carry
+  four narrative fields (origin, date, codecompass_revision, project).
+  All three are "provenance" in the ordinary sense of "who/what
+  produced this, when, from what" but there is no shared schema, base
+  type, or record kind unifying them, and no evidence that unifying
+  them has ever been proposed or attempted in this repository's
+  history.
+derivation: DE-EVID-008
+supporting_evidence: [EV-EVID-013, EV-EVID-014]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "working tree, 2026-09-23"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

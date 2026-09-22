@@ -1,0 +1,17 @@
+id: EV-ADPT-006
+kind: evidence
+evidence_kind: test
+what_it_shows: >
+  The full adapter/protocol test suite (base ABC contract, dispatch
+  table, external-process wire client against a real fake-adapter
+  process, HaskellAdapter's own manifest+delegation behaviour) passes
+  cleanly (30/30) on the current working-tree revision -- the
+  documented adapter/protocol mechanics are not merely described in
+  ADRs/architecture prose but independently exercised and currently
+  green.
+observations: [OBS-ADPT-011]
+source_ref: null
+doc_ref: null
+test_ref: "tests/test_adapters_base.py; tests/test_adapters_dispatch.py; tests/test_adapters_external_process.py; tests/test_adapter_haskell.py"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+status: current

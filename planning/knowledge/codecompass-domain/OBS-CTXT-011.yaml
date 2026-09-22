@@ -1,0 +1,37 @@
+id: OBS-CTXT-011
+kind: observation
+method: source_read
+what_was_done: >
+  Read architecture/overview.md's "Tree generation" section (lines
+  397-470) and "Per-vendor CLAUDE.md structure" section (lines
+  525-576) describing how FILETREE.md/DEPTREE.md/CLAUDE.md are
+  actually produced, then read the real source: src/codecompass/
+  core.py's VendorDigest dataclass (lines 66-103) and
+  src/codecompass/sync.py's sync_vendor excerpt (lines 160-202) that
+  constructs and writes it.
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "architecture/overview.md:397-576; src/codecompass/core.py:66-103; src/codecompass/sync.py:160-202"
+raw_result: >
+  VendorDigest is a real, named dataclass (src/codecompass/core.py:67)
+  -- "Aggregate output of generating a single vendor's documentation" --
+  with fields file_tree/dep_tree/api_surface (deterministic, no AI,
+  Phase 2/3) and technical_description/conversational_overview/
+  action_pointer_file/action_pointer_note/description_error (read-only
+  lookup of this vendor's current vendor_enrichment row -- usage-driven
+  AI enrichment, Phase 16/decisions/0035). sync_vendor (sync.py:186-202)
+  builds one VendorDigest per vendor per sync, writes
+  DEPTREE.md/deptree.json, FILETREE.md/filetree.json (with an embedded
+  Symbol index section), OVERVIEW.md (only if conversational_overview
+  is set), and CLAUDE.md (via render_vendor_claude_md(digest)) under
+  vendor/<name>/. This is a wholly different mechanism, trigger point,
+  storage location, and audience from a context-packet.md
+  (planning/knowledge/<feature>/, feature-scoped, hand/agent-curated
+  from APPROVED knowledge-base records, never regenerated
+  automatically) -- digest generation runs on every `sync` for every
+  tracked vendor unconditionally; a context packet is written once, by
+  knowledge-curator, only after a feature's design.md reaches APPROVED.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

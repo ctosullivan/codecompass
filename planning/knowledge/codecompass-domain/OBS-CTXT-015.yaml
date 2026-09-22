@@ -1,0 +1,27 @@
+id: OBS-CTXT-015
+kind: observation
+method: source_read
+what_was_done: >
+  Grepped for a project-root CLAUDE.md renderer distinct from the
+  per-vendor VendorDigest path, to check whether "digest" also covers
+  the root CLAUDE.md's own vendor routing table (it does not, by name,
+  in code).
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "src/codecompass/index.py:1,77,117; src/codecompass/cli.py:943; src/codecompass/enrichment.py:254"
+raw_result: >
+  index.py's own module docstring reads "Idempotent routing-table
+  injection into the project root CLAUDE.md." This writes/updates the
+  vendor table inside the project's own root CLAUDE.md (the file this
+  very session's own governing CLAUDE.md is an instance of) by string
+  injection, not by constructing or rendering a VendorDigest -- it is a
+  routing/index mechanism, referencing each vendor's own already-
+  written digest by path, never itself called a "digest" anywhere in
+  source or architecture/overview.md. Confirms the project-root
+  CLAUDE.md's vendor table and a per-vendor vendor/<name>/CLAUDE.md are
+  two different mechanisms (routing-table injection vs VendorDigest
+  rendering) that happen to share the filename "CLAUDE.md".
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

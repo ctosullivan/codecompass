@@ -1,0 +1,32 @@
+id: OBS-EVID-012
+kind: observation
+method: doc_read
+what_was_done: >
+  Read planning/context-gaps/README.md in full and the complete
+  CG-001 entry in planning/context-gaps/inbox.md (lines 1042-1144,
+  including its two recorded curation passes), to compare the
+  context-gap record shape against Phase 54c's Observation/Evidence
+  shape directly rather than assuming they are the same kind of thing
+  because both involve "an agent noticing something."
+tool: null
+tool_version: null
+repository_revision: "working tree, 2026-09-23"
+location: "planning/context-gaps/README.md:1-83; planning/context-gaps/inbox.md:1042-1144"
+raw_result: >
+  A context-gap entry's own fixed field set (origin, date,
+  codecompass_revision, project, "the edge", edge kind, "agent's
+  reasoning", "what the graph shows instead", "could mechanical
+  detection ever catch this?", "smallest candidate", classification,
+  status [candidate|recurred|promoted-to-roadmap|discarded],
+  recurrence) shares no field names with Observation
+  (method/what_was_done/tool/location/raw_result) or Evidence
+  (evidence_kind/what_it_shows/observations/source_ref). A context-gap
+  is filed directly as prose in one growing inbox.md file (no per-id
+  YAML file, no cross-directory id resolution via
+  check_knowledge_base.py); it is never itself promoted into an
+  Evidence or Claim record -- its own promotion path (README.md "How
+  it feeds the gates") is a Stage C/E gated roadmap decision, not a
+  Phase 54c Decision/Requirement pair.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

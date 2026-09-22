@@ -1,0 +1,34 @@
+id: DE-CTXT-001
+kind: derivation
+claim: CL-CTXT-001
+method: >
+  Started from the phase-63d brief's own explicit instruction to
+  disambiguate "context" across the graph, the packet, the health/
+  use-log artifacts, and "context quality evaluation" (OBS-CTXT-001).
+  Rather than trust that framing as already-correct and complete, read
+  each named artifact's own governing doc directly
+  (context-health-planner.md, context-health.md, context-use-log.md,
+  context-quality-evaluation.md -- OBS-CTXT-006/007) to confirm they
+  really are four distinct things and not, say, three names for one
+  mechanism. Found a fifth sense not named in the brief's own list
+  while doing this: roadmap-context-curator uses "context" to mean
+  planning-doc truth, unrelated to runtime context entirely -- included
+  because leaving it out would let a reader assume every "context"-named
+  agent concerns the same subject matter, which is false. Cross-checked
+  against the project's own highest-level definition (ai-docs/
+  README.md, OBS-CTXT-008) to find the closest thing to a canonical
+  statement, and found it already treats "context graph" and "digest" as
+  two separate coordinate nouns, not one -- supporting rather than
+  contradicting the five-way split, so no contradicting evidence was
+  found and none is fabricated to look more resolved than it is. Did
+  not attempt to rank these five senses by importance or propose a
+  terminology fix (a product/style decision, out of this role's remit)
+  -- flagged instead as an open question in the concept page itself.
+inputs:
+  - EV-CTXT-001
+  - EV-CTXT-003
+  - EV-CTXT-004
+  - EV-CTXT-005
+  - EV-CTXT-006
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-23T00:00:00Z"

@@ -1,0 +1,27 @@
+id: CL-ADPT-004
+kind: claim
+statement: >
+  "connector" is not a real, distinct CodeCompass concept -- it names
+  nothing in src/, docs/, architecture/, ai-docs/, any decisions/*.md
+  ADR body, or tests/. Its only in-repository occurrences are (a) this
+  Phase 63D research effort's own planning-document lists of terms *to
+  investigate* (never used or defined as a term there either), and (b)
+  one unrelated occurrence inside a vendored third-party SDK's own
+  generated reference digest, describing an Anthropic-product field
+  ("tunnel connector token") that has no relationship to CodeCompass's
+  adapter machinery. If a reader encounters "connector" in a CodeCompass
+  context, the most likely source of confusion is either (i) the broader
+  Claude/MCP ecosystem's own use of "connector" for a hosted
+  integration (a concept this project has never implemented -- MCP work
+  is deferred, Phase 25, not started, and no MCP-related code exists in
+  src/codecompass/ at this revision), or (ii) CodeCompass's own
+  "adapter" (EcosystemAdapter or the external-process protocol client),
+  which is the actual, evidenced mechanism nearest in meaning.
+derivation: DE-ADPT-004
+supporting_evidence: [EV-ADPT-004]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+timestamp: "2026-09-23T00:00:00Z"
+status: supported
+supersedes: null

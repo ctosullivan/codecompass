@@ -1,0 +1,36 @@
+id: OBS-ADPT-009
+kind: observation
+method: executable
+what_was_done: >
+  Ran `grep -rni "connector" --include="*.py" --include="*.md"
+  --include="*.yaml" --include="*.yml" --include="*.toml" .` from the
+  repository root, then filtered the raw hit list by hand to classify
+  each match.
+tool: grep (GNU grep)
+tool_version: "not captured explicitly; system grep on this environment"
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+location: null
+raw_result: >
+  Every hit resolves to one of two categories, and no third category
+  exists: (1) this Phase 63D research effort's own planning-document
+  enumeration of candidate concepts to investigate --
+  decisions/0060-scope-plan-domain-design-implement-methodology.md:44,
+  planning/phase-63d-domain-reconstruction.md:43+189,
+  planning/v1-redefinition/development-methodology.md:75,
+  planning/v1-redefinition/roadmap.md:1560, planning/CONTEXT.md:701,
+  planning/ROADMAP.md:350, CHANGELOG.md:277 -- every one of these
+  instances lists "connector" alongside "adapter, protocol, reference,
+  decision, invariant" as a term *to research*, never as a term already
+  defined or used for a mechanism; (2) one unrelated hit inside a
+  vendored third-party reference digest,
+  .claude/skills/codecompass-anthropic/references/FILETREE.md:1242
+  ("src/anthropic/types/beta/beta_tunnel_token.py -- A tunnel's connector
+  token."), which describes a field inside Anthropic's own Python SDK
+  (a vendored dependency's generated file-tree digest, not CodeCompass's
+  own source) and has no relationship to CodeCompass's adapter
+  machinery. No hit exists in src/codecompass/**, docs/**, architecture/**,
+  ai-docs/**, any decisions/*.md ADR body content, or tests/** using
+  "connector" to name any CodeCompass mechanism, class, or concept.
+timestamp: "2026-09-23T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded
