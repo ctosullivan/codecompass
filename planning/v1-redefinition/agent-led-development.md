@@ -32,8 +32,7 @@ Implemented by Phase 40 (roster + workflow) and proven by Phase 43
 
 ## 2. The roster
 
-Eleven agent definitions exist; a twelfth (`domain-skeptic`, §2.13) is
-planned for Phase 63D and not yet created. Only 4–5 are active in a
+Twelve agent definitions exist. Only 4–5 are active in a
 typical internal phase. All are `.claude/agents/<name>.md` with
 model/tools/isolation frontmatter.
 
@@ -49,7 +48,7 @@ expansion of any existing agent's scope. Phase 54c added a tenth and
 eleventh (`context-researcher`, `documentation-agent`, §2.11–2.12) —
 never previously catalogued in this document, a gap corrected here
 (`decisions/0060`), not a new addition at time of correction. Phase 63D
-plans a twelfth (`domain-skeptic`, §2.13), same "narrow role for a job
+added the twelfth (`domain-skeptic`, §2.13), same "narrow role for a job
 no existing brief naturally covers" rationale as `decisions/0054`'s own.
 
 ### 2.1 Lead Claude session (not an agent file — the human-facing session)
@@ -277,7 +276,7 @@ docs and self-certifies them.
 - **Active in:** the Design stage of Scope→Plan→Domain→Design→Implement,
   for any feature with an `APPROVED`-reachable knowledge base.
 
-### 2.13 `domain-skeptic` — independent adversarial domain review (planned Phase 63D, `decisions/0060`, amended 2026-09-20)
+### 2.13 `domain-skeptic` — independent adversarial domain review (added Phase 63D, `decisions/0060`, amended 2026-09-20)
 - **Question:** does a domain-corpus (or `design.md`) draft actually
   hold up — every material claim evidenced, no internal contradiction,
   no missing edge case — before it reaches the actual user/domain owner?
@@ -324,9 +323,10 @@ docs and self-certifies them.
   `src/codecompass/` writes, no edits to `docs/domain/`), Write (scoped
   to exactly its own review report and `planning/knowledge/**` records
   when resolving a finding itself).
-- **Not created by `decisions/0060` itself** — planned for Phase 63D's
-  own implementation, per that phase's own Files section, matching how
-  Phase 52 planned `context-enrichment-agent` before creating it.
+- **Not created by `decisions/0060` itself** — created during Phase
+  63D's own implementation (`.claude/agents/domain-skeptic.md`), per
+  that phase's own Files section, matching how Phase 52 planned
+  `context-enrichment-agent` before creating it.
 - **Active in:** the Domain stage of Scope→Plan→Domain→Design→Implement,
   from Phase 63D on; re-invoked at **Phase 65** against any domain-claim
   staleness candidate accumulated since (`documentation-lifecycle.md`
@@ -359,7 +359,7 @@ docs and self-certifies them.
 | `context-enrichment-agent` | source doc excerpts, `codecompass query relations` output | nothing directly — `context-graph.db` only via `codecompass enrich apply` | `codecompass query`, `codecompass enrich apply` | no — participant, but the CLI itself enforces its trust boundary mechanically |
 | `context-researcher` | everything (behaviour-first: runs real examples/commands before reading docs) | `planning/knowledge/<slug>/**` only | real examples/commands/tests as evidence | partial — independent investigation, but not adversarial toward its own findings |
 | `documentation-agent` | `planning/knowledge/<slug>/**` | `planning/knowledge/<slug>/design.md` only | — | no — participant, projects from the knowledge base only |
-| `domain-skeptic` (planned, Phase 63D) | source, implementation, design, approved domain corpus (read-only toward all four — never edits any) | its review report / `planning/knowledge/**` Observation-Evidence only (only when resolving a finding itself; never a Claim/Derivation/Decision) | read-only `codecompass query`, tests, greps | **yes** — independent of `context-researcher`/`documentation-agent`, never repairs what it reviews, never rules on a genuine ambiguity in the user's place |
+| `domain-skeptic` (added Phase 63D) | source, implementation, design, approved domain corpus (read-only toward all four — never edits any) | its review report / `planning/knowledge/**` Observation-Evidence only (only when resolving a finding itself; never a Claim/Derivation/Decision) | read-only `codecompass query`, tests, greps | **yes** — independent of `context-researcher`/`documentation-agent`, never repairs what it reviews, never rules on a genuine ambiguity in the user's place |
 
 **No agent** writes `CLAUDE.md`, `decisions/*` (except the lead via the
 ADR process), or `src/` (except the lead / ad-hoc implementer subagent).
