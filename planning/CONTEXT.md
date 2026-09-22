@@ -501,6 +501,33 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 63D — domain corpus drafted, researched, and independently
+reviewed; awaiting actual-user approval (2026-09-23).** Not yet marked
+done — the corpus itself cannot be, until the actual user/domain owner
+reviews it (per this same phase's own no-stand-in rule, the lead does
+not flip `DRAFT` → `APPROVED` unilaterally). Three parallel
+`context-researcher` dispatches produced 19 concept pages under
+`docs/domain/concepts/` and 135+ Observation/Evidence/Claim/Derivation
+records under `planning/knowledge/codecompass-domain/`
+(`EVID`/`CTXT`/`ADPT` clusters). `domain-skeptic` then ran its first
+real review: resolved the `decisions/0058` adapter/adaptor spelling
+drift with new git-history evidence (`CL-ADPT-010` supersedes
+`CL-ADPT-008`); confirmed six terminology-looseness findings as
+correctly-disclosed, non-escalation-worthy open questions; routed two
+real implementation gaps (`symbol_enrichment`'s missing provenance
+column; unvalidated wire `ecosystem`/`capabilities` fields) to
+`planning/learnings/inbox.md` as `L-031`/`L-032`. **Zero genuine
+escalations to the actual user survived attempted resolution.** Also:
+wrote the six `docs/domain/` integration files (README/glossary/
+invariants/examples/open-questions/references) domain-skeptic found
+missing; normalized all 19 concept pages to one DRAFT-marker
+convention; fixed a real false-positive in
+`scripts/check_knowledge_base.py` (its cross-reference check only
+looked within one feature directory; this project-scoped corpus
+legitimately cites other features' records) — verified 0 findings
+after, full suite still 623 passed/2 skipped. Full review:
+`planning/retros/_domain-skeptic-review-phase-63d.md`.
+
 **Phase 63 — lightweight ordinary-project smoke test — done
 (2026-09-22).** GATE DF's own question: did Phases 60–62's Haskell-
 adapter reference implementation disturb ordinary npm/Python/Cargo
@@ -2088,17 +2115,22 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 63 is done (2026-09-22) — GATE DF PASS.** Stage F is now fully
-complete (Phases 60–63). **Phase 63D (Domain reconstruction) is next**
-— gated on Phase 63/GATE DF, which has now passed; not gated on GATE
-DD. Its own plan (`planning/phase-63d-domain-reconstruction.md`) is
-already written and thrice-amended (see "What was just completed"
-history below) and ready to implement: build the evidence-backed
-`docs/domain/` corpus, exercise the new `domain-skeptic` role for the
-first time, and produce the approved domain baseline Phase 64 will
-consume. GATE DD remains open and unaffected by any of this (Stage
-F/63D are a separate axis from Stage E, per `decisions/0056`/
-`decisions/0060`) — no new work resolves or is forced by it here.
+**Phase 63D's own work is complete; the phase itself is blocked on the
+actual user's own review and approval of the domain corpus** — the one
+step this phase's own no-stand-in rule reserves for the actual
+user/domain owner, never the lead. `docs/domain/` (19 concept pages,
+6 integration files) and `planning/retros/_domain-skeptic-review-phase-63d.md`
+(zero genuine escalations found) are ready to read. Once the user
+approves (or rules on anything they want changed — none of the
+disclosed open questions require a ruling, they're correctly left
+open), the remaining closeout steps are mechanical: flip the corpus's
+own `DRAFT` status, write the phase retro, run the standard
+`docs-reconstructor` drift audit + `release-phase-auditor` DoD pass,
+mark Phase 63D done in `planning/ROADMAP.md`/`v1-redefinition/roadmap.md`/
+`CHANGELOG.md`, and Phase 64 (blank-slate documentation reconstruction)
+can begin, consuming this corpus as its own required input. GATE DD
+remains open and unaffected by any of this (Stage F/63D are a separate
+axis from Stage E, per `decisions/0056`/`decisions/0060`).
 
 Phase 61 itself is fully done: a real, symmetric two-agent comparison
 found LOW/effectively-NULL context advantage (outcome shape (b)),
