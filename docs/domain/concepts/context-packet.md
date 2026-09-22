@@ -1,5 +1,5 @@
 ---
-status: DRAFT — pending domain-skeptic review and actual-user approval
+status: APPROVED (2026-09-23, actual user/domain owner, subject to corrections applied same day)
 ---
 
 # Context packet

@@ -1594,19 +1594,31 @@ already-recommended-durable machinery, not replacing it. Its own
 approved output is Phase 64's own required input (below), which no
 longer independently rediscovers CodeCompass's own domain terminology.
 
-**Exit:** the corpus is approved (`domain-skeptic` finds no unresolved
-contradiction it cannot either fix or correctly characterize as an
-open question; every escalation has either a recorded actual-user
-ruling or an honest, still-open entry in `docs/domain/open-questions.md`
-— never a ruling by the lead or any agent standing in); the standard
-DoD (drift audit, retro, learning triage, `release-phase-auditor` pass)
-all hold, per the plan's own Verification/Done-when sections.
+**Exit — met, 2026-09-23.** `domain-skeptic` found no unresolved
+contradiction it could not either fix or correctly characterize as an
+open question — one real naming drift (`decisions/0058`'s "adapter" vs.
+the real "adaptor"-spelled repositories) resolved with new git-history
+evidence (`CL-ADPT-010` supersedes `CL-ADPT-008`); six terminology
+loosenesses correctly left in `docs/domain/open-questions.md`; two real
+implementation gaps (`symbol_enrichment`'s missing provenance column;
+unvalidated wire `ecosystem`/`capabilities` fields) routed to
+`planning/learnings/inbox.md` as `L-031`/`L-032` rather than treated as
+domain questions. **Zero escalations reached the actual user** — the
+one review step reserved for them was therefore the corpus's own
+approval itself, which the actual user/domain owner gave, subject to
+four corrections (two content over-generalisations about which
+enrichment tables carry a `model` provenance column; a stale
+`phase-54c-evidence-workflow.md` file-path reference; this phase's own
+then-stale status across `planning/ROADMAP.md` and its plan file) —
+applied and verified the same day. The standard DoD (drift audit,
+retro, learning triage, `release-phase-auditor` pass) is complete per
+the plan's own Verification/Done-when sections.
 
 **Added (2026-09-20, direct user instruction)**: this phase's own
 `docs/domain/invariants.md` and per-concept references blocks are the
 first real population of `development-methodology.md`'s own
-traceability spine (Evidence → Claim/Invariant → Requirement → Design
-Decision → Implementation → Test) at project scope, not just per-
+traceability spine (Evidence → Claim/Invariant → Design Decision →
+Requirement → Implementation → Test) at project scope, not just per-
 feature. It is also the first phase already known to need this same
 document's own "Re-entry and replanning" rules — its own plan has
 already been amended twice (this session, before implementation) via
@@ -1655,7 +1667,7 @@ or later ecosystem-expansion work) — it is superseded as Stage F's
 
 ---
 
-## STAGE G — v1 consolidation  · COMMITTED once F and 63D complete
+## STAGE G — v1 consolidation  · COMMITTED — F and 63D both complete, unblocked
 
 **Renumbered from the old Stage F** (was Phases 60–67; now 64–70) to make
 room for the new Stage F above. Content unchanged except two additions:

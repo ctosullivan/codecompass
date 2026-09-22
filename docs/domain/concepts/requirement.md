@@ -1,5 +1,5 @@
 ---
-status: DRAFT — pending domain-skeptic review and actual-user approval
+status: APPROVED (2026-09-23, actual user/domain owner, subject to corrections applied same day)
 ---
 
 # Requirement
@@ -40,7 +40,7 @@ implemented | verified`).
   post-implementation revalidation (re-running the Observations that
   established the original understanding against the shipped code) —
   never merely because the code was written
-  (`phase-54c-evidence-workflow.md` §8).
+  (`planning/phase-54c-evidence-knowledge-workflow.md` §8).
 
 ## Example
 

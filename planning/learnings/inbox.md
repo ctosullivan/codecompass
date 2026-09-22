@@ -8,6 +8,78 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-033 — a within-page consistency check is distinct from a claim-against-source check, and `domain-skeptic`'s own review missed the former
+
+- **origin:** Phase 63D (Domain reconstruction), the actual user's own
+  review of the approved corpus, catching what `domain-skeptic`'s own
+  independent review pass had not
+- **date:** 2026-09-23
+- **project_revision:** `27bac36`
+- **observation:** `docs/domain/concepts/provenance.md`'s own
+  Definition section asserted "the three enrichment tables each carry a
+  single `model` column," two paragraphs before its own Counterexample
+  section correctly stated `symbol_enrichment` has no such column at
+  all — a self-contradiction within one page.
+  `evidence.md`'s "Relationships" section repeated the same
+  over-generalisation in passing. `domain-skeptic`'s own review report
+  (`planning/retros/_domain-skeptic-review-phase-63d.md` §3)
+  independently re-verified `provenance.md`'s *Counterexample* claim
+  against the real schema and confirmed it accurate, but did not
+  separately check whether the same page's own *Definition* section
+  agreed with it. The review's own charter names "search for
+  contradictions... between two concept pages" explicitly, but does not
+  name checking a single page's own sections against each other as a
+  distinct pass.
+- **evidence:** `docs/domain/concepts/provenance.md` (pre-fix, commit
+  `f39a986`, Definition section vs. Counterexample section);
+  `docs/domain/concepts/evidence.md` (pre-fix, same commit, Relationships
+  section); `planning/retros/_domain-skeptic-review-phase-63d.md` §3
+  (the review's own re-verification of the Counterexample claim only);
+  `.claude/agents/domain-skeptic.md` step 3 ("search for
+  contradictions... between two concept pages," no explicit mention of
+  within-page consistency).
+- **classification:** scoped-rule
+- **status:** candidate
+- **recurrence:**
+- **promoted_to:**
+
+### L-034 — planning-status closeout discipline: `CONTEXT.md` being updated correctly is not evidence that `ROADMAP.md`/the plan file's own Status line were too
+
+- **origin:** Phase 63D (Domain reconstruction) closeout, second
+  occurrence — Phase 62's own closeout (`planning/retros/_audit-phase-62.md`
+  precedent territory, though that specific finding was about a missing
+  audit-report file, not this exact pattern) already surfaced a related
+  "did I update every planning-status file, not just the one I'm
+  actively narrating" gap
+- **date:** 2026-09-23
+- **project_revision:** `27bac36`
+- **observation:** After Phase 63D's own implementation work completed,
+  `planning/CONTEXT.md` was updated correctly to say "corpus complete,
+  awaiting actual-user approval," but `planning/ROADMAP.md`'s own Phase
+  63D row and `planning/phase-63d-domain-reconstruction.md`'s own
+  Status line were both left saying "not started"/"plan only" — caught
+  only by the actual user's own review, not by the lead before
+  presenting the work. This is the same *shape* of gap as Phase 62's
+  own plan-file Status line being left stale after full implementation
+  (caught during a dedicated Phase 62 closeout-consistency check, a
+  separate session) — a second occurrence of "the actively-narrated
+  file (`CONTEXT.md`, or the conversation itself) gets updated; the
+  quieter tabular/status-line files do not," not a one-off slip.
+- **evidence:** `planning/CONTEXT.md` (commit `27bac36`, correct) vs.
+  `planning/ROADMAP.md` row 63D and
+  `planning/phase-63d-domain-reconstruction.md`'s own Status line (both
+  still stale as of the same commit) — the discrepancy the user's own
+  review instruction named directly; the analogous Phase 62 finding
+  (session history, "Check Phase 62 closeout consistency" task, prior to
+  this one).
+- **classification:** workflow
+- **status:** candidate
+- **recurrence:** second occurrence of the same shape of gap (Phase 62,
+  then Phase 63D) — a third occurrence should trigger promoting this
+  into an explicit workflow-checklist step, not staying a discardable
+  one-off.
+- **promoted_to:**
+
 ### L-031 — `symbol_enrichment` has no provenance column, unlike its two sibling enrichment tables
 
 - **origin:** Phase 63D (Domain reconstruction), `domain-skeptic`'s own

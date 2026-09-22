@@ -1,5 +1,5 @@
 ---
-status: DRAFT — pending domain-skeptic review and actual-user approval
+status: APPROVED (2026-09-23, actual user/domain owner, subject to corrections applied same day)
 ---
 
 # CodeCompass domain corpus
@@ -71,14 +71,25 @@ and the page has a bug.
 
 ## Status
 
-Every page in this corpus is currently marked
-`status: DRAFT — pending domain-skeptic review and actual-user
-approval`. `domain-skeptic`'s own independent adversarial review has
-run once
+**Approved 2026-09-23** by the actual user/domain owner, subject to
+four corrections identified during review and applied the same day
+(two content over-generalisations on
+[`concepts/provenance.md`](concepts/provenance.md)/
+[`concepts/evidence.md`](concepts/evidence.md) about which enrichment
+tables actually carry a `model` provenance column; a stale file-path
+reference on [`concepts/requirement.md`](concepts/requirement.md); a
+planning-status inconsistency across `planning/ROADMAP.md`/the phase
+plan, unrelated to this corpus's own content). Every page now carries
+`status: APPROVED (2026-09-23, actual user/domain owner, subject to
+corrections applied same day)`.
+
+`domain-skeptic`'s own independent adversarial review ran once before
+approval
 ([`planning/retros/_domain-skeptic-review-phase-63d.md`](../../planning/retros/_domain-skeptic-review-phase-63d.md))
 and found no genuine, unresolved domain/product ambiguity requiring the
-actual user's attention. This corpus becomes **approved** once the
-actual user/domain owner has reviewed it and its open questions.
+actual user's attention — every open item in
+[`open-questions.md`](open-questions.md) was reviewed and accepted as
+correctly left open, not requiring a ruling.
 
 ## Freshness
 

@@ -9,6 +9,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 63D** (Domain reconstruction, done): the first project-scoped
+  application of the Scope → Plan → Domain → Design → Implement
+  methodology's own Domain stage (`decisions/0060`). Three parallel
+  `context-researcher` dispatches produced an evidence-backed domain
+  corpus — 19 concept pages under `docs/domain/concepts/` (evidence,
+  observation, claim, derivation, decision, requirement, invariant,
+  provenance, context, context-packet, relationship-edge, reference,
+  digest, adapter, connector, protocol, vendor, ecosystem, capability)
+  and 6 integration files (README/glossary/invariants/examples/
+  open-questions/references), backed by 138 Observation/Evidence/Claim/
+  Derivation records under `planning/knowledge/codecompass-domain/` —
+  plus a new independent adversarial reviewer, `domain-skeptic`
+  (`.claude/agents/domain-skeptic.md`), used for real for the first
+  time. `domain-skeptic` resolved a real `decisions/0058` naming drift
+  ("adapter" vs. the real "adaptor"-spelled repositories) with new
+  `git log`/`git ls-remote` evidence (`CL-ADPT-010` supersedes
+  `CL-ADPT-008`), confirmed six terminology-looseness findings as
+  correctly-disclosed open questions with no current behavioural
+  consequence, and routed two real implementation gaps
+  (`symbol_enrichment`'s missing provenance column;
+  unvalidated wire `ecosystem`/`capabilities` fields) to
+  `planning/learnings/inbox.md` (`L-031`/`L-032`) rather than treating
+  them as domain-meaning ambiguities. **Zero genuine escalations
+  reached the actual user/domain owner.** The actual user then approved
+  the corpus, subject to four corrections found during their own
+  review: two content over-generalisations (`provenance.md`/
+  `evidence.md` incorrectly implied all three enrichment tables carry a
+  `model` provenance column; only two of three do), one stale file
+  reference (`requirement.md`), and a planning-status inconsistency
+  across `planning/ROADMAP.md`/the phase plan (both still said "not
+  started" after implementation had completed) — all applied and
+  independently re-verified. Also fixed along the way: a real false-
+  positive in `scripts/check_knowledge_base.py` (its cross-reference
+  check only looked within one feature directory; this project-scoped
+  corpus legitimately cites other features' own records) — verified 0
+  findings after, full suite still 623 passed/2 skipped. Two further
+  candidate learnings filed (`L-033`, `L-034`) about the review/closeout
+  process itself. Retro:
+  `planning/retros/phase-63d-domain-reconstruction.md`.
+
 - **Phase 63** (Stage F's own final phase, lightweight ordinary-project
   smoke test, done): GATE DF's own question — did Phases 60–62's
   Haskell-adapter reference implementation (a new

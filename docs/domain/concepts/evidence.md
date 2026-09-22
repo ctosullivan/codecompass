@@ -1,5 +1,5 @@
 ---
-status: DRAFT — pending domain-skeptic review and actual-user approval
+status: APPROVED (2026-09-23, actual user/domain owner, subject to corrections applied same day)
 ---
 
 # Evidence
@@ -107,11 +107,14 @@ disconfirmed one (`EV-EVID-004`).
 - **Thinner/different-shaped analogue → AI-authored graph enrichment**
   (`vendor_enrichment`/`symbol_enrichment`/`doc_relation_enrichment`).
   Enrichment content is also "what an AI found/produced," but it is a
-  flat single-row value with one provenance column (`model`), never a
-  chain of Observation→Evidence→Claim, and it describes an
-  already-proven graph fact rather than a behavioural claim that may
-  have no graph fact at all (`decisions/0054`, `EV-EVID-008`,
-  `EV-EVID-014`).
+  flat single-row value, never a chain of Observation→Evidence→Claim,
+  and it describes an already-proven graph fact rather than a
+  behavioural claim that may have no graph fact at all. Two of the
+  three enrichment tables (`vendor_enrichment`, `doc_relation_enrichment`)
+  carry one `model` provenance column each; `symbol_enrichment` carries
+  none — see [`provenance.md`](provenance.md)'s own Definition/
+  Counterexample for the full asymmetry, not restated here
+  (`decisions/0054`, `EV-EVID-008`, `EV-EVID-014`).
 
 ## References
 

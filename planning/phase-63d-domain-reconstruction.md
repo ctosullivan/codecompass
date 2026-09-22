@@ -1,7 +1,12 @@
 # Phase 63D: Domain reconstruction — plan
 
-**Status:** plan only, not started. Do not begin implementation until
-this plan is reviewed (`CLAUDE.md` §1).
+**Status:** done (2026-09-23). Corpus approved by the actual user/domain
+owner, subject to corrections applied the same day. See
+`planning/retros/phase-63d-domain-reconstruction.md` (retro),
+`planning/retros/_domain-skeptic-review-phase-63d.md` (domain-skeptic's
+own review), `planning/retros/_drift-audit-phase-63d.md` (docs
+reconstructor), and `planning/retros/_audit-phase-63d.md`
+(release-phase-auditor) for the full closeout record.
 
 **Sits between Phase 63 (Stage F's own last phase) and Phase 64 (Stage
 G's first phase)** — a letter-suffixed bridge phase (matching

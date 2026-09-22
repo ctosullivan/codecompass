@@ -1,5 +1,5 @@
 ---
-status: DRAFT — pending domain-skeptic review and actual-user approval
+status: APPROVED (2026-09-23, actual user/domain owner, subject to corrections applied same day)
 ---
 
 # Provenance
@@ -18,11 +18,14 @@ concrete shape in each of at least three independent mechanisms
    `tool`/`tool_version`; `timestamp`
    (`planning/phase-54c-evidence-knowledge-workflow.md` §2.3's own
    adopted-fields table).
-2. **The three enrichment tables** each carry a single `model` `TEXT`
+2. **Two of the three enrichment tables** — `vendor_enrichment` and
+   `doc_relation_enrichment` — each carry a single `model` `TEXT`
    column (a real Anthropic model id, or `agent:<agent-name>` for
-   agent-driven output, per `decisions/0054`) — and `symbol_enrichment`
-   carries **no** provenance column at all
-   (`src/codecompass/graph.py:177-182`).
+   agent-driven output, per `decisions/0054`). **`symbol_enrichment`
+   carries no provenance column at all** — a real asymmetry within the
+   same mechanism, not a uniform property of "the enrichment tables" as
+   a group (`src/codecompass/graph.py:165-182`; see "Counterexample"
+   below).
 3. **`context-gaps`/`context-observations` entries** carry four fixed
    narrative fields: `origin`, `date`, `codecompass_revision`,
    `project`.
