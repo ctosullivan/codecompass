@@ -51,6 +51,23 @@ base, exactly as the amended plan scoped.
 - **GATE DF verdict: PASS.** No regression found; nothing to fix or
   scope away with an ADR. Stage G (and Phase 63D specifically, gated on
   this phase per `decisions/0060`) is unblocked.
+- `docs-reconstructor` per-phase drift audit → **NO DRIFT**
+  (`planning/retros/_drift-audit-phase-63.md`).
+- `release-phase-auditor` → first pass **FAIL**, not on substance (every
+  check it re-ran independently — pytest, ruff, check_user_docs.py,
+  `which npm`/`which cargo`, changed-file scope, roadmap/context/
+  changelog accuracy — came back clean) but because the drift audit
+  above and a `knowledge-curator` confirmation of this retro's own "no
+  candidate learnings" call hadn't landed yet at the time it ran
+  (`planning/retros/_audit-phase-63.md`). Both fixed same-session: the
+  drift-audit report was persisted from the auditor's own already-
+  completed findings (a timing/persistence gap, not a missing check —
+  same pattern Phase 62's own closeout found once before);
+  `knowledge-curator` independently re-derived this retro's own "Lessons
+  learnt" claim from source (`src/codecompass/adapters/npm.py`) and
+  filed it as `L-030` (`status: discarded` — a correctly-caught,
+  zero-harm instance of this project's own standing evidence-first
+  discipline, not a new rule).
 
 ## What worked
 

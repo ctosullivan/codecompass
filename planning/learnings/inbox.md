@@ -8,6 +8,129 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-030 — a live check's "realness" is not, by itself, evidence that it adds more informative signal than an already-passing fixture suite covering the same surface
+
+- **origin:** Phase 63 (lightweight ordinary-project smoke test), retro
+  "Lessons learnt" (the retro explicitly declined to file this as an
+  `L-NNN`, reasoning it "doesn't generalise past 'read what a partial
+  live check would and wouldn't cover before assuming it's worth
+  running,' which is already this project's own standing evidence-first
+  discipline, not a new rule"); filed at this triage's own initiative,
+  dispatched specifically because a `release-phase-auditor` DoD audit of
+  Phase 63 flagged the retro's own non-filing decision as itself a
+  curation judgment `CLAUDE.md` §8 reserves for `knowledge-curator`, not
+  something the implementing lead should resolve unilaterally — the same
+  pattern flagged, and then fixed, during Phase 62's own closeout audit
+  (`planning/retros/_audit-phase-62.md`, resulting `L-029`, merged into
+  `L-014`).
+- **date:** 2026-09-22
+- **project_revision:** `6298154` (Phase 63's own closeout commit)
+- **observation:** the plan originally scoped a live clone of an
+  ordinary npm project (Technical Clipper) to smoke-test whether Phases
+  60-62's shared adapter-wiring changes (`EcosystemAdapter.symbols()`,
+  `sync.py`'s `_collect_vendor_symbols` removal) disturbed ordinary
+  npm/Python/Cargo project support. Amended before implementation once
+  `which npm`/`which cargo` both confirmed absent from the sandbox: the
+  live clone was dropped entirely rather than run partially, because a
+  live bootstrap could only exercise `NpmAdapter.installed_version()`/
+  `source_location()`/`readme_and_api_surface()` — never
+  `dependency_tree()`, the one method requiring a real `npm ls`
+  subprocess call and the one method closest to what Phases 60-62's
+  `sync.py` wiring changes could plausibly have disturbed. Independently
+  re-confirmed directly against `src/codecompass/adapters/npm.py`:
+  `dependency_tree()` (line 41) is the only one of the four methods that
+  shells out to `npm ls`; the other three read `node_modules/<name>/
+  package.json` and on-disk files directly, no subprocess involved. The
+  full regression suite (`pytest`: 623 passed, 2 skipped — identical to
+  Phase 62's own closeout baseline) was judged to give more actual
+  coverage of the changed surface than the partial live run would have,
+  and was used as this phase's entire evidence base instead. Generalised
+  statement: "live/real" and "more informative" are different axes — a
+  check's evidentiary value depends on what fraction of the actually-
+  changed surface it exercises, not on whether it runs against a real
+  external project versus a fixture.
+- **evidence:** `planning/phase-63-lightweight-smoke-test.md` §1-2
+  ("Design decisions": "A live bootstrap that can only exercise three of
+  `NpmAdapter`'s five methods... risks *looking* like a real regression
+  check while actually testing less than the existing fixture suite
+  already does"); `planning/retros/phase-63-lightweight-smoke-test.md`
+  "Scope delivered vs planned" + "Lessons learnt";
+  `src/codecompass/adapters/npm.py` lines 17, 20, 41, 58 (read directly
+  at this triage — confirmed `dependency_tree()` is the sole
+  subprocess-`npm ls`-dependent method among the four); Phase 62's own
+  closeout baseline (`planning/retros/_audit-phase-62.md`: "623 passed, 2
+  skipped") cross-checked against Phase 63's own re-run of the identical
+  numbers.
+- **classification:** scoped-rule
+- **status:** discarded
+- **recurrence:** none yet — first filed occurrence of this specific
+  reasoning. If a future phase again treats "runs against a real
+  external project" as self-evidently stronger evidence than an
+  already-passing, more complete fixture/regression suite — without
+  first checking what fraction of the actually-changed surface the live
+  run would exercise — that would be a second occurrence, and this
+  entry's `discarded` status should be revisited toward `retained` or
+  `promoted`.
+- **curation (Phase 63 triage, 2026-09-22, knowledge-curator):**
+  provenance accepted — assigned this id, all required fields now
+  present. Independently re-derived the central claim rather than taking
+  the retro's own account on faith: read
+  `planning/phase-63-lightweight-smoke-test.md` and
+  `planning/retros/phase-63-lightweight-smoke-test.md` directly, then
+  independently read `src/codecompass/adapters/npm.py` and confirmed
+  `dependency_tree()` (line 41) is genuinely the only one of the four
+  cited methods that calls `npm ls` via subprocess — the other three
+  (`installed_version`, `source_location`, `readme_and_api_surface`,
+  lines 17/20/58) read on-disk files directly, exactly as the plan and
+  retro both claim. Checked for a merge/duplicate candidate first, per
+  this queue's own established practice: distinct from `L-017` (live
+  `WebFetch` of an external reference manual — an expense/reliability
+  axis, not a coverage-completeness axis) and from `L-020`
+  (content-hash pinning proves an excerpt hasn't changed, not that its
+  boundary is complete — an excerpt-fidelity axis, not a test-design
+  axis); no existing candidate covers "live execution against a real
+  external project is not automatically stronger evidence than an
+  already-passing, more complete fixture suite," so this is a genuine
+  first occurrence, not a merge target.
+
+  Considered the retro's own "doesn't generalise past... this project's
+  own standing evidence-first discipline" reasoning on its merits rather
+  than deferring to it, exactly as `L-029`'s own triage did for the
+  equivalent Phase 62 finding: agreed that, framed at that level of
+  generality, this is not a newly-discovered failure mode, but
+  disagreed that this makes the observation not candidate-worthy in the
+  first place — `CLAUDE.md` §8 is explicit that "the lead deciding
+  unilaterally that something isn't candidate-worthy" is not itself how
+  this project resolves that question; only `knowledge-curator`'s own
+  triage is. On the substance: this is the same shape `L-014` (Phase 44,
+  status: discarded) already established — a single-occurrence,
+  zero-harm instance of an *already-existing* project discipline
+  (`agent-led-workflow.md` line 10's "verify independently, every time,"
+  and `CLAUDE.md` §1's plan-then-pause-then-implement sequence) working
+  exactly as intended, not an unaddressed gap needing a new mechanism.
+  The plan's own §1/§2 "Design decisions" already did the weighing this
+  observation describes — named which specific method
+  (`dependency_tree()`) the live check would and wouldn't reach, compared
+  that against the unchanged 623-passed fixture baseline, and chose
+  accordingly, with the user's explicit sign-off per `CLAUDE.md` §1's
+  pause-and-ask requirement once the plan surfaced the open choice.
+  Nothing broke, no wrong verification method was chosen, and no
+  standing content was left wrong the way `L-004`/`L-003` describe (the
+  distinguishing test `L-014`'s own curation note applies). **Outcome:
+  discard, not retain or promote.** This is not a rubber-stamp of the
+  lead's original non-filing call: the *substantive* conclusion (this
+  doesn't yet warrant a new standing rule) happens to match the lead's
+  own, but it is now reached via the process `CLAUDE.md` §8 actually
+  requires — an explicit `knowledge-curator` judgment, filed, evidenced,
+  and checked against the two directly-relevant precedents (`L-014`,
+  `L-017`/`L-020` as near-miss non-matches) — rather than the
+  implementing agent's own say-so, closing exactly the gap the
+  `release-phase-auditor` flagged. A second occurrence of this specific
+  reasoning (treating "live" as self-evidently better evidence without
+  checking actual coverage) would be the trigger to revisit this
+  `discarded` status rather than filing a fourth independent entry.
+- **promoted_to:** — (discarded; see rationale above)
+
 ### L-029 — a plan's own claim that several files already duplicate a piece of logic should be re-verified against each real file at implementation time before executing the plan's literal per-file refactor prescription
 
 - **origin:** Phase 62 (adapter-interface consolidation), retro "What

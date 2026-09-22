@@ -520,6 +520,13 @@ specifically (`decisions/0060`'s own gate on this phase), are now
 unblocked.** `planning/ROADMAP.md`, `planning/v1-redefinition/roadmap.md`
 (both the Phase 63 and Phase 63D entries), and `CHANGELOG.md` all
 updated. Retro: `planning/retros/phase-63-lightweight-smoke-test.md`.
+**Closeout audits**: `docs-reconstructor` → NO DRIFT
+(`planning/retros/_drift-audit-phase-63.md`); `release-phase-auditor`
+→ first pass FAIL (both artifacts above hadn't landed yet when it ran,
+substance was already clean), fixed same-session — drift report
+persisted, `knowledge-curator` filed `L-030` (`discarded`) confirming
+the retro's own "no candidate learnings" call independently rather than
+on the lead's say-so alone (`planning/retros/_audit-phase-63.md`).
 
 **Contributor License Agreement wording made explicit (2026-09-21,
 direct user instruction).** Documentation-only, no `src/`/licence/
