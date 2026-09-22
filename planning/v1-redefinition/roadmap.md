@@ -1524,6 +1524,22 @@ formally supports third-party/proprietary adapters. Retro:
   explicitly, narrowly scoped away with its own ADR — same bar the
   original GATE DF set, unchanged.
 
+**Done 2026-09-22.** Amended before implementation (direct user
+instruction): `which npm`/`which cargo` both confirmed absent from this
+sandbox — a live Technical Clipper clone could only have exercised a
+fraction of `NpmAdapter`'s own methods (never `dependency_tree()`,
+which needs a real `npm ls` subprocess call), so the live-project leg
+was dropped entirely rather than run partially, matching this phase's
+own express "if convenient, not required" allowance. **GATE DF
+verdict: PASS** on the full regression suite alone — `pytest` 623
+passed/2 skipped (identical to Phase 62's own closeout baseline),
+`ruff check .` clean, `check_user_docs.py --strict` clean. No
+regression found in npm/Python/Cargo adapter support from anything
+Phases 60–62 changed. Stage G, and Phase 63D specifically
+(`decisions/0060`'s own gate on this phase), are unblocked. Retro:
+`planning/retros/phase-63-lightweight-smoke-test.md`. Full plan:
+`planning/phase-63-lightweight-smoke-test.md`.
+
 ---
 
 ### Phase 63D — Domain reconstruction (new bridge phase, `decisions/0060`, 2026-09-20)
@@ -1532,8 +1548,8 @@ formally supports third-party/proprietary adapters. Retro:
 55b precedent) — sits between Phase 63 (above) and Phase 64 (Stage G,
 below), without renumbering Stage G's own 64–70. Gated on Phase
 63/GATE DF completing (sequential, not parallel — "immediately before"
-Phase 64, literally); **not** gated on GATE DD, exactly like Phases
-60–63 before it.
+Phase 64, literally) — **GATE DF passed 2026-09-22, unblocked**; **not**
+gated on GATE DD, exactly like Phases 60–63 before it.
 
 Full plan: `planning/phase-63d-domain-reconstruction.md`. Full
 methodology definition: `planning/v1-redefinition/development-methodology.md`.

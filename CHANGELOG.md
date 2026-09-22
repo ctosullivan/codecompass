@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 63** (Stage F's own final phase, lightweight ordinary-project
+  smoke test, done): GATE DF's own question — did Phases 60–62's
+  Haskell-adapter reference implementation (a new
+  `EcosystemAdapter.symbols()` default every in-process adapter now
+  inherits, `sync.py`'s own `_collect_vendor_symbols` replaced by
+  `adapter.symbols()` calls) disturb ordinary npm/Python/Cargo project
+  support? Amended before implementation, direct user instruction: with
+  `npm`/`cargo` both confirmed absent from this sandbox (`which npm`/
+  `which cargo`), a live Technical Clipper clone could only have
+  exercised a fraction of `NpmAdapter`'s own methods — never
+  `dependency_tree()`, the one method closest to what the `sync.py`
+  wiring changes could plausibly have disturbed — so the live-project
+  leg was dropped entirely rather than run partially, matching this
+  phase's own roadmap entry's express "if convenient, not required"
+  allowance. **GATE DF verdict: PASS** on the full regression suite
+  alone — 623 passed / 2 skipped (identical to Phase 62's own closeout
+  baseline), `ruff check .` clean, `check_user_docs.py --strict` clean.
+  No regression found; no `src/codecompass/` change. Stage G, and Phase
+  63D specifically (`decisions/0060`'s own gate on this phase), are
+  unblocked. Retro: `planning/retros/phase-63-lightweight-smoke-test.md`.
+  See `planning/phase-63-lightweight-smoke-test.md`.
+
 ### Changed
 
 - **Contributor License Agreement wording made explicit** (direct user

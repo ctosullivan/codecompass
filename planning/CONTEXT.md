@@ -501,6 +501,26 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 63 — lightweight ordinary-project smoke test — done
+(2026-09-22).** GATE DF's own question: did Phases 60–62's Haskell-
+adapter reference implementation disturb ordinary npm/Python/Cargo
+project support? Plan written (`planning/phase-63-lightweight-smoke-test.md`),
+then amended before implementation once `which npm`/`which cargo` both
+confirmed live that neither binary is installed in this sandbox
+(matching Phase 62's own earlier independent-audit finding) — the
+originally-planned live Technical Clipper clone could only have
+exercised a fraction of `NpmAdapter`'s own methods (never
+`dependency_tree()`), so, per direct user instruction, the live-project
+leg was dropped entirely rather than run partially, and GATE DF's
+verdict rests on the full regression suite alone. **Result: PASS** —
+`pytest` 623 passed/2 skipped (identical to Phase 62's own closeout
+baseline), `ruff check .` clean, `check_user_docs.py --strict` clean. No
+regression, no `src/codecompass/` change. **Stage G, and Phase 63D
+specifically (`decisions/0060`'s own gate on this phase), are now
+unblocked.** `planning/ROADMAP.md`, `planning/v1-redefinition/roadmap.md`
+(both the Phase 63 and Phase 63D entries), and `CHANGELOG.md` all
+updated. Retro: `planning/retros/phase-63-lightweight-smoke-test.md`.
+
 **Contributor License Agreement wording made explicit (2026-09-21,
 direct user instruction).** Documentation-only, no `src/`/licence/
 architecture change, no new ADR. The CLA's own substance was already
@@ -2061,19 +2081,17 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 62 is done (2026-09-19)**; the roadmap/methodology
-restructuring above (Phase 63D inserted, `decisions/0060`) is also done
-as of 2026-09-20 — both planning-only, no `src/` change from the
-restructuring itself. Phase 63 (Stage F, lightweight ordinary-project
-smoke test — `planning/ROADMAP.md` row 63,
-`planning/v1-redefinition/roadmap.md`) is still next and still depends
-on Phase 62's own output; it is **not yet planned**. **Phase 63D
-(Domain reconstruction) follows Phase 63**, gated on Phase 63/GATE DF
-completing (sequential — "immediately before" Phase 64, literally), not
-on GATE DD. GATE DD remains open and unaffected by either Phase 62 or
-this restructuring (Stage F/the new bridge phase are a separate axis
-from Stage E, per `decisions/0056`/`decisions/0060`) — no new work
-resolves or is forced by it here.
+**Phase 63 is done (2026-09-22) — GATE DF PASS.** Stage F is now fully
+complete (Phases 60–63). **Phase 63D (Domain reconstruction) is next**
+— gated on Phase 63/GATE DF, which has now passed; not gated on GATE
+DD. Its own plan (`planning/phase-63d-domain-reconstruction.md`) is
+already written and thrice-amended (see "What was just completed"
+history below) and ready to implement: build the evidence-backed
+`docs/domain/` corpus, exercise the new `domain-skeptic` role for the
+first time, and produce the approved domain baseline Phase 64 will
+consume. GATE DD remains open and unaffected by any of this (Stage
+F/63D are a separate axis from Stage E, per `decisions/0056`/
+`decisions/0060`) — no new work resolves or is forced by it here.
 
 Phase 61 itself is fully done: a real, symmetric two-agent comparison
 found LOW/effectively-NULL context advantage (outcome shape (b)),
