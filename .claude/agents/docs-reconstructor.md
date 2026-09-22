@@ -43,6 +43,16 @@ lead gives) + its plan file.
    summary).
 4. Also check the reverse: did the change make an *existing* doc sentence
    false without anyone touching that doc?
+5. **Domain-claim staleness check** (added Phase 63D,
+   `development-methodology.md` §"Domain-corpus freshness and
+   reconciliation" — once `docs/domain/` exists): if the phase's diff
+   touches a file, symbol, or behaviour that a `docs/domain/concepts/*.md`
+   page's own references block cites, name it in your report as a
+   **domain-claim staleness candidate** — not a drift finding, and not
+   itself a claim that the concept page is now wrong. This is a flag for
+   `domain-skeptic` to look again (at the next Phase-65-style
+   reconciliation, or the post-v1 per-feature freshness gate), nothing
+   more. Skip this check entirely until `docs/domain/` exists.
 
 **Output** — a short report `planning/retros/_drift-audit-phase-NN.md`
 (or wherever the lead says), containing:
@@ -51,6 +61,10 @@ lead gives) + its plan file.
 - Per finding: `file:line`, the sentence that's now wrong, what the code
   actually does, and whether it's blocking (user-facing false statement)
   or non-blocking (stale-but-harmless).
+- **Domain-claim staleness candidates** (if any, step 5 above): the
+  `docs/domain/concepts/*.md` page and the specific citation the diff
+  touched — separate from, and never counted toward, the `DRIFT`
+  verdict above.
 - Scope note: what you checked and what you deliberately didn't
   (e.g. "internal refactor in `graph.py`, no observable behaviour
   change, no docs implicated").

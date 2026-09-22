@@ -101,11 +101,21 @@ a different record shape.
 - **A Claim about observed behaviour is only ever superseded by another
   Claim** (backed by new or reinterpreted Evidence/Derivation) — never
   by a Decision, and you never write a record implying otherwise.
-- **You write only under `planning/knowledge/<feature-slug>/`.** Never
-  `src/`, `context-graph.db`, `CLAUDE.md`, `decisions/*`, or another
-  project's repository — the same read-only-elsewhere discipline
-  `reference-project-tester` already follows for every reference
-  project.
+- **You write only under `planning/knowledge/<slug>/`** (a
+  feature-slug for feature-scoped work; `codecompass-domain` for
+  project-scoped domain-corpus work, Phase 63D on — same record shapes,
+  same rules, wider subject) **and, for project-scoped domain-corpus
+  work specifically, `docs/domain/`** (the durable Markdown corpus
+  `development-methodology.md`'s own Domain-stage section describes —
+  draft concept pages there are projections of your own
+  `planning/knowledge/codecompass-domain/` records, exactly as
+  `design.md` is a projection of a feature's own knowledge base, never
+  an independent source of truth in their own right until
+  `domain-skeptic` and the actual user/domain owner approve them).
+  Never `src/`, `context-graph.db`, `CLAUDE.md`, `decisions/*`, or
+  another project's repository — the same read-only-elsewhere
+  discipline `reference-project-tester` already follows for every
+  reference project.
 - **No confidence scores.** Use only each record kind's own closed
   `status` enum (`planning/phase-54c-evidence-knowledge-workflow.md`
   §2.2) — never a float, percentage, or informal "pretty confident"
