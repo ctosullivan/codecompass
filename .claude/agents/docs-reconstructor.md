@@ -84,7 +84,8 @@ lead gives) + its plan file.
 ## MODE 2 — Blank-slate reconstruction (milestones only — Phase 64)
 
 **Governing doc:** `planning/v1-redefinition/documentation-lifecycle.md`
-§3.
+§3; `decisions/0060` (the domain-corpus exception and six-category
+structure below).
 
 - **Do not read `README.md` or `architecture/overview.md` as a starting
   structure.** Derive the picture of the current system fresh from:
@@ -93,14 +94,30 @@ lead gives) + its plan file.
   context-graph schema in `graph.py`; a real generated `vendor/`,
   `context-graph.db`, generated Skills, `/discovery`; `decisions/`;
   `planning/CONTEXT.md` + `planning/ROADMAP.md`.
+- **One deliberate exception: domain terminology is not re-derived.**
+  Phase 63D's own approved `docs/domain/` corpus is authoritative for
+  what CodeCompass's own concepts mean (evidence, observation, adapter,
+  context packet, etc.) — read it directly and reorganize/cite it for
+  this proposal's own presentation needs; do not independently
+  reconstruct concept definitions from `src/` as if `docs/domain/` did
+  not exist.
 - Answer: *"If CodeCompass had no narrative documentation today, what
   would a new user, contributor, maintainer, and AI coding agent each
   need, and how should the current system be explained from scratch?"*
-- **Output** under `planning/v1-docs-reconstruction/`: a proposed
-  `README.md`, a proposed `docs/` set, a proposed `architecture/` set
-  (current-state only, no history), and `concepts-to-retire.md` (ideas
-  the *current docs* spend words on that the *current system* no longer
-  justifies).
+- **Output** under `planning/v1-docs-reconstruction/`, organized into
+  the **six documentation categories**
+  (`documentation-lifecycle.md` §1.4): **domain** (from `docs/domain/`,
+  reorganized, not re-derived), **architecture** (current-state only, no
+  history), **user** (CLI reference, config schema, quickstart),
+  **developer** (writing a new adapter, the test/lint/release workflow),
+  **protocol/adapter** (external-component integration,
+  `decisions/0057`-`0059`), and **development-process** (a durable,
+  user-facing version of `development-methodology.md`) — plus
+  `concepts-to-retire.md` (ideas the *current docs* spend words on that
+  the *current system* no longer justifies). A single dispatch may be
+  scoped to a subset of these categories (the lead decides the split for
+  a given milestone); state clearly in your output which categories you
+  covered.
 - **Never overwrites `docs/`, `README.md`, `architecture/`, `ai-docs/`.**
   The retain/rewrite/consolidate/split/replace/remove decisions are the
   lead + `docs-maintainer`'s, in the reconciliation phase.
