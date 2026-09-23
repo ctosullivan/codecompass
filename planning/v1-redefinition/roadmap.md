@@ -1030,9 +1030,10 @@ the bare project name). Residual, honestly disclosed limitation: the
 mechanism matches by title text only, not filename, so the original
 `CC-LK-001` three files still show no relation to each other — filed as
 `CG-006`, a small, independently-fundable follow-on of the same shape,
-not urgent. A process-lesson candidate (`L-021`) proposes a `CLAUDE.md`
+not urgent. A process-lesson candidate (`L-021`) proposed a `CLAUDE.md`
 §1 amendment requiring a test through a function's real production call
-site whenever a phase adds behaviour to it — drafted, not yet approved.
+site whenever a phase adds behaviour to it — approved and applied
+(`CLAUDE.md` §1, commit `899449d`).
 No `src/codecompass/` change beyond `spec_docs.py`/`doc_mapping.py`/
 `sync.py`; no schema change; no new relation kind. Produces no evidence
 toward the still-open GATE DD ontology question beyond what
