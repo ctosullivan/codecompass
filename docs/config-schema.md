@@ -17,19 +17,9 @@ per tracked dependency.
 | `name` | string | yes | Dependency name, as published (e.g. `turndown`, `requests`, `serde`). |
 | `ecosystem` | string, one of `npm` \| `python` \| `cargo` \| `haskell` | yes | Which `EcosystemAdapter` handles this vendor. `haskell` (Phase 60) is handled by an **external adapter process**, not in-process Python — see [`docs/external-adapters.md`](external-adapters.md). |
 
-No other fields are read. `context_path` (a Phase 5 field) was removed in
-Phase 7 ([`decisions/0019`](../decisions/0019-grounded-description-replaces-gap-analysis.md)).
-`depth` (the original per-vendor `surface`/`full` toggle,
-[`decisions/0001`](../decisions/0001-depth-is-per-vendor-not-global.md))
-was removed in Phase 16
-([`decisions/0031`](../decisions/0031-depth-retired-enrichment-is-usage-driven.md),
-[`decisions/0035`](../decisions/0035-sync-vendor-reads-enrichment-from-graph-grounded-description-retired.md)):
-cloning a vendor's upstream source is now unconditional for every vendor
-(Phase 13, `decisions/0033`), and AI enrichment is selected from actual
-usage evidence in the context graph, not a config flag. A legacy
-`vendor.toml` that still carries a `depth = "surface"`/`depth = "full"`
-line keeps parsing without error — the parser simply never looks at that
-key. No migration and no warning; the line is just inert.
+No other fields are read. Historical fields (`context_path`, `depth`)
+removed in Phase 7/16 are safely ignored if present — see
+[`decisions/0031`](../decisions/0031-depth-retired-enrichment-is-usage-driven.md).
 
 ## What every tracked vendor gets
 

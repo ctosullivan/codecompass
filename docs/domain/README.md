@@ -39,7 +39,10 @@ not that every category needs a dedicated file from day one.
 
 1. **[`glossary.md`](glossary.md)** first — one paragraph per concept,
    cross-linked. The fastest way to see what each term means and how it
-   differs from its neighbours.
+   differs from its neighbours. **[`quick-reference.md`](quick-reference.md)**
+   compresses it one step further into a one-line-per-term table, quoted
+   directly from the glossary — reach for it when you just met a term in
+   CLI output or a generated file and want the fastest possible answer.
 2. **[`concepts/`](concepts/)** — one full page per concept: definition,
    what it is NOT (explicit disambiguation from its nearest neighbours),
    invariants, a worked example, a counterexample or edge case (or an

@@ -1,5 +1,8 @@
 # CLI reference
 
+> New to codecompass? See [`quickstart.md`](quickstart.md) for a
+> first-run walkthrough before this full reference.
+
 > `init`, `sync`, `index`, `check`, `query`, `chat`, `undo`, and
 > `enrich apply` are implemented. `promote` was removed in Phase 15
 > (`decisions/0033`) — its three former jobs (clone, enrich, generate

@@ -12,7 +12,7 @@ pattern below were ported near-verbatim from it while it still existed.
 Wired into `cli.py` (Phase 15's `_maybe_run_enrichment`) and read back by
 `sync.py`'s `sync_vendor` (Phase 16, a read-only graph lookup — this
 module remains the only writer of `vendor_enrichment`). See
-architecture/overview.md's "Batched enrichment" section and
+architecture/sync-and-enrichment-pipeline.md's "Phase B" section and
 planning/phase-14-batched-enrichment.md.
 
 Phase 22 extends `estimate_cost`/`check_budget` (only) to fold

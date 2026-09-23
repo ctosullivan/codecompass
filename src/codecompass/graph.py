@@ -1,11 +1,10 @@
 """SQLite persistence layer for the project-wide context graph.
 
-Pure library in this phase: a schema, a set of typed row dataclasses that
-form `rebuild_deterministic`'s insertion contract, a full-rebuild
-orchestrator, and read-only query functions. **Not called from `sync.py`
-or `cli.py` yet** — that wiring starts in Phase 11 (usage detection) and
-continues through Phase 15 (CLI rewire). See architecture/overview.md's
-"Context graph" section, planning/phase-10-sqlite-graph-foundation.md,
+A schema, a set of typed row dataclasses that form
+`rebuild_deterministic`'s insertion contract, a full-rebuild
+orchestrator, and read-only query functions, called from `sync.py`'s
+`rebuild_project_graph` on every whole-project `sync`. See
+architecture/context-graph-schema.md, planning/phase-10-sqlite-graph-foundation.md,
 [`decisions/0032`](../../decisions/0032-context-graph-stored-in-sqlite.md)
 (SQLite over the original `decisions/0024` JSON-file choice), and
 [`decisions/0025`](../../decisions/0025-context-graph-rebuilds-only-on-whole-project-sync.md)

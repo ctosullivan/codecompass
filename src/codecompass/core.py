@@ -1,7 +1,7 @@
 """Core, ecosystem-agnostic data models for codecompass.
 
-See architecture/overview.md's "Core data model" section for the design
-rationale behind these types.
+See architecture/core-data-model.md for the design rationale behind
+these types.
 """
 
 from __future__ import annotations

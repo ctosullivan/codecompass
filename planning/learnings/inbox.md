@@ -8,6 +8,55 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-037 — a module docstring can carry the exact same history-narration/staleness pattern `documentation-lifecycle.md` targets in current-truth docs, but sits outside any of this project's own doc-drift checks
+
+- **origin:** Phase 65 (architecture + ADR reconciliation), flagged by
+  the `docs-maintainer` dispatch executing the `architecture/overview.md`
+  reconciliation, while re-verifying `graph.py`'s own cross-reference to
+  `architecture/overview.md`'s "Context graph" section (now stale as a
+  direct result of this phase's own restructuring)
+- **date:** 2026-09-23
+- **project_revision:** `b48e7a9`
+- **observation:** `src/codecompass/graph.py`'s own module docstring
+  stated "**Not called from `sync.py` or `cli.py` yet** — that wiring
+  starts in Phase 11 (usage detection) and continues through Phase 15
+  (CLI rewire)" — a transitional-state claim that has been false since
+  Phase 15 (many phases ago; `sync.py`'s real, current
+  `rebuild_project_graph` calls `rebuild_deterministic` directly,
+  confirmed live at `sync.py:353`). This is the exact same
+  "transitional-state descriptions... should be deleted outright once
+  the transition is complete" pattern `architecture-split-candidates.md`
+  catalogues by the dozen for `architecture/overview.md` itself
+  (e.g. item 26's "still not CLI-visible" framing) — except this
+  instance lived inside a `src/codecompass/` module docstring, not a
+  current-truth doc, so no existing mechanism (`check_user_docs.py`,
+  `docs-reconstructor`'s per-phase drift audit, or Phase 65's own
+  `architecture-split-candidates.md` catalogue itself) ever had a reason
+  to look at it. Found and fixed opportunistically, alongside the
+  citation-target fix this phase's own restructuring required (the
+  docstring's own pointer to "architecture/overview.md's 'Context
+  graph' section" needed updating regardless, to
+  `architecture/context-graph-schema.md`) — not found by any systematic
+  search of `src/codecompass/`'s other module docstrings for the same
+  pattern.
+- **evidence:** `src/codecompass/graph.py:1-11` (pre-fix, commit
+  `5d4fa94` and earlier — the false "not called yet" claim, alongside
+  the now-stale `architecture/overview.md` citation); `src/codecompass/sync.py:234,353`
+  (`rebuild_project_graph`/`rebuild_deterministic`, confirming the real,
+  current, long-standing wiring the docstring denied); this phase's own
+  `docs-maintainer` dispatch report (flagged this exact finding
+  explicitly, "out of my write boundary" since `src/` isn't
+  `docs-maintainer`'s to edit); `planning/v1-redefinition/architecture-split-candidates.md`'s
+  own "How Phase 65 should use this" section (the transitional-state
+  principle this docstring also violates, written for `architecture/overview.md`
+  specifically, with no scope note about `src/` docstrings one way or
+  the other).
+- **classification:** open-work
+- **status:** candidate
+- **recurrence:**
+- **promoted_to:**
+
+
 ### L-036 — a milestone-scoped, rarely-exercised agent brief is a recurring locus of drift behind its own governing ADR, confirmed twice now
 
 - **origin:** Phase 64 retro (blank-slate documentation reconstruction)

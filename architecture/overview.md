@@ -7,80 +7,55 @@ is a living document updated in place as the system evolves. When in doubt
 about *why* something is designed the way it is, check `decisions/`; when
 you want to know *what exists now*, check here.
 
-As of Phase 19, the core data model (`codecompass.core`), `vendor.toml`
-parsing (`codecompass.config`), all three ecosystem adapters
-(`codecompass.adapters`) — a fourth, Haskell, was added in Phase 60, as
-an external adapter rather than in-process Python, see "External
-adapters" below — per-ecosystem symbol/purpose extraction
-(`codecompass.symbols`), deterministic tree generation
-(`codecompass.deptree`, `codecompass.filetree`), per-vendor `CLAUDE.md`
-templating (`codecompass.claude_md`), per-vendor sync orchestration
-(`codecompass.sync`), root routing-table injection (`codecompass.index`),
-manifest-based `vendor.toml` bootstrap and zero-question auto-discovery
-(`codecompass.discovery`), upstream repository resolution
-(`codecompass.source_resolution`), the SQLite context graph
-(`codecompass.graph`) and its population (`codecompass.usage`,
-`codecompass.doc_mapping`, `codecompass.skill_scan`), usage-driven batched
-AI enrichment (`codecompass.enrichment`, replacing the retired
-`codecompass.grounded_description` — `decisions/0031`, `decisions/0035`),
-Skill/Cursor/`/discovery` export (`codecompass.skill`,
-`codecompass.commands`), severity-aware staleness checking
-(`codecompass.staleness`), best-effort generated-artifact cleanup (`undo`,
-`decisions/0036`), and the single-vendor chat REPL (`codecompass.chat`,
-grounded on persisted digest files, never live regeneration —
-`decisions/0023`) are all implemented — bare `codecompass`, `init`, `sync`
-(including `--budget`), `index`, `check` (including `--strict`/`--fix`),
-`query` (`vendors`/`vendor`/`symbol`/`skills`), `chat <vendor>`, and `undo`
-(`--yes`/`--dry-run`) are real CLI commands, not stubs. `promote` and the
+Every CLI command described in this document is real and implemented,
+not a stub: bare `codecompass` (zero-question bootstrap), `init`
+(including `--scan`), `sync` (whole-project or single-vendor, including
+`--budget`), `index`, `check` (including `--strict`/`--fix`), `query`
+(`vendors`/`vendor`/`symbol`/`skills`/`relations`), `enrich apply`,
+`chat <vendor>`, and `undo` (`--yes`/`--dry-run`). `promote` and the
 per-vendor `depth` toggle are both retired (`decisions/0033`,
 `decisions/0031`) — every tracked vendor gets the same deterministic
 treatment, and AI enrichment eligibility comes from the context graph's
-usage evidence, not a config field or a separate command. MVP (v0.1) spans
-phases 0-8 (`decisions/0022`); MVP (v0.2) spans phases 9-19
-(`decisions/0030`). Both are now `done` (neither a `v0.1` nor a `v0.2`
-tag/release has been cut yet). Bare `codecompass chat` project-root
-routing and the whole-project dependency rollup, described in the Chat
-REPL section below, remain post-MVP **Phase 20** target design (renumbered
-from the original Phase 9 during this rework — see
-`planning/ROADMAP.md`'s renumbering notes); see `planning/CONTEXT.md` for
-current status.
+usage evidence, not a config field or a separate command. Bare
+`codecompass chat` project-root routing and the whole-project dependency
+rollup, described in the Chat REPL section below, are deferred design,
+not yet implemented — see
+`planning/phase-20-chat-project-root-routing-design.md`.
+
+For the module inventory and how responsibility is layered across
+`src/codecompass/`, see [`module-map.md`](module-map.md); for current
+milestone/phase status, see `planning/ROADMAP.md` and
+`planning/CONTEXT.md` rather than this document, which does not track
+that state.
+
+**Where to look**: this document covers what has no dedicated home below
+— consumption surfaces (Skills, Cursor, `/discovery`, the chat REPL),
+staleness checking, `undo`, the cost model, and known footguns — and
+points into five companion documents for everything else:
+[`module-map.md`](module-map.md) (what each module is responsible for),
+[`core-data-model.md`](core-data-model.md) (the core dataclasses),
+[`adapter-interface.md`](adapter-interface.md) (the `EcosystemAdapter`
+contract and its two implementation strategies),
+[`context-graph-schema.md`](context-graph-schema.md) (every
+`context-graph.db` table), and
+[`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md)
+(what actually happens on `sync`/bare `codecompass`, traced through the
+real call graph). [`historical-notes.md`](historical-notes.md) records
+two past behavior changes with no ADR of their own that are still
+relevant to understanding today's code.
 
 ## Core data model
 
-- **`VendorConfig(name, ecosystem)`** — one entry per dependency, sourced
-  from `vendor.toml`. `context_path` (a Phase 5 field) was removed in
-  Phase 7 (`decisions/0019`); the per-vendor `depth` toggle
-  (`SURFACE`/`FULL`, originally `decisions/0001`) was removed in Phase 16
-  once usage-driven enrichment (`decisions/0031`) and unconditional
-  cloning (`decisions/0033`) made it meaningless — every tracked vendor
-  now gets the same deterministic treatment on `sync`, and AI enrichment
-  eligibility is derived from the context graph's actual usage evidence,
-  not a config field. A legacy `vendor.toml` entry still carrying a
-  `depth = "..."` line keeps parsing without error (`codecompass.config`
-  simply never looks at that key). See
-  [`docs/config-schema.md`](../docs/config-schema.md) for the file format.
-- **`DepNode(name, version, children, dev_only, side_effects)`** — one node
-  in a dependency tree, ecosystem-agnostic. `side_effects` captures things
-  like postinstall scripts or native binary downloads that are invisible in
-  a raw manifest but explain real-world install size/behavior.
-- **`RepositoryLocation(url, subdirectory)`** — a vendor's resolved
-  upstream repository (Phase 7, `decisions/0021`), returned by each
-  adapter's `repository_url()`. `subdirectory` is set only where an
-  ecosystem can express "this package is part of a larger repo" (npm's
-  `repository.directory`); `None` means the repository root is the
-  package root.
-- **`VendorDigest`** — the aggregate return type each vendor's generation
-  produces: config, installed version, generated trees, API surface,
-  optional `technical_description`/`conversational_overview` (renamed
-  from Phase 5's `gap_analysis` field in Phase 7 — same dual-audience
-  shape, different generation mechanism). Carries no staleness
-  information — `check` (Phase 6) reads persisted per-vendor `CLAUDE.md`
-  files directly rather than building a `VendorDigest`, the same pattern
-  `index.py` established in Phase 4, and returns its own
-  `codecompass.staleness.VendorStaleness` type instead. An earlier
-  `is_stale` stub on this class, speculatively added in Phase 1, was
-  removed in Phase 6 once it became clear no code path would ever
-  populate it. See **Known footguns** below.
+`codecompass.core` holds the small set of ecosystem-agnostic dataclasses
+everything else is built from — `VendorConfig`, `RepositoryLocation`,
+`DepNode`, `VendorDigest` — plus `codecompass.symbols`' `Symbol`. See
+[`core-data-model.md`](core-data-model.md) for their fields and the
+design rationale behind each; a summary here would only restate that
+document. `VendorConfig` has exactly two fields (`name`, `ecosystem`) —
+no per-vendor `depth`/`context_path` field exists; a legacy `vendor.toml`
+entry still carrying either key keeps parsing without error. See
+[`../docs/config-schema.md`](../docs/config-schema.md) for the file
+format.
 
 ## Adapter interface
 
@@ -89,148 +64,17 @@ This section covers the **ecosystem adapter** package
 **host-output adapters** described in **Module tiers: CORE, AGENT,
 HOST-OUTPUT ADAPTERS** below (Claude Skills, `/discovery`, the root
 `CLAUDE.md` routing table), which render already-computed content into
-tool-specific formats rather than abstracting a package manager.
-
-`EcosystemAdapter` (ABC, `src/codecompass/adapters/base.py`) is constructed
-with `(config: VendorConfig, project_root: Path)` and defines five
-abstract methods every ecosystem implements: `installed_version() -> str`,
-`source_location() -> Path`, `readme_and_api_surface() -> str`,
-`repository_url() -> RepositoryLocation | None` (Phase 7 —
-`decisions/0021`), `dependency_tree() -> DepNode`; plus one **concrete**
-method, `symbols() -> list[Symbol]` (Phase 62), described below. Adding a
-new ecosystem means writing one adapter class against this interface, not
-touching core logic.
-
-`symbols()` is `context-graph.db`'s own `symbols` table's real data
-source — deliberately **not** abstract, so a future adapter that doesn't
-implement structured extraction isn't forced to (no `TypeError` at
-construction). Its default implementation walks the vendor's own source
-tree (`iter_source_files`) and dispatches each file through
-`codecompass.symbols.extract_symbols_for_file` by ecosystem — the exact
-walk+extract pairing `sync.py::rebuild_project_graph` used to perform
-itself before Phase 62 (as a private `_collect_vendor_symbols` helper,
-now removed); npm/Python/Cargo all get correct behavior for free by
-inheriting this default, unchanged from before. `HaskellAdapter`
-overrides it: `extract_symbols_for_file` has no Haskell branch and never
-will (real Haskell symbol extraction lives in the external
-`codecompass-adaptor-haskell` process, not `src/codecompass/`), so
-`HaskellAdapter.symbols()` instead converts its own already-computed
-external-process `symbols` wire data into `Symbol` objects — this is what
-closes `CG-008` (`context-graph.db`'s `symbols` table stayed empty for
-every Haskell vendor before this phase).
-
-`Symbol` (`codecompass.symbols`) carries two Phase-62 fields beyond
-`name`/`purpose`: `export_kind` (`"export"` | `"reexport"` |
-`"undetermined"`, default `"export"`) and `note` (`str | None`) —
-generalizing `decisions/0059`'s external-wire-protocol addition into
-CodeCompass's own core model. **Deliberately named `export_kind`, not
-`kind`**: these values describe **export/exposure status** (how
-confidently a symbol is known to belong to its package's own public
-surface), never a symbol's own **intrinsic type** — a distinct concept a
-future adapter may need its own field for (e.g. a hypothetical COBOL
-adapter's program/paragraph/section/copybook categories), which a
-generic `kind` field would have foreclosed. `HaskellAdapter.symbols()` is
-the one place the wire's own `kind` field and the core's own
-`export_kind` field meet — read one, write the other; no other
-translation exists anywhere else in the codebase. Every in-process
-extractor (npm/Python/Cargo) only ever produces the default
-(`export_kind="export"`, `note=None`) — none of them has a confidence-
-tiering concept of its own.
-
-`repository_url()` resolves the vendor's upstream repository from
-locally-available package metadata only — never a network call, unlike
-the clone `codecompass.source_resolution` performs from its result. Per
-ecosystem: npm reads `package.json`'s `repository` field (string,
-`git+`-prefixed, or `github:`-shorthand — all normalized to a plain
-`git clone`-able URL; an object form's `directory` key is respected for
-monorepo packages); Python reads the installed package's `Project-URL`
-metadata entries (PEP 621 `project_urls`, already present locally in
-`METADATA`/`PKG-INFO` — no PyPI network call needed), checking key
-variants ("Source", "Repository", "Code", "GitHub", "Homepage") in that
-priority order since PyPI packages don't standardize this field's
-labeling; Cargo reads `cargo metadata`'s package-level `repository`
-field, with no equivalent to npm's `directory` (a known, accepted
-limitation for workspace crates sharing one repository URL). Returns
-`None` if nothing resolves — callers treat that as fail-loud, never a
-fallback trigger (`decisions/0021`).
-
-`dependency_tree()` returns the **raw, fully-expanded** tree exactly as
-the underlying tool reports it — no diamond-dependency dedup. Dedup into
-"see X above" back-references is Phase 3's tree-*rendering* concern, not
-this method's tree-*construction* concern.
-
-The npm/Python/Cargo adapters call subprocesses through a shared
-`_run_json(cmd, cwd)` seam in `base.py`, which resolves `cmd[0]` via
-`shutil.which` before invoking it (needed cross-platform — see **Known
-footguns**) and wraps failures into `AdapterError`. Tests monkeypatch
-this seam per-module to inject fixture JSON rather than requiring a real
-toolchain — see
-[`decisions/0014`](../decisions/0014-adapter-tests-use-fixture-mocking-not-live-subprocesses.md).
-The Haskell adapter (Phase 60) does **not** use this seam — its own
-subprocess calls happen entirely inside the separate
-`codecompass-adaptor-haskell` process; `HaskellAdapter` on the Python
-side only ever speaks the JSON-Lines protocol via `external_process.py`,
-never invoking a tool directly itself.
-
-MVP ships three adapters on day one — npm, Python, Cargo — rather than
-starting npm-only. See
-[`decisions/0008`](../decisions/0008-mvp-ships-three-adapters-day-one.md).
-
-- **npm adapter** — version/location read `node_modules/<name>/package.json`
-  directly (no subprocess); tree via `npm ls <name> --json --all` (the
-  `--all` flag is required — bare `npm ls --json` truncates to top-level
-  only). `dev_only` cross-references the *root* project's `package.json`
-  `devDependencies` against every node's name, regardless of depth — not
-  propagated to a marked node's own children (see **Known footguns**). API
-  surface via README + up to 5 `.d.ts` files, capped for cost/size control
-  — that cap is a known limitation, not a validated final number (see
-  **Known footguns**). `side_effects` picked up from the vendor's own
-  `package.json` `scripts.postinstall`, if present.
-- **Python adapter** — version/location via `importlib.metadata`/
-  `importlib.util.find_spec` (no subprocess); tree via `sys.executable -m
-  pipdeptree --output json-tree --packages <name>` (invoked as a module of
-  the current interpreter, not a bare PATH lookup, so it's found
-  regardless of venv activation state; the flat/deprecated `--json` output
-  is the wrong shape — every installed package with only direct deps
-  each, not a single-rooted tree). API surface has no single canonical
-  source like `.d.ts` — uses `.pyi` stub files where present, else falls
-  back to static `ast` parsing of `__all__`/docstrings (chosen over
-  actually importing the module, which would execute unrelated
-  module-level side effects purely to generate documentation). `dev_only`
-  is always `False` — `pipdeptree` output carries no such field, a real
-  structural difference from npm, not an oversight.
-- **Cargo adapter** — version/location via `cargo metadata
-  --format-version 1 --no-deps`; tree via the full `cargo metadata
-  --format-version 1` call, walking the resolve graph's adjacency list
-  cross-referenced against each package's declared dependency `"kind"`
-  (`"dev"` vs `null`) for per-edge `dev_only` — a cleaner signal than npm
-  has. API surface via a coarse, line-based scan for `pub fn`/`pub
-  struct`/`pub enum`/`pub trait` (+ preceding `///` doc comment) — no
-  standardized doc-comment extraction assumed; misses multi-line
-  signatures (see **Known footguns**). `rustdoc --output-format json`
-  remains a documented future refinement, not attempted since no
-  toolchain is available locally to validate its shape against.
-  **Unverified against real cargo output** — built and tested entirely
-  against hand-written fixture JSON (see **Known footguns**).
-- **Haskell adapter** (Phase 60) — the first adapter that is **not** an
-  in-process Python class implementing ecosystem-specific logic
-  directly. `HaskellAdapter` (`src/codecompass/adapters/haskell.py`) is a
-  thin dispatcher: it reads `package.yaml` directly via real
-  `yaml.safe_load()` for `installed_version()`/`repository_url()` (the
-  hpack `github:` shorthand), resolves a monorepo package root itself
-  (searching immediate subdirectories of `project_root` for the one
-  whose own `package.yaml` declares the matching `name`, so e.g.
-  `hledger-lib` resolves inside the `hledger` monorepo without ever
-  handing the whole monorepo root to anything downstream), and delegates
-  `dependency_tree()`/`readme_and_api_surface()`'s real logic to an
-  **external adapter process** — see **External adapters** below. See
-  [`decisions/0057`](../decisions/0057-external-process-adapter-protocol.md)
-  and
-  [`decisions/0058`](../decisions/0058-adapter-protocol-and-haskell-adapter-as-separate-repositories.md).
-
-See [`decisions/0002`](../decisions/0002-adapter-approach-differs-per-ecosystem.md)
-for the in-process adapters above, and **External adapters** below for
-the Haskell adapter's own second strategy.
+tool-specific formats rather than abstracting a package manager. See
+[`adapter-interface.md`](adapter-interface.md) for the full
+`EcosystemAdapter` contract (five abstract methods plus the concrete,
+overridable `symbols()`), the closed adapter-dispatch table, and both
+coexisting implementation strategies — in-process (npm, Python, Cargo,
+sharing a `_run_json` subprocess seam) and external-process (Haskell,
+the reference implementation, delegating real ecosystem-specific logic
+to a separate `codecompass-adaptor-haskell` process rather than
+in-process Python). `Symbol.export_kind`/`note` (`decisions/0059`) are
+deliberately narrow **export/exposure-status** fields, not a
+symbol-type/kind field — see [`core-data-model.md`](core-data-model.md).
 
 ## External adapters (`codecompass.adapters.external_process`)
 
@@ -242,7 +86,10 @@ stdin/stdout, rather than being importable Python code inside
 Python code is the wrong distribution model — a hypothetical future
 proprietary COBOL/mainframe adapter suite is the motivating case; it
 could never ship as importable GPL-licensed Python code inside this
-repository even if CodeCompass wanted to bundle one.
+repository even if CodeCompass wanted to bundle one. See
+[`adapter-interface.md`](adapter-interface.md#strategy-2-external-process-haskell-the-reference-implementation)
+for how `HaskellAdapter` delegates to it (per-instance analysis caching,
+monorepo package-root resolution, locating the built executable).
 
 **Three real repositories, one local workspace**, checked out as git
 submodules:
@@ -269,16 +116,16 @@ codecompass/                                  (this repository)
   `shutdown`). Zero ecosystem-specific knowledge; reusable by any future
   external-process adapter without modification.
 
-**Protocol shape** (full spec:
-`protocol/codecompass-adaptor-protocol/SCHEMA.md` once checked out, or
-`decisions/0057`): JSON Lines framing, one outstanding request at a
+**Protocol shape**: JSON Lines framing, one outstanding request at a
 time, an `id`-correlated request/response pair, a closed method set
 (`initialize`, `analyze_project`, `shutdown`), a closed capability list
 (`dependencies`, `symbols`, `observations`, `diagnostics`), a closed
 error-code set (`not_found`, `parse_error`, `unsupported_capability`,
 `internal_error`). `analyze_project`'s `observations` section mirrors
-Phase 54c's own Observation record field vocabulary, expressed as JSON
-on the wire, so provenance survives the process boundary losslessly.
+this codebase's own Observation record field vocabulary, expressed as
+JSON on the wire, so provenance survives the process boundary
+losslessly. Full spec: `protocol/codecompass-adaptor-protocol/SCHEMA.md`
+once checked out, or `decisions/0057`.
 
 **Real command shape, verified live against the real `hledger-lib`
 package inside the `hledger` monorepo**: `stack dot --external
@@ -302,25 +149,8 @@ API-surface extraction are genuine ecosystem-specific *logic* — those
 live entirely inside `codecompass-adaptor-haskell`'s own `app/Main.hs`,
 never in this repository's own tracked content.
 
-**Per-instance analysis cache** (Phase 62): `HaskellAdapter.dependency_tree()`,
-`readme_and_api_surface()`, and `symbols()` each independently call an
-internal `_analyze()` method, which used to spawn a fresh external
-subprocess and re-run the **entire** `analyze_project` request (computing
-both `dependencies` and `symbols` server-side) every single call, even
-though each caller only ever reads one of the two fields. `_analyze()`
-now caches its result on `self._cached_analysis`, populated once and
-reused by whichever of the three methods a caller invokes on that
-instance — at most one real external-process round trip per
-`HaskellAdapter` instance. **Deliberately not a cross-instance cache**:
-`sync.py`'s `sync_vendor` and `rebuild_project_graph` each construct
-their own separate `HaskellAdapter` via `get_adapter(...)`, and that
-remaining cross-instance redundancy is an accepted, disclosed
-inefficiency this phase doesn't chase further (would require
-restructuring `sync.py`'s own two-pass orchestration to share adapter
-instances across both passes).
-
 **Local development**: see
-[`docs/external-adapters.md`](../docs/external-adapters.md) for
+[`../docs/external-adapters.md`](../docs/external-adapters.md) for
 clone/submodule setup, building the adapter locally, and the
 version-compatibility matrix between CodeCompass, the protocol, and the
 adapter.
@@ -336,15 +166,16 @@ qualified open-source/IP legal specialist first.
 
 The runtime modules under `src/codecompass/` group into three tiers —
 host-agnostic content production kept separate from tool-specific
-rendering — plus one module that fits neither (Phase 53):
+rendering — plus one module that fits neither:
 
 - **CORE** (host-agnostic — behaves identically whether Claude Code, a
   plain terminal, or some other agent runtime is driving it):
   `discovery.py`, `config.py`, `adapters/**` (the *ecosystem* adapters —
   see **Adapter interface** above), `sync.py`, `symbols.py`,
   `filetree.py`, `deptree.py`, `usage.py`, `source_resolution.py`,
-  `staleness.py`, `graph.py`, `claude_md.py`, the `query` CLI subgroup,
-  and `enrich apply`.
+  `staleness.py`, `graph.py`, `claude_md.py`, `doc_mapping.py`,
+  `doc_chunking.py`, `skill_scan.py`, `spec_docs.py`, the `query` CLI
+  subgroup, and `enrich apply`.
 - **AGENT** (interchangeable content producers, each writing through
   CORE's own graph tables rather than through one another):
   `enrichment.py` and `relation_enrichment.py` (direct-Anthropic-API
@@ -383,15 +214,15 @@ comment-marker scan (`#`, `//`, `/*`, `"""`, `'''`) for files no
 ecosystem parser claims. Extraction functions never raise — a file that
 fails to parse returns `[]`/`None`.
 
-`export_kind`/`note` (Phase 62) generalize `decisions/0059`'s external-
-wire-protocol addition — see **Adapter interface**'s own `symbols()`
-writeup for the full reasoning behind the deliberately narrow, non-
-`kind` naming.
+`export_kind`/`note` generalize `decisions/0059`'s external-wire-protocol
+addition — see [`core-data-model.md`](core-data-model.md) and
+[`adapter-interface.md`](adapter-interface.md) for the full reasoning
+behind the deliberately narrow, non-`kind` naming.
 
 This module is shared: `adapters/cargo.py` and `adapters/python.py` call
-into it for their `readme_and_api_surface()` output (generalized from
-private per-adapter helpers in Phase 2), and `filetree.py` (below) calls
-it for per-file purpose annotations and the symbol index. See
+into it for their `readme_and_api_surface()` output, and `filetree.py`
+(below) calls it for per-file purpose annotations and the symbol index.
+See
 [`decisions/0015`](../decisions/0015-symbol-extraction-reuses-adapter-parsing-per-ecosystem.md).
 
 ## Tree generation — deterministic, always free
@@ -400,18 +231,17 @@ it for per-file purpose annotations and the symbol index. See
 sidecars) involve **no AI calls** and run on every `sync` for every
 tracked vendor. `codecompass.deptree` renders from a `DepNode` tree;
 `codecompass.filetree` renders from `sync_vendor`'s clone-or-fallback
-root, not unconditionally `source_location()` — **since Phase 13**, that
-root is `vendor/<name>/src/`'s clone content (via
-`codecompass.source_resolution`, `decisions/0021`) for **every** vendor,
-since cloning is unconditional (`decisions/0033`); when this run's clone
-attempt fails, it falls back to
+root, not unconditionally `source_location()` — that root is
+`vendor/<name>/src/`'s clone content (via `codecompass.source_resolution`,
+`decisions/0021`) for **every** vendor, unconditionally
+(`decisions/0033`); when this run's clone attempt fails, it falls back to
 the vendor's **locally-installed** source directory (`source_location()`)
 instead, the same fallback semantics already established for the
-`vendor/<name>/src/` snapshot itself. This is a real, visible output
-change: `FILETREE.md` now reflects a vendor's actual upstream repository
-(README, docs, tests, examples included) rather than a possibly-trimmed
-local install, for every tracked vendor whose clone succeeds. Both tree
-renderers are wired into `sync.py` (Phase 4), which writes their output to
+`vendor/<name>/src/` snapshot itself. `FILETREE.md` therefore reflects a
+vendor's actual upstream repository (README, docs, tests, examples
+included) rather than a possibly-trimmed local install, for every
+tracked vendor whose clone succeeds. Both tree renderers are wired into
+`sync.py`, which writes their output to
 `FILETREE.md`/`DEPTREE.md`/`filetree.json`/`deptree.json` under
 `vendor/<name>/`.
 
@@ -445,95 +275,54 @@ renderers are wired into `sync.py` (Phase 4), which writes their output to
   shown` notice if exceeded — same never-silent-truncation rule as the
   depth cap above. Renders as a `## Symbol index` section within
   `FILETREE.md` itself (`sync.py`), not a separate sidecar file.
-  **Known gap, disclosed, not fixed by Phase 62**: this function and
+  **Known gap, disclosed, not fixed**: this function and
   `purpose_for_file` are per-file, synchronous, no-subprocess, with zero
   adapter awareness — they take `(path, ecosystem)`, not an adapter
   instance, so a Haskell vendor's `FILETREE.md` still shows no
   symbol-index entries, even though `context-graph.db`'s own `symbols`
-  table (via `adapter.symbols()`) now correctly holds its real symbols.
+  table (via `adapter.symbols()`) correctly holds its real symbols.
   Retrofitting this would mean either spawning the external process once
   *per file* during the tree walk (a severe regression, the opposite of
-  the per-instance cache fix above), or threading a pre-fetched `Symbol`
-  list through the whole `FILETREE.md`-rendering call chain — a
-  materially larger change than Phase 62's own "smallest justified
-  interface change" scope covers.
+  the per-instance cache in [`adapter-interface.md`](adapter-interface.md)),
+  or threading a pre-fetched `Symbol` list through the whole
+  `FILETREE.md`-rendering call chain — a materially larger change than a
+  "smallest justified interface change" scope covers.
 - **Cross-linking FILETREE entries to description action pointers**
   (e.g. `src/commonmark-rules.js  ← ACTION TARGET: override
-  fencedCodeBlock here`) — implemented in Phase 5 via the
-  `action_pointer` parameter above (mechanism unchanged by Phase 7's
-  gap-analysis-to-grounded-description swap). `sync_vendor` threads
-  `(action_pointer_file, action_pointer_note)`, read from this vendor's
-  current enrichment record in the context graph (Phase 16,
-  `decisions/0035`), into both `render_filetree_markdown` and
+  fencedCodeBlock here`) — the `action_pointer` parameter above.
+  `sync_vendor` threads `(action_pointer_file, action_pointer_note)`,
+  read from this vendor's current enrichment record in the context graph
+  (`decisions/0035`), into both `render_filetree_markdown` and
   `render_filetree_json`; a vendor with no enrichment record yet passes
   `None` and the parameter has no effect.
 
-## Grounded description — retired; `sync_vendor` now reads it back (Phase 16)
-
-`codecompass.grounded_description` — the original one-call-per-vendor,
-`depth = FULL`-gated AI description step this section used to document —
-is **deleted** as of Phase 16 (`decisions/0035`). It made a single
-forced-tool-use call against `claude-haiku-4-5-20251001` per `depth =
-full` vendor, on *every* `sync` run, uncached; that entire mechanism is
-gone. Usage-driven, batched AI enrichment (`codecompass.enrichment`, see
-**Batched enrichment** below) is the sole remaining generator of a
-vendor's Description content, and it writes what it generates straight to
-the context graph's `vendor_enrichment` table (`graph.record_enrichment`)
-— `sync_vendor` itself makes no AI call, ever.
-
-**What `sync_vendor` does instead**: before building a vendor's
-`VendorDigest`, it opens a genuine read-only connection to
-`context-graph.db` (the same cheap, side-effect-free pattern
-`index.py`'s `_open_graph_readonly` already used — `None`, gracefully, if
-the file doesn't exist yet) and looks up that vendor's current
-`vendor_enrichment` row, if any. Found or not, this is a pure read: no
-retrieval, no prompt, no API call, no write. If found, its four fields
-(`technical_description`, `conversational_overview`,
-`action_pointer_file`, `action_pointer_note`) populate the digest exactly
-as a live-generated description used to; if not, they stay `None`,
-same as an unenriched vendor always looked. This makes a from-scratch
-`CLAUDE.md` regeneration — including a plain whole-project `sync` that
-touches every tracked vendor, not just newly-enriched ones — idempotent
-with respect to enrichment: it always reproduces whatever the graph
-currently says, rather than either requiring `sync_vendor` to somehow
-preserve file content it isn't re-deriving, or (the bug this fix
-replaces) silently dropping the Description section on every ordinary
-resync because nothing in the deterministic path ever populated it.
-
-**Failure handling**: `description_error` is set only by a source-clone
-failure (`SourceResolutionError` — no repository field, `git` missing,
-network failure, or a declared monorepo subdirectory that doesn't exist);
-`vendor/<name>/src/` falls back to the old local-install-sourced copy
-(`decisions/0004`) so standalone browsing still has *something*. There is
-no longer a second failure point here — no AI call happens inside
-`sync_vendor` to fail. A clone failure and an existing enrichment record
-are unrelated: `claude_md._render_description_section` does not consult
-`description_error` at all, so a vendor with a good enrichment record
-still shows its Description section even on a run where this particular
-clone attempt failed (see **Per-vendor CLAUDE.md structure** below).
-
-**No more `sync`-level AI budget gate**: `sync_all` used to run
-`check_budget` once, before any vendor's `sync_vendor`, aborting the
-whole run before any output was written if the estimated cost of this
-run's pending `depth = full` generation calls exceeded `--budget`. That
-gate is deleted along with the generation it was guarding. The one
-AI-cost budget gate left in the codebase is Phase B enrichment's, in
-`cli.py`'s `_maybe_run_enrichment` (see **Batched enrichment** below);
-`sync --budget`/bare `codecompass --budget` are passed through to it, not
-consulted by `sync_all`/`sync_vendor` themselves.
-
 ## Per-vendor CLAUDE.md structure (`codecompass.claude_md`)
 
-`render_vendor_claude_md(digest: VendorDigest) -> str`. Sections, in
-order:
+`render_vendor_claude_md(digest: VendorDigest) -> str`. `sync_vendor`
+never generates a vendor's Description content itself — before building
+`VendorDigest`, it opens a read-only connection to `context-graph.db`
+(`None`, gracefully, if the file doesn't exist yet) and looks up that
+vendor's current `vendor_enrichment` row, if any; `codecompass.enrichment`
+(see [`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md))
+is the only writer of that table (`decisions/0035`). This makes a
+from-scratch `CLAUDE.md` regeneration —
+including a plain whole-project `sync` that touches every tracked
+vendor, not just newly-enriched ones — idempotent with respect to
+enrichment: it always reproduces whatever the graph currently says.
+`digest.description_error` is set only by a source-clone failure
+(`SourceResolutionError`), never a description failure — there is no
+description "attempt" inside `sync_vendor` to fail, so a clone failure
+and an existing enrichment record are unrelated facts about the same
+vendor.
 
-1. **Metadata** — ecosystem and a `**Installed version:**` line (the
-   `**Depth:**` line was removed in Phase 16 along with the field).
-   This exact format (`\*\*Installed version:\*\*\s*(\S+)`) is what
+Sections, in order:
+
+1. **Metadata** — ecosystem and a `**Installed version:**` line. This
+   exact format (`\*\*Installed version:\*\*\s*(\S+)`) is what
    `claude_md.read_installed_version` regexes against — a shared helper
-   both `staleness.py` (Phase 6) and `index.py` (Phase 4, populating the
-   routing table's Version column) call, rather than each keeping its own
-   copy of the regex. It is load-bearing, not cosmetic.
+   both `staleness.py` and `index.py` (populating the routing table's
+   Version column) call, rather than each keeping its own copy of the
+   regex. It is load-bearing, not cosmetic.
 2. **Grounding preamble** — fixed instructional text: the pinned version
    is authoritative over training knowledge for this library. This is the
    actual mechanism that changes agent behavior — without an explicit
@@ -543,13 +332,11 @@ order:
 4. **Description + action pointer** — `digest.technical_description` plus
    an `**Action pointer:**` line when `digest.action_pointer_file` is set.
    Omitted entirely (no heading at all) when `technical_description` is
-   unset — a vendor with no enrichment record yet. As of Phase 16
-   (`decisions/0035`), `digest.description_error` is a source-clone
-   failure, not a description failure, and this section no longer
-   consults it at all: a vendor with a good enrichment record still shows
-   its Description even on a run where this sync's own clone attempt
-   failed, since the two are unrelated once description content comes
-   from the graph rather than this run's own generation attempt.
+   unset — a vendor with no enrichment record yet. This section never
+   consults `digest.description_error`: a vendor with a good enrichment
+   record still shows its Description even on a run where this sync's
+   own clone attempt failed, since description content comes from the
+   graph, not from this run's own generation attempt.
 5. **Known gotchas** — deterministically derived from `digest.side_effects`
    (the dependency tree's root `DepNode.side_effects`, e.g. npm's
    postinstall-script detection) rather than left empty or AI-generated.
@@ -558,21 +345,18 @@ order:
 6. **Quick links** — relative links to `./FILETREE.md`, `./DEPTREE.md`,
    and a backlink to the project root `CLAUDE.md`.
 
-**Phase 14 adds a second, narrower write path** alongside this
-from-scratch renderer: `update_description_section`/`read_enrichment_hash`
-(see **Batched enrichment** above) rewrite just an already-rendered
-file's Description section and a `**Enrichment symbol-set hash:**`
-metadata line in place, for `codecompass.enrichment`'s batched,
-usage-driven enrichment. This path never had an eligibility gate — it's
-only ever invoked for a vendor `codecompass.enrichment` just actually
-enriched, never as a generic re-render. Section 4's from-scratch render
-path used to differ (gated on `depth is FULL`, to avoid a misleading
-Description note on a vendor that was never eligible for the old
-grounded-description step); Phase 16 (`decisions/0035`) drops that gate
-too, since `technical_description`'s own truthiness already says
-everything the `Depth` gate used to — the two write paths now agree on
-exactly the same "is there enrichment content" test, reading from and
-writing to the same `vendor_enrichment` table.
+A second, narrower write path exists alongside this from-scratch
+renderer: `update_description_section`/`read_enrichment_hash` (see
+[`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md))
+rewrite just an already-rendered file's
+Description section and a `**Enrichment symbol-set hash:**` metadata
+line in place, for `codecompass.enrichment`'s batched, usage-driven
+enrichment. This path has no eligibility gate of its own — it's only
+ever invoked for a vendor `codecompass.enrichment` just actually
+enriched, never as a generic re-render. Both write paths agree on
+exactly the same "is there enrichment content" test
+(`technical_description`'s own truthiness), reading from and writing to
+the same `vendor_enrichment` table.
 
 ## Two consumption modes
 
@@ -580,17 +364,16 @@ Both must work:
 
 1. **Standalone** — `cd vendor/<name> && claude`. Requires a *copied*
    pinned source snapshot at `vendor/<name>/src/`, for every tracked
-   vendor since Phase 13's universal cloning (`decisions/0033`), NOT a
-   reference into `node_modules` — package managers prune/dedupe/reinstall
-   `node_modules` contents, so it isn't a stable pin target. See
+   vendor, unconditionally (`decisions/0033`), NOT a reference into
+   `node_modules` — package managers prune/dedupe/reinstall `node_modules`
+   contents, so it isn't a stable pin target. See
    [`decisions/0004`](../decisions/0004-vendor-src-snapshot-not-node-modules-reference.md).
-   Since Phase 7, the snapshot is a shallow `git clone` of the vendor's
-   own upstream repository (`codecompass.source_resolution`,
-   `decisions/0021`) rather than a copy of the local install — richer
-   (a published package often excludes docs/tests) and, per
-   `decisions/0004`'s own underlying concern, at least as stable a pin
-   target. If source resolution fails, `sync_vendor` falls back to the
-   original Phase 4 behavior — a pruned copy of `source_location()`
+   The snapshot is a shallow `git clone` of the vendor's own upstream
+   repository (`codecompass.source_resolution`, `decisions/0021`) rather
+   than a copy of the local install — richer (a published package often
+   excludes docs/tests) and, per `decisions/0004`'s own underlying
+   concern, at least as stable a pin target. If source resolution fails,
+   `sync_vendor` falls back to a pruned copy of `source_location()`
    (loosely: strips `node_modules`/`dist`/`build`/`.git`-style noise only
    and keeps `test`/`tests`/`__tests__`/`fixtures` directories) — so
    standalone mode always has *something* to reference, never nothing.
@@ -606,17 +389,17 @@ Both must work:
    just the marked block), without clobbering hand-written content around
    it. Table columns: Vendor, Path, Version, Enriched, Deps, Consult when —
    paired with an explicit routing instruction sentence, since the table
-   alone is inert data. As of Phase 4: `index` **reads each vendor's
-   already-synced `CLAUDE.md`** (regexing the Metadata section's
-   `**Installed version:**` line) rather than re-running `sync` — this
-   keeps `index` cheap and side-effect-free even after Phase 5 adds an
-   AI-gated step to `sync`, and a vendor with no synced `CLAUDE.md` yet
-   shows `_not synced_` rather than erroring. The Version column still has
-   no ✅/⚠ freshness indicator — `check` (Phase 6) reports staleness in
-   its own separate table (`codecompass check`) rather than being wired
-   into `index`'s routing table, a deliberate scope boundary rather than
-   an oversight (see **Known footguns**); the Deps column links to
-   `DEPTREE.md` rather than showing a live dependency count, since `index`
+   alone is inert data. `index` **reads each vendor's already-synced
+   `CLAUDE.md`** (regexing the Metadata section's `**Installed
+   version:**` line) rather than re-running `sync` — this keeps `index`
+   cheap and side-effect-free even though `sync` itself may make AI
+   calls, and a vendor with no synced `CLAUDE.md` yet shows `_not
+   synced_` rather than erroring. The Version column has no ✅/⚠
+   freshness indicator — `check` reports staleness in its own separate
+   table (`codecompass check`) rather than being wired into `index`'s
+   routing table, a deliberate scope boundary rather than an oversight
+   (see **Known footguns**); the Deps column links to `DEPTREE.md`
+   rather than showing a live dependency count, since `index`
    deliberately has no adapter/tree data to draw one from.
 
 ## Staleness checking (`codecompass.staleness`)
@@ -634,8 +417,8 @@ as `MAJOR` for gating purposes, since an unclassifiable delta is a "can't
 verify" state, not a "safe to ignore" one. See
 [`decisions/0005`](../decisions/0005-severity-aware-staleness.md).
 
-Never builds a `VendorDigest` — same reasoning `index.py` (Phase 4)
-already established for staying cheap and side-effect-free. `VendorStaleness`
+Never builds a `VendorDigest` — the same reasoning `index.py` already
+established for staying cheap and side-effect-free. `VendorStaleness`
 (`config`, `recorded_version`, `live_version`, `severity`,
 `transitive_drift`, `error`) is its own lightweight result type, not
 reused from anywhere else. A vendor whose adapter's live read itself fails
@@ -657,11 +440,11 @@ other**:
 - `--fix` — regenerates every vendor where `recorded_version !=
   live_version` (including a vendor that's never been synced at all) or
   `transitive_drift` is set, via the exact same `sync_vendor` `sync`
-  itself uses — unmodified. As of Phase 16, this makes **no AI call**:
-  `sync_vendor` only re-clones and re-renders deterministic output,
-  reading back whatever enrichment content the context graph already has
-  (see **Grounded description — retired** below); `--fix` never
-  re-purchases a vendor's description. `check`'s own `--fix` loop (not
+  itself uses — unmodified. This makes **no AI call**: `sync_vendor`
+  only re-clones and re-renders deterministic output, reading back
+  whatever enrichment content the context graph already has (see
+  **Per-vendor CLAUDE.md structure** above); `--fix` never re-purchases
+  a vendor's description. `check`'s own `--fix` loop (not
   `sync_vendor`) wraps each regeneration in `try/except AdapterError`, so
   one vendor's broken adapter read doesn't abort the rest of the batch;
   exits non-zero if anything failed — either an adapter error, or a
@@ -698,17 +481,15 @@ confident in its training knowledge may never read the digest at all —
 precisely the failure mode codecompass exists to prevent. A Skill's
 description is mechanically part of how Claude decides what's relevant to
 load, a stronger (though not absolute) guarantee than the routing table's
-instruction-following alone. Originally implemented in Phase 7 as part of
-`codecompass promote` (`decisions/0018`); since Phase 15
-(`decisions/0033`), `promote` is retired and a vendor's Skill/`.mdc` pair
-is instead written by `enrichment.apply_results` (see **Batched
-enrichment** below) the moment usage-driven AI enrichment succeeds for
-that vendor — the same trigger point that writes its grounded description,
-just automatic rather than manually invoked.
+instruction-following alone. A vendor's Skill/`.mdc` pair is written by
+`enrichment.apply_results`
+(see [`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md))
+the moment usage-driven AI enrichment succeeds for that vendor,
+automatically — no separate command to trigger it (`decisions/0018`,
+`decisions/0033`).
 
-One Skill per **enriched** vendor (one with a `vendor_enrichment` record —
-no longer gated on a `depth = FULL` toggle, which no longer exists),
-generated at `.claude/skills/codecompass-<vendor>/SKILL.md`:
+One Skill per **enriched** vendor (one with a `vendor_enrichment`
+record), generated at `.claude/skills/codecompass-<vendor>/SKILL.md`:
 - The trigger description is built from data already generated — a
   condensed conversational overview — not a new AI call. **Description
   length is a real, ongoing tuning knob, not a one-time writing task**:
@@ -726,9 +507,9 @@ generated at `.claude/skills/codecompass-<vendor>/SKILL.md`:
   later phase, not required for the initial export.
 - A formal trigger-accuracy evaluation harness (a battery of test
   questions checked against whether the Skill actually loads) is not
-  implemented — the same category of manual-verification gap Phase 5
-  accepted for gap analysis against the live API (`decisions/0016`), now
-  extended to Skill triggering.
+  implemented — the same category of manual-verification gap accepted
+  for AI-generated content against the live API generally
+  (`decisions/0016`), extended here to Skill triggering.
 - A vendor with no enrichment record yet doesn't get a per-vendor Skill —
   no grounded-description content exists to build a meaningful trigger
   description from. This gap is covered separately by the **tool-level
@@ -739,41 +520,41 @@ generated at `.claude/skills/codecompass-<vendor>/SKILL.md`:
   vendor table, so an agent has a mechanical signal that codecompass
   exists even before any vendor has been enriched.
 
-**Cursor `.mdc` export is retained, not replaced.** Cursor does not read
-`CLAUDE.md` natively. Its modern context system is `.cursor/rules/*.mdc`
-files with YAML frontmatter (`description`, `alwaysApply`) controlling
-activation — the legacy single `.cursorrules` file is deprecated and
-unreliable in Cursor's agent mode specifically, so it isn't targeted.
-`.mdc` is a **generated export**, not a separately maintained file —
-same technical-description content as the Skill, different serialization
-— written to `.cursor/rules/codecompass-<vendor>.mdc` by
+**Cursor `.mdc` export** targets Cursor's modern context system — Cursor
+does not read `CLAUDE.md` natively. `.cursor/rules/*.mdc` files use YAML
+frontmatter (`description`, `alwaysApply`) to control activation — the
+legacy single `.cursorrules` file is deprecated and unreliable in
+Cursor's agent mode specifically, so it isn't targeted. `.mdc` is a
+**generated export**, not a separately maintained file — same
+technical-description content as the Skill, different serialization —
+written to `.cursor/rules/codecompass-<vendor>.mdc` by
 `enrichment.apply_results` alongside the Skill. `alwaysApply: false`
 (token cost control, same reasoning applied to the Skill description
 cap above); Cursor falls back to description-based relevance without an
 explicit `globs` key — a `globs` field scoped to wherever the vendor is
 actually imported in the consuming codebase is a documented future
 refinement, not implemented (would require scanning the consuming
-project's own source, a different kind of input than anything else Phase
-B enrichment reads). Cursor's glob-scoped file-pattern activation is a
-different — potentially more precise, once implemented — trigger model
-than Skills' description-matching, and not every Cursor setup has Skills
-support, so this export stays alongside Skills rather than being dropped.
+project's own source, a different kind of input than enrichment reads
+today). Cursor's glob-scoped file-pattern activation is a different —
+potentially more precise, once implemented — trigger model than Skills'
+description-matching, and not every Cursor setup has Skills support, so
+this export exists alongside Skills, for Cursor users specifically.
 
-**The `CLAUDE.md` root routing table is also retained, not replaced** — it
-remains the fallback for any tool or context that doesn't support Skills
-at all, including the Mode-1 standalone `cd`-into-vendor scenario (see
-**Two consumption modes** above), which isn't a "current task the agent
-judges relevant" situation the way Skills triggering assumes.
+**The `CLAUDE.md` root routing table** is the fallback for any tool or
+context that doesn't support Skills at all, including the standalone
+`cd`-into-vendor scenario (see **Two consumption modes** above), which
+isn't a "current task the agent judges relevant" situation the way
+Skills triggering assumes.
 
 ## `/discovery` custom slash command — `codecompass.commands`
 
-**New in Phase 17.** A third generated-artifact type alongside Skills and
-`.mdc` rules, but a genuinely different Claude Code mechanism from
-either: a **custom slash command**, written to `.claude/commands/
-discovery.md` and invoked explicitly by typing `/discovery` inside a
-Claude Code session, rather than auto-triggered by description matching
-the way Skills are. `codecompass.commands` follows `codecompass.skill`'s
-render/write split (`render_discovery_command() -> str` /
+A third generated-artifact type alongside Skills and `.mdc` rules, but a
+genuinely different Claude Code mechanism from either: a **custom slash
+command**, written to `.claude/commands/discovery.md` and invoked
+explicitly by typing `/discovery` inside a Claude Code session, rather
+than auto-triggered by description matching the way Skills are.
+`codecompass.commands` follows `codecompass.skill`'s render/write split
+(`render_discovery_command() -> str` /
 `write_discovery_command(project_root: Path) -> None`) rather than
 inventing a new pattern, but stays a separate module — different
 directory convention, different frontmatter shape, no vendor-specific
@@ -782,14 +563,12 @@ static: it teaches Claude *how* to explore whatever a project's
 codecompass output currently is, not what that output currently
 contains).
 
-**Generated unconditionally**, same trigger points and free/no-AI-cost
-posture as the tool-level Skill: bare `codecompass` (`_bootstrap`) and
-`codecompass index`. Whole-project `codecompass sync` does **not** also
-call it, as of this phase — that call site has never called
-`write_tool_skill` either (only `_bootstrap` and `index` do), so there was
-no existing "same points write_tool_skill already is" precedent at that
-third call site to actually mirror; see `planning/CONTEXT.md` for the
-current status of this gap.
+**Generated unconditionally**, same free/no-AI-cost posture as the
+tool-level Skill, at every whole-project trigger point: bare
+`codecompass`, `codecompass index`, and whole-project `codecompass sync`
+(the last via `_refresh_generated_artifacts`, which regenerates the
+routing table, the tool-level Skill, and `/discovery` together at the
+end of the invocation — see **Retrofitting to existing projects** below).
 
 **Mechanically read-only for the single turn that invokes it; held by
 prose for the rest of the session (`decisions/0040`).** Its frontmatter
@@ -809,21 +588,13 @@ so and stop if one would be needed — for every later turn by default,
 deliberately, not because the frontmatter still enforces it.
 
 **Indexed into the context graph the same way Skills/`.mdc` rules are**:
-`skill_scan.scan_skills` (Phase 12's mapping module — the name predates
-this phase but the function now covers a third artifact type, not just
-Skills/`.mdc`) additionally globs for `.claude/commands/discovery.md` and,
-if present, appends it as a `doc_artifacts` row (`kind='slash_command'` —
-`doc_artifacts.kind`'s CHECK constraint was widened for this,
-`schema_version` bumped from `"1"` to `"2"`, with `open_graph` migrating
-an already-existing pre-Phase-17 `context-graph.db` by dropping and
-recreating just the `doc_artifacts` table — safe, since that table (and
-everything that cascades from it) is fully rebuilt by
-`rebuild_deterministic` on every whole-project sync anyway, and
-`vendor_enrichment`/`symbol_enrichment` have no foreign key to
-`doc_artifacts` at all, so this migration can't reach them regardless).
-Flowing through the same `scan_skills` return value it also participates
-in `skill_scan.build_skill_mentions_edges`' word-boundary mention
-detection, same as any other Skill/`.mdc` doc artifact.
+`skill_scan.scan_skills` (a name that predates this artifact type, but
+the function covers all three) additionally globs for
+`.claude/commands/discovery.md` and, if present, appends it as a
+`doc_artifacts` row (`kind='slash_command'`). Flowing through the same
+`scan_skills` return value it also participates in
+`skill_scan.build_skill_mentions_edges`' word-boundary mention detection,
+same as any other Skill/`.mdc` doc artifact.
 
 `graph.skills_index`/`codecompass query skills` surface the
 `/discovery`-generated `doc_artifacts` row too: the read-side query
@@ -834,23 +605,14 @@ each tagged with its `kind`.
 ## Chat REPL
 
 **Chat is a secondary, dev/debug-oriented tool, not the product's primary
-interface** (see
-[`decisions/0034`](../decisions/0034-chat-demoted-graph-and-skills-are-primary.md)).
+interface**, per
+[`decisions/0034`](../decisions/0034-chat-demoted-graph-and-skills-are-primary.md).
 The SQLite context graph (`codecompass.graph`), generated Skills, and the
 `/discovery` slash command are the primary way both humans and agents
 consume codecompass's output (see **Multi-tool export** and
-**`/discovery`** above). `chat`'s own logic, its digest-only grounding, and
-`decisions/0023`'s "never regenerates" rule are all unchanged by this —
-what changed in Phase 19 is framing, not behavior: `chat <vendor>` remains
-fully functional and genuinely useful for a quick, digest-only Q&A in a
-plain terminal, just no longer described as the product's centerpiece.
-
-> **Historical note**: this section originally opened with
-> [`decisions/0012`](../decisions/0012-conversational-first-repl-design.md)'s
-> framing — "the REPL is the actual product," with the markdown digests as
-> its backing store. `decisions/0012` is not edited (it's append-only and
-> remains an accurate record of the reasoning at the time); it is
-> **superseded by `decisions/0034`**, which this section now reflects.
+**`/discovery`** above). `chat <vendor>` remains fully functional and
+genuinely useful for a quick, digest-only Q&A in a plain terminal — just
+not the product's centerpiece.
 
 The digests (`CLAUDE.md`, `FILETREE.md`, `DEPTREE.md`, and — for a vendor
 that's been usage-driven AI-enriched — `OVERVIEW.md`, the persisted
@@ -872,174 +634,46 @@ beyond what the digest actually covers. Critically, `chat` never calls
 `sync` — it reads whatever's already on disk, so starting a session never
 re-incurs a clone or an AI-generation call (`decisions/0023`).
 
-- **Explicit vendor** (`chat turndown`) — **implemented (Phase 8).** Loads
-  that vendor's `CLAUDE.md`/`OVERVIEW.md` only, single system prompt, no
-  routing needed. Works whether or not the vendor's been AI-enriched — one
-  with no `OVERVIEW.md` yet gets thinner grounding plus a `sync` hint
-  (Phase B enrichment may pick it up), not a hard block.
-- **No vendor specified** (project-root mode) — **not yet implemented
-  (post-MVP Phase 20)**, renumbered from the original Phase 9 during this
-  rework — see `planning/ROADMAP.md`'s renumbering notes. Will load a
-  **project-wide dependency rollup unconditionally at session start**,
-  before any routing happens. The rollup is synthesized once per `sync`
-  (not per query) from the already-generated per-vendor conversational
-  overviews: dependency count, a staleness rollup by severity, notable
-  side-effect flags, and a short narrative. No new per-dependency AI
-  calls — one cheap summarization pass over data that's already paid for.
-  This exists because a large share of realistic casual usage ("anything
-  risky in my deps right now," "why do we even use X," "what changed
-  recently") doesn't cleanly signal either "vendor" or "project" the way
-  keyword/phrase matching expects — waiting for a routing match before
-  loading *any* project-level context would miss these. The REPL's
-  startup banner states that the rollup is loaded, once, up front.
+- **Explicit vendor** (`chat turndown`) — the only mode implemented
+  today. Loads that vendor's `CLAUDE.md`/`OVERVIEW.md` only, single
+  system prompt, no routing needed. Works whether or not the vendor's
+  been AI-enriched — one with no `OVERVIEW.md` yet gets thinner
+  grounding plus a `sync` hint, not a hard block.
+- **No vendor specified** (project-root mode) — **not yet implemented.**
+  Would load a project-wide dependency rollup and route between vendor
+  and project context. See
+  `planning/phase-20-chat-project-root-routing-design.md` for the full
+  (unbuilt) design.
 
-  Vendor-specific escalation still uses two-tier routing **on top of**
-  that baseline rollup, across three possible context targets (a specific
-  vendor, several vendors, or the project itself), now sourced from the
-  SQLite context graph (`decisions/0032`) rather than inventing ad hoc
-  heuristics inline:
-  - **Tier 1** (free, instant) — match against the **same generated
-    Skill description text** that usage-driven AI enrichment
-    (`enrichment.apply_results`, see **Batched enrichment** below)
-    produces for Claude Code's native Skills triggering (see
-    [`decisions/0013`](../decisions/0013-agent-skills-as-shared-context-selection-source.md)),
-    not an independently-authored keyword/alias list. One source of
-    truth for "what fires on what" — Phase 20's REPL routing reads the
-    same Skill-description data enrichment already generates and the
-    graph already indexes, rather than duplicating it. If nothing
-    matches, check for project-level signal instead (question references
-    architecture, a roadmap phase, a past decision, or general "how does
-    this project..." phrasing) and load **project context** (root
-    `CLAUDE.md` + `architecture/` + relevant `decisions/` entries +
-    `planning/CONTEXT.md`'s current-state section) rather than any vendor
-    digest.
-  - **Tier 2** (fallback, only if Tier 1 is ambiguous) — pass both the
-    vendor routing table and a summary of available project-context
-    sources, and let the model itself judge relevance (no extra API call),
-    escalating to a one-shot Haiku classification call only if that's
-    insufficient.
-  - **Always print a visible context indicator line before answering** —
-    e.g. `→ loaded turndown digest (exact match)` or `→ using project
-    context (architecture/overview.md, decisions/0003-*.md)`. This tells
-    the user what *additional* context, beyond the baseline rollup, grounded
-    a given answer — the rollup itself isn't re-announced every turn, only
-    at session start. If a question pulls in both a vendor digest and
-    project context, the indicator line lists both explicitly rather than
-    picking one to display.
-  Loaded context (the baseline rollup, plus anything Tier 1/2 escalation
-  adds) persists in the system prompt for the rest of the session (cheap
-  to keep, cache-friendly); a soft cap (~3-4 loaded context sources beyond
-  the rollup, LRU eviction) prevents a long mixed session from letting the
-  system prompt grow unbounded.
-- **Escalation when a question exceeds digest-only scope** (see
-  [`decisions/0013`](../decisions/0013-agent-skills-as-shared-context-selection-source.md))
-  — deep source inspection, execution, or reasoning beyond what a digest
-  captures. Rather than answering confidently from incomplete context
-  (the same over-trust risk flagged for digest-only answers generally),
-  the REPL states the limitation and points at the already-generated
-  `.claude/skills/codecompass-<vendor>/` folder as the handoff artifact for
-  a full Claude Code session, already grounded via the same Skill —
-  reusing that already-generated Skill (now written automatically by
-  Phase B enrichment, not a manual `promote` step) rather than inventing a
-  separate context-packaging mechanism. The REPL's startup disclaimer
-  ("this only knows what's in the digest") is extended to mention this
-  escalation path exists, so a user hitting the boundary knows there's a
-  next step rather than just receiving a lower-confidence answer.
-- Rich handles presentation: `Panel` for the startup grounding disclaimer,
-  `Markdown` for rendering answers, `Progress`/spinner for multi-vendor
-  `sync` runs, `Table` for `check` output with stale rows highlighted.
-  Since `check` also runs in CI, ANSI codes are explicitly guarded against
-  polluting CI logs (`Console(force_terminal=...)` / `sys.stdout.isatty()`
-  checks) rather than relying solely on Rich's auto-detection.
+`Table` (Rich) renders `check`/`query` output; `Markdown` renders chat
+answers.
 
 ## Retrofitting to existing projects
 
-**Two phases, back to back, both triggered from the same call sites**
-(bare `codecompass` and whole-project `sync` — `init --scan` and
-`sync <vendor>` are explicitly not trigger points): Phase A is the
-always-free, no-prompts bootstrap; Phase B is usage-driven AI enrichment,
-auto-triggered right after Phase A but kept behind a real disclose-and-
-confirm gate. This is Phase 15's rewiring of `decisions/0031` (enrichment
-is usage-driven, not a per-vendor `Depth` toggle) and `decisions/0033`
-(`promote` retired; universal cloning + auto-triggered, disclosed
-consent is the sole cost point) into the actual CLI — see those two ADRs
-for the full rationale; this section describes the resulting flow.
-
-**Phase A** (`decisions/0017`, Phase 7; extended Phase 15 with universal
-cloning and a graph rebuild): auto-discovers manifests at the project
-root (`package.json`, `pyproject.toml`, `requirements.txt`,
-`Cargo.toml`), writes/refreshes `vendor.toml`, clones every vendor's
-source (`decisions/0033` — extended from `depth = FULL`-only cloning),
-regenerates trees, and rebuilds `context-graph.db` from the whole
-project's current state — that rebuild has to happen here, pre-Phase B,
-because `enrichment.select_candidates` reads usage-proven candidates from
-it. No prompts, no AI calls, regardless of project size. Re-running it on
-an already-bootstrapped project is an **idempotent refresh**: newly
-discovered dependencies are appended; already-tracked vendors are left
-untouched by Phase A itself, so Phase A alone never pays AI cost no
-matter how many times it's run.
-
-**Routing table / tool Skill refresh timing (Phase 20).** The routing
-table and the tool-level Skill are *not* regenerated as part of Phase A
-above — they're regenerated once, unconditionally, by
-`cli._refresh_generated_artifacts` at the very end of the whole
-bare-`codecompass`/`sync` invocation, *after* Phase B returns (success,
-decline, or budget-abort — a `try`/`finally` around the Phase B call
-guarantees this runs either way). Earlier phases regenerated them
-*before* Phase B ran, so a vendor enriched in that same invocation still
-showed `Enriched: no` until a separate `codecompass index` — confirmed
-directly during this project's first live enrichment run. `sync`'s
-whole-project branch previously never called this regeneration at all
-(only `index`/bare `codecompass` did); it now shares the same
-post-Phase-B call. `_refresh_generated_artifacts` re-runs
-`rebuild_project_graph` a second time (a full pass, not a partial
-update — `graph.rebuild_deterministic` has no partial-update mode) before
-re-deriving the routing table/tool Skill from it, which also means
-`context-graph.db` picks up any Skill/`.mdc` file Phase B just wrote
-(`skill_scan.scan_skills`) in the same invocation — fixing `codecompass
-undo`'s graph-backed enumeration and `codecompass query skills` missing a
-vendor's brand-new per-vendor Skill until the next whole-project sync.
-See planning/phase-20-refresh-generated-artifacts-after-enrichment.md.
+Two phases, back to back, both triggered from the same call sites (bare
+`codecompass` and whole-project `sync` — `init --scan` and
+`sync <vendor>` are explicitly not trigger points): **Phase A** is the
+always-free, no-prompts bootstrap (manifest discovery, `vendor.toml`
+write/refresh, universal cloning, tree generation, graph rebuild);
+**Phase B** is usage-driven AI enrichment, auto-triggered right after
+Phase A but kept behind a real disclose-and-confirm gate
+(`decisions/0031`, `decisions/0033`). See
+[`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md) for
+the full traced flow, including the cost/budget gate and both phases'
+exact call sequence. Artifacts derived from the graph (the routing
+table, the tool-level Skill, `/discovery`) are refreshed once,
+unconditionally, at the end of the invocation, after Phase B returns —
+success, decline, or budget-abort — so they never reflect
+pre-enrichment state; see [`historical-notes.md`](historical-notes.md)
+for the bug this design fixed.
 
 `codecompass init --scan <manifest file> [--scan <manifest file> ...]`
-(`codecompass.discovery`) remains as the explicit, scripted/CI-friendly
-synonym — useful for naming specific manifests rather than relying on
-root-level auto-discovery. `--scan` is a repeated flag, not one flag
-followed by several space-separated files (not how a named Click/Typer
-option works — the CLI reference's earlier draft syntax was corrected to
-match in Phase 4). Unlike bare `codecompass`, it keeps its original
-stricter contract: errors rather than overwriting if `vendor.toml`
-already exists. Python discovery reads `[project.dependencies]` from
-`pyproject.toml` and every non-comment, non-option line of
-`requirements.txt` (Phase 7 addition) — not
-`[project.optional-dependencies]`. `init --scan` is not a Phase A/B
+(`codecompass.discovery`) is the explicit, scripted/CI-friendly synonym
+for Phase A's discovery step — useful for naming specific manifests
+rather than relying on root-level auto-discovery. Unlike bare
+`codecompass`, it keeps a stricter contract: errors rather than
+overwriting if `vendor.toml` already exists. It is not a Phase A/B
 trigger point itself — no cloning, no graph rebuild, no Phase B.
-
-**Phase B** (`decisions/0031`, `decisions/0033`, wired in Phase 15):
-after Phase A's graph rebuild, `enrichment.select_candidates` checks
-which vendors the project's own source actually imports
-(`graph.enrichment_candidates`, usage-driven — not a per-vendor toggle)
-and don't already have up-to-date enrichment (a two-tier hash check —
-DB-level and, for a fresh clone with no `context-graph.db` yet,
-file-level against the committed `CLAUDE.md`). If any exist, `cli.py`
-discloses an estimated cost (`enrichment.estimate_cost`) and asks for
-confirmation (`typer.confirm`, skipped by `--yes`) before calling
-`enrichment.run_enrichment_batches` + `enrichment.apply_results` — the
-one step that calls the Anthropic API, batched across several vendors
-per call rather than one call per vendor (unlike the retired `promote`).
-`--budget <amount>` is checked via `enrichment.check_budget` *before any
-API call*; if exceeded, Phase B aborts for this run without undoing
-Phase A's already-written output, and the command exits non-zero.
-Declining the confirmation prompt is not a failure — Phase A already
-succeeded — and exits 0. Both bare `codecompass` and whole-project `sync`
-gained `--yes`/`--budget` for this reason. `sync` had already had a
-`--budget` flag before Phase 15, guarding its then-existing
-`depth = FULL` per-vendor regeneration path; that path — and the `Depth`
-field itself — is gone as of Phase 16 (`decisions/0031`,
-`decisions/0035`), so `sync --budget`/bare `codecompass --budget` now
-guard Phase B alone, not two coexisting cost centers. `sync <vendor>` (a
-named vendor) skips both the graph rebuild and Phase B entirely
-(`decisions/0025`).
 
 `promote` is retired (`decisions/0033`) — its three former jobs (clone,
 enrich, generate Skill/`.mdc`) are these two phases' automatic outcomes.
@@ -1049,973 +683,92 @@ requiring a vendor to have been manually escalated first.
 
 ## Context graph (`codecompass.graph`)
 
-**Fully populated at both whole-project call sites and, as of Phase 15,
-CLI-readable too.** `codecompass.graph` is the SQLite persistence layer
-every phase in the v0.2 rework (10-16) builds on: a schema, a set of typed
-row dataclasses that form the insertion contract for a full-rebuild
-orchestrator, and a set of read-only query functions. Phase 10 built it as
-a standalone library; Phase 11 was the first phase to actually populate it
-from real project data — `sync.rebuild_project_graph` (below) — wiring in
-`vendors`/`source_files`/`symbols`/`uses_edges` and calling that from
-`cli.py`'s two whole-project call sites; Phase 12 extends the same call
-site with the remaining five tables (`doc_artifacts`/`documents_edges`/
-`skill_mentions_edges`/`routes_via_edges`/`depends_on_edges`), which
-previously received empty lists. Phase 15 is the first phase to read it
-back through the CLI: the new `codecompass query` command group renders
-`unused_vendors`/`vendor_profile`/`symbol_profile`/`skills_index` as Rich
-tables or raw JSON, `check` gains report-only coverage-gap sections built
-on the same queries, and `index.py`/`skill.py` source their
-"Enriched"/enrichment-count display from the new `has_enrichment` query —
-each gracefully falls back to "no graph yet" rather than erroring if
-`context-graph.db` doesn't exist. Phase 21 adds a tenth deterministic
-table, `doc_relations_edges` — a project's own spec docs (`docs/**/*.md`,
-`decisions/**/*.md`, etc.) mechanically linked to vendors/other doc
-artifacts, the first half of a new three-way relationship feature (Phase
-22 adds AI enrichment over these edges, deliberately separate — see
-[`decisions/0037`](../decisions/0037-spec-docs-get-a-dedicated-table-and-glob-based-detection.md)).
-Phase 27 widens `doc_artifacts` once more — `kind='vendor_doc'`,
-`origin='vendor_upstream'` — for a vendor's own embedded upstream doc
-files (`vendor/<name>/src/README.md` and a small fixed set of siblings),
-registered as one more `doc_artifacts` source so `doc_relations_edges`,
-`query relations`, and `check`'s coverage-gap section pick them up with no
-further changes (see
-[`decisions/0041`](../decisions/0041-vendor-upstream-docs-are-a-new-doc-artifacts-kind-root-level-only.md)).
-Phase 29 widens both `build_documents_edges`'s kind filter and
-`build_doc_relations_edges`'s scannable-source set to include
-`vendor_doc` — a vendor's own upstream README can now document its own
-symbols (`documents_edges`) and mechanically mention another tracked
-vendor, a Skill, or another doc artifact (`doc_relations_edges`), not just
-be mentioned by other docs, with a self-mention exclusion so a vendor
-doc's own name never produces a `mentions_dependency` edge to itself (see
-[`decisions/0043`](../decisions/0043-vendor-docs-become-relationship-sources-closed-allow-set-plus-self-mention-exclusion.md)).
-See
+Fully populated at both whole-project call sites (bare `codecompass` and
+whole-project `sync`) and CLI-readable via `query`/`check`. See
+[`context-graph-schema.md`](context-graph-schema.md) for the literal
+schema — every table, the closed `kind`/`origin`/`relation_kind` sets,
+which tables survive a rebuild and why, the migrations, and every
+read/write function — and
+[`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md) for
+how `sync.rebuild_project_graph` populates it end to end. See
 [`decisions/0032`](../decisions/0032-context-graph-stored-in-sqlite.md)
-(SQLite over the original `decisions/0024` JSON-file choice) and
+(SQLite storage) and
 [`decisions/0025`](../decisions/0025-context-graph-rebuilds-only-on-whole-project-sync.md)
-(the rebuild-trigger posture — full rebuild only on whole-project `sync`,
-never incrementally — carried forward unchanged, just retargeted from "one
-JSON file" to "wipe and rewrite every deterministic table").
+(full rebuild only on whole-project `sync`, never incrementally).
+`context-graph.db` is gitignored — a deterministic, cheaply
+regeneratable artifact, same precedent as `vendor/` (`decisions/0010`).
 
-**Storage**: `context-graph.db` at the project root, one SQLite database.
-Gitignored (extends `decisions/0010`'s existing `vendor/` precedent — a
-deterministic, cheaply regeneratable artifact). `open_graph(project_root:
-Path) -> sqlite3.Connection` is the one function later phases actually
-call to get a working handle: it resolves the db path, connects (creating
-the file if absent), sets `PRAGMA foreign_keys = ON` (SQLite defaults this
-off, and it must be set per-connection, not just once at the file level),
-calls `init_schema`, and returns the connection. `init_schema(conn)` is an
-idempotent `CREATE TABLE IF NOT EXISTS`/`CREATE INDEX IF NOT EXISTS` for
-every table, seeding a `meta.schema_version` row on first call.
+**Spec docs and vendor docs** (`codecompass.spec_docs`, extended
+`codecompass.doc_mapping`) are the two non-generated `doc_artifacts`
+sources: `spec_docs.scan_spec_docs` globs a fixed default pattern set
+rooted at the project (`README.md`, `ARCHITECTURE.md`, `docs/**/*.md`,
+`architecture/**/*.md`, `decisions/**/*.md`, `spec/**/*.md`,
+`ai-docs/**/*.md`, `dev-docs/**/*.md`, and similar), excluding
+`CHANGELOG.md`, `CONTRIBUTING.md`, `LICENSE*`, and root `CLAUDE.md`
+itself, plus anything under `vendor/` or another pruned directory;
+`doc_mapping.collect_vendor_upstream_doc_artifacts` globs a small fixed
+root-level filename set (`README*.md`, `CHANGELOG.md`, `CONTRIBUTING.md`,
+`SECURITY.md`, `MIGRATION.md`) directly under each vendor's own cloned
+source. Each row's `name` is extracted via a title-extraction function
+with a specificity guard: the doc's own first level-1 heading text if it
+exists and is "specific enough" (more than one word, or containing a
+digit/hyphen), else the filename stem if that's specific enough, else
+`None` — this guard exists because a bare repo-name heading (`#
+ledgerkit`) or one-word stem produces guaranteed noise once used as a
+`mentions_artifact` match target, confirmed against a real reference
+project. Both spec docs and vendor docs can be a relation *source*
+(`doc_mapping.build_doc_relations_edges`, closed allow-set) as well as a
+relation *target* — including a vendor's own embedded README both
+documenting its own symbols (`documents_edges`) and mechanically
+mentioning another tracked vendor or doc artifact
+(`doc_relations_edges`) — with two independent self-mention exclusions
+(by vendor name, by doc path) preventing guaranteed-noise edges; see
+[`context-graph-schema.md`](context-graph-schema.md) and
+[`decisions/0043`](../decisions/0043-vendor-docs-become-relationship-sources-closed-allow-set-plus-self-mention-exclusion.md).
+Mention detection throughout this arc is **word-boundary
+(`\b<name>\b`), not substring** — see
+[`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md).
 
-**Schema** — ten deterministic tables plus `meta` plus three enrichment
-tables:
-- `vendors`, `source_files`, `symbols` (unique per `(vendor_id, name)`,
-  since symbol names aren't globally unique across vendors) — the graph's
-  nodes.
-- `uses_edges` (`source_file → vendor`/`symbol`, `symbol_id` nullable for
-  a usage that resolves to a vendor but not a specific symbol),
-  `doc_artifacts` (`kind` one of `claude_md`/`overview`/`skill`/
-  `cursor_mdc`/`slash_command`/`spec_doc`/`vendor_doc`; `origin` one of
-  `codecompass_tool`/`codecompass_vendor`/`third_party`/`project`/
-  `vendor_upstream`/`pinned_reference` —
-  `spec_doc`/`project` added in Phase 21 for a project's own
-  human-authored docs, distinct from every generated/third-party kind;
-  `vendor_doc`/`vendor_upstream` added in Phase 27 for a vendor's own
-  embedded upstream doc files (`vendor/<name>/src/README.md` and
-  siblings) — upstream-*authored* content codecompass merely indexes,
-  distinct from both `codecompass_vendor` (codecompass-generated) and
-  `project` (this project's own hand-authored docs);
-  `pinned_reference` added in Phase 54c (`CG-005`) for a `spec_doc` row
-  whose leading content is a YAML frontmatter block carrying both a
-  `resolved_commit` and a `source_url` key (`spec_docs.py::
-  _has_pinned_reference_frontmatter`) — externally-sourced,
-  revision-pinned reference material a tool materialized into the
-  project tree, distinct from `project` (hand-authored) and never
-  reusing `vendor_upstream` (which requires a tracked `vendors` row this
-  material deliberately has none of);
-  `vendor_id` nullable for tool-level artifacts like the unconditional
-  tool Skill, `decisions/0020`), `documents_edges` (a doc artifact
-  documenting one symbol), `skill_mentions_edges` (a Skill mechanically
-  mentioning a vendor and/or a source file — both nullable,
-  independently), `routes_via_edges` (a vendor routed to a Skill),
-  `depends_on_edges` (vendor-to-vendor dependency), `doc_relations_edges`
-  (Phase 21, widened Phase 29 — a spec doc or vendor doc mechanically
-  mentioning a vendor or another doc artifact; `target_vendor_id`/
-  `target_doc_artifact_id` nullable, exactly one set per row, matching
-  `relation_kind` `'mentions_dependency'`/`'mentions_artifact'` — the same
-  two-nullable-target shape `skill_mentions_edges` already established)
-  — the graph's edges.
-- `doc_chunks` (Phase 32) — `id`, `doc_artifact_id`, `heading_path`,
-  `start_line`, `end_line`, `content_hash`: deterministic heading-based
-  splits of a chunkable doc artifact's markdown text
-  (`doc_chunking.chunk_markdown`), scoped to only the kinds that can ever
-  be a mention-detection source or target (`claude_md`/`overview`/
-  `vendor_doc`/`spec_doc`). `documents_edges`/`doc_relations_edges` each
-  gain a nullable `chunk_id` (`ON DELETE SET NULL`) pointing at the one
-  chunk a mechanical match was attributed to, when exactly one chunk's
-  own text contains it. **Not** the `DocChunk`/`EXPLAINS` tables from the
-  former phase-9d design that `decisions/0032` explicitly excluded from
-  this schema — same name, unrelated design (no embeddings, no semantic
-  chunking; heading-boundary-only, additive to the already-shipped
-  mechanical mention-detection pipeline). See `decisions/0046`.
-- `vendor_enrichment`/`symbol_enrichment` — the two tables that **survive
-  every `rebuild_deterministic` call**, holding Phase 14's paid AI
-  enrichment output (`technical_description`, `conversational_overview`,
-  `action_pointer_file`/`action_pointer_note`, plus `symbol_set_hash` and
-  `model`/`generated_at` for cache-key purposes).
-- `doc_relation_enrichment` (Phase 22) — a third table that **survives
-  every `rebuild_deterministic` call**, holding Phase 22's paid AI
-  enrichment output over `doc_relations_edges` relationships: `ai_summary`
-  plus `content_hash`/`model`/`generated_at` for cache-key purposes, plus a
-  closed-taxonomy `relation_label` (Phase 31, `decisions/0045` — one of
-  `documents_configuration_of`/`explains_usage_of`/`contrasts_with`/
-  `supersedes`/`other`, `NULL` on a row not yet re-enriched since Phase 31
-  shipped). Added to an existing on-disk database via `ALTER TABLE ...
-  ADD COLUMN`, not the drop-and-recreate approach `doc_artifacts`'s own
-  migration uses — this table holds paid AI spend that must survive.
-  Unlike the other two, it holds **no foreign key to `doc_artifacts.id`
-  at all** —
-  keyed purely by natural-key TEXT columns (`source_doc_path`, `target_
-  vendor_name`, `target_doc_path`). See **Relationship enrichment** below
-  and [`decisions/0038`](../decisions/0038-relation-enrichment-natural-key-only-no-fk-never-writes-spec-docs.md)
-  for why this table departs from the FK-based precedent the other two
-  set.
+**Doc chunking** (`codecompass.doc_chunking`) splits a chunkable doc
+artifact's markdown text into heading-scoped chunks
+(`chunk_markdown(text) -> list[DocChunk]`) — root-first nested
+`heading_path`, 1-indexed inclusive line ranges, a per-chunk content
+hash — used to attribute a mechanical mention to the specific heading
+section it occurred in, when exactly one chunk's text contains it. It
+tracks fenced-code-block state and never treats a line inside one as a
+heading candidate — a `#`-prefixed comment in an example fence would
+otherwise be misdetected as a real heading, confirmed live against this
+repo's own `docs/cli-reference.md`. See
+[`decisions/0046`](../decisions/0046-doc-chunking-heading-based-additive.md).
 
-Every table with a foreign key to `vendors`/`symbols`/`doc_artifacts`/
-`source_files` declares `ON DELETE CASCADE` — deliberate, so
-`rebuild_deterministic` never has to manually clear dependent tables in a
-specific order.
+**Relationship enrichment** (`codecompass.relation_enrichment`) asks an
+AI call to explain, in a sentence or two, *how* a spec/vendor doc relates
+to something already mechanically proven (the same "mechanical detection
+first, AI enrichment only over what it proved" gating
+`decisions/0031`/`0033` established for vendors, generalized to
+relationships) — see
+[`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md) for
+current excerpt-selection and candidate-caching behavior, and
+[`historical-notes.md`](historical-notes.md) for why today's fixed-window
+excerpt fallback exists at all. The AI-generated summary is written
+*only* to `doc_relation_enrichment`, never into a spec doc's own file —
+enforced structurally (`apply_results` has no filesystem handle to write
+one). A second, agent-driven producer writes through the same function
+(`codecompass enrich apply`, `decisions/0054`), distinguished only by its
+`model` value.
 
-**Row dataclasses reference each other by natural key, not by pre-assigned
-integer id** — `VendorRow` (keyed by `name`), `SourceFileRow` (keyed by
-`path`), `SymbolRow` (keyed by `(vendor_name, name)`), `UsesEdgeRow`,
-`DocArtifactRow` (keyed by `path`), `DocumentsEdgeRow`,
-`SkillMentionEdgeRow`, `RoutesViaEdgeRow`, `DependsOnEdgeRow`,
-`DocRelationEdgeRow` (Phase 21 — `source_doc_artifact_path`,
-`relation_kind`, `target_vendor_name`/`target_doc_artifact_path`, the
-latter two nullable and mutually exclusive by `relation_kind`). This is a
-deliberate Phase 10 design choice, not spelled out verbatim in the SQL
-schema itself: the detection logic that will construct these rows in
-Phases 11-13 (an AST/regex walk over project source, doc/Skill mapping)
-naturally produces vendor names, file paths, and symbol names — not
-opaque database-assigned ids — and keeping the row dataclasses natural-key-
-shaped means `graph.py` has no import dependency on those not-yet-existing
-modules, avoiding any circular-import risk. `rebuild_deterministic`
-resolves natural keys to integer primary keys internally.
-
-**`rebuild_deterministic(conn, *, vendors, source_files, symbols,
-uses_edges, doc_artifacts, documents_edges, skill_mentions_edges,
-routes_via_edges, depends_on_edges, doc_relations_edges) -> None`** wipes
-and rewrites every
-deterministic table inside one transaction and updates
-`meta.last_deterministic_rebuild_at`. **Never touches
-`vendor_enrichment`/`symbol_enrichment`** — the mechanical reason Phase
-14's enrichment output survives a later whole-project refresh. Because
-both enrichment tables cascade from `vendors`/`symbols` on delete, "never
-touches" is implemented, not just declared: `vendors` and `symbols` are
-**upserted by their natural key** (`INSERT ... ON CONFLICT(name) DO
-UPDATE`, respectively `ON CONFLICT(vendor_id, name) DO UPDATE`) rather
-than deleted and reinserted, which preserves their integer id across a
-rebuild and leaves any enrichment row referencing that id completely
-untouched. Only a vendor or symbol that no longer appears in the new
-fixture at all is deleted (correctly cascading away its enrichment too,
-since the thing it enriched no longer exists). Every other table
-(`source_files`, `uses_edges`, `doc_artifacts`, and the five edge tables
-other than the ones above, `doc_relations_edges` included) carries no
-cross-rebuild identity worth preserving and is unconditionally cleared and
-reinserted.
-
-**Query functions**, each a plain read against already-populated tables —
-none of them write, none of them decide staleness:
-- `unused_vendors(conn) -> list[str]` — vendor names with zero
-  `uses_edges` rows anywhere.
-- `documented_but_unused(conn) -> list[tuple[str, str]]` /
-  `used_but_undocumented(conn) -> list[tuple[str, str]]` — `(vendor,
-  symbol)` pairs covering the two one-sided coverage-gap cases.
-- `vendor_profile(conn, name) -> dict | None` — the vendor row plus its
-  symbols, total usage count, real `(file, line)` usage locations
-  (`used_at`, Phase 30 — surfaces `uses_edges`' existing file/line data,
-  previously collapsed to just `usage_count`), documenting artifacts
-  (linked directly or via one of its symbols), routed Skills, and its
-  `depends_on` vendor names; `None` for an unknown name.
-- `symbol_profile(conn, name) -> list[dict]` — every symbol row named
-  `name` across every vendor (symbol names aren't globally unique), each
-  with its own usage count, `used_at` locations (Phase 30, same shape as
-  `vendor_profile`'s), and documenting artifacts.
-- `doc_code_trace(conn, doc_path_or_vendor_name) -> list[dict]` (Phase
-  30) — a query-time composition of edges already in the graph, no new
-  table (same posture as `documented_but_unused`): given a doc artifact
-  path, unions `documents_edges → symbols → uses_edges` (`via:
-  'documents'` — what this doc documents, and where the project's own
-  code calls it) with this doc's own outgoing `mentions_dependency`
-  `doc_relations_edges → vendors → uses_edges` (`via:
-  'mentions_dependency'` — what vendor this doc mentions, and where the
-  project actually uses it); given a vendor name instead, returns that
-  vendor's own `uses_edges` directly (`via: 'direct_usage'`, the same rows
-  `vendor_profile`'s `used_at` already exposes). Empty list for a name
-  matching neither, never an error. `'documents'`/`'mentions_dependency'`
-  rows also carry `heading` (Phase 32) — the doc-side heading enclosing
-  the edge, when it has a `chunk_id`; `'direct_usage'` rows have no doc
-  side, so `heading` is always `None` there.
-- `skills_index(conn) -> list[dict]` — every agent-context `doc_artifacts`
-  row (`kind` one of `skill`, `cursor_mdc`, `slash_command`), its `kind`
-  and `origin`, and what it mechanically mentions via
-  `skill_mentions_edges`.
-- `enrichment_candidates(conn) -> list[dict]` — every vendor with at least
-  one `uses_edges` row, its currently-used symbol names, and its existing
-  `vendor_enrichment.symbol_set_hash` if any. `graph.py` deliberately
-  doesn't decide staleness here — Phase 14's `enrichment.py` diffs the
-  returned hash against a freshly-computed one itself.
-- `doc_relations(conn, doc_artifact_path) -> list[dict]` (Phase 21) —
-  every `doc_relations_edges` row whose source is `doc_artifact_path`,
-  resolved to the target's name/path; empty for an unknown path or a spec
-  doc with zero detected mentions. `heading` (Phase 32) is the source
-  doc's own heading enclosing the match, when the edge has a `chunk_id`.
-- `spec_docs_without_relations(conn) -> list[str]` (Phase 21) — spec-doc
-  paths with zero `doc_relations_edges` rows as their source; `check`'s
-  report-only coverage-gap section for this table.
-- `relation_enrichment_candidates(conn) -> list[dict]` (Phase 22, extended
-  Phase 28) — every `doc_relations_edges` row joined to its source/target
-  *text* identity (`source_doc_path`, `target_vendor_name`, `target_doc_
-  path`, `target_doc_artifact_name`, `relation_kind`) plus the `content_
-  hash` already on file in `doc_relation_enrichment` for that exact
-  natural-key triple, if any. `target_doc_artifact_name` (Phase 28) is the
-  target doc artifact's own `name` field — the literal `doc_mapping.
-  build_doc_relations_edges` word-boundary-matched for a `mentions_
-  artifact` row, not its `path` — so `select_candidates` can re-run the
-  same match to center its excerpt. Joins with SQLite's NULL-safe `IS`,
-  not `=` — `target_vendor_name`/`target_doc_path` are NULL for whichever
-  `relation_kind` doesn't apply, and plain `=` never matches two NULLs.
-  Same "graph.py doesn't decide staleness" division of responsibility as
-  `enrichment_candidates`: `relation_enrichment.select_candidates` freshly
-  computes each candidate's current content hash and diffs it against what
-  this function returns.
-
-**`record_enrichment(conn, vendor_id, **fields)` /
-`record_symbol_enrichment(conn, symbol_id, purpose, generated_at)`** are
-the only writers to those two enrichment tables, both upserting (`INSERT
-... ON CONFLICT DO UPDATE`) so a second call for the same vendor/symbol
-updates in place rather than erroring or duplicating. Kept as separate
-functions from `rebuild_deterministic` on purpose — a deterministic
-rebuild and a paid enrichment write are different trigger points with
-different costs, and conflating them would risk an enrichment write
-becoming implicitly part of the "free, always safe to rerun" rebuild path.
-
-**`record_relation_enrichment(conn, source_doc_path, target_vendor_name,
-target_doc_path, ai_summary, content_hash, model, generated_at,
-relation_label=None)`** (Phase 22; `relation_label` added Phase 31) is the
-only writer to `doc_relation_enrichment`, kept separate from
-`rebuild_deterministic` for the same reason. It does **not** upsert via
-`INSERT ... ON CONFLICT DO UPDATE` the way `record_enrichment` does —
-SQL's `UNIQUE` constraint treats every `NULL` as distinct from every other
-`NULL`, and exactly one of `target_vendor_name`/`target_doc_path` is
-`NULL` per row, so an `ON CONFLICT` target naming both columns would never
-detect a conflict against an existing row whose non-matching column is
-`NULL`, silently duplicating rather than updating. Instead it deletes any
-existing row for the exact triple (matched with NULL-safe `IS`) and
-inserts fresh, in one transaction. See
-[`decisions/0038`](../decisions/0038-relation-enrichment-natural-key-only-no-fk-never-writes-spec-docs.md).
-
-### Batched enrichment (`codecompass.enrichment`)
-
-**New in Phase 14 — library only, like Phase 10's `graph.py` was: nothing
-here is called from `cli.py`/`sync.py` yet (Phase 15's job).** Conceptually
-replaces `codecompass.grounded_description` (below), but that module stays
-in place, unmodified, and still the one `sync_vendor` actually calls for
-`depth = full` vendors through this phase — `Depth`/`promote` aren't
-retired until Phase 15/16 (`decisions/0033`). The two modules coexist
-through Phase 14; `grounded_description.py` is only deleted once Phase 15
-rewires `cli.py`/`sync.py` off it entirely. `enrichment.py` ports
-`_gather_material`/`_find_entry_point`/`_read_text`/`_first_existing` and
-the `_call_anthropic` forced-tool-use pattern from
-`grounded_description.py` near-verbatim (same caps, same
-per-module-monkeypatch test seam — `decisions/0016`).
-
-**Selection is usage-driven, not `Depth`-driven** — the whole point of
-`decisions/0031`, already reflected in Phase 10's `graph.enrichment_candidates`
-even though `Depth` itself isn't removed until later. `select_candidates(conn,
-configs, project_root) -> list[EnrichmentCandidate]` takes every vendor
-`graph.enrichment_candidates` reports as usage-proven, computes its
-*current* symbol-set hash (`_compute_symbol_set_hash(vendor_name,
-sorted(used_symbol_names), installed_version)`, sha256 over the three
-joined with a separator byte that can't appear in any of them), and skips
-it if that hash already matches — checked two independent ways
-(`decisions/0032`'s belt-and-suspenders design): the DB-level
-`vendor_enrichment.symbol_set_hash` `graph.enrichment_candidates` already
-surfaces, and a file-level check via the new `claude_md.read_enrichment_hash`
-against the committed `vendor/<name>/CLAUDE.md`. The file-level check is
-the one that actually survives a fresh clone with no `context-graph.db` at
-all (gitignored) — belt-and-suspenders, not redundant for no reason. A
-vendor with no retrievable material (no README/docs/entry-point in its
-`vendor/<name>/src/` clone — unconditional since Phase 13) is skipped
-outright rather than aborting the run. `EnrichmentCandidate` carries
-`installed_version` alongside `vendor`/`used_symbol_names`/`material` —
-beyond the phase plan's field sketch, but required so
-`run_enrichment_batches` can recompute the *exact* same hash later when
-writing `EnrichmentResult.symbol_set_hash` back; without it the cache-key
-contract silently breaks (a written hash that never matches what the next
-`select_candidates` call recomputes, re-purchasing enrichment every run).
-
-**Batched, not one call per vendor**: `plan_batches(candidates, *,
-batch_char_budget=150_000) -> list[list[EnrichmentCandidate]]` greedily
-groups candidates into as few batches as fit under the character budget
-(a single oversized candidate still gets its own batch rather than being
-split or dropped) — a conservative starting constant, flagged for
-empirical tuning once Phase 15 makes a real multi-vendor batched call
-reachable to test manually, the same treatment this project already gives
-`_RAW_TEXT_CHAR_CAP` and friends. `run_enrichment_batches(candidates) ->
-list[EnrichmentResult]` calls `_call_anthropic` once per batch against a
-batched `_TOOL_SCHEMA` (forced tool-use; input schema is an array of
-per-vendor results — `vendor`, `technical_description`,
-`conversational_overview`, `symbol_purposes` (one purpose per used
-symbol), optional `action_pointer_file`/`action_pointer_note`), then maps
-each batch's response back onto that batch's candidates. A result naming
-a vendor outside the batch (a hallucinated/misspelled entry) is dropped
-rather than failing the whole batch.
-
-**`apply_results(conn, project_root, results) -> None`** writes each
-result three ways: `graph.record_enrichment`/`graph.record_symbol_enrichment`
-(Phase 10's writers, unchanged); `claude_md.update_description_section`
-(new — see **Per-vendor CLAUDE.md structure** below) to rewrite just that
-vendor's `CLAUDE.md` Description section and hash line in place, without
-re-running `sync_vendor`'s whole pipeline; and
-`skill.write_vendor_skill`/`write_cursor_mdc` against a **minimal
-`VendorDigest`** populated only with the fields those two functions
-actually read (`config`, `installed_version`, `conversational_overview`,
-`technical_description`, `action_pointer_file`, `action_pointer_note`) —
-confirmed by reading both functions' bodies that neither touches
-`api_surface`/`file_tree`/`dep_tree`/`side_effects`, so leaving those at
-their dataclass defaults is safe, not a partial digest.
-`VendorConfig` no longer carries a `depth` field at all (Phase 16,
-`decisions/0035`) — enrichment eligibility is purely usage-driven
-(`decisions/0031`), so there was never a real value to set here in the
-first place.
-
-**Cost model reworked for the batched shape**: `estimate_cost(batch_count)`
-/`check_budget(candidates, budget)` scale with `len(plan_batches(candidates))`,
-not 1:1 with vendor count — several vendors' material and output now share
-one call, so the old per-vendor formula
-(`grounded_description.estimate_cost`) would overstate cost for a batch of
-more than one. Same abort-before-any-spend contract otherwise.
-
-### Project-source usage detection (`codecompass.usage`)
-
-**New in Phase 11 — the first module to inspect the *consuming project's*
-source at all.** `symbols.py`'s extractors run in the opposite direction
-(pulling symbols *out of* a vendor's own source); `usage.py` walks the
-project's own source tree looking for imports *of* a tracked vendor.
-`DetectedImport(vendor, symbol_name, line)` — `symbol_name=None` is the
-vendor-level fallback for an import that doesn't resolve to one specific
-bound name (`import rich`, `use serde::*;`, `require("pkg")`). One no-AI,
-no-subprocess detector per ecosystem, each `Path -> list[DetectedImport]`:
-`detect_python_imports` (`ast`-based; `import` is vendor-level, `from X
-import Y` captures one entry per bound name off `X`'s first dotted
-component; relative imports are skipped outright — they can never name an
-external vendor); `detect_npm_imports` (regex over named/default/
-namespace `import` and `require()` forms, same coarse-regex posture
-already accepted for `extract_npm_symbols`); `detect_rust_imports` (regex
-over `use vendor::Symbol;` / `use vendor::*;` / `use vendor;`).
-
-**Phase 26** adds an attribute-resolution upgrade to `detect_python_imports`
-specifically: a plain `import X` (or `import X as alias`) still always
-records its vendor-level `DetectedImport` as before, but a second pass
-over the same file's AST looks for `X.Attr`-shaped attribute access (an
-`ast.Attribute` whose `.value` is a bare `ast.Name` matching the bound
-import name) and emits an *additional* symbol-level `DetectedImport` per
-match — `import anthropic` + `anthropic.Anthropic(...)` now also yields a
-candidate `symbol_name="Anthropic"`, on top of the untouched vendor-level
-edge. Only the immediate attribute off the bound name resolves (`X.sub.Attr`
-yields `sub`, not `Attr`), the same first-component-only posture
-`ImportFrom` already applies to `module`. This closed a real gap found via
-`/discovery` against this repo itself: `import anthropic`-style usage (this
-project's own dominant style for that vendor) never resolved to
-symbol-level `uses_edges`, so genuinely-used symbols like `Anthropic`/
-`AnthropicError` showed up as "documented but unused."
-`detect_imports_for_file(path, ecosystem)` dispatches by ecosystem and
-file suffix, mirroring `symbols.extract_symbols_for_file`'s dispatch
-shape; every detector never raises, returning `[]` for an unparseable
-file, the same convention `symbols.py` established.
-
-`resolve_project_usage(project_root, configs) -> list[tuple[str,
-DetectedImport]]` walks `project_root` via
-`filetree.iter_source_files(project_root, prune_dirs=
-_PROJECT_PRUNE_DIR_NAMES)` — deliberately **not**
-`filetree._PRUNE_DIR_NAMES`: a project's own `tests`/`fixtures` importing
-a vendor is real usage signal, so `usage.py`'s prune set drops only
-build/dependency noise (`node_modules`, `dist`, `build`, `.git`,
-`__pycache__`, `.venv`, `venv`), never test directories. This is exactly
-why `filetree._iter_files` became the public, parameterizable
-`iter_source_files(root, *, prune_dirs=..., prune_globs=...)` in this same
-phase — same deterministic sorted-and-pruned walk shape, reused with a
-different prune set, rather than a second copy of the walk logic. Results
-are filtered to only vendor names present in `configs` — an import of an
-untracked package isn't this project's concern. `usage.py` has no
-`graph.py` dependency (it only detects and filters against `configs`),
-keeping it independently unit-testable; symbol-name-to-`symbol_id`
-resolution happens one layer up, in `sync.py`.
-
-### Populating the graph (`sync.rebuild_project_graph`)
-
-`rebuild_project_graph(configs: list[VendorConfig], project_root: Path) ->
-None`, added to `sync.py` in Phase 11: for **every** tracked vendor in
-`configs` (not just ones a particular `sync_all` call touched — the graph
-must reflect the full current state regardless of which vendors were just
-resynced), reads `installed_version()`/`repository_url()` (both
-already-existing, no-network adapter methods) and collects that vendor's
-own symbol list via `adapter.symbols()` (Phase 62's generic adapter
-capability — see **Adapter interface**'s own `symbols()` writeup — which
-replaced a private `_collect_vendor_symbols` helper that performed this
-same walk itself). This is also what makes a Haskell vendor's own real
-symbols reach `context-graph.db` at all — `HaskellAdapter.symbols()`
-converts its own external-process result, closing a gap Phase 60 left
-open (`CG-008`) where this call site produced nothing for Haskell. Then
-`usage.resolve_project_usage` detects the project's
-imports, and each `DetectedImport.symbol_name` is resolved against the
-matching vendor's just-collected symbol names: a match becomes a
-symbol-level `UsesEdgeRow`, no match (or `symbol_name=None` to begin with)
-stays a vendor-level fallback edge, matching `uses_edges.symbol_id`'s
-nullability (`decisions/0031`). Phase 12 adds real `doc_artifacts`/
-`documents_edges`/`skill_mentions_edges`/`routes_via_edges`/
-`depends_on_edges` data (below); `graph.open_graph` +
-`graph.rebuild_deterministic` then writes everything in one transaction.
-
-**Deliberately decoupled from `sync_all`'s per-vendor loop, not threaded
-through it as a flag** — `sync_all` is sometimes called with a *subset* of
-configs (bare bootstrap's `new_configs` only) even on a whole-project run,
-but the graph needs *every* tracked vendor's data regardless. `cli.py`
-calls `rebuild_project_graph` explicitly at its two whole-project call
-sites, each with the *full* tracked config list: `_bootstrap`, after
-`write_tool_skill`, with `all_configs`; the `sync` command, only when
-`vendor is None` (the whole-project branch — matching `decisions/0025`'s
-existing rebuild-trigger posture, carried into `decisions/0032`), with
-`configs` right after `sync_all` succeeds. `sync <vendor>` (single-vendor)
-and `check --fix`'s per-vendor loop (already calling `sync_vendor`
-directly, never `sync_all`) leave the graph untouched.
-
-### Doc & wide skill mapping (`codecompass.doc_mapping`, `codecompass.skill_scan`)
-
-**New in Phase 12 — still not CLI-visible (Phase 15's job); this phase
-only populates the five tables `rebuild_project_graph` previously passed
-empty lists for.** Both modules are pure transformations over
-already-generated artifacts — no new AI call, no new extraction — called
-from `rebuild_project_graph` alongside the Phase 11 pieces above.
-
-`doc_mapping.py`:
-- `collect_vendor_doc_artifacts(configs, project_root) ->
-  list[DocArtifactRow]` — one `kind='claude_md'` row per tracked vendor's
-  `vendor/<name>/CLAUDE.md` (skipped if that vendor hasn't been synced
-  yet — no row points at a nonexistent file) and one `kind='overview'` row
-  for `vendor/<name>/OVERVIEW.md` if it exists (only vendors that have
-  been usage-driven AI-enriched have one). Both `origin='codecompass_vendor'`.
-- `build_doc_chunks(doc_artifact_rows, project_root) -> list[DocChunkRow]`
-  (Phase 32) — `doc_chunking.chunk_markdown` over every doc artifact whose
-  kind is in `_CHUNKABLE_DOC_KINDS` (`claude_md`/`overview`/`vendor_doc`/
-  `spec_doc` — the only kinds `build_documents_edges`/`build_doc_
-  relations_edges` ever scan; chunking any other kind would produce rows
-  nothing could reference). Reads each doc's text off disk again,
-  separately from the two builder functions below — an accepted small
-  duplication, consistent with this module's "each builder function reads
-  its own inputs" shape.
-- `build_documents_edges(doc_artifact_rows, symbol_rows, project_root) ->
-  list[DocumentsEdgeRow]` — for each `claude_md`/`overview`/`vendor_doc`
-  doc artifact (Phase 29 widened the kind filter to include `vendor_doc`
-  — a vendor's own upstream README already carries `vendor_name`, Phase
-  27, so no other change was needed), reads its file text off disk and
-  word-boundary-matches it against *that same vendor's* known symbol
-  names. A coverage heuristic ("this symbol's name appears in the
-  vendor's own digest text"), not a quality judgment. Takes
-  `project_root` (beyond the phase plan's originally sketched two-arg
-  signature) since resolving `DocArtifactRow.path` — a natural key,
-  deliberately relative — to an actual file to read requires it;
-  `build_skill_mentions_edges` below needs it for the same reason. Phase
-  32 additionally attempts to attribute each match to exactly one of the
-  doc's own heading-scoped chunks via `_find_containing_chunk` (`chunk_
-  markdown` over the same text, then a word-boundary re-search against
-  each chunk's own text slice), populating `DocumentsEdgeRow.chunk_start_
-  line` when it can — additive, the whole-doc edge is produced identically
-  either way.
-- `build_routes_via_edges(configs, doc_artifact_rows) ->
-  list[RoutesViaEdgeRow]` — routes each vendor to its own per-vendor
-  Skill doc artifact (`kind='skill'`, `origin='codecompass_vendor'`) if
-  one exists, else to the shared tool-level Skill
-  (`kind='skill'`, `origin='codecompass_tool'`) if present — operationalizes
-  `decisions/0013` point 6 as real queryable data.
-- `build_depends_on_edges(configs, project_root) -> list[DependsOnEdgeRow]`
-  — reads each tracked vendor's persisted `vendor/<name>/deptree.json` and
-  flattens it with a module-local `_flatten_deptree` (mirroring
-  `staleness._flatten`, deliberately duplicated rather than imported —
-  same small-local-helper style as elsewhere in this codebase), emitting a
-  `Vendor → Vendor` edge wherever a flattened name matches another
-  *tracked* vendor's name. An untracked transitive dependency isn't a
-  graph node, so no edge for it. A missing/corrupt `deptree.json` is
-  skipped, best-effort, the same tolerant posture
-  `staleness._detect_transitive_drift` already takes toward this file.
-
-`skill_scan.py` — the scope-expanded piece: indexes **every** Skill under
-`.claude/skills/` and every Cursor rule under `.cursor/rules/`, not just
-codecompass's own generated ones:
-- `scan_skills(project_root, configs) -> list[DocArtifactRow]` — globs
-  `.claude/skills/**/SKILL.md` (`kind='skill'`) and `.cursor/rules/*.mdc`
-  (`kind='cursor_mdc'`), extracting `name`/`description` via a **minimal
-  custom frontmatter extractor** (`_extract_scalar` — split on `---`
-  delimiters, handle a single-line `key: value` and a folded `key: >-`
-  block with indented continuation lines, the two shapes this project's
-  own generated Skills use; never raises, returns `None` on anything else
-  — deliberately not a real YAML parser, since this project has no YAML
-  dependency and doesn't need to fully solve arbitrary third-party
-  frontmatter). Classifies `origin` by directory name (`SKILL.md`) or
-  filename stem (`.mdc`) against codecompass's own naming convention,
-  reusing `skill.py`'s own `_TOOL_SKILL_DIR_NAME`/`_vendor_skill_name`
-  rather than duplicating those literals: an exact match on the tool
-  Skill's directory name is `codecompass_tool`; a match against a tracked
-  vendor's `_vendor_skill_name` is `codecompass_vendor` (`vendor_name`
-  set); anything else is `third_party`.
-- `build_skill_mentions_edges(skill_doc_artifacts, configs,
-  source_file_rows, project_root) -> list[SkillMentionEdgeRow]` — for
-  each skill's body text (everything after the frontmatter, not just the
-  parsed `name`/`description` fields), word-boundary-matches against every
-  tracked vendor name (→ vendor-mention edge) and every tracked project
-  source file's basename (→ source-file-mention edge, one per source file
-  sharing that basename). A presence heuristic, same posture as
-  `documents_edges` — explicitly not a claim the skill is *about* that
-  vendor/file, just that it mentions it mechanically. Also takes
-  `project_root` for the same disk-read reason as `build_documents_edges`.
-
-**Word-boundary (`\b<name>\b`), not substring, matching for both mention-
-edge types** — case-sensitive, matching this project's own generated
-Skill/doc content being lowercase-consistent. A naive substring match
-risks false positives on any vendor/file name that collides with a common
-English word (`rich`, `six`) or is short enough to appear inside an
-unrelated word (a vendor named `six` must not match `sixty-four`) —
-covered by a regression test in both `tests/test_doc_mapping.py` and
-`tests/test_skill_scan.py`.
-
-### Spec-doc detection & relationship graph (`codecompass.spec_docs`, extended `codecompass.doc_mapping`)
-
-**New in Phase 21 — part 1 of a new three-way relationship feature (spec
-docs ↔ dependency docs ↔ Skills); Phase 22 adds AI enrichment over the
-edges this phase detects, deliberately separate.** Mechanical only, same
-posture as every other graph-populating module above — no AI call, no
-cost. See
-[`decisions/0037`](../decisions/0037-spec-docs-get-a-dedicated-table-and-glob-based-detection.md)
-for the two real design decisions (a dedicated table vs. extending an
-existing one; fixed default globs vs. a hand-maintained manifest).
-
-`spec_docs.py`:
-- `scan_spec_docs(project_root) -> list[DocArtifactRow]` — globs a fixed
-  default pattern set rooted at `project_root` (`README.md`,
-  `ARCHITECTURE.md`, `REQUIREMENTS.md`, `PRD.md`, `docs/**/*.md`,
-  `architecture/**/*.md`, `decisions/**/*.md`, `spec/**/*.md`,
-  `specs/**/*.md`, `rfcs/**/*.md`, `*.spec.md`, `ai-docs/**/*.md` (added
-  Phase 37, once this repo's own dogfooding sync showed
-  `ai-docs/README.md`/`ai-docs/CLAUDE.md` invisible to detection),
-  `dev-docs/**/*.md` (added Phase 49, closing `CG-002` once an external
-  reference project, Ledgerkit, was found using `dev-docs/` rather than
-  `docs/`/`architecture/` for its developer-facing spec docs)),
-  producing `kind='spec_doc'`, `origin='project'` rows. Excludes
-  `CHANGELOG.md` (a log, not a spec), `CONTRIBUTING.md` (process, not
-  product), `LICENSE*`, and root `CLAUDE.md` itself (governance, not
-  spec), plus anything nested under a directory name in
-  `usage._PROJECT_PRUNE_DIR_NAMES` (imported, not duplicated — same
-  cross-module import precedent `skill_scan.py` already set for
-  `skill.py`'s `_TOOL_SKILL_DIR_NAME`/`_vendor_skill_name`). No
-  `vendor.toml` configurability yet — see `decisions/0037`. Each row's
-  `name` (Phase 55b, `_extract_title`) is the doc's own first level-1
-  heading text *if present and "specific enough"* (more than one word,
-  or containing a digit/hyphen), else its filename stem *if that's
-  specific enough*, else `None` — an H1 that exists but fails the
-  specificity check still falls through to the stem, it is not treated
-  the same as no H1 at all (rejects a bare `# ledgerkit`-style repo-name
-  heading or a one-word stem either way). Before Phase 55b every
-  `spec_doc` row had `name=None`, which structurally excluded it as a
-  `mentions_artifact` match target (`build_doc_relations_edges` below
-  only ever matches a *named* `doc_artifacts` row); see
-  `planning/context-gaps/inbox.md` `CG-004`.
-
-`doc_mapping.py` gains one function (Phase 29 later widens its source
-argument — see **Vendor docs as relationship sources** below):
-- `build_doc_relations_edges(source_doc_rows, configs,
-  other_doc_artifact_rows, project_root) -> list[DocRelationEdgeRow]` —
-  for each source doc whose `kind` is in a closed allow-set (originally
-  `spec_doc` only; Phase 29 widens it to `{spec_doc, vendor_doc}`), reads
-  its text once and word-boundary-matches it (same helper pattern as
-  `build_documents_edges`/`build_skill_mentions_edges`) against every
-  tracked vendor's name (`relation_kind='mentions_dependency'`) and every
-  *other* doc artifact's `name` field — a Skill's frontmatter name, a
-  dependency doc's `f"{vendor} CLAUDE.md"`-style name, or (Phase 55b) a
-  `spec_doc`'s own first-H1/filename-stem title
-  (`relation_kind='mentions_artifact'`), excluding the source row itself
-  from its own target set (`artifact.path == row.path`, Phase 55b — a
-  titled `spec_doc`'s own H1 line trivially contains its own name, so
-  without this exclusion every titled `spec_doc` would generate a
-  guaranteed self-mention noise edge; unreachable before Phase 55b, since
-  no source kind had ever had its own `name` populated until then).
-  Source-doc-outward scanning only:
-  a Skill's or dependency doc's own body mentioning a spec/vendor doc by
-  name is not scanned for, a deliberately deferred direction. Phase 32
-  additionally attempts chunk attribution the same way `build_documents_
-  edges` does, populating `DocRelationEdgeRow.chunk_start_line` when the
-  match falls in exactly one of the source doc's own heading-scoped
-  chunks — additive, same posture.
-
-`sync.rebuild_project_graph` calls `spec_docs.scan_spec_docs` alongside
-`skill_scan.scan_skills`/`collect_vendor_doc_artifacts`, adds the result to
-`doc_artifact_rows`, and feeds `build_doc_relations_edges`'s output into
-`rebuild_deterministic`'s new `doc_relations_edges` parameter — same
-wiring shape as every other scan+edge-build pair already there. Phase 32
-adds one more call, `build_doc_chunks(doc_artifact_rows, project_root)`,
-feeding `rebuild_deterministic`'s new `doc_chunks` parameter — placed
-right before `build_documents_edges` so `doc_chunks` exist before the two
-edge builders that reference them run.
-
-`doc_chunking.py` (Phase 32, new module — `codecompass.doc_chunking`):
-`chunk_markdown(text) -> list[DocChunk]` splits markdown text into
-heading-scoped chunks on any heading level, root-first nested
-`heading_path` (`"Scope > Covers"`), 1-indexed inclusive `start_line`/
-`end_line`, and a per-chunk sha256 `content_hash`. Returns `[]` for a doc
-with no headings at all — deliberately not one whole-file chunk, so a
-headerless doc naturally produces zero `doc_chunks` rows and every match
-against it stays unattributed without any special-casing elsewhere. Pure,
-no AI, no filesystem access — takes already-read text, same shape as
-every other pure transformation in this arc. See `decisions/0046`.
-Tracks fenced-code-block (` ``` `/`~~~`) state and never treats a line
-inside one as a heading candidate (Phase 34) — a `#`-prefixed comment in
-an example fence would otherwise be misdetected as a real heading,
-confirmed live against this repo's own `docs/cli-reference.md` and
-`vendor/anthropic/src/MIGRATION.md`.
-
-`cli.py` gains `codecompass query relations <name>` (the `query` group's
-fifth canned query): given a spec-doc path, prints what it mechanically
-mentions (`graph.doc_relations`); given a vendor name or another doc
-artifact's name (a Skill, a dependency doc), prints which spec docs
-mechanically mention it (a reverse lookup against `doc_relations_edges`,
-resolved directly in `cli.py` rather than added to `graph.py`, matching
-`query vendors`' own precedent of ad hoc inline SQL for CLI-specific
-shapes). `check` gains a report-only coverage-gap section, "Spec docs with
-no detected relations" (`graph.spec_docs_without_relations`) — never
-`--strict`-blocking, same posture as every other graph-derived coverage
-gap. `skill.py`'s tool Skill and the `/discovery` slash-command template
-both gain a one-line mention of `query relations` alongside their existing
-per-`query`-subcommand documentation.
-
-### Relationship enrichment (`codecompass.relation_enrichment`)
-
-**New in Phase 22 — part 2 of the three-way relationship feature; a
-sibling module to `codecompass.enrichment`, not folded into it** (a
-relationship candidate's shape — a doc pair plus two text excerpts — is
-different enough from a vendor candidate's shape that sharing one
-module's functions would mean threading a type-discriminated candidate
-through every function; the two modules do share the batched
-forced-tool-use *call machinery* shape, ported near-verbatim, the same way
-`enrichment.py` itself ported that shape from the deleted `grounded_
-description.py`). Asks an AI call to explain, in a sentence or two, *how*
-a spec doc relates to something Phase 21 already mechanically proved it
-mentions — the same "mechanical detection first, AI enrichment only over
-what it proved" gating `decisions/0031`/`0033` established for vendors,
-generalized to relationships. See
-[`decisions/0038`](../decisions/0038-relation-enrichment-natural-key-only-no-fk-never-writes-spec-docs.md).
-
-**Non-negotiable boundary**: the AI-generated summary is written *only* to
-`doc_relation_enrichment` (the gitignored graph), never into a spec doc's
-own file. Enforced structurally, not just by convention —
-`apply_results(conn, results, *, model=_MODEL) -> None` doesn't accept a
-`project_root` parameter at all, so it has no filesystem handle to a spec
-doc to even attempt writing to one.
-
-`select_candidates(conn, project_root) -> list[RelationEnrichmentCandidate]`
-reads every `graph.relation_enrichment_candidates` row, reads the source
-spec doc's text off disk (skipped, non-fatal, if the file has vanished
-since the last graph rebuild), looks up the target's existing digest text
-— a vendor's `vendor_enrichment.technical_description` or a doc artifact's
-own `description` column, via direct SQL against those tables (`graph.py`
-has no existing read function for either shape, the same precedent
-`sync._lookup_enrichment` already set) — computes a content hash (sha256
-over the *full* source text + target text, same shape as `enrichment.
-_compute_symbol_set_hash`), and skips a candidate whose hash already
-matches what `graph.relation_enrichment_candidates` reports cached.
-No file-level fallback cache the way vendor enrichment has (Phase 14):
-spec docs are never written to, so there's no codecompass-owned file to
-embed a cache-hash line into — a fresh clone re-pays for relationship
-enrichment once, an accepted v1 cost since these are short summaries over
-a small, usage-proven set.
-
-**Phase 28 — the excerpt is centered on the actual mechanical mention, not
-always the file's opening.** Each candidate's `source_excerpt` used to be
-a fixed `source_text[:4_000]` regardless of where in the file Phase 21's
-word-boundary match actually landed — for a match past that offset (this
-repo's own two `"anthropic README.md"` relationships both are), the model
-never saw the sentence that triggered the relationship at all, and filled
-in a plausible-sounding but ungrounded summary from whatever was in its
-window instead. `select_candidates` now re-derives the same needle
-`doc_mapping.build_doc_relations_edges` matched against (the target
-vendor's name for `mentions_dependency`, the target doc artifact's own
-`name` field — not its path — for `mentions_artifact`, via `graph.
-relation_enrichment_candidates`'s `target_doc_artifact_name` column),
-re-runs the identical `re.search(rf"\b{re.escape(needle)}\b", source_text)`
-word-boundary search, and — when found — slices a window centered on the
-match (1,000 characters before, 3,000 after; the asymmetric split favors
-context that typically follows a mention) rather than the file's start.
-Still the same `_SPEC_DOC_EXCERPT_CHAR_CAP` total budget — a relocation of
-the window, not an increase in per-call cost. A needle that can't be
-re-found (the file changed since the last graph rebuild) falls back to the
-original first-N-characters slice, non-fatal. Re-derived at enrichment
-time rather than persisted from Phase 21's detection, so `doc_relations_
-edges` stays a purely mechanical table — see
-[`decisions/0042`](../decisions/0042-relation-enrichment-excerpts-re-derive-match-position-at-enrichment-time.md).
-
-**Phase 31 — a closed-taxonomy `relation_label` alongside the existing
-free-text `ai_summary`.** The batched tool schema's `results` items now
-also require a `relation_label` field, constrained by the schema's own
-`enum` to `graph.RELATION_LABELS`
-(`documents_configuration_of`/`explains_usage_of`/`contrasts_with`/
-`supersedes`/`other`). `_normalize_relation_label` coerces whatever comes
-back to a value in that set, falling back to `'other'` for anything else
-(missing field, wrong type, or a label the model invented despite the
-schema's `enum` — forced tool use doesn't guarantee `enum` is honored) —
-never raises, same "never raises, degrades to a safe default" posture as
-`staleness._parse_version`. The label describes an already-mechanically-
-proven relationship; it cannot create, widen, or narrow *which*
-relationships get enriched — see
-[`decisions/0045`](../decisions/0045-typed-relation-labels-not-new-detection.md).
-`record_relation_enrichment` gained an optional `relation_label` parameter
-(`None` default, so pre-Phase-31 callers/tests are unaffected);
-`doc_relation_enrichment` gained the column via `ALTER TABLE ... ADD
-COLUMN` (not the drop-and-recreate `doc_artifacts`'s migration uses —
-this table holds paid AI spend), leaving every pre-existing row with
-`relation_label = NULL` until its next natural re-enrichment.
-
-**Phase 32 — the excerpt prefers the matched chunk's own text over
-Phase 28's fixed-window guess, when one exists.** `graph.relation_
-enrichment_candidates` now also returns `chunk_start_line`/`chunk_end_
-line` (from `doc_chunks` via the edge's `chunk_id`, both `NULL` if unset).
-When both are set, `select_candidates` uses `_select_source_excerpt_
-from_chunk` — the chunk's own text sliced directly by line range, no
-character cap — instead of calling `_select_source_excerpt` at all.
-Phase 28's needle-re-derivation-plus-fixed-window logic is otherwise
-completely unchanged and remains the fallback for any candidate without a
-chunk (a headerless source doc, or a match spanning more than one
-chunk) — not deleted, not made unreachable. See `decisions/0046`.
-
-`plan_batches`/`run_enrichment_batches` mirror `enrichment.py`'s own
-batching and forced-tool-use call shape exactly, grouping by (excerpt +
-target text) character budget. The batched tool schema identifies each
-relationship by a synthetic per-batch integer `relationship_id` the model
-echoes back, rather than matching on an echoed doc path/vendor name the
-way `enrichment.py` does for vendors — safer given a spec-doc path can be
-long/nested, where a small transcription slip would otherwise silently
-drop a result.
-
-`apply_results(conn, results, model=_MODEL) -> None` calls `graph.record_
-relation_enrichment` — its only action, structurally guaranteeing the
-non-negotiable boundary above.
-
-**Phase 52 — a second, non-automated producer through the same
-`apply_results`, distinguished only by its `model` value.** `apply_
-results` gained the optional `model` parameter above (default unchanged,
-so every existing call site is unaffected) so that `cli.py`'s new
-`codecompass enrich apply` command (see `docs/cli-reference.md`) can pass
-`model=f"agent:{agent}"` when a Claude Code agent
-(`.claude/agents/context-enrichment-agent.md`), rather than this module's
-own batched Anthropic-API call, supplies the `ai_summary`/`relation_
-label`. The trust boundary is enforced by `enrich apply` itself, not by
-agent instruction: it only accepts an entry that matches a row `select_
-candidates` currently lists as pending, and builds the `RelationEnrichment
-Result` from that candidate's own `content_hash`, never an agent-supplied
-one. Both producers write through this same function, the same caching,
-the same `UNIQUE` constraint; `model` is the only column that
-distinguishes them, so every existing reader (`query relations`, `query
-vendor`, `check`) already tells them apart with zero further change — see
-[`decisions/0054`](../decisions/0054-agent-driven-enrichment-is-a-second-non-authoritative-producer.md).
-
-`enrichment.py`'s `estimate_cost`/`check_budget` are extended (only) to
-fold this module's candidate/batch counts into the same disclosed cost
-estimate and budget gate — see **Cost model** below. `cli.py`'s `_maybe_
-run_enrichment` calls `relation_enrichment.select_candidates`/`run_
-enrichment_batches`/`apply_results` alongside the existing vendor/symbol
-enrichment calls, inside the same `try`/confirm block — one prompt, one
-`--yes`, one `--budget`, covering both. `query relations <name>` (above)
-shows each relationship's `ai_summary` when one exists, else "mentioned,
-not yet enriched" — the same two-state display `query vendor` already
-uses for `has_enrichment` — plus `relation_label` (Phase 31) alongside it
-once enriched.
-
-### Vendor-embedded upstream docs (extended `codecompass.doc_mapping`)
-
-**New in Phase 27 — a vendor's own cloned upstream repository commonly
-ships real documentation alongside its source
-(`vendor/<name>/src/README.md`, `CHANGELOG.md`, etc.) that had no
-`doc_artifacts` row at all before this phase, since every project-tree
-scanner (`spec_docs.scan_spec_docs`, `usage.py`) deliberately prunes
-`vendor/` (Phase 15, to stop a vendor's own source self-referencing its
-own package name as false "project uses this vendor" evidence) — pruning
-this phase does not undo.** Registers those files as one more
-`doc_artifacts` source instead: mechanical only, no new edge-detection or
-enrichment machinery — Phase 21/22's existing `doc_relations_edges`/
-relationship-enrichment mechanism already generalizes to any `doc_
-artifacts` row, so a vendor doc becomes an eligible `mentions_artifact`
-*target* (at this phase, only spec docs scan outward, decisions/0037 —
-Phase 29 below changes this) the same way a per-vendor `CLAUDE.md`/
-`OVERVIEW.md` already is, with zero further changes downstream at this
-point. See
-[`decisions/0041`](../decisions/0041-vendor-upstream-docs-are-a-new-doc-artifacts-kind-root-level-only.md).
-
-`doc_mapping.py` gains one function, a sibling to `collect_vendor_doc_
-artifacts` rather than a new module (this scan is narrower and inherently
-vendor-scoped, closer in shape to that function than to `spec_docs.
-scan_spec_docs`'s whole-project glob):
-- `collect_vendor_upstream_doc_artifacts(configs, project_root) ->
-  list[DocArtifactRow]` — for each tracked vendor, globs a small fixed
-  root-level filename set (`README*.md`, `CHANGELOG.md`,
-  `CONTRIBUTING.md`, `SECURITY.md`, `MIGRATION.md`) directly under its
-  *cloned source* root (`vendor/<name>/src/` — not `vendor/<name>/`
-  itself, which only holds codecompass's own generated files), no
-  recursion into subdirectories. Produces `kind='vendor_doc'`,
-  `origin='vendor_upstream'` rows — deliberately distinct from
-  `collect_vendor_doc_artifacts`'s `origin='codecompass_vendor'`: this is
-  upstream-*authored* content codecompass merely indexes, not content it
-  generated. A vendor with no clone on disk yet is skipped entirely, the
-  same tolerant posture `collect_vendor_doc_artifacts` already takes
-  toward a not-yet-synced vendor's missing `CLAUDE.md`.
-
-`sync.rebuild_project_graph` calls the new function alongside `collect_
-vendor_doc_artifacts`/`skill_scan.scan_skills`/`spec_docs.scan_spec_docs`,
-folding its output into the same `doc_artifact_rows` list and into `build_
-doc_relations_edges`'s `other_doc_artifact_rows` argument — same wiring
-shape as every other scan+edge-build pair already there. At this phase, no
-changes to `build_documents_edges`/`build_routes_via_edges`/`build_doc_
-relations_edges` themselves were needed (they already ignore/pass through
-a `kind` they don't special-case) — Phase 29 below is the first phase to
-actually change either of the first two.
-
-`check` gains a parallel report-only coverage-gap section, "Vendor docs
-with no detected relations" (`graph.vendor_docs_without_relations`) —
-kept separate from "Spec docs with no detected relations" rather than
-folded into it, since the two check opposite `doc_relations_edges`
-columns: a spec doc's own *outgoing* mentions (`source_doc_artifact_id`)
-versus whether anything mentions a vendor doc at all (`target_doc_
-artifact_id`). At this phase a vendor doc is never a relation source, so
-`target_doc_artifact_id` is the only column that could ever matter for
-one — Phase 29 below adds a vendor doc's *outgoing* mentions too, but
-`vendor_docs_without_relations` still deliberately checks only
-`target_doc_artifact_id`, since it is asking "does anything point at this
-vendor doc," not "does this vendor doc point at anything." Never
-`--strict`-blocking, same posture as every other coverage gap. `query
-relations <name>` needed no code change at all: it already resolves any
-`doc_artifacts` row by path or by `name`, so a vendor doc's name (e.g.
-`"anthropic README.md"`) works as a reverse-lookup target exactly like a
-Skill's or a dependency doc's name already did.
-
-### Vendor docs as relationship sources (Phase 29, extended `codecompass.doc_mapping`)
-
-**A vendor's own embedded upstream doc (`kind='vendor_doc'`, Phase 27) was
-wired into the graph as passive, indexed content only — eligible as a
-`mentions_artifact` *target*, but never itself a relationship *source*,
-and excluded from `documents_edges` symbol-mention detection entirely.**
-Found the same way Phase 26-28 were: a live `/discovery` session testing
-real output, confirmed against the code. Two gaps, both closed this
-phase:
-
-- `build_documents_edges`'s kind filter widens from `("claude_md",
-  "overview")` to `("claude_md", "overview", "vendor_doc")` — a vendor's
-  own README, arguably the single most authoritative source for "this doc
-  documents this symbol" (the upstream authors documenting their own
-  API), now produces real `documents_edges` rows. No other change was
-  needed: `vendor_doc` rows already carry `vendor_name` (Phase 27).
-- `build_doc_relations_edges`'s first parameter is renamed
-  `spec_doc_rows` → `source_doc_rows` and now accepts a **closed
-  allow-set** of source kinds, `{"spec_doc", "vendor_doc"}`
-  (`_DOC_RELATION_SOURCE_KINDS`) — not "any kind not otherwise excluded."
-  `sync.rebuild_project_graph`'s call site passes `spec_doc_rows +
-  vendor_upstream_doc_rows` as this argument (at this phase, the third
-  argument, the "other doc artifacts a source might mention," is
-  unchanged — Phase 55b below is what later widens it to also include
-  `spec_doc_rows`). A vendor doc mentioning another tracked vendor, a
-  Skill, or another vendor doc now produces a real `doc_relations_edges`
-  row exactly as a spec doc mentioning the same things always has.
-
-**Self-mention exclusion**: a `vendor_doc` source row belonging to vendor
-`V` never produces a `mentions_dependency` edge whose target is `V`
-itself — a package's own README mentioning its own name is guaranteed,
-universal, and adds no signal, unlike a spec doc mentioning a vendor (or
-a vendor doc mentioning a *different* tracked vendor), both of which are
-real evidence. Implemented as a plain vendor-name comparison
-(`row.vendor_name == vendor_name`) before the word-boundary match, not a
-generic self-reference filter — at this phase it did not apply to
-`mentions_artifact` edges at all (a vendor doc's synthetic `name` field,
-`f"{vendor} {filename}"`, is not something the doc's own prose would
-organically contain), and naturally never applied to `spec_doc` sources
-(no `vendor_name` of their own to compare against). See
-[`decisions/0043`](../decisions/0043-vendor-docs-become-relationship-sources-closed-allow-set-plus-self-mention-exclusion.md)
-for the full reasoning behind both the closed allow-set and the
-self-mention exclusion, and for how this supersedes `decisions/0041`'s
-"a vendor doc is never a relation source" claim specifically (that ADR's
-actual subject — root-level, fixed-filename-set scope for *which* files
-get a `doc_artifacts` row — is unchanged).
-
-No change to `graph.py`'s schema (`doc_relations_edges` already supported
-an arbitrary `doc_artifacts` row as `source_doc_artifact_id`; nothing
-there assumed "source is always a spec doc") or to
-`relation_enrichment.py` (it already operates generically over whatever
-`doc_relations_edges` contains, with no assumption about the source row's
-`kind`) — pure `doc_mapping.py`/`sync.py` wiring, confirmed at
-implementation time that `spec_docs_without_relations`/`vendor_docs_
-without_relations` both remain correct unchanged (see the corrected
-paragraph above).
-
-### Spec docs become relationship targets of each other (Phase 55b, extended `codecompass.spec_docs` and `codecompass.doc_mapping`)
-
-**Every `spec_doc` row had `name=None` before this phase**, which
-structurally excluded it as a `mentions_artifact` match target —
-`build_doc_relations_edges` only ever matches a *named* `doc_artifacts`
-row — so two obviously-related spec docs (e.g. a plan file and the retro
-that mentions it by title) could never be mechanically related to each
-other, in any project, regardless of content. Closes `CG-004`
-(`planning/context-gaps/inbox.md`), surfaced independently by both this
-repo's own dogfooding and a real finding against the Ledgerkit reference
-project (`CC-LK-001`).
-
-`spec_docs.scan_spec_docs` now populates `DocArtifactRow.name` for every
-row via `_extract_title(path) -> str | None`: the doc's own first
-level-1 heading text if it has one and it's "specific enough"
-(`_is_specific_enough` — more than one whitespace-separated word, or
-containing a digit/hyphen), else the filename stem if *that's* specific
-enough, else `None`. The specificity guard rejects a bare `# ledgerkit`-
-style repo-name heading or a one-word stem — found live testing against
-the real Ledgerkit repository, where a naive "always use the H1" rule
-produced 50 false `mentions_artifact` edges purely from other docs'
-ordinary prose repeating the project's own name, the same "guaranteed,
-universal noise" reasoning `decisions/0043` already applied to a
-vendor's own README mentioning its own vendor name.
-
-`sync.rebuild_project_graph`'s call to `build_doc_relations_edges` now
-includes `spec_doc_rows` in the third argument (the "other doc artifacts
-a source might mention" target set), alongside `vendor_doc_rows +
-vendor_upstream_doc_rows + skill_doc_rows` — this is what makes a
-`spec_doc` row an actually-reachable `mentions_artifact` target in the
-real running tool, not just in a unit test built against a hand-made
-`DocArtifactRow`.
-
-**Self-mention exclusion, `mentions_artifact`**: `build_doc_relations_
-edges` now skips a `named_artifacts` candidate whose `path` equals the
-source row's own `path`, before the word-boundary match. Unreachable
-before this phase — no `_DOC_RELATION_SOURCE_KINDS` member ever had a
-`name` before `spec_doc` rows got one — and required for the primary fix
-to ship without a guaranteed regression: a doc's own first-H1 title,
-once set as its `name`, is trivially present in that same doc's own full
-text (the heading line itself), so without this exclusion every titled
-`spec_doc` would generate a guaranteed "doc mentions itself" noise edge.
-This is a separate mechanism from the vendor-name-based self-mention
-exclusion above (Phase 29) — that one compares `vendor_name` and applies
-only to `mentions_dependency`; this one compares `path` and applies only
-to `mentions_artifact`.
-
-No new `relation_kind`, no new `doc_artifacts.origin` value, no
-`vendor.toml` change. See `planning/phase-55b-spec-doc-name-population.md`.
+**CLI surface**: `codecompass query relations <name>` — given a spec/
+vendor doc path, prints what it mechanically mentions; given a vendor or
+doc artifact name, prints which docs mechanically mention it (see
+[`docs/cli-reference.md`](../docs/cli-reference.md)). `check` reports two
+independent coverage-gap sections — spec docs with no detected outgoing
+relations, and vendor docs nothing points at — neither `--strict`-blocking,
+the same posture as every other graph-derived coverage gap.
 
 ## `undo` — best-effort generated-artifact cleanup (`codecompass.cli`)
 
-**New in Phase 18 (`decisions/0036`).** `codecompass undo [--yes]
-[--dry-run]` is the first command whose job is to *remove* generated
+`codecompass undo [--yes] [--dry-run]` (`decisions/0036`) is the only
+command whose job is to *remove* generated
 output rather than produce it: every tracked vendor's `vendor/<name>/`
 directory, `vendor.toml`, `context-graph.db`, every codecompass-generated
 Skill/`.mdc`/slash-command artifact, and the root `CLAUDE.md`
@@ -2089,74 +842,63 @@ rolled back (`decisions/0036` has the full rationale).
 
 Structural generation (trees, API-surface extraction, source cloning,
 Phase A's entire zero-question bootstrap) makes no AI calls and is
-effectively free, for every tracked vendor, regardless of usage. As of
-Phase 15, **Phase B is the sole AI cost center in this codebase**
-(`decisions/0031`): usage-driven batched enrichment, using Haiku, wired
-into `cli.py` behind bare `codecompass` and whole-project `sync` (see
-"Retrofitting to existing projects" above for the full disclose/confirm/
-budget flow). Unlike the retired `promote`, Phase B is **cached** — a
-vendor already enriched at its current used-symbol set is skipped
+effectively free, for every tracked vendor, regardless of usage. **Phase
+B is the sole AI cost center in this codebase** (`decisions/0031`):
+usage-driven batched enrichment, using Haiku, wired into `cli.py` behind
+bare `codecompass` and whole-project `sync` (see "Retrofitting to
+existing projects" above and
+[`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md) for
+the full disclose/confirm/budget flow). Phase B is **cached** — a vendor
+already enriched at its current used-symbol set is skipped
 (`enrichment.select_candidates`'s two-tier hash check), so cost scales
 with how often the project's actual dependency *usage* changes, not with
 how often `sync` is run. `enrichment.estimate_cost(batch_count,
 relation_batch_count=0)` / `enrichment.check_budget(candidates, budget,
 relation_candidates=None)` scale with `len(plan_batches(candidates))`
 (batches, not vendors) — several vendors' material and output share one
-call, reworked from the old per-vendor formula `grounded_description.
-estimate_cost` used. `--yes` skips the confirmation prompt; `--budget
-<amount>` refuses to make any Phase B API call at all (not partially) once
-the projected cost for a single run exceeds the cap — same
-abort-before-any-spend contract the retired `promote`/`sync --budget`
-guaranteed. Regardless of how Phase B ends — enriched, declined, or
-budget-aborted — `cli._refresh_generated_artifacts` still runs once at the
-end of the invocation (Phase 20; see "Retrofitting to existing projects"
-above), so a budget-aborted run's already-free Phase A output is left with
-a freshly-regenerated routing table/tool Skill, not a stale one from
-before the abort.
+call. `--yes` skips the confirmation prompt; `--budget <amount>` refuses
+to make any Phase B API call at all (not partially) once the projected
+cost for a single run exceeds the cap. Regardless of how Phase B ends —
+enriched, declined, or budget-aborted — `cli._refresh_generated_artifacts`
+still runs once at the end of the invocation, so a budget-aborted run's
+already-free Phase A output is left with a freshly-regenerated routing
+table/tool Skill, not a stale one from before the abort.
 
-**Phase 22 folds spec-doc relationship enrichment (`codecompass.relation_
-enrichment`) into this same cost center, not a second one.** `relation_
-batch_count`/`relation_candidates` — both optional, defaulting to `0`/
-`None` so pre-Phase-22 callers are unaffected — let `estimate_cost`/
+Spec-doc relationship enrichment (`codecompass.relation_enrichment`)
+folds into this same cost center, not a second one: `relation_
+batch_count`/`relation_candidates` (both optional) let `estimate_cost`/
 `check_budget` add `len(relation_enrichment.plan_batches(relation_
-candidates))` batches to the same flat per-batch rate: one Anthropic call
-either way, a vendor batch or a relationship batch. `cli.py`'s `_maybe_
-run_enrichment` selects both candidate sets up front, discloses one
-combined estimate, and gates both behind the same confirm/`--yes`/
+candidates))` batches to the same flat per-batch rate — one Anthropic
+call either way, a vendor batch or a relationship batch. `cli.py`'s
+`_maybe_run_enrichment` selects both candidate sets up front, discloses
+one combined estimate, and gates both behind the same confirm/`--yes`/
 `--budget` — a relationship-only run (zero vendor candidates, some
 relationship candidates, or vice versa) still triggers exactly this one
-prompt, never a silent skip and never a second separate one. Also cached,
-the same way vendor enrichment is, though by a single content-hash check
-(source spec doc text + target's digest text), not a two-tier one — spec
-docs are never written to (see **Relationship enrichment** above), so
-there's no file-level fallback cache to check a second way.
+prompt, never a silent skip and never a second separate one. Also
+cached, the same way vendor enrichment is, though by a single
+content-hash check (source spec doc text + target's digest text), not a
+two-tier one — spec docs are never written to, so there's no file-level
+fallback cache to check a second way.
 
-**As of Phase 16, there is no other cost path.** The old `depth = FULL`
-per-vendor grounded-description regeneration
-(`codecompass.grounded_description`) that used to run on every `sync`,
-uncached, for a `depth = full` vendor is fully deleted, along with the
-`Depth` field that gated it (`decisions/0031`, `decisions/0035`) — see
-**Grounded description — retired** above. `sync`/`check --fix` make no AI
-call at all; Phase B, triggered only from bare `codecompass` and
-whole-project `sync`, is the only place this codebase spends
-Anthropic-API money.
+**There is no other cost path.** `sync`/`check --fix` make no AI call at
+all; Phase B, triggered only from bare `codecompass` and whole-project
+`sync`, is the only place this codebase spends Anthropic-API money.
 
 ## Known footguns
 
 - **`resolve_and_clone`'s `subdirectory` scopes the *rendered* view
-  only, never the raw on-disk clone** (Phase 61). `_git_clone` always
-  clones the *whole* upstream repository into `dest`
-  (`vendor/<name>/src`); `subdirectory` only changes the function's
-  *return value* (`source_root = dest / subdirectory`), which
-  `sync_vendor` consumes as `tree_root` for rendering `FILETREE.md`/the
-  symbol index. For a monorepo (npm's `repository.directory`, or two
-  Haskell packages sharing one repository URL — Phase 61's own
-  `hledger-lib`/`hledger`), every vendor backed by the same upstream
-  repository gets its own full, duplicate, unscoped clone at
-  `vendor/<name>/src/` — doubled disk cost per sibling, and a real
-  misattribution risk for anyone who `grep`s/`find`s the raw clone
-  directly instead of following `FILETREE.md`. Confirmed live at Phase
-  61: `vendor/hledger-lib/src/` and `vendor/hledger/src/` are
+  only, never the raw on-disk clone.** `_git_clone` always clones the
+  *whole* upstream repository into `dest` (`vendor/<name>/src`);
+  `subdirectory` only changes the function's *return value*
+  (`source_root = dest / subdirectory`), which `sync_vendor` consumes as
+  `tree_root` for rendering `FILETREE.md`/the symbol index. For a
+  monorepo (npm's `repository.directory`, or two Haskell packages
+  sharing one repository URL — `hledger-lib`/`hledger`), every vendor
+  backed by the same upstream repository gets its own full, duplicate,
+  unscoped clone at `vendor/<name>/src/` — doubled disk cost per
+  sibling, and a real misattribution risk for anyone who `grep`s/`find`s
+  the raw clone directly instead of following `FILETREE.md`. Confirmed
+  live: `vendor/hledger-lib/src/` and `vendor/hledger/src/` are
   byte-identical top-level listings of the whole monorepo, while both
   packages' `FILETREE.md`s stay correctly scoped to their own package.
 - **`readme_and_api_surface()` (any ecosystem adapter) extracts a
@@ -2165,21 +907,20 @@ Anthropic-API money.
   "what does it do" or "why does behaviour differ between two call
   sites of it." Confirmed three times independently across two
   structurally different context sources: a hand-curated
-  `dev-docs/hledger-reference/` corpus (Phase 54b) and a live
-  Haskell-adapter-generated `CLAUDE.md` digest (Phase 61 — `grep -ci
-  depth` returns `0` across all 44 rendered command modules, including
-  the ones the task specifically asked about). A task whose answer
-  depends on control-flow/business-logic detail inside a function body
-  is not answerable from the digest alone, regardless of ecosystem or
-  whether the digest came from human curation or mechanical generation
-  — direct source reading is required for that class of question by
-  design, not by omission.
-- **`VendorDigest.is_stale` was removed in Phase 6**, not left as a stub —
-  `check` never builds a `VendorDigest` (same reasoning `index.py`
-  established for staying cheap), so the Phase-1 stub had no code path
-  that could ever populate it. If older notes or memory reference
-  `digest.is_stale`, that API no longer exists; use
-  `codecompass.staleness.check_vendor`/`check_all` instead.
+  `dev-docs/hledger-reference/` corpus and a live
+  Haskell-adapter-generated `CLAUDE.md` digest (`grep -ci depth` returns
+  `0` across all 44 rendered command modules, including the ones the
+  task specifically asked about). A task whose answer depends on
+  control-flow/business-logic detail inside a function body is not
+  answerable from the digest alone, regardless of ecosystem or whether
+  the digest came from human curation or mechanical generation — direct
+  source reading is required for that class of question by design, not
+  by omission.
+- **`VendorDigest` has no `is_stale` field** — `check` never builds a
+  `VendorDigest` (the same reasoning `index.py` established for staying
+  cheap), so there is no code path that could ever populate one. If
+  older notes or memory reference `digest.is_stale`, that API doesn't
+  exist; use `codecompass.staleness.check_vendor`/`check_all` instead.
 - **`staleness.py`'s version parser is a small custom regex, not a real
   PEP 440 or full semver parser** — it only extracts a leading
   `major.minor.patch` integer triple, tolerating a `v` prefix and ignoring
@@ -2195,36 +936,33 @@ Anthropic-API money.
   `--strict` turns severity/error findings into a non-zero exit. Don't
   assume plain `check` in a script or hook enforces anything; use
   `check --strict` for that.
-- `_load_config` and `claude_md.render_vendor_claude_md` are both
-  implemented (Phases 1 and 4) — the CLI skeleton's old `_write_claude_md`
-  `NotImplementedError` stub was removed in Phase 4, not left behind.
 - The `.d.ts` file cap (5 files) in the npm adapter, and the matching
   `.pyi` cap in the Python adapter, are arbitrary initial values for
   cost control, not validated final numbers — flag if they clip useful
   API surface on real-world packages.
-- `vendor/<name>/src/` snapshots are gitignored and regenerated by `sync`,
-  not committed (resolved in Phase 1, see
+- `vendor/<name>/src/` snapshots are gitignored and regenerated by
+  `sync`, not committed (see
   [`decisions/0010`](../decisions/0010-vendor-src-gitignored-and-regenerated.md)).
-  A fresh clone has no working standalone-mode chat for `FULL` vendors
-  until `sync` has been run at least once — easy to forget when
-  onboarding a new checkout.
+  A fresh clone has no working standalone-mode chat until `sync` has
+  been run at least once — easy to forget when onboarding a new
+  checkout.
 - **`_run_json`'s subprocess seam resolves `cmd[0]` via `shutil.which`
   before invoking it** — not just for a nicer "not found" error. On
   Windows, `npm` resolves to a `.cmd` shim, which `subprocess.run` can't
   launch by bare name without a shell; resolving to the full path first
   keeps `shell=False` (and its narrower injection surface) working
-  cross-platform. Found and fixed via Phase 2's live npm smoke test —
-  fixture-only testing would not have caught it (see
+  cross-platform. Found and fixed via a live npm smoke test — fixture-only
+  testing would not have caught it (see
   [`decisions/0014`](../decisions/0014-adapter-tests-use-fixture-mocking-not-live-subprocesses.md)).
 - **The Python adapter invokes `pipdeptree` as `sys.executable -m
   pipdeptree`**, not a bare `pipdeptree` on `PATH` — a standalone venv's
   `Scripts`/`bin` directory isn't reliably on `PATH` unless the venv is
-  activated. Also found via a Phase 2 live smoke test, for the same
-  reason as the npm fix above.
+  activated. Also found via a live smoke test, for the same reason as
+  the npm fix above.
 - **npm `dev_only` is not transitive**: a node is marked `dev_only` only
   if its own name is a *direct* `devDependency` of the root consuming
   project — a transitive dependency of a dev-only package isn't
-  propagated. Documented limitation, not solved in Phase 2.
+  propagated. Documented limitation.
 - **Python `dev_only` is always `False`** — `pipdeptree`'s output carries
   no dev/runtime distinction once a package is installed, a real
   structural difference from npm's `package.json`, not an oversight.
@@ -2233,7 +971,7 @@ Anthropic-API money.
   (generic bounds or `where` clauses spanning lines). `rustdoc
   --output-format json` remains the documented eventual fix.
 - **The Cargo adapter is unverified against real `cargo` output** — no
-  Rust toolchain is available in this dev environment as of Phase 2. Its
+  Rust toolchain has been available in this dev environment. Its
   parsing logic is tested only against hand-written fixture JSON modeled
   on cargo's public schema docs. See
   [`decisions/0014`](../decisions/0014-adapter-tests-use-fixture-mocking-not-live-subprocesses.md)
@@ -2241,18 +979,16 @@ Anthropic-API money.
 - **`deptree.py`'s `_DEPTREE_MAX_DEPTH` (20)**, **`filetree.py`'s
   `_PRUNE_DIR_NAMES`/`_PRUNE_FILE_GLOBS`, and `_SYMBOL_INDEX_CAP` (200)**
   are initial, arbitrary, tunable values, not validated final numbers —
-  same treatment as Phase 2's `.d.ts`/`.pyi` 5-file cap. Flag if they
-  clip useful tree/index content on real-world packages.
-- **`CargoAdapter.readme_and_api_surface()`'s output format changed in
-  Phase 3** — items now render as `name: purpose` instead of the raw `pub
-  fn ...` signature line, because the underlying extraction moved to
-  `symbols.extract_rust_symbols`'s name-based `Symbol` objects. See
+  flag if they clip useful tree/index content on real-world packages.
+- **`CargoAdapter.readme_and_api_surface()` renders items as `name:
+  purpose`**, not the raw `pub fn ...` signature line, because
+  extraction goes through `symbols.extract_rust_symbols`'s name-based
+  `Symbol` objects. See
   [`decisions/0015`](../decisions/0015-symbol-extraction-reuses-adapter-parsing-per-ecosystem.md).
-- **`extract_npm_symbols`'s JSDoc/export regex scan is coarse and new** —
-  unlike the Cargo/Python extractors (which generalize Phase 2-validated
-  logic), it has no adapter-level precedent and is only tested against
-  hand-written `.d.ts` fixtures, not a wide range of real-world authoring
-  styles.
+- **`extract_npm_symbols`'s JSDoc/export regex scan is coarse** —
+  unlike the Cargo/Python extractors, it has no adapter-level precedent
+  of its own and is only tested against hand-written `.d.ts` fixtures,
+  not a wide range of real-world authoring styles.
 - **`filetree.py`'s directory walk (`_iter_files`) uses `Path.rglob("*")`
   then filters pruned directories post-hoc** — it doesn't stop descending
   into a pruned directory like `node_modules/` before walking it, just
@@ -2264,49 +1000,38 @@ Anthropic-API money.
   live-queried Anthropic pricing)** are initial, arbitrary, tunable
   values — same treatment as every other cap in this project. The cost
   estimate is not a guarantee of actual billed cost; `--budget` decisions
-  should be made with that in mind. (These constants carried over from
-  the retired `grounded_description.py` with the same values; only
-  `_ESTIMATED_COST_PER_CALL_USD` was renamed to
-  `_ESTIMATED_COST_PER_BATCH_USD` when Phase 15 made enrichment batched.)
+  should be made with that in mind.
 - **No test ever makes a real Anthropic API call** (see
-  [`decisions/0016`](../decisions/0016-gap-analysis-tests-never-call-the-live-anthropic-api.md),
-  which continues to apply unchanged to `codecompass.enrichment`, the
-  module that replaced `grounded_description.py` in Phase 16) — its
-  batched prompt/schema correctness against the real model is not
-  validated by the automated suite at all; a human must run bare
-  `codecompass`/`sync` against a real, usage-proven vendor with a real
-  `ANTHROPIC_API_KEY` at least once (confirming with `--yes` or the
-  disclosed prompt) to trust Phase B's output quality — not yet actually
-  exercised against a live key as of Phase 19. (Source resolution and
-  cloning were validated against a real repository — pytest's own, via
-  its PyPI `Project-URL` metadata — during Phase 7's implementation; only
-  the AI call itself remains unvalidated against the live API.)
+  [`decisions/0016`](../decisions/0016-gap-analysis-tests-never-call-the-live-anthropic-api.md)) —
+  `codecompass.enrichment`'s batched prompt/schema correctness against
+  the real model is not validated by the automated suite at all; a human
+  must run bare `codecompass`/`sync` against a real, usage-proven vendor
+  with a real `ANTHROPIC_API_KEY` (confirming with `--yes` or the
+  disclosed prompt) to trust Phase B's output quality. Source resolution
+  and cloning are separately validated against a real repository
+  (pytest's own, via its PyPI `Project-URL` metadata) — only the AI call
+  itself remains unvalidated against the live API.
 - **`git` is a required external tool for the universal cloning step**
-  (every vendor, since Phase 13 — no longer gated on a now-removed
-  `FULL` toggle) — `codecompass source_resolution._git_clone` shells out
-  to it the same way adapters shell out to `npm`/`cargo`/`pipdeptree`,
-  with the same `shutil.which`-first resolution pattern. Not declared as
-  a Python dependency (it isn't one), but its absence surfaces as a
-  clear `SourceResolutionError` rather than a cryptic subprocess failure.
+  (every vendor, unconditionally) — `codecompass source_resolution._git_clone`
+  shells out to it the same way adapters shell out to
+  `npm`/`cargo`/`pipdeptree`, with the same `shutil.which`-first
+  resolution pattern. Not declared as a Python dependency (it isn't
+  one), but its absence surfaces as a clear `SourceResolutionError`
+  rather than a cryptic subprocess failure.
 - **`index` reads persisted per-vendor `CLAUDE.md` files rather than
-  re-running `sync`** — a deliberate deviation from
-  `planning/phase-4-sync-index-init.md`'s literal `render_routing_table(digests:
-  list[VendorDigest])` signature (that plan explicitly left this detail
-  open). Re-running `sync` inside `index` would make `index` silently pay
-  gap-analysis AI cost once Phase 5 lands, defeating the reason `index`
-  exists as a separate, cheap command. Consequence: a vendor that's never
-  been synced shows `_not synced_` in the routing table instead of an
-  error, and the Deps column links to `DEPTREE.md` instead of showing a
-  live dependency count (no adapter/tree data is available to `index`).
-- **`VendorDigest.side_effects`** (added in Phase 4) is populated by
-  `sync_vendor` from the dependency tree's root `DepNode.side_effects` —
-  not from every node in the tree, only the vendor's own top-level entry.
-  A transitive dependency's side effects (e.g. a sub-dependency's own
-  postinstall script) aren't surfaced in Known Gotchas.
+  re-running `sync`** — re-running `sync` inside `index` would make
+  `index` silently pay AI cost, defeating the reason `index` exists as a
+  separate, cheap command. Consequence: a vendor that's never been
+  synced shows `_not synced_` in the routing table instead of an error,
+  and the Deps column links to `DEPTREE.md` instead of showing a live
+  dependency count (no adapter/tree data is available to `index`).
+- **`VendorDigest.side_effects`** is populated by `sync_vendor` from the
+  dependency tree's root `DepNode.side_effects` — not from every node in
+  the tree, only the vendor's own top-level entry. A transitive
+  dependency's side effects (e.g. a sub-dependency's own postinstall
+  script) aren't surfaced in Known Gotchas.
 - **`sync_vendor` fully overwrites `vendor/<name>/` on every call** — no
   diffing, no incremental update, and the entire `vendor/<name>/src/`
   snapshot is deleted and recopied each time, not merged, for every
-  vendor (universal since Phase 13's cloning-for-all —
-  `decisions/0031`/`0033`; no `depth`-gating survives). Simple and
-  correct, but means a large vendor's `sync` is not cheap to run
-  repeatedly in a tight loop.
+  vendor. Simple and correct, but means a large vendor's `sync` is not
+  cheap to run repeatedly in a tight loop.
