@@ -2174,30 +2174,29 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 64 is substantively closed out — one step remains before it is
-genuinely DoD-complete per `CLAUDE.md` §5: dispatch
-`release-phase-auditor` for the phase's final independent audit**
-(re-running the plan's own §4 verification, checking every DoD
-condition including the now-complete drift audit and learning triage,
-checking for protected-file drift). `ROADMAP.md`/`CONTEXT.md`/the phase
-plan already read `done`, but per this project's own established
-discipline that status is provisional until the independent audit
-itself confirms it (matching Phase 60/62/63/63D's own precedent) —
-handle any FAIL→fix→re-audit cycle if one occurs. Once
-`release-phase-auditor` returns PASS or PASS WITH NON-BLOCKING
-OBSERVATIONS, proceed directly into **Phase 65 (architecture + ADR
-reconciliation)**: compare Phase 64's own shadow proposal
+**Phase 64 is fully DoD-complete (2026-09-23): independent
+`release-phase-auditor` audit → PASS**
+(`planning/retros/_audit-phase-64.md`), after one real FAIL→fix→re-audit
+cycle — the first pass correctly caught `planning/ROADMAP.md`'s own
+status column and the phase plan's own Status line both still reading
+`planned` despite full implementation being done (fixed in `90c5b13`;
+re-audit confirmed the fix, isolation-checked it touched only the
+claimed files, and re-ran every mechanical check fresh). `ROADMAP.md`,
+`CONTEXT.md`, and the phase plan now all genuinely read `done`.
+
+**Next: Phase 65 (architecture + ADR reconciliation)**, not yet
+planned — write `planning/phase-65-<name>.md` first, per `CLAUDE.md`
+§1, before any implementation. Compare Phase 64's own shadow proposal
 (`planning/v1-docs-reconstruction/`) against current active
 documentation, document by document, recording retain/rewrite/
 consolidate/split/replace/remove decisions
 (`documentation-lifecycle.md` §4) — starting from
 `concepts-to-retire.md`'s own five candidates — plus the domain-corpus
 freshness reconciliation (`domain-skeptic` re-checks staleness
-candidates accumulated since Phase 63D). Its own plan does not yet
-exist and must be written per `CLAUDE.md` §1 before implementation
-begins. GATE DD remains open and unaffected by any of this (Stage
-F/63D/G are a separate axis from Stage E, per
-`decisions/0056`/`decisions/0060`).
+candidates accumulated since Phase 63D). No gate blocks Phase 65 —
+Phase 64 confirmed the planned trajectory without changing it. GATE DD
+remains open and unaffected by any of this (Stage F/63D/G are a
+separate axis from Stage E, per `decisions/0056`/`decisions/0060`).
 
 Phase 61 itself is fully done: a real, symmetric two-agent comparison
 found LOW/effectively-NULL context advantage (outcome shape (b)),
