@@ -7,8 +7,8 @@ for the system-at-a-glance entry point; the rest of this set:
 [`context-graph-schema.md`](context-graph-schema.md),
 [`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md).
 
-`src/codecompass/` is 23 top-level modules plus a 5-module `adapters/`
-package (8,624 lines total). No package splits below
+`src/codecompass/` is 23 top-level modules plus a 6-module `adapters/`
+package (8,623 lines total). No package splits below
 `codecompass`/`codecompass.adapters` exist.
 
 ## Layering, by dependency direction
