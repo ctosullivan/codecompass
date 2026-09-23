@@ -1,10 +1,38 @@
 ---
-status: DRAFT (Phase 65) — a recommendation for the lead to review and
-  decide, per `planning/v1-redefinition/documentation-lifecycle.md` §4.
-  Nothing in this file has been applied. The lead decides each row (or
-  amends it), then dispatches execution (`docs-maintainer` or direct
-  edit) as a separate step.
+status: DECIDED (Phase 65, lead, 2026-09-23) — every row's recommendation
+  accepted as drafted, plus the two open items resolved below. Execution
+  (`docs-maintainer`) dispatched from this decided state.
 ---
+
+## Lead decisions on the two open items
+
+1. **B.12 / B.12b overlap** — confirmed: these are two distinct,
+   non-overlapping passages (`## Per-vendor CLAUDE.md structure` vs.
+   `## Adapter interface`'s per-ecosystem prose). Treated as two
+   separate rows/decisions, not merged, per the draft's own flagged
+   reading.
+2. **§7's open structural question** — **Option (b), a retained,
+   substantially shortened `architecture/overview.md`** (not a 6th new
+   architecture file). It stays the "system at a glance" entry point:
+   after all §1/§2/§3 rewrite/remove/consolidate decisions are applied,
+   it directly covers what has no home in Phase 64's 5-file set (B.13
+   Two consumption modes, B.14 Staleness checking, B.15 Multi-tool
+   export, B.16 `/discovery`, B.17/B.18 Chat REPL, B.30 `undo`, B.31
+   Cost model, B.32 Known footguns — all current-state, rewritten per
+   their own rows) and points into the 5 adopted Phase 64 files
+   (`module-map.md`, `core-data-model.md`, `adapter-interface.md`,
+   `context-graph-schema.md`, `sync-and-enrichment-pipeline.md`,
+   landing under `architecture/`) for what they cover in depth. A new
+   `architecture/historical-notes.md` captures B.19's routing-table/
+   Skill refresh-timing bug story and B.28's relationship-enrichment
+   excerpt-centering evolution — the two genuinely load-bearing pieces
+   of history with no ADR of their own. Rationale: adding a 6th
+   brand-new file for miscellaneous remaining topics would just
+   recreate the "one document doing too much" problem in a different
+   shape; keeping `overview.md` as the always-present index + the
+   content Phase 64 didn't scope for is less disruptive and matches
+   this project's own "don't add abstraction beyond what's needed"
+   default.
 
 # Reconciliation table — Phase 65
 
