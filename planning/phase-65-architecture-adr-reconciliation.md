@@ -1,6 +1,10 @@
 # Phase 65: Architecture + ADR reconciliation — plan
 
-**Status:** planned (2026-09-23).
+**Status:** done (2026-09-23). See
+`planning/retros/phase-65-architecture-adr-reconciliation.md` (retro),
+`planning/retros/_drift-audit-phase-65.md` (docs-reconstructor drift
+audit — one finding, fixed), and `planning/retros/_audit-phase-65.md`
+(release-phase-auditor, once dispatched) for the full closeout record.
 
 **Stage G, second phase** (`planning/v1-redefinition/roadmap.md`).
 Gated on Phase 64 completing — **done 2026-09-23, PASS**, unblocked.

@@ -501,6 +501,37 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
+**Phase 65 — architecture + ADR reconciliation — done (2026-09-23).**
+Stage G's second phase. Compared Phase 64's shadow proposal against
+current active documentation and applied the result:
+`architecture/overview.md` reduced 2312→1037 lines (all 32
+`architecture-split-candidates.md` items + 3 new findings resolved);
+5 files adopted from Phase 64's proposal as new `architecture/*.md`
+documents, each independently re-verified against real `src/` before
+landing; new `architecture/historical-notes.md`; `docs/external-adapters.md`
+split by audience into 4 files; `docs/quickstart.md`/`docs/domain/quick-reference.md`
+adopted. ADR status review across all 59 ADRs found one genuine
+governance gap (`decisions/0019` fully reversed by `decisions/0035` at
+Phase 16, never formally declared) — fixed with a new ADR
+(`decisions/0061`), neither original ADR's content edited. Domain-corpus
+freshness reconciliation confirmed clean. Drift audit: one finding (a
+stale module count in `module-map.md`), fixed. Two learnings promoted:
+`L-037` (`docs-maintainer` now scans a `src/` module docstring's other
+claims for staleness when already reading it to fix a citation) and
+`L-038` (`agent-led-workflow.md` step 1 now checks a session-level
+convention against `CLAUDE.md` before the first commit of a session —
+filed after a real mid-session governance lapse: every commit this
+session had been carrying a `Co-Authored-By`/`Claude-Session` trailer
+against `CLAUDE.md` §7's explicit rule; caught and stopped going
+forward, 32 already-pushed commits left as-is per explicit user
+decision rather than rewriting shared history). Full `pytest`: 623
+passed/2 skipped throughout (3 `src/` docstring-only changes, no
+behavioural change). Retro:
+`planning/retros/phase-65-architecture-adr-reconciliation.md`. Still
+pending before Phase 65 can be considered fully DoD-complete per
+`CLAUDE.md` §5: an independent `release-phase-auditor` final pass (not
+yet dispatched).
+
 **Phase 64 — blank-slate documentation reconstruction — done
 (2026-09-23).** Stage G's first phase, immediately following Phase 63D.
 Three parallel `docs-reconstructor` (MILESTONE mode) dispatches derived
@@ -2174,29 +2205,25 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 64 is fully DoD-complete (2026-09-23): independent
-`release-phase-auditor` audit → PASS**
-(`planning/retros/_audit-phase-64.md`), after one real FAIL→fix→re-audit
-cycle — the first pass correctly caught `planning/ROADMAP.md`'s own
-status column and the phase plan's own Status line both still reading
-`planned` despite full implementation being done (fixed in `90c5b13`;
-re-audit confirmed the fix, isolation-checked it touched only the
-claimed files, and re-ran every mechanical check fresh). `ROADMAP.md`,
-`CONTEXT.md`, and the phase plan now all genuinely read `done`.
-
-**Next: Phase 65 (architecture + ADR reconciliation)**, not yet
-planned — write `planning/phase-65-<name>.md` first, per `CLAUDE.md`
-§1, before any implementation. Compare Phase 64's own shadow proposal
-(`planning/v1-docs-reconstruction/`) against current active
-documentation, document by document, recording retain/rewrite/
-consolidate/split/replace/remove decisions
-(`documentation-lifecycle.md` §4) — starting from
-`concepts-to-retire.md`'s own five candidates — plus the domain-corpus
-freshness reconciliation (`domain-skeptic` re-checks staleness
-candidates accumulated since Phase 63D). No gate blocks Phase 65 —
-Phase 64 confirmed the planned trajectory without changing it. GATE DD
-remains open and unaffected by any of this (Stage F/63D/G are a
-separate axis from Stage E, per `decisions/0056`/`decisions/0060`).
+**Phase 65 is substantively closed out — one step remains before it is
+genuinely DoD-complete per `CLAUDE.md` §5: dispatch
+`release-phase-auditor` for the phase's final independent audit**
+(re-running the plan's own §5 verification, checking every DoD
+condition including the now-complete drift audit and learning triage,
+checking for protected-file drift, confirming the `L-037`/`L-038`
+landings and `decisions/0061`). `ROADMAP.md`/`CONTEXT.md`/the phase
+plan already read `done`, but per this project's own established
+discipline that status is provisional until the independent audit
+itself confirms it (matching Phase 60/62/63/63D/64's own precedent) —
+handle any FAIL→fix→re-audit cycle if one occurs. Once
+`release-phase-auditor` returns PASS or PASS WITH NON-BLOCKING
+OBSERVATIONS, proceed directly into **Phase 66 (roadmap + context
+reconciliation)**: `ROADMAP.md`/`CONTEXT.md` reflect the shipped v1,
+deferred work clearly parked with revisit triggers. Its own plan does
+not yet exist and must be written per `CLAUDE.md` §1 before
+implementation begins. GATE DD remains open and unaffected by any of
+this (Stage F/63D/G are a separate axis from Stage E, per
+`decisions/0056`/`decisions/0060`).
 
 Phase 61 itself is fully done: a real, symmetric two-agent comparison
 found LOW/effectively-NULL context advantage (outcome shape (b)),

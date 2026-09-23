@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 65** (Architecture + ADR reconciliation, done): Stage G's
+  second phase. Compared Phase 64's shadow proposal against current
+  active documentation and applied the result. `architecture/overview.md`
+  reduced from 2312 to 1037 lines — all 32 `architecture-split-candidates.md`
+  items plus 3 new findings resolved (rewrite/consolidate/split/remove
+  per item, present-tense, ADR citations kept, no phase-chronology).
+  Five files adopted from Phase 64's proposal as new `architecture/*.md`
+  documents (`module-map.md`, `core-data-model.md`, `adapter-interface.md`,
+  `context-graph-schema.md`, `sync-and-enrichment-pipeline.md`), each
+  independently re-verified against real `src/` before landing (catching
+  several stale line-citations and one factual error along the way). New
+  `architecture/historical-notes.md` captures the two genuinely
+  load-bearing history stories with no ADR of their own. `docs/external-adapters.md`
+  split by audience into `docs/developer/{haskell-adapter-submodules,writing-an-adapter}.md`
+  and `docs/protocol-adapter/{wire-protocol,integrating-a-new-external-adapter}.md`.
+  `docs/quickstart.md` and `docs/domain/quick-reference.md` adopted,
+  filling two real gaps (no phase-annotation-free first-time-user entry
+  point; no scannable one-line-per-term domain reference). ADR status
+  review across all 59 ADRs found one genuine governance gap — `decisions/0019`
+  fully reversed by `decisions/0035` at Phase 16 but never formally
+  declared — fixed with a new ADR (`decisions/0061`), neither original
+  ADR's content edited. Domain-corpus freshness reconciliation confirmed
+  clean (nothing stale since Phase 63D's approval). Two candidate
+  learnings promoted: `L-037` (a `src/` module docstring can carry the
+  same staleness pattern current-truth docs are checked for, but sits
+  outside every existing drift check — `docs-maintainer` now scans for
+  it opportunistically) and `L-038` (a session-level convention, such as
+  a commit-attribution default, must be checked against `CLAUDE.md`
+  before a session's first commit — found after a real governance lapse
+  this session, corrected going forward, 32 already-pushed commits left
+  as-is per explicit user decision rather than rewriting shared
+  history). Drift audit: one finding (a stale module count), fixed. Full
+  `pytest`: 623 passed / 2 skipped throughout (3 `src/` changes were
+  docstring-only, no behavioural change). Retro:
+  `planning/retros/phase-65-architecture-adr-reconciliation.md`.
+
 - **Phase 64** (Blank-slate documentation reconstruction, done): Stage
   G's first phase. Three parallel `docs-reconstructor` (MILESTONE mode)
   dispatches derived a fresh documentation proposal from authoritative
