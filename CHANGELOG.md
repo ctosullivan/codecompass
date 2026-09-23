@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 64** (Blank-slate documentation reconstruction, done): Stage
+  G's first phase. Three parallel `docs-reconstructor` (MILESTONE mode)
+  dispatches derived a fresh documentation proposal from authoritative
+  project reality (`src/`, tests, real `--help` output, generated
+  artifacts, ADRs), consuming Phase 63D's own approved `docs/domain/`
+  corpus rather than re-deriving domain terminology, organized into the
+  six documentation categories (`documentation-lifecycle.md` §1.4):
+  domain (reorganized from `docs/domain/`, not re-derived), architecture,
+  user, developer, protocol/adapter, and development-process. Output is
+  a shadow proposal under `planning/v1-docs-reconstruction/` (28 files)
+  — no overwrite of `docs/`/`README.md`/`architecture/`/`ai-docs/`, no
+  `src/codecompass/` change; comparing it against current active
+  documentation is Phase 65's job. A real, disclosed gap was fixed
+  before dispatch: `.claude/agents/docs-reconstructor.md`'s own MODE 2
+  section predated `decisions/0060` and didn't yet reflect the
+  domain-corpus consumption exception or the six-category structure.
+  A lead-run cross-cluster consistency pass consolidated five
+  retirement candidates from the three clusters' own independent
+  findings (`concepts-to-retire.md`) — no live factual error found in
+  any cluster's own area — and recognised two genuinely cross-cluster
+  signals: an independent, un-coordinated corroboration (two clusters
+  flagging `docs/external-adapters.md` as a split candidate from
+  opposite sides) and a re-confirmation of an already-tracked item (the
+  `ecosystem`/`capabilities` wire-validation gap, already `L-032`) rather
+  than double-counting either. `knowledge-curator` independently
+  reviewed the retro's own "no candidate learnings" call (per the Phase
+  63/`L-030` precedent) and found two process observations that had been
+  described but not filed — both promoted into
+  `planning/agent-led-workflow.md` step 5 (`L-035`: a multi-cluster
+  phase needs an explicit post-dispatch consistency pass; `L-036`: a
+  milestone-scoped agent brief must be re-read against every ADR landed
+  since its own last edit, before dispatching it — each confirmed twice,
+  at Phase 63D and Phase 64). Drift audit: `NO DRIFT`. Full `pytest`:
+  623 passed / 2 skipped throughout, unchanged baseline. Retro:
+  `planning/retros/phase-64-blank-slate-documentation-reconstruction.md`.
+
 - **Phase 63D** (Domain reconstruction, done): the first project-scoped
   application of the Scope → Plan → Domain → Design → Implement
   methodology's own Domain stage (`decisions/0060`). Three parallel
