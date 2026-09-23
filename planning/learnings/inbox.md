@@ -8,6 +8,208 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-036 — a milestone-scoped, rarely-exercised agent brief is a recurring locus of drift behind its own governing ADR, confirmed twice now
+
+- **origin:** Phase 64 retro (blank-slate documentation reconstruction)
+  "What worked" bullet 4 and "Lessons learnt" bullet 2 — filed by
+  `knowledge-curator` on independent review of the retro's own
+  "Candidate learnings filed: None" call, per this project's own
+  established precedent (Phase 63's `release-phase-auditor` flagging a
+  retro's own non-filing decision as itself a curation judgment
+  `CLAUDE.md` §8 reserves for `knowledge-curator`, which produced
+  `L-030`)
+- **date:** 2026-09-23
+- **project_revision:** `3889779`
+- **observation:** Twice now, a `.claude/agents/*.md` brief exercised
+  only once per milestone (not every phase) was found to have drifted
+  behind an already-landed governing ADR, and was caught and fixed by
+  the lead while writing the *next* phase's plan, before dispatch —
+  not by any mechanical check. First: at Phase 63D, `fef153b` ("agent
+  setup: `domain-skeptic` created, `context-researcher`/
+  `docs-reconstructor` extended") amended both `context-researcher.md`
+  and `docs-reconstructor.md`'s MODE 1 section pre-dispatch. Second: at
+  Phase 64, its own plan §1 ("A real, disclosed gap this phase must
+  close before dispatching") found `docs-reconstructor.md`'s MODE 2
+  section still predated `decisions/0060` — missing both the
+  `docs/domain/` consumption exception and the six-category output
+  structure that ADR had already settled — and amended it before any
+  dispatch. Neither drift was caught by `scripts/check_user_docs.py`
+  or any other mechanical check; both were caught only because the
+  lead happened to re-read the brief while planning the next phase
+  that would use it.
+- **evidence:** `planning/phase-64-blank-slate-documentation-reconstruction.md`
+  §1 (the disclosed pre-dispatch gap and its fix); commit `fef153b`
+  (Phase 63D's own agent-brief extension, same commit cited in
+  `planning/retros/phase-63d-domain-reconstruction.md`'s own
+  commit list); `planning/retros/phase-64-blank-slate-documentation-reconstruction.md`
+  "What worked" bullet 4 and "Lessons learnt" bullet 2 (the explicit
+  generalisation: "any agent whose brief is exercised rarely... is more
+  likely to have drifted... worth an explicit check at the start of any
+  future milestone-scoped dispatch, not just this one"). Checked and
+  confirmed absent as a standing rule: no match for "governing ADR" /
+  "brief" / "drift" pre-dispatch check in
+  `planning/agent-led-workflow.md` or
+  `planning/v1-redefinition/documentation-lifecycle.md` (direct grep,
+  2026-09-23) — the practice exists only as two ad hoc, phase-specific
+  fixes, not a named step any future milestone-scoped dispatch is
+  prompted to repeat.
+- **classification:** workflow
+- **status:** promoted
+- **recurrence:** 2 (Phase 63D `fef153b`; Phase 64 plan §1) — this is
+  itself the reason to promote now rather than wait for a third.
+- **promoted_to:** `planning/agent-led-workflow.md` step 5 (new
+  paragraph: re-read a milestone-scoped agent brief against every ADR
+  landed since its own last edit, before dispatching it)
+- **curation (this triage, 2026-09-23, knowledge-curator):** provenance
+  accepted — all required fields present, both cited commits/documents
+  independently checked, not taken on the retro's word alone (confirmed
+  `fef153b`'s description in the Phase 63D retro's own commit list
+  independently, and confirmed the absence of any existing standing
+  rule via direct grep rather than assuming the retro's framing was
+  novel). This is exactly the shape the learning lifecycle exists for:
+  a real, twice-confirmed, low-cost-to-fix structural risk, currently
+  surviving only as tribal memory across two lead-authored plan files,
+  for a category of agent (`docs-reconstructor` MODE 2, and by the same
+  argument any future milestone-scoped role) that is by definition
+  exercised too rarely for repetition alone to keep its brief current.
+  Correctly *not* filed as a `context-gap` (it is about an agent-brief
+  artifact, not a graph relationship) and correctly *not* a duplicate of
+  `L-023` (that entry is about a brand-new agent type being
+  undispatchable immediately after creation — a registry-timing gap;
+  this one is about an *existing* agent's brief drifting behind an ADR
+  landed after the brief was last edited — a maintenance gap). **Outcome:
+  promote.** Classification `workflow` maps to
+  `planning/agent-led-workflow.md`, finalised by the lead (not landed by
+  this triage — outside this role's write boundary). Status left as
+  `candidate` (not `promoted`) until the lead actually applies the
+  amendment and a `promoted.md` line is added, per
+  `learning-lifecycle.md` §4/§6.
+
+  **Recommended amendment — `planning/agent-led-workflow.md` step 5**
+  (draft, for the lead to review and land; not applied here — insert as
+  a new paragraph in step 5, alongside the existing L-018/L-023 dispatch
+  cautions):
+
+  > **Before dispatching a milestone-scoped agent brief (one exercised
+  > once per milestone rather than every phase — e.g. `docs-reconstructor`
+  > MODE 2), re-read it against every ADR/decision landed since its own
+  > last edit.** A brief exercised rarely is structurally more likely to
+  > have drifted behind a later ADR amendment than one exercised every
+  > phase, because normal use never forces a re-read. Confirmed twice: at
+  > Phase 63D (`context-researcher.md`, `docs-reconstructor.md` MODE 1,
+  > both amended pre-dispatch for `decisions/0060`) and at Phase 64
+  > (`docs-reconstructor.md` MODE 2, same ADR, same pre-dispatch fix).
+  > Neither mechanical check catches this; only re-reading the brief
+  > while writing the plan that will dispatch it does. (Phase 64 —
+  > `L-036`.)
+
+  Revisit if a third occurrence surfaces despite this addition — that
+  would argue for a mechanical check (e.g. a per-agent-brief
+  "governing ADRs" front-matter field a script could diff against
+  `decisions/` mtimes) rather than a habit alone.
+
+### L-035 — an explicit cross-cluster consistency pass after parallel/multi-cluster dispatches is a repeatable step worth codifying, not an incidental synthesis nicety
+
+- **origin:** Phase 64 retro (blank-slate documentation reconstruction)
+  "What worked" bullet 2 and "Lessons learnt" bullet 1, reinforcing a
+  pattern first exercised (uncodified) at Phase 63D — filed by
+  `knowledge-curator` on the same independent review as `L-036` above
+- **date:** 2026-09-23
+- **project_revision:** `3889779`
+- **observation:** Twice now, a phase that split a large derivation task
+  across multiple parallel, independently-dispatched agent clusters
+  added a distinct, explicit synthesis step *after* all clusters landed
+  — checking for agreement/contradiction/duplication across cluster
+  boundaries — and that step caught something no single cluster's own
+  review could have. At Phase 63D, dispatching `domain-skeptic` against
+  the *integrated* corpus (not each cluster in isolation) is what let it
+  catch cross-cluster consistency issues a single cluster's own review
+  never would have seen (Phase 63D retro, "What worked" bullet 2). At
+  Phase 64, the lead's own explicit cross-cluster consistency pass
+  (named in advance in the phase's own plan §2, not added after the
+  fact) both confirmed a genuine independent corroboration (Clusters A
+  and B independently flagging `docs/external-adapters.md` as a split
+  candidate from opposite sides, without reading each other's output)
+  and correctly distinguished it from a re-confirmation of an
+  already-tracked item (the `ecosystem`/`capabilities` gap vs. `L-032`)
+  rather than double-counting either. Neither instance names this as a
+  standing, generally-applicable step — each phase's plan named it
+  freshly, for that phase only.
+- **evidence:** `planning/retros/phase-63d-domain-reconstruction.md`
+  "What worked" bullet 2 (`domain-skeptic` dispatched against the
+  integrated corpus); `planning/phase-64-blank-slate-documentation-reconstruction.md`
+  §2 ("After all three land, the lead reads across all six categories
+  for cross-cluster consistency... before closing the phase"); the
+  actual Phase 64 output performing this
+  (`planning/v1-docs-reconstruction/README.md`'s own "Cross-cluster
+  consistency" section, five checks performed); `planning/retros/phase-64-blank-slate-documentation-reconstruction.md`
+  "What worked" bullet 2 and "Lessons learnt" bullet 1 (the explicit
+  generalisation: "worth doing explicitly, as its own step, even when no
+  contradiction is expected"). Checked and confirmed absent as a
+  standing rule: no match for "consistency pass" / "cross-cluster" /
+  "multi-cluster" in `planning/agent-led-workflow.md` or
+  `planning/v1-redefinition/documentation-lifecycle.md` (direct grep,
+  2026-09-23).
+- **classification:** workflow
+- **status:** promoted
+- **promoted_to:** `planning/agent-led-workflow.md` step 5 (new
+  paragraph: any multi-cluster phase must include an explicit
+  post-dispatch consistency pass before closing the phase)
+- **recurrence:** 2 (Phase 63D, via `domain-skeptic` against the
+  integrated corpus; Phase 64, via an explicit lead synthesis pass) —
+  same "why promote now, not after a third" reasoning as `L-036`.
+- **curation (this triage, 2026-09-23, knowledge-curator):** provenance
+  accepted — all fields present, both cited instances independently
+  re-read (not taken on the retro's word alone), absence of a standing
+  rule confirmed by direct grep rather than assumed. Not a duplicate of
+  `L-018` (that entry is about *never dispatching two agents to `Write`
+  the same file concurrently* — a race-condition hazard during parallel
+  dispatch; this one is about *what happens after* parallel dispatches
+  land, a synthesis-completeness concern, not a write-collision one).
+  Not a documentation-content finding (unlike `concepts-to-retire.md`'s
+  five candidates) — it is a claim about how *this project itself*
+  should structure any future phase that uses parallel/multi-cluster
+  dispatch, squarely a workflow finding. Genuinely twice-confirmed
+  (Phase 63D, Phase 64), on two differently-shaped tasks (domain
+  investigation; documentation structure), by two different mechanisms
+  (a dedicated `domain-skeptic` dispatch; a lead-only synthesis pass) —
+  the mechanism varies, but "some explicit post-dispatch consistency
+  pass, not merely assuming the individual dispatches' own correctness
+  composes" is the constant worth naming as a standing expectation
+  rather than something each phase's plan must independently
+  rediscover. **Outcome: promote.** Classification `workflow` maps to
+  `planning/agent-led-workflow.md`, finalised by the lead (not landed by
+  this triage — outside this role's write boundary). Status left as
+  `candidate` (not `promoted`) until the lead actually applies the
+  amendment and a `promoted.md` line is added, per
+  `learning-lifecycle.md` §4/§6.
+
+  **Recommended amendment — `planning/agent-led-workflow.md` step 5**
+  (draft, for the lead to review and land; not applied here — insert as
+  a new paragraph in step 5, near the existing "One agent = one
+  artifact" guidance):
+
+  > **Any phase that splits work across multiple parallel, independently-
+  > dispatched agent clusters must include an explicit post-dispatch
+  > consistency pass — after all clusters land, before closing the
+  > phase — checking for agreement, contradiction, and duplication
+  > across cluster boundaries.** This is a distinct step from each
+  > cluster's own within-scope correctness, and from any dedicated
+  > adversarial-review dispatch (e.g. `domain-skeptic`) that may also
+  > run against the integrated result. Confirmed twice: Phase 63D
+  > (`domain-skeptic` dispatched against the integrated corpus, not each
+  > cluster separately) and Phase 64 (an explicit lead synthesis pass,
+  > named in the phase's own plan in advance) each caught something —
+  > independent corroboration in one case, a duplicate-vs-corroboration
+  > distinction in the other — that no single cluster's own review would
+  > have surfaced. (Phase 64 — `L-035`.)
+
+  Revisit if a future multi-cluster phase's plan omits this and the
+  omission causes a real miss — that would argue for moving this from a
+  workflow habit into a `release-phase-auditor` DoD check (a multi-
+  cluster phase's retro must name what its consistency pass found)
+  rather than a step description alone.
+
 ### L-033 — a within-page consistency check is distinct from a claim-against-source check, and `domain-skeptic`'s own review missed the former
 
 - **origin:** Phase 63D (Domain reconstruction), the actual user's own

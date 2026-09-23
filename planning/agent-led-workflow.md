@@ -94,6 +94,34 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
    new role's full brief embedded in the prompt for that first pass, and
    retry the real type name on a later dispatch; it has, so far, always
    become available later in the same session. (Phase 54c — L-023.)
+
+   **Before dispatching a milestone-scoped agent brief (one exercised
+   once per milestone rather than every phase — e.g. `docs-reconstructor`
+   MODE 2), re-read it against every ADR/decision landed since its own
+   last edit.** A brief exercised rarely is structurally more likely to
+   have drifted behind a later ADR amendment than one exercised every
+   phase, because normal use never forces a re-read. Confirmed twice: at
+   Phase 63D (`context-researcher.md`, `docs-reconstructor.md` MODE 1,
+   both amended pre-dispatch for `decisions/0060`) and at Phase 64
+   (`docs-reconstructor.md` MODE 2, same ADR, same pre-dispatch fix).
+   Neither mechanical check catches this; only re-reading the brief
+   while writing the plan that will dispatch it does. (Phase 64 —
+   L-036.)
+
+   **Any phase that splits work across multiple parallel, independently-
+   dispatched agent clusters must include an explicit post-dispatch
+   consistency pass — after all clusters land, before closing the
+   phase — checking for agreement, contradiction, and duplication
+   across cluster boundaries.** This is a distinct step from each
+   cluster's own within-scope correctness, and from any dedicated
+   adversarial-review dispatch (e.g. `domain-skeptic`) that may also
+   run against the integrated result. Confirmed twice: Phase 63D
+   (`domain-skeptic` dispatched against the integrated corpus, not each
+   cluster separately) and Phase 64 (an explicit lead synthesis pass,
+   named in the phase's own plan in advance) each caught something —
+   independent corroboration in one case, a duplicate-vs-corroboration
+   distinction in the other — that no single cluster's own review would
+   have surfaced. (Phase 64 — L-035.)
 6. **Implement or coordinate implementation.** The lead implements
    directly, or dispatches one `general-purpose` implementer subagent per
    the `v0.2-implementation-execution-plan.md` pattern (foreground, exact

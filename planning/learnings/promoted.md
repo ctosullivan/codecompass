@@ -34,6 +34,8 @@ L-033 | 2026-09-23 | scoped-rule | .claude/agents/domain-skeptic.md step 3 (with
 L-034 | 2026-09-23 | workflow | planning/agent-led-workflow.md step 10 (dispatch roadmap-context-curator once more immediately before any mid-phase presentation to the actual user/domain owner for approval) @ (this phase's own closeout commit)
 L-031 | 2026-09-23 | future-improvement | planning/ROADMAP.md "Future-improvement backlog (unscheduled)" section (symbol_enrichment missing producer-attribution column) @ (this phase's own closeout commit)
 L-032 | 2026-09-23 | future-improvement | planning/ROADMAP.md "Future-improvement backlog (unscheduled)" section (external adapter protocol's ecosystem/capabilities fields received but never validated) @ (this phase's own closeout commit)
+L-036 | 2026-09-23 | workflow | planning/agent-led-workflow.md step 5 (re-read a milestone-scoped agent brief against every ADR landed since its own last edit, before dispatching it) @ (this phase's own closeout commit)
+L-035 | 2026-09-23 | workflow | planning/agent-led-workflow.md step 5 (any multi-cluster phase must include an explicit post-dispatch consistency pass before closing the phase) @ (this phase's own closeout commit)
 
 <!-- L-002 and prior L-005 (project-rule half) landed in the Phase 43
      commit; replace `d34a486` if it's not the actual Phase 43 commit hash.
