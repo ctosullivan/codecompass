@@ -361,6 +361,26 @@ redefined-v1 Stage C candidate (only if reference-project evidence
 supports project-root context routing), 25 post-redefined-v1. **Not
 renumbered.**
 
+## Future-improvement backlog (unscheduled)
+
+Findings that the learning lifecycle
+(`planning/v1-redefinition/learning-lifecycle.md` §4) classified
+`future-improvement` land here once `knowledge-curator` recommends
+promotion — this is that classification's roadmap destination, finalised
+by `roadmap-context-curator` per that section. A row here has **no phase
+number and is not scheduled**; it becomes a numbered phase only if/when
+someone plans one, at which point its row is replaced by the phase's own
+row elsewhere in this file (per the "How this file is kept in sync"
+section below) rather than left duplicated here. Full evidence lives in
+the originating `planning/learnings/inbox.md` entry (and, once the lead
+records it, `planning/learnings/promoted.md`); this table only tracks
+existence and status.
+
+| ID | Finding | Classification | Status | Notes |
+|---|---|---|---|---|
+| L-031 | `symbol_enrichment` has no producer-attribution column, unlike `vendor_enrichment`/`doc_relation_enrichment` (both carry `model TEXT NOT NULL`) — `symbol_enrichment` rows currently cannot be attributed to a specific producer (agent or automated API call) at all. Add a `model` column via an additive migration (mirroring `_migrate_symbols_export_kind_note_columns`'s `ADD COLUMN` pattern, Phase 62), or explicitly document the asymmetry as an intentional simplification if a rationale is found. Origin: `L-031` (Phase 63D, `domain-skeptic`'s own review). | FUTURE-IMPROVEMENT | not started | — |
+| L-032 | `ExternalAdapterProcess.initialize()` receives `ecosystem` and `capabilities` from an external adapter's wire response (`external_process.py:83-84`) but never validates either: `ecosystem` is never compared against the `core.Ecosystem` value CodeCompass configured the adapter under, and `capabilities` is never checked against the protocol's own closed 4-value set already defined in the same file (`CAPABILITIES`). An adapter reporting a mismatched `ecosystem` string or an unrecognized capability is currently accepted uncomplainingly. Add a membership/equality check in `initialize()`, raising `AdapterError` on mismatch (matching the existing `protocol_version` mismatch handling immediately above it in the same method). Origin: `L-032` (Phase 63D, `domain-skeptic`'s own review). | FUTURE-IMPROVEMENT | not started | — |
+
 ## How this file is kept in sync
 
 - Starting a phase: add its plan-file link here and flip status to
@@ -375,3 +395,10 @@ renumbered.**
 - This table is the source of truth for "what phase are we on" — if it
   ever disagrees with `planning/CONTEXT.md`, treat that as a bug to fix
   immediately, not a discrepancy to reconcile later.
+- A `future-improvement`-classified learning is added to the "Future
+  improvement backlog" table above by `roadmap-context-curator`, once
+  `knowledge-curator` recommends promotion (`learning-lifecycle.md` §4),
+  in the same pass that updates `planning/learnings/inbox.md`'s status
+  and `promoted.md`. When a backlog row is later turned into a real
+  phase, remove the backlog row in the same commit that adds the phase's
+  own row and plan file.

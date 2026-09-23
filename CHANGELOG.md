@@ -46,8 +46,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   corpus legitimately cites other features' own records) — verified 0
   findings after, full suite still 623 passed/2 skipped. Two further
   candidate learnings filed (`L-033`, `L-034`) about the review/closeout
-  process itself. Retro:
-  `planning/retros/phase-63d-domain-reconstruction.md`.
+  process itself; `knowledge-curator` independently re-verified and
+  promoted all four (`L-031`-`L-034`) during closeout — `L-033` into
+  `domain-skeptic`'s own charter (step 3 now names a within-page
+  consistency check as distinct from a claim-against-source check),
+  `L-034` into `planning/agent-led-workflow.md` step 10 (a new
+  mid-phase `roadmap-context-curator` re-dispatch before any
+  user-approval presentation), and `L-031`/`L-032` into a new
+  `planning/ROADMAP.md` "Future-improvement backlog (unscheduled)"
+  section. Retro: `planning/retros/phase-63d-domain-reconstruction.md`.
 
 - **Phase 63** (Stage F's own final phase, lightweight ordinary-project
   smoke test, done): GATE DF's own question — did Phases 60–62's

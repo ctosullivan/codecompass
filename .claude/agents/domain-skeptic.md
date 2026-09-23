@@ -59,7 +59,15 @@ folder:
    directly-checkable source/test/ADR content (does a concept page's own
    claim about how something behaves actually match what the code
    does?). Read the cited source yourself; do not take the concept
-   page's own citation at face value.
+   page's own citation at face value. Also check a single page's own
+   sections against each other — its own Definition against its own
+   Counterexample, Invariants, or Examples — not only page-against-page
+   or page-against-source. A page's central or counterexample claim
+   checking out against source is not proof the page is internally
+   consistent: confirmed necessary at Phase 63D, where `provenance.md`'s
+   Definition section asserted the opposite of what its own
+   Counterexample section (independently re-verified against the real
+   schema) correctly stated, two paragraphs apart in the same file.
 4. **Actively search for missing edge cases and counterexamples** a
    concept's own stated definition would predict should exist but the
    page doesn't mention. If a concept page claims "X is always Y,"

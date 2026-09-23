@@ -123,6 +123,20 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
     and completion audit (step 13) to all exist first, and none of them
     do yet at this point in the sequence. This step keeps `CONTEXT.md`
     current mid-phase; it is not the phase's final reconciliation.
+    **If this phase's work must be presented to the actual user/domain
+    owner for approval before the phase can be called done** (a
+    Domain-stage corpus, a `design.md` needing sign-off, or any other
+    mid-phase human-decision gate), **dispatch `roadmap-context-curator`
+    once more immediately before that presentation**, not only at step
+    10's own regular interim point. This pass must cover the same scope
+    as any other reconciliation (the phase's own `planning/phase-N-*.md`
+    Status line and the `ROADMAP.md` row, not `CONTEXT.md` alone) —
+    updating `CONTEXT.md` correctly while leaving `ROADMAP.md`/the plan
+    file's own Status line stale is a real, visible inconsistency a human
+    reviewer will notice before the lead does, confirmed at Phase 63D
+    (`L-034`): `CONTEXT.md` said "corpus complete, awaiting approval"
+    while `ROADMAP.md` and the phase plan still said "not started"/"plan
+    only," caught only by the actual user's own review.
 11. **Write the phase retro.** The lead authors
     `planning/retros/phase-N-<slug>.md` from `TEMPLATE.md` — **where we
     are** (arc/stage context, what the previous phase set up, state now),

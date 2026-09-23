@@ -1626,6 +1626,17 @@ that section's own Plan-re-entry mechanism (a direct plan-file edit,
 provenance in git history), named retroactively rather than invented
 for this phase specifically.
 
+**Promoted (2026-09-23, `roadmap-context-curator`, per
+`learning-lifecycle.md` §4):** the two implementation gaps
+`domain-skeptic` routed to `planning/learnings/inbox.md` above
+(`L-031`, `symbol_enrichment`'s missing provenance column; `L-032`, the
+external-adapter wire protocol's unvalidated `ecosystem`/`capabilities`
+fields) both landed as unscheduled rows in `planning/ROADMAP.md`'s new
+"Future-improvement backlog (unscheduled)" section — no phase number
+assigned, status `not started`. Neither resolves or is required by
+GATE DD; they are independent, narrow implementation fixes discoverable
+without a broader generalisation decision.
+
 ---
 
 ### Original Stage F content (preserved, superseded as this stage's target — `decisions/0056`)

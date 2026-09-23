@@ -30,6 +30,10 @@ L-028 | 2026-09-19 | architecture | architecture/overview.md "Known footguns" (r
 L-027 | 2026-09-19 | workflow | planning/v1-redefinition/context-quality-evaluation.md §1 (single-trial baseline/treatment comparisons can't separate tool contribution from agent-diligence variance) @ (this phase's own closeout commit)
 L-026 | 2026-09-19 | architecture | architecture/overview.md "Known footguns" (readme_and_api_surface() extracts declared one-line purpose only, never function body) @ (this phase's own closeout commit)
 CG-008 | 2026-09-19 | graph-capability | src/codecompass/adapters/base.py::EcosystemAdapter.symbols() + src/codecompass/adapters/haskell.py::HaskellAdapter.symbols() + src/codecompass/graph.py (symbols.export_kind/note migration) + src/codecompass/sync.py::rebuild_project_graph (adapter.symbols() wiring) @ (this phase's own closeout commit)
+L-033 | 2026-09-23 | scoped-rule | .claude/agents/domain-skeptic.md step 3 (within-page consistency check added to the contradiction-search instruction) @ (this phase's own closeout commit)
+L-034 | 2026-09-23 | workflow | planning/agent-led-workflow.md step 10 (dispatch roadmap-context-curator once more immediately before any mid-phase presentation to the actual user/domain owner for approval) @ (this phase's own closeout commit)
+L-031 | 2026-09-23 | future-improvement | planning/ROADMAP.md "Future-improvement backlog (unscheduled)" section (symbol_enrichment missing producer-attribution column) @ (this phase's own closeout commit)
+L-032 | 2026-09-23 | future-improvement | planning/ROADMAP.md "Future-improvement backlog (unscheduled)" section (external adapter protocol's ecosystem/capabilities fields received but never validated) @ (this phase's own closeout commit)
 
 <!-- L-002 and prior L-005 (project-rule half) landed in the Phase 43
      commit; replace `d34a486` if it's not the actual Phase 43 commit hash.

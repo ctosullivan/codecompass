@@ -501,13 +501,10 @@ were cleaned up (Phase 38).
 
 ## What was just completed
 
-**Phase 63D — domain corpus drafted, researched, and independently
-reviewed; awaiting actual-user approval (2026-09-23).** Not yet marked
-done — the corpus itself cannot be, until the actual user/domain owner
-reviews it (per this same phase's own no-stand-in rule, the lead does
-not flip `DRAFT` → `APPROVED` unilaterally). Three parallel
-`context-researcher` dispatches produced 19 concept pages under
-`docs/domain/concepts/` and 135+ Observation/Evidence/Claim/Derivation
+**Phase 63D — domain corpus approved by the actual user/domain owner,
+subject to four corrections, and fully closed out (2026-09-23).** Three
+parallel `context-researcher` dispatches produced 19 concept pages under
+`docs/domain/concepts/` and 138 Observation/Evidence/Claim/Derivation
 records under `planning/knowledge/codecompass-domain/`
 (`EVID`/`CTXT`/`ADPT` clusters). `domain-skeptic` then ran its first
 real review: resolved the `decisions/0058` adapter/adaptor spelling
@@ -517,16 +514,38 @@ correctly-disclosed, non-escalation-worthy open questions; routed two
 real implementation gaps (`symbol_enrichment`'s missing provenance
 column; unvalidated wire `ecosystem`/`capabilities` fields) to
 `planning/learnings/inbox.md` as `L-031`/`L-032`. **Zero genuine
-escalations to the actual user survived attempted resolution.** Also:
-wrote the six `docs/domain/` integration files (README/glossary/
-invariants/examples/open-questions/references) domain-skeptic found
-missing; normalized all 19 concept pages to one DRAFT-marker
-convention; fixed a real false-positive in
+escalations to the actual user survived attempted resolution.** The
+actual user then approved the corpus subject to four corrections found
+during their own review — two enrichment-table over-generalisations
+(`provenance.md`, `evidence.md`), one stale filename
+(`requirement.md`), and a planning-status inconsistency across
+`ROADMAP.md`/the phase plan — all applied and independently
+re-verified. Also: wrote the six `docs/domain/` integration files
+domain-skeptic found missing; normalized all 19 concept pages to one
+APPROVED-marker convention; fixed a real false-positive in
 `scripts/check_knowledge_base.py` (its cross-reference check only
 looked within one feature directory; this project-scoped corpus
-legitimately cites other features' records) — verified 0 findings
-after, full suite still 623 passed/2 skipped. Full review:
-`planning/retros/_domain-skeptic-review-phase-63d.md`.
+legitimately cites other features' records). **Closeout now fully
+complete**: `docs-reconstructor` drift audit → NO DRIFT
+(`planning/retros/_drift-audit-phase-63d.md`); `knowledge-curator`
+triaged all four candidate learnings filed during the phase and
+recommended **promote** for all four, independently re-verifying each
+rather than taking the filing account on faith (and correcting L-034's
+own claimed "second occurrence" precedent to "first occurrence" after
+checking Phase 62's audit directly) — all four now landed: `L-033` into
+`domain-skeptic`'s own charter (a within-page consistency check,
+step 3), `L-034` into `planning/agent-led-workflow.md` step 10 (a new
+mid-phase `roadmap-context-curator` re-dispatch before any user-approval
+presentation), and `L-031`/`L-032` into a new `planning/ROADMAP.md`
+"Future-improvement backlog (unscheduled)" section. Verified throughout:
+`check_user_docs.py --strict` clean, `check_knowledge_base.py` clean (0
+findings, down from 11 false positives), full `pytest` 623 passed/2
+skipped (unchanged baseline). Full review:
+`planning/retros/_domain-skeptic-review-phase-63d.md`. Retro:
+`planning/retros/phase-63d-domain-reconstruction.md`. Still pending
+before Phase 63D can be considered fully DoD-complete per `CLAUDE.md`
+§5: an independent `release-phase-auditor` final pass (not yet
+dispatched).
 
 **Phase 63 — lightweight ordinary-project smoke test — done
 (2026-09-22).** GATE DF's own question: did Phases 60–62's Haskell-
@@ -2115,22 +2134,27 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 63D's own work is complete; the phase itself is blocked on the
-actual user's own review and approval of the domain corpus** — the one
-step this phase's own no-stand-in rule reserves for the actual
-user/domain owner, never the lead. `docs/domain/` (19 concept pages,
-6 integration files) and `planning/retros/_domain-skeptic-review-phase-63d.md`
-(zero genuine escalations found) are ready to read. Once the user
-approves (or rules on anything they want changed — none of the
-disclosed open questions require a ruling, they're correctly left
-open), the remaining closeout steps are mechanical: flip the corpus's
-own `DRAFT` status, write the phase retro, run the standard
-`docs-reconstructor` drift audit + `release-phase-auditor` DoD pass,
-mark Phase 63D done in `planning/ROADMAP.md`/`v1-redefinition/roadmap.md`/
-`CHANGELOG.md`, and Phase 64 (blank-slate documentation reconstruction)
-can begin, consuming this corpus as its own required input. GATE DD
-remains open and unaffected by any of this (Stage F/63D are a separate
-axis from Stage E, per `decisions/0056`/`decisions/0060`).
+**Phase 63D is approved, corrected, and substantively closed out — one
+step remains before it is genuinely DoD-complete per `CLAUDE.md` §5:
+dispatch `release-phase-auditor` for the phase's final independent
+audit** (re-running the plan's own verification, checking every DoD
+condition including the now-complete drift audit and learning triage,
+checking for protected-file drift). `ROADMAP.md`/`CONTEXT.md`/the phase
+plan already read `done`, but per this project's own established
+discipline that status is provisional until the independent audit
+itself confirms it (matching Phase 60/62/63's own precedent) — handle
+any FAIL→fix→re-audit cycle if one occurs. Once `release-phase-auditor`
+returns PASS or PASS WITH NON-BLOCKING OBSERVATIONS, proceed directly
+into **Phase 64 (blank-slate documentation reconstruction, Stage G's
+first phase)** per the user's own explicit instruction — write
+`planning/phase-64-<name>.md` first, per `CLAUDE.md` §1, before any
+implementation. Phase 64 consumes Phase 63D's own approved `docs/domain/`
+corpus directly rather than independently rediscovering domain
+terminology, and separates six documentation categories (domain/
+architecture/user/developer/protocol-adapter/development-process) in
+its own shadow-proposal output under `planning/v1-docs-reconstruction/`.
+GATE DD remains open and unaffected by any of this (Stage F/63D/G are a
+separate axis from Stage E, per `decisions/0056`/`decisions/0060`).
 
 Phase 61 itself is fully done: a real, symmetric two-agent comparison
 found LOW/effectively-NULL context advantage (outcome shape (b)),

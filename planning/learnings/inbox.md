@@ -39,9 +39,77 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   contradictions... between two concept pages," no explicit mention of
   within-page consistency).
 - **classification:** scoped-rule
-- **status:** candidate
+- **status:** promoted
 - **recurrence:**
-- **promoted_to:**
+- **promoted_to:** `.claude/agents/domain-skeptic.md` step 3 (within-page
+  consistency check added to the contradiction-search instruction)
+- **curation (Phase 63D triage, 2026-09-23, knowledge-curator):**
+  provenance accepted — all required fields present. Independently
+  verified rather than taking the retro's own account on faith: read
+  the *current* (post-fix, commit `507e6f6`) `docs/domain/concepts/provenance.md`
+  directly and confirmed its Definition section now correctly says "**Two
+  of the three enrichment tables** — `vendor_enrichment` and
+  `doc_relation_enrichment` — each carry a single `model` `TEXT`
+  column... `symbol_enrichment` carries no provenance column at all," in
+  agreement with its own Counterexample section — the self-contradiction
+  is genuinely fixed, not merely claimed fixed. Independently re-read
+  `.claude/agents/domain-skeptic.md` step 3 directly: it names
+  "contradictions... between two concept pages in the same corpus" and
+  "between the corpus and directly-checkable source/test/ADR content" as
+  its two explicit examples — it does not name a page's own sections
+  against each other as a third, distinct check. This is a real,
+  narrow, well-evidenced gap: `domain-skeptic`'s own review report
+  (`_domain-skeptic-review-phase-63d.md` §3) shows it *did* independently
+  re-verify the Counterexample section's claim against the real schema
+  and correctly confirmed it accurate — the miss was specifically that
+  a *different* section two paragraphs earlier, in the same file,
+  asserted the opposite, and nothing in step 3's literal text prompted a
+  check of that kind. Checked for a merge/duplicate: no existing
+  candidate names within-page consistency checking; not a duplicate.
+  Weighed against this project's own "single-occurrence, zero-harm,
+  already-covered-by-existing-discipline" discard/retain precedent
+  (`L-014`, `L-029`, `L-030`) and judged this is a materially different
+  shape: those cases involved a *lead* carrying forward a stale planning
+  claim despite an already-general "verify independently" rule already
+  in force; here, `domain-skeptic`'s own charter *specifically and
+  narrowly scopes* its contradiction-search examples to cross-page and
+  page-vs-source, on its first real dispatch, for a role whose entire
+  purpose (`decisions/0060`) is to reduce exactly this class of
+  user-facing review burden — a corpus reached the actual user with an
+  internal self-contradiction the review's own explicit checklist gave
+  no prompt to catch, even though the review otherwise worked exactly as
+  designed (real evidence gathered, one genuine ambiguity resolved with
+  git-history evidence, zero false escalations). Given `domain-skeptic`
+  is a new, foundational, repeatedly-reused role (already slated for
+  Design-stage `design.md` review per its own charter), a one-sentence,
+  low-cost charter clarification closing a specific, nameable checklist
+  gap is worth landing now rather than waiting for a second occurrence.
+  **Outcome: promote.** Classification `scoped-rule` correctly maps to
+  a `.claude/` agent-brief amendment, finalised by the lead (not
+  landed by this triage — outside this role's write boundary). Status
+  left as `candidate` (not `promoted`) until the lead actually applies
+  the amendment and a `promoted.md` line is added, per
+  `learning-lifecycle.md` §4/§6.
+
+  **Recommended amendment — `.claude/agents/domain-skeptic.md` step 3**
+  (draft, for the lead to review and land; not applied here — insert as
+  a new sentence at the end of step 3's existing paragraph):
+
+  > Also check a single page's own sections against each other — its own
+  > Definition against its own Counterexample, Invariants, or Examples —
+  > not only page-against-page or page-against-source. A page's central
+  > or counterexample claim checking out against source is not proof the
+  > page is internally consistent: confirmed necessary at Phase 63D,
+  > where `provenance.md`'s Definition section asserted the opposite of
+  > what its own Counterexample section (independently re-verified
+  > against the real schema) correctly stated, two paragraphs apart in
+  > the same file.
+
+  Revisit/withdraw only if a future review shows this addition still
+  isn't sufficiently explicit to catch the next instance (which would
+  argue for a stronger structural fix — e.g. an explicit per-page
+  "read every section, then re-read the page as a whole for internal
+  agreement" step — not merely a discard).
 
 ### L-034 — planning-status closeout discipline: `CONTEXT.md` being updated correctly is not evidence that `ROADMAP.md`/the plan file's own Status line were too
 
@@ -73,12 +141,115 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   (session history, "Check Phase 62 closeout consistency" task, prior to
   this one).
 - **classification:** workflow
-- **status:** candidate
-- **recurrence:** second occurrence of the same shape of gap (Phase 62,
-  then Phase 63D) — a third occurrence should trigger promoting this
-  into an explicit workflow-checklist step, not staying a discardable
-  one-off.
-- **promoted_to:**
+- **status:** promoted
+- **recurrence:** corrected at this triage — see curation note below;
+  this is a **first occurrence of this specific shape**, not a second
+  occurrence as originally filed.
+- **promoted_to:** `planning/agent-led-workflow.md` step 10 (new bullet:
+  dispatch `roadmap-context-curator` once more immediately before any
+  mid-phase presentation to the actual user/domain owner for approval)
+- **curation (Phase 63D triage, 2026-09-23, knowledge-curator):**
+  provenance accepted — all required fields present. Independently
+  re-verified rather than taking the entry's own account on faith:
+  confirmed `planning/ROADMAP.md` row 63D and
+  `planning/phase-63d-domain-reconstruction.md`'s own Status line are
+  now both correctly "Done 2026-09-23" (commit `507e6f6` applied the
+  fix), matching `CONTEXT.md`'s already-correct account — the underlying
+  fact of the gap is real and correctly described.
+
+  **Did not take the entry's own "second occurrence (Phase 62)" claim on
+  faith — checked it directly, and it does not hold.** Read
+  `planning/retros/_audit-phase-62.md` in full: its own item 7
+  ("Roadmap/context/changelog/context-gaps/promoted.md") states all of
+  `ROADMAP.md`, `v1-redefinition/roadmap.md`, and `CONTEXT.md` were
+  "confirmed reflecting actual completion, not aspirational language" by
+  the time of that audit — i.e. Phase 62's `ROADMAP.md` row and
+  `CONTEXT.md` were never found to disagree, at any point this audit
+  could see. Phase 62's own retro (`planning/retros/phase-62-adapter-interface-consolidation.md`)
+  independently confirms this: its "Lessons learnt"/"Process-improvement
+  feedback" sections are entirely about a *different* issue (a plan's
+  own claim about existing adapter code going stale by implementation
+  time), and "Process-improvement feedback" explicitly says "None beyond
+  the lesson above." The one thing `_audit-phase-62.md` *does* flag as a
+  process gap (item 4) is that the audit report itself wasn't written to
+  `planning/retros/_audit-phase-N.md` at the time it ran — a report
+  *file's own location*, not a planning-status *line's own content*
+  disagreeing across files. These are genuinely different failure
+  shapes: one is "a deliverable wasn't filed where convention expects
+  it," the other is "two files both claim to state the phase's status
+  and disagree." **This candidate's own `origin` field already hedges
+  this exact point** ("though that specific finding was about a missing
+  audit-report file, not this exact pattern") — on inspection, that
+  hedge is the correct call, not a minor caveat: Phase 62 is not a
+  precedent for this specific shape at all. **Recurrence corrected to:
+  first occurrence.**
+
+  This does not make the observation less real or less worth promoting —
+  it changes *why* it's promotable. Not "third-strike, mechanically
+  overdue" (the original framing), but: a specific, well-evidenced,
+  first-occurrence structural gap in `agent-led-workflow.md`'s own
+  14-step model, with a concrete, low-cost fix already named by the
+  phase's own retro. Checked `.claude/agents/roadmap-context-curator.md`'s
+  own Hard rules directly: it *already* mandates reconciling "the
+  phase's own `planning/phase-N-*.md` status line" and "`ROADMAP.md`"
+  together (`L-006`'s own prior promotion) — so the standing rule this
+  gap needed already exists in the agent brief. The actual gap is
+  sequencing: `agent-led-workflow.md`'s 14 steps only dispatch
+  `roadmap-context-curator` at step 10 (interim, `CONTEXT.md` only, by
+  design — `ROADMAP.md` deliberately not flipped yet) and step 14 (final,
+  after the retro/triage/audit sequence completes). Phase 63D needed to
+  present its work to the actual user/domain owner for approval
+  *between* those two points — a case the existing 14 steps don't name a
+  checkpoint for — so the existing `roadmap-context-curator` rule never
+  got a chance to fire before the user saw the inconsistency. This
+  matches the retro's own "Process-improvement feedback" verbatim
+  ("Consider whether `roadmap-context-curator`'s own dispatch should
+  become a mandatory step immediately before presenting any phase's work
+  for user review"). Checked for a merge/duplicate: not a duplicate of
+  `L-006`/`L-013` (already-promoted, already-live rules about *what* to
+  reconcile) — this is about *when* to reconcile, a distinct, so-far
+  unaddressed gap in the step sequence itself. **Outcome: promote**,
+  on the strength of specificity + an already-obvious, low-cost fix, not
+  recurrence-count (this project's own precedent — `L-006`, `L-018`,
+  `L-023` — already promotes well-evidenced first-occurrence workflow
+  gaps directly into `agent-led-workflow.md` without waiting for a
+  second instance). Classification `workflow` matches this project's own
+  established practice of landing such candidates as
+  `agent-led-workflow.md` step amendments (not a `.claude/skills/` file,
+  despite the lifecycle table's literal "workflow → skill" line — every
+  prior `workflow`-classified promotion in `promoted.md` — `L-006`,
+  `L-013`, `L-018`, `L-023` — in fact landed in `agent-led-workflow.md`,
+  which this triage follows as the controlling precedent). Status left
+  as `candidate` (not `promoted`) until the lead actually applies the
+  amendment and a `promoted.md` line is added.
+
+  **Recommended amendment — `planning/agent-led-workflow.md`, new
+  bullet under step 10 ("Reconcile roadmap and context state
+  (interim)")** (draft, for the lead to review and land; not applied
+  here):
+
+  > **If this phase's work must be presented to the actual user/domain
+  > owner for approval before the phase can be called done** (a
+  > Domain-stage corpus, a `design.md` needing sign-off, or any other
+  > mid-phase human-decision gate), **dispatch `roadmap-context-curator`
+  > once more immediately before that presentation**, not only at step
+  > 10's own regular interim point. This pass must cover the same scope
+  > as any other reconciliation (the phase's own `planning/phase-N-*.md`
+  > Status line and the `ROADMAP.md` row, not `CONTEXT.md` alone) —
+  > updating `CONTEXT.md` correctly while leaving `ROADMAP.md`/the plan
+  > file's own Status line stale is a real, visible inconsistency a human
+  > reviewer will notice before the lead does, confirmed at Phase 63D
+  > (`L-034`): `CONTEXT.md` said "corpus complete, awaiting approval"
+  > while `ROADMAP.md` and the phase plan still said "not started"/"plan
+  > only," caught only by the actual user's own review.
+
+  Revisit/withdraw only if a future phase's own experience shows this
+  new checkpoint doesn't actually get triggered reliably (e.g. because
+  "must be presented for approval" is itself ambiguous to spot in
+  advance), which would argue for a stronger mechanical trigger (a
+  `check_user_docs.py` check comparing `CONTEXT.md`'s phase-status
+  language against `ROADMAP.md`'s row and the plan file's Status line)
+  rather than a prose reminder.
 
 ### L-031 — `symbol_enrichment` has no provenance column, unlike its two sibling enrichment tables
 
@@ -108,9 +279,60 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   `domain-skeptic` against the real schema
   (`planning/retros/_domain-skeptic-review-phase-63d.md` §3).
 - **classification:** future-improvement
-- **status:** candidate
+- **status:** promoted
 - **recurrence:**
-- **promoted_to:**
+- **promoted_to:** `planning/ROADMAP.md` "Future-improvement backlog
+  (unscheduled)" section
+- **curation (Phase 63D triage, 2026-09-23, knowledge-curator):**
+  provenance accepted — all required fields present. Independently
+  re-verified rather than taking the candidate's (or `domain-skeptic`'s)
+  own account on faith: read `src/codecompass/graph.py:165-203` directly
+  and confirmed `symbol_enrichment` (lines 177-182) has exactly four
+  columns (`id`, `symbol_id`, `purpose`, `generated_at`) with no `model`
+  column, while `vendor_enrichment`/`doc_relation_enrichment` both
+  genuinely have `model TEXT NOT NULL`; read
+  `graph.record_symbol_enrichment` and confirmed its `INSERT` statement
+  and signature have no producer parameter anywhere. Read
+  `decisions/0054-agent-driven-enrichment-is-a-second-non-authoritative-producer.md`
+  directly and confirmed it does state the "column that has existed
+  since Phase 14" claim in a way that reads as applying to "the
+  enrichment tables" generally — genuinely stale/inaccurate for
+  `symbol_enrichment` specifically, exactly as claimed. Checked for a
+  merge/duplicate: grepped `promoted.md`, `ROADMAP.md`, and
+  `v1-redefinition/roadmap.md` for "provenance"/"model column"/
+  "symbol_enrichment" — no existing roadmap row or promoted learning
+  already covers adding provenance attribution to `symbol_enrichment`;
+  Phase 57's own Stage E candidate ("graph-level provenance... per-claim
+  version + evidence route + confidence state," conditional on GATE DD)
+  is a much larger, different-shaped future generalisation that
+  `provenance.md`'s own "Relationships" section already correctly
+  distinguishes from this narrower, concrete gap — not a duplicate, not
+  a reason to fold this into that future work. **Outcome: promote.**
+  Classification `future-improvement` correctly maps to a `ROADMAP.md`
+  row, finalised by `roadmap-context-curator` (not this role, and not
+  landed here — outside both this role's and the lead's usual write
+  path for that file). Status left as `candidate` until
+  `roadmap-context-curator` actually adds the row and a `promoted.md`
+  line is added, per `learning-lifecycle.md` §4/§6. Separately flagging,
+  not as part of this promotion: `decisions/0054`'s own "using a column
+  that has existed since Phase 14" sentence is now a factually-inaccurate
+  standing ADR claim; per `CLAUDE.md` §2, ADRs are append-only, so
+  whether this warrants a corrective/errata note is an editorial call
+  for whoever owns `decisions/*.md` (the lead), not something this
+  future-improvement promotion resolves or should be blocked on.
+
+  **Recommended new `ROADMAP.md` row** (draft, for `roadmap-context-curator`
+  to review and land; not applied here):
+
+  > `symbol_enrichment` has no producer-attribution column, unlike
+  > `vendor_enrichment`/`doc_relation_enrichment` (both carry `model
+  > TEXT NOT NULL`) — `symbol_enrichment` rows currently cannot be
+  > attributed to a specific producer (agent or automated API call) at
+  > all. Add a `model` column via an additive migration (mirroring
+  > `_migrate_symbols_export_kind_note_columns`'s `ADD COLUMN` pattern,
+  > Phase 62), or explicitly document the asymmetry as an intentional
+  > simplification if a rationale is found. Origin: `L-031` (Phase 63D,
+  > `domain-skeptic`'s own review). | FUTURE-IMPROVEMENT | not started | —
 
 ### L-032 — the external adapter protocol's wire-level `ecosystem` field and `capabilities` list are received but never validated
 
@@ -142,9 +364,59 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   against the real source
   (`planning/retros/_domain-skeptic-review-phase-63d.md` §3).
 - **classification:** future-improvement
-- **status:** candidate
+- **status:** promoted
 - **recurrence:**
-- **promoted_to:**
+- **promoted_to:** `planning/ROADMAP.md` "Future-improvement backlog
+  (unscheduled)" section
+- **curation (Phase 63D triage, 2026-09-23, knowledge-curator):**
+  provenance accepted — all required fields present. Independently
+  re-verified rather than taking the candidate's own account on faith:
+  grepped `src/codecompass/adapters/external_process.py` and every other
+  `.py` file under `src/codecompass/` for `.ecosystem` and `capabilities`
+  attribute access — confirmed `self.ecosystem` (line 51, assigned line
+  83) is genuinely never read anywhere outside `external_process.py`
+  itself (every other `.ecosystem` hit in the codebase belongs to
+  `VendorConfig.ecosystem`/`Vendor.ecosystem`, an unrelated, already-used
+  field on a different class), and `self.capabilities` (assigned line
+  84) is likewise never read or checked against the closed
+  `CAPABILITIES = ("dependencies", "symbols", "observations",
+  "diagnostics")` tuple defined two lines above it in the same file —
+  both fields are write-only within their own class. Confirmed accurate
+  exactly as claimed. Checked for a merge/duplicate: grepped
+  `promoted.md`/`ROADMAP.md`/`v1-redefinition/roadmap.md` for
+  "capabilities"/"validate ecosystem"/"protocol harden" — no existing
+  roadmap row or promoted learning already covers validating the
+  external-adapter wire protocol's own `ecosystem`/`capabilities`
+  fields; distinct from `CG-008` (already resolved, Phase 62 — about
+  `symbols` never reaching the graph at all, not about validating these
+  two specific handshake fields) and from `decisions/0057`/`0058`/`0059`
+  (protocol design ADRs that define the fields but don't validate them
+  either). **Outcome: promote.** Classification `future-improvement`
+  correctly maps to a `ROADMAP.md` row, finalised by
+  `roadmap-context-curator`. Status left as `candidate` until the row is
+  actually added and a `promoted.md` line is added, per
+  `learning-lifecycle.md` §4/§6. Not merged with `L-031`: both are real
+  `src/codecompass/` future-improvement gaps found by the same review,
+  but in unrelated subsystems (an enrichment-table schema vs. an
+  external-adapter handshake) — a shared origin phase isn't grounds to
+  merge two otherwise-independent findings.
+
+  **Recommended new `ROADMAP.md` row** (draft, for `roadmap-context-curator`
+  to review and land; not applied here):
+
+  > `ExternalAdapterProcess.initialize()` receives `ecosystem` and
+  > `capabilities` from an external adapter's wire response
+  > (`external_process.py:83-84`) but never validates either: `ecosystem`
+  > is never compared against the `core.Ecosystem` value CodeCompass
+  > configured the adapter under, and `capabilities` is never checked
+  > against the protocol's own closed 4-value set already defined in the
+  > same file (`CAPABILITIES`). An adapter reporting a mismatched
+  > `ecosystem` string or an unrecognized capability is currently
+  > accepted uncomplainingly. Add a membership/equality check in
+  > `initialize()`, raising `AdapterError` on mismatch (matching the
+  > existing `protocol_version` mismatch handling immediately above it
+  > in the same method). Origin: `L-032` (Phase 63D, `domain-skeptic`'s
+  > own review). | FUTURE-IMPROVEMENT | not started | —
 
 ### L-030 — a live check's "realness" is not, by itself, evidence that it adds more informative signal than an already-passing fixture suite covering the same surface
 
