@@ -1,6 +1,10 @@
 # Phase 64: Blank-slate documentation reconstruction — plan
 
-**Status:** planned (2026-09-23).
+**Status:** done (2026-09-23). See
+`planning/retros/phase-64-blank-slate-documentation-reconstruction.md`
+(retro), `planning/retros/_drift-audit-phase-64.md` (docs-reconstructor
+drift audit — NO DRIFT), and `planning/retros/_audit-phase-64.md`
+(release-phase-auditor) for the full closeout record.
 
 **Stage G's first phase** (`planning/v1-redefinition/roadmap.md`,
 `decisions/0060`). Gated on Phase 63D completing — **done 2026-09-23,

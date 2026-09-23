@@ -79,15 +79,11 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   this one is about an *existing* agent's brief drifting behind an ADR
   landed after the brief was last edited — a maintenance gap). **Outcome:
   promote.** Classification `workflow` maps to
-  `planning/agent-led-workflow.md`, finalised by the lead (not landed by
-  this triage — outside this role's write boundary). Status left as
-  `candidate` (not `promoted`) until the lead actually applies the
-  amendment and a `promoted.md` line is added, per
-  `learning-lifecycle.md` §4/§6.
+  `planning/agent-led-workflow.md`, finalised by the lead. **Landed**:
+  see `status`/`promoted_to` above.
 
-  **Recommended amendment — `planning/agent-led-workflow.md` step 5**
-  (draft, for the lead to review and land; not applied here — insert as
-  a new paragraph in step 5, alongside the existing L-018/L-023 dispatch
+  **Amendment landed — `planning/agent-led-workflow.md` step 5**
+  (as a new paragraph, alongside the existing L-018/L-023 dispatch
   cautions):
 
   > **Before dispatching a milestone-scoped agent brief (one exercised
@@ -178,11 +174,8 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   composes" is the constant worth naming as a standing expectation
   rather than something each phase's plan must independently
   rediscover. **Outcome: promote.** Classification `workflow` maps to
-  `planning/agent-led-workflow.md`, finalised by the lead (not landed by
-  this triage — outside this role's write boundary). Status left as
-  `candidate` (not `promoted`) until the lead actually applies the
-  amendment and a `promoted.md` line is added, per
-  `learning-lifecycle.md` §4/§6.
+  `planning/agent-led-workflow.md`, finalised by the lead. **Landed**:
+  see `status`/`promoted_to` above.
 
   **Recommended amendment — `planning/agent-led-workflow.md` step 5**
   (draft, for the lead to review and land; not applied here — insert as
