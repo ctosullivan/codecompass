@@ -22,11 +22,15 @@ exactly two categories:
    `decisions/0060-scope-plan-domain-design-implement-methodology.md`,
    `planning/phase-63d-domain-reconstruction.md`,
    `planning/v1-redefinition/development-methodology.md`,
-   `planning/v1-redefinition/roadmap.md`, `planning/CONTEXT.md`,
-   `planning/ROADMAP.md`, `CHANGELOG.md` — every one of these lists
-   "connector" alongside "adapter, protocol, reference, decision,
-   invariant" purely as a term *to research*, never as a term already
-   defined or used for a mechanism.
+   `planning/v1-redefinition/roadmap.md`, `planning/ROADMAP.md`,
+   `CHANGELOG.md` — every one of these lists "connector" alongside
+   "adapter, protocol, reference, decision, invariant" purely as a term
+   *to research*, never as a term already defined or used for a
+   mechanism. (`planning/CONTEXT.md` also listed it at the time of this
+   corpus's own approval, but no longer does — Phase 66 rewrote that
+   file into a current-only document per `CLAUDE.md` §4, dropping its
+   own historical phase-63D-planning narrative; verified 2026-09-24,
+   `EV-SKEP-003`.)
 2. **One unrelated hit inside a vendored third-party reference
    digest** — `.claude/skills/codecompass-anthropic/references/FILETREE.md:1242`
    describes a field (`beta_tunnel_token.py` — "A tunnel's connector

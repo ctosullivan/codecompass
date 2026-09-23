@@ -1,0 +1,40 @@
+id: OBS-SKEP-004
+kind: observation
+method: executable
+what_was_done: >
+  Ran `grep -ni "connector"` against each of the seven files
+  `docs/domain/concepts/connector.md`'s own Definition section cites as
+  listing "connector" purely as a candidate term to research
+  (`decisions/0060-scope-plan-domain-design-implement-methodology.md`,
+  `planning/phase-63d-domain-reconstruction.md`,
+  `planning/v1-redefinition/development-methodology.md`,
+  `planning/v1-redefinition/roadmap.md`, `planning/CONTEXT.md`,
+  `planning/ROADMAP.md`, `CHANGELOG.md`), to test Phase 66's own drift
+  audit's claim (`planning/retros/_drift-audit-phase-66.md`) that
+  `planning/CONTEXT.md`'s rewrite from ~2449 to ~126 lines (current-
+  only, per `CLAUDE.md` §4) dropped the word "connector" entirely,
+  making `connector.md`'s enumerated citation list stale for one of
+  its seven named files.
+tool: grep (GNU grep)
+tool_version: "system grep on this environment"
+repository_revision: "3a6e26bd14b89d0c1a3c7c64f7378849601887df"
+location: null
+raw_result: >
+  Six of the seven files still contain the word "connector," in the
+  same research-candidate-list usage `connector.md` describes:
+  `decisions/0060-...md:44`, `planning/phase-63d-domain-
+  reconstruction.md:48,194`, `planning/v1-redefinition/
+  development-methodology.md:75`, `planning/v1-redefinition/
+  roadmap.md:1561`, `planning/ROADMAP.md:352`, `CHANGELOG.md:91,396`.
+  `planning/CONTEXT.md` returns zero matches (confirmed with plain
+  `grep -i connector planning/CONTEXT.md`, exit 1, no output) -- the
+  word does not appear anywhere in the file's current ~126-line
+  current-only content. This is the sole exception among the seven
+  files `connector.md` names, and it traces directly to Phase 66's own
+  documented, deliberate rewrite of `planning/CONTEXT.md` (commit
+  c2526e5, "rewrite CONTEXT.md from scratch (2449 -> current-only)"),
+  not to any edit of `connector.md` itself or any change in what
+  CodeCompass means by "connector."
+timestamp: "2026-09-24T00:00:00Z"
+performed_by: "domain-skeptic agent dispatch"
+status: recorded

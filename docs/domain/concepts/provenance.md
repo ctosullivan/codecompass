@@ -96,7 +96,7 @@ which is a `src/codecompass/` change out of this phase's own scope.
   Phase 57's own Stage E candidate design sketches ("distinguishing
   source-derived fact / doc statement / observed behaviour / test
   result / ADR / agent inference; per-claim version + evidence route +
-  confidence state," `v1-redefinition/roadmap.md:1080-1086`) — a
+  confidence state," `v1-redefinition/roadmap.md:1081-1087`) — a
   future, not-yet-built, graph-level generalisation of exactly this
   concern, conditional on GATE DD, explicitly **not** the full
   ontology "unless demonstrably required."
@@ -114,5 +114,5 @@ which is a `src/codecompass/` change out of this phase's own scope.
 - `planning/context-gaps/README.md`,
   `planning/context-observations/README.md` (the four-field narrative
   provenance shape).
-- `planning/v1-redefinition/roadmap.md:1080-1086` (Phase 57's own
+- `planning/v1-redefinition/roadmap.md:1081-1087` (Phase 57's own
   candidate graph-level provenance generalisation).

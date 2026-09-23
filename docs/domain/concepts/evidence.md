@@ -132,5 +132,5 @@ disconfirmed one (`EV-EVID-004`).
 - `planning/retros/phase-54c-evidence-knowledge-workflow.md:164-178`
   (the untested support/contradict-both-ways property, disclosed
   honestly).
-- `planning/v1-redefinition/roadmap.md:1060-1086` (the graph-level
+- `planning/v1-redefinition/roadmap.md:1061-1087` (the graph-level
   naming-collision note).

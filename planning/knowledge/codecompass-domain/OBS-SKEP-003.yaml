@@ -1,0 +1,44 @@
+id: OBS-SKEP-003
+kind: observation
+method: executable
+what_was_done: >
+  Ran `git show cc650cd..HEAD -- planning/v1-redefinition/roadmap.md`
+  and `grep -n "" planning/v1-redefinition/roadmap.md | sed -n
+  '1058,1088p'` (compared against the same range taken from
+  `git show cc650cd:planning/v1-redefinition/roadmap.md`), to test
+  Phase 66's own drift audit's claim (`planning/retros/
+  _drift-audit-phase-66.md`) that Phase 66's `L-021` status-fix commit
+  shifted every line after it down by one, making four concept pages'
+  own `v1-redefinition/roadmap.md` line-range citations
+  (`evidence.md:135`, `decision.md:117`, `claim.md:126`,
+  `provenance.md:99,117`) stale by one line.
+tool: git, grep
+tool_version: "system git; GNU grep"
+repository_revision: "3a6e26bd14b89d0c1a3c7c64f7378849601887df"
+location: "planning/v1-redefinition/roadmap.md:1030-1090"
+raw_result: >
+  Confirmed directly, not taken on trust. The Phase 66 fix commit
+  (2e184c4) changed a 3-line hunk to a 4-line hunk at the file's own
+  pre-commit lines 1030-1039 (net +1 line: "not yet approved." became
+  "approved and applied (`CLAUDE.md` §1, commit `899449d`)." across one
+  extra line) -- confirmed via `git show 2e184c4 --
+  planning/v1-redefinition/roadmap.md`. Consequently, every line at or
+  after old line 1030 shifted down by exactly one. Specifically: the
+  "A specific naming collision to resolve..." paragraph, which begins
+  at line 1060 in the pre-commit revision (`cc650cd:planning/
+  v1-redefinition/roadmap.md`) and continues through line 1072 (blank
+  line 1073), with the enclosing citation range extending to line 1086
+  (end of the Phase 57 CONDITIONAL stanza, "demonstrably required."),
+  now begins at line 1061 and its enclosing range now ends at line
+  1087 in the current file (HEAD). Separately, the Phase 57 bullet
+  text "distinguishing source-derived fact / doc statement / observed
+  behaviour / test result / ADR / agent inference; per-claim version +
+  evidence route + confidence state" -- cited by `provenance.md` at
+  `:1080-1086` -- sits under the "### Phase 57" header, which was at
+  line 1080 pre-commit (bullet content 1081-1086) and is now at line
+  1081 (bullet content 1082-1087). The underlying prose text itself is
+  byte-for-byte unchanged in both spans -- only its line position
+  moved. No content drift found, only citation-location drift.
+timestamp: "2026-09-24T00:00:00Z"
+performed_by: "domain-skeptic agent dispatch"
+status: recorded

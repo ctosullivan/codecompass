@@ -114,7 +114,7 @@ to.
 - Real example records:
   `planning/knowledge/doc-origin-pinned-reference/DEC-DOCORIGIN-001.yaml`;
   `planning/knowledge/haskell-api-surface-extraction/DEC-HSAPI-001.yaml`.
-- `planning/v1-redefinition/roadmap.md:1060-1086` (the graph-level
+- `planning/v1-redefinition/roadmap.md:1061-1087` (the graph-level
   naming-collision note).
 - `planning/context-gaps/README.md:38-67` ("How it feeds the gates" —
   the separate, project-architecture-scoped decision path).

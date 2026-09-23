@@ -1,0 +1,37 @@
+id: EV-SKEP-003
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  `docs/domain/concepts/connector.md`'s Definition section (lines
+  20-29) enumerates seven planning files as all listing "connector"
+  purely as a research-candidate term. As of this repository revision,
+  this is textually true for six of the seven
+  (`decisions/0060-...md`, `planning/phase-63d-domain-
+  reconstruction.md`, `planning/v1-redefinition/
+  development-methodology.md`, `planning/v1-redefinition/roadmap.md`,
+  `planning/ROADMAP.md`, `CHANGELOG.md`) but no longer true for the
+  seventh, `planning/CONTEXT.md`, which Phase 66 deliberately rewrote
+  from a ~2449-line running history down to ~126 lines of
+  current-only state (per `CLAUDE.md` §4) and which no longer contains
+  the word "connector" anywhere (OBS-SKEP-004). This is a stale
+  citation, not a domain-meaning change: `connector.md`'s substantive,
+  central claim -- "'Connector' is not a real, distinct CodeCompass
+  concept," resting primarily on `EV-ADPT-004`'s own repository-wide
+  grep of `src/`, `docs/`, `architecture/`, `ai-docs/`, `decisions/`,
+  and `tests/` (a different, still-fully-valid check that never
+  depended on `planning/CONTEXT.md`'s content) -- is entirely
+  unaffected. Only the illustrative citation list in the "What it
+  might be confused with" / Definition section's category-1 enumeration
+  needs updating to remove `planning/CONTEXT.md` (or to note its
+  current absence) so the list matches the corpus's own freshness
+  standard. Correcting this is out of this role's own write boundary
+  (`docs/domain/` is never edited by `domain-skeptic`, even for an
+  obviously-correct factual-list fix, per `decisions/0060`) and is
+  named here for whoever holds write access to the approved corpus to
+  apply.
+observations: [OBS-SKEP-004]
+source_ref: null
+doc_ref: "docs/domain/concepts/connector.md:20-29; planning/CONTEXT.md; planning/retros/_drift-audit-phase-66.md"
+test_ref: null
+repository_revision: "3a6e26bd14b89d0c1a3c7c64f7378849601887df"
+status: current
