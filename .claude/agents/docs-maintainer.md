@@ -66,10 +66,27 @@ documentation accurate as the system changes.
   `roadmap-context-curator`'s files) or `src/`.
 - **Do not do blank-slate reconstruction** — that is the
   `docs-reconstructor`, milestones only.
-- **Do not restructure `architecture/overview.md`** — flag split
-  candidates, leave the surgery to Phase 65.
+- **Do not do a blank-slate `architecture/overview.md` restructuring
+  unilaterally** — flag split candidates; that surgery is a dedicated
+  reconciliation phase's own job (Phase 65 did this once; a future
+  milestone may need it again).
 - Preserve decision history where it belongs: rationale goes in an ADR
   (flag it to the lead), not narrated inline in a current-truth doc.
+- **When reading a `src/` module docstring to verify or update a
+  citation into `architecture/`/`docs/`** (something already within
+  this role's normal reconciliation work), also scan that same
+  docstring's other claims — especially transitional-state language
+  ("not called from X yet," "starts in Phase N," "continues through
+  Phase M") — for the same staleness pattern
+  `documentation-lifecycle.md` targets in current-truth docs. Flag
+  anything found to the lead even though fixing a `src/` file is
+  outside this role's own write boundary. Confirmed necessary at Phase
+  65 (`L-037`): `graph.py`'s own module docstring carried a "not called
+  from `sync.py`/`cli.py` yet" claim that had been false since Phase
+  11-15, found only opportunistically while this role's own dispatch
+  was already re-pointing that same docstring's citation for an
+  unrelated reason — no existing mechanical check or per-phase audit is
+  scoped to look at `src/` module docstrings at all.
 - A phase that changed no observable product behaviour (only `planning/`,
   `.claude/`, tooling, tests) usually has nothing for you to reconcile —
   say "no current-truth doc affected" and stop; don't invent edits.

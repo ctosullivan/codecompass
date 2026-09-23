@@ -36,6 +36,18 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
 ## The 14 steps
 
 1. **Inspect the repository.** `git log`, `git status`, the test state.
+   **Before the first commit of a session, check whether any
+   session-level or environment-provided convention (e.g. a default
+   commit-attribution trailer) conflicts with an already-loaded,
+   higher-precedence project rule.** `CLAUDE.md` always wins over a
+   generic environment default per its own §0 — but that precedence
+   only protects the project if something actually prompts the
+   comparison. Confirmed necessary at Phase 65 (`L-038`): a session-wide
+   attribution-trailer default silently contradicted `CLAUDE.md` §7 for
+   32 commits, several already pushed to shared history before the
+   conflict was noticed and could not be cleanly undone. No mechanical
+   check catches this (`check_user_docs.py` does not inspect commit
+   trailers); only an explicit comparison at session start does.
 2. **Establish current project state.** Dispatch `roadmap-context-curator`
    with "summarise current state + the next approved phase". It returns a
    reconciled statement (current phase, blocking gate if any, next step).

@@ -8,6 +8,141 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-038 — nothing in the 14-step workflow prompts a check of a session-level/environment-provided convention against `CLAUDE.md` before the first commit of a session
+
+- **origin:** Phase 65 retro (architecture + ADR reconciliation) "What
+  didn't work" bullet 1 and "Lessons learnt" bullet 1 — filed by
+  `knowledge-curator` on independent review, per this project's own
+  established precedent of not accepting a retro's own "nothing to file
+  here" reasoning at face value (`L-029`/`L-030`, and the Phase 65 task
+  dispatch's own explicit instruction to assess this specific item
+  independently rather than trust the retro's account)
+- **date:** 2026-09-23
+- **project_revision:** `9ddf4cd` (Phase 65's own retro commit)
+- **observation:** every commit in the Phase 65 session (32 total,
+  several already pushed to `origin` by the time the lapse was caught)
+  carried a `Co-Authored-By: Claude.../Claude-Session:` attribution
+  trailer, directly contradicting `CLAUDE.md` §7's explicit "Commits
+  never include an AI assistant as co-author, contributor, or
+  attribution trailer... Fixed convention, not reconsidered case by
+  case." `CLAUDE.md` was loaded as the session's own highest-precedence
+  governing document throughout (its own §0 states "if this file and any
+  other guidance... disagree, this file wins"), yet a generic,
+  session-level attribution default was followed instead for the
+  session's entire duration up to the point of discovery. The lapse was
+  caught only when writing a routine mid-phase commit — not by any
+  existing mechanical check (`check_user_docs.py` does not check commit
+  trailers) or workflow step — and by then, rewriting the already-pushed
+  history to fix it would itself be a destructive git action requiring
+  explicit confirmation (`CLAUDE.md`'s own git-safety norms), so the
+  user's own decision was to stop going forward rather than rewrite
+  shared history. The retro's own "Lessons learnt" section already
+  states the generalization explicitly ("An explicit, project-specific
+  governance rule always outranks a generic environment-level default...
+  checking whether a per-session convention conflicts with an
+  already-loaded, higher-precedence project file is worth doing the
+  first time such a convention is encountered... a standing point of
+  vigilance for future sessions on this project, not a one-time fix")
+  but its own "Process-improvement feedback" section explicitly declined
+  to file this as a candidate learning, reasoning "`CLAUDE.md` already
+  states the rule correctly; the fix was behavioral compliance, not a
+  documentation or process gap."
+- **evidence:**
+  `planning/retros/phase-65-architecture-adr-reconciliation.md` "What
+  didn't work" bullet 1 and "Lessons learnt" bullet 1 (verbatim
+  generalization quoted above; the retro's own explicit non-filing
+  reasoning); `CLAUDE.md` §0 ("this file wins" precedence statement) and
+  §7 (the rule violated) — both read directly at this triage, confirmed
+  currently, correctly, and unambiguously stated, unedited by this
+  incident; `planning/agent-led-workflow.md` (read in full at this
+  triage) — its 14 steps, including step 1 ("Inspect the repository...
+  git log, git status, the test state"), name no check of any
+  session-level/environment-provided convention against `CLAUDE.md`
+  anywhere in the sequence; this session's own git history, per the
+  retro's own explicit count (32 commits, several already pushed) — not
+  independently re-counted by this triage (no Bash access; taken from
+  the retro's own account, which is itself an admission against the
+  lead's own interest and not the kind of claim a retro would inflate).
+- **classification:** workflow
+- **status:** promoted
+- **recurrence:**
+- **promoted_to:** `planning/agent-led-workflow.md` step 1 (new
+  paragraph: check a session-level/environment convention against
+  CLAUDE.md before the first commit of a session)
+- **curation (Phase 65 triage, 2026-09-23, knowledge-curator):**
+  provenance accepted — assigned this id, all required fields now
+  present. Independently assessed the retro's own "nothing to file"
+  reasoning on its merits rather than deferring to it, exactly as this
+  project's `CLAUDE.md` §8 requires ("An agent observation is not
+  authoritative because an agent recorded it" — including a retro's own
+  judgment that something isn't candidate-worthy) and exactly as prior
+  triage did for Phase 62's and Phase 63's equivalent non-filing calls
+  (`L-029`, `L-030`). **Disagree with the retro's own conclusion.** The
+  retro's reasoning — "`CLAUDE.md` already states the rule correctly; the
+  fix was behavioral, not textual" — is true as far as it goes, but it is
+  the same shape of reasoning this project's own workflow-classified
+  precedents (`L-006`, `L-013`, `L-018`, `L-023`, `L-034`, `L-035`,
+  `L-036`) have repeatedly found insufficient to justify a discard: in
+  each of those, the *general* principle already existed somewhere (a
+  standing rule, an agent's charter, `CLAUDE.md` itself) but nothing
+  *operationalized when to apply it* in the 14-step sequence, and the gap
+  was only closed once a concrete trigger point was added to
+  `agent-led-workflow.md`. This is the same gap, not a different one:
+  `CLAUDE.md` §0/§7 already state the rule's content and precedence with
+  total clarity, but no step in `agent-led-workflow.md` ever prompts a
+  lead to actually *compare* a session-level default against `CLAUDE.md`
+  at a concrete moment — the session ran 32 commits deep, several already
+  pushed, before the conflict was noticed, purely because nothing forced
+  an earlier look. This is a materially different shape from the discard
+  precedents `L-014`/`L-030` (a single lead lapse against an
+  already-general, already-operationalized "verify independently, every
+  time" instruction, with no plausible concrete trigger-point gap to
+  name) — there, the fix genuinely was "just follow the existing rule
+  more carefully"; here, a concrete, nameable, low-cost trigger point
+  (step 1, session start) is missing and would plausibly have caught this
+  before it compounded across 32 commits. Weighed the severity: unlike
+  most workflow gaps in this queue, this one left a *permanent*, uncorrected
+  artifact (32 already-pushed commits the user explicitly chose not to
+  rewrite) — the kind of outcome that argues for closing the gap going
+  forward even though this specific instance can't be undone. Checked for
+  a merge/duplicate: not a duplicate of any existing candidate (grepped
+  `inbox.md` and `promoted.md` for "attribution"/"co-author"/"trailer" —
+  no match); distinct from `L-036` (that entry is about a *milestone-scoped
+  agent brief* drifting behind a landed ADR — an artifact-staleness gap;
+  this one is about a *session-level convention* never being checked
+  against `CLAUDE.md` at all — a different failure mode, at a different
+  point in the workflow). **Outcome: promote.** Classification `workflow`
+  maps to `planning/agent-led-workflow.md`, matching this project's own
+  established practice (every prior `workflow`-classified promotion in
+  `promoted.md` landed there, not in `.claude/skills/`, despite the
+  lifecycle table's literal "workflow → skill" line). Finalised by the
+  lead — not landed here, outside this role's write boundary for that
+  file. Status left as `candidate` until the lead actually applies the
+  amendment and a `promoted.md` line is added, per `learning-lifecycle.md`
+  §4/§6.
+
+  **Recommended amendment — `planning/agent-led-workflow.md` step 1
+  ("Inspect the repository")** (draft, for the lead to review and land;
+  not applied here — insert as a new paragraph):
+
+  > **Before the first commit of a session, check whether any
+  > session-level or environment-provided convention (e.g. a default
+  > commit-attribution trailer) conflicts with an already-loaded,
+  > higher-precedence project rule.** `CLAUDE.md` always wins over a
+  > generic environment default per its own §0 — but that precedence
+  > only protects the project if something actually prompts the
+  > comparison. Confirmed necessary at Phase 65 (`L-038`): a session-wide
+  > attribution-trailer default silently contradicted `CLAUDE.md` §7 for
+  > 32 commits, several already pushed to shared history before the
+  > conflict was noticed and could not be cleanly undone. No mechanical
+  > check catches this (`check_user_docs.py` does not inspect commit
+  > trailers); only an explicit comparison at session start does.
+
+  Revisit toward a mechanical check (e.g. a pre-push hook or
+  `check_user_docs.py` extension scanning recent commit trailers against
+  `CLAUDE.md` §7) if a second occurrence shows a prose reminder at step 1
+  isn't sufficient to actually catch this before commits accumulate.
+
 ### L-037 — a module docstring can carry the exact same history-narration/staleness pattern `documentation-lifecycle.md` targets in current-truth docs, but sits outside any of this project's own doc-drift checks
 
 - **origin:** Phase 65 (architecture + ADR reconciliation), flagged by
@@ -51,11 +186,119 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   principle this docstring also violates, written for `architecture/overview.md`
   specifically, with no scope note about `src/` docstrings one way or
   the other).
-- **classification:** open-work
-- **status:** candidate
+- **classification:** scoped-rule (corrected from the as-filed `open-work`
+  at this triage — see curation note below)
+- **status:** promoted
 - **recurrence:**
-- **promoted_to:**
+- **promoted_to:** `.claude/agents/docs-maintainer.md` "Hard rules" (new
+  bullet: when reading a `src/` module docstring to verify or update a
+  citation, also scan that same docstring's other claims for the same
+  transitional-state staleness pattern, and flag any found even though
+  fixing them is outside this role's write boundary)
+- **curation (Phase 65 triage, 2026-09-23, knowledge-curator):**
+  provenance accepted — all required fields present. Independently
+  re-verified rather than taking the retro's/candidate's own account on
+  faith, within this role's tool limits (no Bash, so no `git show` of the
+  cited pre-fix commit — see below): read the *current* (post-fix)
+  `src/codecompass/graph.py:1-20` directly and confirmed it now correctly
+  reads "called from `sync.py`'s `rebuild_project_graph` on every
+  whole-project `sync`," with no "not called yet" language anywhere.
+  Independently confirmed the real wiring the pre-fix docstring is
+  claimed to have denied: `sync.py:234` defines `rebuild_project_graph`,
+  which calls `rebuild_deterministic` at `sync.py:353` exactly as the
+  candidate's evidence field states; `sync.py`'s *own* module docstring
+  (line 11) independently corroborates "`rebuild_project_graph` (Phase
+  11, extended in..." as the wiring's origin phase; `cli.py` directly
+  imports and calls `rebuild_project_graph` at four call sites
+  (`cli.py:49,127→136` via `sync_all`+explicit call, `:234`, `:296→300`
+  via `sync_all`+explicit call) — the wiring is real, current, and has
+  existed since Phase 11, confirming a "not called from `sync.py` or
+  `cli.py` yet" claim would indeed have been false for a long time by
+  Phase 65. **Limitation honestly disclosed**: this role has no Bash, so
+  the literal pre-fix docstring text (cited as `graph.py:1-11`, commit
+  `5d4fa94` and earlier) could not be independently retrieved via `git
+  show` as the dispatch instruction suggested; the above corroborates the
+  claim's *substance* (the wiring is real and long-standing, so a
+  "not-yet-wired" claim about it would be false) rather than the exact
+  pre-fix wording. Nothing here contradicts the candidate's account, and
+  the candidate's own citation of the `docs-maintainer` dispatch report
+  as a source (an agent flagging something explicitly out of its own
+  write boundary) is plausible on its face.
 
+  **Reclassified from `open-work` to `scoped-rule`.** `open-work` (§4:
+  "unresolved current work" → `CONTEXT.md` "next step/outstanding") does
+  not fit: the actual instance was already fixed inline this same phase
+  (per the retro's own "What was achieved" list) — there is no
+  outstanding work-in-progress to record in `CONTEXT.md`. The
+  generalizable content is a coverage gap in *who ever looks at* a
+  `src/` module docstring's non-citation claims: `docs-maintainer` was
+  already physically reading this docstring to fix its citation, and
+  caught the separate staleness only opportunistically, not because
+  anything in its own charter prompted a look. This is the same shape as
+  `L-033` (a within-page consistency check is a distinct axis from a
+  claim-against-source check, missed by a charter that only names the
+  latter) — not "already covered by an existing general discipline" the
+  way `L-014`/`L-030` were discarded (this project's "verify
+  independently" standing rule is about checking what you're citing, not
+  about proactively re-scanning unrelated parts of a file you're already
+  present in for an unrelated reason). Considered `future-improvement`
+  (a `ROADMAP.md` row, `L-031`/`L-032`'s destination) as an alternative:
+  rejected — those two are `src/` *behavior* gaps needing dedicated
+  implementation (a migration, a validation check); this is a *detection
+  coverage* gap, cheaply closed by a one-sentence charter addition, not a
+  scheduled implementation task. Considered whether this should instead
+  widen `docs-reconstructor`'s per-phase drift-audit scope (`CLAUDE.md`
+  §5's DoD text explicitly enumerates `README.md`/`docs/`/`architecture/`/
+  `ai-docs/` as its checked categories) — rejected as the promotion
+  target: that would require amending `CLAUDE.md` §5's own DoD text
+  itself (a `project-rule`-classification change, gated on
+  `proposed-governance-changes.md` and explicit user approval per
+  `CLAUDE.md` §0), a materially larger and riskier lift than the
+  `docs-maintainer`-charter addition below for a single-occurrence,
+  not-yet-shown-to-be-systemic finding (the candidate's own text
+  discloses this was found opportunistically, "not by any systematic
+  search of `src/codecompass`'s other module docstrings for the same
+  pattern" — real evidence of one instance, not evidence of a widespread
+  problem). Checked for a merge/duplicate: not a duplicate of `L-033`
+  (different role, different artifact class — a `src/` docstring, not a
+  `docs/domain/` corpus page — despite the shared "within-file
+  consistency is a distinct check" shape); not a duplicate of any
+  `future-improvement` entry (grepped `promoted.md`/`ROADMAP.md` for
+  "docstring"/"module docstring" — no match). **Outcome: promote**, on
+  the same "specific, well-evidenced, low-cost, first-occurrence"
+  reasoning `L-033` used, not recurrence-count. Classification
+  `scoped-rule` maps to a `.claude/` agent-brief amendment, finalised by
+  the lead (not landed here — outside this role's write boundary).
+  Status left as `candidate` (not `promoted`) until the lead actually
+  applies the amendment and a `promoted.md` line is added, per
+  `learning-lifecycle.md` §4/§6 and this queue's own established practice
+  for a promotion whose landing is deferred to the lead (`L-033`,
+  `L-031`, `L-032`).
+
+  **Recommended amendment — `.claude/agents/docs-maintainer.md` "Hard
+  rules"** (draft, for the lead to review and land; not applied here —
+  insert as a new bullet):
+
+  > When reading a `src/` module docstring to verify or update a
+  > citation into `architecture/`/`docs/` (something already within this
+  > role's normal reconciliation work), also scan that same docstring's
+  > other claims — especially transitional-state language ("not called
+  > from X yet," "starts in Phase N," "continues through Phase M") — for
+  > the same staleness pattern `documentation-lifecycle.md` targets in
+  > current-truth docs. Flag anything found to the lead even though
+  > fixing a `src/` file is outside this role's own write boundary.
+  > Confirmed necessary at Phase 65 (`L-037`): `graph.py`'s own module
+  > docstring carried a "not called from `sync.py`/`cli.py` yet" claim
+  > that had been false since Phase 11-15, found only opportunistically
+  > while this role's own dispatch was already re-pointing that same
+  > docstring's citation for an unrelated reason — no existing mechanical
+  > check or per-phase audit is scoped to look at `src/` module
+  > docstrings at all.
+
+  Revisit toward `future-improvement`/a `docs-reconstructor` scope
+  widening (with the accompanying `CLAUDE.md` §5 governance change) only
+  if a deliberate future sweep, or a second opportunistic find, shows
+  this is systemic rather than a single stale docstring.
 
 ### L-036 — a milestone-scoped, rarely-exercised agent brief is a recurring locus of drift behind its own governing ADR, confirmed twice now
 
