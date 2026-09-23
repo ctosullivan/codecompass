@@ -2205,24 +2205,30 @@ relationships found, not yet AI-enriched — see Next concrete step).
 
 ## Next concrete step
 
-**Phase 65 is substantively closed out — one step remains before it is
-genuinely DoD-complete per `CLAUDE.md` §5: dispatch
-`release-phase-auditor` for the phase's final independent audit**
-(re-running the plan's own §5 verification, checking every DoD
-condition including the now-complete drift audit and learning triage,
-checking for protected-file drift, confirming the `L-037`/`L-038`
-landings and `decisions/0061`). `ROADMAP.md`/`CONTEXT.md`/the phase
-plan already read `done`, but per this project's own established
-discipline that status is provisional until the independent audit
-itself confirms it (matching Phase 60/62/63/63D/64's own precedent) —
-handle any FAIL→fix→re-audit cycle if one occurs. Once
-`release-phase-auditor` returns PASS or PASS WITH NON-BLOCKING
-OBSERVATIONS, proceed directly into **Phase 66 (roadmap + context
-reconciliation)**: `ROADMAP.md`/`CONTEXT.md` reflect the shipped v1,
-deferred work clearly parked with revisit triggers. Its own plan does
-not yet exist and must be written per `CLAUDE.md` §1 before
-implementation begins. GATE DD remains open and unaffected by any of
-this (Stage F/63D/G are a separate axis from Stage E, per
+**Phase 65 is fully DoD-complete (2026-09-23): independent
+`release-phase-auditor` audit → PASS**
+(`planning/retros/_audit-phase-65.md`), first pass, no fix cycle
+needed. One non-blocking observation the auditor flagged, not a Phase
+65 defect but worth carrying into Phase 66's own scope deliberately:
+**this file (`planning/CONTEXT.md`) has grown to 2400+ lines by
+appending a new phase's own narrative each time rather than genuinely
+overwriting the "current state" section, contradicting `CLAUDE.md`
+§4's own explicit instruction** ("Overwrite the current-state section
+each time — don't append indefinitely"). This has been a standing,
+multi-phase drift, not something any single phase introduced.
+
+**Next: Phase 66 (roadmap + context reconciliation)**, not yet planned
+— write `planning/phase-66-<name>.md` first, per `CLAUDE.md` §1, before
+any implementation. Its named scope (`ROADMAP.md`/`CONTEXT.md` reflect
+the shipped v1, deferred work clearly parked with revisit triggers) is
+the natural, deliberate place to finally address this file's own
+long-standing append-only drift — compress this "What was just
+completed" narrative history into a genuinely current-only account
+(the full history already lives in `CHANGELOG.md`, `planning/retros/`,
+and git log; nothing would be lost by no longer re-narrating it here
+every phase). No gate blocks Phase 66 — Phase 65 confirmed the planned
+trajectory without changing it. GATE DD remains open and unaffected by
+any of this (Stage F/63D/G are a separate axis from Stage E, per
 `decisions/0056`/`decisions/0060`).
 
 Phase 61 itself is fully done: a real, symmetric two-agent comparison
