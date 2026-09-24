@@ -4253,7 +4253,8 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   found only because the curator read broadly, not by any check or
   agent remit.
 - **classification:** uncertain
-- **status:** retained
+- **status:** discarded (Phase 69 milestone bulk review, 2026-09-24 —
+  see final curation note below)
 - **recurrence:** pattern recurred — see the Phase 42 curation note below
   (L-004 is a second instance of the same diff-scoped blind-spot shape,
   in `architecture/**` rather than `planning/**`).
@@ -4334,8 +4335,41 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
      drift-check design) or discard (accept the gap as a known, bounded
      residual risk given `planning/**` isn't current-truth in the same
      sense product docs are).
-- **promoted_to:** — (retained; `planning/**` scope gap still open,
-  unrelated to Phase 43b's landed check; flagged for Phase 47 bulk review)
+- **promoted_to:** — (discarded at Phase 69's own milestone bulk
+  review; see final curation note below)
+- **curation (Phase 69 milestone bulk review, 2026-09-24, lead):**
+  L-003's own "moves forward when" clause explicitly required a forced
+  promote/discard at "the Phase 47 bulk review" if still unresolved by
+  then — that forcing point was missed (Phase 47 was pure Ledgerkit-
+  findings synthesis, no learnings-queue bulk disposition ran), and the
+  entry sat `retained` for a further 21 phases without anyone actually
+  making the call the entry's own text demanded. Found and forced now,
+  at the actual milestone-closeout bulk retro review
+  (`planning/phase-69-milestone-closeout.md` §1.2), rather than let it
+  cross into v1 undispositioned. **Outcome: discard.** Reasoning: no
+  second `planning/**` stale-prose incident has recurred in the ~68
+  phases since Phase 41 (the entry's own recurrence clause never
+  fired) — but this is not "the risk never materialized," it's that
+  the *actual* mitigation that emerged is different in shape from what
+  L-003 originally proposed (a per-file mechanical check) while still
+  covering the same risk: this project's own planning docs have been
+  through repeated, full, judgment-based bulk audits at nearly every
+  major transition since — `roadmap-context-curator` dispatches at
+  every phase boundary, the Phase 66 `CONTEXT.md` rewrite (which found
+  and fixed a genuinely stale multi-thousand-line planning narrative),
+  the Phase 66 `ROADMAP.md` full-table audit (three real findings),
+  and Phase 68's own milestone-level audit (confirmed every phase's
+  own retro/audit record) — none of which is the mechanical check
+  L-003 asked for, but together they are a real, repeatedly-exercised,
+  and repeatedly-successful check on exactly the class of drift L-003
+  worried about. Building the originally-proposed blunt mechanical
+  check now, at v1 milestone close, for a risk class the informal
+  process has caught every real instance of for 68 phases, is not
+  worth the false-positive risk the entry's own text already flagged
+  (`planning/**` narrates retired concepts legitimately far more than
+  product docs do). Not silently dropped — a conscious, reasoned
+  milestone-time call, recorded in `planning/v1-closeout.md`'s own
+  distilled process lessons.
 
 ### L-002 — `knowledge-curator` can't run the mechanical check it reasons about
 
