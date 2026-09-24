@@ -3666,7 +3666,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   `test_ignores_fenced_code_examples` L418) as the landed artifact
   demonstrating the calibrated design.
 - **classification:** project-rule
-- **status:** candidate
+- **status:** retained
 - **recurrence:** first occurrence
 - **curation (Phase 43b triage, 2026-09-11, knowledge-curator):**
   provenance accepted — the retro text and the named tests both exist as
