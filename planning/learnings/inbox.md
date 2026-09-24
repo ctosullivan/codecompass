@@ -8,6 +8,51 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-040 — a phase's own final closeout commits (ROADMAP.md/CONTEXT.md status bumps) can reintroduce domain-corpus staleness after the freshness reconciliation already ran and passed
+
+- **origin:** Phase 66's own final independent `release-phase-auditor`
+  DoD audit (`planning/retros/_audit-phase-66.md`), non-blocking
+  observation 1
+- **date:** 2026-09-24
+- **project_revision:** `7c85866`
+- **observation:** Phase 66's own `domain-skeptic` dispatch (commit
+  `b7d0bf3`) independently verified `planning/CONTEXT.md` no longer
+  contained the word "connector" after that file's rewrite — true at
+  the time. This phase's own later closeout commit (`17e9de6`, the
+  same commit that flipped `ROADMAP.md`/the plan file's own Status
+  lines to `done`, applying `L-034`/`L-038`'s own lesson) added a
+  sentence to `CONTEXT.md`'s "What was just completed" naming
+  `docs/domain/concepts/connector.md` by filename — reintroducing a
+  literal "connector" match in `CONTEXT.md`, uncaught, because nothing
+  re-runs the domain-corpus freshness check after a phase's own final
+  status-bump commit. The `release-phase-auditor`'s own independent
+  audit caught it (a `grep -i "connector" planning/CONTEXT.md` during
+  its own re-verification), and judged it non-substantive (a
+  self-referential filename mention, not a use of "connector" as a
+  research-candidate term — `connector.md`'s own core claim is
+  unaffected) — but the *mechanism gap* is real: this project's own
+  domain-corpus freshness reconciliation (added Phase 63D,
+  `development-methodology.md`'s "Domain-corpus freshness and
+  reconciliation" section) currently runs once, mid-phase, with no
+  step re-checking after the phase's own remaining closeout commits
+  land.
+- **evidence:** `planning/retros/_audit-phase-66.md` (the auditor's own
+  finding, non-blocking observation 1, with its own reasoning for why
+  this instance is non-substantive); `planning/retros/_domain-freshness-reconciliation-phase-66.md`
+  (the earlier, correct "clean" finding, timestamped before commit
+  `17e9de6`); commit `17e9de6`'s own diff (the sentence that
+  reintroduced the match); `planning/v1-redefinition/development-methodology.md`'s
+  own "Domain-corpus freshness and reconciliation" section (names three
+  checkpoints — a per-phase drift-audit flag, the phase's own retro,
+  and Phase 65's own milestone reconciliation — none of which is
+  "after this phase's own final closeout commit," a distinct point in
+  the sequence from all three).
+- **classification:** workflow
+- **status:** candidate
+- **recurrence:**
+- **promoted_to:**
+
+
 ### L-039 — a lead's own dispatch prompt must never suggest an exception to a target agent's own hard, unconditional write-boundary rule, even a plausible-looking one
 
 - **origin:** Phase 66 retro (roadmap + context reconciliation) "What

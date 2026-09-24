@@ -68,17 +68,11 @@ detail).
 
 ## What was just completed
 
-**Phase 66 — roadmap + context reconciliation — done (2026-09-24).**
-`ROADMAP.md`'s full table audited (three minor findings fixed; every
-deferred/not-funded/conditional item confirmed clearly parked). This
-file rewritten 2449→126 lines to finally comply with `CLAUDE.md` §4.
-The domain-corpus freshness reconciliation mechanism caught a real
-cross-file staleness case on its first non-trivial exercise (this
-file's own rewrite broke a `docs/domain/concepts/connector.md`
-citation), resolved. One learning promoted (`L-039`). Full detail:
-`planning/retros/phase-66-roadmap-context-reconciliation.md`. Still
-pending before Phase 66 is fully DoD-complete: an independent
-`release-phase-auditor` pass (not yet dispatched).
+**Phase 66 — roadmap + context reconciliation — done (2026-09-24),
+independently audited PASS WITH NON-BLOCKING OBSERVATIONS.**
+`ROADMAP.md` audited and fixed; this file rewritten 2449→126 lines
+per `CLAUDE.md` §4. Full detail:
+`planning/retros/phase-66-roadmap-context-reconciliation.md`.
 
 ## Known standing gaps (carried forward — not phase history, still true)
 
@@ -110,10 +104,14 @@ pending before Phase 66 is fully DoD-complete: an independent
 
 ## Next concrete step
 
-**Dispatch `release-phase-auditor` for Phase 66's final independent
-DoD audit** (drift audit and learning triage already complete). Once
-that returns PASS or PASS WITH NON-BLOCKING OBSERVATIONS, proceed into
-**Phase 67 (final validation:
+**Phase 66 is fully DoD-complete (2026-09-24): independent
+`release-phase-auditor` audit → PASS WITH NON-BLOCKING OBSERVATIONS**
+(`planning/retros/_audit-phase-66.md`) — two observations, neither
+blocking (a trivial self-referential "connector" filename mention
+this file's own closeout commit reintroduced, and this section
+running longer than `CLAUDE.md` §4's literal "2-3 sentences"), filed
+as `L-040` for `knowledge-curator`'s own triage. Proceed into **Phase
+67 (final validation:
 self-dogfood + Ledgerkit + Stage F smoke-test confirmation)** — a
 lightweight confirmation pass re-verifying `planning/context-health.md`/
 `planning/context-use-log.md` are current and Ledgerkit's/Phase 63's
