@@ -22,8 +22,20 @@ milestone into a *product-validation* milestone: CodeCompass developed
 agent-led, validated against real external reference-project work,
 improved from that evidence, and released after a blank-slate
 documentation reconstruction and an independent audit
-(`planning/v1-closeout.md`). See [`planning/`](planning/) for
-phase-by-phase status.
+(`planning/v1-closeout.md`). See [`planning/ROADMAP.md`](planning/ROADMAP.md)
+for current status and deferred/post-v1 work.
+
+**Validated, honestly reported — not oversold.** CodeCompass was tested
+against a real external project ([Ledgerkit](https://github.com/ctosullivan/ledgerkit))
+at two points where its default context had previously given a wrong or
+misleadingly-confident answer. Both
+were fixed and the fix was re-confirmed live on a newer project pin.
+The measured result is **PASS WITH GAPS, LOW context advantage** — real
+and repeatable, but not dramatic: CodeCompass fixed a specific,
+evidenced failure mode (a real file mistaken for untracked), not a
+general "codecompass makes agents smarter" claim. The remaining
+ceiling is structural (see "Limitations" below), not a defect. Full
+results: `planning/v1-closeout.md` §5.
 
 ## What it is
 
@@ -139,6 +151,40 @@ Running codecompass gets you, for every tracked dependency:
 - **Staleness checking** that flags when a digest no longer matches the
   installed version, severity-aware (patch/minor/major).
 
+## Evidence & provenance
+
+CodeCompass distinguishes two kinds of content, and never lets them
+blur together:
+
+- **Mechanically-detected facts** — dependency trees, file trees, API
+  surfaces, spec-doc relationship *existence* (does your `README.md`
+  mention `turndown`? — yes/no, by literal name-mention detection, no
+  AI call, never invented). These are always correct relative to what's
+  actually on disk and installed; there is no hallucination risk
+  because there is no generation step.
+- **AI-enriched content** — vendor descriptions, conversational
+  overviews, per-symbol purposes, and relationship *summaries* (given a
+  real, already-proven relationship, what does it mean?) are a
+  separate, clearly-disclosed layer: gated behind an upfront cost
+  estimate and your confirmation. Vendor descriptions and relationship
+  summaries record **which model or agent produced them** (a real
+  Anthropic model id, or `agent:<name>` for Claude-Code-agent-authored
+  content, `decisions/0054`) so they're never confused with a
+  mechanically-proven fact — per-symbol purposes currently do **not**
+  carry this same producer tag, a known, disclosed asymmetry (tracked
+  in [`planning/ROADMAP.md`](planning/ROADMAP.md)'s future-improvement
+  backlog, not yet fixed). AI content is grounded in the vendor's own
+  real, pinned upstream source — never your project's docs, and never
+  the model's own training-data memory of the library.
+
+This split — real fact vs. disclosed, attributed AI interpretation —
+is CodeCompass's own core design principle, not an afterthought. It is
+documented in full, evidence-by-evidence, in
+[`docs/domain/`](docs/domain/) — a from-scratch investigation of what
+CodeCompass's own concepts (evidence, observation, claim, provenance,
+adapter, and others) actually mean in this codebase, derived from
+source and tests rather than assumed.
+
 ## Supported ecosystems
 
 npm, PyPI, and Cargo — all three ship from day one (see
@@ -190,11 +236,57 @@ reference.
 
 ## How it works
 
-See [`architecture/overview.md`](architecture/overview.md) for the full
-design: data model, ecosystem adapters, tree generation, usage-driven
-enrichment, the context graph, generated Skills/`/discovery`, the two
-consumption modes (standalone vendor folder vs. routed from project root),
-staleness checking, and the chat REPL.
+At a glance: a `VendorConfig` (name + ecosystem) is the unit of
+tracking; each ecosystem has an **adapter** — either in-process Python
+(npm/PyPI/Cargo) or a separate **external process** speaking a small
+JSON protocol over stdin/stdout (Haskell/Stack, and the model for any
+future ecosystem where in-process Python is the wrong fit, e.g. one
+requiring a proprietary or non-redistributable toolchain). Every `sync`
+rebuilds a SQLite **context graph** (`context-graph.db`) deterministically
+from what's actually on disk — usage edges, spec-doc relationships,
+vendor/symbol records — then, only for vendors actually used, offers
+AI enrichment as a second pass. Generated Skills and the `/discovery`
+command are rendered from that graph, not hand-maintained.
+
+Full design: [`architecture/overview.md`](architecture/overview.md)
+(current-state entry point) and its companion files
+(`module-map.md`, `core-data-model.md`, `adapter-interface.md`,
+`context-graph-schema.md`, `sync-and-enrichment-pipeline.md`) — data
+model, ecosystem adapters, tree generation, usage-driven enrichment,
+the context graph schema, generated Skills/`/discovery`, the two
+consumption modes (standalone vendor folder vs. routed from project
+root), staleness checking, and the chat REPL.
+
+## Limitations
+
+Honestly disclosed, not hidden:
+
+- **Context advantage is measured LOW**, not high, on the one real
+  external project tested end-to-end (Ledgerkit) — see "Status" above.
+  CodeCompass fixes specific, evidenced gaps; it is not a general
+  intelligence multiplier, and that hasn't been claimed or measured.
+- **The Cargo adapter has never been validated against real `cargo
+  metadata` output or a real crate** — no Rust toolchain has been
+  available during this project's own development so far.
+- **`extract_npm_symbols` is untested against real-world `.d.ts`
+  authoring styles** beyond hand-written fixtures.
+- **`codecompass chat` has never been run against the real Anthropic
+  API** in this project's own development environment — implemented
+  and unit-tested, not live-exercised.
+- **`symbol_enrichment` rows carry no producer/model attribution**
+  (see "Evidence & provenance" above) — a known, disclosed asymmetry
+  with the other two enrichment tables, not yet fixed.
+- **The external-adapter wire protocol's `ecosystem` and `capabilities`
+  fields are received but not validated** against what CodeCompass
+  itself expects — an adapter reporting a mismatched value is currently
+  accepted uncomplainingly.
+- **No formal trigger-accuracy evaluation exists yet** for when a
+  generated per-vendor Skill should or shouldn't fire.
+- **Cursor `.mdc` export has no `globs` field** — a documented future
+  refinement, not implemented.
+
+Full, current list (this one is not exhaustive of every open item):
+`planning/ROADMAP.md`'s "Future-improvement backlog."
 
 ## Documentation
 
@@ -214,8 +306,11 @@ follows (plan-before-implementing, kept-in-sync docs, changelog discipline).
 
 ## Roadmap
 
-See [`planning/`](planning/) for the phase-by-phase roadmap and current
-status (`planning/CONTEXT.md` reflects the current state).
+v1.0.0 is released. See [`planning/ROADMAP.md`](planning/ROADMAP.md)
+for what's deferred and what's next, and
+[`planning/v1-closeout.md`](planning/v1-closeout.md) for the full v1
+milestone record. [`planning/CONTEXT.md`](planning/CONTEXT.md) reflects
+current session-resumption state.
 
 ## License
 

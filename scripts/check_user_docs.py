@@ -90,25 +90,22 @@ def check_cli_commands_documented(root: Path) -> list[Finding]:
 
 
 def check_readme_phase_count(root: Path) -> list[Finding]:
-    """README's Status-line phase-count claim matches the highest phase
-    number marked `done` in planning/ROADMAP.md's *foundation* tables.
+    """README's Status-line phase-count claim matches planning/ROADMAP.md's
+    own "phases 0-N" claim for the foundation.
 
     The README's "phases 0-N" claim describes the foundation (the
-    npm/PyPI/Cargo package/source tool, MVP v0.1/v0.2 + Post-MVP). The
-    "Redefined CodeCompass v1 — Stages A–F" phases (39+) are a separate
-    process/validation milestone group (decisions/0048) whose completion
-    does not change what "phases 0-N" means to a prospective user, so
-    ROADMAP content from that heading onward is excluded from this check.
+    npm/PyPI/Cargo package/source tool, Phases 0-38) — a permanently fixed
+    historical fact as of v1.0.0 (Phase 70): the redefined-v1 effort never
+    renumbered or added to Phases 0-38, and post-v1 development is tracked
+    in ROADMAP.md's own "Post-v1 development" section, not the foundation
+    count. Since Phase 71's own restructure (ground-up documentation
+    refresh) replaced ROADMAP.md's per-phase row tables with a concise
+    summary, this check compares README.md's claim against ROADMAP.md's
+    own equivalent prose claim directly, rather than scanning individual
+    `done` rows that no longer exist in that form.
     """
     readme_text = _read(root / "README.md")
     roadmap_text = _read(root / "planning" / "ROADMAP.md")
-
-    # Exclude the redefined-v1 milestone-group section from the scan.
-    _redef_heading = re.search(
-        r"^##\s+Redefined CodeCompass v1", roadmap_text, re.MULTILINE
-    )
-    if _redef_heading:
-        roadmap_text = roadmap_text[: _redef_heading.start()]
 
     readme_match = re.search(r"phases 0-(\d+)", readme_text, re.IGNORECASE)
     if not readme_match:
@@ -120,26 +117,23 @@ def check_readme_phase_count(root: Path) -> list[Finding]:
         ]
     readme_n = int(readme_match.group(1))
 
-    done_numbers: list[int] = []
-    for line in roadmap_text.splitlines():
-        line = line.strip()
-        if not line.startswith("|"):
-            continue
-        cells = [c.strip() for c in line.strip("|").split("|")]
-        if len(cells) < 3 or not cells[0].isdigit():
-            continue
-        if "done" in cells:
-            done_numbers.append(int(cells[0]))
-    if not done_numbers:
-        return [Finding("readme_phase_count", "no `done` phase rows found in ROADMAP.md")]
-    highest_done = max(done_numbers)
-
-    if readme_n != highest_done:
+    roadmap_match = re.search(r"phases 0-(\d+)", roadmap_text, re.IGNORECASE)
+    if not roadmap_match:
         return [
             Finding(
                 "readme_phase_count",
-                f"README.md claims 'phases 0-{readme_n}' but the highest "
-                f"`done` phase in planning/ROADMAP.md is {highest_done}",
+                "planning/ROADMAP.md has no 'phases 0-N' claim to check "
+                "README.md's own claim against",
+            )
+        ]
+    roadmap_n = int(roadmap_match.group(1))
+
+    if readme_n != roadmap_n:
+        return [
+            Finding(
+                "readme_phase_count",
+                f"README.md claims 'phases 0-{readme_n}' but "
+                f"planning/ROADMAP.md claims 'phases 0-{roadmap_n}'",
             )
         ]
     return []
