@@ -218,3 +218,83 @@ future-improvement-backlog work, not this phase's job), `decisions/*`,
 - Independent release audit, milestone closeout, release itself
   (Phases 68–70).
 - Any `src/codecompass/` behavioural change.
+
+## 8. Report
+
+### Sub-task 2 — Ledgerkit + Phase 63 smoke-test re-confirmation
+
+**Phase 63's own smoke-test basis, re-checked live**: `which npm`/`which
+cargo` both still return exit code 1 (absent) in this environment —
+Phase 63's own constraint is unchanged, not merely assumed to still
+hold. `git log --since="2026-09-22" -- src/codecompass/adapters/{npm,python,cargo}.py`
+is empty — no adapter code has changed since Phase 63's own commit
+(Phases 64–66 were all documentation/planning-only). The full
+regression suite has been re-run and green (623 passed, 2 skipped) at
+every phase since, most recently at Phase 66's own closeout. **Phase
+63's own basis for "no regression in npm/Python/Cargo adapter support"
+still holds, independently re-verified rather than assumed.**
+
+**Ledgerkit, re-confirmed live against a newer pin than Phase 51's
+own evaluation**: a live Ledgerkit clone exists in this environment at
+`/home/cormac/projects/ledgerkit`, pinned `c6168b2` (2026-09-17) — newer
+than Phase 51's own `05218e3` (2026-09-13). Ran the real onboarding
+flow (`codecompass` bare bootstrap — 0 vendors tracked, matching
+Ledgerkit's own known 0-runtime-dependency shape) and the exact
+disambiguation check Phase 49's fix targeted:
+- `codecompass query relations dev-docs/hledger-compatibility.md` →
+  an honest empty relations table (the file is tracked, correctly
+  found, genuinely has no detected relations) — **not** the
+  pre-fix "not found" error.
+- `codecompass query relations nonexistent-fake-file.md` → the genuine
+  "not found" error, confirming the disambiguation between "tracked,
+  no relations" and "not tracked at all" still works correctly on this
+  newer pin.
+
+**This directly, freshly reconfirms Phase 49/51's fix still holds** —
+not carried forward from the old report, independently re-run against
+a pin that didn't exist when Phase 51's own evaluation ran.
+
+**Explicit written justification for the current PASS WITH GAPS / LOW
+advantage status, below the roadmap's own MODERATE+ target** (per
+`findings.md`'s own "GATE DC" section, re-confirmed unchanged by the
+live check above — no `src/codecompass/` change since Phase 51 could
+plausibly have moved this number): `doc_relations_edges` is built
+purely from literal vendor/Skill name-mention detection. With 0
+tracked vendors (Ledgerkit's own genuine shape — no runtime
+dependencies), `query relations` on any Ledgerkit spec doc structurally
+cannot surface *why* a doc matters, only *whether* it's tracked — this
+is not a bug the fix could have closed; it is `CG-003`'s own
+already-named, already-disclosed structural ceiling (a
+mechanically-detected-relationship system has no signal to work with
+when there are no dependencies to relate a doc to). Raising this
+ceiling would require the kind of general-provenance/graph-level
+generalisation GATE DD (Phase 55) is the actual gate for — not a Phase
+67 fix, and not evidence of a defect in what shipped. **Justification
+to ship at LOW advantage for this specific reference project**: the
+fix that was scoped and funded (`CG-002`/`L-016`, GATE DB) fully closed
+what it targeted, verified twice now (Phase 51, and again live here);
+the remaining ceiling is a structurally different, already-disclosed,
+already-gated question (GATE DD), not a regression or an unaddressed
+defect in the shipped fix.
+
+### Sub-task 3 — methodology exercise count
+
+Scope→Plan→Domain→Design→Implement (`development-methodology.md`) has
+been exercised, as a full, deliberate, named application of all five
+stages, genuinely **once** pre-v1: **Phase 63D** (the domain
+reconstruction itself — Scope and Plan from `decisions/0060`'s own
+phase-insertion, a full project-wide Domain investigation, no Design/
+Implement stage since the corpus *is* the deliverable, but Phase 64/65
+then consumed it as the Design stage's own required input, closing the
+loop). Phase 60's own reuse of Phase 54c's record-model shapes
+(Observation/Evidence/Claim/Derivation/Decision) is a **component**
+reuse, not a full methodology exercise — no named Domain-stage
+investigation ran for Phase 60 specifically, and the methodology itself
+wasn't named/formalized until `decisions/0060`, after Phase 60 shipped.
+Stage E (Phases 56–59) would have been a second full exercise —
+`decisions/0060` §6 explicitly recorded this expectation — but GATE DD
+has not funded it and, per this project's own already-settled design,
+may never. **This is an honest, low count, reported plainly rather than
+inflated**: one full exercise, pre-v1, not the "repeated pre-v1 use"
+the methodology's own portability claim (`decisions/0060` §7) might
+otherwise imply without this explicit disclosure.

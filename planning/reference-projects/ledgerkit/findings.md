@@ -380,6 +380,29 @@ sufficient and proceed toward Stage F/G is a genuine strategic call, not
 a technical one this file resolves — see the retro for the lead's
 framing of that choice.
 
+## Phase 67 re-confirmation (2026-09-24) — does this still hold, shipping-time?
+
+Re-checked live, not carried forward on trust: a live Ledgerkit clone
+in this environment, pinned `c6168b2` (2026-09-17, newer than this
+gate's own `05218e3` pin), bootstrapped fresh (`codecompass` bare —
+0 vendors, matching Ledgerkit's own known shape) and re-run against
+the exact disambiguation Phase 49's fix targeted —
+`codecompass query relations dev-docs/hledger-compatibility.md`
+returns an honest empty relations table (found, tracked, genuinely no
+relations), while `codecompass query relations nonexistent-fake-file.md`
+returns the genuine "not found" error. **The fix, and the
+disambiguation it depends on, both still hold on a pin that didn't
+exist when this gate's own evaluation ran.** No `src/codecompass/`
+change since Phase 51 could plausibly have moved this — confirmed via
+`git log` on the relevant files, empty since Phase 63. Status
+unchanged: PASS WITH GAPS / LOW advantage, still below the roadmap's
+own stated MODERATE+ target for Phase 67's own gate — the structural
+reason (0 tracked vendors means `doc_relations_edges` has nothing to
+relate a doc to; `CG-003`'s own already-disclosed ceiling, gated by
+GATE DD, not a defect in what shipped) is unchanged and is Phase 67's
+own explicit written justification for shipping at this level. Full
+detail: `planning/phase-67-final-validation.md` §8.
+
 Full per-question detail: `planning/reference-projects/ledgerkit/00-baseline.md`
 and `01-query-semantics.md`'s "Phase 51 re-run" sections (independently
 authored by `context-evaluator`, appended, not overwriting the originals).
