@@ -8,6 +8,118 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-046 — a credential-passing mechanism proposed to the user should be verified to actually bridge the user's own interactive shell into the agent's own tool environment before the user is asked to use it for a real secret
+
+- **origin:** Phase 70 retro ("What worked", "What didn't work", "Lessons
+  learnt", `planning/retros/phase-70-release-v1.md`) — the retro names
+  this lesson explicitly and states it is "left for `knowledge-curator`'s
+  own independent triage rather than the lead filing it unilaterally, per
+  this project's now-standard practice," distinct from (but matching the
+  spirit of) `L-034`/`L-038`/`L-039`/`L-041`'s pattern of a retro
+  surfacing something the curator, not the lead, actually files.
+- **date:** 2026-09-24
+- **project_revision:** `4c09185`
+- **observation:** During Phase 70's real PyPI publish, neither shell
+  environment variables nor a `~/.pypirc` file, both set from the user's
+  own interactive `!` shell, bridged into this agent's own tool-call
+  environment — confirmed by the retro's own "What worked" account: "the
+  actual upload was handed to the user's own shell where credentials
+  already worked — the token never needed to enter this agent's own
+  context at all." Before that isolation constraint was understood, the
+  user was asked to `export` the real PyPI token so the agent's own
+  subsequent tool calls could use it; a malformed `export` command (a
+  stray space) caused the actual secret value to be typed directly into
+  the visible conversation transcript once. No misuse occurred and the
+  token was rotated as a precaution (the retro's own "What didn't work"),
+  but the retro's own "Lessons learnt" names a cheap check that would
+  have caught the isolation first: "a quick, harmless check (e.g. `echo
+  $SOME_TEST_VAR` after asking the user to export it) would have caught
+  the isolation immediately, before any real credential was typed into
+  the visible conversation."
+- **evidence:** `planning/retros/phase-70-release-v1.md` lines 54-63
+  ("What worked" — the isolation constraint and the correct final
+  posture, handing the real upload to the user's own shell), lines 85-92
+  ("What didn't work" — the actual near-miss incident), lines 94-103
+  ("Lessons learnt" — the proposed harmless-probe check), read in full.
+  Searched `planning/learnings/inbox.md` and `planning/learnings/promoted.md`
+  for "credential", "secret", "token", "isolation", ".pypirc", and "shell
+  environment" — no existing candidate or promotion covers
+  credential-passing / shell-to-tool-environment isolation; not a
+  duplicate.
+- **classification:** workflow
+- **status:** promoted
+- **recurrence:**
+- **promoted_to:** `planning/agent-led-workflow.md` step 6 (verify a
+  credential-passing mechanism bridges the user's shell into the
+  agent's tool environment via a harmless probe, before requesting a
+  real secret)
+- **curation (this triage, 2026-09-24, knowledge-curator):** provenance
+  accepted — assigned this id, all required fields present, evidenced
+  directly from the retro text (not merely trusting the retro's own
+  characterisation of itself). Independently assessed whether this is
+  genuinely learning-shaped or a one-off, low-severity incident not worth
+  a durable rule, as the dispatch instruction asked: **it is
+  learning-shaped.** The retro's own account confirms no actual harm
+  occurred (precautionary rotation only), but the *recurrence risk* is
+  real and structural, not incident-specific — any future phase that
+  needs the user to supply a credential via an interactive shell for this
+  agent's own subsequent tool use (a future publish, a deploy key, any
+  API token) faces the identical bridging ambiguity between "the user's
+  shell" and "this agent's tool environment," and the fix costs one
+  harmless probe command before the real secret is ever requested. This
+  is the same shape as `L-038` (a cheap, mechanical check inserted before
+  a specific class of action, to catch an environment mismatch before it
+  causes real damage) — not a coincidence; both are "verify an
+  environment assumption holds before trusting it with something that
+  matters" rules. Checked for a duplicate/merge candidate first (see
+  evidence above): none found. **Outcome: promote.** Classification
+  `workflow` maps to `planning/agent-led-workflow.md`, matching this
+  project's own established practice (every prior `workflow`-classified
+  promotion in `promoted.md` landed there, not a `.claude/skills/` entry
+  per the lifecycle doc's literal table — precedent overrides the literal
+  table here exactly as it did for `L-002`/`L-006`/`L-034`/`L-038`/`L-039`/`L-041`).
+  Finalised by the lead — not landed here, outside this role's write
+  boundary for that file (`.claude/agents/knowledge-curator.md` "Hard
+  rules"). Status left as `candidate` until the lead actually applies the
+  amendment below and a `promoted.md` line is added, per
+  `learning-lifecycle.md` §4/§6. This is **not** a `CLAUDE.md` candidate:
+  it is a per-session operational step (how the lead sequences a
+  credential request), not a project-wide rule of the kind §0 protects,
+  and `planning/agent-led-workflow.md` is not subject to §0's
+  user-approval gate — matching the destination the dispatch instruction
+  itself flagged as plausible while correctly noting the *other* named
+  option (`CLAUDE.md`) would need that gate if chosen instead.
+
+  **Recommended amendment — `planning/agent-led-workflow.md` step 6**
+  (draft, for the lead to review and land; not applied here — insert as a
+  new bullet immediately after the existing "The lead implements
+  directly, or dispatches one `general-purpose` implementer subagent..."
+  text):
+
+  > **Before asking the user to type, `export`, or otherwise enter a real
+  > credential or secret via an interactive `!` shell command for this
+  > agent's own subsequent tool use, verify with a harmless probe that
+  > the proposed mechanism actually bridges the user's shell into this
+  > agent's own tool environment** — e.g. ask the user to `export` an
+  > innocuous test value first and confirm this agent's own tool calls
+  > can see it (`echo $SOME_TEST_VAR`), *before* requesting the real
+  > secret. Neither shell environment variables nor a config file (e.g.
+  > `~/.pypirc`) written from the user's interactive shell are guaranteed
+  > to bridge into this agent's own tool-call environment, and discovering
+  > that only *after* asking for the real value risks the value being
+  > typed directly into the visible conversation transcript. Confirmed at
+  > Phase 70 (`L-046`): a malformed `export` command exposed a real PyPI
+  > token in the transcript once, before the isolation was understood; no
+  > misuse occurred (the token was rotated as a precaution) but the probe
+  > above would have caught the isolation harmlessly first. If the probe
+  > shows no bridge exists, do not ask for the real secret at all — hand
+  > the credential-requiring action itself to the user's own shell instead
+  > (the token/secret never needs to enter this agent's own context), the
+  > posture Phase 70 ultimately used correctly.
+
+  Revisit toward a mechanical check only if this prose step proves
+  insufficient at a future phase that needs a similar credential.
+
 ### L-045 — a learning candidate's own self-imposed "force a decision by Phase N" revisit clause is not checked against the actual current phase by any process step, including the two bulk reviews the lifecycle doc itself names
 
 - **origin:** Phase 69 (milestone closeout; retro "What didn't work" /

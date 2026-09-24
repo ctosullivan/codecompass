@@ -177,6 +177,27 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
    directly, or dispatches one `general-purpose` implementer subagent per
    the `v0.2-implementation-execution-plan.md` pattern (foreground, exact
    plan, run its own `pytest`/`ruff`, report).
+
+   **Before asking the user to type, `export`, or otherwise enter a real
+   credential or secret via an interactive `!` shell command for this
+   agent's own subsequent tool use, verify with a harmless probe that
+   the proposed mechanism actually bridges the user's shell into this
+   agent's own tool environment** — e.g. ask the user to `export` an
+   innocuous test value first and confirm this agent's own tool calls
+   can see it (`echo $SOME_TEST_VAR`), *before* requesting the real
+   secret. Neither shell environment variables nor a config file (e.g.
+   `~/.pypirc`) written from the user's interactive shell are guaranteed
+   to bridge into this agent's own tool-call environment, and discovering
+   that only *after* asking for the real value risks the value being
+   typed directly into the visible conversation transcript. Confirmed at
+   Phase 70 (`L-046`): a malformed `export` command exposed a real PyPI
+   token in the transcript once, before the isolation was understood; no
+   misuse occurred (the token was rotated as a precaution) but the probe
+   above would have caught the isolation harmlessly first. If the probe
+   shows no bridge exists, do not ask for the real secret at all — hand
+   the credential-requiring action itself to the user's own shell instead
+   (the token/secret never needs to enter this agent's own context), the
+   posture Phase 70 ultimately used correctly.
 7. **Obtain independent testing/evaluation.**
    - Internal phase → `release-phase-auditor` (read-only DoD check).
    - Reference-project phase → `reference-project-tester` (friction) +

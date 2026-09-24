@@ -42,6 +42,7 @@ L-041 | 2026-09-24 | workflow | planning/agent-led-workflow.md step 4 (dispatch 
 L-042 | 2026-09-24 | future-improvement | planning/v1-redefinition/roadmap.md Phase 67 entry + development-methodology.md cross-reference (the fresh-agent test's criterion 1 cannot separate agent initiative from platform CLAUDE.md auto-load) @ (this phase's own closeout commit)
 L-043 | 2026-09-24 | invariant | scripts/check_user_docs.py::check_learnings_status_matches_retain_outcome + tests/test_check_user_docs.py::TestLearningsStatusMatchesRetainOutcome @ (this phase's own closeout commit)
 L-045 | 2026-09-24 | workflow | planning/v1-redefinition/learning-lifecycle.md Sec2 (a numbered forcing point must be mirrored into its own destination phase's plan file; a standing bulk-review cadence is a scope item of whichever phase lands on that number) @ (this phase's own closeout commit)
+L-046 | 2026-09-24 | workflow | planning/agent-led-workflow.md step 6 (verify a credential-passing mechanism bridges the user's shell into the agent's tool environment via a harmless probe, before requesting a real secret) @ (this phase's own closeout commit)
 L-036 | 2026-09-23 | workflow | planning/agent-led-workflow.md step 5 (re-read a milestone-scoped agent brief against every ADR landed since its own last edit, before dispatching it) @ (this phase's own closeout commit)
 L-035 | 2026-09-23 | workflow | planning/agent-led-workflow.md step 5 (any multi-cluster phase must include an explicit post-dispatch consistency pass before closing the phase) @ (this phase's own closeout commit)
 
