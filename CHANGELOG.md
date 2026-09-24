@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 69** (Milestone closeout, done): Stage G's sixth phase.
+  Executed `planning/milestone-closeout-checklist.md`'s own steps 8–10
+  (freeze declaration, bulk retro review, closeout artifact) on top of
+  Phase 68's own confirmed-clean steps 1–7. Bulk-reviewed every phase
+  retro across the whole redefined-v1 effort (Phases 39–68),
+  dispositioning every "Process-improvement feedback" section
+  explicitly. Found and forced a real, 68-phase-overdue miss:
+  `L-003`'s own text had committed to a forced promote/discard "at the
+  Phase 47 bulk review," which never actually ran — discarded now,
+  with full reasoning (the risk it named never recurred, and a
+  different mitigation — repeated judgment-based planning-doc audits —
+  emerged organically and covers the same ground). Two genuine
+  cross-cutting patterns distilled from the bulk review, visible only
+  across many retros together: the recurring "a cadence existed
+  somewhere but was never operationalized into the actual step
+  sequence" shape (nine instances across the whole effort) and
+  independent adversarial re-verification's consistently-validated
+  payoff. `planning/v1-closeout.md` written (architecture summary,
+  what shipped, what was deferred with revisit triggers, key ADRs,
+  reference-project evaluation results, distilled process lessons). One
+  learning promoted (`L-045`: a candidate's own numbered "force a
+  decision" commitment must now be mirrored into its own destination
+  phase's plan file, closing the exact enforcement gap `L-003` fell
+  through). **Documentation freeze declared** — no further
+  current-truth doc edits until after Phase 70's own tag. No
+  `src/codecompass/` change. Retro:
+  `planning/retros/phase-69-milestone-closeout.md`.
+
 - **Phase 68** (Independent release audit, done): Stage G's fifth
   phase, `COMMITTED (FAIL blocks Phase 69/70)`. `release-phase-auditor`
   ran a milestone-level Definition-of-Done audit across every Stage

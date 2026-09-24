@@ -51,10 +51,11 @@ detail).
 - **Stage G (Phases 64–70), in progress**: 64 (blank-slate doc
   reconstruction), 65 (architecture + ADR reconciliation), 66 (roadmap
   + context reconciliation), 67 (final validation — fresh-agent
-  acceptance test scored 4/4 PASS), and 68 (independent release audit
-  — milestone-level DoD audit, verdict PASS) done. 69 (milestone
-  closeout) and 70 (release, gate G9 — irreversible, needs the actual
-  user's own explicit go-ahead) not yet started.
+  acceptance test scored 4/4 PASS), 68 (independent release audit —
+  milestone-level DoD audit, verdict PASS), and 69 (milestone closeout
+  — `planning/v1-closeout.md` written, documentation freeze declared)
+  done. **70 (release, gate G9 — irreversible, needs the actual user's
+  own explicit go-ahead) is the only phase remaining.**
 - **GATE DD (Phase 55) remains open, intentionally** — Stage E
   (Phases 56–59, the "minimum justified generalisation") is
   `CONDITIONAL` on it and may never fund; this is the roadmap's own
@@ -71,13 +72,16 @@ detail).
 
 ## What was just completed
 
-**Phase 68 — independent release audit — done (2026-09-24),
-milestone-level DoD verdict PASS, first pass.** Confirmed every phase
-since 41 has a real retro and every milestone-closeout-checklist step
-1–7 holds against real, independently re-verified current state. One
-new mechanical check landed (`L-043`, closing a ~57-phase-old
-undetected status/curation-note mismatch). Full detail:
-`planning/retros/phase-68-independent-release-audit.md`.
+**Phase 69 — milestone closeout — done (2026-09-24).** Bulk-reviewed
+every retro across Phases 39–68; forced `L-003`'s own 68-phase-overdue
+disposition (discarded); wrote `planning/v1-closeout.md`; declared the
+documentation freeze. One learning promoted (`L-045`). Full detail:
+`planning/retros/phase-69-milestone-closeout.md`.
+
+**Documentation freeze is in effect**: `README.md`/`docs/`/
+`architecture/`/`ai-docs/` should not be edited except to fix a
+problem the freeze review itself surfaced, until after Phase 70's own
+tag.
 
 ## Known standing gaps (carried forward — not phase history, still true)
 
@@ -109,17 +113,15 @@ undetected status/curation-note mismatch). Full detail:
 
 ## Next concrete step
 
-**Phase 69 (milestone closeout)** is next, not yet planned — write
-`planning/phase-69-<name>.md` first, per `CLAUDE.md` §1. Execute
-`planning/milestone-closeout-checklist.md`'s own steps 8–11 minus the
-tag/release step itself: freeze declaration, bulk review of every
-phase retro since the last milestone, `planning/v1-closeout.md`
-(architecture summary, what shipped, what was deferred + revisit
-triggers, key ADRs, reference-project evaluation results). No gate
-blocks it — Phase 68 confirmed the project is genuinely ready. **Phase
-70 (the actual `v1.0.0` release — dropping `.dev0`, the first-ever
-`twine upload`, the `v1.0.0` tag) is gate G9: irreversible, and
-requires the actual user's own explicit go-ahead** — not something any
-phase before it authorizes on its own. GATE DD remains open and
+**Dispatch `release-phase-auditor` for Phase 69's final independent
+DoD audit** (a standard single-phase pass — Phase 68 already did the
+milestone-level one; drift audit and learning triage already
+complete). Once that returns PASS or PASS WITH NON-BLOCKING
+OBSERVATIONS, **Phase 69 is done and the redefined-v1 effort is ready
+for Phase 70 — the actual, irreversible release** (drop `.dev0`; the
+first-ever `twine upload`; the `v1.0.0` tag; `[Unreleased]` → dated
+section). **This is gate G9: it requires the actual user's own
+explicit go-ahead. The lead does not take this action unilaterally —
+present the final state and ask.** GATE DD remains open and
 unaffected (a separate axis from Stage F/63D/G, per
 `decisions/0056`/`decisions/0060`).

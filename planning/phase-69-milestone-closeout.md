@@ -1,6 +1,11 @@
 # Phase 69: Milestone closeout — plan
 
-**Status:** planned (2026-09-24).
+**Status:** done (2026-09-24). See
+`planning/retros/phase-69-milestone-closeout.md` (retro),
+`planning/retros/_drift-audit-phase-69.md` (docs-reconstructor drift
+audit — NO DRIFT), `planning/v1-closeout.md` (the closeout artifact
+itself), and `planning/retros/_audit-phase-69.md`
+(release-phase-auditor, once dispatched) for the full closeout record.
 
 **Stage G, sixth phase · COMMITTED** (`planning/v1-redefinition/roadmap.md`).
 Gated on Phase 68 completing — **done 2026-09-24, PASS**, unblocked.
