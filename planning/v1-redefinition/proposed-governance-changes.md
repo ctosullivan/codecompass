@@ -399,3 +399,69 @@ This section is left as the historical proposal record, not rewritten.
   precedent for keeping the two in sync); `planning/learnings/inbox.md`'s
   `L-021` flips to `status: promoted` with a `promoted.md` pointer line
   once the edit lands.
+
+## E. 2026-09-25 proposed correction (Phase 71 — `L-050`)
+
+**Status:** approved by the user and landed, 2026-09-25 (`CLAUDE.md` §2,
+Phase 71 closeout). Filed by `knowledge-curator` during Phase 71's own
+triage step, independent of the phase's own retro (which did not
+surface this).
+
+### E1 — §2 "Kept-in-sync docs, same commit": correct `planning/ROADMAP.md`'s own description to match Phase 71's approved restructure
+
+- **Context:** `CLAUDE.md` §2 currently describes `planning/ROADMAP.md`
+  as a "full-roadmap phase-status table (all phases, not just the
+  current one)." Phase 71 (`4bc7c1d`, approved and landed) replaced
+  `ROADMAP.md`'s 424-line phase-by-phase table with a ~113-line
+  current-state summary; `ROADMAP.md`'s own new header states explicitly
+  that full phase-by-phase history is "preserved in three places, not
+  repeated here as a 70-row table" (`v1-closeout.md`,
+  `v1-redefinition/roadmap.md`, git history). `CONTRIBUTING.md` and
+  `ai-docs/CLAUDE.md`'s own descriptions of `ROADMAP.md` were already
+  corrected to match this in `396118a` (that phase's own drift-audit-
+  findings commit). `CLAUDE.md` §2 itself was not — and could not be,
+  per §0, without this explicit approval step. Phase 71's own per-phase
+  drift audit (`planning/retros/_drift-audit-phase-71.md` §3) found this
+  exact tension and explicitly declined to resolve it, naming it "a
+  possible tension between Phase 71's restructure and `CLAUDE.md` §2's
+  own standing requirement, not just a wording fix in `CONTRIBUTING.md`."
+  The phase's own retro never picked this back up. Full account:
+  `planning/learnings/inbox.md`'s `L-050`.
+- **Proposed text — replace the existing `planning/ROADMAP.md` bullet in
+  §2:**
+
+  > Current:
+  > - **`planning/ROADMAP.md`** — full-roadmap phase-status table (all
+  >   phases, not just the current one). Updated whenever a phase starts
+  >   (§1), finishes (§5), or its scope changes.
+  >
+  > Proposed:
+  > - **`planning/ROADMAP.md`** — full-roadmap, at-a-glance phase-status
+  >   view: what's done, what's next, what's still just planned, plus
+  >   deferred/not-funded items with revisit triggers. For a completed
+  >   milestone group, full per-phase historical detail is preserved in
+  >   that milestone's own closeout record (e.g. `v1-closeout.md`,
+  >   `v1-redefinition/roadmap.md`) and git history, not repeated here as
+  >   a row-per-phase table (established at Phase 71). Updated whenever a
+  >   phase starts (§1), finishes (§5), or its scope changes.
+
+- **Alternatives considered:** (a) leave §2 as-is and treat
+  `CONTRIBUTING.md`/`ai-docs/CLAUDE.md`'s own corrections as sufficient —
+  rejected: §2's own preamble is explicit that this file is "what every
+  future session trusts unconditionally on load," and §0 treats
+  unreviewed drift here as compounding silently, so leaving the more
+  authoritative copy stale while fixing the two downstream mirrors is
+  backwards; (b) a smaller edit that only drops the parenthetical "(all
+  phases, not just the current one)" without adding the milestone-closeout
+  pointer — considered, but the current three-doc precedent
+  (`ROADMAP.md`'s own header, `CONTRIBUTING.md`, `ai-docs/CLAUDE.md`) all
+  now explain *where* the historical detail lives, and §2 should not be
+  the one place a reader is left to wonder; (c) wait for a second
+  restructure before treating this as worth a governance change — rejected,
+  this is not a new-rule proposal needing recurrence evidence, it is a
+  correction of an already-false factual claim about a doc `CLAUDE.md`
+  itself governs.
+- **Consequences if approved:** `CLAUDE.md` §2's `planning/ROADMAP.md`
+  bullet is replaced with the text above; `planning/learnings/inbox.md`'s
+  `L-050` flips to `status: promoted` with a `promoted.md` pointer line
+  once the edit lands.

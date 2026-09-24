@@ -8,6 +8,267 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-050 — `CLAUDE.md` §2's own description of `planning/ROADMAP.md` ("full-roadmap phase-status table (all phases, not just the current one)") is now stale against Phase 71's approved restructure
+
+- **origin:** independent read for the Phase 71 `knowledge-curator`
+  triage, following up on `planning/retros/_drift-audit-phase-71.md` §3's
+  second bullet (flagged there as a "possible tension between Phase 71's
+  restructure and `CLAUDE.md` §2's own standing requirement," explicitly
+  left unresolved by that audit: "not something I can resolve or that a
+  docs fix alone settles")
+- **date:** 2026-09-25
+- **project_revision:** 40fc074
+- **observation:** `CLAUDE.md` §2 states `planning/ROADMAP.md` is a
+  "full-roadmap phase-status table (all phases, not just the current
+  one)." Phase 71's approved restructure (`4bc7c1d`) replaced
+  `ROADMAP.md`'s 424-line phase-by-phase table with a ~113-line
+  current-state summary; `ROADMAP.md`'s own new header states explicitly
+  that full phase-by-phase history is "preserved in three places, not
+  repeated here as a 70-row table." `CONTRIBUTING.md` and
+  `ai-docs/CLAUDE.md`'s own descriptions of `ROADMAP.md` were already
+  corrected to match this reality in `396118a` (the drift-audit-findings
+  commit) — but `CLAUDE.md` §2 itself, the one document §0 says every
+  session "trusts unconditionally on load," was not touched, and cannot
+  be touched by any agent without an explicit user-approved diff (§0).
+  This is a real, currently-live inaccuracy in `CLAUDE.md`'s own text,
+  not merely in a downstream doc that mirrors it — and the retro's own
+  "Candidate learnings filed" section does not mention it at all.
+- **evidence:** `CLAUDE.md` §2 (current text, unchanged since before
+  Phase 71); `planning/ROADMAP.md` lines 1-21 (current header, "not
+  repeated here as a 70-row table"); `CONTRIBUTING.md`:56-58 and
+  `ai-docs/CLAUDE.md`:21-25 (both already corrected in `396118a` to
+  describe `ROADMAP.md` as "v1.0.0's own shipped status, deferred items
+  with revisit triggers, and post-v1 development tracking" rather than a
+  full phase table); `planning/retros/_drift-audit-phase-71.md` §3 (names
+  the tension, explicitly declines to resolve it, calls the equivalent
+  `CONTRIBUTING.md` wording "Blocking"); `planning/v1-redefinition/proposed-governance-changes.md`
+  checked directly end to end — sections A-D, none address this bullet.
+- **classification:** project-rule
+- **status:** promoted
+- **recurrence:**
+- **promoted_to:** `CLAUDE.md` §2's `planning/ROADMAP.md` bullet
+  (landed by the lead, Phase 71 closeout, after explicit user approval
+  per §0, following this candidate's own drafted diff verbatim —
+  `planning/v1-redefinition/proposed-governance-changes.md` §E)
+- **curation (Phase 71 triage, 2026-09-25, knowledge-curator):**
+  accepted and independently re-verified — read `CLAUDE.md` §2,
+  `ROADMAP.md`'s current header, `CONTRIBUTING.md`, and `ai-docs/CLAUDE.md`
+  directly rather than taking the drift audit's account on faith; all
+  confirmed. None of this phase's five commits
+  (`657dceb`/`4bc7c1d`/`0e36123`/`396118a`/`40fc074`) touches `CLAUDE.md`
+  (expected — §0 requires explicit user approval first), so this
+  genuinely fell through: the drift audit found it and correctly declined
+  to resolve it itself (out of scope for that role), and the retro's own
+  closeout never picked it back up as a follow-on action item. **Outcome:
+  promote (recommendation + draft only).** `CLAUDE.md` is never written
+  directly by this agent or any agent (§0, this agent's own hard rules) —
+  drafted as a new §E in `planning/v1-redefinition/proposed-governance-changes.md`
+  for the lead to present to the user as a diff, per that file's own
+  established pattern (§D). Not a duplicate of any existing candidate —
+  checked `L-034`/`L-013` (both about `ROADMAP.md`/`CONTEXT.md`/plan-file
+  Status *line* disagreement across files, a different shape from
+  `CLAUDE.md`'s own descriptive prose about what `ROADMAP.md` *is*).
+
+### L-049 — a phase plan's own approximate line-count claim (412) differed from the real pre-restructure count (424), caught only by independent fork review
+
+- **origin:** Phase 71 retro "What didn't work"
+- **date:** 2026-09-25
+- **project_revision:** 40fc074
+- **observation:** `planning/phase-71-post-v1-documentation-refresh.md`
+  §1.2 estimated `ROADMAP.md`'s pre-restructure row-table size at 412
+  lines; the real count, confirmed via `git show 4bc7c1d~1 | wc -l`, was
+  424. Caught by the independent fork consistency review, not by the
+  lead's own drafting or by the (also independent) `docs-reconstructor`
+  drift audit. No downstream consequence: the number was used only in
+  `CONTEXT.md`'s own prose describing the restructure's size, never in a
+  gate, threshold, or test.
+- **evidence:** `planning/retros/phase-71-post-v1-documentation-refresh.md`
+  "What didn't work"; `git show 4bc7c1d~1 | wc -l` → 424 (per the retro's
+  own account, not independently re-run here — no Bash available to this
+  role).
+- **classification:** uncertain
+- **status:** retained
+- **recurrence:** related to `L-007` (Phase 43c, retained) — a weaker,
+  narrower instance of the same broad parent fragility ("a plan's own
+  estimate can be imprecise"), but a distinct shape (an approximate
+  figure carried into prose without re-verifying against a live command,
+  vs. `L-007`'s "mechanism exists vs. mechanism has produced output this
+  phase" conflation)
+- **promoted_to:**
+- **curation (Phase 71 triage, 2026-09-25, knowledge-curator):**
+  accepted. Not merging into `L-007` — different enough in shape that
+  folding them would blur what each is actually about — but recording
+  the relationship so a future third occurrence of either shape counts as
+  real evidence toward a shared "verify a plan-stated figure/claim
+  against a live check before finalizing" rule, rather than two isolated
+  one-offs. This single instance had zero real consequence and was caught
+  by exactly the review step this project already runs before every
+  commit (independent fork review) — promoting a project-rule ("always
+  run `wc -l` before stating a count") from one harmless miss would be
+  premature and adds exactly the kind of low-value rule this project's
+  own "no giant permanent AI learnings document" principle warns against.
+  **Outcome: retain.** Revisit at the next bulk learnings review (note:
+  `planning/v1-redefinition/learning-lifecycle.md` §2 only names
+  milestone-group bulk-review checkpoints, Phase 47 and Phase 69, both
+  now closed — no post-v1 bulk-review cadence is currently scheduled;
+  flagging that scheduling gap is `roadmap-context-curator`'s/the lead's
+  call, not resolved here) or immediately on a second occurrence where an
+  unverified number has real consequence, whichever comes first.
+
+### L-048 — `docs/domain/` illustrative citations of fast-moving planning documents/tests are a recurring fragility class, now confirmed at two independent phases
+
+- **origin:** Phase 71 drift audit (`planning/retros/_drift-audit-phase-71.md`
+  §5) + domain-freshness reconciliation
+  (`planning/retros/_domain-freshness-reconciliation-phase-71.md`,
+  `EV-SKEP-004`); prior occurrence at Phase 66
+  (`EV-SKEP-003`/`OBS-SKEP-004`)
+- **date:** 2026-09-25
+- **project_revision:** 396118a (drift audit) / 40fc074 (fix landed)
+- **observation:** `docs/domain/concepts/connector.md`'s Definition
+  section cites a fixed list of planning documents as all "currently"
+  listing "connector" as a research-candidate term. This list already
+  had to be trimmed once, at Phase 66, when `planning/CONTEXT.md`'s
+  rewrite dropped its own listing (`EV-SKEP-003`). Phase 71's unrelated
+  `ROADMAP.md` restructure broke the same citation list a second time,
+  for a different file in the same list (`planning/ROADMAP.md` no longer
+  mentions "connector" anywhere after its 424→113-line restructure).
+  Both breaks were caused by a planning-document restructure with zero
+  change to domain meaning, and both were only caught after the fact by
+  a dedicated freshness-reconciliation pass, not prevented at authoring
+  time. `docs/domain/concepts/invariant.md`'s "Example" section shows a
+  related but distinct fragility in the same corpus: it cites a specific
+  test method name
+  (`TestReadmePhaseCount::test_ignores_done_phases_in_redefined_v1_section`)
+  as `L-001`'s landed proof; Phase 71 deleted that exact test as part of
+  the same `ROADMAP.md`-driven `check_readme_phase_count` rewrite,
+  leaving the citation dangling even though the underlying promoted-
+  learning fact it illustrates (`L-001`, a real promotion) is still true.
+- **evidence:** `EV-SKEP-004`/`OBS-SKEP-005`
+  (`planning/knowledge/codecompass-domain/`) — direct `grep`/`git show`
+  confirmation of the first case; `EV-SKEP-005`/`OBS-SKEP-006` — direct
+  `grep`/`git show` confirmation of the second; `EV-SKEP-004`'s own text:
+  "this is the second time this exact citation list has gone stale from
+  an unrelated planning-document restructure ... worth naming to
+  `context-researcher` as a candidate for a more durable citation form."
+- **classification:** scoped-rule
+- **status:** promoted
+- **recurrence:** second independent occurrence (Phase 66 `CONTEXT.md`
+  rewrite; Phase 71 `ROADMAP.md` restructure) — same citation-list
+  fragility, two unrelated triggering documents
+- **promoted_to:** `.claude/agents/context-researcher.md` "Hard rules"
+  (landed by the lead, Phase 71 closeout, following this candidate's
+  own drafted text verbatim)
+- **curation (Phase 71 triage, 2026-09-25, knowledge-curator):** accepted
+  — both underlying facts independently re-traced to the cited evidence
+  files, not taken on the retro/report's word alone (spot-checked
+  `EV-SKEP-004`'s claim that `planning/ROADMAP.md` no longer contains
+  "connector" against the current file's own header/body read earlier in
+  this same triage — consistent). **Correcting the retro's own framing**:
+  the retro's "What worked" section attributes this catch to "the
+  domain-corpus freshness-reconciliation mechanism (`L-040`)" — on direct
+  inspection this is imprecise. `L-040`'s own promoted checkpoint
+  (`development-methodology.md` "Domain-corpus freshness and
+  reconciliation" checkpoint 4, "final closeout re-check") is a distinct,
+  narrower mechanism for staleness *reintroduced by a phase's own final
+  status-bump commit*, confirmed exactly once so far (Phase 66's own
+  `CONTEXT.md` filename mention, its origin case) — nothing in either
+  supporting report for Phase 71 shows checkpoint 4 running a second time
+  (Phase 71's `release-phase-auditor` final DoD pass, which would
+  exercise it, is still pending as of this triage). What actually caught
+  both Phase 71 cases is the older, pre-`L-040` checkpoint 1 (a per-phase
+  drift-audit flag escalated to `domain-skeptic` mid-phase, established
+  at Phase 63D) — the same checkpoint that caught the original Phase 66
+  `connector.md`/`CONTEXT.md` case. That mechanism is genuinely confirmed
+  working twice; `L-040` specifically is not (yet) confirmed twice. This
+  distinction doesn't reduce this candidate's own promotability — if
+  anything it sharpens it: **this is about prevention, not detection.**
+  `docs/domain/`'s own authoring convention for illustrative citation
+  lists currently has no guidance steering it away from citing fast-
+  moving, actively-restructured planning documents by present-tense
+  content ("currently lists X"), when a citation form that survives
+  restructuring is available (pin to the git revision the corpus item was
+  approved at, or phrase the citation as inherently historical). Two
+  independent occurrences across two independent, unrelated
+  planning-document restructures meet this project's own recurrence bar
+  for promoting directly (matching `L-036`'s precedent: a drift pattern
+  confirmed twice is enough, no need to wait for a third). **Outcome:
+  promote (recommendation + draft; not landed — `.claude/agents/*.md` is
+  outside this agent's write boundary).**
+
+  **Recommended addition — `.claude/agents/context-researcher.md`, "Hard
+  rules"** (draft, for the lead to review and land):
+
+  > When drafting or revising a `docs/domain/` page's illustrative
+  > citation of *other* project documents (e.g. "these N planning
+  > documents all list term X as Y"), do not cite present-tense content
+  > of a document this project's own process actively restructures
+  > post-v1 (`planning/ROADMAP.md`, `planning/CONTEXT.md`, and any
+  > mechanical-check test file tied to CLI/doc structure) without a
+  > citation form that survives restructuring — pin to the specific git
+  > revision/commit the corpus item was approved at, or phrase the
+  > citation as historical ("as of `<SHA>`, ..."), rather than asserting
+  > the document's current content. Confirmed twice: Phase 66
+  > (`planning/CONTEXT.md` rewrite, `EV-SKEP-003`) and Phase 71
+  > (`planning/ROADMAP.md` restructure, `EV-SKEP-004`) each independently
+  > broke the same citation list in `docs/domain/concepts/connector.md`
+  > this way.
+
+  Also flag, as supporting evidence for the same underlying fragility
+  rather than a separate rule: `invariant.md`'s "Example" section citing
+  a specific test method name as a promoted learning's proof has the
+  identical shape (anchoring to a refactorable implementation detail
+  rather than a stable identifier) — `promoted.md`'s own append-only
+  `L-NNN` line is already the stable anchor available; citing it as the
+  primary reference, with the current regression-test location as a
+  secondary, refresh-on-drift detail, would have survived Phase 71's
+  rewrite of `check_readme_phase_count`. Not drafting this second half as
+  its own rule text — `EV-SKEP-005` already names this as
+  `context-researcher`'s own next concrete step (choosing between
+  reframing `L-001` as historical or re-pointing to a currently-live
+  example); the `.claude/agents/context-researcher.md` addition above
+  should be read to cover both citation shapes if the lead adopts it.
+
+### L-047 — two self-review catches during README.md drafting (fabricated URL, overstated provenance) confirm existing rules already work, surfacing no new gap
+
+- **origin:** Phase 71 retro "What worked" (README.md drafting,
+  self-review before commit)
+- **date:** 2026-09-25
+- **project_revision:** 40fc074
+- **observation:** A first `README.md` draft fabricated Ledgerkit's repo
+  URL (guessed `github.com/simonmichael/hledger` instead of checking
+  `planning/reference-projects/ledgerkit/*.md` for the real
+  `github.com/ctosullivan/ledgerkit`); a second draft overstated
+  `symbol_enrichment`'s own provenance ("every enriched row records which
+  model...") when that table's missing producer-attribution column is a
+  known, disclosed gap (`L-031`). Both caught by the lead's own
+  re-read/grep before committing, not by a separate independent agent.
+- **evidence:** `planning/retros/phase-71-post-v1-documentation-refresh.md`
+  "What worked" bullet 1; the committed `README.md` (`4bc7c1d`) correctly
+  cites `github.com/ctosullivan/ledgerkit` and correctly describes
+  `symbol_enrichment` as lacking a producer-attribution column, matching
+  `L-031`/`planning/ROADMAP.md`'s Future-improvement backlog.
+- **classification:** uncertain
+- **status:** discarded
+- **recurrence:**
+- **promoted_to:**
+- **curation (Phase 71 triage, 2026-09-25, knowledge-curator):** both
+  catches are instances of already-standing rules doing their job — "do
+  not fabricate a URL, verify against the project's own recorded
+  evidence" (already named by the retro itself, matching the spirit of
+  the already-promoted `L-009`, "fetch externally-authoritative text from
+  its own canonical source rather than memory/a template") and "do not
+  overstate provenance beyond a disclosed gap" (`L-031` is already on the
+  record as a named gap — the second draft's error was failing to
+  cross-check against a gap this project's own backlog already names,
+  not the discovery of a new fragility class). No new artifact is
+  needed: there is no evidence this recurs across drafting tasks
+  generally (first and only occurrence of each), the review step that
+  caught both is not new, and inventing a project-rule from two catches
+  in one drafting session would be exactly the low-value rule-pile-up
+  the lifecycle doc's "no giant permanent AI learnings document"
+  principle warns against. **Outcome: discard** — reason: confirms
+  existing rules/process already work; no gap surfaced.
+
 ### L-046 — a credential-passing mechanism proposed to the user should be verified to actually bridge the user's own interactive shell into the agent's own tool environment before the user is asked to use it for a real secret
 
 - **origin:** Phase 70 retro ("What worked", "What didn't work", "Lessons
