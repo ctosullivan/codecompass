@@ -317,3 +317,62 @@ no tracked file, no `src/codecompass/` change. This closes the one
 real, disclosed self-dogfooding credibility gap Phase 67's own
 sub-task 1 surfaced, before it could affect Phase 68's own independent
 audit or a future live demo.
+
+### Sub-task 4 — fresh-agent acceptance test
+
+**Task given**: `L-031` (`symbol_enrichment` missing a producer-
+attribution column), in ordinary product-development language, with no
+mention of Scope/Plan/Domain/Design/Implement, `docs/domain/`,
+`planning/knowledge/`, `CLAUDE.md`, or that this was a test. Dispatched
+as `general-purpose`, not a specialist role. Full output:
+`planning/symbol-enrichment-provenance-proposal.md`.
+
+**Assessed by the lead reading the actual report directly**, not the
+agent's own self-summary:
+
+1. **Discover the development process, find where it's described —
+   PASS.** The report correctly cites and applies `CLAUDE.md` §1 (plan
+   file + real-call-site test requirement), §2 (same-commit doc sync),
+   and §5 (DoD gate, `release-phase-auditor`) in its own §6 "Process
+   note," unprompted. **Honest caveat**: `CLAUDE.md` is very likely
+   auto-loaded into any Claude Code session operating in this
+   repository by the platform itself, not discovered through the
+   agent's own initiative — this is a structural property of running
+   this test on Claude Code, not a finding about CodeCompass's own
+   documentation's discoverability. The deeper methodology documents
+   (`planning/v1-redefinition/development-methodology.md`,
+   `planning/agent-led-workflow.md`) were not cited — plausibly correct
+   scoping for an "investigate and propose" ask rather than a "run the
+   full phase process" one, not a discovery failure, but noted rather
+   than assumed.
+2. **Locate domain/evidence material without being pointed at it —
+   PASS, strongly.** Found `docs/domain/concepts/provenance.md`'s own
+   "Counterexample" section, `docs/domain/open-questions.md`,
+   `concepts/observation.md`, `concepts/evidence.md`, **and**
+   `planning/learnings/inbox.md`'s `L-031` entry, **and**
+   `planning/ROADMAP.md`'s Future-improvement backlog row — cited by
+   exact id and line numbers. None of this was named in the dispatch
+   prompt; this is not auto-loaded content, and finding it required
+   real, unprompted exploration.
+3. **Recognise genuine unresolved uncertainty rather than guess past
+   it — PASS, strongly.** §4 names five distinct open questions
+   (backfill value, whether `decisions/0054` needs a correction, a
+   real transitive-join footgun risk, whether to also wire up the
+   agent-driven producer ADR 0054 anticipated, whether a CLI/query
+   surface is expected) — each with genuine reasoning for why it's
+   unsettled, not a token gesture at uncertainty.
+4. **Produce a sensible, evidence-grounded design — PASS.** Concrete
+   schema/migration/writer-signature/call-site design, following this
+   codebase's own exact established migration precedent
+   (`_migrate_symbols_export_kind_note_columns`), grounded in real line
+   citations and a `git log -p -S` history check, not asserted from
+   memory.
+
+**Overall: 4/4 PASS**, one with an honestly-disclosed platform caveat
+on criterion 1. The agent also independently re-confirmed (not merely
+cited) that `decisions/0054`'s own "already TEXT NOT NULL" claim is
+factually wrong for `symbol_enrichment`, matching `domain-skeptic`'s
+own Phase 63D finding via its own direct check against `graph.py`,
+not by trusting `L-031`'s account. `planning/symbol-enrichment-provenance-proposal.md`
+is a genuinely usable design artifact, not a throwaway — a future
+phase actually implementing `L-031` can start from it directly.
