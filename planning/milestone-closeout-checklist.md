@@ -1,7 +1,10 @@
 # Milestone documentation closeout checklist
 
 Executed at a **major milestone** — for the redefined-v1 effort that is
-**Phase 66** (`planning/v1-redefinition/roadmap.md`). Not run per phase.
+**Phase 69** (`planning/v1-redefinition/roadmap.md`; corrected from
+this document's own original "Phase 66," which predated the Phase 63D
+insertion and the Stage F/G +4 renumbering, `decisions/0056`/`decisions/0060`).
+Not run per phase.
 
 This is the operational form of
 `planning/v1-redefinition/documentation-lifecycle.md` §5. It is a
@@ -122,9 +125,11 @@ waived in writing (with a reason) in the milestone closeout artifact
 
 ## 11. Git tag / release preserving the complete historical state
 
-- **When:** this step is **Phase 67** (redefined-v1), not Phase 66 —
-  steps 1–10 above are the Phase 66 documentation closeout; the release
-  itself is the next phase and its own human-decision gate.
+- **When:** this step is **Phase 70** (redefined-v1), not Phase 69 —
+  steps 1–10 above are the Phase 69 documentation closeout; the release
+  itself is the next phase and its own human-decision gate. *(Corrected
+  from this document's own original "Phase 67"/"Phase 66" — see the
+  header note above.)*
 - **Owner:** lead — **human-decision gate G9** (redefined-v1).
 - **Do:** only after every step above. Bump the version (drop `.dev0`),
   promote `CHANGELOG.md`'s `[Unreleased]` to a dated section — **flatten
