@@ -48,7 +48,7 @@ stated trigger for revisiting, not silently dropped:
 
 | Item | Status | Revisit trigger |
 |---|---|---|
-| **GATE DD / Stage E** — a generalised technical-dependency/provenance abstraction (Phase 55's own decision, never made either way; Phases 56–59 conditional on it) | not started | New evidence that a generalisation beyond Stage C's own concrete work is actually needed, not merely plausible. Stage G's own release did not require resolving this — CodeCompass shipped either way (`decisions/0056`). |
+| **GATE DD / Stage E** — a generalised technical-dependency/provenance abstraction (Phase 55's own decision, never made either way; Phases 56–59 conditional on it) | not started | New evidence that a generalisation beyond Stage C's own concrete work is actually needed, not merely plausible. GATE DD is a separate axis from Stage F/G, explicitly independent of whether those stages proceed (`decisions/0056`, `decisions/0060`) — Stage G's own release did not require resolving it, and CodeCompass shipped either way. |
 | **Phase 24** — project-root-aware REPL routing + whole-project context + dependency rollup at session start | deferred | Reference-project evidence showing project-root context routing is a recurring real need (`decisions/0048`). |
 | **Phase 25** — MCP server (`query_vendor`) | deferred | Real post-v1 CLI/Skill usage patterns informing whether an MCP surface would add value (`decisions/0048`). |
 | **Phase 48** — task-oriented context retrieval | not funded | New evidence — none found across Phases 44–46's own evaluation (`CG-001`, single-occurrence, own-dev only). |

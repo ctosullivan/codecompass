@@ -24,7 +24,7 @@ Deferred, post-v1, each with its own revisit trigger in
 **Phase 71 — post-v1 documentation refresh — in progress (2026-09-24).**
 Direct user request: `README.md` rewritten (limitations, evidence/
 provenance model, realistic v1 positioning); `planning/ROADMAP.md`
-restructured (412→113 lines, historical phase table replaced with a
+restructured (424→113 lines, historical phase table replaced with a
 concise current-state summary — full history preserved in
 `v1-closeout.md`, `v1-redefinition/roadmap.md`, and git history); this
 file further reduced. One mechanical check adapted:
