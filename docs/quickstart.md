@@ -18,8 +18,12 @@ smaller).
 ## 1. Install
 
 ```bash
-pip install codecompass
+pip install codecompass-context
 ```
+
+The PyPI distribution is named `codecompass-context`; the installed
+CLI command and the Python package you `import` are both still
+`codecompass`.
 
 Requires Python ≥3.11 (`pyproject.toml`'s `requires-python`). Optional:
 set `ANTHROPIC_API_KEY` in your environment if you want the AI-enrichment

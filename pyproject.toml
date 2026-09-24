@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "codecompass"
+name = "codecompass-context"
 version = "1.0.0"
 description = "Grounded, version-pinned dependency reference docs for AI coding agents."
 readme = "README.md"

@@ -28,7 +28,7 @@ detect, not just two names sitting in `pyproject.toml`.
 ```bash
 cd examples/toy-project
 python -m venv .venv
-./.venv/Scripts/pip install -e path/to/codecompass    # or: pip install codecompass, once published
+./.venv/Scripts/pip install -e path/to/codecompass    # or: pip install codecompass-context, once published
 ./.venv/Scripts/pip install requests click
 ./.venv/Scripts/codecompass --budget 0                 # Phase A only — no AI spend
 ```
