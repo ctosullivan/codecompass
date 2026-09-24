@@ -49,9 +49,14 @@ human-decision gate recorded against it in
   Write a new ADR whenever a phase involves a non-obvious tradeoff, not
   only for decisions already known at project start.
 - **`planning/CONTEXT.md`** — current session-resumption state (§4).
-- **`planning/ROADMAP.md`** — full-roadmap phase-status table (all
-  phases, not just the current one). Updated whenever a phase starts (§1),
-  finishes (§5), or its scope changes.
+- **`planning/ROADMAP.md`** — full-roadmap, at-a-glance phase-status
+  view: what's done, what's next, what's still just planned, plus
+  deferred/not-funded items with revisit triggers. For a completed
+  milestone group, full per-phase historical detail is preserved in
+  that milestone's own closeout record (e.g. `v1-closeout.md`,
+  `v1-redefinition/roadmap.md`) and git history, not repeated here as
+  a row-per-phase table (established at Phase 71). Updated whenever a
+  phase starts (§1), finishes (§5), or its scope changes.
 
 All of the above update in the same commit as the change that touches
 them — not as a follow-up.
