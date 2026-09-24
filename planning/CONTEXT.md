@@ -21,7 +21,7 @@ Deferred, post-v1, each with its own revisit trigger in
 
 ## What was just completed
 
-**Phase 71 — post-v1 documentation refresh — in progress (2026-09-24).**
+**Phase 71 — post-v1 documentation refresh — done (2026-09-25).**
 Direct user request: `README.md` rewritten (limitations, evidence/
 provenance model, realistic v1 positioning); `planning/ROADMAP.md`
 restructured (424→113 lines, historical phase table replaced with a
@@ -30,7 +30,13 @@ concise current-state summary — full history preserved in
 file further reduced. One mechanical check adapted:
 `check_readme_phase_count` now compares README's and ROADMAP's own
 "phases 0-N" prose claims directly, since the per-phase row table it
-used to scan no longer exists.
+used to scan no longer exists. Closeout: independent fork review (2
+findings, fixed), `docs-reconstructor` drift audit (3 findings, fixed),
+`domain-skeptic` freshness reconciliation (2 stale `docs/domain/`
+citations, fixed, content unchanged), `knowledge-curator` triage
+(`L-047` discarded, `L-048` promoted to `context-researcher.md`,
+`L-049` retained, `L-050` promoted to `CLAUDE.md` §2 after user
+approval).
 
 ## Known standing gaps (current-state facts, not phase history)
 
@@ -53,7 +59,7 @@ used to scan no longer exists.
 
 ## Next concrete step
 
-Finish Phase 71: independent consistency review of the rewritten
-`README.md`/`ROADMAP.md` against `src/`/tests/`v1-closeout.md`; a
-consistency sweep of other current-facing docs; standard closeout
-(retro, drift audit, learning triage, DoD audit).
+Phase 71 is closed. No phase is currently planned — post-v1 development
+proceeds under the same agent-led model as ordinary, non-milestone-group
+work (`ROADMAP.md`'s "Post-v1 development" section). Pending: Phase 71's
+`release-phase-auditor` DoD pass, then push to `origin`.

@@ -68,7 +68,7 @@ toward any milestone-group tag/release gate.
 
 | Phase | Description | Status | Plan |
 |---|---|---|---|
-| 71 | **Post-v1 documentation refresh** — direct user request, 2026-09-24. `README.md` rewritten ground-up against verified current v1 state; `ROADMAP.md` restructured (this section) to replace stale phase-status material with a concise current-state view; `CONTEXT.md` further reduced; a consistency sweep of other current-facing docs. Historical material (retros, ADRs, evaluation evidence, `docs/domain/`) preserved as historical record, not rewritten. Full plan: `planning/phase-71-post-v1-documentation-refresh.md` | in progress | [`planning/phase-71-post-v1-documentation-refresh.md`](phase-71-post-v1-documentation-refresh.md) |
+| 71 | **Post-v1 documentation refresh** — direct user request, 2026-09-24. `README.md` rewritten ground-up against verified current v1 state; `ROADMAP.md` restructured (this section) to replace stale phase-status material with a concise current-state view; `CONTEXT.md` further reduced; a consistency sweep of other current-facing docs; two `docs/domain/` citation staleness cases and one stale `CLAUDE.md` §2 description found and fixed. Full plan: `planning/phase-71-post-v1-documentation-refresh.md`. Retro: `planning/retros/phase-71-post-v1-documentation-refresh.md`. | done | [`planning/phase-71-post-v1-documentation-refresh.md`](phase-71-post-v1-documentation-refresh.md) |
 
 ## Future-improvement backlog (unscheduled)
 

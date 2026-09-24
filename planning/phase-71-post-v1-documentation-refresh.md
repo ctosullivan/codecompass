@@ -1,6 +1,6 @@
 # Phase 71: Post-v1 documentation refresh — plan
 
-**Status:** planned (2026-09-24).
+**Status:** done (2026-09-25).
 
 **First post-v1 phase — not part of the redefined-v1 milestone group**
 (that group, `decisions/0048`, Phases 39–70, is closed). Direct user

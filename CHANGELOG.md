@@ -9,7 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 71** (Post-v1 documentation refresh, done): `README.md`
+  gained a "Limitations" section (8 concrete, honestly-disclosed gaps)
+  and an "Evidence & provenance" section, neither of which existed
+  before.
+
 ### Changed
+
+- **Phase 71**: `README.md` rewritten ground-up against verified
+  current v1.0.0 state (status, capabilities, architecture-at-a-glance,
+  ecosystems/adapters, realistic Ledgerkit-evaluation positioning).
+  `planning/ROADMAP.md`'s 424-line phase-by-phase table replaced with a
+  ~113-line current-state summary (full history preserved in
+  `planning/v1-closeout.md`, `planning/v1-redefinition/roadmap.md`, and
+  git history); `planning/CONTEXT.md` further reduced to `CLAUDE.md`
+  §4's literal four fields. `CLAUDE.md` §2's own description of
+  `planning/ROADMAP.md` corrected to match, after explicit user
+  approval per §0 (`L-050`). `scripts/check_user_docs.py`'s
+  `check_readme_phase_count` rewritten to compare README's and
+  ROADMAP's own "phases 0-N" prose claims directly, since the per-phase
+  row table it used to scan no longer exists — a necessary consequence
+  of the ROADMAP.md restructure, not a behaviour change on its own
+  terms. `.claude/agents/context-researcher.md` gained a new hard rule
+  on citation form for `docs/domain/` references to fast-moving
+  planning documents/tests, after this exact fragility recurred a
+  second time (`L-048`).
 
 ### Fixed
 
@@ -23,6 +47,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `examples/README.md`'s own stale "once published" qualifier. This
   fix itself lands after the `v1.0.0` tag, not retroactively folded
   into the dated `[1.0.0]` section below.
+- **Phase 71**: `ai-docs/CLAUDE.md` and `CONTRIBUTING.md` both still
+  described `planning/ROADMAP.md` using stale "full phase table"/"every
+  phase" language after the restructure above — found by this phase's
+  own per-phase drift audit and fixed. Two `docs/domain/` citations
+  (`connector.md`, `invariant.md`) that referenced the pre-restructure
+  `ROADMAP.md` content and a test this phase deleted were found stale
+  by the domain-corpus freshness-reconciliation check and fixed
+  (citations only — no domain-meaning change).
 
 ## [1.0.0] - 2026-09-24
 
