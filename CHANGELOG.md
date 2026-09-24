@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+
+## [1.0.0] - 2026-09-24
+
+### Added
+
 - **Phase 69** (Milestone closeout, done): Stage G's sixth phase.
   Executed `planning/milestone-closeout-checklist.md`'s own steps 8–10
   (freeze declaration, bulk retro review, closeout artifact) on top of
@@ -250,29 +259,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   unblocked. Retro: `planning/retros/phase-63-lightweight-smoke-test.md`.
   See `planning/phase-63-lightweight-smoke-test.md`.
 
-### Changed
-
-- **Contributor License Agreement wording made explicit** (direct user
-  instruction; no new ADR — refines, does not revise, `decisions/0055`):
-  `CONTRIBUTING.md`'s existing contributor-grant paragraph (added by
-  `decisions/0055`/commit `65afede`, unaltered here — same verbatim
-  text) now sits under its own clearly-titled `### Contributor License
-  Agreement` heading within the `## License` section, rather than
-  running on directly from the surrounding prose. `README.md`'s
-  `## License` section note is rewritten to state all five points
-  explicitly rather than some implicitly: CodeCompass remains
-  GPL-3.0-or-later; contributors retain copyright in their own
-  contributions; contributions are subject to the CLA in
-  `CONTRIBUTING.md`; the CLA permits the project owner to relicense
-  contributed material under alternative or proprietary terms in
-  future; none of this removes or restricts anyone's rights to existing
-  GPL-licensed versions of CodeCompass. The README's own link now
-  points directly at the new `#contributor-license-agreement` anchor
-  rather than the parent `#license` section. Documentation-only; no
-  `src/`, licence, architecture, or other contributor-policy change.
-
-### Added
-
 - **Phase 62** (adapter-interface consolidation, done): closes `CG-008` —
   `context-graph.db`'s `symbols` table stayed empty for every Haskell
   vendor before this phase. `EcosystemAdapter` gains a new, concrete
@@ -483,268 +469,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `planning/reference-projects/ledgerkit/findings.md`'s "Phase 54b"
   section and `planning/retros/phase-54b-ledgerkit-behavioural-understanding.md`.
 
-### Planned
-
-- **Phase 63D plan: Domain reconstruction** (planning only, no code,
-  phase not started; roadmap/methodology restructuring only —
-  `decisions/0060`): inserts a new bridge phase, non-disruptively
-  numbered (matching 43b-e/55b precedent), immediately before Phase 64
-  (blank-slate documentation reconstruction). Dogfoods CodeCompass
-  against its own repository to build an evidence-backed domain corpus
-  (`docs/domain/`) for core concepts (evidence, observation, claim,
-  derivation, provenance, relationship/edge, context, context packet,
-  adapter, connector, protocol, reference, decision, invariant, and
-  others found along the way), reusing Phase 54c's own
-  Observation/Evidence/Claim/Derivation/Decision record model
-  project-wide rather than per-feature. Adds one genuinely new
-  mechanism Phase 54c's own model didn't have: an independent
-  adversarial reviewer (`domain-skeptic`, planned, not yet created)
-  that challenges unsupported claims, hunts for contradictions and
-  missing edge cases, resolves what it can through further evidence,
-  and escalates only genuine domain/product ambiguities to the user.
-  Formalizes **Scope → Plan → Domain → Design → Implement** as
-  CodeCompass's own named v1 development methodology
-  (`planning/v1-redefinition/development-methodology.md`) — naming and
-  organizing Phase 54c's already-recommended-durable machinery, not
-  replacing it. Phase 64 is re-scoped to consume this phase's own
-  approved domain corpus rather than independently rediscovering
-  terminology, and to separate six documentation categories: domain,
-  architecture, user, developer, protocol/adapter, and
-  development-process. Two stale phase-number references, predating
-  the Stage F/G +4 renumbering (`decisions/0056`), corrected as
-  directly-adjacent bookkeeping: `.claude/agents/release-phase-auditor.md`
-  and `.claude/agents/docs-reconstructor.md`. See `decisions/0060`,
-  `planning/phase-63d-domain-reconstruction.md`.
-
-  **Amended 2026-09-20**, before implementation, tightening execution
-  semantics (roadmap structure unchanged): no lead/agent stand-in for
-  the user on a genuine domain/product escalation (narrows Phase 54c's
-  own §5.1 precedent, which permitted it during CodeCompass's own
-  dogfooding — an agent may only fully resolve an item with evidence or
-  leave it explicitly open, never rule on it itself);
-  `domain-skeptic`'s write boundary stated precisely (read-only toward
-  source/implementation/design/the approved corpus; may append
-  Observation/Evidence records and write its own review report, nothing
-  else); a new "minimum viable adoption" profile added to
-  `development-methodology.md` for smaller projects adopting the five
-  stages without CodeCompass's own governance structure; stale "Phase
-  67 = release"/"stages A–F" wording (superseded by the same
-  `decisions/0056` renumbering) corrected across
-  `planning/ROADMAP.md`, `planning/v1-redefinition/README.md`,
-  `context-quality-evaluation.md`, and `migration.md`'s forward-looking
-  sentences, plus `CLAUDE.md` §6/`CONTRIBUTING.md` (protected file,
-  fixed via an explicit user-approved diff per `CLAUDE.md` §0).
-
-  **Amended again 2026-09-20**, before implementation, four further
-  pre-v1 additions to `development-methodology.md` (roadmap structure
-  and phase numbering unchanged; no new ADR — none of this reverses
-  `decisions/0060`'s own Decision section):
-  - **Re-entry and replanning rules**: which stage to return to when new
-    evidence, a contradicted Claim, an infeasible design, or a wrong
-    approach surfaces after an earlier stage's output was approved —
-    Domain/Design re-entries use Phase 54c's own existing
-    `supersedes`/`status: superseded` mechanism (never edited in place);
-    Scope/Plan re-entries may edit the plan file directly, provenance in
-    git history, matching this project's own already-exercised practice
-    (Phase 61/62/63D's own plan amendments).
-  - **A traceability spine**, Evidence → Claim/Invariant → Design
-    Decision → Requirement → Implementation → Test, reusing Phase 54c's own
-    record ids unchanged except two new optional fields on the existing
-    Requirement record (`implemented_at`, `test_ref`) — additive
-    widening of one record kind, not a new schema.
-  - **A fresh-agent acceptance test added to Phase 67**: a genuinely
-    fresh agent, given repo access and no prior context, must discover
-    the development process, locate domain/evidence material, recognise
-    genuinely unresolved uncertainty, and produce a sensible design for
-    one small realistic change — PASS/FAIL per criterion, reported
-    honestly. A FAIL does not block the software release (GATE
-    DF/DD/G9 govern that independently) but does block describing
-    CodeCompass v1 as a validated reference/model project until the
-    specific discoverability failure is fixed and the test passes.
-  - **Domain-corpus freshness and reconciliation semantics**: a material
-    change to implementation/tests/ADRs/references/observed behaviour
-    triggers *consideration*, not automatic invalidation, at three
-    existing checkpoints (per-phase verification via one new
-    `docs-reconstructor` check, retro, and Phase 65's own reconciliation,
-    which re-invokes `domain-skeptic` — the same role, not a new one).
-    A fourth, ongoing rule covers what Phase 65's one-time reconciliation
-    cannot: post-v1, a future feature's Design stage may not rely on a
-    domain concept with an outstanding staleness candidate until that
-    feature's own Domain stage resolves it.
-  See `planning/v1-redefinition/development-methodology.md`,
-  `planning/v1-redefinition/roadmap.md`'s Phase 63D/65/67 entries, and
-  `planning/phase-63d-domain-reconstruction.md`.
-
-  **Amended a third time, 2026-09-20**: corrected the traceability
-  spine's own ordering above — it had listed Requirement before Design
-  Decision, backwards relative to Phase 54c's actual citation direction
-  (a Requirement's `decision:` field points at the Decision that
-  authorizes it, so Decision is upstream); now reads
-  `Evidence → Claim/Invariant → Design Decision → Requirement →
-  Implementation → Test` throughout.
-
-- **Phase 62 plan: adapter-interface consolidation** (planning only, no
-  code, phase not started): closes `CG-008` (the graph's `symbols` table
-  stays empty for Haskell vendors) via a new, concrete (not abstract,
-  default `[]`) `EcosystemAdapter.symbols()` method. `Symbol`/`SymbolRow`
-  widen with optional `kind`/`note`, generalizing `decisions/0059`'s
-  wire-level addition into CodeCompass's own core model; the `symbols`
-  table gains matching nullable columns via `ADD COLUMN`
-  (`_SCHEMA_VERSION` 8→9 — the lighter mechanism used for
-  `doc_relation_enrichment`, not the heavier `vendors`-style rebuild
-  Phase 61 needed, since `ADD COLUMN` carries no FK-cascade risk against
-  `symbol_enrichment`). A real, pre-existing duplication is removed for
-  all four ecosystems, not patched for Haskell alone: npm/Python/Cargo's
-  own `readme_and_api_surface()` already walks+extracts symbols the same
-  way `sync.py`'s own `_collect_vendor_symbols` did independently.
-  `HaskellAdapter` gains a per-instance `_analyze()` cache, closing a
-  real, confirmed redundant-external-process-spawn cost. Explicitly,
-  disclosedly **not fixed**: `build_symbol_index`/`purpose_for_file`
-  (FILETREE.md's own flat symbol index) stay Haskell-blind — a real
-  architectural mismatch judged materially bigger than "smallest
-  justified fix." No broader plugin-marketplace/packaging/licensing
-  commitment is made. See
-  `planning/phase-62-adapter-interface-consolidation.md`.
-
-- **Phase 54c plan: evidence-backed, knowledge-based,
-  documentation-first workflow** (planning only, no code, phase not
-  started): a minimal, file-based (not `context-graph.db`)
-  Observation/Evidence/Claim/Derivation/Decision/Requirement model
-  (`planning/knowledge/<feature-slug>/`) plus a development workflow —
-  Context Researcher → knowledge map → Documentation Agent →
-  user-facing design document → user review gate (DRAFT → RESEARCHED →
-  USER REVIEW → APPROVED → IMPLEMENTING → VERIFIED) → approved context
-  packet → coding agent → behavioural revalidation → retro — usable for
-  both CodeCompass's own development and downstream projects like
-  Ledgerkit. Generalises `decisions/0051`'s and `decisions/0054`'s
-  already-proven "agent-derived content stays outside the graph until
-  promoted" boundary from graph edges/enrichment specifically to
-  general behavioural knowledge; adapts Ledgerkit's own real
-  `dev-docs/compat-register/*.yaml` evidence-kind/status shape as the
-  direct template. Bounded proving case: `CG-005` (the `origin` enum
-  extension, primary — small enough for a full loop within one
-  experimental phase) plus a retroactive, no-new-dispatch check of
-  Phase 54b's own `depth:` evidence against Ledgerkit's real, shipped
-  outcome as a known-correct answer (secondary). Numbered as a bridge
-  phase (54c) informing, not pre-empting, GATE DD (Phase 55). No new
-  `context-graph.db` schema change beyond one incidental CHECK-enum
-  value; no universal ontology, RDF/OWL, confidence scoring, or MCP
-  work. **Amended 2026-09-18**, before implementation: Evidence made
-  strictly neutral (support/contradict lives only on the Claim); a
-  Decision can never supersede a Claim (only another Decision — a
-  factual correction to observed behaviour is always a new Claim, never
-  a Decision); user-run tests are first-class Observation/Evidence;
-  `design.md`'s citation obligation is one-directional (every assertion
-  resolves to knowledge, not every stored Claim need surface); resolved
-  to two new agent roles (Context Researcher, Documentation Agent) plus
-  an extended `knowledge-curator` packet-assembly mode, not three new
-  roles; added a `packet-sufficiency.md` log measuring whether the
-  packet actually reduces rediscovery; the two proving cases are now
-  explicitly framed as testing workflow mechanics and documentation
-  fidelity respectively, not final proof of the methodology, with Phase
-  60/61 named as the first genuine-uncertainty test. See
-  `planning/phase-54c-evidence-knowledge-workflow.md` and
-  `planning/phase-54c-evidence-knowledge-workflow-prompt.md`.
-
-- **Phase 54b plan: behavioural-understanding experiment** (planning
-  only, no code, phase not started): expands Phase 54b's one-paragraph
-  placeholder into a full plan
-  (`planning/phase-54b-ledgerkit-behavioural-understanding-experiment.md`)
-  using Ledgerkit's real Stage C Phase 5 evidence (`c6168b2`) — hledger's
-  `depth:` query term resolves to three distinct behaviours across five
-  commands (clip for balance/register/accounts, full depth-blindness for
-  `print`, genuine exclusion for `stats`), and Stage C Phase 1 made a
-  real, dated premature-conclusion mistake (classified from one
-  function's signature without tracing any command's actual consumption)
-  corrected only by a full six-file source trace at Phase 5. Refines the
-  phase's objective to: test whether CodeCompass context helps an agent
-  reach an execution-path-complete conclusion and avoid that exact
-  mistake, using only existing mechanisms (Phase 54's reference-ingestion
-  pipeline, the context-gap/context-observation queues,
-  `context-evaluator`, plus one new phase-scoped evaluation criterion —
-  "execution-path completeness" — not folded into the shared
-  `context-quality-evaluation.md` instrument). No new ontology, claim
-  system, or execution graph. Findings feed GATE DD's existing
-  executable-kind (§2.2 → Phase 56) and provenance (§2.4 → Phase 57)
-  hypothesis rows, not a new one, and carry forward as named design
-  questions for Phase 60 (adapter API-surface sufficiency for
-  entry-point tracing) and a refined Phase 61 (cross-language
-  behavioural comparison via the same `depth:` case, not just "does the
-  adapter parse Haskell"). Existing phase numbering/sequencing preserved
-  throughout; no new ADR (refines scope inside `decisions/0056`'s
-  existing framework). See `planning/phase-54b-ledgerkit-behavioural-understanding-prompt.md`
-  for the full verbatim request.
-
-- **Roadmap revision: cross-language validation strategy** (no phase
-  number — planning/documentation only, no code): `decisions/0056`
-  replaces Technical Clipper as Stage F's required cross-project
-  validation target with a deliberately small Haskell `EcosystemAdapter`
-  spike validated against hledger/Ledgerkit — already CodeCompass's
-  central reference project, with a real Haskell toolchain (Stack
-  3.11.1) confirmed available in this environment, unlike the still-
-  stalled Cargo-toolchain situation (`decisions/0014`). Revised sequence:
-  new bridge phase **54b** (LedgerKit reference/behaviour validation,
-  Stage D) → Phase 60 (minimal Haskell adapter) → Phase 61 (hledger
-  cross-language experiment) → Phase 62 (adapter-interface
-  consolidation) → Phase 63 (lightweight ordinary-project smoke test,
-  Technical Clipper now merely an optional candidate there, not
-  dropped) → Phases 64-70 unchanged (Stage G v1 consolidation; Phase
-  67's description now names the Stage F smoke test generically rather
-  than Technical Clipper specifically). Rust and JavaScript/npm adapter
-  maturation work is demoted to later, non-near-term ecosystem-expansion
-  work — not required to drive v1 architecture or validation. Stage E
-  (Phases 56-59, GATE DD) is explicitly untouched — a different axis of
-  generalisation. Rationale: a new-ecosystem adapter validated against
-  an already-central codebase is a stronger test of the future modular
-  adapter architecture (potentially independently-licensed Python,
-  Haskell, and proprietary COBOL adapters) than a same-ecosystem
-  (TypeScript/npm) regression against Technical Clipper, whose own
-  ecosystem CodeCompass already ships support for. See `decisions/0056`
-  and `planning/v1-redefinition/roadmap.md` Stage F. Technical Clipper's
-  registration/protocol material is preserved, not deleted, for optional
-  later use.
-
-- **Evidence-reconciliation planning session** (no phase number —
-  planning only): reconstructed current CodeCompass and Ledgerkit state
-  fresh from both repositories (Ledgerkit had advanced 5 commits past
-  the pin every prior evaluation used). Recovered Ledgerkit's own
-  first-ever real consumer-side CodeCompass evidence
-  (`validation/codecompass/findings/CC-LK-001`, its live-repo `-q`/
-  `--query` integration task) — PASS WITH GAPS, LOW advantage,
-  independently corroborating Phase 54's `CG-004` (doc-to-doc relation
-  gap) and `CG-003` (executable/behavioural evidence gap) from a
-  genuinely different angle. Built a reconciliation matrix and
-  recommends one small, doubly-corroborated fix (populate
-  `doc_artifacts.name` for `spec_doc` rows) for implementation, with
-  everything larger (executable-evidence representation, pinned-
-  reference productisation) explicitly deferred pending cross-domain
-  evidence. See `planning/phase-55-evidence-reconciliation.md`. **No
-  code changed; a real phase-numbering conflict was surfaced, not
-  silently resolved, for the user to decide.**
-
-### Fixed
-
-- **Phase 55b** (a bridge phase, not part of the Phase 55/Stage E
-  sequence): `spec_docs.py::scan_spec_docs` now populates
-  `doc_artifacts.name` for every `spec_doc` row (its own first H1
-  heading, or filename stem, gated by a genericity check rejecting a
-  bare single word like a project's own root README's `# ledgerkit`) —
-  closing `CG-004`, doubly-corroborated by Phase 54's own experiment and
-  Ledgerkit's independent, real-live-repo `CC-LK-001` finding.
-  `doc_mapping.py::build_doc_relations_edges` gained a self-mention
-  exclusion for `mentions_artifact` (a titled doc's own heading
-  otherwise trivially matches itself). `sync.py`'s real production call
-  now includes `spec_doc_rows` as a `mentions_artifact` target — the
-  wiring gap a first implementation attempt missed, caught by an
-  independent `context-evaluator` round-1 FAIL before it shipped, fixed,
-  and re-verified in round 2 (PASS WITH NON-BLOCKING OBSERVATIONS) via a
-  real before/after against the live Ledgerkit repository: 3 genuine
-  edges now appear, zero false-positive noise. `CG-006` (matches by
-  title text only, never filename) filed as a small, honestly-disclosed
-  residual limitation, not claimed to be fixed by this change.
-
-### Added
-
 - **Phase 54** (heterogeneous reference-material experiment): a real,
   tested Git-backed reference-ingestion pipeline
   (`planning/reference-projects/ledgerkit/reference-experiment/`,
@@ -769,46 +493,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   51's retro) in Stage D's favour, by having actually run the test —
   genuinely mixed evidence, not a clean mandate either way. No
   `src/codecompass/` change.
-
-### Removed
-
-- **Phase 53** (legacy feature rationalisation): `discovery.py::
-  rewrite_vendor_toml`, dead code with zero callers since the `promote`
-  command's Phase 15 retirement (`decisions/0033`), plus its dedicated
-  test. Reached via a full feature inventory (CORE / AGENT / HOST-OUTPUT
-  ADAPTER classification) and redundancy map covering every runtime
-  module — see `planning/phase-53-legacy-feature-rationalisation-plan.md`.
-  At the review gate, direct-API vendor/symbol/relation enrichment and
-  the `chat` REPL were both explicitly kept unchanged (real,
-  non-hypothetical value; no evidence either is a problem), and two
-  small duplication/naming findings were deferred to a documentation
-  note rather than new tooling.
-
-### Changed
-
-- **Contributor licensing terms** (`decisions/0055`): `CONTRIBUTING.md`'s
-  `## License` section now includes an explicit grant — a contributor
-  retains copyright but grants the project owner an irrevocable,
-  worldwide, royalty-free licence broad enough to relicense the
-  contribution, including under proprietary terms — replacing the prior
-  "no separate CLA" sentence. This preserves the project owner's ability
-  to offer CodeCompass under alternative or commercial licence terms in
-  future; it does not affect CodeCompass's own current licence
-  (GPL-3.0-or-later) or any existing user's rights under it, and nothing
-  has been contributed externally to date for it to apply to
-  retroactively. `README.md`'s `## License` section gains a short,
-  prominent pointer to this term. Documentation-only; no `src/` change.
-- **Phase 53**: `architecture/overview.md` gains a new "Module tiers:
-  CORE, AGENT, HOST-OUTPUT ADAPTERS" section naming the project's
-  existing (previously implicit) module grouping, plus a one-sentence
-  disambiguation of "adapter" (the ecosystem package-manager sense,
-  `src/codecompass/adapters/`) from the phase's new "host-output
-  adapter" sense (Claude Skills, `CLAUDE.md`, Cursor `.mdc`), plus a
-  caveat naming the tool-level Skill / `/discovery` / `docs/
-  cli-reference.md` `query`-subcommand-list triplication as a known,
-  hand-synced maintenance burden.
-
-### Added
 
 - **Phase 52** (context edge lifecycle): a new `planning/context-observations/`
   queue generalises `context-use-log.md` (4 original entries migrated
@@ -883,42 +567,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   --strict` clean. **Whether to continue into Stage D or proceed toward
   Stage F/G is a genuine strategic decision surfaced to the user, not
   resolved by this phase.**
-
-### Fixed
-
-- **Phase 49** (Stage C's first phase — GATE DB's funded fix): closes
-  `CG-002` and `L-016`, both consolidated at Phase 47's GATE DB.
-  `spec_docs.py::_DEFAULT_GLOBS` gains `"dev-docs/**/*.md"` — the exact
-  Phase 37 `ai-docs/**/*.md` precedent applied a second time, this time
-  from external Ledgerkit evidence (Phases 45/46). `cli.py::query_relations`'s
-  not-found branch now calls a new `_relations_not_found_error`: a real
-  on-disk file that simply wasn't detected as a spec/vendor doc gets an
-  explicit, mechanism-naming message pointing at spec-doc glob coverage,
-  instead of an authoritative-sounding bare "not found" indistinguishable
-  from a genuine typo; `query vendor`/`query symbol`'s "not found" paths
-  are untouched, correctly, since file-existence checking doesn't apply
-  to a vendor/symbol name. **This is CodeCompass's first
-  `src/codecompass/` change driven by external reference-project
-  evidence** — the redefined v1's central hypothesis (`decisions/0048`)
-  made concrete for the first time since Phase 43a's own-repo dogfood. 3
-  new tests. Live-verified against the real Ledgerkit clone, independently
-  reproduced by both the lead and the auditor from scratch: `dev-docs/`
-  files (including a nested path) now resolve to an honest empty
-  relations table instead of "not found"; a genuinely nonexistent name
-  keeps the plain message; a still-uncovered real file
-  (`knowledge/DOMAIN_RULES.md`) correctly triggers the new disambiguated
-  message, confirming the fix generalises beyond the one directory it was
-  evidenced against. `docs-maintainer` reconciled `architecture/overview.md`
-  (glob enumeration) and `docs/cli-reference.md` (`query relations`
-  error-behavior description). `docs-reconstructor` drift audit → NO
-  DRIFT (also caught, and the lead fixed before commit, a mistaken ADR
-  citation in `_relations_not_found_error`'s docstring); `release-phase-auditor`
-  → PASS WITH NON-BLOCKING OBSERVATIONS (no blocking gap). `CG-002` stays
-  `promoted-to-roadmap` with a closing note confirming the fix landed;
-  `L-016` flipped `retained` → `promoted`. `pytest` 557 passed / 2 skipped
-  (+3), `ruff check .` clean, `check_user_docs.py --strict` clean.
-
-### Added
 
 - **Phase 47** (Stage B's fourth and final phase — **GATE DB**): pure
   synthesis, no new evaluation. `knowledge-curator` bulk-reviewed every
@@ -1048,131 +696,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   notes resolved/accounted for, no blocking gap). `pytest` 554 passed / 2
   skipped, `ruff check .` clean, `check_user_docs.py --strict` clean.
 
-### Changed
-
-- **BREAKING (licensing): Phases 43d + 43e** — gates G11/G12/G13 approved
-  ("Proceed as recommended", 2026-09-12), executed the same session.
-  **CodeCompass is now licensed GPL-3.0-or-later (was MIT)** — `LICENSE`
-  replaced with the canonical GPL-3.0-or-later text (fetched verbatim
-  from `hledgerorg/hledger`'s own `LICENSE` file, unmodified per the
-  FSF's own instructions, plus a CodeCompass copyright/notice block);
-  `pyproject.toml`'s `license` field and classifier updated (verified
-  live: `pip install -e .` + `pip show codecompass` reports
-  `License: GPL-3.0-or-later`); `README.md` and `CONTRIBUTING.md` gain
-  License sections pointing at the rationale. `decisions/0052` (Ledgerkit
-  is the next reference project, ratifying gate G11 — no file changes
-  beyond the already-amended planning docs from the prior commit) and
-  `decisions/0053` (the relicensing itself, ratifying gate G12) written
-  as `Accepted`, superseding their proposed drafts in
-  `proposed-governance-changes.md` §C. `planning/v1-redefinition/adoption-blueprint.md`
-  approved as the version handed to Ledgerkit (gate G13, Phase 43e) — no
-  content change from the prior commit, just the gate resolving.
-  **Nothing published/tagged is affected** — no git tag exists, nothing
-  has ever shipped to PyPI, so no historical release needs
-  reconciling; individual past commits remain, as a historical fact,
-  made under MIT at the time. `docs-reconstructor` drift audit → **NO
-  DRIFT**; `knowledge-curator` triage filed **L-009** (fetch
-  canonical upstream text for byte-fidelity, retained) and **L-010** (a
-  reusable document should cite its justifying incidents + state a
-  revision policy, retained). No `src/codecompass/` change, no test
-  change; `ruff check .` clean, `python scripts/check_user_docs.py
-  --strict` clean.
-
-- **2026-09-12 realignment** (planning only — `planning/v1-redefinition/realignment-2026-09.md`,
-  gate G11): reassessed and reordered the remaining redefined-v1 roadmap.
-  **Ledgerkit is now Stage B** (the first external reference project;
-  was Technical Clipper) — its dependency shape (the `hledger` executable,
-  its manuals, journal syntax, query semantics, compatibility tests,
-  intentional divergences) is the stronger test of CodeCompass's
-  distinctive value, confirmed by live re-inspection this session:
-  `hledger` is `GPL-3.0-or-later` (confirmed at the SPDX-field level),
-  currently stable at 1.52.4 (1.99.x is a preview); Ledgerkit is MIT,
-  single-copyright-holder, with a genuine next task already scoped on
-  its own roadmap (Milestone 5, "CLI Filter Flags"). **Technical Clipper
-  moves to a new Stage F** (cross-ecosystem regression, run after
-  Ledgerkit-driven changes land, to check they generalise rather than
-  overfit to accounting/hledger). Phases 39–43c are unchanged, `done`,
-  not renumbered; phases 45–67 (none started — confirmed:
-  `planning/reference-projects/` doesn't exist yet) are renumbered
-  45–70 to make room for the new stage. GATE letters DB/DC/DD/DE keep
-  their conceptual position (now scoped to Ledgerkit evidence); a new
-  **GATE DF** covers Technical Clipper's regression decision.
-  Two new Stage-A bridge phases: **43d** (GPL-3.0-or-later relicensing
-  plan — CodeCompass is currently MIT, single copyright holder, no
-  bundled third-party source, no other contributors to consult; the
-  actual `LICENSE`/`pyproject.toml`/`README.md` edits are held behind
-  **gate G12**, not made this session) and **43e** (a reusable agent-led
-  adoption blueprint, extracted from CodeCompass's own 8-agent working
-  practice, for Ledgerkit — and later projects — to adopt; **gate G13**).
-  New planning artifacts: `licence-migration.md`, `adoption-blueprint.md`,
-  `codecompass-feedback-ingestion.md` (the standard finding format +
-  review process for a reference project's context-curator findings —
-  Ledgerkit discovers problems, CodeCompass generalises them, promotion
-  is never automatic). Draft ADRs `decisions/0052` (the reorder) and
-  `decisions/0053` (the relicensing) staged in
-  `proposed-governance-changes.md` §C, not yet written to `decisions/`.
-  Amended for consistency: `ledgerkit-plan.md` (promoted from Stage D to
-  Stage B, phase numbers), `reference-project-protocol.md` (Technical
-  Clipper's specifics repositioned as Stage F), `conditional-generalisation.md`
-  (flagged that Technical-Clipper-sourced evidence rows are now
-  unavailable at GATE DD's original timing), `context-quality-evaluation.md`,
-  `migration.md`, the package `README.md` (§1.6/1.7 swapped, §3's roadmap
-  summary reordered, gates/risks tables extended). **No implementation
-  from this realignment** — `CLAUDE.md` untouched, no `src/` change, no
-  file under gate G12/G13 touched, `python scripts/check_user_docs.py --strict`
-  clean throughout.
-
-### Fixed
-
-- **Phase 43b**: 4 self-contradictory passages in `architecture/overview.md`
-  (catalogued as items 33-36 in
-  `planning/v1-redefinition/architecture-split-candidates.md` §C,
-  candidate learning L-004) described removed code as live, each verified
-  against `src/` and corrected: a "grounded description is regenerated on
-  every `sync` run" footgun deleted outright (`sync_vendor` never makes an
-  AI call — confirmed by its own docstring); the adjacent
-  `_RAW_TEXT_CHAR_CAP`/`_DOCS_FILE_CAP`/`_ESTIMATED_COST_PER_CALL_USD`
-  bullet re-attributed from the deleted `grounded_description.py` to
-  `enrichment.py` (which still carries the first two constants unchanged,
-  with the third renamed to `_ESTIMATED_COST_PER_BATCH_USD`); a
-  `sync_vendor` full-overwrite bullet's false `depth = full`/`FULL`
-  qualifier removed (the behaviour is universal, unconditional since
-  Phase 13); and a passage claiming `VendorConfig.depth` "is set to
-  `Depth.FULL`" rewritten to match `enrichment.py`'s own already-correct
-  docstring (`VendorConfig` has no `depth` field at all). Closes L-004's
-  Phase-61 obligation early for these 4 items — the broader §A/§B
-  history-shaped trims in that catalogue remain Phase 61's job.
-  `docs-maintainer` applied the fixes from lead-verified source evidence;
-  independent `docs-reconstructor` drift audit confirmed each against
-  `src/` directly.
-
-- **Phase 43**: `codecompass query skills` (and `graph.skills_index`) no
-  longer hides non-Skill agent-context artifacts. The read-side query was
-  hard-filtered to `WHERE kind = 'skill'`, so Cursor `.mdc` rules
-  (`kind='cursor_mdc'`) and the `/discovery` slash command
-  (`kind='slash_command'`) — both already indexed, both already carrying
-  `skill_mentions_edges` — surfaced only through a raw `context-graph.db`
-  read, even though the command's own docstring promised "Skill/`.mdc`
-  rule". Widened to
-  `WHERE kind IN ('skill', 'cursor_mdc', 'slash_command')`
-  (`graph._SKILLS_INDEX_KINDS`); each returned row now carries its
-  `kind`; `query skills` gains a **Kind** column (and `kind` in `--json`);
-  the generated tool-Skill's `query skills` description
-  (`skill.py::render_tool_skill` → `.claude/skills/codecompass/SKILL.md`)
-  is reworded to match. Closes the gap the Phase 17 entry recorded as
-  "`query skills` doesn't yet surface the new artifact kind" (that
-  time-relative historical line is left as-is; this entry supersedes it).
-  Confirmed live against this repo: `query skills` now returns 9 rows
-  (5 Skills + 3 `.mdc` + `/discovery`) where it previously returned 5.
-  +2 tests (`test_graph.py`, `test_cli.py`); full suite 545.
-  `docs-maintainer` reconciled `docs/cli-reference.md` and
-  `architecture/overview.md` (the stale "not widened in this phase"
-  paragraph removed). This is the first `src/codecompass/` change since
-  the v1 redefinition began; it was dogfooded through the full 14-step
-  agent-led loop (Stage A's exit, GATE DA).
-
-### Added
-
 - **Phase 43b**: two `check_user_docs.py` rules GATE DA scheduled — the
   standing-content complement to the diff-scoped per-phase docs-drift
   audit (now 46 tests in that module, +9). `check_no_deleted_names_as_live`
@@ -1196,94 +719,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   drift audit instead). Both clean (0 findings) against the current repo.
   `.claude/skills/docs-sync/SKILL.md` lists both as items 13-14.
 
-### Changed
-
-- **Phase 43**: GATE DA (Stage A's exit retro) kept the agent roster at 7
-  with no pruning and landed **4 amendments** to the agent-led process
-  docs: (1) `planning/agent-led-workflow.md` step 12 + the
-  `knowledge-curator` brief now require the curator to end its report with
-  an explicit "lead: run `<check>` to confirm" line, which the lead then
-  runs (from candidate learning **L-002**); (2) the `docs-maintainer`
-  brief gains a hard rule — before editing any file, check whether it is
-  *generated from `src/`* (`.claude/skills/codecompass/SKILL.md`, the
-  per-vendor Skill/`.mdc` exports, `.claude/commands/discovery.md`, and
-  the root `CLAUDE.md` routing block are git-tracked but regenerated on
-  `sync`, so a fix belongs in the generator — the lead's job — not the
-  artifact), surfaced by candidate learning **L-005** during the first
-  *editing* use of `docs-maintainer`; (3) the `docs-maintainer` brief now
-  notes "fix, don't caveat" may mean *deleting* a paragraph whose only
-  purpose was to explain a now-resolved gap; (4)
-  `planning/agent-led-workflow.md` step 11 + the `roadmap-context-curator`
-  brief now require re-dispatching the curator after a retro that changes
-  the plan, reconciling *every* planning doc (incl.
-  `planning/v1-redefinition/roadmap.md`), from candidate learning
-  **L-006**. Two `check_user_docs.py` rules GATE DA specified
-  (`check_no_deleted_names_as_live`,
-  `check_generated_artifacts_match_source`) are scheduled as Phase 43b.
-  Candidate learnings filed this phase: **L-005** (promoted — the brief
-  rule above; its `check_user_docs.py` half is Phase 43b) and **L-006**
-  (candidate — the curator reconciles before the retro, so a GATE/retro
-  can stale its pass; disposition confirmed at Phase 43b triage). The
-  `release-phase-auditor` reached PASS WITH NON-BLOCKING OBSERVATIONS
-  after a 3-round FAIL → FAIL → PASS trail, every gap planning-doc
-  bookkeeping. No `CLAUDE.md` change and no new ADR this phase (43a is a
-  bug fix — the command did not match its own docstring — not a
-  non-obvious tradeoff), and no release or tag (gate G2-b).
-  Follow-up (user request): the phase-retro `TEMPLATE.md` gains **What
-  worked** (keep doing) and **What didn't work** (stop / fix) sections
-  between "What was achieved" and "Lessons learnt"; `agent-led-workflow.md`
-  step 11, the `retros/README.md`, and the `release-phase-auditor` brief
-  updated to match, and the Phase 43 retro backfilled.
-
-- **Phase 43c**: a Stage A→B bridge (user request) that instruments the
-  agent-led development process to produce context-quality signal from
-  CodeCompass's own development. Three new `planning/` pathways, no
-  `src/codecompass/` change:
-  - `planning/context-gaps/` (`README.md`, `TEMPLATE.md`, `inbox.md`) —
-    a capture pathway for relationships an agent believes the graph
-    should hold but mechanical detection can't produce. First entry
-    `CG-001` (the Phase 43 `skill.py` ↔ `graph.skills_index` ↔
-    `cli.py::query_skills` "one feature, three modules" relationship,
-    which `codecompass query relations` cannot surface — verified).
-  - `planning/context-use-log.md` — a 4-line record per CodeCompass
-    context retrieval: what it gave vs. the agent's default pathway
-    (grep / read / `--help`), a LOW/MODERATE/HIGH advantage rating
-    (`context-quality-evaluation.md` §5), and whether anything was
-    misleading. First entry: the live Phase 43 `query skills` use (rated
-    **LOW** — dogfooding the query layer on itself is a hard case).
-    `planning/agent-led-workflow.md` step 4 amended to require an entry.
-  - `planning/context-health.md` + the roster's **8th agent**,
-    `context-health-planner` (`.claude/agents/context-health-planner.md`)
-    — a forward-looking "is the graph adequate for the upcoming roadmap"
-    assessment; runs `codecompass query` read-only, writes only that one
-    file. First assessment: CodeCompass's own 4-dependency graph is
-    healthy (all versions fresh, 3/4 enriched, `pipdeptree` correctly
-    unused); no Stage A→B phase is gated on it; the graph that matters
-    next is Technical Clipper's, expected near-empty.
-  - `decisions/0051` — agent-suggested context is captured as reviewable
-    candidates, **never written to `context-graph.db`**; it becomes
-    authoritative only by promotion through the learning lifecycle into a
-    mechanical-detection heuristic (Stage C / GATE DB) or a graph
-    capability (Stage E / GATE DD), each with its own ADR. Extends the
-    determinism-first boundary (`decisions/0031`/`0037`/`0045`) to a new
-    input source.
-  - `decisions/0049` Consequences gains a roster-extension note;
-    `planning/v1-redefinition/agent-led-development.md` (§2.9 new, §3
-    table, §7 step 4) and `conditional-generalisation.md` §1.2 updated;
-    `knowledge-curator` + `reference-project-tester` briefs updated to
-    own / feed the new pathways. `ROADMAP.md` row `43c` between `43b` and
-    `44`. No `src/` change, no test change, no release (gate G2-b).
-  - Agent-led closeout: `docs-reconstructor` drift audit → **NO DRIFT**;
-    `knowledge-curator` triage → `CG-001` `candidate` (provenance
-    verified by code-trace) + **L-007** filed `retained` ("a mechanism
-    existing" ≠ "the mechanism produced output this phase" — the first
-    `context-health.md` was lead-written, so the `context-health-planner`
-    agent's first solo run is tracked for before Phase 45);
-    `release-phase-auditor` → **PASS WITH NON-BLOCKING OBSERVATIONS**.
-    Retro: `planning/retros/phase-43c-agent-context-pathways.md`.
-
-### Added
-
 - **Phase 42**: the everyday documentation lifecycle gains deterministic
   drift checks and the milestone gets a documentation-closeout gate.
   `scripts/check_user_docs.py` adds three checks (now 37 tests in that
@@ -1306,21 +741,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   61 reconciliation. Candidate learning **L-004** filed: the per-phase
   docs-drift audit is diff-scoped, so pre-existing standing rot is
   invisible to it.
-
-### Changed
-
-- **Phase 42**: the `docs-maintainer` agent brief is finalised — it runs
-  the new link / example / ADR checks, flags `architecture/overview.md`
-  split candidates for Phase 61 without restructuring the file itself,
-  and may return "no current-truth doc affected" for a phase that changed
-  no observable product behaviour. `.claude/skills/docs-sync/SKILL.md`
-  documents the three new checks;
-  `planning/v1-redefinition/documentation-lifecycle.md` §5 now points at
-  the closeout checklist as its operational form. No `CLAUDE.md` change
-  (§5 was already amended in Phases 40–41) and no `src/codecompass/`
-  change.
-
-### Added
 
 - **Phase 41**: the project-learning lifecycle is operational and two new
   per-phase closeout mechanisms are in place. `planning/learnings/` gains
@@ -1346,22 +766,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   phase context, upcoming phase context), not just reports a phase in
   isolation.
 
-### Changed
-
-- **Phase 41**: `CLAUDE.md` §5 gained two Definition-of-Done conditions —
-  a lead-authored phase retro (`planning/retros/phase-N-<slug>.md`) and an
-  independent per-phase `docs-reconstructor` drift audit scoped to what
-  the phase changed — approved 2026-09-10 and mirrored into
-  `CONTRIBUTING.md`. `scripts/check_user_docs.py` gains a `Finding.strict`
-  flag (blocking vs informational; `--strict` now fails only on blocking
-  findings) and four new checks: learnings-candidate provenance-field
-  coverage, `promoted.md` consistency for `status: promoted` candidates,
-  stale `evidence-gathering` candidates (informational), and per-phase
-  retro presence for phases marked `done` from 41 onward. New tests cover
-  each; `.claude/skills/docs-sync/SKILL.md` notes the new checks.
-
-### Added
-
 - **Phase 40**: the agent-led development model is operational. New
   `.claude/agents/` roster — `context-evaluator`,
   `reference-project-tester`, `docs-maintainer`, `roadmap-context-curator`,
@@ -1374,33 +778,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `context-evaluator` report for reference-project phases), and a §6
   milestone-group bullet — all approved (gate G4) and mirrored into
   `CONTRIBUTING.md`. `decisions/0049` records the model.
-
-### Changed
-
-- **Phase 40**: `scripts/check_user_docs.py::check_readme_phase_count`
-  now excludes ROADMAP content from the `## Redefined CodeCompass v1`
-  heading onward — the Stage A–F phases are a process/validation
-  milestone group (`decisions/0048`) and marking them `done` must not
-  force the README's foundation "phases 0-N" claim upward. Regression
-  test added. `README.md` Status section reverted to "phases 0-38" (the
-  foundation). Captured as candidate learning L-001.
-
-- **Phase 39**: ratified the v1 redefinition. New ADRs `decisions/0048`
-  (redefined v1 is a product-validation milestone, not a packaging one)
-  and `decisions/0049` (agent-led development model). `pyproject.toml`
-  `version` `1.0.0` → `1.0.0.dev0` — all publishing is held until the
-  redefined-v1 release (Phase 67), which will be the first-ever PyPI
-  publish, as `1.0.0` (gate G2-b). `planning/ROADMAP.md`: the
-  "Redefined CodeCompass v1 — Stages A–F" section is now ratified (not
-  "planning"); Phase 23 row marked "Part A done; Part B superseded";
-  Phases 24/25 marked `deferred` (not renumbered); a reframing note added
-  above the historical "v1.0 scope notes" clarifying "v1.0" there now
-  means the foundation release (the notes themselves are unedited dated
-  records). `README.md` Status section reframed. No `src/` change; no
-  release, tag, or dated CHANGELOG section (G2-b). `CLAUDE.md` is
-  untouched — its §8/§5/§1 changes are gate G4, landing in Phases 40–42.
-
-### Added
 
 - Planning: **`planning/v1-redefinition/`** — an umbrella planning package
   (same role `v1.0-initial-release-roadmap.md` played for phases 20–23,
@@ -1429,26 +806,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the restructuring and version realignment are Phase 39's job, gated on
   human decisions G1–G5.
 
-### Changed
-
-- **Phase 38**: final polish pass ahead of the v1.0 release. `cli.py`
-  gained `_not_found_error()` and `_graph_session()` (a context manager),
-  removing a verbatim-duplicated error block and a 6-times-repeated
-  graph-connection open/close scaffold across the `query` subcommands.
-  `vendor.toml` lost 4 dead `depth = "surface"` lines (the retired `Depth`
-  field). `pyproject.toml`'s 4 runtime dependencies gained lower-bound
-  version pins (`typer>=0.27`, `rich>=15`, `anthropic>=0.109`,
-  `pipdeptree>=4.2`) — verified live against `anthropic`'s real `1.0.0`
-  breaking release (`decisions/0047`). A 5-category redundancy audit found
-  the rest of the codebase clean (no dead references to retired concepts,
-  no stale docs beyond what's noted, no test-suite overlap); one
-  duplicate-looking pattern (the word-boundary mention-regex across
-  `doc_mapping.py`/`skill_scan.py`/`relation_enrichment.py`) was
-  deliberately left as-is per `decisions/0038`'s existing small-module
-  precedent.
-
-### Added
-
 - **Phase 35**: `README.md` gains a real Setup section (Python `>=3.11`,
   `git` as a required local dependency, `ANTHROPIC_API_KEY` as the optional
   env var gating AI enrichment — previously undocumented anywhere) and a
@@ -1468,32 +825,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Report-only by default, `--strict` for exit-code gating. New
   `.claude/skills/docs-sync/SKILL.md` instructs an agent to run it and fix
   findings by judgment, never mechanically — no auto-fix path exists.
-
-### Fixed
-
-- **Phase 37**: `spec_docs._DEFAULT_GLOBS` gains `"ai-docs/**/*.md"` — found
-  live during this repo's own dogfooding sync right after Phase 35 created
-  `ai-docs/README.md`/`ai-docs/CLAUDE.md`: neither was detected as a spec
-  doc at all, so `query relations ai-docs/README.md` errored "not found in
-  context-graph.db". Confirmed live: both files now resolve correctly and
-  participate in mechanical relationship detection.
-
-- **Phase 34**: `doc_chunking.chunk_markdown` no longer misdetects a
-  `#`-prefixed comment inside a fenced code block (` ``` `/`~~~`) as a
-  real markdown heading. Found via a `/discovery` session testing Phase
-  30-33's real output quality: `docs/cli-reference.md`'s example fence
-  containing `# Not a shell command...` was misdetected, corrupting the
-  `heading` reported for the `typer` relation sourced from that doc.
-  Scanning all 84 currently-chunkable doc artifacts found 37 such
-  false-positive lines, 12 of which had already produced real bogus
-  `heading_path` values on `vendor/anthropic/src/MIGRATION.md`'s
-  `documents_edges` rows (e.g. `"After > Bedrock: a region is now
-  required"` — a fake heading prepended to a real one). Fixed by tracking
-  fence state and never treating a line inside one as a heading
-  candidate. No backfill — the next whole-project `sync` naturally
-  recomputes `doc_chunks` from scratch.
-
-### Added
 
 - **Phase 32**: new `doc_chunking.py` deterministically splits a
   chunkable doc artifact's (`claude_md`/`overview`/`vendor_doc`/
@@ -1553,25 +884,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   section lists real `typer` call sites in `cli.py`. See `planning/
   phase-30-bidirectional-code-traversal.md`.
 
-### Fixed
-
-- **Phase 33**: `codecompass query vendors|vendor|symbol|skills|relations
-  --json` no longer emits invalid JSON. Every `--json` call site printed
-  through the shared Rich `Console`, which word-wraps long printed text by
-  inserting real line breaks; a value long enough to cross the wrap width
-  (e.g. `anthropic`'s longer symbol `purpose` strings, confirmed live
-  against this repo's real graph) got a literal newline inserted into it,
-  corrupting the JSON. Fixed by adding `soft_wrap=True` to all five call
-  sites — the same flag Rich's own `Console.print_json` uses internally
-  for exactly this case. New regression test confirmed to fail against the
-  pre-fix code and pass against the fix. Found via the same `/discovery`
-  session that surfaced Phases 30-32 below; that session's other flagged
-  item (a `check` version-drift reading that looked backwards) was
-  investigated and confirmed not a bug — see `planning/
-  phase-33-fix-query-json-line-wrapping.md`'s Context section.
-
-### Added
-
 - Planning: `planning/doc-graph-precision-roadmap.md` — a new umbrella
   plan (same role `v1.0-initial-release-roadmap.md` played for 20-23),
   plus three new phase plans it introduces: `planning/
@@ -1611,91 +923,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `decisions/0043`, which supersedes `decisions/0041`'s "a vendor doc is
   never a relation source" claim specifically (its actual root-level
   detection-scope decision is unaffected).
-
-### Fixed
-
-- **Phase 28**: `relation_enrichment.select_candidates` no longer always
-  sends the spec doc's first 4,000 characters as AI grounding — it now
-  re-derives the mechanical match's position (the same needle and regex
-  shape `doc_mapping.build_doc_relations_edges` used to detect the
-  relationship) and centers a 4,000-character window on it, falling back
-  to the old first-N-characters slice only if the needle can no longer be
-  found. Fixes a real, reproduced bug: this repo's own two currently-
-  enriched `"anthropic README.md"` relationships had their real
-  mechanical match at character 7,870 and 91,374 of their respective
-  files, both past the old fixed window, producing plausible-sounding but
-  ungrounded AI summaries. `graph.relation_enrichment_candidates` gained
-  a `target_doc_artifact_name` column to support this. See `decisions/0042`.
-
-- Planning: `planning/phase-28-center-relationship-excerpts-on-the-
-  actual-match.md` — a future plan found via a live `/discovery` session
-  testing Phase 26/27's real output quality. `relation_enrichment.
-  select_candidates` always sends a spec doc's first 4,000 characters as
-  grounding, regardless of where the mechanical match actually is;
-  confirmed with real data that both of this repo's currently-enriched
-  vendor-doc relationships got ungrounded AI summaries as a result (the
-  real match sits at character 7,870 of one file and 91,374 of another,
-  both past the fixed window). `planning/ROADMAP.md`'s Post-MVP table
-  updated: 28 appended after 27, no renumbering. Planning only, no code
-  changed.
-
-- **Phase 27**: a cloned vendor's own embedded upstream doc files
-  (`README*.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`,
-  `MIGRATION.md` at its clone root, `vendor/<name>/src/`) are now
-  registered as `doc_artifacts` rows (`kind='vendor_doc'`,
-  `origin='vendor_upstream'` — new CHECK values, `_SCHEMA_VERSION` "3" →
-  "4"), via new `doc_mapping.collect_vendor_upstream_doc_artifacts`. Every
-  downstream mechanism picks them up unchanged: they're eligible
-  `mentions_artifact` targets for Phase 21's mention-detection and
-  Phase 22's AI-enriched relationship summaries, appear in `query
-  relations`, and `check` gained a new "Vendor docs with no detected
-  relations" section. Root-level files only, deliberately not a
-  recursive scan of a vendor's own `docs/` folder. Confirmed against
-  this repo: 28 real vendor-doc rows registered across all four tracked
-  vendors, with no impact on Phase 15's existing `vendor/`
-  usage-detection exclusion. See `decisions/0041`.
-
-- **Phase 26**: `usage.detect_python_imports` now upgrades a plain
-  `import X` (or `import X as alias`) to symbol-level usage evidence when
-  the code actually accesses an attribute of it (`X.Attr(...)`) — an
-  additive second AST pass, the vendor-level `DetectedImport` from the
-  `import` statement itself is unchanged. Only the immediate attribute
-  off the bound name resolves (`X.sub.Attr` → `sub`, not `Attr`),
-  mirroring `ImportFrom`'s existing first-dotted-component-only rule.
-  Fixes real noise this repo's own `check` output had: 35 real
-  `anthropic` symbols (`Anthropic`, `AnthropicError`, etc.) showing as
-  "documented but unused" purely because this project imports `anthropic`
-  as a module and accesses attributes on it, which the detector
-  previously couldn't resolve past the module level.
-
-- Planning: two new future phases found via a `/discovery` dogfooding
-  session against this repo itself, each with its own real, confirmed
-  evidence (not guessed) — `planning/phase-26-symbol-level-resolution-
-  for-attribute-usage.md` (a plain `import X` followed by `X.Attr(...)`
-  never resolves to a symbol-level usage edge, confirmed: all 6
-  `anthropic` `uses_edges` rows in this repo have `symbol_id = NULL`,
-  causing 35 real symbols to show as "documented but unused") and
-  `planning/phase-27-register-embedded-vendor-docs.md` (a cloned vendor's
-  own upstream docs — confirmed: 30+ real files under `vendor/*/src/` in
-  this repo — have no `doc_artifacts` row at all, so Phase 21/22's
-  relationship detection/enrichment never applies to them).
-  `planning/ROADMAP.md`'s Post-MVP table updated: 26/27 appended after
-  24/25, no renumbering needed. Planning only, no code changed.
-
-### Fixed
-
-- `/discovery`'s generated body overstated what its `allowed-tools`
-  frontmatter guarantees: confirmed against actual Claude Code behavior
-  (not assumed) that the pre-approval grant covers only the single turn
-  that invokes the command — it clears once the reply is sent, and
-  nothing re-applies it or blocks `Write`/`Edit`/`ExitPlanMode` on a later
-  turn in the same conversation. `render_discovery_command` (`commands.py`)
-  and `architecture/overview.md` now say so explicitly and instruct Claude
-  to hold the read-only posture deliberately for the rest of the session,
-  not assume the frontmatter still enforces it past the first reply. See
-  `decisions/0040`.
-
-### Added
 
 - **Phase 23, Part A** (packaging/release readiness — the actual PyPI
   publish is Part B, held for explicit confirmation): `pyproject.toml`
@@ -1745,21 +972,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `kind`/`origin` CHECK constraints widened (`_SCHEMA_VERSION` "2" →
   "3"). See `decisions/0037`.
 
-### Fixed
-
-- **Phase 20**: the root `CLAUDE.md` routing table, tool-level Skill, and
-  discovery command now always refresh *after* AI enrichment finishes
-  (success or budget-abort), not before — a vendor enriched during the
-  same `codecompass`/`sync` invocation no longer shows stale
-  pre-enrichment status until a second run. New `cli._refresh_generated_
-  artifacts`, called from a `try/finally` around `_maybe_run_enrichment`
-  in both `_bootstrap` and `sync`'s whole-project branch — the latter
-  previously never regenerated these artifacts at all. Closes the
-  graph/enrichment ordering gap flagged after Phase 18 and confirmed
-  during this project's first live enrichment run.
-
-### Added
-
 - Planning: `planning/v1.0-initial-release-roadmap.md` — the path-to-v1.0
   umbrella plan, plus two new phase plans it introduces: `planning/
   phase-21-spec-doc-detection-and-relationship-graph.md` (mechanical
@@ -1782,74 +994,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   skills` freshness immediately after a vendor's first enrichment).
   `planning/ROADMAP.md`'s Post-MVP table updated: new Phase 20 inserted,
   former 20/21/22 shift to 21/22/23. Planning only, no code changed.
-
-### Fixed
-
-- The tool-level Skill (`.claude/skills/codecompass/SKILL.md`) listed
-  `codecompass query vendors|vendor|symbol|skills` as one bare line with
-  no guidance on what each subcommand does, no mention of `--json`, and
-  no pointer to `context-graph.db`'s schema for ad hoc queries — found by
-  direct inspection, unlike `/discovery`'s much richer equivalent
-  content. `skill.py`'s `render_tool_skill` now explains each `query`
-  subcommand, the raw-`sqlite3` escape hatch, and points at `/discovery`.
-
-- **`codecompass sync` crashed on any second run once a vendor had been
-  git-cloned** — `source_resolution._git_clone`'s naive
-  `shutil.rmtree(dest)` hit a `PermissionError` re-cloning over a git
-  repo's own read-only `.git/objects/pack/*` files (Windows). Found via
-  the first real end-to-end run of this project against a live
-  Anthropic API key. Fixed by promoting `undo`'s (Phase 18,
-  `decisions/0036`) best-effort rmtree helper —
-  clears the read-only bit and retries, reports genuine failures instead
-  of guessing — to `source_resolution.rmtree_best_effort`, shared by
-  both callers instead of duplicated; `cli.py`'s local copy removed.
-- **A vendor's `OVERVIEW.md` never appeared on its first-ever
-  enrichment**, only from the *next* whole-project sync — `sync_vendor`
-  (Phase A) only ever writes it from an enrichment record that already
-  existed *before* that run, and on a first enrichment nothing was in
-  the graph yet when Phase A ran. Also found via the same live run.
-  Fixed: `enrichment.apply_results` (Phase B) now writes `OVERVIEW.md`
-  itself, right where `conversational_overview` is freshest, instead of
-  waiting a full sync cycle. Regression test simulates a vendor's first
-  enrichment with no prior `OVERVIEW.md` on disk.
-
-- A `depth = surface` vendor whose source clone fails no longer shows a
-  misleading "## Description — Description unavailable" section in its
-  `CLAUDE.md` — `_render_description_section` now gates on `depth is
-  FULL` before ever looking at `description_error`, since Phase 13 made
-  cloning (and therefore `description_error`) universal, decoupling it
-  from whether a description was ever attempted. Caught during
-  independent verification of Phase 13, not by automated tests (nothing
-  before Phase 13 could produce this combination, so nothing asserted
-  its absence) — see `planning/v0.2-implementation-execution-plan.md`
-  for the reinforced verification step this prompted.
-
-### Fixed
-
-- A whole-project `sync` re-run silently erased Phase B's AI-enrichment
-  content from `CLAUDE.md` — `sync_vendor` rebuilt every vendor's file
-  from scratch via a digest that never carried enrichment data, gated on
-  a `Depth` value nothing has set since `promote` was removed in Phase
-  15. Shipped on `main` since that phase; caught while implementing
-  Phase 16. Fixed per `decisions/0035`: `sync_vendor` now reads a
-  vendor's current enrichment from the context graph before building its
-  digest, so a from-scratch re-render reproduces existing enrichment
-  instead of erasing it. Regression test syncs an enriched vendor twice
-  and confirms the Description section survives.
-- `usage.py`'s project-source scan didn't exclude `vendor/` — since
-  Phase 13, every tracked vendor's own upstream source clones into
-  `vendor/<name>/src/` inside that same walk, and a vendor's own source
-  very often self-references its own package name, registering as a
-  false-positive "the project uses this vendor" signal for nearly every
-  vendor on every run. Fixed by adding `"vendor"` to
-  `_PROJECT_PRUNE_DIR_NAMES` (Phase 15), with a regression test. Caught
-  by the implementing subagent's own end-to-end testing before it ever
-  reached the orchestrating session's independent review.
-- `chat.py`'s "no grounded description yet" hint still referenced
-  `codecompass promote <vendor>`, a command removed in Phase 15 — reworded
-  to point at `sync`.
-
-### Added
 
 - **Phase 19: chat demotion + governance docs — MVP (v0.2) complete,
   all eleven phases (9-19) `done`.** Implements
@@ -1988,92 +1132,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   called from `sync.py`/`cli.py` (starts Phase 11). `context-graph.db`
   added to `.gitignore`. `pytest`: 241 passed, 1 skipped; `ruff check .`
   clean.
-
-### Changed
-
-- **MVP (v0.2) phase order corrected**: "Retire `Depth`" moves from
-  Phase 10 to **Phase 16** — it was originally sequenced before anything
-  existed to replace the eight call sites that currently read it
-  (`sync.py`, `grounded_description.py`, `cli.py`, `index.py`,
-  `skill.py`, `claude_md.py`, `chat.py`, `discovery.py`); it's only safe
-  once phases 13-15 replace all of them. The graph/usage-detection/
-  mapping/cloning/enrichment/CLI phases shift from 11-16 down to 10-15;
-  phases 17-19 unaffected. Bookkeeping only, no code — caught and fixed
-  before any Phase 10 code was written. See `planning/ROADMAP.md`'s
-  renumbering note for the full old→new table, including which of
-  `decisions/0031`-`0034`'s internal "Phase N" citations are now stale
-  (not editable — append-only).
-- **Phase 9: renamed the package from `depcompass` to `codecompass`**
-  (`decisions/0029`, `planning/phase-9-rename-to-codecompass.md`) —
-  mechanical only, zero behavior change. `src/depcompass/` moved to
-  `src/codecompass/` (`git mv`, preserving blame); the console script is
-  now `codecompass`; every internal import, the root `CLAUDE.md` routing
-  marker (`<!-- codecompass:start/end -->`), the tool-level Skill
-  (`.claude/skills/codecompass/`), and all prose in `README.md`,
-  `CONTRIBUTING.md`, `docs/`, and `architecture/overview.md` updated to
-  match. `decisions/*.md` and `CHANGELOG.md`'s prior entries are
-  deliberately untouched (append-only / historical record). Full test
-  suite (218 passed, 1 skipped) and `ruff check .` both green under the
-  new name; verified end-to-end with a fresh `pip install -e ".[dev]"`
-  and a bare `codecompass` + `codecompass sync` run against this repo
-  itself.
-- Phase 10 planning: `planning/phase-10-sqlite-graph-foundation.md` — the
-  new `graph.py` module (SQLite schema, `init_schema`,
-  `rebuild_deterministic`, read-only query functions), per
-  `decisions/0032`. Library-only; not yet wired into `sync.py`/`cli.py`.
-  Planning only, no code changed.
-- **Phases 11-19 planning: the rest of MVP (v0.2) is now fully
-  implementation-ready.** Nine new plan files, each grounded in the
-  actual current source, covering the whole arc in dependency order:
-  `phase-11-project-source-usage-detection.md` (new `usage.py`;
-  `filetree._iter_files` becomes public `iter_source_files` with
-  configurable prune sets; new `sync.rebuild_project_graph`, wired into
-  bare bootstrap and whole-project `sync` only), `phase-12-doc-and-
-  wide-skill-mapping.md` (new `doc_mapping.py` + `skill_scan.py`,
-  including the project-wide, not-just-codecompass-generated skill scope
-  expansion; word-boundary matching, no new YAML dependency),
-  `phase-13-universal-source-cloning.md` (splits cloning from grounded-
-  description generation in `sync_vendor` — cloning becomes
-  unconditional, description stays `depth`-gated until Phase 15),
-  `phase-14-batched-enrichment.md` (new `enrichment.py` replacing
-  `grounded_description.py`; batched candidate selection, two-tier
-  cache-hash skip logic, a new `claude_md.update_description_section`
-  for in-place `CLAUDE.md` updates instead of full `VendorDigest`
-  reconstruction), `phase-15-cli-rewire.md` (the integration phase:
-  `promote` removed, bare `codecompass` gains `--yes`/`--budget` for
-  Phase B's auto-triggered consent gate, new `query` command group,
-  `check`/`index`/`skill.py` migrated to graph-backed enrichment status),
-  `phase-16-retire-depth.md` (now safe — the `Depth` enum/field finally
-  removed, `vendor.toml`'s legacy `depth=` line tolerated on read),
-  `phase-17-discovery-slash-command.md` (new `commands.py`, `/discovery`
-  generated alongside the tool Skill), `phase-18-undo-command.md` (new
-  `undo [--yes] [--dry-run]`, graph-backed enumeration with a
-  pattern-based fallback when no graph exists yet, never commits), and
-  `phase-19-chat-demotion-and-governance-docs.md` (README/architecture
-  rewritten around the graph+Skills+`/discovery` as primary, MVP (v0.2)
-  closes out). Every `planning/ROADMAP.md` row for phases 11-19 flips
-  from `not started` to `planned` with its plan file linked. Planning
-  only, no implementation code changed — implementation proceeds
-  strictly in this order starting from Phase 10, since each later
-  phase's plan assumes the previous ones' code already exists.
-- `planning/ROADMAP.md` renumbered: the context graph (Phase 9,
-  sub-phases 9a-9e) is inserted ahead of the previously-unplanned
-  project-root REPL routing/rollup work, which shifts from Phase 9 to
-  **Phase 10** (former Phase 10/11 — polish, MCP — shift to 11/12).
-  Bookkeeping only, no code; all shifted phases were `not started`, so
-  this is a clean renumber, not a rewrite of in-flight work — same
-  precedent as the Phase 7-era renumbering below.
-- MVP milestone expanded from phases 0-6 to phases 0-8 (`decisions/0022`)
-  — bookkeeping only, no code. Phase 8 (the chat REPL, `decisions/0012`'s
-  "actual product") structurally depends on Phase 7's outputs (Skill
-  files, dual-audience content shape), so both move from
-  `planning/ROADMAP.md`'s Post-MVP table into its MVP table together;
-  `v0.1` now tags only once Phase 8 is `done`, not Phase 6.
-  `CLAUDE.md` §6, `CONTRIBUTING.md`, `docs/cli-reference.md`,
-  `architecture/overview.md`, and `README.md` updated to match; no phase
-  was renumbered, only table membership and milestone-boundary text.
-
-### Added
 
 - **MVP (v0.2) planning: rename to codecompass, retire `promote`/`Depth`,
   SQLite relationship graph, `/discovery`, `undo`** — planning only, no
@@ -2296,30 +1354,348 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   below). The Cargo adapter is unverified against real `cargo` output —
   no Rust toolchain is available in this dev environment.
 
-### Fixed
-
-- `_run_json`'s subprocess seam now resolves the target tool via
-  `shutil.which` before invoking it, fixing two real bugs surfaced by
-  Phase 2's live smoke tests: on Windows, a bare `npm` couldn't be
-  launched by `subprocess.run` without a shell (it resolves to a `.cmd`
-  shim); a bare `pipdeptree` wasn't reliably on `PATH` outside an
-  activated venv (now invoked as `sys.executable -m pipdeptree`).
-
-### Removed
-
-- `depcompass.gap_analysis` module and `VendorConfig.context_path` field
-  (Phase 7) — replaced by `depcompass.grounded_description` and
-  `depcompass.source_resolution` (`decisions/0019`, `decisions/0021`).
-  An existing `vendor.toml` with `context_path` lines still parses
-  cleanly (the field is simply ignored, not rejected); `depth = full`
-  no longer requires it.
-- `VendorDigest.is_stale` (Phase 6) — the property, its `_stale` field,
-  and the Phase-1 docstring promising a future staleness check would
-  populate it. `check` (Phase 6) never builds a `VendorDigest`, so no code
-  path could ever set it; `depcompass.staleness.VendorStaleness` replaces
-  it as `check`'s own return type.
-
 ### Changed
+
+- **Contributor License Agreement wording made explicit** (direct user
+  instruction; no new ADR — refines, does not revise, `decisions/0055`):
+  `CONTRIBUTING.md`'s existing contributor-grant paragraph (added by
+  `decisions/0055`/commit `65afede`, unaltered here — same verbatim
+  text) now sits under its own clearly-titled `### Contributor License
+  Agreement` heading within the `## License` section, rather than
+  running on directly from the surrounding prose. `README.md`'s
+  `## License` section note is rewritten to state all five points
+  explicitly rather than some implicitly: CodeCompass remains
+  GPL-3.0-or-later; contributors retain copyright in their own
+  contributions; contributions are subject to the CLA in
+  `CONTRIBUTING.md`; the CLA permits the project owner to relicense
+  contributed material under alternative or proprietary terms in
+  future; none of this removes or restricts anyone's rights to existing
+  GPL-licensed versions of CodeCompass. The README's own link now
+  points directly at the new `#contributor-license-agreement` anchor
+  rather than the parent `#license` section. Documentation-only; no
+  `src/`, licence, architecture, or other contributor-policy change.
+
+- **Contributor licensing terms** (`decisions/0055`): `CONTRIBUTING.md`'s
+  `## License` section now includes an explicit grant — a contributor
+  retains copyright but grants the project owner an irrevocable,
+  worldwide, royalty-free licence broad enough to relicense the
+  contribution, including under proprietary terms — replacing the prior
+  "no separate CLA" sentence. This preserves the project owner's ability
+  to offer CodeCompass under alternative or commercial licence terms in
+  future; it does not affect CodeCompass's own current licence
+  (GPL-3.0-or-later) or any existing user's rights under it, and nothing
+  has been contributed externally to date for it to apply to
+  retroactively. `README.md`'s `## License` section gains a short,
+  prominent pointer to this term. Documentation-only; no `src/` change.
+- **Phase 53**: `architecture/overview.md` gains a new "Module tiers:
+  CORE, AGENT, HOST-OUTPUT ADAPTERS" section naming the project's
+  existing (previously implicit) module grouping, plus a one-sentence
+  disambiguation of "adapter" (the ecosystem package-manager sense,
+  `src/codecompass/adapters/`) from the phase's new "host-output
+  adapter" sense (Claude Skills, `CLAUDE.md`, Cursor `.mdc`), plus a
+  caveat naming the tool-level Skill / `/discovery` / `docs/
+  cli-reference.md` `query`-subcommand-list triplication as a known,
+  hand-synced maintenance burden.
+
+- **BREAKING (licensing): Phases 43d + 43e** — gates G11/G12/G13 approved
+  ("Proceed as recommended", 2026-09-12), executed the same session.
+  **CodeCompass is now licensed GPL-3.0-or-later (was MIT)** — `LICENSE`
+  replaced with the canonical GPL-3.0-or-later text (fetched verbatim
+  from `hledgerorg/hledger`'s own `LICENSE` file, unmodified per the
+  FSF's own instructions, plus a CodeCompass copyright/notice block);
+  `pyproject.toml`'s `license` field and classifier updated (verified
+  live: `pip install -e .` + `pip show codecompass` reports
+  `License: GPL-3.0-or-later`); `README.md` and `CONTRIBUTING.md` gain
+  License sections pointing at the rationale. `decisions/0052` (Ledgerkit
+  is the next reference project, ratifying gate G11 — no file changes
+  beyond the already-amended planning docs from the prior commit) and
+  `decisions/0053` (the relicensing itself, ratifying gate G12) written
+  as `Accepted`, superseding their proposed drafts in
+  `proposed-governance-changes.md` §C. `planning/v1-redefinition/adoption-blueprint.md`
+  approved as the version handed to Ledgerkit (gate G13, Phase 43e) — no
+  content change from the prior commit, just the gate resolving.
+  **Nothing published/tagged is affected** — no git tag exists, nothing
+  has ever shipped to PyPI, so no historical release needs
+  reconciling; individual past commits remain, as a historical fact,
+  made under MIT at the time. `docs-reconstructor` drift audit → **NO
+  DRIFT**; `knowledge-curator` triage filed **L-009** (fetch
+  canonical upstream text for byte-fidelity, retained) and **L-010** (a
+  reusable document should cite its justifying incidents + state a
+  revision policy, retained). No `src/codecompass/` change, no test
+  change; `ruff check .` clean, `python scripts/check_user_docs.py
+  --strict` clean.
+
+- **2026-09-12 realignment** (planning only — `planning/v1-redefinition/realignment-2026-09.md`,
+  gate G11): reassessed and reordered the remaining redefined-v1 roadmap.
+  **Ledgerkit is now Stage B** (the first external reference project;
+  was Technical Clipper) — its dependency shape (the `hledger` executable,
+  its manuals, journal syntax, query semantics, compatibility tests,
+  intentional divergences) is the stronger test of CodeCompass's
+  distinctive value, confirmed by live re-inspection this session:
+  `hledger` is `GPL-3.0-or-later` (confirmed at the SPDX-field level),
+  currently stable at 1.52.4 (1.99.x is a preview); Ledgerkit is MIT,
+  single-copyright-holder, with a genuine next task already scoped on
+  its own roadmap (Milestone 5, "CLI Filter Flags"). **Technical Clipper
+  moves to a new Stage F** (cross-ecosystem regression, run after
+  Ledgerkit-driven changes land, to check they generalise rather than
+  overfit to accounting/hledger). Phases 39–43c are unchanged, `done`,
+  not renumbered; phases 45–67 (none started — confirmed:
+  `planning/reference-projects/` doesn't exist yet) are renumbered
+  45–70 to make room for the new stage. GATE letters DB/DC/DD/DE keep
+  their conceptual position (now scoped to Ledgerkit evidence); a new
+  **GATE DF** covers Technical Clipper's regression decision.
+  Two new Stage-A bridge phases: **43d** (GPL-3.0-or-later relicensing
+  plan — CodeCompass is currently MIT, single copyright holder, no
+  bundled third-party source, no other contributors to consult; the
+  actual `LICENSE`/`pyproject.toml`/`README.md` edits are held behind
+  **gate G12**, not made this session) and **43e** (a reusable agent-led
+  adoption blueprint, extracted from CodeCompass's own 8-agent working
+  practice, for Ledgerkit — and later projects — to adopt; **gate G13**).
+  New planning artifacts: `licence-migration.md`, `adoption-blueprint.md`,
+  `codecompass-feedback-ingestion.md` (the standard finding format +
+  review process for a reference project's context-curator findings —
+  Ledgerkit discovers problems, CodeCompass generalises them, promotion
+  is never automatic). Draft ADRs `decisions/0052` (the reorder) and
+  `decisions/0053` (the relicensing) staged in
+  `proposed-governance-changes.md` §C, not yet written to `decisions/`.
+  Amended for consistency: `ledgerkit-plan.md` (promoted from Stage D to
+  Stage B, phase numbers), `reference-project-protocol.md` (Technical
+  Clipper's specifics repositioned as Stage F), `conditional-generalisation.md`
+  (flagged that Technical-Clipper-sourced evidence rows are now
+  unavailable at GATE DD's original timing), `context-quality-evaluation.md`,
+  `migration.md`, the package `README.md` (§1.6/1.7 swapped, §3's roadmap
+  summary reordered, gates/risks tables extended). **No implementation
+  from this realignment** — `CLAUDE.md` untouched, no `src/` change, no
+  file under gate G12/G13 touched, `python scripts/check_user_docs.py --strict`
+  clean throughout.
+
+- **Phase 43**: GATE DA (Stage A's exit retro) kept the agent roster at 7
+  with no pruning and landed **4 amendments** to the agent-led process
+  docs: (1) `planning/agent-led-workflow.md` step 12 + the
+  `knowledge-curator` brief now require the curator to end its report with
+  an explicit "lead: run `<check>` to confirm" line, which the lead then
+  runs (from candidate learning **L-002**); (2) the `docs-maintainer`
+  brief gains a hard rule — before editing any file, check whether it is
+  *generated from `src/`* (`.claude/skills/codecompass/SKILL.md`, the
+  per-vendor Skill/`.mdc` exports, `.claude/commands/discovery.md`, and
+  the root `CLAUDE.md` routing block are git-tracked but regenerated on
+  `sync`, so a fix belongs in the generator — the lead's job — not the
+  artifact), surfaced by candidate learning **L-005** during the first
+  *editing* use of `docs-maintainer`; (3) the `docs-maintainer` brief now
+  notes "fix, don't caveat" may mean *deleting* a paragraph whose only
+  purpose was to explain a now-resolved gap; (4)
+  `planning/agent-led-workflow.md` step 11 + the `roadmap-context-curator`
+  brief now require re-dispatching the curator after a retro that changes
+  the plan, reconciling *every* planning doc (incl.
+  `planning/v1-redefinition/roadmap.md`), from candidate learning
+  **L-006**. Two `check_user_docs.py` rules GATE DA specified
+  (`check_no_deleted_names_as_live`,
+  `check_generated_artifacts_match_source`) are scheduled as Phase 43b.
+  Candidate learnings filed this phase: **L-005** (promoted — the brief
+  rule above; its `check_user_docs.py` half is Phase 43b) and **L-006**
+  (candidate — the curator reconciles before the retro, so a GATE/retro
+  can stale its pass; disposition confirmed at Phase 43b triage). The
+  `release-phase-auditor` reached PASS WITH NON-BLOCKING OBSERVATIONS
+  after a 3-round FAIL → FAIL → PASS trail, every gap planning-doc
+  bookkeeping. No `CLAUDE.md` change and no new ADR this phase (43a is a
+  bug fix — the command did not match its own docstring — not a
+  non-obvious tradeoff), and no release or tag (gate G2-b).
+  Follow-up (user request): the phase-retro `TEMPLATE.md` gains **What
+  worked** (keep doing) and **What didn't work** (stop / fix) sections
+  between "What was achieved" and "Lessons learnt"; `agent-led-workflow.md`
+  step 11, the `retros/README.md`, and the `release-phase-auditor` brief
+  updated to match, and the Phase 43 retro backfilled.
+
+- **Phase 43c**: a Stage A→B bridge (user request) that instruments the
+  agent-led development process to produce context-quality signal from
+  CodeCompass's own development. Three new `planning/` pathways, no
+  `src/codecompass/` change:
+  - `planning/context-gaps/` (`README.md`, `TEMPLATE.md`, `inbox.md`) —
+    a capture pathway for relationships an agent believes the graph
+    should hold but mechanical detection can't produce. First entry
+    `CG-001` (the Phase 43 `skill.py` ↔ `graph.skills_index` ↔
+    `cli.py::query_skills` "one feature, three modules" relationship,
+    which `codecompass query relations` cannot surface — verified).
+  - `planning/context-use-log.md` — a 4-line record per CodeCompass
+    context retrieval: what it gave vs. the agent's default pathway
+    (grep / read / `--help`), a LOW/MODERATE/HIGH advantage rating
+    (`context-quality-evaluation.md` §5), and whether anything was
+    misleading. First entry: the live Phase 43 `query skills` use (rated
+    **LOW** — dogfooding the query layer on itself is a hard case).
+    `planning/agent-led-workflow.md` step 4 amended to require an entry.
+  - `planning/context-health.md` + the roster's **8th agent**,
+    `context-health-planner` (`.claude/agents/context-health-planner.md`)
+    — a forward-looking "is the graph adequate for the upcoming roadmap"
+    assessment; runs `codecompass query` read-only, writes only that one
+    file. First assessment: CodeCompass's own 4-dependency graph is
+    healthy (all versions fresh, 3/4 enriched, `pipdeptree` correctly
+    unused); no Stage A→B phase is gated on it; the graph that matters
+    next is Technical Clipper's, expected near-empty.
+  - `decisions/0051` — agent-suggested context is captured as reviewable
+    candidates, **never written to `context-graph.db`**; it becomes
+    authoritative only by promotion through the learning lifecycle into a
+    mechanical-detection heuristic (Stage C / GATE DB) or a graph
+    capability (Stage E / GATE DD), each with its own ADR. Extends the
+    determinism-first boundary (`decisions/0031`/`0037`/`0045`) to a new
+    input source.
+  - `decisions/0049` Consequences gains a roster-extension note;
+    `planning/v1-redefinition/agent-led-development.md` (§2.9 new, §3
+    table, §7 step 4) and `conditional-generalisation.md` §1.2 updated;
+    `knowledge-curator` + `reference-project-tester` briefs updated to
+    own / feed the new pathways. `ROADMAP.md` row `43c` between `43b` and
+    `44`. No `src/` change, no test change, no release (gate G2-b).
+  - Agent-led closeout: `docs-reconstructor` drift audit → **NO DRIFT**;
+    `knowledge-curator` triage → `CG-001` `candidate` (provenance
+    verified by code-trace) + **L-007** filed `retained` ("a mechanism
+    existing" ≠ "the mechanism produced output this phase" — the first
+    `context-health.md` was lead-written, so the `context-health-planner`
+    agent's first solo run is tracked for before Phase 45);
+    `release-phase-auditor` → **PASS WITH NON-BLOCKING OBSERVATIONS**.
+    Retro: `planning/retros/phase-43c-agent-context-pathways.md`.
+
+- **Phase 42**: the `docs-maintainer` agent brief is finalised — it runs
+  the new link / example / ADR checks, flags `architecture/overview.md`
+  split candidates for Phase 61 without restructuring the file itself,
+  and may return "no current-truth doc affected" for a phase that changed
+  no observable product behaviour. `.claude/skills/docs-sync/SKILL.md`
+  documents the three new checks;
+  `planning/v1-redefinition/documentation-lifecycle.md` §5 now points at
+  the closeout checklist as its operational form. No `CLAUDE.md` change
+  (§5 was already amended in Phases 40–41) and no `src/codecompass/`
+  change.
+
+- **Phase 41**: `CLAUDE.md` §5 gained two Definition-of-Done conditions —
+  a lead-authored phase retro (`planning/retros/phase-N-<slug>.md`) and an
+  independent per-phase `docs-reconstructor` drift audit scoped to what
+  the phase changed — approved 2026-09-10 and mirrored into
+  `CONTRIBUTING.md`. `scripts/check_user_docs.py` gains a `Finding.strict`
+  flag (blocking vs informational; `--strict` now fails only on blocking
+  findings) and four new checks: learnings-candidate provenance-field
+  coverage, `promoted.md` consistency for `status: promoted` candidates,
+  stale `evidence-gathering` candidates (informational), and per-phase
+  retro presence for phases marked `done` from 41 onward. New tests cover
+  each; `.claude/skills/docs-sync/SKILL.md` notes the new checks.
+
+- **Phase 40**: `scripts/check_user_docs.py::check_readme_phase_count`
+  now excludes ROADMAP content from the `## Redefined CodeCompass v1`
+  heading onward — the Stage A–F phases are a process/validation
+  milestone group (`decisions/0048`) and marking them `done` must not
+  force the README's foundation "phases 0-N" claim upward. Regression
+  test added. `README.md` Status section reverted to "phases 0-38" (the
+  foundation). Captured as candidate learning L-001.
+
+- **Phase 39**: ratified the v1 redefinition. New ADRs `decisions/0048`
+  (redefined v1 is a product-validation milestone, not a packaging one)
+  and `decisions/0049` (agent-led development model). `pyproject.toml`
+  `version` `1.0.0` → `1.0.0.dev0` — all publishing is held until the
+  redefined-v1 release (Phase 67), which will be the first-ever PyPI
+  publish, as `1.0.0` (gate G2-b). `planning/ROADMAP.md`: the
+  "Redefined CodeCompass v1 — Stages A–F" section is now ratified (not
+  "planning"); Phase 23 row marked "Part A done; Part B superseded";
+  Phases 24/25 marked `deferred` (not renumbered); a reframing note added
+  above the historical "v1.0 scope notes" clarifying "v1.0" there now
+  means the foundation release (the notes themselves are unedited dated
+  records). `README.md` Status section reframed. No `src/` change; no
+  release, tag, or dated CHANGELOG section (G2-b). `CLAUDE.md` is
+  untouched — its §8/§5/§1 changes are gate G4, landing in Phases 40–42.
+
+- **Phase 38**: final polish pass ahead of the v1.0 release. `cli.py`
+  gained `_not_found_error()` and `_graph_session()` (a context manager),
+  removing a verbatim-duplicated error block and a 6-times-repeated
+  graph-connection open/close scaffold across the `query` subcommands.
+  `vendor.toml` lost 4 dead `depth = "surface"` lines (the retired `Depth`
+  field). `pyproject.toml`'s 4 runtime dependencies gained lower-bound
+  version pins (`typer>=0.27`, `rich>=15`, `anthropic>=0.109`,
+  `pipdeptree>=4.2`) — verified live against `anthropic`'s real `1.0.0`
+  breaking release (`decisions/0047`). A 5-category redundancy audit found
+  the rest of the codebase clean (no dead references to retired concepts,
+  no stale docs beyond what's noted, no test-suite overlap); one
+  duplicate-looking pattern (the word-boundary mention-regex across
+  `doc_mapping.py`/`skill_scan.py`/`relation_enrichment.py`) was
+  deliberately left as-is per `decisions/0038`'s existing small-module
+  precedent.
+
+- **MVP (v0.2) phase order corrected**: "Retire `Depth`" moves from
+  Phase 10 to **Phase 16** — it was originally sequenced before anything
+  existed to replace the eight call sites that currently read it
+  (`sync.py`, `grounded_description.py`, `cli.py`, `index.py`,
+  `skill.py`, `claude_md.py`, `chat.py`, `discovery.py`); it's only safe
+  once phases 13-15 replace all of them. The graph/usage-detection/
+  mapping/cloning/enrichment/CLI phases shift from 11-16 down to 10-15;
+  phases 17-19 unaffected. Bookkeeping only, no code — caught and fixed
+  before any Phase 10 code was written. See `planning/ROADMAP.md`'s
+  renumbering note for the full old→new table, including which of
+  `decisions/0031`-`0034`'s internal "Phase N" citations are now stale
+  (not editable — append-only).
+- **Phase 9: renamed the package from `depcompass` to `codecompass`**
+  (`decisions/0029`, `planning/phase-9-rename-to-codecompass.md`) —
+  mechanical only, zero behavior change. `src/depcompass/` moved to
+  `src/codecompass/` (`git mv`, preserving blame); the console script is
+  now `codecompass`; every internal import, the root `CLAUDE.md` routing
+  marker (`<!-- codecompass:start/end -->`), the tool-level Skill
+  (`.claude/skills/codecompass/`), and all prose in `README.md`,
+  `CONTRIBUTING.md`, `docs/`, and `architecture/overview.md` updated to
+  match. `decisions/*.md` and `CHANGELOG.md`'s prior entries are
+  deliberately untouched (append-only / historical record). Full test
+  suite (218 passed, 1 skipped) and `ruff check .` both green under the
+  new name; verified end-to-end with a fresh `pip install -e ".[dev]"`
+  and a bare `codecompass` + `codecompass sync` run against this repo
+  itself.
+- Phase 10 planning: `planning/phase-10-sqlite-graph-foundation.md` — the
+  new `graph.py` module (SQLite schema, `init_schema`,
+  `rebuild_deterministic`, read-only query functions), per
+  `decisions/0032`. Library-only; not yet wired into `sync.py`/`cli.py`.
+  Planning only, no code changed.
+- **Phases 11-19 planning: the rest of MVP (v0.2) is now fully
+  implementation-ready.** Nine new plan files, each grounded in the
+  actual current source, covering the whole arc in dependency order:
+  `phase-11-project-source-usage-detection.md` (new `usage.py`;
+  `filetree._iter_files` becomes public `iter_source_files` with
+  configurable prune sets; new `sync.rebuild_project_graph`, wired into
+  bare bootstrap and whole-project `sync` only), `phase-12-doc-and-
+  wide-skill-mapping.md` (new `doc_mapping.py` + `skill_scan.py`,
+  including the project-wide, not-just-codecompass-generated skill scope
+  expansion; word-boundary matching, no new YAML dependency),
+  `phase-13-universal-source-cloning.md` (splits cloning from grounded-
+  description generation in `sync_vendor` — cloning becomes
+  unconditional, description stays `depth`-gated until Phase 15),
+  `phase-14-batched-enrichment.md` (new `enrichment.py` replacing
+  `grounded_description.py`; batched candidate selection, two-tier
+  cache-hash skip logic, a new `claude_md.update_description_section`
+  for in-place `CLAUDE.md` updates instead of full `VendorDigest`
+  reconstruction), `phase-15-cli-rewire.md` (the integration phase:
+  `promote` removed, bare `codecompass` gains `--yes`/`--budget` for
+  Phase B's auto-triggered consent gate, new `query` command group,
+  `check`/`index`/`skill.py` migrated to graph-backed enrichment status),
+  `phase-16-retire-depth.md` (now safe — the `Depth` enum/field finally
+  removed, `vendor.toml`'s legacy `depth=` line tolerated on read),
+  `phase-17-discovery-slash-command.md` (new `commands.py`, `/discovery`
+  generated alongside the tool Skill), `phase-18-undo-command.md` (new
+  `undo [--yes] [--dry-run]`, graph-backed enumeration with a
+  pattern-based fallback when no graph exists yet, never commits), and
+  `phase-19-chat-demotion-and-governance-docs.md` (README/architecture
+  rewritten around the graph+Skills+`/discovery` as primary, MVP (v0.2)
+  closes out). Every `planning/ROADMAP.md` row for phases 11-19 flips
+  from `not started` to `planned` with its plan file linked. Planning
+  only, no implementation code changed — implementation proceeds
+  strictly in this order starting from Phase 10, since each later
+  phase's plan assumes the previous ones' code already exists.
+- `planning/ROADMAP.md` renumbered: the context graph (Phase 9,
+  sub-phases 9a-9e) is inserted ahead of the previously-unplanned
+  project-root REPL routing/rollup work, which shifts from Phase 9 to
+  **Phase 10** (former Phase 10/11 — polish, MCP — shift to 11/12).
+  Bookkeeping only, no code; all shifted phases were `not started`, so
+  this is a clean renumber, not a rewrite of in-flight work — same
+  precedent as the Phase 7-era renumbering below.
+- MVP milestone expanded from phases 0-6 to phases 0-8 (`decisions/0022`)
+  — bookkeeping only, no code. Phase 8 (the chat REPL, `decisions/0012`'s
+  "actual product") structurally depends on Phase 7's outputs (Skill
+  files, dual-audience content shape), so both move from
+  `planning/ROADMAP.md`'s Post-MVP table into its MVP table together;
+  `v0.1` now tags only once Phase 8 is `done`, not Phase 6.
+  `CLAUDE.md` §6, `CONTRIBUTING.md`, `docs/cli-reference.md`,
+  `architecture/overview.md`, and `README.md` updated to match; no phase
+  was renumbered, only table membership and milestone-boundary text.
 
 - `index.py`'s `load_routing_rows` (Phase 6) now calls the new shared
   `claude_md.read_installed_version` instead of keeping its own private
@@ -2363,3 +1739,326 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   matching, and the REPL gains an explicit escalation path to the
   generated Skill folder for questions exceeding digest-only scope. See
   `decisions/0013`.
+
+### Fixed
+
+- **Phase 55b** (a bridge phase, not part of the Phase 55/Stage E
+  sequence): `spec_docs.py::scan_spec_docs` now populates
+  `doc_artifacts.name` for every `spec_doc` row (its own first H1
+  heading, or filename stem, gated by a genericity check rejecting a
+  bare single word like a project's own root README's `# ledgerkit`) —
+  closing `CG-004`, doubly-corroborated by Phase 54's own experiment and
+  Ledgerkit's independent, real-live-repo `CC-LK-001` finding.
+  `doc_mapping.py::build_doc_relations_edges` gained a self-mention
+  exclusion for `mentions_artifact` (a titled doc's own heading
+  otherwise trivially matches itself). `sync.py`'s real production call
+  now includes `spec_doc_rows` as a `mentions_artifact` target — the
+  wiring gap a first implementation attempt missed, caught by an
+  independent `context-evaluator` round-1 FAIL before it shipped, fixed,
+  and re-verified in round 2 (PASS WITH NON-BLOCKING OBSERVATIONS) via a
+  real before/after against the live Ledgerkit repository: 3 genuine
+  edges now appear, zero false-positive noise. `CG-006` (matches by
+  title text only, never filename) filed as a small, honestly-disclosed
+  residual limitation, not claimed to be fixed by this change.
+
+- **Phase 49** (Stage C's first phase — GATE DB's funded fix): closes
+  `CG-002` and `L-016`, both consolidated at Phase 47's GATE DB.
+  `spec_docs.py::_DEFAULT_GLOBS` gains `"dev-docs/**/*.md"` — the exact
+  Phase 37 `ai-docs/**/*.md` precedent applied a second time, this time
+  from external Ledgerkit evidence (Phases 45/46). `cli.py::query_relations`'s
+  not-found branch now calls a new `_relations_not_found_error`: a real
+  on-disk file that simply wasn't detected as a spec/vendor doc gets an
+  explicit, mechanism-naming message pointing at spec-doc glob coverage,
+  instead of an authoritative-sounding bare "not found" indistinguishable
+  from a genuine typo; `query vendor`/`query symbol`'s "not found" paths
+  are untouched, correctly, since file-existence checking doesn't apply
+  to a vendor/symbol name. **This is CodeCompass's first
+  `src/codecompass/` change driven by external reference-project
+  evidence** — the redefined v1's central hypothesis (`decisions/0048`)
+  made concrete for the first time since Phase 43a's own-repo dogfood. 3
+  new tests. Live-verified against the real Ledgerkit clone, independently
+  reproduced by both the lead and the auditor from scratch: `dev-docs/`
+  files (including a nested path) now resolve to an honest empty
+  relations table instead of "not found"; a genuinely nonexistent name
+  keeps the plain message; a still-uncovered real file
+  (`knowledge/DOMAIN_RULES.md`) correctly triggers the new disambiguated
+  message, confirming the fix generalises beyond the one directory it was
+  evidenced against. `docs-maintainer` reconciled `architecture/overview.md`
+  (glob enumeration) and `docs/cli-reference.md` (`query relations`
+  error-behavior description). `docs-reconstructor` drift audit → NO
+  DRIFT (also caught, and the lead fixed before commit, a mistaken ADR
+  citation in `_relations_not_found_error`'s docstring); `release-phase-auditor`
+  → PASS WITH NON-BLOCKING OBSERVATIONS (no blocking gap). `CG-002` stays
+  `promoted-to-roadmap` with a closing note confirming the fix landed;
+  `L-016` flipped `retained` → `promoted`. `pytest` 557 passed / 2 skipped
+  (+3), `ruff check .` clean, `check_user_docs.py --strict` clean.
+
+- **Phase 43b**: 4 self-contradictory passages in `architecture/overview.md`
+  (catalogued as items 33-36 in
+  `planning/v1-redefinition/architecture-split-candidates.md` §C,
+  candidate learning L-004) described removed code as live, each verified
+  against `src/` and corrected: a "grounded description is regenerated on
+  every `sync` run" footgun deleted outright (`sync_vendor` never makes an
+  AI call — confirmed by its own docstring); the adjacent
+  `_RAW_TEXT_CHAR_CAP`/`_DOCS_FILE_CAP`/`_ESTIMATED_COST_PER_CALL_USD`
+  bullet re-attributed from the deleted `grounded_description.py` to
+  `enrichment.py` (which still carries the first two constants unchanged,
+  with the third renamed to `_ESTIMATED_COST_PER_BATCH_USD`); a
+  `sync_vendor` full-overwrite bullet's false `depth = full`/`FULL`
+  qualifier removed (the behaviour is universal, unconditional since
+  Phase 13); and a passage claiming `VendorConfig.depth` "is set to
+  `Depth.FULL`" rewritten to match `enrichment.py`'s own already-correct
+  docstring (`VendorConfig` has no `depth` field at all). Closes L-004's
+  Phase-61 obligation early for these 4 items — the broader §A/§B
+  history-shaped trims in that catalogue remain Phase 61's job.
+  `docs-maintainer` applied the fixes from lead-verified source evidence;
+  independent `docs-reconstructor` drift audit confirmed each against
+  `src/` directly.
+
+- **Phase 43**: `codecompass query skills` (and `graph.skills_index`) no
+  longer hides non-Skill agent-context artifacts. The read-side query was
+  hard-filtered to `WHERE kind = 'skill'`, so Cursor `.mdc` rules
+  (`kind='cursor_mdc'`) and the `/discovery` slash command
+  (`kind='slash_command'`) — both already indexed, both already carrying
+  `skill_mentions_edges` — surfaced only through a raw `context-graph.db`
+  read, even though the command's own docstring promised "Skill/`.mdc`
+  rule". Widened to
+  `WHERE kind IN ('skill', 'cursor_mdc', 'slash_command')`
+  (`graph._SKILLS_INDEX_KINDS`); each returned row now carries its
+  `kind`; `query skills` gains a **Kind** column (and `kind` in `--json`);
+  the generated tool-Skill's `query skills` description
+  (`skill.py::render_tool_skill` → `.claude/skills/codecompass/SKILL.md`)
+  is reworded to match. Closes the gap the Phase 17 entry recorded as
+  "`query skills` doesn't yet surface the new artifact kind" (that
+  time-relative historical line is left as-is; this entry supersedes it).
+  Confirmed live against this repo: `query skills` now returns 9 rows
+  (5 Skills + 3 `.mdc` + `/discovery`) where it previously returned 5.
+  +2 tests (`test_graph.py`, `test_cli.py`); full suite 545.
+  `docs-maintainer` reconciled `docs/cli-reference.md` and
+  `architecture/overview.md` (the stale "not widened in this phase"
+  paragraph removed). This is the first `src/codecompass/` change since
+  the v1 redefinition began; it was dogfooded through the full 14-step
+  agent-led loop (Stage A's exit, GATE DA).
+
+- **Phase 37**: `spec_docs._DEFAULT_GLOBS` gains `"ai-docs/**/*.md"` — found
+  live during this repo's own dogfooding sync right after Phase 35 created
+  `ai-docs/README.md`/`ai-docs/CLAUDE.md`: neither was detected as a spec
+  doc at all, so `query relations ai-docs/README.md` errored "not found in
+  context-graph.db". Confirmed live: both files now resolve correctly and
+  participate in mechanical relationship detection.
+
+- **Phase 34**: `doc_chunking.chunk_markdown` no longer misdetects a
+  `#`-prefixed comment inside a fenced code block (` ``` `/`~~~`) as a
+  real markdown heading. Found via a `/discovery` session testing Phase
+  30-33's real output quality: `docs/cli-reference.md`'s example fence
+  containing `# Not a shell command...` was misdetected, corrupting the
+  `heading` reported for the `typer` relation sourced from that doc.
+  Scanning all 84 currently-chunkable doc artifacts found 37 such
+  false-positive lines, 12 of which had already produced real bogus
+  `heading_path` values on `vendor/anthropic/src/MIGRATION.md`'s
+  `documents_edges` rows (e.g. `"After > Bedrock: a region is now
+  required"` — a fake heading prepended to a real one). Fixed by tracking
+  fence state and never treating a line inside one as a heading
+  candidate. No backfill — the next whole-project `sync` naturally
+  recomputes `doc_chunks` from scratch.
+
+- **Phase 33**: `codecompass query vendors|vendor|symbol|skills|relations
+  --json` no longer emits invalid JSON. Every `--json` call site printed
+  through the shared Rich `Console`, which word-wraps long printed text by
+  inserting real line breaks; a value long enough to cross the wrap width
+  (e.g. `anthropic`'s longer symbol `purpose` strings, confirmed live
+  against this repo's real graph) got a literal newline inserted into it,
+  corrupting the JSON. Fixed by adding `soft_wrap=True` to all five call
+  sites — the same flag Rich's own `Console.print_json` uses internally
+  for exactly this case. New regression test confirmed to fail against the
+  pre-fix code and pass against the fix. Found via the same `/discovery`
+  session that surfaced Phases 30-32 below; that session's other flagged
+  item (a `check` version-drift reading that looked backwards) was
+  investigated and confirmed not a bug — see `planning/
+  phase-33-fix-query-json-line-wrapping.md`'s Context section.
+
+- **Phase 28**: `relation_enrichment.select_candidates` no longer always
+  sends the spec doc's first 4,000 characters as AI grounding — it now
+  re-derives the mechanical match's position (the same needle and regex
+  shape `doc_mapping.build_doc_relations_edges` used to detect the
+  relationship) and centers a 4,000-character window on it, falling back
+  to the old first-N-characters slice only if the needle can no longer be
+  found. Fixes a real, reproduced bug: this repo's own two currently-
+  enriched `"anthropic README.md"` relationships had their real
+  mechanical match at character 7,870 and 91,374 of their respective
+  files, both past the old fixed window, producing plausible-sounding but
+  ungrounded AI summaries. `graph.relation_enrichment_candidates` gained
+  a `target_doc_artifact_name` column to support this. See `decisions/0042`.
+
+- Planning: `planning/phase-28-center-relationship-excerpts-on-the-
+  actual-match.md` — a future plan found via a live `/discovery` session
+  testing Phase 26/27's real output quality. `relation_enrichment.
+  select_candidates` always sends a spec doc's first 4,000 characters as
+  grounding, regardless of where the mechanical match actually is;
+  confirmed with real data that both of this repo's currently-enriched
+  vendor-doc relationships got ungrounded AI summaries as a result (the
+  real match sits at character 7,870 of one file and 91,374 of another,
+  both past the fixed window). `planning/ROADMAP.md`'s Post-MVP table
+  updated: 28 appended after 27, no renumbering. Planning only, no code
+  changed.
+
+- **Phase 27**: a cloned vendor's own embedded upstream doc files
+  (`README*.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`,
+  `MIGRATION.md` at its clone root, `vendor/<name>/src/`) are now
+  registered as `doc_artifacts` rows (`kind='vendor_doc'`,
+  `origin='vendor_upstream'` — new CHECK values, `_SCHEMA_VERSION` "3" →
+  "4"), via new `doc_mapping.collect_vendor_upstream_doc_artifacts`. Every
+  downstream mechanism picks them up unchanged: they're eligible
+  `mentions_artifact` targets for Phase 21's mention-detection and
+  Phase 22's AI-enriched relationship summaries, appear in `query
+  relations`, and `check` gained a new "Vendor docs with no detected
+  relations" section. Root-level files only, deliberately not a
+  recursive scan of a vendor's own `docs/` folder. Confirmed against
+  this repo: 28 real vendor-doc rows registered across all four tracked
+  vendors, with no impact on Phase 15's existing `vendor/`
+  usage-detection exclusion. See `decisions/0041`.
+
+- **Phase 26**: `usage.detect_python_imports` now upgrades a plain
+  `import X` (or `import X as alias`) to symbol-level usage evidence when
+  the code actually accesses an attribute of it (`X.Attr(...)`) — an
+  additive second AST pass, the vendor-level `DetectedImport` from the
+  `import` statement itself is unchanged. Only the immediate attribute
+  off the bound name resolves (`X.sub.Attr` → `sub`, not `Attr`),
+  mirroring `ImportFrom`'s existing first-dotted-component-only rule.
+  Fixes real noise this repo's own `check` output had: 35 real
+  `anthropic` symbols (`Anthropic`, `AnthropicError`, etc.) showing as
+  "documented but unused" purely because this project imports `anthropic`
+  as a module and accesses attributes on it, which the detector
+  previously couldn't resolve past the module level.
+
+- Planning: two new future phases found via a `/discovery` dogfooding
+  session against this repo itself, each with its own real, confirmed
+  evidence (not guessed) — `planning/phase-26-symbol-level-resolution-
+  for-attribute-usage.md` (a plain `import X` followed by `X.Attr(...)`
+  never resolves to a symbol-level usage edge, confirmed: all 6
+  `anthropic` `uses_edges` rows in this repo have `symbol_id = NULL`,
+  causing 35 real symbols to show as "documented but unused") and
+  `planning/phase-27-register-embedded-vendor-docs.md` (a cloned vendor's
+  own upstream docs — confirmed: 30+ real files under `vendor/*/src/` in
+  this repo — have no `doc_artifacts` row at all, so Phase 21/22's
+  relationship detection/enrichment never applies to them).
+  `planning/ROADMAP.md`'s Post-MVP table updated: 26/27 appended after
+  24/25, no renumbering needed. Planning only, no code changed.
+
+- `/discovery`'s generated body overstated what its `allowed-tools`
+  frontmatter guarantees: confirmed against actual Claude Code behavior
+  (not assumed) that the pre-approval grant covers only the single turn
+  that invokes the command — it clears once the reply is sent, and
+  nothing re-applies it or blocks `Write`/`Edit`/`ExitPlanMode` on a later
+  turn in the same conversation. `render_discovery_command` (`commands.py`)
+  and `architecture/overview.md` now say so explicitly and instruct Claude
+  to hold the read-only posture deliberately for the rest of the session,
+  not assume the frontmatter still enforces it past the first reply. See
+  `decisions/0040`.
+
+- **Phase 20**: the root `CLAUDE.md` routing table, tool-level Skill, and
+  discovery command now always refresh *after* AI enrichment finishes
+  (success or budget-abort), not before — a vendor enriched during the
+  same `codecompass`/`sync` invocation no longer shows stale
+  pre-enrichment status until a second run. New `cli._refresh_generated_
+  artifacts`, called from a `try/finally` around `_maybe_run_enrichment`
+  in both `_bootstrap` and `sync`'s whole-project branch — the latter
+  previously never regenerated these artifacts at all. Closes the
+  graph/enrichment ordering gap flagged after Phase 18 and confirmed
+  during this project's first live enrichment run.
+
+- The tool-level Skill (`.claude/skills/codecompass/SKILL.md`) listed
+  `codecompass query vendors|vendor|symbol|skills` as one bare line with
+  no guidance on what each subcommand does, no mention of `--json`, and
+  no pointer to `context-graph.db`'s schema for ad hoc queries — found by
+  direct inspection, unlike `/discovery`'s much richer equivalent
+  content. `skill.py`'s `render_tool_skill` now explains each `query`
+  subcommand, the raw-`sqlite3` escape hatch, and points at `/discovery`.
+
+- **`codecompass sync` crashed on any second run once a vendor had been
+  git-cloned** — `source_resolution._git_clone`'s naive
+  `shutil.rmtree(dest)` hit a `PermissionError` re-cloning over a git
+  repo's own read-only `.git/objects/pack/*` files (Windows). Found via
+  the first real end-to-end run of this project against a live
+  Anthropic API key. Fixed by promoting `undo`'s (Phase 18,
+  `decisions/0036`) best-effort rmtree helper —
+  clears the read-only bit and retries, reports genuine failures instead
+  of guessing — to `source_resolution.rmtree_best_effort`, shared by
+  both callers instead of duplicated; `cli.py`'s local copy removed.
+- **A vendor's `OVERVIEW.md` never appeared on its first-ever
+  enrichment**, only from the *next* whole-project sync — `sync_vendor`
+  (Phase A) only ever writes it from an enrichment record that already
+  existed *before* that run, and on a first enrichment nothing was in
+  the graph yet when Phase A ran. Also found via the same live run.
+  Fixed: `enrichment.apply_results` (Phase B) now writes `OVERVIEW.md`
+  itself, right where `conversational_overview` is freshest, instead of
+  waiting a full sync cycle. Regression test simulates a vendor's first
+  enrichment with no prior `OVERVIEW.md` on disk.
+
+- A `depth = surface` vendor whose source clone fails no longer shows a
+  misleading "## Description — Description unavailable" section in its
+  `CLAUDE.md` — `_render_description_section` now gates on `depth is
+  FULL` before ever looking at `description_error`, since Phase 13 made
+  cloning (and therefore `description_error`) universal, decoupling it
+  from whether a description was ever attempted. Caught during
+  independent verification of Phase 13, not by automated tests (nothing
+  before Phase 13 could produce this combination, so nothing asserted
+  its absence) — see `planning/v0.2-implementation-execution-plan.md`
+  for the reinforced verification step this prompted.
+
+- A whole-project `sync` re-run silently erased Phase B's AI-enrichment
+  content from `CLAUDE.md` — `sync_vendor` rebuilt every vendor's file
+  from scratch via a digest that never carried enrichment data, gated on
+  a `Depth` value nothing has set since `promote` was removed in Phase
+  15. Shipped on `main` since that phase; caught while implementing
+  Phase 16. Fixed per `decisions/0035`: `sync_vendor` now reads a
+  vendor's current enrichment from the context graph before building its
+  digest, so a from-scratch re-render reproduces existing enrichment
+  instead of erasing it. Regression test syncs an enriched vendor twice
+  and confirms the Description section survives.
+- `usage.py`'s project-source scan didn't exclude `vendor/` — since
+  Phase 13, every tracked vendor's own upstream source clones into
+  `vendor/<name>/src/` inside that same walk, and a vendor's own source
+  very often self-references its own package name, registering as a
+  false-positive "the project uses this vendor" signal for nearly every
+  vendor on every run. Fixed by adding `"vendor"` to
+  `_PROJECT_PRUNE_DIR_NAMES` (Phase 15), with a regression test. Caught
+  by the implementing subagent's own end-to-end testing before it ever
+  reached the orchestrating session's independent review.
+- `chat.py`'s "no grounded description yet" hint still referenced
+  `codecompass promote <vendor>`, a command removed in Phase 15 — reworded
+  to point at `sync`.
+
+- `_run_json`'s subprocess seam now resolves the target tool via
+  `shutil.which` before invoking it, fixing two real bugs surfaced by
+  Phase 2's live smoke tests: on Windows, a bare `npm` couldn't be
+  launched by `subprocess.run` without a shell (it resolves to a `.cmd`
+  shim); a bare `pipdeptree` wasn't reliably on `PATH` outside an
+  activated venv (now invoked as `sys.executable -m pipdeptree`).
+
+### Removed
+
+- **Phase 53** (legacy feature rationalisation): `discovery.py::
+  rewrite_vendor_toml`, dead code with zero callers since the `promote`
+  command's Phase 15 retirement (`decisions/0033`), plus its dedicated
+  test. Reached via a full feature inventory (CORE / AGENT / HOST-OUTPUT
+  ADAPTER classification) and redundancy map covering every runtime
+  module — see `planning/phase-53-legacy-feature-rationalisation-plan.md`.
+  At the review gate, direct-API vendor/symbol/relation enrichment and
+  the `chat` REPL were both explicitly kept unchanged (real,
+  non-hypothetical value; no evidence either is a problem), and two
+  small duplication/naming findings were deferred to a documentation
+  note rather than new tooling.
+
+- `depcompass.gap_analysis` module and `VendorConfig.context_path` field
+  (Phase 7) — replaced by `depcompass.grounded_description` and
+  `depcompass.source_resolution` (`decisions/0019`, `decisions/0021`).
+  An existing `vendor.toml` with `context_path` lines still parses
+  cleanly (the field is simply ignored, not rejected); `depth = full`
+  no longer requires it.
+- `VendorDigest.is_stale` (Phase 6) — the property, its `_stale` field,
+  and the Phase-1 docstring promising a future staleness check would
+  populate it. `check` (Phase 6) never builds a `VendorDigest`, so no code
+  path could ever set it; `depcompass.staleness.VendorStaleness` replaces
+  it as `check`'s own return type.
+
