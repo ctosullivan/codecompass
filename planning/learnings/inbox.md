@@ -80,8 +80,10 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   no artifact naming *which* checklist or *whose* responsibility it is)
   — leaving it there would repeat the exact failure mode this candidate
   describes: a real observation living only in prose nothing else is
-  ever obligated to re-read. **Outcome: promote-recommendation** (not
-  yet promoted — no artifact has landed; the curator has no write
+  ever obligated to re-read. **Outcome: promote-recommendation —
+  landed by the lead** (`planning/v1-redefinition/learning-lifecycle.md`
+  §2, commit `d98963c`); at the time this note was originally written,
+  no artifact had landed yet — the curator has no write
   access to `planning/v1-redefinition/learning-lifecycle.md` or
   `planning/agent-led-workflow.md`). Recommended fix, matching this
   project's own established preference (per the nine-instance cluster
