@@ -264,6 +264,32 @@ class TestPromotedLearningsLogged:
         assert check_user_docs.check_promoted_learnings_logged(tmp_path) == []
 
 
+class TestLearningsStatusMatchesRetainOutcome:
+    def test_flags_retain_outcome_with_stale_candidate_status(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "learnings" / "inbox.md",
+            _GOOD_CANDIDATE
+            + "- **curation:** provenance accepted. **Outcome: retain**, not "
+            "promote.\n",
+        )
+        findings = check_user_docs.check_learnings_status_matches_retain_outcome(
+            tmp_path
+        )
+        assert len(findings) == 1 and "L-042" in findings[0].message
+
+    def test_no_finding_when_status_already_retained(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "learnings" / "inbox.md",
+            _GOOD_CANDIDATE.replace("**status:** candidate", "**status:** retained")
+            + "- **curation:** provenance accepted. **Outcome: retain**, not "
+            "promote.\n",
+        )
+        assert (
+            check_user_docs.check_learnings_status_matches_retain_outcome(tmp_path)
+            == []
+        )
+
+
 class TestContextObservationFields:
     def test_flags_missing_fields(self, tmp_path):
         _write(

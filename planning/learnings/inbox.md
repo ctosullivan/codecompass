@@ -8,6 +8,226 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-044 — a milestone-level DoD audit needs its own explicit "spot-check enough vs. re-derive from scratch" scope statement named in the plan before dispatch, not left to the auditor's own improvised judgment call
+
+- **origin:** Phase 68 (`release-phase-auditor`'s milestone-level DoD
+  audit; retro "What worked" bullet 1 and "Lessons learnt")
+- **date:** 2026-09-24
+- **project_revision:** ca0bbab (current HEAD at triage time)
+- **observation:** Phase 68 was this project's first genuinely
+  *milestone-level* audit (a spot-check across every Stage A-G phase's
+  own exit criteria, Phases 41-67, plus
+  `planning/milestone-closeout-checklist.md` steps 1-7) rather than a
+  per-phase re-verification. Its own plan file
+  (`planning/phase-68-independent-release-audit.md` §0/§2) named, in
+  advance and explicitly, what counted as "spot-check enough" (a
+  representative sample: one phase per stage, plus recently-audited
+  phases) versus what needed independent re-derivation (the
+  checklist's seven steps, each re-run directly). The retro credits
+  this explicit scope statement as the reason the audit stayed
+  proportionate — real evidence gathered, nothing re-derived that an
+  earlier phase's own audit had already settled — and states the
+  general lesson: "a milestone-level audit is a genuinely different
+  exercise from a per-phase one — it needs its own explicit scope
+  statement... named in the plan *before* dispatch, not left to the
+  auditor's own improvised judgment call on the day." This is a
+  specific instance of a more general principle (`CLAUDE.md` §1
+  already requires a plan describing scope for *any* phase) applied to
+  a phase-shape this project hadn't produced before, and the retro
+  itself frames it as "worth keeping as the template for any future
+  milestone-scale audit this project runs" — language that reaches for
+  a durable artifact, not just this one plan file as an implicit
+  precedent.
+- **evidence:** `planning/phase-68-independent-release-audit.md` §0
+  ("This is a milestone-level audit, not 68 individual per-phase
+  re-audits from scratch...") and §2 (the explicit per-item spot-check
+  vs. re-derive breakdown); `planning/retros/phase-68-independent-release-audit.md`
+  "What worked" bullet 1 and "Lessons learnt"; `planning/retros/_audit-phase-68.md`
+  §2.1 item 3 (the auditor's own report explicitly following the
+  plan's spot-check sample, not re-deriving all 27 phases). Checked
+  `planning/agent-led-workflow.md` and `.claude/agents/release-phase-auditor.md`
+  directly (2026-09-24): neither currently distinguishes a
+  milestone-level dispatch's scoping needs from a per-phase one — the
+  distinction exists only in this one phase's plan file today.
+- **classification:** workflow
+- **status:** retained
+- **recurrence:** first occurrence (this is the first milestone-level,
+  as opposed to per-phase, `release-phase-auditor` dispatch this
+  project has run)
+- **curation (Phase 68 triage, 2026-09-24, knowledge-curator):**
+  provenance accepted — the plan file, both retro sections, and the
+  audit report were independently re-read (not taken on the retro's
+  own characterization alone), and the plan's §0/§2 do contain the
+  explicit scope statement the retro credits. Assessed independently
+  whether this is adequately captured by the plan file's own existence
+  as an implicit template versus being genuinely un-filed and
+  learning-shaped: it is real and specific enough to file (a concrete,
+  reusable practice, not a restatement of `CLAUDE.md` §1's general
+  planning requirement — the general requirement is "describe scope";
+  this is the sharper, milestone-specific corollary "for a
+  spot-check-shaped audit, scope means naming what counts as sampled
+  vs. re-derived, in advance"), but it is **single-occurrence** — this
+  is the first milestone-level audit this project has run, so there is
+  no second data point yet confirming the pattern generalizes rather
+  than being incidental to this one phase's own care. **Outcome:
+  retain, not promote yet** — matching this project's own established
+  bar for `workflow`-classified candidates (contrast `L-035`, promoted
+  only once a second, differently-shaped instance confirmed the
+  pattern). Plausible destination, once/if it recurs: a short paragraph
+  in `.claude/agents/release-phase-auditor.md` and/or
+  `planning/agent-led-workflow.md` naming that a milestone-level (as
+  opposed to per-phase) dispatch's own plan must state its spot-check
+  scope explicitly before dispatch. Revisit at the next milestone-scale
+  audit this project runs (plausibly a future post-v1.0.0 milestone
+  group, since Phase 69/70 close out the current one without another
+  milestone-level DoD sweep) — if that phase's plan also states this
+  discipline explicitly (whether because someone remembered, or because
+  this candidate was consulted), that is recurrence-2 and promotion
+  should follow: if it's omitted and something is missed as a result,
+  that is a stronger, harder form of the same case.
+- **promoted_to:** — (not yet; retained)
+
+### L-043 — no mechanical check cross-references a learning candidate's own `status:` field against the verdict its own curation note records, except for the `promoted` case
+
+- **origin:** Phase 68 (`release-phase-auditor`'s milestone-level DoD
+  audit, `planning/retros/_audit-phase-68.md` §5 "Non-blocking
+  observation"; `knowledge-curator` triage of that finding)
+- **date:** 2026-09-24
+- **project_revision:** ca0bbab (current HEAD at triage time)
+- **observation:** `L-008`'s own `status:` header field read
+  `candidate` in `planning/learnings/inbox.md`, despite its own
+  curation note (dated 2026-09-11, Phase 43b) stating explicitly
+  "**Outcome: retain**, not promote" with a full reasoned disposition.
+  That mismatch survived every subsequent phase's own step-10 triage
+  pass and the Phase 47/55 bulk reviews — roughly 57 phases — until
+  Phase 68's `release-phase-auditor` happened to read the full
+  learnings queue end to end for an unrelated purpose (a
+  domain-corpus-staleness sweep) and noticed the field disagreed with
+  the prose next to it. No process step or mechanical check exists
+  whose job is specifically to catch this: `scripts/check_user_docs.py`'s
+  `check_promoted_learnings_logged` (L254-273) cross-references
+  `status: promoted` against `planning/learnings/promoted.md`, but nothing
+  cross-references a `retain`/`merge`/`discard` curation-note verdict
+  against its own `status:` field. Spot-checking every other
+  `Outcome: retain`-verdict candidate in the current queue
+  (`grep -n "Outcome: retain"` across `inbox.md`) found all of them
+  correctly carry `status: retained` — so this was a genuine one-off
+  miss, not a systemic pattern already in effect across the queue —
+  but the check gap that let it go undetected for ~57 phases is itself
+  real and would let a *future* instance go undetected the same way,
+  regardless of how rare the underlying typo turns out to be.
+- **evidence:** `planning/retros/_audit-phase-68.md` §5; `planning/learnings/inbox.md`
+  `L-008` entry (status field corrected to `retained` in this same
+  triage pass to match its own already-recorded Phase 43b "Outcome:
+  retain" verdict); `scripts/check_user_docs.py:254-273`
+  (`check_promoted_learnings_logged`, the only existing status
+  cross-check, scoped to `promoted` only); `grep -n "Outcome: retain"
+  planning/learnings/inbox.md` cross-checked against each match's own
+  `status:` field (all other instances already consistent, confirming
+  this was an isolated miss rather than a queue-wide problem).
+- **classification:** invariant
+- **status:** promoted
+- **recurrence:** first occurrence (of the meta-gap; `L-008` is the
+  single confirmed instance the gap allowed to go undetected so far)
+- **curation (Phase 68 triage, 2026-09-24, knowledge-curator):**
+  provenance accepted and independently re-verified — re-read
+  `check_user_docs.py`'s full set of learnings-queue checks
+  (`check_learnings_candidate_fields`, `check_promoted_learnings_logged`,
+  `check_stale_evidence_gathering`) directly rather than taking the
+  audit report's characterization on trust; confirmed none of the three
+  checks a curation-note "Outcome:" verdict against the `status:`
+  header for the `retain`/`merge`/`discard` cases. Applied the L-008
+  fix inline as part of this same triage pass (status header now reads
+  `retained`, matching its own long-standing curation note) — that part
+  is the mechanical, one-off correction the Phase 68 retro correctly
+  called non-generalizable on its own. The check-coverage gap that let
+  it sit uncaught for ~57 phases is the separate, genuinely
+  learning-shaped thing the retro's "Candidate learnings filed: None"
+  call missed: it is specific (a named code location and a concrete
+  blind spot), evidenced (one real instance, one real absence in the
+  check's own coverage), and has a cheap, well-scoped destination — not
+  an "uncertain but plausible" retain. **Outcome: promote-recommendation**
+  (not yet promoted — no artifact has landed; the curator has no write
+  access to `scripts/`/`tests/`). Recommending a narrow, low-risk check
+  rather than a general-purpose "verify every Outcome" parser (avoiding
+  over-fitting the fix to more cases than the one actually observed,
+  matching this queue's own `L-008` precedent about calibrating a
+  pattern-match check against real false-positive risk before
+  generalizing it):
+  - **Preferred fix (invariant → test, `scripts/check_user_docs.py` +
+    `tests/test_check_user_docs.py`, lead/`docs-maintainer` finalizes):**
+    add `check_learnings_status_matches_retain_outcome`, scoped
+    narrowly to the one verdict shape actually observed going stale —
+    a candidate whose most recent curation note contains
+    `Outcome: retain` (optionally followed by ", not promote" /
+    ", not promote yet" — the phrasings already in use across this
+    file) but whose `status:` header is still `candidate` or
+    `evidence-gathering` rather than `retained`:
+    ```python
+    def check_learnings_status_matches_retain_outcome(root: Path) -> list[Finding]:
+        """A candidate whose own curation note records an 'Outcome: retain'
+        verdict should carry `status: retained`, not still
+        `candidate`/`evidence-gathering` -- the drift L-008 sat with,
+        undetected, for ~57 phases (Phase 68 audit finding, L-043)."""
+        findings: list[Finding] = []
+        for cand_id, body in _iter_learning_candidates(root):
+            status_match = re.search(
+                r"\*\*status:\*\*\s*([a-z:_-]+)", body, re.IGNORECASE
+            )
+            status = status_match.group(1).lower() if status_match else ""
+            if (
+                re.search(r"Outcome:\s*\*{0,2}\s*retain\b", body, re.IGNORECASE)
+                and status in ("candidate", "evidence-gathering")
+            ):
+                findings.append(
+                    Finding(
+                        "learnings_status_matches_retain_outcome",
+                        f"candidate {cand_id} curation note records an "
+                        f"'Outcome: retain' verdict but status is still "
+                        f"`{status}`",
+                    )
+                )
+        return findings
+    ```
+    Register it alongside the other learnings-queue checks (near
+    `check_promoted_learnings_logged`) and in the script's `CHECKS`
+    list. Pair with two regression tests in `tests/test_check_user_docs.py`
+    (sibling to the existing `TestPromotedLearningsLogged`-style
+    fixtures): (1) a fixture candidate block with `**status:** candidate`
+    and a curation note containing `**Outcome: retain**` -> asserts a
+    finding is produced; (2) the same block with `**status:** retained`
+    -> asserts no finding (the already-correct, common case, to guard
+    against a false-positive on every other already-consistent entry in
+    this very file).
+  - **Rejected alternative:** a fully general check that also parses
+    `promote`/`merge`/`discard` verdicts and their corresponding status
+    values. Rejected as the *initial* fix — `promote` verdicts
+    legitimately stay non-`promoted` until an artifact lands (see
+    `L-011`'s own history: `Outcome: promote-recommendation` sat under
+    `status: retained`-shaped states for phases before the real
+    `promoted_to` commit landed and `status` flipped to `promoted`), so
+    a naive "Outcome: promote implies status: promoted" rule would
+    false-positive on every legitimate promote-recommendation-not-yet-
+    landed candidate in this file today (e.g. `L-010`, `L-011`,
+    `L-013`, `L-023`'s own promote-recommendation-shaped entries at
+    various points in their history). `retain` has no such legitimate
+    lag — once a curator writes "Outcome: retain," the status field
+    should already say `retained` in the very same edit — so it is the
+    one verdict shape safe to check mechanically without a
+    landed-artifact confound. `merge`/`discard` are deferred for the
+    same reason (not yet observed going stale, and would need their own
+    false-positive calibration first, per `L-008`'s own governing
+    lesson about designing a prose-matching check's false-positive case
+    before its true-positive one).
+  - Not the curator's place to land either the check or its tests —
+    both are `scripts/`/`tests/` edits outside this agent's write
+    boundary (`planning/learnings/**`, `planning/context-gaps/**`,
+    `planning/context-observations/**`, `planning/knowledge/**`, draft
+    files under `planning/` only).
+- **promoted_to:** `scripts/check_user_docs.py::check_learnings_status_matches_retain_outcome`
+  + `tests/test_check_user_docs.py::TestLearningsStatusMatchesRetainOutcome`
+  — landed by the lead
+
 ### L-042 — the fresh-agent acceptance test's criterion 1 cannot cleanly separate "agent discovered the process" from "the platform auto-loaded CLAUDE.md," a structural confound the current protocol text doesn't disclose or address
 
 - **origin:** Phase 67 retro (final validation) "What didn't work"

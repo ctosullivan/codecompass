@@ -273,6 +273,32 @@ def check_promoted_learnings_logged(root: Path) -> list[Finding]:
     return findings
 
 
+def check_learnings_status_matches_retain_outcome(root: Path) -> list[Finding]:
+    """A candidate whose own curation note records an 'Outcome: retain'
+    verdict should carry `status: retained`, not still
+    `candidate`/`evidence-gathering` -- the drift L-008 sat with,
+    undetected, for ~57 phases (Phase 68 audit finding, L-043)."""
+    findings: list[Finding] = []
+    for cand_id, body in _iter_learning_candidates(root):
+        status_match = re.search(
+            r"\*\*status:\*\*\s*([a-z:_-]+)", body, re.IGNORECASE
+        )
+        status = status_match.group(1).lower() if status_match else ""
+        if (
+            re.search(r"Outcome:\s*\*{0,2}\s*retain\b", body, re.IGNORECASE)
+            and status in ("candidate", "evidence-gathering")
+        ):
+            findings.append(
+                Finding(
+                    "learnings_status_matches_retain_outcome",
+                    f"candidate {cand_id} curation note records an "
+                    f"'Outcome: retain' verdict but status is still "
+                    f"`{status}`",
+                )
+            )
+    return findings
+
+
 _CONTEXT_OBSERVATION_REQUIRED_FIELDS = (
     "origin",
     "date",
@@ -850,6 +876,7 @@ CHECKS = [
     check_ai_docs_present,
     check_learnings_candidate_fields,
     check_promoted_learnings_logged,
+    check_learnings_status_matches_retain_outcome,
     check_context_observation_fields,
     check_stale_evidence_gathering,
     check_phase_retros_present,

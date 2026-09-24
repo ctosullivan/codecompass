@@ -40,6 +40,7 @@ L-039 | 2026-09-24 | workflow | planning/agent-led-workflow.md step 5 (never sug
 L-040 | 2026-09-24 | workflow | planning/v1-redefinition/development-methodology.md "Domain-corpus freshness and reconciliation" checkpoint 4 + release-phase-auditor.md checklist item 9 (re-run the domain-staleness check against the phase's own final closeout commit) @ (this phase's own closeout commit)
 L-041 | 2026-09-24 | workflow | planning/agent-led-workflow.md step 4 (dispatch context-health-planner at every stage boundary, not only before a context-leaning phase) @ (this phase's own closeout commit)
 L-042 | 2026-09-24 | future-improvement | planning/v1-redefinition/roadmap.md Phase 67 entry + development-methodology.md cross-reference (the fresh-agent test's criterion 1 cannot separate agent initiative from platform CLAUDE.md auto-load) @ (this phase's own closeout commit)
+L-043 | 2026-09-24 | invariant | scripts/check_user_docs.py::check_learnings_status_matches_retain_outcome + tests/test_check_user_docs.py::TestLearningsStatusMatchesRetainOutcome @ (this phase's own closeout commit)
 L-036 | 2026-09-23 | workflow | planning/agent-led-workflow.md step 5 (re-read a milestone-scoped agent brief against every ADR landed since its own last edit, before dispatching it) @ (this phase's own closeout commit)
 L-035 | 2026-09-23 | workflow | planning/agent-led-workflow.md step 5 (any multi-cluster phase must include an explicit post-dispatch consistency pass before closing the phase) @ (this phase's own closeout commit)
 
