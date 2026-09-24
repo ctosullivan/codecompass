@@ -4,23 +4,26 @@ Grounded, version-pinned dependency reference docs for AI coding agents.
 
 ## Status
 
-**Pre-release, not yet published.** The **foundation** (phases 0-38) is
-complete: the npm/PyPI/Cargo package/source-grounding tool — bare
-`codecompass`, `init`, `sync`, `index`, `check`, `query`, `chat`, and
-`undo`, all fully implemented (`promote` was removed in Phase 15,
-`decisions/0033`). Phase 52 added `codecompass enrich apply`
+**Released.** `codecompass` `1.0.0` is published on PyPI as the
+`codecompass-context` distribution (the installed CLI command and the
+Python package you `import` are both still `codecompass`). The
+**foundation** (phases 0-38) is complete: the npm/PyPI/Cargo/Haskell
+package/source-grounding tool — bare `codecompass`, `init`, `sync`,
+`index`, `check`, `query`, `chat`, and `undo`, all fully implemented
+(`promote` was removed in Phase 15, `decisions/0033`). Phase 52 added
+`codecompass enrich apply`
 (`decisions/0054`), a narrower agent/developer-facing command that lets a
 Claude Code agent supply spec-doc relationship enrichment when no
 `ANTHROPIC_API_KEY` is configured — see "Core idea" below.
 
-"CodeCompass v1" has been **redefined** (`decisions/0048`,
+"CodeCompass v1" was **redefined** (`decisions/0048`,
 [`planning/v1-redefinition/`](planning/v1-redefinition/)) from a packaging
 milestone into a *product-validation* milestone: CodeCompass developed
 agent-led, validated against real external reference-project work,
-improved from that evidence, and released only after a blank-slate
-documentation reconstruction and an independent audit. All publishing is
-held until then — the first PyPI release will be that redefined v1
-(`1.0.0`). See [`planning/`](planning/) for phase-by-phase status.
+improved from that evidence, and released after a blank-slate
+documentation reconstruction and an independent audit
+(`planning/v1-closeout.md`). See [`planning/`](planning/) for
+phase-by-phase status.
 
 ## What it is
 
@@ -56,7 +59,7 @@ entrypoint.
   "Core idea" below).
 
 ```bash
-pip install -e ".[dev]"    # not yet published to PyPI — local dev install
+pip install -e ".[dev]"    # editable local dev install; the published package is codecompass-context
 ```
 
 ## AI enrichment vs. no-AI usage

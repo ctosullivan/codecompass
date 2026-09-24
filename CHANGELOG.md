@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `README.md`'s own "Status" section still said "Pre-release, not yet
+  published" and its dev-install comment still said "not yet published
+  to PyPI" after `1.0.0` was actually published to PyPI as
+  `codecompass-context` (tag `v1.0.0`) — found by Phase 70's own
+  per-phase drift audit, which correctly flagged that a release-status
+  claim (not a behaviour description) was mistakenly left out of that
+  phase's own "explicitly not touched" scope. Fixed, along with
+  `examples/README.md`'s own stale "once published" qualifier. This
+  fix itself lands after the `v1.0.0` tag, not retroactively folded
+  into the dated `[1.0.0]` section below.
 
 ## [1.0.0] - 2026-09-24
 

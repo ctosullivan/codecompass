@@ -1,143 +1,152 @@
 # Phase 70 drift audit — release redefined CodeCompass v1
 
 **Auditor:** docs-reconstructor (independent, MODE 1 per-phase drift audit)
-**Diff audited:** `git log c1495ac..HEAD` (5 substantive commits:
-`c70cbc3` plan, `9dba747` version bump + CHANGELOG flatten, `4d3a4f2`
-PyPI distribution rename, `4c09185`/`08eda6e` retro + learnings closeout)
-`git diff --stat c1495ac..HEAD`
+**Re-audit of:** the three findings from this file's own prior version
+(`DRIFT — 3 findings`, 2 blocking + 1 non-blocking), after fixes landed
+in the working tree (`README.md`, `examples/README.md`).
 
-**Verdict: DRIFT — 3 findings** (2 blocking, 1 non-blocking)
+**Verdict: NO DRIFT.** All 3 prior findings confirmed fixed by direct
+re-read of current file content (not by trusting any agent's account of
+what it changed). Mechanical checks re-run fresh and pass.
 
 ## Method
 
-Read the actual observable-behaviour change directly: `pyproject.toml`'s
-`name` (`codecompass` → `codecompass-context`) and `version`
-(`1.0.0.dev0` → `1.0.0`), confirmed via `git diff c1495ac..HEAD --
-pyproject.toml`. Confirmed the real-world state via the phase's own retro
-(`planning/retros/phase-70-release-v1.md`): the package is actually live
-on PyPI as `codecompass-context` 1.0.0, and `v1.0.0` is tagged — this is
-not a hypothetical/planned state, it is a completed, irreversible fact as
-of this phase. Then grepped every current-truth doc
-(`README.md`, `docs/**`, `architecture/**`, `ai-docs/**`) for `pip
-install`, the bare distribution name, `pre-release`/`not yet published`,
-and stale `dev0` version strings, independent of what
-`docs-maintainer`'s own two fixes (`docs/quickstart.md`,
-`examples/README.md`) claimed to have covered.
+Read `README.md` and `examples/README.md` in full directly, independent
+of any summary of what was changed. Diffed each against the prior
+audit's quoted "was" text to confirm the "now" text is actually present
+on disk, not merely claimed. Re-ran both maintainer scripts fresh rather
+than trusting a prior run. Grepped the full current-truth doc set
+(`README.md`, `examples/README.md`, `docs/*.md`, `architecture/*.md`,
+`ai-docs/*.md`) for `not yet published`, `pre-release`, `Pre-release`,
+`once published`, and `dev0` to catch anything missed outside the three
+originally-flagged lines.
 
-## Findings
+## Finding-by-finding re-verification
 
-### 1. `README.md:7` — BLOCKING
+### 1. `README.md`'s "## Status" section — FIXED
 
-> **Pre-release, not yet published.** The **foundation** (phases 0-38) is
-> complete: ...
+Current text (`README.md:7-9`):
 
-and further down, `README.md:21-23`:
+> **Released.** `codecompass` `1.0.0` is published on PyPI as the
+> `codecompass-context` distribution (the installed CLI command and the
+> Python package you `import` are both still `codecompass`).
 
-> All publishing is held until then — the first PyPI release will be that
-> redefined v1 (`1.0.0`). See [`planning/`](planning/) for phase-by-phase
-> status.
+This replaces the prior "**Pre-release, not yet published.**" claim and
+the further-down "All publishing is held until then — the first PyPI
+release will be that redefined v1 (`1.0.0`)" future-tense framing, which
+is now: "released after a blank-slate documentation reconstruction and
+an independent audit (`planning/v1-closeout.md`)" — correctly past
+tense, correctly cites the closeout doc.
 
-This entire "## Status" section describes CodeCompass as **not yet
-published**, gating the eventual release on a future event ("the first
-PyPI release will be that redefined v1"). That event has now happened —
-`codecompass-context` 1.0.0 is live on PyPI, confirmed via the real PyPI
-JSON API per this phase's own retro, and `v1.0.0` is tagged and pushed.
-This is the single most user-facing, highest-visibility sentence in the
-entire repository (top of `README.md`, under a heading literally titled
-"Status") stating something that became false the moment this phase's
-`twine upload` succeeded. `README.md` was not touched in this phase's
-diff at all — this is a real gap, not a deliberate, justified exclusion.
-The plan file (`planning/phase-70-release-v1.md` §3) explicitly lists
-`README.md` under "Explicitly not touched," reasoning that this is "a
-version-number release, not a feature phase." That reasoning holds for
-`architecture/`, `decisions/`, `docs/domain/`, and ordinary `docs/`
-content (nothing about the system's *behaviour* changed) — but the
-Status section is not a behaviour description, it is a release-status
-claim, and this phase's entire purpose was to change that exact fact.
+- **Distribution vs. import/CLI name split, confirmed still correct**:
+  the section explicitly says the published PyPI distribution is
+  `codecompass-context` while "the installed CLI command and the Python
+  package you `import` are both still `codecompass`" — matches
+  `pyproject.toml`'s actual `name = "codecompass-context"` with the
+  `codecompass` console-script entry point and package directory
+  unchanged.
+- **`phases 0-N` claim**: `README.md:10` reads "The **foundation**
+  (phases 0-38) is complete" — verified mechanically, not just read, per
+  below.
 
-### 2. `README.md:59` — BLOCKING
+### 2. `README.md`'s dev-install comment — FIXED
+
+Current text (`README.md:62`):
 
 ```bash
-pip install -e ".[dev]"    # not yet published to PyPI — local dev install
+pip install -e ".[dev]"    # editable local dev install; the published package is codecompass-context
 ```
 
-Same underlying issue as finding 1, narrower scope: the inline comment
-on the dev-install command asserts the package is "not yet published to
-PyPI," which is now false. A new user reading this comment would be told
-the wrong thing about whether a real, installable release exists — this
-is exactly the class of statement `docs/quickstart.md`'s own fix (`pip
-install codecompass-context`, this phase) implicitly corrects, but the
-identical claim in `README.md` was missed.
+No longer asserts the package is unpublished; correctly names
+`codecompass-context` as the real published package alongside the local
+editable-install instruction.
 
-### 3. `examples/README.md:31` — NON-BLOCKING
+### 3. `examples/README.md`'s "once published" qualifier — FIXED
+
+Current text (`examples/README.md:31`):
 
 ```bash
-./.venv/Scripts/pip install -e path/to/codecompass    # or: pip install codecompass-context, once published
+./.venv/Scripts/pip install -e path/to/codecompass    # or: pip install codecompass-context
 ```
 
-This phase's own commit (`4d3a4f2`) updated this line's distribution
-name from `codecompass` to `codecompass-context` but left the qualifier
-"once published" in place. The package has, as of this same phase, been
-published — so "once published" is now stale (it should read something
-like "now published" or drop the qualifier). Non-blocking because the
-install instruction actually given (`pip install -e path/to/codecompass`
-for local dev) is still correct and the comment doesn't tell a reader to
-do anything wrong; it just describes the publish state incorrectly in a
-low-visibility, secondary example file, not a first-line claim like
-findings 1-2.
+The stale "once published" qualifier has been dropped entirely (not
+just reworded) — the line now states the alternative real-install
+command with no publish-status claim attached, which is accurate and
+doesn't need one.
 
-## What was checked and found clean
+## Mechanical checks (re-run fresh, not reused from any prior report)
 
-- Every `pip install` occurrence across `README.md`, `docs/`,
-  `architecture/`, `ai-docs/`, `examples/` — grepped broadly, not limited
-  to the two files this phase's own commit touched. Only the three
-  findings above are stale; `docs/quickstart.md`'s own fix is correct and
-  complete for that file.
+```
+$ python scripts/check_user_docs.py --strict
+check_user_docs: no findings
+(exit 0)
+
+$ python scripts/check_knowledge_base.py
+check_knowledge_base: no findings
+(exit 0)
+```
+
+`check_user_docs.py --strict` includes `check_readme_phase_count`, which
+mechanically parses README's `phases 0-N` claim against the highest
+phase number marked `done` in `planning/ROADMAP.md`'s foundation tables
+(excluding the "Redefined CodeCompass v1" heading section, i.e. phases
+39+, per that check's own documented scope). README currently claims
+`phases 0-38`; `planning/ROADMAP.md` row 38 ("Final polish: redundancy
+cleanup") is marked `done` and is the highest-numbered `done` row before
+the Redefined-v1 heading — the claim and the roadmap agree, confirmed by
+the check passing with zero findings, not by inspection alone.
+
+## Grep sweep for any missed instance
+
+```
+grep -rn "not yet published\|pre-release\|Pre-release\|once published\|dev0" \
+  README.md examples/README.md docs/*.md architecture/*.md ai-docs/*.md
+```
+
+One hit: `architecture/overview.md:927` — "No epoch support, no
+pre-release-ordering [support]" — this is `staleness.py`'s generic
+semver-parsing-limitation documentation for *third-party* dependency
+version strings, unrelated to CodeCompass's own release status. Already
+confirmed clean by the prior audit pass; re-confirmed here. No other
+hits anywhere in the current-truth doc set.
+
+## What was checked and found clean (carried forward, re-confirmed)
+
+- CLI command name and Python import package: still `codecompass`
+  everywhere (README's own `codecompass <subcmd>` usage, `ai-docs/`,
+  `docs/cli-reference.md`) — correctly unaffected by the distribution
+  rename.
 - No lingering `1.0.0.dev0` / `dev0` string anywhere in current-truth
-  docs — the version bump is otherwise fully reflected.
-- `README.md:23`'s own forward-looking reference to "the first PyPI
-  release will be that redefined v1 (`1.0.0`)" correctly names the
-  version number `1.0.0` (not `dev0`) — it's the *tense* that's wrong
-  (future instead of past), not the version number itself, consistent
-  with finding 1.
-- CLI command name and Python import package: confirmed still
-  `codecompass` everywhere (README's own extensive `codecompass <subcmd>`
-  usage, `ai-docs/README.md`, `docs/cli-reference.md`) — correctly
-  unaffected by the distribution-name rename, nothing to fix here.
-- `architecture/overview.md:927`'s mention of "pre-release-ordering" is
-  about `staleness.py`'s generic semver-parsing limitations (an
-  unrelated third-party version string concept), not a claim about
-  CodeCompass's own release status — not a finding.
+  docs.
+- `CHANGELOG.md`'s internal correctness and `planning/CONTEXT.md` /
+  `planning/ROADMAP.md` governance bookkeeping remain out of this
+  per-phase drift audit's current-truth doc scope, as in the prior pass.
 
 ## Domain-claim staleness check (step 5)
 
-Checked directly whether any `docs/domain/concepts/*.md` page's own
-references block cites `pyproject.toml`, `PyPI`, the distribution name,
-or `CHANGELOG.md` (the four files this phase's diff actually touches
-plus the artifacts it produces). Grepped all 18 concept pages
-(`adapter.md`, `capability.md`, `claim.md`, `connector.md`, `context.md`,
-`context-packet.md`, `decision.md`, `derivation.md`, `digest.md`,
-`ecosystem.md`, `evidence.md`, `invariant.md`, `observation.md`,
-`protocol.md`, `provenance.md`, `reference.md`, `relationship-edge.md`,
-`requirement.md`, `vendor.md`) for `pyproject.toml`, `distribution name`,
-`codecompass-context`, and `PyPI`.
+Unchanged from the prior pass: none of the 18 `docs/domain/concepts/*.md`
+pages' own references blocks cite `pyproject.toml`, the distribution
+name, `codecompass-context`, or `PyPI`. No domain-claim staleness
+candidates from this phase.
 
-**No hits.** None of the domain-corpus concept pages cite this phase's
-touched files or the packaging/distribution-name concept in their own
-references blocks. No domain-claim staleness candidates from this phase.
+## Note on working-tree state at time of this re-audit
+
+The three fixes above are present in the working tree
+(`git status`: `M README.md`, `M examples/README.md`) but had not yet
+been committed at the time of this re-audit. This report verifies file
+*content* on disk, independent of commit state — the lead should commit
+these two files (with a changelog entry per CLAUDE.md §3, since they are
+user-facing doc corrections to a landed phase) before treating Phase 70
+as fully closed per CLAUDE.md §5's "docs updated" and "drift audit finds
+no misdescribing doc" conditions.
 
 ## Scope note
 
-Checked: all current-truth docs (`README.md`, `docs/`, `architecture/`,
-`ai-docs/`) for install-command and release-status staleness following
-the two real observable changes (distribution name, version number).
-Did not re-check `CHANGELOG.md`'s own internal correctness (mechanical
-flattening, verified byte-for-byte by the phase's own process per its
-retro, and not itself a "current-truth doc" in the docs-drift sense —
-it's a historical record, not a system description) or
-`planning/CONTEXT.md` / `planning/ROADMAP.md` (governance bookkeeping,
-out of this audit's current-truth doc list, and the lead/`docs-maintainer`
-already updated `ROADMAP.md` per the diff). Did not re-verify the actual
-PyPI listing myself (took the phase's own retro's claim of independent
-JSON-API confirmation as read, consistent with this audit's remit being
-doc-vs-code/reality drift, not re-doing the release verification itself).
+Checked: `README.md`, `examples/README.md` in full, re-grepped against
+the full current-truth doc set (`docs/`, `architecture/`, `ai-docs/`)
+for the same stale-publish-status patterns as the original pass, plus a
+fresh run of both maintainer mechanical checks. Did not re-verify the
+actual PyPI listing myself in this re-audit (unchanged fact from the
+original pass, not something this content re-check needed to redo). Did
+not re-review `CHANGELOG.md` or `planning/CONTEXT.md`/`ROADMAP.md`
+correctness — out of this audit's current-truth doc list, as before.
