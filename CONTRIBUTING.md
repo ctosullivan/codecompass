@@ -53,9 +53,9 @@ updated in the **same commit** as any change that affects them:
   reversal. Write a new ADR whenever a phase involves a non-obvious
   tradeoff call, not only for decisions already known at project start.
 - **`planning/CONTEXT.md`** — current session-resumption state (see below).
-- **`planning/ROADMAP.md`** — full-roadmap phase-status table (every
-  phase, not just the current one). Updated whenever a phase starts,
-  finishes, or its scope changes.
+- **`planning/ROADMAP.md`** — v1.0.0's own shipped status, deferred
+  items with revisit triggers, and post-v1 development tracking.
+  Updated whenever a phase starts, finishes, or its scope changes.
 
 `CLAUDE.md` is **not** on this list — see the note on it below.
 

@@ -19,6 +19,7 @@ only to point an agent to the right doc for what it's actually here to do:
   [`decisions/`](../decisions/) (ADRs, append-only, one per significant
   tradeoff).
 - **Current project state** — what's done, what's next →
-  [`planning/ROADMAP.md`](../planning/ROADMAP.md) (full phase table) and
+  [`planning/ROADMAP.md`](../planning/ROADMAP.md) (v1.0.0 shipped;
+  deferred items and post-v1 development) and
   [`planning/CONTEXT.md`](../planning/CONTEXT.md) (current session-resumption
   state).
