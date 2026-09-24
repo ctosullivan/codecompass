@@ -50,9 +50,11 @@ detail).
   than re-derives.
 - **Stage G (Phases 64–70), in progress**: 64 (blank-slate doc
   reconstruction), 65 (architecture + ADR reconciliation), 66 (roadmap
-  + context reconciliation), and 67 (final validation — fresh-agent
-  acceptance test scored 4/4 PASS) done. 68 (independent release audit)
-  through 70 (release) not yet started.
+  + context reconciliation), 67 (final validation — fresh-agent
+  acceptance test scored 4/4 PASS), and 68 (independent release audit
+  — milestone-level DoD audit, verdict PASS) done. 69 (milestone
+  closeout) and 70 (release, gate G9 — irreversible, needs the actual
+  user's own explicit go-ahead) not yet started.
 - **GATE DD (Phase 55) remains open, intentionally** — Stage E
   (Phases 56–59, the "minimum justified generalisation") is
   `CONDITIONAL` on it and may never fund; this is the roadmap's own
@@ -69,12 +71,13 @@ detail).
 
 ## What was just completed
 
-**Phase 67 — final validation — done (2026-09-24).** Fixed this
-checkout's own stale `context-graph.db` (21 phases untouched);
-re-confirmed Ledgerkit's fix live on a newer pin; fresh-agent
-acceptance test scored 4/4 PASS. Three learnings promoted
-(`L-040`/`L-041`/`L-042`). Full detail:
-`planning/retros/phase-67-final-validation.md`.
+**Phase 68 — independent release audit — done (2026-09-24),
+milestone-level DoD verdict PASS, first pass.** Confirmed every phase
+since 41 has a real retro and every milestone-closeout-checklist step
+1–7 holds against real, independently re-verified current state. One
+new mechanical check landed (`L-043`, closing a ~57-phase-old
+undetected status/curation-note mismatch). Full detail:
+`planning/retros/phase-68-independent-release-audit.md`.
 
 ## Known standing gaps (carried forward — not phase history, still true)
 
@@ -106,13 +109,17 @@ acceptance test scored 4/4 PASS. Three learnings promoted
 
 ## Next concrete step
 
-**Dispatch `release-phase-auditor` for Phase 67's final independent
-DoD audit** (drift audit and learning triage already complete). Once
-that returns PASS or PASS WITH NON-BLOCKING OBSERVATIONS, proceed into
-**Phase 68 (independent release audit)**: `release-phase-auditor`,
-read-only, a full Definition-of-Done audit across every Stage A–G
-phase's own exit criteria plus the milestone-closeout checklist — a
-`FAIL` prevents Phases 69/70. Its own plan does not yet exist and must
-be written per `CLAUDE.md` §1 before implementation begins. GATE DD
-remains open and unaffected (a separate axis from Stage F/63D/G, per
+**Phase 69 (milestone closeout)** is next, not yet planned — write
+`planning/phase-69-<name>.md` first, per `CLAUDE.md` §1. Execute
+`planning/milestone-closeout-checklist.md`'s own steps 8–11 minus the
+tag/release step itself: freeze declaration, bulk review of every
+phase retro since the last milestone, `planning/v1-closeout.md`
+(architecture summary, what shipped, what was deferred + revisit
+triggers, key ADRs, reference-project evaluation results). No gate
+blocks it — Phase 68 confirmed the project is genuinely ready. **Phase
+70 (the actual `v1.0.0` release — dropping `.dev0`, the first-ever
+`twine upload`, the `v1.0.0` tag) is gate G9: irreversible, and
+requires the actual user's own explicit go-ahead** — not something any
+phase before it authorizes on its own. GATE DD remains open and
+unaffected (a separate axis from Stage F/63D/G, per
 `decisions/0056`/`decisions/0060`).

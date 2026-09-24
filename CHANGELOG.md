@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 68** (Independent release audit, done): Stage G's fifth
+  phase, `COMMITTED (FAIL blocks Phase 69/70)`. `release-phase-auditor`
+  ran a milestone-level Definition-of-Done audit across every Stage
+  A–G phase since Phase 41 (when the retro requirement began) plus
+  `planning/milestone-closeout-checklist.md`'s own steps 1–7 — not 68
+  individual re-audits from scratch, but a spot-check confirming the
+  aggregate compliance record is genuine. **Verdict: PASS**, first
+  pass, no fix cycle needed. Fixed before dispatching: the checklist's
+  own stale "Phase 66"/"Phase 67" references (predating the Phase 63D
+  insertion and Stage F/G +4 renumbering) corrected to "Phase 69"/
+  "Phase 70". Two candidate learnings triaged: `L-043` (promoted — a
+  new mechanical check, `check_learnings_status_matches_retain_outcome`,
+  closes a real detection gap that let `L-008`'s own status field sit
+  inconsistent with its curation note for ~57 phases, undetected until
+  this audit happened to read the full learnings queue) and `L-044`
+  (retained — single-occurrence). No `src/codecompass/` change. Retro:
+  `planning/retros/phase-68-independent-release-audit.md`.
+
 - **Phase 67** (Final validation: self-dogfood + Ledgerkit + Stage F
   smoke test, done): Stage G's fourth phase, `EXPERIMENTAL (gates v1)`
   — a lightweight confirmation pass, not a full re-run. Found and fixed

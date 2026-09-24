@@ -1,6 +1,11 @@
 # Phase 68: Independent release audit — plan
 
-**Status:** planned (2026-09-24).
+**Status:** done (2026-09-24). See
+`planning/retros/phase-68-independent-release-audit.md` (retro),
+`planning/retros/_drift-audit-phase-68.md` (docs-reconstructor drift
+audit — NO DRIFT), and `planning/retros/_audit-phase-68.md`
+(release-phase-auditor's own milestone-level audit — PASS) for the
+full closeout record.
 
 **Stage G, fifth phase · COMMITTED (FAIL blocks)** (`planning/v1-redefinition/roadmap.md`).
 Gated on Phase 67 completing — **done 2026-09-24, PASS**, unblocked.
