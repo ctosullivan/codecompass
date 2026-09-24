@@ -1,6 +1,11 @@
 # Phase 66: Roadmap + context reconciliation — plan
 
-**Status:** planned (2026-09-24).
+**Status:** done (2026-09-24). See
+`planning/retros/phase-66-roadmap-context-reconciliation.md` (retro),
+`planning/retros/_drift-audit-phase-66.md` (docs-reconstructor drift
+audit — NO DRIFT, plus two domain-claim staleness candidates
+resolved), and `planning/retros/_audit-phase-66.md`
+(release-phase-auditor, once dispatched) for the full closeout record.
 
 **Stage G, third phase** (`planning/v1-redefinition/roadmap.md`). Gated
 on Phase 65 completing — **done 2026-09-23, PASS**, unblocked. Not

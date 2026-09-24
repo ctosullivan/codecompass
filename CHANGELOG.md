@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 66** (Roadmap + context reconciliation, done): Stage G's
+  third phase. `planning/ROADMAP.md`'s full table audited against
+  actual project state — three real, minor findings fixed (a
+  status-legend omission, a stale `L-021` approval claim, a missing
+  plan-file link); every deferred/not-funded/conditional item (Phases
+  24/25/48/50, GATE DD/Stage E 55-59) confirmed clearly, legibly parked
+  with a stated revisit trigger, not silently ambiguous. `planning/CONTEXT.md`
+  rewritten in full from ~2449 lines to ~126, finally complying with
+  `CLAUDE.md` §4's own explicit "overwrite, don't append" instruction —
+  flagged as a standing, multi-phase drift by Phase 65's own audit. A
+  dedicated fork cross-check read the full prior file against every
+  retro/ADR/`CHANGELOG.md` entry it narrated and confirmed no genuine
+  information loss before the rewrite. The domain-corpus freshness
+  reconciliation mechanism (added Phase 63D) caught a real, non-obvious
+  cross-file staleness case on its first non-trivial exercise: the
+  `CONTEXT.md` rewrite broke `docs/domain/concepts/connector.md`'s own
+  citation list, and an unrelated one-line `ROADMAP.md` fix shifted four
+  citations into `v1-redefinition/roadmap.md` by one line — both
+  resolved. One candidate learning promoted: `L-039` (`agent-led-workflow.md`
+  step 5 now cautions against a lead's own dispatch prompt suggesting a
+  target agent may bend its own hard write-boundary rule, however
+  plausible-looking — found after `domain-skeptic` correctly declined
+  exactly such a suggestion during this phase's own freshness
+  reconciliation). No `src/codecompass/` change. Retro:
+  `planning/retros/phase-66-roadmap-context-reconciliation.md`.
+
 - **Phase 65** (Architecture + ADR reconciliation, done): Stage G's
   second phase. Compared Phase 64's shadow proposal against current
   active documentation and applied the result. `architecture/overview.md`

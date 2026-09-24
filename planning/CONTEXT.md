@@ -49,9 +49,9 @@ detail).
   mean — is now the durable input every later phase consumes rather
   than re-derives.
 - **Stage G (Phases 64–70), in progress**: 64 (blank-slate doc
-  reconstruction) and 65 (architecture + ADR reconciliation) done. 66
-  (this phase, roadmap + context reconciliation) in progress. 67
-  (final validation) through 70 (release) not yet started.
+  reconstruction), 65 (architecture + ADR reconciliation), and 66
+  (roadmap + context reconciliation) done. 67 (final validation)
+  through 70 (release) not yet started.
 - **GATE DD (Phase 55) remains open, intentionally** — Stage E
   (Phases 56–59, the "minimum justified generalisation") is
   `CONDITIONAL` on it and may never fund; this is the roadmap's own
@@ -68,15 +68,17 @@ detail).
 
 ## What was just completed
 
-**Phase 65 — architecture + ADR reconciliation — done (2026-09-23),
-independently audited PASS.** `architecture/overview.md` reduced
-2312→1037 lines; five files adopted from Phase 64's proposal
-(`module-map.md`, `core-data-model.md`, `adapter-interface.md`,
-`context-graph-schema.md`, `sync-and-enrichment-pipeline.md`) plus a
-new `historical-notes.md`; `docs/external-adapters.md` split by
-audience; one real ADR governance gap found and fixed
-(`decisions/0061`). Full detail:
-`planning/retros/phase-65-architecture-adr-reconciliation.md`.
+**Phase 66 — roadmap + context reconciliation — done (2026-09-24).**
+`ROADMAP.md`'s full table audited (three minor findings fixed; every
+deferred/not-funded/conditional item confirmed clearly parked). This
+file rewritten 2449→126 lines to finally comply with `CLAUDE.md` §4.
+The domain-corpus freshness reconciliation mechanism caught a real
+cross-file staleness case on its first non-trivial exercise (this
+file's own rewrite broke a `docs/domain/concepts/connector.md`
+citation), resolved. One learning promoted (`L-039`). Full detail:
+`planning/retros/phase-66-roadmap-context-reconciliation.md`. Still
+pending before Phase 66 is fully DoD-complete: an independent
+`release-phase-auditor` pass (not yet dispatched).
 
 ## Known standing gaps (carried forward — not phase history, still true)
 
@@ -108,12 +110,10 @@ audience; one real ADR governance gap found and fixed
 
 ## Next concrete step
 
-**Phase 66 is in progress.** Remaining: finish this rewrite's own
-verification (mechanical checks, per-phase drift audit — expected `NO
-DRIFT`, no current-truth doc or `src/` touched), write the phase
-retro, `knowledge-curator` learning triage, and the final independent
-`release-phase-auditor` DoD pass. Once that returns PASS or PASS WITH
-NON-BLOCKING OBSERVATIONS, proceed into **Phase 67 (final validation:
+**Dispatch `release-phase-auditor` for Phase 66's final independent
+DoD audit** (drift audit and learning triage already complete). Once
+that returns PASS or PASS WITH NON-BLOCKING OBSERVATIONS, proceed into
+**Phase 67 (final validation:
 self-dogfood + Ledgerkit + Stage F smoke-test confirmation)** — a
 lightweight confirmation pass re-verifying `planning/context-health.md`/
 `planning/context-use-log.md` are current and Ledgerkit's/Phase 63's
