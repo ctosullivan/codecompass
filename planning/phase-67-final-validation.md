@@ -298,3 +298,22 @@ may never. **This is an honest, low count, reported plainly rather than
 inflated**: one full exercise, pre-v1, not the "repeated pre-v1 use"
 the methodology's own portability claim (`decisions/0060` §7) might
 otherwise imply without this explicit disclosure.
+
+### Sub-task 1 — context-health follow-up (a real gap, fixed)
+
+`context-health-planner`'s own fresh assessment
+(`planning/context-health.md`, 2026-09-24 entry) found this checkout's
+own `context-graph.db` had genuinely regressed since 2026-09-12 —
+enrichment tables at 0 rows, doc/skill detection tables empty despite
+5 Skills/1 slash command/3 Cursor rules/a full spec-doc tree genuinely
+existing on disk, and `ai-docs/README.md`'s own published worked
+example (`codecompass query relations architecture/overview.md`)
+live-reproduced as erroring. **Fixed**: ran a full deterministic
+`codecompass sync` (whole-project, Phase A only — declined Phase B's
+own AI-enrichment prompt, no cost incurred). Re-verified live: the
+previously-broken worked example now returns real relationship rows.
+`git status` confirms only the gitignored `context-graph.db` changed —
+no tracked file, no `src/codecompass/` change. This closes the one
+real, disclosed self-dogfooding credibility gap Phase 67's own
+sub-task 1 surfaced, before it could affect Phase 68's own independent
+audit or a future live demo.
