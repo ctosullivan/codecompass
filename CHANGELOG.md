@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 67** (Final validation: self-dogfood + Ledgerkit + Stage F
+  smoke test, done): Stage G's fourth phase, `EXPERIMENTAL (gates v1)`
+  — a lightweight confirmation pass, not a full re-run. Found and fixed
+  a real self-dogfooding gap: this checkout's own `context-graph.db`
+  had regressed since 2026-09-12 (predating 21 phases), with
+  `ai-docs/README.md`'s own published worked example erroring — fixed
+  with a full deterministic sync (no AI cost). Ledgerkit's fix
+  re-confirmed live on a genuinely newer pin (`c6168b2`) than the
+  original GATE DC evaluation (`05218e3`); Phase 63's own smoke-test
+  basis (no adapter code change, regression suite green) independently
+  re-checked. The Scope→Plan→Domain→Design→Implement methodology's
+  exercise count reported honestly as one (Phase 63D), not inflated. A
+  fresh-agent acceptance test — a genuinely context-free agent given
+  one real small task (`L-031`) in ordinary language, with no mention
+  of the development process or that this was a test — scored **4/4
+  PASS** across discovering the process, locating domain material
+  unassisted, recognising genuine unresolved uncertainty, and producing
+  a grounded design (`planning/symbol-enrichment-provenance-proposal.md`).
+  Three learnings promoted: `L-040` (domain-corpus freshness
+  reconciliation now re-checks after a phase's own final closeout
+  commit, not only mid-phase), `L-041` (`context-health-planner` now
+  dispatches at every stage boundary, operationalizing a cadence
+  already named in its own charter but never wired into the actual
+  workflow), `L-042` (a disclosed platform confound on the fresh-agent
+  test's own criterion 1, for any future repeat). No
+  `src/codecompass/` change. Retro:
+  `planning/retros/phase-67-final-validation.md`.
+
 - **Phase 66** (Roadmap + context reconciliation, done): Stage G's
   third phase. `planning/ROADMAP.md`'s full table audited against
   actual project state — three real, minor findings fixed (a

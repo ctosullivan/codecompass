@@ -49,8 +49,9 @@ detail).
   mean — is now the durable input every later phase consumes rather
   than re-derives.
 - **Stage G (Phases 64–70), in progress**: 64 (blank-slate doc
-  reconstruction), 65 (architecture + ADR reconciliation), and 66
-  (roadmap + context reconciliation) done. 67 (final validation)
+  reconstruction), 65 (architecture + ADR reconciliation), 66 (roadmap
+  + context reconciliation), and 67 (final validation — fresh-agent
+  acceptance test scored 4/4 PASS) done. 68 (independent release audit)
   through 70 (release) not yet started.
 - **GATE DD (Phase 55) remains open, intentionally** — Stage E
   (Phases 56–59, the "minimum justified generalisation") is
@@ -68,11 +69,12 @@ detail).
 
 ## What was just completed
 
-**Phase 66 — roadmap + context reconciliation — done (2026-09-24),
-independently audited PASS WITH NON-BLOCKING OBSERVATIONS.**
-`ROADMAP.md` audited and fixed; this file rewritten 2449→126 lines
-per `CLAUDE.md` §4. Full detail:
-`planning/retros/phase-66-roadmap-context-reconciliation.md`.
+**Phase 67 — final validation — done (2026-09-24).** Fixed this
+checkout's own stale `context-graph.db` (21 phases untouched);
+re-confirmed Ledgerkit's fix live on a newer pin; fresh-agent
+acceptance test scored 4/4 PASS. Three learnings promoted
+(`L-040`/`L-041`/`L-042`). Full detail:
+`planning/retros/phase-67-final-validation.md`.
 
 ## Known standing gaps (carried forward — not phase history, still true)
 
@@ -104,21 +106,13 @@ per `CLAUDE.md` §4. Full detail:
 
 ## Next concrete step
 
-**Phase 66 is fully DoD-complete (2026-09-24): independent
-`release-phase-auditor` audit → PASS WITH NON-BLOCKING OBSERVATIONS**
-(`planning/retros/_audit-phase-66.md`) — two observations, neither
-blocking (a trivial self-referential "connector" filename mention
-this file's own closeout commit reintroduced, and this section
-running longer than `CLAUDE.md` §4's literal "2-3 sentences"), filed
-as `L-040` for `knowledge-curator`'s own triage. Proceed into **Phase
-67 (final validation:
-self-dogfood + Ledgerkit + Stage F smoke-test confirmation)** — a
-lightweight confirmation pass re-verifying `planning/context-health.md`/
-`planning/context-use-log.md` are current and Ledgerkit's/Phase 63's
-final numbers still hold against the code as shipped, plus a
-fresh-agent acceptance test and an explicit count of how many real
-times the Scope→Plan→Domain→Design→Implement methodology was exercised
-pre-v1. Its own plan does not yet exist and must be written per
-`CLAUDE.md` §1 before implementation begins. GATE DD remains open and
-unaffected (a separate axis from Stage F/63D/G, per
+**Dispatch `release-phase-auditor` for Phase 67's final independent
+DoD audit** (drift audit and learning triage already complete). Once
+that returns PASS or PASS WITH NON-BLOCKING OBSERVATIONS, proceed into
+**Phase 68 (independent release audit)**: `release-phase-auditor`,
+read-only, a full Definition-of-Done audit across every Stage A–G
+phase's own exit criteria plus the milestone-closeout checklist — a
+`FAIL` prevents Phases 69/70. Its own plan does not yet exist and must
+be written per `CLAUDE.md` §1 before implementation begins. GATE DD
+remains open and unaffected (a separate axis from Stage F/63D/G, per
 `decisions/0056`/`decisions/0060`).

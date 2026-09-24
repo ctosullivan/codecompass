@@ -1,6 +1,10 @@
 # Phase 67: Final validation — self-dogfood + Ledgerkit + Stage F smoke test
 
-**Status:** planned (2026-09-24).
+**Status:** done (2026-09-24). See
+`planning/retros/phase-67-final-validation.md` (retro),
+`planning/retros/_drift-audit-phase-67.md` (docs-reconstructor drift
+audit — NO DRIFT), and `planning/retros/_audit-phase-67.md`
+(release-phase-auditor, once dispatched) for the full closeout record.
 
 **Stage G, fourth phase, EXPERIMENTAL (gates v1)** (`planning/v1-redefinition/roadmap.md`).
 Gated on Phase 66 completing — **done 2026-09-24, PASS WITH NON-BLOCKING
