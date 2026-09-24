@@ -8,6 +8,143 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-039 — a lead's own dispatch prompt must never suggest an exception to a target agent's own hard, unconditional write-boundary rule, even a plausible-looking one
+
+- **origin:** Phase 66 retro (roadmap + context reconciliation) "What
+  didn't work" section and "Lessons learnt" bullet 2 — filed by
+  `knowledge-curator` on independent review, per this project's own
+  established precedent of not accepting a retro's own "nothing to file"
+  call at face value (`L-030`, `L-035`/`L-036`, `L-038`), and per this
+  specific Phase 66 dispatch's own explicit instruction to independently
+  assess this item rather than trust the retro's "None identified"
+  account
+- **date:** 2026-09-24
+- **project_revision:** `d6a0603`
+- **observation:** the lead's own dispatch prompt to `domain-skeptic` for
+  the Phase 66 domain-corpus freshness reconciliation task suggested the
+  agent could resolve a citation-drift finding itself ("you may resolve
+  this yourself... a one-line citation fix is not a change to any
+  claim's own meaning"). This directly contradicts `domain-skeptic`'s own
+  charter, independently re-read at this triage
+  (`.claude/agents/domain-skeptic.md` line 94-100, "Hard rules — write
+  boundary"): "You never edit any of these, under any circumstance,
+  including to fix something you find wrong — even an obviously-correct
+  one-line fix to a concept page is not yours to make; name it instead."
+  The charter carves out no exception for a fix that doesn't change a
+  claim's meaning — it is unconditional. `domain-skeptic` correctly
+  declined the lead's own suggested shortcut and named the exact fix for
+  the lead to apply instead
+  (`planning/retros/_domain-freshness-reconciliation-phase-66.md` "Not
+  fixed here — write-boundary" section: "That restriction is not waived
+  by a dispatch instruction proposing otherwise; it is a structural rule
+  this role exists to hold, not a discretionary default"). No harm
+  resulted, but the dispatch prompt itself was the error, and — checked
+  directly — nothing in `planning/agent-led-workflow.md` step 5's own
+  existing set of dispatch-prompt cautions (concurrent-`Write` collision
+  — `L-018`; fresh-agent-type registry lag — `L-023`; milestone-scoped
+  brief drift — `L-036`; cross-cluster consistency pass — `L-035`)
+  addresses this specific failure mode: a lead's own prompt content
+  contradicting a target role's hard, unconditional write-boundary rule.
+  This is a repeatable risk, not specific to `domain-skeptic` — any role
+  with an unconditional write-boundary rule (`docs-reconstructor`,
+  `context-evaluator`, `release-phase-auditor`, `domain-skeptic` again)
+  is equally exposed to a future lead drafting the same kind of
+  "surely this small case is fine" suggestion into a dispatch prompt.
+- **evidence:** `planning/retros/phase-66-roadmap-context-reconciliation.md`
+  "What didn't work" (verbatim dispatch-prompt quote) and "Lessons learnt"
+  bullet 2 (the generalization, correctly stated but not filed:
+  "don't suggest an exception to it in the dispatch prompt, even for what
+  looks like an obviously-safe case... a real (if harmless-this-time)
+  drafting mistake, not a neutral suggestion the agent is free to take or
+  leave"); `planning/retros/_domain-freshness-reconciliation-phase-66.md`
+  "Not fixed here — write-boundary" section (the agent's own account of
+  declining and naming the fix instead); `.claude/agents/domain-skeptic.md`
+  lines 94-100, read directly at this triage (the exact, unconditional
+  charter text quoted above — confirms the retro's paraphrase rather than
+  taking it on trust); `planning/agent-led-workflow.md` step 5, read
+  directly at this triage in full (confirms the four existing
+  dispatch-prompt cautions there — `L-018`/`L-023`/`L-036`/`L-035` — none
+  of which cover a lead's own prompt inviting a write-boundary exception).
+- **classification:** workflow
+- **status:** promoted
+- **recurrence:**
+- **promoted_to:** `planning/agent-led-workflow.md` step 5 (new
+  dispatch-prompt caution: never suggest an exception to a target
+  agent's own hard write-boundary rule, however plausible-looking)
+- **curation (Phase 66 triage, 2026-09-24, `knowledge-curator`):**
+  provenance accepted — assigned this id, all required fields present.
+  Independently assessed the retro's own "Candidate learnings filed:
+  None" call on its merits rather than deferring to it, exactly as
+  `CLAUDE.md` §8 requires and exactly as prior triage did for the
+  equivalent calls this same retro cites as precedent (`L-030`,
+  `L-035`/`L-036`, `L-038`). **Disagree with the retro's own "no new
+  mechanism needed" framing.** The retro's "Process-improvement feedback"
+  section reasons: "None beyond the lesson above — no new mechanism
+  needed, just care when drafting future `domain-skeptic` dispatch
+  prompts." This is the same shape of reasoning `L-038`'s triage already
+  found insufficient: the general principle (an agent's charter is
+  authoritative over a lead's own suggestion) already existed and even
+  held on this occasion, but nothing *operationalizes a check on the
+  lead's own dispatch-prompt drafting* at the point where the mistake is
+  actually made — the same location (`agent-led-workflow.md` step 5) that
+  already carries four analogous dispatch-prompt cautions for other
+  failure modes discovered exactly this way (one incident, no harm
+  resulting, but a nameable, low-cost, generalizable fix). Verified this
+  is not domain-skeptic-specific: `domain-skeptic` is one of several
+  roles in the roster table with an unconditional "never edits" rule
+  (`docs-reconstructor`'s read-only mandate toward what it audits;
+  `release-phase-auditor`'s and `context-evaluator`'s "its report only"
+  write column) — the same drafting mistake could recur against any of
+  them, which is why this belongs in the general dispatch-prompt guidance
+  (step 5) rather than a `domain-skeptic`-specific brief amendment.
+  Weighed severity: lower than `L-038` (no artifact was actually damaged
+  here — the agent's own discipline caught it before any write happened)
+  but the *mechanism* gap is the same shape and the fix is essentially
+  free (one sentence, no new step, no new dispatch). Checked for a
+  merge/duplicate: grepped `inbox.md` and `promoted.md` for
+  "write-boundary"/"write boundary"/"obviously-correct"/"obviously safe"
+  — no existing candidate or promoted entry names a lead's own dispatch
+  prompt contradicting a target role's write boundary; not a duplicate of
+  `L-033` (that entry is about `domain-skeptic`'s own review *checklist*
+  missing a within-page consistency check — a gap in what the agent looks
+  for, not in what the lead tells it to do) or of `L-036` (that entry is
+  about an agent *brief* drifting behind an ADR, a maintenance gap on the
+  brief's own content — not a per-dispatch prompting error). **Outcome:
+  promote.** Classification `workflow` maps to
+  `planning/agent-led-workflow.md`, matching this project's own
+  established practice (every prior `workflow`-classified promotion in
+  `promoted.md` landed there). Finalised by the lead — not landed here,
+  outside this role's write boundary for that file. Status left as
+  `candidate` until the lead actually applies the amendment below and a
+  `promoted.md` line is added, per `learning-lifecycle.md` §4/§6.
+
+  **Recommended amendment — `planning/agent-led-workflow.md` step 5**
+  (draft, for the lead to review and land; not applied here — insert as a
+  new paragraph alongside the existing `L-018`/`L-023`/`L-036`/`L-035`
+  dispatch-prompt cautions):
+
+  > **Never suggest, in a dispatch prompt, that a target agent may make an
+  > exception to its own hard, unconditional write-boundary rule — even
+  > for a case that looks obviously safe.** A role's write-boundary rule
+  > (e.g. `domain-skeptic`'s "never edits the approved domain corpus,
+  > under any circumstance, including to fix something you find wrong")
+  > exists precisely because "this specific case is obviously fine" is a
+  > judgment call the role itself is not supposed to make — a dispatch
+  > prompt that invites the exception is a real drafting mistake even if
+  > the agent's own charter holds and no harm results. Confirmed at Phase
+  > 66 (`L-039`): a dispatch prompt to `domain-skeptic` suggested "you may
+  > resolve this yourself... a one-line citation fix is not a change to
+  > any claim's own meaning"; the agent correctly declined and named the
+  > fix instead, but the prompt itself should never have offered the
+  > exception. Before dispatching any role with an unconditional
+  > "never edits X" or "its report only" write column (the roster table
+  > above), re-read the prompt for any suggestion — however small — that
+  > the role could act outside that boundary this one time.
+
+  Revisit toward a stronger check (e.g. a `release-phase-auditor` review
+  of dispatch prompts themselves, not just their outputs) only if a
+  second occurrence shows this prose caution isn't sufficient.
+
 ### L-038 — nothing in the 14-step workflow prompts a check of a session-level/environment-provided convention against `CLAUDE.md` before the first commit of a session
 
 - **origin:** Phase 65 retro (architecture + ADR reconciliation) "What

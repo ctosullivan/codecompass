@@ -134,6 +134,24 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
    independent corroboration in one case, a duplicate-vs-corroboration
    distinction in the other — that no single cluster's own review would
    have surfaced. (Phase 64 — L-035.)
+
+   **Never suggest, in a dispatch prompt, that a target agent may make an
+   exception to its own hard, unconditional write-boundary rule — even
+   for a case that looks obviously safe.** A role's write-boundary rule
+   (e.g. `domain-skeptic`'s "never edits the approved domain corpus,
+   under any circumstance, including to fix something you find wrong")
+   exists precisely because "this specific case is obviously fine" is a
+   judgment call the role itself is not supposed to make — a dispatch
+   prompt that invites the exception is a real drafting mistake even if
+   the agent's own charter holds and no harm results. Confirmed at Phase
+   66 (`L-039`): a dispatch prompt to `domain-skeptic` suggested "you may
+   resolve this yourself... a one-line citation fix is not a change to
+   any claim's own meaning"; the agent correctly declined and named the
+   fix instead, but the prompt itself should never have offered the
+   exception. Before dispatching any role with an unconditional
+   "never edits X" or "its report only" write column (the roster table
+   above), re-read the prompt for any suggestion — however small — that
+   the role could act outside that boundary this one time.
 6. **Implement or coordinate implementation.** The lead implements
    directly, or dispatches one `general-purpose` implementer subagent per
    the `v0.2-implementation-execution-plan.md` pattern (foreground, exact
