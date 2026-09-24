@@ -369,6 +369,18 @@ redefined-v1 Stage C candidate (only if reference-project evidence
 supports project-root context routing), 25 post-redefined-v1. **Not
 renumbered.**
 
+## Post-v1 development
+
+The redefined-v1 milestone group (Phases 39–70) is complete and
+released (`v1.0.0`, `planning/v1-closeout.md`). Phases from here are
+ordinary, non-milestone-group development, tracked the same way as any
+prior phase — plan file, this table, closeout — but no longer counted
+toward any milestone-group tag/release gate.
+
+| Phase | Description | Status | Plan |
+|---|---|---|---|
+| 71 | **Post-v1 documentation refresh** — direct user request, 2026-09-24. `README.md` rewritten ground-up against verified current v1 state; `ROADMAP.md` restructured (this section) to replace stale phase-status material with a concise current-state view; `CONTEXT.md` further reduced; a consistency sweep of other current-facing docs. Historical material (retros, ADRs, evaluation evidence, `docs/domain/`) preserved as historical record, not rewritten. Full plan: `planning/phase-71-post-v1-documentation-refresh.md` | planned | [`planning/phase-71-post-v1-documentation-refresh.md`](phase-71-post-v1-documentation-refresh.md) |
+
 ## Future-improvement backlog (unscheduled)
 
 Findings that the learning lifecycle
