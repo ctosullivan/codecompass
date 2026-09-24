@@ -21,67 +21,36 @@ full text remains in git history at any commit before this one.
 
 ## Current phase
 
-**"CodeCompass v1" is a redefined product-validation milestone**
-(`decisions/0048`), not the `pyproject.toml` version string: CodeCompass
-developed agent-led, validated against real external reference-project
-work, improved from that evidence, generalised only as far as evidence
-justifies, then released after blank-slate doc reconstruction and an
-independent audit. Full roadmap: `planning/ROADMAP.md` (phase-by-phase
-status table) and `planning/v1-redefinition/roadmap.md` (per-stage
-detail).
+**CodeCompass v1.0.0 is released.** The redefined-v1 milestone group
+(`decisions/0048`, Phases 39–70) is complete: published to PyPI as the
+`codecompass-context` distribution (CLI command and Python import
+package both stay `codecompass`), tagged `v1.0.0`. Full roadmap:
+`planning/ROADMAP.md`. Closeout record: `planning/v1-closeout.md`
+(architecture summary, what shipped, what was deferred with revisit
+triggers, key ADRs, reference-project evaluation results, distilled
+process lessons).
 
-- **Foundation (Phases 0–38)**: done. The npm/PyPI/Cargo
-  package-source-grounding tool — auto-clones tracked vendors, detects
-  real project-source usage, maps docs/skills/dependencies into a
-  SQLite context graph with AI-enriched relationships, exposes it via
-  `codecompass query`/`/discovery`/generated Skills. Current-state
-  description: `architecture/module-map.md` and `docs/quickstart.md`
-  (Phase 64/65's own reconstructed documentation), not this file.
-- **Stages A–F (Phases 39–63)**: done. Agent-led development model
-  operational (`.claude/agents/`, `planning/agent-led-workflow.md`);
-  GPL-3.0-or-later relicensing; Ledgerkit + Technical-Clipper reference
-  evaluation cycles; the evidence-backed Scope→Plan→Domain→Design→Implement
-  methodology formalized (`decisions/0060`); a real external Haskell
-  adapter (two separate repositories) as the reference implementation
-  of a genuinely external adapter.
-- **Phase 63D (Domain reconstruction)**: done. `docs/domain/` — the
-  approved, evidence-backed corpus for what CodeCompass's own concepts
-  mean — is now the durable input every later phase consumes rather
-  than re-derives.
-- **Stage G (Phases 64–70), in progress**: 64 (blank-slate doc
-  reconstruction), 65 (architecture + ADR reconciliation), 66 (roadmap
-  + context reconciliation), 67 (final validation — fresh-agent
-  acceptance test scored 4/4 PASS), 68 (independent release audit —
-  milestone-level DoD audit, verdict PASS), and 69 (milestone closeout
-  — `planning/v1-closeout.md` written, documentation freeze declared)
-  done. **70 (release, gate G9 — irreversible, needs the actual user's
-  own explicit go-ahead) is the only phase remaining.**
-- **GATE DD (Phase 55) remains open, intentionally** — Stage E
-  (Phases 56–59, the "minimum justified generalisation") is
-  `CONDITIONAL` on it and may never fund; this is the roadmap's own
-  already-settled design ("if Stage D/E were skipped per GATE DD,
-  Stage G runs against the Stage C product instead," `v1-redefinition/roadmap.md`),
-  not an oversight. Every Stage F/G phase since Phase 60 independently
-  confirms it does not resolve or require GATE DD.
-- **Phases 24/25 (project-root REPL routing; MCP server) remain
-  deferred** past v1 (`decisions/0048`) — revisit triggers: 24 if
-  reference-project evidence shows recurring need, 25 post-v1 informed
-  by real CLI/Skill usage. **Phases 48/50 (task-oriented context
-  retrieval; shared-agent context) are not funded** (GATE DB, Phase
-  47 — insufficient evidence) — revisit if new evidence emerges.
+- **Foundation (Phases 0–38) + Stages A–G (Phases 39–70)**: all done.
+  Current-state description of what CodeCompass does:
+  `architecture/module-map.md` and `docs/quickstart.md`, not this file.
+- **GATE DD (Phase 55) remains open, intentionally, post-v1** — Stage
+  E (Phases 56–59) is `CONDITIONAL` on it and may never fund; this is
+  the roadmap's own already-settled design, not an oversight.
+- **Phases 24/25/48/50 remain deferred/not-funded, post-v1** — revisit
+  triggers stated in `planning/ROADMAP.md`'s own rows.
+- **The documentation freeze (declared at Phase 69) is lifted** — the
+  `v1.0.0` tag it was conditioned on now exists.
 
 ## What was just completed
 
-**Phase 69 — milestone closeout — done (2026-09-24).** Bulk-reviewed
-every retro across Phases 39–68; forced `L-003`'s own 68-phase-overdue
-disposition (discarded); wrote `planning/v1-closeout.md`; declared the
-documentation freeze. One learning promoted (`L-045`). Full detail:
-`planning/retros/phase-69-milestone-closeout.md`.
-
-**Documentation freeze is in effect**: `README.md`/`docs/`/
-`architecture/`/`ai-docs/` should not be edited except to fix a
-problem the freeze review itself surfaced, until after Phase 70's own
-tag.
+**Phase 70 — release redefined CodeCompass v1 — done (2026-09-24).**
+Published `codecompass-context` 1.0.0 to PyPI (confirmed live via the
+real PyPI JSON API); `v1.0.0` tagged and pushed; `CHANGELOG.md`
+flattened to a dated `[1.0.0]` release section. One drift-audit fix
+cycle: `README.md`'s own release-status claims were mistakenly left
+out of the phase's initial scope, found and fixed. One learning
+promoted (`L-046`). Full detail:
+`planning/retros/phase-70-release-v1.md`.
 
 ## Known standing gaps (carried forward — not phase history, still true)
 
@@ -113,15 +82,13 @@ tag.
 
 ## Next concrete step
 
-**Dispatch `release-phase-auditor` for Phase 69's final independent
-DoD audit** (a standard single-phase pass — Phase 68 already did the
-milestone-level one; drift audit and learning triage already
-complete). Once that returns PASS or PASS WITH NON-BLOCKING
-OBSERVATIONS, **Phase 69 is done and the redefined-v1 effort is ready
-for Phase 70 — the actual, irreversible release** (drop `.dev0`; the
-first-ever `twine upload`; the `v1.0.0` tag; `[Unreleased]` → dated
-section). **This is gate G9: it requires the actual user's own
-explicit go-ahead. The lead does not take this action unilaterally —
-present the final state and ask.** GATE DD remains open and
-unaffected (a separate axis from Stage F/63D/G, per
-`decisions/0056`/`decisions/0060`).
+**Phase 71 (post-v1 documentation refresh), direct user request
+2026-09-24**: a ground-up rewrite of current-facing documentation
+against the now-final, shipped v1 state — `README.md`, a simplified
+`planning/ROADMAP.md`, this file reduced further, and a consistency
+sweep of other current-facing docs/indexes/examples. Historical
+material (retros, ADRs, evaluation evidence) stays as a historical
+record, not rewritten. Its own plan does not yet exist and must be
+written per `CLAUDE.md` §1 before implementation begins. This is the
+first phase of CodeCompass's ordinary post-v1 development — no longer
+part of the redefined-v1 milestone group, which is closed.

@@ -1,6 +1,11 @@
 # Phase 70: Release redefined CodeCompass v1 — plan
 
-**Status:** planned (2026-09-24).
+**Status:** done (2026-09-24). See
+`planning/retros/phase-70-release-v1.md` (retro),
+`planning/retros/_drift-audit-phase-70.md` (docs-reconstructor drift
+audit — one fix cycle, now NO DRIFT), and `planning/v1-closeout.md`
+(the milestone closeout artifact) for the full closeout record. **The
+redefined-v1 milestone group (Phases 39–70) is complete.**
 
 **Stage G, seventh and final phase · COMMITTED (gate G9)**
 (`planning/v1-redefinition/roadmap.md`). Gated on Phase 69 completing
