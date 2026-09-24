@@ -29,79 +29,137 @@ for "current."
 
 ---
 
-## Assessment — 2026-09-11 (Phase 43c, ahead of Stage A close → Stage B)
+## Assessment — 2026-09-24 (Phase 67, final validation — self-dogfood re-check)
 
-**CodeCompass revision:** f47f3e2 · **graph:** `context-graph.db` last
-rebuilt at `d34a486` (Phase 43, 2026-09-10) · **assessor:** lead (the
-`context-health-planner` agent runs this for real during Phase 43c
-execution and replaces this stub with its output).
+**Supersedes the 2026-09-11 assessment above (same target: CodeCompass's
+own repo) per this file's own "current assessment replaces the previous
+one" rule.** **CodeCompass revision:** `abc1186` (2026-09-24) ·
+**graph:** this checkout's own `context-graph.db` (gitignored,
+`decisions/0024`) · **assessor:** `context-health-planner`, dispatched by
+Phase 67 sub-task 1 (`planning/phase-67-final-validation.md` §1) —
+explicitly checking whether the Phase 45 snapshot still holds after
+Phases 46–66 (21 phases, none of which touched this repo's own graph
+directly).
 
 ### The graph today
 
-| Dependency | Recorded | Installed | Fresh? | Used? | Enriched? | Notes |
+| Dependency | Recorded | Installed (`pip show`) | Fresh? | Used? (uses_edges) | Enriched? | Notes |
 |---|---|---|---|---|---|---|
-| `anthropic` | 0.109.1 | 0.109.1 | ✅ | yes (15 sites) | yes | the enrichment-heavy one; API-surface + gotchas |
-| `rich` | 15.0.0 | 15.0.0 | ✅ | yes | yes | — |
-| `typer` | 0.27.1 | 0.27.1 | ✅ | yes | yes | — |
-| `pipdeptree` | 4.2.1 | 4.2.1 | ✅ | **no** | no | correct — it's invoked as a subprocess, not imported; `Used: no` is accurate, not a gap |
+| `anthropic` | 1.5.0 | 1.5.0 | ✅ | yes (15) | **no** | deterministic-only `vendor/anthropic/CLAUDE.md` ("Known gotchas: No known side effects detected." — the placeholder, not real AI text) |
+| `rich` | 15.0.0 | 15.0.0 | ✅ | yes (6) | **no** | same pattern |
+| `typer` | 0.27.2 | 0.27.2 | ✅ | yes (43) | **no** | same pattern |
+| `pipdeptree` | 4.2.5 | 4.2.5 | ✅ | **no** | no | correct — invoked as a subprocess, never imported (unchanged since 2026-09-11) |
 
-- **Freshness:** all four recorded versions equal the installed versions
-  (`pip show`), and lower-bound pins in `pyproject.toml` (`>=0.27`,
-  `>=15`, `>=0.109`, `>=4.2`) are consistent (`decisions/0047`). No drift.
-- **Grounding:** 3 of 4 enriched; `pipdeptree` correctly not (no usage).
-- **Completeness:** `query skills` returns 9 agent-context artifacts
-  (5 Skills + 3 `.cursor/rules/*.mdc` + `/discovery`), consistent with
-  the Phase 43 change. Doc-mention edges present for the spec docs.
-- **One caveat:** the committed `context-graph.db` predates the Phase 43
-  `skill.py` prose change and will predate Phase 43b's tooling changes.
-  The read-side `query skills` widening works without a rebuild (it's a
-  SQL change in `graph.py`), but **before the graph is used as a
-  demo/example artifact it should get one whole-project `codecompass
-  sync`** to pick up the regenerated `SKILL.md` text. Low urgency — no
-  upcoming phase reads it as ground truth.
+- **Freshness (package layer):** all four recorded versions match both
+  `pip show` and `pyproject.toml`'s lower-bound pins (`>=0.27`, `>=15`,
+  `>=0.109` — n.b. the pin floor is stale relative to the now-installed
+  1.5.0 but that's a pin-floor question, not a graph-freshness one, and
+  outside this file's remit) — **no drift**, same clean result as
+  2026-09-11.
+- **Enrichment — materially changed, and not for the better.** `SELECT
+  count(*)` against `vendor_enrichment`, `symbol_enrichment`, and
+  `doc_relation_enrichment` all return **0** in this checkout's graph
+  right now. The 2026-09-11 assessment recorded anthropic/rich/typer as
+  enriched ("the enrichment-heavy one; API-surface + gotchas"); that
+  state is **not present** in the graph as it currently sits on disk.
+  `codecompass check`'s "Used but undocumented" list confirms this from
+  the query side: 13 real symbols across all three used vendors
+  (`Anthropic`, `AnthropicError`, `Console`, `Markdown`, `Prompt`,
+  `Table`, `Argument`, `CliRunner`, `Context`, `Exit`, `Option`, `Typer`,
+  `confirm`) show as undocumented.
+- **Completeness — the more significant finding.** `doc_artifacts`,
+  `doc_chunks`, `documents_edges`, `doc_relations_edges`, and
+  `skill_mentions_edges` are **all 0 rows** — despite this repository
+  genuinely having 5 Skills + 1 slash command + 3 Cursor rules on disk
+  (`.claude/skills/{codecompass,codecompass-anthropic,codecompass-rich,codecompass-typer,docs-sync}/`,
+  `.claude/commands/discovery.md`, `.cursor/rules/*.mdc`) and a full set
+  of real spec docs (`README.md`, `architecture/`, `decisions/`,
+  `ai-docs/`, `docs/domain/`, etc.) — exactly the machinery Phases
+  21/27/29/30/31/32/37/49/55b built and repeatedly verified working
+  against this same repo. Live-reproduced, not inferred: `codecompass
+  query skills` returns **0 rows** (2026-09-11 recorded 9), and running
+  `ai-docs/README.md`'s own worked example verbatim —
+  `codecompass query relations architecture/overview.md` — **errors**:
+  `'architecture/overview.md' exists as a file but was not detected as a
+  spec/vendor doc, so it has no relations recorded — check whether it's
+  covered by spec_docs's glob coverage, then re-run sync`. That
+  disambiguation message is itself Phase 49/L-016's own correct fix
+  working as designed — it's not a crash, and it correctly diagnoses the
+  cause — but the underlying condition it's warning about is real right
+  now, in this checkout, for a doc example the project publishes as
+  literally reproducible.
+- **Root cause, as far as read-only inspection can tell:** `meta.last_deterministic_rebuild_at`
+  = `2026-09-12T14:01:32Z` — i.e. whatever last ran the deterministic
+  rebuild path predates Phase 45 through Phase 66 entirely (including
+  the Haskell external-adapter work at 60–62 and the Phase 63D–66
+  domain/docs reconstruction). Since spec-doc detection (Phase 21),
+  skill scanning (Phase 12), and `ai-docs/` glob coverage (Phase 37) all
+  predate that timestamp too, a genuine whole-project `codecompass sync`
+  run at that point should have populated `doc_artifacts`/skills — their
+  absence suggests whatever produced the *current* file's content either
+  ran narrower than a real whole-project sync, or this checkout's graph
+  file has since been touched (its mtime, 2026-09-23 21:12, postdates the
+  meta timestamp) without a corresponding rebuild. I cannot determine
+  which without running `sync`, which is outside this role's remit
+  (read-only, per the agent's own operating rules) — I'm reporting the
+  discrepancy, not diagnosing or fixing the pipeline itself.
+- **Noise:** none observed — same posture as 2026-09-11; an incomplete
+  graph isn't a noisy one, and the "used but undocumented" list above is
+  a real, correctly-surfaced finding, not noise.
 
 ### Do the upcoming phases lean on this graph?
 
 | Phase | Leans on CodeCompass's own context? | Health verdict |
 |---|---|---|
-| 43b — `check_user_docs.py` standing-drift rules | No — a maintainer script, reads `src/`/`docs/` directly | n/a |
-| 43c — this phase (planning) | No | n/a |
-| 44 — reference-project protocol + eval spec → operational templates | No — writes templates + a registry | n/a |
-| 45 — register Technical Clipper + baseline | No (CodeCompass's own graph); **yes** for Technical Clipper's | see below |
-| 46 — CodeCompass during genuine Technical Clipper tasks | **Yes — Technical Clipper's graph**, not this repo's | see below |
-| 47 — GATE DB consolidation | Reads the accumulated evidence, not the graph | n/a |
+| 67 (this phase), sub-task 4 — fresh-agent acceptance test | **No** — the dispatch protocol gives the agent repository access only; discovery is meant to happen by reading `README.md`/`CLAUDE.md`/`docs/domain/` directly, never via `codecompass query` (`phase-67-final-validation.md` §4) | n/a |
+| 68–70 — independent release audit, milestone closeout, release | **No** — process/audit phases grounded in git history, ADRs, and direct doc review, matching every other internal/tooling phase's pattern to date | n/a |
+| A reader following `ai-docs/README.md`'s own worked examples today | **Yes, incidentally** — one of its three example prompts (`query relations architecture/overview.md`) currently errors against this checkout's live graph, as reproduced above | see below |
 
 ### The real forward-looking finding
 
-**CodeCompass's own 4-dependency graph is healthy and will not be the
-limiting factor in any Stage A→B phase.** The graph that matters from
-Phase 45 on is **Technical Clipper's**, and the strongest prior
-(`conditional-generalisation.md` §1.1) is that it will be **near-empty**:
-Technical Clipper has ≈0 runtime package dependencies; its real technical
-context is CommonMark, the DOM/Chromium API, and a CLI. CodeCompass's
-`package → version → source → context` model has little to bite on there.
+**No phase between here and v1 (68–70) is gated on this graph** — the
+pattern holds exactly as it did at every prior assessment: internal and
+process phases don't lean on CodeCompass's own context. That is the
+honest, low-urgency half of this finding.
 
-That is not a health problem to *fix* — it is the evidence Stage B exists
-to gather. But it means:
+**The higher-urgency half is about credibility, not blocking:** Phase
+67's own title is "self-dogfood," and this checkout's graph — the thing
+a curious reader or auditor would actually run `codecompass query`
+against right now — does not reflect the doc/skill-detection and
+enrichment capability this project spent Phases 21–38, 49, and 55b
+building and proving. A worked example from the project's own
+`ai-docs/README.md` fails when tried today. This is a **staleness/re-sync
+finding about a local generated artifact**, not a code defect (the
+underlying mechanisms are exercised and passing in the test suite; this
+checkout's graph simply hasn't had a genuine whole-project sync run
+against current `HEAD` recently) and not an un-representable
+relationship, so it does **not** belong in `context-gaps/inbox.md`
+(`decisions/0051`) — filing it there would misclassify a sync-freshness
+problem as a modelling gap. It belongs here, as a recommended action.
 
-1. Before Phase 45, run a `context-health` pass **on the Technical
-   Clipper clone** (once registered) — expect the honest answer "the
-   graph is nearly empty; here is what CodeCompass cannot represent",
-   and file each un-representable dependency as a `planning/context-gaps/`
-   entry (`decisions/0051`).
-2. The Phase 46 `context-use-log.md` entries will mostly be LOW advantage
-   for the same reason — record that honestly; it is a valid Stage B
-   result, not a failure to hide.
-3. A whole-project `codecompass sync` of this repo is worth doing before
-   Phase 60's blank-slate docs reconstruction, not before Stage B.
+**Ledgerkit spot-check (CG-002), done live for this assessment:** the
+live Ledgerkit clone at `/home/cormac/projects/ledgerkit` (pinned
+`c6168b2`, its own `context-graph.db` rebuilt 2026-09-24 08:19) still
+resolves `codecompass query relations dev-docs/hledger-compatibility.md`
+cleanly (an empty-relations table, not the old `'...' not found` error)
+— **CG-002 remains fixed**, unchanged since Phase 51's GATE DC
+confirmation. `codecompass query vendors` on that clone still returns 0
+rows (0 runtime deps, still the honest, correct number for that
+project's shape) and `check`'s "spec docs with no detected relations"
+still lists the full real `dev-docs/**`/`docs/**` tree, relation-less —
+matching Phase 51's own PASS WITH GAPS / LOW-advantage, structural-ceiling
+finding exactly. This is a reconfirmation, not a new assessment; the
+2026-09-13 section below remains the full current record for that
+target and is not rewritten.
 
 ### Recommended actions
 
 | Action | Urgency | Owner |
 |---|---|---|
-| `codecompass sync` (whole project) to refresh `context-graph.db` past Phase 43/43b | Low — before Phase 60, not now | lead |
-| `context-health` pass on the Technical Clipper clone once registered | **Before Phase 45** | `context-health-planner` |
-| Nothing for `anthropic`/`rich`/`typer`/`pipdeptree` — all fresh and correctly classified | — | — |
+| Run a full deterministic `codecompass sync` (no `--budget`, no AI cost) in this checkout to restore `doc_artifacts`/skills/doc-relations from current `HEAD` — the deterministic path needs no cost consent (`decisions/0031`/`0033`) | **Before this repo's own graph is used as a live demo again** — e.g. before any reader is pointed at `ai-docs/README.md`'s worked examples expecting them to run as published, and worth doing ahead of Phase 68's independent release audit in case it spot-checks self-dogfooding claims | lead |
+| Separately consider re-running AI enrichment (paid, needs consent) for `anthropic`/`rich`/`typer` — the 2026-09-11-recorded enriched state is gone from this checkout's graph | Low — no upcoming phase (67–70) reads enrichment text as evidence | lead (cost/consent decision) |
+| No `context-gaps/` candidate filed — this is a re-sync/staleness finding about a local generated artifact, not an un-representable relationship | — | — |
+| Ledgerkit CG-002 — no action; confirmed fixed via today's live spot-check | — | — |
 
 ---
 
@@ -251,3 +309,15 @@ to.
   cannot see at all — predicted LOW context advantage for Phase 46, not
   because Ledgerkit lacks governing docs but because none are reachable
   through CodeCompass.
+- **2026-09-24** (Phase 67, final validation) — fresh re-check of
+  CodeCompass's own graph: package-version freshness still clean (4/4
+  match `pip show`), but **enrichment (all 3 tables) and doc/skill
+  detection (`doc_artifacts`, `doc_chunks`, `documents_edges`,
+  `doc_relations_edges`, `skill_mentions_edges`) all read 0 rows** —
+  `meta.last_deterministic_rebuild_at` predates Phases 45-66 entirely.
+  Live-reproduced: `ai-docs/README.md`'s own worked
+  `query relations architecture/overview.md` example currently errors.
+  Not a code defect and no phase 67-70 is gated on it, but a re-sync is
+  recommended before this graph is used as a live demo again. Ledgerkit's
+  CG-002 spot-checked live and reconfirmed still fixed (unchanged since
+  Phase 51).
