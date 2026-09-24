@@ -1,0 +1,53 @@
+id: OBS-SKEP-005
+kind: observation
+method: executable
+what_was_done: >
+  Phase 71's own per-phase drift audit (`planning/retros/
+  _drift-audit-phase-71.md` §5) flagged `docs/domain/concepts/
+  connector.md`'s Definition section item 1 (its six-file citation list
+  of planning documents that list "connector" purely as a
+  research-candidate term) as a staleness candidate: Phase 71 replaced
+  `planning/ROADMAP.md`'s entire 424-line phase-by-phase table with a
+  113-line summary, which may have removed the Phase 63D row containing
+  "connector." Ran `grep -ni "connector" planning/ROADMAP.md` to check
+  directly, then `git show 9ce200f:planning/ROADMAP.md | grep -n
+  connector` to confirm the original source of the citation (the old
+  Phase 63D row), then re-ran the same `grep -ni "connector"` check
+  against the other five files `connector.md` currently cites
+  (`decisions/0060-scope-plan-domain-design-implement-methodology.md`,
+  `planning/phase-63d-domain-reconstruction.md`,
+  `planning/v1-redefinition/development-methodology.md`,
+  `planning/v1-redefinition/roadmap.md`, `CHANGELOG.md`) to confirm
+  nothing else in the citation list changed, plus the original
+  repository-wide grep from `EV-ADPT-004`
+  (`grep -rni "connector" --include="*.py" --include="*.md"
+  --include="*.yaml" --include="*.yml" --include="*.toml" .`) to confirm
+  the page's central claim is unaffected.
+tool: grep (GNU grep); git show
+tool_version: "system grep/git on this environment"
+repository_revision: "396118aa6b2c445ac60be75ffba0a345953f4e6f"
+location: null
+raw_result: >
+  `grep -ni "connector" planning/ROADMAP.md` returns no output (exit 1)
+  — the word does not appear anywhere in the current 113-line file.
+  `git show 9ce200f:planning/ROADMAP.md | grep -n connector` shows the
+  word did appear, at line 352, in the old Phase 63D row that Phase 71's
+  restructure deleted along with the rest of the per-phase table. The
+  other five files `connector.md` currently cites still contain
+  "connector" in the same research-candidate-list usage:
+  `decisions/0060-...md:44`, `planning/phase-63d-domain-
+  reconstruction.md:48,194`, `planning/v1-redefinition/
+  development-methodology.md:75`, `planning/v1-redefinition/
+  roadmap.md:1561`, `CHANGELOG.md:120,210`. The repository-wide grep
+  from `EV-ADPT-004` still finds no use of "connector" naming any real
+  CodeCompass mechanism, class, table, or concept — only the same two
+  categories that evidence record already classified (planning-document
+  research-candidate lists, and the one unrelated vendored-SDK hit).
+  This is the second recurrence of the exact fragility class
+  `EV-SKEP-003`/`OBS-SKEP-004` already documented for
+  `planning/CONTEXT.md` at Phase 66 — a fast-moving planning document
+  `connector.md` cites got restructured and dropped the cited word,
+  with no change to what CodeCompass means by "connector."
+timestamp: "2026-09-25T00:00:00Z"
+performed_by: "domain-skeptic agent dispatch"
+status: recorded

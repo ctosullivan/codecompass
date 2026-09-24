@@ -1,0 +1,53 @@
+id: EV-SKEP-005
+kind: evidence
+evidence_kind: test
+what_it_shows: >
+  `docs/domain/concepts/invariant.md`'s "Example" section cites
+  `tests/test_check_user_docs.py::TestReadmePhaseCount::
+  test_ignores_done_phases_in_redefined_v1_section` as `L-001`'s real,
+  landed example of a `planning/learnings/`-classification-sense
+  `invariant` (sense 1 of the page's own three senses). As of this
+  repository revision this test no longer exists: Phase 71 deleted it
+  along with the per-phase-row-table-scanning logic in
+  `check_readme_phase_count` it exercised, replacing both with a
+  direct "phases 0-N" prose-claim comparison and a new test,
+  `test_flags_missing_roadmap_claim`, that exercises different
+  behaviour (`OBS-SKEP-006`). This is a stale citation, not a
+  domain-meaning change: `invariant.md`'s substantive claim -- that
+  `L-001` is a real, promoted `invariant`-classified learning that
+  landed as a regression test, exactly matching sense (1) of the
+  page's own three-sense definition -- remains true. `L-001` itself
+  (`planning/learnings/promoted.md`) is a historical record of a
+  promotion event and is not expected to track later refactors of the
+  test it names; the promotion happened, the rule it encoded ("`done`
+  phases under the redefined-v1 heading must not force the README's
+  foundation phase-count claim upward") was real at the time, and its
+  regression-test form was later superseded by Phase 71's own
+  restructure of the underlying behaviour it protected (ROADMAP.md no
+  longer has per-phase `done` rows for a "redefined-v1 heading" to even
+  apply to). What is stale is purely `invariant.md`'s own choice of a
+  currently-real code line to point at as a live, inspectable example.
+  Two live options exist to replace it, per `context-researcher`'s own
+  judgement, not this role's: (a) reword the Example to describe
+  `L-001` as a historical promoted example (citing `planning/learnings/
+  promoted.md`'s own `L-001` entry and noting its original regression
+  test was later superseded by Phase 71's behavioural change, a fact
+  worth stating rather than silently repointing), or (b) find a
+  currently-live `invariant`-classified `planning/learnings/promoted.md`
+  entry whose regression test still exists verbatim and cite that
+  instead. Choosing between these, or drafting the replacement Example
+  text, is `context-researcher`'s own synthesis work, not a mechanical
+  citation swap this role can make unilaterally -- naming the exact
+  replacement test (if option (b) applies) requires checking every
+  other `promoted.md` entry's current test status, which this role has
+  not exhaustively done. Correcting `invariant.md` itself is out of
+  this role's own write boundary (`docs/domain/` is never edited by
+  `domain-skeptic`) and is named here for whoever holds write access
+  to the approved corpus, informed by `context-researcher`'s choice of
+  replacement content.
+observations: [OBS-SKEP-006]
+source_ref: null
+doc_ref: "docs/domain/concepts/invariant.md:65-71; tests/test_check_user_docs.py:67-105; planning/learnings/promoted.md; planning/retros/_drift-audit-phase-71.md"
+test_ref: "tests/test_check_user_docs.py::TestReadmePhaseCount (current, post-Phase-71)"
+repository_revision: "396118aa6b2c445ac60be75ffba0a345953f4e6f"
+status: current

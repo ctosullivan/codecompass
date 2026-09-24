@@ -1,0 +1,44 @@
+id: EV-SKEP-004
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  `docs/domain/concepts/connector.md`'s Definition section item 1 (its
+  citation list of planning documents that list "connector" purely as a
+  research-candidate term, already trimmed once at Phase 66 per
+  `EV-SKEP-003`/`OBS-SKEP-004` to remove `planning/CONTEXT.md`) still
+  names `planning/ROADMAP.md` as one of six files carrying this
+  citation. As of this repository revision this is no longer true:
+  Phase 71 replaced `planning/ROADMAP.md`'s entire 424-line phase-by-
+  phase table (which contained the Phase 63D row listing "connector"
+  alongside "adapter, protocol, reference, decision, invariant" as a
+  research-candidate term, at the old file's line 352) with a 113-line
+  summary that does not mention "connector" anywhere (`OBS-SKEP-005`).
+  This is a stale citation, not a domain-meaning change:
+  `connector.md`'s substantive, central claim -- "'Connector' is not a
+  real, distinct CodeCompass concept" -- rests on `EV-ADPT-004`'s own
+  repository-wide grep of `src/`, `docs/`, `architecture/`, `ai-docs/`,
+  `decisions/`, and `tests/`, a check independent of
+  `planning/ROADMAP.md`'s current content and re-confirmed unaffected
+  by `OBS-SKEP-005`. Only the illustrative citation list in the
+  Definition section's category-1 enumeration needs updating to remove
+  `planning/ROADMAP.md` (or to note its current absence, mirroring the
+  existing parenthetical already covering `planning/CONTEXT.md`'s
+  identical Phase 66 breakage) so the list matches the corpus's own
+  freshness standard. This is the second time this exact citation list
+  has gone stale from an unrelated planning-document restructure
+  (`planning/CONTEXT.md` at Phase 66, `planning/ROADMAP.md` at Phase
+  71) -- a recurring fragility worth naming to `context-researcher` as
+  a candidate for a more durable citation form (e.g. citing the
+  Phase-63D-era git revision directly, rather than the current state of
+  a document known to be actively restructured post-v1). Correcting the
+  citation list itself is out of this role's own write boundary
+  (`docs/domain/` is never edited by `domain-skeptic`, even for an
+  obviously-correct factual-list fix, per `decisions/0060`) and is
+  named here for whoever holds write access to the approved corpus to
+  apply.
+observations: [OBS-SKEP-005]
+source_ref: null
+doc_ref: "docs/domain/concepts/connector.md:20-33; planning/ROADMAP.md; planning/retros/_drift-audit-phase-71.md"
+test_ref: null
+repository_revision: "396118aa6b2c445ac60be75ffba0a345953f4e6f"
+status: current

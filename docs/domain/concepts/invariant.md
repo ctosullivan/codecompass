@@ -64,11 +64,20 @@ coincide** for a given rule (`CL-EVID-007`):
 
 ## Example
 
-`planning/learnings/promoted.md`'s `L-001` entry:
-`invariant | tests/test_check_user_docs.py::TestReadmePhaseCount::
-test_ignores_done_phases_in_redefined_v1_section... @ c22d8e4` — a real,
-promoted `invariant`-classified learning, landed as a regression test,
-exactly matching sense (1) above.
+`planning/learnings/promoted.md`'s `L-011` entry:
+`invariant | scripts/check_user_docs.py::check_generated_artifacts_
+match_source + tests/test_check_user_docs.py::
+TestGeneratedArtifactsMatchSource::
+test_skill_comparison_skipped_without_graph_db @ 80162fd` — a real,
+promoted `invariant`-classified learning, landed as a regression test
+still live and unchanged at this revision, exactly matching sense (1)
+above. (An earlier version of this example cited `L-001`'s own
+regression test; that test was deleted at Phase 71 when the behaviour
+it protected — `check_readme_phase_count`'s per-phase `done`-row
+scanning — was itself replaced by a direct prose-claim comparison.
+`L-001`'s promotion was real and its rule was true at the time; only
+this page's choice of a currently-inspectable example needed updating,
+not `L-001` itself. Verified 2026-09-25, `EV-SKEP-005`.)
 
 ## Counterexample / edge case
 

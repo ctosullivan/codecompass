@@ -1,0 +1,52 @@
+id: OBS-SKEP-006
+kind: observation
+method: executable
+what_was_done: >
+  Phase 71's own per-phase drift audit (`planning/retros/
+  _drift-audit-phase-71.md` §5) flagged `docs/domain/concepts/
+  invariant.md`'s "Example" section as a staleness candidate: it cites
+  `tests/test_check_user_docs.py::TestReadmePhaseCount::
+  test_ignores_done_phases_in_redefined_v1_section` as `L-001`'s real,
+  landed example of an `invariant`-classified learning, but Phase 71
+  rewrote `scripts/check_user_docs.py::check_readme_phase_count` (the
+  function this test exercised) to compare README's and ROADMAP's own
+  "phases 0-N" prose claims directly, since ROADMAP.md no longer has
+  per-phase `done` rows to scan. Ran `grep -n
+  "TestReadmePhaseCount\|test_ignores_done_phases_in_redefined_v1_section"
+  tests/test_check_user_docs.py` to check the cited test's current
+  existence directly, then read the full current `TestReadmePhaseCount`
+  class, then `git show c22d8e4:tests/test_check_user_docs.py | grep -n
+  "test_ignores_done_phases_in_redefined_v1_section"` to confirm the
+  test existed (and this was its exact name) at the commit
+  `planning/learnings/promoted.md`'s `L-001` entry cites, then `git show
+  4bc7c1d -- tests/test_check_user_docs.py` to see the exact diff that
+  removed it.
+tool: grep (GNU grep); git show
+tool_version: "system grep/git on this environment"
+repository_revision: "396118aa6b2c445ac60be75ffba0a345953f4e6f"
+location: "tests/test_check_user_docs.py:67-105"
+raw_result: >
+  The class `TestReadmePhaseCount` still exists (line 67), but the
+  method `test_ignores_done_phases_in_redefined_v1_section` no longer
+  exists anywhere in the file -- the only grep hit is the class
+  definition line itself. The class's current three methods are
+  `test_flags_mismatch`, `test_no_finding_when_consistent`, and a new
+  `test_flags_missing_roadmap_claim` (added by Phase 71). `git show
+  c22d8e4:tests/test_check_user_docs.py` confirms
+  `test_ignores_done_phases_in_redefined_v1_section` existed at that
+  commit with that exact name, matching `L-001`'s citation. `git show
+  4bc7c1d -- tests/test_check_user_docs.py` shows Phase 71's diff
+  deleted this test outright (it asserted that `done` phase rows under
+  a "Redefined CodeCompass v1" heading were excluded from the
+  foundation phase-count scan -- logic that no longer exists, since
+  `check_readme_phase_count` no longer scans per-phase `done` rows at
+  all post-Phase-71) and replaced it with `test_flags_missing_roadmap_
+  claim`, which exercises different behaviour entirely (a missing
+  "phases 0-N" prose claim in ROADMAP.md, not a done-phase-row
+  computation). No other test in the current file exercises the same
+  "ignore a `done` row under an unrelated heading" behaviour
+  `invariant.md`'s Example section describes, because that behaviour
+  itself no longer exists in `check_readme_phase_count`.
+timestamp: "2026-09-25T00:00:00Z"
+performed_by: "domain-skeptic agent dispatch"
+status: recorded
