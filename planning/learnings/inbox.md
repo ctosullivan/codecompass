@@ -8,6 +8,115 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-045 — a learning candidate's own self-imposed "force a decision by Phase N" revisit clause is not checked against the actual current phase by any process step, including the two bulk reviews the lifecycle doc itself names
+
+- **origin:** Phase 69 (milestone closeout; retro "What didn't work" /
+  "Lessons learnt", `planning/retros/phase-69-milestone-closeout.md`;
+  also recorded as `planning/v1-closeout.md` §6 item 3; filed here on
+  `knowledge-curator`'s own independent triage, per the retro's explicit
+  deferral of this exact question to this queue rather than the lead
+  filing it unilaterally)
+- **date:** 2026-09-24
+- **project_revision:** 67e4f36 (+ Phase 69 commits)
+- **observation:** `L-003`'s own text (added at its Phase 43b curation
+  note) committed to a specific forcing point: "If still unresolved at
+  the Phase 47 bulk review, force a promote/discard." `planning/v1-redefinition/learning-lifecycle.md`
+  §2 independently names Phase 47 and Phase 55 as the queue's own
+  standing bulk-review checkpoints — this was not a cadence invented
+  by L-003, it already existed in the lifecycle doc's own text. Despite
+  that, no bulk learnings-queue disposition actually ran at Phase 47
+  (`planning/phase-69-milestone-closeout.md`'s own note: "Phase 47 was
+  pure Ledgerkit-findings synthesis, no learnings-queue bulk disposition
+  ran") — nothing in Phase 47's own plan file listed the bulk review as
+  a scope item, so nothing forced it to happen even though the
+  cadence was named, in writing, in a governing doc. The miss then went
+  uncaught for a further 21 phases (Phase 48 through Phase 68), across
+  every one of those phases' own step-10/step-12 per-phase triage passes,
+  until Phase 69's dedicated milestone-scale bulk retro review happened
+  to re-read the whole queue end to end. This is a distinct failure mode
+  from `L-043` (a candidate's `status:` field silently disagreeing with
+  its own already-written curation-note verdict, undetected for ~57
+  phases) — `L-003`'s `status:` field was internally consistent
+  (`retained`, matching its own curation notes) throughout; the gap here
+  is that nothing ever compared the *phase number a candidate's own text
+  names as a forcing point* against the *actual current phase number*,
+  even at the two checkpoints (Phase 47, Phase 55) explicitly designated
+  for exactly that kind of review.
+- **evidence:** `planning/learnings/inbox.md`'s own `L-003` entry —
+  the Phase 43b curation note's "moves forward when" clause ("If still
+  unresolved at the Phase 47 bulk review, force a promote/discard");
+  the entry's `status:` staying `retained` unchanged from Phase 43b
+  (2026-09-11) through Phase 68 with no curation note added at Phase 47
+  or Phase 55; `planning/v1-redefinition/learning-lifecycle.md` §2 ("at
+  each phase's step 10, and in bulk at Phases 47 and 55, the curator
+  reviews the queue"); `planning/retros/phase-69-milestone-closeout.md`'s
+  own "What didn't work" section and its Phase 69 curation note on
+  `L-003` itself (this same file, lines ~4340-4372).
+- **classification:** workflow
+- **status:** promoted
+- **recurrence:** first occurrence of this specific gap (a candidate's
+  own named forcing-phase going unchecked) — related to, but distinct
+  from, the general "a cadence existed somewhere but was never
+  operationalized into the actual step sequence" pattern already named
+  nine times over in `v1-closeout.md` §6 item 1 (`L-006`, `L-013`,
+  `L-018`, `L-023`, `L-034`, `L-036`, `L-038`, `L-039`, `L-041`). Not
+  merged into that cluster: item 1's own post-v1 implication is scoped
+  to checking a *newly added* role/rule's cadence against the step
+  sequence at the moment it's added; it does not cover an
+  *already-established* cadence (the Phase 47/55 bulk review, named in
+  `learning-lifecycle.md` §2 since Phase 41) simply not being executed
+  when its own named phase arrives. That gap needs its own fix, not
+  coverage-by-analogy from item 1's already-drafted remedy.
+- **curation (Phase 69 triage, 2026-09-24, knowledge-curator):**
+  accepted as a candidate and triaged in the same pass, per this
+  project's established precedent for well-evidenced first-occurrence
+  `workflow` promotions not requiring a second recurrence before
+  promotion (`L-006`, `L-018`, `L-023`, `L-043` all promoted on a single
+  well-evidenced instance). This is genuinely learning-shaped, not
+  adequately captured by having been named once in `v1-closeout.md`'s
+  own prose: that document is a one-time milestone-closeout artifact,
+  not a durable process rule, and its own item 3 explicitly declines to
+  prescribe a fix ("should be tracked as an actual checklist item," with
+  no artifact naming *which* checklist or *whose* responsibility it is)
+  — leaving it there would repeat the exact failure mode this candidate
+  describes: a real observation living only in prose nothing else is
+  ever obligated to re-read. **Outcome: promote-recommendation** (not
+  yet promoted — no artifact has landed; the curator has no write
+  access to `planning/v1-redefinition/learning-lifecycle.md` or
+  `planning/agent-led-workflow.md`). Recommended fix, matching this
+  project's own established preference (per the nine-instance cluster
+  above) for operationalizing a cadence into the actual step sequence
+  rather than relying on a fragile free-text-parsing mechanical check:
+  1. **Primary fix — `planning/v1-redefinition/learning-lifecycle.md`
+     §2 amendment:** add an explicit rule that any curation note
+     committing to a numbered forcing point ("if still unresolved at
+     the Phase N bulk review/[triage], force a promote/discard") must,
+     in the same edit, also be mirrored as a concrete line in Phase N's
+     own `planning/phase-N-*.md` plan file once that file exists (or,
+     if Phase N's plan doesn't exist yet, added to a short running
+     "forcing points due" list this section maintains) — so the
+     commitment is checkable from the destination phase's own scope
+     list (`CLAUDE.md` §1), not only readable by someone who happens to
+     open `inbox.md` and notice the phase number has arrived.
+  2. **Secondary fix — same section:** state explicitly that the
+     Phase 47/55-style standing bulk-review cadence is itself a
+     `planning/phase-N-*.md` scope item for whichever phase lands on
+     that number, not an obligation floating free of any specific
+     phase's own plan — closing the exact gap that let Phase 47 pass
+     with no bulk review and no one noticing until Phase 69.
+  3. Both are `planning/v1-redefinition/learning-lifecycle.md` edits —
+     outside this agent's write boundary (`planning/learnings/**`,
+     `planning/context-gaps/**`, `planning/context-observations/**`,
+     `planning/knowledge/**`, draft files under `planning/` only).
+     Lead finalises, per this classification's own destination table
+     entry (`workflow` → workflow-doc amendment, lead finalises).
+- **promoted_to:** `planning/v1-redefinition/learning-lifecycle.md` §2
+  (a numbered forcing point must be mirrored into its own destination
+  phase's plan file; a standing bulk-review cadence is itself a scope
+  item of whichever phase lands on that number)
+
+---
+
 ### L-044 — a milestone-level DoD audit needs its own explicit "spot-check enough vs. re-derive from scratch" scope statement named in the plan before dispatch, not left to the auditor's own improvised judgment call
 
 - **origin:** Phase 68 (`release-phase-auditor`'s milestone-level DoD

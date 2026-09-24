@@ -44,8 +44,30 @@ promote  /  retain  /  merge  /  discard
 - **candidate → evidence:** a candidate sits in the inbox gaining
   `evidence:` / `recurrence:` annotations across phases. A candidate with
   no new evidence after ~3 phases is a discard candidate (curator's call).
-- **evidence → curation:** at each phase's step 10, and in bulk at Phases
-  47 and 55, the curator reviews the queue.
+- **evidence → curation:** at each phase's step 10, and in bulk at each
+  milestone's own closeout (Phase 69 for the redefined-v1 milestone;
+  Phase 47 was this project's own first standing bulk-review checkpoint,
+  though no dedicated bulk disposition actually ran there — see below),
+  the curator reviews the queue.
+- **A candidate's own curation note may commit to a numbered forcing
+  point** ("if still unresolved at the Phase N bulk review, force a
+  promote/discard"). **That commitment must, in the same edit, also be
+  mirrored as a concrete line in Phase N's own `planning/phase-N-*.md`
+  plan file** once that file exists (or, if Phase N's plan doesn't exist
+  yet, added to a short running "forcing points due" list in this
+  section) — so it is checkable from the destination phase's own scope
+  list (`CLAUDE.md` §1), not only readable by someone who happens to
+  open `inbox.md` and notice the phase number has arrived. **A standing
+  bulk-review cadence (like Phase 47's own, above) is itself a scope
+  item of whichever phase lands on that number** — not an obligation
+  floating free of any specific phase's own plan. Confirmed necessary
+  at Phase 69 (`L-045`): `L-003`'s own Phase 43b curation note committed
+  to a forced decision "at the Phase 47 bulk review," and this section's
+  own text already named Phase 47 as a standing checkpoint — but nothing
+  in Phase 47's own plan listed the bulk review as a scope item, so no
+  bulk disposition actually ran there, and the miss went uncaught for a
+  further 21 phases until Phase 69's own dedicated milestone-scale
+  review happened to re-read the whole queue end to end.
 - **curation → outcome:** one of four (see §4).
 
 ## 3. Candidate learning format
