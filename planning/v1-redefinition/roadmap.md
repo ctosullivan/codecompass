@@ -1806,6 +1806,19 @@ identical.)
   existing "no FAIL verdicts... or an explicit written justification"
   posture above) — the distinction is which claim a FAIL withholds, not
   whether it gets disclosed.
+  **Noted for any repeat of this test (Phase 67 — `L-042`):** criterion
+  1 ("discover that this project has a development process at all, and
+  find where it's described") cannot cleanly separate the dispatched
+  agent's own initiative from Claude Code's own platform behaviour of
+  very likely auto-loading `CLAUDE.md` into any session operating in
+  this repository — a structural confound of running this specific
+  criterion on this specific platform, not a signal about CodeCompass's
+  own documentation's discoverability. If this test is ever repeated,
+  either (a) report criterion 1 as structurally confounded rather than
+  a clean PASS/FAIL on this platform, or (b) redesign its dispatch (e.g.
+  a harness/agent context that does not auto-load `CLAUDE.md`) to get a
+  genuine discovery signal. Criteria 2-4 are unaffected — none of their
+  target material is platform auto-loaded.
 
 ### Phase 68 — Independent release audit · COMMITTED (FAIL blocks)
 - `release-phase-auditor`, read-only, full Definition-of-Done audit

@@ -78,6 +78,27 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
    - Before a phase that leans on CodeCompass context (a reference-project
      phase, or Phase 60), dispatch **`context-health-planner`** for a
      forward-looking adequacy assessment (`planning/context-health.md`).
+   - **Also dispatch `context-health-planner` at every stage boundary**
+     (Stage C→D, the Stage E-skipped transition into Stage F, Stage F→G,
+     and any future boundary `planning/v1-redefinition/roadmap.md`'s own
+     stage grouping defines) — not only immediately before a phase that
+     leans on CodeCompass context. This closes a real gap between the
+     role's own charter (`.claude/agents/context-health-planner.md`'s
+     frontmatter, and `agent-led-development.md` §2.9, both already state
+     "stage boundaries" as part of this role's cadence) and this step's
+     own prior text, which named only the context-leaning-phase trigger —
+     the cadence existed in name, in two documents, but was never
+     operationalized here. Confirmed necessary at Phase 67 (`L-041`):
+     `planning/context-health.md` went 21 phases (46-66), spanning at
+     least three real stage boundaries, without an update, because
+     nothing in this step ever invoked the cadence the role's own
+     definition already promised. A stage boundary with no material
+     change since the last assessment is a valid dispatch outcome too —
+     an explicit one-line "no action — nothing changed since the last
+     assessment" entry in `planning/context-health.md`'s own History
+     section is sufficient; this bullet does not require a full
+     re-assessment report every single time, only that the check
+     actually happens.
 5. **Delegate bounded specialist work.** One agent = one artifact. Give
    each a self-contained prompt (the phase plan path, exact scope, what
    to return). Run in the background unless the next step strictly

@@ -55,6 +55,16 @@ without fixing anything — that a phase is actually done.
    creep into files the plan didn't name.
 8. For a reference-project phase: a `context-evaluator` report exists and
    is linked.
+9. **Once `docs/domain/` exists: re-run the domain-staleness term check
+   against the full current repository state, including this phase's
+   own final closeout commit** — not only the pre-closeout diff a
+   per-phase drift audit already covered mid-phase
+   (`development-methodology.md`'s "Domain-corpus freshness and
+   reconciliation" checkpoint 4). Confirmed necessary at Phase 66
+   (`L-040`): a closeout commit's own new `CONTEXT.md` sentence
+   reintroduced a domain-corpus staleness term after the mid-phase
+   reconciliation had already run clean — only this final, independent
+   re-check catches that specific timing gap.
 
 ## Hard rules
 

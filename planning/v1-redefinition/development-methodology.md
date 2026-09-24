@@ -402,6 +402,19 @@ adding a new standing "domain watcher" process:
    escalates only what remains a genuine ambiguity to the actual
    user/domain owner — the same no-stand-in rule Phase 63D itself
    established, unchanged here.
+4. **Final closeout re-check** (`agent-led-workflow.md` step 13,
+   `release-phase-auditor`'s own final DoD pass — unchanged mechanism,
+   widened scope): before treating a phase's own final
+   `ROADMAP.md`/`CONTEXT.md` status-bump commit (step 14) as closing the
+   phase, `release-phase-auditor`'s final pass re-runs the same
+   domain-staleness term check checkpoint (1) already uses, against the
+   *full* current repository state — including any reconciliation prose
+   already staged for that closeout commit — not only the pre-closeout
+   diff checkpoint (1) covered mid-phase. Confirmed necessary at Phase
+   66 (`L-040`): a closeout commit's own new `CONTEXT.md` sentence
+   reintroduced a domain-corpus staleness term after the mid-phase
+   reconciliation had already run clean; only the auditor's own
+   independent, incidental re-check caught it.
 
 **What does not change pre-v1**: `docs/domain/` is not re-derived from
 scratch at every phase — that would defeat the point of having done
@@ -474,7 +487,9 @@ Named as evidence, not yet claimed as proven:
   govern independently — it blocks only the separate claim that
   CodeCompass v1 is itself a validated reference/model project for this
   methodology, until the specific discoverability gap is fixed and the
-  test passes.
+  test passes. **See `roadmap.md`'s own Phase 67 entry for a real,
+  disclosed platform confound on this test's criterion 1** (`L-042`,
+  Phase 67) before repeating it.
 
 Whether this methodology **improves development quality** generally
 remains an open question, exactly as Phase 54c's own retro left it —

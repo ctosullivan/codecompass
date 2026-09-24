@@ -36,10 +36,14 @@ and the test passes. This phase's own verdict is about the
 ## 1. Sub-task 1: context-health/context-use-log currency
 
 `planning/context-health.md` was last substantively updated at Phase
-45 (2026-09-13); `planning/context-use-log.md` at Phase 52
-(2026-09-14). Neither has been touched across Phases 53–66 — a real,
-substantial gap this phase must address directly, not assume away.
-Dispatch `context-health-planner` for a fresh assessment against
+45 (2026-09-13) and untouched across Phases 46–66 — a real, substantial
+gap this phase must address directly, not assume away.
+**Correction, checked directly**: `planning/context-use-log.md`'s own
+staleness since Phase 52 is *not* a gap — its own header states
+plainly it was deliberately superseded by `planning/context-observations/`
+that same phase, kept in place only so old links still resolve. Only
+`context-health.md` needs a fresh look. Dispatch `context-health-planner`
+for a fresh assessment against
 CodeCompass's own current `context-graph.db` in this checkout,
 cross-referenced against `planning/ROADMAP.md`'s current state (its own
 designed method). Report whether the prior findings (own graph

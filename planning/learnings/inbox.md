@@ -8,6 +8,308 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-042 — the fresh-agent acceptance test's criterion 1 cannot cleanly separate "agent discovered the process" from "the platform auto-loaded CLAUDE.md," a structural confound the current protocol text doesn't disclose or address
+
+- **origin:** Phase 67 retro (final validation) "What didn't work"
+  bullet 2 and "Lessons learnt" bullet 2, and `planning/phase-67-final-validation.md`
+  §8 sub-task 4's own criterion-1 report — filed by `knowledge-curator`
+  on independent review, per this project's own established precedent
+  of not accepting a retro's own "described but deliberately left for
+  independent triage" framing at face value (`L-035`/`L-036`, `L-038`,
+  `L-039`), and per this specific Phase 67 dispatch's own explicit
+  instruction to assess this item independently rather than default to
+  either "file it" or "nothing to file"
+- **date:** 2026-09-24
+- **project_revision:** `2b4261e`
+- **observation:** Phase 67's fresh-agent acceptance test (protocol
+  specified in `planning/v1-redefinition/roadmap.md`'s own Phase 67
+  entry, added 2026-09-20 per direct user instruction, and echoed in
+  `planning/v1-redefinition/development-methodology.md`) scored 4/4 PASS,
+  but criterion 1 ("did it discover that this project has a development
+  process at all, and find where it's described") carries an
+  honestly-disclosed caveat the lead's own report states plainly:
+  `CLAUDE.md` is very likely auto-loaded into any Claude Code session
+  operating in this repository by the platform itself, not discovered
+  through the dispatched agent's own initiative — a structural property
+  of running this specific test on this specific platform (Claude
+  Code), not a finding about CodeCompass's own documentation's
+  discoverability. Independently verified this is a genuine protocol
+  gap, not something already covered: read
+  `planning/v1-redefinition/roadmap.md`'s full Phase 67 entry
+  (lines 1741-1808) and `development-methodology.md`'s own fresh-agent-
+  test paragraph (lines 458-468) directly — neither mentions Claude
+  Code, CLAUDE.md auto-loading, or any platform caveat anywhere; both
+  specify criterion 1 exactly as "discover... find where it's described"
+  with no qualification. Grepped `decisions/` for "fresh-agent
+  acceptance test" / "fresh agent" and found **no match at all** — the
+  test protocol's actual authoritative text lives only in the two
+  planning documents above (`decisions/0060` itself, read in full,
+  never names or specifies this test — it is a same-day, separately
+  recorded direct-user-instruction amendment to the roadmap, not part of
+  that ADR's own Decision section). The roadmap's own text ("Phase 67 is
+  meant to validate the methodology once") does not rule out a repeat,
+  and gives no guidance for what a repeat should do differently about
+  criterion 1's platform confound if one is ever run. The other three
+  criteria (locate domain material; recognise unresolved uncertainty;
+  produce a grounded design) are unaffected — they test discovery of
+  content no platform auto-loads.
+- **evidence:** `planning/retros/phase-67-final-validation.md` "What
+  didn't work" bullet 2 and "Lessons learnt" bullet 2 (verbatim
+  disclosure and generalization, explicitly left unfiled);
+  `planning/phase-67-final-validation.md` §8, sub-task 4, criterion 1's
+  own report paragraph (the caveat as originally stated by the lead
+  reading the fresh agent's actual transcript, not the agent's
+  self-summary); `planning/v1-redefinition/roadmap.md` lines 1741-1808
+  (the full, current Phase 67 protocol text, read directly — confirmed
+  no platform-caveat language exists anywhere in it);
+  `planning/v1-redefinition/development-methodology.md` lines 458-468
+  (the same test described more briefly, same absence confirmed);
+  `decisions/0060-scope-plan-domain-design-implement-methodology.md`
+  (read in full — confirms the fresh-agent test is not actually
+  specified in this ADR's own Decision section, only cross-referenced
+  loosely by Phase 67's plan as "decisions/0060's own amendment,
+  2026-09-20"); a direct grep for "fresh-agent acceptance test" / "fresh
+  agent" across `decisions/` returning no files.
+- **classification:** future-improvement
+- **status:** promoted
+- **recurrence:**
+- **promoted_to:** `planning/v1-redefinition/roadmap.md` Phase 67
+  entry (new caveat paragraph) + `development-methodology.md`'s
+  fresh-agent-test paragraph (cross-reference)
+- **curation (this triage, 2026-09-24, knowledge-curator):** provenance
+  accepted — assigned this id, all required fields present.
+  Independently re-verified the retro's own account rather than taking
+  it on trust: read `planning/v1-redefinition/roadmap.md`'s full Phase
+  67 entry and `development-methodology.md`'s fresh-agent-test paragraph
+  directly, confirmed neither discloses the platform-auto-load confound
+  anywhere; independently confirmed via grep that the "fresh-agent
+  acceptance test" is not actually defined inside `decisions/0060` at
+  all (it is a same-day roadmap amendment referencing that ADR's
+  context, not ADR text itself) — a small but real correction to how the
+  dispatch task described this candidate's likely destination.
+  **Assessed as genuinely learning-shaped, not a one-off with nowhere to
+  land.** The dispositive fact is the roadmap's own text ("Phase 67 is
+  meant to validate the methodology once... does not rule out repeating
+  it") — this is not a closed, one-time test description the way, say, a
+  single phase's own internal report would be; it is a **standing
+  protocol** (specified once, in `roadmap.md`, reusable by reference for
+  any future repeat) with a real, structural, non-obvious methodological
+  flaw in one of its four criteria that the next person to run it would
+  otherwise silently reproduce, having no reason to know Phase 67 already
+  found and disclosed it. This is exactly the "worth recording for
+  whoever designs a repeat" shape the retro itself named but declined to
+  operationalize. Considered discarding as "no current trigger, so
+  nothing to promote into yet" (the same reasoning that makes `retain`
+  appropriate for a merely-plausible, not-yet-actionable observation) —
+  rejected: unlike a `retain`-shaped uncertain claim, there is nothing
+  uncertain about this finding (the confound is a disclosed, verified
+  structural fact, not a hypothesis needing more evidence), and the
+  destination is concrete and cheap (a caveat paragraph in an existing,
+  already-written protocol section) rather than requiring a new
+  mechanism to be invented before it can be actioned. This is the same
+  shape `L-031`/`L-032` used to justify `future-improvement` classified
+  into `planning/ROADMAP.md`'s backlog rather than `retain`: real,
+  evidenced, small, with a clear eventual home, just not urgent because
+  no phase currently plans to repeat the test. Checked for a
+  merge/duplicate: grepped `inbox.md`/`promoted.md` for "fresh-agent" /
+  "CLAUDE.md auto-load" / "platform caveat" — no existing candidate
+  covers this. **Outcome: promote**, classification `future-improvement`
+  (a protocol note attached to unscheduled future work, not an
+  immediately-actionable rule), destination the Phase 67 protocol text
+  itself rather than a generic backlog row — closer to the table's
+  "future improvement → a roadmap row" mapping than to `workflow`
+  (nothing about the 14-step per-session procedure needs to change; the
+  gap is in a specific, occasionally-reused test protocol's own written
+  criteria). Finalised by the lead / `roadmap-context-curator` — not
+  landed here, outside this role's write boundary for `planning/v1-redefinition/roadmap.md`.
+  Status left as `candidate` until the amendment is actually applied and
+  a `promoted.md` line is added, per `learning-lifecycle.md` §4/§6.
+
+  **Recommended amendment — `planning/v1-redefinition/roadmap.md`'s
+  Phase 67 entry** (draft, for the lead to review and land; not applied
+  here — insert as a new paragraph immediately after the existing
+  "Clarified 2026-09-20... two separate claims, two separate
+  consequences" paragraph):
+
+  > **Noted for any repeat of this test (Phase 67 — `L-042`):**
+  > criterion 1 ("discover that this project has a development process
+  > at all, and find where it's described") cannot cleanly separate the
+  > dispatched agent's own initiative from Claude Code's own platform
+  > behaviour of very likely auto-loading `CLAUDE.md` into any session
+  > operating in this repository — a structural confound of running this
+  > specific criterion on this specific platform, not a signal about
+  > CodeCompass's own documentation's discoverability. If this test is
+  > ever repeated, either (a) report criterion 1 as structurally
+  > confounded rather than a clean PASS/FAIL on this platform, or (b)
+  > redesign its dispatch (e.g. a harness/agent context that does not
+  > auto-load `CLAUDE.md`) to get a genuine discovery signal. Criteria
+  > 2-4 are unaffected — none of their target material is platform
+  > auto-loaded.
+
+  Also worth a one-line cross-reference from
+  `planning/v1-redefinition/development-methodology.md`'s own
+  fresh-agent-test paragraph (lines 458-468) back to this note, so a
+  reader consulting the methodology doc alone also sees it. Revisit only
+  if a repeat is actually scheduled — at that point this note should
+  move from "recorded caveat" to an actual criterion-1 redesign decision.
+
+### L-041 — `context-health-planner`'s own charter already promises a "stage boundaries" dispatch cadence that `agent-led-workflow.md`'s actual operational step never carries — the standing trigger exists in name only, across two governing docs, not zero
+
+- **origin:** Phase 67 retro (final validation) "What didn't work" and
+  "Process-improvement feedback" — filed by `knowledge-curator` on
+  independent review, per this project's own established precedent of
+  not accepting a retro's own "described but deliberately left for
+  independent triage" framing at face value (`L-035`/`L-036`, `L-038`,
+  `L-039`), and per this specific Phase 67 dispatch's own explicit
+  instruction to check whether something already covers this before
+  treating the retro's "consider a new trigger" framing as the right
+  diagnosis
+- **date:** 2026-09-24
+- **project_revision:** `2b4261e`
+- **observation:** `planning/context-health.md`/`planning/context-use-log.md`
+  went 21 phases (46-66) with no update, found only because Phase 67's
+  own plan happened to name them explicitly. The retro frames this as
+  "nothing in `agent-led-workflow.md`'s 14 steps schedules a periodic
+  re-check" and suggests `knowledge-curator` consider "a periodic
+  `context-health-planner` dispatch trigger... similar to how
+  `L-034`/`L-038` added triggers for other files." **Independently
+  checked this framing directly and found it materially incomplete**: a
+  "stage boundaries" cadence is not merely *absent* — it is **already
+  declared, twice, in the roster's own governing documents**, and simply
+  never made it into the one document that actually drives what the
+  lead does each session. `.claude/agents/context-health-planner.md`'s
+  own frontmatter `description` field states verbatim: "Runs at stage
+  boundaries and before any phase that leans on CodeCompass context."
+  `planning/v1-redefinition/agent-led-development.md` §2.9's own
+  "Active in" line, independently read, states the identical cadence:
+  "stage boundaries; before any phase that leans on CodeCompass
+  context." But `planning/agent-led-workflow.md` step 4 — the actual
+  14-step per-session procedure `CLAUDE.md` §8 names as governing —
+  names only "Before a phase that leans on CodeCompass context...
+  dispatch `context-health-planner`," with **no "stage boundaries"
+  language anywhere in the document** (confirmed by a direct grep for
+  "stage boundar" returning zero matches in `agent-led-workflow.md`,
+  against seven other files that do carry the phrase). This reframes the
+  finding from "no trigger exists, invent one" (the retro's framing) to
+  "a trigger already exists in the role's own charter and its own
+  catalogue entry, but was never operationalized into the step sequence
+  that actually executes it" — the fix is alignment, not invention.
+  Cross-checked against real phase history
+  (`planning/v1-redefinition/roadmap.md`) to confirm this gap is
+  recurring, not hypothetical: at least three genuine stage transitions
+  fall inside the 46-66 stale window — Stage C's own close (Phase 51,
+  GATE DC resolved), Stage D's effective close with Stage E never funded
+  and Stage F beginning (around Phase 55b/60), and Stage F's close into
+  Stage G (Phase 63/63D → 64) — none of which triggered a
+  `context-health-planner` dispatch per `planning/context-health.md`'s
+  own last-substantive-update date (Phase 45, per Phase 67's own plan
+  §1), confirming the missed cadence is not a single occasion but a
+  standing, repeated gap across the entire window.
+- **evidence:** `.claude/agents/context-health-planner.md` lines 9-10
+  (frontmatter `description`, "Runs at stage boundaries..." — read
+  directly); `planning/v1-redefinition/agent-led-development.md` §2.9,
+  lines 210-211 ("Active in: stage boundaries; before any phase that
+  leans on CodeCompass context" — read directly, independently
+  corroborating the agent brief's own claim rather than relying on it
+  alone); `planning/agent-led-workflow.md` (read in full at this
+  triage) step 4's own text (only the context-leaning-phase trigger,
+  no stage-boundary language) and a direct grep for "stage boundar"
+  across the repository, confirming `agent-led-workflow.md` is the one
+  of eight matching-context files that does *not* contain the phrase;
+  `planning/retros/phase-67-final-validation.md` "What didn't work" and
+  "Process-improvement feedback" (the retro's own framing, quoted
+  above); `planning/phase-67-final-validation.md` §1 and §8 sub-task 1
+  (the 21-phase staleness finding and its fix); `planning/v1-redefinition/roadmap.md`
+  (the stage-boundary phase ranges cited above, read directly to confirm
+  their existence within the 46-66 window).
+- **classification:** workflow
+- **status:** promoted
+- **recurrence:**
+- **promoted_to:** `planning/agent-led-workflow.md` step 4 (new bullet:
+  dispatch `context-health-planner` at every stage boundary, not only
+  before a context-leaning phase)
+- **curation (this triage, 2026-09-24, knowledge-curator):** provenance
+  accepted — assigned this id, all required fields present.
+  Independently verified every claim above rather than taking the
+  retro's or the dispatch instruction's framing on trust: read
+  `.claude/agents/context-health-planner.md`'s frontmatter directly,
+  independently read `agent-led-development.md` §2.9 (not cited by the
+  retro at all — found by this triage's own check for "does something
+  already cover this"), and read `agent-led-workflow.md` in full,
+  confirming by direct grep that "stage boundar" appears in seven other
+  project files but not in it. **This changes the correct fix from what
+  the retro proposed.** The retro's own "Process-improvement feedback"
+  suggests `knowledge-curator` consider *inventing* a periodic-dispatch
+  trigger "similar to `L-034`/`L-038`" — but `L-034`/`L-038` both
+  addressed a genuine *absence* (no rule existed anywhere). Here, the
+  rule already exists, worded identically, in two separate governing
+  documents (`context-health-planner.md`'s own charter and
+  `agent-led-development.md`'s roster catalogue) — it simply was never
+  carried into `agent-led-workflow.md`'s own step sequence, the one
+  document that actually drives session-by-session behaviour per
+  `CLAUDE.md` §8. This is a *documentation-alignment* gap of the same
+  general shape as `L-036` (a brief drifting behind an ADR) but
+  differently directed: there, a rarely-exercised brief lagged behind a
+  newer decision; here, a cadence stated in a role's own definition (and
+  independently repeated in the roster catalogue) was apparently never
+  transcribed into the operational step list in the first place, so it
+  had no chance to lag — it simply never arrived. Weighed against this
+  project's discard precedents (`L-014`/`L-030`): those involved a
+  general principle already being *operationally correct* and merely
+  under-applied by a lapse in care; here, by contrast, the operational
+  document (`agent-led-workflow.md`) is **incomplete relative to its own
+  sibling documents**, a structural gap a future lead has no way to
+  notice without independently cross-reading three separate files, which
+  is exactly what happened for 21 real phases. Checked for a
+  merge/duplicate: grepped `inbox.md`/`promoted.md` for
+  "context-health-planner"/"stage boundary"/"stage boundaries" — no
+  existing candidate or promotion names this specific cross-document gap.
+  Not a duplicate of `L-036` (that entry is about a *milestone-scoped
+  agent brief drifting behind an ADR it should have incorporated*; this
+  one is about a *cadence stated in a role's own charter never being
+  transcribed into the step sequence that would actually invoke it* — no
+  ADR is involved on either side). **Outcome: promote.** Classification
+  `workflow` maps to `planning/agent-led-workflow.md`, matching this
+  project's own established practice (every prior `workflow`-classified
+  promotion in `promoted.md` landed there). Finalised by the lead — not
+  landed here, outside this role's write boundary for that file. Status
+  left as `candidate` until the lead actually applies the amendment
+  below and a `promoted.md` line is added, per `learning-lifecycle.md`
+  §4/§6.
+
+  **Recommended amendment — `planning/agent-led-workflow.md` step 4**
+  (draft, for the lead to review and land; not applied here — insert as
+  a new bullet immediately after the existing "Before a phase that leans
+  on CodeCompass context... dispatch `context-health-planner`..."
+  bullet):
+
+  > **Also dispatch `context-health-planner` at every stage boundary**
+  > (Stage C→D, the Stage E-skipped transition into Stage F, Stage F→G,
+  > and any future boundary `planning/v1-redefinition/roadmap.md`'s own
+  > stage grouping defines) — not only immediately before a phase that
+  > leans on CodeCompass context. This closes a real gap between the
+  > role's own charter (`.claude/agents/context-health-planner.md`'s
+  > frontmatter, and `agent-led-development.md` §2.9, both already state
+  > "stage boundaries" as part of this role's cadence) and this step's
+  > own prior text, which named only the context-leaning-phase trigger —
+  > the cadence existed in name, in two documents, but was never
+  > operationalized here. Confirmed necessary at Phase 67 (`L-041`):
+  > `planning/context-health.md`/`context-use-log.md` went 21 phases
+  > (46-66), spanning at least three real stage boundaries, without an
+  > update, because nothing in this step ever invoked the cadence the
+  > role's own definition already promised. A stage boundary with no
+  > material change since the last assessment is a valid dispatch
+  > outcome too — an explicit one-line "no action — nothing changed
+  > since the last assessment" entry in `planning/context-health.md`'s
+  > own History section is sufficient; this bullet does not require a
+  > full re-assessment report every single time, only that the check
+  > actually happens.
+
+  Revisit toward a mechanical check (e.g. `check_user_docs.py` flagging
+  `context-health.md`'s own last-entry date against
+  `planning/v1-redefinition/roadmap.md`'s current stage) only if this
+  prose trigger proves insufficient at a future stage boundary.
+
 ### L-040 — a phase's own final closeout commits (ROADMAP.md/CONTEXT.md status bumps) can reintroduce domain-corpus staleness after the freshness reconciliation already ran and passed
 
 - **origin:** Phase 66's own final independent `release-phase-auditor`
@@ -48,10 +350,83 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   "after this phase's own final closeout commit," a distinct point in
   the sequence from all three).
 - **classification:** workflow
-- **status:** candidate
+- **status:** promoted
 - **recurrence:**
-- **promoted_to:**
+- **promoted_to:** `planning/v1-redefinition/development-methodology.md`
+  "Domain-corpus freshness and reconciliation" (new checkpoint 4) +
+  `.claude/agents/release-phase-auditor.md` checklist (new item 9)
+- **curation (this triage, 2026-09-24, knowledge-curator):** provenance
+  accepted — all required fields present. This entry was filed by the
+  lead directly from an auditor's own finding, not yet independently
+  reviewed by `knowledge-curator` before this pass — reviewed here on
+  its own merits rather than deferred, per this dispatch's own explicit
+  instruction. Independently re-read
+  `planning/v1-redefinition/development-methodology.md`'s "Domain-corpus
+  freshness and reconciliation" section (lines 367-407) in full and
+  confirmed the entry's own account of it is accurate: exactly three
+  checkpoints are named (per-phase drift-audit flag, the phase's own
+  retro, Phase 65's own milestone reconciliation), and none of the three
+  is scoped to "after the phase's own truly final closeout commit" —
+  the first two operate mid-phase (before the final `ROADMAP.md`/
+  `CONTEXT.md` status-bump lands per `agent-led-workflow.md` steps 9/11),
+  and the third is a milestone-level pass, not a per-phase one. The
+  underlying mechanism gap is real and specific: a phase's own final
+  closeout commit (the one that flips status lines per
+  `agent-led-workflow.md` step 14, applying `L-034`/`L-038`'s own
+  lesson) can itself add prose to `CONTEXT.md` — and nothing re-runs the
+  domain-staleness check against that specific, last commit. This is the
+  same general shape as `L-034` (a real gap in *when*, precisely, a
+  check happens relative to the sequence's own final commits) rather
+  than a new failure mode. Checked for a merge/duplicate: not a
+  duplicate of `L-034` (that entry is about `CONTEXT.md`/`ROADMAP.md`/a
+  plan file's Status line disagreeing with each other after
+  implementation; this one is about a domain-corpus-staleness term being
+  *reintroduced* by the closeout commit's own new prose, a content
+  check, not a status-line-agreement check) or of the three checkpoints
+  already named in `development-methodology.md` (confirmed distinct
+  above). Weighed severity: low in this specific instance (the auditor's
+  own account judges the reintroduced match non-substantive — a
+  self-referential filename, not a live use of "connector" as a
+  research-candidate term) but the *mechanism* gap is real, cheap to
+  close, and would not necessarily be caught non-substantively next
+  time. **Outcome: promote.** Classification `workflow` maps to
+  `planning/v1-redefinition/development-methodology.md`'s own
+  "Domain-corpus freshness and reconciliation" section (a fourth,
+  explicit checkpoint) — the more precise destination than
+  `agent-led-workflow.md` itself, since the three existing checkpoints
+  this one extends already live there, not in the generic 14-step
+  document. Finalised by the lead — not landed here, outside this
+  role's write boundary for that file. Status left as `candidate` until
+  the lead actually applies the amendment below and a `promoted.md` line
+  is added, per `learning-lifecycle.md` §4/§6.
 
+  **Recommended amendment — `planning/v1-redefinition/development-methodology.md`'s
+  "Domain-corpus freshness and reconciliation" section** (draft, for the
+  lead to review and land; not applied here — insert as a fourth
+  numbered checkpoint, after the existing "3. Knowledge reconciliation —
+  Phase 65" item):
+
+  > 4. **Final closeout re-check** (`agent-led-workflow.md` step 13,
+  >    `release-phase-auditor`'s own final DoD pass — unchanged
+  >    mechanism, widened scope): before treating a phase's own final
+  >    `ROADMAP.md`/`CONTEXT.md` status-bump commit (step 14) as closing
+  >    the phase, `release-phase-auditor`'s final pass re-runs the same
+  >    domain-staleness term check checkpoint (1) already uses, against
+  >    the *full* current repository state — including any reconciliation
+  >    prose already staged for that closeout commit — not only the
+  >    pre-closeout diff checkpoint (1) covered mid-phase. Confirmed
+  >    necessary at Phase 66 (`L-040`): a closeout commit's own new
+  >    `CONTEXT.md` sentence reintroduced a domain-corpus staleness term
+  >    after the mid-phase reconciliation had already run clean; only the
+  >    auditor's own independent, incidental re-check caught it.
+
+  Also worth a one-line cross-reference in
+  `.claude/agents/release-phase-auditor.md`'s own checklist, so the
+  auditor's brief names this explicitly rather than relying on it being
+  caught incidentally, as it was at Phase 66. Revisit toward a mechanical
+  check (a `check_user_docs.py` domain-term grep run specifically against
+  the closeout commit's own diff) only if a future instance is
+  substantive rather than a harmless self-referential mention.
 
 ### L-039 — a lead's own dispatch prompt must never suggest an exception to a target agent's own hard, unconditional write-boundary rule, even a plausible-looking one
 
