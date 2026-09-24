@@ -120,6 +120,24 @@ a different record shape.
   `status` enum (`planning/phase-54c-evidence-knowledge-workflow.md`
   §2.2) — never a float, percentage, or informal "pretty confident"
   qualifier standing in for one.
+- **When a `docs/domain/` page illustratively cites another project
+  document's or test's *current* content** (e.g. "these N planning
+  documents all currently list term X as Y," or "test `T` is a real,
+  landed example of learning `L`"), use a citation form that survives
+  that document being restructured later, rather than asserting its
+  present-tense content: pin to the specific git revision/commit the
+  corpus item was approved at, or phrase the citation as historical
+  ("as of `<SHA>`, ..."). Prefer a stable identifier over a refactorable
+  implementation detail — e.g. cite `planning/learnings/promoted.md`'s
+  own append-only `L-NNN` line as the primary reference for a promoted
+  learning, with any current regression-test location as a secondary,
+  refresh-on-drift detail, not the primary anchor. Confirmed twice as a
+  real recurring fragility, not a hypothetical: Phase 66
+  (`planning/CONTEXT.md`'s rewrite broke `connector.md`'s citation list,
+  `EV-SKEP-003`) and Phase 71 (`planning/ROADMAP.md`'s restructure broke
+  the same list a second time, and a test deletion broke
+  `invariant.md`'s Example citation, `EV-SKEP-004`/`EV-SKEP-005`) —
+  `L-048`.
 
 ## Output
 
