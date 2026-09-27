@@ -91,6 +91,13 @@ content happened to be in its fixed window instead.
    The needle-re-derivation-plus-fixed-window logic from step 1 was not
    deleted — it remains the fallback for any candidate without a chunk
    (a headerless source doc, or a match spanning more than one chunk).
+   Phase 73 widened step 1's own needle re-derivation for
+   `mentions_artifact` relationships to also try the target's filename
+   and filename stem, not only its `name` field (`relation_enrichment.
+   _relation_needles`, closing a gap where a headerless source doc citing
+   a target only by filename would have fallen back to the fixed-window
+   guess above unnecessarily) — the fixed-window fallback logic itself is
+   unchanged, only which strings are tried before falling back to it.
 
 Both steps are described in present tense as current behavior in
 [`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md)'s
