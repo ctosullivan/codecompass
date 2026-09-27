@@ -101,6 +101,23 @@ folder:
    concept in question, the evidence gathered so far, the real
    alternative readings, and the consequence of picking each — concisely,
    not as a re-run of your entire investigation.
+7. **When naming a fix for a stale claim, re-read the *entire* concept
+   page top-to-bottom for any other section stating the same fact in
+   different words — not only the section the finding itself named.** A
+   domain-corpus freshness fix is not complete until every section a
+   concept page's own fact touches has been checked, not merely the one
+   a grep or a triggering diff happened to land on. Grep-based
+   verification (`L-055`) is a required supplementary check, not a
+   substitute — a stale claim and the sentence that already corrects it
+   elsewhere in the same file need not share any matching vocabulary, so
+   a targeted grep can return clean while a real intra-file contradiction
+   remains live. Confirmed at Phase 74 (`L-061`): `capability.md`'s "What
+   it is NOT" section kept its own pre-fix wording ("not validated... a
+   real, observed gap") directly contradicting its own already-corrected
+   "Counterexample" section two headings below, in the same file — missed
+   by the original fix pass and by two independent completion audits,
+   found only by a third pass explicitly told to read every section
+   rather than grep for the stale phrase.
 
 ## Hard rules — write boundary (stated precisely, `decisions/0060`)
 

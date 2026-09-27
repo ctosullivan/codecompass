@@ -64,7 +64,18 @@ without fixing anything — that a phase is actually done.
    (`L-040`): a closeout commit's own new `CONTEXT.md` sentence
    reintroduced a domain-corpus staleness term after the mid-phase
    reconciliation had already run clean — only this final, independent
-   re-check catches that specific timing gap.
+   re-check catches that specific timing gap. **For this specific
+   check, default to a full top-to-bottom read of every `docs/domain/`
+   concept page the phase touched, with a corpus-wide grep sweep as a
+   supplementary, not sufficient-on-its-own, cross-check** — a targeted
+   grep for a retired term or superseded phrase cannot catch an
+   intra-file contradiction stated in genuinely different words.
+   Confirmed at Phase 74 (`L-061`): two prior passes (one PASS, one
+   FAIL on an unrelated finding) both used grep-based verification and
+   both missed `capability.md`'s own "What it is NOT" section
+   contradicting its own already-corrected "Counterexample" section two
+   headings below in the same file — found only once a pass was
+   explicitly scoped to read every section of every touched page.
 
 ## Hard rules
 

@@ -53,14 +53,178 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   warning against exactly this hand-patching, attached to a different
   step). Full reconstruction: `planning/retros/_root-cause-closeout-defect.md`.
 - **classification:** workflow
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** meta-recurrence of `L-048`→`L-051` and `L-055`→`L-058`'s
   own shape (a fix scoped correctly to the one location/role first
   named, never checked against every sibling location/role the
   identical pattern could recur in) — `L-056` fixed `docs-reconstructor`'s
   missing-report-path gap one phase before this same gap was found,
   unfixed, in `release-phase-auditor`
-- **promoted_to:**
+- **promoted_to:** `scripts/check_user_docs.py::check_done_phases_have_audit_report`
+  + `check_context_not_stale_about_pending_audit` (+ matching
+  `tests/test_check_user_docs.py` cases) and
+  `.claude/agents/release-phase-auditor.md` "Output" (now names its
+  required `planning/retros/_audit-phase-N.md` path explicitly, closing
+  the identical gap `L-056` had already fixed in `docs-reconstructor.md`)
+  and `planning/agent-led-workflow.md` steps 10/14 (step 10 now names
+  self-hand-patching as the confirmed failure mode and cross-references
+  the mechanical checks; step 14 now states a post-verdict substantive
+  fix voids the verdict and requires re-audit before the `done`-flip) @
+  `9a14753`; `CLAUDE.md` §5 reordered so "`ROADMAP.md` marks the phase
+  `done`" is stated as the terminal, audit-gated action rather than one
+  item in a flat list (diff presented to and approved by the user per
+  §0) @ `f1ddc4c`.
+- **curation (knowledge-curator, 2026-09-27).** **Outcome: promote —
+  confirmed already-landed, and now independently validated by real,
+  repeated use.** Verified directly, not merely trusted from this
+  candidate's own text:
+  1. **`planning/retros/_audit-phase-71.md`, `_audit-phase-72.md`,
+     `_audit-phase-73.md`, `_audit-phase-74.md` all exist and contain
+     real, substantive verdicts** (PASS; PASS; PASS WITH NON-BLOCKING
+     OBSERVATIONS; PASS WITH NON-BLOCKING OBSERVATIONS respectively),
+     each re-running the phase's own plan-file verification section,
+     re-executing `pytest`/`ruff`/`check_user_docs.py --strict`/
+     `check_knowledge_base.py`, independently re-reading every drift-audit
+     and domain-skeptic finding against current file content (not commit
+     messages), and checking protected-file drift and changed-file scope
+     — none is a stub.
+  2. **The described sequence genuinely happened**, corroborated across
+     the four audit reports, `planning/retros/phase-74-provenance-hardening.md`,
+     and `planning/CONTEXT.md`'s own current text (which states this
+     reconciliation was performed by a genuinely dispatched
+     `roadmap-context-curator`, not self-served): Phase 74 alone went
+     through three real, independently-dispatched `release-phase-auditor`
+     rounds (first pass → `da1b56b`'s fix; second pass FAIL → `157957b`'s
+     fixes, including a stale `evidence.md` claim `domain-skeptic`'s own
+     scoped dispatch had missed; third pass FAIL→PASS-WITH-OBSERVATIONS →
+     `f667da4`'s fix of `capability.md`'s intra-file contradiction), and
+     the git-status snapshot at the top of this session
+     (`f9e1a4a` "final reconciliation", `ae8806a` "finalize retros against
+     fully-audited final state", `f667da4`, `157957b`, `60c175c`) matches
+     this account exactly. (I do not have Bash and could not run `git log`
+     myself to re-derive this independently from raw history — I
+     cross-checked the claimed commit SHAs against every persisted audit
+     report's own "Audited state" section, `planning/CONTEXT.md`'s current
+     text, and the session's own git-status snapshot instead, and found no
+     inconsistency. **Lead: run `git log --oneline f1ddc4c..f9e1a4a` to
+     confirm directly.**)
+  3. **The mechanical checks are correctly registered**: both
+     `check_done_phases_have_audit_report` and
+     `check_context_not_stale_about_pending_audit` are present in
+     `scripts/check_user_docs.py`'s `CHECKS` list (the list `--strict`
+     iterates), each with a docstring explicitly citing `L-060` and the
+     defect it closes. **Lead: run
+     `.venv/bin/python scripts/check_user_docs.py --strict` and
+     `.venv/bin/python -m pytest -q tests/test_check_user_docs.py` to
+     confirm currently clean/passing against HEAD** (I traced the check
+     logic by hand rather than executing it).
+  4. **The real-world exercise validates the original diagnosis and adds
+     no evidence of under-scoping of `L-060` itself.** All three defects
+     `L-060` named (premature `done`-flip, unpersisted verdicts, a
+     post-verdict fix never re-audited) are exactly what the four fresh
+     audits were dispatched to catch, and they did: Phase 71's audit is
+     the *first* completion audit that phase ever received (confirming
+     Finding 4's severity was real, not overstated); Phase 73/74's
+     multi-round cycle is precisely the "post-verdict fix voids the
+     verdict, re-audit before done-flip" rule (`agent-led-workflow.md`
+     step 14) being exercised for real, repeatedly, and catching genuine,
+     additional, previously-missed staleness each round. Nothing in this
+     exercise suggests the diagnosis was wrong or the fix insufficient
+     for the failure class it targets.
+  5. **One genuinely new sub-pattern surfaced, out of `L-060`'s own
+     scope** — see `L-061` below, filed as its own candidate rather than
+     folded in here, since it concerns domain-corpus verification
+     *methodology* (grep vs. full top-to-bottom read), not the
+     phase-completion reconciliation-dispatch failure `L-060` itself
+     names. `L-060`'s own diagnosis and fix need no amendment for it.
+
+### L-061 — a domain-corpus concept page's own intra-file contradiction can survive a targeted fix, a post-fix sibling-instance grep (`L-055`/`L-058`), and two independent completion audits, because grep cannot match a stale sentence against its own correct replacement when the two don't share vocabulary — only a full top-to-bottom read of every section catches it
+
+- **origin:** Phase 74 (Priority B provenance hardening) retro's own
+  "Lessons learnt" section, explicitly left for `knowledge-curator`'s
+  independent assessment; corroborated directly against
+  `planning/retros/_audit-phase-74.md` (the third of three
+  `release-phase-auditor` passes for this phase)
+- **date:** 2026-09-27
+- **project_revision:** `f667da4` (the fix); `_audit-phase-74.md` (the
+  finding and its confirmed closure)
+- **observation:** `docs/domain/concepts/capability.md`'s "What it is
+  NOT" section kept pre-fix wording ("not validated... a real, observed
+  gap") directly contradicting its own already-corrected
+  "Counterexample" section two headings below, in the same file. This
+  survived: (a) `domain-skeptic`'s original Phase 74 fix pass (which
+  fixed the Counterexample section but not the sibling "What it is NOT"
+  section in the same file); (b) the `evidence.md` fix pass that
+  followed a first `release-phase-auditor` FAIL; (c) two full
+  `release-phase-auditor` completion-audit passes (first PASS-with-one-
+  finding, second FAIL on an unrelated stale citation). It was found
+  only by a *third* audit pass, and only because that pass was
+  explicitly instructed to do a full top-to-bottom read of every section
+  of every touched `docs/domain/concepts/*.md` file rather than rely on
+  a keyword/phrase grep — a plain grep for the stale phrase structurally
+  could not have matched the correct section's own differently-worded
+  text ("now validated against its own closed set" vs. "not
+  validated... observed gap" share no matching substring a targeted grep
+  would key on). This is a real, evidenced *limitation* of the
+  post-fix-completeness-grep discipline `L-055`→`L-058` already
+  established (which catches sibling-file/sibling-location instances of
+  the *same* retired phrase, but not an intra-file contradiction stated
+  in genuinely different words) — not a case those two learnings already
+  cover.
+- **evidence:** `planning/retros/phase-74-provenance-hardening.md`
+  "Lessons learnt" (second item, verbatim: "a domain-corpus freshness fix
+  always requires a full top-to-bottom read of every section of every
+  touched concept page, not a targeted section read or a keyword grep,
+  before the finding can be considered closed"); `_audit-phase-74.md` §1
+  ("`capability.md`'s intra-file contradiction — confirmed fixed") and §2
+  ("Full independent top-to-bottom re-read of all six `docs/domain/`
+  files this phase touched... per the dispatch's explicit instruction...
+  not grep alone, since grep already missed the flagged contradiction
+  once"); `git show --stat f667da4` (one file, 7 lines — the minimal,
+  precisely-scoped fix).
+- **classification:** scoped-rule
+- **status:** promoted
+- **recurrence:** first occurrence of this specific sub-pattern
+  (grep-survives-but-full-read-catches); it is the *third* occurrence
+  this session of the broader `L-051`/`L-055`/`L-058` shape
+  ("fix scoped correctly to the locations first named, never checked
+  against every sibling the pattern could recur in") within this single
+  phase's own domain-corpus remediation alone, per the retro's own count.
+- **promoted_to:** `.claude/agents/domain-skeptic.md` step 7 and
+  `.claude/agents/release-phase-auditor.md` checklist item 9 (landed by
+  the lead, following this candidate's own drafted text)
+- **curation (knowledge-curator, 2026-09-27).** **Outcome: promote —
+  landed.** This is specific, evidenced by a real 3-round audit
+  trail (not a hypothetical), and directly actionable — not "retain,"
+  since the exact fix is already implied by the evidence and does not
+  need further recurrence to justify acting on it now, and not "merge
+  into `L-060`," since it is a distinct failure mode (domain-corpus
+  verification *methodology*, not the phase-completion
+  reconciliation-dispatch bypass `L-060` names) that would dilute both
+  candidates' own scope if combined. Recommended destination: a new hard
+  rule in **both** `.claude/agents/domain-skeptic.md` (author-side: after
+  fixing a flagged section of a concept page, re-read the *entire* file
+  top-to-bottom for any other section stating the same fact in different
+  words, not just the section the finding named) and
+  `.claude/agents/release-phase-auditor.md` (auditor-side: a
+  `docs/domain/` freshness re-check following any domain-corpus-touching
+  phase defaults to a full top-to-bottom read of every touched concept
+  page, with a corpus-wide grep sweep as a supplementary, not
+  sufficient-on-its-own, cross-check — matching exactly the method the
+  third Phase 74 audit pass used only because it was explicitly told to).
+  Draft rule text (for the lead to review and place):
+  > A domain-corpus freshness fix is not complete until every section of
+  > every concept page it touches (or that the fix logically affects) has
+  > been read top-to-bottom, not merely the section a finding named or a
+  > keyword/phrase grep matched. Grep-based verification is a required
+  > supplementary check, not a substitute — a stale claim and the
+  > sentence that already corrects it elsewhere in the same file need not
+  > share any matching vocabulary, so grep can return clean while a real
+  > intra-file contradiction remains live.
+  Does not extend `L-055`/`L-058` retroactively (their own grep-based
+  fixes remain correct and necessary for the sibling-location case they
+  target) — this is a narrower, additional requirement for the case grep
+  cannot reach.
 
 ### L-059 — a `docs-reconstructor` dispatch prompt naming files `docs-maintainer` already checked, as a courtesy, does not appear to have anchored/narrowed the audit's own search — no evidence the risk actually occurred this time
 
