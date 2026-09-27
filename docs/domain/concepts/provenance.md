@@ -10,7 +10,7 @@ status: APPROVED (2026-09-23, actual user/domain owner, subject to corrections a
 **never a record kind of its own** anywhere in this codebase. It is a
 **cross-cutting concern**, realized with a structurally different
 concrete shape in each of at least three independent mechanisms
-(`CL-EVID-008`, `EV-EVID-013`):
+(`CL-EVID-013`, superseding `CL-EVID-008`; `EV-EVID-013`):
 
 1. **Phase 54c's own records** carry a named, method-conditional set of
    provenance fields: `repository_revision`; `source_ref`/`doc_ref`/
@@ -49,8 +49,9 @@ concrete shape in each of at least three independent mechanisms
   two orthogonal properties every record with both fields keeps
   separate.
 - **Not itself evidenced by a formal Claim about "provenance" as a
-  unified system** — this page's own central Claim (`CL-EVID-008`) is
-  precisely that no such unification exists, not a description of one.
+  unified system** — this page's own central Claim (`CL-EVID-013`,
+  superseding `CL-EVID-008`) is precisely that no such unification
+  exists, not a description of one.
 
 ## Invariants
 
