@@ -38,8 +38,11 @@ always cites the `derivation` (`derivation.md`) that produced it.
   about a target project, vs. a file-based record of CodeCompass's own
   reasoning about a researched feature) from this record kind, sharing
   only the word. No resolution of this naming collision exists yet; it
-  is explicitly deferred to Stage E's own future Domain stage
-  (`CL-EVID-003`, `CL-EVID-009`).
+  is deferred to whichever future Priority B phase takes up this
+  candidate design's own Domain stage — the old "Stage E" phase-group
+  label this collision was originally deferred to is retired
+  (`decisions/0062`; `planning/pre-v1-disposition.md` §7's own
+  disposition table) (`CL-EVID-012`, `CL-EVID-011`).
 
 ## Invariants
 

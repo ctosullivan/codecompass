@@ -1,0 +1,51 @@
+id: DE-EVID-012
+kind: derivation
+claim: CL-EVID-012
+method: >
+  Companion revision to DE-EVID-011/CL-EVID-011, triggered by the same
+  `domain-skeptic` finding (planning/retros/
+  _domain-skeptic-review-phase-72.md, OBS-SKEP-007/EV-SKEP-006): that
+  report names CL-EVID-003 as echoing CL-EVID-009's same stale "Phase
+  57's own Stage E design sketch" framing, and identifies revising both
+  as context-researcher's own synthesis work, not a citation-list fix.
+
+  Re-read CL-EVID-003's own full statement directly rather than relying
+  on the domain-skeptic report's characterisation of it, to check
+  exactly which clause needed correction and which did not. Found the
+  "Stage E design sketch" phrase appears in exactly one place, in the
+  Claim's final paragraph distinguishing the file-based "Claim" record
+  from the graph-level candidate entity kind -- the rest of the
+  statement (the Claim-schema account: support/contradict lives only on
+  Claims, the status enum, the supersedes-never-crosses-kinds hard rule,
+  and the honest disclosure that contradicting_evidence/supersedes were
+  untested with real content) does not depend on the "Stage E" label at
+  all and needed no change.
+
+  One correction this Derivation itself had to catch mid-revision: the
+  original CL-EVID-003 statement asserted "every real Claim produced
+  under this model to date...has...supersedes: null." That sentence is
+  now literally false as of this same revision batch -- CL-EVID-011 and
+  this Claim (CL-EVID-012) are real Claims with non-null `supersedes`
+  values. Rather than silently leaving a newly-false sentence in a
+  Claim being revised for freshness anyway, the corrected statement
+  narrows the claim to "before Phase 72" for contradicting_evidence and
+  explicitly names CL-EVID-011/CL-EVID-012 as the first real exercise of
+  the supersedes mechanism -- itself still with the honest caveat that a
+  narrow, mechanical resolution-mechanism correction is a much weaker
+  exercise of the mechanism than a genuine substantive reversal would
+  be, so the "genuinely untested" disclosure is narrowed but not
+  discarded.
+
+  Cross-checked `decisions/0062` and `planning/pre-v1-disposition.md`
+  §7 directly (same reading as DE-EVID-011, not repeated in full here)
+  to confirm the re-homing target (Priority B) and that GATE DD remains
+  unresolved -- both apply identically to this Claim's revision.
+
+  Structural move, same as DE-EVID-011: a new Claim supersedes
+  CL-EVID-003 (Evidence unchanged plus EV-SKEP-006 added), and
+  CL-EVID-003's own status field is separately, mechanically updated to
+  `superseded` per §2.4 -- its original content is preserved, not
+  rewritten.
+inputs: [EV-EVID-002, EV-EVID-003, EV-EVID-004, EV-EVID-005, EV-EVID-006, EV-SKEP-006]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-27T00:00:00Z"

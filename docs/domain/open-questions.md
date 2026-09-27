@@ -64,22 +64,27 @@ silently, only marked resolved with a pointer to what resolved it
 
 ## Deferred to a future phase, already managed
 
-7. **The Stage E graph-level vs. file-based `Evidence`/`Observation`/
-   `Claim`/`Decision` naming collision** — Phase 57's own candidate
-   design for `context-graph.db`-level provenance entity kinds reuses
-   the exact names Phase 54c's file-based model already uses, for an
-   entirely different purpose (a queryable database row about another
+7. **The graph-level vs. file-based `Evidence`/`Observation`/`Claim`/
+   `Decision` naming collision** — a candidate design for
+   `context-graph.db`-level provenance entity kinds (originally sketched
+   as part of the redefined-v1 effort's own "Stage E," now re-homed to
+   Priority B, `decisions/0062`; `planning/pre-v1-disposition.md` §7)
+   reuses the exact names Phase 54c's file-based model already uses, for
+   an entirely different purpose (a queryable database row about another
    project's dependencies, vs. a file-based record of CodeCompass's own
    development-process reasoning). Already named and explicitly deferred
-   to Stage E's own future Domain stage in
-   `planning/v1-redefinition/roadmap.md`'s own Stage E entry — this
-   corpus re-states, not re-litigates, an already-managed deferral.
-   Whichever future phase builds Stage E must resolve this — either
-   picking genuinely distinct names for the graph-level concepts, or
-   explicitly justifying sharing the terms with a stated disambiguation
-   rule — not silently overload them a second time.
+   to whichever future Priority B phase takes up this candidate design's
+   own Domain stage — the collision itself is documented, unresolved,
+   and unaffected by the retirement of the old "Stage E" phase-group
+   label; only the label naming its future resolution vehicle changed.
+   Whichever future phase takes this up must resolve it — either picking
+   genuinely distinct names for the graph-level concepts, or explicitly
+   justifying sharing the terms with a stated disambiguation rule — not
+   silently overload them a second time. The original collision is
+   still documented at `planning/v1-redefinition/roadmap.md:1061-1087`
+   (historical, unedited).
    *(`evidence.md`, `observation.md`, `claim.md`, `decision.md`, each
-   own "What X is NOT" section; `CL-EVID-003`, `CL-EVID-009`)*
+   own "What X is NOT" section; `CL-EVID-012`, `CL-EVID-011`)*
 
 ## Documentation cross-reference gaps (not domain ambiguities)
 

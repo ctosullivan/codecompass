@@ -35,8 +35,10 @@ mechanically enforced).
   entity kind alongside `Evidence`/`Observation`/`Claim`, for a
   different purpose (provenance about other projects' dependencies) —
   the same naming collision documented on `claim.md`/`evidence.md`,
-  unresolved, deferred to Stage E's own future Domain stage
-  (`CL-EVID-009`).
+  unresolved, deferred to whichever future Priority B phase takes up
+  this candidate design's own Domain stage — the old "Stage E"
+  phase-group label is retired (`decisions/0062`;
+  `planning/pre-v1-disposition.md` §7) (`CL-EVID-011`).
 - **Not (as of this research) ever actually authored by an independent
   human reviewer in this project's own history** — see the
   counterexample below.

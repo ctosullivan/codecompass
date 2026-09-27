@@ -1,0 +1,113 @@
+id: EV-SKEP-006
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  This IS genuine staleness, same pattern as `EV-SKEP-003`/`EV-SKEP-004`
+  (`connector.md` at Phase 66/71): an unrelated planning-document
+  restructure -- here, Phase 72's `decisions/0062`, which explicitly
+  retires the "Stage E" phase-group label project-wide and reorganises
+  post-v1 work into Priority A-F -- has broken a specific interpretive
+  claim inside the domain corpus's own prose, with zero change to the
+  underlying domain meaning: the naming collision between Phase 54c's
+  file-based Evidence/Observation/Claim/Decision records and a possible
+  future graph-level entity-kind proposal is exactly as real, exactly
+  as evidenced, and exactly as unresolved as it was before Phase 72;
+  GATE DD remains explicitly open (`decisions/0062`'s own words: "GATE
+  DD is not resolved by this decision").
+  What is stale, precisely, is not the citation *pointer*
+  (`planning/v1-redefinition/roadmap.md:1061-1087` is unedited and the
+  file:line-range is still literally correct in every page that cites
+  it, per `OBS-SKEP-007`(a)) but the *resolution-mechanism gloss* three
+  places add on top of it: `claim.md:41`, `decision.md:38`, and
+  `open-questions.md` item 7 (lines 74-80) each assert the collision is
+  "deferred to Stage E's own future Domain stage." `decisions/0062`'s
+  own "Decision" section says plainly that "the old Stage E phase
+  grouping... is superseded as a phase group," and
+  `conditional-generalisation.md`'s own dated 2026-09-27 amendment (the
+  very document this candidate design lives in) confirms it in its own
+  voice: "the old 'Stage E' phase-group framing... that would have
+  resolved it is superseded -- post-v1 work is no longer organised into
+  lettered stages at all." There is no longer a "Stage E" for a future
+  "Domain stage" to belong to. `pre-v1-disposition.md` §7's own
+  disposition table re-homes exactly this candidate design (§2.4,
+  "provenance/evidence") to **Priority B** specifically, not to an
+  unnamed future stage.
+  A fourth place, `relationship-edge.md`'s "What this is NOT" item 1,
+  has the same defect in a different context: it names "a Stage C
+  mechanical-detection decision or a Stage E graph-capability decision"
+  as one of the two live gate types through which an agent-suggested
+  relationship becomes a real edge -- "Stage E" is asserted there as a
+  currently-live decision-gate name, which `decisions/0062` also
+  retires.
+  The remaining four pages this audit named (`evidence.md`,
+  `derivation.md`, `provenance.md`, `observation.md`) are **not**
+  stale: their mentions of "Phase 57" / "Stage E" only label where a
+  candidate design historically originated or is currently filed
+  (`conditional-generalisation.md` §2.2-§2.4), never assert a future
+  resolution mechanism by that name, and their substantive claims
+  (the entity-kind candidate is "not yet built or funded," Derivation
+  has no graph-level naming-collision counterpart, provenance
+  generalisation remains "conditional on GATE DD") are all still true
+  post-Phase-72. The drift audit's framing that all seven pages'
+  References blocks cite `roadmap.md:1061-1087` also overstates
+  uniformity -- only three do verbatim, one cites a narrower range,
+  three don't cite that line range in References at all (`OBS-SKEP-007`(e)).
+
+  **The originating record is a Claim, not merely corpus prose**:
+  `CL-EVID-009.yaml` (status `supported`) itself states "the roadmap
+  itself already states the correct resolution path: Stage E's own
+  future Domain stage must either pick genuinely distinct names or
+  explicitly justify sharing the terms" -- this Claim's own account of
+  the resolution mechanism is what has gone stale, and `claim.md`/
+  `decision.md`/`open-questions.md` inherit the stale phrase directly
+  from it. Revising `CL-EVID-009` (and `CL-EVID-003`, which echoes the
+  same "Phase 57's own Stage E design sketch" framing) is
+  `context-researcher`'s own synthesis work -- a Claim revision, not a
+  citation-list fix a mechanical edit could make -- and is out of this
+  role's write boundary (`decisions/0060`; this role never writes a
+  Claim or Derivation).
+
+  **Exact fix needed, for whoever holds write access to `docs/domain/`
+  and for `context-researcher` on the Claim records**:
+  1. `CL-EVID-009.yaml` and `CL-EVID-003.yaml`: `context-researcher`
+     should revise the "Stage E's own future Domain stage" language to
+     reflect `decisions/0062`/`pre-v1-disposition.md` §7 -- e.g. "the
+     candidate design's own future Domain stage, whichever Priority
+     phase (`pre-v1-disposition.md` §7 currently re-homes this
+     specifically to Priority B) eventually takes it up" -- a new
+     Derivation documenting why the claim needed revision, not a
+     silent edit.
+  2. `docs/domain/concepts/claim.md:41` and `decision.md:38`: replace
+     "deferred to Stage E's own future Domain stage" with wording that
+     doesn't name a retired phase-group, e.g. "deferred to whichever
+     future Priority B phase takes up this candidate design's own
+     Domain stage (`decisions/0062`; `pre-v1-disposition.md` §7's own
+     disposition table)."
+  3. `docs/domain/open-questions.md` item 7 (lines 74-80): same fix,
+     replacing "Already named and explicitly deferred to Stage E's own
+     future Domain stage in `planning/v1-redefinition/roadmap.md`'s
+     own Stage E entry" with a version naming `decisions/0062` and
+     `pre-v1-disposition.md` §7's Priority B re-homing instead, while
+     still citing `roadmap.md:1061-1087` as the (unedited, still
+     accurate) historical origin of the collision itself.
+  4. `docs/domain/concepts/relationship-edge.md`'s "What this is NOT"
+     item 1: replace "a Stage C mechanical-detection decision or a
+     Stage E graph-capability decision" with "a Stage C
+     mechanical-detection decision or a future Priority A/B
+     graph-capability decision (`decisions/0062` retires the old
+     Stage E phase-group label; the same gated-ADR promotion mechanism
+     `decisions/0051` describes still applies)."
+  No fix is needed for `evidence.md`, `derivation.md`, `provenance.md`,
+  or `observation.md` -- their "Phase 57"/"Stage E" mentions are
+  accurate historical labels, not resolution-mechanism claims, and
+  none of their substantive content changed truth value.
+  This is not a genuine domain ambiguity requiring escalation to the
+  user: it is a mechanical citation/framing correction, exactly the
+  same shape as `EV-SKEP-003`/`EV-SKEP-004`, resolved here by direct
+  source-reading rather than escalated.
+observations: [OBS-SKEP-007]
+source_ref: null
+doc_ref: "docs/domain/concepts/claim.md:41; docs/domain/concepts/decision.md:38; docs/domain/open-questions.md:67-82; docs/domain/concepts/relationship-edge.md:34-45; decisions/0062-post-v1-priorities-are-task-context-completeness-first.md; planning/v1-redefinition/conditional-generalisation.md:1-45; planning/pre-v1-disposition.md §7; planning/knowledge/codecompass-domain/CL-EVID-009.yaml, CL-EVID-003.yaml"
+test_ref: null
+repository_revision: "c0c0d15319add8eceea535dadae566378e9896a9"
+status: current

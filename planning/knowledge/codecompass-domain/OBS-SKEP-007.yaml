@@ -1,0 +1,97 @@
+id: OBS-SKEP-007
+kind: observation
+method: executable
+what_was_done: >
+  Phase 72's own per-phase drift audit flagged seven `docs/domain/
+  concepts/*.md` pages (`evidence.md`, `claim.md`, `decision.md`,
+  `observation.md`, `derivation.md`, `provenance.md`,
+  `relationship-edge.md`) plus `docs/domain/open-questions.md` item 7 as
+  a possible staleness candidate: their citation of
+  `planning/v1-redefinition/roadmap.md:1061-1087` and its "deferred to
+  Stage E's own future Domain stage" framing, now that
+  `decisions/0062` (Phase 72) reorganises post-v1 work into Priority
+  A-F rather than lettered stages. Checked directly rather than taking
+  the audit's own framing at face value: (1) read
+  `planning/v1-redefinition/roadmap.md:1030-1110` (the Stage E section
+  itself) to confirm it was not edited by Phase 72 and still reads
+  exactly as it did before; (2) read `decisions/0062` in full,
+  specifically its "Decision" and "Consequences" sections; (3) read
+  `planning/ROADMAP.md`'s "Post-v1 priorities (A-F)" section (lines
+  44-79); (4) read `planning/v1-redefinition/conditional-
+  generalisation.md:1-45`, specifically its own dated 2026-09-27
+  amendment note; (5) read `planning/pre-v1-disposition.md` section 7
+  ("GATE DD / Stage E (Phases 56-59)") in full, including its
+  §2.1-§2.6 disposition table; (6) grepped every one of the seven
+  concept pages plus `open-questions.md` for "Stage E" and read each
+  hit's surrounding paragraph and each page's own `## References`
+  block in full, rather than only the lines the audit named; (7) read
+  the three source knowledge records the "Stage E's own future Domain
+  stage" language traces back to: `CL-EVID-003.yaml`, `CL-EVID-009.yaml`,
+  `DE-EVID-009.yaml`.
+tool: grep (GNU grep); Read
+tool_version: "system grep on this environment"
+repository_revision: "c0c0d15319add8eceea535dadae566378e9896a9"
+location: "docs/domain/concepts/{evidence,claim,decision,observation,derivation,provenance,relationship-edge}.md; docs/domain/open-questions.md; planning/v1-redefinition/roadmap.md:1030-1110; decisions/0062-post-v1-priorities-are-task-context-completeness-first.md; planning/v1-redefinition/conditional-generalisation.md:1-45; planning/pre-v1-disposition.md §7; planning/knowledge/codecompass-domain/CL-EVID-003.yaml, CL-EVID-009.yaml, DE-EVID-009.yaml"
+raw_result: >
+  (a) `planning/v1-redefinition/roadmap.md:1061-1087` is byte-identical
+  to its pre-Phase-72 content -- the naming-collision paragraph and the
+  Phase 56-59 CONDITIONAL section headings are unchanged. The citation
+  *pointer* (file:line-range) in every page that uses it remains
+  literally accurate.
+  (b) `decisions/0062`'s own "Decision" section states explicitly:
+  "The old Stage E phase grouping (Phases 56-59...) is superseded as a
+  phase group -- its candidate designs (`conditional-generalisation.md`
+  §2.1-2.4) are not discarded, they are re-homed under whichever
+  Priority above actually needs them, decided when that Priority's own
+  phase is planned, not pre-committed here." GATE DD itself is
+  explicitly "not resolved by this decision."
+  (c) `conditional-generalisation.md` -- the document the whole
+  candidate-design cluster lives in -- already carries its own dated
+  2026-09-27 (Phase 72) amendment saying so in its own voice: "the old
+  'Stage E' phase-group framing... that would have resolved it is
+  superseded -- post-v1 work is no longer organised into lettered
+  stages at all," and names `planning/pre-v1-disposition.md` §7 as
+  re-homing each of §2.1-2.6.
+  (d) `pre-v1-disposition.md` §7's own table re-homes §2.4
+  ("provenance/evidence" -- the exact candidate design that names the
+  colliding `Evidence`/`Observation`/`Claim`/`Decision` graph-level
+  entity kinds) specifically to **Priority B** ("directly the
+  productisation this ADR names"), not to an unspecified future
+  Priority.
+  (e) Of the seven named concept pages, only three
+  (`evidence.md`, `claim.md`, `decision.md`) actually cite
+  `roadmap.md:1061-1087` verbatim in their own `## References` block;
+  `provenance.md` cites the narrower `:1081-1087`; `observation.md`,
+  `derivation.md`, and `relationship-edge.md` do not cite that line
+  range in References at all -- they only mention "Stage E" in body
+  text (Relationships / "What this is NOT" sections). The drift audit's
+  framing that all seven pages' References blocks cite this line range
+  is not accurate as stated.
+  (f) Of the body-text mentions across all seven pages plus
+  `open-questions.md`, exactly three places assert a *future
+  resolution mechanism* using the words "Stage E's own future Domain
+  stage": `claim.md:41`, `decision.md:38`, and `open-questions.md`
+  item 7 (lines 74-75, "explicitly deferred to Stage E's own future
+  Domain stage in `planning/v1-redefinition/roadmap.md`'s own Stage E
+  entry"). A fourth place, `relationship-edge.md`'s "What this is NOT"
+  item 1, names "a Stage C mechanical-detection decision or a Stage E
+  graph-capability decision" as one of the two live gate types through
+  which an agent-suggested relationship could become a real edge.
+  (g) The remaining mentions (`evidence.md` lines 100-106,
+  `derivation.md` lines 92-97, `provenance.md` lines 95-102,
+  `observation.md` lines 42-45) only use "Phase 57"/"Stage E" as a
+  historical label for *where a candidate design already lives or
+  originated* ("Phase 57's own Stage E design sketch," "the collision
+  already named in ... roadmap.md's Stage E section") and make no claim
+  about what mechanism resolves it in the future; none of these four
+  pages' substantive claims changed truth value.
+  (h) `CL-EVID-009.yaml` (status: supported) is the original source of
+  the "Stage E's own future Domain stage" language: its own
+  `statement` field reads "The roadmap itself already states the
+  correct resolution path: Stage E's own future Domain stage must
+  either pick genuinely distinct names or explicitly justify sharing
+  the terms with a stated disambiguation rule." `CL-EVID-003.yaml`
+  echoes the same framing ("Phase 57's own Stage E design sketch").
+timestamp: "2026-09-27T00:00:00Z"
+performed_by: "domain-skeptic agent dispatch"
+status: recorded

@@ -1,0 +1,58 @@
+id: DE-EVID-011
+kind: derivation
+claim: CL-EVID-011
+method: >
+  Triggered by `domain-skeptic`'s Phase 72 freshness-reconciliation pass
+  (planning/retros/_domain-skeptic-review-phase-72.md,
+  OBS-SKEP-007/EV-SKEP-006), which is read in full first: it found that
+  CL-EVID-009's own statement field -- "Stage E's own future Domain
+  stage must either pick genuinely distinct names or explicitly justify
+  sharing the terms" -- had gone stale in its account of the resolution
+  *mechanism*, not its substantive content, once `decisions/0062`
+  retired the "Stage E" phase-group label project-wide. Per that
+  role's own write boundary it named the exact fix but did not apply
+  it, deferring the Claim revision to context-researcher
+  (decisions/0060).
+
+  Independently re-checked rather than trusting the domain-skeptic
+  report's paraphrase: read `decisions/0062` in full (Decision,
+  Alternatives, Consequences), confirming its own words "GATE DD is not
+  resolved by this decision" and "the old Stage E phase grouping...is
+  superseded as a phase group -- its candidate designs...are re-homed
+  under whichever Priority above actually needs them." Read
+  `planning/pre-v1-disposition.md` §7 directly and confirmed its
+  disposition table re-homes exactly §2.4 ("provenance/evidence" -- the
+  candidate design naming the colliding entity kinds) to Priority B
+  specifically, not to an unspecified future stage. Read
+  `planning/v1-redefinition/conditional-generalisation.md:1-45` and
+  confirmed its own dated 2026-09-27 (Phase 72) amendment note says the
+  same thing in the document's own voice. Read
+  `planning/v1-redefinition/roadmap.md:1030-1110` (the original Stage E
+  section CL-EVID-009 cites) and confirmed it is byte-identical to its
+  pre-Phase-72 content -- Phase 72 did not edit the source paragraph the
+  collision was originally found in, so the underlying evidence
+  (EV-EVID-006) needs no reinterpretation, only the Claim's own gloss on
+  top of it does.
+
+  What was initially unclear and had to be checked rather than assumed:
+  whether GATE DD itself had been resolved or narrowed by `decisions/
+  0062` (which would have been a substantive change to the collision,
+  not merely a naming one). Confirmed it had not -- `decisions/0062`
+  states this explicitly in its own text, so this revision is scoped
+  strictly to the resolution-mechanism name, not to the collision's
+  reality, evidence, or open status.
+
+  Structural move per phase-54c-evidence-knowledge-workflow.md §2.4/
+  §5.2: this is a factual correction to a Claim's account of an
+  external mechanism (the roadmap's own phase-group organisation), not
+  a re-reading of the original Evidence and not a Decision -- so a new
+  Claim (this one) supersedes CL-EVID-009, backed by the existing
+  Evidence (EV-EVID-006, unchanged) plus the new Evidence
+  (EV-SKEP-006, documenting `decisions/0062`'s retirement of the
+  phase-group label and `pre-v1-disposition.md` §7's re-homing). Per
+  §2.4, CL-EVID-009's own content is left untouched; only its `status`
+  field is mechanically updated to `superseded` in a separate edit, not
+  as part of this Derivation's own reasoning.
+inputs: [EV-EVID-006, EV-SKEP-006]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-27T00:00:00Z"

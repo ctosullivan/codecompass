@@ -1,0 +1,57 @@
+id: CL-EVID-011
+kind: claim
+statement: >
+  A real, already-named naming collision exists, and is deliberately
+  unresolved, between Phase 54c's file-based Evidence/Observation/
+  Claim/Decision records (planning/knowledge/<slug>/, CodeCompass's own
+  development-process knowledge, the subject of this whole cluster) and
+  a candidate GRAPH-LEVEL (context-graph.db) entity-kind proposal using
+  the identical names to represent provenance about OTHER PROJECTS'
+  technical dependencies (originally sketched in v1-redefinition/
+  roadmap.md's old "Stage E" section, §2.4 "provenance/evidence" of
+  planning/v1-redefinition/conditional-generalisation.md, conditional on
+  GATE DD). These are genuinely different concepts sharing four words:
+  the file-based kinds are narrative YAML records about CodeCompass's
+  own reasoning process, written by context-researcher/documentation-
+  agent/knowledge-curator, never queryable via `codecompass query`; the
+  graph-level candidate kinds (not yet built, not funded, conditional on
+  a gate that has not been decided) would be structured, queryable
+  database rows about a target project's own dependency provenance.
+  This Claim documents the collision as real, evidenced, and open -- it
+  is this cluster's single most important open question and is carried
+  forward to docs/domain/open-questions.md verbatim, not silently
+  resolved by naming a preference here.
+
+  This Claim supersedes CL-EVID-009 for exactly one reason, narrower
+  than the substantive collision itself: CL-EVID-009's own statement
+  named the future resolution vehicle as "Stage E's own future Domain
+  stage," and `decisions/0062` (Phase 72) explicitly retires the old
+  "Stage E" phase-group label project-wide -- post-v1 work is now
+  organised into Priority A-F, not lettered stages
+  (`planning/ROADMAP.md`'s "Post-v1 priorities (A-F)" section). The
+  candidate design this collision concerns (`conditional-
+  generalisation.md` §2.4, "provenance/evidence") is re-homed by
+  `planning/pre-v1-disposition.md` §7's own disposition table
+  specifically to **Priority B** -- not to an unnamed future stage, and
+  not resolved. GATE DD itself remains exactly as open as before:
+  `decisions/0062`'s own words are "GATE DD is not resolved by this
+  decision." The corrected resolution path is therefore: the candidate
+  design's own future Domain stage, whichever Priority phase eventually
+  takes it up (currently re-homed to Priority B by
+  `pre-v1-disposition.md` §7, per `decisions/0062`) must either pick
+  genuinely distinct names or explicitly justify sharing the terms with
+  a stated disambiguation rule -- still NOT a decision this research
+  makes, since resolving it requires GATE DD funding decisions and
+  whichever future Priority-B phase plan takes up this candidate
+  design, exactly as far outside this research's own scope as before.
+  Nothing about the collision's reality, evidence, or open status has
+  changed; only the name of the future phase-group vehicle has, because
+  that phase-group itself no longer exists under its old name.
+derivation: DE-EVID-011
+supporting_evidence: [EV-EVID-006, EV-SKEP-006]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "c0c0d15319add8eceea535dadae566378e9896a9"
+timestamp: "2026-09-27T00:00:00Z"
+status: supported
+supersedes: CL-EVID-009

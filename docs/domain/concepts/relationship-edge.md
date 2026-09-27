@@ -38,9 +38,12 @@ precise meaning, even though casual language could call either a
    `context-graph.db` — no staging table, no `source='agent_inference'`
    column, no write path from a `context-gaps/` entry into any graph
    table. It becomes a real edge (or a new graph capability) only
-   through a separately-gated ADR process (a Stage C mechanical-
-   detection decision or a Stage E graph-capability decision), never
-   silently. The decision names the exact risk this boundary prevents:
+   through a separately-gated ADR process (a mechanical-detection
+   decision or a future graph-capability decision — the old "Stage
+   C"/"Stage E" phase-group labels are retired, `decisions/0062`, but
+   the same gated-ADR promotion mechanism `decisions/0051` describes
+   still applies), never silently. The decision names the exact risk
+   this boundary prevents:
    an ungated agent-suggested edge would be "indistinguishable, three
    phases later, from a mechanically-proven one" (`EV-CTXT-012`).
 2. **An enrichment record commenting on a relationship is not itself an
