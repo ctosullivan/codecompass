@@ -5,9 +5,14 @@
   `build_doc_relations_edges` filename/stem matching), `29ced55`
   (follow-on fix: `relation_enrichment.py` excerpt-needle widening,
   found by `docs-maintainer`), `07c8475` (`CG-006` status flip),
-  `38d577c` (drift audit report + `historical-notes.md` fix).
+  `38d577c` (drift audit report + `historical-notes.md` fix), `157957b`
+  (a fresh, independent completion audit's own one non-blocking finding
+  fixed: `CG-006`'s structured status field still read `candidate`
+  despite its own prose note already saying `promoted-to-roadmap`).
+  Final verdict: `planning/retros/_audit-phase-73.md`, **PASS WITH
+  NON-BLOCKING OBSERVATIONS**.
 - **Agents used:** `docs-maintainer` (reconciliation), `docs-reconstructor`
-  (per-phase drift audit).
+  (per-phase drift audit), `release-phase-auditor` (completion audit).
 
 ## Where we are
 

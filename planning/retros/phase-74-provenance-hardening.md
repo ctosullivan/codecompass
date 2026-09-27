@@ -18,6 +18,17 @@
   Retro updated 2026-09-27 (post-audit) to add this note — it originally
   predated `da1b56b` and needed correcting before a fresh audit could
   pass cleanly, exactly the kind of retro staleness `L-060` names.
+  `f1ddc4c`/`9a14753` (the root-cause investigation and its own fix,
+  cross-phase, not Phase-74-specific), `157957b` (a fresh, independent
+  re-audit's own two required fixes: `evidence.md`'s stale
+  `symbol_enrichment` claim `domain-skeptic`'s own scoped dispatch had
+  missed, and this retro's stale commit list), `f667da4` (a *second*
+  fresh re-audit finding: `capability.md`'s own "What it is NOT" section
+  still contradicted its own, already-corrected "Counterexample"
+  section — an intra-file instance of the identical pattern, found only
+  by a third independent audit pass). Final verdict:
+  `planning/retros/_audit-phase-74.md`, **PASS WITH NON-BLOCKING
+  OBSERVATIONS**, against `f667da4`.
 - **Agents used:** `docs-maintainer` (initial reconciliation — see "What
   didn't work"), `docs-reconstructor` (per-phase drift audit),
   `domain-skeptic` (domain-corpus freshness, twice — Stage E cluster
@@ -132,6 +143,29 @@ of whether this generalizes to a rule (e.g., "never list what another
 agent already checked in an audit's own dispatch prompt, to avoid
 anchoring its search") or was already a non-issue given `docs-reconstructor`'s
 own report shows it searched broadly regardless.
+
+**A third, independent instance of the identical recurring shape, this
+time found only by the third of three `release-phase-auditor` passes,
+not by any prior step**: `docs/domain/concepts/capability.md`'s own
+"What it is NOT" section kept the pre-fix "not validated... a real,
+observed gap" wording, directly contradicting its own already-corrected
+"Counterexample" section two headings below, in the *same file* —
+neither `domain-skeptic`'s original fix pass, nor the `evidence.md` fix,
+nor the first two `release-phase-auditor` passes caught it, because a
+plain keyword grep for the stale phrase didn't match the correct
+section's own different wording, and no step had yet done a genuine
+top-to-bottom read of every section in every touched file. Only when
+explicitly instructed to do that full read (the third audit dispatch)
+was it found. This is now the third occurrence this session of the
+`L-051`/`L-055`/`L-058` shape within a single phase's own domain-corpus
+remediation alone — a real pattern, not a one-off, and specifically one
+that keyword-based verification (grep) structurally cannot catch when
+the stale and correct sentences don't share vocabulary. Left for
+`knowledge-curator`'s own independent assessment of whether this
+warrants a rule change (e.g., "a domain-corpus freshness fix always
+requires a full top-to-bottom read of every section of every touched
+concept page, not a targeted section read or a keyword grep, before the
+finding can be considered closed").
 
 ## Process-improvement feedback
 
