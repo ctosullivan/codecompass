@@ -29,137 +29,141 @@ for "current."
 
 ---
 
-## Assessment — 2026-09-24 (Phase 67, final validation — self-dogfood re-check)
+## Assessment — 2026-09-27 (Phase 72, Stage C learnings capture + post-v1 roadmap realignment — stage-boundary check ahead of Priority A)
 
-**Supersedes the 2026-09-11 assessment above (same target: CodeCompass's
+**Supersedes the 2026-09-24 assessment above (same target: CodeCompass's
 own repo) per this file's own "current assessment replaces the previous
-one" rule.** **CodeCompass revision:** `abc1186` (2026-09-24) ·
+one" rule.** **CodeCompass revision:** `933579c` (2026-09-27, Phase 72's
+own plan-file commit; no `src/` change since the last graph rebuild) ·
 **graph:** this checkout's own `context-graph.db` (gitignored,
 `decisions/0024`) · **assessor:** `context-health-planner`, dispatched by
-Phase 67 sub-task 1 (`planning/phase-67-final-validation.md` §1) —
-explicitly checking whether the Phase 45 snapshot still holds after
-Phases 46–66 (21 phases, none of which touched this repo's own graph
-directly).
+Phase 72's plan (`planning/phase-72-stage-c-learnings-and-roadmap-realignment.md`
+§2 step 2) — this realignment is exactly the kind of stage-boundary
+moment `planning/agent-led-workflow.md` step 4 and this role's own
+cadence (`L-041`) call for a fresh adequacy assessment, this time asked
+forward against whatever **Priority A** (task-oriented context
+completeness/discovery, most likely reviving Phase 48's own old scope)
+turns into once a future session plans it.
 
 ### The graph today
 
-| Dependency | Recorded | Installed (`pip show`) | Fresh? | Used? (uses_edges) | Enriched? | Notes |
-|---|---|---|---|---|---|---|
-| `anthropic` | 1.5.0 | 1.5.0 | ✅ | yes (15) | **no** | deterministic-only `vendor/anthropic/CLAUDE.md` ("Known gotchas: No known side effects detected." — the placeholder, not real AI text) |
-| `rich` | 15.0.0 | 15.0.0 | ✅ | yes (6) | **no** | same pattern |
-| `typer` | 0.27.2 | 0.27.2 | ✅ | yes (43) | **no** | same pattern |
-| `pipdeptree` | 4.2.5 | 4.2.5 | ✅ | **no** | no | correct — invoked as a subprocess, never imported (unchanged since 2026-09-11) |
+| Dependency | Recorded | Installed (`.venv/bin/pip show`) | Fresh? | Used? | Enriched? |
+|---|---|---|---|---|---|
+| `anthropic` | 1.5.0 | 1.5.0 | ✅ | yes | no |
+| `rich` | 15.0.0 | 15.0.0 | ✅ | yes | no |
+| `typer` | 0.27.2 | 0.27.2 | ✅ | yes | no |
+| `pipdeptree` | 4.2.5 | 4.2.5 | ✅ | no (correct — subprocess only) | no |
 
-- **Freshness (package layer):** all four recorded versions match both
-  `pip show` and `pyproject.toml`'s lower-bound pins (`>=0.27`, `>=15`,
-  `>=0.109` — n.b. the pin floor is stale relative to the now-installed
-  1.5.0 but that's a pin-floor question, not a graph-freshness one, and
-  outside this file's remit) — **no drift**, same clean result as
-  2026-09-11.
-- **Enrichment — materially changed, and not for the better.** `SELECT
-  count(*)` against `vendor_enrichment`, `symbol_enrichment`, and
-  `doc_relation_enrichment` all return **0** in this checkout's graph
-  right now. The 2026-09-11 assessment recorded anthropic/rich/typer as
-  enriched ("the enrichment-heavy one; API-surface + gotchas"); that
-  state is **not present** in the graph as it currently sits on disk.
-  `codecompass check`'s "Used but undocumented" list confirms this from
-  the query side: 13 real symbols across all three used vendors
-  (`Anthropic`, `AnthropicError`, `Console`, `Markdown`, `Prompt`,
-  `Table`, `Argument`, `CliRunner`, `Context`, `Exit`, `Option`, `Typer`,
-  `confirm`) show as undocumented.
-- **Completeness — the more significant finding.** `doc_artifacts`,
-  `doc_chunks`, `documents_edges`, `doc_relations_edges`, and
-  `skill_mentions_edges` are **all 0 rows** — despite this repository
-  genuinely having 5 Skills + 1 slash command + 3 Cursor rules on disk
-  (`.claude/skills/{codecompass,codecompass-anthropic,codecompass-rich,codecompass-typer,docs-sync}/`,
-  `.claude/commands/discovery.md`, `.cursor/rules/*.mdc`) and a full set
-  of real spec docs (`README.md`, `architecture/`, `decisions/`,
-  `ai-docs/`, `docs/domain/`, etc.) — exactly the machinery Phases
-  21/27/29/30/31/32/37/49/55b built and repeatedly verified working
-  against this same repo. Live-reproduced, not inferred: `codecompass
-  query skills` returns **0 rows** (2026-09-11 recorded 9), and running
-  `ai-docs/README.md`'s own worked example verbatim —
-  `codecompass query relations architecture/overview.md` — **errors**:
-  `'architecture/overview.md' exists as a file but was not detected as a
-  spec/vendor doc, so it has no relations recorded — check whether it's
-  covered by spec_docs's glob coverage, then re-run sync`. That
-  disambiguation message is itself Phase 49/L-016's own correct fix
-  working as designed — it's not a crash, and it correctly diagnoses the
-  cause — but the underlying condition it's warning about is real right
-  now, in this checkout, for a doc example the project publishes as
-  literally reproducible.
-- **Root cause, as far as read-only inspection can tell:** `meta.last_deterministic_rebuild_at`
-  = `2026-09-12T14:01:32Z` — i.e. whatever last ran the deterministic
-  rebuild path predates Phase 45 through Phase 66 entirely (including
-  the Haskell external-adapter work at 60–62 and the Phase 63D–66
-  domain/docs reconstruction). Since spec-doc detection (Phase 21),
-  skill scanning (Phase 12), and `ai-docs/` glob coverage (Phase 37) all
-  predate that timestamp too, a genuine whole-project `codecompass sync`
-  run at that point should have populated `doc_artifacts`/skills — their
-  absence suggests whatever produced the *current* file's content either
-  ran narrower than a real whole-project sync, or this checkout's graph
-  file has since been touched (its mtime, 2026-09-23 21:12, postdates the
-  meta timestamp) without a corresponding rebuild. I cannot determine
-  which without running `sync`, which is outside this role's remit
-  (read-only, per the agent's own operating rules) — I'm reporting the
-  discrepancy, not diagnosing or fixing the pipeline itself.
-- **Noise:** none observed — same posture as 2026-09-11; an incomplete
-  graph isn't a noisy one, and the "used but undocumented" list above is
-  a real, correctly-surfaced finding, not noise.
+- **Freshness (package layer):** unchanged, clean — 4/4 match, same as
+  every prior assessment. (Note for whoever reads this next: the
+  system-wide `pip`/`pip show` in this environment resolves to a
+  *different* interpreter than the project's own `.venv` — e.g. system
+  `pip show rich` reports `13.9.4`, a stale unrelated environment. The
+  correct comparison is always `.venv/bin/pip show`, which matches the
+  graph exactly. Worth naming explicitly since it's an easy false-alarm
+  trap for a future run of this same check.)
+- **Completeness — the 2026-09-24 finding is resolved.** The re-sync that
+  assessment recommended has visibly run: `meta.last_deterministic_rebuild_at`
+  = `2026-09-24T00:28:40Z` (same day, after that assessment's own
+  session), and `doc_artifacts` (145), `doc_chunks` (2237),
+  `documents_edges` (605), `doc_relations_edges` (115),
+  `skill_mentions_edges` (11), and `symbols` (2440) are all populated.
+  `codecompass query skills` returns 9 rows again (matching the original
+  2026-09-11 count, not the 0-row regression seen at Phase 67). The
+  specific worked example that errored at the last assessment —
+  `codecompass query relations architecture/overview.md` — now
+  reproduces cleanly with real relation rows. This closes out the prior
+  assessment's top recommended action; no further action needed on it.
+- **Minor, non-blocking freshness footnote:** four commits landed after
+  that `2026-09-24T00:28:40Z` rebuild (`40fc074`, `4d3a4f2`, `9dba747`,
+  `b7d0bf3`) — three touch `docs/domain/**/*.md` content (spec-doc-glob
+  covered: `connector.md`, `invariant.md`, `claim.md`, `decision.md`,
+  `evidence.md`, `provenance.md`) and two touch `pyproject.toml`
+  (version-string bumps only — package rename/`.dev0` drop — not
+  dependency pins). Spot-checked: `codecompass query relations
+  docs/domain/concepts/connector.md` still resolves without error. None
+  of these four commits touch a vendor, a symbol, or CLI-observable
+  behaviour, so this is not a re-sync trigger — flagged only so it isn't
+  mistaken for a clean rebuild-matches-HEAD state if someone checks the
+  commit hash literally.
+- **Enrichment still 0 rows** across `vendor_enrichment`,
+  `symbol_enrichment`, `doc_relation_enrichment` — unchanged since Phase
+  67. Still correctly low-urgency: no phase between here and Priority A's
+  eventual scoping reads enrichment text as evidence, and Priority A as
+  currently understood (see below) is about *edges/relations*, not
+  enrichment prose.
+- **Noise:** none observed.
 
-### Do the upcoming phases lean on this graph?
+### Does the next Priority-relevant work lean on this graph?
 
-| Phase | Leans on CodeCompass's own context? | Health verdict |
+| Item | Leans on CodeCompass's own context? | Note |
 |---|---|---|
-| 67 (this phase), sub-task 4 — fresh-agent acceptance test | **No** — the dispatch protocol gives the agent repository access only; discovery is meant to happen by reading `README.md`/`CLAUDE.md`/`docs/domain/` directly, never via `codecompass query` (`phase-67-final-validation.md` §4) | n/a |
-| 68–70 — independent release audit, milestone closeout, release | **No** — process/audit phases grounded in git history, ADRs, and direct doc review, matching every other internal/tooling phase's pattern to date | n/a |
-| A reader following `ai-docs/README.md`'s own worked examples today | **Yes, incidentally** — one of its three example prompts (`query relations architecture/overview.md`) currently errors against this checkout's live graph, as reproduced above | see below |
+| Phase 72 itself (this synthesis/ADR/roadmap-realignment phase) | **No** — grounded in git history, existing planning docs, and the Ledgerkit evidence record, not the graph | n/a |
+| **Priority A** (task-oriented context completeness/discovery — not yet a written `planning/phase-N-*.md`; Phase 72 §0 explicitly defers writing that plan to a future session) | **Yes, directly and unusually so** — unlike almost every prior internal/tooling phase this file has assessed, Priority A's own subject matter *is* a capability of this graph, not merely a task that happens to run inside this repo | see finding below |
+| Priorities B–F (claim/evidence/contradiction model, gap-detection/research-task conversion, documentation-first workflow, independent evaluation, clean-environment reproducibility) | Not assessed here — none has a concrete near-term phase yet; each should get its own forward check when scoped, per this role's normal cadence | n/a |
 
 ### The real forward-looking finding
 
-**No phase between here and v1 (68–70) is gated on this graph** — the
-pattern holds exactly as it did at every prior assessment: internal and
-process phases don't lean on CodeCompass's own context. That is the
-honest, low-urgency half of this finding.
+**Housekeeping is in good shape — the substantive finding is about a gap
+this project already knows it has, not a new one.**
+`planning/context-gaps/inbox.md`'s **CG-001** ("one feature spread across
+three `src/` modules, with no edge joining them," filed 2026-09-11, Phase
+43) is the founding, still-open evidence for exactly the hypothesis
+Priority A would set out to test: *"task-oriented retrieval needs new
+edges (not just new joins)"* (`conditional-generalisation.md` §2.6,
+restated verbatim in `context-gaps/README.md`'s own hypothesis table,
+which names CG-001 as "the first"). Re-confirmed today: CG-001's status
+line still reads `candidate` — it has never recurred and was never
+independently filed by a second agent, the project's own bar
+(`context-gaps/README.md`: promoted `candidate` → `recurred` only on a
+recurrence or two-agent independent filing) for treating a graph-schema
+gap as load-bearing evidence rather than a single anecdote. Phase 72's
+own plan (§0) already declines to resolve GATE DD's graph-schema funding
+question on CG-001 (plus CG-003/CG-006/CG-007) for exactly this reason —
+this assessment agrees with that call, on independent inspection of the
+same entry, not merely by citing the plan.
 
-**The higher-urgency half is about credibility, not blocking:** Phase
-67's own title is "self-dogfood," and this checkout's graph — the thing
-a curious reader or auditor would actually run `codecompass query`
-against right now — does not reflect the doc/skill-detection and
-enrichment capability this project spent Phases 21–38, 49, and 55b
-building and proving. A worked example from the project's own
-`ai-docs/README.md` fails when tried today. This is a **staleness/re-sync
-finding about a local generated artifact**, not a code defect (the
-underlying mechanisms are exercised and passing in the test suite; this
-checkout's graph simply hasn't had a genuine whole-project sync run
-against current `HEAD` recently) and not an un-representable
-relationship, so it does **not** belong in `context-gaps/inbox.md`
-(`decisions/0051`) — filing it there would misclassify a sync-freshness
-problem as a modelling gap. It belongs here, as a recommended action.
+This is directly load-bearing for however Priority A gets planned:
 
-**Ledgerkit spot-check (CG-002), done live for this assessment:** the
-live Ledgerkit clone at `/home/cormac/projects/ledgerkit` (pinned
-`c6168b2`, its own `context-graph.db` rebuilt 2026-09-24 08:19) still
-resolves `codecompass query relations dev-docs/hledger-compatibility.md`
-cleanly (an empty-relations table, not the old `'...' not found` error)
-— **CG-002 remains fixed**, unchanged since Phase 51's GATE DC
-confirmation. `codecompass query vendors` on that clone still returns 0
-rows (0 runtime deps, still the honest, correct number for that
-project's shape) and `check`'s "spec docs with no detected relations"
-still lists the full real `dev-docs/**`/`docs/**` tree, relation-less —
-matching Phase 51's own PASS WITH GAPS / LOW-advantage, structural-ceiling
-finding exactly. This is a reconfirmation, not a new assessment; the
-2026-09-13 section below remains the full current record for that
-target and is not rewritten.
+- The graph's current behavior on this exact task shape is not a defect
+  — `codecompass query relations src/codecompass/skill.py` correctly
+  returns "not found" because intra-`src` feature-grouping edges are
+  genuinely outside today's schema (package/vendor/spec-doc mention
+  edges only). A Priority A phase should expect this and not mistake a
+  correct "no data" answer for a bug.
+- Priority A's own first real task is the most plausible place a second,
+  independent CG-001-shaped occurrence would surface. Whoever plans it
+  should explicitly watch for that and file it as a new dated entry
+  (`decisions/0051`'s process) if it recurs — including if it recurs in
+  a form that *doesn't* end up justifying a schema change — rather than
+  either (a) treating CG-001 alone as already-sufficient evidence to
+  skip straight to a schema-generalisation design, or (b) letting a real
+  second occurrence go unfiled because "it's basically the same as
+  CG-001, no need to log it again." The recurrence-bar discipline only
+  works if occurrences actually get logged.
+- No concept for "task-context completeness" or CG-001's own
+  graph-capability-gap framing exists yet in `docs/domain/concepts/`
+  (checked: 19 concept files, none of this shape) — deliberately, per
+  Phase 72 §5's own explicit deferral. Given this project's own
+  precedent for "new capability + new concept" work (Phase 54c/60,
+  formalised as the Scope → Plan → Domain → Design → Implement
+  methodology, `decisions/0060`), whoever plans Priority A should expect
+  to run it through that pipeline — including opening a
+  `planning/knowledge/<feature-slug>/` directory — rather than jump
+  straight from ADR 0062's prioritisation language to a design doc. None
+  of the four existing `planning/knowledge/` directories
+  (`codecompass-domain`, `doc-origin-pinned-reference`,
+  `haskell-api-surface-extraction`, `hledger-depth`) currently cover this
+  feature.
 
 ### Recommended actions
 
 | Action | Urgency | Owner |
 |---|---|---|
-| Run a full deterministic `codecompass sync` (no `--budget`, no AI cost) in this checkout to restore `doc_artifacts`/skills/doc-relations from current `HEAD` — the deterministic path needs no cost consent (`decisions/0031`/`0033`) | **Before this repo's own graph is used as a live demo again** — e.g. before any reader is pointed at `ai-docs/README.md`'s worked examples expecting them to run as published, and worth doing ahead of Phase 68's independent release audit in case it spot-checks self-dogfooding claims | lead |
-| Separately consider re-running AI enrichment (paid, needs consent) for `anthropic`/`rich`/`typer` — the 2026-09-11-recorded enriched state is gone from this checkout's graph | Low — no upcoming phase (67–70) reads enrichment text as evidence | lead (cost/consent decision) |
-| No `context-gaps/` candidate filed — this is a re-sync/staleness finding about a local generated artifact, not an un-representable relationship | — | — |
-| Ledgerkit CG-002 — no action; confirmed fixed via today's live spot-check | — | — |
+| No re-sync needed now — the 2026-09-24 recommendation was carried out and is confirmed live (doc/skill detection populated, worked example reproduces) | — | — |
+| No re-enrichment action — still correctly low-urgency; no consumer reads enrichment text before Priority A is even scoped | Low | lead (cost/consent decision, if it ever becomes relevant) |
+| When Priority A's own `planning/phase-N-*.md` is written: re-read this entry plus CG-001, `conditional-generalisation.md` §2.6, and `context-gaps/README.md`'s hypothesis table before scoping; treat "does this task's first real investigation reproduce CG-001's edge-shortfall independently" as a question the plan must explicitly answer (and log, either way) rather than an incidental discovery | Before that phase's plan file is written | whoever plans Priority A (lead, `CLAUDE.md` §1) + `context-researcher` once scoped |
+| No new `context-gaps/` candidate filed this pass — nothing new observed beyond what CG-001/CG-003/CG-006/CG-007 already record; the "second occurrence" named above is a forward risk for the next phase to watch for, not something hit during this read-only pass | — | — |
 
 ---
 
@@ -321,3 +325,15 @@ to.
   recommended before this graph is used as a live demo again. Ledgerkit's
   CG-002 spot-checked live and reconfirmed still fixed (unchanged since
   Phase 51).
+- **2026-09-27** (Phase 72, stage-boundary check ahead of Priority A) —
+  own graph re-checked: the 2026-09-24 re-sync recommendation was carried
+  out (doc/skill detection and doc-relations fully repopulated,
+  `ai-docs/README.md`'s worked example now reproduces cleanly); package
+  freshness still clean; enrichment still 0 rows (still low-urgency, no
+  consumer). Key finding: CG-001 ("task-oriented retrieval needs new
+  edges") — the founding, still-`candidate`, never-recurred evidence
+  behind `conditional-generalisation.md` §2.6 — is directly load-bearing
+  for however Priority A (task-oriented context discovery) gets planned;
+  no new `context-gaps` candidate filed, but flagged that Priority A's
+  own first task is the likeliest place a second, loggable occurrence
+  would surface.

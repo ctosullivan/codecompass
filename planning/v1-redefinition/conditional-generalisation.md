@@ -27,6 +27,22 @@ yet for §2.4 specifically (and, secondarily, §2.2 via the same
 proving-case reasoning Phase 54b already established). See
 `planning/phase-54c-evidence-knowledge-workflow.md`.
 
+**Amended again 2026-09-27** (Phase 72, `decisions/0062`): this gate is
+still not resolved and this file's own content is unchanged, but the
+old "Stage E" phase-group framing (§0's "Phases 56-58") that would have
+resolved it is superseded — post-v1 work is no longer organised into
+lettered stages at all (`planning/ROADMAP.md`'s Phase 71 restructure).
+The candidate designs below are not discarded: `planning/pre-v1-disposition.md`
+§7 re-homes each of §2.1-2.6 under whichever new Post-v1 priority
+(A-F, `planning/ROADMAP.md`) actually needs it, decided when that
+priority's own phase is planned, not pre-committed now. §2.2
+(`executable` kind) and §2.6 (task-oriented retrieval edges) are the two
+most directly evidenced by real Ledgerkit Stage C work
+(`planning/ledgerkit-stage-c-learnings.md` #1-2) — see `decisions/0062`
+for the full evidence trail. `CG-001`, `CG-003`, `CG-006`, `CG-007`
+(§1.2's own table) remain at unchanged evidence status — none has
+independently crossed this project's own recurrence bar.
+
 ## 1. Evidence status of each idea (as of this planning session)
 
 ### 1.1 Already supporting the need — nothing yet

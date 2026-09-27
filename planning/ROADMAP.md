@@ -41,22 +41,41 @@ reconstruction and an independent milestone-level audit
 the `codecompass-context` distribution, `1.0.0`, tagged `v1.0.0`,
 2026-09-24 (`retros/phase-70-release-v1.md`).
 
-## Deferred / not-funded (post-v1 revisit candidates)
+## Post-v1 priorities (A-F)
 
-Real, evidenced items intentionally not pursued — each with its own
-stated trigger for revisiting, not silently dropped:
+**Established Phase 72 (`decisions/0062`), replacing the old "Deferred /
+not-funded" list above.** Real evidence from Ledgerkit's own Stage C
+work (`planning/ledgerkit-stage-c-learnings.md`) shows post-v1
+CodeCompass should optimise for **task-context completeness**, not graph
+size or feature breadth — most of the mechanisms these priorities need
+already exist, proven, as CodeCompass's own internal development
+tooling (`planning/knowledge/`, `context-gaps/`, `context-evaluator`);
+none has ever been offered to a downstream user of the shipped tool.
+Full disposition of every pre-v1 item these priorities absorb, merge, or
+leave as backlog: **[`pre-v1-disposition.md`](pre-v1-disposition.md)**.
+GATE DD is **not** resolved by this list — see `decisions/0062`'s own
+"Decision" section for exactly what remains open.
+
+| Priority | Scope | Success criterion | Status |
+|---|---|---|---|
+| **A — Task context completeness** | Reliably answer "what does a fresh agent need to safely understand, design, implement, or review this specific change?" (producers/consumers, siblings, execution/behavioural paths, tests, docs/ADRs, upstream references, compatibility gaps, explicit uncertainty). Absorbs Phase 48, `CG-001`/`CG-006`/`CG-007`. | A `context-evaluator` PASS or PASS WITH GAPS (not FAIL) on a real reference-project task specifically because task-relevant context was surfaced, not merely present in the graph. | **Recommended next phase** — needs a fresh `planning/phase-N-*.md` scoping pass against current evidence (`CLAUDE.md` §1), not a resumption of Phase 48's old scope unchanged. |
+| **B — Lightweight claim/evidence/contradiction model** | Productise Phase 54c's already-proven, already-durable-recommended Observation/Evidence/Claim model for a *downstream user's own project* (not `planning/knowledge/`'s internal-only use). Also closes `L-031`/`L-032` and exercises the contradiction-handling machinery against real conflicting evidence for the first time. | A downstream-facing claim can be recorded with ≥1 evidence item, a closed status value, and — for at least one real case — a genuine contradiction surfaced rather than silently resolved. | Not yet planned. |
+| **C — Context gap detection and research tasks** | Productise `planning/context-gaps/`'s already-proven candidate→recurred→promoted lifecycle for gaps in a *target* project's own context, convertible into a concrete task. | A gap identified in a real target project is expressible as an actionable task without hand-authoring a new template each time. | Not yet planned. |
+| **D — Documentation-first development workflow** | Package the proven Scope→Plan→Domain→Design→Implement workflow *shape* (`decisions/0060`) — not CodeCompass's own specific agent roster — as guidance a downstream user's process could adopt, reusing `query`/Skill/graph capabilities. | A downstream user can follow research→evidence map→design→review→packet→implementation→verification→retro→knowledge-update using only already-shipped CodeCompass surfaces plus documented convention, no new agent required. | Not yet planned. Open question named in `ledgerkit-stage-c-learnings.md` #8: how much of this actually needs product tooling vs. remaining a documented convention. |
+| **E — Independent context evaluation** | Offer a repeatable version of the `context-evaluator`/`packet-sufficiency.md` protocol for downstream adoption. | A fresh, independent reviewer (human or agent) can assess packet sufficiency using a documented, repeatable procedure, not bespoke judgment each time. | Not yet planned. |
+| **F — Clean-environment reproducibility and context-quality measurement** | Formalise the already-proven scratch-clone/fresh-agent discipline into a repeatable check; keep `context-quality-evaluation.md`'s existing advantage-over-default-pathway metric as primary — explicitly not graph size or edge count. | A context packet can be checked for fresh-session reproducibility mechanically, not only by case-by-case phase diligence. | Not yet planned. |
+
+**Backlog, not absorbed into A-F** (real, not silently dropped, each
+with its own revisit trigger — full detail
+`pre-v1-disposition.md` §3-4, §9-10):
 
 | Item | Status | Revisit trigger |
 |---|---|---|
-| **GATE DD / Stage E** — a generalised technical-dependency/provenance abstraction (Phase 55's own decision, never made either way; Phases 56–59 conditional on it) | not started | New evidence that a generalisation beyond Stage C's own concrete work is actually needed, not merely plausible. GATE DD is a separate axis from Stage F/G, explicitly independent of whether those stages proceed (`decisions/0056`, `decisions/0060`) — Stage G's own release did not require resolving it, and CodeCompass shipped either way. |
-| **Phase 24** — project-root-aware REPL routing + whole-project context + dependency rollup at session start | deferred | Reference-project evidence showing project-root context routing is a recurring real need (`decisions/0048`). |
-| **Phase 25** — MCP server (`query_vendor`) | deferred | Real post-v1 CLI/Skill usage patterns informing whether an MCP surface would add value (`decisions/0048`). |
-| **Phase 48** — task-oriented context retrieval | not funded | New evidence — none found across Phases 44–46's own evaluation (`CG-001`, single-occurrence, own-dev only). |
-| **Phase 50** — shared-agent context/entry-point improvements | not funded | New evidence — none found across Phases 44–46's own evaluation. |
-
-Full original reasoning for each: git history (any commit before
-Phase 71) and the ADRs/retros each item's own original phase entry
-cited.
+| **Phase 24** — project-root-aware REPL routing + whole-project context | deferred | Reference-project evidence showing project-root context routing is a recurring real need. |
+| **Phase 25** — MCP server (`query_vendor`) | deferred | Real post-v1 CLI/Skill usage patterns informing whether an MCP surface would add value. |
+| **Phase 50 remainder** — shared-agent context/entry-point improvements not covered by Priority A/D | not funded | New evidence emerging from post-v1 use. |
+| **`CG-003`** — external reference-manual zero representation | candidate | A second independent occurrence, or independent second filing (`context-gaps/README.md`'s own bar). |
+| **§2.5 `browser_api`/`platform_api` kind** | deferred indefinitely | Already resolved at `decisions/0056` — only reopens if a real browser/platform-API reference project is separately picked up. |
 
 ## Post-v1 development
 
@@ -84,12 +103,15 @@ row elsewhere in this file (per the "How this file is kept in sync"
 section below) rather than left duplicated here. Full evidence lives in
 the originating `planning/learnings/inbox.md` entry (and, once the lead
 records it, `planning/learnings/promoted.md`); this table only tracks
-existence and status.
+existence and status. **`L-031`/`L-032` below are also named in the
+Post-v1 priorities table above as Priority B's own first, already-scoped
+hardening items** (`ledgerkit-stage-c-learnings.md` #6) — kept here too
+since neither has yet become a real phase.
 
 | ID | Finding | Classification | Status | Notes |
 |---|---|---|---|---|
-| L-031 | `symbol_enrichment` has no producer-attribution column, unlike `vendor_enrichment`/`doc_relation_enrichment` (both carry `model TEXT NOT NULL`) — `symbol_enrichment` rows currently cannot be attributed to a specific producer (agent or automated API call) at all. Add a `model` column via an additive migration (mirroring `_migrate_symbols_export_kind_note_columns`'s `ADD COLUMN` pattern, Phase 62), or explicitly document the asymmetry as an intentional simplification if a rationale is found. Origin: `L-031` (Phase 63D, `domain-skeptic`'s own review). | FUTURE-IMPROVEMENT | not started | — |
-| L-032 | `ExternalAdapterProcess.initialize()` receives `ecosystem` and `capabilities` from an external adapter's wire response (`external_process.py:83-84`) but never validates either: `ecosystem` is never compared against the `core.Ecosystem` value CodeCompass configured the adapter under, and `capabilities` is never checked against the protocol's own closed 4-value set already defined in the same file (`CAPABILITIES`). An adapter reporting a mismatched `ecosystem` string or an unrecognized capability is currently accepted uncomplainingly. Add a membership/equality check in `initialize()`, raising `AdapterError` on mismatch (matching the existing `protocol_version` mismatch handling immediately above it in the same method). Origin: `L-032` (Phase 63D, `domain-skeptic`'s own review). | FUTURE-IMPROVEMENT | not started | — |
+| L-031 | `symbol_enrichment` has no producer-attribution column, unlike `vendor_enrichment`/`doc_relation_enrichment` (both carry `model TEXT NOT NULL`) — `symbol_enrichment` rows currently cannot be attributed to a specific producer (agent or automated API call) at all. Add a `model` column via an additive migration (mirroring `_migrate_symbols_export_kind_note_columns`'s `ADD COLUMN` pattern, Phase 62), or explicitly document the asymmetry as an intentional simplification if a rationale is found. Origin: `L-031` (Phase 63D, `domain-skeptic`'s own review). | FUTURE-IMPROVEMENT | not started | Priority B hardening candidate |
+| L-032 | `ExternalAdapterProcess.initialize()` receives `ecosystem` and `capabilities` from an external adapter's wire response (`external_process.py:83-84`) but never validates either: `ecosystem` is never compared against the `core.Ecosystem` value CodeCompass configured the adapter under, and `capabilities` is never checked against the protocol's own closed 4-value set already defined in the same file (`CAPABILITIES`). An adapter reporting a mismatched `ecosystem` string or an unrecognized capability is currently accepted uncomplainingly. Add a membership/equality check in `initialize()`, raising `AdapterError` on mismatch (matching the existing `protocol_version` mismatch handling immediately above it in the same method). Origin: `L-032` (Phase 63D, `domain-skeptic`'s own review). | FUTURE-IMPROVEMENT | not started | Priority B hardening candidate |
 
 ## How this file is kept in sync
 
@@ -112,3 +134,9 @@ existence and status.
   and `promoted.md`. When a backlog row is later turned into a real
   phase, remove the backlog row in the same commit that adds the phase's
   own row and plan file.
+- When a Post-v1 priority (A-F) gets its first real
+  `planning/phase-N-*.md`, flip that priority's own "Status" cell from
+  "Not yet planned" to a link to the new phase file, in the same commit
+  that adds the phase's own row to "Post-v1 development" above — the
+  priority row itself is never removed (it names the ongoing track, the
+  phase row names one concrete step within it).

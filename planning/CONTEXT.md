@@ -16,27 +16,31 @@ description of what CodeCompass does: `README.md`,
 Full status: `planning/ROADMAP.md`. Closeout record:
 `planning/v1-closeout.md`.
 
-Deferred, post-v1, each with its own revisit trigger in
-`planning/ROADMAP.md`: GATE DD/Stage E, Phases 24/25/48/50.
+Post-v1 work is organised into six priorities (A-F,
+`planning/ROADMAP.md`'s "Post-v1 priorities" section, `decisions/0062`),
+not lettered stages — task-context completeness (Priority A) is the
+recommended next concrete phase. Backlog, each with its own revisit
+trigger: Phases 24/25, Phase 50's remainder, `CG-003`, the
+`browser_api`/`platform_api` kind — full detail
+`planning/pre-v1-disposition.md`.
 
 ## What was just completed
 
-**Phase 71 — post-v1 documentation refresh — done (2026-09-25).**
-Direct user request: `README.md` rewritten (limitations, evidence/
-provenance model, realistic v1 positioning); `planning/ROADMAP.md`
-restructured (424→113 lines, historical phase table replaced with a
-concise current-state summary — full history preserved in
-`v1-closeout.md`, `v1-redefinition/roadmap.md`, and git history); this
-file further reduced. One mechanical check adapted:
-`check_readme_phase_count` now compares README's and ROADMAP's own
-"phases 0-N" prose claims directly, since the per-phase row table it
-used to scan no longer exists. Closeout: independent fork review (2
-findings, fixed), `docs-reconstructor` drift audit (3 findings, fixed),
-`domain-skeptic` freshness reconciliation (2 stale `docs/domain/`
-citations, fixed, content unchanged), `knowledge-curator` triage
-(`L-047` discarded, `L-048` promoted to `context-researcher.md`,
-`L-049` retained, `L-050` promoted to `CLAUDE.md` §2 after user
-approval).
+**Phase 72 — Ledgerkit Stage C learnings capture + post-v1 roadmap
+realignment — in progress (2026-09-27).** Direct user request:
+`planning/ledgerkit-stage-c-learnings.md` (new) distils 11 learnings
+from Ledgerkit's own Stage C work (studied at Phases 54/54b/54c/61)
+into validated observations / design principles / existing-vs-proposed
+capability / open hypotheses. `decisions/0062` (new ADR) records the
+resulting prioritisation pivot — task-context completeness over graph
+completeness — as six priorities (A-F). `planning/pre-v1-disposition.md`
+(new) dispositions every material pre-v1 item (Phase 24/25/48/50, GATE
+DD/Stage E, open `context-gaps`, `L-031`/`L-032`) so nothing was
+silently dropped. `planning/ROADMAP.md`'s old "Deferred/not-funded" and
+"Future-improvement backlog" framing replaced by the Priority A-F
+structure; `conditional-generalisation.md` gained a dated amendment note
+(content otherwise unchanged — GATE DD's own graph-schema questions
+remain explicitly open, not resolved by this phase).
 
 ## Known standing gaps (current-state facts, not phase history)
 
@@ -59,7 +63,11 @@ approval).
 
 ## Next concrete step
 
-Phase 71 is closed. No phase is currently planned — post-v1 development
-proceeds under the same agent-led model as ordinary, non-milestone-group
-work (`ROADMAP.md`'s "Post-v1 development" section). Pending: Phase 71's
-`release-phase-auditor` DoD pass, then push to `origin`.
+Finish Phase 72: independent fork review of the new/changed planning
+documents against the underlying phase evidence, `docs-reconstructor`
+per-phase drift audit, standard closeout (retro, `knowledge-curator`
+triage, `release-phase-auditor` DoD pass). After that: no phase is yet
+planned for any of Priority A-F — Priority A (task-context completeness)
+is the recommended first pick, but needs its own fresh
+`planning/phase-N-*.md` scoping pass, not a resumption of old Phase 48's
+scope unchanged.

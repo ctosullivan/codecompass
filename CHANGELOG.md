@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gained a "Limitations" section (8 concrete, honestly-disclosed gaps)
   and an "Evidence & provenance" section, neither of which existed
   before.
+- **Phase 72** (Ledgerkit Stage C learnings + post-v1 roadmap
+  realignment): `planning/ledgerkit-stage-c-learnings.md` — a durable
+  record of 11 learnings distilled from Ledgerkit's own Stage C work
+  (studied at Phases 54/54b/54c/61), each classified as validated
+  observation / design principle / existing-vs-proposed capability /
+  open hypothesis. `decisions/0062` — the resulting prioritisation ADR
+  (task-context completeness over graph completeness, six priorities
+  A-F). `planning/pre-v1-disposition.md` — disposition of every
+  material pre-v1 roadmap item.
 
 ### Changed
 
@@ -34,6 +43,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on citation form for `docs/domain/` references to fast-moving
   planning documents/tests, after this exact fragility recurred a
   second time (`L-048`).
+- **Phase 72**: `planning/ROADMAP.md`'s "Deferred / not-funded" and
+  "Future-improvement backlog" framing replaced by a "Post-v1
+  priorities (A-F)" structure, each with a scope, success criterion,
+  and status; a "Backlog, not absorbed into A-F" table replaces the
+  items GATE DD's own schema questions don't cover.
+  `planning/v1-redefinition/conditional-generalisation.md` gained a
+  dated amendment note (its own existing convention) pointing at the
+  new ADR — content otherwise unchanged; GATE DD remains explicitly
+  open.
 
 ### Fixed
 
