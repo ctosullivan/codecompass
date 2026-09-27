@@ -115,6 +115,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   paragraph understated the current excerpt-fallback's robustness after
   this phase's own filename-matching widening — fixed with a brief
   present-tense note, historical narrative otherwise unchanged.
+- **Phase 73**: `planning/context-gaps/inbox.md`'s `CG-006` entry own
+  structured `- **status:**` field still read `candidate` even though
+  the same entry's prose narrative already said "Status: `candidate` →
+  `promoted-to-roadmap`" — found by a fresh, independent
+  `release-phase-auditor` completion-audit pass (`L-060`) and fixed to
+  match sibling entries' convention.
 - **Phase 74**: both `L-031`/`L-032` were documented as currently-open
   gaps across 11 current-truth/domain-corpus doc locations —
   `README.md` (twice), `architecture/context-graph-schema.md`,
@@ -126,6 +132,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and fixed. `CL-EVID-008` superseded by `CL-EVID-013` for the one
   affected Claim record, correcting only the now-false enrichment-table
   sub-fact.
+- **Phase 74** (post-`done`, found by independent `release-phase-auditor`
+  completion audits rather than by the phase's own closeout, `L-060`):
+  three further stale/contradictory `docs/domain/` locations the
+  original `domain-skeptic`/`docs-reconstructor` passes missed. (1)
+  `docs/domain/concepts/evidence.md` still said `symbol_enrichment`
+  "carries none" (no `model` column) — the `domain-skeptic` dispatch
+  that fixed the other locations had scoped itself to only 5 of the 8
+  the drift audit actually named, missing this one; corrected to match
+  `provenance.md`'s own framing. (2) `docs/domain/concepts/provenance.md`
+  still cited the superseded `CL-EVID-008` present-tense in two places
+  (Definition intro, "What Provenance is NOT") instead of
+  `CL-EVID-013`; both annotated with the "(superseded)" convention
+  `protocol.md` already used. (3) `docs/domain/concepts/capability.md`'s
+  own "What it is NOT" section still asserted the gap was "not
+  validated... a real, observed gap, not a hypothetical one",
+  contradicting its own "Counterexample" section two headings below
+  (already correctly rewritten to say the gap is closed) — fixed to
+  state both consistently. A full independent top-to-bottom re-read of
+  all six `docs/domain/` files this phase touched, plus targeted
+  full-corpus grep sweeps, found no further instance of any of these
+  three patterns. `planning/retros/phase-74-provenance-hardening.md`'s
+  own commit list was also corrected to include the post-audit fix
+  commits, having fallen behind them.
 
 ## [1.0.0] - 2026-09-24
 
