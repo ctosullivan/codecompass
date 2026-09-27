@@ -214,7 +214,14 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
    It reports `NO DRIFT` or a list of current-truth doc sentences the
    change made false. Any finding → back to `docs-maintainer` (step 8),
    then re-audit. `NO DRIFT` is fine and common for a `planning/`- or
-   internal-only phase.
+   internal-only phase. **State explicitly in the dispatch prompt that
+   its report must be written to
+   `planning/retros/_drift-audit-phase-N.md`** — do not rely on
+   `docs-reconstructor.md`'s own agent-definition file to guarantee the
+   write happens. A first dispatch of this exact step at Phase 72
+   produced a substantive verbal finding but no persisted file, caught
+   only by `release-phase-auditor`'s independent DoD audit, not by any
+   step in this workflow's own sequence (`L-056`).
 10. **Reconcile roadmap and context state (interim).** Dispatch
     `roadmap-context-curator`: overwrite `CONTEXT.md` and add the
     `CHANGELOG.md` entry reflecting implementation + docs-audit progress

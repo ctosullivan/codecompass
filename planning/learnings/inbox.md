@@ -8,6 +8,193 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-056 — a `docs-reconstructor` (or any report-writing role) dispatch step in `agent-led-workflow.md` must itself state the report's required persisted file path, not rely on the role's own agent-definition file to guarantee the write happens
+
+- **origin:** `planning/retros/phase-72-stage-c-learnings-and-roadmap-realignment.md`
+  "What didn't work" (first bullet) + "Lessons learnt" (third bullet);
+  independent knowledge-curator triage of that rework, following up on
+  the prior Phase 72 triage pass (`L-051`–`L-054`) which had not yet seen
+  this rework's own retro update
+- **date:** 2026-09-27
+- **project_revision:** f2f7cbf (redone drift-audit report persisted);
+  71f5949 (retro/CONTEXT/CHANGELOG closeout of the rework)
+- **observation:** Phase 72's first `docs-reconstructor` per-phase
+  dispatch produced a real, substantive verbal finding (a "Stage E"
+  citation-staleness cluster, correctly routed to `domain-skeptic` and
+  fixed in `336b4cd`) but never wrote the standalone report file
+  (`planning/retros/_drift-audit-phase-72.md`) required by every phase
+  from 45 through 71. This was caught only by `release-phase-auditor`'s
+  own independent DoD audit (first pass: FAIL) — not by any step in the
+  phase's own execution or by `planning/agent-led-workflow.md` step 9
+  itself (the step that dispatches this exact audit). Checked directly:
+  `.claude/agents/docs-reconstructor.md` MODE 1's own "Output" section
+  *does* state the path ("a short report
+  `planning/retros/_drift-audit-phase-NN.md` (or wherever the lead
+  says)") — the role's own definition is not silent on this. But
+  `agent-led-workflow.md` step 9's own text ("Dispatch `docs-reconstructor`
+  in per-phase mode with the phase diff... It reports `NO DRIFT` or a
+  list of current-truth doc sentences the change made false") never
+  restates the persisted-file requirement at the point a dispatch prompt
+  is actually composed — it describes the report's *content*, not that
+  the dispatch prompt must explicitly instruct the agent to write it to
+  that path. This is the same shape as `L-041` (`context-health-planner`'s
+  own charter promised a cadence `agent-led-workflow.md`'s actual step
+  never carried) and `L-036`/`L-046` (a role's own stated requirement,
+  never re-stated at the point of dispatch, is structurally likely to be
+  silently dropped) — a role's own file stating a requirement is not the
+  same as that requirement being operationalized into the step sequence
+  that actually invokes the role.
+- **evidence:** `.claude/agents/docs-reconstructor.md` lines 57-58
+  ("**Output** — a short report `planning/retros/_drift-audit-phase-NN.md`
+  (or wherever the lead says)"); `planning/agent-led-workflow.md` step 9
+  (no restatement of the output path in the dispatch instruction itself);
+  `planning/retros/_drift-audit-phase-72.md` line 9 ("the standalone
+  report file was never written to disk at the time"); phase-72 retro
+  "What didn't work" first bullet
+- **classification:** workflow
+- **status:** promoted
+- **recurrence:** first confirmed instance of this exact failure (a
+  report-writing role's verbal finding landing correctly but its
+  persisted-file requirement silently dropped); same underlying shape as
+  `L-041`/`L-036`/`L-046`'s "stated-but-not-operationalized requirement"
+  class, third+ occurrence of that broader class
+- **promoted_to:** `planning/agent-led-workflow.md` step 9 (landed by
+  the lead, Phase 72 closeout, following this candidate's own drafted
+  text)
+- **curation (independent post-rework triage, 2026-09-27,
+  knowledge-curator):** accept and recommend **promote**. Checked both
+  named documents directly, as asked: `docs-reconstructor.md`'s own
+  "Output" text already names the path, so this is not a case of the
+  role's own definition being silent — but nothing about a role's own
+  file being correct guarantees a *lead's dispatch prompt*, composed from
+  `agent-led-workflow.md` step 9's own (shorter, content-focused) text,
+  actually re-states that path when the prompt is written. That gap —
+  between what a role's own brief says and what the workflow step that
+  invokes it says — is exactly the shape `L-041` already named and fixed
+  for `context-health-planner`'s cadence; this is the same shape applied
+  to a different missing operationalization (a required output path
+  rather than a required dispatch cadence). **Draft amendment** to
+  `planning/agent-led-workflow.md` step 9 (insert after the existing
+  first sentence): "State explicitly in the dispatch prompt that its
+  report must be written to `planning/retros/_drift-audit-phase-N.md` —
+  do not rely on `docs-reconstructor.md`'s own agent-definition file to
+  guarantee the write happens. A first dispatch of this exact step at
+  Phase 72 produced a substantive verbal finding but no persisted file,
+  caught only by `release-phase-auditor`'s independent DoD audit, not by
+  any step in this workflow's own sequence (`L-056`)." The lead should
+  also consider (not drafted here, since it widens scope beyond the one
+  concrete failure) whether the same clause belongs at every other
+  report-writing-role dispatch point in this file (step 4
+  `context-health-planner`, step 13 `release-phase-auditor`, any
+  `domain-skeptic` dispatch) — flagging this as a live question for the
+  lead rather than pre-deciding it, since only one concrete failure (this
+  one) has actually occurred so far. Not landing the `agent-led-workflow.md`
+  edit directly — outside this role's write boundary; drafted here for
+  the lead to review and land.
+
+### L-055 — a fix commit closing a drift-audit/domain-skeptic finding needs its own completeness check against every sibling instance of the identical retired-terminology pattern, not just the specific locations the triggering report first named
+
+- **origin:** `planning/retros/phase-72-stage-c-learnings-and-roadmap-realignment.md`
+  "What didn't work" (second bullet) + "Lessons learnt" (second bullet);
+  `planning/retros/_drift-audit-phase-72.md` §3; independent
+  knowledge-curator triage of that rework
+- **date:** 2026-09-27
+- **project_revision:** 336b4cd (incomplete fix); 5d6a37d (follow-on
+  fix for the 3 sibling instances + 1 stale citation)
+- **observation:** `336b4cd` correctly fixed the exact four locations
+  `domain-skeptic`'s Phase 72 report named (`claim.md`, `decision.md`,
+  `relationship-edge.md`, `open-questions.md` item 7) and correctly
+  superseded the two originating Claims. The redone `docs-reconstructor`
+  drift audit (`_drift-audit-phase-72.md` §3), grepping independently for
+  every occurrence of the retired "Stage E"/"Stage C" terminology in
+  `docs/domain/` rather than trusting the fix commit's own scope, found
+  three sibling instances of the identical pattern the fix left behind —
+  `decision.md:27` and `decision.md:101` (two more instances *in the same
+  file* `336b4cd` was already editing for this exact issue, one only 62
+  lines from the sentence it did fix) and `observation.md:51` (a file the
+  fix commit never touched at all, despite sharing the same collision
+  material as the files it did touch) — plus a fourth, weaker instance
+  (`evidence.md:106`'s stale `CL-EVID-009` citation, not updated to
+  `CL-EVID-011` the way `claim.md`'s parallel citation was). **Independent
+  check against `L-051`, as asked:** `L-051`'s own landed text
+  (`.claude/agents/domain-skeptic.md` step 3) instructs `domain-skeptic`,
+  "when running a freshness reconciliation pass specifically," to "grep
+  for known fragile term-classes directly... rather than relying solely
+  on 'does the triggering diff touch a file/symbol/behaviour this page
+  cites.'" That is a **detection-time** instruction — it governs the
+  initial search that produces a finding. This candidate's failure
+  happened at a different moment: **after** a finding had already been
+  named and a fix drafted, nobody (`domain-skeptic`, `context-researcher`,
+  the lead) re-grepped the corpus to confirm the fix actually closed
+  every occurrence the same search would have found. `L-051`'s text does
+  not say "and re-run this grep against the fix's own final state before
+  considering the finding closed" — it is silent on fix-completeness
+  verification specifically. This is a distinct, narrower moment than
+  `L-051` covers, not a re-statement of it — though the retro's own text
+  is right that it is "a narrower instance of the same shape" (a retired
+  label is fragile wherever it appears, checked or not), the *mechanism*
+  that would prevent recurrence (a post-fix completeness grep, owned by
+  whoever executes the correction) is not the same mechanism `L-051`
+  already installed (a pre-finding detection grep, owned by
+  `domain-skeptic` during its own adversarial pass). Note also that
+  `L-051` itself postdates the `336b4cd` dispatch chronologically (it was
+  promoted *from* analysis of this same phase's events), so even had
+  `domain-skeptic`'s original report-writing pass used full-corpus
+  grepping throughout, that alone would not establish a standing
+  completeness check for whoever *executes* a fix afterward — a separate
+  actor, a separate moment, and (per `decisions/0060`'s write-boundary
+  split) frequently a separate role (`context-researcher`, not
+  `domain-skeptic`, per this same phase's own "What worked" section).
+- **evidence:** `planning/retros/_drift-audit-phase-72.md` §3 (the three
+  sibling instances + one weaker instance, with file:line); commit
+  `336b4cd` (the incomplete fix); commit `5d6a37d` (the follow-on
+  completeness fix); `.claude/agents/domain-skeptic.md` step 3 (`L-051`'s
+  landed text, scoped to detection during a freshness-reconciliation
+  pass, not to post-fix verification)
+- **classification:** scoped-rule
+- **status:** promoted
+- **recurrence:** first confirmed instance of this specific gap
+  (post-fix completeness verification against sibling instances); related
+  to, but a distinct moment from, `L-048`/`L-051`'s citation-fragility
+  class (now four+ occurrences of *that* class)
+- **promoted_to:** `.claude/agents/context-researcher.md` "Hard rules"
+  (extending the same `L-048`/`L-051` bullet — landed by the lead, Phase
+  72 closeout)
+- **curation (independent post-rework triage, 2026-09-27,
+  knowledge-curator):** accept and recommend **promote**, as a targeted
+  amendment to the *same* `L-048`/`L-051` bullet in
+  `.claude/agents/context-researcher.md` "Hard rules" (the role that
+  actually executes a `docs/domain/` correction per this phase's own
+  write-boundary finding), rather than a free-standing new rule or a
+  `domain-skeptic.md` change — `domain-skeptic` is read-only toward the
+  corpus and does not execute fixes, so a completeness check belongs with
+  the role that does the editing. **Draft amendment** (append to the
+  existing bullet, after the `L-051` sentence): "When revising
+  domain-corpus content to close a citation-staleness/retired-terminology
+  finding, grep the full corpus for every remaining occurrence of the
+  identical retired term or pattern before considering the revision
+  complete — not only the specific locations the triggering report named.
+  A fix scoped to only the named locations can leave sibling instances of
+  the identical pattern behind, including in files the fix is already
+  editing for the same underlying issue: confirmed at Phase 72
+  (`336b4cd` fixed exactly the four locations `domain-skeptic`'s report
+  named, missing three sibling instances plus one stale citation, two of
+  them in a file `336b4cd` was already editing — caught only by a redone,
+  independent `docs-reconstructor` audit, `L-055`)." Also recommend the
+  lead consider (not drafted here, since it's a broader, unconfirmed
+  extension) whether `release-phase-auditor`'s own DoD checklist should
+  gain an explicit item verifying a fix commit's completeness against a
+  full-corpus grep whenever it closes a named staleness finding — this
+  would add an independent backstop rather than relying solely on
+  `context-researcher`'s own self-check at fix time, matching this
+  project's general preference for independent verification over
+  self-certification (`CLAUDE.md` §5). Flagging, not deciding, since only
+  one concrete instance has occurred and `release-phase-auditor`'s
+  existing general "re-runs verification" mandate arguably already covers
+  it in principle. Not landing the `context-researcher.md` edit directly
+  — outside this role's write boundary; drafted here for the lead to
+  review and land.
+
 ### L-054 — `docs-reconstructor`'s domain-claim staleness flag matched on body-text mentions of a retired label across more pages than actually cited it in their own References block — over-inclusive but harmless given `domain-skeptic`'s own follow-up verification
 
 - **origin:** `planning/retros/_domain-skeptic-review-phase-72.md`, "A

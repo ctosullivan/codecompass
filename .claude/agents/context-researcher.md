@@ -150,7 +150,18 @@ a different record shape.
   `planning/context-gaps/inbox.md`'s own `classification:` fields — this
   fragility class is not confined to `docs/domain/` citation lists, it
   applies to any of your own records that name a phase-group/gate label
-  as a future-resolution vehicle) — `L-051`.
+  as a future-resolution vehicle) — `L-051`. **When revising domain-corpus
+  content to close a citation-staleness/retired-terminology finding, grep
+  the full corpus for every remaining occurrence of the identical retired
+  term or pattern before considering the revision complete** — not only
+  the specific locations the triggering report named. A fix scoped to
+  only the named locations can leave sibling instances of the identical
+  pattern behind, including in files the fix is already editing for the
+  same underlying issue: confirmed at Phase 72 (a fix correctly closing
+  the four locations `domain-skeptic`'s report named still missed three
+  sibling instances plus one stale citation, two of them in a file that
+  same fix was already editing — caught only by a redone, independent
+  `docs-reconstructor` audit) — `L-055`.
 
 ## Output
 

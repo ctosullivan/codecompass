@@ -47,6 +47,8 @@ L-046 | 2026-09-24 | workflow | planning/agent-led-workflow.md step 6 (verify a 
 L-048 | 2026-09-25 | scoped-rule | .claude/agents/context-researcher.md "Hard rules" (docs/domain/ illustrative citations of fast-moving planning documents/tests must use a restructure-resistant citation form) @ (this phase's own closeout commit)
 L-050 | 2026-09-25 | project-rule | CLAUDE.md §2 (planning/ROADMAP.md's own description corrected to match Phase 71's restructure) @ (this phase's own closeout commit)
 L-051 | 2026-09-27 | scoped-rule | .claude/agents/context-researcher.md "Hard rules" (extends L-048 to cover live phase-group/gate/priority-track labels and Claim-record statement text) + .claude/agents/domain-skeptic.md step 3 (grep for retired phase-group labels during freshness reconciliation) @ (this phase's own closeout commit)
+L-055 | 2026-09-27 | scoped-rule | .claude/agents/context-researcher.md "Hard rules" (post-fix completeness grep against sibling instances of a retired-terminology pattern, before considering a domain-corpus revision complete) @ (this phase's own closeout commit)
+L-056 | 2026-09-27 | workflow | planning/agent-led-workflow.md step 9 (dispatch prompt must explicitly restate docs-reconstructor's required persisted report path) @ (this phase's own closeout commit)
 L-036 | 2026-09-23 | workflow | planning/agent-led-workflow.md step 5 (re-read a milestone-scoped agent brief against every ADR landed since its own last edit, before dispatching it) @ (this phase's own closeout commit)
 L-035 | 2026-09-23 | workflow | planning/agent-led-workflow.md step 5 (any multi-cluster phase must include an explicit post-dispatch consistency pass before closing the phase) @ (this phase's own closeout commit)
 
