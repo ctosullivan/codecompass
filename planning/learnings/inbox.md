@@ -2424,7 +2424,18 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 - **status:** promoted
 - **recurrence:**
 - **promoted_to:** `planning/ROADMAP.md` "Future-improvement backlog
-  (unscheduled)" section
+  (unscheduled)" section (Phase 63D-Phase 73), then Phase 74's own row
+  (`planning/phase-74-provenance-hardening.md`) once actually
+  implemented -- landed for real: `symbol_enrichment.model` added via
+  `_migrate_symbol_enrichment_model_column`, `record_symbol_enrichment`
+  requires a real `model` argument for every new write, its one
+  production call site (`enrichment.py:427`) supplies it. Closed
+  precisely as this entry's own recommendation named (an additive
+  migration, `_migrate_symbols_export_kind_note_columns`'s own pattern),
+  with one refinement `domain-skeptic`'s own Phase 74 freshness check
+  found: the column is nullable, not `NOT NULL`, since a pre-existing
+  row's real producer was never recorded and an honest `NULL` is the
+  correct backfill, not a fabricated value.
 - **curation (Phase 63D triage, 2026-09-23, knowledge-curator):**
   provenance accepted — all required fields present. Independently
   re-verified rather than taking the candidate's (or `domain-skeptic`'s)
@@ -2509,7 +2520,16 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 - **status:** promoted
 - **recurrence:**
 - **promoted_to:** `planning/ROADMAP.md` "Future-improvement backlog
-  (unscheduled)" section
+  (unscheduled)" section (Phase 63D-Phase 73), then Phase 74's own row
+  (`planning/phase-74-provenance-hardening.md`) once actually
+  implemented -- landed for real: `ExternalAdapterProcess.initialize`
+  now takes a required `expected_ecosystem` argument and validates it
+  plus `capabilities` against the closed set, raising `AdapterError` on
+  either mismatch. `adapters/haskell.py`'s one production call site
+  passes `expected_ecosystem=self.config.ecosystem`. Closed exactly as
+  this entry's own recommendation named -- domain-skeptic's own Phase 74
+  freshness check confirmed this is a full closure with no residual gap
+  (unlike L-031's own narrower nullability caveat).
 - **curation (Phase 63D triage, 2026-09-23, knowledge-curator):**
   provenance accepted — all required fields present. Independently
   re-verified rather than taking the candidate's own account on faith:
