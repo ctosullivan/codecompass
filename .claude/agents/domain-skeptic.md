@@ -68,6 +68,17 @@ folder:
    Definition section asserted the opposite of what its own
    Counterexample section (independently re-verified against the real
    schema) correctly stated, two paragraphs apart in the same file.
+   **When running a freshness reconciliation pass specifically** (not an
+   initial adversarial review), also grep for known fragile term-classes
+   directly — a live project phase-group/stage/gate/priority-track label
+   (e.g. "Stage E," "GATE DD") used anywhere in the corpus as a
+   future-resolution-mechanism reference — rather than relying solely on
+   "does the triggering diff touch a file/symbol/behaviour this page
+   cites": Phase 72's own triggering diff (`decisions/0062`) never
+   touched `planning/v1-redefinition/roadmap.md` itself, yet made four
+   pages' own "Stage E's own future Domain stage" phrasing stale anyway,
+   because the label being retired lived only in the corpus's own prose,
+   not in the cited file (`L-051`).
 4. **Actively search for missing edge cases and counterexamples** a
    concept's own stated definition would predict should exist but the
    page doesn't mention. If a concept page claims "X is always Y,"

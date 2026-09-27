@@ -234,9 +234,11 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   the shape of a fix, but scoping it (which languages, which symbol
   kinds, how to avoid false positives on common short identifiers) is a
   real design question, not a one-line change.
-- **classification:** graph-capability (Stage E / GATE DD) — a new
-  relation kind and a new detection pass, not a tuning change to an
-  existing Stage C heuristic.
+- **classification:** graph-capability (GATE DD; the "Stage E"
+  phase-group label that would have decided this is retired,
+  `decisions/0062` — re-homed to whichever Priority phase takes it up,
+  `pre-v1-disposition.md` §7) — a new relation kind and a new detection
+  pass, not a tuning change to an existing Stage C heuristic.
 - **status:** candidate
 - **recurrence:** related to, but distinct from, three prior entries —
   checked explicitly rather than assumed: **not** `CG-004` (name
@@ -295,6 +297,27 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   below the ≥2-occurrence promotion bar). No entry made to
   `context-graph.db` — this queue never writes there, per
   `decisions/0051`.
+- **curation (Phase 72 triage, 2026-09-27, knowledge-curator):**
+  `decisions/0062` explicitly reviews this exact candidate by name
+  (alongside `CG-001`/`CG-003`/`CG-006`) and leaves it at unchanged
+  evidence status — "this ADR does not promote any of them past what
+  `context-gaps/README.md`'s own recurrence bar requires." **Status
+  unchanged: `candidate`**, still single-occurrence. Separately: this
+  entry's own standalone `classification:` field named "Stage E" as the
+  live gate that would decide it — `decisions/0062` retires that
+  phase-group label project-wide (post-v1 work is now Priority A-F, not
+  lettered stages); corrected the field above to name `decisions/0062`/
+  `pre-v1-disposition.md` §7 instead, GATE DD itself unaffected. This is
+  a further, self-caught instance of the citation-fragility class
+  `L-048` already names (a live project phase-group/gate label used as a
+  future-resolution-mechanism reference going stale from an unrelated
+  restructure) — this time inside `context-gaps/inbox.md`'s own
+  structured field rather than a `docs/domain/` page or a Claim record,
+  and outside `domain-skeptic`'s own Phase 72 scope (it only reviewed
+  `docs/domain/`). Filed as `L-051` for the lead's consideration
+  (extend `L-048`'s landed rule to cover phase-group/gate labels, not
+  only document content, and to note this class of staleness can occur
+  in this queue's own fields too).
 
 ### CG-006 — `mentions_artifact` matches by target title text only, never by filename, so docs that cross-reference each other by filename in prose (a common real pattern) are missed
 
@@ -394,6 +417,15 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   own "Where we're going" framing — not urgent, no forcing deadline. No
   entry made to `context-graph.db` — this queue never writes there, per
   `decisions/0051`.
+- **curation (Phase 72 triage, 2026-09-27, knowledge-curator):**
+  `decisions/0062` explicitly reviews this exact candidate by name
+  (alongside `CG-001`/`CG-003`/`CG-007`) and leaves it at unchanged
+  evidence status. **Status unchanged: `candidate`**, still
+  first-occurrence. This entry's own standalone `classification:` field
+  (`detection-improvement`) never named "Stage E" as its own resolution
+  vehicle, so no field correction needed here — noted only for
+  completeness alongside the sibling correction made to `CG-001`/
+  `CG-003`/`CG-007` (see those entries' own Phase 72 notes; `L-051`).
 
 ### CG-005 — `doc_artifacts.origin='project'` is semantically wrong for externally-sourced, pinned reference material
 
@@ -479,13 +511,11 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   synthetic test. Full evidence trail:
   `planning/knowledge/doc-origin-pinned-reference/` (11 Observation, 9
   Evidence, 4 Claim, 4 Derivation, 1 Decision, 3 Requirement records,
-  `design.md`, `context-packet.md`, `packet-sufficiency.md`). **Pending
-  `promoted.md` line** (lead/`knowledge-curator` to add once this
-  phase's closeout commit lands, per the `CG-002`/`CG-004` precedent):
-  `CG-005 | 2026-09-18 | graph-capability |
-  src/codecompass/graph.py (origin CHECK enum, _SCHEMA_VERSION 7) +
-  src/codecompass/spec_docs.py::_has_pinned_reference_frontmatter/_detect_origin
-  + tests/test_spec_docs.py + tests/test_graph.py @ <real short SHA>`.
+  `design.md`, `context-packet.md`, `packet-sufficiency.md`).
+  **`promoted.md` line added** (found missing during Phase 72's own
+  `knowledge-curator` triage — a pre-existing hygiene gap since this
+  phase's own closeout, backfilled with the real commit SHA `c3e5006`):
+  see `planning/learnings/promoted.md`.
 - **recurrence:** first occurrence
 - **curation (Phase 54 triage, 2026-09-16, knowledge-curator):** template
   fields all present. Independently re-verified rather than taken on the
@@ -772,9 +802,12 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   implementation... as evidence nodes with provenance." This entry is the
   first concrete, evidenced instance of that hypothesis actually blocking
   a real task, ahead of that future phase's scheduled test.
-- **classification:** graph-capability (Stage E / GATE DD) — matches
-  `conditional-generalisation.md` §2.3's "reference-doc / spec / manual
-  dependency kind" hypothesis row exactly.
+- **classification:** graph-capability (GATE DD; the "Stage E"
+  phase-group label that would have decided this is retired,
+  `decisions/0062` — re-homed to whichever Priority phase takes it up,
+  `pre-v1-disposition.md` §7) — matches `conditional-generalisation.md`
+  §2.3's "reference-doc / spec / manual dependency kind" hypothesis row
+  exactly.
 - **status:** candidate
 - **recurrence:** first occurrence
 - **curation (Phase 46 triage, 2026-09-13, knowledge-curator):** template
@@ -874,6 +907,21 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   Status unchanged (`candidate`) — this is corroboration of an existing,
   already-classified gap, not grounds to promote past it on two
   same-project instances.
+- **curation (Phase 72 triage, 2026-09-27, knowledge-curator):**
+  `decisions/0062` explicitly reviews this exact candidate by name
+  (alongside `CG-001`/`CG-006`/`CG-007`) and leaves it at unchanged
+  evidence status — "this ADR does not promote any of them past what
+  `context-gaps/README.md`'s own recurrence bar requires." **Status
+  unchanged: `candidate`**, still single-occurrence (the Phase 55
+  corroboration above remains same-domain, per that note's own §D
+  discipline). Corrected this entry's own standalone `classification:`
+  field above: it named "Stage E" as the live gate that would decide
+  this — `decisions/0062` retires that phase-group label project-wide
+  (post-v1 work is now Priority A-F, not lettered stages); GATE DD
+  itself is unaffected and remains the correct gate name. A further,
+  self-caught instance of the citation-fragility class `L-048` already
+  names, this time inside `context-gaps/inbox.md` rather than
+  `docs/domain/` or a Claim record — filed as `L-051`.
 
 ### CG-002 — Ledgerkit's entire `dev-docs/` tree is invisible to spec-doc detection, not merely under-related
 
@@ -1142,3 +1190,25 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   §6), not a promotion. Status unchanged: `candidate`, still needs a
   genuine second occurrence or independent second observer of *this*
   edge shape.
+- **curation (Phase 72 triage, 2026-09-27, knowledge-curator):**
+  `decisions/0062` explicitly reviews this exact candidate by name
+  (alongside `CG-003`/`CG-006`/`CG-007`), independently confirms
+  `context-health-planner`'s own stage-boundary assessment names it as
+  "its founding, still-uncorroborated evidence" for the new Priority A
+  track, and leaves it at unchanged evidence status — "this ADR does not
+  promote any of them past what `context-gaps/README.md`'s own
+  recurrence bar requires." **Status unchanged: `candidate`**, still
+  single-occurrence/single-observer. This entry's own "Classification"
+  narrative line (Phase 43c triage) named "Stage E" as the live gate
+  that would decide the feature-grouping half — `decisions/0062` retires
+  that phase-group label project-wide (post-v1 work is now Priority A-F,
+  not lettered stages); GATE DD itself is unaffected and remains the
+  correct gate name, now expected to inform Priority A specifically per
+  `decisions/0062`. Leaving the Phase 43c/47 narrative text as written
+  (a historical record of that triage's own reasoning, per this file's
+  existing convention of appending rather than rewriting), but noting
+  the "Stage E" reference is now stale as a forward-looking pointer — a
+  further, self-caught instance of the citation-fragility class `L-048`
+  already names, this time inside `context-gaps/inbox.md` rather than
+  `docs/domain/` or a Claim record, and outside `domain-skeptic`'s own
+  Phase 72 scope (it only reviewed `docs/domain/`). Filed as `L-051`.

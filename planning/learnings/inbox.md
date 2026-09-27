@@ -8,6 +8,213 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-054 — `docs-reconstructor`'s domain-claim staleness flag matched on body-text mentions of a retired label across more pages than actually cited it in their own References block — over-inclusive but harmless given `domain-skeptic`'s own follow-up verification
+
+- **origin:** `planning/retros/_domain-skeptic-review-phase-72.md`, "A
+  secondary finding: the audit's own framing overstated uniformity"
+- **date:** 2026-09-27
+- **project_revision:** 336b4cd
+- **observation:** Phase 72's per-phase drift audit named seven
+  `docs/domain/concepts/*.md` pages plus one `open-questions.md` item as
+  domain-claim staleness candidates tied to `roadmap.md:1061-1087`'s
+  "Stage E" framing. `domain-skeptic`'s own follow-up check found only
+  three of the seven (`evidence.md`, `claim.md`, `decision.md`) actually
+  cite that line range verbatim in their own References block;
+  `provenance.md` cites a narrower range; `observation.md`,
+  `derivation.md`, and `relationship-edge.md` don't cite it in References
+  at all, only mentioning "Stage E" in body text — yet all were flagged.
+  `development-methodology.md` checkpoint 1's own written criterion for
+  this check is "if a phase's diff touches a file, symbol, or behaviour a
+  `docs/domain/concepts/*.md` page's own references block cites" —
+  narrower than what evidently ran, since Phase 72's diff never touched
+  `roadmap.md` (the cited file) at all; the actual staleness came from
+  `decisions/0062`, an unrelated file, retiring the framing the citation
+  depended on.
+- **evidence:** `planning/retros/_domain-skeptic-review-phase-72.md`
+  "Precisely which pages are affected" and "A secondary finding" sections;
+  `planning/v1-redefinition/development-methodology.md` "Domain-corpus
+  freshness and reconciliation" checkpoint 1's literal text
+- **classification:** scoped-rule
+- **status:** retained
+- **recurrence:** first occurrence of this specific over-flagging pattern;
+  no downstream harm since `domain-skeptic`'s own verification step
+  (already required, per checkpoint 1's "not a finding... only that it is
+  worth `domain-skeptic` looking again") caught and correctly narrowed it
+  before any fix landed
+- **promoted_to:**
+- **curation (Phase 72 triage, 2026-09-27, knowledge-curator):** this is
+  arguably a feature, not a bug — a cheap, over-inclusive flag with a
+  cheap, precise verification step downstream is a reasonable
+  recall/precision tradeoff, and `domain-skeptic`'s own report treats it
+  as "worth noting... though it doesn't change the substantive verdict,"
+  not a defect. Also notable: `docs-reconstructor`'s actual behaviour here
+  was broader than checkpoint 1's own literal written criterion (it
+  flagged pages whose cited file was never touched by the diff, catching
+  a real staleness anyway) — worth someone eventually writing down what
+  actually triggered the flag this time, since the documented criterion
+  alone would not have predicted this catch. Not promoting a rule change
+  from one instance where the audit's looser-than-documented behaviour
+  happened to work in the project's favour. **Outcome: retain** — revisit
+  if a future instance shows either (a) the same broad matching producing
+  a genuinely wasteful false-positive load, or (b) the narrower documented
+  criterion actually missing a real case the broader behaviour would have
+  caught.
+
+### L-053 — independent fork review, not the lead's own second read, caught a disposition entry's own omission of an existing (relocated) design document — a repeat of `L-049`'s shape, not yet a promotable rule
+
+- **origin:** Phase 72 retro "What worked" (fork-review finding, landed
+  `c0c0d15`)
+- **date:** 2026-09-27
+- **project_revision:** c0c0d15
+- **observation:** `planning/pre-v1-disposition.md`'s Phase 24 entry
+  originally stated Phase 24 "never had its own numbered plan file"
+  without citing `planning/phase-20-chat-project-root-routing-design.md`
+  — a real design document for exactly that scope, relocated from
+  `architecture/overview.md` at Phase 65 — which does exist. An
+  independent fork review caught this; the lead's own second
+  read-through of the same disposition table had not. Fixed in `c0c0d15`.
+- **evidence:** `planning/pre-v1-disposition.md` §3 (current text, citing
+  `planning/phase-20-chat-project-root-routing-design.md`); commit
+  `c0c0d15` ("cite Phase 20's own design doc under Phase 24's
+  disposition"); `planning/retros/phase-72-stage-c-learnings-and-roadmap-realignment.md`
+  "What worked" third bullet
+- **classification:** uncertain
+- **status:** retained
+- **recurrence:** related to `L-049` (Phase 71, a fork review catching a
+  line-count discrepancy the lead's own drafting missed) — same shape (an
+  independent completeness/consistency check catching what a second
+  read-through by the lead alone missed), different concrete content (a
+  missing citation to an existing document, vs. an imprecise numeric
+  estimate); neither individually promoted, per `L-049`'s own reasoning
+  against promoting a rule from a single harmless miss
+- **promoted_to:**
+- **curation (Phase 72 triage, 2026-09-27, knowledge-curator):** following
+  `L-049`'s own precedent exactly — a second instance of "independent
+  fork review earns its cost" doesn't yet justify inventing a
+  project-rule (e.g. "always grep `planning/phase-N-*` and
+  `architecture/overview.md`'s relocation history before writing a
+  backlog disposition entry"); the retro's own "What didn't work" section
+  already treats this as the review step working as designed, not a
+  process failure. **Outcome: retain** — revisit if a third instance of
+  this shape (an independent review catching a completeness gap the
+  lead's own read missed) recurs with real, not just cosmetic,
+  consequence, per `L-049`'s own revisit condition.
+
+### L-052 — confirming that a Claim/Evidence-model correction limited to a resolution-mechanism reference still goes through full Claim-supersedes-Claim, not a lighter edit, matches `development-methodology.md`'s already-unconditional rule — no new rule surfaced
+
+- **origin:** Phase 72 retro "Lessons learnt" (explicitly left to
+  `knowledge-curator`'s own independent assessment)
+- **date:** 2026-09-27
+- **project_revision:** c0c0d15 (`CL-EVID-011`/`CL-EVID-012`'s own
+  recorded `repository_revision`)
+- **observation:** `context-researcher` superseded `CL-EVID-009`/
+  `CL-EVID-003` with `CL-EVID-011`/`CL-EVID-012` for a narrow, mechanical
+  correction (retiring "Stage E" as the named future-resolution vehicle)
+  — the first time this project's Claim-supersedes-Claim mechanism has
+  been exercised with real content (`CL-EVID-012`'s own statement: "the
+  first real exercise... a narrow, mechanical resolution-mechanism
+  correction, not a substantive reversal"). The retro frames this as a
+  possible new process rule. Checked directly:
+  `development-methodology.md`'s "Traceability without silent rewriting"
+  section already states, unconditionally and with no severity/magnitude
+  carve-out, that "Domain and Design artifacts are never edited in place
+  once approved. A superseded Claim, Derivation, Decision, or Requirement
+  gets a **new** record..." — this rule already covers any correction to
+  a Claim, narrow or substantive, with no exception written for
+  citation-only/reference-only fixes. Phase 72's use is a clean,
+  unsurprising application of an already-fully-general rule, not a
+  discovery of a boundary case the rule hadn't already settled.
+- **evidence:** `planning/v1-redefinition/development-methodology.md`
+  "Traceability without silent rewriting" (the unconditional rule text,
+  unchanged since it was written); `planning/knowledge/codecompass-domain/CL-EVID-012.yaml`
+  (states plainly this was "a narrow, mechanical resolution-mechanism
+  correction, not a substantive reversal" and that the mechanism's
+  behaviour "under a genuine contradiction... remains honestly untested"
+  — i.e. the domain corpus itself already records the caveat the retro
+  raises, durably, without needing a duplicate learnings-queue entry)
+- **classification:** uncertain
+- **status:** discarded
+- **recurrence:** none — first and only instance so far of the mechanism
+  firing with real content
+- **promoted_to:**
+- **curation (Phase 72 triage, 2026-09-27, knowledge-curator):** matches
+  the `L-047` precedent exactly (two self-review catches at Phase 71 that
+  "confirm existing rules already work, surfacing no new gap" →
+  discard). Here too: the rule that decided how to handle this correction
+  was already fully general before Phase 72, the correction followed it
+  without needing interpretation or exception, and the one genuinely open
+  fact this phase surfaces (the mechanism remains untested under a real,
+  substantive contradiction) is already recorded, durably, in
+  `CL-EVID-012.yaml`'s own text — filing a second, duplicate record of the
+  same caveat in the learnings queue would be exactly the low-value
+  pile-up the lifecycle's "no giant permanent AI learnings document"
+  principle warns against. **Outcome: discard** — reason: confirms an
+  already-unconditional rule; the one real open question is already
+  durably recorded elsewhere.
+
+### L-051 — a domain-corpus citation naming a live project phase-group/gate label (not just a document's content) as a future-resolution mechanism is exactly as fragile to an unrelated organisational restructure as `L-048`'s document-content citations — a third/fourth instance, now also inside a Claim record and this project's own `context-gaps` queue
+
+- **origin:** Phase 72 retro "What worked" +
+  `planning/retros/_domain-skeptic-review-phase-72.md` + this triage's
+  own independent check of `planning/context-gaps/inbox.md`
+- **date:** 2026-09-27
+- **project_revision:** 336b4cd (domain-corpus fix); this triage's own
+  session (context-gaps/inbox.md fix, uncommitted at filing time)
+- **observation:** `decisions/0062` (Phase 72) retires the "Stage E"
+  phase-group label project-wide. `domain-skeptic`'s Phase 72 review
+  found this made "Stage E's own future Domain stage" stale inside
+  `CL-EVID-009`/`CL-EVID-003` and four `docs/domain/concepts/*.md` pages
+  — the third occurrence of the citation-fragility `L-048` already names,
+  but the first inside a Claim record rather than a concept page's
+  References list, and the first requiring `context-researcher`'s
+  Claim-supersession mechanism (not a citation-list edit) to fix.
+  Independently, this triage found the identical pattern in
+  `planning/context-gaps/inbox.md`'s own `classification:` fields for
+  `CG-001`, `CG-003`, `CG-007` ("graph-capability (Stage E / GATE DD)"),
+  a location outside both `domain-skeptic`'s Phase 72 scope (`docs/domain/`
+  only) and `context-researcher`'s (Claim records only) — a fourth
+  instance, self-caught by this curation pass, not by any dedicated
+  freshness check, and fixed directly in this same triage (within this
+  role's own write boundary, `planning/context-gaps/**`).
+- **evidence:** `planning/retros/_domain-skeptic-review-phase-72.md` "The
+  staleness originates in a Claim record, not just corpus prose";
+  `planning/knowledge/codecompass-domain/CL-EVID-011.yaml`/`CL-EVID-012.yaml`
+  (supersession); `planning/context-gaps/inbox.md` `CG-001`/`CG-003`/
+  `CG-007` classification fields (fixed in this same triage, Phase 72
+  curation notes added to `CG-001`/`CG-003`/`CG-006`/`CG-007`)
+- **classification:** scoped-rule
+- **status:** promoted
+- **recurrence:** third/fourth occurrence of `L-048`'s underlying class
+  (Phase 66 `CONTEXT.md` rewrite; Phase 71 `ROADMAP.md` restructure;
+  Phase 72's `decisions/0062` Stage-E retirement, twice — once inside a
+  Claim, once inside `context-gaps/inbox.md`)
+- **promoted_to:** `.claude/agents/context-researcher.md` "Hard rules"
+  (extended the `L-048` rule) and `.claude/agents/domain-skeptic.md`
+  step 3 (landed by the lead, Phase 72 closeout, following this
+  candidate's own drafted text)
+- **curation (Phase 72 triage, 2026-09-27, knowledge-curator):** accept
+  and recommend **promote** — amend the already-landed `L-048` rule in
+  `.claude/agents/context-researcher.md` "Hard rules" to explicitly cover
+  "a live project phase-group/stage/gate/priority-track label used as a
+  future-resolution-mechanism reference," not only "another document's
+  current content," and add a pointer that this fragility class isn't
+  confined to `docs/domain/`: it can occur inside a Claim record's own
+  statement text (out of this role's write boundary — `context-researcher`'s
+  territory) and inside this project's own `context-gaps/inbox.md`
+  classification fields (fixed directly in this triage). Also recommend
+  `.claude/agents/domain-skeptic.md`'s own contradiction-search step
+  (already amended once for within-page consistency, `L-033`) gain a note
+  to grep for "Stage E" / other retired phase-group names as a known
+  fragile term-class during a freshness reconciliation pass, rather than
+  relying solely on the diff-touched-file heuristic
+  (`development-methodology.md` checkpoint 1's literal criterion — "diff
+  touches a file/symbol/behaviour the page's own references cite" — did
+  not, on its own written text, predict this catch, since Phase 72's diff
+  never touched `roadmap.md` itself; see `L-054` for the related
+  over-flagging finding). Not landing either `.claude/agents/*.md` edit
+  directly — outside this role's write boundary; drafted here for the
+  lead to review and land.
+
 ### L-050 — `CLAUDE.md` §2's own description of `planning/ROADMAP.md` ("full-roadmap phase-status table (all phases, not just the current one)") is now stale against Phase 71's approved restructure
 
 - **origin:** independent read for the Phase 71 `knowledge-curator`
