@@ -600,6 +600,86 @@ def test_build_doc_relations_edges_matches_another_spec_doc_by_its_h1_title(
     assert matches[0].target_doc_artifact_path == "dev-docs/17-query-semantics-brief.md"
 
 
+def test_build_doc_relations_edges_matches_another_spec_doc_by_its_filename(
+    tmp_path: Path,
+) -> None:
+    """Phase 73 (closes `CG-006`): the exact real-world Ledgerkit pair
+    `CG-006`'s own filing named — a source doc citing a target by its
+    **filename**, never its H1 title — still produced zero edges after
+    `CG-004`'s own fix (Phase 55b) landed, because that fix only widened
+    *which artifacts* are named, not *which strings* are searched for.
+    """
+    _write_spec_doc(
+        tmp_path,
+        "dev-docs/17-query-semantics-brief.md",
+        "# Query semantics brief\n\nPer `07-query-regex.md` §7.1's phasing note.\n",
+    )
+    _write_spec_doc(
+        tmp_path,
+        "dev-docs/07-query-regex.md",
+        "# Query language and regex extension plan\n\nDetails here.\n",
+    )
+    spec_doc_rows = scan_spec_docs(tmp_path)
+
+    edges = build_doc_relations_edges(spec_doc_rows, [], spec_doc_rows, tmp_path)
+
+    matches = [e for e in edges if e.relation_kind == "mentions_artifact"]
+    assert len(matches) == 1
+    assert matches[0].source_doc_artifact_path == "dev-docs/17-query-semantics-brief.md"
+    assert matches[0].target_doc_artifact_path == "dev-docs/07-query-regex.md"
+
+
+def test_build_doc_relations_edges_matches_another_spec_doc_by_its_stem(
+    tmp_path: Path,
+) -> None:
+    """A citation by filename stem (no `.md` extension) is also matched,
+    not only the full filename with extension.
+    """
+    _write_spec_doc(
+        tmp_path,
+        "dev-docs/17-query-semantics-brief.md",
+        "# Query semantics brief\n\nSee 07-query-regex for the full plan.\n",
+    )
+    _write_spec_doc(
+        tmp_path,
+        "dev-docs/07-query-regex.md",
+        "# Query language and regex extension plan\n\nDetails here.\n",
+    )
+    spec_doc_rows = scan_spec_docs(tmp_path)
+
+    edges = build_doc_relations_edges(spec_doc_rows, [], spec_doc_rows, tmp_path)
+
+    matches = [e for e in edges if e.relation_kind == "mentions_artifact"]
+    assert len(matches) == 1
+    assert matches[0].target_doc_artifact_path == "dev-docs/07-query-regex.md"
+
+
+def test_build_doc_relations_edges_ignores_a_generic_filename_mention(
+    tmp_path: Path,
+) -> None:
+    """A target's own filename can be generic (`notes.md`, stem `notes`)
+    even when its H1 title is specific enough to give it a real `.name`
+    (so it's still an eligible match target) — citing it only by that
+    generic filename must not become a universal match, mirroring
+    `_is_specific_enough`'s existing protection for a bare title.
+    """
+    _write_spec_doc(
+        tmp_path,
+        "docs/notes.md",
+        "# API design notes\n\nDetails here.\n",
+    )
+    _write_spec_doc(
+        tmp_path,
+        "docs/usage.md",
+        "# Usage\n\nSee notes.md for background.\n",
+    )
+    spec_doc_rows = scan_spec_docs(tmp_path)
+
+    edges = build_doc_relations_edges(spec_doc_rows, [], spec_doc_rows, tmp_path)
+
+    assert [e for e in edges if e.relation_kind == "mentions_artifact"] == []
+
+
 def test_build_doc_relations_edges_excludes_a_spec_doc_mentioning_its_own_title(
     tmp_path: Path,
 ) -> None:

@@ -23,6 +23,7 @@ from codecompass.graph import (
     RoutesViaEdgeRow,
     SymbolRow,
 )
+from codecompass.spec_docs import _is_specific_enough
 
 _DEPTREE_FILENAME = "deptree.json"
 
@@ -296,6 +297,26 @@ def build_doc_relations_edges(
     (`relation_kind='mentions_artifact'`). A doc artifact with no `name`
     set is never a match target — nothing to word-boundary-search for.
 
+    Phase 73 (closes `CG-006`): for an already-named target not matched
+    by its `.name`, also try its path's filename
+    (`Path(artifact.path).name`, e.g. `"07-query-regex.md"`) and stem
+    (`Path(artifact.path).stem`, e.g. `"07-query-regex"`) as additional
+    word-boundary patterns — a real, ordinary citation style ("see
+    `07-query-regex.md`") that title-only matching missed even after
+    `CG-004`'s own fix, found live on the exact real-world pair that
+    fix's motivating example named. Each candidate string is gated
+    through `spec_docs._is_specific_enough` (reused, not duplicated) so
+    a generic filename like `readme.md` doesn't become a universal
+    match target any more than the bare title "readme" already isn't.
+    Same relation kind, same self-mention exclusion, same chunk
+    attribution as title-based matching — this widens *which strings*
+    are tried per target, not *which targets* are eligible (an unnamed
+    artifact stays excluded, unchanged). **Known limitation, not fixed
+    here**: two files sharing an identical basename in different
+    directories are indistinguishable by this strategy, the same class
+    of limitation title-based matching already has for two docs sharing
+    an identical title.
+
     Self-mention exclusion (Phase 29): a `vendor_doc` source row's own
     vendor (its `vendor_name`) never produces a `mentions_dependency` edge
     targeting that same vendor — a package's own README mentioning its own
@@ -358,8 +379,24 @@ def build_doc_relations_edges(
         for artifact in named_artifacts:
             if artifact.path == row.path:
                 continue
+            match_string: str | None = None
             if re.search(rf"\b{re.escape(artifact.name)}\b", text):
-                chunk = _find_containing_chunk(lines, chunks, artifact.name)
+                match_string = artifact.name
+            else:
+                filename = Path(artifact.path).name
+                stem = Path(artifact.path).stem
+                if _is_specific_enough(filename) and re.search(
+                    rf"\b{re.escape(filename)}\b", text
+                ):
+                    match_string = filename
+                elif (
+                    stem != filename
+                    and _is_specific_enough(stem)
+                    and re.search(rf"\b{re.escape(stem)}\b", text)
+                ):
+                    match_string = stem
+            if match_string is not None:
+                chunk = _find_containing_chunk(lines, chunks, match_string)
                 edges.append(
                     DocRelationEdgeRow(
                         source_doc_artifact_path=row.path,

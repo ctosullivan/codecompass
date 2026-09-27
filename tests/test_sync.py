@@ -661,6 +661,33 @@ def test_rebuild_project_graph_relates_two_spec_docs_to_each_other(tmp_path: Pat
     assert matches[0]["target_doc_artifact_path"] == "dev-docs/17-query-semantics-brief.md"
 
 
+def test_rebuild_project_graph_relates_docs_citing_each_other_by_filename(
+    tmp_path: Path,
+) -> None:
+    """Phase 73 (closes `CG-006`), through the real production entry point
+    `rebuild_project_graph` — not `build_doc_relations_edges` called
+    directly, unlike the unit tests in `test_doc_mapping.py`. The exact
+    real-world Ledgerkit pair `CG-006`'s own filing named: a source doc
+    citing a target by its filename, never its H1 title.
+    """
+    (tmp_path / "dev-docs").mkdir()
+    (tmp_path / "dev-docs" / "17-query-semantics-brief.md").write_text(
+        "# Query semantics brief\n\nPer `07-query-regex.md` §7.1's phasing note.\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "dev-docs" / "07-query-regex.md").write_text(
+        "# Query language and regex extension plan\n\nDetails here.\n", encoding="utf-8"
+    )
+
+    rebuild_project_graph([], tmp_path)
+
+    conn = open_graph(tmp_path)
+    relations = doc_relations(conn, "dev-docs/17-query-semantics-brief.md")
+    matches = [r for r in relations if r["relation_kind"] == "mentions_artifact"]
+    assert len(matches) == 1
+    assert matches[0]["target_doc_artifact_path"] == "dev-docs/07-query-regex.md"
+
+
 def test_rebuild_project_graph_excludes_a_generic_bare_project_name_readme_title(
     tmp_path: Path,
 ) -> None:
