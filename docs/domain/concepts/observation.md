@@ -48,7 +48,10 @@ record shape (`CL-EVID-002`, `EV-EVID-010`):
   that exists; it has its own, entirely different field set (origin,
   edge, edge kind, "could mechanical detection ever catch this?",
   etc. — `EV-EVID-009`) and is never promoted into an Evidence/Claim at
-  all — its promotion path is a Stage C/E gated roadmap decision.
+  all — its promotion path is a mechanical-detection or graph-capability
+  gated roadmap decision (the old "Stage C"/"Stage E" phase-group labels
+  are retired, `decisions/0062`; the same gated-ADR promotion mechanism
+  `decisions/0051` describes still applies).
 - **Not a `planning/learnings/` entry.** A learning is "how we should
   work" (a process/workflow lesson about CodeCompass's own
   development); an Observation is "what was found" about a researched

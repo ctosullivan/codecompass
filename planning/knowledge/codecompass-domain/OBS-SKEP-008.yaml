@@ -1,0 +1,108 @@
+id: OBS-SKEP-008
+kind: observation
+method: source_read
+what_was_done: >
+  Follow-on freshness-reconciliation check, same cluster as
+  `EV-SKEP-006`/`OBS-SKEP-007`. `docs-reconstructor`'s per-phase drift
+  audit (`planning/retros/_drift-audit-phase-72.md`, committed at
+  `f2f7cbf`) found that remediation commit `336b4cd` -- which fixed four
+  "Stage E's own future Domain stage" citations -- left three sibling
+  instances of the identical "Stage C/E" pattern unfixed in the same
+  files, plus a weaker fourth candidate (a stale Claim-id citation).
+  Checked each of the four directly rather than trusting the audit's
+  framing: (1) read the current text at
+  `docs/domain/concepts/decision.md:27`, `:101`,
+  `docs/domain/concepts/observation.md:51`, and
+  `docs/domain/concepts/evidence.md:106` in full page context (not just
+  the flagged lines); (2) re-read `decisions/0062` in full (Decision,
+  Alternatives, Consequences sections) for its exact wording on what is
+  and isn't retired; (3) re-read
+  `planning/v1-redefinition/conditional-generalisation.md:27-33`'s own
+  2026-09-27 amendment note ("post-v1 work is no longer organised into
+  lettered stages at all"); (4) grepped
+  `planning/v1-redefinition/roadmap.md` for every `^## STAGE` heading to
+  confirm the full A-G stage-lettering scheme and each stage's own
+  status label; (5) grepped `planning/pre-v1-disposition.md` and
+  `planning/ROADMAP.md` for "Stage C" to confirm it is never named as a
+  live post-v1 destination anywhere in the current planning corpus; (6)
+  re-read `docs/domain/concepts/relationship-edge.md:38-46`'s own
+  already-corrected sentence (the fix commit's own template for this
+  exact pattern) verbatim; (7) diffed commit `336b4cd` directly
+  (`git show 336b4cd -- docs/domain/concepts/relationship-edge.md
+  docs/domain/concepts/decision.md docs/domain/concepts/claim.md
+  docs/domain/open-questions.md`) to see precisely what wording it used
+  and precisely what it left untouched; (8) read `CL-EVID-009.yaml`,
+  `CL-EVID-011.yaml`, `CL-EVID-003.yaml`, `CL-EVID-012.yaml` in full to
+  determine which superseding Claim, if any, backs the specific fact
+  `evidence.md:106` cites `CL-EVID-009` for.
+tool: grep (GNU grep); git show; Read
+tool_version: "system grep/git on this environment"
+repository_revision: "f2f7cbf3e0dd038e1b27ca41c11a43e9af5c17ab"
+location: "docs/domain/concepts/decision.md:27,101; docs/domain/concepts/observation.md:51; docs/domain/concepts/evidence.md:106; docs/domain/concepts/relationship-edge.md:38-46; decisions/0062-post-v1-priorities-are-task-context-completeness-first.md; planning/v1-redefinition/conditional-generalisation.md:27-33; planning/v1-redefinition/roadmap.md (all `## STAGE` headings); planning/pre-v1-disposition.md; planning/ROADMAP.md; planning/knowledge/codecompass-domain/CL-EVID-009.yaml, CL-EVID-011.yaml, CL-EVID-003.yaml, CL-EVID-012.yaml"
+raw_result: >
+  (a) `decision.md:27` reads (unchanged since before Phase 72): "Those
+  queues promote into a Stage C/E *roadmap* decision (an ADR, a new
+  detection heuristic, a new graph capability) -- a different,
+  project-architecture-scoped kind of decision from a per-feature
+  Decision record..." This describes the exact same `context-gaps`/
+  `context-observations` -> ADR promotion mechanism that
+  `relationship-edge.md`'s already-fixed sentence describes ("It
+  becomes a real edge... only through a separately-gated ADR process").
+  (b) `decision.md:101` reads: "**Narrower cousin of -> a Stage C/E
+  gated roadmap decision** reached via `context-gaps`/learning-lifecycle
+  promotion..." -- same mechanism, same file, 62 lines below the
+  sentence (`decision.md:38-41`) `336b4cd` already corrected for the
+  neighbouring (but distinct) "graph-level Decision entity-kind
+  collision" topic in this same file.
+  (c) `observation.md:51` reads: "A context-gap records a
+  *believed-missing relationship*... and is never promoted into an
+  Evidence/Claim at all -- its promotion path is a Stage C/E gated
+  roadmap decision." Same mechanism again, in a file `336b4cd` never
+  touched.
+  (d) `evidence.md:106` reads: "...a queryable database row, not a
+  file-based development-process record, and not yet built or funded
+  (`CL-EVID-009`)." `CL-EVID-009.yaml`'s own `status` field is
+  `superseded`, `supersedes: null` -- it is a historical, frozen record
+  per `decisions/0060`'s append-only model, correctly never edited in
+  place, but should no longer be the *live* citation for a still-true
+  fact. `CL-EVID-011.yaml` (`status: supported`, `supersedes:
+  CL-EVID-009`) carries forward the identical "not yet built, not
+  funded" language verbatim in its own `statement` field. `claim.md`'s
+  parallel citation for the neighbouring "Claim entity-kind collision"
+  fact was updated by `336b4cd` to cite both `CL-EVID-012, CL-EVID-011`
+  (because claim.md's own collision spans both original Claims);
+  `decision.md:38-41`'s parallel citation for the "Decision entity-kind
+  collision" fact was updated to cite `CL-EVID-011` alone (because
+  decision.md's own collision, like evidence.md's, is CL-EVID-009's
+  specific subject, not CL-EVID-003's). `evidence.md:106`'s citation is
+  the direct sibling of decision.md's fixed citation, not claim.md's --
+  `CL-EVID-003`/`CL-EVID-012` never mention the graph-level `Evidence`
+  entity kind specifically, only the graph-level `Claim` entity kind.
+  (e) `decisions/0062`'s own "Decision" section states: "The old Stage
+  E phase grouping (Phases 56-59...) is superseded as a phase group."
+  `conditional-generalisation.md`'s own 2026-09-27 amendment states, in
+  its own voice: "post-v1 work is no longer organised into lettered
+  stages at all" -- not scoped to "Stage E" alone; this sentence retires
+  the entire lettered-stage scheme as a post-v1 organising device,
+  which necessarily includes "Stage C" wherever "Stage C" is used to
+  name a *future* destination rather than a historical label.
+  (f) `planning/v1-redefinition/roadmap.md`'s own `## STAGE C` heading
+  reads "STAGE C -- Improve the existing product · **COMPLETE** (GATE
+  DB ratified 2026-09-13; GATE DC confirmed 2026-09-14)" -- Stage C is
+  a finished, historical phase group, not a live gate. Grepping
+  `planning/pre-v1-disposition.md` and `planning/ROADMAP.md` for "Stage
+  C" finds zero hits in either current planning document -- "Stage C"
+  as a live post-v1 destination-name does not exist anywhere outside
+  the stale corpus prose itself.
+  (g) `relationship-edge.md`'s already-corrected sentence (unedited
+  since `336b4cd`, re-read verbatim): "...only through a separately-
+  gated ADR process (a mechanical-detection decision or a future
+  graph-capability decision -- the old 'Stage C'/'Stage E' phase-group
+  labels are retired, `decisions/0062`, but the same gated-ADR
+  promotion mechanism `decisions/0051` describes still applies), never
+  silently." This is the exact same `context-gaps`-promotion-into-an-
+  ADR mechanism the three sibling sentences in (a)-(c) describe, already
+  fixed once in this file, for this exact mechanism, in this same phase.
+timestamp: "2026-09-27T00:00:00Z"
+performed_by: "domain-skeptic agent dispatch"
+status: recorded

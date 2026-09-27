@@ -1,0 +1,123 @@
+id: EV-SKEP-007
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  Genuine staleness, same root cause and same pattern as
+  `EV-SKEP-006`/`OBS-SKEP-007`, confirmed by direct inspection rather
+  than by trusting the drift audit's own framing:
+  `docs-reconstructor`'s per-phase drift audit
+  (`planning/retros/_drift-audit-phase-72.md`) is correct that
+  remediation commit `336b4cd` fixed only four of the "Stage C/E"
+  future-resolution-mechanism instances in `docs/domain/concepts/`,
+  leaving three sibling instances of the identical pattern -- and one
+  weaker, related citation-staleness instance -- unfixed in the same
+  files.
+
+  **Three confirmed-stale instances (same pattern as the four already
+  fixed)**:
+  - `docs/domain/concepts/decision.md:27` -- "Those queues promote into
+    a Stage C/E *roadmap* decision..."
+  - `docs/domain/concepts/decision.md:101` -- "**Narrower cousin of ->
+    a Stage C/E gated roadmap decision**..."
+  - `docs/domain/concepts/observation.md:51` -- "...its promotion path
+    is a Stage C/E gated roadmap decision."
+
+  All three describe the identical `context-gaps`/`context-
+  observations` -> gated-ADR promotion mechanism that
+  `relationship-edge.md`'s own already-corrected sentence describes
+  (`OBS-SKEP-008`(g)), and all three name "Stage C" and "Stage E"
+  together as the live gate-pair a promotion resolves into. Both labels
+  are retired as post-v1 organising devices: `decisions/0062`'s own
+  words retire "the old Stage E phase grouping... as a phase group,"
+  and `conditional-generalisation.md`'s own 2026-09-27 amendment goes
+  further in its own voice -- "post-v1 work is no longer organised into
+  lettered stages at all" -- which covers "Stage C" too, not only
+  "Stage E." Independently confirmed "Stage C" is not merely retired in
+  the abstract but was already historical *before* Phase 72:
+  `planning/v1-redefinition/roadmap.md`'s own `## STAGE C` heading
+  reads "· COMPLETE (GATE DB ratified 2026-09-13; GATE DC confirmed
+  2026-09-14)" -- it is a finished phase group, not a live promotion
+  destination, and does not appear anywhere in
+  `planning/pre-v1-disposition.md` or `planning/ROADMAP.md`'s current
+  post-v1 structure (`OBS-SKEP-008`(f)). This is exactly the same
+  citation/framing break as `EV-SKEP-006`'s three already-fixed
+  instances -- an unrelated planning restructure invalidating an
+  interpretive gloss layered on top of an otherwise-unedited,
+  still-accurate mechanism, not a domain-meaning change. The underlying
+  fact (a context-gap or agent-suggested edge only becomes a real graph
+  fact through a separately-gated ADR, per `decisions/0051`) is exactly
+  as true as before; only the two lettered labels naming which future
+  gate pair does the gating have gone stale.
+
+  This is drift left over from `336b4cd`'s own incomplete remediation,
+  not a new causal event -- `docs-reconstructor`'s framing in
+  `_drift-audit-phase-72.md` §3 is accurate on this point and is not
+  overstated.
+
+  **One confirmed weaker instance (stale citation, not stale prose)**:
+  `docs/domain/concepts/evidence.md:106`'s parenthetical `(CL-EVID-009)`
+  cites a Claim whose own `status` is `superseded`
+  (`supersedes: null`, correctly unedited per `decisions/0060`'s
+  append-only model) rather than its direct replacement,
+  `CL-EVID-011` (`status: supported`, `supersedes: CL-EVID-009`), which
+  carries forward the exact "not yet built, not funded" fact this
+  citation backs, verbatim, in its own `statement` field
+  (`OBS-SKEP-008`(d)). This is the direct sibling of `decision.md:38-41`'s
+  citation for the neighbouring "graph-level Decision entity-kind"
+  fact, which `336b4cd` already updated to cite `CL-EVID-011` alone --
+  `evidence.md:106`'s citation is for the graph-level *Evidence*
+  entity-kind specifically, which is `CL-EVID-009`/`CL-EVID-011`'s own
+  subject, not `CL-EVID-003`/`CL-EVID-012`'s (that pair is specific to
+  the graph-level *Claim* entity-kind collision documented on
+  `claim.md`). So `evidence.md:106` should cite `CL-EVID-011` alone,
+  matching `decision.md`'s pattern, not `claim.md`'s two-citation
+  pattern. The drift audit's own "weaker... may be part of the
+  unchanged remainder of CL-EVID-009's statement" hedge is resolved
+  here: the fact is unchanged, but per `decisions/0060`'s model a
+  citation should point at the current, supported Claim carrying that
+  fact forward, not at a `superseded` one, exactly as `336b4cd` already
+  did for the sibling `decision.md` citation. This is a real,
+  non-hedged finding, not merely a weaker candidate.
+
+  **Exact fix needed for each of the four locations** (for whoever
+  holds `docs/domain/` write access; matching `336b4cd`'s own template,
+  `relationship-edge.md:38-46`):
+
+  1. `docs/domain/concepts/decision.md:27` -- replace "Those queues
+     promote into a Stage C/E *roadmap* decision (an ADR, a new
+     detection heuristic, a new graph capability)" with "Those queues
+     promote into a mechanical-detection or graph-capability *roadmap*
+     decision (an ADR, a new detection heuristic, a new graph
+     capability) -- the old 'Stage C'/'Stage E' phase-group labels are
+     retired (`decisions/0062`), but the same gated-ADR promotion
+     mechanism `decisions/0051` describes still applies."
+
+  2. `docs/domain/concepts/decision.md:101` -- replace "**Narrower
+     cousin of -> a Stage C/E gated roadmap decision** reached via
+     `context-gaps`/learning-lifecycle promotion" with "**Narrower
+     cousin of -> a mechanical-detection or graph-capability gated
+     roadmap decision** reached via `context-gaps`/learning-lifecycle
+     promotion (the old 'Stage C'/'Stage E' phase-group labels for this
+     gate pair are retired, `decisions/0062`)."
+
+  3. `docs/domain/concepts/observation.md:51` -- replace "its promotion
+     path is a Stage C/E gated roadmap decision" with "its promotion
+     path is a mechanical-detection or graph-capability gated roadmap
+     decision -- the old 'Stage C'/'Stage E' phase-group labels are
+     retired (`decisions/0062`), but the same gated-ADR promotion
+     mechanism `decisions/0051` describes still applies."
+
+  4. `docs/domain/concepts/evidence.md:106` -- replace the trailing
+     "(`CL-EVID-009`)" with "(`CL-EVID-011`)".
+
+  None of these four requires a Claim revision (unlike `EV-SKEP-006`'s
+  `CL-EVID-009`/`CL-EVID-003` finding) -- (1)-(3) are pure corpus-prose
+  citation/framing fixes tracing directly to `decisions/0062`'s already-
+  final text, and (4) is a citation-pointer update to an already-existing,
+  already-`supported` Claim (`CL-EVID-011`), not a new synthesis.
+observations: [OBS-SKEP-008]
+source_ref: null
+doc_ref: "docs/domain/concepts/decision.md:27,101; docs/domain/concepts/observation.md:51; docs/domain/concepts/evidence.md:106; docs/domain/concepts/relationship-edge.md:38-46; decisions/0062-post-v1-priorities-are-task-context-completeness-first.md; planning/v1-redefinition/conditional-generalisation.md:27-33; planning/v1-redefinition/roadmap.md (STAGE C heading); planning/knowledge/codecompass-domain/CL-EVID-009.yaml, CL-EVID-011.yaml"
+test_ref: null
+repository_revision: "f2f7cbf3e0dd038e1b27ca41c11a43e9af5c17ab"
+status: current

@@ -24,12 +24,15 @@ mechanically enforced).
   *agree with* or *deliberately diverge from* an unchanged, still-valid
   Claim — it cannot make a Claim wrong (`claim.md`).
 - **Not a `context-gaps`/`context-observations` promotion outcome
-  directly.** Those queues promote into a Stage C/E *roadmap* decision
-  (an ADR, a new detection heuristic, a new graph capability) — a
-  different, project-architecture-scoped kind of decision from a
-  per-feature Decision record inside one `planning/knowledge/<slug>/`
-  directory, even though both are, in the end, "the project owner
-  choosing something."
+  directly.** Those queues promote into a mechanical-detection or
+  graph-capability *roadmap* decision (an ADR, a new detection
+  heuristic, a new graph capability) — the old "Stage C"/"Stage E"
+  phase-group labels are retired (`decisions/0062`), but the same
+  gated-ADR promotion mechanism `decisions/0051` describes still
+  applies — a different, project-architecture-scoped kind of decision
+  from a per-feature Decision record inside one
+  `planning/knowledge/<slug>/` directory, even though both are, in the
+  end, "the project owner choosing something."
 - **Not the graph-level "Decision" entity-kind candidate.** Phase 57's
   own Stage E design sketch names `Decision` as a possible graph-level
   entity kind alongside `Evidence`/`Observation`/`Claim`, for a
@@ -98,10 +101,13 @@ to.
 - **Same-word, different-scope collision with → the graph-level
   `Decision` entity-kind candidate** (Phase 57, Stage E) — see "What
   Decision is NOT," above.
-- **Narrower cousin of → a Stage C/E gated roadmap decision** reached
-  via `context-gaps`/learning-lifecycle promotion — both are "the
-  project owner choosing something," at different scopes (one
-  feature's behaviour vs. project architecture).
+- **Narrower cousin of → a mechanical-detection or graph-capability
+  gated roadmap decision** (the old "Stage C"/"Stage E" phase-group
+  labels are retired, `decisions/0062`; the same gated-ADR promotion
+  mechanism `decisions/0051` describes still applies) reached via
+  `context-gaps`/learning-lifecycle promotion — both are "the project
+  owner choosing something," at different scopes (one feature's
+  behaviour vs. project architecture).
 
 ## References
 

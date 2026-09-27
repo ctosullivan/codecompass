@@ -103,7 +103,7 @@ disconfirmed one (`EV-EVID-004`).
   provenance about *other projects'* technical dependencies inside
   `context-graph.db` — a queryable database row, not a file-based
   development-process record, and not yet built or funded
-  (`CL-EVID-009`).
+  (`CL-EVID-011`).
 - **Thinner/different-shaped analogue → AI-authored graph enrichment**
   (`vendor_enrichment`/`symbol_enrichment`/`doc_relation_enrichment`).
   Enrichment content is also "what an AI found/produced," but it is a
