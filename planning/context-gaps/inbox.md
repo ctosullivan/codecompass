@@ -426,6 +426,24 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   vehicle, so no field correction needed here — noted only for
   completeness alongside the sibling correction made to `CG-001`/
   `CG-003`/`CG-007` (see those entries' own Phase 72 notes; `L-051`).
+- **curation (Phase 73 closure, 2026-09-27):** fix landed —
+  `build_doc_relations_edges` now also tries a named target's filename/
+  stem (gated through `_is_specific_enough`) alongside its `.name`,
+  closing this entry's own motivating pair
+  (`17-query-semantics-brief.md` citing `07-query-regex.md` by filename)
+  for real, confirmed via a real integration test through
+  `rebuild_project_graph`, not just the isolated function. A follow-on
+  gap this same phase's own independent `docs-maintainer` review found
+  (`relation_enrichment.py::_relation_needle` not updated for the same
+  widening) was fixed in the same phase, not deferred. **Status:
+  `candidate` → `promoted-to-roadmap`** —
+  `planning/phase-73-doc-relations-filename-matching.md` now owns this
+  gap. `promoted.md` line:
+  `CG-006 | 2026-09-27 | detection-improvement |
+  src/codecompass/doc_mapping.py::build_doc_relations_edges +
+  src/codecompass/relation_enrichment.py::_relation_needles +
+  tests/test_doc_mapping.py + tests/test_sync.py +
+  tests/test_relation_enrichment.py @ <this phase's own closeout commit>`.
 
 ### CG-005 — `doc_artifacts.origin='project'` is semantically wrong for externally-sourced, pinned reference material
 
