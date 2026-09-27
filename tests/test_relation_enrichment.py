@@ -240,6 +240,60 @@ def test_select_candidates_excerpt_centers_on_artifact_match_past_the_cap(
     )
 
 
+def test_select_candidates_excerpt_centers_on_filename_match_when_name_absent(
+    tmp_path: Path,
+) -> None:
+    """Regression test, found live by an independent `docs-maintainer`
+    review after Phase 73: a source doc citing a target only by its
+    filename (never its `.name`), with no chunk to prefer (`chunk_start_line`
+    unset, mirroring a headerless doc), must still center the excerpt on
+    the filename mention rather than silently falling back to the first-N
+    -characters slice — the exact gap Phase 73's detection-side widening
+    (`CG-006`) didn't carry through to this re-derivation.
+    """
+    spec_doc_text = (
+        _PADDING + "Per `07-query-regex.md` for the full plan. " + "more " * 50
+    )
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(
+        conn,
+        vendors=[],
+        source_files=[],
+        symbols=[],
+        uses_edges=[],
+        doc_artifacts=[
+            DocArtifactRow(path=_SPEC_DOC_PATH, kind="spec_doc", origin="project"),
+            DocArtifactRow(
+                path="dev-docs/07-query-regex.md",
+                kind="spec_doc",
+                origin="project",
+                name="Query language and regex extension plan",
+            ),
+        ],
+        documents_edges=[],
+        skill_mentions_edges=[],
+        routes_via_edges=[],
+        depends_on_edges=[],
+        doc_relations_edges=[
+            DocRelationEdgeRow(
+                source_doc_artifact_path=_SPEC_DOC_PATH,
+                relation_kind="mentions_artifact",
+                target_doc_artifact_path="dev-docs/07-query-regex.md",
+            ),
+        ],
+    )
+    (tmp_path / _SPEC_DOC_PATH).write_text(spec_doc_text, encoding="utf-8")
+
+    candidates = select_candidates(conn, tmp_path)
+
+    assert len(candidates) == 1
+    assert "07-query-regex.md" in candidates[0].source_excerpt
+    assert (
+        "07-query-regex.md"
+        not in spec_doc_text[: relation_enrichment_module._SPEC_DOC_EXCERPT_CHAR_CAP]
+    )
+
+
 def test_select_candidates_excerpt_falls_back_when_needle_not_found(tmp_path: Path) -> None:
     """A relationship whose needle can't be re-found in the current source
     text (the file changed since the graph rebuild that detected it, an

@@ -54,10 +54,28 @@ undocumented; the existing title-based matching has an analogous
 limitation (two docs sharing an identical title) and this project has
 never treated that as blocking either.
 
+### 1.1 Follow-on fix, found by `docs-maintainer`'s independent review
+
+`src/codecompass/relation_enrichment.py::_relation_needle` re-derives
+the match string for excerpt-centering during enrichment, but was not
+updated for this phase's own widened detection — a headerless source
+doc (no chunk to prefer) citing a target only by filename/stem would
+silently fall back to the worse first-N-characters excerpt, reintroducing
+the exact failure mode Phase 28 fixed. Renamed to `_relation_needles`
+(plural), now tries every candidate string in the same priority order
+detection does (name, then filename, then stem), using whichever is
+still found in the current text. A direct, in-scope completeness fix
+for this same phase's own change (`L-055`'s own lesson — check every
+consumer of a widened match, not just the primary edge-creation path —
+applied here to a different sub-system), not deferred to a later phase.
+
 ## 2. Files created/changed
 
 - `src/codecompass/doc_mapping.py` — `build_doc_relations_edges`
   extended; docstring updated.
+- `src/codecompass/relation_enrichment.py` — `_relation_needle` renamed
+  `_relation_needles`, widened to try filename/stem too (§1.1 follow-on
+  fix).
 - `tests/test_doc_mapping.py` — new unit test(s): filename match
   produces an edge; stem-only match produces an edge; a generic
   filename (`readme.md`) does not; the existing title-match tests are
@@ -68,6 +86,9 @@ never treated that as blocking either.
   real call site — mirrors
   `test_rebuild_project_graph_relates_two_spec_docs_to_each_other`'s own
   shape exactly, using a filename citation instead of a title citation.
+- `tests/test_relation_enrichment.py` — new regression test for the
+  §1.1 follow-on fix (headerless doc, filename-only citation, excerpt
+  correctly centers on the filename mention).
 - `docs/cli-reference.md` / `architecture/` — only if the consistency
   check (step 4 below) finds a stale description of `mentions_artifact`
   detection's own current matching strategy.

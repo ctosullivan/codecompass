@@ -233,49 +233,74 @@ def _lookup_doc_artifact_description(conn: sqlite3.Connection, path: str) -> str
     return row[0] if row is not None else None
 
 
-def _relation_needle(
+def _relation_needles(
     relation_kind: str,
     target_vendor_name: str | None,
     target_doc_artifact_name: str | None,
-) -> str | None:
-    """The exact literal `doc_mapping.build_doc_relations_edges` word-
-    boundary-matched to detect this relationship in the first place: the
-    target vendor's name for `'mentions_dependency'`, the target doc
-    artifact's own `name` field (not its path) for `'mentions_artifact'`.
-    Re-deriving it here — rather than persisting the match position from
-    Phase 21's detection — is this phase's design decision (see the new
-    ADR): `doc_relations_edges` stays a purely mechanical table with no
-    concept of "where an as-yet-unenriched candidate's excerpt should
-    center."
+    target_doc_path: str | None,
+) -> list[str]:
+    """Every literal string `doc_mapping.build_doc_relations_edges` could
+    have word-boundary-matched to detect this relationship, in the same
+    priority order that function tries them: the target vendor's name for
+    `'mentions_dependency'`; for `'mentions_artifact'`, the target doc
+    artifact's own `name` field (not its path), then its filename, then
+    its filename stem (Phase 73, closes `CG-006`'s own detection-side
+    widening). Re-deriving these here — rather than persisting the match
+    position from Phase 21's detection — is this phase's design decision
+    (see the new ADR): `doc_relations_edges` stays a purely mechanical
+    table with no concept of "where an as-yet-unenriched candidate's
+    excerpt should center." Returns every candidate, not just the first,
+    because which one actually triggered the original match was never
+    persisted — `_select_source_excerpt` tries each in order and uses
+    whichever is still found in the current text.
+
+    Found live, not designed speculatively: an independent
+    `docs-maintainer` review after Phase 73 landed noticed this function
+    still only tried `target_doc_artifact_name`, so a headerless source
+    doc (no chunk to prefer) citing a target only by filename/stem would
+    silently fall back to the worse first-N-characters excerpt — exactly
+    the failure mode Phase 28 originally fixed, reintroduced by Phase
+    73's own otherwise-correct detection-side widening not being carried
+    through to this re-derivation.
     """
     if relation_kind == "mentions_dependency":
-        return target_vendor_name
+        return [target_vendor_name] if target_vendor_name else []
     if relation_kind == "mentions_artifact":
-        return target_doc_artifact_name
-    return None
+        needles: list[str] = []
+        if target_doc_artifact_name:
+            needles.append(target_doc_artifact_name)
+        if target_doc_path:
+            filename = Path(target_doc_path).name
+            stem = Path(target_doc_path).stem
+            needles.append(filename)
+            if stem != filename:
+                needles.append(stem)
+        return needles
+    return []
 
 
-def _select_source_excerpt(source_text: str, needle: str | None) -> str:
+def _select_source_excerpt(source_text: str, needles: list[str]) -> str:
     """The excerpt sent to the model for a relationship's spec-doc side —
-    centered on `needle`'s first word-boundary match (`re.search(rf"\\b
-    {re.escape(needle)}\\b", source_text)`, the exact same regex shape
-    `doc_mapping.build_doc_relations_edges` used to detect this
-    relationship), so the model actually sees the sentence/paragraph that
-    triggered the match rather than whatever happens to sit in the file's
-    opening `_SPEC_DOC_EXCERPT_CHAR_CAP` characters (Phase 28).
+    centered on the first word-boundary match
+    (`re.search(rf"\\b{re.escape(needle)}\\b", source_text)`, the exact
+    same regex shape `doc_mapping.build_doc_relations_edges` used to
+    detect this relationship) among `needles`, tried in order, so the
+    model actually sees the sentence/paragraph that triggered the match
+    rather than whatever happens to sit in the file's opening
+    `_SPEC_DOC_EXCERPT_CHAR_CAP` characters (Phase 28).
 
-    Falls back to the original first-N-characters slice when `needle` is
-    `None` or can't be re-found — the file changed between the graph
+    Falls back to the original first-N-characters slice when `needles` is
+    empty or none can be re-found — the file changed between the graph
     rebuild that detected the mention and this call. Expected to be rare
     (the mention was proven to exist as of the last rebuild) but must
     degrade gracefully, not raise.
 
-    Only the *first* match is used, same as `build_doc_relations_edges`
-    itself already implicitly does via `re.search` (not `re.finditer`) —
-    a relationship with multiple mechanical matches in the same doc isn't
-    handled specially here.
+    Only the *first* match of the *first* matching needle is used, same
+    as `build_doc_relations_edges` itself already implicitly does via
+    `re.search` (not `re.finditer`) — a relationship with multiple
+    mechanical matches in the same doc isn't handled specially here.
     """
-    if needle:
+    for needle in needles:
         match = re.search(rf"\b{re.escape(needle)}\b", source_text)
         if match is not None:
             start = max(0, match.start() - _EXCERPT_CHARS_BEFORE_MATCH)
@@ -357,8 +382,10 @@ def select_candidates(
                 source_text, chunk_start_line, chunk_end_line
             )
         else:
-            needle = _relation_needle(relation_kind, target_vendor_name, target_doc_artifact_name)
-            source_excerpt = _select_source_excerpt(source_text, needle)
+            needles = _relation_needles(
+                relation_kind, target_vendor_name, target_doc_artifact_name, target_doc_path
+            )
+            source_excerpt = _select_source_excerpt(source_text, needles)
 
         candidates.append(
             RelationEnrichmentCandidate(
