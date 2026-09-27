@@ -21,11 +21,19 @@ Post-v1 work is organised into six priorities (A-F,
 not lettered stages. Priority A's first concrete deliverable
 (Phase 73, `CG-006`), Priority B's first hardening step (Phase 74,
 `L-031`/`L-032`), and Priority A's first real-task validation trial
-(Phase 75) are all done, audited, and closed. **Phase 75 is the current
-work and the most recently completed phase** — no phase is yet planned
-beyond it. Backlog, each with its own revisit trigger: Phases 24/25,
-Phase 50's remainder, `CG-003`, the `browser_api`/`platform_api` kind —
-full detail `planning/pre-v1-disposition.md`.
+(Phase 75) are all done, audited, and closed. **Phase 76 (Git repository
+topology awareness — worktrees + submodules) is now planned** (direct
+user request, not yet implemented) — `planning/phase-76-git-repository-topology.md`.
+Backlog, each with its own revisit trigger: Phases 24/25, Phase 50's
+remainder, `CG-003`, the `browser_api`/`platform_api` kind — full detail
+`planning/pre-v1-disposition.md`. Separately, a **second, differently-
+shaped Priority A Ledgerkit validation trial** was recommended at
+Phase 75's own closeout (see "Next concrete step" below) — this remains
+a live, valid recommendation, but it was never actually numbered (no
+plan file was ever written for it, so per `CLAUDE.md` §1 no phase number
+was ever reserved); Phase 76 went to the git-topology phase instead. The
+Ledgerkit trial recommendation is not abandoned, just not yet
+phase-numbered.
 
 ## What was just completed
 
@@ -111,15 +119,26 @@ recorded here:**
 
 ## Next concrete step
 
-Phase 75 is closed. Recommended **Phase 76**: a second, differently-shaped
-Priority A validation trial (per
+**Phase 76 is planned, not yet implemented**: Git repository topology
+awareness (worktrees + submodules), direct user request —
+`planning/phase-76-git-repository-topology.md`. Three new
+`context-graph.db` tables, a new `git_topology.py` detection module, and
+`codecompass query topology`; validated against this repository's own
+real submodules (`decisions/0058`) plus a disposable test worktree.
+Explicitly does not redefine deferred Phase 24 (chat project-root
+routing) — a different capability, cross-referenced only in the plan.
+Stopped after planning per direct user instruction — awaiting review
+before any `src/` implementation begins.
+
+Separately, still unclaimed by a phase number: a second, differently-
+shaped Priority A Ledgerkit validation trial (per
 `planning/reference-projects/ledgerkit/04-cur-query-priority-a-validation.md`'s
 own "Next-phase recommendation" section) — ideally exercising `CG-001`'s
 original intra-`src`-module motivating shape, or a reference-project
 corpus less self-descriptively organized than Ledgerkit's own
-`dev-docs/planning/core-redefinition/NN-title.md` convention — not a
-capability build, and not abandonment of Priority A. No phase plan file
-exists yet for this; per `CLAUDE.md` §1, one must be written before any
-implementation/evaluation work begins. Beyond that, `CG-001`/`CG-007`
-and Priority B's own broader claim/evidence productisation remain
-genuinely unplanned design questions, not "smallest justified fix" work.
+`dev-docs/planning/core-redefinition/NN-title.md` convention. No phase
+plan file exists yet for this; per `CLAUDE.md` §1, one must be written
+before any implementation/evaluation work begins on it. Beyond that,
+`CG-001`/`CG-007` and Priority B's own broader claim/evidence
+productisation remain genuinely unplanned design questions, not
+"smallest justified fix" work.
