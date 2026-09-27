@@ -27,7 +27,7 @@ trigger: Phases 24/25, Phase 50's remainder, `CG-003`, the
 ## What was just completed
 
 **Phase 72 — Ledgerkit Stage C learnings capture + post-v1 roadmap
-realignment — in progress (2026-09-27).** Direct user request:
+realignment — done (2026-09-27).** Direct user request:
 `planning/ledgerkit-stage-c-learnings.md` (new) distils 11 learnings
 from Ledgerkit's own Stage C work (studied at Phases 54/54b/54c/61)
 into validated observations / design principles / existing-vs-proposed
@@ -40,7 +40,15 @@ silently dropped. `planning/ROADMAP.md`'s old "Deferred/not-funded" and
 "Future-improvement backlog" framing replaced by the Priority A-F
 structure; `conditional-generalisation.md` gained a dated amendment note
 (content otherwise unchanged — GATE DD's own graph-schema questions
-remain explicitly open, not resolved by this phase).
+remain explicitly open, not resolved by this phase). A domain-corpus
+staleness cluster surfaced by the drift audit (4 concept-page/
+open-questions locations, plus the first real exercise of the
+Claim-supersedes-Claim mechanism — `CL-EVID-011`/`012` superseding
+`CL-EVID-009`/`003`) was found and fixed. Closeout: `context-health-planner`
+assessment, fork review, `docs-reconstructor` drift audit,
+`domain-skeptic` freshness check, `context-researcher` Claim revision,
+`knowledge-curator` triage (`L-051` promoted — extends `L-048`'s citation
+rule to phase-group labels and Claim text).
 
 ## Known standing gaps (current-state facts, not phase history)
 
@@ -63,11 +71,9 @@ remain explicitly open, not resolved by this phase).
 
 ## Next concrete step
 
-Finish Phase 72: independent fork review of the new/changed planning
-documents against the underlying phase evidence, `docs-reconstructor`
-per-phase drift audit, standard closeout (retro, `knowledge-curator`
-triage, `release-phase-auditor` DoD pass). After that: no phase is yet
-planned for any of Priority A-F — Priority A (task-context completeness)
-is the recommended first pick, but needs its own fresh
-`planning/phase-N-*.md` scoping pass, not a resumption of old Phase 48's
-scope unchanged.
+Phase 72 is closed. No phase is yet planned for any of Priority A-F —
+Priority A (task-context completeness) is the recommended first pick
+(`ROADMAP.md`'s Post-v1 priorities table, `decisions/0062`), but needs
+its own fresh `planning/phase-N-*.md` scoping pass, not a resumption of
+old Phase 48's scope unchanged. Pending: Phase 72's `release-phase-auditor`
+DoD pass, then push to `origin`.

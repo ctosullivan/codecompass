@@ -73,6 +73,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ROADMAP.md` content and a test this phase deleted were found stale
   by the domain-corpus freshness-reconciliation check and fixed
   (citations only — no domain-meaning change).
+- **Phase 72**: a domain-corpus staleness cluster (`decisions/0062`'s
+  retirement of the "Stage E" phase-group label broke four
+  `docs/domain/` concept-page/open-questions citations and two Claim
+  records, `EV-SKEP-006`) fixed — content unchanged, only the
+  resolution-mechanism reference corrected. Two Claim records
+  (`CL-EVID-009`, `CL-EVID-003`) superseded by corrected versions
+  (`CL-EVID-011`, `CL-EVID-012`) rather than silently edited — the first
+  real exercise of this project's Claim-supersedes-Claim mechanism with
+  real content. `.claude/agents/context-researcher.md`'s `L-048` rule
+  extended, and `.claude/agents/domain-skeptic.md` gained a
+  freshness-reconciliation grep step, after this exact fragility class
+  recurred a third/fourth time (`L-051`). A pre-existing hygiene gap
+  also backfilled: `CG-005`'s own `promoted.md` line, missing since
+  Phase 54c.
 
 ## [1.0.0] - 2026-09-24
 

@@ -1,6 +1,6 @@
 # Phase 72: Ledgerkit Stage C learnings capture + post-v1 roadmap realignment — plan
 
-**Status:** in progress (2026-09-27).
+**Status:** done (2026-09-27).
 
 **First post-v1 phase after Phase 71** (`planning/ROADMAP.md`'s "Post-v1
 development" section) — not part of the redefined-v1 milestone group
