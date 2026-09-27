@@ -371,7 +371,7 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   which string matched).
 - **classification:** detection-improvement (Stage C / GATE DB-scale) —
   same class as `CG-002`/`CG-004`, not a Stage E ontology question.
-- **status:** candidate
+- **status:** promoted-to-roadmap — fix implemented Phase 73 (2026-09-27)
 - **recurrence:** first occurrence
 - **curation (Phase 55b triage, 2026-09-17, knowledge-curator):** template
   fields all present (origin, date, `codecompass_revision`, project, the

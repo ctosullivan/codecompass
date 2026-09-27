@@ -6,12 +6,26 @@
   ecosystem/capability validation), `40e7718` (documentation closeout —
   6 current-truth doc locations + 5 `docs/domain/` locations fixed,
   `CL-EVID-008`→`CL-EVID-013` supersession), `3d0ed30` (learnings
-  log/ROADMAP landing).
+  log/ROADMAP landing), `76c441f`/`901512d` (joint Phase 73/74 retro +
+  triage landing, `L-058`), `da1b56b` (a *further*, post-audit fix: a
+  first `release-phase-auditor` pass found two remaining stale
+  `CL-EVID-008` citations `domain-skeptic`'s own fix list hadn't named —
+  fixed, but not itself re-audited before being pushed, which a
+  subsequent root-cause investigation (`planning/retros/_root-cause-closeout-defect.md`,
+  `L-060`) later identified as a real process gap; a fresh, independent
+  re-audit against this state is what this retro entry itself is now
+  being updated to reflect, per that same investigation's own fix).
+  Retro updated 2026-09-27 (post-audit) to add this note — it originally
+  predated `da1b56b` and needed correcting before a fresh audit could
+  pass cleanly, exactly the kind of retro staleness `L-060` names.
 - **Agents used:** `docs-maintainer` (initial reconciliation — see "What
   didn't work"), `docs-reconstructor` (per-phase drift audit),
   `domain-skeptic` (domain-corpus freshness, twice — Stage E cluster
   spillover check and the L-031/L-032 gap-closure cluster),
-  `context-researcher` (Claim supersession, `CL-EVID-008`→`CL-EVID-013`).
+  `context-researcher` (Claim supersession, `CL-EVID-008`→`CL-EVID-013`),
+  `release-phase-auditor` (completion audit, at least twice — the first
+  pass's own PASS-with-one-finding state is what `da1b56b` fixed; a
+  fresh pass is what this retro update itself responds to).
 
 ## Where we are
 
@@ -81,6 +95,26 @@ project. Unlike Phase 71/72's own rework (a missing report file, an
 incomplete domain-corpus fix), this is the first instance this session
 of the *ordinary* reconciliation step itself under-delivering on a
 straightforward, non-edge-case doc update.
+
+**A second, independent instance of the identical "scoped correctly to
+the specifically-named locations, not checked against every sibling"
+shape, found only by the final completion audit**: the `docs-reconstructor`
+drift audit's own "Domain-claim staleness candidates" section named
+`evidence.md`, `observation.md`, and `relationship-edge.md` (alongside
+`capability.md`/`protocol.md`/`ecosystem.md`/`provenance.md`) as
+locations citing the two gaps this phase closed — but the `domain-skeptic`
+dispatch that followed scoped itself to only the latter five, missing
+`evidence.md` entirely (which did in fact carry a genuinely stale claim)
+and never independently re-confirming `observation.md`/`relationship-edge.md`
+were actually clean rather than simply un-investigated. A fresh
+`release-phase-auditor` pass caught this — `evidence.md`'s stale
+"`symbol_enrichment` carries none" sentence, fixed post-audit — after
+the phase had already been marked `done`. This is the third occurrence
+this session of the exact shape `L-051`/`L-055`/`L-058` already name (a
+fix correctly scoped to the locations first identified, never checked
+against every sibling the identical pattern could recur in), now
+recurring inside a *dispatch prompt's own scoping*, not just a fix's
+own completeness.
 
 ## Lessons learnt
 

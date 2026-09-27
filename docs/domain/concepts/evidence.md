@@ -109,12 +109,15 @@ disconfirmed one (`EV-EVID-004`).
   Enrichment content is also "what an AI found/produced," but it is a
   flat single-row value, never a chain of Observation→Evidence→Claim,
   and it describes an already-proven graph fact rather than a
-  behavioural claim that may have no graph fact at all. Two of the
-  three enrichment tables (`vendor_enrichment`, `doc_relation_enrichment`)
-  carry one `model` provenance column each; `symbol_enrichment` carries
-  none — see [`provenance.md`](provenance.md)'s own Definition/
-  Counterexample for the full asymmetry, not restated here
-  (`decisions/0054`, `EV-EVID-008`, `EV-EVID-014`).
+  behavioural claim that may have no graph fact at all. All three
+  enrichment tables (`vendor_enrichment`, `doc_relation_enrichment`,
+  and — as of Phase 74, `L-031` — `symbol_enrichment`) now carry a
+  `model` provenance column each; a narrower nullability asymmetry
+  remains (`symbol_enrichment.model` is nullable, honestly `NULL` for
+  pre-Phase-74 rows, unlike its two `NOT NULL` siblings) — see
+  [`provenance.md`](provenance.md)'s own Definition/Counterexample for
+  the full detail, not restated here (`decisions/0054`, `EV-EVID-008`,
+  `EV-EVID-014`, `EV-EVID-015`).
 
 ## References
 
