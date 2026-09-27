@@ -89,7 +89,8 @@ toward any milestone-group tag/release gate.
 |---|---|---|---|
 | 71 | **Post-v1 documentation refresh** — direct user request, 2026-09-24. `README.md` rewritten ground-up against verified current v1 state; `ROADMAP.md` restructured (this section) to replace stale phase-status material with a concise current-state view; `CONTEXT.md` further reduced; a consistency sweep of other current-facing docs; two `docs/domain/` citation staleness cases and one stale `CLAUDE.md` §2 description found and fixed. Full plan: `planning/phase-71-post-v1-documentation-refresh.md`. Retro: `planning/retros/phase-71-post-v1-documentation-refresh.md`. | done | [`planning/phase-71-post-v1-documentation-refresh.md`](phase-71-post-v1-documentation-refresh.md) |
 | 72 | **Ledgerkit Stage C learnings capture + post-v1 roadmap realignment** — direct user request, 2026-09-27. Records the real learnings from Ledgerkit's own Stage C work (studied at Phases 54/54b/54c/61) as a durable document (`planning/ledgerkit-stage-c-learnings.md`); a new ADR (`decisions/0062`) records the resulting prioritisation pivot; `planning/pre-v1-disposition.md` dispositions every material pre-v1 item; this file's own "Deferred/not-funded" and "Future-improvement backlog" sections replaced by a Priority A-F post-v1 structure (below); a domain-corpus staleness cluster (4 locations, 2 Claim-record supersessions) found and fixed. Full plan: `planning/phase-72-stage-c-learnings-and-roadmap-realignment.md`. Retro: `planning/retros/phase-72-stage-c-learnings-and-roadmap-realignment.md`. | done | [`planning/phase-72-stage-c-learnings-and-roadmap-realignment.md`](phase-72-stage-c-learnings-and-roadmap-realignment.md) |
-| 73 | **`mentions_artifact` filename-based matching (closes `CG-006`)** — first concrete Priority A deliverable. Extends `build_doc_relations_edges` to also match a target doc's filename/stem, not only its title, closing a real gap found on `CG-004`'s own original motivating pair. Full plan: `planning/phase-73-doc-relations-filename-matching.md`. | in progress | [`planning/phase-73-doc-relations-filename-matching.md`](phase-73-doc-relations-filename-matching.md) |
+| 73 | **`mentions_artifact` filename-based matching (closes `CG-006`)** — first concrete Priority A deliverable. Extends `build_doc_relations_edges` to also match a target doc's filename/stem, not only its title, closing a real gap found on `CG-004`'s own original motivating pair; a follow-on gap in relation-enrichment excerpt selection found and fixed in the same phase. Full plan: `planning/phase-73-doc-relations-filename-matching.md`. | in progress | [`planning/phase-73-doc-relations-filename-matching.md`](phase-73-doc-relations-filename-matching.md) |
+| 74 | **Priority B provenance hardening (`L-031` + `L-032`)** — adds `symbol_enrichment.model` (nullable, honest-gap backfill) and validates the external adapter protocol's `ecosystem`/`capabilities` fields against what CodeCompass configured. Full plan: `planning/phase-74-provenance-hardening.md`. | in progress | [`planning/phase-74-provenance-hardening.md`](phase-74-provenance-hardening.md) |
 
 ## Future-improvement backlog (unscheduled)
 
@@ -104,15 +105,11 @@ row elsewhere in this file (per the "How this file is kept in sync"
 section below) rather than left duplicated here. Full evidence lives in
 the originating `planning/learnings/inbox.md` entry (and, once the lead
 records it, `planning/learnings/promoted.md`); this table only tracks
-existence and status. **`L-031`/`L-032` below are also named in the
-Post-v1 priorities table above as Priority B's own first, already-scoped
-hardening items** (`ledgerkit-stage-c-learnings.md` #6) — kept here too
-since neither has yet become a real phase.
+existence and status.
 
-| ID | Finding | Classification | Status | Notes |
-|---|---|---|---|---|
-| L-031 | `symbol_enrichment` has no producer-attribution column, unlike `vendor_enrichment`/`doc_relation_enrichment` (both carry `model TEXT NOT NULL`) — `symbol_enrichment` rows currently cannot be attributed to a specific producer (agent or automated API call) at all. Add a `model` column via an additive migration (mirroring `_migrate_symbols_export_kind_note_columns`'s `ADD COLUMN` pattern, Phase 62), or explicitly document the asymmetry as an intentional simplification if a rationale is found. Origin: `L-031` (Phase 63D, `domain-skeptic`'s own review). | FUTURE-IMPROVEMENT | not started | Priority B hardening candidate |
-| L-032 | `ExternalAdapterProcess.initialize()` receives `ecosystem` and `capabilities` from an external adapter's wire response (`external_process.py:83-84`) but never validates either: `ecosystem` is never compared against the `core.Ecosystem` value CodeCompass configured the adapter under, and `capabilities` is never checked against the protocol's own closed 4-value set already defined in the same file (`CAPABILITIES`). An adapter reporting a mismatched `ecosystem` string or an unrecognized capability is currently accepted uncomplainingly. Add a membership/equality check in `initialize()`, raising `AdapterError` on mismatch (matching the existing `protocol_version` mismatch handling immediately above it in the same method). Origin: `L-032` (Phase 63D, `domain-skeptic`'s own review). | FUTURE-IMPROVEMENT | not started | Priority B hardening candidate |
+Currently empty: `L-031`/`L-032` (the only two entries this table ever
+held) are now owned by Phase 74's own row above, removed from here per
+the sync rule below.
 
 ## How this file is kept in sync
 
