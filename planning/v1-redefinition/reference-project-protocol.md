@@ -93,6 +93,32 @@ Each reference project gets a record at
 - Where reproducibility matters, the clone is checked out at a **pinned
   commit** and that SHA is recorded in the evaluation report.
 
+**Added 2026-09-27 (`L-062`, Phase 75):** for any baseline/treatment
+*comparison* (not a single-agent task run), the dispatch prompt must
+additionally state, explicitly, one of the following for **both** arms
+symmetrically:
+
+- read access is scoped to the assigned scratch clone's own tree only
+  (no reads outside it, including a sibling checkout of the same
+  upstream project or its dependencies), so neither arm can gain access
+  to source neither the tool under test nor the other arm could
+  plausibly have surfaced; or
+- read access is intentionally left unscoped (matching how a real
+  development session would actually work), in which case the `L-027`
+  agent-diligence-variance check (`context-quality-evaluation.md` §1)
+  remains mandatory regardless, and any finding traceable to a read
+  outside the assigned scratch clone is excluded from the tool's own
+  credited advantage.
+
+A dispatch prompt that restricts *writes* to a scratch clone but is
+silent about *reads* leaves both arms with equal, unscoped filesystem
+read access by default — harmless to either arm's own task performance,
+but a hidden threat to the *comparison's* validity. Confirmed at Phase
+75: the treatment agent's single most impressive-looking finding came
+from an unscoped `find /` locating a sibling checkout of the real
+upstream project; the baseline agent could equally have run the same
+command but ran a scoped `find .` instead and found nothing.
+
 ### 2.3 Task selection — genuine work only
 
 Tasks come from the reference project's **own** roadmap, deferred-work

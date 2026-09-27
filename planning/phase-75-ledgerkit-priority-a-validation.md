@@ -1,6 +1,6 @@
 # Phase 75: Priority A Ledgerkit validation — real task, baseline vs. CodeCompass-assisted — plan
 
-**Status:** in progress (2026-09-27).
+**Status:** done (2026-09-28). Retro: `planning/retros/phase-75-ledgerkit-priority-a-validation.md`. Completion audit: `planning/retros/_audit-phase-75.md` (PASS, second pass after a first-pass FAIL over a cross-document `CG-001` propagation defect, fixed and re-verified). Drift audit: `planning/retros/_drift-audit-phase-75.md` (NO DRIFT).
 
 Direct user request, following Phase 73/74's own implementation work
 and a separate root-cause investigation/fix into a phase-closeout

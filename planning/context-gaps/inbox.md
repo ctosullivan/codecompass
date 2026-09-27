@@ -8,6 +8,148 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
 
 ---
 
+### CG-009 — `context-graph.db`'s `symbols` table has no path for a project's *own* first-party source at all, in any ecosystem
+
+- **origin:** Phase 75 (Ledgerkit Priority A validation — `cur:` query
+  design/discovery, baseline vs. CodeCompass-assisted), independent
+  `context-evaluator` verification
+- **date:** 2026-09-27
+- **codecompass_revision:** `d4f5e0a` (working tree at evaluation time;
+  `pyproject.toml` version `1.0.0`)
+- **project:** ledgerkit, scratch treatment clone
+  (`ledgerkit-treatment`, pinned `6c90b4c`), **0 tracked vendors**
+  (`vendor.toml` empty) — but independently confirmed the gap is
+  structural, not merely "this project happens to track nothing":
+  even a fully-populated `vendor.toml` would only ever add the
+  *vendor's* symbols, never the project's own.
+- **the edge:** `A ↔ B` where A = Ledgerkit's own first-party source
+  symbols (e.g. `ledgerkit/models.py::Posting`, `::Amount`,
+  `ledgerkit/query/ast.py::Tag`), B = `context-graph.db`'s `symbols`
+  table.
+- **edge kind:** other (an ingestion-path/architecture gap, the same
+  category `CG-008` used — not a doc↔code or dependency↔dependency
+  relation in the usual sense)
+- **agent's reasoning:** the treatment agent, investigating what `cur:`
+  needs to match against, tried `codecompass query symbol Posting` and
+  `codecompass query symbol Amount` (Ledgerkit's own dataclasses,
+  `ledgerkit/models.py`) expecting to find the project's own commodity/
+  amount representation via the tool's `symbol` surface. Both returned
+  empty. Independently reproduced live by this evaluator, exactly as
+  reported (`no symbol named 'Posting' found in context-graph.db`; same
+  for `Amount`). Root-caused by direct code reading rather than taken on
+  the treatment's own word: `src/codecompass/sync.py::rebuild_project_graph`
+  (lines 234-303) builds `symbol_rows` by iterating only
+  `configs: list[VendorConfig]` (i.e. `vendor.toml` entries), calling
+  `adapter.symbols()` once per tracked vendor — there is no code path
+  anywhere in `rebuild_project_graph`, or elsewhere in `sync.py`, that
+  walks the project's own source tree (`ledgerkit/`, or
+  `src/codecompass/` for CodeCompass's own dogfooding case) to extract
+  its own first-party classes/functions into `symbols`. The schema
+  enforces this structurally, not just as an unexercised code path:
+  `symbols.vendor_id INTEGER NOT NULL REFERENCES vendors(id) ON DELETE
+  CASCADE` (`graph.py:73`) — a `symbols` row cannot exist without a real
+  `vendors` row to hang off, and a project is never itself modeled as a
+  `vendors` row anywhere in the schema. This holds regardless of
+  ecosystem (Python/Cargo/npm/Haskell all take the same
+  `adapter.symbols()`-per-vendor path) and regardless of how many
+  vendors a project tracks — it is not fixed by tracking more vendors,
+  and it is not the same gap `CG-008` already closed (`CG-008` was "a
+  real, tracked *vendor*'s own adapter output wasn't reaching the
+  `symbols` table for one ecosystem [Haskell]" — fixed Phase 62 by
+  giving `EcosystemAdapter` a `symbols()` method every adapter
+  implements; this entry is "the `symbols()` method is never called for
+  anything *except* a tracked vendor, ever, for any ecosystem including
+  fully-supported in-process ones like Python").
+- **what the graph shows instead:** zero `symbols` rows for a project's
+  own first-party source, in every project, regardless of tracked-vendor
+  count — confirmed live for Ledgerkit (0 vendors tracked) and true by
+  code-path inspection for any hypothetical project with vendors tracked
+  too (the walk that populates `symbols` never touches
+  `adapter.source_location()`'s *caller* project, only each vendor's own
+  installed package location).
+- **could mechanical detection ever catch this?** yes-with-better-
+  heuristics is the wrong frame — this is not a missing pattern/heuristic,
+  it is a missing scope: the exact same per-ecosystem
+  `extract_symbols_for_file`/`adapter.symbols()`-shaped walk that already
+  works for vendor source could in principle be pointed at the project's
+  own tree too, but doing so raises a real modeling question the schema
+  does not yet have an answer for (is the project an implicit "self"
+  `vendors` row purely for `symbols` purposes, given `vendor_id` is
+  `NOT NULL`/FK-constrained today; does `query symbol` then need to
+  disambiguate "the project's own `Posting`" from "some vendor's own
+  `Posting`" by name-collision the same way it already does across
+  vendors) — a real architecture decision, not a one-line detection tune.
+- **smallest candidate that would fix it:** unclear — closest precedent
+  is `CG-008`'s own resolution shape (`EcosystemAdapter.symbols()`, now
+  reused per-vendor), but extending it to "the project itself" needs
+  either a schema change (`symbols.vendor_id` becoming nullable, or a
+  synthetic always-present "project" `vendors`-shaped row) or a wholly
+  separate `project_symbols` table — a genuine design question for
+  whichever phase next takes this up, not decided here.
+- **classification:** graph-capability (GATE DD; per `decisions/0062`,
+  the "Stage E" phase-group label that would previously have named this
+  is retired — re-homed to whichever Priority-track phase takes it up,
+  `pre-v1-disposition.md` §7)
+- **status:** candidate
+- **recurrence:** first occurrence — checked explicitly against `CG-008`
+  (the closest-sounding prior entry) and confirmed genuinely distinct:
+  `CG-008` is "a tracked vendor's own adapter output isn't reaching the
+  table" (a per-ecosystem dispatch-branch bug, now fixed); this entry is
+  "the table has no concept of `symbols` belonging to the project doing
+  the tracking, ever, regardless of ecosystem or vendor count" (a scope
+  boundary the schema itself enforces via a `NOT NULL` vendor FK). Also
+  checked against `CG-001` (CodeCompass's own intra-`src` Python-module
+  feature grouping — a different project, a different mechanism: that
+  entry is about relating already-graphed nodes to each other, this one
+  is about the nodes never existing in the graph at all for first-party
+  source) — not a duplicate.
+- **curation (Phase 75 triage, 2026-09-27, knowledge-curator):** template
+  fields all present (origin, date, `codecompass_revision`, project, the
+  edge, edge kind, agent's reasoning, what-the-graph-shows-instead,
+  "could mechanical detection ever catch this?", smallest candidate,
+  classification, status, recurrence). Independently re-verified by
+  direct code reading rather than taken on the entry's own (or
+  `context-evaluator`'s own) word: read
+  `src/codecompass/sync.py::rebuild_project_graph` directly (the
+  `symbol_rows: list[SymbolRow] = []` declaration and the `for config in
+  configs:` loop immediately below it) and confirmed `symbol_rows` is
+  appended to in exactly one place in the entire function — inside that
+  per-`config` loop, via `adapter.symbols()` — and nowhere else; grepped
+  the whole file for `symbol_rows` and found only the declaration, the
+  one `.append(...)` inside the vendor loop, its use to build
+  `documents_edge_rows`, and its pass-through into the persisted-graph
+  call — no second population path exists for the project's own source
+  tree, exactly as claimed. Read `src/codecompass/graph.py`'s schema
+  directly and confirmed `CREATE TABLE IF NOT EXISTS symbols (... vendor_id
+  INTEGER NOT NULL REFERENCES vendors(id) ON DELETE CASCADE ...)` — the
+  `NOT NULL` FK constraint is real and exactly as cited, not a
+  paraphrase. Checked distinctness from `CG-008`: `CG-008` was a
+  per-ecosystem dispatch-branch bug in `extract_symbols_for_file`
+  (silently returning `[]` for Haskell specifically) that left a real,
+  *tracked* vendor's own symbols out of the table — fixed Phase 62 by
+  giving `EcosystemAdapter` a polymorphic `symbols()` method every
+  adapter now implements (confirmed still landed: `rebuild_project_graph`
+  calls `adapter.symbols()`, not `extract_symbols_for_file`, in the
+  current code read above). This entry's gap survives that fix entirely
+  intact — it is not "which ecosystem's vendor symbols reach the table"
+  but "whether *any* code path ever looks at the project's own tree at
+  all" — genuinely distinct, not a restatement. Checked distinctness from
+  `CG-001`: `CG-001` concerns relating nodes that already exist in the
+  graph (an intra-`src/codecompass` feature spread across modules); this
+  entry concerns nodes that can never exist in the graph at all for a
+  project's own first-party source, in any ecosystem — a different
+  mechanism, correctly not merged. **Outcome: stays `candidate`** — first
+  occurrence (this is the first `CG-NNN` entry naming this specific
+  scope gap), needs a second independent occurrence or observer before
+  `recurred`. **Classification confirmed correct: `graph-capability`**
+  (GATE DD) — the smallest fix genuinely requires either a schema change
+  (`symbols.vendor_id` becoming nullable, or a synthetic always-present
+  "project" `vendors`-shaped row) or a new `project_symbols` table, not a
+  tunable detection heuristic; matches the `CG-008` resolution shape's
+  own precedent for what counts as architecture-level rather than
+  Stage-C-scale. No entry made to `context-graph.db` — this queue never
+  writes there, per `decisions/0051`.
+
 ### CG-008 — `context-graph.db`'s `symbols` table has no path for an external-process adapter's own structured symbol output
 
 - **origin:** Phase 60 (minimal external Haskell adapter), real end-to-end
@@ -297,6 +439,17 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   below the ≥2-occurrence promotion bar). No entry made to
   `context-graph.db` — this queue never writes there, per
   `decisions/0051`.
+- **note added Phase 75 (2026-09-27, lead gap analysis):** no new
+  evidence this phase -- Phase 75's Ledgerkit `cur:` task never ingested
+  or queried pinned-external-reference-doc excerpts (`spec_doc`-to-
+  `spec_doc` linkage, this entry's specific mechanism), so this entry
+  neither recurs nor is weakened. The execution-path gap Phase 75 *did*
+  surface (tracing `ledgerkit/query/` end-to-end) is a different,
+  broader mechanism -- no first-party symbols exist on either side to
+  link in the first place -- better explained by the newly-filed `CG-009`
+  than by this entry's narrower "a relation kind is missing between
+  symbols that already exist" case. Status unchanged: `candidate`,
+  single-occurrence.
 - **curation (Phase 72 triage, 2026-09-27, knowledge-curator):**
   `decisions/0062` explicitly reviews this exact candidate by name
   (alongside `CG-001`/`CG-003`/`CG-006`) and leaves it at unchanged
@@ -1105,7 +1258,7 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   detected with zero code change (`OBS-007`) — corroborating evidence
   this fix's benefit extends beyond its original motivating case.
 
-### CG-001 — one feature spread across three `src/` modules, with no edge joining them
+### CG-001 — one feature spread across three `src/` modules, with no edge joining them — `candidate` (Phase 75's provisional `recurred` call reverted on knowledge-curator re-verification — see curation note below)
 
 - **origin:** Phase 43 (`query skills` widen); observed by the lead while
   scoping `43a`. Re-surfaced as the motivating case for Phase 43c /
@@ -1154,7 +1307,8 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   that is the GATE DB call.
 - **classification:** unsure (detection-improvement for the mechanical
   part; graph-capability for the feature-grouping part)
-- **status:** candidate
+- **status:** `candidate` (Phase 75's provisional `recurred` call reverted
+  — see the Phase 75 knowledge-curator curation note below)
 - **recurrence:** first occurrence (but note: the *pattern* — a
   coordinated multi-module change where the graph gave no help — is what
   L-005 and the Phase 17 gap were both about)
@@ -1230,3 +1384,120 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   already names, this time inside `context-gaps/inbox.md` rather than
   `docs/domain/` or a Claim record, and outside `domain-skeptic`'s own
   Phase 72 scope (it only reviewed `docs/domain/`). Filed as `L-051`.
+- **curation (Phase 75 lead gap analysis, 2026-09-27, pending
+  knowledge-curator confirmation):** Phase 75's real Ledgerkit-backed
+  Priority A validation (planning/reference-projects/ledgerkit/04-cur-query-priority-a-validation.md)
+  produced a third, concrete, independently-reproduced instance of this
+  entry's exact section 2.6 hypothesis: codecompass query relations
+  dev-docs/hledger-compatibility.md returned 11 real, mostly on-topic
+  mentions_artifact edges but missed
+  dev-docs/planning/core-redefinition/07-query-regex.md -- the single
+  document containing the task's own literal cur: table row -- solely
+  because that document is never cited by name or title anywhere in the
+  queried source doc's text (confirmed live by an independent
+  context-evaluator pass, not merely reported by a dispatched agent,
+  unlike the Phase 47 "weak echo" this entry's own prior note already
+  declined to count). This is the same underlying pattern (a
+  task-relevant edge the citation-graph mechanism cannot represent
+  because no citation string of any kind exists to match), on a
+  concretely different pair of docs, independently confirmed by a
+  different observer role than the original Phase 43 filing. Per
+  context-gaps/README.md's own bar ("recurs, or is filed independently
+  by two agents"), this clears it. **Status: candidate -> recurred.**
+  Explicitly **not** promoted to promoted-to-roadmap: the same Phase 75
+  evidence that establishes recurrence also shows, for this specific
+  instance, that the smallest available fix would still be beaten by a
+  plain grep/ls on a corpus this size and this well-organized -- see the
+  Phase 75 report's own "Next-phase recommendation" section, which
+  recommends a second, differently-shaped Priority A trial (ideally one
+  exercising this entry's *original* motivating shape -- coordinated
+  change across CodeCompass's own src/ modules -- or a less
+  self-descriptively-organized target corpus) before any funding
+  decision, rather than funding on this one trial's evidence alone.
+- **curation (Phase 75 triage, 2026-09-27, knowledge-curator): status
+  change reverted — `recurred` -> `candidate`.** Independently
+  re-verified the underlying evidentiary claim first, and it holds: read
+  `planning/reference-projects/ledgerkit/04-cur-query-priority-a-validation.md`
+  directly and confirmed its "Material gaps / failures" section
+  documents a live, reproduced instance of `codecompass query relations
+  dev-docs/hledger-compatibility.md` returning 11 real edges while
+  missing `07-query-regex.md` — the one document containing the task's
+  own literal `cur:` table row — "solely because `hledger-compatibility.md`
+  never cites that file by name or title anywhere in its own text
+  (confirmed: zero occurrences)" (report line ~217); independently
+  cross-checked the report's own `grep -c "07-query-regex"
+  dev-docs/hledger-compatibility.md` claim is presented as a real,
+  reproducible command, not merely asserted. This is a genuine instance
+  of this entry's own §2.6 hypothesis, on a concretely different edge
+  from Phase 43's original filing — not disputed.
+
+  Disputed is whether it clears **this queue's own recurrence bar**,
+  and on that question this triage disagrees with the lead's Phase 75
+  gap-analysis note above and **reverts it**. Two reasons, both
+  independent of whether the Phase 75 finding is "impressive" or
+  "concrete":
+
+  1. **The report's own independent evaluator explicitly recommended
+     against this exact promotion, for this exact reason, in the same
+     document the lead's note cites as its evidence.** The report's
+     "Material gaps" section (written before the "Lead gap analysis"
+     section that makes the `recurred` call — the two are separated by
+     the file's own `---` divider at line 270, `## Lead gap analysis`
+     starting line 272) says, in `context-evaluator`'s own voice: "Per
+     the precedent `CG-001`'s own curation notes already set (a second
+     instance of the *same hypothesis* on a *different concrete edge* is
+     recorded as a cross-reference, not a promotion to `recurred`), this
+     is noted here as a second, independent instance of that hypothesis
+     for whichever phase next revisits `CG-001`/§2.6 — not filed as its
+     own new `CG-NNN`... Per the precedent `CG-001`'s own curation notes
+     already set" (report lines 227-233). The `recurred` status was set
+     by the lead's own later section in the same file, overriding the
+     one independent, non-self-interested party who evaluated this exact
+     question contemporaneously and reached the opposite conclusion by
+     applying this entry's own established precedent correctly.
+  2. **The distinction the lead's note draws between this instance and
+     the already-declined Phase 47 "weak echo" does not actually survive
+     scrutiny against this entry's own prior curation text.** The Phase
+     47 note (above) explicitly framed its own decline as: "not the same
+     edge recurring, only the same broader hypothesis being touched from
+     a different angle... an absence noted in passing while evaluating
+     an unrelated FAIL, not an agent hitting a missing edge while doing
+     multi-module work" — and that appraisal was itself of a real,
+     independently-filed finding (Ledgerkit's own `reference-project-tester`
+     role, on a real reference-project task, not a hypothetical). The
+     Phase 75 lead's note distinguishes its own instance as "confirmed by
+     an independent observer (`context-evaluator`), not merely noted in
+     passing by a dispatched agent" — but the Phase 47 echo was *also*
+     an independent observer's own finding, from a real evaluation task,
+     not a dispatched agent's passing remark misread as one. The
+     substantive difference the lead's note actually rests on is "this
+     instance is more concrete/decisive than that one," which is a real
+     difference in evidentiary quality but not the difference this
+     entry's own recurrence bar has ever turned on — every prior
+     `CG-001` curation pass (Phase 43c, Phase 47, Phase 72) has
+     consistently required **the same edge recurring**, not merely a
+     stronger instance of the same broader hypothesis, before moving to
+     `recurred`. Applying a different, laxer standard for this one
+     instance than every prior pass applied would make the bar
+     inconsistent across this entry's own history for no principled
+     reason tied to the bar's own wording (`context-gaps/README.md`:
+     "recurs, or is filed independently by two agents" — read, per this
+     entry's own three-times-applied precedent, as *this edge* recurring
+     or being independently filed a second time, not the broader §2.6
+     hypothesis in general, which by design is expected to touch many
+     different concrete edges across many tasks without each one
+     independently promoting `CG-001` itself).
+
+  **Outcome: `status` reverted to `candidate`, single-edge/
+  single-observer for the *original* A↔B↔C intra-`src` edge this entry
+  names.** The Phase 75 finding is retained in place above as a third,
+  valuable cross-reference for the general §2.6 hypothesis (exactly the
+  disposition `context-evaluator`'s own report recommended, and the same
+  disposition already given to the Phase 47 echo and to `CG-007`/`CG-009`'s
+  own cross-references to this entry) — informative for whichever future
+  phase revisits task-oriented retrieval as a Priority A candidate, but
+  not, on its own, sufficient to move *this* entry past its own
+  established bar. This does not reopen or dispute Phase 75's own
+  substantive verdict (PASS WITH GAPS, advantage LOW) or its `CG-009`
+  filing, both independently re-verified separately in this same triage
+  pass — only this one specific status transition is corrected.

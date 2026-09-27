@@ -124,7 +124,7 @@ unaddressed.
 - `planning/v1-redefinition/reference-project-protocol.md:1-30`
 - `planning/knowledge/doc-origin-pinned-reference/EV-DOCORIGIN-001.yaml`,
   `EV-DOCORIGIN-008.yaml`
-- `planning/context-gaps/inbox.md:267-363` (`CG-005`)
+- `planning/context-gaps/inbox.md:601-722` (`CG-005`)
 - `planning/knowledge/doc-origin-pinned-reference/CL-DOCORIGIN-001.yaml`,
   `CL-DOCORIGIN-003.yaml` (earlier, feature-scoped Claims this page
   cites but does not re-derive)

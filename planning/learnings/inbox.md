@@ -8,6 +8,291 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-063 — a subagent dispatch prompt must never claim a fresh agent already has access to content that exists only in the dispatching session's own conversation history
+
+- **origin:** Phase 75 (Priority A Ledgerkit validation), retro
+  "What didn't work" / "Process-improvement feedback" sections; not
+  filed by the retro as its own `L-NNN` at the time (folded into prose
+  instead) — filed here by `knowledge-curator` triage per this queue's
+  own practice of giving every distinct, evidenced retro observation a
+  trackable id rather than letting it live only as unindexed retro prose.
+- **date:** 2026-09-27
+- **project_revision:** `d4f5e0a` (working tree at filing time); retro:
+  `planning/retros/phase-75-ledgerkit-priority-a-validation.md`.
+- **observation:** the `context-evaluator` dispatch prompt for this phase
+  stated that both the baseline and treatment agents' full raw reports
+  were "already in this conversation's history." They were not — a fresh
+  subagent has no visibility into the dispatching session's own prior
+  turns/tool results unless that content is pasted directly into the
+  dispatch prompt or written to a file the subagent can read, and neither
+  had happened here: both reports existed only as message content in the
+  lead's own conversation, never written to disk. Compounding this,
+  neither scratch clone retained any durable trace of either agent's own
+  investigation (`git status` clean in both, per `context-evaluator`'s
+  own note) — so there was no fallback file to read even after the
+  dispatch prompt's own claim proved wrong.
+- **evidence:** `planning/retros/phase-75-ledgerkit-priority-a-validation.md`
+  "What didn't work" (the dispatch-prompt claim and its falsity) and
+  "Lessons learnt" (the general rule the retro itself already drew, in
+  prose, from this instance) and "Process-improvement feedback" (the
+  concrete fix: write baseline/treatment reports to disk immediately on
+  receipt, before dispatching any downstream evaluator that will need
+  them).
+- **why this happened:** `context-evaluator`'s own methodology
+  (independent ground-truth establishment against the real repository,
+  never trusting either dispatched agent's report at face value) made it
+  robust to this gap by design — it re-derived what it needed rather than
+  stalling or guessing when the claimed content wasn't there. No harm
+  resulted this time, but that robustness is specific to this one role's
+  own charter, not a property every downstream-evaluator dispatch can
+  assume it has.
+- **could mechanical detection ever catch this?** no — this is a
+  dispatch-prompt drafting correctness question (does the prompt's own
+  claim about what the target agent can see match reality), not something
+  a deterministic check over `src/` or `planning/**` content could verify
+  ahead of time.
+- **smallest candidate that would fix it:** a standing rule at
+  `planning/agent-led-workflow.md`, in the same style as the existing
+  step 9 addition for `L-056` ("state explicitly in the dispatch prompt
+  that its report must be written to `<path>`... do not rely on the
+  role's own agent-definition file to guarantee the write happens"): (1)
+  never assert, in a dispatch prompt, that a target agent already has
+  access to content that lives only in the dispatching session's own
+  conversation — either paste the actual content into the prompt or
+  write it to a file first and point the agent at the file; (2)
+  specifically for any multi-agent comparison (baseline/treatment or
+  similar), write each prior agent's full report to disk immediately on
+  receipt, before dispatching any downstream role that will need to
+  reference it, rather than leaving it as conversation-only content
+  until a downstream dispatch turns out to need it.
+- **classification:** workflow (a dispatch-prompt-writing discipline
+  applicable to any multi-agent-chain phase, not one role's own
+  procedure — matches `L-056`'s own classification for the structurally
+  identical "state the required path explicitly, don't assume it
+  happens" shape).
+- **status:** promoted
+- **recurrence:** first occurrence.
+- **curation (Phase 75 triage, 2026-09-27, knowledge-curator):**
+  provenance accepted — backfilled `origin`/`date`/`project_revision`/
+  `evidence`/`classification` fields from the retro's own text (the retro
+  recorded this as prose rather than filing it with the template; per
+  this lifecycle's own "any agent may append... the curator does a
+  lightweight accept" step, filing it now with an id rather than leaving
+  it untracked). Independently re-verified rather than taken on the
+  retro's own word: read
+  `planning/retros/phase-75-ledgerkit-priority-a-validation.md` directly
+  — "What didn't work," "Lessons learnt," and "Process-improvement
+  feedback" all state this exactly as summarized above, including the
+  explicit `git status` clean confirmation and the "should not be relied
+  on twice" caveat. Read `planning/agent-led-workflow.md` step 9's own
+  existing `L-056` addition and confirmed it addresses a different,
+  narrower case (a report-writing role's *own* output path, e.g.
+  `docs-reconstructor`'s drift-audit report) — this entry's mechanism
+  (a dispatch prompt misrepresenting what a *different*, unrelated prior
+  turn's content the fresh agent can see) is a distinct failure mode:
+  not "did the role write its own report," but "did the dispatching
+  agent correctly convey what the target agent can already see." Not a
+  duplicate. Checked `L-018` (never `Write` the same path with two
+  concurrent agents) and `L-039` (never suggest an exception to a hard
+  write-boundary rule) — both are dispatch-hygiene rules from the same
+  family but address different mechanisms; not duplicates either.
+  **Outcome: promote.** Real, specific, evidenced, cheap to fix, and
+  general enough to recur in any future multi-agent-chain phase (not
+  scoped to reference-project evaluations specifically) — matches this
+  queue's own bar for closing a first, well-evidenced instance
+  immediately rather than waiting for recurrence (the same reasoning
+  `L-018`/`L-022`/`L-056` each used). **Destination:
+  `planning/agent-led-workflow.md`, alongside step 7 ("Obtain independent
+  testing/evaluation")** — not step 9 (`L-056`'s own home), since this
+  entry's failure mode isn't specific to the drift-audit report path;
+  not `.claude/agents/context-evaluator.md` alone, since the rule applies
+  to whoever writes the *dispatching* prompt (the lead), not to the
+  dispatched role's own behaviour. Draft addition text (for the lead to
+  review, adapt, and apply — outside this role's own write boundary):
+
+  > **A dispatch prompt must never claim a fresh subagent already has
+  > access to content that exists only in the dispatching session's own
+  > conversation history** — a fresh subagent has no visibility into
+  > prior turns or tool results of the dispatching session unless that
+  > content is pasted directly into the dispatch prompt or written to a
+  > file the subagent can read. When a multi-agent comparison (e.g.
+  > baseline/treatment) produces reports a downstream evaluator will need
+  > to reference, write each prior agent's full report to disk
+  > immediately on receipt (e.g. under
+  > `planning/reference-projects/<project>/`), before dispatching the
+  > downstream evaluator, and point it at the file path rather than
+  > asserting the content is "already in this conversation." Confirmed at
+  > Phase 75 (`L-063`): a `context-evaluator` dispatch prompt claimed
+  > exactly this, incorrectly; the evaluator's own independent
+  > ground-truth methodology absorbed the gap harmlessly that time, but
+  > this should not be relied on twice, and neither scratch clone in that
+  > instance retained any fallback trace of either prior agent's work.
+
+  **Applied by the lead, 2026-09-28:** the draft above was added to
+  `planning/agent-led-workflow.md` step 7, immediately after its own
+  re-verification bullet, verbatim. **Status: `candidate` → `promoted`.**
+  `promoted.md` line added.
+
+### L-062 — a baseline/treatment dispatch prompt that restricts *writes* to a scratch clone doesn't also restrict *reads*, so one agent's broader filesystem search (not the tool under test) can decide the comparison
+
+- **origin:** Phase 75 (Priority A Ledgerkit validation — `cur:` query
+  design/discovery, baseline vs. CodeCompass-assisted), independent
+  `context-evaluator` verification, applying the `L-027`
+  agent-diligence-variance check the phase's own plan required.
+- **date:** 2026-09-27
+- **project_revision:** `d4f5e0a` (working tree at filing time); full
+  report: `planning/reference-projects/ledgerkit/04-cur-query-priority-a-validation.md`.
+- **observation:** the treatment agent's single most valuable-looking
+  finding (hledger's `cur:` uses anchored `^...$` full-string matching)
+  came from reading the real, pinned local hledger source clone at
+  `/home/cormac/projects/ledgerkit`'s sibling path
+  `/home/cormac/projects/hledger`, found via an **unscoped**
+  `find / -iname Query.hs`. The baseline agent ran a **scoped**
+  `find . -iname "*.hs"` (its own working directory only) and found
+  nothing. Both dispatch prompts told each agent its scratch clone was
+  "the project root" and forbade *modifying* files outside it — neither
+  prompt said anything about *reading* outside it, so both agents in
+  fact had equal real access to the decisive evidence; only one thought
+  to look. `context-evaluator` went further and found the same fact was
+  already in the hledger 1.52 manual the baseline agent is reported to
+  have already `WebFetch`ed — so this specific finding was not even
+  local-source-access-gated, only extraction-care-gated. Per the phase's
+  own plan (`context-quality-evaluation.md` §1's standing rule), this
+  was correctly excluded from the tool's credited advantage — but only
+  because the plan explicitly required checking for it. A less
+  disciplined comparison would have credited CodeCompass with a finding
+  it had no part in.
+- **evidence:** `planning/reference-projects/ledgerkit/04-cur-query-priority-a-validation.md`'s
+  "Context advantage: LOW" section, finding 1 (the `find /` vs. `find .`
+  account, independently confirmed by `context-evaluator` against the
+  real `/home/cormac/projects/hledger` checkout and both scratch clones'
+  own tool-call histories) and finding 2 (the same fact already present
+  in the hledger 1.52 manual). `planning/phase-75-ledgerkit-priority-a-validation.md`
+  §2/§4 (the dispatch scope itself: a write-restriction stated, no
+  read-restriction stated, for either arm).
+- **why this happened:** a "write-restricted, read-unrestricted" working
+  copy is normal and correct for a *single* agent doing real work (no
+  reason to sandbox reads) but is a hidden threat to *validity* the
+  moment two agents' results are being compared for a tool's own causal
+  contribution — the asymmetry only matters in the comparison, not in
+  either agent's own task performance.
+- **could mechanical detection ever catch this?** partially — a dispatch
+  prompt could symmetrically scope *reads* too (both agents confined to
+  their own scratch clone's tree, no reads elsewhere), removing the
+  confound structurally rather than relying on a post-hoc `L-027` check
+  to catch it after the fact. This trades away a legitimate case (an
+  agent that would genuinely have found the same sibling checkout during
+  real unsandboxed work) for a cleaner comparison — a real tradeoff, not
+  a free fix, so not applied retroactively to Phase 75's own already-run
+  trial.
+- **smallest candidate that would fix it:** amend
+  `reference-project-protocol.md`'s / `context-quality-evaluation.md`'s
+  own baseline/treatment dispatch template to state explicitly:
+  read access is scoped to the assigned scratch clone's own tree for
+  *both* arms of a comparison (not merely write access), OR, if
+  unsandboxed reads are intentionally allowed (to match how a real
+  session would actually work), the dispatch prompt must say so
+  explicitly and the `L-027` diligence-variance check remains mandatory
+  regardless.
+- **classification:** workflow (corrected from the filed value "process,"
+  not one of `learning-lifecycle.md` §3's controlled vocabulary values —
+  matches `L-027`'s own classification for the same
+  `context-quality-evaluation.md`/`reference-project-protocol.md`
+  dispatch-methodology territory).
+- **status:** promoted
+- **recurrence:** first occurrence.
+- **curation (Phase 75 triage, 2026-09-27, knowledge-curator):**
+  provenance accepted — all required fields present (origin, date,
+  project_revision, observation, evidence, classification, status,
+  recurrence). Independently re-verified rather than taken on the
+  entry's own word: read
+  `planning/phase-75-ledgerkit-priority-a-validation.md` §2 directly.
+  Confirmed exactly as claimed — the section states both agents work
+  from their own scratch clone, states the real
+  `/home/cormac/projects/ledgerkit` directory is "never" the working
+  location ("read-only source only"), and its only explicit prohibition
+  anywhere in the plan is on *writing* ("no PR, no commit, nothing
+  written back to the real Ledgerkit checkout" — §4's "Explicitly not
+  touched"). No sentence anywhere in §2 or §4 scopes either agent's
+  *reads* to its own clone — confirmed by a full read of §2's five
+  bullets and §4's closing paragraph, not just the sentence the entry
+  itself quotes. This matches the entry's central claim exactly: a
+  write-restriction was stated, a read-restriction was not, and both
+  agents therefore had equal, unscoped real filesystem read access by
+  default. Independently spot-checked the entry's own supporting
+  narrative against
+  `planning/reference-projects/ledgerkit/04-cur-query-priority-a-validation.md`
+  (the `L-027` diligence-variance finding it cites) rather than assuming
+  it: the report does describe an unscoped `find / -iname Query.hs`
+  locating `/home/cormac/projects/hledger` as the treatment agent's route
+  to the decisive fact, a scoped `find .` for the baseline agent, and
+  independently confirms the same fact was already present in the
+  hledger 1.52 manual the baseline agent had separately fetched — the
+  entry's account of this evidence holds up.
+
+  Checked for existing coverage before treating this as novel: `L-027`
+  (`planning/learnings/promoted.md`, already landed at
+  `context-quality-evaluation.md` §1) is the *detection* mechanism for
+  exactly this class of confound ("check both agents' own file-access
+  logs before crediting either" — it is what caught this instance) but
+  is silent on *preventing* the confound by dispatch-prompt design; `L-022`
+  (hand-authored evaluation material must not leak internal authoring
+  rationale into agent-visible output) and `L-018` (never dispatch two
+  agents to `Write` the same path concurrently) are both genuinely
+  different dispatch-hygiene mechanisms, not duplicates. Grepped
+  `reference-project-protocol.md` and `context-quality-evaluation.md` for
+  any existing read-scope guidance: none exists — §2.2's own "Working
+  copy discipline" only ever discusses where the clone lives and that it
+  is never added to CodeCompass's own tree/`vendor.toml`/`context-graph.db`,
+  never what either agent may *read* outside it. Genuinely a new,
+  first-occurrence, well-evidenced process gap.
+
+  **Outcome: promote.** Real, specific (`L-027` gives no design-time
+  guidance on read-scoping, only a post-hoc check), and cheap to fix — a
+  one-paragraph addition to an existing protocol document, matching the
+  precedent this exact document already sets for `L-022`. **Destination:
+  `planning/v1-redefinition/reference-project-protocol.md` §2.2 ("Working
+  copy discipline")**, with a one-line cross-reference added to
+  `context-quality-evaluation.md` §1 (which already documents the `L-027`
+  check this new text supplements, not replaces) pointing back at §2.2's
+  fuller text rather than duplicating it. Recommended addition text
+  (for the lead to review, adapt, and apply — outside this role's own
+  write boundary, `reference-project-protocol.md` is not
+  `planning/learnings/**`/`planning/context-gaps/**`/
+  `planning/context-observations/**`/`planning/knowledge/**`):
+
+  > **Added `<date>` (`L-062`, Phase 75):** for any baseline/treatment
+  > *comparison* (not a single-agent task run), the dispatch prompt must
+  > additionally state, explicitly, one of the following for **both**
+  > arms symmetrically:
+  > - read access is scoped to the assigned scratch clone's own tree
+  >   only (no reads outside it, including a sibling checkout of the same
+  >   upstream project or its dependencies), so neither arm can gain
+  >   access to source neither the tool under test nor the other arm
+  >   could plausibly have surfaced; or
+  > - read access is intentionally left unscoped (matching how a real
+  >   development session would actually work), in which case the
+  >   `L-027` agent-diligence-variance check
+  >   (`context-quality-evaluation.md` §1) remains mandatory regardless,
+  >   and any finding traceable to a read outside the assigned scratch
+  >   clone is excluded from the tool's own credited advantage.
+  >
+  > A dispatch prompt that restricts *writes* to a scratch clone but is
+  > silent about *reads* leaves both arms with equal, unscoped filesystem
+  > read access by default — harmless to either arm's own task
+  > performance, but a hidden threat to the *comparison's* validity.
+  > Confirmed at Phase 75: the treatment agent's single most
+  > impressive-looking finding came from an unscoped `find /` locating a
+  > sibling checkout of the real upstream project; the baseline agent
+  > could equally have run the same command but ran a scoped `find .`
+  > instead and found nothing.
+
+  **Applied by the lead, 2026-09-28:** the draft above was added to
+  `planning/v1-redefinition/reference-project-protocol.md` §2.2
+  verbatim, with a one-line cross-reference added to
+  `context-quality-evaluation.md` §1 pointing back at it. **Status:
+  `candidate` → `promoted`.** `promoted.md` line added.
+
 ### L-060 — the lead self-served phase-completion reconciliation instead of dispatching `roadmap-context-curator`, removing the one designed check on marking one's own work `done`, for five consecutive phases
 
 - **origin:** direct user request, 2026-09-27 — "investigate and fix the

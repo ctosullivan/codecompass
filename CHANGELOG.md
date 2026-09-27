@@ -28,6 +28,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fabricated default), so per-symbol AI-enrichment output can now be
   attributed to a producer the same way `vendor_enrichment`/
   `doc_relation_enrichment` already were.
+- **Phase 75** (Priority A Ledgerkit validation, evaluation only, no
+  `src/` change): `planning/reference-projects/ledgerkit/04-cur-query-priority-a-validation.md`
+  — a real baseline-vs-CodeCompass-assisted evaluation of hledger's
+  `cur:` query-term design/discovery task, independently rated by
+  `context-evaluator` (**PASS WITH GAPS, advantage LOW**). New context
+  gap `CG-009` filed (zero symbol-level index of a project's own
+  first-party source, any ecosystem — structural, not fixed by tracking
+  more vendors). `CG-001` stays `candidate` — a provisional `recurred`
+  call was reversed by `knowledge-curator`'s own independent same-phase
+  triage, reviewed and concurred by the lead; retained as a third
+  cross-reference for its own task-oriented-retrieval hypothesis, not
+  promoted. Two new process learnings promoted: `L-062` (a
+  baseline/treatment dispatch prompt
+  restricting writes to a scratch clone doesn't also restrict reads,
+  which can let one agent's broader filesystem search — not the tool
+  under test — decide a comparison, now landed in
+  `reference-project-protocol.md` §2.2) and `L-063` (a subagent dispatch
+  prompt must never claim a fresh agent already has access to
+  conversation-only content, now landed in `agent-led-workflow.md` step
+  7).
 
 ### Changed
 

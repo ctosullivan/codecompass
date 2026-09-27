@@ -64,3 +64,5 @@ L-061 | 2026-09-27 | scoped-rule | .claude/agents/domain-skeptic.md step 7 (re-r
      curator.md amendment — not `d34a486` (feat(phase-43), the code
      change + GATE DA verdict itself, which predates the amendment).
      Confirmed via `git show --stat f6cc86d`. -->
+L-062 | 2026-09-28 | workflow | planning/v1-redefinition/reference-project-protocol.md §2.2 (read-scope dispatch-prompt rule) + planning/v1-redefinition/context-quality-evaluation.md §1 (cross-reference) @ (this phase's own closeout commit)
+L-063 | 2026-09-28 | workflow | planning/agent-led-workflow.md step 7 (never claim a fresh subagent can see conversation-only content) @ (this phase's own closeout commit)

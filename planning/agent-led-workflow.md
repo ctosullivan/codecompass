@@ -206,6 +206,24 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
    The lead **re-verifies independently regardless**: re-run
    `pytest`/`ruff`, read the actual diff for the core logic change,
    confirm the changed-file list matches the plan's Files section.
+
+   **A dispatch prompt must never claim a fresh subagent already has
+   access to content that exists only in the dispatching session's own
+   conversation history** — a fresh subagent has no visibility into
+   prior turns or tool results of the dispatching session unless that
+   content is pasted directly into the dispatch prompt or written to a
+   file the subagent can read. When a multi-agent comparison (e.g.
+   baseline/treatment) produces reports a downstream evaluator will need
+   to reference, write each prior agent's full report to disk
+   immediately on receipt (e.g. under
+   `planning/reference-projects/<project>/`), before dispatching the
+   downstream evaluator, and point it at the file path rather than
+   asserting the content is "already in this conversation." Confirmed at
+   Phase 75 (`L-063`): a `context-evaluator` dispatch prompt claimed
+   exactly this, incorrectly; the evaluator's own independent
+   ground-truth methodology absorbed the gap harmlessly that time, but
+   this should not be relied on twice, and neither scratch clone in that
+   instance retained any fallback trace of either prior agent's work.
 8. **Reconcile current documentation.** Dispatch `docs-maintainer` with
    the phase diff. It fixes wrong paragraphs (not appends caveats),
    deletes false statements, runs the deterministic doc checks.

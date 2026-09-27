@@ -19,65 +19,73 @@ Full status: `planning/ROADMAP.md`. Closeout record:
 Post-v1 work is organised into six priorities (A-F,
 `planning/ROADMAP.md`'s "Post-v1 priorities" section, `decisions/0062`),
 not lettered stages. Priority A's first concrete deliverable
-(Phase 73, `CG-006`) and Priority B's first hardening step (Phase 74,
-`L-031`/`L-032`) are both done, audited, and closed. **Phase 75**
-(Priority A Ledgerkit validation, `planning/phase-75-ledgerkit-priority-a-validation.md`)
-is the current work, `in progress`. Backlog, each with its own revisit
-trigger: Phases 24/25, Phase 50's remainder, `CG-003`, the
-`browser_api`/`platform_api` kind — full detail
-`planning/pre-v1-disposition.md`.
+(Phase 73, `CG-006`), Priority B's first hardening step (Phase 74,
+`L-031`/`L-032`), and Priority A's first real-task validation trial
+(Phase 75) are all done, audited, and closed. **Phase 75 is the current
+work and the most recently completed phase** — no phase is yet planned
+beyond it. Backlog, each with its own revisit trigger: Phases 24/25,
+Phase 50's remainder, `CG-003`, the `browser_api`/`platform_api` kind —
+full detail `planning/pre-v1-disposition.md`.
 
 ## What was just completed
 
-**Phases 71-74 are genuinely done, audited, and closed** — each now has
-a fresh, independently-run, persisted `release-phase-auditor` completion
-audit against its own final state (`planning/retros/_audit-phase-71.md`
-PASS, `_audit-phase-72.md` PASS, `_audit-phase-73.md` PASS WITH
-NON-BLOCKING OBSERVATIONS, `_audit-phase-74.md` PASS WITH NON-BLOCKING
-OBSERVATIONS), closing a real process defect (`L-060`,
-`planning/retros/_root-cause-closeout-defect.md`): across these four
-phases the lead had flipped `ROADMAP.md`/plan-file status to `done`
-before any completion audit ran, and — for Phase 71 — before one had
-ever run at all. This reconciliation (`roadmap-context-curator`) is the
-first genuinely independent DoD check these four phases have received;
-it confirms, rather than assumes, that all `CLAUDE.md` §5 conditions now
-hold for each.
+**Phase 75 — Priority A Ledgerkit validation (real-task evaluation, no
+`src/` change).** A genuine baseline-vs-CodeCompass-assisted comparison
+on hledger's `cur:` query-term design/discovery task in Ledgerkit's own
+query engine, independently rated by `context-evaluator`:
+**PASS WITH GAPS, advantage LOW**. `CG-001` stays `candidate`; a new
+gap `CG-009` (zero first-party-source symbol index, any ecosystem) was
+filed and confirmed `candidate`; `CG-007` got a "no new evidence"
+cross-reference. Two process learnings landed: `L-062`
+(baseline/treatment dispatch prompts must state read-scope symmetry
+explicitly, `reference-project-protocol.md` §2.2) and `L-063` (a
+dispatch prompt must never claim a fresh subagent already has access to
+conversation-only content, `agent-led-workflow.md` step 7). Full
+report: `planning/reference-projects/ledgerkit/04-cur-query-priority-a-validation.md`.
+Recommended next step: a second, differently-shaped Priority A
+validation trial before any funding decision on `CG-001`/`CG-007` (see
+"Next concrete step" below) — not a capability build.
 
-**Phase 73 — `mentions_artifact` filename-based matching, closes
-`CG-006`.** `build_doc_relations_edges` now also matches a named
-target's filename/stem, not only its title (gated through the reused
-`_is_specific_enough` noise filter), closing a real gap on the exact
-pair `CG-004`'s own fix was motivated by. A follow-on gap
-`docs-maintainer` found in the same phase (`relation_enrichment.py`'s
-excerpt-needle re-derivation, not updated for the same widening) was
-fixed, not deferred. The audit's one non-blocking finding (`CG-006`'s
-own structured status field left at `candidate` despite its prose
-already saying otherwise) was fixed at `157957b`.
+**Undocumented-elsewhere decisions from this phase's closeout, now
+recorded here:**
 
-**Phase 74 — Priority B provenance hardening, closes `L-031`+`L-032`.**
-`symbol_enrichment.model` added (nullable — an honest backfill, not a
-fabricated `NOT NULL` default, for rows whose real producer predates
-this column). `ExternalAdapterProcess.initialize` now requires
-`expected_ecosystem` and validates it plus `capabilities` against the
-closed set, raising `AdapterError` on either mismatch. Both gaps were
-documented as open across 11 current-truth/domain-corpus doc
-locations — all found and fixed (`docs-reconstructor`'s drift audit
-caught 6 the initial `docs-maintainer` pass missed; `domain-skeptic`
-verified and named the fix for 5 `docs/domain/` locations, one Claim
-supersession — `CL-EVID-008`→`CL-EVID-013`). Two further post-`done`
-audit rounds found and fixed three more stale/contradictory
-`docs/domain/` locations the original passes missed
-(`evidence.md`, two `provenance.md` citations, an intra-file
-contradiction in `capability.md`) — see `_audit-phase-74.md` and
-`CHANGELOG.md` for the full account. A full independent re-read of all
-six touched `docs/domain/` files plus corpus-wide grep sweeps found no
-further instance of any of these patterns.
-
-**Outstanding, not part of this reconciliation:** `L-060` itself
-(`planning/learnings/inbox.md`, status `candidate`) remains untriaged —
-it is a cross-phase (70-74) process learning, not owned by any one of
-the four phases' own retros, and needs its own `knowledge-curator`
-triage dispatch.
+- `CG-001`'s status has a provisional-then-reversed history worth
+  remembering exactly: the lead's own gap analysis first moved it
+  `candidate` → `recurred` on this phase's evidence; `knowledge-curator`'s
+  own independent same-phase triage reviewed that call and reversed it
+  back to `candidate` (the evaluation report's own `context-evaluator`
+  section had already recommended cross-reference-not-promotion using
+  this entry's own established precedent); the lead reviewed and
+  concurred with the reversal. The final, authoritative record is
+  `planning/context-gaps/inbox.md`'s own `CG-001` entry. This reversal
+  was not propagated to four other artifacts on the first closeout
+  attempt (`planning/reference-projects/ledgerkit/04-cur-query-priority-a-validation.md`,
+  `planning/ROADMAP.md` (both the Priority A row and the `CG-009` row),
+  `CHANGELOG.md`, and the phase retro) — `release-phase-auditor`'s first
+  completion-audit pass caught this as a real `FAIL` (a cross-document
+  propagation defect, not a fabrication); the lead fixed all four plus
+  one more, and the re-audit (`planning/retros/_audit-phase-75.md`)
+  confirmed every fix landed and swept the repository for the same
+  defect class, finding nothing further.
+- **Phase 75 is the first phase closed under the corrected closeout
+  process** (the `L-060`/`L-061` root-cause fix landed just before this
+  phase, `d4f5e0a`, itself following the discovery that Phases 70-74 had
+  been self-serving this exact reconciliation step). This
+  `roadmap-context-curator` reconciliation is itself part of confirming
+  that fix holds — the corrected sequence (drift audit → interim
+  reconciliation → retro → learning triage → completion audit →
+  only-on-`PASS` final reconciliation) caught a real, non-trivial defect
+  on its very first real exercise (the `CG-001` propagation `FAIL`
+  above) rather than rubber-stamping the phase, which is direct evidence
+  the fix is working as intended rather than merely present in the
+  process documents.
+- Independently re-confirmed at this reconciliation (not re-derived from
+  the audit's own word alone): `pytest` (641 passed, 2 skipped),
+  `ruff check .` (clean), `check_user_docs.py --strict` and
+  `check_knowledge_base.py` (both clean), `planning/context-gaps/inbox.md`'s
+  `CG-001` entry is internally consistent, `L-062`/`L-063` are genuinely
+  present at both of their claimed destinations, and no protected file
+  (`CLAUDE.md`, `decisions/*`) was touched this phase.
 
 ## Known standing gaps (current-state facts, not phase history)
 
@@ -94,19 +102,24 @@ triage dispatch.
 - A pre-Phase-74 `symbol_enrichment` row's producer remains honestly
   unknown (`NULL`) — new rows are attributed, historical ones cannot be
   retroactively.
+- `symbols` has no path for a project's own first-party source, any
+  ecosystem (`CG-009`, filed Phase 75) — `vendor_id NOT NULL` FK means
+  only tracked vendor dependencies are indexed, never a project's own
+  code.
 - `vendor/` and a local `.venv/` exist in this checkout (both
   gitignored, freely regeneratable) — live artifacts, not fixtures.
 
 ## Next concrete step
 
-Phases 71-74 are closed (see above). **Phase 75** (Priority A Ledgerkit
-validation — real-task evaluation of `cur:` query-term implementation
-in Ledgerkit, baseline vs. CodeCompass-assisted, independently rated by
-`context-evaluator`) is the current work, plan file `in progress`:
-`planning/phase-75-ledgerkit-priority-a-validation.md`. Separately,
-`L-060` (the phase-closeout process defect these four phases surfaced)
-needs a `knowledge-curator` triage dispatch — it is not resolved by this
-reconciliation. Beyond Phase 75, no phase is yet planned for the
-remainder of Priority A-F — `CG-001`/`CG-007` and Priority B's own
-broader claim/evidence productisation remain genuinely unplanned design
-questions, not "smallest justified fix" work.
+Phase 75 is closed. Recommended **Phase 76**: a second, differently-shaped
+Priority A validation trial (per
+`planning/reference-projects/ledgerkit/04-cur-query-priority-a-validation.md`'s
+own "Next-phase recommendation" section) — ideally exercising `CG-001`'s
+original intra-`src`-module motivating shape, or a reference-project
+corpus less self-descriptively organized than Ledgerkit's own
+`dev-docs/planning/core-redefinition/NN-title.md` convention — not a
+capability build, and not abandonment of Priority A. No phase plan file
+exists yet for this; per `CLAUDE.md` §1, one must be written before any
+implementation/evaluation work begins. Beyond that, `CG-001`/`CG-007`
+and Priority B's own broader claim/evidence productisation remain
+genuinely unplanned design questions, not "smallest justified fix" work.

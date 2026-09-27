@@ -53,6 +53,13 @@ reference-project evaluation, not just Phase 61's own.
   have been misattributed to CodeCompass had this check not been made
   explicitly — both agents had read the exact same decisive raw source,
   which was not itself a CodeCompass vendor.
+- **This check is detection, not prevention** — it catches a
+  read-access-scope confound after the fact, but does not stop a
+  dispatch prompt from creating one. See
+  `reference-project-protocol.md` §2.2's own added rule (`L-062`, Phase
+  75) for the design-time complement: state explicitly, for both arms of
+  any comparison, whether reads are scoped to the assigned scratch clone
+  or intentionally left unscoped.
 
 ## 2. Report structure
 
