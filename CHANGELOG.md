@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (task-context completeness over graph completeness, six priorities
   A-F). `planning/pre-v1-disposition.md` — disposition of every
   material pre-v1 roadmap item.
+- **Phase 74** (Priority B provenance hardening, closes `L-031`):
+  `symbol_enrichment` gained a `model` column (nullable — an honest
+  backfill for rows whose real producer predates this column, not a
+  fabricated default), so per-symbol AI-enrichment output can now be
+  attributed to a producer the same way `vendor_enrichment`/
+  `doc_relation_enrichment` already were.
 
 ### Changed
 
@@ -52,6 +58,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dated amendment note (its own existing convention) pointing at the
   new ADR — content otherwise unchanged; GATE DD remains explicitly
   open.
+- **Phase 73** (closes `CG-006`): `build_doc_relations_edges` now also
+  matches a named target's filename and filename stem, not only its
+  title, when detecting `mentions_artifact` relationships — a real,
+  ordinary citation style ("see `07-query-regex.md`") that title-only
+  matching missed even after `CG-004`'s own fix. Gated through the
+  existing `_is_specific_enough` noise filter, reused from `spec_docs`.
+  `relation_enrichment.py`'s excerpt-selection widened identically
+  (found by an independent `docs-maintainer` review in the same phase).
+- **Phase 74** (closes `L-032`): `ExternalAdapterProcess.initialize`
+  now requires an `expected_ecosystem` argument and validates it, plus
+  every `capabilities` entry, against what CodeCompass configured and
+  the protocol's own closed set — raising `AdapterError` on either
+  mismatch, matching the existing `protocol_version` check's own
+  unconditional posture. An adapter reporting a mismatched ecosystem or
+  an unrecognized capability is no longer accepted uncomplainingly.
 
 ### Fixed
 
@@ -90,6 +111,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   three more "Stage C/E" instances in `decision.md`/`observation.md`
   and a stale Claim citation in `evidence.md` — confirmed and fixed the
   same way.
+- **Phase 73**: `architecture/historical-notes.md`'s own closing
+  paragraph understated the current excerpt-fallback's robustness after
+  this phase's own filename-matching widening — fixed with a brief
+  present-tense note, historical narrative otherwise unchanged.
+- **Phase 74**: both `L-031`/`L-032` were documented as currently-open
+  gaps across 11 current-truth/domain-corpus doc locations —
+  `README.md` (twice), `architecture/context-graph-schema.md`,
+  `docs/developer/writing-an-adapter.md`,
+  `docs/protocol-adapter/integrating-a-new-external-adapter.md`
+  (twice), and 5 `docs/domain/` concept-page/open-questions locations —
+  all found (6 by an independent `docs-reconstructor` audit after the
+  initial `docs-maintainer` pass missed them; 5 by `domain-skeptic`)
+  and fixed. `CL-EVID-008` superseded by `CL-EVID-013` for the one
+  affected Claim record, correcting only the now-false enrichment-table
+  sub-fact.
 
 ## [1.0.0] - 2026-09-24
 

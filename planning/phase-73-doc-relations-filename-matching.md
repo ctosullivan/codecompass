@@ -1,6 +1,6 @@
 # Phase 73: `mentions_artifact` filename-based matching (closes `CG-006`) — plan
 
-**Status:** in progress (2026-09-27).
+**Status:** done (2026-09-27).
 
 First concrete Priority A deliverable (`planning/ROADMAP.md`'s "Post-v1
 priorities (A-F)" table, `decisions/0062`), continuing directly from

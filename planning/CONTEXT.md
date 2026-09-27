@@ -18,45 +18,35 @@ Full status: `planning/ROADMAP.md`. Closeout record:
 
 Post-v1 work is organised into six priorities (A-F,
 `planning/ROADMAP.md`'s "Post-v1 priorities" section, `decisions/0062`),
-not lettered stages — task-context completeness (Priority A) is the
-recommended next concrete phase. Backlog, each with its own revisit
+not lettered stages. Priority A's first concrete deliverable
+(Phase 73, `CG-006`) and Priority B's first hardening step (Phase 74,
+`L-031`/`L-032`) are both done. Backlog, each with its own revisit
 trigger: Phases 24/25, Phase 50's remainder, `CG-003`, the
 `browser_api`/`platform_api` kind — full detail
 `planning/pre-v1-disposition.md`.
 
 ## What was just completed
 
-**Phase 72 — Ledgerkit Stage C learnings capture + post-v1 roadmap
-realignment — done (2026-09-27).** Direct user request:
-`planning/ledgerkit-stage-c-learnings.md` (new) distils 11 learnings
-from Ledgerkit's own Stage C work (studied at Phases 54/54b/54c/61)
-into validated observations / design principles / existing-vs-proposed
-capability / open hypotheses. `decisions/0062` (new ADR) records the
-resulting prioritisation pivot — task-context completeness over graph
-completeness — as six priorities (A-F). `planning/pre-v1-disposition.md`
-(new) dispositions every material pre-v1 item (Phase 24/25/48/50, GATE
-DD/Stage E, open `context-gaps`, `L-031`/`L-032`) so nothing was
-silently dropped. `planning/ROADMAP.md`'s old "Deferred/not-funded" and
-"Future-improvement backlog" framing replaced by the Priority A-F
-structure; `conditional-generalisation.md` gained a dated amendment note
-(content otherwise unchanged — GATE DD's own graph-schema questions
-remain explicitly open, not resolved by this phase). A domain-corpus
-staleness cluster surfaced by the drift audit (7 concept-page/
-open-questions locations across two passes, plus the first real
-exercise of the Claim-supersedes-Claim mechanism — `CL-EVID-011`/`012`
-superseding `CL-EVID-009`/`003`) was found and fixed — the first
-remediation commit was itself incomplete (3 sibling instances missed),
-caught by `release-phase-auditor`'s own DoD pass finding the drift
-audit's report file had never been persisted, then a redone audit
-finding the remaining staleness. Closeout: `context-health-planner`
-assessment, fork review, `docs-reconstructor` drift audit (two passes),
-`domain-skeptic` freshness check (two passes), `context-researcher`
-Claim revision, `knowledge-curator` triage, twice (`L-051` promoted — extends `L-048`'s
-citation rule to phase-group labels and Claim text; a follow-on pass
-after the rework promoted `L-055`/`L-056` — a post-fix completeness
-grep, and `agent-led-workflow.md` step 9 now restates
-`docs-reconstructor`'s required report path in the dispatch prompt
-itself).
+**Phase 73 — `mentions_artifact` filename-based matching, closes
+`CG-006` — done (2026-09-27).** `build_doc_relations_edges` now also
+matches a named target's filename/stem, not only its title (gated
+through the reused `_is_specific_enough` noise filter), closing a real
+gap on the exact pair `CG-004`'s own fix was motivated by. A follow-on
+gap `docs-maintainer` found in the same phase
+(`relation_enrichment.py`'s excerpt-needle re-derivation, not updated
+for the same widening) was fixed, not deferred.
+
+**Phase 74 — Priority B provenance hardening, closes `L-031`+`L-032` —
+done (2026-09-27).** `symbol_enrichment.model` added (nullable — an
+honest backfill, not a fabricated `NOT NULL` default, for rows whose
+real producer predates this column). `ExternalAdapterProcess.initialize`
+now requires `expected_ecosystem` and validates it plus `capabilities`
+against the closed set, raising `AdapterError` on either mismatch. Both
+gaps were documented as open across 11 current-truth/domain-corpus doc
+locations — all found and fixed (`docs-reconstructor`'s drift audit
+caught 6 the initial `docs-maintainer` pass missed; `domain-skeptic`
+verified and named the fix for 5 `docs/domain/` locations, one Claim
+supersession — `CL-EVID-008`→`CL-EVID-013`).
 
 ## Known standing gaps (current-state facts, not phase history)
 
@@ -70,18 +60,18 @@ itself).
   correctness — string comparison only.
 - No formal trigger-accuracy evaluation harness for per-vendor Skills.
 - Cursor `.mdc` export has no `globs` field.
-- `symbol_enrichment` has no producer/model attribution (`L-031`,
-  tracked in `planning/ROADMAP.md`'s future-improvement backlog).
-- External-adapter wire protocol's `ecosystem`/`capabilities` fields
-  received but not validated (`L-032`, same backlog).
+- A pre-Phase-74 `symbol_enrichment` row's producer remains honestly
+  unknown (`NULL`) — new rows are attributed, historical ones cannot be
+  retroactively.
 - `vendor/` and a local `.venv/` exist in this checkout (both
   gitignored, freely regeneratable) — live artifacts, not fixtures.
 
 ## Next concrete step
 
-Phase 72 is closed. No phase is yet planned for any of Priority A-F —
-Priority A (task-context completeness) is the recommended first pick
-(`ROADMAP.md`'s Post-v1 priorities table, `decisions/0062`), but needs
-its own fresh `planning/phase-N-*.md` scoping pass, not a resumption of
-old Phase 48's scope unchanged. Pending: Phase 72's `release-phase-auditor`
-DoD pass, then push to `origin`.
+Phases 73/74 are closed. No phase is yet planned for the remainder of
+Priority A-F — `CG-001`/`CG-007` (Priority A's harder task-oriented-
+retrieval/execution-path candidates) and Priority B's own broader
+claim/evidence productisation both remain genuinely unplanned design
+questions, not "smallest justified fix" work. Pending:
+`release-phase-auditor` DoD passes for both phases, then push to
+`origin`.

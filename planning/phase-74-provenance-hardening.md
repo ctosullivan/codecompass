@@ -1,6 +1,6 @@
 # Phase 74: Priority B provenance hardening (`L-031` + `L-032`) — plan
 
-**Status:** in progress (2026-09-27).
+**Status:** done (2026-09-27).
 
 Second concrete post-v1 phase, continuing directly from Phase 73 per
 the user's own instruction to proceed with implementation. Closes the
