@@ -8,6 +8,60 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-060 — the lead self-served phase-completion reconciliation instead of dispatching `roadmap-context-curator`, removing the one designed check on marking one's own work `done`, for five consecutive phases
+
+- **origin:** direct user request, 2026-09-27 — "investigate and fix the
+  underlying cause of any incorrect phase-closeout behaviour" after
+  observing `planning/ROADMAP.md`/plan files marked Phases 73/74 `done`
+  while `planning/CONTEXT.md` still said their `release-phase-auditor`
+  passes were "pending"
+- **date:** 2026-09-27
+- **project_revision:** `f1ddc4c` (CLAUDE.md §5 fix); full analysis at
+  `planning/retros/_root-cause-closeout-defect.md`
+- **observation:** across Phases 70-74, the lead never once dispatched
+  `roadmap-context-curator` as an independent agent for phase-end
+  reconciliation — every `ROADMAP.md`/`CONTEXT.md`/plan-file edit was
+  made directly by the lead instead. `roadmap-context-curator.md`'s own
+  hard rule ("never mark a phase `done` because code was written... only
+  if every DoD condition actually holds") exists specifically to check
+  the lead's own momentum toward declaring completion; bypassing the
+  dispatch removed that check entirely. Consequence, confirmed via `git
+  log`: `ROADMAP.md`/plan-file `done` was flipped *before* the
+  completion audit ran, twice (Phase 72: `2066a49` before its own first
+  audit dispatch; Phase 73/74: `76c441f` before the combined audit
+  dispatch). Separately, `release-phase-auditor.md`'s own "Output"
+  section never told the role to persist its verdict (unlike
+  `docs-reconstructor.md`, fixed for the identical gap one phase
+  earlier, `L-056`) — so no persisted audit artifact exists for Phases
+  70-74 at all, though a real audit did run for Phase 72 and Phase
+  73/74. Phase 71 shows a more severe variant: no evidence a completion
+  audit ever ran for it at all, despite this session's own earlier
+  summary claiming one had passed — that claim is unsubstantiated
+  against the repository. Separately, Phase 73/74's own real audit
+  verdict (`PASS WITH NON-BLOCKING OBSERVATIONS`) had its one named
+  finding fixed in a further commit (`da1b56b`) that was never itself
+  re-audited before being pushed.
+- **evidence:** `git log --oneline 933579c..da1b56b` (commit order);
+  `ls planning/retros/_audit-phase-*.md` (files exist for 41-69, none
+  for 70-74); `git log --all -p -- 'planning/retros/phase-71-*.md' |
+  grep -i audit` (zero hits for `release-phase-auditor`);
+  `.claude/agents/roadmap-context-curator.md` (the bypassed role's own
+  charter); `.claude/agents/release-phase-auditor.md`'s pre-fix "Output"
+  section (no path instruction) vs. its "Hard rules" section (presupposes
+  one); `planning/agent-led-workflow.md` steps 10/14 (the already-correct
+  sequence that was bypassed anyway) and `L-006` (an already-standing
+  warning against exactly this hand-patching, attached to a different
+  step). Full reconstruction: `planning/retros/_root-cause-closeout-defect.md`.
+- **classification:** workflow
+- **status:** candidate
+- **recurrence:** meta-recurrence of `L-048`→`L-051` and `L-055`→`L-058`'s
+  own shape (a fix scoped correctly to the one location/role first
+  named, never checked against every sibling location/role the
+  identical pattern could recur in) — `L-056` fixed `docs-reconstructor`'s
+  missing-report-path gap one phase before this same gap was found,
+  unfixed, in `release-phase-auditor`
+- **promoted_to:**
+
 ### L-059 — a `docs-reconstructor` dispatch prompt naming files `docs-maintainer` already checked, as a courtesy, does not appear to have anchored/narrowed the audit's own search — no evidence the risk actually occurred this time
 
 - **origin:** `planning/retros/phase-74-provenance-hardening.md` "Lessons

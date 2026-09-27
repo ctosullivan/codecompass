@@ -355,6 +355,70 @@ class TestPhaseRetrosPresent:
         assert check_user_docs.check_phase_retros_present(tmp_path) == []
 
 
+class TestDonePhasesHaveAuditReport:
+    def _roadmap(self, rows: str) -> str:
+        return "| Phase | Name | Status |\n|---|---|---|\n" + rows
+
+    def test_flags_done_phase_without_audit_report_or_trivial_marker(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "ROADMAP.md",
+            self._roadmap("| 76 | x | done |\n"),
+        )
+        _write(tmp_path / "planning" / "retros" / "phase-76-x.md", "# retro\nshipped\n")
+        findings = check_user_docs.check_done_phases_have_audit_report(tmp_path)
+        assert len(findings) == 1 and "phase 76" in findings[0].message
+
+    def test_no_finding_when_audit_report_present(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "ROADMAP.md",
+            self._roadmap("| 76 | x | done |\n"),
+        )
+        _write(tmp_path / "planning" / "retros" / "_audit-phase-76.md", "verdict: PASS\n")
+        assert check_user_docs.check_done_phases_have_audit_report(tmp_path) == []
+
+    def test_no_finding_when_retro_documents_trivial_carve_out(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "ROADMAP.md",
+            self._roadmap("| 76 | x | done |\n"),
+        )
+        _write(
+            tmp_path / "planning" / "retros" / "phase-76-x.md",
+            "# retro\nTrivial phase -- lead confirmation stands in.\n",
+        )
+        assert check_user_docs.check_done_phases_have_audit_report(tmp_path) == []
+
+    def test_ignores_phases_before_41(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "ROADMAP.md",
+            self._roadmap("| 39 | x | done |\n"),
+        )
+        assert check_user_docs.check_done_phases_have_audit_report(tmp_path) == []
+
+    def test_ignores_non_done_phases(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "ROADMAP.md",
+            self._roadmap("| 76 | x | in progress |\n"),
+        )
+        assert check_user_docs.check_done_phases_have_audit_report(tmp_path) == []
+
+
+class TestContextNotStaleAboutPendingAudit:
+    def test_flags_pending_release_phase_auditor_language(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "CONTEXT.md",
+            "Pending: Phase 76's release-phase-auditor DoD pass, then push.\n",
+        )
+        findings = check_user_docs.check_context_not_stale_about_pending_audit(tmp_path)
+        assert len(findings) == 1
+
+    def test_no_finding_when_context_is_clean(self, tmp_path):
+        _write(
+            tmp_path / "planning" / "CONTEXT.md",
+            "Phase 76 is closed. No phase is currently planned.\n",
+        )
+        assert check_user_docs.check_context_not_stale_about_pending_audit(tmp_path) == []
+
+
 _CLI_PY = (
     "import typer\n"
     "app = typer.Typer()\n"

@@ -16,11 +16,13 @@ Covers, as of Phase 43b: CLI command coverage, README phase-count
 consistency, `ANTHROPIC_API_KEY` mention, `VendorConfig` field coverage,
 `ai-docs/` presence, project-learning candidate provenance +
 promoted-log consistency, per-phase retro presence (`planning/retros/`),
-internal-link resolution across hand-authored docs, fenced `codecompass`
-example commands using real subcommands, ADR Status +
-cross-reference integrity, retired names appearing as live prose
-(the standing-content complement to the per-phase docs-drift audit), and
-generated-artifact-vs-generator drift.
+a persisted completion-audit report for every `done` phase (or an
+explicit trivial-phase carve-out), `CONTEXT.md` not still describing a
+completion audit as pending, internal-link resolution across
+hand-authored docs, fenced `codecompass` example commands using real
+subcommands, ADR Status + cross-reference integrity, retired names
+appearing as live prose (the standing-content complement to the
+per-phase docs-drift audit), and generated-artifact-vs-generator drift.
 """
 
 from __future__ import annotations
@@ -396,6 +398,107 @@ def check_phase_retros_present(root: Path) -> list[Finding]:
                     f"planning/retros/phase-{num}-*.md retro",
                 )
             )
+    return findings
+
+
+def check_done_phases_have_audit_report(root: Path) -> list[Finding]:
+    """Every phase marked `done` in planning/ROADMAP.md with number >= 41
+    has a persisted independent completion-audit artifact —
+    `planning/retros/_audit-phase-N.md` — or its own
+    `planning/retros/phase-N-*.md` retro explicitly documents the
+    `CLAUDE.md` §5 trivial-phase carve-out (an explicit lead
+    self-confirmation standing in for the auditor, marked with the
+    literal phrase "trivial phase" per `planning/agent-led-workflow.md`'s
+    own fast-path convention).
+
+    Added Phase 76 (`L-060`): a real, evidenced gap where a phase's
+    `ROADMAP.md` row and plan-file Status line were flipped to `done`
+    before any independent `release-phase-auditor` pass had run at all
+    (Phases 72-74), and `release-phase-auditor`'s own verdict, once
+    obtained, was never persisted to a checkable file for those same
+    phases (unlike every phase from 41 through 69, which all have one) —
+    so nothing in the repository state itself could ever have caught
+    either problem. This check makes "an audit actually happened, and
+    left a durable trace" a mechanical precondition for `done`, not a
+    process step that depends on every future session remembering to
+    follow it.
+    """
+    roadmap_text = _read(root / "planning" / "ROADMAP.md")
+    retro_dir = root / "planning" / "retros"
+    audited_nums = set()
+    trivial_nums = set()
+    if retro_dir.is_dir():
+        for p in retro_dir.glob("_audit-phase-*.md"):
+            m = re.match(r"_audit-phase-(\d+)(?:-.*)?\.md", p.name)
+            if m:
+                audited_nums.add(int(m.group(1)))
+        for p in retro_dir.glob("phase-*.md"):
+            m = re.match(r"phase-(\d+)-", p.name)
+            if m and "trivial phase" in _read(p).lower():
+                trivial_nums.add(int(m.group(1)))
+
+    findings: list[Finding] = []
+    for line in roadmap_text.splitlines():
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) < 3 or not cells[0].isdigit():
+            continue
+        num = int(cells[0])
+        if num < 41 or "done" not in cells:
+            continue
+        if num in audited_nums or num in trivial_nums:
+            continue
+        findings.append(
+            Finding(
+                "done_phases_have_audit_report",
+                f"phase {num} is `done` in ROADMAP.md but has no "
+                f"planning/retros/_audit-phase-{num}.md completion-audit "
+                f"report, and its retro doesn't document the trivial-phase "
+                f"carve-out (CLAUDE.md §5) — the ROADMAP row and plan file "
+                f"must not be flipped to `done` until an independent "
+                f"release-phase-auditor pass has actually run and left a "
+                f"persisted verdict, or the phase is genuinely trivial and "
+                f"says so",
+            )
+        )
+    return findings
+
+
+def check_context_not_stale_about_pending_audit(root: Path) -> list[Finding]:
+    """`planning/CONTEXT.md` must not say a `release-phase-auditor` pass is
+    still pending — `CONTEXT.md` reflects *current* state (`CLAUDE.md`
+    §4), so once any phase's audit has genuinely run and its outcome is
+    reconciled, no live "pending" language for it should remain. A phase
+    still mid-audit belongs in `CONTEXT.md`'s "Next concrete step" as
+    exactly that (in progress, audit not yet run) — not described in a
+    way that a reader, or a later commit, could mistake for a completed
+    phase whose done-flip merely hasn't been walked back yet. Added
+    Phase 76 (`L-060`): the exact phrasing this check looks for
+    (`"Pending: ... release-phase-auditor ... DoD pass"`) is the literal
+    text `CONTEXT.md` carried, unnoticed, while `ROADMAP.md` and the
+    phase's own plan file already said `done` (Phases 72 and 73/74).
+    """
+    context_path = root / "planning" / "CONTEXT.md"
+    if not context_path.is_file():
+        return []
+    context_text = _read(context_path)
+    findings: list[Finding] = []
+    for m in re.finditer(
+        r"pending.{0,80}release-phase-auditor|release-phase-auditor.{0,80}pending",
+        context_text,
+        re.IGNORECASE | re.DOTALL,
+    ):
+        findings.append(
+            Finding(
+                "context_not_stale_about_pending_audit",
+                "planning/CONTEXT.md says a release-phase-auditor pass is "
+                f"still pending ({m.group(0)!r}) — if that phase's audit "
+                "has actually run, update this text; if it hasn't, that "
+                "phase's ROADMAP.md row and plan file must not say `done`",
+            )
+        )
     return findings
 
 
@@ -874,6 +977,8 @@ CHECKS = [
     check_context_observation_fields,
     check_stale_evidence_gathering,
     check_phase_retros_present,
+    check_done_phases_have_audit_report,
+    check_context_not_stale_about_pending_audit,
     check_internal_links_resolve,
     check_fenced_codecompass_examples,
     check_adr_status_and_supersedes,

@@ -76,6 +76,24 @@ without fixing anything — that a phase is actually done.
 
 ## Output
 
-Return to the lead: the verdict, the evidence for it (what you re-ran and
-the result), and — if not PASS — a numbered list of exactly what must be
-fixed before re-audit.
+**Write your full verdict and evidence to
+`planning/retros/_audit-phase-N.md`** (the same path every phase from 41
+through 69 used) — a persisted, independently-checkable artifact is
+itself part of what makes a completion transition real, not merely a
+report string in a conversation that leaves no trace once this dispatch
+ends. Do not rely on a dispatch prompt to remind you of this path every
+time; write there by default. Then return to the lead: the verdict, the
+evidence for it (what you re-ran and the result), and — if not PASS — a
+numbered list of exactly what must be fixed before re-audit.
+
+Confirmed necessary at Phases 70-74 (`L-060`): no completion-audit
+report was persisted for any of them (unlike every phase from 41-69,
+which all have one) — for two of those phases (71, then a post-fix
+state of 73/74), this meant the repository had no durable evidence an
+independent audit had ever actually run against the final state,
+compounding the separate `ROADMAP.md`-flipped-before-audit defect
+`L-060` also names. `scripts/check_user_docs.py::check_done_phases_have_audit_report`
+now mechanically requires this file (or an explicit trivial-phase
+carve-out in the retro) for every `done` phase numbered 41+ — write the
+file so that check passes for real, not merely so the lead can quote
+your verdict from a conversation.

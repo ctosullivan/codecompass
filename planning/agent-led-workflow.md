@@ -230,6 +230,26 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
     and completion audit (step 13) to all exist first, and none of them
     do yet at this point in the sequence. This step keeps `CONTEXT.md`
     current mid-phase; it is not the phase's final reconciliation.
+    **This must be a real dispatch of `roadmap-context-curator`, not the
+    lead editing `ROADMAP.md`/`CONTEXT.md`/the plan file's own Status
+    line directly** — hand-patching these files yourself removes the one
+    check whose entire charter is "never mark a phase `done` because
+    code was written... only if every DoD condition actually holds; if
+    one doesn't, say so and leave it not-done" (`.claude/agents/roadmap-context-curator.md`),
+    letting the lead's own momentum toward calling something finished go
+    unchecked. Confirmed a real, repeated failure at Phases 70-74
+    (`L-060`): the lead self-served every `ROADMAP.md`/`CONTEXT.md`/plan-
+    file edit directly for five consecutive phases, and twice flipped a
+    `ROADMAP.md` row and plan-file Status line to `done` (step 14's own
+    action) before step 13's completion audit had run at all — this is
+    the same failure step 11's own `L-006` cross-reference already warns
+    against ("don't hand-patch the planning docs yourself; that
+    drifts"), recurring here at the phase-completion transition
+    specifically, the single highest-stakes place for it to recur.
+    `scripts/check_user_docs.py::check_done_phases_have_audit_report`
+    and `check_context_not_stale_about_pending_audit` now catch the
+    observable symptom mechanically, but dispatching the actual role
+    remains the right fix, not a check to satisfy after the fact.
     **If this phase's work must be presented to the actual user/domain
     owner for approval before the phase can be called done** (a
     Domain-stage corpus, a `design.md` needing sign-off, or any other
@@ -273,13 +293,27 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
     protected-file drift and scope creep. Verdict `PASS` / `PASS WITH
     NON-BLOCKING OBSERVATIONS` / `FAIL`.
 14. **Refuse to mark work complete when the gate fails.** A `FAIL` →
-    fix the named gaps, or re-scope with a new ADR, then re-audit. Only
-    on `PASS` (or `PASS WITH NON-BLOCKING OBSERVATIONS`) does the lead
-    **re-dispatch `roadmap-context-curator` for the final
-    reconciliation** — flip the `ROADMAP.md` row to `done` now that every
-    DoD condition genuinely holds, and confirm `CONTEXT.md` reflects the
-    retro/triage/audit outcomes — then commit (`type(phase-N): summary`,
-    no AI attribution — `CLAUDE.md` §7) and move to the next phase.
+    fix the named gaps, or re-scope with a new ADR, then re-audit. **A
+    `PASS WITH NON-BLOCKING OBSERVATIONS` verdict's own named
+    observations, once fixed, still require a fresh confirmation pass
+    before flipping to `done`** — "non-blocking" describes that specific
+    verdict's own gate decision, not a license to skip verifying the fix
+    it named. **Any substantive commit landing after a stored verdict
+    and before the `done`-flip — fixing an observation, or anything
+    else that touches audited scope — voids that verdict**; re-audit
+    against the new state rather than treating the earlier PASS as still
+    covering it. Confirmed necessary at Phases 73/74 (`L-060`): a
+    `PASS WITH NON-BLOCKING OBSERVATIONS` verdict's one named finding
+    (two stale citations) was fixed in a further commit that was never
+    itself re-audited before the state was pushed — the fix could
+    equally have introduced a new problem, and nothing would have caught
+    it. Only on a verdict obtained *against the exact state about to be
+    marked `done`* does the lead **re-dispatch `roadmap-context-curator`
+    for the final reconciliation** — flip the `ROADMAP.md` row to `done`
+    now that every DoD condition genuinely holds, and confirm
+    `CONTEXT.md` reflects the retro/triage/audit outcomes — then commit
+    (`type(phase-N): summary`, no AI attribution — `CLAUDE.md` §7) and
+    move to the next phase.
 
 ## When a candidate learning blocks phase verification
 
