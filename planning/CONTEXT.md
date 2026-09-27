@@ -51,8 +51,12 @@ audit's report file had never been persisted, then a redone audit
 finding the remaining staleness. Closeout: `context-health-planner`
 assessment, fork review, `docs-reconstructor` drift audit (two passes),
 `domain-skeptic` freshness check (two passes), `context-researcher`
-Claim revision, `knowledge-curator` triage (`L-051` promoted — extends
-`L-048`'s citation rule to phase-group labels and Claim text).
+Claim revision, `knowledge-curator` triage, twice (`L-051` promoted — extends `L-048`'s
+citation rule to phase-group labels and Claim text; a follow-on pass
+after the rework promoted `L-055`/`L-056` — a post-fix completeness
+grep, and `agent-led-workflow.md` step 9 now restates
+`docs-reconstructor`'s required report path in the dispatch prompt
+itself).
 
 ## Known standing gaps (current-state facts, not phase history)
 
