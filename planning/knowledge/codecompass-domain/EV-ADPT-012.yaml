@@ -1,0 +1,34 @@
+id: EV-ADPT-012
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  The gap described by OBS-ADPT-017/EV-ADPT-010 (ecosystem.md's own
+  "Counterexample" section) — that `ExternalAdapterProcess.ecosystem`
+  "is stored but never subsequently read, compared against
+  `core.Ecosystem`, or used for any dispatch or validation decision" —
+  is closed. `initialize()` now takes a required keyword-only
+  `expected_ecosystem: str` parameter and, immediately after setting
+  `self.ecosystem` from the wire response, raises `AdapterError`
+  ("external adapter ecosystem mismatch: CodeCompass configured this
+  adapter under {expected_ecosystem!r}, adapter responded with
+  {self.ecosystem!r}") if the two disagree. `HaskellAdapter._analyze`
+  — the one production call site (OBS-ADPT-019) — passes
+  `expected_ecosystem=self.config.ecosystem`, i.e. the real
+  `core.Ecosystem` value CodeCompass configured this adapter under via
+  `vendor.toml`, closing the loop the Counterexample described as
+  open. This is a real behavior change: the wire-level `ecosystem`
+  field is no longer write-only telemetry — it is now read and
+  compared on every `initialize` call, before `analyze_project` is
+  reached. Exercised end to end by a real, currently-passing test
+  (`test_ecosystem_mismatch_raises_adapter_error`, OBS-ADPT-020).
+  Narrower point preserved unchanged by this fix: adapter *dispatch*
+  (`get_adapter`) is still driven entirely by `VendorConfig.ecosystem`,
+  never by the wire-reported value — this fix adds a validation check,
+  not a new dispatch path — so ecosystem.md's own "is-the-category-
+  that"/"determines" Relationships entries remain accurate as stated.
+observations: [OBS-ADPT-017, OBS-ADPT-018, OBS-ADPT-019, OBS-ADPT-020]
+source_ref: "src/codecompass/adapters/external_process.py:53-98; src/codecompass/adapters/haskell.py:184-195"
+doc_ref: "protocol/codecompass-adaptor-protocol/SCHEMA.md:48-54"
+test_ref: "tests/test_adapters_external_process.py::test_ecosystem_mismatch_raises_adapter_error"
+repository_revision: "38d577c6c6e2da53a2a9d8b911455b307ff473b3 + uncommitted working tree (Phase 74, not yet committed, closes L-032), 2026-09-27"
+status: current

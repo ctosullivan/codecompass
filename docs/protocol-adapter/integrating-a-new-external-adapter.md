@@ -51,7 +51,12 @@ Following `HaskellAdapter`'s own shape
    tree resolution, source-file API-surface extraction — belongs in the
    external process, not reimplemented in Python. Construct one
    `ExternalAdapterProcess([executable_path])` per `analyze_project` call
-   site (not reused across projects), call `.initialize()`, then
+   site (not reused across projects), call
+   `.initialize(expected_ecosystem=...)` — passing the real
+   `core.Ecosystem` value your adapter's own `VendorConfig` was
+   configured under; `initialize` raises `AdapterError` if the wire
+   response's own `ecosystem` field disagrees, or if `capabilities`
+   reports anything outside the closed 4-value set (Phase 74) — then
    `.analyze_project(project_root, package_name)`, then `.shutdown()`.
 3. **Resolve monorepo package roots yourself, before calling
    `analyze_project`.** If your ecosystem can have multiple packages
@@ -86,8 +91,11 @@ Independent of language, per [`wire-protocol.md`](wire-protocol.md):
 - Read one JSON object per line on `stdin`, write one per line on
   `stdout`, exactly one outstanding request at a time.
 - Respond to `initialize` with your `protocol_version` (currently `1`),
-  `adapter_name`, `adapter_version`, `ecosystem` (free text), and the
-  subset of the four capabilities you can actually produce.
+  `adapter_name`, `adapter_version`, `ecosystem` (free text at the wire
+  level, but validated by the caller against the `core.Ecosystem` value
+  it configured you under — a mismatch raises `AdapterError`, Phase 74),
+  and the subset of the four capabilities you can actually produce (an
+  entry outside the closed 4-value set also raises `AdapterError`).
 - Only return an `analyze_project` result section you declared as a
   capability.
 - Reject any method outside `initialize`/`analyze_project`/`shutdown`

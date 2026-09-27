@@ -1,0 +1,35 @@
+id: OBS-EVID-019
+kind: observation
+method: test_run
+what_was_done: >
+  Ran `.venv/bin/python -m pytest tests/test_graph.py
+  tests/test_enrichment.py -q` from the repository root, against the
+  current working tree (uncommitted Phase 74 changes), to confirm the
+  `symbol_enrichment.model` column and its migration (OBS-EVID-017)
+  are exercised by real, currently-passing tests, including a test
+  that simulates a genuine pre-Phase-74 on-disk database with a real
+  paid-enrichment row already present.
+tool: pytest
+tool_version: "9.1.1"
+repository_revision: "38d577c6c6e2da53a2a9d8b911455b307ff473b3 + uncommitted working tree (Phase 74, not yet committed), 2026-09-27"
+location: null
+raw_result: >
+  All passed, zero failures/errors/skips. Includes two new tests added
+  by this working tree:
+  `test_open_graph_migrates_pre_phase_74_symbol_enrichment_preserves_rows`
+  (builds a pre-Phase-74 `symbol_enrichment` table with no `model`
+  column and one real row by hand, then asserts `open_graph` adds the
+  column via `ALTER TABLE` — never drop/recreate — and the pre-existing
+  row's `model` reads back as `NULL`, and that a fresh
+  `record_symbol_enrichment(..., model="fake-model")` call afterward
+  correctly populates a real value) and
+  `test_open_graph_symbol_enrichment_migration_is_idempotent` (a second
+  `open_graph` call against an already-migrated database does not
+  raise `sqlite3.OperationalError: duplicate column name`). The
+  pre-existing `test_rebuild_deterministic_never_touches_symbol_
+  enrichment` test was updated to pass a real `model=` argument and
+  still passes, confirming `rebuild_deterministic` still never touches
+  this table.
+timestamp: "2026-09-27T00:00:00Z"
+performed_by: "domain-skeptic agent dispatch"
+status: recorded

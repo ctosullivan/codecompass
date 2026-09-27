@@ -1,0 +1,38 @@
+id: EV-EVID-015
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  The specific gap OBS-EVID-011 found and CL-EVID-008/provenance.md's
+  own Definition and Counterexample sections state as current fact —
+  "`symbol_enrichment` carries no provenance column at all" — is
+  closed, but with a real, narrower residual asymmetry that is NOT
+  closed. `symbol_enrichment` now has a `model TEXT` column (Phase 74,
+  closes L-031), and `record_symbol_enrichment` — the table's only
+  writer — now requires a real `model` argument for every new write
+  (its one production call site, `enrichment.py:427`, supplies the
+  real Anthropic model id, confirmed by OBS-EVID-018). So it is no
+  longer true that this table has "no provenance column at all," and
+  it is no longer true that a newly-written row "cannot be attributed
+  to a specific producer." **Residual, unclosed asymmetry**: unlike
+  `vendor_enrichment.model`/`doc_relation_enrichment.model`, both `TEXT
+  NOT NULL` from their own first schema version, `symbol_enrichment.
+  model` is nullable, and every row written before this migration
+  backfills `NULL` (an honest "producer unknown, predates this
+  column," not a fabricated value, per the migration's own stated
+  rationale) rather than being retroactively attributed. So: the
+  three enrichment tables are no longer asymmetric in *whether* they
+  carry a producer column, but they remain asymmetric in *nullability*
+  and in whether every existing row actually has a populated value —
+  a pre-Phase-74 `symbol_enrichment` row is provenance-unknown in a way
+  no `vendor_enrichment`/`doc_relation_enrichment` row (both `NOT
+  NULL` since inception) can be. This does not affect CL-EVID-008's
+  broader claim (provenance is a cross-cutting concern with no shared
+  schema unifying Phase 54c's records, the enrichment tables, and
+  context-gaps/context-observations) — that claim does not rest on
+  symbol_enrichment's specific column count and remains accurate.
+observations: [OBS-EVID-011, OBS-EVID-017, OBS-EVID-018, OBS-EVID-019]
+source_ref: "src/codecompass/graph.py:176-182, 515-549, 1583-1608; src/codecompass/enrichment.py:427"
+doc_ref: null
+test_ref: "tests/test_graph.py::test_open_graph_migrates_pre_phase_74_symbol_enrichment_preserves_rows"
+repository_revision: "38d577c6c6e2da53a2a9d8b911455b307ff473b3 + uncommitted working tree (Phase 74, not yet committed, closes L-031), 2026-09-27"
+status: current

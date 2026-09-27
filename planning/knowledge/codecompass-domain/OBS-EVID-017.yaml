@@ -1,0 +1,41 @@
+id: OBS-EVID-017
+kind: observation
+method: source_read
+what_was_done: >
+  Read src/codecompass/graph.py's current `symbol_enrichment` schema
+  (lines 176-182), `_migrate_symbol_enrichment_model_column` (lines
+  515-549), and `record_symbol_enrichment` (lines 1583-1608) directly
+  on the working tree (uncommitted Phase 74 changes, closing L-031),
+  to check whether the asymmetry OBS-EVID-011 found — `symbol_
+  enrichment` has no provenance/`model` column at all, unlike
+  `vendor_enrichment`/`doc_relation_enrichment` — still holds.
+tool: null
+tool_version: null
+repository_revision: "38d577c6c6e2da53a2a9d8b911455b307ff473b3 + uncommitted working tree (Phase 74, not yet committed), 2026-09-27"
+location: "src/codecompass/graph.py:176-182, 515-549, 1583-1608"
+raw_result: >
+  `symbol_enrichment` now has five columns, not four: `id, symbol_id,
+  purpose TEXT NOT NULL, model TEXT, generated_at TEXT NOT NULL`
+  (line 180 is the new `model` column). It is **nullable**, not `NOT
+  NULL` — this is a real, deliberate difference from `vendor_
+  enrichment.model`/`doc_relation_enrichment.model`, both `TEXT NOT
+  NULL` since their own first schema version (per this migration
+  function's own docstring, lines 522-535): a pre-existing `symbol_
+  enrichment` row's real producer was never recorded, so the migration
+  backfills `NULL` rather than inventing a value, honouring this
+  project's stated "honest gaps over fabricated certainty" principle.
+  `_migrate_symbol_enrichment_model_column` (an `ALTER TABLE ... ADD
+  COLUMN`, not a drop-and-recreate) runs on every `open_graph` call and
+  is idempotent (checked via `PRAGMA table_info`, only altering if
+  `model` is absent). `record_symbol_enrichment` (the only writer to
+  this table) now requires a real `model: str` argument — no default —
+  for every call; its one production call site
+  (`enrichment.py:427`, confirmed by OBS-EVID-018) passes `model=
+  _MODEL` (the real Anthropic model id used for that batch). So: the
+  column now exists and every *new* write populates it with a real
+  producer value, but any row written before this migration remains
+  `NULL` — a narrower, residual distinction from the two `NOT NULL`
+  sibling columns that this observation does not consider closed.
+timestamp: "2026-09-27T00:00:00Z"
+performed_by: "domain-skeptic agent dispatch"
+status: recorded

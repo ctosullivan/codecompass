@@ -54,23 +54,29 @@ adapter, via `get_adapter`) are keyed on.
 
 ## Counterexample / edge case
 
-**The wire protocol's `ecosystem` field and CodeCompass's own
-`Ecosystem` enum are two independent, currently-unreconciled values.**
-`ExternalAdapterProcess.ecosystem` (set from an external adapter's
-`initialize` response) is stored but **never subsequently read,
-compared against `core.Ecosystem`, or used for any dispatch or
-validation decision anywhere in `src/codecompass/`** — confirmed by a
-direct grep of every `.ecosystem` attribute access in
-`src/codecompass/adapters/*.py` and `sync.py` (`OBS-ADPT-017`,
-`EV-ADPT-010`). Adapter dispatch is driven entirely by
-`VendorConfig.ecosystem` (fixed on the CodeCompass side, via
-`vendor.toml`, before any adapter process is even spawned). This means:
-nothing in the current implementation would detect or surface an
-external adapter reporting an `ecosystem` string that disagrees with
-the `Ecosystem` value CodeCompass configured it under — the wire field
-is currently write-only telemetry from CodeCompass's own perspective.
-This is a real, observed gap in the current implementation, not merely
-a specification looseness.
+**Closed as of Phase 74 (`L-032`) — the wire protocol's `ecosystem`
+field IS now read and compared against the `Ecosystem` value CodeCompass
+configured the adapter under.**
+`ExternalAdapterProcess.initialize()` now takes a required
+`expected_ecosystem: str` keyword argument, and raises `AdapterError`
+("external adapter ecosystem mismatch: CodeCompass configured this
+adapter under `{expected_ecosystem!r}`, adapter responded with
+`{self.ecosystem!r}`") if the wire-reported `self.ecosystem` disagrees.
+`HaskellAdapter._analyze` — the one production call site — passes
+`expected_ecosystem=self.config.ecosystem`, the real `core.Ecosystem`
+value fixed via `vendor.toml` before the adapter process is even spawned
+(`src/codecompass/adapters/external_process.py:53-98`,
+`src/codecompass/adapters/haskell.py:184-195`, `EV-ADPT-012`,
+superseding the prior `OBS-ADPT-017`/`EV-ADPT-010`-documented gap). The
+wire field is no longer write-only telemetry — it is validated on every
+`initialize` call, before `analyze_project` is reached.
+
+**Narrower point preserved unchanged**: adapter *dispatch* (`get_adapter`)
+is still driven entirely by `VendorConfig.ecosystem`, never by the
+wire-reported value — this fix adds a validation check, not a new
+dispatch path. The two values remain independently-typed things (one
+free text, one closed enum); they are now compared for equality at one
+point, not unified into one type.
 
 ## Relationships
 
@@ -83,7 +89,9 @@ a specification looseness.
 
 ## References
 
-- `EV-ADPT-001`, `EV-ADPT-005`, `EV-ADPT-010` —
+- `EV-ADPT-001`, `EV-ADPT-005`, `EV-ADPT-010`, `EV-ADPT-012` —
+  `planning/knowledge/codecompass-domain/`
+- `OBS-ADPT-018`, `OBS-ADPT-019`, `OBS-ADPT-020` —
   `planning/knowledge/codecompass-domain/`
 - `CL-ADPT-005`, `CL-ADPT-009` — `planning/knowledge/codecompass-domain/`
 - `src/codecompass/core.py:13-19`

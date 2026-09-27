@@ -103,27 +103,42 @@ silently, only marked resolved with a pointer to what resolved it
 
 ## Known implementation gaps, not domain-meaning ambiguities
 
-These are real `src/codecompass/` gaps this research found incidentally
-while investigating what a concept *means* — they do not affect the
-domain corpus's own definitions and are routed to
-`planning/learnings/inbox.md` as future-improvement candidates for
-`knowledge-curator` to triage, not resolved here (matching Phase 63D's
-own scope boundary: evidence and documentation only, no `src/` change):
+These were real `src/codecompass/` gaps this research found incidentally
+while investigating what a concept *means* — they did not affect the
+domain corpus's own definitions and were routed to
+`planning/learnings/inbox.md` as future-improvement candidates
+(`L-031`, `L-032`) for `knowledge-curator` to triage (matching Phase
+63D's own scope boundary: evidence and documentation only, no `src/`
+change at the time). Both have since been resolved, at Phase 74 — kept
+here, prefixed **RESOLVED**, rather than silently removed, per this
+file's own re-entry convention:
 
-9. **`symbol_enrichment` has no provenance column at all** — unlike
-   `vendor_enrichment`/`doc_relation_enrichment`, which both carry a
-   `model TEXT NOT NULL` column. `decisions/0054`'s own claim that all
-   three enrichment tables uniformly distinguish producers "using a
-   column that has existed since Phase 14" is factually wrong for
-   `symbol_enrichment` specifically, independently re-confirmed by
-   `domain-skeptic` against the real schema. See
-   [`concepts/provenance.md`](concepts/provenance.md).
-10. **The external protocol's wire-level `ecosystem` field, and its
-    `capabilities` list, are received but never validated against their
-    own closed sets** — `ExternalAdapterProcess.ecosystem` is set and
-    never subsequently read/compared anywhere in `src/codecompass/`; the
-    `capabilities` tuple is stored with no membership check against the
-    protocol's own closed 4-value set. Both independently re-confirmed
-    by `domain-skeptic` via direct grep. See
-    [`concepts/ecosystem.md`](concepts/ecosystem.md) and
-    [`concepts/capability.md`](concepts/capability.md).
+9. **RESOLVED (Phase 74, closes `L-031`) — `symbol_enrichment` now has
+   a provenance column.** Previously: `symbol_enrichment` carried no
+   provenance column at all, unlike `vendor_enrichment`/`doc_relation_
+   enrichment` (`model TEXT NOT NULL`). As of Phase 74, `symbol_
+   enrichment.model` exists (`src/codecompass/graph.py:176-182`), and
+   `record_symbol_enrichment` requires a real `model` argument for
+   every new write (its one production call site, `enrichment.py:427`,
+   supplies it). Residual, narrower point not closed by this fix:
+   `symbol_enrichment.model` is nullable and every pre-Phase-74 row
+   backfills an honest `NULL`, unlike the two sibling `NOT NULL`
+   columns — see [`concepts/provenance.md`](concepts/provenance.md)'s
+   own Counterexample section. *(`EV-EVID-015`, `OBS-EVID-017`–`019`,
+   superseding the prior `OBS-EVID-011`-documented gap.)*
+10. **RESOLVED (Phase 74, closes `L-032`) — the external protocol's
+    wire-level `ecosystem` field and `capabilities` list ARE now
+    validated against their own closed sets.** Previously:
+    `ExternalAdapterProcess.ecosystem` was set and never subsequently
+    read/compared anywhere in `src/codecompass/`, and the `capabilities`
+    tuple was stored with no membership check. As of Phase 74,
+    `initialize()` requires an `expected_ecosystem` argument and raises
+    `AdapterError` on a mismatch, and separately raises `AdapterError`
+    on any `capabilities` entry outside the module's own closed
+    `CAPABILITIES` set. `HaskellAdapter`'s one production call site
+    passes the real `core.Ecosystem` value. Fully closed — no residual
+    gap found. See [`concepts/ecosystem.md`](concepts/ecosystem.md) and
+    [`concepts/capability.md`](concepts/capability.md)'s own
+    Counterexample sections. *(`EV-ADPT-011`, `EV-ADPT-012`,
+    `OBS-ADPT-018`–`020`, superseding the prior `OBS-ADPT-005`/
+    `OBS-ADPT-017`-documented gaps.)*

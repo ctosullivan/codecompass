@@ -86,14 +86,19 @@ this fixture through the generic Python client and passes (30/30,
 
 ## Counterexample / edge case
 
-**The received `capabilities` list is not itself validated against the
-closed 4-value set by `external_process.py` at parse time** — it is
-stored as `tuple(response.get("capabilities", []))` with no membership
-check. Nothing in the current Python client would reject or even flag
-an adapter reporting a fifth, unrecognized capability string; the
-closed-set discipline currently rests entirely on the *specification*
-(SCHEMA.md) and on well-behaved adapters, not on any enforcement code
-in this repository (`OBS-ADPT-005`).
+**Closed as of Phase 74 (`L-032`) — the received `capabilities` list IS
+now validated against the closed 4-value set at parse time.**
+`ExternalAdapterProcess.initialize()` computes `unrecognized = [c for c
+in self.capabilities if c not in CAPABILITIES]` immediately after
+storing the tuple, and raises `AdapterError` if any entry falls outside
+the four known strings — an adapter reporting a fifth, unrecognized
+capability string now aborts `initialize` with a diagnostic error before
+`analyze_project` is ever reached, rather than being accepted
+uncomplainingly. The closed-set discipline no longer rests solely on the
+specification (SCHEMA.md) and well-behaved adapters; enforcement code
+now exists in this repository
+(`src/codecompass/adapters/external_process.py:99-104`, `EV-ADPT-011`,
+superseding the prior `OBS-ADPT-005`-documented gap).
 
 A second naming inconsistency, found and then resolved during
 `domain-skeptic`'s own review: `decisions/0058`'s own prose consistently
@@ -130,7 +135,9 @@ this finding.
 
 ## References
 
-- `EV-ADPT-003`, `EV-ADPT-006`, `EV-ADPT-008` —
+- `EV-ADPT-003`, `EV-ADPT-006`, `EV-ADPT-008`, `EV-ADPT-011` —
+  `planning/knowledge/codecompass-domain/`
+- `OBS-ADPT-018`, `OBS-ADPT-019`, `OBS-ADPT-020` —
   `planning/knowledge/codecompass-domain/`
 - `CL-ADPT-003`, `CL-ADPT-008` (superseded), `CL-ADPT-010` (the
   resolution, citing `OBS-SKEP-001`, `OBS-SKEP-002`, `EV-SKEP-001`) —

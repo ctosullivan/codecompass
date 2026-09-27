@@ -1,0 +1,26 @@
+id: OBS-EVID-018
+kind: observation
+method: executable
+what_was_done: >
+  Ran `grep -rn "record_symbol_enrichment(" src/codecompass/` to
+  confirm `enrichment.py`'s `apply_results` remains the one production
+  call site of `graph.record_symbol_enrichment`, and that it actually
+  supplies the now-required `model` argument (not merely that the
+  function signature changed in isolation).
+tool: grep (GNU grep)
+tool_version: "not captured explicitly"
+repository_revision: "38d577c6c6e2da53a2a9d8b911455b307ff473b3 + uncommitted working tree (Phase 74, not yet committed), 2026-09-27"
+location: null
+raw_result: >
+  Exactly one call site outside `graph.py`/tests:
+  `src/codecompass/enrichment.py:427` —
+  `graph.record_symbol_enrichment(conn, symbol_id, purpose,
+  generated_at, model=_MODEL)`, where `_MODEL =
+  "claude-haiku-4-5-20251001"` (module constant, line 43 of
+  `enrichment.py`). Confirmed by reading the diff directly: this call
+  previously omitted `model` entirely (pre-Phase-74), which would now
+  be a `TypeError` given the parameter has no default — the call site
+  was in fact updated, not left stale against the new signature.
+timestamp: "2026-09-27T00:00:00Z"
+performed_by: "domain-skeptic agent dispatch"
+status: recorded

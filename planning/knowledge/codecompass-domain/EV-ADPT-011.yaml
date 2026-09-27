@@ -1,0 +1,30 @@
+id: EV-ADPT-011
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  The gap described by OBS-ADPT-005/EV-ADPT-009 (capability.md's and
+  protocol.md's own "Counterexample" sections) — that a received
+  `capabilities` list "is not itself validated against the closed
+  4-value set at parse time" — is closed. `ExternalAdapterProcess.
+  initialize()` now checks every entry of `tuple(response.get
+  ("capabilities", []))` against the module's own closed `CAPABILITIES`
+  constant immediately after storing it, and raises `AdapterError`
+  ("external adapter reported unrecognized capabilities {unrecognized!r}
+  — expected a subset of {CAPABILITIES!r}") if any entry falls outside
+  the four known strings. This is a real behavior change, not a
+  citation restructure: an adapter reporting a fifth, unrecognized
+  capability string is no longer accepted uncomplainingly — it now
+  aborts `initialize` with a diagnostic `AdapterError` before
+  `analyze_project` is ever reached. Exercised end to end by a real,
+  currently-passing test
+  (`test_unrecognized_capability_raises_adapter_error`,
+  OBS-ADPT-020) using a fixture adapter that reports an extra
+  `"telepathy"` capability. The closed-set discipline no longer rests
+  solely on the specification and well-behaved adapters — enforcement
+  code now exists in this repository.
+observations: [OBS-ADPT-005, OBS-ADPT-018, OBS-ADPT-019, OBS-ADPT-020]
+source_ref: "src/codecompass/adapters/external_process.py:99-104"
+doc_ref: "protocol/codecompass-adaptor-protocol/SCHEMA.md:34-58"
+test_ref: "tests/test_adapters_external_process.py::test_unrecognized_capability_raises_adapter_error"
+repository_revision: "38d577c6c6e2da53a2a9d8b911455b307ff473b3 + uncommitted working tree (Phase 74, not yet committed, closes L-032), 2026-09-27"
+status: current

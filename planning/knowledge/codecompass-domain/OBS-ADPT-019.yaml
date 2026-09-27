@@ -1,0 +1,24 @@
+id: OBS-ADPT-019
+kind: observation
+method: executable
+what_was_done: >
+  Ran `grep -rn "ExternalAdapterProcess(" src/codecompass/` and
+  `grep -rn "\.initialize(" src/codecompass/` to confirm
+  `HaskellAdapter._analyze` remains the one production construction
+  and call site of `ExternalAdapterProcess`/`initialize` — i.e. that
+  OBS-ADPT-018's observed fix is actually reachable in production, not
+  only present in a code path nothing calls.
+tool: grep (GNU grep)
+tool_version: "not captured explicitly"
+repository_revision: "38d577c6c6e2da53a2a9d8b911455b307ff473b3 + uncommitted working tree (Phase 74, not yet committed), 2026-09-27"
+location: null
+raw_result: >
+  Exactly one hit for each pattern in `src/codecompass/`:
+  `src/codecompass/adapters/haskell.py:187` (construction) and
+  `src/codecompass/adapters/haskell.py:188` (the `initialize` call,
+  now passing `expected_ecosystem=self.config.ecosystem`). No other
+  module in `src/codecompass/` constructs or calls
+  `ExternalAdapterProcess`.
+timestamp: "2026-09-27T00:00:00Z"
+performed_by: "domain-skeptic agent dispatch"
+status: recorded

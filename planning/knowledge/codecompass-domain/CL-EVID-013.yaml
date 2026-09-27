@@ -1,0 +1,60 @@
+id: CL-EVID-013
+kind: claim
+statement: >
+  "Provenance" is never a record kind of its own anywhere in this
+  codebase -- it is a cross-cutting property, realized with a
+  structurally different concrete shape in each of at least three
+  mechanisms: Phase 54c's own records carry a named, method-conditional
+  set of provenance fields (repository_revision; source_ref/doc_ref/
+  test_ref; performed_by/derived_by/decided_by; tool/tool_version;
+  timestamp -- §2.3's own adopted list); the three enrichment tables
+  each carry a single `model` TEXT column; context-gaps/context-
+  observations entries carry four narrative fields (origin, date,
+  codecompass_revision, project). All three are "provenance" in the
+  ordinary sense of "who/what produced this, when, from what" but there
+  is no shared schema, base type, or record kind unifying them, and no
+  evidence that unifying them has ever been proposed or attempted in
+  this repository's history.
+
+  This Claim supersedes CL-EVID-008 for exactly one reason, narrower
+  than the substantive cross-cutting-provenance conclusion itself:
+  CL-EVID-008's own statement described `symbol_enrichment` as having
+  its `model` column "absent entirely" -- true at the time it was
+  written (repository_revision "working tree, 2026-09-23") but made
+  false by Phase 74 (`L-031`, landed at
+  `050e366993a8831beda9f3a729bbdbaae22cc029`):
+  `_migrate_symbol_enrichment_model_column`
+  (`src/codecompass/graph.py:515-549`) now adds a nullable `model TEXT`
+  column via `ALTER TABLE` (never drop/recreate), and
+  `record_symbol_enrichment` (`src/codecompass/graph.py:1583-1608`) now
+  requires a real `model` argument for every new write, with its one
+  production call site (`src/codecompass/enrichment.py:427`) supplying
+  the real Anthropic model id.
+
+  The three enrichment tables are therefore no longer asymmetric in
+  *whether* they carry a producer column -- all three now do. A real,
+  narrower asymmetry remains and is not closed by Phase 74:
+  `vendor_enrichment.model`/`doc_relation_enrichment.model` are `TEXT
+  NOT NULL` from their own first schema version, while
+  `symbol_enrichment.model` is nullable, and every row written *before*
+  this migration honestly backfills `NULL` (an accurate "producer
+  unknown, predates this column," not a fabricated value) rather than
+  being retroactively attributed. A pre-Phase-74 `symbol_enrichment`
+  row therefore remains provenance-unknown in a way no sibling-table
+  row (`NOT NULL` since inception) can be. This narrower point was not
+  investigated further here (e.g. whether a one-time backfill heuristic
+  is worth pursuing) and is not decided by this record either way.
+
+  Nothing about the broader cross-cutting-provenance conclusion changes:
+  it never rested on `symbol_enrichment`'s specific column count, and
+  the three mechanisms (Phase 54c records, enrichment tables,
+  context-gaps/context-observations) remain structurally incompatible
+  with each other exactly as before.
+derivation: DE-EVID-013
+supporting_evidence: [EV-EVID-013, EV-EVID-014, EV-EVID-015]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "050e366993a8831beda9f3a729bbdbaae22cc029"
+timestamp: "2026-09-27T00:00:00Z"
+status: supported
+supersedes: CL-EVID-008

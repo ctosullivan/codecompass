@@ -1,0 +1,71 @@
+id: DE-EVID-013
+kind: derivation
+claim: CL-EVID-013
+method: >
+  Triggered by `domain-skeptic`'s Phase 74 freshness-reconciliation pass
+  (`planning/retros/_domain-skeptic-review-phase-74.md`, its own
+  `EV-EVID-015`/`OBS-EVID-017`-`019`), read in full first: it found that
+  CL-EVID-008's own `statement` field baked in a parenthetical --
+  "(absent entirely on symbol_enrichment)" -- that Phase 74's real
+  `src/` fix (`L-031`, landed at
+  `050e366993a8831beda9f3a729bbdbaae22cc029`) made false, and named the
+  exact revision needed for `context-researcher` to make, since editing
+  a Claim is outside `domain-skeptic`'s own write boundary.
+
+  Independently re-checked rather than trusting the report's paraphrase:
+  read `src/codecompass/graph.py` lines 164-182 (schema) and 515-549
+  (`_migrate_symbol_enrichment_model_column`) directly, confirming
+  `symbol_enrichment` now has five columns (`id, symbol_id, purpose,
+  model, generated_at`), the column is nullable, and the migration is
+  additive (`ALTER TABLE ... ADD COLUMN`, never a drop/recreate).
+  Read `record_symbol_enrichment` (lines 1583-1608) confirming it now
+  requires a real `model: str` argument with no default. Grepped
+  `record_symbol_enrichment(` across `src/codecompass/` confirming
+  `enrichment.py:427` is the one production call site and that it
+  passes the real `_MODEL` constant, not a placeholder. Ran
+  `git show --stat 050e366` to confirm this fix is a real, landed commit
+  (not merely a working-tree change as `EV-EVID-015` had initially
+  described it, since domain-skeptic's own review pre-dated the commit
+  landing) -- `repository_revision` on this Claim and its cited Evidence
+  is updated accordingly to the landed commit hash.
+
+  Cross-checked whether the underlying schema asymmetry was fully
+  closed or only partially: compared `symbol_enrichment.model`'s
+  nullability against `vendor_enrichment.model`/
+  `doc_relation_enrichment.model`'s own schema definitions
+  (`src/codecompass/graph.py`, same file) and confirmed both siblings
+  are `TEXT NOT NULL` from their first schema version, while
+  `symbol_enrichment.model` remains nullable -- so the fix closes the
+  "no column at all" gap but leaves a narrower nullability/pre-existing-
+  NULL asymmetry open. This matches `EV-EVID-015`'s own account exactly;
+  no reinterpretation of that Evidence record was needed, only its
+  synthesis into a corrected Claim statement.
+
+  What was initially unclear and had to be checked rather than assumed:
+  whether Phase 74's fix should be read as fully closing CL-EVID-008's
+  enrichment-table sub-fact, given the retro's own framing emphasized
+  "closed, but not fully." Resolved by separating the two distinct
+  factual claims CL-EVID-008 had bundled together -- "no column exists"
+  (now false, closed) versus "every row has a populated value" (never
+  actually asserted by CL-EVID-008's own original wording, and still
+  false for pre-migration rows) -- and revising only the first, per the
+  correction actually needed, rather than overstating closure.
+
+  Structural move per phase-54c-evidence-knowledge-workflow.md §2.4/
+  §5.2 and this model's own established convention
+  (`decisions/0060`, exercised at Phase 72 for CL-EVID-009/CL-EVID-003
+  via CL-EVID-011/CL-EVID-012): this is a factual correction to a
+  Claim's own prose describing real, changed `src/` behaviour, not a
+  re-reading of the original supporting Evidence and not a Decision --
+  so a new Claim (this one) supersedes CL-EVID-008, backed by the
+  existing Evidence (EV-EVID-013, EV-EVID-014, unchanged) plus the new
+  Evidence (EV-EVID-015, documenting the Phase 74 fix and its residual
+  nullability asymmetry). Per §2.4, CL-EVID-008's own content is left
+  untouched; only its `status` field is mechanically updated to
+  `superseded` in a separate edit, not as part of this Derivation's own
+  reasoning. The broader cross-cutting-provenance conclusion is
+  re-asserted verbatim, not re-derived, since nothing in the new
+  evidence bears on it.
+inputs: [EV-EVID-013, EV-EVID-014, EV-EVID-015]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-09-27T00:00:00Z"

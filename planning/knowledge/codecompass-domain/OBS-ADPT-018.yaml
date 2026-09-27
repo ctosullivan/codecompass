@@ -1,0 +1,37 @@
+id: OBS-ADPT-018
+kind: observation
+method: source_read
+what_was_done: >
+  Read src/codecompass/adapters/external_process.py's initialize()
+  (lines 53-104) and src/codecompass/adapters/haskell.py's _analyze()
+  (lines 184-195) directly, on the current working tree (uncommitted
+  Phase 74 changes, closing L-031/L-032), to check whether the
+  capabilities-validation gap (OBS-ADPT-005/EV-ADPT-009, capability.md/
+  protocol.md) and the ecosystem-comparison gap (OBS-ADPT-017/
+  EV-ADPT-010, ecosystem.md) those records document still hold.
+tool: null
+tool_version: null
+repository_revision: "38d577c6c6e2da53a2a9d8b911455b307ff473b3 + uncommitted working tree (Phase 74, not yet committed), 2026-09-27"
+location: "src/codecompass/adapters/external_process.py:53-104; src/codecompass/adapters/haskell.py:184-195"
+raw_result: >
+  Both gaps are closed as of this working tree. `initialize` (line 53)
+  now takes a required keyword-only `expected_ecosystem: str` parameter
+  — no default. After setting `self.ecosystem`/`self.capabilities` from
+  the wire response exactly as before, it now (lines 93-104) raises
+  `AdapterError` ("external adapter ecosystem mismatch: CodeCompass
+  configured this adapter under {expected_ecosystem!r}, adapter
+  responded with {self.ecosystem!r}") if `self.ecosystem !=
+  expected_ecosystem`, and separately computes `unrecognized = [c for c
+  in self.capabilities if c not in CAPABILITIES]`, raising
+  `AdapterError` ("external adapter reported unrecognized capabilities
+  {unrecognized!r} — expected a subset of {CAPABILITIES!r}") if
+  non-empty. `haskell.py`'s `_analyze()` (line 188) now calls
+  `process.initialize(expected_ecosystem=self.config.ecosystem)` —
+  `self.config.ecosystem` is `core.Ecosystem`, the same closed
+  4-member enum `ecosystem.md`'s own Definition describes, passed as a
+  real value at this call site, not a placeholder or a hardcoded
+  string. Both new checks run unconditionally on every `initialize`
+  call, before `analyze_project` is ever invoked.
+timestamp: "2026-09-27T00:00:00Z"
+performed_by: "domain-skeptic agent dispatch"
+status: recorded

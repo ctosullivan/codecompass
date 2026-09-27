@@ -60,15 +60,19 @@ capability concept gating what the caller may rely on
 
 ## Counterexample / edge case
 
-**The received `capabilities` list is not itself validated against the
-closed 4-value set at parse time.** `ExternalAdapterProcess.initialize()`
-stores `tuple(response.get("capabilities", []))` directly — nothing in
-`external_process.py` checks each entry is one of the four known
-strings. An adapter reporting a fifth, unrecognized capability string
-would be accepted uncomplainingly by the Python client; the closed-set
-discipline currently rests entirely on the specification (SCHEMA.md)
-and on well-behaved adapters, not on enforcement code in this
-repository (`OBS-ADPT-005`).
+**Closed as of Phase 74 (`L-032`) — the received `capabilities` list IS
+now validated against the closed 4-value set at parse time.**
+`ExternalAdapterProcess.initialize()` computes `unrecognized = [c for c
+in self.capabilities if c not in CAPABILITIES]` immediately after
+storing the tuple, and raises `AdapterError` if any entry falls outside
+the four known strings — an adapter reporting a fifth, unrecognized
+capability string now aborts `initialize` with a diagnostic error before
+`analyze_project` is ever reached, rather than being accepted
+uncomplainingly. The closed-set discipline no longer rests solely on the
+specification (SCHEMA.md) and well-behaved adapters; enforcement code
+now exists in this repository
+(`src/codecompass/adapters/external_process.py:99-104`, `EV-ADPT-011`,
+superseding the prior `OBS-ADPT-005`-documented gap).
 
 A second, softer edge case: even the word "capability" itself is
 sometimes used in this project's own prose in a looser, non-protocol
@@ -91,7 +95,8 @@ word in this codebase is the closed-set one.
 
 ## References
 
-- `EV-ADPT-003`, `EV-ADPT-009` — `planning/knowledge/codecompass-domain/`
+- `EV-ADPT-003`, `EV-ADPT-009`, `EV-ADPT-011` — `planning/knowledge/codecompass-domain/`
+- `OBS-ADPT-018`, `OBS-ADPT-019`, `OBS-ADPT-020` — `planning/knowledge/codecompass-domain/`
 - `CL-ADPT-003`, `CL-ADPT-006` — `planning/knowledge/codecompass-domain/`
 - `src/codecompass/adapters/external_process.py:28-34, 53-84`
 - `src/codecompass/adapters/haskell.py:99-107`

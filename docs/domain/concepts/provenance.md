@@ -18,14 +18,19 @@ concrete shape in each of at least three independent mechanisms
    `tool`/`tool_version`; `timestamp`
    (`planning/phase-54c-evidence-knowledge-workflow.md` §2.3's own
    adopted-fields table).
-2. **Two of the three enrichment tables** — `vendor_enrichment` and
-   `doc_relation_enrichment` — each carry a single `model` `TEXT`
-   column (a real Anthropic model id, or `agent:<agent-name>` for
-   agent-driven output, per `decisions/0054`). **`symbol_enrichment`
-   carries no provenance column at all** — a real asymmetry within the
-   same mechanism, not a uniform property of "the enrichment tables" as
-   a group (`src/codecompass/graph.py:165-182`; see "Counterexample"
-   below).
+2. **All three enrichment tables** — `vendor_enrichment`, `doc_relation_enrichment`,
+   and (as of Phase 74, `L-031`) `symbol_enrichment` — now carry a
+   `model` `TEXT` column (a real Anthropic model id, or
+   `agent:<agent-name>` for agent-driven output, per `decisions/0054`).
+   **A narrower asymmetry remains**: `vendor_enrichment.model`/
+   `doc_relation_enrichment.model` are `NOT NULL` from their own first
+   schema version, while `symbol_enrichment.model` is nullable — a
+   pre-Phase-74 row's real producer was never recorded and honestly
+   backfills `NULL` rather than a fabricated value, so a
+   `symbol_enrichment` row written before this migration remains
+   provenance-unknown in a way no sibling-table row can be
+   (`src/codecompass/graph.py:164-182, 515-549`; see "Counterexample"
+   below; `EV-EVID-015`).
 3. **`context-gaps`/`context-observations` entries** carry four fixed
    narrative fields: `origin`, `date`, `codecompass_revision`,
    `project`.
@@ -71,21 +76,31 @@ record exists for either.
 
 ## Counterexample / edge case
 
-`symbol_enrichment` (`src/codecompass/graph.py:177-182`) has **no
-provenance column at all** — `id, symbol_id, purpose, generated_at`,
-four columns, none naming a producer. This is a real, structural
-asymmetry within the *same* enrichment mechanism decisions/0054
-describes as uniformly distinguishable "using a column that has existed
-since Phase 14" — that statement is accurate for
-`vendor_enrichment`/`doc_relation_enrichment`, but not, on direct
-inspection, for `symbol_enrichment`, which has no `model` column to
-read at all (`OBS-EVID-011`). Whether this is a genuine gap
-(`symbol_enrichment` rows currently cannot be attributed to a specific
-producer at all, agent or automated) or an intentional simplification
-this research did not find a stated rationale for is left as an
-observed, unresolved fact — not something this research resolves,
-since resolving it would require deciding whether to add a column,
-which is a `src/codecompass/` change out of this phase's own scope.
+**Closed as of Phase 74 (`L-031`) — `symbol_enrichment` now has a
+`model` column.** `src/codecompass/graph.py:176-182` shows five
+columns, not four: `id, symbol_id, purpose, model, generated_at`. The
+column was added via `_migrate_symbol_enrichment_model_column` (an
+`ALTER TABLE ... ADD COLUMN`, never a drop-and-recreate — this table
+holds paid enrichment output that must survive migration). `record_
+symbol_enrichment`, the table's only writer, now requires a real
+`model` argument for every new write; its one production call site
+(`enrichment.py:427`) supplies the real Anthropic model id used for
+that batch (`EV-EVID-015`, `OBS-EVID-017`, `OBS-EVID-018`). It is no
+longer accurate that a row written from this migration forward cannot
+be attributed to a specific producer.
+
+**Residual, narrower, still-real asymmetry**: unlike `vendor_
+enrichment.model`/`doc_relation_enrichment.model` (both `TEXT NOT
+NULL` from their own first schema version), `symbol_enrichment.model`
+is nullable, and every row written before this migration backfills
+`NULL` — an honest "producer unknown, predates this column," not a
+retroactively fabricated value. A pre-Phase-74 `symbol_enrichment` row
+therefore remains provenance-unknown in a way no `vendor_enrichment`/
+`doc_relation_enrichment` row (`NOT NULL` since inception) can be.
+Whether this residual nullability is itself worth resolving further
+(e.g. a one-time backfill heuristic, or simply accepting it as
+permanent history) was not investigated here and is not decided by
+this record either way.
 
 ## Relationships
 
@@ -103,13 +118,16 @@ which is a `src/codecompass/` change out of this phase's own scope.
 
 ## References
 
-- `planning/knowledge/codecompass-domain/CL-EVID-008.yaml`,
-  `DE-EVID-008.yaml`, `EV-EVID-013.yaml`, `EV-EVID-014.yaml`,
-  `OBS-EVID-011.yaml`, `OBS-EVID-016.yaml`.
+- `planning/knowledge/codecompass-domain/CL-EVID-013.yaml` (supersedes
+  `CL-EVID-008.yaml`), `DE-EVID-013.yaml`, `EV-EVID-013.yaml`,
+  `EV-EVID-014.yaml`, `EV-EVID-015.yaml`, `OBS-EVID-011.yaml`
+  (superseded gap, see above), `OBS-EVID-016.yaml`, `OBS-EVID-017.yaml`,
+  `OBS-EVID-018.yaml`, `OBS-EVID-019.yaml`.
 - `planning/phase-54c-evidence-knowledge-workflow.md:320-336` (§2.3,
   the adopted provenance-fields table).
-- `src/codecompass/graph.py:165-203` (the real enrichment-table
-  schema, including `symbol_enrichment`'s missing `model` column).
+- `src/codecompass/graph.py:164-203, 515-549` (the real enrichment-table
+  schema, including `symbol_enrichment`'s `model` column and its own
+  migration function).
 - `decisions/0054-agent-driven-enrichment-is-a-second-non-authoritative-producer.md`.
 - `planning/context-gaps/README.md`,
   `planning/context-observations/README.md` (the four-field narrative

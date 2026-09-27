@@ -92,7 +92,9 @@ statements says so explicitly:
   `model`, `generated_at`. Written only by `graph.record_enrichment`
   (`enrichment.py`'s writer).
 - **`symbol_enrichment`** — one row per symbol (`symbol_id` UNIQUE),
-  `purpose`, `generated_at`. Written only by
+  `purpose`, `model` (nullable — Phase 74; a pre-Phase-74 row honestly
+  backfills `NULL`, never a fabricated value, unlike the two `NOT NULL`
+  `model` columns above/below), `generated_at`. Written only by
   `graph.record_symbol_enrichment`.
 - **`doc_relation_enrichment`** — keyed by plain **text** columns
   (`source_doc_path`, `target_vendor_name`, `target_doc_path`), *not* a

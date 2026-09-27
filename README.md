@@ -170,10 +170,11 @@ blur together:
   summaries record **which model or agent produced them** (a real
   Anthropic model id, or `agent:<name>` for Claude-Code-agent-authored
   content, `decisions/0054`) so they're never confused with a
-  mechanically-proven fact — per-symbol purposes currently do **not**
-  carry this same producer tag, a known, disclosed asymmetry (tracked
-  in [`planning/ROADMAP.md`](planning/ROADMAP.md)'s future-improvement
-  backlog, not yet fixed). AI content is grounded in the vendor's own
+  mechanically-proven fact — per-symbol purposes carry this same
+  producer tag for every row written from Phase 74 onward; a row
+  written before that carries an honest `NULL` (producer genuinely
+  unknown for that history) rather than a guessed value. AI content is
+  grounded in the vendor's own
   real, pinned upstream source — never your project's docs, and never
   the model's own training-data memory of the library.
 
@@ -273,13 +274,6 @@ Honestly disclosed, not hidden:
 - **`codecompass chat` has never been run against the real Anthropic
   API** in this project's own development environment — implemented
   and unit-tested, not live-exercised.
-- **`symbol_enrichment` rows carry no producer/model attribution**
-  (see "Evidence & provenance" above) — a known, disclosed asymmetry
-  with the other two enrichment tables, not yet fixed.
-- **The external-adapter wire protocol's `ecosystem` and `capabilities`
-  fields are received but not validated** against what CodeCompass
-  itself expects — an adapter reporting a mismatched value is currently
-  accepted uncomplainingly.
 - **No formal trigger-accuracy evaluation exists yet** for when a
   generated per-vendor Skill should or shouldn't fire.
 - **Cursor `.mdc` export has no `globs` field** — a documented future

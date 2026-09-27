@@ -1,0 +1,31 @@
+id: OBS-ADPT-020
+kind: observation
+method: test_run
+what_was_done: >
+  Ran `.venv/bin/python -m pytest tests/test_adapters_base.py
+  tests/test_adapters_dispatch.py tests/test_adapters_external_process.py
+  tests/test_adapter_haskell.py -q` from the repository root, against
+  the current working tree (uncommitted Phase 74 changes), to confirm
+  the new ecosystem-mismatch and unrecognized-capability checks
+  (OBS-ADPT-018) are exercised by real, currently-passing tests, not
+  merely present in source with no test coverage.
+tool: pytest
+tool_version: "9.1.1"
+repository_revision: "38d577c6c6e2da53a2a9d8b911455b307ff473b3 + uncommitted working tree (Phase 74, not yet committed), 2026-09-27"
+location: null
+raw_result: >
+  All passed, zero failures/errors/skips. Includes two new tests added
+  by this working tree:
+  `test_ecosystem_mismatch_raises_adapter_error` (asserts
+  `AdapterError` with message matching "ecosystem mismatch" when the
+  fake adapter fixture reports `ecosystem: "wrong-ecosystem"` against
+  `expected_ecosystem="fake"`) and
+  `test_unrecognized_capability_raises_adapter_error` (asserts
+  `AdapterError` matching "unrecognized capabilities" when the fixture
+  reports an extra `"telepathy"` capability string). Every pre-existing
+  `initialize()` call site in the test suite was updated to pass
+  `expected_ecosystem=` explicitly (confirmed by reading the diff, not
+  only the pass/fail result).
+timestamp: "2026-09-27T00:00:00Z"
+performed_by: "domain-skeptic agent dispatch"
+status: recorded
