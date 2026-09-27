@@ -83,18 +83,24 @@ Code implemented + plan file's verification step passes + `docs/`,
 (`README.md`, `docs/`, `architecture/`, `ai-docs/`) left misdescribing
 the system, scoped to what the phase changed (the full blank-slate
 reconstruction stays a milestone activity) + changelog entry added
-+ `planning/CONTEXT.md` reflects the new state + `planning/ROADMAP.md`
-marks the phase `done` + a phase retro report exists at
-`planning/retros/phase-N-<slug>.md` (goal, delivered vs planned, lessons
-learnt, process-improvement feedback; a few lines suffice for a trivial
-phase) + candidate learnings from the phase — including any surfaced by
-the retro — have been triaged by the `knowledge-curator` (promote /
-retain / merge / discard, per `planning/learnings/`) + an independent
-`release-phase-auditor` pass (or, for a trivial phase, an explicit lead
-confirmation) verifies the preceding conditions rather than trusting the
-implementing agent's report. For a reference-project or
-context-evaluation phase, a `context-evaluator` report exists and is
-linked from the phase's exit note. Not done until all of these.
++ `planning/CONTEXT.md` reflects the new state + a phase retro report
+exists at `planning/retros/phase-N-<slug>.md` (goal, delivered vs
+planned, lessons learnt, process-improvement feedback; a few lines
+suffice for a trivial phase) + candidate learnings from the phase —
+including any surfaced by the retro — have been triaged by the
+`knowledge-curator` (promote / retain / merge / discard, per
+`planning/learnings/`) + an independent `release-phase-auditor` pass (or,
+for a trivial phase, an explicit lead confirmation) verifies every
+preceding condition, against the exact commit about to be marked done,
+rather than trusting the implementing agent's report. For a
+reference-project or context-evaluation phase, a `context-evaluator`
+report exists and is linked from the phase's exit note. **Only once
+every one of the above genuinely holds does `planning/ROADMAP.md` mark
+the phase `done`** — this is the terminal action of the sequence, not a
+condition the auditor checks alongside the others; any commit after the
+auditor's own pass that touches audited scope voids that pass and
+requires a fresh one before this transition happens. Not done until all
+of these.
 
 ## 6. Commits and milestones
 
