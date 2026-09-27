@@ -31,19 +31,18 @@ def main() -> None:
             response = {"id": req_id}
         elif method == "initialize":
             protocol_version = 999 if mode == "bad_version" else 1
+            ecosystem = "wrong-ecosystem" if mode == "bad_ecosystem" else "fake"
+            capabilities = ["dependencies", "symbols", "observations", "diagnostics"]
+            if mode == "bad_capability":
+                capabilities.append("telepathy")
             response = {
                 "id": req_id,
                 "result": {
                     "protocol_version": protocol_version,
                     "adapter_name": "fake-adapter",
                     "adapter_version": "0.1.0",
-                    "ecosystem": "fake",
-                    "capabilities": [
-                        "dependencies",
-                        "symbols",
-                        "observations",
-                        "diagnostics",
-                    ],
+                    "ecosystem": ecosystem,
+                    "capabilities": capabilities,
                 },
             }
         elif method == "analyze_project":

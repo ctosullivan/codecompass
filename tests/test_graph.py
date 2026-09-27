@@ -642,7 +642,11 @@ def test_rebuild_deterministic_never_touches_symbol_enrichment(tmp_path) -> None
         "SELECT id FROM symbols WHERE name = 'doStuff'"
     ).fetchone()
     record_symbol_enrichment(
-        conn, symbol_id, purpose="Does the stuff.", generated_at="2026-01-01T00:00:00+00:00"
+        conn,
+        symbol_id,
+        purpose="Does the stuff.",
+        generated_at="2026-01-01T00:00:00+00:00",
+        model="claude-haiku-4-5-20251001",
     )
     before = conn.execute(
         "SELECT * FROM symbol_enrichment WHERE symbol_id = ?", (symbol_id,)
@@ -1194,6 +1198,91 @@ def test_open_graph_symbols_migration_is_idempotent(tmp_path) -> None:
 
     columns = {row[1] for row in conn.execute("PRAGMA table_info(symbols)")}
     assert {"export_kind", "note"} <= columns
+
+
+def test_open_graph_migrates_pre_phase_74_symbol_enrichment_preserves_rows(
+    tmp_path,
+) -> None:
+    """Simulates a `context-graph.db` created before Phase 74
+    (`symbol_enrichment` with no `model` column) with one real
+    paid-enrichment row already on disk — `open_graph` must add the
+    column via `ALTER TABLE ADD COLUMN`, never drop/recreate (would lose
+    paid enrichment spend). A pre-existing row backfills `model = NULL`
+    (honest "producer unknown", closes `L-031` without fabricating a
+    value for history that never recorded one) — never a guessed model
+    name.
+    """
+    db_path = tmp_path / "context-graph.db"
+    old_conn = sqlite3.connect(db_path)
+    old_conn.execute("PRAGMA foreign_keys = ON")
+    old_conn.executescript(
+        """
+        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE vendors (
+          id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE,
+          ecosystem TEXT NOT NULL CHECK (ecosystem IN ('npm','python','cargo','haskell')),
+          installed_version TEXT, repository_url TEXT,
+          repository_subdirectory TEXT, source_resolved INTEGER NOT NULL DEFAULT 0,
+          source_resolution_error TEXT, last_synced_at TEXT
+        );
+        CREATE TABLE symbols (
+          id INTEGER PRIMARY KEY,
+          vendor_id INTEGER NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+          name TEXT NOT NULL, purpose TEXT,
+          export_kind TEXT NOT NULL DEFAULT 'export', note TEXT,
+          UNIQUE (vendor_id, name)
+        );
+        CREATE TABLE symbol_enrichment (
+          id INTEGER PRIMARY KEY,
+          symbol_id INTEGER NOT NULL UNIQUE REFERENCES symbols(id) ON DELETE CASCADE,
+          purpose TEXT NOT NULL, generated_at TEXT NOT NULL
+        );
+        """
+    )
+    old_conn.execute(
+        "INSERT INTO vendors (id, name, ecosystem, installed_version) "
+        "VALUES (1, 'used-lib', 'npm', '1.0.0')"
+    )
+    old_conn.execute(
+        "INSERT INTO symbols (id, vendor_id, name, purpose) "
+        "VALUES (1, 1, 'doThing', 'does the thing')"
+    )
+    old_conn.execute(
+        "INSERT INTO symbol_enrichment (symbol_id, purpose, generated_at) "
+        "VALUES (1, 'enriched purpose', '2026-01-01T00:00:00Z')"
+    )
+    old_conn.execute("INSERT INTO meta (key, value) VALUES ('schema_version', '9')")
+    old_conn.commit()
+    old_conn.close()
+
+    conn = open_graph(tmp_path)
+
+    row = conn.execute(
+        "SELECT purpose, model FROM symbol_enrichment WHERE symbol_id = 1"
+    ).fetchone()
+    assert row == ("enriched purpose", None)
+
+    record_symbol_enrichment(
+        conn, 1, purpose="updated purpose", generated_at="2026-02-01T00:00:00Z", model="fake-model"
+    )
+    row = conn.execute(
+        "SELECT purpose, model FROM symbol_enrichment WHERE symbol_id = 1"
+    ).fetchone()
+    assert row == ("updated purpose", "fake-model")
+
+
+def test_open_graph_symbol_enrichment_migration_is_idempotent(tmp_path) -> None:
+    """A second `open_graph` call against an already-migrated database must
+    not attempt `ALTER TABLE ADD COLUMN` again, which would raise
+    `sqlite3.OperationalError: duplicate column name`.
+    """
+    conn = open_graph(tmp_path)
+    conn.close()
+
+    conn = open_graph(tmp_path)  # must not raise
+
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(symbol_enrichment)")}
+    assert "model" in columns
 
 
 def test_sync_symbols_round_trips_export_kind_and_note(tmp_path) -> None:

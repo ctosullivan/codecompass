@@ -177,6 +177,7 @@ CREATE TABLE IF NOT EXISTS symbol_enrichment (
   id           INTEGER PRIMARY KEY,
   symbol_id    INTEGER NOT NULL UNIQUE REFERENCES symbols(id) ON DELETE CASCADE,
   purpose      TEXT NOT NULL,
+  model        TEXT,
   generated_at TEXT NOT NULL
 );
 
@@ -511,6 +512,43 @@ def _migrate_symbols_export_kind_note_columns(conn: sqlite3.Connection) -> None:
             conn.execute("ALTER TABLE symbols ADD COLUMN note TEXT")
 
 
+def _migrate_symbol_enrichment_model_column(conn: sqlite3.Connection) -> None:
+    """Adds `symbol_enrichment.model` (Phase 74, closes `L-031`) to a
+    pre-Phase-74 on-disk database via `ALTER TABLE ... ADD COLUMN`,
+    mirroring `_migrate_symbols_export_kind_note_columns`'s own shape:
+    `symbol_enrichment` holds paid AI enrichment output that survives
+    every `rebuild_deterministic` call, so it is never dropped/recreated.
+
+    **Nullable, not `NOT NULL` with a backfilled default** — unlike
+    `vendor_enrichment.model`/`doc_relation_enrichment.model` (both
+    `NOT NULL` from their own first schema version, `decisions/0054`), a
+    pre-existing `symbol_enrichment` row's real producer was never
+    recorded. Inventing a value now (e.g. a placeholder model name) would
+    fabricate certainty this project's own provenance discipline
+    (`decisions/0051`, `decisions/0054`) explicitly rejects — an honest
+    `NULL` ("producer unknown, predates this column") is the correct
+    backfill, matching this repository's own Ledgerkit-Stage-C-derived
+    "honest gaps over fabricated certainty" principle
+    (`planning/ledgerkit-stage-c-learnings.md` #4/#6).
+    `record_symbol_enrichment` requires a real `model` argument for every
+    new write going forward; only rows written before this migration can
+    ever be `NULL`.
+
+    A brand-new database has no `symbol_enrichment` table yet at all —
+    `init_schema`'s own `CREATE TABLE IF NOT EXISTS`, called right after
+    this function returns, creates it with the column already present.
+    """
+    table_exists = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'symbol_enrichment'"
+    ).fetchone()
+    if not table_exists:
+        return
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(symbol_enrichment)")}
+    if "model" not in columns:
+        with conn:
+            conn.execute("ALTER TABLE symbol_enrichment ADD COLUMN model TEXT")
+
+
 def _migrate_vendors_ecosystem_constraint(conn: sqlite3.Connection) -> None:
     """Widens `vendors.ecosystem`'s CHECK constraint to accept `'haskell'`
     (Phase 60) on a database whose `vendors` table predates it —
@@ -612,6 +650,7 @@ def open_graph(project_root: Path) -> sqlite3.Connection:
     _migrate_doc_relation_enrichment_relation_label(conn)
     _migrate_vendors_ecosystem_constraint(conn)
     _migrate_symbols_export_kind_note_columns(conn)
+    _migrate_symbol_enrichment_model_column(conn)
     init_schema(conn)
     return conn
 
@@ -1542,22 +1581,30 @@ def record_enrichment(conn: sqlite3.Connection, vendor_id: int, **fields: object
 
 
 def record_symbol_enrichment(
-    conn: sqlite3.Connection, symbol_id: int, purpose: str, generated_at: str
+    conn: sqlite3.Connection, symbol_id: int, purpose: str, generated_at: str, model: str
 ) -> None:
     """Insert or update the one `symbol_enrichment` row for `symbol_id`.
     The only writer to `symbol_enrichment`, kept separate from
     `rebuild_deterministic` for the same reason as `record_enrichment`.
+
+    `model` (Phase 74, closes `L-031`) records the real producer for
+    every new write, matching `record_enrichment`'s own `model` field —
+    the column itself is nullable (see
+    `_migrate_symbol_enrichment_model_column`) only to allow an honest
+    `NULL` on rows written before this column existed, never for a new
+    write, which always supplies a real value.
     """
     with conn:
         conn.execute(
             """
-            INSERT INTO symbol_enrichment (symbol_id, purpose, generated_at)
-            VALUES (?, ?, ?)
+            INSERT INTO symbol_enrichment (symbol_id, purpose, model, generated_at)
+            VALUES (?, ?, ?, ?)
             ON CONFLICT(symbol_id) DO UPDATE SET
                 purpose = excluded.purpose,
+                model = excluded.model,
                 generated_at = excluded.generated_at
             """,
-            (symbol_id, purpose, generated_at),
+            (symbol_id, purpose, model, generated_at),
         )
 
 

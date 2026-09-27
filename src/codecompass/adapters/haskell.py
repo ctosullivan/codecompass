@@ -185,7 +185,7 @@ class HaskellAdapter(EcosystemAdapter):
         if self._cached_analysis is None:
             executable = _adapter_executable(self.project_root)
             process = ExternalAdapterProcess([str(executable)])
-            process.initialize()
+            process.initialize(expected_ecosystem=self.config.ecosystem)
             try:
                 self._cached_analysis = process.analyze_project(
                     self._resolve_package_dir(), self.config.name

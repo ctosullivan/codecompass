@@ -49,8 +49,8 @@ currently sends. Response `result` fields:
 | `protocol_version` | int | Hard mismatch with CodeCompass's own value raises `AdapterError` immediately — no negotiation range in v1 (`external_process.py:75-80`). |
 | `adapter_name` | string | e.g. `"codecompass-adaptor-haskell"`. |
 | `adapter_version` | string | The adapter's own semver release — distinct from `protocol_version`. |
-| `ecosystem` | string | Free text at the specification level — **not validated against CodeCompass's own closed `Ecosystem` enum anywhere in `src/codecompass/`**, confirmed by grep (see "A real, observed gap" below). |
-| `capabilities` | array of string | Drawn from the closed 4-value set below. Stored as-is by the client, **not validated** against that set at parse time (`external_process.py:84`: `tuple(response.get("capabilities", []))`, no membership check). |
+| `ecosystem` | string | Validated against the `core.Ecosystem` value CodeCompass configured this adapter under (`initialize(expected_ecosystem=...)`, Phase 74) — a mismatch raises `AdapterError` immediately, the same posture as `protocol_version`. |
+| `capabilities` | array of string | Drawn from the closed 4-value set below, validated by membership at parse time (Phase 74) — an unrecognized entry raises `AdapterError` immediately. |
 
 `CAPABILITIES = ("dependencies", "symbols", "observations",
 "diagnostics")` (`external_process.py:32`) — hard-coded in the Python
@@ -154,29 +154,31 @@ registry, not remote/distributed execution, not a versioned SDK
 these is justified by the protocol's own founding proving case (one local
 subprocess, analyzing one project, at a time).
 
-## A real, observed gap — not enforced by code, only by specification
+## Handshake validation (closed, Phase 74)
 
-Two things can be confirmed directly by reading the client source, both
-already documented in `docs/domain/concepts/protocol.md` and
-`capability.md` and worth repeating here for anyone building a new
-external adapter:
+Two gaps this page used to document as open (`L-032`, filed at Phase
+63D's own `domain-skeptic` review) are now closed, both raising
+`AdapterError` immediately, matching `protocol_version`'s own existing
+posture:
 
-1. **The received `capabilities` list is never validated** against the
-   closed 4-value set — an adapter reporting a fifth, unrecognized
-   string would be accepted uncomplainingly.
-2. **The `ecosystem` field is stored but never read again** anywhere in
-   `src/codecompass/` — `ExternalAdapterProcess.ecosystem` is set at
-   `initialize` and never subsequently compared against
-   `VendorConfig.ecosystem`/`core.Ecosystem`, or used for any dispatch or
-   validation decision. Adapter dispatch is driven entirely by
-   `VendorConfig.ecosystem`, fixed on the CodeCompass side via
-   `vendor.toml` before any adapter process is spawned. A new adapter
-   reporting a mismatched `ecosystem` string would not be caught by
-   anything currently in this repository.
+1. **The received `capabilities` list is validated** against the closed
+   4-value set (`external_process.py::CAPABILITIES`) — an adapter
+   reporting a fifth, unrecognized string is rejected at `initialize`,
+   not accepted uncomplainingly.
+2. **The `ecosystem` field is validated against the value CodeCompass
+   configured this adapter under** —
+   `HaskellAdapter._analyze` passes `expected_ecosystem=self.config.ecosystem`
+   (the same `VendorConfig.ecosystem`/`core.Ecosystem` value that drives
+   adapter dispatch via `vendor.toml`) to
+   `ExternalAdapterProcess.initialize`, which compares it against the
+   response's own `ecosystem` field. A new adapter reporting a mismatched
+   `ecosystem` string is now caught at the handshake, not silently
+   accepted.
 
-Neither is a defect to be fixed — both are disclosed, real gaps a new
-adapter author should know about, not architectural guarantees to rely
-on.
+Any future external-process adapter must pass its own real
+`expected_ecosystem` to `initialize` — the parameter is required, not
+optional, so this validation can't be silently skipped by a new call
+site.
 
 ## Naming note (already resolved, not a live ambiguity)
 

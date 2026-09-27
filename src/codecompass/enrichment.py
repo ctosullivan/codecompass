@@ -424,7 +424,7 @@ def apply_results(
             symbol_id = symbol_ids_by_name.get(symbol_name)
             if symbol_id is None:
                 continue  # model described a symbol not actually recorded for this vendor
-            graph.record_symbol_enrichment(conn, symbol_id, purpose, generated_at)
+            graph.record_symbol_enrichment(conn, symbol_id, purpose, generated_at, model=_MODEL)
 
         vendor_dir = project_root / "vendor" / result.vendor
         update_description_section(

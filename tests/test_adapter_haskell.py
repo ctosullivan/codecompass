@@ -279,8 +279,8 @@ def test_analyze_result_cached_across_multiple_method_calls(
         def __init__(self, command: list[str]) -> None:
             del command
 
-        def initialize(self) -> None:
-            pass
+        def initialize(self, *, expected_ecosystem: str) -> None:
+            del expected_ecosystem
 
         def analyze_project(self, package_dir: Path, name: str) -> dict:
             del package_dir, name

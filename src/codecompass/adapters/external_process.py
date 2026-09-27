@@ -50,11 +50,19 @@ class ExternalAdapterProcess:
         self.adapter_version: str | None = None
         self.ecosystem: str | None = None
 
-    def initialize(self) -> None:
+    def initialize(self, *, expected_ecosystem: str) -> None:
         """Spawn the adapter process and perform the handshake. Raises
-        `AdapterError` on a version mismatch, a malformed response, or a
-        protocol-level `error` response — never leaves the caller with a
-        half-initialized process silently.
+        `AdapterError` on a version mismatch, a malformed response, a
+        protocol-level `error` response, an `ecosystem` mismatch, or an
+        unrecognized `capabilities` entry — never leaves the caller with
+        a half-initialized process silently.
+
+        `expected_ecosystem` (Phase 74, closes `L-032`) is the
+        `core.Ecosystem` value CodeCompass configured this adapter under
+        — required, not optional, matching the existing unconditional
+        `protocol_version` check immediately below: an adapter reporting
+        a mismatched ecosystem or an unrecognized capability was
+        previously accepted uncomplainingly.
         """
         try:
             self._process = subprocess.Popen(
@@ -82,6 +90,18 @@ class ExternalAdapterProcess:
         self.adapter_version = response.get("adapter_version")
         self.ecosystem = response.get("ecosystem")
         self.capabilities = tuple(response.get("capabilities", []))
+        if self.ecosystem != expected_ecosystem:
+            raise AdapterError(
+                "external adapter ecosystem mismatch: CodeCompass configured "
+                f"this adapter under {expected_ecosystem!r}, adapter responded "
+                f"with {self.ecosystem!r}"
+            )
+        unrecognized = [c for c in self.capabilities if c not in CAPABILITIES]
+        if unrecognized:
+            raise AdapterError(
+                f"external adapter reported unrecognized capabilities {unrecognized!r} "
+                f"— expected a subset of {CAPABILITIES!r}"
+            )
 
     def analyze_project(self, project_root: Path, package_name: str) -> dict[str, Any]:
         """Request analysis of an already-resolved package directory.
