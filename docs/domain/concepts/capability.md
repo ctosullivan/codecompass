@@ -33,9 +33,10 @@ out to be importable (`EV-ADPT-009`).
   (`EV-ADPT-009`). Calling `symbols()` "a feature" is not wrong English,
   but it is a different, weaker claim than saying an adapter
   "declared the `symbols` capability."
-- **Not validated against its own closed set by the receiving code.**
-  See "Counterexample" below — this is a real, observed gap, not a
-  hypothetical one.
+- **Closed as of Phase 74 (`L-032`) — now validated against its own
+  closed set by the receiving code.** See "Counterexample" below for
+  the full detail of what changed and why this was a real, observed gap
+  before this phase, not merely a hypothetical one.
 - **Not itself a source/table/schema concept.** `capability` belongs
   entirely to the wire protocol layer; it has no `context-graph.db`
   counterpart and is never written to that database.
