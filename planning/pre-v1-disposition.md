@@ -55,14 +55,20 @@ lost.
 ## 3. Phase 24 — project-root-aware REPL routing + whole-project context
 
 **Disposition: backlog, unchanged revisit trigger, lightly informed by
-Priority A.** Deferred at `decisions/0048`; never had its own plan file.
-`planning/v1-closeout.md` §3's stated revisit trigger stands: "reference-
-project evidence showing project-root context routing is a recurring
-real need." Priority A's own task-context-completeness work may
-incidentally touch session/routing concerns, but this item is not
-folded into Priority A outright — its own trigger (a recurring routing
-need, not a context-completeness need) is a different question, unmet
-by the Stage C evidence this phase reviewed.
+Priority A.** Deferred at `decisions/0048`; never had its own numbered
+plan file, but real design content already exists —
+`planning/phase-20-chat-project-root-routing-design.md` (relocated from
+`architecture/overview.md` at Phase 65, "design content only... not yet
+implemented") is the concrete design sketch for exactly this scope
+(`codecompass chat` with no vendor argument, "project-root mode," plus a
+related escalation idea) and is the right starting point if this item is
+ever picked up. `planning/v1-closeout.md` §3's stated revisit trigger
+stands: "reference-project evidence showing project-root context routing
+is a recurring real need." Priority A's own task-context-completeness
+work may incidentally touch session/routing concerns, but this item is
+not folded into Priority A outright — its own trigger (a recurring
+routing need, not a context-completeness need) is a different question,
+unmet by the Stage C evidence this phase reviewed.
 
 ## 4. Phase 25 — MCP server (`query_vendor`)
 
