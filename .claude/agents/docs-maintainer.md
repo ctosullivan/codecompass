@@ -90,6 +90,21 @@ documentation accurate as the system changes.
 - A phase that changed no observable product behaviour (only `planning/`,
   `.claude/`, tooling, tests) usually has nothing for you to reconcile —
   say "no current-truth doc affected" and stop; don't invent edits.
+- **Before reporting that a document needs no change, grep the full
+  repository (not just a directory-scoped read) for the exact name of
+  every changed symbol/behaviour and for the specific phrasing that
+  stated the now-superseded claim** (e.g. "not yet fixed," "known gap,"
+  "not validated," "no producer attribution," "uncomplainingly"). A
+  directory-scoped read can miss sibling occurrences even inside a
+  document you were explicitly told to check — confirmed at Phase 74
+  (`L-058`): a reconciliation pass that reported only one file needed
+  updating had, in fact, left six BLOCKING current-truth locations
+  false, three of them inside `README.md` itself (a document named in
+  the same dispatch), caught only by `docs-reconstructor`'s independent,
+  grep-based drift audit. This generalizes `L-055`'s "post-fix
+  completeness grep" discipline (originally scoped to
+  `context-researcher`'s domain-corpus citation-staleness revisions) to
+  this role's own ordinary reconciliation pass.
 
 ## Output
 

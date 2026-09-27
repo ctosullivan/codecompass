@@ -8,6 +8,238 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-059 — a `docs-reconstructor` dispatch prompt naming files `docs-maintainer` already checked, as a courtesy, does not appear to have anchored/narrowed the audit's own search — no evidence the risk actually occurred this time
+
+- **origin:** `planning/retros/phase-74-provenance-hardening.md` "Lessons
+  learnt"; `planning/retros/_drift-audit-phase-74.md` "Scope note";
+  independent knowledge-curator triage (explicitly directed to read the
+  audit's own report before assuming the retro's own hypothesis was
+  correct)
+- **date:** 2026-09-27
+- **project_revision:** `40e7718` (the doc-closeout commit whose own
+  dispatch prompt and resulting `_drift-audit-phase-74.md` report are at
+  issue)
+- **observation:** Phase 74's retro speculates that "a `docs-maintainer`
+  dispatch that names specific files it already checked (as a courtesy,
+  to save the audit re-deriving them) may cause the audit to over-trust
+  that specific list rather than doing its own full sweep" and notes
+  "this phase's own `docs-reconstructor` dispatch prompt explicitly
+  listed the files `docs-maintainer` said it checked." Read
+  `_drift-audit-phase-74.md` directly, as the task required, rather than
+  trusting the retro's own framing. Its own "Scope note" states the
+  audit's actual method: grepping the full current-truth surface
+  (`README.md`, `docs/**`, `architecture/**`, `ai-docs/**`) for the exact
+  affected symbol/behaviour names (`symbol_enrichment`,
+  `record_symbol_enrichment`, `initialize(`, `expected_ecosystem`) and
+  the specific superseded-claim phrasing (`"not validated"`,
+  `"uncomplainingly"`, `"observed gap"`), and explicitly stating it
+  "Independently re-verified the code ... rather than trusting the
+  commit message or `docs-maintainer`'s own claim that only
+  `wire-protocol.md` needed updating — that claim turned out to be
+  incomplete." Nowhere does the report describe narrowing its search to,
+  or starting from, any courtesy list of files `docs-maintainer` said it
+  already checked; on the contrary it treats that claim as something to
+  independently re-verify and disprove, and finds six locations (three
+  inside `README.md` itself, a file that same claim covered) never named
+  by any prior report. The retro's own text already concedes "the audit
+  worked correctly here despite the risk" but leaves the generalization
+  question open for this role. On the evidence actually in the audit's
+  own report, the courtesy-list-anchoring hypothesis is unsupported:
+  nothing shows the audit's search was narrowed, biased toward, or
+  seeded by that list. The observed six misses are better explained by
+  `docs-maintainer`'s own reconciliation methodology being narrower than
+  a full exact-string/symbol grep (tracked separately as `L-058`), not by
+  anything in how `docs-reconstructor`'s own dispatch prompt was worded.
+- **evidence:** `planning/retros/_drift-audit-phase-74.md` "Scope note"
+  ("Checked: every current-truth doc surfaced by grepping for the
+  affected symbols/behaviour ... Independently re-verified the code ...
+  rather than trusting ... `docs-maintainer`'s own claim"); phase-74
+  retro "Lessons learnt" (the hypothesis as stated, and its own "the
+  audit worked correctly here despite the risk" concession)
+- **classification:** unsupported
+- **status:** discarded
+- **recurrence:** n/a — one occurrence, evaluated and found unsupported
+- **curation (knowledge-curator, 2026-09-27).** **Outcome: discard.**
+  One-line reason:
+  the audit's own persisted report shows an independent, full-repo,
+  exact-string/symbol grep-based search method that explicitly distrusts
+  `docs-maintainer`'s claim rather than building on it — this directly
+  contradicts the "courtesy list anchored the audit" theory. The real
+  explanatory factor for the six misses is `docs-maintainer`'s own
+  reconciliation methodology, tracked separately as `L-058`, not the
+  dispatch-prompt wording. If a future audit's own report shows a search
+  actually restricted to a courtesy list (e.g. a finding scoped only to
+  the named files, or the report stating it treated the list as
+  sufficient), re-open as a fresh candidate then — this specific
+  occurrence provides no such evidence.
+
+### L-058 — `docs-maintainer`'s own current-truth reconciliation pass must grep the full repository for a changed symbol/behaviour's exact name and the specific stale-claim phrasing it invalidates, not rely on directory-scoped review — generalizes `L-055`'s post-fix completeness-grep discipline to a second role and artifact class
+
+- **origin:** `planning/retros/phase-74-provenance-hardening.md` "What
+  didn't work" + "Lessons learnt" + "Process-improvement feedback";
+  `planning/retros/_drift-audit-phase-74.md`; independent
+  knowledge-curator triage
+- **date:** 2026-09-27
+- **project_revision:** `050e366` (the behavioural change:
+  `symbol_enrichment.model`, `ExternalAdapterProcess.initialize`
+  ecosystem/capabilities validation); `docs-maintainer`'s own initial
+  reconciliation pass (a dispatch between `050e366` and `40e7718`, not
+  itself a commit); `40e7718` (follow-on fix: six current-truth locations
+  + five `docs/domain/` locations, landed only after
+  `docs-reconstructor`'s independent audit)
+- **observation:** `docs-maintainer`'s Phase 74 dispatch was scoped, per
+  its own fixed agent-definition, to `README.md`, `docs/`,
+  `architecture/`, `ai-docs/`, `CONTRIBUTING.md`, and it reported only
+  `docs/protocol-adapter/wire-protocol.md` needed updating.
+  `docs-reconstructor`'s independent per-phase drift audit
+  (`_drift-audit-phase-74.md`) subsequently found six more BLOCKING
+  current-truth findings the reconciliation pass missed: `README.md:276-278`,
+  `README.md:165-178`, and `README.md:279-282` (three separate locations
+  *inside the one document explicitly named in `docs-maintainer`'s own
+  dispatch scope*), `architecture/context-graph-schema.md:94-96`,
+  `docs/developer/writing-an-adapter.md:153-166`, and
+  `docs/protocol-adapter/integrating-a-new-external-adapter.md` (two
+  sub-findings). Two of the six misses being in `README.md` itself — a
+  document the reconciliation pass was explicitly told to check — rules
+  out "wrong directory scope" as the explanation; the actual variable is
+  *methodology within the correct scope*. The audit's own "Scope note"
+  describes its method precisely: grepping for the exact affected
+  symbols/behaviour (`symbol_enrichment`, `record_symbol_enrichment`,
+  `initialize(`, `expected_ecosystem`) and the specific superseded-claim
+  phrasing (`"not validated"`, `"uncomplainingly"`, `"observed gap"`)
+  across the *entire* current-truth surface, and explicitly states it
+  did not trust `docs-maintainer`'s own claim. `docs-maintainer`'s own
+  report does not describe an equivalent exact-string/symbol grep — the
+  retro's own "Process-improvement feedback" section already names the
+  right candidate fix: "Consider whether `docs-maintainer`'s own dispatch
+  should more explicitly instruct a full-repository grep for every
+  changed symbol/behavior name (not just a directory sweep)." This is the
+  same underlying shape `L-055` already named for a different role
+  (`context-researcher`'s domain-corpus citation-staleness revisions): a
+  reconciliation/fix pass declares itself complete having checked the
+  specific things it thought to check, and only an independent,
+  exhaustively-grepped audit catches the sibling instances left behind.
+  Unlike Phase 73's weaker, single, first-attempt-caught instance (see
+  `L-057`, which by contrast needed no rework), this miss was **not**
+  caught until the independent audit ran — a real, evidenced process gap
+  in `docs-maintainer`'s own ordinary reconciliation methodology, not
+  merely the audit doing its job as designed.
+- **evidence:** `planning/retros/_drift-audit-phase-74.md` Findings 1-6
+  and its "Scope note"; phase-74 retro "What didn't work", "Lessons
+  learnt", "Process-improvement feedback"; `.claude/agents/docs-maintainer.md`
+  current "What to do" step 2 (directory-scoped, no exact-string/symbol
+  full-repo grep instruction) and "Hard rules" (no completeness-grep
+  requirement analogous to `L-055`'s landed text)
+- **classification:** scoped-rule
+- **status:** promoted
+- **recurrence:** second confirmed instance (after `L-055`/Phase 72) of
+  "a reconciliation/fix pass declares completeness on its own
+  named-location review; only an independent, full-corpus/full-repo
+  grep-based audit catches the sibling instances left behind" — now
+  confirmed in a second role (`docs-maintainer`'s ordinary current-truth
+  reconciliation, not only `context-researcher`'s domain-corpus
+  citation-staleness revision)
+- **curation (knowledge-curator, 2026-09-27).** **Outcome: promote.**
+  Destination: `.claude/agents/docs-maintainer.md` "Hard
+  rules". **Draft addition** (new bullet, alongside the existing `L-037`
+  bullet):
+
+  > **Before reporting that a document needs no change, grep the full
+  > repository (not just a directory-scoped read) for the exact name of
+  > every changed symbol/behaviour and for the specific phrasing that
+  > stated the now-superseded claim** (e.g. "not yet fixed," "known gap,"
+  > "not validated," "no producer attribution," "uncomplainingly"). A
+  > directory-scoped read can miss sibling occurrences even inside a
+  > document you were explicitly told to check — confirmed at Phase 74
+  > (`L-058`): a reconciliation pass that reported only
+  > `wire-protocol.md` needed updating had, in fact, left six BLOCKING
+  > current-truth locations false, three of them inside `README.md`
+  > itself (a document named in the same dispatch), caught only by
+  > `docs-reconstructor`'s independent, grep-based drift audit. This
+  > generalizes `L-055`'s "post-fix completeness grep" discipline
+  > (originally scoped to `context-researcher`'s domain-corpus
+  > citation-staleness revisions) to this role's own ordinary
+  > reconciliation pass.
+
+  **Landed by the lead** (`.claude/agents/docs-maintainer.md` "Hard
+  rules", following this candidate's own drafted text verbatim), as a
+  follow-up amendment since Phase 73/74 were already marked `done`
+  (commit `76c441f`) before this triage ran.
+
+### L-057 — an independent `docs-maintainer` reconciliation pass catching a same-phase `src/` completeness gap (a widened matching function's sibling consumer left unmodified) is structurally similar to `L-055` but not yet evidence of a second, distinct rule
+
+- **origin:** `planning/retros/phase-73-doc-relations-filename-matching.md`
+  "Scope delivered vs planned" + "What worked" + "Lessons learnt";
+  independent knowledge-curator triage
+- **date:** 2026-09-27
+- **project_revision:** `0f3337d` (core `build_doc_relations_edges`
+  filename/stem widening; `relation_enrichment.py::_relation_needle` left
+  unmodified for the same widening); `29ced55` (same-phase follow-on fix,
+  renamed `_relation_needles`, widened identically)
+- **observation:** `docs-maintainer`'s independent reconciliation pass,
+  dispatched as part of Phase 73's ordinary review step, found that
+  `relation_enrichment.py::_relation_needle` (the excerpt-centering
+  helper used during AI enrichment) implemented the same "match a named
+  target by title only" logic `build_doc_relations_edges` had just been
+  widened to also match by filename/stem — and had not been updated for
+  the same widening, meaning a headerless source doc citing a target only
+  by filename would still get a worse excerpt. Fixed in the same phase
+  (`29ced55`), not deferred. The phase's own retro frames this as
+  "matching `L-055`'s own lesson (check every consumer of a widened
+  match, not just the primary edge-creation path)". **Independent check
+  against `L-055`'s own landed text**, as required:
+  `.claude/agents/context-researcher.md` lines 153-164 is explicitly
+  scoped to "revising domain-corpus content to close a
+  citation-staleness/retired-terminology finding" — a `context-researcher`
+  grepping `docs/domain/` prose for remaining literal occurrences of a
+  retired term/pattern. This Phase 73 instance is a different role
+  (`docs-maintainer`'s ordinary reconciliation, not `context-researcher`
+  closing a citation-staleness finding), a different artifact class (a
+  `src/` module implementing matching logic, not `docs/domain/` prose),
+  and a different mechanism (checking whether a second function
+  implementing similar matching logic over the same underlying data was
+  updated for a widened rule, not grepping text for a retired string).
+  The retro's framing that this "matches `L-055`" is a structural analogy
+  (both are "check every sibling instance of an identical pattern before
+  considering a change complete"), not the same landed rule applying a
+  second time. Also notable, and distinguishing this from `L-058`: unlike
+  `L-055`'s own genesis (Phase 72, where an initial fix was declared
+  complete and only a *redone, independent* `docs-reconstructor` audit
+  later caught the misses, requiring rework) and unlike `L-058` (Phase
+  74, where the initial reconciliation pass's miss was likewise only
+  caught by the independent audit), this Phase 73 instance was caught by
+  the *first* `docs-maintainer` reconciliation pass, in the same phase,
+  with no rework needed — the existing process worked as designed on its
+  first attempt here, not only after a prior failure.
+- **evidence:** `src/codecompass/doc_mapping.py::build_doc_relations_edges`
+  (`0f3337d`); `src/codecompass/relation_enrichment.py::_relation_needles`
+  (`29ced55`, renamed from `_relation_needle`);
+  `.claude/agents/context-researcher.md` lines 153-164 (`L-055`'s actual
+  landed scope: domain-corpus citation-staleness revisions); phase-73
+  retro "Scope delivered vs planned", "What worked"
+- **classification:** uncertain
+- **status:** retained
+- **recurrence:** first instance of this specific shape (a widened
+  `src/` matching function whose sibling consumer over the same data was
+  initially unmodified, caught by `docs-maintainer`'s own reconciliation
+  pass on its first attempt). Not yet two instances — insufficient to
+  generalize a new scoped rule extending `L-055`'s mechanism into
+  `docs-maintainer`'s own "Hard rules" or elsewhere in `.claude/agents/`.
+- **curation (knowledge-curator, 2026-09-27).** **Outcome: retain**, not
+  promote — no promotion yet. This is a real, evidenced, working-as-designed catch — not a
+  demonstrated process gap (contrast `L-058`, where the equivalent catch
+  *failed* on the first pass this same phase-pair). If a second,
+  independent instance occurs (another phase's `src/` behavioral
+  widening whose sibling consumer over the same underlying data is left
+  unmodified and only caught by reconciliation/audit rather than by the
+  implementer's own plan), promote at that point — likely destination
+  `.claude/agents/docs-maintainer.md` "Hard rules" (e.g. "when
+  reconciling after a phase widens a detection/matching function, grep
+  for every other function implementing similar matching against the
+  same underlying data") or `CLAUDE.md` §1's existing test-through-real-
+  call-site language (`L-021`), whichever the second instance's own shape
+  better fits. Not promoting on a single instance.
+
 ### L-056 — a `docs-reconstructor` (or any report-writing role) dispatch step in `agent-led-workflow.md` must itself state the report's required persisted file path, not rely on the role's own agent-definition file to guarantee the write happens
 
 - **origin:** `planning/retros/phase-72-stage-c-learnings-and-roadmap-realignment.md`
