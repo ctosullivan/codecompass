@@ -86,7 +86,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   freshness-reconciliation grep step, after this exact fragility class
   recurred a third/fourth time (`L-051`). A pre-existing hygiene gap
   also backfilled: `CG-005`'s own `promoted.md` line, missing since
-  Phase 54c.
+  Phase 54c. A follow-on drift audit found the first fix incomplete —
+  three more "Stage C/E" instances in `decision.md`/`observation.md`
+  and a stale Claim citation in `evidence.md` — confirmed and fixed the
+  same way.
 
 ## [1.0.0] - 2026-09-24
 

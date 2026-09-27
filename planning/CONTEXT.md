@@ -41,14 +41,18 @@ silently dropped. `planning/ROADMAP.md`'s old "Deferred/not-funded" and
 structure; `conditional-generalisation.md` gained a dated amendment note
 (content otherwise unchanged — GATE DD's own graph-schema questions
 remain explicitly open, not resolved by this phase). A domain-corpus
-staleness cluster surfaced by the drift audit (4 concept-page/
-open-questions locations, plus the first real exercise of the
-Claim-supersedes-Claim mechanism — `CL-EVID-011`/`012` superseding
-`CL-EVID-009`/`003`) was found and fixed. Closeout: `context-health-planner`
-assessment, fork review, `docs-reconstructor` drift audit,
-`domain-skeptic` freshness check, `context-researcher` Claim revision,
-`knowledge-curator` triage (`L-051` promoted — extends `L-048`'s citation
-rule to phase-group labels and Claim text).
+staleness cluster surfaced by the drift audit (7 concept-page/
+open-questions locations across two passes, plus the first real
+exercise of the Claim-supersedes-Claim mechanism — `CL-EVID-011`/`012`
+superseding `CL-EVID-009`/`003`) was found and fixed — the first
+remediation commit was itself incomplete (3 sibling instances missed),
+caught by `release-phase-auditor`'s own DoD pass finding the drift
+audit's report file had never been persisted, then a redone audit
+finding the remaining staleness. Closeout: `context-health-planner`
+assessment, fork review, `docs-reconstructor` drift audit (two passes),
+`domain-skeptic` freshness check (two passes), `context-researcher`
+Claim revision, `knowledge-curator` triage (`L-051` promoted — extends
+`L-048`'s citation rule to phase-group labels and Claim text).
 
 ## Known standing gaps (current-state facts, not phase history)
 
