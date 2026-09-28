@@ -80,11 +80,82 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   the point the first report arrives, not just at the point of writing
   the next dispatch prompt.
 - **classification:** workflow
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** second occurrence of the same underlying rule violation
   (first: Phase 75, which is what produced `L-063` itself; second: this
   entry, Phase 76) — but the first occurrence predated the rule's own
   existence, so this is the rule's **first real test**, and it failed.
+- **curation (Phase 76 triage, 2026-09-28, knowledge-curator):** template
+  fields all present (id, origin, date, project_revision, observation,
+  evidence, classification, status, recurrence) — accepted as filed, no
+  backfill needed. Independently re-verified rather than taken on the
+  entry's own word: read `planning/agent-led-workflow.md` step 7 directly
+  and confirmed `L-063`'s own text is present, unchanged, exactly where
+  the entry says it is; the described dispatch-prompt claim and the
+  returned `context-evaluator` report's own "Disclosed limitation of this
+  review" section (this conversation) match the entry's summary. Checked
+  for a duplicate: this is not a re-filing of `L-063` itself — `L-063` is
+  the *rule*; this entry is evidence that the rule, once landed as prose,
+  failed its own first real test one phase later. Not a duplicate, and
+  not a mere restatement.
+
+  **Outcome: promote.** This is a stronger case than `L-063`'s own
+  first-occurrence promotion, not a weaker one: the fix `L-063` actually
+  landed (a "never do X" caveat added to step 7, the point of *drafting*
+  a dispatch prompt) was in force, in the exact governing document, for
+  the exact next dispatch that needed it — and was not consulted. Adding
+  a second, near-identical sentence to the same location would repeat the
+  same shape of fix that has now been shown, once, not to survive contact
+  with the next real dispatch. Per the task's own framing (and this
+  entry's own "why this happened" analysis, which independently reaches
+  the same conclusion `L-006`/`L-060`'s prior instances already
+  established — "a rule that exists in docs but isn't consulted at the
+  point of action"), the destination should not be another prose
+  restatement of the prohibition alone. Instead: **move the actionable
+  half of the rule to the point where the temptation-causing event
+  actually occurs** (a report's arrival, step 5) rather than leaving it
+  only as a thing to recall later while drafting a downstream prompt
+  (step 7). This converts a "remember not to do X" prohibition into a "do
+  Y now, unconditionally" habit that does not depend on recalling the
+  specific failure mode at all at the moment it would otherwise recur.
+
+  **Destination: `planning/agent-led-workflow.md` step 5** (a new
+  sub-bullet, not a further edit to step 7's own `L-063` text, which
+  stays as a second line of defense) — **draft, for the lead to review,
+  adapt, and apply** (outside this role's own write boundary):
+
+  > **Whenever a dispatched agent's report will need to be referenced by
+  > a later dispatch this same phase (a multi-agent comparison such as
+  > baseline/treatment, or any downstream evaluator/auditor role that
+  > will need to see it), write that report to disk immediately on
+  > receipt** — before drafting any further dispatch prompt, whether or
+  > not that later prompt has been drafted yet. Treat this as the default
+  > action taken the moment a report arrives, not a rule to recall later
+  > while writing the prompt that will reference it. Confirmed necessary
+  > twice, in consecutive phases: `L-063` (Phase 75) and `L-064` (Phase
+  > 76, the very next phase that needed the rule) each involved a
+  > dispatch prompt falsely claiming a fresh subagent could see
+  > conversation-only content — in both cases a "never claim X" caveat
+  > added only to step 7 (the point of *drafting* the dispatch prompt)
+  > was not consulted before writing the very next prompt it governed.
+  > Moving the actionable step to the point of report *receipt* (here)
+  > removes the need to recall a prohibition at the moment of temptation;
+  > step 7's own existing rule still applies as a second line of defense,
+  > but should not be relied on as the only place this discipline lives.
+
+  Suggested one-clause addition to step 7's existing `L-063` paragraph,
+  cross-referencing the new step 5 bullet, so a reader who only reads
+  step 7 still finds the stronger fix (append after the existing "point
+  the agent at the file path rather than asserting the content is
+  'already in this conversation'" sentence): "**See also step 5's own
+  receipt-time action, added after this rule's first real-world
+  violation at Phase 76 (`L-064`).**"
+
+  **Applied by the lead, 2026-09-28**: draft landed verbatim (adapted
+  only for exact line placement) as a new sub-bullet in
+  `planning/agent-led-workflow.md` step 5, plus the suggested one-clause
+  cross-reference appended to step 7's own `L-063` paragraph. Status
+  flipped to `promoted`; `promoted.md` entry added.
 
 ### L-063 — a subagent dispatch prompt must never claim a fresh agent already has access to content that exists only in the dispatching session's own conversation history
 

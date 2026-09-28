@@ -25,8 +25,9 @@ not lettered stages. Priority A's first concrete deliverable
 topology awareness — worktrees + submodules) is implemented and
 evaluated** — `context-evaluator` verdict **PASS WITH GAPS, advantage
 MODERATE** (the strongest Priority A result to date) — but not yet
-marked `done`: the independent `release-phase-auditor` DoD pass and
-final `roadmap-context-curator` reconciliation are still pending. Full
+marked `done`, per `ROADMAP.md`'s own `in progress` row: the independent
+`release-phase-auditor` DoD pass has not yet run, nor has the final
+`roadmap-context-curator` reconciliation. Full
 plan: `planning/phase-76-git-repository-topology.md`. Retro:
 `planning/retros/phase-76-git-repository-topology.md`.
 Backlog, each with its own revisit trigger: Phases 24/25, Phase 50's

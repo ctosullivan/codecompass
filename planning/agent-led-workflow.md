@@ -173,6 +173,25 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
    "never edits X" or "its report only" write column (the roster table
    above), re-read the prompt for any suggestion — however small — that
    the role could act outside that boundary this one time.
+
+   **Whenever a dispatched agent's report will need to be referenced by
+   a later dispatch this same phase** (a multi-agent comparison such as
+   baseline/treatment, or any downstream evaluator/auditor role that
+   will need to see it), **write that report to disk immediately on
+   receipt** — before drafting any further dispatch prompt, whether or
+   not that later prompt has been drafted yet. Treat this as the default
+   action taken the moment a report arrives, not a rule to recall later
+   while writing the prompt that will reference it. Confirmed necessary
+   twice, in consecutive phases: `L-063` (Phase 75) and `L-064` (Phase
+   76, the very next phase that needed the rule) each involved a
+   dispatch prompt falsely claiming a fresh subagent could see
+   conversation-only content — in both cases a "never claim X" caveat
+   added only to step 7 (the point of *drafting* the dispatch prompt)
+   was not consulted before writing the very next prompt it governed.
+   Moving the actionable step to the point of report *receipt* (here)
+   removes the need to recall a prohibition at the moment of temptation;
+   step 7's own existing rule still applies as a second line of defense,
+   but should not be relied on as the only place this discipline lives.
 6. **Implement or coordinate implementation.** The lead implements
    directly, or dispatches one `general-purpose` implementer subagent per
    the `v0.2-implementation-execution-plan.md` pattern (foreground, exact
@@ -224,6 +243,8 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
    ground-truth methodology absorbed the gap harmlessly that time, but
    this should not be relied on twice, and neither scratch clone in that
    instance retained any fallback trace of either prior agent's work.
+   **See also step 5's own receipt-time action, added after this rule's
+   first real-world violation at Phase 76 (`L-064`).**
 8. **Reconcile current documentation.** Dispatch `docs-maintainer` with
    the phase diff. It fixes wrong paragraphs (not appends caveats),
    deletes false statements, runs the deterministic doc checks.

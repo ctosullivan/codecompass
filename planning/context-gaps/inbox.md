@@ -58,7 +58,49 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   detection-heuristic tuning change.
 - **status:** candidate
 - **recurrence:** first occurrence
-- **curation:** pending — not yet triaged by `knowledge-curator`.
+- **curation (Phase 76 triage, 2026-09-28, knowledge-curator):** template
+  fields checked against `TEMPLATE.md`: **`recurrence` was missing** —
+  backfilled above as `first occurrence` (a single agent,
+  `context-evaluator`, in one controlled scratch-repo experiment; not
+  independently corroborated by a second agent or a second instance).
+  All other required fields present. Independently re-verified rather
+  than taken on the entry's own word: the described mechanism
+  (`query topology`'s "never live" contract rendering a sibling's stale
+  `branch`/`head_commit` with the same unqualified confidence as
+  `is_dirty=null`'s explicit "not probed" signal) is consistent with
+  `docs/cli-reference.md`'s own documented snapshot-at-sync-time
+  guarantee, and with `is_dirty` being nullable specifically for
+  non-current worktrees per this same phase's implementation — the
+  asymmetry the entry names (one field nulled to signal uncertainty,
+  the adjacent fields not) is real, not a misreading.
+
+  Checked against every prior `CG-NNN` entry for a duplicate: none of
+  `CG-001` through `CG-010` concerns worktree/topology staleness
+  signalling — genuinely distinct, not a restatement of `CG-010` (filed
+  alongside this entry, same phase, but a different edge: `CG-010` is
+  "no field distinguishes *why* a submodule mismatch exists," this entry
+  is "no field signals *that* a sibling worktree's reported state could
+  already be stale at all"). Both originate from the same phase's schema
+  and share a family resemblance ("represent uncertainty/staleness
+  explicitly rather than silently," the same discipline `is_dirty=null`
+  already applies) — worth a shared cross-reference for whoever next
+  touches Git-topology schema, not a merge.
+
+  **Outcome: candidate, unchanged.** Single occurrence (one agent, one
+  experiment) — per this queue's own recurrence bar (`context-gaps/README.md`,
+  and precedent: `CG-007`'s Phase 54b triage kept a dual-agent,
+  same-instance corroboration at "first occurrence," requiring a
+  genuinely separate instance — a different pair, a different project —
+  before `recurred`), this does not yet qualify even for `recurred`,
+  since it has not been corroborated a second time at all. Classification
+  `graph-capability (Stage E / GATE DD)` confirmed correct: the smallest
+  fix is a new nullable schema column (`observed_at` or similar) plus a
+  rendering decision, not a tunable detection heuristic. Needs a second,
+  independent instance (a different repository, or a different agent
+  hitting the same staleness gap unprompted) before further promotion;
+  named here for GATE DD's future input alongside `CG-009`. No entry made
+  to `context-graph.db` — this queue never writes there, per
+  `decisions/0051`.
 
 ### CG-010 — `git_submodules` has no field distinguishing a staged-but-uncommitted parent gitlink bump from purely local, unstaged child-checkout drift
 
@@ -114,7 +156,67 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   from a completely independent re-derivation), a stronger-than-usual
   first filing though not yet a second, separately-observed instance
   per `context-gaps/README.md`'s own recurrence bar.
-- **curation:** pending — not yet triaged by `knowledge-curator`.
+- **curation (Phase 76 triage, 2026-09-28, knowledge-curator):** template
+  fields all present (origin, date, `codecompass_revision`, project, the
+  edge, edge kind, agent's reasoning, what-the-graph-shows-instead,
+  "could mechanical detection ever catch this?", smallest candidate,
+  classification, status, recurrence). Independently re-verified rather
+  than taken on the entry's own word: read
+  `src/codecompass/git_topology.py::_detect_pinned_commit` directly and
+  confirmed it runs `git ls-tree HEAD -- <path>` only, with no index
+  inspection anywhere in the function or its callers — the claim that a
+  staged-but-uncommitted gitlink bump and a genuinely unstaged local
+  checkout divergence look identical to CodeCompass today holds exactly
+  as written.
+
+  **On the recurrence-bar question this entry itself raises** (and the
+  triage task explicitly asked to confirm): this project's own established
+  practice reads `context-gaps/README.md`'s "recurs, or is filed
+  independently by two agents" bar as requiring a **second, genuinely
+  separate concrete instance** (a different repository, a different
+  submodule/pair, a different phase) — not two agents independently
+  confirming the *same* single real-world occurrence within one phase.
+  Direct precedent: `CG-007`'s own Phase 54b triage note explicitly kept
+  a dual-agent corroboration of one instance (treatment run +
+  `reference-project-tester`, same phase, same files) at `first
+  occurrence`, stating in so many words that it "needs a second,
+  independent instance (a different pair of pinned reference-doc
+  excerpts, or a different reference project) before moving to
+  `recurred`." `CG-010`'s own scenario is structurally identical — one
+  real occurrence (an uncommitted `git submodule` checkout divergence in
+  this phase's own evaluation fixtures), independently investigated and
+  confirmed correct by two agents, but still one occurrence, not two.
+  Applying `CG-007`'s own precedent consistently: **this does not yet
+  satisfy the bar for `recurred`** — the two-agent corroboration is
+  strong evidence the *claim* is true and correctly diagnosed (worth more
+  than an unverified single-agent filing), but it is not the same thing
+  as recurrence across separate trials/phases, which is what the bar is
+  actually tracking (does this class of gap keep showing up in
+  independent, unrelated situations, not "did two people look at the same
+  situation and agree").
+
+  **Outcome: candidate, unchanged** (not `recurred`) — consistent with the
+  `CG-007` precedent applied above. Classification `detection-improvement
+  (Stage C / GATE DB)` confirmed correct: the smallest fix (one additional
+  `git ls-files --stage` call at sync/detection time, populating a new
+  nullable column) is a small, additive, already-precedented shape
+  (matches `CG-006`'s own resolution shape: an additive column/matching
+  mode, no new relation kind, no new ontological concept) — a strong
+  candidate for scheduling as a small phase on its own narrow terms, the
+  same framing `CG-006` used before Phase 73 picked it up, **without
+  needing to wait for a second occurrence or a formal GATE DB milestone
+  review first** (recurrence strengthens the case for GATE DB's own
+  aggregate input; it is not a precondition every individually-fundable
+  Stage C fix must clear before the lead can schedule it — `CG-004`/
+  `CG-005`/`CG-006`/`CG-008` were each scheduled and closed at exactly
+  `first occurrence`). Recommending to the lead: a candidate for a
+  near-term small phase, same shape as `CG-006`'s own path to Phase 73;
+  actual scheduling is the lead's/`roadmap-context-curator`'s call, not
+  this role's to make. Cross-referenced against `CG-011` (filed same
+  phase, same topology feature, same "represent uncertainty/staleness
+  explicitly" family) — a related but distinct edge, not a duplicate. No
+  entry made to `context-graph.db` — this queue never writes there, per
+  `decisions/0051`.
 
 ### CG-009 — `context-graph.db`'s `symbols` table has no path for a project's *own* first-party source at all, in any ecosystem
 
