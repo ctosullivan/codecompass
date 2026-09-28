@@ -2081,3 +2081,131 @@ def test_query_topology_path_unsafe_submodule_rendered_as_refused(
     result = runner.invoke(app, ["query", "topology"])
     assert result.exit_code == 0, result.output
     assert "escapes repository" in result.output
+
+
+def test_query_topology_current_worktree_unknown_dirty_state_renders_as_unknown_not_clean(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Phase 76 corrective pass: `is_dirty is None` (the probe itself
+    failed) must never render as the false-certainty `clean` — it must be
+    visibly `unknown`."""
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_topology(
+        tmp_path,
+        git_repositories=[graph.GitRepositoryRow(common_dir="/repo/.git")],
+        git_worktrees=[
+            graph.GitWorktreeRow(
+                repository_common_dir="/repo/.git",
+                worktree_path="/repo",
+                is_current=True,
+                branch="main",
+                head_commit="abc123",
+                is_dirty=None,
+            ),
+        ],
+        git_topology_status="detected",
+    )
+
+    result = runner.invoke(app, ["query", "topology"])
+    assert result.exit_code == 0, result.output
+    assert "workspace: unknown" in result.output
+    assert "workspace: clean" not in result.output
+
+
+def test_query_topology_submodule_unknown_dirty_state_renders_as_unknown_not_clean(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Phase 76 corrective pass: an initialized submodule whose own dirty
+    probe returned `None` must never render as `clean`."""
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_topology(
+        tmp_path,
+        git_repositories=[graph.GitRepositoryRow(common_dir="/repo/.git")],
+        git_submodules=[
+            graph.GitSubmoduleRow(
+                parent_repository_common_dir="/repo/.git",
+                path="adapters/haskell",
+                pinned_commit="deadbeef",
+                is_initialized=True,
+                checked_out_commit="deadbeef",
+                revision_matches_pin=True,
+                child_is_dirty=None,
+            )
+        ],
+        git_topology_status="detected",
+    )
+
+    result = runner.invoke(app, ["query", "topology"])
+    assert result.exit_code == 0, result.output
+    assert "workspace: unknown" in result.output
+    assert "workspace: clean" not in result.output
+
+
+def test_query_topology_submodule_unresolved_pin_comparison_renders_as_unresolved_not_differs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Phase 76 corrective pass: `revision_matches_pin is None` (e.g. the
+    pin itself could not be resolved) must never render as the false
+    negative `differs from pin` — it must be visibly unresolved."""
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_topology(
+        tmp_path,
+        git_repositories=[graph.GitRepositoryRow(common_dir="/repo/.git")],
+        git_submodules=[
+            graph.GitSubmoduleRow(
+                parent_repository_common_dir="/repo/.git",
+                path="adapters/haskell",
+                pinned_commit=None,
+                is_initialized=True,
+                checked_out_commit="deadbeef",
+                revision_matches_pin=None,
+            )
+        ],
+        git_topology_status="detected",
+    )
+
+    result = runner.invoke(app, ["query", "topology"])
+    assert result.exit_code == 0, result.output
+    assert "comparison unresolved" in result.output
+    assert "differs from pin" not in result.output
+
+
+def test_query_topology_json_preserves_nullable_values_unchanged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The text renderer's tri-state fix must not leak into `--json` —
+    JSON keeps the raw nullable values exactly as persisted."""
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_topology(
+        tmp_path,
+        git_repositories=[graph.GitRepositoryRow(common_dir="/repo/.git")],
+        git_worktrees=[
+            graph.GitWorktreeRow(
+                repository_common_dir="/repo/.git",
+                worktree_path="/repo",
+                is_current=True,
+                branch="main",
+                head_commit="abc123",
+                is_dirty=None,
+            ),
+        ],
+        git_submodules=[
+            graph.GitSubmoduleRow(
+                parent_repository_common_dir="/repo/.git",
+                path="adapters/haskell",
+                pinned_commit=None,
+                is_initialized=True,
+                checked_out_commit="deadbeef",
+                revision_matches_pin=None,
+                child_is_dirty=None,
+            )
+        ],
+        git_topology_status="detected",
+    )
+
+    result = runner.invoke(app, ["query", "topology", "--json"])
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["worktrees"][0]["is_dirty"] is None
+    assert payload["submodules"][0]["revision_matches_pin"] is None
+    assert payload["submodules"][0]["child_is_dirty"] is None

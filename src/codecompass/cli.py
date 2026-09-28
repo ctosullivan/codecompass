@@ -948,6 +948,20 @@ def _render_topology_not_indexed(json_output: bool) -> None:
     console.print(f"[yellow]{_NOT_INDEXED_NOTE}[/yellow]")
 
 
+def _tri_state_label(value: bool | None, when_true: str, when_false: str, when_none: str) -> str:
+    """Renders a nullable boolean fact as one of three explicit labels —
+    never collapses `None` (unresolved/unknown) into `when_false` via
+    Python truthiness, the exact class of bug this exists to prevent
+    (Phase 76 corrective pass: `is_dirty`/`revision_matches_pin` were
+    being rendered as false negative certainty instead of honest
+    unknown/unresolved states)."""
+    if value is True:
+        return when_true
+    if value is False:
+        return when_false
+    return when_none
+
+
 def _render_topology(profile: dict, json_output: bool) -> None:
     status = profile["status"]
     reason = profile["reason"]
@@ -983,7 +997,8 @@ def _render_topology(profile: dict, json_output: bool) -> None:
         console.print(f"  branch: {branch}")
         console.print(f"  HEAD: {w['head_commit'] or '(unborn)'}")
         if w["is_current"]:
-            console.print(f"  workspace: {'dirty' if w['is_dirty'] else 'clean'}")
+            state = _tri_state_label(w["is_dirty"], "dirty", "clean", "unknown")
+            console.print(f"  workspace: {state}")
         else:
             console.print("  workspace: not probed")
         if w["is_bare"]:
@@ -1004,11 +1019,17 @@ def _render_topology(profile: dict, json_output: bool) -> None:
                 console.print(f"    repository: {s['child_repository_url']}")
             console.print(f"    parent-pinned revision: {s['pinned_commit'] or 'unresolved'}")
             if s["is_initialized"]:
-                match = "matches pin" if s["revision_matches_pin"] else "differs from pin"
+                match = _tri_state_label(
+                    s["revision_matches_pin"],
+                    "matches pin",
+                    "differs from pin",
+                    "comparison unresolved",
+                )
                 console.print(f"    checked out: {s['checked_out_commit']} ({match})")
                 if s["child_branch"]:
                     console.print(f"    branch: {s['child_branch']}")
-                console.print(f"    workspace: {'dirty' if s['child_is_dirty'] else 'clean'}")
+                dirty_state = _tri_state_label(s["child_is_dirty"], "dirty", "clean", "unknown")
+                console.print(f"    workspace: {dirty_state}")
             else:
                 console.print("    not initialized")
 
