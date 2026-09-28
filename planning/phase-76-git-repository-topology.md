@@ -1,22 +1,26 @@
 # Phase 76: Git repository topology awareness (worktrees + submodules) — plan
 
-**Status:** closeout correction in progress (2026-09-28). Originally
+**Status:** `done` (corrective pass complete, 2026-09-28). Originally
 marked `done` (2026-09-28, amended 2026-09-28; implemented and closed
 2026-09-28; independent `release-phase-auditor` completion audit PASS
 WITH NON-BLOCKING OBSERVATIONS, `planning/retros/_audit-phase-76.md`,
-final `roadmap-context-curator` reconciliation confirmed) — **reopened
-the same day** for a narrowly-scoped corrective pass after three real
-post-closeout defects were found: (1) the CLI text renderer collapsed
-several `None` (unresolved/unknown) topology facts into false-certainty
-negatives; (2) the documented Git 2.5 minimum-version claim was wrong —
-the real floor is Git 2.7 (`decisions/0064`, superseding `decisions/0063`
-point 8); (3) `CLAUDE.md` §5's own closeout rule was internally
-contradictory (the terminal `roadmap-context-curator` reconciliation
-commit it requires necessarily touches files the same sentence calls
-"audited scope," which would void the very audit that authorizes it).
-See the corrective-pass amendment below and the retro's own corrective-
-pass addendum for full detail. Will be restored to `done` only after a
-fresh, independent completion audit against the corrected state.
+final `roadmap-context-curator` reconciliation confirmed), then
+**reopened the same day** for a narrowly-scoped corrective pass after
+three real post-closeout defects were found: (1) the CLI text renderer
+collapsed several `None` (unresolved/unknown) topology facts into
+false-certainty negatives; (2) the documented Git 2.5 minimum-version
+claim was wrong — the real floor is Git 2.7 (`decisions/0064`,
+superseding `decisions/0063` point 8); (3) `CLAUDE.md` §5's own closeout
+rule was internally contradictory (the terminal `roadmap-context-curator`
+reconciliation commit it requires necessarily touches files the same
+sentence calls "audited scope," which would void the very audit that
+authorizes it). All three defects are now fixed and independently
+re-verified; a fresh `release-phase-auditor` completion audit of the
+corrective pass itself returned **PASS WITH NON-BLOCKING OBSERVATIONS**
+(`planning/retros/_audit-phase-76-corrective.md`), its one blocking
+precondition (committing `knowledge-curator`'s `L-065` triage) resolved
+before this terminal reconciliation. See the corrective-pass amendment
+below and the retro's own corrective-pass addendum for full detail.
 
 Direct user request. An evaluation/implementation phase: CodeCompass
 gains mechanical awareness of Git worktree and submodule topology, so a

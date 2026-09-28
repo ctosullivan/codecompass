@@ -23,18 +23,24 @@ not lettered stages. Priority A's first concrete deliverable
 `L-031`/`L-032`), and Priority A's first real-task validation trial
 (Phase 75) are all **done**, audited, and closed.
 
-**Phase 76 (Git repository topology awareness, Priority A) is
-`in progress` — REOPENED, not `done`.** It was originally implemented,
-independently rated by `context-evaluator` (**PASS WITH GAPS, advantage
-MODERATE** — the strongest Priority A result to date), audited by
-`release-phase-auditor` (**PASS WITH NON-BLOCKING OBSERVATIONS**,
-`planning/retros/_audit-phase-76.md`), and marked `done` the same day
-(`b3abe07`). A direct user post-closeout review then found three real
-defects that closeout had missed, so the phase was reopened for a
-narrowly-scoped corrective pass (same day, `planning/ROADMAP.md`'s
+**Phase 76 (Git repository topology awareness, Priority A) is `done`.**
+It was originally implemented, independently rated by `context-evaluator`
+(**PASS WITH GAPS, advantage MODERATE** — the strongest Priority A result
+to date), audited by `release-phase-auditor` (**PASS WITH NON-BLOCKING
+OBSERVATIONS**, `planning/retros/_audit-phase-76.md`), and marked `done`
+the same day (`b3abe07`). A direct user post-closeout review then found
+three real defects that closeout had missed, so the phase was reopened
+the same day for a narrowly-scoped corrective pass. That corrective pass
+is now itself complete: all three defects fixed, a fresh independent
+`docs-reconstructor` drift audit found **NO DRIFT**
+(`planning/retros/_drift-audit-phase-76-corrective.md`), `knowledge-
+curator` triaged `L-065` to **promoted**, and a fresh independent
+`release-phase-auditor` completion audit of the corrective pass itself
+returned **PASS WITH NON-BLOCKING OBSERVATIONS**
+(`planning/retros/_audit-phase-76-corrective.md`). `planning/ROADMAP.md`'s
 Phase 76 row and `planning/phase-76-git-repository-topology.md`'s own
-Status line both now say so). See "What was just completed" and "Next
-concrete step" below for the corrective pass's current state.
+Status line both now read `done`. See "What was just completed" below
+for the full corrective-pass history.
 
 Backlog, each with its own revisit trigger: Phases 24/25, Phase 50's
 remainder, `CG-003`, the `browser_api`/`platform_api` kind — full detail
@@ -49,7 +55,8 @@ trial recommendation is not abandoned, just not yet phase-numbered.
 ## What was just completed
 
 **Phase 76 — Git repository topology awareness (worktrees + submodules),
-originally `done`, now REOPENED for a corrective pass, `in progress`.**
+originally `done`, reopened same-day for a corrective pass, now `done`
+again with the corrective pass complete.**
 New `git_topology.py` detection module (Git ≥2.7-compatible plumbing
 only — corrected from an originally-claimed ≥2.5, see below — never
 invoked outside `sync`); three new `context-graph.db` tables
@@ -105,19 +112,25 @@ updates + 2 new regression tests), `6d668db` (operationalizing the
 CLAUDE.md fix in `planning/agent-led-workflow.md` step 14 and
 `.claude/agents/roadmap-context-curator.md`, plus filing `L-065` as
 `candidate`), `a89920d` (plan-file corrective-pass amendment +
-`CHANGELOG.md` entry). Full suite re-verified at `a89920d`: 694 passed,
-2 skipped; `ruff check .` clean; `check_user_docs.py --strict` and
-`check_knowledge_base.py` both clean. **Not yet complete** — still
-pending before restoration to `done`: a phase-retro corrective-pass
-addendum (`planning/retros/phase-76-git-repository-topology.md` has no
-corrective-pass content yet), a fresh independent `docs-reconstructor`
-drift audit, `knowledge-curator` triage of `L-065` (and any new
-candidates it surfaces), a fresh independent `release-phase-auditor`
-completion audit against the corrected state, and only then a final
-`roadmap-context-curator` reconciliation restoring the phase to `done`.
-Full plan (including corrective-pass amendment):
-`planning/phase-76-git-repository-topology.md`. Retro:
-`planning/retros/phase-76-git-repository-topology.md`.
+`CHANGELOG.md` entry), `48a5fea` (interim `ROADMAP.md`/`CONTEXT.md`
+reopening reconciliation), `924bea5` (retro corrective-pass addendum),
+`0db424a` (fresh `docs-reconstructor` drift audit, **NO DRIFT**),
+`8ab36aa` (backfilled `L-065`'s `CLAUDE.md` §5 change into
+`planning/v1-redefinition/proposed-governance-changes.md`), `f7016e9`
+(`knowledge-curator` triage of `L-065` landed — **promoted**, confirmed
+sound and complete against all three artifacts it names), `71231ea`
+(fresh independent `release-phase-auditor` completion audit of the
+corrective pass itself persisted — **PASS WITH NON-BLOCKING
+OBSERVATIONS**, `planning/retros/_audit-phase-76-corrective.md`, its one
+blocking precondition — committing the `L-065` triage — resolved before
+this reconciliation). Full suite independently re-verified at this
+reconciliation: 694 passed, 2 skipped; `ruff check .` clean;
+`check_user_docs.py --strict` and `check_knowledge_base.py` both clean.
+**Corrective pass complete — Phase 76 restored to `done`** by this
+`roadmap-context-curator` reconciliation, per `CLAUDE.md` §5's narrow
+three-target terminal-reconciliation exemption. Full plan (including
+corrective-pass amendment): `planning/phase-76-git-repository-topology.md`.
+Retro: `planning/retros/phase-76-git-repository-topology.md`.
 
 **Phase 75 — Priority A Ledgerkit validation (real-task evaluation, no
 `src/` change).** A genuine baseline-vs-CodeCompass-assisted comparison
@@ -212,25 +225,13 @@ recorded here:**
 
 ## Next concrete step
 
-**Finish Phase 76's corrective pass, in this order** (per `CLAUDE.md`
-§5, none of it optional): (1) write the phase retro's corrective-pass
-addendum describing the three defects, their fixes, and lessons learnt;
-(2) dispatch a fresh, independent `docs-reconstructor` drift audit
-scoped to what the corrective pass changed (CLI topology rendering,
-Git-version claims, the `CLAUDE.md` §5 exemption's operationalization);
-(3) have `knowledge-curator` triage `L-065` (currently `candidate` in
-`planning/learnings/inbox.md`) and any further candidates the retro
-surfaces; (4) dispatch a fresh, independent `release-phase-auditor`
-completion audit against the exact corrected commit, since the original
-`PASS WITH NON-BLOCKING OBSERVATIONS` audit (`planning/retros/_audit-phase-76.md`)
-predates and does not cover these fixes; (5) only once that audit
-returns `PASS` or `PASS WITH NON-BLOCKING OBSERVATIONS`, a final
-`roadmap-context-curator` reconciliation restores `planning/ROADMAP.md`'s
-Phase 76 row to `done` and updates this file accordingly. Do not push to
-`origin` under `CLAUDE.md` §6 until that final `done` reconciliation
-lands — the phase's DoD gate has not passed yet.
+Phase 76 (including its corrective pass) is fully closed — no further
+action needed on it. Per `CLAUDE.md` §6, push this reconciliation to
+`origin` once committed and reviewed, since the DoD gate (fresh
+`release-phase-auditor` PASS WITH NON-BLOCKING OBSERVATIONS on the
+corrective pass) has now passed.
 
-Still unclaimed by a phase number: a second, differently-
+The next piece of unstarted, unclaimed work is a second, differently-
 shaped Priority A Ledgerkit validation trial (per
 `planning/reference-projects/ledgerkit/04-cur-query-priority-a-validation.md`'s
 own "Next-phase recommendation" section) — ideally exercising `CG-001`'s
