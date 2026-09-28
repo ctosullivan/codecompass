@@ -1,8 +1,9 @@
 # Phase 77: First-party source awareness + `codecompass-template` — plan
 
-**Status:** in progress (2026-09-28, amended twice on 2026-09-28/29;
-implementation begins immediately after the second amendment, per direct
-instruction).
+**Status:** done (2026-09-28, amended twice on 2026-09-28/29; implemented
+and closed 2026-09-29). Independent `release-phase-auditor` completion
+audit: PASS (`planning/retros/_audit-phase-77.md`), final
+`roadmap-context-curator` reconciliation confirmed.
 
 Direct user request, two connected goals: (1) make a project's own
 first-party source (files + top-level implementation symbols) a

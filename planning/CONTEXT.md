@@ -32,11 +32,12 @@ closed and pushed to `origin`; no further action needed. Full history in
 `CONTEXT.md` git history if needed.
 
 **Phase 77 (First-party source awareness (`CG-009`) + a usable
-`codecompass-template`, Priority A + Priority D) is `in progress` —
-implementation and every pre-audit closeout step complete; only the
-independent `release-phase-auditor` completion audit and the terminal
-done-flip reconciliation remain.** See "What was just completed" and
-"Next concrete step" below for the full account.
+`codecompass-template`, Priority A + Priority D) is `done`,** including
+its independent `release-phase-auditor` completion audit (**PASS**,
+`planning/retros/_audit-phase-77.md`, against final HEAD `d74ee47`) and
+this terminal `roadmap-context-curator` reconciliation. Fully closed;
+push to `origin` remains. See "What was just completed" and "Next
+concrete step" below for the full account.
 
 Backlog, each with its own revisit trigger: Phases 24/25, Phase 50's
 remainder, `CG-003`, the `browser_api`/`platform_api` kind — full detail
@@ -56,8 +57,7 @@ recommendation is not abandoned, just not yet phase-numbered.
 ## What was just completed
 
 **Phase 77 — First-party source awareness (`CG-009`) + a usable
-`codecompass-template` — implementation and every pre-audit closeout step
-now complete; the phase itself remains `in progress`, not `done`.**
+`codecompass-template` — `done`.**
 
 Implementation (`03f8519`): new `source_files.language`/`content_hash`/
 `symbol_index_status`/`symbol_index_diagnostic` columns (nullable
@@ -117,13 +117,17 @@ ordinary real code before committing to schema — real and evidenced but
 single-phase, **retained** as a candidate, not yet promotable to one
 specific artifact) (`planning/learnings/inbox.md`, `f92d3f2`).
 
-**Still blocking `done`:** an independent completion audit has not yet
-run, and, only after its own `PASS` or `PASS WITH NON-BLOCKING
-OBSERVATIONS`, the terminal done-flip reconciliation follows
-(`ROADMAP.md`'s phase row, this file's current-state section, and the
-plan file's own Status line only, per `CLAUDE.md` §5's narrow
-terminal-reconciliation exemption). Full plan (amended twice):
-`planning/phase-77-first-party-source-and-template.md`.
+Independent `release-phase-auditor` completion audit against final HEAD
+`d74ee47`: **PASS** (`planning/retros/_audit-phase-77.md`), all 17
+checked conditions held with real, independently-gathered evidence
+(full 733-passed/2-skipped test run, `ruff check .` clean, both doc-check
+scripts clean, the prior FAIL audit's own trip-wire defect confirmed
+genuinely fixed, schema/ADR/docs cross-checked directly against live
+code, the real `codecompass-template` repository independently confirmed
+via the GitHub API, protected-file boundaries and commit hygiene clean,
+no scope creep, scratch clones confirmed cleaned up), independently
+re-confirmed by this `roadmap-context-curator` reconciliation. Full plan
+(amended twice): `planning/phase-77-first-party-source-and-template.md`.
 
 **Phase 76 — Git repository topology awareness (worktrees + submodules)
 — `done`,** including its same-day post-closeout corrective pass (three
@@ -170,35 +174,22 @@ above). Full report:
 
 ## Next concrete step
 
-**Dispatch an independent `release-phase-auditor` completion audit of
-Phase 77**, against the exact commit at the top of this file
-(`f92d3f2`), checking every `CLAUDE.md` §5 condition against real
-evidence (not the implementing/curating agents' own word): code
-implemented and its plan file's verification steps pass; `docs/`/
-`architecture/`/`decisions/` updated (`decisions/0065`); independent
-`docs-reconstructor` drift audit found no remaining drift (confirmed
-twice, second pass **NO DRIFT**); changelog entry present; this file
-reflects current state (just done); phase retro exists; candidate
-learnings (`L-066`, `L-067`) triaged; `codecompass-template` genuinely
-populated, pushed, and validated by a real clean clone; `CG-009`
-triaged using real evidence (done — **promoted-to-roadmap**); an
-independent Priority A task-context evaluation exists and is linked
-(done — **PASS WITH GAPS, advantage LOW**); all disposable scratch
-clones/fixtures confirmed cleaned up.
+Phase 77 is fully closed (`done`, per `planning/ROADMAP.md`'s Phase 77
+row and this reconciliation). Push the closing commit(s) to `origin` per
+`CLAUDE.md` §6 (the DoD gate has passed: `PASS`).
 
-**Only after that audit returns `PASS` or `PASS WITH NON-BLOCKING
-OBSERVATIONS`** does the terminal done-flip reconciliation happen — a
-narrowly-scoped `roadmap-context-curator` dispatch touching only
-`planning/ROADMAP.md`'s Phase 77 row, this file's current-state section,
-and `planning/phase-77-first-party-source-and-template.md`'s own Status
-line, per `CLAUDE.md` §5's narrow terminal-reconciliation exemption — no
-other file, even a genuinely correct one, in that specific commit.
-
-Separately, still live and unclaimed (not superseded by Phase 77): a
-**second, differently-shaped Priority A Ledgerkit validation trial**
-recommended at Phase 75's closeout, needing first-party *relationships*
-that Phase 77 explicitly deferred as its own follow-on.
+Still live and unclaimed (not superseded by Phase 77, which precedes but
+does not replace it): a **second, differently-shaped Priority A
+Ledgerkit validation trial** recommended at Phase 75's closeout, needing
+first-party *relationships* that Phase 77 explicitly deferred as its own
+follow-on (§13 of Phase 77's own plan). No plan file exists for it yet
+and no phase number has been reserved (per `CLAUDE.md` §1) — writing
+that plan file is the next concrete piece of unclaimed work, pending
+direct user instruction on whether to pick it up next or pursue a
+different priority.
 
 Per `CLAUDE.md` §6, Phases 75 and 76 (including Phase 76's corrective
 pass) are fully closed and already pushed to `origin` — no further
-action needed on either.
+action needed on either. Phase 77 is fully closed as of this
+reconciliation commit; only its push to `origin` remains, per the first
+paragraph above.
