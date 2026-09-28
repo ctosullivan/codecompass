@@ -6,6 +6,9 @@ from codecompass.graph import (
     DocChunkRow,
     DocRelationEdgeRow,
     DocumentsEdgeRow,
+    GitRepositoryRow,
+    GitSubmoduleRow,
+    GitWorktreeRow,
     RoutesViaEdgeRow,
     SkillMentionEdgeRow,
     SourceFileRow,
@@ -16,6 +19,7 @@ from codecompass.graph import (
     doc_relations,
     documented_but_unused,
     enrichment_candidates,
+    get_meta,
     has_enrichment,
     init_schema,
     open_graph,
@@ -27,6 +31,7 @@ from codecompass.graph import (
     skills_index,
     spec_docs_without_relations,
     symbol_profile,
+    topology_profile,
     unused_vendors,
     used_but_undocumented,
     vendor_docs_without_relations,
@@ -166,7 +171,7 @@ def test_init_schema_seeds_schema_version(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "9"
+    assert value == "10"
 
 
 def test_init_schema_is_idempotent(tmp_path) -> None:
@@ -176,7 +181,7 @@ def test_init_schema_is_idempotent(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "9"
+    assert value == "10"
 
 
 def test_doc_artifacts_accepts_slash_command_kind(tmp_path) -> None:
@@ -289,7 +294,7 @@ def test_open_graph_migrates_pre_phase_17_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "9"
+    assert schema_version == "10"
 
     # Would raise sqlite3.IntegrityError under the pre-migration constraint.
     conn.execute(
@@ -363,7 +368,7 @@ def test_open_graph_migrates_pre_phase_21_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "9"
+    assert schema_version == "10"
 
     # Would raise sqlite3.IntegrityError under the pre-Phase-21 constraints.
     conn.execute(
@@ -421,7 +426,7 @@ def test_open_graph_migrates_pre_phase_27_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "9"
+    assert schema_version == "10"
 
     # Would raise sqlite3.IntegrityError under the pre-Phase-27 constraints.
     conn.execute(
@@ -443,6 +448,94 @@ def test_open_graph_migration_is_noop_when_schema_version_already_current(tmp_pa
 
     (doc_artifact_count,) = conn.execute("SELECT COUNT(*) FROM doc_artifacts").fetchone()
     assert doc_artifact_count == len(_fixture_kwargs()["doc_artifacts"])
+
+
+def test_open_graph_does_not_drop_doc_artifacts_for_an_unrelated_schema_version_bump(
+    tmp_path,
+) -> None:
+    """Phase 76 regression: a real v9 database whose `doc_artifacts`/
+    `documents_edges`/`doc_relations_edges` are *already* shaped exactly
+    like the current schema must not have them dropped and recreated
+    merely because `_SCHEMA_VERSION` itself changed for an unrelated
+    reason (the real historical case: Phase 60/62 each bumped the global
+    version for `vendors`/`symbols` changes that touch none of these three
+    tables at all). Before this fix, `_migrate_doc_artifacts_constraints`
+    triggered on any `meta.schema_version` mismatch, unconditionally —
+    confirmed by this test to no longer be true: a pre-existing row
+    survives opening under the current (`"10"`) code with the stored
+    version still at `"9"`.
+    """
+    db_path = tmp_path / "context-graph.db"
+    old_conn = sqlite3.connect(db_path)
+    old_conn.execute("PRAGMA foreign_keys = ON")
+    old_conn.executescript(
+        """
+        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE vendors (
+          id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE,
+          ecosystem TEXT NOT NULL, installed_version TEXT
+        );
+        CREATE TABLE doc_artifacts (
+          id          INTEGER PRIMARY KEY,
+          vendor_id   INTEGER REFERENCES vendors(id) ON DELETE CASCADE,
+          kind        TEXT NOT NULL CHECK (
+                        kind IN (
+                          'claude_md','overview','skill','cursor_mdc','slash_command','spec_doc',
+                          'vendor_doc'
+                        )
+                      ),
+          origin      TEXT CHECK (
+                        origin IN (
+                          'codecompass_tool','codecompass_vendor','third_party','project',
+                          'vendor_upstream','pinned_reference'
+                        )
+                      ),
+          path        TEXT NOT NULL UNIQUE,
+          name        TEXT,
+          description TEXT
+        );
+        CREATE TABLE documents_edges (
+          id INTEGER PRIMARY KEY,
+          doc_artifact_id INTEGER NOT NULL REFERENCES doc_artifacts(id) ON DELETE CASCADE,
+          symbol_id INTEGER NOT NULL,
+          chunk_id INTEGER
+        );
+        CREATE TABLE doc_relations_edges (
+          id INTEGER PRIMARY KEY,
+          source_doc_artifact_id INTEGER NOT NULL REFERENCES doc_artifacts(id) ON DELETE CASCADE,
+          target_vendor_id INTEGER,
+          target_doc_artifact_id INTEGER,
+          relation_kind TEXT NOT NULL,
+          chunk_id INTEGER
+        );
+        """
+    )
+    old_conn.execute("INSERT INTO meta (key, value) VALUES ('schema_version', '9')")
+    old_conn.execute(
+        "INSERT INTO doc_artifacts (id, kind, origin, path) VALUES "
+        "(1, 'skill', 'codecompass_tool', '.claude/skills/codecompass/SKILL.md')"
+    )
+    old_conn.commit()
+    old_conn.close()
+
+    conn = open_graph(tmp_path)
+
+    # The core regression: this row must still exist -- a version-diff
+    # trigger would have dropped and recreated doc_artifacts here.
+    (path,) = conn.execute("SELECT path FROM doc_artifacts WHERE id = 1").fetchone()
+    assert path == ".claude/skills/codecompass/SKILL.md"
+
+    # The three new Phase 76 tables exist regardless (plain CREATE TABLE
+    # IF NOT EXISTS, unaffected by doc_artifacts' own migration decision).
+    for table in ("git_repositories", "git_worktrees", "git_submodules"):
+        conn.execute(f"SELECT COUNT(*) FROM {table}")
+
+    # meta.schema_version is still updated, unconditionally, as pure
+    # bookkeeping -- just not the thing that decided whether to migrate.
+    (schema_version,) = conn.execute(
+        "SELECT value FROM meta WHERE key = 'schema_version'"
+    ).fetchone()
+    assert schema_version == "10"
 
 
 def test_open_graph_migrates_pre_phase_31_schema_preserves_existing_rows(tmp_path) -> None:
@@ -958,7 +1051,7 @@ def test_open_graph_migrates_pre_phase_32_schema_adds_chunk_id_columns(tmp_path)
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "9"
+    assert schema_version == "10"
 
     documents_edges_columns = {row[1] for row in conn.execute("PRAGMA table_info(documents_edges)")}
     doc_relations_edges_columns = {
@@ -1036,7 +1129,7 @@ def test_open_graph_migrates_pre_phase_54c_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "9"
+    assert schema_version == "10"
 
     # Would raise sqlite3.IntegrityError under the pre-Phase-54c constraint.
     conn.execute(
@@ -1640,3 +1733,105 @@ def test_relation_enrichment_candidates_surfaces_existing_content_hash(tmp_path)
     assert by_kind["mentions_dependency"]["content_hash"] == "matching-hash"
     # The other relationship (mentions_artifact) has no enrichment row yet.
     assert by_kind["mentions_artifact"]["content_hash"] is None
+
+
+# --- Phase 76: Git repository topology --------------------------------------
+
+
+def test_rebuild_deterministic_round_trips_git_topology_rows(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(
+        conn,
+        **_fixture_kwargs(),
+        git_repositories=[GitRepositoryRow(common_dir="/repo/.git", origin_url="https://host/repo.git")],
+        git_worktrees=[
+            GitWorktreeRow(
+                repository_common_dir="/repo/.git",
+                worktree_path="/repo",
+                is_current=True,
+                branch="main",
+                head_commit="abc123",
+                is_dirty=False,
+            ),
+            GitWorktreeRow(
+                repository_common_dir="/repo/.git",
+                worktree_path="/repo-feature",
+                is_current=False,
+                branch="feature",
+                head_commit="def456",
+            ),
+        ],
+        git_submodules=[
+            GitSubmoduleRow(
+                parent_repository_common_dir="/repo/.git",
+                path="adapters/haskell",
+                pinned_commit="deadbeef",
+                is_initialized=True,
+                checked_out_commit="deadbeef",
+                revision_matches_pin=True,
+                child_branch="main",
+                child_is_dirty=False,
+            ),
+            GitSubmoduleRow(
+                parent_repository_common_dir="/repo/.git",
+                path="broken/path",
+                is_path_safe=False,
+            ),
+        ],
+        git_topology_status="detected",
+        git_topology_reason=None,
+    )
+
+    profile = topology_profile(conn)
+    assert profile["status"] == "detected"
+    assert profile["reason"] is None
+    assert profile["repository"] == {"common_dir": "/repo/.git", "origin_url": "https://host/repo.git"}
+    assert len(profile["worktrees"]) == 2
+    current = next(w for w in profile["worktrees"] if w["is_current"])
+    sibling = next(w for w in profile["worktrees"] if not w["is_current"])
+    assert current["branch"] == "main"
+    assert current["is_dirty"] is False
+    assert sibling["is_dirty"] is None
+
+    by_path = {s["path"]: s for s in profile["submodules"]}
+    assert by_path["adapters/haskell"]["revision_matches_pin"] is True
+    assert by_path["broken/path"]["is_path_safe"] is False
+    assert by_path["broken/path"]["pinned_commit"] is None
+
+
+def test_rebuild_deterministic_defaults_git_topology_to_empty(tmp_path) -> None:
+    """Backwards compatibility: a caller (an old test exercising unrelated
+    tables) that omits the Phase 76 parameters entirely behaves exactly as
+    every pre-Phase-76 test already expects -- no git_* rows, no
+    meta.git_topology_status written at all.
+    """
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+
+    assert topology_profile(conn) is None
+    (count,) = conn.execute("SELECT COUNT(*) FROM git_repositories").fetchone()
+    assert count == 0
+
+
+def test_topology_profile_is_none_when_never_indexed(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    assert get_meta(conn, "git_topology_status") is None
+    assert topology_profile(conn) is None
+
+
+def test_topology_profile_handles_not_git_status_with_no_repository_row(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(
+        conn,
+        **_fixture_kwargs(),
+        git_topology_status="not_git",
+        git_topology_reason=None,
+    )
+    profile = topology_profile(conn)
+    assert profile == {
+        "status": "not_git",
+        "reason": None,
+        "repository": None,
+        "worktrees": [],
+        "submodules": [],
+    }

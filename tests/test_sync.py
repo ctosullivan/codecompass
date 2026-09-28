@@ -10,6 +10,7 @@ from codecompass.graph import (
     doc_relations,
     open_graph,
     record_enrichment,
+    topology_profile,
     unused_vendors,
     vendor_profile,
 )
@@ -712,3 +713,56 @@ def test_rebuild_project_graph_excludes_a_generic_bare_project_name_readme_title
     conn = open_graph(tmp_path)
     relations = doc_relations(conn, "docs/usage.md")
     assert [r for r in relations if r["relation_kind"] == "mentions_artifact"] == []
+
+
+# --- Phase 76: Git repository topology, real production call path -----------
+
+
+def _git(args: list[str], cwd: Path) -> None:
+    import subprocess
+
+    subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=True)
+
+
+def test_rebuild_project_graph_populates_git_topology_via_real_call_path(tmp_path: Path) -> None:
+    """`L-021`-required real-call-site test (`CLAUDE.md` §1): exercises
+    `git_topology.detect_git_topology` -> `sync._build_git_topology_rows`
+    -> `rebuild_deterministic` through the actual production entry point,
+    not the isolated `git_topology`/`graph` functions alone.
+    """
+    _git(["init", "-q"], tmp_path)
+    _git(["config", "user.email", "test@example.com"], tmp_path)
+    _git(["config", "user.name", "Test"], tmp_path)
+    (tmp_path / "a.txt").write_text("hello", encoding="utf-8")
+    _git(["add", "-A"], tmp_path)
+    _git(["commit", "-q", "-m", "init"], tmp_path)
+
+    rebuild_project_graph([], tmp_path)
+
+    conn = open_graph(tmp_path)
+    profile = topology_profile(conn)
+    assert profile is not None
+    assert profile["status"] == "detected"
+    assert profile["repository"]["common_dir"] == str((tmp_path / ".git").resolve())
+    assert len(profile["worktrees"]) == 1
+    assert profile["worktrees"][0]["is_current"] is True
+
+
+def test_rebuild_project_graph_topology_not_git_for_a_non_repository_project_root(
+    tmp_path: Path,
+) -> None:
+    """A plain, non-Git project root (the common case for most existing
+    tests in this file, and for a real non-Git codecompass project) must
+    still sync cleanly -- topology status `not_git`, no crash, no
+    git_repositories row."""
+    rebuild_project_graph([], tmp_path)
+
+    conn = open_graph(tmp_path)
+    profile = topology_profile(conn)
+    assert profile == {
+        "status": "not_git",
+        "reason": None,
+        "repository": None,
+        "worktrees": [],
+        "submodules": [],
+    }

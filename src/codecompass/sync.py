@@ -31,7 +31,7 @@ import shutil
 import sqlite3
 from pathlib import Path
 
-from codecompass import skill_scan, spec_docs, usage
+from codecompass import git_topology, skill_scan, spec_docs, usage
 from codecompass.adapters import get_adapter
 from codecompass.claude_md import render_vendor_claude_md
 from codecompass.core import VendorConfig, VendorDigest
@@ -51,6 +51,9 @@ from codecompass.filetree import (
     render_filetree_markdown,
 )
 from codecompass.graph import (
+    GitRepositoryRow,
+    GitSubmoduleRow,
+    GitWorktreeRow,
     SourceFileRow,
     SymbolRow,
     UsesEdgeRow,
@@ -348,6 +351,9 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
         project_root,
     )
 
+    topology = git_topology.detect_git_topology(project_root)
+    git_repository_rows, git_worktree_rows, git_submodule_rows = _build_git_topology_rows(topology)
+
     conn = open_graph(project_root)
     try:
         rebuild_deterministic(
@@ -363,9 +369,64 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
             routes_via_edges=routes_via_edge_rows,
             depends_on_edges=depends_on_edge_rows,
             doc_relations_edges=doc_relations_edge_rows,
+            git_repositories=git_repository_rows,
+            git_worktrees=git_worktree_rows,
+            git_submodules=git_submodule_rows,
+            git_topology_status=topology.status.value,
+            git_topology_reason=topology.reason,
         )
     finally:
         conn.close()
+
+
+def _build_git_topology_rows(
+    topology: git_topology.RepositoryTopology,
+) -> tuple[list[GitRepositoryRow], list[GitWorktreeRow], list[GitSubmoduleRow]]:
+    """Converts `git_topology.detect_git_topology`'s own plain dataclasses
+    into `graph.py` row types — the same "detection module stays
+    graph-agnostic, `sync.py` is the only place that converts" pattern
+    `usage.DetectedImport` -> `graph.UsesEdgeRow` already establishes.
+    Empty for `not_git`/`unavailable` (`topology.common_dir` is `None`
+    for both — confirmed by `detect_git_topology`'s own contract), not a
+    special case here.
+    """
+    if topology.common_dir is None:
+        return [], [], []
+
+    repository_rows = [
+        GitRepositoryRow(common_dir=topology.common_dir, origin_url=topology.origin_url)
+    ]
+    worktree_rows = [
+        GitWorktreeRow(
+            repository_common_dir=topology.common_dir,
+            worktree_path=w.path,
+            is_current=w.is_current,
+            branch=w.branch,
+            is_detached=w.is_detached,
+            head_commit=w.head_commit,
+            is_dirty=w.is_dirty,
+            is_bare=w.is_bare,
+            is_locked=w.is_locked,
+            is_prunable=w.is_prunable,
+        )
+        for w in topology.worktrees
+    ]
+    submodule_rows = [
+        GitSubmoduleRow(
+            parent_repository_common_dir=topology.common_dir,
+            path=s.path,
+            is_path_safe=s.is_path_safe,
+            child_repository_url=s.child_repository_url,
+            pinned_commit=s.pinned_commit,
+            is_initialized=s.is_initialized,
+            checked_out_commit=s.checked_out_commit,
+            revision_matches_pin=s.revision_matches_pin,
+            child_branch=s.child_branch,
+            child_is_dirty=s.child_is_dirty,
+        )
+        for s in topology.submodules
+    ]
+    return repository_rows, worktree_rows, submodule_rows
 
 
 def _copy_source_snapshot(source: Path, dest: Path) -> None:

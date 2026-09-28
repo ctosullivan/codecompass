@@ -7,11 +7,12 @@ for the system-at-a-glance entry point; the rest of this set:
 [`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md).
 
 Full schema as of `src/codecompass/graph.py`'s `_SCHEMA_SQL`, schema
-version `"9"`. One SQLite file at the project root, opened via
-`open_graph(project_root)`, which runs foreign-key-enabling PRAGMA, four
-in-place migrations (for an on-disk database created under an older
-schema version), then `init_schema`'s idempotent `CREATE TABLE IF NOT
-EXISTS`. See
+version `"10"`. One SQLite file at the project root, opened via
+`open_graph(project_root)`, which runs foreign-key-enabling PRAGMA, five
+in-place migrations (for an on-disk database whose `doc_artifacts`/
+`symbols`/`vendors`/`doc_relation_enrichment`/`symbol_enrichment` shape
+predates the current one), then `init_schema`'s idempotent `CREATE TABLE
+IF NOT EXISTS`. See
 [`docs/domain/concepts/context.md`](../docs/domain/concepts/context.md)
 sense 1 and
 [`relationship-edge.md`](../docs/domain/concepts/relationship-edge.md)
@@ -21,7 +22,7 @@ for what this graph means conceptually; this page is the literal schema.
 
 | Table | Key columns | Notes |
 |---|---|---|
-| `meta` | `key` (PK), `value` | `schema_version`, `last_deterministic_rebuild_at`. |
+| `meta` | `key` (PK), `value` | `schema_version` (informational bookkeeping since Phase 76 — no migration's own trigger condition reads it any more), `last_deterministic_rebuild_at`, `git_topology_status`/`git_topology_reason` (Phase 76 — see "Git topology tables" below; absent entirely, as opposed to any of the four real status values, means "never indexed under Phase-76-aware code"). |
 | `vendors` | `name` UNIQUE, `ecosystem` CHECK'd to the 4-member set, `installed_version`, `repository_url`, `repository_subdirectory`, `source_resolved`, `source_resolution_error`, `last_synced_at` | **Upserted** by `name` on every rebuild — never deleted-and-reinserted while still present in the new fixture, so its integer `id` (and anything foreign-keying to it) is stable across syncs. |
 | `source_files` | `path` UNIQUE | Every project source file with at least one detected `uses_edges` row. |
 | `symbols` | `(vendor_id, name)` UNIQUE, `purpose`, `export_kind` CHECK'd `('export'\|'reexport'\|'undetermined')` default `'export'`, `note` | Also **upserted** by natural key, for the same enrichment-preservation reason as `vendors`. |
@@ -122,6 +123,48 @@ untouched. Only a vendor or symbol that no longer appears in the new
 fixture at all is deleted (correctly cascading away its enrichment too,
 since the thing it enriched no longer exists).
 
+## Git topology tables (Phase 76)
+
+Three tables — `git_repositories`, `git_worktrees`, `git_submodules` —
+plus two `meta` keys (`git_topology_status`, `git_topology_reason`), all
+written by `rebuild_deterministic`, fully cleared and reinserted every
+rebuild (no cross-rebuild identity to preserve, same category as
+`doc_artifacts`). Detection lives in `git_topology.py`, entirely separate
+from `graph.py` — `sync.py::rebuild_project_graph` is the only place that
+converts `git_topology.detect_git_topology`'s own plain dataclasses into
+these row types, the same "detection module stays graph-agnostic"
+pattern `usage.DetectedImport → graph.UsesEdgeRow` already establishes.
+See `planning/phase-76-git-repository-topology.md` and `decisions/0063`
+for the full design rationale.
+
+| Table | Key columns | Notes |
+|---|---|---|
+| `git_repositories` | `common_dir` UNIQUE, `origin_url` (sanitized — credentials never persisted) | Identified by the absolute path to the shared `.git` directory — identical across every worktree of one repository, deliberately never the invocation directory or any per-worktree path. |
+| `git_worktrees` | `repository_id → git_repositories`, `worktree_path`, `is_current`, `branch`, `is_detached`, `head_commit`, `is_dirty` (nullable — **always `NULL` for a non-current/sibling worktree**, by design: probing a sibling's workspace state is never attempted), `is_bare`, `is_locked`, `is_prunable` | One row per worktree `git worktree list --porcelain` reports, not only the current one. `is_bare` can be `1` for a *sibling* row (a bare "hub" repository with linked, non-bare worktrees is representable); the *current* worktree can never carry `is_bare=1`, since a bare repository as the current checkout is out of scope entirely (`git_topology_status='unavailable'`, no `git_worktrees` row for "self" is ever built). |
+| `git_submodules` | `parent_repository_id → git_repositories`, `path`, `is_path_safe`, `child_repository_url` (sanitized), `pinned_commit` (nullable), `is_initialized` (nullable), `checked_out_commit`, `revision_matches_pin`, `child_branch`, `child_is_dirty` | One row per path `.gitmodules` declares — always emitted once declared, regardless of how much else is resolvable (`pinned_commit=NULL` when `.gitmodules` names a path with no corresponding gitlink in `HEAD`'s tree yet; every child-state field `NULL` when not initialized). `is_path_safe=0` means the declared path, resolved against the repository's own worktree root, escaped it — every other field is left unset and **no `git`/filesystem command is ever run against that path**. |
+
+`meta.git_topology_status` is one of `detected` / `not_git` / `unavailable`
+/ `partial` (`git_topology.TopologyStatus`) — a **whole-pass** status
+("could repository identity and the worktree/submodule lists be
+enumerated at all"), entirely distinct from the per-row nullable columns
+above, which represent per-fact uncertainty *within* a structure that
+*was* successfully enumerated. `unavailable` covers both "`git` missing"
+and "no working tree" (a bare repository as the current checkout — not
+supported, detected honestly via the distinctive `git rev-parse
+--show-toplevel` failure message, never conflated with `not_git`).
+`partial` means repository identity was established but a subsequent
+enumeration step (worktree list, `.gitmodules` read) failed unexpectedly
+— the structure that *was* established is still persisted, not
+discarded. The key's own **absence** (as opposed to any of these four
+values) means "no sync has ever run under Phase-76-aware code" —
+`cli.py::query_topology` checks for this before ever reading the value,
+and never invokes `git` itself on any path, including this one.
+
+Requires Git 2.5+ (the version `git worktree`/`--git-common-dir`
+themselves were introduced in) — no newer feature is used anywhere in
+`git_topology.py`; an older Git surfaces as `unavailable` with the raw
+error as `git_topology_reason`, never a crash.
+
 ## `RELATION_LABELS` — the closed taxonomy
 
 ```python
@@ -172,25 +215,41 @@ One transaction (`with conn:`), in this fixed order:
 4. Insert every edge table, resolving each row's natural-key references
    (vendor name, symbol name, doc path, chunk `(path, start_line)`) via
    those maps.
-5. Write `meta.last_deterministic_rebuild_at`.
+5. Insert `git_repositories`, then `git_worktrees`/`git_submodules`
+   (resolved against `git_repositories` by `common_dir`), then write
+   `meta.git_topology_status`/`git_topology_reason` (Phase 76) — only
+   when the caller actually supplies a status; an old caller/test that
+   omits them leaves those two `meta` keys untouched, never fabricated.
+6. Write `meta.last_deterministic_rebuild_at`.
 
 Called from exactly one place: `sync.rebuild_project_graph` — see
 [`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md) for
 what assembles the row lists this function is handed.
 
-## Migrations — why four separate functions, not one
+## Migrations — why five separate functions, not one
 
-`open_graph` runs four migration functions before `init_schema`, each
-independently idempotent and each checking its own precondition directly
-(`PRAGMA table_info`, or the stored `CREATE TABLE` SQL text) rather than
-uniformly gating on `meta.schema_version`:
+`open_graph` runs five migration functions before `init_schema`, each
+independently idempotent and **each checking its own precondition
+directly** (`PRAGMA table_info`, or the stored `CREATE TABLE` SQL text)
+— **none of them gates on `meta.schema_version`** (Phase 76:
+`_migrate_doc_artifacts_constraints` was the last holdout still doing
+this; `git log` confirms its old version-diff trigger had already fired
+unnecessarily twice, for two unrelated schema bumps — Phase 60's
+`vendors.ecosystem` widening and Phase 62's `symbols.export_kind`/`note`
+addition, neither of which touched `doc_artifacts` at all — before being
+brought into line with this file's own other four migrations'
+introspection style):
 
 - `_migrate_doc_artifacts_constraints` — the only one that actually drops
   and recreates tables (`doc_artifacts`, `documents_edges`,
   `doc_relations_edges`), because none of the three holds enrichment data
-  that must survive.
+  that must survive. Triggers only when `_doc_artifacts_schema_is_current`
+  (direct introspection of the stored CHECK-constraint text and column
+  set) says the on-disk shape is genuinely stale — never merely because
+  `meta.schema_version` differs from `_SCHEMA_VERSION`.
 - `_migrate_doc_relation_enrichment_relation_label`,
   `_migrate_symbols_export_kind_note_columns`,
+  `_migrate_symbol_enrichment_model_column`,
   `_migrate_vendors_ecosystem_constraint` — each uses `ALTER TABLE ADD
   COLUMN` or (for `vendors`, since SQLite has no `ALTER TABLE` form for
   changing a `CHECK` constraint) a create-copy-drop-rename dance that
@@ -198,6 +257,12 @@ uniformly gating on `meta.schema_version`:
   `vendor_enrichment`/`symbol_enrichment` cascade from these tables and
   must not be destroyed by a schema upgrade on an existing project's
   database.
+
+`meta.schema_version` itself is updated unconditionally, on every
+`open_graph` call, regardless of what any migration above decided —
+purely informational bookkeeping ("last schema-code vintage this
+database was opened under"), read by no migration's own trigger
+condition and by nothing else in `src/codecompass/`.
 
 ## Read/query functions
 
@@ -207,7 +272,10 @@ function, not a design sketch: `unused_vendors`, `documented_but_unused`,
 `vendor_docs_without_relations`, `doc_relations`, `doc_code_trace`,
 `vendor_profile`, `symbol_profile`, `skills_index`,
 `enrichment_candidates`, `has_enrichment`,
-`relation_enrichment_candidates`. Each is read-only except the three
+`relation_enrichment_candidates`, `topology_profile` (Phase 76 — `None`
+if `meta.git_topology_status` was never written, the "not yet indexed"
+case `cli.py::query_topology` renders without ever invoking `git`).
+Each is read-only except the three
 enrichment writers (`record_enrichment`, `record_symbol_enrichment`,
 `record_relation_enrichment`) and `rebuild_deterministic` itself —
 `graph.py` has no other write path. `graph.py` deliberately never decides

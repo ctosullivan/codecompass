@@ -28,7 +28,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 _DB_FILENAME = "context-graph.db"
-_SCHEMA_VERSION = "9"
+_SCHEMA_VERSION = "10"
 
 # Closed taxonomy for `doc_relation_enrichment.relation_label` (Phase 31,
 # decisions/0045). `'other'` is the required fallback for any label an AI
@@ -200,6 +200,51 @@ CREATE TABLE IF NOT EXISTS doc_relation_enrichment (
   generated_at       TEXT NOT NULL,
   UNIQUE (source_doc_path, target_vendor_name, target_doc_path)
 );
+
+-- Phase 76: Git repository topology (worktrees, submodules). Fully
+-- cleared and reinserted every rebuild_deterministic call, same category
+-- as doc_artifacts/every edge table above -- no cross-rebuild identity to
+-- preserve, no AI/agent involvement, no `origin`-style provenance enum
+-- (every fact here is mechanically derived from a real `git` subprocess
+-- call, with no second, less-authoritative source it could have come
+-- from). See planning/phase-76-git-repository-topology.md, decisions/0063.
+CREATE TABLE IF NOT EXISTS git_repositories (
+  id          INTEGER PRIMARY KEY,
+  common_dir  TEXT NOT NULL UNIQUE,
+  origin_url  TEXT
+);
+
+CREATE TABLE IF NOT EXISTS git_worktrees (
+  id            INTEGER PRIMARY KEY,
+  repository_id INTEGER NOT NULL REFERENCES git_repositories(id) ON DELETE CASCADE,
+  worktree_path TEXT NOT NULL,
+  is_current    INTEGER NOT NULL DEFAULT 0,
+  branch        TEXT,
+  is_detached   INTEGER NOT NULL DEFAULT 0,
+  head_commit   TEXT,
+  is_dirty      INTEGER,
+  is_bare       INTEGER NOT NULL DEFAULT 0,
+  is_locked     INTEGER NOT NULL DEFAULT 0,
+  is_prunable   INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (repository_id, worktree_path)
+);
+CREATE INDEX IF NOT EXISTS idx_git_worktrees_repository ON git_worktrees(repository_id);
+
+CREATE TABLE IF NOT EXISTS git_submodules (
+  id                    INTEGER PRIMARY KEY,
+  parent_repository_id  INTEGER NOT NULL REFERENCES git_repositories(id) ON DELETE CASCADE,
+  path                  TEXT NOT NULL,
+  is_path_safe          INTEGER NOT NULL DEFAULT 1,
+  child_repository_url  TEXT,
+  pinned_commit         TEXT,
+  is_initialized        INTEGER,
+  checked_out_commit    TEXT,
+  revision_matches_pin  INTEGER,
+  child_branch          TEXT,
+  child_is_dirty        INTEGER,
+  UNIQUE (parent_repository_id, path)
+);
+CREATE INDEX IF NOT EXISTS idx_git_submodules_parent ON git_submodules(parent_repository_id);
 """
 
 
@@ -355,6 +400,60 @@ class DocRelationEdgeRow:
     chunk_start_line: int | None = None
 
 
+@dataclass(frozen=True)
+class GitRepositoryRow:
+    """One `git_repositories` row, keyed by `common_dir` (unique) — the
+    absolute path to the shared `.git` directory, identical across every
+    worktree of one repository, the canonical identity Phase 76 uses.
+    """
+
+    common_dir: str
+    origin_url: str | None = None
+
+
+@dataclass(frozen=True)
+class GitWorktreeRow:
+    """One `git_worktrees` row: a checkout of the repository identified by
+    `repository_common_dir` (resolved to `git_repositories.id` inside
+    `rebuild_deterministic`, the same natural-key-resolution pattern every
+    other row dataclass in this module already follows).
+    """
+
+    repository_common_dir: str
+    worktree_path: str
+    is_current: bool
+    branch: str | None = None
+    is_detached: bool = False
+    head_commit: str | None = None
+    is_dirty: bool | None = None
+    is_bare: bool = False
+    is_locked: bool = False
+    is_prunable: bool = False
+
+
+@dataclass(frozen=True)
+class GitSubmoduleRow:
+    """One `git_submodules` row: a submodule the repository identified by
+    `parent_repository_common_dir` declares in its own `.gitmodules`.
+    Always emitted once declared, regardless of how much else about it is
+    resolvable — `path` is the only field guaranteed meaningful besides
+    `is_path_safe`; every other field is allowed to be honestly `None`
+    rather than omitting the row entirely (planning/phase-76-git-repository-topology.md
+    §8's explicit-uncertainty discipline).
+    """
+
+    parent_repository_common_dir: str
+    path: str
+    is_path_safe: bool = True
+    child_repository_url: str | None = None
+    pinned_commit: str | None = None
+    is_initialized: bool | None = None
+    checked_out_commit: str | None = None
+    revision_matches_pin: bool | None = None
+    child_branch: str | None = None
+    child_is_dirty: bool | None = None
+
+
 # --- Schema / connection setup --------------------------------------------
 
 
@@ -371,33 +470,72 @@ def init_schema(conn: sqlite3.Connection) -> None:
         )
 
 
+def _doc_artifacts_schema_is_current(conn: sqlite3.Connection) -> bool:
+    """True iff `doc_artifacts`/`documents_edges`/`doc_relations_edges` are
+    already shaped exactly as the current `_SCHEMA_SQL` expects — checked
+    by direct introspection (the stored `CREATE TABLE` text for the
+    widest-known CHECK values; `PRAGMA table_info` for the newest known
+    column), never by comparing `meta.schema_version`.
+
+    Phase 76 (`L`-numbered learning, `planning/phase-76-git-repository-topology.md`
+    §11): `meta.schema_version`-based triggering is unsafe the moment any
+    *unrelated* schema change also bumps `_SCHEMA_VERSION` — confirmed via
+    `git log` to have already happened twice before this fix (Phase 60's
+    `vendors.ecosystem` widening, Phase 62's `symbols.export_kind`/`note`
+    addition), each one silently forcing this function's own
+    drop-and-recreate even though neither touched `doc_artifacts` at all.
+    This mirrors the introspection style `_migrate_vendors_ecosystem_constraint`
+    and `_migrate_doc_relation_enrichment_relation_label` already use for
+    exactly this reason — `_migrate_doc_artifacts_constraints` was simply
+    the one migration in this file never brought into line with that
+    precedent until now.
+
+    A brand-new database (no `doc_artifacts` table yet) is trivially
+    "current" — there is nothing to migrate; `init_schema`'s own `CREATE
+    TABLE IF NOT EXISTS`, called right after, creates it correctly shaped.
+    """
+    table_exists = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'doc_artifacts'"
+    ).fetchone()
+    if not table_exists:
+        return True
+    (create_sql,) = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'doc_artifacts'"
+    ).fetchone()
+    if "'vendor_doc'" not in create_sql or "'pinned_reference'" not in create_sql:
+        return False
+    for table in ("documents_edges", "doc_relations_edges"):
+        columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+        if "chunk_id" not in columns:
+            return False
+    return True
+
+
 def _migrate_doc_artifacts_constraints(conn: sqlite3.Connection) -> None:
-    """Migrates an on-disk schema older than `_SCHEMA_VERSION` by dropping
-    and recreating `doc_artifacts` under the current (widened) CHECK
-    constraints, plus `documents_edges`/`doc_relations_edges` under their
-    current column set. Phase 17 widened `kind` (added `'slash_command'`,
-    "1" -> "2"); Phase 21 widens both `kind` (added `'spec_doc'`) and
-    `origin` (added `'project'`, "2" -> "3") for the same reason; Phase 27
-    widens both again (`kind` gains `'vendor_doc'`, `origin` gains
-    `'vendor_upstream'`, "3" -> "4") for a vendor's own embedded upstream
-    doc files (`vendor/<name>/src/README.md` and siblings); Phase 32 adds
-    a nullable `chunk_id` column to `documents_edges`/`doc_relations_edges`
-    ("5" -> "6"); Phase 54c widens `origin` again (adds `'pinned_reference'`,
-    "6" -> "7") for externally-sourced, revision-pinned reference material
-    a tool materializes into a project's tree — distinct from both
-    `'project'` (hand-authored) and `'vendor_upstream'` (tied to a tracked
-    `vendors` row, which this material deliberately has none of; see
-    `planning/context-gaps/inbox.md` `CG-005` and
-    `planning/knowledge/doc-origin-pinned-reference/`) — dropping
-    `doc_artifacts` alone only cascades a DELETE of
-    those two tables' *rows* (`ON DELETE CASCADE`), it doesn't touch their
-    own column set, so they need their own explicit drop for `chunk_id` to
-    actually appear on an existing database. One generic, version-agnostic
-    function handles any prior version, not one function per phase — it
-    only ever compares the stored version against current and, on
-    mismatch, drops+recreates once; `init_schema`'s `CREATE TABLE IF NOT
-    EXISTS` won't retrofit an already-existing table's columns/constraints
-    on its own, which is why this is needed at all. Safe: all three tables
+    """Migrates an on-disk schema whose `doc_artifacts`/`documents_edges`/
+    `doc_relations_edges` predate the current shape by dropping and
+    recreating all three under the current (widened) CHECK constraints/
+    column set. Phase 17 widened `kind` (added `'slash_command'`); Phase 21
+    widens both `kind` (added `'spec_doc'`) and `origin` (added `'project'`)
+    for the same reason; Phase 27 widens both again (`kind` gains
+    `'vendor_doc'`, `origin` gains `'vendor_upstream'`) for a vendor's own
+    embedded upstream doc files (`vendor/<name>/src/README.md` and
+    siblings); Phase 32 adds a nullable `chunk_id` column to
+    `documents_edges`/`doc_relations_edges`; Phase 54c widens `origin`
+    again (adds `'pinned_reference'`) for externally-sourced,
+    revision-pinned reference material a tool materializes into a
+    project's tree — distinct from both `'project'` (hand-authored) and
+    `'vendor_upstream'` (tied to a tracked `vendors` row, which this
+    material deliberately has none of; see `planning/context-gaps/inbox.md`
+    `CG-005` and `planning/knowledge/doc-origin-pinned-reference/`) —
+    dropping `doc_artifacts` alone only cascades a DELETE of those two
+    tables' *rows* (`ON DELETE CASCADE`), it doesn't touch their own
+    column set, so they need their own explicit drop for `chunk_id` to
+    actually appear on an existing database. One generic function handles
+    any prior version, not one function per phase — it checks
+    `_doc_artifacts_schema_is_current` (introspection, not
+    `meta.schema_version`, per that function's own docstring/Phase 76) and,
+    only if genuinely stale, drops+recreates once. Safe: all three tables
     (plus `skill_mentions_edges`/`routes_via_edges`, cascaded from
     `doc_artifacts`) are fully cleared and rewritten by `rebuild_
     deterministic` on every whole-project sync anyway, so there's no
@@ -405,29 +543,23 @@ def _migrate_doc_artifacts_constraints(conn: sqlite3.Connection) -> None:
     = ON` already set on this connection, SQLite itself cascades the
     `doc_artifacts` drop into `skill_mentions_edges`/`routes_via_edges`'s
     rows, so no dangling foreign keys are left behind even between this
-    migration and
-    the next sync. Never touches `vendor_enrichment`/`symbol_enrichment` —
-    those tables have no foreign key to `doc_artifacts` at all, so a
-    `doc_artifacts` drop can't reach them (same "never touch enrichment"
-    invariant every other phase in this arc preserves).
+    migration and the next sync. Never touches `vendor_enrichment`/
+    `symbol_enrichment` — those tables have no foreign key to
+    `doc_artifacts` at all, so a `doc_artifacts` drop can't reach them
+    (same "never touch enrichment" invariant every other phase in this
+    arc preserves).
 
-    A brand-new database (no `meta` table yet — `init_schema` hasn't run
-    at all) has nothing to migrate; `init_schema`, called right after this
-    function returns, seeds `schema_version` at the current value fresh.
+    Does **not** update `meta.schema_version` — that value is purely
+    informational bookkeeping since Phase 76 (`open_graph` itself keeps it
+    current, unconditionally, on every open) and is no longer read by any
+    migration's own trigger condition.
     """
-    meta_table_exists = conn.execute(
-        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'meta'"
-    ).fetchone()
-    if not meta_table_exists:
-        return
-    row = conn.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()
-    if row is None or row[0] == _SCHEMA_VERSION:
+    if _doc_artifacts_schema_is_current(conn):
         return
     with conn:
         conn.execute("DROP TABLE IF EXISTS documents_edges")
         conn.execute("DROP TABLE IF EXISTS doc_relations_edges")
         conn.execute("DROP TABLE IF EXISTS doc_artifacts")
-        conn.execute("UPDATE meta SET value = ? WHERE key = 'schema_version'", (_SCHEMA_VERSION,))
 
 
 def _migrate_doc_relation_enrichment_relation_label(conn: sqlite3.Connection) -> None:
@@ -652,7 +784,26 @@ def open_graph(project_root: Path) -> sqlite3.Connection:
     _migrate_symbols_export_kind_note_columns(conn)
     _migrate_symbol_enrichment_model_column(conn)
     init_schema(conn)
+    # Phase 76: meta.schema_version is now purely informational bookkeeping
+    # ("last schema-code vintage this database was opened under") — no
+    # migration's own trigger condition reads it any more (every migration
+    # in this file uses direct introspection instead, per each one's own
+    # docstring). Updated unconditionally, on every open, decoupled from
+    # any specific migration's own decision of whether it needed to act.
+    with conn:
+        conn.execute("UPDATE meta SET value = ? WHERE key = 'schema_version'", (_SCHEMA_VERSION,))
     return conn
+
+
+def get_meta(conn: sqlite3.Connection, key: str) -> str | None:
+    """One `meta` value by key, or `None` if the key has never been
+    written (distinct from an empty string, which `meta.value`'s own
+    `NOT NULL` constraint never allows in the first place). Used by
+    `cli.py::query_topology` to detect a genuinely unindexed graph
+    (`git_topology_status` absent) without ad hoc inline SQL.
+    """
+    row = conn.execute("SELECT value FROM meta WHERE key = ?", (key,)).fetchone()
+    return row[0] if row is not None else None
 
 
 # --- rebuild_deterministic -------------------------------------------------
@@ -672,6 +823,11 @@ def rebuild_deterministic(
     routes_via_edges: Sequence[RoutesViaEdgeRow],
     depends_on_edges: Sequence[DependsOnEdgeRow],
     doc_relations_edges: Sequence[DocRelationEdgeRow],
+    git_repositories: Sequence[GitRepositoryRow] = (),
+    git_worktrees: Sequence[GitWorktreeRow] = (),
+    git_submodules: Sequence[GitSubmoduleRow] = (),
+    git_topology_status: str | None = None,
+    git_topology_reason: str | None = None,
 ) -> None:
     """Wipe and rewrite every deterministic table inside one transaction,
     then update `meta.last_deterministic_rebuild_at`. Never touches
@@ -692,6 +848,18 @@ def rebuild_deterministic(
     and is fully cleared and reinserted, `doc_chunks` (Phase 32) included —
     `doc_chunks` defaults to `()` so pre-Phase-32 callers/tests that don't
     pass it keep working unchanged.
+
+    Phase 76: `git_repositories`/`git_worktrees`/`git_submodules` (all
+    default `()`, same backwards-compatibility precedent as `doc_chunks`)
+    are likewise fully cleared and reinserted — no cross-rebuild identity
+    to preserve, no AI/agent involvement. `git_topology_status`/
+    `git_topology_reason` (both default `None`) are written to `meta`
+    only when a caller actually supplies a status — a caller that omits
+    them (an old test exercising unrelated tables in isolation) leaves
+    `meta.git_topology_status` exactly as it already was, never fabricated;
+    every real production call (`sync.py::rebuild_project_graph`) always
+    supplies a real `TopologyStatus` value, since `detect_git_topology`
+    never returns `None`.
     """
     with conn:
         # Edge / leaf tables carry no cross-rebuild identity — clear and
@@ -705,6 +873,9 @@ def rebuild_deterministic(
         conn.execute("DELETE FROM doc_chunks")
         conn.execute("DELETE FROM doc_artifacts")
         conn.execute("DELETE FROM source_files")
+        conn.execute("DELETE FROM git_worktrees")
+        conn.execute("DELETE FROM git_submodules")
+        conn.execute("DELETE FROM git_repositories")
 
         _sync_vendors(conn, vendors)
         vendor_ids = _fetch_name_to_id(conn, "vendors")
@@ -728,6 +899,25 @@ def rebuild_deterministic(
         _insert_doc_relations_edges(
             conn, doc_relations_edges, vendor_ids, doc_artifact_ids, doc_chunk_ids
         )
+
+        repository_ids = _insert_git_repositories(conn, git_repositories)
+        _insert_git_worktrees(conn, git_worktrees, repository_ids)
+        _insert_git_submodules(conn, git_submodules, repository_ids)
+
+        if git_topology_status is not None:
+            conn.execute(
+                "INSERT INTO meta (key, value) VALUES ('git_topology_status', ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                (git_topology_status,),
+            )
+            if git_topology_reason is not None:
+                conn.execute(
+                    "INSERT INTO meta (key, value) VALUES ('git_topology_reason', ?) "
+                    "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                    (git_topology_reason,),
+                )
+            else:
+                conn.execute("DELETE FROM meta WHERE key = 'git_topology_reason'")
 
         conn.execute(
             "INSERT INTO meta (key, value) VALUES ('last_deterministic_rebuild_at', ?) "
@@ -1003,6 +1193,183 @@ def _insert_doc_relations_edges(
                 chunk_id,
             ),
         )
+
+
+def _insert_git_repositories(
+    conn: sqlite3.Connection, git_repositories: Sequence[GitRepositoryRow]
+) -> dict[str, int]:
+    ids: dict[str, int] = {}
+    for r in git_repositories:
+        cur = conn.execute(
+            "INSERT INTO git_repositories (common_dir, origin_url) VALUES (?, ?)",
+            (r.common_dir, r.origin_url),
+        )
+        ids[r.common_dir] = cur.lastrowid
+    return ids
+
+
+def _insert_git_worktrees(
+    conn: sqlite3.Connection,
+    git_worktrees: Sequence[GitWorktreeRow],
+    repository_ids: dict[str, int],
+) -> None:
+    for w in git_worktrees:
+        conn.execute(
+            """
+            INSERT INTO git_worktrees (
+                repository_id, worktree_path, is_current, branch, is_detached,
+                head_commit, is_dirty, is_bare, is_locked, is_prunable
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                repository_ids[w.repository_common_dir],
+                w.worktree_path,
+                w.is_current,
+                w.branch,
+                w.is_detached,
+                w.head_commit,
+                w.is_dirty,
+                w.is_bare,
+                w.is_locked,
+                w.is_prunable,
+            ),
+        )
+
+
+def _insert_git_submodules(
+    conn: sqlite3.Connection,
+    git_submodules: Sequence[GitSubmoduleRow],
+    repository_ids: dict[str, int],
+) -> None:
+    for s in git_submodules:
+        conn.execute(
+            """
+            INSERT INTO git_submodules (
+                parent_repository_id, path, is_path_safe, child_repository_url,
+                pinned_commit, is_initialized, checked_out_commit,
+                revision_matches_pin, child_branch, child_is_dirty
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                repository_ids[s.parent_repository_common_dir],
+                s.path,
+                s.is_path_safe,
+                s.child_repository_url,
+                s.pinned_commit,
+                s.is_initialized,
+                s.checked_out_commit,
+                s.revision_matches_pin,
+                s.child_branch,
+                s.child_is_dirty,
+            ),
+        )
+
+
+def topology_profile(conn: sqlite3.Connection) -> dict | None:
+    """The persisted Git topology for this graph, or `None` if
+    `meta.git_topology_status` has never been written (a genuinely
+    unindexed graph — `cli.py::query_topology` renders this as "not yet
+    indexed", never as `not_git`/`unavailable`, and never invokes `git`
+    itself to find out). Shape: `{"status": ..., "reason": ..., "repository":
+    {...} | None, "worktrees": [...], "submodules": [...]}` — `repository`
+    is `None` for `not_git`/`unavailable` (no `git_repositories` row exists
+    for those statuses, confirmed by construction in `sync.py`).
+    """
+    status = get_meta(conn, "git_topology_status")
+    if status is None:
+        return None
+    reason = get_meta(conn, "git_topology_reason")
+
+    repo_row = conn.execute(
+        "SELECT id, common_dir, origin_url FROM git_repositories LIMIT 1"
+    ).fetchone()
+    if repo_row is None:
+        return {
+            "status": status,
+            "reason": reason,
+            "repository": None,
+            "worktrees": [],
+            "submodules": [],
+        }
+    repository_id, common_dir, origin_url = repo_row
+
+    worktrees = [
+        {
+            "path": path,
+            "is_current": bool(is_current),
+            "branch": branch,
+            "is_detached": bool(is_detached),
+            "head_commit": head_commit,
+            "is_dirty": bool(is_dirty) if is_dirty is not None else None,
+            "is_bare": bool(is_bare),
+            "is_locked": bool(is_locked),
+            "is_prunable": bool(is_prunable),
+        }
+        for (
+            path,
+            is_current,
+            branch,
+            is_detached,
+            head_commit,
+            is_dirty,
+            is_bare,
+            is_locked,
+            is_prunable,
+        ) in conn.execute(
+            """
+            SELECT worktree_path, is_current, branch, is_detached, head_commit,
+                   is_dirty, is_bare, is_locked, is_prunable
+            FROM git_worktrees WHERE repository_id = ?
+            ORDER BY is_current DESC, worktree_path
+            """,
+            (repository_id,),
+        )
+    ]
+
+    submodules = [
+        {
+            "path": path,
+            "is_path_safe": bool(is_path_safe),
+            "child_repository_url": child_repository_url,
+            "pinned_commit": pinned_commit,
+            "is_initialized": bool(is_initialized) if is_initialized is not None else None,
+            "checked_out_commit": checked_out_commit,
+            "revision_matches_pin": (
+                bool(revision_matches_pin) if revision_matches_pin is not None else None
+            ),
+            "child_branch": child_branch,
+            "child_is_dirty": bool(child_is_dirty) if child_is_dirty is not None else None,
+        }
+        for (
+            path,
+            is_path_safe,
+            child_repository_url,
+            pinned_commit,
+            is_initialized,
+            checked_out_commit,
+            revision_matches_pin,
+            child_branch,
+            child_is_dirty,
+        ) in conn.execute(
+            """
+            SELECT path, is_path_safe, child_repository_url, pinned_commit, is_initialized,
+                   checked_out_commit, revision_matches_pin, child_branch, child_is_dirty
+            FROM git_submodules WHERE parent_repository_id = ?
+            ORDER BY path
+            """,
+            (repository_id,),
+        )
+    ]
+
+    return {
+        "status": status,
+        "reason": reason,
+        "repository": {"common_dir": common_dir, "origin_url": origin_url},
+        "worktrees": worktrees,
+        "submodules": submodules,
+    }
 
 
 # --- Query functions --------------------------------------------------------

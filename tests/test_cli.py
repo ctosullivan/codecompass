@@ -1842,3 +1842,242 @@ def test_check_reports_spec_docs_without_relations_section(
     assert result.exit_code == 0, result.output
     assert "Spec docs with no detected relations" in result.output
     assert "README.md" in result.output
+
+
+# --- Phase 76: `codecompass query topology` ----------------------------------
+
+
+def _rebuild_with_topology(
+    tmp_path: Path,
+    *,
+    git_repositories=(),
+    git_worktrees=(),
+    git_submodules=(),
+    git_topology_status=None,
+    git_topology_reason=None,
+) -> None:
+    conn = graph.open_graph(tmp_path)
+    graph.rebuild_deterministic(
+        conn,
+        vendors=[],
+        source_files=[],
+        symbols=[],
+        uses_edges=[],
+        doc_artifacts=[],
+        documents_edges=[],
+        skill_mentions_edges=[],
+        routes_via_edges=[],
+        depends_on_edges=[],
+        doc_relations_edges=[],
+        git_repositories=git_repositories,
+        git_worktrees=git_worktrees,
+        git_submodules=git_submodules,
+        git_topology_status=git_topology_status,
+        git_topology_reason=git_topology_reason,
+    )
+    conn.close()
+
+
+def test_query_topology_no_database_at_all_is_not_yet_indexed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["query", "topology"])
+
+    assert result.exit_code == 0, result.output
+    assert "not been indexed" in result.output
+    assert "sync" in result.output.lower()
+
+
+def test_query_topology_no_database_at_all_json(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["query", "topology", "--json"])
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output) == {"indexed": False}
+
+
+def test_query_topology_database_exists_but_never_synced_under_phase_76_is_not_yet_indexed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The second required 'not yet indexed' case: an existing database
+    (opened under Phase 76 code, e.g. by any other `query`/`sync` call)
+    that has never itself had topology detection run against it."""
+    monkeypatch.chdir(tmp_path)
+    conn = graph.open_graph(tmp_path)
+    conn.close()
+
+    result = runner.invoke(app, ["query", "topology"])
+    assert result.exit_code == 0, result.output
+    assert "not been indexed" in result.output
+
+    json_result = runner.invoke(app, ["query", "topology", "--json"])
+    assert json.loads(json_result.output) == {"indexed": False}
+
+
+def test_query_topology_never_invokes_git(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`query topology` reads only persisted state -- confirmed here by
+    making `detect_git_topology` itself raise if ever called, for both
+    the not-yet-indexed and the indexed cases."""
+
+    def _boom(_project_root):
+        raise AssertionError("query topology must never invoke git detection")
+
+    monkeypatch.setattr("codecompass.git_topology.detect_git_topology", _boom)
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["query", "topology"])
+    assert result.exit_code == 0, result.output
+
+    _rebuild_with_topology(tmp_path, git_topology_status="detected")
+    result = runner.invoke(app, ["query", "topology"])
+    assert result.exit_code == 0, result.output
+
+
+def test_query_topology_not_git(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_topology(tmp_path, git_topology_status="not_git")
+
+    result = runner.invoke(app, ["query", "topology"])
+    assert result.exit_code == 0, result.output
+    assert "not a git repository" in result.output.lower()
+
+
+def test_query_topology_unavailable_shows_reason(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_topology(
+        tmp_path,
+        git_topology_status="unavailable",
+        git_topology_reason="no working tree (bare repository) — Git topology requires a checkout",
+    )
+
+    result = runner.invoke(app, ["query", "topology"])
+    assert result.exit_code == 0, result.output
+    assert "could not be determined" in result.output.lower()
+    assert "bare repository" in result.output
+
+
+def test_query_topology_partial_shows_banner_and_structure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_topology(
+        tmp_path,
+        git_repositories=[graph.GitRepositoryRow(common_dir="/repo/.git")],
+        git_topology_status="partial",
+        git_topology_reason="could not enumerate worktrees: boom",
+    )
+
+    result = runner.invoke(app, ["query", "topology"])
+    assert result.exit_code == 0, result.output
+    assert "partially determined" in result.output.lower()
+    assert "/repo/.git" in result.output
+
+
+def test_query_topology_detected_full_rendering(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_topology(
+        tmp_path,
+        git_repositories=[graph.GitRepositoryRow(common_dir="/repo/.git", origin_url="https://host/repo.git")],
+        git_worktrees=[
+            graph.GitWorktreeRow(
+                repository_common_dir="/repo/.git",
+                worktree_path="/repo",
+                is_current=True,
+                branch="main",
+                head_commit="abc123",
+                is_dirty=True,
+            ),
+            graph.GitWorktreeRow(
+                repository_common_dir="/repo/.git",
+                worktree_path="/repo-feature",
+                is_current=False,
+                branch="feature",
+                head_commit="def456",
+            ),
+        ],
+        git_submodules=[
+            graph.GitSubmoduleRow(
+                parent_repository_common_dir="/repo/.git",
+                path="adapters/haskell",
+                child_repository_url="git@github.com:org/repo.git",
+                pinned_commit="deadbeef",
+                is_initialized=True,
+                checked_out_commit="deadbeef",
+                revision_matches_pin=True,
+                child_branch="main",
+                child_is_dirty=False,
+            )
+        ],
+        git_topology_status="detected",
+    )
+
+    result = runner.invoke(app, ["query", "topology"])
+    assert result.exit_code == 0, result.output
+    assert "/repo/.git" in result.output
+    assert "main" in result.output
+    assert "dirty" in result.output
+    assert "not probed" in result.output
+    assert "adapters/haskell" in result.output
+    assert "matches pin" in result.output
+
+
+def test_query_topology_json_round_trips(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_topology(
+        tmp_path,
+        git_repositories=[graph.GitRepositoryRow(common_dir="/repo/.git")],
+        git_worktrees=[
+            graph.GitWorktreeRow(
+                repository_common_dir="/repo/.git",
+                worktree_path="/repo",
+                is_current=True,
+                branch="main",
+                head_commit="abc123",
+                is_dirty=False,
+            )
+        ],
+        git_topology_status="detected",
+    )
+
+    result = runner.invoke(app, ["query", "topology", "--json"])
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["indexed"] is True
+    assert payload["status"] == "detected"
+    assert payload["repository"]["common_dir"] == "/repo/.git"
+    assert payload["worktrees"][0]["branch"] == "main"
+
+
+def test_query_topology_path_unsafe_submodule_rendered_as_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_topology(
+        tmp_path,
+        git_repositories=[graph.GitRepositoryRow(common_dir="/repo/.git")],
+        git_submodules=[
+            graph.GitSubmoduleRow(
+                parent_repository_common_dir="/repo/.git",
+                path="../../etc",
+                is_path_safe=False,
+            )
+        ],
+        git_topology_status="detected",
+    )
+
+    result = runner.invoke(app, ["query", "topology"])
+    assert result.exit_code == 0, result.output
+    assert "escapes repository" in result.output

@@ -126,12 +126,13 @@ codecompass sync --yes
 codecompass sync --budget 1.00
 ```
 
-## `codecompass query vendors|vendor|symbol|skills|relations`
+## `codecompass query vendors|vendor|symbol|skills|relations|topology`
 
 **Status:** implemented (Phase 15; `relations` added Phase 21; `used_at`/
 package-code trace added Phase 30; `relation_label` added Phase 31;
 `heading` added Phase 32; `skills` widened to Cursor `.mdc` rules and the
-`/discovery` slash command, with a `kind` field, Phase 43a).
+`/discovery` slash command, with a `kind` field, Phase 43a; `topology`
+added Phase 76).
 
 Reads `context-graph.db` and renders the result as a Rich table by
 default, or raw JSON with `--json`. If `context-graph.db` doesn't exist
@@ -189,6 +190,45 @@ prints a one-line note pointing at `sync` rather than a traceback.
   falls in, when the doc has headings and the match is attributable to
   exactly one of them; `None`/blank otherwise (a headerless doc, or a
   match that appears in more than one section).
+- `codecompass query topology [--json]` — Git repository topology
+  (worktrees, submodules), as of the last `sync` (Phase 76). Never
+  invokes `git` itself — reads only what the last sync persisted. Three
+  distinguishable outcomes before any repository detail:
+  - **`context-graph.db` doesn't exist yet, or exists but has never been
+    synced under Phase-76-aware code**: "Git topology has not been
+    indexed yet; run `codecompass sync`." — `--json` → `{"indexed":
+    false}`, no other keys.
+  - **Indexed, but the project root isn't inside a Git repository**: "not
+    a Git repository."
+  - **Indexed, but Git topology could not be determined** — `git`
+    missing, or the project root is a bare repository (no working tree —
+    bare repositories are not supported by this command; a real, checked-
+    out worktree is required): "Git topology could not be determined
+    (\<reason\>)."
+  - **Indexed and determined** (possibly only *partially*, if a
+    downstream enumeration step failed unexpectedly after repository
+    identity was established — shown as a "topology partially
+    determined" note, followed by whatever was established): repository
+    identity (the shared `.git` directory, identical across every
+    worktree of one repository — never the invocation directory);
+    the active checkout's path, branch or `(detached)`, HEAD commit, and
+    workspace state (`dirty`/`clean`); every other known worktree of the
+    same repository, with its own branch/HEAD as observed at the current
+    checkout's own last sync (never live) and an explicit `workspace: not
+    probed` line (sibling dirty state is never probed, by design); and
+    every declared submodule — its child repository URL (credentials
+    stripped from any parseable URL, `ssh://git@host/...`-style identity
+    preserved), the parent-pinned revision (or `unresolved` if
+    `.gitmodules` declares the path but no gitlink exists in `HEAD`'s
+    tree yet), and — if initialized — the checked-out revision with an
+    explicit match/mismatch against the pin, its own branch, and its own
+    dirty state. A `.gitmodules` path that resolves outside the
+    repository's own worktree root is refused, not followed — shown as
+    "path escapes repository — refused," nothing else probed for that
+    entry. Requires Git 2.5+ (the version that introduced `git worktree`/
+    `--git-common-dir`, the primitives this command's own detection is
+    built on) — an older Git surfaces as "Git topology could not be
+    determined," not a crash.
 
 ```bash
 codecompass query vendors
@@ -198,6 +238,8 @@ codecompass query symbol parse
 codecompass query skills --unused-mentions
 codecompass query relations architecture/overview.md
 codecompass query relations turndown
+codecompass query topology
+codecompass query topology --json
 ```
 
 ## `codecompass enrich apply <entries.json> --agent <name>`

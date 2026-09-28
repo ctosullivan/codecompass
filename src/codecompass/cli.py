@@ -892,6 +892,127 @@ def query_relations(
         console.print(trace_table)
 
 
+def _open_graph_for_topology(project_root: Path) -> sqlite3.Connection | None:
+    """`None` if `context-graph.db` doesn't exist at all — read-only, never
+    creates the file as a side effect of a read-only command (matching
+    `_open_graph_or_note`'s own posture), but prints nothing itself:
+    `query_topology`'s own caller renders the specific "not yet indexed"
+    outcome for a `None` result here, not `_NO_GRAPH_NOTE` — deliberately
+    not a change to the shared `_open_graph_or_note`/`_graph_session`
+    helpers, since every other `query` subcommand's own existing
+    missing-database behaviour is correct and out of scope
+    (planning/phase-76-git-repository-topology.md §9, third amendment).
+    """
+    db_path = project_root / _GRAPH_DB_FILENAME
+    if not db_path.exists():
+        return None
+    return graph.open_graph(project_root)
+
+
+_NOT_INDEXED_NOTE = "Git topology has not been indexed yet; run `codecompass sync`."
+
+
+@query_app.command("topology")
+def query_topology(
+    json_output: bool = typer.Option(
+        False, "--json", help="Raw JSON instead of a Rich rendering."
+    ),
+) -> None:
+    """Git repository topology (worktrees, submodules) as of the last
+    `sync` — never invokes `git` itself, on any code path (Phase 76).
+    Distinguishes three outcomes before rendering the normal four-state
+    result: `context-graph.db` absent entirely, present but never synced
+    under Phase-76-aware code, or genuinely indexed. See
+    architecture/context-graph-schema.md and docs/cli-reference.md for the
+    full status model.
+    """
+    project_root = Path.cwd()
+    conn = _open_graph_for_topology(project_root)
+    if conn is None:
+        _render_topology_not_indexed(json_output)
+        return
+    try:
+        profile = graph.topology_profile(conn)
+    finally:
+        conn.close()
+    if profile is None:
+        _render_topology_not_indexed(json_output)
+        return
+    _render_topology(profile, json_output)
+
+
+def _render_topology_not_indexed(json_output: bool) -> None:
+    if json_output:
+        console.print(json.dumps({"indexed": False}, indent=2), soft_wrap=True)
+        return
+    console.print(f"[yellow]{_NOT_INDEXED_NOTE}[/yellow]")
+
+
+def _render_topology(profile: dict, json_output: bool) -> None:
+    status = profile["status"]
+    reason = profile["reason"]
+    repository = profile["repository"]
+
+    if json_output:
+        console.print(
+            json.dumps({"indexed": True, **profile}, indent=2),
+            soft_wrap=True,
+        )
+        return
+
+    if status == "not_git":
+        console.print("[dim]not a Git repository[/dim]")
+        return
+    if status == "unavailable":
+        console.print(f"[yellow]Git topology could not be determined ({reason}).[/yellow]")
+        return
+    if status == "partial":
+        console.print(f"[yellow]topology partially determined: {reason}[/yellow]")
+
+    if repository is None:
+        return
+
+    console.print(f"[bold]Repository[/bold]: {repository['common_dir']}")
+    if repository["origin_url"]:
+        console.print(f"Origin: {repository['origin_url']}")
+
+    for w in profile["worktrees"]:
+        label = "Active checkout" if w["is_current"] else "Other worktree"
+        console.print(f"\n[bold]{label}[/bold]: {w['path']}")
+        branch = w["branch"] if w["branch"] is not None else "(detached)"
+        console.print(f"  branch: {branch}")
+        console.print(f"  HEAD: {w['head_commit'] or '(unborn)'}")
+        if w["is_current"]:
+            console.print(f"  workspace: {'dirty' if w['is_dirty'] else 'clean'}")
+        else:
+            console.print("  workspace: not probed")
+        if w["is_bare"]:
+            console.print("  bare: yes")
+        if w["is_prunable"]:
+            console.print("  prunable: directory missing")
+        if w["is_locked"]:
+            console.print("  locked: yes")
+
+    if profile["submodules"]:
+        console.print("\n[bold]Submodules[/bold]:")
+        for s in profile["submodules"]:
+            console.print(f"  {s['path']}")
+            if not s["is_path_safe"]:
+                console.print("    path escapes repository — refused")
+                continue
+            if s["child_repository_url"]:
+                console.print(f"    repository: {s['child_repository_url']}")
+            console.print(f"    parent-pinned revision: {s['pinned_commit'] or 'unresolved'}")
+            if s["is_initialized"]:
+                match = "matches pin" if s["revision_matches_pin"] else "differs from pin"
+                console.print(f"    checked out: {s['checked_out_commit']} ({match})")
+                if s["child_branch"]:
+                    console.print(f"    branch: {s['child_branch']}")
+                console.print(f"    workspace: {'dirty' if s['child_is_dirty'] else 'clean'}")
+            else:
+                console.print("    not initialized")
+
+
 @app.command()
 def chat(
     vendor: str = typer.Argument(..., help="Vendor name to chat about."),

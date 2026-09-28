@@ -100,6 +100,11 @@ def render_tool_skill(configs: list[VendorConfig], project_root: Path) -> str:
         "mentions; given a vendor or Skill name, which spec docs "
         "mechanically mention it. Shows an AI-generated summary of *how* "
         "the two relate when one has been enriched.",
+        "  - `query topology [--json]` — Git repository topology "
+        "(worktrees, submodules) as of the last sync: repository "
+        "identity, the active checkout's branch/HEAD/dirty state, other "
+        "known worktrees, and each submodule's parent-pinned vs. "
+        "checked-out revision. Never invokes `git` itself.",
         "  - If a question doesn't fit any of these — an ad hoc join or "
         "filter — query `context-graph.db` directly with `sqlite3` (a "
         "plain SQLite file at the project root); see "
@@ -107,7 +112,8 @@ def render_tool_skill(configs: list[VendorConfig], project_root: Path) -> str:
         "schema (`vendors`, `symbols`, `uses_edges`, `doc_artifacts`, "
         "`documents_edges`, `skill_mentions_edges`, `routes_via_edges`, "
         "`depends_on_edges`, `doc_relations_edges`, `vendor_enrichment`, "
-        "`symbol_enrichment`, `doc_relation_enrichment`).",
+        "`symbol_enrichment`, `doc_relation_enrichment`, "
+        "`git_repositories`, `git_worktrees`, `git_submodules`).",
         "- `/discovery` — a read-only guided-exploration slash command "
         "covering the same ground as `query`, for a human-initiated "
         "session that should never write, edit, or plan code changes.",

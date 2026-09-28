@@ -765,6 +765,62 @@ independent coverage-gap sections — spec docs with no detected outgoing
 relations, and vendor docs nothing points at — neither `--strict`-blocking,
 the same posture as every other graph-derived coverage gap.
 
+## Git repository topology (`codecompass.git_topology`)
+
+Phase 76. Mechanical awareness of Git worktrees and submodules — a
+separate concern from the context graph's own dependency/doc tracking,
+sharing only the same `context-graph.db` storage and `rebuild_deterministic`
+write path. `git_topology.detect_git_topology(project_root)` is a pure,
+graph-agnostic detection module (no import dependency on `graph.py`,
+mirroring `usage.py`/`spec_docs.py`'s own shape); `sync.py::rebuild_project_graph`
+is the only place its output is converted into `graph.py` row types and
+persisted, once per whole-project `sync`.
+
+**Three separate paths, kept distinct on purpose**: the *invocation root*
+(`project_root`, wherever CodeCompass was actually run from — may be a
+subdirectory of a Git worktree), the *Git worktree root*
+(`git rev-parse --show-toplevel`), and the *Git common directory*
+(`git rev-parse --git-common-dir` — identical across every worktree of
+one repository, the identity `git_repositories.common_dir` uses). Every
+topology operation (finding `.gitmodules`, resolving a submodule mount
+path, matching the current worktree in `git worktree list`'s output) is
+relative to the worktree root, never the invocation root, when the two
+differ. Requires Git 2.5+ only (the version that introduced `git
+worktree`/`--git-common-dir` themselves) — no newer flag is used
+anywhere, a deliberate choice over the convenience-only
+`--path-format=absolute` (Git 2.31) an earlier design used.
+
+**Status model**: `detected` / `not_git` / `unavailable` (includes a
+bare repository as the current checkout — not supported, detected
+honestly via `--show-toplevel`'s own distinctive failure message rather
+than conflated with `not_git`) / `partial`, persisted to
+`meta.git_topology_status`/`git_topology_reason`. A fifth, "not yet
+indexed" state (the key entirely absent) is a query-layer concept only,
+never a value the status model itself takes — see
+[`context-graph-schema.md`](context-graph-schema.md)'s own "Git topology
+tables" section for the full two-level uncertainty model (this whole-pass
+status vs. per-row nullable facts like an unresolved submodule pin).
+
+**Submodule path safety and credential sanitisation**: a `.gitmodules`
+path is resolved against the worktree root and verified to stay within
+it (`Path.is_relative_to`) before any command ever runs against it — an
+escaping path is refused, not followed, and the row still records that
+the escaping path was declared. Every Git remote URL (`origin_url`,
+`child_repository_url`) is sanitised before it ever reaches a dataclass:
+a password/token component is stripped from any parseable `http(s)`/
+`ssh`/other URI-form remote; a non-`http(s)` URL's own bare, non-secret
+username (`ssh://git@host/...`) is preserved; SCP-like syntax
+(`git@host:org/repo.git`) has no parseable userinfo at all and is left
+untouched.
+
+**CLI surface**: `codecompass query topology [--json]` — reads
+`context-graph.db` only, **never invokes `git` itself** on any code
+path, including the "not yet indexed" one (see
+[`docs/cli-reference.md`](../docs/cli-reference.md)). See
+`decisions/0063` for the schema/migration-safety design rationale in
+full, and `planning/phase-76-git-repository-topology.md` for the
+complete phase record.
+
 ## `undo` — best-effort generated-artifact cleanup (`codecompass.cli`)
 
 `codecompass undo [--yes] [--dry-run]` (`decisions/0036`) is the only
