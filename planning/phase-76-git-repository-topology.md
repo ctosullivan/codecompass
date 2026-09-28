@@ -1,9 +1,22 @@
 # Phase 76: Git repository topology awareness (worktrees + submodules) — plan
 
-**Status:** done (2026-09-28, amended 2026-09-28; implemented and closed
-2026-09-28). Independent `release-phase-auditor` completion audit: PASS
-WITH NON-BLOCKING OBSERVATIONS (`planning/retros/_audit-phase-76.md`),
-final `roadmap-context-curator` reconciliation confirmed.
+**Status:** closeout correction in progress (2026-09-28). Originally
+marked `done` (2026-09-28, amended 2026-09-28; implemented and closed
+2026-09-28; independent `release-phase-auditor` completion audit PASS
+WITH NON-BLOCKING OBSERVATIONS, `planning/retros/_audit-phase-76.md`,
+final `roadmap-context-curator` reconciliation confirmed) — **reopened
+the same day** for a narrowly-scoped corrective pass after three real
+post-closeout defects were found: (1) the CLI text renderer collapsed
+several `None` (unresolved/unknown) topology facts into false-certainty
+negatives; (2) the documented Git 2.5 minimum-version claim was wrong —
+the real floor is Git 2.7 (`decisions/0064`, superseding `decisions/0063`
+point 8); (3) `CLAUDE.md` §5's own closeout rule was internally
+contradictory (the terminal `roadmap-context-curator` reconciliation
+commit it requires necessarily touches files the same sentence calls
+"audited scope," which would void the very audit that authorizes it).
+See the corrective-pass amendment below and the retro's own corrective-
+pass addendum for full detail. Will be restored to `done` only after a
+fresh, independent completion audit against the corrected state.
 
 Direct user request. An evaluation/implementation phase: CodeCompass
 gains mechanical awareness of Git worktree and submodule topology, so a
@@ -586,11 +599,30 @@ a heuristic search — "walk upward looking for a `.git` entry" remains
 explicitly rejected as a parallel, redundant, and strictly worse
 mechanism, unchanged from the first amendment's reasoning.
 
-**The resulting, now-explicit minimum: Git 2.5** (the version that
-introduced `git worktree`/`--git-common-dir` at all) — nine years old as
-of this phase, and *unavoidable* rather than a convenience, since
-worktree awareness has no meaning at all on a Git predating the feature
-itself. **If the combined `rev-parse` call fails for a reason other than
+**This specific call's own minimum: Git 2.5** (the version that
+introduced `git worktree`/`--git-common-dir` at all) — unavoidable rather
+than a convenience, since worktree awareness has no meaning at all on a
+Git predating the feature itself.
+
+**Corrective-pass correction (2026-09-28): Git 2.5 is *not* this
+module's overall minimum.** The original plan text here claimed 2.5 as
+"the resulting, now-explicit minimum" for the module as a whole — true
+only for this one call. `_detect_worktrees` (§7 below) unconditionally
+calls `git worktree list --porcelain`, and `_detect_origin_url`
+unconditionally calls `git remote get-url origin` — both confirmed,
+directly against Git's own release notes, to have been introduced only
+in **Git 2.7.0** (January 2016), not 2.5. A real Git in the 2.5–2.6 range
+passes this `rev-parse` call successfully, then fails later at
+`worktree list` with a raw, confusing stderr string that the original
+design would have surfaced as an unexplained `PARTIAL` result. Fixed:
+`detect_git_topology` now runs a single `git --version` check
+immediately after this `rev-parse` call succeeds (before either
+2.7-gated command runs) and returns an explicit, version-naming
+`UNAVAILABLE` diagnostic for anything below 2.7. **Git 2.7.0, not 2.5, is
+this module's real, now-documented minimum** — see `decisions/0064`
+(supersedes `decisions/0063` point 8) and §7 below.
+
+**If the combined `rev-parse` call fails for a reason other than
 "not a git repository" or "bare repository, no work tree"** (§6's
 decision procedure) — including, on a sufficiently old Git, an
 "unrecognized option" error for `--git-common-dir` itself — the result is
@@ -997,6 +1029,25 @@ concern.
   for "clean" or "unknown for some other reason"). `head_commit`/
   `pinned_commit`/`checked_out_commit` remain committed-repository facts,
   safe to compare across worktrees/syncs; `is_dirty` never is.
+- **Corrective-pass finding (2026-09-28): this discipline was correctly
+  designed here but not fully carried into the CLI text renderer.**
+  `_render_topology`'s original implementation used plain Python
+  truthiness (`'dirty' if is_dirty else 'clean'`,
+  `'matches pin' if revision_matches_pin else 'differs from pin'`) for
+  three nullable facts — the *current* worktree's own `is_dirty` (never
+  actually unresolvable in practice today, since `_detect_dirty` only
+  returns `None` on a subprocess failure, but the code did not special-
+  case it), an initialized submodule's `child_is_dirty`, and
+  `revision_matches_pin` — silently collapsing `None` (the probe itself
+  failed, or the pin couldn't be resolved) into the same rendering as a
+  hard `False`. This is exactly the "false certainty" class of bug this
+  section's own governing rule exists to prevent, just not caught by any
+  test before closeout because no existing fixture exercised those three
+  fields' `None` state specifically (every prior test used an explicit
+  `True`/`False`). Fixed with a shared `_tri_state_label` helper and four
+  new regression tests exercising exactly these `None` cases; `--json`
+  output was already correct (it round-trips the raw nullable value
+  unchanged) and required no fix.
 - **The precise guarantee (second amendment — corrected from an
   overclaim in the first amendment's own text, which said "credentials
   are never persisted or surfaced" while an implementation that only
@@ -1130,9 +1181,11 @@ sibling-dirty-state disclosure (§8); otherwise as originally planned.
 3. **`docs/cli-reference.md`**: a new `query topology [--json]` section,
    documenting the "not yet indexed" outcome plus all four `TopologyStatus`
    outcomes explicitly (not just the happy path), and the resulting,
-   now-explicit **Git ≥2.5 minimum** for worktree/common-dir detection
-   (§5) — the first documented Git version requirement anywhere in this
-   project — required for `check_cli_commands_documented`.
+   now-explicit **Git ≥2.7 minimum** (corrected by `decisions/0064`;
+   `--git-common-dir` alone is 2.5, but `git worktree list`/`git remote
+   get-url` push the module's real floor to 2.7, §5/§8) — the first
+   documented Git version requirement anywhere in this project — required
+   for `check_cli_commands_documented`.
 4. **Generated root `CLAUDE.md`**: not changed — unchanged reasoning
    from the original plan (§16 restates the deferral).
 5. **`planning/knowledge/<feature-slug>/context-packet.md`**: not
@@ -1417,21 +1470,34 @@ change to what's being tested.
    chosen specifically because it is a documented, script-stable format,
    not human-oriented prose.
 
-12.10. **Git version compatibility (second amendment)**: no command
-   used anywhere in this module depends on a Git feature newer than
-   `git worktree`/`--git-common-dir` themselves (Git 2.5, July 2015) —
-   `--path-format=absolute` (Git 2.31, 2021), used by the first
-   amendment's own design purely for the convenience of skipping a
-   manual path-join, is removed entirely (§5). The resulting minimum
-   (Git 2.5) is unavoidable, not a convenience: `git worktree` has no
-   meaning at all on an older Git, so there is nothing this phase's own
-   worktree-awareness half could do on such a version regardless of
-   implementation choices. A Git old enough to reject `--git-common-dir`
-   outright surfaces as `UNAVAILABLE` with the raw stderr as its reason
-   (§6) — an honest diagnostic, not a crash or a misclassification as
-   `NOT_GIT` — with no separate, dedicated `git --version` parsing step
-   added solely to detect this ahead of time (§5's own "smallest model"
-   reasoning).
+12.10. **Git version compatibility (second amendment; corrected by the
+   corrective pass, `decisions/0064`)**: `--path-format=absolute` (Git
+   2.31, 2021), used by the first amendment's own design purely for the
+   convenience of skipping a manual path-join, is removed entirely (§5)
+   — that part of the second amendment's reasoning still holds. But the
+   second amendment's own conclusion that Git 2.5 was therefore "the
+   resulting minimum" for the module as a whole was **wrong**: `git
+   worktree list --porcelain` (`_detect_worktrees`) and `git remote
+   get-url origin` (`_detect_origin_url`) are both called unconditionally
+   on every invocation and were both confirmed, directly against Git's
+   own release notes, to require **Git 2.7.0** (January 2016), not 2.5 —
+   `--git-common-dir` alone (genuinely 2.5) is necessary but was never
+   sufficient to state as the module's floor. The second amendment's own
+   rejection of "a separate, dedicated `git --version` parsing step
+   added solely to detect this ahead of time" is **reversed**, narrowly:
+   new evidence (a real Git in the 2.5–2.6 range passing the initial
+   `rev-parse` call, then failing later at `worktree list` with a raw,
+   confusing stderr string, previously misclassified as a generic
+   `PARTIAL`) is exactly the evidence that rejection's own "no evidence
+   calls for it" standard required. `detect_git_topology` now runs a
+   single `git --version` check immediately after the `rev-parse` call
+   succeeds and before either 2.7-gated command runs, short-circuiting
+   to an explicit, version-naming `UNAVAILABLE` diagnostic for anything
+   below 2.7 — an honest diagnostic, not a crash, not a misclassification
+   as `NOT_GIT`, and not the confusing raw-stderr `PARTIAL` outcome the
+   original design would have produced for this specific version range.
+   **Git 2.7.0 is this module's real, now-documented minimum**
+   (`decisions/0064`, superseding `decisions/0063` point 8).
 
 12.11. **Bare-repository detection (second amendment)**: `git -C
    project_root rev-parse --show-toplevel --git-common-dir` fails with
@@ -1560,8 +1626,8 @@ new documents.
   this plan isn't misled by it).
 - `architecture/context-graph-schema.md`, `architecture/overview.md`/
   `git-topology.md` — expanded content per above, including the
-  now-explicit Git ≥2.5 minimum and the bare-repository non-support
-  decision.
+  now-explicit Git ≥2.7 minimum (`decisions/0064`) and the
+  bare-repository non-support decision.
 - `docs/cli-reference.md` — the "not yet indexed" outcome and all four
   `TopologyStatus` outcomes (§9) documented explicitly, not just the
   happy path.
@@ -1854,7 +1920,8 @@ amendment and three further additions from the second (all marked
 design choice, old and new (the URL-sanitization scheme boundary now
 including the ssh-password case, the path-safety check's exact
 mechanism, the two-level uncertainty model, the migration introspection
-predicate, the Git-2.5 version floor, the bare-repository non-support
+predicate, the Git version floor (corrected to 2.7 by the corrective
+pass, `decisions/0064`), the bare-repository non-support
 decision, the "not yet indexed" absent-key representation, the
 fixture-equivalence check's own required fact list) was resolved by
 direct precedent already in this codebase, by live verification
@@ -1880,6 +1947,14 @@ disposable `git init`-ed fixture under `tmp_path`:
   (simulated, standing in for a pre-2.5 Git) → `status=UNAVAILABLE`,
   reason surfaces the raw message, never misclassified as `NOT_GIT`
   (§5/§12.10's version-tolerance regression test).
+- **New (corrective pass)**: a real repository with `git --version`
+  monkeypatched to report `"git version 2.6.6"` (standing in for a real
+  Git new enough for `--git-common-dir` but too old for `git worktree
+  list`/`git remote get-url`, §12.10) → `status=UNAVAILABLE`, reason
+  explicitly names both the installed and required versions, and neither
+  `worktree list` nor `remote get-url` is ever actually invoked (spied).
+  A companion test confirms an unparseable `git --version` output never
+  blocks detection on its own.
 - **New (second amendment)**: a real, disposable `git init --bare`
   fixture → `status=UNAVAILABLE`, reason mentions "no working tree
   (bare repository)"; independently cross-checked via a real
@@ -2095,12 +2170,15 @@ amendments' own new requirements (items marked **new**; items marked
    this repository's own real submodule URLs) fully unchanged — all
    eight cases (§18), not the previous four-case, `http(s)`-only
    guarantee.
-8. **New, 2nd**: Git-topology detection genuinely depends on no Git
-   feature newer than 2.5 (`--path-format=absolute` fully removed, §5/
-   §12.10) — confirmed by the nested-directory test exercising the one,
-   only, manual-resolution code path, and by the simulated-old-Git test
-   producing an honest `UNAVAILABLE`, never a crash or a `NOT_GIT`
-   misclassification (§18).
+8. **New, 2nd; corrected by the corrective pass**: Git-topology detection
+   genuinely depends on no Git feature newer than its real, documented
+   floor — **Git 2.7**, not 2.5 (`--path-format=absolute` fully removed,
+   §5/§12.10; `decisions/0064` corrects the floor itself) — confirmed by
+   the nested-directory test exercising the one, only, manual-resolution
+   code path, by the simulated-pre-2.5-Git test producing an honest
+   `UNAVAILABLE`, never a crash or a `NOT_GIT` misclassification, and by
+   the new simulated-2.6-Git test confirming the explicit version check
+   fires before either 2.7-gated command is ever invoked (§18).
 9. **New, 2nd**: the "topology not yet indexed" state (§4/§6/§9) is
    genuinely distinguishable, in both CLI text and `--json` output, from
    all four `TopologyStatus` outcomes — confirmed against both a
@@ -2117,8 +2195,8 @@ amendments' own new requirements (items marked **new**; items marked
     the bare-repository fixture, and all disposable submodule fixtures
     (divergence, path-safety, both credential-URL schemes).
 12. `docs/`, `architecture/`, `decisions/` updated per §14, same commit
-    as the code, including the now-explicit Git ≥2.5 minimum and the
-    bare-repository non-support decision.
+    as the code, including the now-explicit Git ≥2.7 minimum
+    (`decisions/0064`) and the bare-repository non-support decision.
 13. **New, revised 2nd**: §15's amended, independent baseline/treatment/
     `context-evaluator` task-context evaluation performed and recorded
     honestly (not the lead-self-comparison-only version) — **gated on

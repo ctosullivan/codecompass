@@ -239,6 +239,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   never mutates git state" with an explanation distinguishing Phase 76's
   own read-only git plumbing (during `sync` only) from any mutating
   command (never present anywhere in the codebase).
+- **Phase 76** (post-`done`, narrowly-scoped corrective pass, direct user
+  request, three real defects found after closeout): (1) `_render_topology`'s
+  CLI text renderer used plain Python truthiness for three nullable
+  facts (the current worktree's own `is_dirty`, an initialized
+  submodule's `child_is_dirty`, and `revision_matches_pin`), silently
+  rendering an unresolved/unknown `None` as the false-certainty negative
+  `clean`/`differs from pin` — fixed with a shared `_tri_state_label`
+  helper rendering all three states explicitly
+  (`dirty`/`clean`/`unknown`, `matches pin`/`differs from pin`/
+  `comparison unresolved`); `--json` output was already correct and
+  needed no fix. (2) The documented Git 2.5 minimum-version claim (this
+  same `[Unreleased]` section's own Phase 76 entry above, `decisions/0063`
+  point 8, and every current-truth doc) was wrong — `git worktree list`
+  and `git remote get-url`, both called unconditionally on every
+  detection pass, were confirmed (directly against Git's own release
+  notes) to require Git 2.7.0, not 2.5; `--git-common-dir` alone
+  (genuinely 2.5) was never sufficient to state as the module's floor. A
+  new, narrow `git --version` check now classifies a Git in the 2.5–2.6
+  range as an honest, version-naming `UNAVAILABLE` rather than a
+  confusing raw-stderr `PARTIAL` result. `decisions/0064` supersedes
+  `decisions/0063` point 8 (append-only; `0063`'s own text is unedited).
+  (3) `CLAUDE.md` §5's closeout rule was internally contradictory: the
+  terminal `roadmap-context-curator` reconciliation commit it requires
+  (flipping `ROADMAP.md`/`CONTEXT.md`/the plan file's Status line) itself
+  touches files the same sentence calls "audited scope," which would
+  void the very audit that authorizes it — fixed with an explicit,
+  narrowly-enumerated exemption for that one terminal commit (`CLAUDE.md`
+  §5 amendment, presented to and approved by the user per §0's own
+  approval-gate requirement) plus operationalizing updates to
+  `planning/agent-led-workflow.md` and the affected agent definitions.
 
 ## [1.0.0] - 2026-09-24
 
