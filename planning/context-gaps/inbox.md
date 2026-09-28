@@ -300,7 +300,8 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   the "Stage E" phase-group label that would previously have named this
   is retired — re-homed to whichever Priority-track phase takes it up,
   `pre-v1-disposition.md` §7)
-- **status:** candidate
+- **status:** promoted-to-roadmap (resolved 2026-09-29, Phase 77 — see
+  curation note below)
 - **recurrence:** first occurrence — checked explicitly against `CG-008`
   (the closest-sounding prior entry) and confirmed genuinely distinct:
   `CG-008` is "a tracked vendor's own adapter output isn't reaching the
@@ -359,6 +360,121 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   own precedent for what counts as architecture-level rather than
   Stage-C-scale. No entry made to `context-graph.db` — this queue never
   writes there, per `decisions/0051`.
+
+- **curation (Phase 77 closeout, 2026-09-29, knowledge-curator):**
+  independent reassessment, not a rubber-stamp of the lead's own
+  characterization — the same discipline the Phase 75 `CG-001` reversal
+  applied. Read all three cited validation records directly, in full,
+  rather than trusting their summaries:
+  `planning/reference-projects/ledgerkit/05-phase-77-first-party-source-validation.md`,
+  `planning/reference-projects/codecompass-self/phase-77-validation.md`,
+  `planning/reference-projects/codecompass-self/phase-77-context-evaluation.md`.
+  Also read the actual schema and sync code directly
+  (`src/codecompass/graph.py` — `source_files`/`source_symbols` table
+  definitions, both independent of `vendor_id`, no FK to `vendors`
+  anywhere on either table; `src/codecompass/sync.py::_sync_source_files`/
+  `_sync_source_symbols` — real upsert-by-natural-key code paths, not
+  stubs) and `docs/cli-reference.md`'s `query source`/`query
+  source-symbol` sections, rather than accepting the plan's own account
+  of what shipped.
+
+  **Verification findings:**
+  1. The structural claim this gap named — `symbols.vendor_id INTEGER
+     NOT NULL REFERENCES vendors(id)`, so a `symbols` row could never
+     exist without a real vendor to hang off — is resolved by exactly
+     one of the two candidate shapes the original filing itself named as
+     possible fixes ("a wholly separate `project_symbols` table"): new,
+     vendor-independent `source_files`/`source_symbols` tables, confirmed
+     present in the current schema by direct reading, not by trusting the
+     plan's narrative.
+  2. The original motivating command
+     (`codecompass query symbol Posting`/`Amount` against Ledgerkit,
+     returning empty) is **not** literally now non-empty — `query
+     symbol` remains vendor-namespace-only by deliberate design, per
+     `docs/cli-reference.md`'s own text ("names aren't globally unique
+     across files — same posture `query symbol` already has across
+     vendors"). This is a legitimate, disclosed resolution of the exact
+     disambiguation question this entry's own filing raised ("does
+     `query symbol` then need to disambiguate... by name-collision") —
+     the answer chosen was a separate, parallel `query source-symbol`
+     namespace rather than a merge, avoiding the collision risk
+     entirely rather than solving it heuristically. The underlying
+     complaint (Ledgerkit's own first-party classes have **no
+     representation anywhere in `context-graph.db`**) is what this entry
+     actually filed, and that is what is fixed, confirmed live: a fresh
+     Ledgerkit clone at real current HEAD (`6c90b4c`, unchanged since
+     Phase 75), `Posting`/`Amount`/`Tag` re-resolved live at their real
+     current locations, all three now returned correctly by
+     `codecompass query source-symbol` (file, line, kind, exposure, full
+     verbatim docstring, `"indexed": true`), with zero tracked vendors
+     throughout — independently re-derived from the validation record's
+     own transcript, not taken on its narrative summary.
+  3. Vendor-independence and non-interference confirmed by a second,
+     separate line of evidence beyond Ledgerkit: a zero-vendor,
+     zero-`symbols`-row acceptance test against the real, freshly
+     populated `codecompass-template` repository (`source_files`/
+     `source_symbols` rows present for an added fixture with **0 rows in
+     `vendors`/`symbols`**, confirmed by direct `sqlite3` inspection per
+     the record — no synthetic "self" vendor row was invented, resolving
+     the other half of the original filing's own open design question
+     cleanly), plus CodeCompass's own dogfooding sync (1,165 real
+     `source_symbols` rows; an existing tracked vendor symbol,
+     `Anthropic`, still resolves correctly via `query symbol` alongside
+     first-party data in the same database with no cross-contamination).
+  4. The third record (an independent `context-evaluator` task-context
+     evaluation, PASS WITH GAPS, advantage LOW) does **not** weigh
+     against closure. Read it in full and independently confirmed its
+     own characterization: its low-advantage, incomplete-for-this-task
+     verdict traces entirely to *method-level* symbols (`to_dataframe()`
+     instances nested inside classes) — a scope boundary
+     `planning/phase-77-first-party-source-and-template.md` §2 names as
+     an explicit, documented non-goal ("first-party symbol extraction
+     stays top-level only"), disclosed at three independent surfaces
+     (the plan, `--help` text, `docs/cli-reference.md`) before the
+     failing query is even run — and the evaluation itself, applying
+     this queue's own "what does NOT belong here" exclusion for
+     query-output-formatting requests, correctly declined to file a new
+     `CG-NNN` for it. Nothing in that report casts doubt on the
+     top-level first-party symbols this gap was actually about; it
+     documents a narrower, different, already-disclosed limitation one
+     layer down.
+
+  **Outcome: `candidate` → `promoted-to-roadmap`.** Consistent with this
+  queue's own established practice of promoting directly at first
+  occurrence once a phase actually implements the fix, without waiting
+  for a second independent occurrence (`CG-004`/`CG-005`/`CG-006`/
+  `CG-008` precedent, and `CG-010`'s own Phase 76 triage note stating
+  this explicitly: recurrence strengthens GATE DD's aggregate input, it
+  is not a precondition an individually-fundable fix must clear).
+  Classification `graph-capability (GATE DD)` confirmed correct in
+  retrospect: the fix that actually landed was exactly the schema-level,
+  new-table shape the original filing predicted would be needed, not a
+  tunable heuristic. **Resolved 2026-09-29, Phase 77.**
+  `planning/phase-77-first-party-source-and-template.md` now owns this
+  gap. `promoted.md` line:
+  `CG-009 | 2026-09-29 | graph-capability |
+  src/codecompass/graph.py (source_files/source_symbols tables,
+  schema version 11) + src/codecompass/sync.py (_sync_source_files/
+  _sync_source_symbols, rebuild_project_graph wiring) +
+  src/codecompass/source_symbols.py + src/codecompass/cli.py
+  (query source / query source-symbol) + docs/cli-reference.md +
+  tests/test_graph.py + tests/test_sync.py + tests/test_cli.py
+  @ (this phase's own closeout commit)`.
+
+  **Forward-looking note, not a new `CG-NNN` entry:** the method-level
+  extraction boundary the context-evaluation report surfaced (top-level
+  declarations only; no recursion into class bodies, for any language)
+  is real and will recur on any task whose decisive facts live at method
+  granularity, as this one did. It is not filed here as a gap because it
+  fails this queue's own threshold the same way the evaluator concluded:
+  it is a disclosed, deliberate, mechanically-tractable-later scope
+  boundary (the fix, if ever taken up, is "recurse into `ClassDef`
+  bodies too" — an extraction-scope expansion, not a new relationship
+  kind mechanical detection structurally cannot produce), not a
+  structural incapacity of the class `CG-009` itself named. Recorded here
+  only as a pointer for whoever next revisits first-party symbol scope,
+  should method-level opacity recur independently on a future task and
+  cross a future filing's own bar.
 
 ### CG-008 — `context-graph.db`'s `symbols` table has no path for an external-process adapter's own structured symbol output
 
