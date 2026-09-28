@@ -215,3 +215,138 @@ standard closeout roster (`knowledge-curator`, `release-phase-auditor`,
 suite grew by 30 new tests (`test_git_topology.py`) plus additions across
 four existing test files; full `pytest`/`ruff`/`check_user_docs.py
 --strict` sweep run at closeout.
+
+## Corrective-pass addendum (2026-09-28, same day)
+
+Phase 76 was marked `done` (commit `b3abe07`) and then reopened the same
+day, at direct user request, after a review found three real defects the
+original closeout — including its own independent `release-phase-auditor`
+PASS WITH NON-BLOCKING OBSERVATIONS verdict — missed.
+
+### What was found
+
+1. **CLI false-certainty rendering.** `_render_topology`'s text renderer
+   used plain Python truthiness for three nullable facts — the current
+   worktree's own `is_dirty`, an initialized submodule's `child_is_dirty`,
+   and `revision_matches_pin` — silently rendering an unresolved/unknown
+   `None` the same as a hard `False` ("clean", "differs from pin"). This
+   is exactly the false-certainty class of bug §8's own explicit-
+   uncertainty discipline exists to prevent, and the original closeout's
+   own test suite never caught it because no existing fixture exercised
+   these three fields' `None` state specifically — every prior test used
+   an explicit `True`/`False`. `--json` output was already correct (it
+   round-trips the raw nullable value unchanged).
+2. **Wrong Git minimum-version claim.** `decisions/0063` point 8 claimed
+   Git 2.5 as the module's overall floor, verified only against
+   `--git-common-dir` (genuinely 2.5). `git worktree list` and `git
+   remote get-url` — both called unconditionally on every invocation —
+   were confirmed, directly against Git's own release notes
+   (`Documentation/RelNotes/2.7.0.txt`, cross-checked against the real
+   `builtin/rev-parse.c` source at the `v2.4.0`/`v2.5.0` tags for
+   `--git-common-dir` itself), to require Git 2.7.0. A real Git in the
+   2.5–2.6 range would have passed the initial `rev-parse` call, then
+   failed later at `worktree list` with a raw, confusing stderr string
+   misclassified as a generic `PARTIAL` result rather than the
+   structurally-expected, version-attributable failure it actually is.
+3. **A genuinely contradictory closeout rule.** `CLAUDE.md` §5 required
+   "any commit after the auditor's own pass that touches audited scope
+   voids that pass" — but the same paragraph's own terminal step (a
+   `roadmap-context-curator` reconciliation flipping `ROADMAP.md`'s row
+   to `done`) necessarily lands after the audit and necessarily touches
+   `ROADMAP.md`/`CONTEXT.md`, files the auditor's own checklist item 2
+   explicitly checks. Every phase closeout to date, including this
+   phase's own original one, had informally judged the curator's diff
+   "narrow enough" by eye, with no written standard to judge it against.
+
+### How each was fixed
+
+1. A shared `_tri_state_label` helper renders all three states explicitly
+   (`dirty`/`clean`/`unknown`, `matches pin`/`differs from pin`/
+   `comparison unresolved`); four new regression tests exercise exactly
+   the `None` cases the original suite never did; real rendered CLI
+   output (not only pytest assertions) was inspected directly to confirm.
+2. A single, narrow `git --version` check (`_detect_git_version`), run
+   once after a real repository is confirmed and before either 2.7-gated
+   command runs, short-circuits to an explicit, version-naming
+   `UNAVAILABLE` for anything below 2.7; an unparseable version never
+   blocks detection. `decisions/0064` supersedes `decisions/0063` point 8
+   (append-only — `0063`'s own text is unedited, per `CLAUDE.md` §2's
+   established convention, exercised previously at `decisions/0061`).
+   Live-verified against a real disposable repository with a
+   monkeypatched `git --version` output, not only via pytest.
+3. `CLAUDE.md` §5 gained a narrow, explicitly-enumerated exemption
+   covering only the terminal reconciliation commit's three legitimate
+   targets (the phase row, the current-state section, the plan file's
+   Status line) — the exact diff was presented to the user and approved
+   before being written, per §0's own approval-gate requirement, since no
+   agent may write `CLAUDE.md` and no exception exists for a
+   lead-initiated fix either. `planning/agent-led-workflow.md` step 14
+   and `.claude/agents/roadmap-context-curator.md` were both updated to
+   operationalize the exemption (naming the exact three targets, and
+   requiring the lead to read the curator's actual diff before treating a
+   phase as done) rather than leaving it as an ad hoc judgment call.
+
+### What worked
+
+- **The user's own review caught all three defects that a fresh,
+  independent `release-phase-auditor` pass had not** — a reminder that an
+  audit verifying "does the plan's own stated behavior match the code"
+  cannot catch a defect the plan itself never anticipated testing for
+  (item 1), a factual claim the plan itself asserted confidently but
+  never independently verified against primary sources (item 2), or a
+  contradiction in the governing process document itself, which is
+  outside any per-phase audit's own scope entirely (item 3).
+- **Authoritative primary-source verification, not memory or inference,
+  settled the Git-version question decisively.** Local
+  `/usr/share/doc/git/RelNotes/2.7.0.txt` (this machine's own installed
+  Git's bundled release notes) and GitHub's raw source at specific tags
+  (`v2.4.0`/`v2.5.0` `builtin/rev-parse.c`) gave an unambiguous,
+  independently-checkable answer rather than a plausible-sounding guess.
+- **The append-only ADR-supersession convention (`decisions/0061`'s own
+  precedent) resolved the "how do we correct an already-shipped ADR"
+  question cleanly** — no ambiguity about whether to edit `0063` in
+  place, because this project had already established the pattern once.
+- **Splitting the corrective work into five small, single-purpose commits**
+  (CLAUDE.md alone, CLI fix, Git-version fix, process operationalization,
+  plan/changelog amendment) kept each change independently reviewable and
+  matched `CLAUDE.md` §6's own "one logical change per commit" guidance
+  even under corrective-pass pressure to move fast.
+
+### What didn't work / process gap this surfaces
+
+- **No existing DoD gate specifically checks "does every nullable field
+  the renderer touches have a test exercising its `None` state."** This
+  is a real, generalizable gap — any future phase with nullable
+  provenance fields and a human-readable renderer is exposed to the same
+  class of bug this phase's own test suite missed. Not filed as a new
+  learning here (the corrective pass's own scope is Phase 76 specifically,
+  per the user's explicit "no expansion" instruction) — worth a future
+  phase's own consideration, not invented as a rule here.
+- **No mechanical or process check previously existed for verifying a
+  plan's own stated external-tool version-compatibility claim against
+  the tool's actual authoritative history** — this phase's Git-2.5 claim
+  went unverified against Git's own release notes for two full amendment
+  rounds and the original implementation, only caught by an explicit,
+  separate user-directed review. Also not expanded into a new rule here,
+  per the same narrow-scope instruction — noted for awareness only.
+- **`L-065`** (filed `candidate`, per explicit instruction to run the
+  normal `knowledge-curator` triage rather than self-assign a promoted
+  status) covers the third defect's own root-cause analysis in full.
+
+### Corrective-pass commits
+
+`feaaaa0` (CLAUDE.md §5 fix, alone, user-approved), `db33352` (CLI
+rendering fix + 4 tests), `bb21122` (Git version floor fix +
+`decisions/0064` + 2 tests + doc updates), `6d668db` (workflow/agent
+operationalization + `L-065` filing), `a89920d` (plan-file corrective
+amendment + CHANGELOG entry), `48a5fea` (interim `ROADMAP.md`/`CONTEXT.md`
+reopening reconciliation).
+
+### Closeout sequence for this corrective pass
+
+Per the user's own explicit instruction: a fresh, independent
+`docs-reconstructor` drift audit; `knowledge-curator` triage of `L-065`;
+a fresh, independent `release-phase-auditor` completion audit (requiring
+PASS or PASS WITH NON-BLOCKING OBSERVATIONS); and only then a final
+`roadmap-context-curator` reconciliation, itself verified to satisfy
+`CLAUDE.md` §5's own newly-fixed exemption, restoring Phase 76 to `done`.
