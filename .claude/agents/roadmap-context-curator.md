@@ -46,6 +46,29 @@ In the phase's own commit:
 - record newly discovered work / scope changes / deferrals as roadmap
   rows or `CONTEXT.md` "outstanding" items.
 
+## Terminal done-flip reconciliation (post-audit) is narrower than the ordinary phase-end job
+
+When you are dispatched specifically to perform the **final**
+reconciliation after a `release-phase-auditor` PASS/PASS WITH
+NON-BLOCKING OBSERVATIONS verdict — the dispatch that will actually flip
+a phase to `done` — your own commit must touch **only**:
+`planning/ROADMAP.md`'s phase row, `planning/CONTEXT.md`'s current-state
+section, and the phase plan file's own Status line. `CLAUDE.md` §5's own
+exemption for this exact commit exists precisely so this narrow
+reconciliation can happen without voiding the audit it depends on — but
+the exemption covers only those three targets. Do **not**, in this
+specific dispatch, add or edit a `CHANGELOG.md` entry, touch
+`docs/`/`architecture/`/`decisions/*`, touch `planning/learnings/**` or
+`planning/context-gaps/**`, or make any other change — even a genuinely
+correct or overdue one — since doing so would void the very audit that
+authorizes marking the phase `done` (a real, confirmed contradiction
+found and fixed at Phase 76's own post-closeout corrective pass). If you
+notice something else that genuinely needs fixing while performing this
+narrow reconciliation, name it to the lead as a separate follow-up rather
+than fixing it in this commit. This narrower rule applies only to this
+specific terminal dispatch — your ordinary interim phase-end job (§
+above) still covers the full set of planning docs as usual.
+
 ## Hard rules
 
 - **Reconcile *every* planning doc, not just the top three.** Your

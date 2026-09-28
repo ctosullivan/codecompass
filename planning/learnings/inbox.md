@@ -8,6 +8,80 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-065 — `CLAUDE.md` §5's own closeout rule was internally contradictory: the terminal reconciliation commit it requires could technically void the audit that authorizes it
+
+- **origin:** Phase 76 (Git repository topology awareness), post-closeout
+  corrective pass — direct user request, review found the gate itself,
+  not the phase's own implementation, was broken.
+- **date:** 2026-09-28
+- **project_revision:** working tree during Phase 76's corrective pass,
+  after commit `b3abe07` (Phase 76's original, now-reopened `done` mark).
+- **observation:** `CLAUDE.md` §5 stated "any commit after the auditor's
+  own pass that touches audited scope voids that pass and requires a
+  fresh one before this transition happens." The same paragraph also
+  requires, as the terminal step, a `roadmap-context-curator`
+  reconciliation commit that flips `planning/ROADMAP.md`'s phase row to
+  `done` and updates `planning/CONTEXT.md`'s current-state section —
+  both files the auditor's own checklist item 2 explicitly checks as
+  part of "audited scope." Read literally, the one commit required to
+  ever reach `done` necessarily voids the audit that was supposed to
+  authorize it, making the gate structurally impossible to satisfy
+  without either (a) silently ignoring the letter of the rule (which is
+  what every phase closeout to date, including Phase 76's own original
+  closeout, actually did — informally verifying the curator's diff was
+  "narrow enough" without any documented standard for what "narrow
+  enough" meant) or (b) never actually reaching a clean `done` state.
+- **evidence:** `CLAUDE.md` §5 (pre-fix text, commit `b3abe07` and
+  earlier); `planning/agent-led-workflow.md` step 14 (pre-fix text,
+  describing the same "any commit voids it" rule with no exemption);
+  Phase 76's own original closeout (`8c053f7`→`b3abe07`), where the lead
+  informally re-read the curator's diff and judged it "narrow enough" by
+  eye, with no written standard to judge it against — exactly the kind
+  of ad hoc, unrepeatable check this project's own process discipline
+  otherwise avoids.
+- **why this happened:** the rule was written (`L-060`'s own fix, Phase
+  75) to close a real, confirmed defect — the lead self-serving the
+  ROADMAP/CONTEXT done-flip without ever dispatching an independent
+  audit at all. That fix correctly made "any subsequent commit voids the
+  audit" the default, but never separately considered that the *cure*
+  for the original defect (a mandatory, dispatched, terminal
+  reconciliation commit) is itself a commit that necessarily lands after
+  the audit and necessarily touches ROADMAP/CONTEXT — the same files the
+  new rule's own scope net was cast wide enough to catch. A rule
+  correctly closing one failure mode opened an internal contradiction in
+  the very next clause.
+- **could mechanical detection ever catch this?** No — this is a logic
+  contradiction in a governance document, not a code or data defect; no
+  `check_user_docs.py`-style check operates on `CLAUDE.md`'s own internal
+  consistency. Only a close human/agent read of the rule's own stated
+  consequences against what it actually requires next catches it.
+- **smallest candidate that would fix it:** a narrow, explicitly-
+  enumerated exemption for the one commit the rule itself mandates —
+  naming exactly which files/fields are exempt (the phase row, the
+  current-state section, the plan file's Status line) and nothing
+  broader — plus a mechanical confirmation step (the lead reading
+  `git diff --stat` against that exact list) before treating the phase
+  as done. A broader "trust the curator's own judgment" fix was
+  considered and rejected — it would reintroduce exactly the
+  unrepeatable, ad hoc standard this entry's own "evidence" section
+  criticizes.
+- **classification:** project-rule
+- **status:** candidate
+- **recurrence:** first occurrence
+- **note for triage:** the `CLAUDE.md` §5 fix itself was already applied
+  directly by the lead (the only path available, per `CLAUDE.md` §0's own
+  approval-gate — no agent may write `CLAUDE.md`), with the exact diff
+  presented to and approved by the user before it was written, plus
+  matching operationalization already landed in
+  `planning/agent-led-workflow.md` step 14 and
+  `.claude/agents/roadmap-context-curator.md`'s new "Terminal done-flip
+  reconciliation" section. This entry is filed as `candidate` rather than
+  self-assigned `promoted`, per the user's own explicit instruction to
+  use the normal `knowledge-curator` triage process rather than inventing
+  a learning status directly — triage should confirm the fix that
+  already landed is sound and complete (right destinations, right scope,
+  no gap), not decide whether to apply it a second time.
+
 ### L-064 — `L-063`'s own landed rule (never claim a fresh subagent can see conversation-only content) was violated again, in the very next phase that needed it, despite being written directly into the workflow step being followed
 
 - **origin:** Phase 76 (Git repository topology awareness) task-context

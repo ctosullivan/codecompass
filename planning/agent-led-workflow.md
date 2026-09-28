@@ -346,11 +346,33 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
     (two stale citations) was fixed in a further commit that was never
     itself re-audited before the state was pushed — the fix could
     equally have introduced a new problem, and nothing would have caught
-    it. Only on a verdict obtained *against the exact state about to be
-    marked `done`* does the lead **re-dispatch `roadmap-context-curator`
-    for the final reconciliation** — flip the `ROADMAP.md` row to `done`
-    now that every DoD condition genuinely holds, and confirm
-    `CONTEXT.md` reflects the retro/triage/audit outcomes — then commit
+    it.
+
+    **One explicit, narrow exemption to "any commit voids the verdict"**
+    (`CLAUDE.md` §5, corrected post-Phase-76-closeout): the terminal
+    `roadmap-context-curator` reconciliation commit itself — flipping
+    `planning/ROADMAP.md`'s phase row to `done`, overwriting
+    `planning/CONTEXT.md`'s current-state section, and updating the
+    phase plan file's own Status line, **and nothing else** — is not
+    "audited scope" for this purpose, since the audit is required
+    precisely so this commit can be made; treating it as self-
+    invalidating made the gate impossible to ever satisfy, a real,
+    confirmed contradiction (Phase 76's own post-closeout corrective
+    pass). Concretely: only on a verdict obtained *against the exact
+    state about to be marked `done`* does the lead **re-dispatch
+    `roadmap-context-curator` for the final reconciliation** — flip the
+    `ROADMAP.md` row to `done` now that every DoD condition genuinely
+    holds, and confirm `CONTEXT.md` reflects the retro/triage/audit
+    outcomes. **Before treating the phase as done, the lead reads the
+    curator's actual diff (`git diff --stat` is sufficient) and confirms
+    it touches only those three named targets** — no `CHANGELOG.md`
+    content change, no `docs/`/`architecture/`/`decisions/*` edit, no
+    `src/`/test change, no `planning/learnings/**`/
+    `planning/context-gaps/**` edit, no other file. If the curator's own
+    commit touches anything outside that enumerated set, the audit is
+    voided exactly as any other post-audit commit would void it, and
+    must be repeated against the new state before `done` is genuinely
+    reached. Only once this check passes does the lead commit
     (`type(phase-N): summary`, no AI attribution — `CLAUDE.md` §7) and
     move to the next phase.
 
