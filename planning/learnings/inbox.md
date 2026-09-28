@@ -8,6 +8,84 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-064 — `L-063`'s own landed rule (never claim a fresh subagent can see conversation-only content) was violated again, in the very next phase that needed it, despite being written directly into the workflow step being followed
+
+- **origin:** Phase 76 (Git repository topology awareness) task-context
+  evaluation — the lead's own `context-evaluator` dispatch prompt stated
+  "Both dispatched agents' full reports, verbatim, already delivered in
+  this conversation's own message history... read them there in full,"
+  exactly the claim `L-063` (landed one phase earlier, same session,
+  `agent-led-workflow.md` step 7) says must never be made.
+- **date:** 2026-09-28
+- **project_revision:** working tree at Phase 76 implementation
+- **observation:** `L-063` was filed and promoted during Phase 75's own
+  closeout, landing real text in `planning/agent-led-workflow.md` step 7
+  ("A dispatch prompt must never claim a fresh subagent already has
+  access to content that exists only in the dispatching session's own
+  conversation history... write it to a file first and point the agent
+  at the file"). One phase later, writing the `context-evaluator`
+  dispatch prompt for Phase 76's own task-context evaluation, the lead
+  made the *identical* claim about the baseline/treatment agents' reports
+  — despite `agent-led-workflow.md` step 7 being the exact governing
+  section for this exact dispatch. The dispatched `context-evaluator`
+  caught this itself, disclosed it honestly in its own report ("I was
+  dispatched as a fresh session with no visibility into the conversation
+  that dispatched the two agents... per the task's own disclosed risk
+  (`L-063`), I did not assume access to that history"), and adapted its
+  own methodology to compensate (re-deriving ground truth independently
+  rather than stalling) — the same robustness-by-design `L-063`'s own
+  filing already praised in the Phase 75 instance. No harm resulted this
+  time either, for the same reason: `context-evaluator`'s own charter
+  ("establish ground truth by inspecting the target directly, never
+  trust either report") does not actually *require* the two reports to
+  produce a valid verdict, only to enrich a transcript-grounded
+  `L-027` check the report explicitly flagged as unavailable.
+- **evidence:** the Phase 76 `context-evaluator` dispatch prompt itself
+  (this conversation, same turn that also dispatched baseline/treatment);
+  the returned report's own "Disclosed limitation of this review" section
+  naming `L-063` by id and describing exactly this gap;
+  `planning/agent-led-workflow.md` step 7's already-landed `L-063` text,
+  confirmed present and unchanged since Phase 75.
+- **why this happened:** the rule exists in a governing document the
+  lead did not re-read immediately before writing this specific dispatch
+  prompt — the same general failure shape `L-006` already named for a
+  different rule ("don't hand-patch the planning docs yourself") and
+  `L-060`'s own root-cause analysis this same session already diagnosed
+  more broadly ("a designed check bypassed by momentum, not malice").
+  Landing a rule in a workflow document does not, by itself, guarantee
+  the next dispatch that needs it actually consults that document at the
+  point of writing the prompt — the same "rule exists in docs but not
+  enforced at point of action" shape this project has now hit at least
+  three times (`L-006`, the original `L-060`/`L-061` closeout defect,
+  and now this).
+- **could mechanical detection ever catch this?** partially — a
+  mechanical check could grep a dispatch prompt's own text for a phrase
+  pattern like "already in this conversation" / "already delivered in
+  this conversation" before the dispatch is sent, and fail loudly if
+  found without an accompanying file path also being named in the same
+  prompt. This would not catch every phrasing of the same mistake, but
+  would catch the literal repeat of this exact wording, which is
+  cheap and specific enough to be worth adding given it has now recurred
+  once already.
+- **smallest candidate that would fix it:** (1) a `scripts/check_user_docs.py`-style
+  mechanical check is likely overkill for a one-off dispatch-prompt
+  phrasing question and not proposed here; (2) the more direct fix:
+  `agent-led-workflow.md` step 7's own `L-063` text gains one sentence
+  instructing the lead to write any multi-agent-comparison's own prior
+  reports to disk *immediately upon receipt*, before drafting the next
+  dispatch prompt that will reference them — removing the *temptation*
+  to claim conversation-history access at all, since a real file path
+  would already exist to point at instead. This is a stronger fix than
+  a reminder alone, since it changes the lead's own default action at
+  the point the first report arrives, not just at the point of writing
+  the next dispatch prompt.
+- **classification:** workflow
+- **status:** candidate
+- **recurrence:** second occurrence of the same underlying rule violation
+  (first: Phase 75, which is what produced `L-063` itself; second: this
+  entry, Phase 76) — but the first occurrence predated the rule's own
+  existence, so this is the rule's **first real test**, and it failed.
+
 ### L-063 — a subagent dispatch prompt must never claim a fresh agent already has access to content that exists only in the dispatching session's own conversation history
 
 - **origin:** Phase 75 (Priority A Ledgerkit validation), retro

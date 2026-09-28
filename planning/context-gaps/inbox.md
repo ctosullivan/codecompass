@@ -8,6 +8,114 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
 
 ---
 
+### CG-011 — a sibling worktree's reported branch/HEAD carries no inline staleness signal, unlike its explicitly-nulled dirty state
+
+- **origin:** Phase 76 (Git repository topology awareness), independent
+  `context-evaluator` verification of `codecompass query topology`
+- **date:** 2026-09-28
+- **codecompass_revision:** `46ab3c5` (Phase 76 implementation commit)
+- **project:** codecompass (own dev) — self-hosted evaluation fixtures
+  (disposable scratch clones), plus a separate controlled experiment in
+  a disposable scratch repo
+- **the edge:** `A ↔ B` where A = `git_worktrees` row for a *sibling*
+  (non-current) worktree, B = that worktree's own real, live
+  branch/HEAD state at query time
+- **edge kind:** other (a provenance/freshness-signalling gap in an
+  already-correct mechanical fact, not a missing relationship between
+  two entities)
+- **agent's reasoning:** `context-evaluator`, tasked with independently
+  rating `query topology`'s own output, ran a controlled experiment in a
+  disposable scratch repo (not the evaluation fixtures): synced worktree
+  A, advanced worktree B's HEAD with a new commit, then re-queried
+  topology from A *without re-syncing A*. A continued reporting B's
+  **old, pre-advance** HEAD indefinitely — confirmed this is the tool's
+  documented "never live" contract (`docs/cli-reference.md`) working
+  exactly as designed, not a bug. The gap is that this staleness has **no
+  signal at the point of output** — `is_dirty` is explicitly `null`/"not
+  probed" for a sibling, so a reader is warned not to trust it, but
+  `branch`/`head_commit` are rendered with the same unqualified
+  confidence as the current checkout's own live-equivalent fields, with
+  no "as of &lt;this checkout's&gt; own last sync" marker anywhere in the
+  CLI text or the JSON payload itself.
+- **what the graph shows instead:** `git_worktrees.branch`/`head_commit`
+  for a sibling row, populated, with no companion field or flag
+  indicating when it was observed or that it may already be stale
+  relative to the sibling's own real, current state.
+- **could mechanical detection ever catch this?** yes-with-better-
+  heuristics — a per-worktree `synced_at` (or reuse of
+  `meta.last_deterministic_rebuild_at`'s own timestamp, captured into the
+  row at rebuild time) surfaced in `query topology --json`'s sibling
+  entries would let a caller judge staleness itself, the same
+  "represent uncertainty explicitly rather than silently" discipline
+  this phase already applies to `is_dirty=null`.
+- **smallest candidate that would fix it:** a nullable `observed_at`-style
+  column added to `git_worktrees` (or a single per-repository "as of"
+  timestamp reused from `meta.last_deterministic_rebuild_at`, cheaper if
+  precision-per-row isn't needed), rendered as an explicit qualifier next
+  to a sibling's branch/HEAD in both CLI and JSON output.
+- **classification:** graph-capability — needs a new schema column plus
+  a rendering decision about how to present relative staleness, not a
+  detection-heuristic tuning change.
+- **status:** candidate
+- **recurrence:** first occurrence
+- **curation:** pending — not yet triaged by `knowledge-curator`.
+
+### CG-010 — `git_submodules` has no field distinguishing a staged-but-uncommitted parent gitlink bump from purely local, unstaged child-checkout drift
+
+- **origin:** Phase 76 (Git repository topology awareness) — surfaced
+  independently by both the dispatched treatment agent and the
+  independent `context-evaluator` verification, on the exact same real
+  scenario (an uncommitted `git submodule` checkout divergence)
+- **date:** 2026-09-28
+- **codecompass_revision:** `46ab3c5` (Phase 76 implementation commit)
+- **project:** codecompass (own dev) — self-hosted evaluation fixtures
+- **the edge:** `A ↔ B` where A = `git_submodules.pinned_commit` (sourced
+  only from `git ls-tree HEAD`), B = the parent repository's own *index*
+  state for the same submodule path (`git ls-files --stage`, distinct
+  from `HEAD` when a `git add adapters/haskell` has been staged but not
+  yet committed)
+- **edge kind:** other (a missing distinction within an already-correct
+  mechanical fact, not a missing relationship between two artifacts)
+- **agent's reasoning:** Task A of this phase's own task-context
+  evaluation explicitly asked: when a submodule's checked-out commit
+  differs from the parent's pin, does that difference represent
+  committed parent-repository state, or only local uncommitted
+  child-checkout state? `codecompass query topology --json` answers the
+  first three parts of Task A directly (both SHAs, the match/mismatch
+  verdict) but has no field for this fourth, explicit question — both
+  the treatment agent and `context-evaluator`, independently, had to
+  fall back to ordinary `git status`/`git diff --cached -- <path>`
+  regardless of CodeCompass's own availability. Confirmed by reading
+  `git_topology.py::_detect_pinned_commit` directly: it only ever runs
+  `git ls-tree HEAD -- <path>`, never inspects the index separately, so
+  a staged-but-uncommitted gitlink bump and a genuinely unstaged local
+  checkout divergence currently look identical to CodeCompass.
+- **what the graph shows instead:** `git_submodules.pinned_commit`
+  reflects `HEAD` only; nothing in the schema reflects the index's own,
+  potentially-different, gitlink SHA.
+- **could mechanical detection ever catch this?** yes-with-better-
+  heuristics — compare the index's own gitlink SHA (`git ls-files
+  --stage -- <path>`) against `HEAD`'s; `sync` already shells out to
+  `git` elsewhere (this doesn't contradict `query`'s own "never invokes
+  git" contract, since the comparison would happen at sync/detection
+  time, same as every other topology fact).
+- **smallest candidate that would fix it:** a new, nullable
+  `git_submodules` column (e.g. `staged_commit`, or a boolean
+  `pin_is_staged_uncommitted`) populated by one additional `git`
+  invocation in `git_topology.py::_build_submodule_info`, rendered
+  explicitly in `query topology`'s output alongside the existing
+  pinned/checked-out pair.
+- **classification:** detection-improvement — a small, additive column
+  populated by a git call the detection module already has the
+  machinery to make, not a new ontological concept.
+- **status:** candidate
+- **recurrence:** first occurrence — independently corroborated twice in
+  the same phase (the dispatched treatment agent, then `context-evaluator`
+  from a completely independent re-derivation), a stronger-than-usual
+  first filing though not yet a second, separately-observed instance
+  per `context-gaps/README.md`'s own recurrence bar.
+- **curation:** pending — not yet triaged by `knowledge-curator`.
+
 ### CG-009 — `context-graph.db`'s `symbols` table has no path for a project's *own* first-party source at all, in any ecosystem
 
 - **origin:** Phase 75 (Ledgerkit Priority A validation — `cur:` query
