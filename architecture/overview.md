@@ -785,10 +785,15 @@ one repository, the identity `git_repositories.common_dir` uses). Every
 topology operation (finding `.gitmodules`, resolving a submodule mount
 path, matching the current worktree in `git worktree list`'s output) is
 relative to the worktree root, never the invocation root, when the two
-differ. Requires Git 2.5+ only (the version that introduced `git
-worktree`/`--git-common-dir` themselves) — no newer flag is used
-anywhere, a deliberate choice over the convenience-only
-`--path-format=absolute` (Git 2.31) an earlier design used.
+differ. Requires Git 2.7+ (`decisions/0064`) — `--git-common-dir` itself
+only needs Git 2.5, but `git worktree list`/`git remote get-url` (both
+called unconditionally on every detection pass) were first introduced in
+Git 2.7.0, confirmed directly against Git's own release notes. No flag
+newer than 2.7 is used anywhere, a deliberate choice over the
+convenience-only `--path-format=absolute` (Git 2.31) an earlier design
+used. A Git older than 2.7 is detected via a single `git --version`
+check and reported as `unavailable` with an explicit, version-naming
+reason, never a crash or a confusing raw command-failure message.
 
 **Status model**: `detected` / `not_git` / `unavailable` (includes a
 bare repository as the current checkout — not supported, detected

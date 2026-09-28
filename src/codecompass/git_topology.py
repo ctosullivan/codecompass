@@ -11,9 +11,20 @@ worktree), the *Git worktree root* (`git rev-parse --show-toplevel`), and
 the *Git common directory* (`git rev-parse --git-common-dir` — identical
 across every worktree of one repository, the canonical identity this
 module uses). See planning/phase-76-git-repository-topology.md §5-§8 for
-the full design rationale, including why no Git feature newer than
-`git worktree`/`--git-common-dir` themselves (Git 2.5, July 2015) is ever
-required.
+the full design rationale.
+
+Git 2.7.0 (January 2016) is this module's real minimum version, gated by
+`git worktree list` and `git remote get-url` (both first introduced in
+2.7.0, confirmed directly against Git's own release notes) — narrower
+than an earlier, incorrect Git 2.5 claim (`decisions/0063` point 8, since
+superseded by `decisions/0064`) that checked only `--git-common-dir`
+(genuinely 2.5) without checking the other two commands this module also
+calls unconditionally. `detect_git_topology` checks the installed Git's
+own version once, after confirming a real repository/worktree exists but
+before calling either 2.7-gated command, and returns `UNAVAILABLE` with
+an explicit, version-naming reason for anything older — never a raw,
+confusing "unknown subcommand" error surfaced from the failed command
+itself, and never silently misclassified as `not_git`.
 
 `detect_git_topology` never returns `None` and never raises — its own
 `status` field tells the caller how much of the rest to trust (§6):
@@ -37,6 +48,7 @@ never needs to represent "I have not run yet."
 
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -45,6 +57,19 @@ from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
 _GIT_TIMEOUT_SECONDS = 10
+
+# `git worktree list` and `git remote get-url` were both first introduced in
+# Git 2.7.0 (January 2016) -- confirmed directly against Git's own release
+# notes (Documentation/RelNotes/2.7.0.txt: "git worktree learned a list
+# subcommand" and "git remote learned get-url subcommand"), and absent from
+# 2.5.0/2.6.0. This module unconditionally calls both on every
+# `detect_git_topology` invocation, so 2.7 -- not 2.5 -- is the real floor
+# for this module as a whole, superseding decisions/0063 point 8's original
+# (incorrect) Git 2.5 claim, which only verified `--git-common-dir` itself
+# (genuinely 2.5) without checking the other two commands. See
+# decisions/0064.
+_MIN_GIT_VERSION = (2, 7)
+_GIT_VERSION_RE = re.compile(r"git version (\d+)\.(\d+)")
 
 
 class TopologyStatus(StrEnum):
@@ -195,6 +220,25 @@ def _normalize_head_commit(head: str | None) -> str | None:
     return head
 
 
+def _detect_git_version(cwd: Path) -> tuple[int, int] | None:
+    """Best-effort `(major, minor)` from `git --version`'s own stdout.
+    Returns `None` on any failure or unparseable output (a custom build, an
+    unusual localization, ...) rather than raising — an unknown version
+    never blocks detection on its own; only a version that *parsed* and is
+    genuinely below `_MIN_GIT_VERSION` does.
+    """
+    try:
+        result = _run_git(["--version"], cwd)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    match = _GIT_VERSION_RE.search(result.stdout)
+    if match is None:
+        return None
+    return (int(match.group(1)), int(match.group(2)))
+
+
 def _empty_topology(
     project_root: Path, status: TopologyStatus, reason: str | None
 ) -> RepositoryTopology:
@@ -252,6 +296,18 @@ def detect_git_topology(project_root: Path) -> RepositoryTopology:
         if Path(raw_common_dir).is_absolute()
         else (project_root / raw_common_dir)
     ).resolve()
+
+    git_version = _detect_git_version(worktree_root)
+    if git_version is not None and git_version < _MIN_GIT_VERSION:
+        major, minor = git_version
+        floor_major, floor_minor = _MIN_GIT_VERSION
+        return _empty_topology(
+            project_root,
+            TopologyStatus.UNAVAILABLE,
+            f"git {major}.{minor} is older than the minimum version "
+            f"({floor_major}.{floor_minor}) required for repository topology "
+            "detection (git worktree list / git remote get-url)",
+        )
 
     origin_url = _detect_origin_url(worktree_root)
 

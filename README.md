@@ -154,7 +154,7 @@ Running codecompass gets you, for every tracked dependency:
   distinguishes a worktree of *this* repository from a genuinely
   separate project, and a submodule's parent-pinned commit from what's
   actually checked out — read-only, persisted at the last `sync`, never
-  a live `git` call. Requires Git 2.5+.
+  a live `git` call. Requires Git 2.7+.
 
 ## Evidence & provenance
 

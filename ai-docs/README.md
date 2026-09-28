@@ -46,7 +46,7 @@ and how a project's own docs relate to them.
   never live (persisted at the last `sync`) — that distinguish a
   worktree of *this* repository from a genuinely separate project, and a
   submodule's parent-pinned commit from what's actually checked out.
-  Requires Git 2.5+.
+  Requires Git 2.7+ (`decisions/0064`).
 
 ## What it does NOT do
 

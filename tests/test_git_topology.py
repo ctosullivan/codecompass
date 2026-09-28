@@ -98,6 +98,79 @@ def test_bare_repository_is_unavailable_not_a_crash(tmp_path) -> None:
     assert topo.worktrees == ()
 
 
+def test_git_older_than_2_7_is_unavailable_with_a_clear_version_reason(
+    tmp_path, monkeypatch
+) -> None:
+    """Corrective pass: `git worktree list`/`git remote get-url` were both
+    only introduced in Git 2.7.0 (confirmed against Git's own release
+    notes) -- a real repository on an older-but->=2.5 Git (old enough to
+    support `--git-common-dir` but too old for those two commands) must be
+    classified UNAVAILABLE with an explicit, version-naming reason, and
+    must never reach the worktree-list call at all."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    (repo / "a.txt").write_text("hello")
+    _commit(repo)
+
+    import codecompass.git_topology as gt
+
+    real_run_git = gt._run_git
+    calls: list[list[str]] = []
+
+    def _fake_run_git(args, cwd):
+        calls.append(args)
+        if args == ["--version"]:
+
+            class _FakeVersion:
+                returncode = 0
+                stdout = "git version 2.6.6\n"
+                stderr = ""
+
+            return _FakeVersion()
+        return real_run_git(args, cwd)
+
+    monkeypatch.setattr(gt, "_run_git", _fake_run_git)
+    topo = detect_git_topology(repo)
+
+    assert topo.status == TopologyStatus.UNAVAILABLE
+    assert "2.6" in topo.reason
+    assert "2.7" in topo.reason
+    assert topo.worktrees == ()
+    assert topo.submodules == ()
+    assert not any(call[:2] == ["worktree", "list"] for call in calls)
+    assert not any(call[:2] == ["remote", "get-url"] for call in calls)
+
+
+def test_git_version_unparseable_does_not_block_detection(tmp_path, monkeypatch) -> None:
+    """An unparseable `git --version` output (an unusual build/locale)
+    must never block detection outright -- only a version that parsed and
+    is genuinely below the floor does."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    (repo / "a.txt").write_text("hello")
+    _commit(repo)
+
+    import codecompass.git_topology as gt
+
+    real_run_git = gt._run_git
+
+    def _fake_run_git(args, cwd):
+        if args == ["--version"]:
+
+            class _FakeVersion:
+                returncode = 0
+                stdout = "custom-git-build\n"
+                stderr = ""
+
+            return _FakeVersion()
+        return real_run_git(args, cwd)
+
+    monkeypatch.setattr(gt, "_run_git", _fake_run_git)
+    topo = detect_git_topology(repo)
+
+    assert topo.status == TopologyStatus.DETECTED
+
+
 def test_single_worktree_clean_repo(tmp_path) -> None:
     repo = tmp_path / "repo"
     _init_repo(repo)

@@ -160,10 +160,13 @@ values) means "no sync has ever run under Phase-76-aware code" —
 `cli.py::query_topology` checks for this before ever reading the value,
 and never invokes `git` itself on any path, including this one.
 
-Requires Git 2.5+ (the version `git worktree`/`--git-common-dir`
-themselves were introduced in) — no newer feature is used anywhere in
-`git_topology.py`; an older Git surfaces as `unavailable` with the raw
-error as `git_topology_reason`, never a crash.
+Requires Git 2.7+ (`decisions/0064`) — `--git-common-dir` itself only
+needs Git 2.5, but `git worktree list`/`git remote get-url`, both called
+unconditionally on every detection pass, need 2.7; no feature newer than
+2.7 is used anywhere in `git_topology.py`. A Git older than 2.7 is
+detected via a single `git --version` check and surfaces as
+`unavailable` with an explicit, version-naming `git_topology_reason`,
+never a crash.
 
 ## `RELATION_LABELS` — the closed taxonomy
 

@@ -222,13 +222,18 @@ prints a one-line note pointing at `sync` rather than a traceback.
     `.gitmodules` declares the path but no gitlink exists in `HEAD`'s
     tree yet), and — if initialized — the checked-out revision with an
     explicit match/mismatch against the pin, its own branch, and its own
-    dirty state. A `.gitmodules` path that resolves outside the
+    dirty state. Every one of these dirty/match facts is nullable and
+    rendered as one of three explicit states — never collapsed into a
+    false negative — `dirty`/`clean`/`unknown` for workspace state,
+    `matches pin`/`differs from pin`/`comparison unresolved` for the pin
+    comparison. A `.gitmodules` path that resolves outside the
     repository's own worktree root is refused, not followed — shown as
     "path escapes repository — refused," nothing else probed for that
-    entry. Requires Git 2.5+ (the version that introduced `git worktree`/
-    `--git-common-dir`, the primitives this command's own detection is
-    built on) — an older Git surfaces as "Git topology could not be
-    determined," not a crash.
+    entry. Requires Git 2.7+ (`decisions/0064`; `--git-common-dir` itself
+    only needs Git 2.5, but `git worktree list`/`git remote get-url` —
+    also used unconditionally by this command's own detection — need
+    2.7) — an older Git surfaces as "Git topology could not be
+    determined," with an explicit version-naming reason, not a crash.
 
 ```bash
 codecompass query vendors
