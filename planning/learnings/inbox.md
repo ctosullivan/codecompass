@@ -8,6 +8,187 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-067 — two related schema/plan-design heuristics surfaced during Phase 77's second amendment (binary-first-guess is often wrong for a cross-language concept; live-verify a natural key against ordinary, non-edge-case real code before committing to schema) — real and evidenced, but single-phase, not yet promotable to one specific artifact
+
+- **origin:** Phase 77 (First-party source awareness + `codecompass-template`)
+  retro "Lessons learnt" (both bullets) — filed at this triage's own
+  initiative after independently assessing the retro's "Candidate
+  learnings filed" section, which stated "none new this phase," per
+  `CLAUDE.md` §8's reservation of that judgment call to `knowledge-curator`
+  triage, not the retro-writing lead's own say-so (matching `L-029`'s own
+  precedent for exactly this situation).
+- **date:** 2026-09-29
+- **project_revision:** `fa47972` (Phase 77's second plan amendment,
+  where both corrections actually landed as text, before implementation)
+- **observation:** two distinct schema/ontology corrections in the same
+  amendment round shared a common shape: (1) `source_symbols.exposure`
+  and `source_files.symbol_index_status` each started as a two-state
+  model in the *first* amendment (`public`/`private`;
+  `indexed`/not-indexed) and needed a *second* round to become honest —
+  Rust's real three-tier visibility (`pub` / `pub(crate)`-etc. /
+  no-modifier) does not fit a public/private binary, and the real
+  fidelity gap between AST parsing (Python) and regex/line-scan
+  extraction (Rust, JS/TS) does not fit a binary indexed/not-indexed
+  split — both were widened to five-value vocabularies only after direct
+  review flagged the binary framing as too simplistic. (2) Separately,
+  the natural-key design for `source_symbols`
+  (`UNIQUE(source_file_id, name)`, the initial plan's own choice) was
+  **live-verified** — not merely reasoned about — against real, ordinary
+  (not edge-case) Python `@typing.overload`-stacked functions and a real
+  overloaded TypeScript function declaration, both run through the
+  actual existing extractors, before any schema was written; both
+  produced multiple same-named rows, confirming the natural key would
+  have crashed a real `codecompass sync` with `sqlite3.IntegrityError`
+  the first time it ever encountered ordinary, common function
+  overloading — not a hypothetical.
+- **evidence:** `planning/phase-77-first-party-source-and-template.md`
+  §3.2 ("Duplicate-identity design — the occurrence approach, chosen with
+  live evidence... not the logical-symbol (collapse) approach"), §0
+  ("Live-verified the overload-collision risk item 5 warns about, on both
+  ecosystems this plan supports — not assumed" — TypeScript
+  `extract_npm_symbols`/Python `extract_python_symbols`, three
+  `Symbol(name='foo', ...)` results each), §3.2's exposure section ("The
+  first amendment's binary `public`/`private` was itself too simplistic
+  once Rust's own three-tier visibility model... is considered"), §6
+  ("the initial plan's own first amendment implicitly treated
+  regex/line-scan extraction as equally complete to AST parsing by giving
+  both the same `INDEXED` status; this is dishonest about a real,
+  material difference in fidelity"); `planning/retros/phase-77-first-party-source-and-template.md`
+  "Lessons learnt" (both bullets, quoted in the observation above) and
+  "What worked" bullet 1 (same two corrections, from the "what worked"
+  angle).
+- **classification:** uncertain
+- **status:** retained
+- **recurrence:** heuristic (1) occurred twice within this single phase
+  (the `exposure` field, the `symbol_index_status` field) but has no
+  occurrence yet in any other phase; heuristic (2) is a single occurrence
+  with no recurrence yet.
+- **promoted_to:** —
+- **curation (Phase 77 triage, 2026-09-29, knowledge-curator):**
+  independently re-read the retro's "Lessons learnt" section against
+  `planning/phase-77-first-party-source-and-template.md`'s own §0/§3.2/§6
+  text directly (not taken on the retro's summary alone) — confirmed both
+  corrections are real, both happened only after direct review flagged
+  the binary framing (not caught by the extractor code or a mechanical
+  check), and the overload live-verification is exactly as described,
+  with matching, independently-checkable line numbers.
+
+  Considered, and rejected, simply agreeing with the retro's own "none
+  new this phase" framing without filing: `CLAUDE.md` §8 and `L-029`'s
+  own precedent are explicit that a retro/lead unilaterally deciding
+  something "doesn't generalize" is not itself how this project resolves
+  that question — only `knowledge-curator`'s own triage is. Filed
+  accordingly, then judged on the merits.
+
+  **On the merits, this is not the same shape as `L-047`'s "confirms
+  existing rules already work, no new gap" discard.** `L-047`'s two
+  catches (a fabricated URL, an overstated provenance claim) were each
+  already covered by a *specifically named* pre-existing rule/gap (`L-009`,
+  `L-031`) — the drafting session's review was simply that rule doing its
+  job. Here, no pre-existing candidate or promoted learning names either
+  "check whether a closed classification is genuinely binary before
+  finalizing it for a concept observed across multiple languages" or
+  "live-verify a natural key against ordinary, non-edge-case real code
+  before committing to schema" specifically (checked: no match for
+  "binary", "natural key", "live-verif" elsewhere in this queue except
+  this phase's own text). These are more specific than `CLAUDE.md` §1's
+  generic "if writing the plan surfaces an assumption not already
+  settled, pause and ask" clause, which is the general mechanism that
+  *did* catch both corrections this phase — but naming the specific
+  failure shape ("binary is often the wrong first guess for a
+  cross-language concept") is itself a real, potentially reusable
+  refinement of that general clause, in the same spirit as `L-024`'s own
+  narrow addition to `context-researcher.md` ("explicit schema/migration-
+  mechanism test-file check") drawn from a single occurrence.
+
+  **Outcome: retain, not promote, not discard.** Both heuristics are
+  real and evidenced, but the evidence is confined to one phase's one
+  amendment round (heuristic (1) recurred twice *within* that round;
+  heuristic (2) occurred once) — not yet the cross-phase recurrence this
+  project's own practice (`L-048`→`L-051`→`L-055`, `L-063`→`L-064`) has
+  repeatedly used to justify committing a new, permanent, specifically-
+  worded rule to `CLAUDE.md` §1 or a workflow document, and inventing
+  such a rule from a single session's own experience risks exactly the
+  low-value pile-up `L-047`'s own discard reasoning warned against. **If
+  either heuristic recurs in a future schema/plan-design phase** — most
+  plausibly the explicitly-deferred first-party relationship phase this
+  same plan's own §13 names, or any future ecosystem/adapter/schema
+  work — that second, cross-phase occurrence should trigger promotion
+  into `CLAUDE.md` §1 (a narrow, concrete addition mirroring `L-021`'s
+  own precedent: e.g. "a plan introducing a closed classification field
+  for a concept observed across more than one language/technique must
+  identify at least one genuine third value before treating two as
+  sufficient" / "a natural-key design must be live-verified against an
+  ordinary, non-edge-case real instance of the modeled language feature,
+  not only reasoned about, before the schema is finalized") rather than
+  restarting the evidence-gathering clock from zero with a fresh entry.
+
+### L-066 — `agent-led-workflow.md` step 5's `L-064` report-to-disk rule passed its first real-world exercise cleanly at Phase 77 — confirms an already-landed fix works, surfaces no new gap
+
+- **origin:** Phase 77 retro "What worked" bullet 2 — filed at this
+  triage's own initiative (same `CLAUDE.md` §8 reasoning as `L-067`
+  above: a retro's own "nothing new" framing does not settle the
+  question by itself).
+- **date:** 2026-09-29
+- **project_revision:** commit range `18cb251`..`4fb9483` (Phase 77);
+  the exercise itself happened at the baseline/treatment/context-evaluator
+  dispatch sequence within that range (report-writing-to-disk precedes
+  the `context-evaluator` dispatch reflected in the retro's commit `f75bd99`,
+  "context evaluation").
+- **observation:** `planning/agent-led-workflow.md` step 5's own
+  `L-064`-derived sub-bullet ("write a referenced agent's report to disk
+  immediately on receipt... before drafting any further dispatch
+  prompt") was followed correctly the first time it was actually needed
+  since landing at Phase 76's corrective pass: both the baseline and
+  treatment agents' reports were written to disk the moment each
+  arrived, before the `context-evaluator` dispatch prompt was drafted,
+  and that dispatch prompt correctly pointed the `context-evaluator` at
+  real file paths rather than claiming conversation-history access — the
+  exact failure mode `L-063`/`L-064` exist to prevent.
+- **evidence:**
+  `planning/retros/phase-77-first-party-source-and-template.md` "What
+  worked" bullet 2, in full: "`agent-led-workflow.md` step 5's own new
+  rule — write a referenced agent's report to disk immediately on
+  receipt — worked exactly as intended on its first real exercise since
+  landing at Phase 76's own corrective pass... `L-064`'s own proposed fix
+  is now confirmed working, not merely landed."; `planning/agent-led-workflow.md`
+  step 5's `L-064` sub-bullet, confirmed present and unchanged since
+  Phase 76.
+- **classification:** uncertain
+- **status:** discarded
+- **recurrence:** first confirming instance (not a recurrence of the
+  underlying failure — the opposite: the first real test the rule has
+  had since it was written, and it held).
+- **promoted_to:** —
+- **curation (Phase 77 triage, 2026-09-29, knowledge-curator):**
+  independently re-read `planning/agent-led-workflow.md` step 5 directly
+  and confirmed the `L-064` sub-bullet's text is present, unchanged,
+  exactly where the retro says it is; the retro's own commit list and
+  "Agents used" line (two general-purpose agents, then
+  `context-evaluator`) are consistent with a baseline→treatment→evaluator
+  sequence in the same shape `L-064` was written for. This is the exact
+  same shape as `L-047`'s own "confirms existing rules already work, no
+  new gap" disposition — a landed rule (`L-064`, already `promoted`) is
+  reported to have worked correctly on its first live exercise, with no
+  new failure mode, no new destination artifact needed, and no
+  gap surfaced. **Outcome: discard** — reason: confirms an already-landed
+  fix works in practice; no new artifact needed. The confirmation itself
+  is already adequately preserved in a durable, committed artifact (the
+  phase retro, `planning/retros/phase-77-first-party-source-and-template.md`,
+  which is permanent project history, not a transient queue entry) —
+  amending `L-064`'s own already-`promoted` record to append a
+  "confirmed working" note was considered and rejected: `promoted.md` is
+  explicitly pointers-only ("no giant permanent AI learnings document"),
+  and `inbox.md`/`candidates/` entries are not routinely revised after
+  their own curation note closes them (no other `promoted` entry in this
+  queue carries a later "confirmed in practice" addendum) — introducing
+  that pattern for `L-064` alone, without evidence it's needed generally,
+  would be a new, un-costed process habit, not a small fix. If this rule
+  is ever *violated* again (the failure mode, not its absence), that
+  would be new evidence reopening `L-063`/`L-064`'s own lineage, the same
+  way `L-064` itself was `L-063`'s second occurrence — but a clean pass
+  is not that.
+
 ### L-065 — `CLAUDE.md` §5's own closeout rule was internally contradictory: the terminal reconciliation commit it requires could technically void the audit that authorizes it
 
 - **origin:** Phase 76 (Git repository topology awareness), post-closeout
