@@ -1033,22 +1033,70 @@ concern.
 sibling-dirty-state disclosure (§8); otherwise as originally planned.
 
 1. **New CLI command**: `codecompass query topology [--json]` — added
-   to `cli.py`'s existing `query_app`, same `_graph_session`/`--json`
-   pattern as `query vendors`/`query relations`. **Second amendment:
-   checks for the presence of `meta.git_topology_status` at all,
-   before reading its value**:
-   - **Key entirely absent** (§4/§6) → "Git topology has not been
-     indexed yet; run `codecompass sync`." — plain text, exit code 0,
-     not an error. `--json` → `{"indexed": false}` (top-level; no
-     `status`/`repository`/`worktrees`/`submodules` keys at all, rather
-     than any of them being present-but-`null`, so a consumer cannot
-     mistake "never indexed" for "indexed and confirmed not a git
-     repository"). This is read purely from the persisted `meta` table
-     — **`query topology` never invokes `git` itself, on any code path,
-     including this one**; it does not silently perform live detection
-     merely because the persisted state is missing.
-   - Key present → `{"indexed": true, "status": ..., ...}` in JSON, and
-     for text output:
+   to `cli.py`'s existing `query_app`, same `--json`-flag convention as
+   `query vendors`/`query relations`, but **not** `_graph_session`/
+   `_open_graph_or_note`'s own shared open-or-note helper. **Third
+   amendment: this was a real, confirmed defect in the previous
+   design, not a stylistic choice** — `_open_graph_or_note` (`cli.py`)
+   returns early, printing its own generic `_NO_GRAPH_NOTE` and never
+   calling `graph.open_graph()` at all, the moment `context-graph.db`
+   doesn't exist on disk yet. A brand-new worktree (no `context-graph.db`
+   file at all) would therefore never reach the topology-specific "not
+   yet indexed" message this phase defines — it would print the shared,
+   generic note instead, silently losing the distinction §4/§6 require.
+   **A narrow, `query-topology`-specific resolution function is added
+   instead** (`_open_graph_for_topology`, `cli.py`, deliberately not a
+   change to the shared `_open_graph_or_note`/`_graph_session` helpers,
+   since every other `query` subcommand's existing behaviour for a
+   missing database is correct as-is and out of scope here — "do not
+   change unrelated query commands unless a shared helper change is
+   demonstrably cleaner," and it is not, since `query topology`'s
+   "absent" and "present-but-unindexed" cases collapse to the *same*
+   rendered outcome while every other command's "absent" case is
+   properly a distinct, generic "no context-graph.db yet" note the other
+   commands still need):
+
+   ```python
+   def _open_graph_for_topology(project_root: Path) -> sqlite3.Connection | None:
+       """None if context-graph.db doesn't exist at all -- read-only,
+       never creates the file as a side effect of a read-only command
+       (matching _open_graph_or_note's own posture), but prints nothing
+       itself: query_topology's own caller renders the specific "not yet
+       indexed" outcome for a None result, not _NO_GRAPH_NOTE."""
+       db_path = project_root / _GRAPH_DB_FILENAME
+       if not db_path.exists():
+           return None
+       return graph.open_graph(project_root)
+   ```
+
+   `query_topology`'s own body: `conn = _open_graph_for_topology(...)`;
+   if `conn is None` **or** `graph.get_meta(conn, "git_topology_status")
+   is None`, render "not yet indexed" (closing `conn` first in the
+   second case, since it was genuinely opened); otherwise render the
+   normal four-state result. This gives the three required, individually
+   distinguishable outcomes exactly as specified:
+   - **`context-graph.db` file absent entirely** → "not yet indexed" —
+     no file created, no `git` invoked.
+   - **File present, `meta.git_topology_status` absent** (an existing
+     schema-v9 database, opened under Phase 76's own code per §11, but
+     never re-synced) → "not yet indexed" — same rendered outcome as
+     above, via the same code path, distinguished from it only in that a
+     real connection was opened and closed; no `git` invoked either way.
+   - **`meta.git_topology_status` present** → the normal four-state
+     result below.
+
+   Both "not yet indexed" sub-cases render identically: plain text "Git
+   topology has not been indexed yet; run `codecompass sync`.", exit
+   code 0, not an error; `--json` → `{"indexed": false}` (top-level; no
+   `status`/`repository`/`worktrees`/`submodules` keys at all, rather
+   than any of them being present-but-`null`, so a consumer cannot
+   mistake "never indexed" for "indexed and confirmed not a git
+   repository"). **`query topology` never invokes `git` itself, on any
+   code path, including both of these** — it does not silently perform
+   live detection merely because the persisted state is missing or
+   incomplete.
+   - When `git_topology_status` is present → `{"indexed": true, "status":
+     ..., ...}` in JSON, and for text output:
      - `not_git` → a plain "not a Git repository" line.
      - `unavailable` → "Git topology could not be determined (<reason>)."
        (the bare-repository reason — "no working tree (bare
@@ -1562,55 +1610,84 @@ post-hoc `L-027` check to catch it, since (unlike Phase 75's Ledgerkit
 trial) there is no legitimate reason either arm would need to look
 outside its own assigned clone for this task.
 
-- **Baseline clone**: a fresh clone of this repository (with
-  `--recurse-submodules`), plus the same disposable two-worktree fixture
-  §13 constructs, no CodeCompass installed.
-- **Treatment clone**: an identical fixture, with CodeCompass installed
-  and `codecompass sync` already run in both worktrees.
+**Third amendment: replaced with a shared normalized seed, forked only
+after normalization — the previous design's "treatment-only
+normalization commit" and "identical worktree HEADs across both arms"
+requirements directly contradicted each other** (a commit made in
+treatment alone, after cloning, necessarily gives treatment a HEAD
+baseline never shares). The fix moves normalization *before* the fork,
+not after it:
 
-**New (second amendment) — mandatory pre-dispatch fixture-equivalence
-check, run by the lead, before either agent is dispatched:**
+```
+normalized seed fixture (one clone, synced once, committed once)
+       │
+       ├── baseline clone/worktrees  — CodeCompass not installed/available
+       │     (same commit as the seed; scenario constructed independently)
+       │
+       └── treatment clone/worktrees — CodeCompass installed, pre-synced
+             (same commit as the seed; identical scenario constructed
+             independently; a second, treatment-only sync afterward
+             updates only its own gitignored context-graph.db)
+```
 
-The review's own concern is concrete and real, not hypothetical:
-`codecompass sync`/`index` regenerates *tracked* files
-(`.claude/skills/codecompass/SKILL.md`, `CLAUDE.md`,
-`.claude/commands/discovery.md` — confirmed live, §0, to be tracked, not
-gitignored, in this repository) with new, topology-aware content once
-Phase 76 ships — running `sync` in the treatment clone alone would leave
-it `git status`-dirty relative to an un-synced baseline clone, for a
-reason that has nothing to do with either fixture's own intended
-worktree/submodule scenario. `context-graph.db`/`vendor/` themselves are
-gitignored (confirmed live, §0) and pose no such risk, but the
-tracked-file regeneration does.
+1. **Build one seed clone** of this repository (`--recurse-submodules`),
+   pinned at a fixed commit. Run `codecompass sync` in it **once** — this
+   is what regenerates the *tracked* files
+   (`.claude/skills/codecompass/SKILL.md`, `CLAUDE.md`,
+   `.claude/commands/discovery.md` — confirmed live, §0, to be tracked,
+   not gitignored) with Phase 76's own new, but scenario-independent,
+   static content (the `query topology` command's own existence and the
+   new table names — content that does not depend on any particular
+   worktree/submodule *state*, only on the command existing at all).
+   `git add -A && git commit -m "fixture: seed codecompass sync"` **in
+   the seed clone itself** — one normalization commit, before either arm
+   exists, not after either one is cloned.
+2. **Clone the seed twice**, `baseline-clone` and `treatment-clone`, both
+   `git clone --recurse-submodules <seed-path>` — **both necessarily
+   start from the exact same commit**, because both are cloned from the
+   same, already-normalized source after step 1 completed, not before
+   it. This is what actually resolves the contradiction: there is no
+   longer any step that mutates one arm's history after the point where
+   the two arms' histories must match.
+3. **Construct the identical intended scenario independently in each
+   clone** — the same actions, run twice, once per clone, never
+   committed to either (so this step cannot reintroduce a HEAD
+   mismatch): checkout the same specific prior commit inside
+   `adapters/haskell/` in both (Task A's divergence — a real, local,
+   uncommitted-in-the-parent checkout change, exactly matching "someone
+   ran `git submodule update --remote` locally without committing," the
+   scenario Task A itself asks about); `git worktree add
+   <path> -b codecompass-phase76-eval-feature` from the same starting
+   branch in both (Task B's second worktree — deterministic, since both
+   clones share the same HEAD to branch from); write the same edit to
+   the same file in the new worktree in both (Task B's dirty state).
+4. **Only now, in `treatment-clone` alone**, install CodeCompass and run
+   `codecompass sync` a second time, in both of *its own* worktrees —
+   this updates only `context-graph.db` (gitignored, confirmed live,
+   §0) with the actual scenario's real topology facts; it does **not**
+   re-touch `SKILL.md`/`CLAUDE.md`/`discovery.md` a second time, since
+   their content is enrichment/vendor-count/static-command-list derived,
+   not topology-data derived — confirmed by inspecting
+   `skill.py::render_tool_skill`'s own new content (§9.2): it names the
+   `query topology` command and the new table names unconditionally,
+   never any specific worktree/submodule fact. `baseline-clone` never
+   installs or runs CodeCompass at all.
 
-**Fix — normalize both fixtures to the same clean baseline before
-layering the intended test scenario on top**: immediately after cloning
-the treatment fixture, run `codecompass sync` once as pure fixture setup
-(not part of either task), then `git add -A && git commit -m
-"fixture: baseline codecompass sync"` **inside the disposable treatment
-clone only** (a throwaway, never-pushed, scratch-clone-only commit,
-consistent with `reference-project-protocol.md` §2.2's own scratch-clone
-discipline) — this absorbs the sync-caused tracked-file changes into a
-committed, clean state *before* the intended dirty/clean worktree
-scenario (§13's own step 6) is constructed on top of it. The baseline
-clone needs no equivalent commit (it never runs `sync` at all); the
-extra commit in treatment's own private scratch history is not one of
-the facts either task actually asks about (neither task question names
-"how many total commits exist"), so it does not itself break
-equivalence on any fact that matters.
-
-**Then, independently re-derive and compare ground truth for both
-fixtures, for every fact either task tests — not assumed identical
-merely because both were built from the same clone command**:
+**Mandatory pre-dispatch fixture-equivalence check, run by the lead,
+after step 4, before either agent is dispatched** — independently
+re-derive and compare ground truth for both clones, for every fact
+either task tests, not assumed identical merely because both were built
+from the same seed:
 
 | Fact | How verified | Required outcome |
 |---|---|---|
-| Parent-pinned Haskell-adapter SHA | `git -C <fixture> ls-tree HEAD -- adapters/haskell` | identical in both |
-| Checked-out submodule SHA | `git -C <fixture>/adapters/haskell rev-parse HEAD` | identical in both (or identically diverged, if Task A's own scenario intentionally constructs a divergence — never divergent in one fixture only) |
+| Parent-pinned Haskell-adapter SHA | `git -C <clone> ls-tree HEAD -- adapters/haskell` | identical in both |
+| Checked-out submodule SHA | `git -C <clone>/adapters/haskell rev-parse HEAD` | identical in both (identically diverged from the pin, per step 3 — never divergent in one clone only) |
 | Intended pin/checkout match-or-mismatch state | derived from the two rows above | identical in both |
-| Worktree count | `git -C <fixture> worktree list` | identical in both (two: main + disposable) |
-| Worktree branches/HEADs | `git -C <fixture> worktree list --porcelain`, both worktrees | identical in both |
-| Intended dirty/clean state | `git -C <fixture> status --porcelain`, both worktrees, **after** treatment's own fixture-normalization commit above | identical in both — this is the specific check that would have caught the sync-dirties-tracked-files confound had the normalization step above not already fixed it |
+| Worktree count | `git -C <clone> worktree list` | identical in both (two: main + the `codecompass-phase76-eval-feature` worktree) |
+| Worktree branches/HEADs | `git -C <clone> worktree list --porcelain`, both worktrees | identical in both |
+| Intended dirty/clean state | `git -C <clone> status --porcelain`, both worktrees | identical in both — confirms step 4's treatment-only second sync did not reintroduce any tracked-file dirtiness the equivalence check would otherwise need to catch |
+| Main-clone HEAD (the seed commit itself) | `git -C <clone> rev-parse HEAD` (main worktree only) | identical in both — the literal check that the previous design's contradiction made impossible to satisfy |
 | Current-vs-sibling layout | which path each dispatched agent is told to start in | identical in both (same relative layout, same worktree named as "current" in the task prompt) |
 
 **Persisted as evaluation evidence** — written to
@@ -1621,6 +1698,19 @@ reference project) before either agent is dispatched, not reconstructed
 after the fact. If the check finds a genuine discrepancy, the fixtures
 are fixed and the check re-run before dispatch — dispatching on a known
 inequivalence is not an option this amendment leaves open.
+
+**One disclosed, accepted limitation, not engineered around further**:
+because both clones share the seed's own committed `SKILL.md` (which
+names `codecompass query topology` as a real command, per step 1),
+`baseline-clone`'s dispatched agent could in principle *read* that
+static description without ever being able to *run* the command (no
+`codecompass` binary installed/available in that environment) — this
+gives it, at most, prose knowledge of the command's shape, never the
+actual scenario data (real worktree/submodule state) the task asks
+about, so it is not treated as invalidating the comparison. Stripping
+`SKILL.md` differently between the two clones was considered and
+rejected, since it would reintroduce exactly the "identical repository
+state" violation this correction exists to remove.
 
 **Two fresh, independent `general-purpose` agents** (neither the
   lead, neither told about the other or this evaluation's own
