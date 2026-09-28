@@ -42,6 +42,10 @@ Phase 76 row and `planning/phase-76-git-repository-topology.md`'s own
 Status line both now read `done`. See "What was just completed" below
 for the full corrective-pass history.
 
+**Phase 77 (First-party source awareness (`CG-009`) + `codecompass-
+template` design, Priority A + Priority D) is `planned`, not yet
+implemented.** See "Next concrete step" below for the full account.
+
 Backlog, each with its own revisit trigger: Phases 24/25, Phase 50's
 remainder, `CG-003`, the `browser_api`/`platform_api` kind — full detail
 `planning/pre-v1-disposition.md`. Separately, a **second, differently-
@@ -49,8 +53,13 @@ shaped Priority A Ledgerkit validation trial** was recommended at
 Phase 75's own closeout — this remains a live, valid recommendation, but
 it was never actually numbered (no plan file was ever written for it, so
 per `CLAUDE.md` §1 no phase number was ever reserved); Phase 76 went to
-the git-topology phase instead, at direct user request. The Ledgerkit
-trial recommendation is not abandoned, just not yet phase-numbered.
+the git-topology phase instead, at direct user request, and Phase 77
+goes to first-party source awareness next, also at direct user request.
+Phase 77's own plan explicitly analyses this: it **precedes, does not
+replace,** the second trial, since that trial's own `CG-001` motivating
+shape needs first-party *relationships* (Phase 77's own explicitly-
+deferred follow-on) to even be attemptable. The Ledgerkit trial
+recommendation is not abandoned, just not yet phase-numbered.
 
 ## What was just completed
 
@@ -225,21 +234,40 @@ recorded here:**
 
 ## Next concrete step
 
-Phase 76 (including its corrective pass) is fully closed — no further
-action needed on it. Per `CLAUDE.md` §6, push this reconciliation to
-`origin` once committed and reviewed, since the DoD gate (fresh
-`release-phase-auditor` PASS WITH NON-BLOCKING OBSERVATIONS on the
-corrective pass) has now passed.
+**Phase 77 (First-party source awareness + `codecompass-template`
+design) is planned, not yet implemented** — direct user request,
+`planning/phase-77-first-party-source-and-template.md`. Two connected
+goals: (1) make a project's own first-party source files/top-level
+symbols queryable, independent of `vendor.toml`, closing `CG-009`
+(verified live and still accurate: `source_files` is vendor-usage-gated,
+`symbols.vendor_id` is `NOT NULL`); (2) design (not create) a separate,
+MIT-licensed `codecompass-template` repository — Priority D's first
+concrete deliverable, investigation found no new runtime tooling
+required. New `source_symbols` table + `source_files` extension
+(`ecosystem`/`content_hash`), a new `source_symbols.py` module reusing
+existing per-ecosystem extraction techniques (Python/Rust fully
+supported; npm/TypeScript support **live-verified** against a real `.ts`
+file during planning, not assumed; Haskell explicitly unsupported —
+file-recognized only, no in-process parser exists). Two new CLI commands
+(`query source`, `query source-symbol`), deliberately not unifying with
+`query symbol` (a real vendor-vs-first-party axis difference, not
+arbitrary). Migration follows Phase 76's own corrected introspection-
+based discipline (`ALTER TABLE ADD COLUMN`, never drop/recreate
+`source_files` — it's referenced by `uses_edges ON DELETE CASCADE`).
+Three required validations (zero-vendor template fixture — the
+architectural acceptance test; a fresh Ledgerkit clone testing
+`Posting`/`Amount`/`Tag`; CodeCompass's own dogfooding) plus an
+independent Priority A task-context evaluation. **Explicitly precedes,
+does not replace,** the second differently-shaped Priority A Ledgerkit
+trial Phase 75 recommended: that trial's own `CG-001` motivating shape
+("one feature spread across first-party modules") is a *relationship*
+between first-party objects — this phase's own explicitly-deferred
+follow-on (source_file→imports, source_symbol→references, test→tests,
+doc→documents), not this phase's own scope. The second trial
+recommendation stays live, not yet phase-numbered, to be reconsidered
+once that follow-on exists. Stopped after planning per direct user
+instruction — awaiting review before any `src/` implementation or
+external-repository creation begins.
 
-The next piece of unstarted, unclaimed work is a second, differently-
-shaped Priority A Ledgerkit validation trial (per
-`planning/reference-projects/ledgerkit/04-cur-query-priority-a-validation.md`'s
-own "Next-phase recommendation" section) — ideally exercising `CG-001`'s
-original intra-`src`-module motivating shape, or a reference-project
-corpus less self-descriptively organized than Ledgerkit's own
-`dev-docs/planning/core-redefinition/NN-title.md` convention. No phase
-plan file exists yet for this; per `CLAUDE.md` §1, one must be written
-before any implementation/evaluation work begins on it. Beyond that,
-`CG-001`/`CG-007` and Priority B's own broader claim/evidence
-productisation remain genuinely unplanned design questions, not
-"smallest justified fix" work.
+Per `CLAUDE.md` §6, Phase 76 (including its corrective pass) is fully
+closed and already pushed to `origin` — no further action needed on it.
