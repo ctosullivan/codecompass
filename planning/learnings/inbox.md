@@ -66,7 +66,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   unrepeatable, ad hoc standard this entry's own "evidence" section
   criticizes.
 - **classification:** project-rule
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** first occurrence
 - **note for triage:** the `CLAUDE.md` §5 fix itself was already applied
   directly by the lead (the only path available, per `CLAUDE.md` §0's own
@@ -81,6 +81,85 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   a learning status directly — triage should confirm the fix that
   already landed is sound and complete (right destinations, right scope,
   no gap), not decide whether to apply it a second time.
+- **promoted_to:** `CLAUDE.md` §5 (three-target exemption clause, landed
+  by the lead after explicit user approval per §0, commit `feaaaa0`) +
+  `planning/agent-led-workflow.md` step 14 (matching "one explicit,
+  narrow exemption" paragraph + lead-reads-`git diff --stat` confirmation
+  requirement) + `.claude/agents/roadmap-context-curator.md` "Terminal
+  done-flip reconciliation (post-audit) is narrower than the ordinary
+  phase-end job" section (both commit `6d668db`)
+- **curation (Phase 76 corrective-pass triage, 2026-09-28,
+  knowledge-curator):** **promote — confirmed sound and complete,
+  independently re-read against the current text of all three files**
+  (not the commit messages or the task's own summary):
+  - `CLAUDE.md` §5's added clause is internally consistent with the
+    paragraph it extends: the general rule ("any commit after the
+    auditor's own pass that touches audited scope voids that pass")
+    still stands unweakened for every other case; the new clause carves
+    out *only* the one commit the rule itself mandates
+    (`planning/ROADMAP.md`'s phase row, `planning/CONTEXT.md`'s
+    current-state section, the phase plan file's own Status line —
+    verbatim-identical three-item list in all three documents, no drift
+    between them), names the exact excluded-file categories that still
+    void it if touched (changelog, `docs/`, `architecture/`,
+    `decisions/*`, `src/`, tests, `planning/learnings/**`,
+    `planning/context-gaps/**`, "or any other file"), and requires a
+    mechanical confirmation (`git diff --stat` against the enumerated
+    list) rather than reinstating the "trust the curator's judgment by
+    eye" standard the entry's own evidence section names as the original
+    defect. No remaining ambiguity about which files are exempt, no
+    remaining internal contradiction.
+  - `planning/agent-led-workflow.md` step 14 and
+    `.claude/agents/roadmap-context-curator.md`'s new section both name
+    the identical three targets and the identical excluded-category list
+    as `CLAUDE.md` §5 — no drift across the three documents that would
+    leave an agent or the lead applying a different boundary depending
+    on which doc they read.
+  - **Scope check requested by the task — correctly narrow.** The
+    exemption is bound to one named role (`roadmap-context-curator`), one
+    named dispatch (the *terminal* reconciliation, explicitly
+    distinguished from that same agent's own "ordinary interim phase-end
+    job" a few lines below in its own file, which still covers the full
+    planning-doc set as before), and exactly three files/fields. A
+    mid-phase commit, a non-curator commit, or a curator commit that
+    touches even one file outside the three (e.g. a genuinely correct,
+    overdue `planning/learnings/**` fix bundled "while I'm in there") is
+    explicitly still voided — the agent brief says so directly ("even a
+    genuinely correct or overdue one"). This does not weaken the general
+    rule for any other case; it resolves exactly the one structural
+    impossibility the entry's own observation names, without touching
+    anything else.
+  - **`release-phase-auditor.md` — correctly silent, no matching update
+    needed.** Verified by reading the file directly: nothing in its
+    checklist or hard rules references the terminal reconciliation
+    commit, and nothing needs to. Sequencing (per
+    `planning/agent-led-workflow.md`'s own step order) has the auditor's
+    pass (step 13) complete *before* the exempted commit is even
+    dispatched (step 14); the auditor never re-examines the exempted
+    commit itself, and the decision of whether a *later* commit falls
+    inside or outside the exemption is explicitly the lead's own
+    responsibility ("confirmed by the lead reading the commit's actual
+    diff" — `CLAUDE.md` §5; "the lead reads the curator's actual diff...
+    and confirms" — step 14), not a re-dispatch of the auditor role. The
+    auditor's job structurally ends before this exemption's scope ever
+    becomes relevant to it.
+  - **One separate, pre-existing minor looseness noted for the lead's
+    awareness, not blocking this promotion and not part of this fix's
+    own scope:** `release-phase-auditor.md` checklist item 2 still lists
+    "`planning/ROADMAP.md` marks the phase" as one of the DoD conditions
+    it checks, phrasing that predates both this fix and `L-060`'s own
+    Phase-75 correction ("this is the terminal action of the sequence,
+    not a condition the auditor checks alongside the others" —
+    `CLAUDE.md` §5). It is not factually wrong (the auditor does need to
+    confirm `ROADMAP.md` accurately reflects the *pre-terminal-commit*
+    state), but a literal read could suggest the auditor expects to see
+    `done` already at audit time, which is backwards. Not filed as a new
+    candidate — too small and not connected to any observed failure —
+    but worth a one-line wording tightening ("marks the phase's current,
+    correct, not-yet-`done` status" or similar) next time that file is
+    touched for another reason.
+  - No further destination change needed; `L-065` closes as `promoted`
+    against the artifacts named above.
 
 ### L-064 — `L-063`'s own landed rule (never claim a fresh subagent can see conversation-only content) was violated again, in the very next phase that needed it, despite being written directly into the workflow step being followed
 
