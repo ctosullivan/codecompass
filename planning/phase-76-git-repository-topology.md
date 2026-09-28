@@ -1,6 +1,9 @@
 # Phase 76: Git repository topology awareness (worktrees + submodules) — plan
 
-**Status:** planned (2026-09-28, amended 2026-09-28).
+**Status:** done (2026-09-28, amended 2026-09-28; implemented and closed
+2026-09-28). Independent `release-phase-auditor` completion audit: PASS
+WITH NON-BLOCKING OBSERVATIONS (`planning/retros/_audit-phase-76.md`),
+final `roadmap-context-curator` reconciliation confirmed.
 
 Direct user request. An evaluation/implementation phase: CodeCompass
 gains mechanical awareness of Git worktree and submodule topology, so a

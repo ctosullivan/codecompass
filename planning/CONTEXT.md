@@ -20,14 +20,14 @@ Post-v1 work is organised into six priorities (A-F,
 `planning/ROADMAP.md`'s "Post-v1 priorities" section, `decisions/0062`),
 not lettered stages. Priority A's first concrete deliverable
 (Phase 73, `CG-006`), Priority B's first hardening step (Phase 74,
-`L-031`/`L-032`), and Priority A's first real-task validation trial
-(Phase 75) are all done, audited, and closed. **Phase 76 (Git repository
-topology awareness — worktrees + submodules) is implemented and
-evaluated** — `context-evaluator` verdict **PASS WITH GAPS, advantage
-MODERATE** (the strongest Priority A result to date) — but not yet
-marked `done`, per `ROADMAP.md`'s own `in progress` row: the independent
-`release-phase-auditor` DoD pass has not yet run, nor has the final
-`roadmap-context-curator` reconciliation. Full
+`L-031`/`L-032`), Priority A's first real-task validation trial
+(Phase 75), and Priority A's Git repository topology capability build
+(Phase 76, `context-evaluator` verdict **PASS WITH GAPS, advantage
+MODERATE** — the strongest Priority A result to date) are all **done**,
+audited, and closed — `planning/ROADMAP.md`'s Phase 76 row confirmed
+`done` by an independent `release-phase-auditor` DoD pass
+(`planning/retros/_audit-phase-76.md`, **PASS WITH NON-BLOCKING
+OBSERVATIONS**) and this `roadmap-context-curator` reconciliation. Full
 plan: `planning/phase-76-git-repository-topology.md`. Retro:
 `planning/retros/phase-76-git-repository-topology.md`.
 Backlog, each with its own revisit trigger: Phases 24/25, Phase 50's
@@ -43,12 +43,11 @@ trial recommendation is not abandoned, just not yet phase-numbered.
 ## What was just completed
 
 **Phase 76 — Git repository topology awareness (worktrees + submodules),
-implemented and evaluated, not yet `done`.** New `git_topology.py`
-detection module (read-only, Git ≥2.5-compatible plumbing only, never
-invoked outside `sync`); three new `context-graph.db` tables
-(`git_repositories`, `git_worktrees`, `git_submodules`, schema version
-9→10); `codecompass query topology` (`--json`, plus a narrow
-not-yet-indexed path for brand-new projects via
+`done`.** New `git_topology.py` detection module (read-only, Git
+≥2.5-compatible plumbing only, never invoked outside `sync`); three new
+`context-graph.db` tables (`git_repositories`, `git_worktrees`,
+`git_submodules`, schema version 9→10); `codecompass query topology`
+(`--json`, plus a narrow not-yet-indexed path for brand-new projects via
 `_open_graph_for_topology`, deliberately not touching the shared
 `_open_graph_or_note` helper). Validated against this repository's own
 real submodules and a disposable worktree/clone (all cleaned up).
@@ -57,23 +56,31 @@ MODERATE** — the strongest Priority A result to date. New gaps `CG-010`
 (submodule mismatch has no field distinguishing committed-parent-state
 divergence from local uncommitted checkout state) and `CG-011` (a
 sibling worktree's stale/unprobed dirtiness has no inline CLI signal)
-filed, both `candidate`. Process learning `L-064` filed: a genuine
-recurrence of `L-063` (one phase after it landed) — self-caught and
-disclosed by the dispatched `context-evaluator`, filed honestly with
-root-cause analysis. Also fixed a real, pre-existing bug found via live
-testing: `_migrate_doc_artifacts_constraints` fired on any unrelated
+filed, both `candidate`, triage confirmed by `knowledge-curator`.
+Process learning `L-064` filed and **promoted**: a genuine recurrence of
+`L-063` (one phase after it landed) — self-caught and disclosed by the
+dispatched `context-evaluator`, filed honestly with root-cause analysis,
+now landed as real text in `planning/agent-led-workflow.md` steps 5 and
+7 (write referenced agent reports to disk immediately on receipt). Also
+fixed a real, pre-existing bug found via live testing:
+`_migrate_doc_artifacts_constraints` fired on any unrelated
 `meta.schema_version` bump, not only when `doc_artifacts` itself needed
 migration — confirmed via `git log` that Phases 60 and 62 both would
 have triggered it unnecessarily; replaced with an introspection-based
 check. Docs-reconstructor drift audit found and fixed two real gaps
 (`README.md`/`ai-docs/README.md` never mentioned Git topology
-awareness); re-audit confirmed **NO DRIFT**. Full plan (thrice amended
-before implementation):
-`planning/phase-76-git-repository-topology.md`. Retro:
-`planning/retros/phase-76-git-repository-topology.md`. Remaining before
-`done`: `knowledge-curator` triage of `L-064`/`CG-010`/`CG-011`,
-independent `release-phase-auditor` DoD pass, and final
-`roadmap-context-curator` reconciliation.
+awareness); re-audit confirmed **NO DRIFT**. Independent
+`release-phase-auditor` completion audit against `644e818`: **PASS WITH
+NON-BLOCKING OBSERVATIONS** (`planning/retros/_audit-phase-76.md`), all
+13 checked conditions held, four cosmetic/process-precision observations
+recorded, none requiring a fix; the one subsequent commit (`8c053f7`,
+persisting that audit report to disk) touches no audited scope, so the
+verdict holds unchanged against final HEAD, independently re-confirmed
+by this `roadmap-context-curator` reconciliation (full test suite
+re-run: 688 passed, 2 skipped; `ruff check .` clean; both doc-check
+scripts clean; protected-file diff clean). Full plan (thrice amended
+before implementation): `planning/phase-76-git-repository-topology.md`.
+Retro: `planning/retros/phase-76-git-repository-topology.md`.
 
 **Phase 75 — Priority A Ledgerkit validation (real-task evaluation, no
 `src/` change).** A genuine baseline-vs-CodeCompass-assisted comparison
@@ -168,13 +175,12 @@ recorded here:**
 
 ## Next concrete step
 
-**Phase 76's remaining closeout steps**: `knowledge-curator` triage of
-`L-064`/`CG-010`/`CG-011`, an independent `release-phase-auditor` DoD
-pass, and — only on a PASS/PASS WITH NON-BLOCKING OBSERVATIONS verdict —
-a fresh `roadmap-context-curator` reconciliation to flip Phase 76's
-`planning/ROADMAP.md` row to `done`, then a final push.
+Phase 76 is fully closed (`done`, per `planning/ROADMAP.md`'s Phase 76
+row and this reconciliation). Push the closing commit(s) to `origin` per
+`CLAUDE.md` §6 (the DoD gate has passed: `PASS WITH NON-BLOCKING
+OBSERVATIONS`).
 
-Separately, still unclaimed by a phase number: a second, differently-
+Still unclaimed by a phase number: a second, differently-
 shaped Priority A Ledgerkit validation trial (per
 `planning/reference-projects/ledgerkit/04-cur-query-priority-a-validation.md`'s
 own "Next-phase recommendation" section) — ideally exercising `CG-001`'s
