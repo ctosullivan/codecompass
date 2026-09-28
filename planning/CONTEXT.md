@@ -43,10 +43,11 @@ Status line both now read `done`. See "What was just completed" below
 for the full corrective-pass history.
 
 **Phase 77 (First-party source awareness (`CG-009`) + a usable
-`codecompass-template`, Priority A + Priority D) is `planned` (amended
-2026-09-28), not yet implemented.** The template repository already
-exists at `https://github.com/ctosullivan/codecompass-template`
-(confirmed empty) — Phase 77 delivers it populated, not merely designed.
+`codecompass-template`, Priority A + Priority D) is `in progress`**
+(plan amended twice, 2026-09-28/29; implementation now underway per
+direct instruction). The template repository already exists at
+`https://github.com/ctosullivan/codecompass-template` (confirmed empty
+at plan time) — Phase 77 delivers it populated, not merely designed.
 See "Next concrete step" below for the full account.
 
 Backlog, each with its own revisit trigger: Phases 24/25, Phase 50's
@@ -280,9 +281,22 @@ an independent Priority A task-context evaluation. **Still explicitly
 precedes, does not replace,** the second differently-shaped Priority A
 Ledgerkit trial Phase 75 recommended — that trial's own `CG-001`
 motivating shape needs first-party *relationships* (this phase's own
-explicitly-deferred follow-on), unaffected by this amendment. Stopped
-after planning per direct user instruction — awaiting review before any
-`src/` implementation or external-repository population begins.
+explicitly-deferred follow-on), unaffected by this amendment.
+**Second amendment (2026-09-29, direct user instruction) adds five
+further corrections and proceeds directly into implementation**: a
+project-level `meta.source_index_version` marker distinguishing
+never-indexed from indexed-but-empty (mirroring `git_topology_status`'s
+own absence-means-never-synced precedent); `source_symbols.line INTEGER
+NOT NULL` (a location-less occurrence is never emitted); a five-value
+`exposure` concept (`public`/`restricted`/`internal`/
+`conventional_private`/`unknown`) replacing the first amendment's own
+public/private binary, capturing Rust's real three-tier visibility
+model (live-verified against 8 representative forms); an honest
+`indexed`/`indexed_partial` extraction-fidelity distinction (Python's
+real AST parser vs. Rust/JS/TS's coarse line-scan/regex techniques); and
+corrected `CG-009` roadmap wording ("reassess at Phase 77 closeout using
+Ledgerkit validation and normal context-gap triage," not automatic
+closure). Implementation is now underway — see below for progress.
 
 Per `CLAUDE.md` §6, Phase 76 (including its corrective pass) is fully
 closed and already pushed to `origin` — no further action needed on it.

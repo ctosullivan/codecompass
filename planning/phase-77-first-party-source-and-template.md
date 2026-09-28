@@ -1,6 +1,8 @@
 # Phase 77: First-party source awareness + `codecompass-template` — plan
 
-**Status:** planned (2026-09-28, amended 2026-09-28).
+**Status:** in progress (2026-09-28, amended twice on 2026-09-28/29;
+implementation begins immediately after the second amendment, per direct
+instruction).
 
 Direct user request, two connected goals: (1) make a project's own
 first-party source (files + top-level implementation symbols) a
@@ -10,10 +12,17 @@ MIT-licensed `codecompass-template` repository** — the repository
 already exists at `https://github.com/ctosullivan/codecompass-template`
 (confirmed empty, §0) — packaging the proven downstream-adoption
 workflow shape without inheriting CodeCompass's own GPL implementation
-or internal governance corpus. Planning only — no `src/` change, no
-external-repository population, per explicit instruction for *this*
-amendment pass; implementation (including populating the real template
-repository) is the next, not-yet-started step.
+or internal governance corpus.
+
+**Second amendment (2026-09-29):** five further corrections, detailed at
+the point each lands below: a project-level "never indexed" marker
+(§3.4, §7); non-null symbol location (§3.2); an honest five-value
+cross-language exposure model replacing the first amendment's own
+public/private binary (§3.2, §5); an honest `indexed`/`indexed_partial`
+extraction-fidelity distinction (§6); and corrected `CG-009` roadmap
+wording (`planning/ROADMAP.md`, same commit). This amendment is followed
+directly by implementation, per explicit instruction — this plan is no
+longer "planning only."
 
 **Amendment note (2026-09-28, same day as the initial plan `585f891`):**
 this amendment corrects twelve issues a direct user review found:
@@ -169,7 +178,8 @@ CREATE TABLE IF NOT EXISTS source_files (
   content_hash            TEXT,
   symbol_index_status     TEXT CHECK (
                             symbol_index_status IN (
-                              'indexed','unsupported','parse_error','unreadable'
+                              'indexed','indexed_partial','unsupported',
+                              'parse_error','unreadable'
                             )
                           ),
   symbol_index_diagnostic TEXT
@@ -248,7 +258,7 @@ any query this phase adds.
 usage" to "every recognized first-party source file"** — unchanged.
 `uses_edges.source_file_id`'s FK is unaffected — unchanged.
 
-### 3.2 `source_symbols` (new) — occurrence-based identity, implementation scope, optional visibility
+### 3.2 `source_symbols` (new) — occurrence-based identity, non-null location, honest cross-language exposure
 
 ```sql
 CREATE TABLE IF NOT EXISTS source_symbols (
@@ -256,9 +266,13 @@ CREATE TABLE IF NOT EXISTS source_symbols (
   source_file_id INTEGER NOT NULL REFERENCES source_files(id) ON DELETE CASCADE,
   name           TEXT NOT NULL,
   kind           TEXT NOT NULL,
-  line           INTEGER,
+  line           INTEGER NOT NULL,
   purpose        TEXT,
-  visibility     TEXT CHECK (visibility IN ('public','private')),
+  exposure       TEXT CHECK (
+                   exposure IN (
+                     'public','restricted','internal','conventional_private','unknown'
+                   )
+                 ),
   UNIQUE (source_file_id, name, kind, line)
 );
 CREATE INDEX IF NOT EXISTS idx_source_symbols_file ON source_symbols(source_file_id);
@@ -283,37 +297,143 @@ and no legitimate declaration can ever collide with another. Upsert
 mirrors `_sync_symbols`'s own exact pattern (§0): compute the existing
 `(source_file_id, name, kind, line)` tuple set via `SELECT`, diff against
 the incoming set, `DELETE` anything stale, `INSERT ... ON CONFLICT(...)
-DO UPDATE SET purpose = excluded.purpose, visibility =
-excluded.visibility` for everything current — a genuinely identical
-declaration (same file, name, kind, line) upserts cleanly across syncs;
-a moved or removed declaration is deleted and, if still present
-elsewhere, re-inserted at its new line as a "new" row (an honest
-consequence of location being part of identity, not unnecessary churn —
-no enrichment table hangs off `source_symbols.id` this phase, so no real
-identity-preservation requirement is violated by this choice).
+DO UPDATE SET purpose = excluded.purpose, exposure =
+excluded.exposure` for everything current.
+
+**`line INTEGER NOT NULL` — second amendment correction.** The first
+amendment left `line` nullable "for an extractor that can't cheaply
+produce one," while noting no extractor actually needed that escape
+hatch. Direct review correctly identifies this as an unjustified
+nullable column: **every Phase-77 extractor this plan ships always knows
+the line it matched at** (an AST node's own `.lineno`, or a regex/line-
+scan match's own position) — a symbol occurrence *is*, in this schema,
+partly defined by its location (§3.2's own identity design), so a
+location-less symbol row is a contradiction in terms, not a valid state.
+**Enforced at the schema level**: `line INTEGER NOT NULL`. The
+consequence for extraction (§5/§6): if a hypothetical future technique
+cannot determine a symbol's line, it must not emit a row for that
+symbol at all — the file's own `symbol_index_status` (§6) already
+carries the honest "something was found but couldn't be fully
+represented" signal (`indexed_partial`) without needing a location-less
+row to express it.
 
 **`kind`**: unchanged reasoning from the initial plan — deliberately not
 `CHECK`-constrained, a per-language, growing vocabulary.
 
-**`visibility` (new field, this amendment)** — nullable, `CHECK
-(visibility IN ('public','private'))`: a genuinely closed, two-value,
-phase-owned vocabulary (unlike `kind`/`language`), so `CHECK`-constraining
-it costs nothing in future extensibility. Populated per §5's own
-per-language rules; `NULL` for a language/extractor with no deterministic
-visibility signal (Haskell — no extractor at all; any future extractor
-that doesn't yet compute it). **Recorded as a separate property, never
-used to filter a symbol out of the table** — the explicit instruction
-this amendment applies directly: a private/non-exported top-level
-declaration is still a real row, with `visibility='private'`, not a
-suppressed one.
+**`exposure` (renamed from `visibility`, widened, second amendment
+correction)** — nullable, `CHECK (exposure IN ('public','restricted',
+'internal','conventional_private','unknown'))`. The first amendment's
+binary `public`/`private` was itself too simplistic once Rust's own
+three-tier visibility model (`pub`, `pub(crate)`/`pub(super)`/`pub(in
+...)`, no modifier) is considered — collapsing `pub(crate)` into either
+"public" (wrong — it isn't visible outside the crate) or "private"
+(wrong — it *is* visible to the rest of the crate) would misrepresent a
+real, distinct Rust concept. **A genuinely closed, five-value,
+phase-owned vocabulary** (still cheap to `CHECK`-constrain, matching the
+first amendment's own reasoning for why this field differs from
+`kind`/`language`):
 
-**`purpose`, `line`** — unchanged reasoning from the initial plan.
+- **`public`** — visible outside the file/module/crate boundary the
+  language itself defines: Python (no leading underscore), Rust (bare
+  `pub`), JS/TS (`export` present).
+- **`restricted`** — visible to a genuine, language-defined *subset*
+  wider than "this file alone" but narrower than fully public: Rust's
+  own `pub(crate)`/`pub(super)`/`pub(in path)` forms — **live-verified**
+  against eight representative Rust declarations (`pub fn`, `pub(crate)
+  fn`, `pub(super) struct`, `pub(in crate::module) enum`, `pub(self)
+  trait`, and three bare/no-modifier forms), all eight classified
+  correctly by a single regex capturing the full modifier text. No
+  equivalent concept exists in Python or JS/TS today — `restricted`
+  simply never occurs for those languages' own rows, an honest,
+  language-driven absence, not a gap.
+- **`internal`** — has no visibility keyword/modifier at all, in a
+  language where that specifically means "not exported/not public,"
+  the language's own default: Rust (no `pub`), JS/TS (no `export`).
+- **`conventional_private`** — signaled only by *naming convention*, not
+  a language-enforced boundary: Python's own leading-underscore
+  convention (PEP 8's "weak internal use indicator," the one Python
+  convention with a real, mechanically-checkable consequence: `from
+  module import *` excludes leading-underscore names). Deliberately a
+  *different* value from `internal` — a convention a determined caller
+  can freely ignore is not the same fact as a language boundary the
+  compiler/runtime itself enforces, and conflating them would overstate
+  Python's own guarantee.
+- **`unknown`** — reserved for a language/extractor that cannot cheaply
+  and reliably determine exposure at all. **Not actually produced by any
+  extractor this phase ships** — Python, Rust, and JS/TS each always
+  resolve to one of the four values above — but kept in the vocabulary
+  now so a future, less-certain extractor has an honest value to use
+  rather than forcing a guess or silently omitting the column.
+
+Populated per §5's own per-language rules; `NULL` only for a
+language/extractor with genuinely no exposure concept at all (Haskell —
+no extractor exists, no row is ever emitted in the first place, so this
+is moot in practice today, not a real `NULL`-producing path this phase
+exercises). **Recorded as a separate property, never used to filter a
+symbol out of the table** — unchanged from the first amendment's own
+instruction: a `conventional_private`/`internal` top-level declaration is
+still a real row, not a suppressed one.
+
+**`purpose`** — unchanged reasoning from the initial plan.
 
 **No `export_kind` column, still.** Unchanged: `source_symbols.kind` is
 the intrinsic-kind concept `export_kind`'s own docstring says must not
-be repurposed; `visibility` is a genuinely new, narrower property
-(public/private), never conflated with either `kind` or vendor
-`export_kind`.
+be repurposed; `exposure` is a genuinely new, distinct property, never
+conflated with either `kind` or vendor `export_kind`.
+
+### 3.4 Project-level "never indexed" marker — new, this amendment
+
+**A real gap the first amendment missed, distinct from per-file
+`symbol_index_status` (§6).** An *upgraded* pre-Phase-77 database can
+exist in a state where `source_files`/`source_symbols` have gained their
+new columns/table (via the migration, §4) but have **never actually been
+repopulated by a Phase-77-aware `sync`** — the migration adds schema,
+it does not itself trigger a rebuild. In that state, `source_symbols` is
+genuinely, structurally empty, and `query source-symbol Posting`
+returning "not found" would be **indistinguishable from a real,
+freshly-indexed project that genuinely has no symbol named `Posting`** —
+the exact class of ambiguity `git_topology`'s own "not yet indexed"
+design (Phase 76, `decisions/0063` point 4) already solved once for a
+different table, and this amendment now applies the identical solution
+here rather than leaving a second instance of the same bug.
+
+**Mechanism, directly mirroring `meta.git_topology_status`'s own
+precedent**: a new `meta` key, `source_index_version`, written
+unconditionally by `rebuild_deterministic` whenever a genuinely
+Phase-77-aware rebuild runs — **regardless of whether any first-party
+source files were actually found** (a project with zero recognized
+source files still gets `source_index_version` written, the same way a
+project with zero worktrees still gets `git_topology_status` written).
+Value: `"1"` today (a plain version marker, not a semantic status enum —
+first-party indexing either happened under this mechanism's own current
+shape or it didn't; there is no multi-state whole-pass status analogous
+to `TopologyStatus` needed here, since first-party discovery has no
+"could the structure be enumerated at all" failure mode the way Git
+topology detection does — it either ran, or it hasn't run yet). **The
+key's absence** — not a `NULL` value, its total absence from `meta` —
+means "first-party source has never been indexed under Phase-77-aware
+code," exactly matching `git_topology_status`'s own absence-means-
+never-synced convention.
+
+**Query-layer contract** (§7 gives the full CLI design): `query source`/
+`query source-symbol` check for this key's absence *before* running
+their normal profile query — on absence, they render an explicit "not
+yet indexed, run `codecompass sync`" state (`--json`: `{"indexed":
+false}`, mirroring `query topology`'s own exact JSON shape for the
+identical concept) and never fall through to a bare "not found" that a
+reader could misread as a real negative result. **Both commands remain
+read-only** — this check only ever reads the persisted `meta` value,
+never invokes `sync` itself, matching every other `query` subcommand's
+own posture (including `query topology`'s own explicit "never invokes
+`git`/never invokes a rebuild" guarantee). **Kept structurally separate
+from per-file `symbol_index_status`** — a whole-project "has indexing
+ever run" fact and a per-file "what happened when it did" fact answer
+different questions and must never be conflated, the same two-level-
+uncertainty discipline `decisions/0063` point 4 already established for
+Git topology (whole-pass status vs. per-row nullable facts) applied here
+as the same two-level shape: whole-*project* status (`source_index_version`
+present or absent) vs. per-*file* status (`symbol_index_status`, always
+populated once indexing has run at all).
 
 ### 3.3 Why a distinct extraction type, not a `kind`/`visibility` field on `symbols.Symbol`
 
@@ -386,9 +506,9 @@ extracts; §6 covers *how success/failure is represented*.
 class SourceSymbol:
     name: str
     kind: str
-    line: int | None
+    line: int  # never None -- a location-less occurrence is not emitted (§3.2)
     purpose: str | None = None
-    visibility: str | None = None  # 'public' | 'private' | None
+    exposure: str | None = None  # 'public' | 'restricted' | 'internal' | 'conventional_private' | 'unknown' | None
 ```
 
 **Implementation scope, not API-surface scope — the core correction this
@@ -400,53 +520,50 @@ language:
   needed at all** — confirmed by re-reading `extract_python_symbols`
   directly: it already walks *every* top-level `FunctionDef`/
   `AsyncFunctionDef`/`ClassDef` via `ast.iter_child_nodes`, with no
-  export/visibility filter of any kind (Python has no formal top-level
-  export mechanism to filter on in the first place). The existing
-  technique already satisfies "implementation, not API surface" for
-  Python with zero widening. `kind` = `"function"`/`"class"`,
-  `line = node.lineno`, `purpose = ast.get_docstring(node)`.
-  **`visibility`** (new, cheap, reliable, and grounded in a real
-  language-level convention, not a guess): `"private"` if
+  export filter of any kind (Python has no formal top-level export
+  mechanism to filter on in the first place). The existing technique
+  already satisfies "implementation, not API surface" for Python with
+  zero widening. `kind` = `"function"`/`"class"`, `line = node.lineno`
+  (always present — `ast` guarantees every node carries one), `purpose =
+  ast.get_docstring(node)`. **`exposure`**: `"conventional_private"` if
   `node.name.startswith("_")` (PEP 8's own leading-underscore
-  convention — mechanically checkable, and the *only* Python convention
-  with a real language-level consequence: `from module import *`
-  actually excludes leading-underscore names), `"public"` otherwise.
-- **Rust** (`.rs`): `extract_rust_source_symbols`. **Scope widened**
-  from the initial plan: the existing vendor extractor's
-  `_RUST_PUB_PREFIXES` line-scan matches only `pub fn`/`pub struct`/
-  `pub enum`/`pub trait` — correct for a *vendor's* API surface, wrong
-  for first-party implementation scope. The first-party variant matches
-  the *same* four item keywords **with or without a leading `pub`**
-  (`(?:pub\s+)?(fn|struct|enum|trait)\s+\w+`), recording
-  `visibility='public'` when `pub` was present, `'private'` otherwise —
-  a real, deterministic, zero-ambiguity signal (Rust's own visibility
-  keyword, not a convention). `kind`/`line`/`purpose` (`///` doc
-  comments) extracted identically to the vendor extractor's own
-  technique.
+  convention — the one Python convention with a real, mechanically-
+  checkable consequence: `from module import *` excludes leading-
+  underscore names), `"public"` otherwise. Never `"restricted"`/
+  `"internal"` — Python has neither concept.
+- **Rust** (`.rs`): `extract_rust_source_symbols`. **Scope widened** from
+  the vendor extractor's `pub`-only match to **every top-level `fn`/
+  `struct`/`enum`/`trait`, with or without any visibility modifier**, and
+  **exposure widened past a binary public/private to Rust's own real
+  three-tier model** — live-verified (§0) against eight representative
+  declarations: `(?:(pub(?:\((?:crate|super|self|in\s+[\w:]+)\))?)\s+)?
+  (fn|struct|enum|trait)\s+(\w+)`, classifying the captured modifier
+  text as `exposure='public'` (bare `pub`), `'restricted'` (any
+  `pub(...)` form), or `'internal'` (no modifier at all) — all eight live
+  test cases classified correctly. `line`/`purpose` (`///` doc comments)
+  extracted identically to the vendor extractor's own technique.
 - **JavaScript** (`.js`/`.jsx`/`.mjs`/`.cjs`) and **TypeScript**
   (`.ts`/`.tsx`): `extract_js_family_source_symbols` (one shared
-  function — the underlying regex technique doesn't distinguish JS from
-  TS syntax; `language` is determined by file suffix at the
-  discovery/dispatch level, §3.1, not by which construct matched).
-  **Scope widened**: the existing vendor extractor's `_NPM_EXPORT_RE`
-  matches only a leading `export` keyword — correct for a vendor's own
-  `.d.ts` declaration surface, wrong for first-party implementation
-  scope. The first-party variant matches the same six construct keywords
-  (`function`/`class`/`interface`/`const`/`type`/`enum`) **with or
-  without a leading `export`** (`(?:export\s+)?(?:default\s+)?(?:declare\s+)?
-  (function|class|interface|const|type|enum)\s+(\w+)`), recording
-  `visibility='public'` when `export` was present, `'private'`
-  otherwise. `kind`/`line`/`purpose` (leading JSDoc) extracted
-  identically to the vendor extractor's own technique — **live-verified
-  unchanged from the initial plan**: the base regex correctly extracts
-  from real `.ts` implementation files (§0 of the initial plan's own
-  verification stands; this amendment only widens the export
-  requirement, not the underlying matching technique).
+  function — the regex technique doesn't distinguish JS from TS syntax;
+  `language` is determined by file suffix at dispatch, §3.1). **Scope
+  widened** from the vendor extractor's `export`-only match to the same
+  six construct keywords (`function`/`class`/`interface`/`const`/`type`/
+  `enum`) **with or without a leading `export`**
+  (`(?:export\s+)?(?:default\s+)?(?:declare\s+)?(function|class|interface|
+  const|type|enum)\s+(\w+)`), recording `exposure='public'` when
+  `export` was present, `'internal'` otherwise (JS/TS has no
+  `restricted`-equivalent middle tier — never produced for these
+  languages). `line`/`purpose` (leading JSDoc) extracted identically to
+  the vendor extractor's own technique — the base regex's own correctness
+  against real `.ts` implementation files was already live-verified in
+  the initial plan; this amendment only widens the export requirement
+  and the exposure vocabulary, not the underlying matching technique.
 - **Haskell** (`.hs`): **file recognition only, no symbol extraction**
-  — unchanged from the initial plan. No in-process Haskell parser
-  exists; building one, or routing first-party files through the
-  external-adapter-process protocol, is explicitly out of scope this
-  phase, per Phase 76's own "declare unsupported honestly" precedent.
+  — unchanged. No in-process Haskell parser exists; out of scope, per
+  Phase 76's own "declare unsupported honestly" precedent. No
+  `source_symbols` row is ever emitted, so `exposure` is never actually
+  `NULL` in practice for any language this phase ships — `NULL` is a
+  schema-level allowance, not an outcome any real extractor produces.
 
 ### 5.3 Walk-sharing note — unchanged from the initial plan
 
@@ -471,6 +588,7 @@ invented for this phase:
 ```python
 class SymbolIndexStatus(StrEnum):
     INDEXED = "indexed"
+    INDEXED_PARTIAL = "indexed_partial"
     UNSUPPORTED = "unsupported"
     PARSE_ERROR = "parse_error"
     UNREADABLE = "unreadable"
@@ -483,22 +601,42 @@ class SourceFileExtraction:
     symbols: tuple[SourceSymbol, ...]
 ```
 
-- **`INDEXED`**: extraction ran to completion for a supported language.
-  `symbols` may be **empty** — a real, valid, distinct outcome ("this
-  file genuinely has no top-level implementation symbols"), never
-  conflated with failure. `diagnostic` is `None`.
+- **`INDEXED`**: extraction ran via a real structural parser, not a
+  coarse heuristic — **Python only, today**, via `ast.parse`. `symbols`
+  may be **empty** — a real, valid, distinct outcome ("this file
+  genuinely has no top-level implementation symbols"), never conflated
+  with failure. `diagnostic` is `None`.
+- **`INDEXED_PARTIAL`** (new, second amendment): extraction ran via a
+  coarse line-scan/regex technique, not a real parser — **Rust and
+  JS/TS, today**. **Direct correction applied**: the initial plan's own
+  first amendment implicitly treated regex/line-scan extraction as
+  equally complete to AST parsing by giving both the same `INDEXED`
+  status; this is dishonest about a real, material difference in
+  fidelity — a coarse line-scan can miss a multi-line signature, a
+  construct split across lines in an unusual style, or (rarely) produce
+  a false match inside a string/comment the same way the existing vendor
+  extractors already can. `symbols` may be empty or populated, exactly
+  as for `INDEXED` — the distinction is about *technique fidelity*, not
+  about whether anything was found. `diagnostic` is `None` (the
+  technique itself, not a specific failure, is the qualifier — already
+  fully conveyed by the status value and `source_files.language`).
+  **Reconsider only if a future phase proves the coarse technique's
+  practical completeness** — not assumed or asserted here.
 - **`UNSUPPORTED`**: no extractor exists for this file's `Language`
   (Haskell, today). `symbols` is always `()`. `diagnostic` is `None` — the
   *language itself* is the reason, already fully captured by
   `source_files.language`; no separate diagnostic text is needed.
 - **`PARSE_ERROR`**: the language's own structural parser rejected the
-  file — in practice, **Python-specific today**: `ast.parse` raising
-  `SyntaxError`. Rust/JS/TS's own coarse line-scan/regex techniques have
-  no real "parse" step to fail structurally (a malformed Rust/JS/TS file
-  simply yields fewer or no matches, correctly surfacing as `INDEXED`
-  with an empty/partial `symbols` tuple — an honest limitation of a
-  non-parsing technique, not a defect this phase introduces or hides).
-  `diagnostic` carries the caught exception's own message.
+  file — **Python-specific**: `ast.parse` raising `SyntaxError`. Rust/
+  JS/TS's own coarse techniques have no real "parse" step to fail
+  structurally (a malformed Rust/JS/TS file simply yields fewer or no
+  matches, correctly surfacing as `INDEXED_PARTIAL` with an empty/partial
+  `symbols` tuple — an honest limitation of a non-parsing technique, not
+  a defect this phase introduces or hides). `diagnostic` carries the
+  caught exception's own message. **No row is emitted for a symbol
+  without a determinable line** (§3.2's `NOT NULL` requirement) — a
+  partial match that can't be pinned to a line is dropped, not
+  represented with a fabricated location.
 - **`UNREADABLE`**: the file itself could not be read (`OSError`,
   `UnicodeDecodeError`) — possible for any language. `diagnostic` carries
   the caught exception's own message.
@@ -510,7 +648,7 @@ class SourceFileExtraction:
   silently swallowed into `[]`.
 
 `source_files.symbol_index_status`/`symbol_index_diagnostic` (§3.1)
-persist exactly this outcome per file — the CLI (§7) renders all four
+persist exactly this outcome per file — the CLI (§7) renders all five
 states honestly, never collapsing one into another.
 
 ## 7. CLI / query design
@@ -519,30 +657,46 @@ Unchanged separation decision from the initial plan: **`query symbol` is
 completely unmodified** — the vendor-vs-first-party axis is real, a
 synthetic "self" vendor remains rejected, no unification.
 
+**Project-level "not yet indexed" gate, checked first, second amendment
+(§3.4)** — directly mirroring `cli.py::_open_graph_for_topology`'s own
+narrow, command-specific pattern (Phase 76): before running either
+command's normal profile query, check `meta.source_index_version`'s
+presence. Absent → render an explicit "first-party source has never been
+indexed — run `codecompass sync`" message (text) or `{"indexed": false}`
+(`--json`, the identical JSON shape `query topology` already uses for
+the same concept) — for **both** `query source` and `query source-symbol`
+— and return, never falling through to a "not found" a reader could
+mistake for a genuine negative result. **Both commands remain
+read-only**: this check only reads a persisted `meta` value, never
+invokes `sync`, matching every other `query` subcommand's own posture.
+Present → proceed to the normal query below, whose own JSON payload
+includes `"indexed": true` alongside the real data, matching `query
+topology`'s own precedent exactly.
+
 - **`codecompass query source <path>`** exposes, at minimum: `language`
   (or an explicit "unresolved" state if `NULL`), `content_hash` if
-  present, `symbol_index_status` (one of the four states, rendered
-  explicitly — e.g. `"parse error: <diagnostic>"`,
-  `"no symbol extractor for <language>"`, `"unreadable: <diagnostic>"`,
-  or the symbol list itself for `indexed`), its own `source_symbols`
-  (name, kind, line, purpose, `visibility` — rendered as `public`/
-  `private`/`unknown`, **never omitted or silently defaulted** when
-  `NULL`, applying Phase 76's own corrected tri-state discipline from
-  first implementation rather than fixing it after the fact), and its
-  own recorded vendor usage (cross-referencing `uses_edges`, mirroring
-  `query vendor`'s existing rendering). `--json` supported, with every
-  nullable field emitted as JSON `null`, not coerced to a default or
-  omitted.
+  present, `symbol_index_status` (one of the five states, rendered
+  explicitly and distinctly — e.g. `"indexed (full parse)"` vs.
+  `"indexed (coarse scan)"` for `indexed`/`indexed_partial`,
+  `"parse error: <diagnostic>"`, `"no symbol extractor for <language>"`,
+  `"unreadable: <diagnostic>"`), its own `source_symbols` (name, kind,
+  line, purpose, `exposure` — rendered as `public`/`restricted`/
+  `internal`/`conventional_private`/`unknown`, **never omitted or
+  silently defaulted** when `NULL`, applying Phase 76's own corrected
+  tri-state discipline from first implementation rather than fixing it
+  after the fact), and its own recorded vendor usage (cross-referencing
+  `uses_edges`, mirroring `query vendor`'s existing rendering). `--json`
+  supported, with every nullable field emitted as JSON `null`, not
+  coerced to a default or omitted.
 - **`codecompass query source-symbol <name>`** exposes, at minimum:
-  name, kind, source file path, line, purpose, the containing file's
-  `language`, and `visibility` (again rendered as `public`/`private`/
-  `unknown`, never collapsed). `--json` supported with the same explicit-
-  null discipline.
-- No special "not yet indexed" handling needed — unchanged from the
-  initial plan; `source_files`/`source_symbols` populate on every
-  ordinary `sync`.
+  name, kind, source file path, line (always present — `NOT NULL`,
+  §3.2), purpose, the containing file's `language`, and `exposure`
+  (again rendered as one of the five explicit values, never collapsed).
+  `--json` supported with the same explicit-null discipline.
 - New `graph.py` query functions: `source_file_profile(conn, path) ->
-  dict | None` and `source_symbol_profile(conn, name) -> list[dict]`.
+  dict | None`, `source_symbol_profile(conn, name) -> list[dict]`, and
+  `source_index_version(conn) -> str | None` (the §3.4 presence check,
+  mirroring `get_meta`/`topology_profile`'s own existing shape).
 - **Explicit cross-reference to the exact defect this amendment must not
   repeat**: Phase 76's own corrective pass (`decisions/0064` era, `db33352`)
   fixed `query topology` for precisely this class of bug — a nullable
@@ -550,8 +704,9 @@ synthetic "self" vendor remains rejected, no unification.
   truthiness, silently turning `None` into a false `"clean"`/`"differs
   from pin"`. `query source`/`query source-symbol`'s own renderers reuse
   the same `_tri_state_label`-style helper `cli.py` already has for
-  exactly this purpose, applied to `visibility` and to
-  `symbol_index_status`'s own four-way rendering, from the very first
+  exactly this purpose, generalized to `exposure`'s own five-way
+  rendering and to `symbol_index_status`'s own five-way rendering, from
+  the very first
   implementation of these commands — not discovered and fixed in a later
   corrective pass.
 
@@ -684,8 +839,9 @@ the real repository now exists and this validation uses it directly:
 4. Run `codecompass sync` (editable install) against the clone.
 5. **Verify**: `source_files` rows exist for the added files with
    correct `language`/`symbol_index_status`; `source_symbols` rows exist
-   for the top-level functions/classes, with the private one correctly
-   `visibility='private'`; `codecompass query source <path>` and
+   for the top-level functions/classes, with the leading-underscore one
+   correctly `exposure='conventional_private'`; `codecompass query
+   source <path>` and
    `query source-symbol <name>` both return real data with every field
    this plan specifies; `vendors`/`symbols` tables are empty (0 rows) —
    **no fake/self vendor row created**, confirmed by direct `sqlite3`
@@ -731,13 +887,13 @@ a not-yet-real repository.
 
 ## 12. First-party language/extraction scope summary (supersedes the initial plan's "ecosystem scope" table)
 
-| Language | File recognition | Symbol extraction | Scope | Basis |
-|---|---|---|---|---|
-| Python (`.py`) | Yes | Yes | Every top-level `def`/`async def`/`class`, public and private (leading-underscore) alike | `ast`-based; no scope change needed — the existing technique already covers full implementation scope |
-| Rust (`.rs`) | Yes | Yes | Every top-level `fn`/`struct`/`enum`/`trait`, public and private alike, `visibility` recorded | Line-scan, **widened** from `pub`-only to `pub`-or-not, `visibility` from the `pub` keyword itself |
-| JavaScript (`.js`/`.jsx`/`.mjs`/`.cjs`) | Yes | Yes | Every top-level `function`/`class`/`interface`/`const`/`type`/`enum`, exported and non-exported alike, `visibility` recorded | Regex, **widened** from `export`-only to `export`-or-not, `visibility` from the `export` keyword itself |
-| TypeScript (`.ts`/`.tsx`) | Yes | Yes | Same as JavaScript (shared extractor, language distinguished only by suffix) | Same regex technique, **live-verified** against a real `.ts` implementation file and a real overloaded-function `.ts` file (§0) |
-| Haskell (`.hs`) | Yes | **No — explicitly unsupported** | `symbol_index_status='unsupported'` | No in-process parser exists; out of scope, not fabricated |
+| Language | File recognition | Symbol extraction | Index status | Exposure values produced | Scope | Basis |
+|---|---|---|---|---|---|---|
+| Python (`.py`) | Yes | Yes | `indexed` (real parser) or `parse_error` | `public`, `conventional_private` | Every top-level `def`/`async def`/`class`, public and private alike | `ast`-based; no scope change needed |
+| Rust (`.rs`) | Yes | Yes | `indexed_partial` (coarse line-scan) | `public`, `restricted`, `internal` | Every top-level `fn`/`struct`/`enum`/`trait`, any visibility | Line-scan, **widened** to match with-or-without any `pub(...)` modifier, **live-verified** against 8 representative forms (§0) |
+| JavaScript (`.js`/`.jsx`/`.mjs`/`.cjs`) | Yes | Yes | `indexed_partial` (coarse regex) | `public`, `internal` | Every top-level `function`/`class`/`interface`/`const`/`type`/`enum`, exported or not | Regex, **widened** to match with-or-without `export` |
+| TypeScript (`.ts`/`.tsx`) | Yes | Yes | `indexed_partial` (coarse regex) | `public`, `internal` | Same as JavaScript (shared extractor, language distinguished only by suffix) | Same regex technique, **live-verified** against a real `.ts` implementation file and a real overloaded-function `.ts` file (§0) |
+| Haskell (`.hs`) | Yes | **No — explicitly unsupported** | `unsupported` | (none — no row ever emitted) | — | No in-process parser exists; out of scope, not fabricated |
 
 ## 13. Likely follow-on phase — unchanged, not scoped here
 
@@ -776,7 +932,8 @@ the initial plan, unaffected by this amendment).
 - **`src/codecompass/skill.py`**: generated tool Skill gains the two new
   command lines + table names.
 - **`docs/cli-reference.md`**: new sections, including the explicit
-  four-state `symbol_index_status` disclosure and `visibility` rendering.
+  five-state `symbol_index_status` disclosure, the `source_index_version`
+  not-yet-indexed state, and `exposure` rendering.
 - **`architecture/context-graph-schema.md`**: `source_files`/
   `source_symbols` sections, corrected stale description, the
   nullable-everywhere contract stated explicitly.
@@ -787,9 +944,11 @@ the initial plan, unaffected by this amendment).
   reading this file for the initial plan.
 - **`decisions/0065-<slug>.md`** (new ADR — language-vs-ecosystem
   ontology decision, nullable-everywhere migration contract, occurrence-
-  based symbol identity with the live overload evidence, implementation-
-  vs-API-surface scope decision, explicit indexing-status model,
-  Haskell's non-support).
+  based symbol identity with the live overload evidence, non-null
+  location, the five-value exposure model with the live Rust-visibility
+  evidence, the five-state indexing-status model including
+  `indexed_partial`'s honest fidelity distinction, the project-level
+  `source_index_version` marker, Haskell's non-support).
 - **`README.md`, `ai-docs/README.md`**: new capability bullets + the
   `codecompass-template` cross-link/license note.
 - **`CHANGELOG.md`**: `[Unreleased]` entry.
@@ -807,55 +966,75 @@ phase.
 ## 15. Tests
 
 - **New `tests/test_source_symbols.py`**:
-  - file discovery (prune-set behaviour, tests kept, `Language`
-    classification by suffix — including `.js` vs `.ts` distinctness —
-    independent of `vendor.toml` content);
+  - file discovery: prune-set behaviour (tests kept; build/vendor/cache
+    dirs excluded), `Language` classification by suffix for all five
+    languages — including `.js` vs `.ts` distinctness — independent of
+    `vendor.toml` content, and a zero-vendor-project case;
   - Python/Rust/JS/TS extraction, including a **dedicated overload test
-    per ecosystem** (a real overloaded function, at least Python
-    `@overload` and one JS-family overloaded declaration, asserting
-    multiple distinct rows are produced, none dropped, none crashing);
-  - visibility extraction (Python leading-underscore, Rust `pub`
-    presence/absence, JS/TS `export` presence/absence);
-  - **`SourceFileExtraction` status coverage**: an indexed file with
-    symbols; an indexed file with zero symbols (both must be `INDEXED`,
-    distinguishable only by `symbols` being non-empty vs. empty, not by
-    `status`); an unsupported language (Haskell); a genuine Python
-    syntax error (`PARSE_ERROR`, `diagnostic` populated); an unreadable
-    file (permissions or a deliberately undecodable byte sequence,
-    `UNREADABLE`, `diagnostic` populated) — every one of the five
-    required cases from the task's own instruction.
+    per language that supports overloading** (a real `@typing.overload`-
+    stacked Python function and a real overloaded TypeScript function
+    declaration, each asserting multiple distinct rows are produced, none
+    dropped, none crashing, each with its own correct, distinct `line`);
+  - exposure extraction: Python (`public` vs `conventional_private`),
+    Rust (`public` vs `restricted` — all of bare `pub`/`pub(crate)`/
+    `pub(super)`/`pub(in path)` — vs `internal`), JS/TS (`public` vs
+    `internal`);
+  - **`SourceFileExtraction` status coverage, all five states**: an
+    `indexed` Python file with symbols; an `indexed` Python file with
+    zero symbols (both `INDEXED`, distinguishable only by `symbols`
+    being non-empty vs. empty); an `indexed_partial` Rust/JS/TS file (any
+    non-empty coarse-scan result); an unsupported language (Haskell); a
+    genuine Python syntax error (`PARSE_ERROR`, `diagnostic` populated);
+    an unreadable file (permissions or a deliberately undecodable byte
+    sequence, `UNREADABLE`, `diagnostic` populated).
 - **`tests/test_graph.py`** additions:
   - migration safety (`_migrate_source_files_columns` — an existing
-    pre-migration fixture's `uses_edges` rows survive);
+    pre-migration fixture's `uses_edges` rows, and existing
+    `vendors`/`symbols`/`vendor_enrichment`/`symbol_enrichment` data,
+    all survive untouched);
   - **a dedicated fresh-vs-upgraded nullability-contract test**: build a
     database via `init_schema` fresh, and a second database via the old
     (pre-Phase-77) schema then migrated, and assert
     `PRAGMA table_info(source_files)` returns **identical** column
-    names/types/nullability for both — the concrete test this
-    amendment's §3.1/§4 correction requires;
+    names/types/nullability for both;
   - `source_files`/`source_symbols` upsert-by-natural-key behaviour,
     including the corrected `(source_file_id, name, kind, line)` key —
-    an unchanged declaration keeps its `id`, a removed one is deleted, a
-    genuine overload produces multiple stable rows across two
-    `rebuild_deterministic` calls without collision;
-  - new query function tests.
+    an unchanged declaration keeps its `id` across two
+    `rebuild_deterministic` calls, a removed one is deleted, a genuine
+    overload produces multiple stable rows without collision;
+  - **`source_index_version` presence/absence**: absent on a database
+    that has never run a Phase-77-aware rebuild (the pre-index state);
+    present, and set, after any real `rebuild_deterministic` call
+    (including one that finds zero first-party files) — the
+    pre-index-vs-indexed-empty distinction the task requires;
+  - new query function tests (`source_file_profile`,
+    `source_symbol_profile`, `source_index_version`).
 - **`tests/test_sync.py`** additions: real-call-site test (L-021) for
   `rebuild_project_graph`, including the zero-vendor case; **a dedicated
   real-call-site overload test** confirming `codecompass sync` does not
-  raise on a fixture file containing a genuine function overload.
+  raise on a fixture file containing a genuine function overload; a
+  real end-to-end assertion that `meta.source_index_version` is set
+  after a real `rebuild_project_graph` call.
 - **`tests/test_cli.py`** additions: `query source`/`query source-symbol`
-  — found/not-found/`--json` cases, all four `symbol_index_status`
-  renderings, `visibility` tri-state rendering (`public`/`private`/
-  `unknown`, never collapsed).
+  — found/not-found/`--json` cases, the pre-index (`source_index_version`
+  absent) state rendering as `{"indexed": false}` and an explicit
+  "run `codecompass sync`" text message for **both** commands, all five
+  `symbol_index_status` renderings (including the `indexed`-vs-
+  `indexed_partial` fidelity distinction), `exposure`'s five-way
+  rendering (`public`/`restricted`/`internal`/`conventional_private`/
+  `unknown`, never collapsed to a false certainty).
 - Full existing suite must continue to pass unmodified in substance.
 
 ## 16. Documentation / ADR requirements — unchanged in shape, content updated per this amendment
 
 `decisions/0065` now records: the language-vs-ecosystem ontology
 decision (with the JS/TS example), the nullable-everywhere migration
-contract, the occurrence-based symbol identity (with the live overload
-evidence from §0), the implementation-vs-API-surface scope decision, and
-the explicit four-state indexing model. `docs/`/`architecture/` updates
+contract, the occurrence-based symbol identity with non-null location
+(with the live overload evidence from §0), the implementation-vs-API-
+surface scope decision, the five-value exposure model (with the live
+Rust-visibility evidence from §0), the five-state indexing model
+(including `indexed_partial`'s fidelity distinction), and the
+project-level `source_index_version` marker. `docs/`/`architecture/` updates
 per §14.1, same commit as the code. Independent `docs-reconstructor`
 drift audit before closeout, unchanged. `codecompass-template`'s own
 content is fully specified in §8-§9 — implementation writes it directly
@@ -894,18 +1073,20 @@ remote — is not a planning-time gate; it is an ordinary execution-time
 confirmation step (§17), the same as any other push this session already
 treats that way.
 
-## 19. Implementation sequence (for the eventual implementation phase, not run now)
+## 19. Implementation sequence
 
 1. `source_symbols.py` (discovery + per-language extraction +
-   `SourceFileExtraction` model + overload/visibility/indexing-status
+   `SourceFileExtraction` model + overload/exposure/indexing-status
    tests) — verifiable in complete isolation.
 2. `graph.py` schema/migration/query-function changes + the
    fresh-vs-upgraded nullability-contract test + migration regression
-   test.
+   test + `source_index_version` presence/absence tests.
 3. `sync.py::rebuild_project_graph` wiring (real-call-site test,
-   zero-vendor test, overload real-call-site test).
-4. `cli.py` query commands + `skill.py` update + CLI tests (all four
-   indexing states, visibility tri-state).
+   zero-vendor test, overload real-call-site test,
+   `source_index_version` real-call-site test).
+4. `cli.py` query commands + `skill.py` update + CLI tests (the
+   not-yet-indexed gate, all five indexing states, exposure's five-way
+   rendering).
 5. Docs/ADR/architecture updates, same commits as the code.
 6. **Populate and push `codecompass-template`** (§8.2/§9) to its own
    existing remote — a distinct, explicitly-confirmed action (§17).
