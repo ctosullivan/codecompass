@@ -117,12 +117,12 @@ ordinary real code before committing to schema — real and evidenced but
 single-phase, **retained** as a candidate, not yet promotable to one
 specific artifact) (`planning/learnings/inbox.md`, `f92d3f2`).
 
-**Still pending, blocking `done`:** an independent `release-phase-auditor`
-completion audit (not yet dispatched) and, only after its own `PASS` or
-`PASS WITH NON-BLOCKING OBSERVATIONS`, the terminal done-flip
-reconciliation (`ROADMAP.md`'s phase row, this file's current-state
-section, and the plan file's own Status line only, per `CLAUDE.md` §5's
-narrow terminal-reconciliation exemption). Full plan (amended twice):
+**Still blocking `done`:** an independent completion audit has not yet
+run, and, only after its own `PASS` or `PASS WITH NON-BLOCKING
+OBSERVATIONS`, the terminal done-flip reconciliation follows
+(`ROADMAP.md`'s phase row, this file's current-state section, and the
+plan file's own Status line only, per `CLAUDE.md` §5's narrow
+terminal-reconciliation exemption). Full plan (amended twice):
 `planning/phase-77-first-party-source-and-template.md`.
 
 **Phase 76 — Git repository topology awareness (worktrees + submodules)
