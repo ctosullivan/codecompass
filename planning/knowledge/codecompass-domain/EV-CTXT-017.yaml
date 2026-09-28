@@ -1,0 +1,44 @@
+id: EV-CTXT-017
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  A full top-to-bottom re-read of `relationship-edge.md`'s own References
+  block (prompted by the Phase-77 citation-currency check, but not
+  produced by Phase 77's own diff) surfaces two further citations that
+  are wrong independent of any line-shift, discoverable only by actually
+  opening the cited file at the cited lines rather than trusting the
+  citation:
+  (1) `tests/test_graph.py:1426-1436` (cited for
+  `test_doc_relation_enrichment_has_no_foreign_key`) lands, in both the
+  pre-Phase-77 file and the current file, inside an unrelated test
+  (`test_skills_index_includes_cursor_mdc_and_slash_command`'s own
+  fixture-construction code) — confirmed by reading the exact lines in
+  both `git show 03f8519^:tests/test_graph.py` and the current file. The
+  real `test_doc_relation_enrichment_has_no_foreign_key` function is at
+  current `tests/test_graph.py:1611-1621` (was old line 1608, shifted by
+  a net +3 from unrelated earlier hunks in the same file — confirmed by
+  `grep -n` in both revisions).
+  (2) `architecture/overview.md:1050-1320` does not correspond to any
+  relationship-edge content in either revision: the pre-Phase-77 file
+  was only ~1102 lines total (confirmed `git diff --stat
+  03f8519^ 03f8519 -- architecture/overview.md` showing "68
+  insertions(+)" against a base short enough that 1320 already exceeded
+  it), and old lines 1050-1102 land in a "Known limitations" list about
+  adapter/extractor quality (`extract_npm_symbols`'s coarse regex scan,
+  `filetree.py`'s directory walk), not relationship/edge content. The
+  actual "Context graph" section discussing `doc_relations_edges`/
+  `build_doc_relations_edges`/`mentions_artifact`/`mentions_dependency`
+  (the content this page's Example/Relationships sections are actually
+  about) is at `architecture/overview.md:688-734`, unaffected by Phase
+  77's own single hunk (which starts at old line 826, well after this
+  section).
+  Both errors predate Phase 77 and are unrelated to this phase's own
+  diff; they were found only because this citation-currency task
+  required a full top-to-bottom re-read of the page rather than only
+  the Phase-77-adjacent citations.
+source_ref: "tests/test_graph.py:1611-1621; architecture/overview.md:688-734"
+doc_ref: null
+test_ref: "tests/test_graph.py::test_doc_relation_enrichment_has_no_foreign_key"
+observations: []
+repository_revision: "04b87c222a626fbe751a5e4b4fcef7042362262b, 2026-09-29"
+status: current

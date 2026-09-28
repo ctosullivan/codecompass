@@ -1,0 +1,43 @@
+id: EV-CTXT-016
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  `relationship-edge.md`'s Definition section states: "Every one of
+  these tables (except the natural-key-upserted `vendors`/`symbols`
+  nodes they reference) is wiped and reinserted by `rebuild_deterministic`
+  on every whole-project `sync`." Phase 77 (`03f8519`) changed
+  `source_files` from clear-and-reinsert to upsert-by-natural-key
+  (`path`), mirroring `vendors`/`symbols`: the pre-Phase-77
+  `rebuild_deterministic` body included `conn.execute("DELETE FROM
+  source_files")` in its wipe block and called a plain-INSERT
+  `_insert_source_files`; the current body (confirmed by reading
+  `graph.py:1013-1054` directly) has **no** `DELETE FROM source_files`
+  statement at all, and calls a new `_sync_source_files` (upsert via
+  `ON CONFLICT(path) DO UPDATE`, `graph.py:1166-1197`) instead. Two of
+  the six edge tables this page enumerates reference `source_files` by
+  foreign key (`uses_edges.source_file_id`, `skill_mentions_edges.
+  source_file_id`, both `ON DELETE CASCADE`). This means the page's own
+  parenthetical listing of which referenced node tables are
+  natural-key-upserted (as opposed to cleared-and-reinserted) is now
+  incomplete: it names only `vendors`/`symbols`, omitting `source_files`,
+  which as of Phase 77 belongs in the same category.
+  **The page's central claim is unaffected and remains accurate**: all
+  six edge tables themselves (`doc_relations_edges`, `depends_on_edges`,
+  `routes_via_edges`, `skill_mentions_edges`, `documents_edges`,
+  `uses_edges`) are still unconditionally cleared and reinserted every
+  sync — confirmed directly, the six `DELETE FROM` statements are still
+  present verbatim in the current `rebuild_deterministic` body
+  (`graph.py:1016-1021`) — so "a relationship, in this precise sense, is
+  always a current, mechanically re-provable fact, never a standing
+  record of something once true" is still true. Only the parenthetical's
+  own exception list is stale, not the claim it qualifies.
+  Recommended fix (not applied — outside this role's write boundary):
+  change "(except the natural-key-upserted `vendors`/`symbols` nodes they
+  reference)" to "(except the natural-key-upserted `vendors`/`symbols`/
+  `source_files` nodes they reference)".
+source_ref: "src/codecompass/graph.py:1013-1054, 1016-1021, 1166-1197"
+doc_ref: null
+test_ref: null
+observations: []
+repository_revision: "04b87c222a626fbe751a5e4b4fcef7042362262b, 2026-09-29"
+status: current

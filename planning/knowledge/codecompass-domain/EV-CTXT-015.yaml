@@ -1,0 +1,56 @@
+id: EV-CTXT-015
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  Phase 77's diff to `src/codecompass/graph.py` (`03f8519`) is three
+  hunks before old-file line ~920 (net +40 at old line 63: `source_files`
+  column extension + new `source_symbols` table; net +30 at old line
+  267: `SourceFileRow`/`SourceSymbolRow` dataclasses; net +52 at old
+  line 681: `_migrate_source_files_columns`) plus four further hunks
+  later in the file (net +1, +2, +24, -1, +1, +7 around `open_graph`/
+  `rebuild_deterministic`'s signature and docstring; net +77 replacing
+  `_insert_source_files` with `_sync_source_files`/`_sync_source_symbols`
+  at old line 1010; net +86 adding `source_file_profile`/
+  `source_symbol_profile` after old line 1686) — cumulative net +319
+  lines by end of file (old file 2109 lines, confirmed via `git show
+  03f8519^:src/codecompass/graph.py | wc -l`; new file 2428, confirmed
+  via `wc -l`). Re-deriving old->new line mapping directly from every
+  `@@` hunk header (not trusting the docs-reconstructor drift audit's
+  own rough "+40, +40, +52" summary, which only characterized the first
+  three hunks) gives the following confirmed current locations for
+  citations flagged stale in `docs/domain/concepts/reference.md`,
+  `context.md`, and `relationship-edge.md`:
+  (1) `doc_artifacts`'s `origin` CHECK-enum table, cited by
+  `reference.md` as `graph.py:104-122`, is now at `graph.py:143-161`
+  (whole `CREATE TABLE doc_artifacts` block; the `origin` CHECK itself
+  is lines 152-157) — confirmed by reading the current file directly.
+  (2) The schema span cited by `context.md`/`relationship-edge.md` as
+  `graph.py:50-360` (covering `_SCHEMA_SQL` plus the early row
+  dataclasses through `SkillMentionEdgeRow`) is now `graph.py:50-430` —
+  confirmed old line 360 (`doc_artifact_path: str` inside
+  `SkillMentionEdgeRow`) maps exactly to new line 430 (identical text).
+  (3) `relationship-edge.md`'s second citation, `graph.py:1184-1226`
+  labelled "(`rebuild_deterministic`)", maps under the full hunk
+  accounting to new `graph.py:1417-1459` (confirmed by exact text match:
+  old line 1184 = "chunk_id" inside `_insert_doc_relations_edges`; old
+  1226 = "repository_ids[w.repository_common_dir]," inside
+  `_insert_git_worktrees`) — but this citation was **already wrong
+  before Phase 77**, in both the old and new file: lines 1184-1226 (old)
+  / 1417-1459 (new) fall inside `_insert_doc_relations_edges`'s tail and
+  `_insert_git_repositories`/`_insert_git_worktrees` (Git-topology insert
+  helpers, unrelated to the six edge tables this page discusses), not
+  inside `rebuild_deterministic` itself. The real `rebuild_deterministic`
+  function (confirmed via `grep -n "^def rebuild_deterministic"`) is at
+  `graph.py:935-1084`, and the actual wipe-and-reinsert statements for
+  all six edge tables this page enumerates are at lines 1016-1021
+  (`DELETE FROM doc_relations_edges` / `depends_on_edges` /
+  `routes_via_edges` / `skill_mentions_edges` / `documents_edges` /
+  `uses_edges`) — a materially better citation for the page's own claim
+  "wiped and reinserted by `rebuild_deterministic` on every whole-project
+  sync" than the pre-existing, still-wrong `1184-1226`/`1417-1459` span.
+source_ref: "src/codecompass/graph.py:143-161, 50-430, 935-1084, 1016-1021, 1417-1459"
+doc_ref: null
+test_ref: null
+observations: []
+repository_revision: "04b87c222a626fbe751a5e4b4fcef7042362262b, 2026-09-29"
+status: current

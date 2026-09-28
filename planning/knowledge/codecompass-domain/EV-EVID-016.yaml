@@ -1,0 +1,40 @@
+id: EV-EVID-016
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  `provenance.md` cites `graph.py:164-182` (Definition point 2, inline)
+  and `graph.py:165-175` (Example) / `graph.py:176-182` (Counterexample)
+  for `vendor_enrichment`/`symbol_enrichment`'s schema, and
+  `graph.py:164-203, 515-549` (References) for "the real enrichment-table
+  schema, including `symbol_enrichment`'s `model` column and its own
+  migration function." Phase 77's first hunk (net +40 at old line 63)
+  shifts every one of these (all old lines >=63, <267): confirmed by
+  exact text match, old line 164 ("CREATE TABLE IF NOT EXISTS
+  vendor_enrichment (") now at current line 204, old line 182 (the
+  closing `);` of `symbol_enrichment`) now at current line 222, old line
+  202 (closing `);` of `doc_relation_enrichment`) now at current line
+  242. Corrected citations: `164-182` -> `204-222` (still exactly
+  `vendor_enrichment` (204-214) + `symbol_enrichment` (216-222));
+  `165-175` -> `205-215`; `176-182` -> `216-222`; the `164-203` half of
+  the References citation -> `204-243`.
+  **The `515-549` half of the References citation (and the inline
+  Definition-point-2 mention of the same range) was already wrong before
+  Phase 77**, in both the old and current file: old/current lines
+  515-549 fall inside `_migrate_doc_artifacts_constraints`'s own
+  docstring (a completely unrelated migration, about `doc_artifacts`/
+  `documents_edges`/`doc_relations_edges` `kind`/`origin` CHECK
+  widenings across Phases 17/21/27/32/54c) — confirmed by reading
+  `git show 03f8519^:src/codecompass/graph.py` at those exact lines. The
+  actual `_migrate_symbol_enrichment_model_column` function this
+  citation is supposed to point at is at current
+  `graph.py:717-751` (was old `647-683`, shifted +70 by the first two
+  Phase-77 hunks combined — confirmed via `grep -n
+  "^def _migrate_symbol_enrichment_model_column"` in both revisions).
+  Recommended corrected References citation:
+  `graph.py:204-243, 717-751`.
+source_ref: "src/codecompass/graph.py:204-243, 717-751"
+doc_ref: null
+test_ref: null
+observations: []
+repository_revision: "04b87c222a626fbe751a5e4b4fcef7042362262b, 2026-09-29"
+status: current

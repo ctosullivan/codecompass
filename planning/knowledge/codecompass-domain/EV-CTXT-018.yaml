@@ -1,0 +1,25 @@
+id: EV-CTXT-018
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  `digest.md` cites `src/codecompass/sync.py:160-202` for `sync_vendor`.
+  Phase 77's diff to `sync.py` (`03f8519`) inserts two 1-line-net import
+  hunks before `sync_vendor` (old lines 26 and 55, both +1 net) and does
+  not touch `sync_vendor`'s own body at all (its Phase-77 changes are
+  entirely inside `rebuild_project_graph`, later in the file). Net
+  cumulative offset by old line 160 is +2. Confirmed by exact text match:
+  old line 160 ("graph_conn.close()" inside `sync_vendor`'s enrichment
+  lookup) equals current line 162 verbatim; old line 202 ("side_effects=
+  list(dep_tree_root.side_effects),") equals current line 204 verbatim.
+  `sync_vendor` itself is now at `sync.py:107-206` (was `105-206`);
+  `digest.md`'s cited excerpt should move from `160-202` to `162-204`.
+  Also confirmed unaffected by this phase: `core.py:66-103`
+  (`VendorDigest`, in a file Phase 77 never touched) and
+  `architecture/overview.md:397-576` (Phase 77's only hunk to that file
+  starts at old line 826, well after this cited range).
+source_ref: "src/codecompass/sync.py:107-206, 162-204"
+doc_ref: null
+test_ref: null
+observations: []
+repository_revision: "04b87c222a626fbe751a5e4b4fcef7042362262b, 2026-09-29"
+status: current
