@@ -1,71 +1,103 @@
 # Phase 77: First-party source awareness + `codecompass-template` — plan
 
-**Status:** planned (2026-09-28).
+**Status:** planned (2026-09-28, amended 2026-09-28).
 
 Direct user request, two connected goals: (1) make a project's own
-first-party source (files + top-level symbols) a first-class,
-non-vendor-gated object in `context-graph.db`, closing the structural gap
-`CG-009` documented; (2) design (not yet create) a separate,
-MIT-licensed `codecompass-template` repository that packages the proven
-downstream-adoption workflow shape without inheriting CodeCompass's own
-GPL implementation or internal governance corpus. Planning only — no
-`src/` change, no external repository created, per explicit instruction.
+first-party source (files + top-level implementation symbols) a
+first-class, non-vendor-gated object in `context-graph.db`, closing the
+structural gap `CG-009` documents; (2) **deliver a genuinely usable,
+MIT-licensed `codecompass-template` repository** — the repository
+already exists at `https://github.com/ctosullivan/codecompass-template`
+(confirmed empty, §0) — packaging the proven downstream-adoption
+workflow shape without inheriting CodeCompass's own GPL implementation
+or internal governance corpus. Planning only — no `src/` change, no
+external-repository population, per explicit instruction for *this*
+amendment pass; implementation (including populating the real template
+repository) is the next, not-yet-started step.
 
-## 0. Verified current state (read live, not assumed)
+**Amendment note (2026-09-28, same day as the initial plan `585f891`):**
+this amendment corrects twelve issues a direct user review found:
+(1) the template repository already exists and Phase 77 must deliver a
+usable populated version of it, not merely a design; (2) `source_files`
+needs a first-party **language** concept, not a reused **package-
+ecosystem** concept — `core.Ecosystem`'s single `npm` value cannot
+distinguish JavaScript from TypeScript, which first-party symbol
+extraction genuinely needs to; (3) the nullable-vs-`NOT NULL` column
+contract must be identical between a fresh and an upgraded database —
+not "`NOT NULL` for new, nullable-until-repopulated for old"; (4)
+first-party symbol scope must cover implementation, not just an API
+surface — non-exported/private top-level declarations included, with
+visibility recorded as a separate property, not used as a filter; (5)
+`UNIQUE(source_file_id, name)` can crash a real sync on a genuine,
+common language feature (function overloads) — **live-verified** on
+both Python and TypeScript, not assumed; (6) empty-list ambiguity
+(no symbols vs. extraction failure) is unacceptable for first-party
+source and needed an explicit indexing-status model; (7)-(8) preserve
+source-file identity/backwards-compatibility and the separate query
+namespace; (9) validation must use the real template repository, not an
+imaginary scratch scaffold; (10)-(11) preserve the three real
+validations and the narrow non-goal boundary; (12) reconcile every
+section against all of the above. Full detail inline below, at the
+point each change actually lands.
 
-- HEAD at plan time: `e11afa7` (Phase 76's corrective pass, `done`,
-  pushed).
-- `planning/ROADMAP.md`'s Phase 76 row: `done`. `planning/CONTEXT.md`
-  consistent with it. No phase currently `in progress`. No
-  `planning/phase-77-*.md` existed before this file — **77 is the
-  correct next phase number**, not assumed from the prompt's own
-  wording but confirmed by `ls planning/phase-*.md` (highest existing:
-  76) and a repo-wide search finding no other "Phase 77" reference
-  anywhere.
+## 0. Verified current state (read live, not assumed, re-verified for this amendment)
+
+- HEAD at amendment time: `585f891` (Phase 77's initial plan, `planned`).
+  Working tree clean.
+- `planning/ROADMAP.md`/`planning/CONTEXT.md`: consistent, Phase 77
+  `planned`, no phase `in progress`.
 - `CG-009` (`planning/context-gaps/inbox.md`): `status: candidate`,
-  filed Phase 75, re-verified live for this plan (see §1) — still
-  accurate, not stale.
-- Current schema version: `"10"` (`graph.py::_SCHEMA_VERSION`, set by
-  Phase 76). Next: `"11"`.
-- Latest ADR: `decisions/0064`. Next: `0065`.
-- CodeCompass's own license: GPL-3.0-or-later (`LICENSE`,
-  `pyproject.toml`), single committer (`decisions/0055`'s own research,
-  unchanged) — relevant to §10.
+  unchanged since Phase 75 — still accurate (§1).
+- Current schema version: `"10"`. Next: `"11"` (unchanged by this
+  amendment).
+- Latest ADR: `decisions/0064`. Next: `0065` (unchanged).
+- **`https://github.com/ctosullivan/codecompass-template` — confirmed
+  live via direct inspection: the repository exists and is genuinely
+  empty** (no files, no README, no commits visible). This is not a
+  future action to plan — it is the starting point implementation picks
+  up from. Nothing was written to it during this planning amendment
+  (read-only inspection only, per explicit instruction).
+- Re-read `graph.py::_sync_vendors`/`_sync_symbols` directly (not from
+  memory) to confirm the exact upsert-by-natural-key SQL shape this
+  plan's §3/§4 now extends: both compute an `existing` set via `SELECT`,
+  diff against `incoming`, `DELETE` anything stale, then
+  `INSERT ... ON CONFLICT(...) DO UPDATE SET ...` for everything current.
+  This pattern is reused, not reinvented, for `source_files`/
+  `source_symbols` (§4).
+- **Live-verified the overload-collision risk item 5 warns about**, on
+  both ecosystems this plan supports — not assumed:
+  - TypeScript, a real overloaded function declaration
+    (`export function foo(a: string): void; export function foo(a:
+    number): void; export function foo(a: string | number): void {
+    ... }`) run through the existing `extract_npm_symbols` regex
+    produces **three** `Symbol(name='foo', ...)` results, one per
+    signature line.
+  - Python, a real `@typing.overload`-stacked function (two `@overload`
+    stub definitions plus the real implementation, all named `foo`) run
+    through `extract_python_symbols` produces **three**
+    `Symbol(name='foo', ...)` results, one per `def foo` occurrence.
+  - **`UNIQUE(source_file_id, name)` would make either of these crash a
+    real `codecompass sync`** on an `sqlite3.IntegrityError` the moment
+    a second same-named row is inserted. This is not a hypothetical edge
+    case — function overloading is ordinary, common code in both
+    languages. §3.2 fixes this directly, with the natural key each
+    verification's own distinct line numbers make safe.
 
-## 1. Problem statement & evidence — verified, not assumed
+## 1. Problem statement & evidence (unchanged by this amendment — still verified, still accurate)
 
-Re-derived directly from current source, not taken from `CG-009`'s own
-prose on faith:
-
-- `graph.py:66-69` — `source_files` is `(id, path UNIQUE)` only, no
-  `ecosystem`, no content identity, no symbol relationship of its own.
+- `graph.py:66-69` — `source_files` is `(id, path UNIQUE)` only.
 - `graph.py:71-79` — `symbols.vendor_id INTEGER NOT NULL REFERENCES
-  vendors(id) ON DELETE CASCADE` — structurally forces every symbol row
-  to belong to a tracked vendor. No project is ever itself a `vendors`
-  row.
-- `sync.py::rebuild_project_graph` (`sync.py:287-330`) — `symbol_rows`
-  is built by iterating `configs: list[VendorConfig]` only, calling
-  `adapter.symbols()` once per tracked vendor. `source_file_rows` is
-  built from `usage.resolve_project_usage(project_root, configs)`'s own
-  output — **only files where a detected import matched a tracked
-  vendor name** (`sync.py:318-330`). A file with no vendor-matching
-  import never becomes a `source_files` row today, regardless of how
-  much first-party code it contains.
-- Live-reproduced the exact `CG-009` symptom against this repository's
-  own architecture (not re-run against Ledgerkit at plan time — that is
-  §11's own validation step, not a planning-time action): `graph.py`'s
-  own `rebuild_deterministic`, `detect_git_topology`, or any other
-  first-party function/class in `src/codecompass/` is equally
-  unqueryable via `codecompass query symbol` today, for the exact same
-  structural reason `CG-009` names for Ledgerkit's `Posting`/`Amount`/
-  `Tag` — this is not a Ledgerkit-specific gap, it is universal across
-  every project CodeCompass has ever been run against, including its
-  own dogfooding case.
-- **Confirmed: this is not fixed by tracking more vendors.** The
-  `adapter.symbols()` walk only ever touches `adapter.source_location()`
-  — a vendor's own installed package directory — never the calling
-  project's own tree, for any ecosystem, at any vendor count including
-  zero.
+  vendors(id) ON DELETE CASCADE` structurally forces every symbol row to
+  belong to a tracked vendor.
+- `sync.py::rebuild_project_graph` (`sync.py:287-330`) builds
+  `source_file_rows` only from `usage.resolve_project_usage`'s own
+  vendor-import-matched output — a file with no vendor-matching import
+  never becomes a `source_files` row today, regardless of first-party
+  content.
+- Reproduced the exact `CG-009` symptom against this repository's own
+  first-party code (`rebuild_deterministic`, `detect_git_topology`, ...)
+  — the gap is universal, not Ledgerkit-specific, and not fixed by
+  tracking more vendors.
 
 `CG-009` stands verified, current, and unresolved. This phase directly
 targets it.
@@ -75,22 +107,33 @@ targets it.
 **Goals:**
 
 1. A project's own first-party source files become durable,
-   ecosystem-tagged `context-graph.db` rows, independent of `vendor.toml`
+   language-tagged `context-graph.db` rows, independent of `vendor.toml`
    content (works identically at 0 tracked vendors).
-2. A project's own first-party top-level symbols (functions, classes,
-   and ecosystem-equivalent constructs) become durable, queryable rows
-   with `kind` and `line`, for ecosystems with a reliable in-process
-   extractor.
-3. Two small, explicit, additive CLI query commands expose this
+2. A project's own first-party **implementation** symbols — not merely
+   an API surface — become durable, queryable rows with `kind`, `line`,
+   and (where cheaply and reliably determinable) `visibility`, for
+   languages with a reliable in-process extractor. Non-exported/private
+   top-level declarations are included, not filtered out.
+3. Every source file's own symbol-extraction outcome is explicitly,
+   honestly represented — indexed (possibly with zero symbols),
+   unsupported language, parse error, or unreadable — never a bare empty
+   result standing in for more than one real cause.
+4. Two small, explicit, additive CLI query commands expose this
    surface, without touching existing `query symbol`/`query vendor`
-   compatibility.
-4. A design (not yet a repository) for `codecompass-template`, an
-   MIT-licensed, minimal downstream-adoption scaffold.
-5. Real, independent validation: a zero-vendor template fixture, a real
-   Ledgerkit clone, and CodeCompass's own dogfooding — plus one
-   lightweight independent task-context evaluation.
+   compatibility, and without collapsing any nullable/unknown state into
+   a false certainty (Phase 76's own corrected discipline, applied from
+   first implementation here rather than fixed later).
+5. **Deliver a genuinely usable, populated, MIT-licensed
+   `codecompass-template` repository** at the real, already-existing
+   `https://github.com/ctosullivan/codecompass-template` — not merely a
+   design document.
+6. Real, independent validation: a zero-vendor validation against a real
+   clone of the now-populated template repository, a real Ledgerkit
+   clone, and CodeCompass's own dogfooding — plus one lightweight
+   independent task-context evaluation.
 
-**Non-goals (explicitly deferred, not implemented this phase):**
+**Non-goals (explicitly deferred, not implemented this phase — unchanged
+by this amendment):**
 
 - Function/method call graphs, control/data flow, inheritance graphs,
   local symbol-reference resolution.
@@ -100,78 +143,112 @@ targets it.
 - Any semantic/AI-derived code understanding, embeddings, or
   whole-project summarisation of first-party code.
 - Nested/member symbols (a class's own methods, a module's local
-  helpers) — first-party symbol extraction stays **top-level only**,
-  matching the existing vendor-symbol extractors' own established scope
-  exactly (§6).
-- Creating, initializing, or publishing the `codecompass-template`
-  repository itself.
+  helpers) — first-party symbol extraction stays **top-level only**.
+  (Widened from "top-level, exported/public-equivalent only" to
+  "top-level, implementation-inclusive" by this amendment — §5 — but the
+  *top-level-only* boundary itself is unchanged: this phase still does
+  not walk into class bodies or nested scopes.)
 - Closing `CG-009` by lead fiat — closure goes through the normal
-  context-gap lifecycle (`knowledge-curator` triage +
-  `context-evaluator`-backed evidence from §11's own validations), not
-  "code was added."
+  context-gap lifecycle (§10.2, §21).
+- The future first-party *relationship* graph (§13) — explicitly out of
+  scope, unaffected by this amendment.
 
 ## 3. Proposed data model
 
-Two new tables, extending `source_files` and adding `source_symbols` —
-**not** a nullable `symbols.vendor_id`. Rationale (evidence-based, not
-merely the semantic-distinction argument the task prompt already
-anticipated):
+Two new/extended tables — **not** a nullable `symbols.vendor_id`, for
+the same evidence-based reasons as the initial plan (semantic distinction
++ migration risk, §3 of the original text, unchanged by this amendment).
 
-- **Semantic**: a vendor symbol answers "what does this dependency's
-  API surface offer"; a first-party symbol answers "what does this
-  project itself implement." Conflating them into one table with an
-  optional owner would force every future field (`export_kind`, vendor
-  usage-count joins, `symbol_enrichment`) to either apply ambiguously to
-  both kinds or grow a second discriminator column anyway — no
-  simplification, only ambiguity.
-- **Migration risk**: SQLite cannot relax a column's `NOT NULL`
-  constraint via `ALTER TABLE` — doing so would require the same
-  drop-and-rebuild-with-data-copy shape Phase 76's corrective pass just
-  replaced for `doc_artifacts` specifically because it was a real,
-  demonstrated risk (`decisions/0064`, `decisions/0063` point 6). A
-  fully separate new table needs only `CREATE TABLE IF NOT EXISTS` — no
-  existing row is ever touched, no destructive-migration risk exists at
-  all. This is the stronger, concrete argument for the separate-table
-  design.
-- **Backwards compatibility**: zero interaction with `vendors`,
-  `symbols`, `symbol_enrichment`, or `uses_edges` — every existing query
-  path is structurally unreachable from the new tables and vice versa.
-
-### 3.1 `source_files` (extended, not replaced)
+### 3.1 `source_files` (extended, not replaced) — language, not ecosystem; nullable everywhere
 
 ```sql
 CREATE TABLE IF NOT EXISTS source_files (
-  id            INTEGER PRIMARY KEY,
-  path          TEXT NOT NULL UNIQUE,
-  ecosystem     TEXT NOT NULL CHECK (ecosystem IN ('npm','python','cargo','haskell')),
-  content_hash  TEXT
+  id                      INTEGER PRIMARY KEY,
+  path                    TEXT NOT NULL UNIQUE,
+  language                TEXT,
+  content_hash            TEXT,
+  symbol_index_status     TEXT CHECK (
+                            symbol_index_status IN (
+                              'indexed','unsupported','parse_error','unreadable'
+                            )
+                          ),
+  symbol_index_diagnostic TEXT
 );
 ```
 
-- `ecosystem` reuses the exact same `Ecosystem` enum/CHECK vocabulary
-  `vendors.ecosystem` already uses (`core.Ecosystem`) — no new type. A
-  file's ecosystem is determined by its own suffix (`.py`→python,
-  `.rs`→cargo, `.js/.jsx/.ts/.tsx/.mjs/.cjs`→npm, `.hs`→haskell),
-  **independent of `vendor.toml`** — the same suffix-dispatch pattern
-  `usage.detect_imports_for_file` already uses, confirmed live (§0/§6).
-  This is what makes the zero-vendor acceptance test possible: ecosystem
-  tagging never consults tracked-vendor configuration at all.
-- `content_hash` (nullable — `None` only on a read failure, matching
-  every extractor's own "never raise" convention) is a deterministic
-  hash of the file's own current text, computed once per sync. Included
-  now as cheap, low-risk, forward-looking provenance (matching
-  `doc_chunks.content_hash`'s own precedent) for a concrete future
-  consumer the follow-on relationship phase will need (detecting whether
-  a file changed since a prior sync, without re-diffing full content) —
-  not consumed by any query this phase adds.
-- **`source_files` broadens from "files with a detected vendor usage"
-  to "every recognized first-party source file"** — a strict superset
-  of today's population. `uses_edges.source_file_id`'s own FK is
-  unaffected: it already resolves against whatever `source_file_ids`
-  mapping the current rebuild produced, so a larger `source_files` set
-  changes nothing about how `uses_edges` rows resolve.
+**Why `language`, not `ecosystem` — a real ontology mismatch, not a
+naming preference.** `core.Ecosystem` has exactly one value covering
+both JavaScript and TypeScript (`NPM` — it names a *package* ecosystem,
+where both languages share one registry/toolchain). A project's own
+first-party source file is genuinely, observably one or the other — a
+`.js` file has no `interface`/`type` construct, a `.ts` file does — and
+first-party symbol *kind* extraction (§5) genuinely differs between
+them. Reusing `Ecosystem` here would either merge two languages that
+need separate `kind` vocabularies, or force a new `Ecosystem` member
+that means something different from every existing one (a *dependency*
+package-manager concept gaining a non-dependency meaning). **A new,
+narrow `Language` concept is introduced instead** — not a
+"convenience reuse" of `Ecosystem`, an evidence-based rejection of it.
 
-### 3.2 `source_symbols` (new)
+```python
+class Language(StrEnum):
+    """A first-party source file's own programming language — distinct
+    from `core.Ecosystem` (a *package* ecosystem: npm covers both
+    JavaScript and TypeScript dependencies identically, but a project's
+    own first-party `.js` and `.ts` files are observably different
+    languages with different symbol-kind vocabularies). Defined in
+    `source_symbols.py`, not `core.py`, since this phase is its only
+    consumer; promoting it to `core.py` is a trivial future move if a
+    second consumer emerges — not preemptively done here.
+    """
+
+    PYTHON = "python"
+    RUST = "rust"
+    JAVASCRIPT = "javascript"
+    TYPESCRIPT = "typescript"
+    HASKELL = "haskell"
+```
+
+Suffix mapping (a genuine refinement over `usage.py`'s own
+`_NPM_SOURCE_SUFFIXES`, which lumps `.js`/`.ts` together — first-party
+discovery splits them): `.py`→`PYTHON`; `.rs`→`RUST`; `.js`/`.jsx`/
+`.mjs`/`.cjs`→`JAVASCRIPT`; `.ts`/`.tsx`→`TYPESCRIPT` (`.d.ts` falls into
+this bucket too — `Path.suffix` returns `.ts` for `foo.d.ts`, no special
+case needed, confirmed by how Python's own `pathlib` suffix semantics
+work); `.hs`→`HASKELL`.
+
+**Nullable everywhere — fresh and upgraded databases identical, per
+direct correction.** The initial plan proposed `ecosystem TEXT NOT NULL`
+for a fresh schema while an upgraded database would transiently carry
+`NULL` until repopulated — an inconsistency the amendment explicitly
+rejects. **`language` (and `content_hash`/`symbol_index_status`/
+`symbol_index_diagnostic`) are nullable in the schema itself, on every
+database, new or upgraded, with no exception.** The contract:
+`language` = a value from `Language` above, mechanically classified;
+`NULL` = unresolved, legacy (a pre-Phase-77 row briefly present between
+migration and the next rebuild), or a file recognized as source but not
+mapped to any known `Language` (there is no such case today — every
+recognized suffix maps to a `Language` — but the contract leaves room
+for one without requiring a schema change). **Every row a genuinely
+Phase-77-aware `sync` produces populates `language`** — the `NULL`
+state is real but transient/exceptional, never the steady-state outcome
+of an ordinary sync, on a fresh or upgraded database alike. This removes
+the fresh/upgraded divergence entirely: there is exactly one schema-level
+contract, applied identically regardless of a database's own history.
+
+`symbol_index_status`/`symbol_index_diagnostic` — see §6 (the explicit
+extraction-outcome model this amendment adds).
+
+`content_hash` — unchanged from the initial plan: nullable, a
+deterministic hash of the file's current text, forward-looking provenance
+for a future relationship/staleness-detection consumer, not consumed by
+any query this phase adds.
+
+**`source_files` still broadens from "files with a detected vendor
+usage" to "every recognized first-party source file"** — unchanged.
+`uses_edges.source_file_id`'s FK is unaffected — unchanged.
+
+### 3.2 `source_symbols` (new) — occurrence-based identity, implementation scope, optional visibility
 
 ```sql
 CREATE TABLE IF NOT EXISTS source_symbols (
@@ -181,169 +258,128 @@ CREATE TABLE IF NOT EXISTS source_symbols (
   kind           TEXT NOT NULL,
   line           INTEGER,
   purpose        TEXT,
-  UNIQUE (source_file_id, name)
+  visibility     TEXT CHECK (visibility IN ('public','private')),
+  UNIQUE (source_file_id, name, kind, line)
 );
 CREATE INDEX IF NOT EXISTS idx_source_symbols_file ON source_symbols(source_file_id);
 ```
 
-- `kind` is deliberately **not** `CHECK`-constrained to a fixed
-  enumeration — unlike `vendors.ecosystem`/`export_kind` (small, stable,
-  already-closed sets), the kind vocabulary is per-ecosystem and will
-  grow as ecosystem support grows (Python: `function`/`class`; Rust:
-  `function`/`struct`/`enum`/`trait`; npm/TS: `function`/`class`/
-  `interface`/`const`/`type`/`enum`) — constraining it now would force a
-  schema migration for every future ecosystem's own kind vocabulary,
-  which the extensibility goal doesn't justify.
-- `line` is nullable in the schema (an ecosystem extractor that can't
-  cheaply produce a line number could still emit a symbol without one)
-  but every extractor this phase actually ships (§6) always populates
-  it — no extractor produces a `None` line in practice today.
-- `purpose` is the same "docstring/doc-comment when deterministically
-  available" concept `symbols.Symbol.purpose` already has — reused
-  logic, not reinvented (§6).
-- `UNIQUE (source_file_id, name)` mirrors `symbols`'s own
-  `UNIQUE (vendor_id, name)` precedent exactly, including its
-  known-and-accepted limitation (a file with two same-named top-level
-  declarations collides; the existing vendor-symbol table has carried
-  the identical limitation since Phase 2 without it ever mattering in
-  practice).
-- **No `export_kind` column.** `export_kind`'s own docstring
-  (`symbols.py:30-41`) already states it "must not become... a stand-in
-  for a future intrinsic symbol-type concept" — `source_symbols.kind`
-  is exactly that intrinsic concept, kept on its own dedicated,
-  purpose-built table rather than retrofitted onto the field the
-  existing docstring explicitly protects.
+**Duplicate-identity design — the occurrence approach, chosen with live
+evidence (§0), not the logical-symbol (collapse) approach.** A natural
+key of `(source_file_id, name)` alone — the initial plan's own choice —
+would raise `sqlite3.IntegrityError` on the very first genuine function
+overload `codecompass sync` ever encountered, live-confirmed above on
+both Python and TypeScript. **Rejected the logical-symbol/collapse
+alternative**: overloads are not duplicate facts to be merged into one
+row with an arbitrary "which signature wins" rule — they are multiple,
+individually real declarations, each at its own line, and collapsing
+them would discard real information (a caller asking "what does line 43
+declare" deserves a real answer, not a note that some other line won a
+merge). **Adopted the occurrence approach**: `UNIQUE(source_file_id,
+name, kind, line)` — each overload signature is a distinct row (distinct
+`line`), the common single-declaration case behaves exactly as before
+(one name, one kind, one line, one row, stable across an unedited file),
+and no legitimate declaration can ever collide with another. Upsert
+mirrors `_sync_symbols`'s own exact pattern (§0): compute the existing
+`(source_file_id, name, kind, line)` tuple set via `SELECT`, diff against
+the incoming set, `DELETE` anything stale, `INSERT ... ON CONFLICT(...)
+DO UPDATE SET purpose = excluded.purpose, visibility =
+excluded.visibility` for everything current — a genuinely identical
+declaration (same file, name, kind, line) upserts cleanly across syncs;
+a moved or removed declaration is deleted and, if still present
+elsewhere, re-inserted at its new line as a "new" row (an honest
+consequence of location being part of identity, not unnecessary churn —
+no enrichment table hangs off `source_symbols.id` this phase, so no real
+identity-preservation requirement is violated by this choice).
 
-### 3.3 Why a distinct extraction type, not a `kind` field on `symbols.Symbol`
+**`kind`**: unchanged reasoning from the initial plan — deliberately not
+`CHECK`-constrained, a per-language, growing vocabulary.
 
-The task's own framing asks this directly. Decision: **a distinct
-dataclass/module**, not an intrinsic `kind` field added to
-`symbols.Symbol`. Reasoning:
+**`visibility` (new field, this amendment)** — nullable, `CHECK
+(visibility IN ('public','private'))`: a genuinely closed, two-value,
+phase-owned vocabulary (unlike `kind`/`language`), so `CHECK`-constraining
+it costs nothing in future extensibility. Populated per §5's own
+per-language rules; `NULL` for a language/extractor with no deterministic
+visibility signal (Haskell — no extractor at all; any future extractor
+that doesn't yet compute it). **Recorded as a separate property, never
+used to filter a symbol out of the table** — the explicit instruction
+this amendment applies directly: a private/non-exported top-level
+declaration is still a real row, with `visibility='private'`, not a
+suppressed one.
 
-- Every existing call site of `symbols.Symbol` (four extractors, all of
-  `filetree.py`'s purpose-annotation logic, every `adapter.symbols()`
-  implementation) has no concept of `kind` and would need to either
-  populate a meaningless default or be threaded through unnecessarily.
-- `Symbol.export_kind`'s docstring already draws this exact line — adding
-  `kind` to the same dataclass one field over from a doc comment that
-  says "this must never become a kind field" is confusing, not
-  economical.
-- Reuse happens at the **extraction technique** level (§6), not the
-  **dataclass** level — exactly matching the user's own instruction to
-  "reuse existing ecosystem extractors where sensible" without forcing
-  a shared type onto two genuinely different producers.
+**`purpose`, `line`** — unchanged reasoning from the initial plan.
 
-## 4. Migration strategy (Phase 76's corrected discipline, not schema-version-triggered destructive migration)
+**No `export_kind` column, still.** Unchanged: `source_symbols.kind` is
+the intrinsic-kind concept `export_kind`'s own docstring says must not
+be repurposed; `visibility` is a genuinely new, narrower property
+(public/private), never conflated with either `kind` or vendor
+`export_kind`.
 
-- `_SCHEMA_VERSION`: `"10"` → `"11"`.
-- **`source_files`**: existing rows need two new columns
-  (`ecosystem`, `content_hash`) added via `ALTER TABLE source_files ADD
-  COLUMN ...` — SQLite supports adding a nullable column cheaply and
-  safely. **Never drop-and-recreate `source_files`** — it is
-  referenced by `uses_edges.source_file_id ON DELETE CASCADE`, and a
-  careless recreate would cascade-delete every `uses_edges` row, the
-  exact class of destructive-migration risk `decisions/0064` (Phase 76's
-  own corrective pass) just fixed for `doc_artifacts`. A new
-  introspection-based check — `_source_files_schema_is_current(conn)`,
-  checking `PRAGMA table_info(source_files)` for the two new columns,
-  mirroring `_doc_artifacts_schema_is_current`'s exact pattern — gates a
-  new `_migrate_source_files_columns(conn)` that runs `ALTER TABLE ADD
-  COLUMN` only when a column is genuinely missing, decoupled from
-  `meta.schema_version`'s own value exactly as `decisions/0064`
-  requires. Existing rows get `ecosystem = NULL`/`content_hash = NULL`
-  until the next `rebuild_deterministic` call repopulates them for real
-  (every real production call path always calls `rebuild_deterministic`
-  immediately after `open_graph`, so this transient state is never
-  user-visible in practice — same posture `git_topology`'s own
-  "not yet indexed" design already established).
-- Because `ecosystem` should end up `NOT NULL` for every row `sync`
-  actually produces, but `ALTER TABLE ADD COLUMN` in SQLite cannot add a
-  `NOT NULL` column without a default to a non-empty table in one step,
-  the added column is created nullable at the schema level and
-  populated for real by `rebuild_deterministic`'s own unconditional
-  `source_files` upsert immediately after — the same "meta.schema_version
-  becomes purely informational, updated unconditionally" posture
-  `decisions/0064` established. (If investigation at implementation time
-  finds SQLite's `ALTER TABLE ADD COLUMN ... NOT NULL DEFAULT ...`
-  variant is simpler and equally safe, that is an implementation
-  refinement, not a plan change — the constraint on *behaviour* is what
-  matters: never drop the table, never lose an existing `uses_edges`
-  row.)
+### 3.3 Why a distinct extraction type, not a `kind`/`visibility` field on `symbols.Symbol`
+
+Unchanged reasoning from the initial plan (§3.3 there) — reuse happens
+at the extraction-technique level (§5), not the dataclass level; every
+existing `symbols.Symbol` call site has no concept of `kind` or
+`visibility` and gains nothing from carrying either.
+
+## 4. Migration strategy (Phase 76's corrected discipline; nullable contract identical on fresh and upgraded databases)
+
+- `_SCHEMA_VERSION`: `"10"` → `"11"` (unchanged).
+- **`source_files`**: existing rows need four new columns (`language`,
+  `content_hash`, `symbol_index_status`, `symbol_index_diagnostic`)
+  added via `ALTER TABLE source_files ADD COLUMN ...` — all nullable, no
+  default needed, since the schema-level contract is "nullable
+  everywhere" (§3.1) with no fresh/upgraded divergence to reconcile.
+  **Never drop-and-recreate `source_files`** — referenced by
+  `uses_edges.source_file_id ON DELETE CASCADE`; a careless recreate
+  would cascade-delete every `uses_edges` row, the exact class of risk
+  `decisions/0064` fixed for `doc_artifacts`. `_source_files_schema_is_current(conn)`
+  (checking `PRAGMA table_info(source_files)` for all four new columns,
+  mirroring `_doc_artifacts_schema_is_current`'s exact introspection
+  pattern) gates a new `_migrate_source_files_columns(conn)` that adds
+  only genuinely-missing columns, decoupled from `meta.schema_version`'s
+  own value, exactly as `decisions/0064` requires.
+- **This amendment removes the initial plan's own `NOT NULL`-eventually
+  posture entirely** — there is no longer a "the column should end up
+  `NOT NULL` once populated" statement anywhere in this plan. The schema
+  itself never enforces `language`/`content_hash`/`symbol_index_status`/
+  `symbol_index_diagnostic` as `NOT NULL`, on a fresh `init_schema` call
+  or an upgraded one — identical column definitions, identical
+  nullability, identical `PRAGMA table_info` output, verified by a
+  dedicated test (§15).
 - **`source_symbols`**: brand new table, `CREATE TABLE IF NOT EXISTS`
-  only — no existing data, no migration risk, identical posture to
-  Phase 76's own three new tables.
-- **`source_files`/`source_symbols` upsert by natural key** (`path`;
-  `(source_file_id, name)` respectively) — **not** cleared-and-reinserted
-  like `source_files` is today. This is a deliberate behaviour change
-  from `source_files`'s current disposable-every-rebuild treatment,
-  needed to satisfy the task's own explicit requirement ("stable enough
-  natural keys to support later relationships without unnecessary
-  identity churn") and to leave room for a future `source_symbol`-keyed
-  enrichment table (not built this phase) the same way
-  `vendors`/`symbols` already support `vendor_enrichment`/
-  `symbol_enrichment` today. Mirrors `_sync_vendors`/`_sync_symbols`'s
-  exact upsert-by-natural-key shape (`graph.py`), not
-  `_insert_source_files`'s current delete-then-insert shape. A row whose
-  path/name no longer appears in the current rebuild is deleted
-  (correctly cascading away any future per-symbol enrichment for
-  something that no longer exists) — identical posture to how
-  `vendors`/`symbols` already handle removal today.
-- **`uses_edges` behaviour is completely unaffected** — same FK, same
-  resolution mechanism, strictly more `source_files` rows to resolve
-  against, never fewer.
-- **`symbols`/`symbol_enrichment`/`vendor_enrichment` behaviour is
-  completely unaffected** — no column, constraint, or row in these
-  tables changes at all.
-- **A project with no `vendor.toml` (0 tracked vendors) still builds
-  full first-party `source_files`/`source_symbols` state** — the new
-  discovery walk (§6) takes `project_root` only, never `configs`,
-  confirmed by design (unlike `resolve_project_usage`, which legitimately
-  needs `configs` to filter to *tracked* vendor names).
+  only — no migration risk, unchanged from the initial plan.
+- **`source_files`/`source_symbols` upsert by natural key** — unchanged
+  reasoning from the initial plan (§4 there), with `source_symbols`'s
+  own key now `(source_file_id, name, kind, line)` per §3.2's corrected
+  identity design, not `(source_file_id, name)`.
+- **`uses_edges`/`symbols`/`symbol_enrichment`/`vendor_enrichment`
+  behaviour completely unaffected** — unchanged.
+- **A project with no `vendor.toml` still builds full first-party
+  state** — unchanged.
 - `rebuild_deterministic`'s new `source_symbols` parameter defaults to
-  `()`, matching `doc_chunks`/`git_repositories`'s own established
-  backwards-compatibility precedent for any existing test/caller that
-  doesn't pass it.
+  `()` — unchanged.
 
-## 5. Source detection/extraction approach
+## 5. Source detection/extraction approach — implementation scope, not API-surface scope
 
-New module: **`src/codecompass/source_symbols.py`** — mirrors
-`usage.py`'s own architectural role (a project-facing counterpart to
-`symbols.py`'s vendor-facing extractors), Layer 2 (mechanical
-detection, no AI, no shared state).
+New module: **`src/codecompass/source_symbols.py`** — unchanged
+architectural role (Layer 2, project-facing counterpart to
+`symbols.py`'s vendor-facing extractors).
 
-### 5.1 File discovery — reused walk, broadened prune-set choice verified live
+### 5.1 File discovery — unchanged from the initial plan
 
-`discover_source_files(project_root: Path) -> list[tuple[str, Ecosystem]]`
-walks `project_root` via `filetree.iter_source_files(project_root,
-prune_dirs=<project prune set>)`, classifying each file's ecosystem by
-suffix (same mapping `usage.detect_imports_for_file` already uses).
+`discover_source_files(project_root: Path) -> list[tuple[str, Language]]`
+— same walk, same reused `usage._PROJECT_PRUNE_DIR_NAMES` prune set
+(preserves first-party tests as source, §0/§5.1 of the initial plan,
+unaffected by this amendment), now classifying by `Language` (§3.1)
+instead of `Ecosystem`.
 
-**Verified, not assumed, which prune set to reuse**: `filetree.py`'s own
-default prune set (`_PRUNE_DIR_NAMES`) excludes `test`/`tests`/
-`__tests__`/`fixtures` — correct for rendering a *vendor's* `FILETREE.md`
-(tests are noise there), but wrong here: the task explicitly requires
-"preserve first-party tests as source." `usage.py`'s own
-`_PROJECT_PRUNE_DIR_NAMES` (already used by `resolve_project_usage`)
-excludes only build/dependency noise (`node_modules`, `dist`, `build`,
-`.git`, `__pycache__`, `.venv`, `venv`, `vendor`) and **does not** prune
-tests — confirmed by reading `usage.py`'s own comment, which already
-states this exact rationale for the identical reason. **First-party
-discovery reuses `usage._PROJECT_PRUNE_DIR_NAMES`**, not
-`filetree._PRUNE_DIR_NAMES` — a project's own test file remains a
-first-class source file, satisfying this requirement for free via
-existing, already-reasoned precedent rather than a new decision.
+### 5.2 Extraction result — explicit success/failure, not a bare list (this amendment's new model, §6 below fully specifies it)
 
-**Walk-sharing note (implementation-level, not schema-affecting)**:
-`resolve_project_usage` already performs an equivalent walk today. The
-sync orchestration should walk the project tree once per sync, feeding
-both import-usage detection and first-party file/symbol extraction from
-that single pass — exact refactor shape left to implementation, but the
-requirement (no second full-tree walk) is a plan-level constraint, not
-an afterthought.
-
-### 5.2 Symbol extraction — reusing existing ecosystem techniques, verified live
-
-`SourceSymbol` dataclass (new, in `source_symbols.py`):
+`extract_source_symbols_for_file(path: Path, language: Language) ->
+SourceFileExtraction` — see §6 for the full `SourceFileExtraction`/
+`SymbolIndexStatus` design. This subsection covers *what* each language
+extracts; §6 covers *how success/failure is represented*.
 
 ```python
 @dataclass(frozen=True)
@@ -352,311 +388,273 @@ class SourceSymbol:
     kind: str
     line: int | None
     purpose: str | None = None
+    visibility: str | None = None  # 'public' | 'private' | None
 ```
 
-`extract_source_symbols_for_file(path: Path, ecosystem: Ecosystem) ->
-list[SourceSymbol]` dispatches per ecosystem, reusing the **same
-underlying scanning technique** each existing `symbols.py` extractor
-already uses (AST walk for Python, line-scan for Rust, regex export-scan
-for npm) — not calling the existing functions unmodified (their return
-type has no `kind`/`line`), but not inventing new parsing infrastructure
-either: `ast.iter_child_nodes`/`ast.FunctionDef`/`ast.ClassDef` for
-Python, the same `_RUST_PUB_PREFIXES` line-scan for Rust, the same
-`_NPM_EXPORT_RE` regex for npm — each now also recording which branch
-matched (`kind`) and the node/match's own line number.
+**Implementation scope, not API-surface scope — the core correction this
+amendment makes.** The question for first-party source is "what does
+this project implement," not "what does this dependency expose." Per
+language:
 
-**Live-verified before committing to npm/TypeScript support** (a real
-finding, not an assumption copied from the task prompt): the existing
-`extract_npm_symbols` regex (`_NPM_EXPORT_RE`) is gated to `.d.ts` files
-only by `extract_symbols_for_file`'s own dispatcher — but the regex
-*itself* has no declaration-file-specific assumption. Tested directly
-against a representative regular `.ts` implementation file
-(`export function add(...) {...}`, `export class Widget {...}`, a
-non-exported function, a non-exported const):
+- **Python** (`.py`): `extract_python_source_symbols`. **No scope change
+  needed at all** — confirmed by re-reading `extract_python_symbols`
+  directly: it already walks *every* top-level `FunctionDef`/
+  `AsyncFunctionDef`/`ClassDef` via `ast.iter_child_nodes`, with no
+  export/visibility filter of any kind (Python has no formal top-level
+  export mechanism to filter on in the first place). The existing
+  technique already satisfies "implementation, not API surface" for
+  Python with zero widening. `kind` = `"function"`/`"class"`,
+  `line = node.lineno`, `purpose = ast.get_docstring(node)`.
+  **`visibility`** (new, cheap, reliable, and grounded in a real
+  language-level convention, not a guess): `"private"` if
+  `node.name.startswith("_")` (PEP 8's own leading-underscore
+  convention — mechanically checkable, and the *only* Python convention
+  with a real language-level consequence: `from module import *`
+  actually excludes leading-underscore names), `"public"` otherwise.
+- **Rust** (`.rs`): `extract_rust_source_symbols`. **Scope widened**
+  from the initial plan: the existing vendor extractor's
+  `_RUST_PUB_PREFIXES` line-scan matches only `pub fn`/`pub struct`/
+  `pub enum`/`pub trait` — correct for a *vendor's* API surface, wrong
+  for first-party implementation scope. The first-party variant matches
+  the *same* four item keywords **with or without a leading `pub`**
+  (`(?:pub\s+)?(fn|struct|enum|trait)\s+\w+`), recording
+  `visibility='public'` when `pub` was present, `'private'` otherwise —
+  a real, deterministic, zero-ambiguity signal (Rust's own visibility
+  keyword, not a convention). `kind`/`line`/`purpose` (`///` doc
+  comments) extracted identically to the vendor extractor's own
+  technique.
+- **JavaScript** (`.js`/`.jsx`/`.mjs`/`.cjs`) and **TypeScript**
+  (`.ts`/`.tsx`): `extract_js_family_source_symbols` (one shared
+  function — the underlying regex technique doesn't distinguish JS from
+  TS syntax; `language` is determined by file suffix at the
+  discovery/dispatch level, §3.1, not by which construct matched).
+  **Scope widened**: the existing vendor extractor's `_NPM_EXPORT_RE`
+  matches only a leading `export` keyword — correct for a vendor's own
+  `.d.ts` declaration surface, wrong for first-party implementation
+  scope. The first-party variant matches the same six construct keywords
+  (`function`/`class`/`interface`/`const`/`type`/`enum`) **with or
+  without a leading `export`** (`(?:export\s+)?(?:default\s+)?(?:declare\s+)?
+  (function|class|interface|const|type|enum)\s+(\w+)`), recording
+  `visibility='public'` when `export` was present, `'private'`
+  otherwise. `kind`/`line`/`purpose` (leading JSDoc) extracted
+  identically to the vendor extractor's own technique — **live-verified
+  unchanged from the initial plan**: the base regex correctly extracts
+  from real `.ts` implementation files (§0 of the initial plan's own
+  verification stands; this amendment only widens the export
+  requirement, not the underlying matching technique).
+- **Haskell** (`.hs`): **file recognition only, no symbol extraction**
+  — unchanged from the initial plan. No in-process Haskell parser
+  exists; building one, or routing first-party files through the
+  external-adapter-process protocol, is explicitly out of scope this
+  phase, per Phase 76's own "declare unsupported honestly" precedent.
 
+### 5.3 Walk-sharing note — unchanged from the initial plan
+
+Sync orchestration should walk the project tree once, feeding both
+import-usage detection and first-party file/symbol extraction from the
+same pass — implementation-level detail, not a schema-affecting
+constraint.
+
+## 6. Explicit symbol-extraction outcome model (new section, this amendment)
+
+The initial plan inherited the existing vendor-extractor convention
+where an empty `list[Symbol]` means both "genuinely nothing here" and
+"failed to parse/read" indistinguishably. **Unacceptable for first-party
+source**, per direct instruction: a downstream developer actively
+editing a file with a syntax error must never see a silent, misleading
+"no symbols" result indistinguishable from a clean, symbol-free file.
+
+**Modeled directly on `git_topology.RepositoryTopology`'s own precedent**
+(a `status` + `reason` + data dataclass, Phase 76) — not a new pattern
+invented for this phase:
+
+```python
+class SymbolIndexStatus(StrEnum):
+    INDEXED = "indexed"
+    UNSUPPORTED = "unsupported"
+    PARSE_ERROR = "parse_error"
+    UNREADABLE = "unreadable"
+
+
+@dataclass(frozen=True)
+class SourceFileExtraction:
+    status: SymbolIndexStatus
+    diagnostic: str | None
+    symbols: tuple[SourceSymbol, ...]
 ```
-Symbol(name='add', purpose='Adds two numbers together.', export_kind='export', note=None)
-Symbol(name='Widget', purpose=None, export_kind='export', note=None)
-Symbol(name='MAX', purpose=None, export_kind='export', note=None)
-```
 
-Correctly extracted every exported declaration (with JSDoc), correctly
-skipped both non-exported ones. **npm/TypeScript first-party extraction
-is genuinely supported this phase** — for `.ts`/`.tsx`/`.js`/`.jsx`/
-`.mjs`/`.cjs` files, matching `_NPM_SOURCE_SUFFIXES` already defined in
-`usage.py`, scoped to top-level `export`ed declarations only (the
-regex's own existing, accepted scope — a first-party module-private
-function is not captured, an honest, disclosed limitation matching this
-extractor's existing behaviour for vendors, not a new one introduced
-here).
+- **`INDEXED`**: extraction ran to completion for a supported language.
+  `symbols` may be **empty** — a real, valid, distinct outcome ("this
+  file genuinely has no top-level implementation symbols"), never
+  conflated with failure. `diagnostic` is `None`.
+- **`UNSUPPORTED`**: no extractor exists for this file's `Language`
+  (Haskell, today). `symbols` is always `()`. `diagnostic` is `None` — the
+  *language itself* is the reason, already fully captured by
+  `source_files.language`; no separate diagnostic text is needed.
+- **`PARSE_ERROR`**: the language's own structural parser rejected the
+  file — in practice, **Python-specific today**: `ast.parse` raising
+  `SyntaxError`. Rust/JS/TS's own coarse line-scan/regex techniques have
+  no real "parse" step to fail structurally (a malformed Rust/JS/TS file
+  simply yields fewer or no matches, correctly surfacing as `INDEXED`
+  with an empty/partial `symbols` tuple — an honest limitation of a
+  non-parsing technique, not a defect this phase introduces or hides).
+  `diagnostic` carries the caught exception's own message.
+- **`UNREADABLE`**: the file itself could not be read (`OSError`,
+  `UnicodeDecodeError`) — possible for any language. `diagnostic` carries
+  the caught exception's own message.
+- **No extraction error ever crashes `sync`** — every failure mode is
+  caught inside `extract_source_symbols_for_file` itself and converted
+  to a `SourceFileExtraction`, matching this codebase's own established
+  "extractors never raise" convention (`symbols.py`'s own docstrings)
+  extended, not violated, by making the failure *visible* instead of
+  silently swallowed into `[]`.
 
-- **Python** (`.py`): `extract_python_source_symbols` — `kind`
-  = `"function"` (`FunctionDef`/`AsyncFunctionDef`) or `"class"`
-  (`ClassDef`), `line = node.lineno`, `purpose =
-  ast.get_docstring(node)`. Top-level only, identical scope to
-  `extract_python_symbols`.
-- **Rust** (`.rs`): `extract_rust_source_symbols` — `kind` from which
-  `_RUST_PUB_PREFIXES` entry matched (`"function"`/`"struct"`/
-  `"enum"`/`"trait"`), `line` from the matched line's own position,
-  `purpose` from a preceding `///` block, identical scope to
-  `extract_rust_symbols`.
-- **npm/TypeScript** (`.js`/`.jsx`/`.ts`/`.tsx`/`.mjs`/`.cjs`):
-  `extract_npm_source_symbols` — `kind` from which `_NPM_EXPORT_RE`
-  alternative matched (`function`/`class`/`interface`/`const`/`type`/
-  `enum`), `line` from the matched line's own position, `purpose` from a
-  leading JSDoc block. **Exported top-level declarations only** — see
-  above.
-- **Haskell** (`.hs`): **file recognition only, no symbol extraction**.
-  No in-process Haskell parser exists anywhere in this codebase — Phase
-  76's own precedent (bare repositories: "declared unsupported, honestly,
-  rather than building fallback support with no evidence calling for
-  it") applies directly. A recognized `.hs` file still gets a
-  `source_files` row (`ecosystem='haskell'`), with zero `source_symbols`
-  rows — the CLI (§7) renders this as an explicit, honest "no symbol
-  extractor available for this ecosystem" state, never a silent empty
-  result indistinguishable from "genuinely has no top-level symbols."
-  Building Haskell first-party extraction would require either a new
-  in-process parser (out of scope — no evidence justifies the
-  investment) or routing through the existing external-adapter-process
-  protocol for a *first-party* file, a materially different integration
-  shape than the adapter protocol's current vendor-only design —
-  explicitly deferred, not fabricated.
+`source_files.symbol_index_status`/`symbol_index_diagnostic` (§3.1)
+persist exactly this outcome per file — the CLI (§7) renders all four
+states honestly, never collapsing one into another.
 
-## 6. CLI / query design
+## 7. CLI / query design
 
-Two new, additive `query` subcommands — **`query symbol` is completely
-unmodified**, confirmed by design: its own `symbol_profile` output has a
-`Vendor` column with no first-party equivalent, and unifying the two
-would either need a synthetic "self" vendor row (explicitly rejected by
-the acceptance test: "no fake/self vendor is required simply to
-represent project code") or a schema-breaking column addition to an
-existing, stable query. Investigation supports keeping the namespaces
-separate, not unifying them.
+Unchanged separation decision from the initial plan: **`query symbol` is
+completely unmodified** — the vendor-vs-first-party axis is real, a
+synthetic "self" vendor remains rejected, no unification.
 
-- **`codecompass query source <path>`** — every first-party fact known
-  about one source file: `ecosystem`, whether an extractor exists for it
-  (explicit `"no symbol extractor for <ecosystem> yet"` state, not a
-  bare empty list, when applicable), its own `source_symbols` (name,
-  kind, line, purpose), and its own recorded vendor usage (a
-  cross-reference to `uses_edges`, mirroring `query vendor`'s existing
-  usage-site rendering) if any. `--json` supported, matching every other
-  `query` subcommand.
-- **`codecompass query source-symbol <name>`** — every `source_symbols`
-  row named `name`, across every first-party file (names aren't
-  globally unique across files, same posture `query symbol` already
-  has across vendors): name, kind, source file path, line, purpose.
-  `--json` supported.
-- No special "not yet indexed" handling is needed (unlike Phase 76's
-  `query topology`): `source_files`/`source_symbols` populate on
-  **every** ordinary `sync`, not an opt-in analysis pass — the existing
-  shared `_graph_session`/`_open_graph_or_note` helper every other
-  `query` subcommand already uses is sufficient and should be reused
-  unmodified, a simpler integration than Phase 76's own.
+- **`codecompass query source <path>`** exposes, at minimum: `language`
+  (or an explicit "unresolved" state if `NULL`), `content_hash` if
+  present, `symbol_index_status` (one of the four states, rendered
+  explicitly — e.g. `"parse error: <diagnostic>"`,
+  `"no symbol extractor for <language>"`, `"unreadable: <diagnostic>"`,
+  or the symbol list itself for `indexed`), its own `source_symbols`
+  (name, kind, line, purpose, `visibility` — rendered as `public`/
+  `private`/`unknown`, **never omitted or silently defaulted** when
+  `NULL`, applying Phase 76's own corrected tri-state discipline from
+  first implementation rather than fixing it after the fact), and its
+  own recorded vendor usage (cross-referencing `uses_edges`, mirroring
+  `query vendor`'s existing rendering). `--json` supported, with every
+  nullable field emitted as JSON `null`, not coerced to a default or
+  omitted.
+- **`codecompass query source-symbol <name>`** exposes, at minimum:
+  name, kind, source file path, line, purpose, the containing file's
+  `language`, and `visibility` (again rendered as `public`/`private`/
+  `unknown`, never collapsed). `--json` supported with the same explicit-
+  null discipline.
+- No special "not yet indexed" handling needed — unchanged from the
+  initial plan; `source_files`/`source_symbols` populate on every
+  ordinary `sync`.
 - New `graph.py` query functions: `source_file_profile(conn, path) ->
-  dict | None` and `source_symbol_profile(conn, name) -> list[dict]`,
-  mirroring `symbol_profile`'s/`topology_profile`'s own existing shape
-  and conventions exactly.
+  dict | None` and `source_symbol_profile(conn, name) -> list[dict]`.
+- **Explicit cross-reference to the exact defect this amendment must not
+  repeat**: Phase 76's own corrective pass (`decisions/0064` era, `db33352`)
+  fixed `query topology` for precisely this class of bug — a nullable
+  fact (`is_dirty`, `revision_matches_pin`) rendered via bare Python
+  truthiness, silently turning `None` into a false `"clean"`/`"differs
+  from pin"`. `query source`/`query source-symbol`'s own renderers reuse
+  the same `_tri_state_label`-style helper `cli.py` already has for
+  exactly this purpose, applied to `visibility` and to
+  `symbol_index_status`'s own four-way rendering, from the very first
+  implementation of these commands — not discovered and fixed in a later
+  corrective pass.
 
-## 7. Relationship to the current roadmap
+## 8. `codecompass-template` — a real deliverable this phase, not a design-only artifact
 
-- **Priority A (task-context completeness)** — this phase's primary
-  home, per direct instruction. Directly closes the structural blocker
-  `CG-009` named and the concrete mechanism Phase 75's own Ledgerkit
-  trial hit (CodeCompass could supply zero context about Ledgerkit's own
-  implementation core — `Posting`/`Amount`/`Tag` — because none of it
-  was ever indexed as a symbol at all, independent of the `cur:` task's
-  own specifics).
-- **`CG-009`** — this phase is its direct, evidence-gathering response.
-  Closure itself goes through the normal lifecycle (§11's Ledgerkit
-  validation feeds `knowledge-curator`/`context-evaluator`, not a
-  lead-declared "done because code was added").
-- **Priority D (documentation-first downstream workflow)** — §9's
-  template design is this priority's **first concrete deliverable**,
-  not merely "naturally related." `planning/ROADMAP.md`'s own Priority D
-  success criterion ("a downstream user can follow
-  research→evidence→design→review→packet→implementation→verification→
-  retro→knowledge-update using only already-shipped CodeCompass surfaces
-  plus documented convention, no new agent required") is close to a
-  verbatim match for what §9 below designs. This phase's own retro
-  should flip Priority D's `ROADMAP.md` status cell from "Not yet
-  planned" to a link to this plan, per that table's own "How this file
-  is kept in sync" rule.
-- **Phase 76's own evidence** (narrowly-motivated capabilities
-  outperform broad graph expansion, MODERATE advantage — the strongest
-  Priority A result to date) directly shaped this phase's own scope
-  discipline: first-party *objects* only, relationships explicitly
-  deferred to a follow-on (§13), matching the same "narrow, concrete,
-  evaluated" shape that produced Phase 76's own result rather than
-  Phase 72's originally-anticipated broader trajectory.
-- **The previously-recommended "second, differently-shaped Priority A
-  Ledgerkit trial"** (Phase 75's own closeout recommendation,
-  `planning/CONTEXT.md`'s own still-live, not-yet-phase-numbered item):
-  **this phase precedes it; it does not constitute or fully satisfy
-  it.** That recommendation specifically named exercising `CG-001`'s own
-  "intra-`src`-module" motivating shape — `CG-001` is defined
-  (`planning/context-gaps/README.md`) as "a local-code ↔ local-code link
-  that is one *feature* spread across files, which the graph does not
-  join" (its own worked example: `skill.py` ↔ `graph.skills_index` ↔
-  `cli.py::query_skills`). That is squarely a **relationship** between
-  first-party objects — this phase's own explicitly-deferred follow-on
-  scope (§13), not this phase's own. A `CG-001`-shaped trial is
-  structurally impossible to run meaningfully today (there is nothing
-  for such a trial to join, since the individual first-party objects
-  don't exist as queryable facts yet) and remains impossible until a
-  relationship phase exists. What this phase's own §11.2 Ledgerkit
-  validation *does* provide is genuine, real, independent Priority A
-  evidence from Ledgerkit again — but evaluating `CG-009` specifically,
-  not `CG-001`. **Recommendation: the second, `CG-001`-shaped trial
-  stays exactly where Phase 75 left it — recommended, live, not yet
-  phase-numbered — and should be reconsidered once this phase's own
-  follow-on (§13) makes a `CG-001`-shaped task answerable at all.**
-  `planning/CONTEXT.md` should say this explicitly, not silently drop
-  the recommendation.
+**The repository already exists and is confirmed empty (§0).** This
+phase populates it with a genuinely usable initial version — the
+initial plan's "design only, not created" framing is retired by this
+amendment; every statement in this section describes what Phase 77's
+own implementation actually delivers into the real repository.
 
-## 8. `codecompass-template` — design
+### 8.1 Purpose and shape — unchanged
 
-Tentative name: `codecompass-template`. A **separate** repository
-(design only this phase — not created, not initialized, not pushed).
+Lets a downstream project adopt the proven workflow shape — understand →
+research/evidence → plan → design → implement → verify → retro → update
+knowledge — without inheriting CodeCompass's own phase history,
+12-role specialist-agent roster, or CodeCompass-only knowledge.
 
-### 8.1 Purpose and shape
-
-Lets a downstream project adopt the *proven workflow shape* — research/
-evidence → plan → design → implement → verify → retro → update knowledge
-(`decisions/0060`'s own Scope→Plan→Domain→Design→Implement methodology,
-generalized) — without inheriting CodeCompass's own 76-phase history,
-specialist-agent roster (12 named roles as of this plan), or
-CodeCompass-only knowledge (`planning/learnings/`,
-`planning/context-gaps/`, milestone-specific rules, GATE machinery).
-
-### 8.2 Sketch structure (design sketch, not a required literal tree — confirmed against the task's own framing)
+### 8.2 Structure to actually populate (a concrete deliverable list, not a sketch)
 
 ```
-codecompass-template/
-├── LICENSE                    (MIT, §10)
-├── README.md                  (what this template is, how to adopt it)
-├── CLAUDE.md                  (minimal: plan-before-code, doc-sync, DoD — no GATE/priority/phase-group machinery)
-├── vendor.toml                (empty/commented example — CodeCompass populates it via discovery)
-├── .gitignore                 (context-graph.db, vendor/, generated Skills/slash-commands — never committed)
+codecompass-template/            (existing GitHub repo, currently empty)
+├── LICENSE                      (MIT, §9)
+├── README.md                    (what this template is, how to adopt it)
+├── CLAUDE.md                    (minimal: plan-before-code, doc-sync, DoD — no GATE/priority/phase-group machinery)
+├── vendor.toml                  (empty/commented example — CodeCompass populates it via discovery)
+├── .gitignore                   (context-graph.db, vendor/, generated Skills/slash-commands — never committed)
 ├── docs/
-│   └── architecture.md        (a starting current-state doc template, not CodeCompass's own content)
+│   └── architecture.md          (a starting current-state doc template)
 ├── decisions/
-│   ├── README.md              (append-only ADR convention, generic)
+│   ├── README.md                (append-only ADR convention, generic)
 │   └── TEMPLATE.md
 └── planning/
-    ├── ROADMAP.md              (empty phase table + the sync rules, generic)
-    ├── CONTEXT.md              (empty current-state skeleton)
+    ├── ROADMAP.md                (empty phase table + the sync rules, generic)
+    ├── CONTEXT.md                (empty current-state skeleton)
     ├── retros/
     │   └── TEMPLATE.md
     ├── knowledge/
-    │   └── README.md           (generic "learnings inbox" convention, not CodeCompass's own learnings)
+    │   └── README.md             (generic "learnings inbox" convention)
     └── context-gaps/
-        └── README.md           (generic "context gap" convention, decoupled from CodeCompass-specific GATE DB/DD language)
+        └── README.md             (generic "context gap" convention, no GATE DB/DD language)
 ```
 
-### 8.3 What is explicitly NOT copied
+Every file above is a real implementation deliverable for this phase —
+not a sketch to revisit later.
 
-- The full `.claude/agents/*` specialist roster (12 roles) — the
-  template documents the **workflow shape** as plain convention a human
-  or any agent can follow with ordinary tools (`query`, generated
-  Skills, the graph), not a prescribed agent cast. A downstream project
-  that wants a similar agent-led model can build its own roster suited
-  to its own scale, same as CodeCompass's own
-  `planning/v1-redefinition/agent-led-development.md` is CodeCompass-
-  specific, not a universal prescription.
-- Historical phase machinery, milestone-group/stage-letter naming,
-  GATE-DA/DB/DD-style deliberation gates — CodeCompass-specific process
-  scar tissue, not a reusable convention.
-- `planning/learnings/inbox.md`/`promoted.md`'s own **content**
-  (CodeCompass's own 65 learnings) — only the *convention* (a
-  candidate→promoted lifecycle) is packaged, as an empty, documented
-  template.
-- Any generated artifact: `context-graph.db`, `vendor/<name>/`,
-  generated Skills/slash-commands, `.claude/skills/codecompass*/`. A
-  clean template checkout produces none of these — they appear only
-  after a downstream project runs `codecompass init`/`sync` itself. This
-  is the acceptance test's own architectural check (§11.1) applied to
-  the template's own repository hygiene too.
+### 8.3 What is explicitly NOT copied — unchanged
 
-### 8.4 What Priority D productisation actually needs
+The full `.claude/agents/*` roster, historical phase machinery,
+milestone-group/GATE-style gates, `planning/learnings/`'s own *content*
+(only the convention), and any generated CodeCompass artifact
+(`context-graph.db`, `vendor/<name>/`, generated Skills/slash-commands).
 
-Per the task's own explicit steer ("prefer documented convention/
-templates over building new runtime tooling unless evidence shows
-tooling is required") and per `planning/ROADMAP.md`'s own Priority D
-open question ("how much of this actually needs product tooling vs.
-remaining a documented convention," `ledgerkit-stage-c-learnings.md`
-#8): **investigation finds no evidence any new runtime tooling is
-required.** Every mechanism the template packages already exists and
-ships today as ordinary CodeCompass surfaces a downstream project gets
-for free once it installs the tool: `codecompass init`/`sync`/`query`,
-generated per-vendor Skills, the `/discovery` slash command, and — after
-this phase — `query source`/`query source-symbol`. The template's own
-job is **documentation and empty scaffolding only** — no new CLI
-command, no new Python module, nothing under `src/codecompass/` is
-required to make the template real. This directly and cheaply confirms
-Priority D's own success criterion.
+### 8.4 What Priority D productisation actually needs — unchanged, now delivered rather than merely found
 
-## 9. MIT licensing / provenance approach
+Investigation (unchanged from the initial plan) found no evidence any
+new runtime tooling is required — the template's job is documentation
+and empty scaffolding only, using CodeCompass surfaces (`init`/`sync`/
+`query`, generated Skills, `/discovery`, and — after this phase —
+`query source`/`query source-symbol`) that already ship. This phase
+*delivers* that scaffolding into the real repository, directly and
+concretely satisfying Priority D's own success criterion rather than
+merely describing how it could be satisfied.
 
-**Fixed requirement, applied, not reconsidered**: `codecompass-template`
-ships its own `LICENSE` (MIT) and its reusable material is authored to
-be genuinely, unambiguously MIT-compatible.
+## 9. MIT licensing / provenance approach — unchanged policy, now applied to a real delivered repository
 
-**Legal note, for clarity, not as license to skip the discipline
-below**: CodeCompass has exactly one copyright holder to date
-(`decisions/0055`'s own research, unchanged) — that same person could,
-strictly speaking, dual-license their own original text under both
-GPL-3.0-or-later and MIT without rewriting a word, since dual-licensing
-one's own original work carries no incompatibility risk. **This plan
-does not rely on that fact.** The task's own instruction is to author
-template material as fresh MIT content and rewrite CodeCompass-derived
-wording from first principles — followed here for a concrete, practical
-reason beyond the legal minimum: it keeps `codecompass-template`'s own
-provenance unambiguous for every downstream adopter (GPL, permissive,
-and proprietary projects alike), with no reader ever needing to trace
-back through CodeCompass's own licensing history or the specific
-authorship chain to trust the template's MIT terms.
-
-Applying the task's own required identification, file by file:
+The full file-by-file provenance table from the initial plan (§9 there)
+is unchanged in substance and now describes what implementation actually
+writes into the real repository, not a hypothetical:
 
 | Template file | Provenance | Treatment |
 |---|---|---|
-| `LICENSE` (MIT) | New — standard MIT text | Authored fresh, standard boilerplate |
-| `README.md` | New | Fresh prose describing the template's own purpose/adoption steps — no CodeCompass README text reused |
-| `CLAUDE.md` | Rewritten from principles | The **general workflow concept** (plan-before-code, same-commit doc-sync, retro-on-completion) is a process idea, not copyrightable expression — the template's own version is freshly worded for a minimal, generic project, not CodeCompass's own 8-section, phase/priority/gate-laden text |
-| `vendor.toml` | New | An empty/commented example — `vendor.toml`'s own schema is CodeCompass's own config format, not prose; a commented example file is trivial, functional boilerplate, not a copyrightability question |
-| `.gitignore` | New | A generic ignore-list; CodeCompass's own `.gitignore` entries for `vendor/`/`context-graph.db`/generated Skills are facts about file paths, not protectable expression, but the file itself is authored fresh rather than copied verbatim |
-| `docs/architecture.md` | New | A minimal starting-point template (headings + "describe current state here" guidance), not any of CodeCompass's own actual architecture content |
-| `decisions/README.md`, `decisions/TEMPLATE.md` | Rewritten from principles | The append-only-ADR **convention** is a process idea (already documented as reusable in CodeCompass's own `CLAUDE.md` §2, itself following the widely-used public ADR convention popularized by Michael Nygard — not CodeCompass's own invention to begin with); the template's own README/TEMPLATE text is freshly worded, shorter, with no CodeCompass-specific numbering history or cross-references |
-| `planning/ROADMAP.md`, `planning/CONTEXT.md` | Rewritten from principles | The **shape** (a phase-status table; a session-resumption current-state doc) is reused as a documented pattern; the actual template file ships empty/skeletal, with fresh instructional prose, not CodeCompass's own accumulated ~110-line current-state summary or its own historical sync rules |
-| `planning/retros/TEMPLATE.md` | Rewritten from principles | CodeCompass's own retro template's **section list** (where we are / goal / delivered vs planned / worked / didn't work / lessons / feedback / candidate learnings / where we're going) is a reusable structural idea; the template's own version is freshly worded and shorter (no candidate-learning-lifecycle cross-references CodeCompass's own template carries) |
-| `planning/knowledge/README.md`, `planning/context-gaps/README.md` | Rewritten from principles | The candidate→promoted lifecycle **concept** is reused; wording, GATE-DB/DD terminology, and every CodeCompass-specific cross-reference is dropped and rewritten generically |
+| `LICENSE` (MIT) | New | Standard MIT boilerplate |
+| `README.md` | New | Fresh prose, no CodeCompass README text reused |
+| `CLAUDE.md` | Rewritten from principles | Reusable process idea (plan-before-code, same-commit doc-sync, retro-on-completion), freshly worded, minimal, no phase/priority/gate machinery |
+| `vendor.toml` | New | Empty/commented example |
+| `.gitignore` | New | Freshly authored, generic ignore-list |
+| `docs/architecture.md` | New | A minimal starting-point template, not CodeCompass's own architecture content |
+| `decisions/README.md`, `decisions/TEMPLATE.md` | Rewritten from principles | The append-only-ADR convention (itself not CodeCompass's own invention — the widely-used public ADR pattern) is reused; wording is fresh, shorter, no CodeCompass cross-references |
+| `planning/ROADMAP.md`, `planning/CONTEXT.md` | Rewritten from principles | The shape is reused; ships empty/skeletal with fresh instructional prose |
+| `planning/retros/TEMPLATE.md` | Rewritten from principles | Reusable section-list idea, freshly worded and shorter |
+| `planning/knowledge/README.md`, `planning/context-gaps/README.md` | Rewritten from principles | The candidate→promoted lifecycle concept is reused; all CodeCompass-specific terminology/cross-references dropped |
 
-**General principle applied throughout**: general workflow ideas, process
-shapes, and documented conventions are not copyrightable expression and
-are freely reusable; CodeCompass's own specific prose, phase-numbering
-history, internal cross-references, and accumulated project-specific
-detail are copyrightable expression and are never copied — every
-template file is freshly authored, shorter, and generic.
+**Legal note, unchanged**: CodeCompass's single copyright holder
+(`decisions/0055`) could legally dual-license their own original text
+without rewriting it — this plan does not rely on that, for the same
+practical unambiguous-provenance reason the initial plan gave.
 
-**No generated CodeCompass artifact is ever distributed with the
-template** — confirmed by design (§8.3), not merely asserted: the
-template's own `.gitignore` excludes exactly the paths a real
-`codecompass init`/`sync` run would produce, and the template repository
-itself never runs `codecompass sync` before being published, so no such
-file is ever created inside it to begin with.
+**No generated CodeCompass artifact is ever committed to the template
+repository** — its own `.gitignore` excludes exactly the paths a real
+`codecompass init`/`sync` run produces, and populating the template
+(§8.2) never involves running `codecompass sync` *inside* the template
+repository's own working tree before or during that population — only
+the validation clone (§10.1) ever runs `sync`, and that clone is
+disposable, not the template repository itself.
 
-**Provenance documentation for future contributors**: `codecompass-
-template`'s own `README.md` states explicitly, near the top: this
-template is MIT-licensed and independently authored; it is designed to
-be adopted by projects under any license, including proprietary ones;
-it is maintained alongside CodeCompass (GPL-3.0-or-later) but is not
-itself a redistribution of CodeCompass's own source or documentation. A
-short note in CodeCompass's own `README.md`/`ai-docs/README.md`
-(current-truth docs, updated same-commit per `CLAUDE.md` §2) cross-links
-the template and states the same license boundary, so a reader of either
-repository sees the separation stated from both sides.
+**Provenance documentation for future contributors** — unchanged:
+`codecompass-template`'s own `README.md` states its MIT license,
+independent authorship, and universal-adoption intent; CodeCompass's own
+`README.md`/`ai-docs/README.md` cross-link it with the same boundary
+stated from the other side.
 
-**Final architecture, preserved exactly as required**:
+**Final architecture, preserved exactly as required:**
 
 ```
 CodeCompass implementation   — GPL-3.0-or-later
@@ -664,325 +662,270 @@ codecompass-template         — MIT
 downstream project           — chooses its own compatible license
 ```
 
-## 10. Validation fixtures — three real validations required
+## 10. Validation fixtures — three real validations, using the real repository
 
-All three follow the existing scratch-clone discipline
-(`planning/v1-redefinition/reference-project-protocol.md` §2.2): a
-project fixture is cloned/created into a scratch location outside this
-repository, never added to CodeCompass's own tree/`vendor.toml`/
-`context-graph.db`, and fully cleaned up afterward (§16).
+### 10.1 Template validation — the architectural acceptance test, against the real repository
 
-### 10.1 Template / zero-vendor project — the architectural acceptance test
+**Corrected from the initial plan's own "scratch scaffold" framing** —
+the real repository now exists and this validation uses it directly:
 
-- Build a small, real (not synthetic-for-testing-only) source tree from
-  the `codecompass-template` design (§9) in a scratch directory — since
-  the real repository doesn't exist yet, this is a scratch scaffold
-  matching §9's own sketch, not a clone of a published repo.
-- Add a handful of real, representative first-party Python files (a
-  module with 2-3 functions/classes, a test file) — **zero entries in
-  `vendor.toml`**.
-- Run `codecompass sync` (editable install).
-- **Verify**: `source_files` rows exist for the added files;
-  `source_symbols` rows exist for their top-level functions/classes;
-  `codecompass query source <path>` and `query source-symbol <name>`
-  both return real data; `vendors`/`symbols` tables are empty (0 rows) —
-  **no fake/self vendor row was created anywhere**, confirmed by direct
-  `sqlite3` inspection of `context-graph.db`, not only CLI output.
+1. Populate the real `codecompass-template` repository (§8.2) — commit
+   and push to its own existing remote (a separate git identity from
+   `codecompass`'s own repository/remote; cloned/worked on in a
+   location entirely outside this repository's own working tree).
+2. Obtain a **clean clone of the real, now-populated
+   `codecompass-template` repository** into a scratch location.
+3. Add a handful of real, representative first-party Python files
+   (a module with 2-3 functions/classes including at least one
+   leading-underscore "private" one, a test file) to the clone —
+   **uncommitted, or committed to the scratch clone only, never pushed
+   back to the template's own remote** — **zero entries in
+   `vendor.toml`**.
+4. Run `codecompass sync` (editable install) against the clone.
+5. **Verify**: `source_files` rows exist for the added files with
+   correct `language`/`symbol_index_status`; `source_symbols` rows exist
+   for the top-level functions/classes, with the private one correctly
+   `visibility='private'`; `codecompass query source <path>` and
+   `query source-symbol <name>` both return real data with every field
+   this plan specifies; `vendors`/`symbols` tables are empty (0 rows) —
+   **no fake/self vendor row created**, confirmed by direct `sqlite3`
+   inspection, not only CLI output.
+6. **Also verify the template repository's own hygiene**: the clone's
+   `git status`/`git log` shows no `context-graph.db`, `vendor/`, or
+   generated Skill ever committed to the *template's own* history — only
+   the scratch clone's own local, uncommitted (or locally-committed-and-
+   discarded) working state ever contains them.
+7. **Also verify the adoption workflow is genuinely understandable**: a
+   fresh read of the populated template's own `README.md`/`CLAUDE.md`
+   (by the lead, or ideally delegated to a fresh subagent with no prior
+   context on this plan, matching this project's own "verify
+   independently" discipline) should make the understand → research →
+   plan → design → implement → verify → retro → update-knowledge shape
+   clear without any CodeCompass-internal knowledge.
 
-### 10.2 Ledgerkit validation — directly tests whether `CG-009` is resolved
+### 10.2 Ledgerkit validation — unchanged in substance, still the principal `CG-009` evidence
 
-- Clone Ledgerkit fresh at plan-time-unknown-but-implementation-time-
-  resolved HEAD (never hardcode Phase 75's own pinned `6c90b4c` as
-  current — **re-resolve `Posting`/`Amount`/`Tag`'s real current file
-  paths at clone time**, since Ledgerkit's own development has continued
-  since Phase 75). Last-known locations from `CG-009`'s own evidence:
-  `ledgerkit/models.py::Posting`, `::Amount`, `ledgerkit/query/ast.py::Tag`
-  — confirm these still hold, or find their real current location, at
-  implementation time.
-- Run `codecompass sync` against the fresh clone (0 or whatever vendors
-  Ledgerkit currently tracks — irrelevant to this test, since first-party
-  discovery never consults `vendor.toml`).
-- **Verify**: `codecompass query source-symbol Posting` / `Amount` /
-  `Tag` (or their real current names) return real, correct data —
-  right file, right kind, right line, docstring if present.
-- **Do not close `CG-009` because this test passes.** Feed the result
-  into the normal context-gap lifecycle: an independent
-  `context-evaluator` (or `knowledge-curator`, whichever this project's
-  process currently uses for gap-closure evidence — confirm against
-  `planning/context-gaps/README.md`'s own "How it feeds the gates"
-  section at closeout time) reviews the evidence and makes the actual
-  status-transition call, the same discipline every prior gap closure
-  in this project has followed.
+Fresh clone, real current HEAD, re-resolve `Posting`/`Amount`/`Tag`'s
+real current locations (not hardcoded from Phase 75's own `6c90b4c`).
+Verify `query source-symbol` returns correct data for each. **`CG-009`
+is not closed by this test passing** — it goes through the normal
+context-gap lifecycle (§21), the same discipline as the initial plan
+required and this amendment does not weaken.
 
-### 10.3 CodeCompass dogfooding
+### 10.3 CodeCompass dogfooding — unchanged in substance
 
-- Run the feature against CodeCompass's own working tree (already
-  installed, no clone needed — this repository *is* the fixture).
-- Resolve real, current first-party symbol names at implementation time
-  (not hardcoded from this plan) — candidates already known to exist as
-  of this plan's own writing: `git_topology.detect_git_topology`,
-  `sync.rebuild_project_graph` (confirm these are still the real,
-  current names/locations when implementation actually runs `sync`).
-- **Verify**: both become queryable via `query source-symbol`, with
-  correct file/line/kind, alongside CodeCompass's own already-tracked
-  vendor symbols (`anthropic`, `rich`, `typer`, `pipdeptree`) — both
-  surfaces coexisting in the same `context-graph.db`, confirming no
-  interference between vendor and first-party symbol namespaces.
+Run against CodeCompass's own working tree; resolve real, current
+symbol names at implementation time (`detect_git_topology`,
+`rebuild_project_graph`, or their current equivalents); verify
+coexistence with existing vendor symbols in the same database.
 
-## 11. Independent evaluation methodology
+## 11. Independent evaluation methodology — unchanged in substance, fixture reference updated
 
-A lightweight Priority A evaluation, reusing the seed-then-fork fixture
-design and pre-dispatch equivalence check Phase 76's own third amendment
-established (`planning/phase-76-git-repository-topology.md` §15) — the
-same evaluation shape as Phase 76's own MODERATE-advantage trial, not a
-new methodology invented for this phase.
+Same seed-then-fork methodology, same measured dimensions, same
+`context-evaluator` protocol, same `L-062`/`L-064`/`L-065` read-scope/
+report-to-disk discipline as the initial plan's §11. **Fixture**: now
+explicitly the real, populated `codecompass-template` clone from §10.1
+(or Ledgerkit, if a more suitable self-contained task exists there) —
+no longer "the template project (or another... fixture)" hedged against
+a not-yet-real repository.
 
-- **Fixture**: the §10.1 template project (or another clean, small,
-  genuinely representative fixture — Ledgerkit is a second, valid
-  option if a suitably self-contained task exists there) — normalized
-  once, forked into baseline-clone/treatment-clone, scenario constructed
-  identically-but-independently in each after the fork.
-- **Task shape** (per direct instruction): locate where a feature is
-  implemented, identify its principal first-party symbols/files, and
-  identify where an external dependency is used.
-- **Baseline**: normal repository/tool access (grep, file reads,
-  `--help`).
-- **Treatment**: same access, plus `codecompass query source`/
-  `query source-symbol`/`query symbol` for the task.
-- **Measured** (exactly as instructed, no token-savings claim unless
-  tokens are actually counted): factual completeness (did it find the
-  real implementation files/symbols); missed implementation files/
-  symbols (a concrete, countable miss list); count of exploratory
-  reads/searches/tool calls in each arm; whether the treatment arm did
-  *additional* repository exploration after consulting CodeCompass
-  context (a signal the context alone wasn't sufficient, matching
-  Phase 75's own `L-027` diligence-variance discipline); first-pass
-  correctness; review/correction cycles, where practically observable.
-- **Evaluator**: `context-evaluator`, inspecting the target directly
-  (never trusting either arm's own report), per this project's
-  established, repeatedly-validated protocol — not a new evaluation
-  mechanism.
-- **Read-scope symmetry** stated explicitly in the dispatch prompt for
-  both arms (`L-062`, `reference-project-protocol.md` §2.2) — and, per
-  `L-064`/`L-065`'s own hard-won lesson, **any prior agent's report
-  needed by a downstream dispatch is written to disk immediately on
-  receipt**, before the next dispatch prompt is drafted (`planning/
-  agent-led-workflow.md` step 5's own new rule, landed at Phase 76's
-  corrective pass) — applied here as the first real exercise of that
-  rule since it landed.
+## 12. First-party language/extraction scope summary (supersedes the initial plan's "ecosystem scope" table)
 
-## 12. Ecosystem scope summary (no fabricated symmetry)
+| Language | File recognition | Symbol extraction | Scope | Basis |
+|---|---|---|---|---|
+| Python (`.py`) | Yes | Yes | Every top-level `def`/`async def`/`class`, public and private (leading-underscore) alike | `ast`-based; no scope change needed — the existing technique already covers full implementation scope |
+| Rust (`.rs`) | Yes | Yes | Every top-level `fn`/`struct`/`enum`/`trait`, public and private alike, `visibility` recorded | Line-scan, **widened** from `pub`-only to `pub`-or-not, `visibility` from the `pub` keyword itself |
+| JavaScript (`.js`/`.jsx`/`.mjs`/`.cjs`) | Yes | Yes | Every top-level `function`/`class`/`interface`/`const`/`type`/`enum`, exported and non-exported alike, `visibility` recorded | Regex, **widened** from `export`-only to `export`-or-not, `visibility` from the `export` keyword itself |
+| TypeScript (`.ts`/`.tsx`) | Yes | Yes | Same as JavaScript (shared extractor, language distinguished only by suffix) | Same regex technique, **live-verified** against a real `.ts` implementation file and a real overloaded-function `.ts` file (§0) |
+| Haskell (`.hs`) | Yes | **No — explicitly unsupported** | `symbol_index_status='unsupported'` | No in-process parser exists; out of scope, not fabricated |
 
-| Ecosystem | File recognition | Symbol extraction | Basis |
-|---|---|---|---|
-| Python (`.py`) | Yes | Yes — function/class, top-level | `ast`-based, reuses `extract_python_symbols`'s own technique |
-| Rust (`.rs`) | Yes | Yes — function/struct/enum/trait, top-level | Line-scan, reuses `extract_rust_symbols`'s own technique |
-| npm/TypeScript (`.js`/`.jsx`/`.ts`/`.tsx`/`.mjs`/`.cjs`) | Yes | Yes — **exported top-level declarations only** | Regex reuse of `_NPM_EXPORT_RE`, **live-verified** against a real `.ts` file (§6) — a genuine, confirmed capability, not an assumption |
-| Haskell (`.hs`) | Yes | **No — explicitly unsupported, not fabricated** | No in-process parser exists; external-adapter-process integration for first-party files is a materially different, out-of-scope undertaking |
+## 13. Likely follow-on phase — unchanged, not scoped here
 
-## 13. Likely follow-on phase (explicitly deferred, not scoped or promised here)
-
-Relationships **among** first-party objects this phase creates — real
-opportunities recorded for a future phase to scope for real, once this
-phase's own evaluation (§11) shows which are actually valuable:
-
-- `source_file → imports → source_file` (first-party import graph —
-  the natural next step once files are objects; likely reuses
-  `usage.py`'s own already-proven per-ecosystem import-parsing
-  techniques, now pointed at first-party targets instead of vendor
-  names).
-- `source_symbol → references/calls → source_symbol` (the actual
-  call-graph capability explicitly out of scope this phase).
-- `test → tests → source_symbol/source_file` (a real, concrete, and
-  probably valuable next step, since this phase already keeps first-
-  party tests as source rather than pruning them — the natural next
-  question is *what does a given test actually exercise*).
-- `doc → documents → source_symbol` (extending `doc_mapping.py`'s
-  already-proven `documents_edges` mechanism, currently vendor-symbol-
-  only, to first-party symbols too).
-- This is very likely the shape that finally makes a genuine
-  `CG-001`-shaped trial possible (§7) — a strong hint for that
-  follow-on's own eventual scoping, not a commitment made here.
-
-No detailed scope, schema, or timeline is assigned to any of these here
-— per direct instruction, this section exists to record the
-opportunity, not to plan it.
+Relationships among first-party objects (`source_file → imports →
+source_file`, `source_symbol → references/calls → source_symbol`,
+`test → tests → source_symbol/source_file`, `doc → documents →
+source_symbol`) remain explicitly deferred, recorded as opportunity
+only, per the initial plan's §13 (unchanged by this amendment). This
+remains the most likely path to a genuine `CG-001`-shaped trial (§7 of
+the initial plan, unaffected by this amendment).
 
 ## 14. Files expected to change
 
-- **New**: `src/codecompass/source_symbols.py`.
+### 14.1 This repository (`codecompass`)
+
+- **New**: `src/codecompass/source_symbols.py` (`Language`,
+  `SymbolIndexStatus`, `SourceSymbol`, `SourceFileExtraction`,
+  `discover_source_files`, `extract_source_symbols_for_file` +
+  per-language functions).
 - **`src/codecompass/graph.py`**: `_SCHEMA_VERSION` "10"→"11";
-  `source_files` table gains `ecosystem`/`content_hash` columns (ALTER,
-  not recreate); new `source_symbols` table; `SourceFileRow` extended
-  with `ecosystem`/`content_hash`; new `SourceSymbolRow` dataclass;
-  `_source_files_schema_is_current`/`_migrate_source_files_columns`
-  (new, mirroring Phase 76's `_doc_artifacts_schema_is_current`
-  pattern); `_sync_source_files`/`_sync_source_symbols` (new,
-  upsert-by-natural-key, mirroring `_sync_vendors`/`_sync_symbols`);
-  `rebuild_deterministic` gains a `source_symbols` parameter (default
-  `()`); new `source_file_profile`/`source_symbol_profile` query
-  functions.
-- **`src/codecompass/sync.py`**: `rebuild_project_graph` — replace the
-  vendor-usage-gated `source_file_paths` collection with a full
-  first-party discovery pass (`source_symbols.discover_source_files`),
-  feeding both `source_file_rows`+`source_symbol_rows` and the existing
-  `uses_edges` detection (now resolved against the broader
-  `source_file_ids` mapping); walk-sharing refactor with
-  `usage.resolve_project_usage` per §6's own note.
+  `source_files` gains `language`/`content_hash`/`symbol_index_status`/
+  `symbol_index_diagnostic` (all nullable, `ALTER TABLE ADD COLUMN`, no
+  fresh/upgraded divergence, §4); new `source_symbols` table (§3.2);
+  `SourceFileRow` extended; new `SourceSymbolRow` dataclass; migration
+  helpers (§4); `_sync_source_files`/`_sync_source_symbols` (upsert by
+  the corrected natural keys); `rebuild_deterministic` gains a
+  `source_symbols` parameter (default `()`); new
+  `source_file_profile`/`source_symbol_profile` query functions.
+- **`src/codecompass/sync.py`**: `rebuild_project_graph` — full
+  first-party discovery pass replacing the vendor-usage-gated one,
+  feeding `source_file_rows`+`source_symbol_rows`, walk-sharing with
+  `usage.resolve_project_usage`.
 - **`src/codecompass/cli.py`**: new `query source`/`query source-symbol`
-  commands + rendering functions.
+  commands + rendering, reusing the existing tri-state-label discipline
+  (§7) from first implementation.
 - **`src/codecompass/skill.py`**: generated tool Skill gains the two new
-  command lines + the two new table names (matching Phase 76's own
-  precedent for `query topology`).
-- **`docs/cli-reference.md`**: new `query source [--json]`/
-  `query source-symbol [--json]` sections.
+  command lines + table names.
+- **`docs/cli-reference.md`**: new sections, including the explicit
+  four-state `symbol_index_status` disclosure and `visibility` rendering.
 - **`architecture/context-graph-schema.md`**: `source_files`/
-  `source_symbols` sections updated/added; the current, stale
-  description ("Every project source file with at least one detected
-  `uses_edges` row") corrected.
-- **`architecture/overview.md`**: a new "First-party source awareness"
-  subsection, matching the existing "Git repository topology" one's own
-  shape.
-- **`architecture/module-map.md`**: add `source_symbols.py` to Layer 2's
-  module list. **Also fix a pre-existing, unrelated drift found while
-  reading this file for this plan**: it currently omits `git_topology.py`
-  entirely (added Phase 76) — worth fixing in the same touch, flagged
-  here rather than silently left for a future phase to rediscover.
-- **`decisions/0065-<slug>.md`** (new ADR — table design, migration
-  approach, ecosystem-scope decisions, npm/TS live-verification finding).
+  `source_symbols` sections, corrected stale description, the
+  nullable-everywhere contract stated explicitly.
+- **`architecture/overview.md`**: new "First-party source awareness"
+  subsection.
+- **`architecture/module-map.md`**: add `source_symbols.py`; also fix
+  the pre-existing, unrelated omission of `git_topology.py` found while
+  reading this file for the initial plan.
+- **`decisions/0065-<slug>.md`** (new ADR — language-vs-ecosystem
+  ontology decision, nullable-everywhere migration contract, occurrence-
+  based symbol identity with the live overload evidence, implementation-
+  vs-API-surface scope decision, explicit indexing-status model,
+  Haskell's non-support).
 - **`README.md`, `ai-docs/README.md`**: new capability bullets + the
-  `codecompass-template` cross-link/license-boundary note (§9).
+  `codecompass-template` cross-link/license note.
 - **`CHANGELOG.md`**: `[Unreleased]` entry.
-- **`planning/ROADMAP.md`**: new Phase 77 row; Priority A's own status
-  cell updated; Priority D's status cell flipped from "Not yet planned"
-  to link this plan (per §7).
-- **`planning/CONTEXT.md`**: current-state update, including the
-  explicit "precedes, does not replace" note on the second Ledgerkit
-  trial (§7).
-- **`planning/context-gaps/inbox.md`**: `CG-009` gets a triage note once
-  §10.2's evidence exists (closeout time, not now).
+- **`planning/ROADMAP.md`**, **`planning/CONTEXT.md`**: updated per this
+  amendment (below).
+- **`planning/context-gaps/inbox.md`**: `CG-009` triage note at closeout.
+
+### 14.2 `codecompass-template` (separate repository, real deliverable)
+
+Every file in §8.2's structure — a genuine implementation deliverable of
+this phase, committed and pushed to its own existing remote, not part of
+this repository's own diff/changed-file list, and not gated on a future
+phase.
 
 ## 15. Tests
 
-- **New `tests/test_source_symbols.py`**: file-discovery walk (prune-set
-  behaviour, including the explicit "tests are kept" case), per-ecosystem
-  extraction (Python/Rust/npm real fixtures, including the npm
-  export-vs-non-export distinction verified live in §6), the Haskell
-  file-recognized-no-symbols case, ecosystem classification by suffix
-  independent of any `vendor.toml` content.
-- **`tests/test_graph.py`** additions: schema migration safety (the
-  `_migrate_source_files_columns` equivalent of Phase 76's own migration
-  regression test — an existing pre-migration fixture's `uses_edges` rows
-  must survive); `source_files`/`source_symbols` upsert-by-natural-key
-  behaviour (an unchanged path/name keeps its `id` across two
-  `rebuild_deterministic` calls; a removed one is deleted); new
-  `source_file_profile`/`source_symbol_profile` query function tests.
-- **`tests/test_sync.py`** additions: a real-call-site test (per
-  `CLAUDE.md` §1's L-021 rule) exercising `rebuild_project_graph`
-  end-to-end with a real fixture tree and confirming `source_files`/
-  `source_symbols` are genuinely populated — not only the extraction
-  functions in isolation; a **zero-vendor** real-call-site test,
-  confirming first-party state builds with an empty `vendor.toml`.
+- **New `tests/test_source_symbols.py`**:
+  - file discovery (prune-set behaviour, tests kept, `Language`
+    classification by suffix — including `.js` vs `.ts` distinctness —
+    independent of `vendor.toml` content);
+  - Python/Rust/JS/TS extraction, including a **dedicated overload test
+    per ecosystem** (a real overloaded function, at least Python
+    `@overload` and one JS-family overloaded declaration, asserting
+    multiple distinct rows are produced, none dropped, none crashing);
+  - visibility extraction (Python leading-underscore, Rust `pub`
+    presence/absence, JS/TS `export` presence/absence);
+  - **`SourceFileExtraction` status coverage**: an indexed file with
+    symbols; an indexed file with zero symbols (both must be `INDEXED`,
+    distinguishable only by `symbols` being non-empty vs. empty, not by
+    `status`); an unsupported language (Haskell); a genuine Python
+    syntax error (`PARSE_ERROR`, `diagnostic` populated); an unreadable
+    file (permissions or a deliberately undecodable byte sequence,
+    `UNREADABLE`, `diagnostic` populated) — every one of the five
+    required cases from the task's own instruction.
+- **`tests/test_graph.py`** additions:
+  - migration safety (`_migrate_source_files_columns` — an existing
+    pre-migration fixture's `uses_edges` rows survive);
+  - **a dedicated fresh-vs-upgraded nullability-contract test**: build a
+    database via `init_schema` fresh, and a second database via the old
+    (pre-Phase-77) schema then migrated, and assert
+    `PRAGMA table_info(source_files)` returns **identical** column
+    names/types/nullability for both — the concrete test this
+    amendment's §3.1/§4 correction requires;
+  - `source_files`/`source_symbols` upsert-by-natural-key behaviour,
+    including the corrected `(source_file_id, name, kind, line)` key —
+    an unchanged declaration keeps its `id`, a removed one is deleted, a
+    genuine overload produces multiple stable rows across two
+    `rebuild_deterministic` calls without collision;
+  - new query function tests.
+- **`tests/test_sync.py`** additions: real-call-site test (L-021) for
+  `rebuild_project_graph`, including the zero-vendor case; **a dedicated
+  real-call-site overload test** confirming `codecompass sync` does not
+  raise on a fixture file containing a genuine function overload.
 - **`tests/test_cli.py`** additions: `query source`/`query source-symbol`
-  — found/not-found/`--json` cases, the Haskell "no extractor" rendering
-  case.
-- Full existing suite (694 tests as of Phase 76's own close) must
-  continue to pass unmodified in substance — this phase adds no change
-  to any existing vendor/symbol/uses_edges behavior.
+  — found/not-found/`--json` cases, all four `symbol_index_status`
+  renderings, `visibility` tri-state rendering (`public`/`private`/
+  `unknown`, never collapsed).
+- Full existing suite must continue to pass unmodified in substance.
 
-## 16. Documentation / ADR requirements
+## 16. Documentation / ADR requirements — unchanged in shape, content updated per this amendment
 
-- `decisions/0065` (new ADR, per `CLAUDE.md` §2 — a genuinely
-  non-obvious tradeoff: separate-table vs. nullable-FK, upsert-by-
-  natural-key vs. clear-and-reinsert, npm/TS scope decision with its
-  live-verification evidence, Haskell's explicit non-support).
-- `docs/`, `architecture/` updates per §14, same commit as the code
-  (`CLAUDE.md` §2).
-- An independent `docs-reconstructor` per-phase drift audit before
-  closeout (`CLAUDE.md` §5).
-- `codecompass-template`'s own design content (§8-§10) is fully
-  contained in this plan file — no separate design doc needed until the
-  repository itself is actually created (a future phase's own scope).
+`decisions/0065` now records: the language-vs-ecosystem ontology
+decision (with the JS/TS example), the nullable-everywhere migration
+contract, the occurrence-based symbol identity (with the live overload
+evidence from §0), the implementation-vs-API-surface scope decision, and
+the explicit four-state indexing model. `docs/`/`architecture/` updates
+per §14.1, same commit as the code. Independent `docs-reconstructor`
+drift audit before closeout, unchanged. `codecompass-template`'s own
+content is fully specified in §8-§9 — implementation writes it directly
+into the real repository; no separate design doc is needed since this
+plan *is* that design, now being executed rather than deferred.
 
 ## 17. Rollback / cleanup requirements
 
-- Every scratch clone/fixture created for §10's three validations is
-  built outside this repository (scratchpad or a sibling directory,
-  never inside `codecompass`'s own tree, never added to `vendor.toml`)
-  and is fully deleted once its validation completes — matching
-  `reference-project-protocol.md` §2.2 exactly, and Phase 76's own
-  mandatory-cleanup precedent for its disposable worktree/clone.
-- No git worktree, branch, or remote is created against this repository
-  itself for this phase's own validation work.
-- The `codecompass-template` design itself creates no artifact anywhere
-  this phase — confirmed by its own non-goal (§2): no repository
-  created, no files written outside this plan document and (at
-  implementation time) this project's own `planning/`/`architecture/`/
-  `docs/`/`decisions/` updates.
-- A migration-safety test fixture (an old-schema `.db` file built for
-  the `_migrate_source_files_columns` regression test, §15) is an
-  in-repository *test* fixture, not a scratch clone — no special cleanup
-  beyond the test suite's own normal `tmp_path` discipline.
+- Every scratch clone/fixture for §10's validations: built outside both
+  `codecompass` and `codecompass-template`'s own working trees, never
+  added to `vendor.toml`, fully deleted once validation completes —
+  unchanged discipline from the initial plan.
+- **Populating and pushing to `codecompass-template`'s own remote is a
+  real, hard-to-reverse, externally-visible action** — per this
+  session's own standing git-safety norms, it proceeds at implementation
+  time with the same explicit-confirmation posture any other push to a
+  shared/external remote already requires in this session; this plan
+  authorizes *what* gets written (§8.2/§9), not a standing blanket
+  authorization to push without that ordinary confirmation step.
+- No git worktree, branch, or remote is created against `codecompass`'s
+  own repository for this phase's validation work.
+- A migration-safety test fixture (an old-schema `.db` file, §15) is an
+  in-repository test fixture with normal `tmp_path` cleanup, not a
+  scratch clone.
 
 ## 18. Human decision gates
 
-**None identified.** Candidates considered and resolved by evidence
-rather than escalated:
-
-- *Separate table vs. nullable `vendor_id`* — resolved by the migration-
-  risk argument (§3), not merely the semantic one the task already
-  anticipated; both point the same direction, no genuine tension.
-- *Whether npm/TypeScript is in scope* — resolved by live verification
-  (§6), not assumption; the evidence answered the question the task
-  itself flagged as open.
-- *GPL/MIT content separation policy* — the task itself already fixed
-  the policy (rewrite from principles, don't copy); this plan applies it
-  file-by-file (§9), it does not need to re-decide it.
-- *CLI command naming* — the task explicitly delegated this choice
-  ("may change if existing conventions suggest something better");
-  `query source`/`query source-symbol` directly match the existing
-  `query vendor`/`query symbol` naming convention, no escalation needed.
-- *Whether this phase replaces the second Ledgerkit trial* — resolved by
-  direct comparison against `CG-001`'s own documented scope (§7); a
-  reasoned "precedes, does not replace" conclusion, not an
-  irresolvable ambiguity.
-- *Actually creating/publishing `codecompass-template`* — not a planning
-  gate (no action is taken now); creating and pushing a new external
-  repository is a hard-to-reverse, externally-visible action that will
-  need its own explicit confirmation at the point implementation
-  actually reaches it, per this session's own standing git-safety
-  norms — noted here so it isn't forgotten, not escalated now.
+**None identified**, re-confirmed for this amendment. All twelve
+requested changes were resolved by direct evidence (live regex/AST
+verification, the real repository's confirmed-empty state, established
+migration-safety precedent) or by the task's own already-fixed policy
+(MIT/GPL separation, template-is-now-a-deliverable) — none required
+escalation. The one item genuinely outside this plan's own authority to
+decide now — actually executing a push to `codecompass-template`'s real
+remote — is not a planning-time gate; it is an ordinary execution-time
+confirmation step (§17), the same as any other push this session already
+treats that way.
 
 ## 19. Implementation sequence (for the eventual implementation phase, not run now)
 
-1. `source_symbols.py` (discovery + per-ecosystem extraction + tests) —
-   verifiable in complete isolation from the graph.
-2. `graph.py` schema/migration/query-function changes + migration
-   regression test.
+1. `source_symbols.py` (discovery + per-language extraction +
+   `SourceFileExtraction` model + overload/visibility/indexing-status
+   tests) — verifiable in complete isolation.
+2. `graph.py` schema/migration/query-function changes + the
+   fresh-vs-upgraded nullability-contract test + migration regression
+   test.
 3. `sync.py::rebuild_project_graph` wiring (real-call-site test,
-   zero-vendor real-call-site test).
-4. `cli.py` query commands + `skill.py` Skill update + CLI tests.
-5. Docs/ADR/architecture updates, same commits as the code they
-   describe.
-6. §10.1 template/zero-vendor validation (architectural acceptance
-   test) — first, since it's the cheapest and most direct proof the
-   design works before spending effort on the other two.
-7. §10.3 CodeCompass dogfooding validation — second, no external clone
-   needed.
-8. §10.2 Ledgerkit validation — third, the one requiring a fresh
-   external clone and path re-resolution.
-9. §11 independent task-context evaluation.
-10. `CG-009` triage (not closure-by-fiat) using §10.2's evidence.
-11. Full closeout sequence per `CLAUDE.md` §5/`planning/
-    agent-led-workflow.md`'s corrected 14 steps (as amended by Phase
-    76's own corrective pass): docs-maintainer → docs-reconstructor
-    drift audit → interim `roadmap-context-curator` reconciliation →
-    retro → `knowledge-curator` triage → independent
-    `release-phase-auditor` → only-on-PASS final `roadmap-context-
-    curator` reconciliation (scoped per `CLAUDE.md` §5's own narrow
-    three-target exemption) → push.
+   zero-vendor test, overload real-call-site test).
+4. `cli.py` query commands + `skill.py` update + CLI tests (all four
+   indexing states, visibility tri-state).
+5. Docs/ADR/architecture updates, same commits as the code.
+6. **Populate and push `codecompass-template`** (§8.2/§9) to its own
+   existing remote — a distinct, explicitly-confirmed action (§17).
+7. §10.1 validation against a fresh clone of the now-real, populated
+   template repository — first among the three validations, cheapest
+   and most direct.
+8. §10.3 CodeCompass dogfooding validation — second.
+9. §10.2 Ledgerkit validation — third, requiring a fresh external clone
+   and path re-resolution.
+10. §11 independent task-context evaluation.
+11. `CG-009` triage (not closure-by-fiat) using §10.2's evidence.
+12. Full closeout sequence per `CLAUDE.md` §5/`planning/
+    agent-led-workflow.md`'s corrected steps (Phase 76's own corrective-
+    pass discipline): docs-maintainer → docs-reconstructor drift audit →
+    interim `roadmap-context-curator` reconciliation → retro →
+    `knowledge-curator` triage → independent `release-phase-auditor` →
+    only-on-PASS final `roadmap-context-curator` reconciliation (scoped
+    per `CLAUDE.md` §5's own narrow three-target exemption) → push.
 
-## 20. Verification commands
+## 20. Verification commands — unchanged
 
 ```bash
 .venv/bin/pytest -q
@@ -992,27 +935,31 @@ python3 scripts/check_knowledge_base.py
 ```
 
 Plus the three live validations (§10) and the independent evaluation
-(§11) — none of these are mechanical checks a script can run; each
-requires a real fixture and, for §10.2/§11, real external clones.
+(§11) — not mechanical, each requires a real fixture and, for §10.1/
+§10.2/§11, real external repository interaction.
 
 ## 21. Definition of Done
 
-Per `CLAUDE.md` §5, unabridged: code implemented; plan's own
-verification (§20) passes; `docs/`/`architecture/`/`decisions/` updated;
-independent `docs-reconstructor` drift audit finds `NO DRIFT`; changelog
-entry added; `planning/CONTEXT.md` reflects the new state; a substantive
-phase retro exists; candidate learnings (including anything this phase's
-own evaluation surfaces) triaged by `knowledge-curator`; `CG-009` triaged
-(promoted/closed/retained — never closed by lead assertion alone) using
-real evidence from §10.2; a `context-evaluator` report exists and is
-linked for §11's own evaluation; independent `release-phase-auditor`
-pass (`PASS`/`PASS WITH NON-BLOCKING OBSERVATIONS`); only then does
-`planning/ROADMAP.md` mark Phase 77 `done`, via a genuinely fresh
-`roadmap-context-curator` dispatch, scoped per `CLAUDE.md` §5's own
-narrow terminal-reconciliation exemption (§0's own corrected rule,
-verified still consistent across `CLAUDE.md`/`planning/
-agent-led-workflow.md`/`.claude/agents/roadmap-context-curator.md` at
-the point this phase actually closes). All disposable scratch
-clones/fixtures (§17) confirmed cleaned up before the phase is marked
-done. `codecompass-template` remains **undesigned-beyond-this-plan** —
-not created — until a future phase explicitly takes that up.
+Per `CLAUDE.md` §5, unabridged, **corrected by this amendment to require
+`codecompass-template` as a genuinely usable, populated repository, not
+a plan**: code implemented; plan's own verification (§20) passes;
+`docs/`/`architecture/`/`decisions/` updated; independent
+`docs-reconstructor` drift audit finds `NO DRIFT`; changelog entry
+added; `planning/CONTEXT.md` reflects the new state; a substantive phase
+retro exists; candidate learnings triaged by `knowledge-curator`;
+**`codecompass-template` exists at its real URL, populated per §8.2,
+MIT-licensed, validated by a real clean clone (§10.1) confirming both
+the zero-vendor first-party-source acceptance test and the template's
+own repository hygiene (no generated CodeCompass state ever committed to
+its history)**; `CG-009` triaged (promoted/closed/retained — never
+closed by lead assertion alone) using real evidence from §10.2; a
+`context-evaluator` report exists and is linked for §11; independent
+`release-phase-auditor` pass (`PASS`/`PASS WITH NON-BLOCKING
+OBSERVATIONS`); only then does `planning/ROADMAP.md` mark Phase 77
+`done`, via a genuinely fresh `roadmap-context-curator` dispatch, scoped
+per `CLAUDE.md` §5's own narrow terminal-reconciliation exemption. All
+disposable scratch clones/fixtures (§17) confirmed cleaned up. **The
+previously-recommended second, differently-shaped Ledgerkit Priority A
+trial is not silently treated as satisfied by this phase** — it remains
+live, unclaimed, to be reconsidered once the follow-on relationship
+phase (§13) exists.

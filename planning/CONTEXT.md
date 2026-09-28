@@ -42,9 +42,12 @@ Phase 76 row and `planning/phase-76-git-repository-topology.md`'s own
 Status line both now read `done`. See "What was just completed" below
 for the full corrective-pass history.
 
-**Phase 77 (First-party source awareness (`CG-009`) + `codecompass-
-template` design, Priority A + Priority D) is `planned`, not yet
-implemented.** See "Next concrete step" below for the full account.
+**Phase 77 (First-party source awareness (`CG-009`) + a usable
+`codecompass-template`, Priority A + Priority D) is `planned` (amended
+2026-09-28), not yet implemented.** The template repository already
+exists at `https://github.com/ctosullivan/codecompass-template`
+(confirmed empty) — Phase 77 delivers it populated, not merely designed.
+See "Next concrete step" below for the full account.
 
 Backlog, each with its own revisit trigger: Phases 24/25, Phase 50's
 remainder, `CG-003`, the `browser_api`/`platform_api` kind — full detail
@@ -234,40 +237,52 @@ recorded here:**
 
 ## Next concrete step
 
-**Phase 77 (First-party source awareness + `codecompass-template`
-design) is planned, not yet implemented** — direct user request,
-`planning/phase-77-first-party-source-and-template.md`. Two connected
-goals: (1) make a project's own first-party source files/top-level
-symbols queryable, independent of `vendor.toml`, closing `CG-009`
-(verified live and still accurate: `source_files` is vendor-usage-gated,
-`symbols.vendor_id` is `NOT NULL`); (2) design (not create) a separate,
-MIT-licensed `codecompass-template` repository — Priority D's first
-concrete deliverable, investigation found no new runtime tooling
-required. New `source_symbols` table + `source_files` extension
-(`ecosystem`/`content_hash`), a new `source_symbols.py` module reusing
-existing per-ecosystem extraction techniques (Python/Rust fully
-supported; npm/TypeScript support **live-verified** against a real `.ts`
-file during planning, not assumed; Haskell explicitly unsupported —
-file-recognized only, no in-process parser exists). Two new CLI commands
-(`query source`, `query source-symbol`), deliberately not unifying with
-`query symbol` (a real vendor-vs-first-party axis difference, not
-arbitrary). Migration follows Phase 76's own corrected introspection-
-based discipline (`ALTER TABLE ADD COLUMN`, never drop/recreate
-`source_files` — it's referenced by `uses_edges ON DELETE CASCADE`).
-Three required validations (zero-vendor template fixture — the
-architectural acceptance test; a fresh Ledgerkit clone testing
-`Posting`/`Amount`/`Tag`; CodeCompass's own dogfooding) plus an
-independent Priority A task-context evaluation. **Explicitly precedes,
-does not replace,** the second differently-shaped Priority A Ledgerkit
-trial Phase 75 recommended: that trial's own `CG-001` motivating shape
-("one feature spread across first-party modules") is a *relationship*
-between first-party objects — this phase's own explicitly-deferred
-follow-on (source_file→imports, source_symbol→references, test→tests,
-doc→documents), not this phase's own scope. The second trial
-recommendation stays live, not yet phase-numbered, to be reconsidered
-once that follow-on exists. Stopped after planning per direct user
-instruction — awaiting review before any `src/` implementation or
-external-repository creation begins.
+**Phase 77 (First-party source awareness + a usable `codecompass-
+template`) is planned (amended), not yet implemented** — direct user
+request, `planning/phase-77-first-party-source-and-template.md`. Two
+connected goals: (1) make a project's own first-party source files/
+top-level symbols queryable, independent of `vendor.toml`, closing
+`CG-009` (verified live and still accurate); (2) **deliver a genuinely
+usable, populated, MIT-licensed `codecompass-template` repository** —
+`https://github.com/ctosullivan/codecompass-template` **already exists**
+(confirmed empty via direct inspection) — Priority D's first concrete,
+delivered scaffold, not merely a design.
+
+**Amended 2026-09-28** after direct user review found twelve issues in
+the initial plan, all now fixed: `source_files` gains a first-party
+**`language`** concept (Python/Rust/JavaScript/TypeScript/Haskell),
+deliberately **not** a reuse of `core.Ecosystem` (whose single `npm`
+value cannot distinguish JavaScript from TypeScript — a real ontology
+mismatch, not a naming choice); `language`/`content_hash` and a new,
+explicit four-state `symbol_index_status` (`indexed`/`unsupported`/
+`parse_error`/`unreadable`, modeled on `git_topology.RepositoryTopology`'s
+own status+reason precedent) are **nullable on both fresh and upgraded
+databases identically** — no more "`NOT NULL` for new, nullable-until-
+repopulated for old" divergence; `source_symbols`' identity is
+**occurrence-based** (`UNIQUE(source_file_id, name, kind, line)`, not
+name-only) after **live-verifying** that a name-only key crashes a real
+`sync` on genuine function overloads — confirmed on both a real
+`@typing.overload`-stacked Python function and a real overloaded
+TypeScript function declaration, each producing 3 same-named rows;
+first-party extraction now covers **implementation scope**, not an API
+surface — non-exported/private top-level declarations are included, with
+a new `visibility` property (`public`/`private`) recorded, never used to
+filter a symbol out (Python needed no scope change at all — it already
+had no export filter; Rust/JS/TS extractors are widened to match with-or-
+without `pub`/`export`). New CLI commands (`query source`,
+`query source-symbol`) apply Phase 76's own corrected tri-state-label
+discipline from first implementation, not as a later fix. Three required
+validations, now using the **real** template repository: populate and
+push it (§8-§9 of the plan), then validate against a real clean clone of
+it (the zero-vendor acceptance test), plus a fresh Ledgerkit clone
+testing `Posting`/`Amount`/`Tag`, plus CodeCompass's own dogfooding, plus
+an independent Priority A task-context evaluation. **Still explicitly
+precedes, does not replace,** the second differently-shaped Priority A
+Ledgerkit trial Phase 75 recommended — that trial's own `CG-001`
+motivating shape needs first-party *relationships* (this phase's own
+explicitly-deferred follow-on), unaffected by this amendment. Stopped
+after planning per direct user instruction — awaiting review before any
+`src/` implementation or external-repository population begins.
 
 Per `CLAUDE.md` §6, Phase 76 (including its corrective pass) is fully
 closed and already pushed to `origin` — no further action needed on it.
