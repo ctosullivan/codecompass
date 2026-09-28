@@ -41,6 +41,12 @@ and how a project's own docs relate to them.
   apply`, `decisions/0054`).
 - **Staleness checking** (`codecompass check`) against installed versions,
   and a clean `undo` of everything it generated.
+- **Git repository topology awareness** (`codecompass query topology`,
+  Phase 76): mechanical worktree and submodule facts — read-only,
+  never live (persisted at the last `sync`) — that distinguish a
+  worktree of *this* repository from a genuinely separate project, and a
+  submodule's parent-pinned commit from what's actually checked out.
+  Requires Git 2.5+.
 
 ## What it does NOT do
 
@@ -65,8 +71,13 @@ and how a project's own docs relate to them.
 - **It doesn't classify or cluster dependencies by concept/topic** — no
   semantic grouping, no embeddings, nothing beyond mechanical name/symbol
   matching anywhere in the graph.
-- **It doesn't touch git.** No commits, no `git add`/`rm`, ever — including
-  in `undo`.
+- **It never mutates git state.** No commits, no `git add`/`rm`, ever —
+  including in `undo`. As of Phase 76, it does *read* Git worktree/
+  submodule topology (`codecompass query topology`) — always read-only
+  plumbing commands (`rev-parse`, `worktree list`, `ls-tree`, `status
+  --porcelain`, `config -f .gitmodules`), never a command that changes
+  repository state, and only during `sync` — `query topology` itself
+  reads the persisted graph, never invoking `git` at all.
 
 ## Example prompts
 

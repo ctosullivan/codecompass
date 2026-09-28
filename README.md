@@ -150,6 +150,11 @@ Running codecompass gets you, for every tracked dependency:
   agent knows which vendor digest to consult and when.
 - **Staleness checking** that flags when a digest no longer matches the
   installed version, severity-aware (patch/minor/major).
+- **Git repository topology awareness** (`codecompass query topology`):
+  distinguishes a worktree of *this* repository from a genuinely
+  separate project, and a submodule's parent-pinned commit from what's
+  actually checked out — read-only, persisted at the last `sync`, never
+  a live `git` call. Requires Git 2.5+.
 
 ## Evidence & provenance
 
