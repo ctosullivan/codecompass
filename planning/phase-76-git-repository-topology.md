@@ -1,6 +1,6 @@
 # Phase 76: Git repository topology awareness (worktrees + submodules) — plan
 
-**Status:** planned (2026-09-28).
+**Status:** planned (2026-09-28, amended 2026-09-28).
 
 Direct user request. An evaluation/implementation phase: CodeCompass
 gains mechanical awareness of Git worktree and submodule topology, so a
@@ -9,47 +9,92 @@ from "different repository" and "parent-pinned commit" apart from
 "actually checked-out commit" — without CodeCompass creating, managing,
 or mutating any of that topology itself.
 
+**Amendment note (2026-09-28, same day as initial commit `7ac9f34`):**
+direct user review of the committed plan found eight concrete, evidenced
+issues before implementation began — a real migration-safety bug latent
+in existing code that this phase's own schema bump would have triggered
+for the third time; a worktree-root/invocation-root conflation; failure
+states collapsing into ambiguous silence; an inappropriately-rigid
+`NOT NULL` constraint; a validation sequence inconsistent with the
+plan's own stated freshness contract; a task-context evaluation too weak
+to trust on its own; a path-traversal risk in trusting `.gitmodules`
+content; and a credential-leakage risk in persisting raw remote URLs.
+This amendment fixes all eight, grounded in newly-gathered live evidence
+(quoted throughout), while preserving every part of the original
+direction the review confirmed as sound (§"Preserved from the original
+plan, unchanged" at the end of each amended section, and restated in
+full at the close of this document). No implementation code exists yet
+for this phase — this remains a planning-only amendment.
+
 ## 0. Verified current state and HEAD
 
-Confirmed live, not assumed, immediately before writing this plan:
+Confirmed live, not assumed, immediately before writing this plan (and
+re-confirmed for this amendment):
 
 - `git log --oneline -1` → `694e4f0` (`docs(phase-75): backfill real
   closeout commit SHA into L-062/L-063 promoted.md lines`), on `main`,
-  clean working tree.
+  clean working tree, at original plan-writing time; `7ac9f34`
+  (`plan(phase-76): ...`) is the committed, now-being-amended plan
+  itself.
 - `planning/ROADMAP.md`: highest phase row is **75, `done`**
   (Priority A Ledgerkit validation, `context-evaluator` verdict PASS
-  WITH GAPS / advantage LOW). No phase 76 row exists yet — **76 is the
-  next valid phase number**, not assumed from a stale recollection.
-- `planning/CONTEXT.md`'s own "Next concrete step" *recommends* "a
-  second, differently-shaped Priority A validation trial" as what it
-  calls "Phase 76" — but no `planning/phase-76-*.md` file was ever
-  written for that recommendation, so per `CLAUDE.md` §1 ("add the
-  phase's row/status to ROADMAP.md in the same commit as the plan
-  file") that number was never actually allocated; it was prose, not a
-  reservation. This plan claims 76 for the git-topology phase instead
-  (direct, explicit user request, arriving after that recommendation
-  was written); the Ledgerkit second-trial idea is not abandoned, it
-  simply becomes "whichever number comes after this phase" if/when it's
-  picked up — `planning/CONTEXT.md` is corrected below to say this
-  plainly instead of naming two different things "Phase 76."
+  WITH GAPS / advantage LOW). Phase 76's own row (this plan) is
+  `planned`.
 - `git worktree list` → exactly one worktree (`/home/cormac/projects/codecompass`,
-  `694e4f0`, `[main]`). No linked worktree exists in the real checkout
-  today — validation needs a disposable one (§12).
+  `[main]`). No linked worktree exists in the real checkout today —
+  validation needs a disposable one (§13).
 - `.gitmodules` → two real submodules, confirmed live:
   `protocol/codecompass-adaptor-protocol` →
   `git@github.com:ctosullivan/codecompass-adaptor-protocol.git`;
   `adapters/haskell` → `git@github.com:ctosullivan/codecompass-adaptor-haskell.git`.
-  `git submodule status` (no `+`/`-` prefix on either line) confirms
-  both are currently initialized and checked out **exactly at** their
-  parent-pinned commit (`dfd7a783...` / `596fb94f...`) — the "checked-out
-  differs from pin" case does not occur naturally in the real repo right
-  now and must be constructed in a disposable fixture (§12).
-- Neither submodule is a `vendor.toml` entry (`vendor.toml` lists only
-  `anthropic`, `pipdeptree`, `rich`, `typer`, all `ecosystem = "python"`)
-  — confirmed live. This is real, load-bearing evidence for §4's schema
-  decision, not an assumption.
-- `git --version` → 2.47.3 (supports every subcommand/flag this plan
-  uses; no minimum-version gate needed).
+  Both currently checked out **exactly at** their parent-pinned commit —
+  the "checked-out differs from pin" case must be constructed in a
+  disposable fixture (§13).
+- Neither submodule is a `vendor.toml` entry — confirmed live
+  (`vendor.toml` lists only `anthropic`, `pipdeptree`, `rich`, `typer`,
+  all `ecosystem = "python"`).
+- `git --version` → 2.47.3. `pyproject.toml`'s `requires-python =
+  ">=3.11"` — confirmed live — so `pathlib.Path.is_relative_to` (added
+  3.9) is safely available for §12.6's path-safety check.
+- **Newly verified for this amendment**: `git -C <path> rev-parse
+  --path-format=absolute --show-toplevel --git-common-dir`, run live
+  from `src/codecompass/` (a real subdirectory of this repository's own
+  worktree), returns two lines —
+  `/home/cormac/projects/codecompass` (the worktree root) and
+  `/home/cormac/projects/codecompass/.git` (the common dir) — in one
+  subprocess call, both already absolute, confirming this is the right,
+  minimal primitive for §5's fix (a plain `git rev-parse
+  --git-common-dir` with no `--path-format` returns a *relative* path
+  instead, e.g. `../../.git` from that same subdirectory — this is
+  exactly the mechanism the original plan under-specified).
+- **Newly verified for this amendment**: `git config -f .gitmodules
+  --list -z`, piped through `tr '\0' '\n'` for display, returns the
+  same four `submodule.<name>.path`/`.url` lines as the non-`-z` form on
+  this repository's own two-entry `.gitmodules` — confirming the
+  NUL-delimited form (§12.9) is a safe drop-in that additionally protects
+  against a pathological embedded-newline value, at no cost.
+- **Newly verified for this amendment**: a live Python `urllib.parse`
+  sanitizer (exact code in §12.7) run against six real and representative
+  URLs (`https://user:token@example.com/repo.git`, a bare-token-as-
+  username HTTPS form, this repository's own real
+  `git@github.com:...` SCP-like submodule URLs, `ssh://git@example.com/...`,
+  and two credential-free HTTPS URLs) produces exactly the intended
+  result on every one: credentials stripped from `http(s)` forms only,
+  every SSH/SCP-like form (including this repository's own real
+  submodule URLs) left byte-for-byte unchanged. Not theoretical —
+  actually executed during planning.
+- **Newly (re-)verified for this amendment, the schema-migration
+  finding motivating §11**: `git log --all -p -- src/codecompass/graph.py`
+  shows `_SCHEMA_VERSION` has already been bumped twice
+  (`41bae257`, Phase 60, `7`→`8`, for `vendors.ecosystem`'s CHECK
+  constraint; `96428a8c`, Phase 62, `8`→`9`, for `symbols.export_kind`/
+  `note`) for changes that touch **neither** `doc_artifacts` nor
+  `documents_edges`/`doc_relations_edges` — yet
+  `_migrate_doc_artifacts_constraints` (`graph.py:374-430`) fires on
+  **any** `meta.schema_version` mismatch, unconditionally, and
+  unconditionally drops and recreates all three of those tables when it
+  fires. This is a real, latent, pre-existing defect this phase's own
+  naive `"9"`→`"10"` bump would have reproduced a third time — see §11.
 
 ## 1. Problem statement and evidence
 
@@ -98,6 +143,9 @@ committed gitlink bump, and update the compatibility matrix
 
 ## 2. Relationship to post-v1 Priority A and to deferred Phase 24
 
+Unchanged from the original plan — re-confirmed, not revised, by this
+amendment.
+
 **Priority A (`decisions/0062`, `planning/ROADMAP.md`).** This is a
 **new, direct-user-requested Priority A capability**, not a promotion of
 an existing `context-gaps` entry — `planning/context-gaps/README.md`'s
@@ -134,22 +182,47 @@ question asked from inside `adapters/haskell/` route as "this project"
 or as "the parent project's own submodule"? This phase's own topology
 detection (§4) answers "what is the relationship," not "how should chat
 route because of it" — that remains Phase 24's own future design
-question, now with a concrete, mechanically-available fact source to
-design against if/when it is revisited. `planning/CONTEXT.md`/
-`planning/ROADMAP.md`'s Phase 24 backlog row is **not** changed by this
-phase beyond this cross-reference note.
+question, now with a concrete, mechanically-available fact source (and,
+per this amendment's §5, a concrete distinction between the invocation
+root and the Git worktree root) to design against if/when it is
+revisited. `planning/CONTEXT.md`/`planning/ROADMAP.md`'s Phase 24
+backlog row is **not** changed by this phase beyond this cross-reference
+note.
 
 ## 3. Relevant current architecture and files
 
-Read in full before writing this plan (not summarized from memory):
+Read in full before writing this plan, and re-read in full for this
+amendment (not summarized from memory):
 
 - `src/codecompass/graph.py` — schema (`_SCHEMA_VERSION = "9"`), row
-  dataclasses, `rebuild_deterministic` (full wipe-and-reinsert per
-  table, `vendors`/`symbols` upserted by natural key to preserve
-  enrichment; everything else — including every edge table and
-  `doc_artifacts` — fully cleared and reinserted every rebuild, no
-  cross-rebuild identity to preserve), `open_graph` (four in-place
-  migrations then idempotent `CREATE TABLE IF NOT EXISTS`).
+  dataclasses, `rebuild_deterministic`, `open_graph`. **Amendment: read
+  all five existing `_migrate_*` functions in full, not just skimmed**
+  (`_migrate_doc_artifacts_constraints`, `_migrate_doc_relation_enrichment_relation_label`,
+  `_migrate_symbols_export_kind_note_columns`,
+  `_migrate_symbol_enrichment_model_column`,
+  `_migrate_vendors_ecosystem_constraint`). **Four of the five already
+  use direct schema introspection** (`PRAGMA table_info`, or
+  `sqlite_master.sql` text inspection) to decide whether *their own*
+  migration is needed, explicitly and self-documentedly *because*
+  `meta.schema_version`-based triggering is unsafe for a table holding
+  paid enrichment or requiring precision about what actually changed —
+  `_migrate_vendors_ecosystem_constraint`'s own docstring states this
+  reasoning outright ("matching `_migrate_doc_relation_enrichment_relation_label`'s
+  own 'introspect the real thing' style rather than
+  `_migrate_doc_artifacts_constraints`'s version-difference style").
+  **`_migrate_doc_artifacts_constraints` is the one outlier still using
+  the crude global-version-mismatch trigger** — confirmed via git
+  history (§0) to have already fired unnecessarily on both prior
+  version bumps. This is the concrete, in-repository precedent §11's
+  fix generalizes, not a novel pattern invented for this phase.
+- `tests/test_graph.py` — confirmed to already carry extensive
+  migration-regression coverage for `_migrate_doc_artifacts_constraints`
+  (schema versions `"1"` through `"8"` each individually simulated and
+  migrated to `"9"`), each asserting the literal string `"9"` as the
+  post-migration value — **these existing assertions must be updated to
+  `"10"` as part of this phase's own implementation** (§12), a
+  mechanical consequence of the version bump that has apparently
+  recurred at every prior bump too.
 - `src/codecompass/sync.py::rebuild_project_graph` — the one
   orchestration function every detection module feeds into; `cli.py`'s
   `_bootstrap`/`sync`/`index` all call it with `project_root`.
@@ -159,67 +232,52 @@ Read in full before writing this plan (not summarized from memory):
   pattern this phase's own `git_topology.py` follows.
 - `src/codecompass/source_resolution.py` — the existing precedent for
   shelling out to real `git` (`shutil.which("git")` guard,
-  `subprocess.run`, explicit `SourceResolutionError` only for a genuine
-  vendor-clone failure — topology detection is supplementary, not
-  gating, so it degrades silently rather than raising, see §8).
+  `subprocess.run`).
 - `src/codecompass/cli.py` — `query_app` Typer sub-app, five existing
-  `query` subcommands (`vendors`, `vendor`, `symbol`, `skills`,
-  `relations`), each with a `--json` flag and a `_graph_session`
+  `query` subcommands, each with a `--json` flag and a `_graph_session`
   context manager; `Path.cwd()` is the only "project root" resolution
   anywhere in the file today.
 - `src/codecompass/skill.py::render_tool_skill` — the generated
   `.claude/skills/codecompass/SKILL.md`; lists every `query` subcommand
   by hand *and* the graph's own table names in prose — the exact
-  multi-module coordination shape `CG-001` was originally filed against
-  (`graph.py` ↔ `cli.py` ↔ `skill.py`, three places a new capability
-  must land consistently).
-- `scripts/check_user_docs.py::check_cli_commands_documented` — already
-  mechanically fails the build if a new `@query_app.command(...)` isn't
-  named in `docs/cli-reference.md`. `check_generated_artifacts_match_source`
-  already mechanically fails the build if `.claude/skills/codecompass/SKILL.md`
-  drifts from `skill.render_tool_skill(...)`'s real output. **Both
-  checks already exist and will catch a `CG-001`-shaped coordination
-  gap in this phase's own implementation for free** — confirmed by
-  reading both functions directly, not assumed.
-- `decisions/0057` (external-process adapter protocol),
-  `decisions/0058` (adapter protocol + Haskell adapter as separate
-  submodule repositories) — the real, load-bearing reason this
-  project's own submodules exist; `docs/developer/haskell-adapter-submodules.md`,
-  `docs/protocol-adapter/*.md`, `architecture/adapter-interface.md`,
-  `architecture/overview.md` — existing **human-facing** developer docs
-  describing the same submodules this phase makes **mechanically**
-  legible to CodeCompass itself; not rewritten, cross-referenced (§14).
+  multi-module coordination shape `CG-001` was originally filed against.
+- `scripts/check_user_docs.py::check_cli_commands_documented` and
+  `check_generated_artifacts_match_source` — already mechanically catch
+  a `CG-001`-shaped coordination gap in this phase's own implementation.
+- `decisions/0057`, `decisions/0058` — the real, load-bearing reason
+  this project's own submodules exist.
 - `docs/domain/concepts/vendor.md` — confirms `VendorConfig` is
-  narrowly `(name: str, ecosystem: Ecosystem)`, sourced from
-  `vendor.toml`, "not itself a package in some general sense... tied to
-  this project's `vendor.toml` schema" — direct evidence that a
-  submodule (no `vendor.toml` entry, no `Ecosystem`, no package-manager
-  identity) does not fit the `vendors` table and should not be forced
-  into it (§4).
+  narrowly `(name: str, ecosystem: Ecosystem)`, ruling `vendors` out as
+  a home for submodules.
 - `planning/v1-redefinition/reference-project-protocol.md` §2.2 (as
-  amended this session, `L-062`) — scratch-clone-only working-copy
-  discipline, now including explicit read-scope guidance; reused
-  directly for §12's disposable worktree/submodule-divergence fixtures.
+  amended in Phase 75, `L-062`) — scratch-clone-only working-copy
+  discipline, **including explicit read-scope-symmetry guidance for any
+  baseline/treatment comparison** — directly reused for §15's amended,
+  strengthened task-context evaluation.
 
 ## 4. Proposed data model and terminology
+
+Unchanged reasoning for rejecting `vendors`/`doc_artifacts` reuse (§4 of
+the original plan); the table shapes themselves are revised by this
+amendment (nullability, path-safety, sanitization) and one new
+mechanism (topology status) is added.
 
 **Investigated and rejected: reusing `vendors`.** A submodule has no
 `Ecosystem`, no `vendor.toml` entry, and (per `decisions/0058`) is
 mounted specifically as a *Git-level* construct independent of any
-package manager — forcing it into `vendors` would misrepresent it as a
-package dependency it is not, and would require relaxing the
-`ecosystem` CHECK constraint for something that isn't one. Rejected.
+package manager. Rejected.
 
 **Investigated and rejected: a generic `doc_artifacts`/`other`-kind
-row.** `doc_artifacts` models *documents* (Markdown, generated Skills,
-spec docs) with a `path`/`name`/`description` shape; a worktree or
-submodule is neither a document nor addressable by the
-`mentions_artifact`/`mentions_dependency` word-boundary matchers that
-give `doc_artifacts` rows their whole reason for existing. Rejected.
+row.** A worktree or submodule is neither a document nor addressable by
+the `mentions_artifact`/`mentions_dependency` word-boundary matchers.
+Rejected.
 
-**Decision: three new tables, a new graph-capability addition (schema
-version `9` → `10`)**, mirroring the exact conceptual model the user
-specified:
+**Decision: three new tables** (schema version `9` → `10`, migration
+strategy fully redesigned in §11), mirroring the conceptual model the
+user specified, **plus two new `meta` keys for top-level topology
+status** (no new table needed for that — `meta` is already the graph's
+existing key/value bookkeeping mechanism, e.g. `schema_version`,
+`last_deterministic_rebuild_at`):
 
 ```
 git_repositories   -- one row per canonical repository this checkout
@@ -227,7 +285,10 @@ git_repositories   -- one row per canonical repository this checkout
 git_worktrees      -- N rows per repository: this checkout, plus every
                       sibling worktree observed via `git worktree list`
 git_submodules     -- N rows per repository: every submodule this
-                      project's own `.gitmodules` declares
+                      project's own `.gitmodules` declares, present even
+                      when some or all of its own facts are unresolved
+meta.git_topology_status  -- 'detected'|'not_git'|'unavailable'|'partial'
+meta.git_topology_reason  -- diagnostic text; NULL for 'detected'/'not_git'
 ```
 
 ```sql
@@ -239,27 +300,35 @@ CREATE TABLE IF NOT EXISTS git_repositories (
                                       -- repository, the canonical
                                       -- identity key this phase uses
   origin_url  TEXT                   -- `git remote get-url origin`,
+                                      -- sanitized (§12.7) before storage;
                                       -- nullable (no remote configured)
 );
 
 CREATE TABLE IF NOT EXISTS git_worktrees (
   id            INTEGER PRIMARY KEY,
   repository_id INTEGER NOT NULL REFERENCES git_repositories(id) ON DELETE CASCADE,
-  worktree_path TEXT NOT NULL,        -- absolute path
+  worktree_path TEXT NOT NULL,        -- absolute path, resolved via
+                                       -- `git rev-parse --show-toplevel`
+                                       -- (§5), NEVER the raw invocation
+                                       -- root when they differ
   is_current    INTEGER NOT NULL DEFAULT 0,  -- 1 for the worktree this
                                               -- context-graph.db lives
                                               -- in; 0 for a sibling
-  branch        TEXT,                 -- NULL when detached
+  branch        TEXT,                 -- short name (`refs/heads/`
+                                       -- prefix stripped, §12.8); NULL
+                                       -- when detached
   is_detached   INTEGER NOT NULL DEFAULT 0,
   head_commit   TEXT,                 -- NULL only for a truly unborn
                                        -- branch (no commits yet)
-  is_dirty      INTEGER,              -- NULL for a non-current (sibling)
-                                       -- worktree — see §8 for why this
-                                       -- is never populated for siblings
+  is_dirty      INTEGER,              -- NULL = not probed. Always NULL
+                                       -- for a non-current (sibling)
+                                       -- worktree — this is a stated,
+                                       -- permanent limitation of the
+                                       -- data contract (§7.4/§8), not
+                                       -- a transient gap
   is_bare       INTEGER NOT NULL DEFAULT 0,
   is_locked     INTEGER NOT NULL DEFAULT 0,
-  is_prunable   INTEGER NOT NULL DEFAULT 0,  -- `git worktree list`'s own
-                                              -- "directory is gone" flag
+  is_prunable   INTEGER NOT NULL DEFAULT 0,
   UNIQUE (repository_id, worktree_path)
 );
 CREATE INDEX IF NOT EXISTS idx_git_worktrees_repository ON git_worktrees(repository_id);
@@ -267,103 +336,304 @@ CREATE INDEX IF NOT EXISTS idx_git_worktrees_repository ON git_worktrees(reposit
 CREATE TABLE IF NOT EXISTS git_submodules (
   id                    INTEGER PRIMARY KEY,
   parent_repository_id  INTEGER NOT NULL REFERENCES git_repositories(id) ON DELETE CASCADE,
-  path                  TEXT NOT NULL,     -- mount path, relative to the
-                                            -- parent repo root, e.g.
-                                            -- "adapters/haskell"
-  child_repository_url  TEXT,              -- from .gitmodules; nullable
-                                            -- if .gitmodules is malformed
-                                            -- for this entry
-  pinned_commit         TEXT NOT NULL,     -- the gitlink SHA recorded in
-                                            -- the PARENT's own tree
-                                            -- (`git ls-tree HEAD -- <path>`)
-                                            -- — never the child's own
-                                            -- working state
-  is_initialized        INTEGER NOT NULL DEFAULT 0,
-  checked_out_commit    TEXT,              -- NULL if not initialized
-  revision_matches_pin  INTEGER,           -- NULL if not initialized;
-                                            -- else 1/0 — the mechanical
-                                            -- fact the user's own
-                                            -- required-capability list
-                                            -- names explicitly
-  child_branch          TEXT,              -- NULL if not initialized or
-                                            -- detached
-  child_is_dirty        INTEGER,           -- NULL if not initialized
+  path                  TEXT NOT NULL,     -- mount path exactly as
+                                            -- .gitmodules declares it,
+                                            -- relative to the worktree
+                                            -- root (§5) — always present:
+                                            -- this row exists as soon as
+                                            -- .gitmodules declares the
+                                            -- path, regardless of how
+                                            -- much else is resolvable
+  is_path_safe          INTEGER NOT NULL DEFAULT 1,  -- 0 = the resolved
+                                            -- path escaped the worktree
+                                            -- root (§12.6) — every field
+                                            -- below is left NULL/0 and
+                                            -- NEVER probed when this is 0
+  child_repository_url  TEXT,              -- from .gitmodules, sanitized
+                                            -- (§12.7); NULL if absent/
+                                            -- unparseable
+  pinned_commit         TEXT,              -- **now nullable** (amended
+                                            -- from the original plan's
+                                            -- `NOT NULL`, §8): the
+                                            -- gitlink SHA recorded in
+                                            -- the parent's own tree
+                                            -- (`git ls-tree HEAD --
+                                            -- <path>`); NULL when
+                                            -- .gitmodules declares the
+                                            -- path but no gitlink exists
+                                            -- in HEAD's tree yet (a real,
+                                            -- honestly-representable
+                                            -- mid-edit state, not an
+                                            -- error) — never omits the
+                                            -- row itself
+  is_initialized        INTEGER,           -- NULL only when
+                                            -- is_path_safe = 0 (never
+                                            -- checked); else 0/1
+  checked_out_commit    TEXT,              -- NULL if not initialized or
+                                            -- not path-safe
+  revision_matches_pin  INTEGER,           -- NULL unless BOTH
+                                            -- pinned_commit and
+                                            -- checked_out_commit are
+                                            -- known; else 1/0
+  child_branch          TEXT,              -- short name; NULL if not
+                                            -- initialized, detached, or
+                                            -- not path-safe
+  child_is_dirty        INTEGER,           -- NULL if not initialized or
+                                            -- not path-safe
   UNIQUE (parent_repository_id, path)
 );
 CREATE INDEX IF NOT EXISTS idx_git_submodules_parent ON git_submodules(parent_repository_id);
 ```
 
-**No `observed_at`/timestamp column on any of the three** — these
-tables are fully wiped and reinserted every `rebuild_deterministic`
-call, in the same transaction as everything else (no cross-rebuild
-identity to preserve, same category as `doc_artifacts`/every edge
-table), so `meta.last_deterministic_rebuild_at` (already the graph's
-one shared freshness signal) already answers "as of when" without a
-redundant per-row column.
+**No `observed_at`/timestamp column on any of the three** — fully wiped
+and reinserted every `rebuild_deterministic` call, same category as
+`doc_artifacts`; `meta.last_deterministic_rebuild_at` already answers
+"as of when."
 
-**No `origin`-style provenance enum** (contrast `doc_artifacts.origin`):
-every fact in these three tables is *mechanically derived from `git`
-commands with no AI/agent involvement and no ambiguity about producer*
-— there is no second, less-authoritative source these facts could have
-come from the way a doc could be `project`-authored vs.
-`vendor_upstream`-sourced. Provenance here is the deterministic-only
-model itself (§8), not a field.
+**No `origin`-style provenance enum** — every fact here is mechanically
+derived from `git`, with no second, less-authoritative source it could
+have come from. Provenance here is the deterministic-only model (§8)
+plus, new in this amendment, the explicit epistemic-status model below —
+not a per-row enum field.
 
-**Terminology** (for `architecture/`/docs use, §14):
+**New: `meta.git_topology_status`/`meta.git_topology_reason`** — a
+top-level, whole-detection-pass status distinct from any individual
+row's own nullable fields (§8 explains the two-level distinction in
+full): `detected` (repository/worktree-list/submodule-list enumeration
+all succeeded structurally — individual facts within that structure may
+still be legitimately unknown, e.g. an unresolved `pinned_commit`, which
+is a *row-level* fact, not a whole-pass failure); `not_git` (confidently
+determined: `project_root` is not inside a Git repository); `unavailable`
+(the `git` executable is missing, or the very first repository-identity
+command failed for a reason *other than* "not a repository" — e.g.
+permission denied, a corrupted `.git`); `partial` (repository identity
+was established, but a subsequent structural step — enumerating
+worktrees, or enumerating `.gitmodules` — failed unexpectedly). This is
+the direct fix for the requirement that CodeCompass must never display
+"not a Git repository" when it actually could not determine that fact.
 
-- **Repository** — identified by its `common_dir` (the one `.git`
-  directory shared by every worktree of it). Not the same as "project"
-  (`project_root` may be a git repo, a subdirectory inside one, or not a
-  git repo at all — this phase adds repository awareness *when
-  applicable*, never requires it).
-- **Worktree** — one checkout of a repository: a path, a branch or
-  detached HEAD, a HEAD commit, and (for the current one only) a
-  workspace/dirty state. Two worktrees of the same repository share
-  `common_dir` and are never represented as separate `git_repositories`
-  rows, satisfying the user's own hard requirement directly at the
-  schema level (a worktree literally cannot become "its own project" —
-  there is no column path for it to acquire a second `git_repositories`
-  identity).
+**Terminology** (for `architecture/`/docs use, §14) — restated with two
+amendments (worktree-root distinction, submodule non-recursion made
+explicit per the user's own request to clarify it, §16):
+
+- **Repository** — identified by its `common_dir`. Not the same as
+  "project" (`project_root`, the CLI's invocation root, may be a git
+  repo, a subdirectory inside one, or not a git repo at all).
+- **Worktree** — one checkout of a repository, identified by its own
+  root directory (`git rev-parse --show-toplevel`) — **not** the
+  invocation root a command happened to be run from, when the two
+  differ (§5). A path, a branch or detached HEAD, a HEAD commit, and
+  (for the current one only) a workspace/dirty state. Two worktrees of
+  the same repository share `common_dir` and are never represented as
+  separate `git_repositories` rows.
 - **Submodule** — a mount point recorded in the *parent's* tree (a
-  gitlink) plus `.gitmodules`; distinct from the child's own actual
-  checkout state, which may or may not be initialized, and may or may
-  not match the parent-pinned commit.
+  gitlink) plus `.gitmodules`, distinct from the child's own actual
+  checkout state. **A `git_submodules` row is a topology *relationship*
+  fact about the parent repository being inspected — it is not, and this
+  phase never makes it, a recursively materialized child
+  `git_repositories` row of its own.** If a submodule's own directory is
+  itself later inspected directly (`codecompass sync` run *inside*
+  `adapters/haskell/`), that produces its own, entirely separate
+  `git_repositories` row in its own `context-graph.db` — the two are
+  never linked to each other by this phase (§16).
 
 ## 5. Discovery / root-resolution changes required
 
-**None to existing `project_root` resolution.** `project_root` stays
-exactly `Path.cwd()` everywhere it is today — this phase adds a new,
-independent detection pass (`git_topology.py`, §6) that runs *from*
-`project_root`, it does not change what `project_root` means or how any
-existing command resolves it. `discover_manifest_paths`/`discover_all`
-(dependency-manifest discovery) are untouched; this is a parallel
-concern (Git structure, not dependency manifests).
+**Amended.** The original plan's §5 stated `project_root` stays
+unchanged everywhere and topology detection "runs from `project_root`,"
+but §6's own detection notes then treated `project_root.resolve()` as
+if it were necessarily the worktree root when matching the current
+worktree in `git worktree list`'s output. **This is wrong when
+CodeCompass is invoked from a subdirectory of a worktree** — e.g. from
+`repo/src/` while the worktree root is `repo/` — confirmed live during
+this amendment (`git rev-parse --show-toplevel`, run from
+`src/codecompass/`, correctly returns the repository root two directories
+up, not the invocation directory itself; §0).
 
-**One explicit non-change worth stating**: this phase does **not**
-walk upward from `project_root` looking for an ancestor repository that
-treats `project_root` itself as *its* submodule — only descend from
-`project_root` to detect worktrees/submodules `project_root`'s own
-repository declares. Detecting "am I someone else's submodule" is a
-different, upward-facing question the user's own acceptance model
-doesn't ask for (the model is `Repository → Worktree*,Submodule*`,
-strictly downward) and is named as an explicit deferral (§16).
+**No change to `project_root`'s own meaning or resolution anywhere
+else in the codebase** — this remains exactly `Path.cwd()`, unchanged,
+consistent with the original plan. What changes is that `git_topology.py`
+now **explicitly establishes and keeps distinct three separate paths**,
+never conflating any two of them:
 
-## 6. New module: `src/codecompass/git_topology.py`
+1. **Invocation root** (`project_root`) — wherever `Path.cwd()` (or a
+   future `--root` argument, if one is ever added) points. This is
+   `context-graph.db`'s own location (§10, unchanged) and the value every
+   other detection module already receives.
+2. **Git worktree root** — `git -C <project_root> rev-parse
+   --show-toplevel` (or, for a bare repository, the directory containing
+   `.git` itself — §7's edge-case notes). **This, not `project_root`, is
+   the root every topology operation below is actually relative to.**
+3. **Git common directory** — `git -C <project_root> rev-parse
+   --git-common-dir` — the repository's own canonical identity (§4),
+   identical from every worktree.
+
+Both (2) and (3) are obtained from **one combined subprocess call**,
+`git -C <project_root> rev-parse --path-format=absolute --show-toplevel
+--git-common-dir` (confirmed live, §0, to return both as absolute paths
+on two lines, in git 2.47.3 — `--path-format=absolute` has been
+supported since Git 2.31, comfortably below what any environment running
+this project's own `requires-python = ">=3.11"`-era tooling would
+realistically have) — never guessed via filesystem walking (e.g. "walk
+upward looking for a `.git` entry" was **not** implemented and is
+explicitly rejected as a parallel, redundant, and strictly worse
+mechanism now that the real primitive is confirmed to exist and work).
+
+**Every subsequent topology operation is now stated relative to the
+resolved worktree root, not `project_root`** (§7 gives the exact
+commands):
+
+- **Identifying which worktree is current**: each block in `git
+  worktree list --porcelain`'s output is compared, resolved, against
+  the **worktree root**, not `project_root` — when they're the same
+  directory (the common case: CodeCompass invoked from the repository's
+  own top level) this makes no observable difference; when they differ
+  (invoked from a subdirectory) this is the fix that makes current-worktree
+  identification correct instead of silently failing to match any block
+  at all.
+- **Locating `.gitmodules`**: read at `<worktree_root>/.gitmodules`,
+  never `<project_root>/.gitmodules` — `.gitmodules` is defined by Git
+  to live at a worktree's own top level; reading it relative to
+  `project_root` would silently find nothing (or, worse, a coincidental
+  unrelated file) when invoked from a subdirectory.
+- **Resolving submodule mount paths**: `.gitmodules`'s own `path` values
+  are declared relative to the worktree root and are resolved as
+  `<worktree_root> / declared_path` (then checked for safety, §12.6) —
+  never relative to `project_root`.
+- **Running parent-tree Git operations** (`git ls-tree HEAD --
+  <path>`, `git remote get-url origin`, `git worktree list`): all
+  invoked with `-C <worktree_root>`, not `-C <project_root>` — for
+  correctness, not merely style: `git -C <subdirectory> ls-tree HEAD --
+  <path-relative-to-repo-root>` can silently resolve the wrong tree
+  entry or none at all if the two roots differ.
+
+**`context-graph.db`'s own placement is unchanged** (§10) — it remains
+rooted at `project_root`, exactly as today. This amendment is
+specifically about not *semantically conflating* that storage location
+with the Git worktree root when they happen to differ; it does not move
+where the database file lives.
+
+**Still true, restated from the original plan**: this phase does **not**
+walk upward from the worktree root looking for an ancestor repository
+that treats it as *its* submodule — only descend to detect
+worktrees/submodules the worktree root's own repository declares (§16).
+
+**New tests required by this amendment** (§18): topology detection
+invoked from the repository root, and from a real nested subdirectory of
+the same repository, must both identify the same worktree root and the
+same `common_dir`.
+
+## 6. Topology status model (new section — amendment, was folded into
+§8/§10 in the original plan)
+
+Direct response to the review's finding that "not a Git repository,"
+"`git` executable unavailable," "a `git` command failed," and "partial/
+malformed topology" could previously collapse into the same observable
+result.
+
+```python
+class TopologyStatus(str, Enum):
+    DETECTED = "detected"
+    NOT_GIT = "not_git"
+    UNAVAILABLE = "unavailable"
+    PARTIAL = "partial"
+```
+
+**Two distinct levels of uncertainty, never conflated** (this is the
+core design resolving the review's concern):
+
+1. **Whole-pass structural status** (`TopologyStatus`, above) — "could
+   repository identity, the worktree list, and the submodule list each
+   be enumerated at all." Determined once per `detect_git_topology`
+   call; stored as `meta.git_topology_status`/`meta.git_topology_reason`
+   (§4).
+2. **Per-row factual completeness** — for a structure that *was*
+   successfully enumerated, individual facts about one of its rows may
+   still be legitimately unknown (an unresolved `pinned_commit`, an
+   unprobed `is_dirty` for a sibling worktree, a `child_branch` that's
+   `None` because the submodule isn't initialized). These are ordinary
+   nullable columns (§4), never a reason to downgrade the whole-pass
+   `TopologyStatus`, and never a reason to omit the row itself.
+
+**Decision procedure** (exact order, each step's failure mode named):
+
+1. `shutil.which("git") is None` → `UNAVAILABLE`, reason = `"git
+   executable not found on PATH"`. Nothing further attempted.
+2. `git -C project_root rev-parse --path-format=absolute --show-toplevel
+   --git-common-dir` — on failure, **the stderr text is pattern-matched**
+   (`"not a git repository"`, Git's own stable, documented message for
+   this exact case) to distinguish:
+   - Matches → `NOT_GIT`, reason = `None` (an expected, unremarkable
+     outcome — most projects using CodeCompass are not Git
+     repositories at all; this is not an anomaly worth a diagnostic
+     string).
+   - Does not match (permission error, corrupted `.git`, an unexpected
+     exception, a timeout) → `UNAVAILABLE`, reason = the captured
+     stderr/exception text (truncated to a reasonable length for
+     storage/display). **This is the literal fix for "must not display
+     'not a Git repository' when it actually could not determine that
+     fact."**
+3. On success: worktree root + common dir now known.
+   - `origin_url`: `git -C <worktree_root> remote get-url origin` — a
+     non-zero exit (no `origin` remote configured) is **normal, not an
+     anomaly** — `origin_url = None`, status unaffected.
+   - `git -C <worktree_root> worktree list --porcelain` fails
+     unexpectedly → overall status becomes `PARTIAL`, reason = `"could
+     not enumerate worktrees: <stderr>"`; `worktrees = ()`; submodule
+     detection still proceeds independently (a worktree-list failure
+     doesn't imply a submodule-detection failure).
+   - No block in a successful `worktree list` result resolves to
+     `<worktree_root>` → also `PARTIAL` (a genuine anomaly — the current
+     worktree should always appear in its own listing), reason =
+     `"current worktree not found in its own worktree list"`.
+   - `.gitmodules` absent at `<worktree_root>` → zero submodules,
+     **normal, not an anomaly** (most projects have none).
+   - `.gitmodules` present but `git config -f <worktree_root>/.gitmodules
+     --list -z` fails unexpectedly (malformed file) → overall status
+     becomes `PARTIAL` (or stays `PARTIAL` if worktree listing already
+     set it), reason appended/first-reason-kept (documented as
+     first-failure-only, not an exhaustive multi-reason log — the
+     smallest model that still tells a fresh agent "something is
+     incomplete, here's a starting point," not a full diagnostic
+     report).
+   - Otherwise → `DETECTED`.
+
+**CLI/JSON must render all four states distinguishably** — `not_git`
+prints a plain, unremarkable "not a Git repository" line (unchanged from
+the original plan's intent, now actually correctly gated only on a
+genuine `NOT_GIT` determination); `unavailable` prints "Git topology
+could not be determined (<reason>)"; `partial` prints whatever structure
+*was* established, prefixed with a visible "topology partially
+determined: <reason>" note rather than silently presenting incomplete
+data as if it were complete; `detected` prints the full structure with
+no caveat banner. §9 gives the exact rendering; §18 tests all four.
+
+**Non-fatal to ordinary `sync`, in every case**: nothing in this
+decision procedure raises or aborts `rebuild_project_graph` — the
+status itself, not an exception, is how uncertainty is communicated,
+consistent with "failures should still generally remain non-fatal to
+ordinary CodeCompass sync." No evidence gathered during this amendment
+suggests any topology-detection failure mode should gate `sync` itself;
+this is restated as a deliberate, evidence-based choice, not an
+oversight.
+
+## 7. New module: `src/codecompass/git_topology.py`
 
 Mirrors the existing `discovery.py`/`usage.py`/`spec_docs.py` shape: a
 pure, graph-agnostic detection module; `sync.py` is the only place that
-converts its output into `graph.py` row types (matching the existing
-`usage.DetectedImport` → `graph.UsesEdgeRow` pattern).
+converts its output into `graph.py` row types.
 
 ```python
 @dataclass(frozen=True)
 class WorktreeInfo:
-    path: str            # absolute
+    path: str                    # absolute; the worktree's own root
     is_current: bool
-    branch: str | None
+    branch: str | None           # short name (§12.8); None if detached
     is_detached: bool
     head_commit: str | None
-    is_dirty: bool | None
+    is_dirty: bool | None        # None = not probed (always None for
+                                  # a non-current worktree — a permanent
+                                  # data-contract limitation, see §8)
     is_bare: bool
     is_locked: bool
     is_prunable: bool
@@ -371,669 +641,973 @@ class WorktreeInfo:
 @dataclass(frozen=True)
 class SubmoduleInfo:
     path: str
-    child_repository_url: str | None
-    pinned_commit: str
-    is_initialized: bool
+    is_path_safe: bool           # False = declared path escaped the
+                                  # worktree root (§12.6); every field
+                                  # below is unset/False when this is
+                                  # False, and was never probed
+    child_repository_url: str | None   # sanitized (§12.7) before this
+                                        # dataclass is ever constructed
+    pinned_commit: str | None    # None = declared, but no gitlink
+                                  # resolvable in HEAD's tree right now
+    is_initialized: bool | None  # None only when is_path_safe is False
     checked_out_commit: str | None
-    revision_matches_pin: bool | None
+    revision_matches_pin: bool | None   # None unless both
+                                         # pinned_commit and
+                                         # checked_out_commit are known
     child_branch: str | None
     child_is_dirty: bool | None
 
 @dataclass(frozen=True)
 class RepositoryTopology:
-    common_dir: str
-    origin_url: str | None
+    status: TopologyStatus
+    reason: str | None
+    invocation_root: str          # str(project_root), always present
+    worktree_root: str | None     # None only for NOT_GIT/UNAVAILABLE
+    common_dir: str | None
+    origin_url: str | None        # sanitized
     worktrees: tuple[WorktreeInfo, ...]
     submodules: tuple[SubmoduleInfo, ...]
 
-def detect_git_topology(project_root: Path) -> RepositoryTopology | None:
-    """None if `git` isn't installed, or project_root isn't inside a
-    Git repository (or working tree). Never raises — see §8."""
+def detect_git_topology(project_root: Path) -> RepositoryTopology:
+    """Always returns a RepositoryTopology — never None, never raises.
+    `status` tells the caller how much of the rest to trust; see §6."""
 ```
 
-**Implementation notes** (exact commands, chosen for the reasons
-below):
+**`detect_git_topology` never returns `None`** (amended from the
+original plan) — this removes the `None`-special-casing the review
+flagged as one more place a real distinction could get silently lost;
+`sync.py` (§12) checks `.status`, not identity-vs-`None`.
 
-1. **`git` availability + repo check**: `shutil.which("git")` (mirrors
-   `source_resolution._git_clone`'s own guard); if absent, return
-   `None` immediately. Then `git -C <project_root> rev-parse
-   --git-common-dir` — a non-zero exit (not a git repo) → return
-   `None`. Resolve the (possibly relative) output against
-   `project_root` and `.resolve()` it to an absolute path — this
-   absolute common-dir path is `common_dir`, chosen specifically
-   because it is **identical from every worktree of the same
-   repository** (that is its literal git-defined purpose), unlike
-   `--git-dir` (which differs per worktree) or the worktree's own path
-   (which is the thing we're trying to *distinguish from* identity).
-2. **`origin_url`**: `git -C <project_root> remote get-url origin`;
-   non-zero exit (no `origin` remote) → `None`, not an error.
-3. **Worktrees**: `git -C <project_root> worktree list --porcelain` —
-   a stable, documented, blank-line-delimited block format
-   (`worktree <path>`, `HEAD <sha>`, `branch <ref>` or `detached`,
-   optional `bare`/`locked [reason]`/`prunable [reason]` lines). Mark
-   `is_current` by comparing each block's resolved path against
-   `project_root.resolve()`. **Dirty state is computed only for the
-   current worktree** (`git -C <project_root> status --porcelain`,
-   non-empty output → dirty; this counts untracked files as dirty,
-   matching the plain-English "workspace: dirty" framing, documented
-   explicitly as this phase's own definition) — never for a sibling,
-   for the reason given in §8/§9 (avoiding N extra subprocess calls
-   against paths that may be stale/unmounted/removed, and avoiding any
-   appearance of authoritative live knowledge about another checkout's
-   mutable state beyond what `worktree list` itself already reports).
-4. **Submodules**: enumerate `.gitmodules` via
-   `git config -f .gitmodules --list` (real git-config parsing, not a
-   hand-rolled `.gitmodules` reader — same "prefer the real parser"
-   posture `decisions/0057` already established for `package.yaml`),
-   grouping `submodule.<name>.path`/`.url` pairs. For each path:
-   - `pinned_commit`: `git -C <project_root> ls-tree HEAD -- <path>` →
-     parse the `160000 commit <sha>\t<path>` gitlink line. This is
-     **the parent's own tree entry** — deliberately not derived from
-     `git submodule status`'s single SHA column, which shows the
-     *checked-out* commit unless `--cached` is passed; reading the
-     gitlink directly is unambiguous and needs no flag-dependent
-     interpretation.
-   - `is_initialized`: does `<project_root>/<path>/.git` exist (file or
-     directory — git uses a gitfile for a normal submodule, a full
-     `.git` directory only in unusual manually-`git init`'d cases;
-     either way `git -C <path> ...` works transparently, no
-     special-casing needed)?
-   - If initialized: `checked_out_commit` = `git -C <path> rev-parse
-     HEAD`; `child_branch` = `git -C <path> symbolic-ref --short HEAD`
-     (non-zero exit → detached, `child_branch = None`);
-     `child_is_dirty` = non-empty `git -C <path> status --porcelain`;
-     `revision_matches_pin` = `checked_out_commit == pinned_commit`.
-   - If not initialized: all four fields `None`/`False` as documented
-     above — never attempt a git command inside an uninitialized
-     submodule directory (it may not even exist on disk).
-   - **Cross-check used only in testing, not production code** (§13):
-     `git submodule status`'s leading character (space = in sync, `+` =
-     checked-out differs from pin, `-` = not initialized) independently
-     corroborates `revision_matches_pin`/`is_initialized` without being
-     the primary derivation.
-5. **Never recurse into nested submodules-of-submodules** — `.gitmodules`
-   is read at exactly one level (`project_root`'s own), matching the
-   "minimum capability" scope; a submodule's *own* submodules (if any)
-   are not this phase's concern (§16).
+**Exact commands** (§6 gives the decision procedure; this gives the
+concrete `git` invocations, chosen and verified live, §0):
 
-## 7. Context / query / packet integration points
+1. `shutil.which("git")`; absent → `UNAVAILABLE` immediately.
+2. `git -C project_root rev-parse --path-format=absolute --show-toplevel
+   --git-common-dir` — one call, two output lines, both already
+   absolute (§0/§5). Stderr pattern-matched per §6 step 2.
+3. `git -C <worktree_root> remote get-url origin`, sanitized (§12.7)
+   before ever being placed in `origin_url`.
+4. `git -C <worktree_root> worktree list --porcelain` — the stable,
+   documented, blank-line-delimited block format (`worktree <path>`,
+   `HEAD <sha>`, `branch <ref>` or `detached`, optional `bare`/
+   `locked [reason]`/`prunable [reason]`). Each block's path is resolved
+   and compared against `worktree_root` (§5) to find `is_current`.
+   **Dirty state is computed only for the current worktree**
+   (`git -C <worktree_root> status --porcelain`, non-empty → dirty,
+   counting untracked files — this phase's own explicit, stated
+   definition) — never for a sibling, a permanent limitation stated
+   explicitly in the data contract and CLI output (§8), not merely an
+   implementation shortcut left undocumented.
+5. **Submodules**: `git config -f <worktree_root>/.gitmodules --list -z`
+   (NUL-delimited — §0/§12.9's robustness note), grouping
+   `submodule.<name>.path`/`.url` pairs. For each declared path:
+   - Resolve `<worktree_root> / declared_path`, verify with
+     `Path.is_relative_to(worktree_root)` after `.resolve()` (§12.6) —
+     if it escapes, `is_path_safe = False` and **no `git` command is
+     ever run against that path**; the row is still emitted (path +
+     `is_path_safe=False`, everything else unset).
+   - `pinned_commit`: `git -C <worktree_root> ls-tree HEAD -- <path>` →
+     parse the `160000 commit <sha>\t<path>` gitlink line; absent
+     (no gitlink in `HEAD`'s tree — e.g. added to `.gitmodules` but never
+     `git add`-ed) → `pinned_commit = None`, **row still emitted**
+     (amended from the original plan, which incorrectly omitted the row
+     entirely in this case).
+   - `is_initialized`: does `<resolved-path>/.git` exist (file or
+     directory)?
+   - If initialized: `checked_out_commit` = `git -C <resolved-path>
+     rev-parse HEAD`; `child_branch` = `git -C <resolved-path>
+     symbolic-ref --short HEAD` (non-zero → detached, `None`);
+     `child_is_dirty` = non-empty `git -C <resolved-path> status
+     --porcelain`; `revision_matches_pin` = equality, **only when both
+     SHAs are actually known** (amended: previously implicitly assumed
+     `pinned_commit` was always present).
+   - If not initialized, or not path-safe: the remaining fields stay
+     `None`/unset, never guessed.
+6. **Never recurse into nested submodules-of-submodules** — `.gitmodules`
+   is read at exactly the worktree root's own level; a submodule's own
+   submodules are this phase's explicit non-goal (§16).
+
+**Additional edge cases** (restated from the original plan's own
+dedicated table, folded in here rather than kept as a separate section,
+each confirmed to still be correctly handled by the decision procedure
+above — no behaviour change from the original plan on any of these,
+only relocated for this amendment):
+
+- **Invoked from a linked (non-main) worktree, not the main one**:
+  `worktree_root`/`common_dir` still resolve correctly — `--show-toplevel`/
+  `--git-common-dir` are defined by Git to work identically regardless
+  of which worktree they're run from (confirmed live, §0, from a
+  subdirectory of this repository's own single worktree; the same
+  primitive applies unchanged when the worktree itself is a linked one).
+  That worktree's own row gets `is_current=True`; the *main* worktree
+  appears as an ordinary sibling row — no special-casing required.
+- **Bare repository**: `is_bare=True` on its own worktree row (from
+  `worktree list --porcelain`'s own `bare` marker); `head_commit`/
+  `branch` may be present or absent depending on whether a HEAD ref
+  exists; no crash either way.
+- **Truly unborn branch** (fresh `git init`, no commits yet):
+  `head_commit=None`, `branch` = the unborn branch name if resolvable,
+  no crash.
+- **Two worktrees of the same repository, one mid-rebase (detached
+  HEAD, no branch)**: `is_detached=True`, `branch=None`, `head_commit`
+  still populated — detached HEAD is a first-class, correctly
+  representable state for either the current or a sibling worktree, not
+  an error case.
+- **Submodule checked out at a commit not reachable from the pinned
+  commit's history at all** (an entirely different branch): still just
+  `revision_matches_pin=False` — no attempt to characterize *how*
+  divergent; explicitly deferred (§16).
+
+## 8. Deterministic provenance and explicit-uncertainty rules
+
+**Amended**: restates and sharpens the original plan's provenance
+section against the review's "honest gaps over fabricated certainty"
+concern.
+
+- **Every fact is mechanically derived from a real `git` subprocess
+  call, never inferred or AI-generated.**
+- **No semantic relationship is created between a submodule and
+  anything else** — `git_submodules` rows never assert, e.g., that
+  `codecompass-adaptor-haskell` implements `codecompass-adaptor-protocol`;
+  that would need independent evidence and its own relation kind,
+  exactly as `CG-007`'s own precedent establishes for keeping mechanical
+  and semantic relationships separate.
+- **Two-level uncertainty, never conflated (§6)**: a whole-pass
+  `TopologyStatus` (`detected`/`not_git`/`unavailable`/`partial`)
+  answers "could the structure be enumerated at all"; per-row nullable
+  fields answer "for a structure that was enumerated, which specific
+  facts about it remain unknown." Neither is used as a stand-in for the
+  other — a `partial` whole-pass status is never silently represented as
+  a clean `detected` result with some fields merely absent, and a
+  single row's own unresolved fact (e.g. an uninitialized submodule's
+  `checked_out_commit = NULL`) never downgrades the whole-pass status,
+  since that row's *declaration itself* was successfully and completely
+  observed.
+- **A declared submodule is never silently omitted.** Every path
+  `.gitmodules` names produces a `git_submodules` row, regardless of how
+  much else about it is currently resolvable — `path` and `is_path_safe`
+  are the only two fields guaranteed non-null; every other field is
+  allowed to honestly be `NULL`/unset rather than forcing the row out of
+  existence (§4's schema; §7.5's detection logic). This is the direct
+  fix for "do not silently erase a submodule... represent the known fact
+  honestly."
+- **A sibling worktree's branch/HEAD is "as observed at this worktree's
+  own last sync," not live** — the same staleness contract every other
+  graph fact already carries (`decisions/0025`). Stated explicitly in
+  `docs/cli-reference.md`'s new section and in `query topology`'s own
+  output.
+- **Dirty/uncommitted state is only ever claimed for the current
+  worktree, and this limitation is stated explicitly, not merely
+  implied by an absent value** (amended: the original plan left this as
+  an implementation detail; this amendment requires the CLI/JSON output
+  itself to say "workspace: not probed" for a sibling worktree — §9 —
+  rather than presenting a bare `null`/blank that a reader could mistake
+  for "clean" or "unknown for some other reason"). `head_commit`/
+  `pinned_commit`/`checked_out_commit` remain committed-repository facts,
+  safe to compare across worktrees/syncs; `is_dirty` never is.
+- **Credentials embedded in a Git remote URL are never persisted or
+  surfaced anywhere** — `context-graph.db`, CLI text, `--json` output,
+  the generated Skill, and any future agent-context surface all only
+  ever see the sanitized form (§12.7); sanitization happens once, at
+  detection time, before a `RepositoryTopology`/`SubmoduleInfo` object
+  is even constructed — there is no code path that holds an
+  un-sanitized URL past the point of the raw `git remote`/`git config`
+  subprocess call that produced it.
+- **Graceful, non-fatal degradation, at both levels of uncertainty**: no
+  single `git` command failure — missing binary, non-repository root,
+  an inaccessible or pruned worktree path, an unsafe submodule path, a
+  malformed `.gitmodules` entry — ever raises or aborts `sync`. It is
+  represented as a `TopologyStatus`, a `None` field, or an
+  `is_path_safe = False` row, per the rules above — never as an
+  exception propagating out of `rebuild_project_graph`.
+
+## 9. Context / query / packet integration points
+
+**Amended** to render the four-state status model (§6) and the
+sibling-dirty-state disclosure (§8); otherwise as originally planned.
 
 1. **New CLI command**: `codecompass query topology [--json]` — added
    to `cli.py`'s existing `query_app`, same `_graph_session`/`--json`
-   pattern as `query vendors`/`query relations`. Reads the persisted
-   `git_repositories`/`git_worktrees`/`git_submodules` tables (not a
-   live `git` re-invocation — consistent with `decisions/0025`'s
-   "graph reflects state as of last full sync" contract, the same
-   contract every other `query` subcommand already honours). Renders
-   the exact shape the user's own acceptance example names:
-   repository identity, the active checkout's full detail
-   (path/branch-or-detached/HEAD/dirty), every other known worktree
-   (branch-or-detached/HEAD only, no dirty claim — see §6.3), and every
-   submodule (path, child repository URL, parent-pinned revision,
-   checked-out revision + match/mismatch, child branch/dirty if
-   initialized). When no `git_repositories` row exists (not a Git
-   project, or `git` unavailable), prints a plain "not a Git
-   repository" line — matching every other `query` command's graceful
-   empty-state posture, never an error.
+   pattern as `query vendors`/`query relations`. Reads
+   `meta.git_topology_status`/`reason` first:
+   - `not_git` → a plain "not a Git repository" line.
+   - `unavailable` → "Git topology could not be determined (<reason>)."
+   - `partial` → a visible "topology partially determined: <reason>"
+     banner, **followed by** whatever structure was established (never
+     silently suppressed).
+   - `detected` → the full structure: repository identity, the active
+     checkout's full detail (path/branch-or-detached/HEAD/dirty), every
+     other known worktree (branch-or-detached/HEAD only, plus an
+     explicit **"workspace: not probed"** line, never a bare blank —
+     §8), and every submodule (path; `is_path_safe=False` rendered as
+     "path escapes repository — refused" with nothing else shown for
+     that row; otherwise child repository URL, parent-pinned revision
+     — or "unresolved" when `NULL` — checked-out revision + match/
+     mismatch, child branch/dirty if initialized).
+   `--json` mirrors this exactly (`status`, `reason`, `repository`,
+   `worktrees`, `submodules` keys — `repository` is `null` for
+   `not_git`/`unavailable`).
 2. **`skill.py::render_tool_skill`**: gains a `query topology` line in
-   the existing hand-written Commands list (alongside `query vendors`/
-   `query relations`/etc.) **and** `git_repositories`/`git_worktrees`/
-   `git_submodules` added to the trailing "query context-graph.db
-   directly" table-name list — the exact two spots `CG-001`'s own
-   motivating example named as easy to miss. `check_cli_commands_documented`
-   and `check_generated_artifacts_match_source` (§3) mechanically catch
-   a miss here at `check_user_docs.py --strict` time.
-3. **`docs/cli-reference.md`**: a new `## `codecompass query topology
-   [--json]`` section, same shape as the five existing `query`
-   subcommand sections — required for `check_cli_commands_documented`
-   to pass, not optional polish.
-4. **Generated root `CLAUDE.md`**: **not changed** — `update_root_claude_md`/
-   `render_routing_table` render *per-vendor* routing rows; repository
-   topology is not a per-vendor concept and does not belong in that
-   table. (Considered and rejected: a new always-present "Repository"
-   section in the root `CLAUDE.md` alongside the routing table — deferred,
-   §16, since the routing table's own generation path is more invasive
-   to extend correctly than adding one CLI surface + one Skill section,
-   and the Skill is already the established "orientation" surface for
-   exactly this kind of tool-level fact, per `decisions/0020`.)
-5. **`planning/knowledge/<feature-slug>/context-packet.md`** (Phase
-   54c's own narrowly-scoped artifact): not modified by `sync` — this
-   phase does not touch the knowledge-packet pipeline. A future
-   `knowledge-curator` packet for a feature that genuinely depends on
-   submodule/worktree state (e.g., "bump the Haskell adapter pin") can
-   now cite `codecompass query topology --json` as a real evidence
-   source; this phase makes that possible, it does not wire it in
-   automatically.
+   the Commands list and `git_repositories`/`git_worktrees`/
+   `git_submodules` in the trailing table-name list — the exact spots
+   `CG-001`'s own motivating example named. `check_cli_commands_documented`
+   and `check_generated_artifacts_match_source` mechanically catch a
+   miss here.
+3. **`docs/cli-reference.md`**: a new `query topology [--json]` section,
+   documenting all four status outcomes explicitly (not just the happy
+   path) — required for `check_cli_commands_documented`.
+4. **Generated root `CLAUDE.md`**: not changed — unchanged reasoning
+   from the original plan (§16 restates the deferral).
+5. **`planning/knowledge/<feature-slug>/context-packet.md`**: not
+   modified by `sync` — unchanged from the original plan.
 
-## 8. Deterministic provenance rules
+## 10. Cache / index implications
 
-- **Every fact in `git_repositories`/`git_worktrees`/`git_submodules`
-  is mechanically derived from a real `git` subprocess call, never
-  inferred or AI-generated** — matching the user's own explicit
-  instruction to keep `SUBMODULE → pinned_revision = <SHA>` as a
-  stronger, structurally distinct fact from any inferred "depends on"
-  semantic relationship.
-- **No semantic relationship is created between a submodule and
-  anything else.** In particular, this phase does **not** assert
-  `codecompass-adaptor-haskell IMPLEMENTS codecompass-adaptor-protocol`
-  or any similar edge — that would need independent evidence
-  (`decisions/0057`'s protocol conformance story is the closest existing
-  candidate, but it is out of this phase's scope entirely). The two
-  submodules appear in `git_submodules` purely as "both are mount
-  points this parent repository declares," with no claim about their
-  relationship *to each other* beyond both being real. If a future
-  phase wants that semantic edge, it needs its own evidence and its own
-  relation kind, exactly as `CG-007`'s own precedent already
-  establishes for keeping mechanical and semantic relationships
-  separate.
-- **A sibling worktree's branch/HEAD is "as observed at this worktree's
-  own last sync," not live** — the same staleness contract every other
-  graph fact already carries (`decisions/0025`). This is stated
-  explicitly in `docs/cli-reference.md`'s new section and in `query
-  topology`'s own output (a one-line freshness note, reusing
-  `meta.last_deterministic_rebuild_at`), so a fresh agent is never
-  misled into treating a sibling worktree's shown branch as
-  necessarily current.
-- **Dirty/uncommitted state is only ever claimed for the current
-  worktree** (§6.3) — this is the direct mechanism satisfying "clearly
-  distinguish committed repository evidence from uncommitted worktree
-  state": `head_commit`/`pinned_commit`/`checked_out_commit` are all
-  committed-repository facts (safe to compare across worktrees/syncs);
-  `is_dirty` is explicitly scoped to "this one checkout, right now, as
-  of this sync" and never extrapolated to any other worktree.
-- **Graceful, silent degradation on any single `git` command failure**:
-  a missing `git` binary, a non-git `project_root`, an inaccessible or
-  pruned worktree path, or a malformed `.gitmodules` entry each
-  degrade the affected field(s)/row to `None`/absence — never raises,
-  never aborts the rest of `sync`. This matches `discovery.py`'s own
-  posture (a malformed manifest degrades that one manifest, not the
-  whole discovery pass) rather than `source_resolution.py`'s (a vendor
-  clone failure *is* a hard, surfaced error) — topology detection is
-  supplementary orientation, not a gating operation.
+Unchanged from the original plan; re-confirmed, not revised.
+`context-graph.db` stays exactly `project_root / "context-graph.db"`.
+Each worktree keeps its own separate database file; recognition (via
+the shared `common_dir` identity), not consolidation, is what this
+phase adds. A full merged/shared-storage design was considered and
+rejected as unnecessary for this phase's minimum capability (§16).
 
-## 9. Cache / index implications
+## 11. Migration strategy — schema-version safety (amended; this is the
+fix for the review's most severe finding)
 
-**No change to where `context-graph.db` lives** — still exactly
-`project_root / "context-graph.db"` (`open_graph`, unchanged). This is
-the deliberate, investigated answer to "how should cache/index identity
-behave when the same repository appears through multiple worktrees":
-**each worktree keeps its own separate database file, as it already
-does today** — this is not "duplicating a graph per worktree" in the
-sense the user's own constraint warns against, because a worktree can
-genuinely hold different file content (different branch, different
-dirty state) at any moment, so per-worktree isolation is already the
-*correct* behaviour for the vendor/symbol/doc content those files
-describe, not an accidental duplication this phase introduces.
+**The problem, confirmed with real evidence (§0/§3), not hypothetical**:
+`_migrate_doc_artifacts_constraints` (`graph.py:374-430`) fires
+whenever `meta.schema_version != _SCHEMA_VERSION` — *any* mismatch,
+regardless of whether the actual change has anything to do with
+`doc_artifacts`. `git log` confirms this has already happened twice
+(Phase 60's `vendors.ecosystem` widening, `7`→`8`; Phase 62's
+`symbols.export_kind`/`note` addition, `8`→`9`) for changes touching
+neither `doc_artifacts` nor `documents_edges`/`doc_relations_edges` at
+all. The original plan's naive `"9"`→`"10"` bump for three entirely new,
+unrelated tables would have reproduced this a third time. The concrete,
+user-visible risk this creates: **`open_graph` runs on every `query`
+invocation, not only on `sync`** (`_open_graph_or_note`/`_graph_session`,
+`cli.py`) — so a user who upgrades CodeCompass and runs `codecompass
+query relations <doc>` *before* their next `sync` would silently have
+their previously-synced `doc_artifacts`/`documents_edges`/
+`doc_relations_edges` content dropped and left empty, purely because an
+unrelated version number changed, with no `sync` in between to
+repopulate it yet. This is not a data-loss risk in the "paid enrichment
+lost forever" sense (those three tables are always fully rewritten by
+the next `rebuild_deterministic` regardless), but it is a real,
+concrete "opening an upgraded database before a full sync does not
+behave predictably" failure — exactly the case the review named.
 
-What this phase adds is **recognition, not consolidation**: worktree A's
-own `context-graph.db` records `common_dir` (shared identity) plus its
-own worktree row (`is_current=1`) plus whatever sibling worktrees
-(including B) `git worktree list` reported *as of A's own last sync*.
-Worktree B's own separate `context-graph.db`, when it syncs, records the
-mirror image (`is_current=1` for itself, A as a sibling). There is no
-shared file, no write contention, and therefore no risk of "conflating
-two different HEAD revisions" — each database is unambiguous about
-which row describes *itself*. A full merged/shared-storage design
-(one `context-graph.db` per repository rather than per worktree) was
-considered and rejected as unnecessary for this phase's minimum
-capability: it would require relocating `open_graph`'s db path to the
-common-dir (a change touching every call site in `cli.py`/`sync.py`/
-`skill.py` that currently does `project_root / _GRAPH_DB_FILENAME`
-directly) for a benefit (deduplicating identical vendor/symbol/doc
-content across worktrees) this phase's own evidence does not yet call
-for — named as a deferral (§16), not built speculatively.
+**The fix, grounded in this file's own existing, better precedent
+(§3)**: rewrite `_migrate_doc_artifacts_constraints` to introspect
+whether `doc_artifacts`/`documents_edges`/`doc_relations_edges` *actually*
+need reconstruction, the same way `_migrate_vendors_ecosystem_constraint`
+already introspects `vendors`'s own stored `CREATE TABLE` text instead of
+trusting the global version number:
 
-## 10. Edge cases and failure behaviour
+```python
+def _doc_artifacts_schema_is_current(conn: sqlite3.Connection) -> bool:
+    """True iff doc_artifacts/documents_edges/doc_relations_edges are
+    already shaped exactly as the current _SCHEMA_SQL expects — checked
+    by direct introspection, never by comparing meta.schema_version,
+    per the same reasoning _migrate_vendors_ecosystem_constraint already
+    established for `vendors` (graph.py, Phase 60)."""
+    table_exists = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'doc_artifacts'"
+    ).fetchone()
+    if not table_exists:
+        return True  # nothing to migrate; init_schema creates it fresh
+    (create_sql,) = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'doc_artifacts'"
+    ).fetchone()
+    if "'vendor_doc'" not in create_sql or "'pinned_reference'" not in create_sql:
+        return False  # the newest kind/origin CHECK values are missing
+    for table in ("documents_edges", "doc_relations_edges"):
+        columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+        if "chunk_id" not in columns:
+            return False
+    return True
+```
 
-| Case | Behaviour |
-|---|---|
-| `project_root` is not inside a Git repository at all | `detect_git_topology` returns `None`; zero rows in all three tables; `query topology` prints a plain "not a Git repository" line; every other `sync`/`query` command is completely unaffected (matches today's non-git-project behaviour exactly). |
-| `git` binary not on `PATH` | Same as above — degrades identically to "not a Git repository," no error surfaced (topology is supplementary; `sync` must not fail because `git` is missing when a project has no vendors needing source resolution either). |
-| `project_root` is itself a linked worktree (not the main one) | `common_dir` still resolves correctly (it is defined to be identical across every worktree); this worktree's own row gets `is_current=1`; the *main* worktree appears as a sibling row. No special-casing required — confirmed this is git's own designed behaviour, not an assumption. |
-| `project_root` is a bare repository | `is_bare=1` on its own worktree row (from `worktree list --porcelain`'s own `bare` marker); `head_commit`/`branch` may be present or absent depending on whether a HEAD ref exists; no crash. |
-| Sibling worktree's directory was deleted without `git worktree remove` | `git worktree list --porcelain` reports it `prunable` — `is_prunable=1` on that row, surfaced directly in `query topology` output as e.g. "prunable (directory missing)" rather than a silent stale entry. |
-| Truly unborn branch (fresh `git init`, no commits yet) | `head_commit=None`, `branch` = the unborn branch name if resolvable, no crash. |
-| `.gitmodules` exists but a path was never `git submodule init`'d | `is_initialized=0`, `checked_out_commit`/`revision_matches_pin`/`child_branch`/`child_is_dirty` all `None` — `pinned_commit` is still populated (it comes from the parent's own tree, independent of the child's init state). |
-| `.gitmodules` references a path with no corresponding gitlink in `HEAD` (e.g. added to `.gitmodules` but never `git add`-ed) | `pinned_commit` lookup fails; that submodule is skipped from `git_submodules` entirely (no fabricated/`NOT NULL`-violating row) with no error — a genuinely malformed/mid-edit state, not this phase's job to repair or flag beyond omission. |
-| Submodule checked out at a commit not reachable from the pinned commit's history at all (e.g. an entirely different branch) | Still just `revision_matches_pin=0` — no attempt to characterize *how* divergent (ahead/behind/unrelated); that finer distinction is explicitly deferred (§16). |
-| Two worktrees of the same repository synced independently, one mid-way through a rebase (detached HEAD, no branch) | `is_detached=1`, `branch=None`, `head_commit` still populated — detached HEAD is a first-class, correctly-representable state, not an error case. |
+`_migrate_doc_artifacts_constraints` itself becomes: if
+`_doc_artifacts_schema_is_current(conn)`, return immediately (no drop,
+no recreate, no `meta` write) — otherwise perform exactly the same
+drop-and-recreate this function already performs today (that
+*remediation* was never the problem; only the *trigger condition* was).
+`meta.schema_version` is **decoupled from this decision entirely** — it
+becomes a purely informational "last schema code version this database
+has been opened under" marker, updated unconditionally by `open_graph`
+on every open (a trivial, harmless `UPDATE`/`INSERT OR REPLACE`) with no
+migration behaviour keyed off its value anywhere except this one
+now-fixed function. Confirmed via `grep` (§0) that `meta.schema_version`
+has no other functional reader anywhere in `src/codecompass/` — only
+this migration function and test assertions ever read it — so this
+decoupling changes no other behaviour.
 
-## 11. Backwards-compatibility considerations
+**This satisfies every one of the review's stated requirements
+directly**:
 
-- **Schema version bump `"9"` → `"10"`**, new tables only
-  (`CREATE TABLE IF NOT EXISTS`) — no existing table's columns change,
-  so **no `_migrate_*` function is needed** for this phase (the existing
-  four migrations remain exactly as they are; a fifth is only ever
-  needed for an *altered* table, not a new one — confirmed against
-  every existing `_migrate_*` function's own docstring pattern).
-- An on-disk `context-graph.db` created under schema `9` opens fine
-  under the new code: `init_schema`'s `CREATE TABLE IF NOT EXISTS`
-  creates the three new empty tables in place; the next `sync` populates
-  them normally. No data loss, no forced re-sync.
-- `rebuild_deterministic`'s signature gains three new keyword-only
-  parameters (`git_repositories`, `git_worktrees`, `git_submodules`),
-  each defaulting to `()` — mirroring `doc_chunks`'s own
-  Phase-32-added-with-a-default precedent exactly, so any existing
-  caller (including every current test) that doesn't pass them keeps
-  working unchanged.
-- `query topology`'s absence of a `--json` result when there's no Git
-  repository is a *new*, previously-impossible response shape for a
-  `query` subcommand (every existing one either errors "not found" for
-  a bad name or returns real data) — documented explicitly in
-  `docs/cli-reference.md` as this command's own distinct empty-state,
-  not assumed to be self-evident.
-- No `vendor.toml` schema change, no `VendorConfig` change — confirmed
-  unnecessary since submodules are deliberately not vendors (§4).
+- *Opening an existing schema-v9 database under Phase 76 must not
+  unnecessarily destroy/recreate unrelated tables* — confirmed: Phase
+  76 touches none of `doc_artifacts`/`documents_edges`/
+  `doc_relations_edges`'s shape, so `_doc_artifacts_schema_is_current`
+  returns `True` immediately for a real, current v9 database, and no
+  drop occurs.
+- *The three additive Git topology tables must appear safely on
+  upgrade* — unaffected by this change; `init_schema`'s existing
+  `CREATE TABLE IF NOT EXISTS` already handles this regardless of
+  `meta.schema_version`'s value (confirmed: the three new tables need no
+  migration function at all, since they are purely additive — this part
+  of the original plan's reasoning was already correct and is
+  unchanged).
+- *Existing paid/persistent enrichment must remain untouched* — already
+  true and unaffected either way (`vendor_enrichment`/`symbol_enrichment`/
+  `doc_relation_enrichment` have no foreign key to `doc_artifacts` and
+  are never touched by this function); now doubly protected since the
+  function fires strictly less often.
+- *Opening an upgraded database before a full sync must behave
+  predictably* — now genuinely true: a `query`-only invocation
+  immediately after upgrading to Phase 76 sees its prior
+  `doc_artifacts`/relations content completely undisturbed, exactly as
+  a user would reasonably expect.
+- *Migration regression tests specifically covering a real v9-shaped
+  database upgraded to the Phase 76 schema* — §18.
+
+**Not merely removing the version bump**: `_SCHEMA_VERSION` is still
+bumped to `"10"` — the review's own instruction not to dodge the problem
+this way is honoured; the version number remains useful, honest
+bookkeeping ("what schema-code vintage last touched this database"),
+it is simply no longer the *trigger* for a specific table's
+reconstruction. This is judged the genuinely correct long-term fix
+(not a stopgap) because it generalizes a pattern this file's own history
+already converged on independently four separate times
+(`_migrate_doc_relation_enrichment_relation_label`,
+`_migrate_symbols_export_kind_note_columns`,
+`_migrate_symbol_enrichment_model_column`,
+`_migrate_vendors_ecosystem_constraint` — every migration added *after*
+`_migrate_doc_artifacts_constraints` itself already uses direct
+introspection) — `_migrate_doc_artifacts_constraints` was simply never
+brought into line with its own file's own later, better precedent until
+now.
+
+**Existing test literal-value updates required** (§3): every
+`assert schema_version == "9"` in `tests/test_graph.py` becomes `"10"`
+— a mechanical consequence of the version bump, not a behavioural
+change to what's being tested.
 
 ## 12. Exact implementation sequence
 
-1. `src/codecompass/git_topology.py` — `WorktreeInfo`/`SubmoduleInfo`/
-   `RepositoryTopology` dataclasses, `detect_git_topology`, and the
-   private `_run_git`/parsing helpers (§6). Unit-testable in total
-   isolation from `graph.py`/`sync.py`.
-2. `src/codecompass/graph.py` — bump `_SCHEMA_VERSION` to `"10"`; add
-   the three `CREATE TABLE IF NOT EXISTS` blocks + indexes (§4); add
-   `GitRepositoryRow`/`GitWorktreeRow`/`GitSubmoduleRow` dataclasses
-   (natural-key-based: `GitWorktreeRow`/`GitSubmoduleRow` carry the
-   parent's `common_dir` as a plain field, resolved to the integer
-   `git_repositories.id` inside `rebuild_deterministic`, exactly like
-   every existing natural-key row type); extend `rebuild_deterministic`
-   to delete-then-reinsert all three (children before parent:
-   `git_worktrees`/`git_submodules` before `git_repositories`, same
-   FK-respecting order every other table already follows).
+1. `src/codecompass/git_topology.py` — `TopologyStatus`, `WorktreeInfo`/
+   `SubmoduleInfo`/`RepositoryTopology` dataclasses, `detect_git_topology`,
+   the URL sanitizer (§12.7 below), the path-safety check (§12.6), and
+   the private `_run_git`/parsing helpers (§6/§7). Unit-testable in
+   total isolation from `graph.py`/`sync.py`.
+2. `src/codecompass/graph.py`:
+   - Bump `_SCHEMA_VERSION` to `"10"`.
+   - Add the three `CREATE TABLE IF NOT EXISTS` blocks + indexes (§4),
+     with `pinned_commit` nullable and `is_path_safe`/`is_initialized`
+     as specified.
+   - Add `GitRepositoryRow`/`GitWorktreeRow`/`GitSubmoduleRow`
+     dataclasses (natural-key-based, mirroring every existing row type).
+   - Extend `rebuild_deterministic` to delete-then-reinsert all three
+     (children before parent, matching every other table's FK-respecting
+     order), plus write `meta.git_topology_status`/`git_topology_reason`.
+   - **Rewrite `_migrate_doc_artifacts_constraints` per §11** —
+     introspection-based trigger, `meta.schema_version` decoupled from
+     its decision, unconditional (harmless) `meta.schema_version` update
+     moved into `open_graph` itself.
 3. `src/codecompass/sync.py::rebuild_project_graph` — call
    `git_topology.detect_git_topology(project_root)` once; convert its
-   result (if not `None`) into the three row-dataclass lists; pass them
-   into `rebuild_deterministic`. A `None` result means "pass three empty
-   tuples," not a special code path.
+   result into the three row-dataclass lists (empty when `status` is
+   `not_git`/`unavailable`) plus the status/reason strings; pass all
+   into `rebuild_deterministic`.
 4. `src/codecompass/cli.py` — new `@query_app.command("topology")`
-   function, `_graph_session`-based, `--json` flag, rendering per §7.1;
-   a `_render_topology_table`/`_render_topology_json` helper pair
-   mirroring `query_vendors`'s own existing shape.
-5. `src/codecompass/skill.py::render_tool_skill` — add the `query
-   topology` line to the Commands list and the three new table names to
-   the trailing schema-table list (§7.2).
-6. `docs/cli-reference.md` — new `query topology` section (§7.3).
-7. `architecture/context-graph-schema.md` — add the three new tables to
-   the existing node-table listing, following that page's own exact
-   format.
-8. `architecture/overview.md` and/or a new
-   `architecture/git-topology.md` (decide during implementation based on
-   how large the addition is relative to `overview.md`'s own existing
-   "keep current-truth docs from growing unbounded" discipline,
-   `decisions/0060`'s own precedent for splitting out design content —
-   not a decision gate, an ordinary editorial call `docs-maintainer`
-   makes same as any other phase).
+   function, rendering the four-state output (§9).
+5. `src/codecompass/skill.py::render_tool_skill` — §9.2.
+6. `docs/cli-reference.md` — §9.3.
+7. `architecture/context-graph-schema.md` — the three new tables +
+   the two new `meta` keys, following that page's own exact format.
+8. `architecture/overview.md` and/or a new `architecture/git-topology.md`
+   (an ordinary editorial call during implementation, not a decision
+   gate) — including an explicit statement of §4's "not recursively
+   materialized" clarification and §8's sibling-dirty-state limitation.
 9. `decisions/0063-git-worktrees-and-submodules-as-a-new-graph-capability.md`
-   (exact number confirmed live at implementation time, not assumed —
-   `0062` is the highest existing ADR as of this plan) — records the
-   `vendors`-rejection reasoning (§4), the per-worktree-database
-   decision (§9), and the "mechanical fact only, no semantic edge"
-   posture (§8), written in the **same commit** as the schema change
-   per `CLAUDE.md` §2.
-10. Tests (§13).
-11. `CHANGELOG.md` `[Unreleased]` entry, `planning/ROADMAP.md` status
-    flip, `planning/CONTEXT.md` update, phase retro, learning triage,
-    drift audit, completion audit, final reconciliation — the
-    now-corrected closeout sequence this session's own `L-060`/`L-061`
-    fix established, unchanged by this phase.
+   (number confirmed live at implementation time) — records the
+   `vendors`-rejection reasoning, the per-worktree-database decision,
+   the mechanical-facts-only posture, **and this amendment's own
+   migration-safety fix, the invocation-root/worktree-root distinction,
+   the credential-sanitization policy, and the submodule-path-safety
+   check** — all genuinely non-obvious tradeoffs worth a durable record,
+   written in the same commit as the schema change.
+10. Tests (§18).
+11. `CHANGELOG.md`, `planning/ROADMAP.md`, `planning/CONTEXT.md`, phase
+    retro, learning triage, drift audit, completion audit, final
+    reconciliation — the corrected closeout sequence from this session's
+    own `L-060`/`L-061` fix, unchanged by this phase.
 
-## 13. Tests
+**New implementation notes from this amendment**:
 
-**Unit (`tests/test_git_topology.py`, new)** — every test builds its own
-disposable `git init`-ed fixture under `tmp_path` (no dependency on this
-repository's own real state, matching every other detection module's
-existing test style, e.g. `tests/test_discovery.py`):
+12.6. **Submodule path safety**: before running *any* `git`/filesystem
+   command inside a declared submodule path,
 
-- Not a Git repository → `detect_git_topology` returns `None`.
-- Single-worktree, clean repo → one `git_repositories` row, one
-  `git_worktrees` row (`is_current=1`, `is_dirty=False`, correct
-  `branch`/`head_commit`), zero `git_submodules` rows.
-- Dirty working tree (an uncommitted edit) → `is_dirty=True`.
-- Untracked-only change (no edits to tracked files) → `is_dirty=True`
-  (confirms the stated "untracked counts as dirty" definition, §6.3).
-- Detached HEAD (`git checkout --detach <sha>`) → `is_detached=True`,
-  `branch=None`, `head_commit` still populated.
-- Unborn branch (fresh `git init`, no commit yet) → `head_commit=None`,
-  no crash.
-- Two real worktrees of one fixture repo (`git worktree add`) → both
-  appear in `git_worktrees`, sharing one `git_repositories.common_dir`;
-  exactly one has `is_current=1` depending on which path
-  `detect_git_topology` was called against; the other has `is_dirty=None`.
-- A `prunable` worktree (create one, delete its directory without
-  `git worktree remove`) → `is_prunable=1`.
-- One real submodule fixture (`git submodule add <local bare repo>
-  sub`) fully in sync → `pinned_commit == checked_out_commit`,
-  `revision_matches_pin=True`.
-- Same fixture, submodule checked out one commit behind the pin (a real
-  divergence constructed inside the fixture, `git -C sub checkout
-  HEAD~1` without updating the parent) → `revision_matches_pin=False`,
-  both SHAs correctly distinct and correctly attributed (pinned vs.
-  checked-out never swapped).
-- Submodule declared in `.gitmodules` but never initialized →
-  `is_initialized=False`, `pinned_commit` still populated, every
-  child-state field `None`.
-- `git` binary missing (monkeypatch `shutil.which` to return `None`) →
-  `detect_git_topology` returns `None`, no exception.
+   ```python
+   resolved = (worktree_root / declared_path).resolve()
+   is_path_safe = resolved.is_relative_to(worktree_root.resolve())
+   ```
 
-**Integration (`tests/test_graph.py`, `tests/test_sync.py` — extend
-existing test files, matching their own established pattern)**:
+   (`Path.is_relative_to`, stdlib since Python 3.9; `requires-python
+   = ">=3.11"` confirmed live, §0 — no compatibility concern). When
+   `False`, the row is emitted with `is_path_safe=False` and nothing
+   else is ever probed for that path — no `git -C <resolved>`, no
+   filesystem read of any kind at `<resolved>`. Covers an absolute path,
+   a `../`-traversal path, and a symlink that resolves outside the
+   worktree root (`.resolve()` follows symlinks, so a symlinked escape
+   is caught the same way a textual `../../` escape is).
 
-- `rebuild_deterministic` called with real `GitRepositoryRow`/
-  `GitWorktreeRow`/`GitSubmoduleRow` fixtures persists and round-trips
-  correctly; called with all three defaulted to `()` behaves exactly as
-  every pre-this-phase test already expects (backwards-compatibility
-  confirmed by not having to touch any existing test).
-- `rebuild_project_graph`, run against a real disposable Git fixture
-  (not a mock), produces the expected `git_repositories`/`git_worktrees`/
-  `git_submodules` rows via the actual production call path — the
-  `L-021`-required "test through the real call site," not only the
-  isolated function (`CLAUDE.md` §1's own standing rule for a phase that
-  adds behaviour to an existing function with a real call site).
+12.7. **Credential redaction** (`sanitize_git_url`, in `git_topology.py`,
+   applied at detection time to `origin_url` and every
+   `child_repository_url` before either ever reaches a dataclass, the
+   graph, or any output surface):
 
-**CLI (`tests/test_cli.py`, extend)**:
+   ```python
+   from urllib.parse import urlsplit, urlunsplit
 
-- `codecompass query topology` against a real synced fixture prints the
-  expected structure; `--json` output round-trips through `json.loads`;
-  against a non-git fixture prints the graceful empty-state line, exit
-  code 0 (not an error).
+   def sanitize_git_url(url: str) -> str:
+       parsed = urlsplit(url)
+       if parsed.scheme not in ("http", "https") or not parsed.username:
+           return url
+       netloc = parsed.hostname or ""
+       if parsed.port:
+           netloc += f":{parsed.port}"
+       return urlunsplit((parsed.scheme, netloc, parsed.path, parsed.query, parsed.fragment))
+   ```
 
-**Real-repository validation (this repository itself, plus disposable
-scratch fixtures — required by the user, run during implementation, not
-merely in unit tests with synthetic data)**:
+   Verified live during planning (§0) against six real/representative
+   URLs: an `https://user:pass@host/repo.git` credential form and a
+   bare-token-as-username `https://TOKEN@host/repo.git` form both lose
+   their userinfo entirely (`https://host/repo.git`); this repository's
+   own real `git@github.com:org/repo.git` SCP-like submodule URLs and a
+   `ssh://git@host/repo.git` form are both left **byte-for-byte
+   unchanged** (SSH/SCP-like forms never carry a password in the URL by
+   protocol design — a bare `user@` there, almost always the
+   non-secret, public convention `git`, is not a credential to strip);
+   a plain `https://host/repo.git` with no userinfo is unchanged
+   (idempotent). Only `http`/`https` schemes are ever touched.
 
-1. **Submodules, real, no fixture needed**: run `codecompass sync`
-   against this actual repository's own working tree; confirm
-   `git_submodules` holds exactly two rows
-   (`protocol/codecompass-adaptor-protocol`,
-   `adapters/haskell`), each with the real `.gitmodules` URL, the real
-   pinned SHA (cross-checked against `git ls-tree HEAD`, confirmed
-   live at plan-writing time: `596fb94f...`/`dfd7a783...`), and
-   `revision_matches_pin=True` (confirmed live: both currently match).
-2. **Submodule divergence, real, disposable clone required** (the real
-   checkout's submodules currently match their pins, so this case must
-   be constructed, never by editing the real checkout): `git clone
+12.8. **Branch name form**: `git worktree list --porcelain`'s own
+   `branch` line gives a **full ref** (`refs/heads/main`), confirmed
+   against Git's documented porcelain format. CodeCompass stores the
+   **short name** (`main`) — stripping a literal `refs/heads/` prefix
+   when present, and falling back to the raw value unstripped in the
+   rare case a branch ref doesn't use that prefix (a real but
+   exceedingly uncommon case, disclosed rather than silently assumed
+   away). Matches the human-facing shape the acceptance example and the
+   original plan's own CLI mockup already show (`branch: feature-x`),
+   made an explicit, tested rule rather than an implicit assumption.
+
+12.9. **Robust parsing, confirmed not merely asserted**: `git worktree
+   list --porcelain` (stable block format, not human prose), `git config
+   -f .gitmodules --list -z` (NUL-delimited — verified live, §0, to
+   produce identical key/value pairs to the newline form on this
+   repository's own real `.gitmodules`, with additional robustness
+   against a pathological embedded-newline value), `git ls-tree`
+   (stable, tab-delimited plumbing output), `git rev-parse
+   --path-format=absolute` (machine-oriented, no manual path resolution
+   needed, §5), and `git status --porcelain` (the already-planned,
+   already-correct machine-stable form, explicitly not plain `git
+   status`) are the only text-parsing surfaces this module has — each
+   chosen specifically because it is a documented, script-stable format,
+   not human-oriented prose.
+
+## 13. Real-repository validation sequence (amended — ordering fixed)
+
+**The problem the review found**: the original plan's §13.3/§18
+implicitly expected `codecompass query topology`, run from the **main**
+worktree, to already know about a **new** sibling worktree created
+*after* the main worktree's own last sync — but §9 correctly states
+`query topology` reads persisted, last-sync state, never live `git`. The validation sequence as originally written was inconsistent
+with the plan's own architecture.
+
+**Corrected sequence** (exact order, each step's purpose stated):
+
+1. **Create** the disposable linked worktree first, before either
+   database is touched: `git worktree add <scratchpad-path> -b
+   codecompass-phase76-worktree-test` from the real checkout (additive,
+   non-destructive to `main`'s own checkout).
+2. **Sync the main worktree** (`codecompass sync --yes --budget 0` from
+   `/home/cormac/projects/codecompass`) — *after* the sibling now
+   exists, so `git worktree list` (run as part of this sync) has a
+   chance to observe it.
+3. **Sync the disposable worktree** (`codecompass sync --yes --budget 0`
+   from the new worktree path) — its own, separate `context-graph.db`,
+   observing the main worktree as its own sibling.
+4. **Query from main**: `codecompass query topology` (from
+   `/home/cormac/projects/codecompass`) — must show `is_current=1` for
+   itself (`main`, its own real HEAD at the time of step 2's sync) and
+   the disposable worktree as a sibling, with whatever branch/HEAD that
+   worktree had *at the time of step 2's sync* (i.e., its initial state
+   right after `git worktree add`, since step 3's sync hadn't run yet
+   when step 2 ran — this ordering detail is itself a real, useful
+   demonstration of the plan's own stated "as of this worktree's own
+   last sync" freshness contract, not an inconvenience to hide).
+5. **Query from the disposable worktree**: `codecompass query topology`
+   — must show `is_current=1` for itself and `main` as a sibling, with
+   whatever branch/HEAD `main` had *at the time of step 3's sync* (i.e.,
+   reflecting step 2's already-run sync).
+6. **Make an uncommitted edit** in the disposable worktree (dirty state),
+   **re-sync** it, **re-query** it — `is_dirty=true` for itself.
+   Additionally `git checkout --detach <sha>` in the disposable
+   worktree, re-sync, re-query — `is_detached=true`, `branch=null`.
+7. Confirm throughout: both databases report the **identical**
+   `git_repositories.common_dir` — the literal acceptance test ("main
+   checkout + feature worktree recognized as one repository, two
+   checkout states, not two unrelated projects").
+8. **Mandatory cleanup, before this phase closes**: `git worktree
+   remove <scratchpad-path> --force` (force, since step 6 leaves it
+   dirty) and `git branch -D codecompass-phase76-worktree-test` — the
+   real repository returns to exactly one worktree, confirmed via `git
+   worktree list`/`git branch` showing the pre-test state restored.
+
+**Submodule validation** (unchanged reasoning from the original plan,
+restated for completeness):
+
+1. **Real, no fixture needed**: `codecompass sync` against this actual
+   repository; confirm `git_submodules` holds exactly two rows, both
+   `revision_matches_pin=true`, matching the real, live-confirmed pins
+   (§0).
+2. **Divergence, disposable clone required**: `git clone
    --recurse-submodules` this repository into the session scratchpad;
-   inside the clone's `adapters/haskell/`, `git checkout HEAD~1`
-   (a real, valid prior commit in that submodule's own real history) —
-   *without* touching the parent's gitlink; run `codecompass sync`
-   inside the scratch clone; confirm `revision_matches_pin=False` with
-   both the pinned and the (different) checked-out SHA correctly shown.
-   Scratch clone discarded after — never a change to the real
-   `adapters/haskell` submodule or its pin.
-3. **Worktrees, real, disposable required** (the real checkout currently
-   has exactly one worktree): from the real checkout, `git worktree add
-   <scratchpad-path> -b codecompass-phase76-worktree-test` (additive,
-   non-destructive — does not touch `main`'s own checkout); run
-   `codecompass sync` from **both** the main checkout and the new
-   worktree; confirm both `context-graph.db`s report the **same**
-   `git_repositories.common_dir` and correctly mark themselves
-   `is_current=1` while showing the other as a sibling — this is the
-   literal acceptance test: "main checkout + feature worktree recognized
-   as one repository, two checkout states, not two unrelated projects."
-   Additionally test from the new worktree: make an uncommitted edit
-   (dirty), then `git checkout --detach <sha>` (detached HEAD) — confirm
-   `query topology` reflects each state correctly. **Cleanup, mandatory
-   before this phase closes**: `git worktree remove
-   <scratchpad-path>` (or `--force` if a dirty test edit blocks it) and
-   `git branch -D codecompass-phase76-worktree-test` — the real
-   repository must return to exactly one worktree, no disposable branch
-   left behind, confirmed via `git worktree list`/`git branch` showing
-   the pre-test state restored.
+   inside the clone's `adapters/haskell/`, `git checkout HEAD~1` without
+   touching the parent's gitlink; `codecompass sync` inside the clone;
+   confirm `revision_matches_pin=false` with both SHAs correctly
+   distinct and correctly attributed. Scratch clone discarded after.
+3. **New: malformed/traversal submodule path** — a disposable fixture
+   repository (not this repository) whose `.gitmodules` declares a path
+   containing `../` or an absolute path; confirm `is_path_safe=false`,
+   confirm (via a mock/spy on the subprocess layer) that **no** `git`
+   command was ever invoked against the escaping path, and confirm the
+   row is still present (not silently dropped) — tested in full at §18.
+4. **New: credential-bearing URL** — a disposable fixture's
+   `.gitmodules` declares a submodule URL of the form
+   `https://user:token@example.com/repo.git`; confirm the persisted
+   `child_repository_url` has no userinfo component, both via direct
+   database inspection and via `query topology --json` output.
 
 ## 14. Documentation / ADR / roadmap / context / changelog impacts
 
-- **`decisions/0063`** (§12.9) — new ADR, required (a genuinely
-  non-obvious tradeoff: rejecting `vendors` reuse, choosing per-worktree
-  database isolation over consolidation, choosing mechanical-only
-  facts over semantic edges).
-- **`architecture/context-graph-schema.md`**, **`architecture/overview.md`**
-  (or a new `architecture/git-topology.md`, decided during
-  implementation, §12.8) — current-truth updates, same commit as the
-  schema change (`CLAUDE.md` §2).
-- **`docs/cli-reference.md`** — new command section (§7.3), required for
-  `check_cli_commands_documented`.
-- **Cross-references only, not rewrites**, to
+Unchanged in structure from the original plan; content requirements
+expanded to cover this amendment's additions (§11's migration fix, §5's
+three-root distinction, §6's status model, §12.6/§12.7's safety/
+sanitization mechanisms) wherever `architecture/context-graph-schema.md`,
+`architecture/overview.md`/`git-topology.md`, and `decisions/0063`
+describe the feature — these are **content requirements on documents
+already named for updating**, not new documents.
+
+- `decisions/0063` — expanded scope per §12.9.
+- `architecture/context-graph-schema.md`, `architecture/overview.md`/
+  `git-topology.md` — expanded content per above.
+- `docs/cli-reference.md` — the four-state output (§9) documented
+  explicitly, not just the happy path.
+- Cross-references only (not rewrites) to
   `docs/developer/haskell-adapter-submodules.md`,
-  `docs/protocol-adapter/*.md`, `architecture/adapter-interface.md`: a
-  one-line pointer ("CodeCompass can now also show this mechanically via
-  `codecompass query topology`") added where each already discusses
-  manual `git submodule` workflow — these pages' own purpose (how a
-  *human* clones/updates) is unchanged and not restated.
-- **No new `docs/domain/concepts/*.md` page in this phase** — a
-  considered, explicit call, not an oversight: this project's existing
-  domain-corpus pages (`vendor.md`, `provenance.md`, etc.) each carry a
-  `status: APPROVED (date, actual user/domain owner)` header, meaning
-  they went through `domain-skeptic` adversarial review *and* the real
-  domain owner's own sign-off (`decisions/0060`) — a heavier process
-  than this phase's own well-defined, standard-Git-semantics scope
-  needs or than the user's own request asks for. If `docs-reconstructor`'s
-  per-phase drift audit (§17) finds the domain corpus is now materially
-  incomplete without one, that becomes a normal DoD finding to act on
-  same as any other phase, not a decision pre-made here either way.
-- **`CHANGELOG.md`** — `[Unreleased]` → `Added` entry, this phase only.
-- **`planning/ROADMAP.md`** — new Phase 76 row (`planned`, this plan
-  file linked), added in this same commit per `CLAUDE.md` §1.
-- **`planning/CONTEXT.md`** — corrected in this same commit: Phase 76 is
-  now named as this git-topology phase (direct user request), and the
-  prior "recommended second Priority A Ledgerkit trial" text is
-  reworded to no longer claim the "Phase 76" number for itself (§0) —
-  it remains a live, valid backlog recommendation, just not
-  pre-numbered.
+  `docs/protocol-adapter/*.md`, `architecture/adapter-interface.md` —
+  unchanged from the original plan.
+- **No new `docs/domain/concepts/*.md` page in this phase** — unchanged
+  reasoning from the original plan.
+- `CHANGELOG.md`, `planning/ROADMAP.md`, `planning/CONTEXT.md` — updated
+  in this amendment where the amendment itself changes current truth
+  (below); the phase's own `done`-flip entries still land at
+  implementation-closeout time, unchanged process.
 
-## 15. Task-context evaluation methodology
+**This amendment's own effect on `planning/ROADMAP.md`/`planning/CONTEXT.md`**:
+the Phase 76 row/section already describes the phase at the right level
+of generality (worktrees + submodules, new Priority A capability) that
+no rewording is required by this amendment — both already say "planned,"
+neither asserts implementation details fine-grained enough to now be
+wrong. Confirmed by re-reading both files during this amendment: no
+edit needed beyond what this plan file itself now says. (If a
+future reader compares this amended plan against those files and finds
+a genuine discrepancy, that is a normal drift finding for the eventual
+`docs-reconstructor` pass, not something this amendment silently
+assumed away.)
 
-Two realistic, concretely-grounded scenarios (not invented to flatter
-the feature — both trace to real, already-documented project needs):
+## 15. Task-context evaluation methodology (amended — strengthened per
+the review)
 
-- **Task A — submodule pin bump** (grounded in `decisions/0058`'s own
-  "version-compatibility matrix must be kept current" requirement): *"Is
-  the `adapters/haskell` submodule's checked-out commit the same as
-  what CodeCompass's own `main` branch has pinned? If a contributor ran
-  `git submodule update --remote` locally without committing, would that
-  be visible?"*
-- **Task B — worktree-vs-main review** (the user's own named scenario,
-  matching real `Agent(isolation: "worktree")` usage in this
-  environment): *"I'm in a linked worktree on `feature-x`. Is this the
-  same repository as the `main` checkout elsewhere on this machine, or
-  a separate clone? Is my working tree dirty? What's `main`'s own HEAD,
-  as last observed?"*
+**The problem the review found**: a lead-only before/after command-count
+comparison is real signal but weak evidence, since the same person
+knows the intended answer in both passes — exactly the risk this
+project's own `L-027` was filed to guard against in *external*
+reference-project trials, and there is no principled reason it wouldn't
+apply here too.
 
-**Method**: for each task, the lead performs (and records, in the phase
-retro, not a separate reference-project-style report — this validates
-CodeCompass's *own* new capability against CodeCompass's *own* repository,
-which does not need `reference-project-protocol.md`'s external-target
-ground-truthing machinery or a fresh-agent dispatch to avoid
-prior-knowledge contamination the way an *external* reference-project
-trial does) a **before** pass (ordinary tools only: `git submodule
-status`, `git config -f .gitmodules --list`, `git ls-tree`, `git
-worktree list`, `git status`, manually cross-referencing which SHA is
-which) and an **after** pass (`codecompass query topology [--json]`
-alone), recording for each:
+**Amended method**: keep the cheap command-count metric (§15's original
+value, restated below), but add an **independent baseline/treatment
+comparison**, run only once the CLI command exists (i.e., during
+implementation, not before) — this is a DoD-gating step for Phase 76's
+own closeout, not something performed during planning.
 
-- Which of the required facts (pinned SHA, checked-out SHA, match/
-  mismatch, repository identity, current vs. sibling worktree, dirty
-  state) were obtained, and via how many distinct commands.
-- Any point where the *before* pass risked conflating pinned vs.
-  checked-out (a real, easy mistake — `git submodule status`'s own
-  single SHA column changes meaning with `--cached`, confirmed
-  directly, §6.4) that the *after* pass's explicit two-column output
-  cannot make.
-- Whether the *after* pass surfaced anything the *before* pass would
-  have missed entirely without deliberately knowing to check for it
-  (e.g., a `prunable` worktree, or an uninitialized submodule).
+**Setup, applying `L-062`'s own newly-landed read-scope-symmetry rule
+from Phase 75** (`reference-project-protocol.md` §2.2): both arms get
+**scoped reads**, confined to their own assigned scratch clone —
+deliberately the simpler of `L-062`'s two allowed options, chosen to
+remove the read-access-asymmetry confound entirely rather than needing a
+post-hoc `L-027` check to catch it, since (unlike Phase 75's Ledgerkit
+trial) there is no legitimate reason either arm would need to look
+outside its own assigned clone for this task.
 
-**Efficiency indicator** (cheap, honestly measured, not invented):
-number of distinct `git`/config-reading commands the *before* pass
-needed vs. the single `query topology` call — reported as a plain count
-in the retro, explicitly **not** converted into a token-savings or
-time-savings claim, per the user's own instruction.
+- **Baseline clone**: a fresh clone of this repository (with
+  `--recurse-submodules`), plus the same disposable two-worktree fixture
+  §13 constructs, no CodeCompass installed.
+- **Treatment clone**: an identical fixture, with CodeCompass installed
+  and `codecompass sync` already run in both worktrees.
+- **Two fresh, independent `general-purpose` agents** (neither the
+  lead, neither told about the other or this evaluation's own
+  hypothesis) — one dispatched into the baseline clone, one into the
+  treatment clone, each asked the same fixed questions:
 
-**Relationship to the existing `context-evaluator` discipline**: this
-phase does not dispatch `context-evaluator` — that role's entire
-methodology is built around independently ground-truthing an *external*
-reference project (`context-quality-evaluation.md` §1's own "inspect the
-target repository directly" framing presumes CodeCompass and the target
-are different projects). Using it here, on CodeCompass validating a
-capability against itself, would not add independent ground-truthing
-value the lead's own direct git-command verification doesn't already
-provide. **Explicit follow-up, not part of this phase's own DoD**: the
+  **Task A — submodule scenario**: what commit does the parent
+  repository pin for the Haskell adapter submodule? What commit is
+  actually checked out? Do they differ? If they differ, does that
+  represent committed parent state (a real gitlink change) or merely
+  local child-checkout state (an uncommitted `git submodule update`)?
+
+  **Task B — worktree scenario**: are the two worktree paths separate
+  repositories or worktrees of the same repository? Which checkout is
+  current? What is the current checkout's branch/HEAD/dirty state?
+  What is the sibling's own observed branch/HEAD? Which of these facts
+  is persisted (from a prior sync) versus live?
+
+  The baseline agent uses ordinary repository/Git access only. The
+  treatment agent is told CodeCompass is available and to try `codecompass
+  query topology` as a first move, falling back to ordinary tools for
+  anything it doesn't answer.
+
+- **`context-evaluator`**, dispatched third, independently re-derives
+  ground truth for both tasks by inspecting the fixtures directly —
+  its own standing methodology ("does NOT use CodeCompass to validate
+  CodeCompass") is about not trusting CodeCompass's *output* as its own
+  ground-truth source, which applies here exactly as it does to an
+  external target; the fact that the "target" is CodeCompass's own
+  repository does not exempt either arm's report from independent
+  verification, and this amendment judges (contrary to the original
+  plan's own reasoning, which is superseded here) that the role's
+  methodology fits fine without adaptation. It rates both reports for:
+
+  - Factual completeness and factual errors, against its own
+    independently-derived ground truth.
+  - Whether pinned-vs-checked-out state was correctly distinguished (not
+    conflated, the exact real mistake `git submodule status`'s own
+    `--cached`-dependent single SHA column invites).
+  - Whether repository-vs-worktree identity was correctly distinguished.
+  - Commands/tool reads each arm actually used (both agents log their
+    own raw tool-call history, per `L-027`'s standing requirement).
+  - Any extra repository exploration the treatment arm still needed
+    after consulting CodeCompass's own output.
+
+**Efficiency indicator** (cheap, honestly measured, retained from the
+original plan, not expanded into an unmeasured claim): number of
+distinct `git`/config-reading commands the baseline pass needed vs. the
+treatment pass's `query topology` call — reported as a plain count,
+**never** converted into a token-savings or time-savings claim unless
+tokens/time are actually, separately measured (per direct instruction).
+
+**This is stronger than lead self-comparison alone** without requiring
+the full external reference-project apparatus for a target that
+genuinely isn't external — the fixtures are disposable scratch clones
+(matching `reference-project-protocol.md` §2.2's own working-copy
+discipline), the comparison is genuinely independent (neither dispatched
+agent is the lead, neither sees the other's work), and `context-evaluator`
+provides the third-party verification the review specifically asked for.
+
+**Explicit, unforced follow-up, not part of this phase's own DoD**: the
 next external Priority-A Ledgerkit validation trial (recommended at
-Phase 75's own closeout, still unclaimed by a phase number, §0) should
-deliberately pick a task where Git topology awareness could plausibly
-matter (Ledgerkit itself has no submodules or multi-worktree workflow
-today, per its own real state — this would need to be a genuinely
-existing need there, not manufactured, matching that trial's own
-"genuine task only" discipline).
+Phase 75's own closeout, still unclaimed by a phase number) should
+separately consider a task where Git topology awareness might matter —
+only if Ledgerkit's own real state ever presents one; none does today.
 
 ## 16. Explicit non-goals and deferrals
 
-Restating the user's own list, plus this plan's own additions, each
-with its concrete reason:
+Restated from the original plan, with two additions from this amendment
+(marked **new**):
 
 - Generic multi-repository federation, cross-clone/cross-machine
-  identity (only `common_dir`, a single-machine concept, is used —
-  `origin_url` is captured but not used as an identity key this phase).
-- Cross-repository symbol-level graphs (no attempt to index a
-  submodule's own source content at all — `git_submodules` is pure
-  topology metadata, no nested `context-graph.db`, no recursive sync).
+  identity.
+- Cross-repository symbol-level graphs; no nested `context-graph.db` for
+  a submodule's own content, no recursive sync (§4's "not recursively
+  materialized" clarification is the amendment's own sharpening of this
+  same point).
 - Automatic branch creation, automatic worktree creation/removal, merge/
   rebase/conflict management, agent orchestration, generic Git hosting/
-  GitHub management, Docker/container topology, MCP functionality — none
-  touched; this phase is read-only observation of existing topology.
-- A complete monorepo/workspace abstraction — three narrow tables, not a
-  general workspace model.
-- Detecting "is `project_root` itself someone else's submodule" (§5) —
-  the acceptance model is strictly downward (repository → its own
-  worktrees/submodules); upward ancestry detection is a different
-  question with its own real ambiguities (which of possibly several
-  on-disk ancestor repositories, if any, actually declares this
-  directory as a submodule — not answerable by a simple upward walk the
-  way `--git-common-dir` cleanly answers the downward case).
-- Recursive submodules-of-submodules (§6.5) — one level only.
+  GitHub management, Docker/container topology, MCP functionality.
+- A complete monorepo/workspace abstraction.
+- Detecting "is the worktree root itself someone else's submodule" (§5)
+  — strictly downward detection only.
+- Recursive submodules-of-submodules — one level only.
 - Characterizing *how* a diverged submodule commit relates to its pin
-  (ahead/behind/unrelated, `git merge-base` analysis) — `revision_matches_pin`
-  is a boolean only; finer characterization is real, additional scope
-  with no evidence yet that the boolean isn't sufficient for the tasks
-  this phase's own evaluation (§15) names.
+  (ahead/behind/unrelated, `git merge-base` analysis) — a boolean only.
 - A shared/consolidated `context-graph.db` across a repository's
-  worktrees (§9) — per-worktree isolation is kept, consolidation
-  deferred pending evidence it's actually needed.
-- Cross-linking a `git_submodules` row to a `vendors` row on path/name
-  match, for the (currently nonexistent in this repository) case of a
-  submodule that is *also* a declared `vendor.toml` dependency — no real
-  instance exists to design against; deferred until one does.
-- Any change to `chat.py`/Phase 24's own routing scope (§2) — explicitly
-  not silently redefined.
-- A new `docs/domain/concepts/*.md` page (§14) — deferred pending a real
-  drift-audit finding that one is needed.
+  worktrees (§10).
+- Cross-linking a `git_submodules` row to a `vendors` row — no real
+  instance exists to design against.
+- Any change to `chat.py`/Phase 24's own routing scope (§2).
+- A new `docs/domain/concepts/*.md` page (§14).
 - Semantic relationship edges between the two submodules, or between
-  either submodule and anything else (§8) — mechanical facts only.
+  either submodule and anything else (§8).
+- **New: any credential-scanning/redaction beyond a Git remote URL's own
+  userinfo component** — e.g., scanning commit messages, file contents,
+  or environment variables for embedded secrets is a materially larger,
+  different problem this phase's own evidence (a real, narrow risk in
+  `origin_url`/`child_repository_url` specifically) does not call for.
+- **New: characterizing an `unavailable`/`partial` failure beyond a
+  short, first-failure diagnostic string** — a structured, multi-cause
+  error-reporting model is real additional scope with no evidence yet
+  that a plain string is insufficient for the tasks this phase's own
+  evaluation (§15) names.
 
 ## 17. Human decision gates
 
-**None identified.** Every design choice above was resolved by direct
-precedent already established in this codebase (the `discovery.py`/
-`usage.py` detection-module pattern; `source_resolution.py`'s `git`
-subprocess conventions; `vendors`'s own documented narrow scope ruling
-it out for submodules; `rebuild_deterministic`'s existing
-default-to-`()` backwards-compatibility precedent; `decisions/0025`'s
-existing sync-freshness contract), by the non-goals list, or by ordinary
-engineering judgement with a stated, reversible rationale (e.g., "dirty"
-counting untracked files; per-worktree database isolation). If
-implementation surfaces a genuine ambiguity this plan didn't
-anticipate, work pauses and the lead asks before proceeding, per
-`CLAUDE.md` §1 — but none is manufactured here to be safe.
+**None identified — re-confirmed for this amendment.** Every new design
+choice (the URL-sanitization scheme boundary, the path-safety check's
+exact mechanism, the two-level uncertainty model, the migration
+introspection predicate) was resolved by direct precedent already in
+this codebase, by live verification performed during planning (§0), or
+by ordinary engineering judgement with a stated, reversible rationale
+disclosed in the relevant section above. If implementation surfaces a
+genuine ambiguity neither the original plan nor this amendment
+anticipated, work pauses and the lead asks before proceeding, per
+`CLAUDE.md` §1 — none is manufactured here to be safe.
 
-## 18. Runnable verification commands and expected outcomes
+## 18. Unit / integration / real-repository tests
+
+**`tests/test_git_topology.py`, new** — every test builds its own
+disposable `git init`-ed fixture under `tmp_path`:
+
+- Not a Git repository → `status=NOT_GIT`.
+- `git` binary missing (monkeypatch `shutil.which`) → `status=UNAVAILABLE`,
+  reason populated.
+- A `rev-parse` failure with non-"not a git repository" stderr
+  (simulated) → `status=UNAVAILABLE`, not `NOT_GIT`.
+- Single-worktree, clean repo → `status=DETECTED`; one `git_repositories`
+  row, one `git_worktrees` row (`is_current=True`, `is_dirty=False`,
+  correct `branch`/`head_commit`), zero `git_submodules` rows.
+- **New**: `detect_git_topology` invoked from the fixture's own root,
+  and separately from a real nested subdirectory of the same fixture —
+  both calls identify the **same** `worktree_root` and `common_dir`
+  (§5's core regression test).
+- Dirty working tree (tracked edit) and untracked-only change → both
+  `is_dirty=True`.
+- Detached HEAD → `is_detached=True`, `branch=None`, `head_commit`
+  populated.
+- Unborn branch → `head_commit=None`, no crash.
+- Two real worktrees (`git worktree add`) → both in `git_worktrees`,
+  sharing one `common_dir`; exactly one `is_current=True` depending on
+  which path was queried; the other has `is_dirty=None`.
+- A `prunable` worktree → `is_prunable=True`.
+- `git worktree list` failing despite a successful `rev-parse`
+  (simulated) → `status=PARTIAL`, `worktrees=()`, reason populated.
+- **New**: `branch` stores the short name even though `worktree list
+  --porcelain`'s own raw output is a full `refs/heads/...` ref
+  (confirms §12.8's stripping rule against real git output, not an
+  assumption).
+- One real submodule fixture (`git submodule add <local bare repo>`)
+  fully in sync → `revision_matches_pin=True`.
+- Same fixture, submodule one commit behind its pin (real divergence,
+  constructed inside the fixture) → `revision_matches_pin=False`, both
+  SHAs correctly attributed.
+- Submodule declared, never initialized → `is_initialized=False`,
+  `pinned_commit` still populated, child-state fields `None`.
+- **New**: submodule declared in `.gitmodules` with **no** corresponding
+  gitlink in `HEAD`'s tree (added to `.gitmodules`, never `git add`-ed)
+  → the row **is still emitted**, `pinned_commit=None`,
+  `revision_matches_pin=None` (amended: the original plan incorrectly
+  dropped this row entirely).
+- **New**: submodule path escaping the worktree root (`../etc`, or an
+  absolute path) → `is_path_safe=False`; a mock/spy on the subprocess
+  layer confirms **zero** `git`/filesystem calls were made against the
+  escaping path; the row is still present.
+- **New**: `sanitize_git_url` — credential-bearing HTTPS
+  (`user:pass@host`), bare-token-as-username HTTPS, normal
+  credential-free HTTPS, SCP-like `git@host:path`, and `ssh://git@host/path`
+  — exactly the six cases verified live during planning (§0), now as
+  permanent regression tests.
+
+**`tests/test_graph.py`, extend**:
+
+- **New, per §11**: a hand-built, real v9-shaped `doc_artifacts`/
+  `documents_edges`/`doc_relations_edges` fixture (matching today's
+  actual current schema — Phase 76 changes none of their columns), with
+  `meta.schema_version = "9"` and a real pre-existing row inserted into
+  `doc_artifacts` — opened under the Phase 76 code — asserts the
+  pre-existing row **still exists afterward** (the core regression: this
+  would previously have been dropped purely by the version bump) and
+  that the three new `git_*` tables now exist.
+- **New**: a genuinely pre-Phase-17-shaped `doc_artifacts` fixture
+  (narrow `kind` CHECK, as the existing `test_open_graph_migrates_pre_phase_17_schema`
+  test already builds) still correctly triggers the drop-and-recreate
+  migration under the new introspection-based trigger — confirming the
+  fix doesn't just always skip, it still correctly detects a genuinely
+  stale schema.
+- Every existing `assert schema_version == "9"` literal updated to
+  `"10"` (§11/§3) — a mechanical, disclosed consequence of the version
+  bump, not a behavioural change.
+- `rebuild_deterministic` called with real `GitRepositoryRow`/
+  `GitWorktreeRow`/`GitSubmoduleRow` fixtures round-trips correctly;
+  called with all three defaulted to `()` behaves exactly as every
+  pre-existing test already expects.
+
+**`tests/test_sync.py`, extend**:
+
+- `rebuild_project_graph`, run against a real disposable Git fixture,
+  produces the expected rows via the actual production call path (the
+  `L-021`-required real-call-site test, `CLAUDE.md` §1).
+
+**`tests/test_cli.py`, extend**:
+
+- `codecompass query topology` against a real synced fixture prints the
+  expected structure for each of the four `TopologyStatus` values
+  (constructed via fixtures/monkeypatching for `not_git`/`unavailable`/
+  `partial`, real for `detected`); `--json` round-trips through
+  `json.loads`; a `partial` result's structure is still shown alongside
+  its banner, never suppressed.
+
+**Real-repository validation** — §13 (submodules: real repo + two
+disposable-clone scenarios + the new path-safety/credential-URL
+fixtures; worktrees: the corrected, sync-then-query ordering).
+
+## 19. Runnable verification commands and expected outcomes
 
 ```bash
 # Unit + integration
 .venv/bin/pytest tests/test_git_topology.py tests/test_graph.py \
   tests/test_sync.py tests/test_cli.py -q
-# Expected: all pass, including every real-git-fixture case in §13.
+# Expected: all pass, including the migration-regression, nested-
+# directory, path-safety, and credential-sanitization cases (§18).
 
-# Full regression (no unrelated breakage)
+# Full regression
 .venv/bin/pytest -q
 # Expected: same pass count as this plan's own baseline (641 passed,
 # 2 skipped) plus this phase's new tests, all passing.
 
 .venv/bin/ruff check .
-# Expected: all checks passed.
-
 python3 scripts/check_user_docs.py --strict
-# Expected: no findings — in particular check_cli_commands_documented
-# and check_generated_artifacts_match_source both pass, confirming the
-# new command landed consistently in cli.py + docs/cli-reference.md +
-# skill.py's generated SKILL.md.
-
 python3 scripts/check_knowledge_base.py
-# Expected: no findings.
+# Expected: no findings on any of the three.
 
-# Real-repository validation (this repository itself)
+# Real-repository validation — submodules (this repository itself)
 codecompass sync --yes --budget 0
 codecompass query topology
 codecompass query topology --json
-# Expected: two git_submodules rows (protocol/codecompass-adaptor-protocol,
-# adapters/haskell), both revision_matches_pin=true; one git_worktrees
-# row, is_current=true, branch=main, is_dirty reflecting real working-
-# tree state at the time.
+# Expected: status=detected; two git_submodules rows, both
+# revision_matches_pin=true; child_repository_url values match
+# .gitmodules exactly (SCP-like, no credentials to strip in this
+# repository's own real case).
 
-# Disposable worktree validation (see §13.3 for full sequence + mandatory cleanup)
+# Real-repository validation — worktrees (corrected ordering, §13)
 git worktree add /tmp/codecompass-phase76-worktree-test -b codecompass-phase76-worktree-test
-cd /tmp/codecompass-phase76-worktree-test && codecompass sync --yes --budget 0 && codecompass query topology
-cd /home/cormac/projects/codecompass && codecompass query topology
-# Expected: both invocations report the same git_repositories.common_dir;
-# each correctly marks itself is_current and the other as a sibling.
+codecompass sync --yes --budget 0   # main worktree, AFTER the sibling now exists
+(cd /tmp/codecompass-phase76-worktree-test && codecompass sync --yes --budget 0)
+codecompass query topology          # from main
+(cd /tmp/codecompass-phase76-worktree-test && codecompass query topology)
+# Expected: both report the identical git_repositories.common_dir; each
+# correctly marks itself current and the other a sibling, per its own
+# last sync (not live).
+
+# Mandatory cleanup
 git worktree remove /tmp/codecompass-phase76-worktree-test --force
 git branch -D codecompass-phase76-worktree-test
 git worktree list
 # Expected: back to exactly one worktree, no leftover branch.
 ```
 
-## 19. Definition of Done
+## 20. Definition of Done
 
-Per `CLAUDE.md` §5, unchanged process, all of the following genuinely
-hold (not merely asserted) before `planning/ROADMAP.md` marks Phase 76
-`done`:
+Per `CLAUDE.md` §5, unchanged process; amended to include this
+amendment's own new requirements (items marked **new**):
 
 1. Code implemented per §12; `git_topology.py`, `graph.py`, `sync.py`,
-   `cli.py`, `skill.py` all consistent with each other (mechanically
-   confirmed, §3/§18).
-2. §13's full test suite passes, including the real-repository and
-   disposable-fixture validation (submodule divergence, two-worktree
-   recognition, detached HEAD, dirty/clean) — not only synthetic
-   isolated-function tests, satisfying `CLAUDE.md` §1's real-call-site
-   requirement.
-3. `docs/`, `architecture/`, `decisions/` updated per §14, same commit
+   `cli.py`, `skill.py` all consistent with each other.
+2. **New**: `_migrate_doc_artifacts_constraints` genuinely rewritten to
+   introspection-based triggering (§11), confirmed by the new migration
+   regression tests (§18), not merely by the version bump landing.
+3. **New**: the invocation-root/worktree-root/common-dir distinction is
+   genuinely implemented (§5) and tested from a real nested directory
+   (§18), not merely documented.
+4. **New**: the four-state `TopologyStatus` model (§6) is genuinely
+   distinguishable in both persisted data and CLI/JSON output — not
+   collapsed back into "empty result" for more than one underlying
+   cause.
+5. **New**: `pinned_commit` is genuinely nullable and a declared-but-
+   unresolved submodule is genuinely represented, not omitted (§18).
+6. **New**: the submodule path-safety check genuinely refuses to probe
+   an escaping path (§18, confirmed via a subprocess-call spy, not only
+   the resulting data).
+7. **New**: the URL sanitizer genuinely strips credentials from
+   `http(s)` forms and genuinely leaves SSH/SCP-like forms (including
+   this repository's own real submodule URLs) unchanged (§18).
+8. §18's full test suite passes, including the corrected real-repository
+   worktree validation sequence and both disposable submodule fixtures.
+9. `docs/`, `architecture/`, `decisions/` updated per §14, same commit
    as the code.
-4. §15's task-context evaluation performed and recorded honestly
-   (including if the answer turns out to be "less advantage than
-   hoped") — not skipped, not assumed positive in advance.
-5. An independent `docs-reconstructor` per-phase drift audit finds no
-   current-truth doc left misdescribing the system, scoped to this
-   phase's diff.
-6. `CHANGELOG.md` entry added, same commit.
-7. `planning/CONTEXT.md` reflects the new state.
-8. A phase retro exists at `planning/retros/phase-76-git-repository-topology.md`,
-   including §15's before/after findings.
-9. Candidate learnings from the phase (if any) triaged by
-   `knowledge-curator`.
-10. An independent `release-phase-auditor` pass verifies every
+10. **New**: §15's amended, independent baseline/treatment/`context-evaluator`
+    task-context evaluation performed and recorded honestly (not the
+    lead-self-comparison-only version) — including if the answer turns
+    out to be "less advantage than hoped."
+11. An independent `docs-reconstructor` per-phase drift audit finds no
+    current-truth doc left misdescribing the system.
+12. `CHANGELOG.md` entry added, same commit.
+13. `planning/CONTEXT.md` reflects the new state.
+14. A phase retro exists at
+    `planning/retros/phase-76-git-repository-topology.md`, including
+    §15's findings.
+15. Candidate learnings from the phase (if any) triaged by
+    `knowledge-curator` — **the migration-safety finding in §11 is a
+    strong candidate for its own learning entry**, distinct from this
+    phase's own feature work, since it documents a real, pre-existing,
+    twice-already-occurred defect class this phase's own review
+    happened to surface.
+16. An independent `release-phase-auditor` pass verifies every
     preceding condition against the exact commit about to be marked
-    done, persisting `planning/retros/_audit-phase-76.md`, per this
-    session's own `L-060` fix — any post-audit commit touching audited
-    scope voids that pass and requires re-audit.
-11. Disposable test worktree/branch and scratch submodule-divergence
-    clone are fully cleaned up — `git worktree list`/`git branch`/
-    `git status` on the real repository show no leftover trace (§13.3,
-    §18).
-12. Only once every one of the above genuinely holds does a genuinely-
+    done, persisting `planning/retros/_audit-phase-76.md` — any
+    post-audit commit touching audited scope voids that pass.
+17. Disposable test worktree/branch and scratch submodule-divergence/
+    path-safety/credential-URL fixtures are fully cleaned up — no
+    leftover trace on the real repository.
+18. Only once every one of the above genuinely holds does a genuinely-
     dispatched `roadmap-context-curator` (never the lead self-serving
-    it, per this session's own `L-060` fix) perform final reconciliation
-    and flip `planning/ROADMAP.md`'s Phase 76 row to `done`.
+    it) perform final reconciliation and flip
+    `planning/ROADMAP.md`'s Phase 76 row to `done`.
 
 **Not done merely because Git metadata can be parsed** — it must be
-correctly represented, provenance-grounded, reachable through
-`codecompass query topology` and the generated Skill, and shown (§15)
-to help at least one realistic task.
+correctly represented at both levels of uncertainty (§6/§8), safe
+against a hostile or malformed `.gitmodules` (§12.6), free of credential
+leakage (§12.7), correct regardless of invocation directory (§5), safe
+to open against an existing production database (§11), reachable
+through `codecompass query topology` and the generated Skill, and shown
+(§15), via genuinely independent assessment, to help at least one
+realistic task.
+
+---
+
+## Preserved from the original plan, unchanged by this amendment
+
+Restated explicitly, per the user's own instruction, so nothing on this
+list is mistaken for having been reopened:
+
+- Separate Git topology tables rather than abusing `vendors` (§4).
+- Mechanical Git facts kept separate from semantic project relationships
+  (§8).
+- Parent-pinned revision kept distinct from child checked-out revision
+  (§4/§7).
+- Per-worktree `context-graph.db` isolation for now (§10).
+- One-level submodule scope (§7.6/§16).
+- No recursive submodule graph indexing (§4/§16).
+- No generic multi-repository federation (§16).
+- No cross-repository symbol graph (§16).
+- No worktree/branch management — read-only observation only (§16).
+- No Phase 24 implementation or redefinition (§2).
+- Real CodeCompass protocol/Haskell submodules used as dogfood fixtures
+  (§0/§13).
+- Disposable worktree and scratch-clone validation, with mandatory
+  cleanup (§13/§20).
+- The documentation/ADR/retro/drift-audit/release-audit/
+  roadmap-context-curator closeout discipline established after the
+  `L-060`/`L-061` fixes (§12/§20).
