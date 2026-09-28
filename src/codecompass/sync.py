@@ -26,12 +26,13 @@ planning/phase-27-register-embedded-vendor-docs.md.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 import sqlite3
 from pathlib import Path
 
-from codecompass import git_topology, skill_scan, spec_docs, usage
+from codecompass import git_topology, skill_scan, source_symbols, spec_docs, usage
 from codecompass.adapters import get_adapter
 from codecompass.claude_md import render_vendor_claude_md
 from codecompass.core import VendorConfig, VendorDigest
@@ -55,6 +56,7 @@ from codecompass.graph import (
     GitSubmoduleRow,
     GitWorktreeRow,
     SourceFileRow,
+    SourceSymbolRow,
     SymbolRow,
     UsesEdgeRow,
     VendorRow,
@@ -283,6 +285,29 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
     once `spec_docs.scan_spec_docs` started populating `name`
     (`_extract_title`), which is what actually makes a `spec_doc` row an
     eligible `mentions_artifact` target (closes `CG-004`).
+
+    Phase 77 replaces the old vendor-usage-gated `source_files`
+    population (only a file with a detected tracked-vendor import ever
+    became a row) with `source_symbols.discover_source_files` — every
+    recognized first-party source file, independent of `vendor.toml`,
+    closing `CG-009`. Each recognized file's own top-level implementation
+    symbols are extracted via `source_symbols.extract_source_symbols_for_file`
+    and persisted to the new `source_symbols` table; `meta.source_index_version`
+    is written unconditionally (`"1"`), regardless of whether any
+    first-party files were found, so `cli.py::query_source`/
+    `query_source_symbol` can distinguish "genuinely indexed, zero
+    results" from "first-party source has never been indexed" (mirroring
+    `git_topology_status`'s own absence-means-never-synced precedent).
+    `source_file_rows`' own set is now a strict superset of the file set
+    `usage.resolve_project_usage` can ever detect a vendor import in
+    (every suffix that module recognizes maps to a `Language` here too),
+    so `uses_edge_rows` always resolves against a path this pass also
+    produces. A known, accepted minor inefficiency: this pass and
+    `usage.resolve_project_usage` each walk the project tree once,
+    independently — deferred, since correctness does not depend on
+    merging the two walks and doing so would touch `usage.py`'s own
+    well-tested, unrelated walk logic for a performance-only gain no
+    evidence yet calls for.
     """
     vendor_rows: list[VendorRow] = []
     symbol_rows: list[SymbolRow] = []
@@ -313,10 +338,8 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
                 )
             )
 
-    source_file_paths: set[str] = set()
     uses_edge_rows: list[UsesEdgeRow] = []
     for rel_path, detected in usage.resolve_project_usage(project_root, configs):
-        source_file_paths.add(rel_path)
         known_names = vendor_symbol_names.get(detected.vendor, set())
         symbol_name = detected.symbol_name if detected.symbol_name in known_names else None
         uses_edge_rows.append(
@@ -327,7 +350,43 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
                 line=detected.line,
             )
         )
-    source_file_rows = [SourceFileRow(path=p) for p in sorted(source_file_paths)]
+
+    # Phase 77: first-party source discovery — every recognized source
+    # file, independent of vendor.toml (works identically at 0 tracked
+    # vendors, since language classification is suffix-based). A strict
+    # superset of `usage.resolve_project_usage`'s own vendor-import-
+    # matched file set (every suffix that module's own detectors
+    # recognize is also a `source_symbols.Language`), so `uses_edge_rows`
+    # above always resolves against a path this pass also produces.
+    source_file_rows: list[SourceFileRow] = []
+    source_symbol_rows: list[SourceSymbolRow] = []
+    for rel_path, language in source_symbols.discover_source_files(project_root):
+        absolute_path = project_root / rel_path
+        try:
+            content_hash = hashlib.sha256(absolute_path.read_bytes()).hexdigest()
+        except OSError:
+            content_hash = None
+        extraction = source_symbols.extract_source_symbols_for_file(absolute_path, language)
+        source_file_rows.append(
+            SourceFileRow(
+                path=rel_path,
+                language=language.value,
+                content_hash=content_hash,
+                symbol_index_status=extraction.status.value,
+                symbol_index_diagnostic=extraction.diagnostic,
+            )
+        )
+        for symbol in extraction.symbols:
+            source_symbol_rows.append(
+                SourceSymbolRow(
+                    source_file_path=rel_path,
+                    name=symbol.name,
+                    kind=symbol.kind,
+                    line=symbol.line,
+                    purpose=symbol.purpose,
+                    exposure=symbol.exposure,
+                )
+            )
 
     vendor_doc_rows = collect_vendor_doc_artifacts(configs, project_root)
     vendor_upstream_doc_rows = collect_vendor_upstream_doc_artifacts(configs, project_root)
@@ -374,6 +433,8 @@ def rebuild_project_graph(configs: list[VendorConfig], project_root: Path) -> No
             git_submodules=git_submodule_rows,
             git_topology_status=topology.status.value,
             git_topology_reason=topology.reason,
+            source_symbols=source_symbol_rows,
+            source_index_version="1",
         )
     finally:
         conn.close()

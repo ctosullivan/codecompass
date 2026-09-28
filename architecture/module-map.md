@@ -7,8 +7,8 @@ for the system-at-a-glance entry point; the rest of this set:
 [`context-graph-schema.md`](context-graph-schema.md),
 [`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md).
 
-`src/codecompass/` is 23 top-level modules plus a 6-module `adapters/`
-package (8,623 lines total). No package splits below
+`src/codecompass/` is 25 top-level modules plus a 6-module `adapters/`
+package (10,707 lines total). No package splits below
 `codecompass`/`codecompass.adapters` exist.
 
 ## Layering, by dependency direction
@@ -47,6 +47,16 @@ in the current codebase.
   `resolve_project_usage`) — the mirror image of `symbols.py`: pulls
   usage sites *out of* the consuming project rather than symbols *out of*
   a vendor.
+- **`git_topology.py`** (Phase 76) — mechanical Git worktree/submodule
+  detection (`detect_git_topology`, `sanitize_git_url`) — pure,
+  graph-agnostic, no import dependency on `graph.py`.
+- **`source_symbols.py`** (Phase 77) — first-party source file/top-level
+  implementation symbol detection (`discover_source_files`,
+  `extract_source_symbols_for_file`, `Language`, `SymbolIndexStatus`) —
+  the project-facing counterpart to `symbols.py`'s vendor-facing
+  extractors, reusing their underlying per-language scanning techniques
+  but answering "what does this project implement" rather than "what
+  does this dependency expose."
 - **`source_resolution.py`** — resolves a vendor's upstream repository
   from locally-available adapter metadata only (never a network registry
   lookup, `decisions/0021`) and shallow-clones it (`resolve_and_clone`).
@@ -73,7 +83,7 @@ in the current codebase.
 - **`graph.py`** — `context-graph.db`'s schema, `rebuild_deterministic`
   (the whole-project rebuild transaction), and every read/write query
   function. See [`context-graph-schema.md`](context-graph-schema.md). The
-  single largest module (1,696 lines).
+  single largest module (2,428 lines).
 - **`claude_md.py`** — per-vendor `CLAUDE.md` template rendering
   (`render_vendor_claude_md`) plus the narrower in-place Description-only
   edit path (`update_description_section`) enrichment uses.
@@ -104,11 +114,12 @@ in the current codebase.
 
 - **`cli.py`** — the Typer app: `init`, `sync`, `index`, `check`,
   `query` (a sub-app: `vendors`, `vendor`, `symbol`, `skills`,
-  `relations`), `chat`, `undo`, plus bare `codecompass`'s own
-  bootstrap/enrichment orchestration (`_bootstrap`,
-  `_maybe_run_enrichment`, `_refresh_generated_artifacts`). 1,219
-  lines — the second-largest module, and the only one every other layer
-  is invisible to (nothing in layers 1-3 imports `cli.py`).
+  `relations`, `topology`, `source`, `source-symbol`), `chat`, `undo`,
+  plus bare `codecompass`'s own bootstrap/enrichment orchestration
+  (`_bootstrap`, `_maybe_run_enrichment`, `_refresh_generated_artifacts`).
+  1,519 lines — the second-largest module (after `graph.py`, 2,428
+  lines), and the only one every other layer is invisible to (nothing in
+  layers 1-3 imports `cli.py`).
 
 ## Two informal senses of "adapter" in this codebase
 

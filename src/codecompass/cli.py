@@ -892,16 +892,19 @@ def query_relations(
         console.print(trace_table)
 
 
-def _open_graph_for_topology(project_root: Path) -> sqlite3.Connection | None:
+def _open_graph_if_exists(project_root: Path) -> sqlite3.Connection | None:
     """`None` if `context-graph.db` doesn't exist at all — read-only, never
     creates the file as a side effect of a read-only command (matching
-    `_open_graph_or_note`'s own posture), but prints nothing itself:
-    `query_topology`'s own caller renders the specific "not yet indexed"
-    outcome for a `None` result here, not `_NO_GRAPH_NOTE` — deliberately
-    not a change to the shared `_open_graph_or_note`/`_graph_session`
-    helpers, since every other `query` subcommand's own existing
-    missing-database behaviour is correct and out of scope
-    (planning/phase-76-git-repository-topology.md §9, third amendment).
+    `_open_graph_or_note`'s own posture), but prints nothing itself: each
+    caller renders its own specific "not yet indexed" outcome for a
+    `None` result, not `_NO_GRAPH_NOTE` — deliberately not a change to
+    the shared `_open_graph_or_note`/`_graph_session` helpers, since every
+    other `query` subcommand's own existing missing-database behaviour is
+    correct and out of scope (planning/phase-76-git-repository-topology.md
+    §9, third amendment). Originally `_open_graph_for_topology`
+    (Phase 76); generalized (Phase 77) since `query source`/
+    `query source-symbol` need the identical narrow behaviour and the
+    logic itself was never topology-specific.
     """
     db_path = project_root / _GRAPH_DB_FILENAME
     if not db_path.exists():
@@ -927,7 +930,7 @@ def query_topology(
     full status model.
     """
     project_root = Path.cwd()
-    conn = _open_graph_for_topology(project_root)
+    conn = _open_graph_if_exists(project_root)
     if conn is None:
         _render_topology_not_indexed(json_output)
         return
@@ -1032,6 +1035,161 @@ def _render_topology(profile: dict, json_output: bool) -> None:
                 console.print(f"    workspace: {dirty_state}")
             else:
                 console.print("    not initialized")
+
+
+_SOURCE_NOT_INDEXED_NOTE = (
+    "First-party source has not been indexed yet; run `codecompass sync`."
+)
+
+_SYMBOL_INDEX_STATUS_LABELS = {
+    "indexed": "indexed (full parse)",
+    "indexed_partial": "indexed (coarse scan)",
+    "unsupported": "no symbol extractor available for this language",
+}
+
+
+def _render_symbol_index_status(status: str | None, diagnostic: str | None) -> str:
+    """Renders `source_files.symbol_index_status`'s five states
+    explicitly and honestly — never implies a coarse line-scan/regex
+    technique (`indexed_partial`) is as complete as a real parser
+    (`indexed`), and never collapses `parse_error`/`unreadable` into a
+    bare "no symbols" result. `None` (a theoretical pre-repopulation
+    transient the caller should never actually observe, since `query
+    source`/`query source-symbol` only reach this point once
+    `meta.source_index_version` is confirmed present) renders honestly as
+    `unknown` rather than crashing or guessing.
+    """
+    if status is None:
+        return "unknown"
+    if status in ("parse_error", "unreadable"):
+        label = status.replace("_", " ")
+        return f"{label}: {diagnostic}" if diagnostic else label
+    return _SYMBOL_INDEX_STATUS_LABELS.get(status, status)
+
+
+def _render_exposure(exposure: str | None) -> str:
+    """Renders `source_symbols.exposure`'s five states — `None` renders
+    as `unknown`, never silently omitted or defaulted to a specific
+    value (the same tri-state discipline `_tri_state_label` established,
+    generalized to a five-value closed vocabulary)."""
+    return exposure if exposure is not None else "unknown"
+
+
+@query_app.command("source")
+def query_source(
+    path: str = typer.Argument(..., help="Source file path to look up (relative, as stored)."),
+    json_output: bool = typer.Option(
+        False, "--json", help="Raw JSON instead of a Rich rendering."
+    ),
+) -> None:
+    """Every first-party fact known about one recognized source file
+    (Phase 77): language, content identity, symbol-indexing status, its
+    own top-level implementation symbols, and any recorded vendor usage.
+    Read-only — never invokes a rebuild; a project whose first-party
+    source has never been indexed under Phase-77-aware code says so
+    explicitly (`run codecompass sync`), never a misleading "not found."
+    """
+    project_root = Path.cwd()
+    conn = _open_graph_if_exists(project_root)
+    if conn is None or graph.get_meta(conn, "source_index_version") is None:
+        if conn is not None:
+            conn.close()
+        _render_source_not_indexed(json_output)
+        return
+    try:
+        profile = graph.source_file_profile(conn, path)
+    finally:
+        conn.close()
+
+    if json_output:
+        payload = {"indexed": True, "found": profile is not None}
+        if profile is not None:
+            payload.update(profile)
+        else:
+            payload["path"] = path
+        console.print(json.dumps(payload, indent=2), soft_wrap=True)
+        return
+
+    if profile is None:
+        console.print(f"[yellow]no source file {path!r} found in context-graph.db[/yellow]")
+        return
+
+    console.print(f"[bold]Source file[/bold]: {profile['path']}")
+    console.print(f"  language: {profile['language'] or 'unknown'}")
+    if profile["content_hash"]:
+        console.print(f"  content hash: {profile['content_hash']}")
+    status_label = _render_symbol_index_status(
+        profile["symbol_index_status"], profile["symbol_index_diagnostic"]
+    )
+    console.print(f"  symbol index: {status_label}")
+
+    if profile["symbols"]:
+        console.print("\n[bold]Symbols[/bold]:")
+        for s in profile["symbols"]:
+            exposure = _render_exposure(s["exposure"])
+            console.print(f"  {s['name']} ({s['kind']}, line {s['line']}, {exposure})")
+            if s["purpose"]:
+                console.print(f"    {s['purpose']}")
+    elif profile["symbol_index_status"] in ("indexed", "indexed_partial"):
+        console.print("\n[dim]no top-level implementation symbols found[/dim]")
+
+    if profile["vendor_usages"]:
+        console.print("\n[bold]Vendor usage[/bold]:")
+        for u in profile["vendor_usages"]:
+            symbol_part = f"::{u['symbol']}" if u["symbol"] else ""
+            console.print(f"  {u['vendor']}{symbol_part} (line {u['line']})")
+
+
+@query_app.command("source-symbol")
+def query_source_symbol(
+    name: str = typer.Argument(..., help="Source symbol name to look up (across all files)."),
+    json_output: bool = typer.Option(
+        False, "--json", help="Raw JSON instead of a Rich table."
+    ),
+) -> None:
+    """Every first-party top-level implementation symbol named `name`,
+    across every recognized source file (Phase 77) — names aren't
+    globally unique across files, same posture `query symbol` already has
+    across vendors. Read-only; an unindexed project says so explicitly.
+    """
+    project_root = Path.cwd()
+    conn = _open_graph_if_exists(project_root)
+    if conn is None or graph.get_meta(conn, "source_index_version") is None:
+        if conn is not None:
+            conn.close()
+        _render_source_not_indexed(json_output)
+        return
+    try:
+        profiles = graph.source_symbol_profile(conn, name)
+    finally:
+        conn.close()
+
+    if json_output:
+        console.print(json.dumps({"indexed": True, "symbols": profiles}, indent=2), soft_wrap=True)
+        return
+
+    if not profiles:
+        console.print(f"[yellow]no source symbol named {name!r} found in context-graph.db[/yellow]")
+        return
+
+    table = Table("File", "Language", "Kind", "Line", "Exposure", "Purpose")
+    for p in profiles:
+        table.add_row(
+            p["source_file_path"],
+            p["language"] or "unknown",
+            p["kind"],
+            str(p["line"]),
+            _render_exposure(p["exposure"]),
+            p["purpose"] or "",
+        )
+    console.print(table)
+
+
+def _render_source_not_indexed(json_output: bool) -> None:
+    if json_output:
+        console.print(json.dumps({"indexed": False}, indent=2), soft_wrap=True)
+        return
+    console.print(f"[yellow]{_SOURCE_NOT_INDEXED_NOTE}[/yellow]")
 
 
 @app.command()

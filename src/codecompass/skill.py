@@ -105,6 +105,17 @@ def render_tool_skill(configs: list[VendorConfig], project_root: Path) -> str:
         "identity, the active checkout's branch/HEAD/dirty state, other "
         "known worktrees, and each submodule's parent-pinned vs. "
         "checked-out revision. Never invokes `git` itself.",
+        "  - `query source <path> [--json]` — every first-party fact "
+        "known about one recognized source file: language, symbol-"
+        "indexing status (indexed / a coarse partial scan / unsupported "
+        "language / parse error / unreadable), its own top-level "
+        "implementation symbols, and any recorded vendor usage. Works "
+        "independent of `vendor.toml` — no tracked vendor required.",
+        "  - `query source-symbol <name> [--json]` — every first-party "
+        "top-level implementation symbol with this name across all "
+        "recognized source files (names aren't globally unique), its "
+        "kind, location, purpose, and exposure (public / restricted / "
+        "internal / conventional_private / unknown).",
         "  - If a question doesn't fit any of these — an ad hoc join or "
         "filter — query `context-graph.db` directly with `sqlite3` (a "
         "plain SQLite file at the project root); see "
@@ -113,7 +124,8 @@ def render_tool_skill(configs: list[VendorConfig], project_root: Path) -> str:
         "`documents_edges`, `skill_mentions_edges`, `routes_via_edges`, "
         "`depends_on_edges`, `doc_relations_edges`, `vendor_enrichment`, "
         "`symbol_enrichment`, `doc_relation_enrichment`, "
-        "`git_repositories`, `git_worktrees`, `git_submodules`).",
+        "`git_repositories`, `git_worktrees`, `git_submodules`, "
+        "`source_files`, `source_symbols`).",
         "- `/discovery` — a read-only guided-exploration slash command "
         "covering the same ground as `query`, for a human-initiated "
         "session that should never write, edit, or plan code changes.",

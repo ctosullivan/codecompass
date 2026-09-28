@@ -28,7 +28,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 _DB_FILENAME = "context-graph.db"
-_SCHEMA_VERSION = "10"
+_SCHEMA_VERSION = "11"
 
 # Closed taxonomy for `doc_relation_enrichment.relation_label` (Phase 31,
 # decisions/0045). `'other'` is the required fallback for any label an AI
@@ -63,10 +63,50 @@ CREATE TABLE IF NOT EXISTS vendors (
   last_synced_at          TEXT
 );
 
+-- Phase 77: language/content_hash/symbol_index_status/
+-- symbol_index_diagnostic are all nullable, identically on a fresh or an
+-- upgraded database (decisions/0065; the same nullable-everywhere
+-- contract Phase 76's own corrective pass, decisions/0064, established
+-- for Git topology) -- NULL means unresolved/legacy, never enforced
+-- NOT NULL; a genuinely Phase-77-aware sync always supplies all four for
+-- every row it produces.
 CREATE TABLE IF NOT EXISTS source_files (
-  id   INTEGER PRIMARY KEY,
-  path TEXT NOT NULL UNIQUE
+  id                      INTEGER PRIMARY KEY,
+  path                    TEXT NOT NULL UNIQUE,
+  language                TEXT,
+  content_hash            TEXT,
+  symbol_index_status     TEXT CHECK (
+                            symbol_index_status IN (
+                              'indexed','indexed_partial','unsupported',
+                              'parse_error','unreadable'
+                            )
+                          ),
+  symbol_index_diagnostic TEXT
 );
+
+-- Phase 77: a project's own first-party top-level implementation
+-- symbols -- structurally separate from `symbols` (vendor API surface),
+-- never a nullable `symbols.vendor_id`. Occurrence-based identity
+-- (`UNIQUE(source_file_id, name, kind, line)`, `line NOT NULL`): a
+-- top-level declaration's identity includes its own location, since a
+-- real language feature (function overloading) produces multiple
+-- distinct declarations sharing one name (live-verified on both Python
+-- `@overload` and TypeScript, decisions/0065).
+CREATE TABLE IF NOT EXISTS source_symbols (
+  id             INTEGER PRIMARY KEY,
+  source_file_id INTEGER NOT NULL REFERENCES source_files(id) ON DELETE CASCADE,
+  name           TEXT NOT NULL,
+  kind           TEXT NOT NULL,
+  line           INTEGER NOT NULL,
+  purpose        TEXT,
+  exposure       TEXT CHECK (
+                   exposure IN (
+                     'public','restricted','internal','conventional_private','unknown'
+                   )
+                 ),
+  UNIQUE (source_file_id, name, kind, line)
+);
+CREATE INDEX IF NOT EXISTS idx_source_symbols_file ON source_symbols(source_file_id);
 
 CREATE TABLE IF NOT EXISTS symbols (
   id          INTEGER PRIMARY KEY,
@@ -267,9 +307,39 @@ class VendorRow:
 
 @dataclass(frozen=True)
 class SourceFileRow:
-    """One `source_files` row, keyed by `path` (unique)."""
+    """One `source_files` row, keyed by `path` (unique) — upserted across
+    rebuilds (Phase 77), not cleared-and-reinserted, so its `id` stays
+    stable for an unchanged path (supporting a later relationship phase
+    without unnecessary identity churn). `language`/`content_hash`/
+    `symbol_index_status`/`symbol_index_diagnostic` are all nullable —
+    `None` means unresolved/legacy, on a fresh or an upgraded database
+    identically (decisions/0065).
+    """
 
     path: str
+    language: str | None = None
+    content_hash: str | None = None
+    symbol_index_status: str | None = None
+    symbol_index_diagnostic: str | None = None
+
+
+@dataclass(frozen=True)
+class SourceSymbolRow:
+    """One `source_symbols` row, keyed by `(source_file_path, name, kind,
+    line)` — occurrence-based identity (Phase 77), not name-only, since a
+    real language feature (function overloading) produces multiple
+    genuinely distinct declarations sharing one name (live-verified on
+    both Python `@overload` and TypeScript, decisions/0065). `line` is
+    never `None` — an extractor unable to determine one does not produce
+    a row at all.
+    """
+
+    source_file_path: str
+    name: str
+    kind: str
+    line: int
+    purpose: str | None = None
+    exposure: str | None = None
 
 
 @dataclass(frozen=True)
@@ -681,6 +751,58 @@ def _migrate_symbol_enrichment_model_column(conn: sqlite3.Connection) -> None:
             conn.execute("ALTER TABLE symbol_enrichment ADD COLUMN model TEXT")
 
 
+def _migrate_source_files_columns(conn: sqlite3.Connection) -> None:
+    """Adds `source_files`'s four new Phase 77 columns (`language`,
+    `content_hash`, `symbol_index_status`, `symbol_index_diagnostic`) to
+    a pre-Phase-77 on-disk database via `ALTER TABLE ... ADD COLUMN`,
+    never drop-and-recreate: `source_files.id` is referenced by
+    `uses_edges.source_file_id ON DELETE CASCADE`, and a careless
+    recreate would cascade-delete every `uses_edges` row — the exact
+    class of risk `decisions/0064` (Phase 76's own corrective pass)
+    fixed for `doc_artifacts`.
+
+    All four columns are added nullable, with no default — Phase 77's
+    own corrected nullable-everywhere contract (decisions/0065): a fresh
+    `init_schema` call and this migration produce identical column
+    definitions, identical nullability, on a fresh or an upgraded
+    database alike (verified directly, `test_graph.py`). An existing
+    row's four new columns start `NULL` ("never indexed under
+    Phase-77-aware code yet") until the next `rebuild_deterministic`
+    call repopulates them for real — every real production call path
+    (`sync.py::rebuild_project_graph`) always calls
+    `rebuild_deterministic` immediately after `open_graph`, so this
+    transient state is never user-visible in practice. Separately,
+    `meta.source_index_version`'s own absence (not this migration's own
+    concern — see `rebuild_deterministic`) is the actual signal a fresh
+    agent should read for "has first-party indexing ever run at all."
+
+    Checked directly via `PRAGMA table_info`, not `meta.schema_version`,
+    matching every migration in this file since Phase 76. A brand-new
+    database has no `source_files` table yet at all — `init_schema`'s
+    own `CREATE TABLE IF NOT EXISTS`, called right after this function
+    returns, creates it with all four columns already present.
+    """
+    table_exists = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'source_files'"
+    ).fetchone()
+    if not table_exists:
+        return
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(source_files)")}
+    with conn:
+        if "language" not in columns:
+            conn.execute("ALTER TABLE source_files ADD COLUMN language TEXT")
+        if "content_hash" not in columns:
+            conn.execute("ALTER TABLE source_files ADD COLUMN content_hash TEXT")
+        if "symbol_index_status" not in columns:
+            conn.execute(
+                "ALTER TABLE source_files ADD COLUMN symbol_index_status TEXT "
+                "CHECK (symbol_index_status IN "
+                "('indexed','indexed_partial','unsupported','parse_error','unreadable'))"
+            )
+        if "symbol_index_diagnostic" not in columns:
+            conn.execute("ALTER TABLE source_files ADD COLUMN symbol_index_diagnostic TEXT")
+
+
 def _migrate_vendors_ecosystem_constraint(conn: sqlite3.Connection) -> None:
     """Widens `vendors.ecosystem`'s CHECK constraint to accept `'haskell'`
     (Phase 60) on a database whose `vendors` table predates it —
@@ -783,6 +905,7 @@ def open_graph(project_root: Path) -> sqlite3.Connection:
     _migrate_vendors_ecosystem_constraint(conn)
     _migrate_symbols_export_kind_note_columns(conn)
     _migrate_symbol_enrichment_model_column(conn)
+    _migrate_source_files_columns(conn)
     init_schema(conn)
     # Phase 76: meta.schema_version is now purely informational bookkeeping
     # ("last schema-code vintage this database was opened under") — no
@@ -828,6 +951,8 @@ def rebuild_deterministic(
     git_submodules: Sequence[GitSubmoduleRow] = (),
     git_topology_status: str | None = None,
     git_topology_reason: str | None = None,
+    source_symbols: Sequence[SourceSymbolRow] = (),
+    source_index_version: str | None = None,
 ) -> None:
     """Wipe and rewrite every deterministic table inside one transaction,
     then update `meta.last_deterministic_rebuild_at`. Never touches
@@ -860,6 +985,30 @@ def rebuild_deterministic(
     every real production call (`sync.py::rebuild_project_graph`) always
     supplies a real `TopologyStatus` value, since `detect_git_topology`
     never returns `None`.
+
+    Phase 77: `source_files`/`source_symbols` are now **upserted by
+    natural key** (`path`; `(source_file_path, name, kind, line)`
+    respectively) — the same cross-rebuild-identity-preserving treatment
+    `vendors`/`symbols` already get, not `doc_artifacts`-style clear-and-
+    reinsert — so an unchanged file/symbol keeps its `id` across syncs
+    (supporting a later relationship phase without unnecessary identity
+    churn, and a future per-symbol enrichment table the same way
+    `symbol_enrichment` already works for vendor symbols). `source_symbols`
+    defaults to `()`, same backwards-compatibility precedent as
+    `doc_chunks`/`git_repositories`. `source_index_version` (default
+    `None`) is written to `meta` only when a caller actually supplies one
+    — mirroring `git_topology_status`'s exact pattern — so an old test
+    exercising unrelated tables in isolation leaves
+    `meta.source_index_version` exactly as it already was, never
+    fabricated; every real production call
+    (`sync.py::rebuild_project_graph`) always supplies a real value,
+    regardless of whether any first-party source files were actually
+    found (a project with zero recognized source files still gets
+    `source_index_version` written, the same way a project with zero
+    worktrees still gets `git_topology_status` written) — its **absence**
+    is what `cli.py::query_source`/`query_source_symbol` treat as "first-
+    party source has never been indexed," never conflated with a
+    genuinely indexed-but-empty project.
     """
     with conn:
         # Edge / leaf tables carry no cross-rebuild identity — clear and
@@ -872,7 +1021,6 @@ def rebuild_deterministic(
         conn.execute("DELETE FROM uses_edges")
         conn.execute("DELETE FROM doc_chunks")
         conn.execute("DELETE FROM doc_artifacts")
-        conn.execute("DELETE FROM source_files")
         conn.execute("DELETE FROM git_worktrees")
         conn.execute("DELETE FROM git_submodules")
         conn.execute("DELETE FROM git_repositories")
@@ -883,7 +1031,8 @@ def rebuild_deterministic(
         _sync_symbols(conn, symbols, vendor_ids)
         symbol_ids = _fetch_symbol_ids(conn)
 
-        source_file_ids = _insert_source_files(conn, source_files)
+        source_file_ids = _sync_source_files(conn, source_files)
+        _sync_source_symbols(conn, source_symbols, source_file_ids)
         doc_artifact_ids = _insert_doc_artifacts(conn, doc_artifacts, vendor_ids)
         doc_chunk_ids = _insert_doc_chunks(conn, doc_chunks, doc_artifact_ids)
 
@@ -918,6 +1067,13 @@ def rebuild_deterministic(
                 )
             else:
                 conn.execute("DELETE FROM meta WHERE key = 'git_topology_reason'")
+
+        if source_index_version is not None:
+            conn.execute(
+                "INSERT INTO meta (key, value) VALUES ('source_index_version', ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                (source_index_version,),
+            )
 
         conn.execute(
             "INSERT INTO meta (key, value) VALUES ('last_deterministic_rebuild_at', ?) "
@@ -1010,14 +1166,91 @@ def _fetch_symbol_ids(conn: sqlite3.Connection) -> dict[tuple[str, str], int]:
     }
 
 
-def _insert_source_files(
+def _sync_source_files(
     conn: sqlite3.Connection, source_files: Sequence[SourceFileRow]
 ) -> dict[str, int]:
-    ids: dict[str, int] = {}
+    """Upserts `source_files` by natural key (`path`) — mirrors
+    `_sync_vendors`'s exact shape (Phase 77), not the old clear-and-
+    reinsert treatment: an unchanged path keeps its `id` across rebuilds,
+    supporting a later relationship phase and any future per-symbol
+    enrichment table without unnecessary identity churn.
+    """
+    existing = {path for (path,) in conn.execute("SELECT path FROM source_files")}
+    incoming = {sf.path for sf in source_files}
+    for stale_path in existing - incoming:
+        conn.execute("DELETE FROM source_files WHERE path = ?", (stale_path,))
+
     for sf in source_files:
-        cur = conn.execute("INSERT INTO source_files (path) VALUES (?)", (sf.path,))
-        ids[sf.path] = cur.lastrowid
-    return ids
+        conn.execute(
+            """
+            INSERT INTO source_files (
+                path, language, content_hash, symbol_index_status, symbol_index_diagnostic
+            )
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(path) DO UPDATE SET
+                language = excluded.language,
+                content_hash = excluded.content_hash,
+                symbol_index_status = excluded.symbol_index_status,
+                symbol_index_diagnostic = excluded.symbol_index_diagnostic
+            """,
+            (
+                sf.path,
+                sf.language,
+                sf.content_hash,
+                sf.symbol_index_status,
+                sf.symbol_index_diagnostic,
+            ),
+        )
+    return dict(conn.execute("SELECT path, id FROM source_files"))
+
+
+def _sync_source_symbols(
+    conn: sqlite3.Connection,
+    source_symbols: Sequence[SourceSymbolRow],
+    source_file_ids: dict[str, int],
+) -> None:
+    """Upserts `source_symbols` by natural key (`source_file_id`, `name`,
+    `kind`, `line`) — mirrors `_sync_symbols`'s exact shape (Phase 77),
+    keyed on the occurrence-based identity `graph.py`'s own schema
+    enforces (§3.2 of the plan): a genuine function overload produces
+    multiple distinct rows (distinct `line`), never a uniqueness
+    collision, and an unchanged declaration keeps its `id` across
+    rebuilds.
+    """
+    existing = {
+        (source_file_id, name, kind, line)
+        for source_file_id, name, kind, line in conn.execute(
+            "SELECT source_file_id, name, kind, line FROM source_symbols"
+        )
+    }
+    incoming = {
+        (source_file_ids[s.source_file_path], s.name, s.kind, s.line) for s in source_symbols
+    }
+    for source_file_id, name, kind, line in existing - incoming:
+        conn.execute(
+            "DELETE FROM source_symbols "
+            "WHERE source_file_id = ? AND name = ? AND kind = ? AND line = ?",
+            (source_file_id, name, kind, line),
+        )
+
+    for s in source_symbols:
+        conn.execute(
+            """
+            INSERT INTO source_symbols (source_file_id, name, kind, line, purpose, exposure)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(source_file_id, name, kind, line) DO UPDATE SET
+                purpose = excluded.purpose,
+                exposure = excluded.exposure
+            """,
+            (
+                source_file_ids[s.source_file_path],
+                s.name,
+                s.kind,
+                s.line,
+                s.purpose,
+                s.exposure,
+            ),
+        )
 
 
 def _insert_doc_artifacts(
@@ -1684,6 +1917,92 @@ def symbol_profile(conn: sqlite3.Connection, name: str) -> list[dict]:
             }
         )
     return profiles
+
+
+def source_file_profile(conn: sqlite3.Connection, path: str) -> dict | None:
+    """Every first-party fact known about one recognized source file, or
+    `None` if `path` has no `source_files` row at all — a genuine "not
+    found," distinct from "first-party source has never been indexed"
+    (`cli.py::query_source` checks `meta.source_index_version`'s own
+    presence *before* calling this function, per Phase 77's project-level
+    not-yet-indexed design). Shape: `{"path", "language", "content_hash",
+    "symbol_index_status", "symbol_index_diagnostic", "symbols": [...],
+    "vendor_usages": [...]}`. `symbols`/`vendor_usages` are always lists
+    (possibly empty) — never `None` — once the file row itself exists.
+    """
+    row = conn.execute(
+        """
+        SELECT id, language, content_hash, symbol_index_status, symbol_index_diagnostic
+        FROM source_files WHERE path = ?
+        """,
+        (path,),
+    ).fetchone()
+    if row is None:
+        return None
+    source_file_id, language, content_hash, symbol_index_status, symbol_index_diagnostic = row
+
+    symbols = [
+        {"name": name, "kind": kind, "line": line, "purpose": purpose, "exposure": exposure}
+        for name, kind, line, purpose, exposure in conn.execute(
+            """
+            SELECT name, kind, line, purpose, exposure FROM source_symbols
+            WHERE source_file_id = ? ORDER BY line, name
+            """,
+            (source_file_id,),
+        )
+    ]
+    vendor_usages = [
+        {"vendor": vendor_name, "symbol": symbol_name, "line": line}
+        for vendor_name, symbol_name, line in conn.execute(
+            """
+            SELECT v.name, s.name, ue.line
+            FROM uses_edges ue
+            JOIN vendors v ON ue.vendor_id = v.id
+            LEFT JOIN symbols s ON ue.symbol_id = s.id
+            WHERE ue.source_file_id = ?
+            ORDER BY ue.line
+            """,
+            (source_file_id,),
+        )
+    ]
+    return {
+        "path": path,
+        "language": language,
+        "content_hash": content_hash,
+        "symbol_index_status": symbol_index_status,
+        "symbol_index_diagnostic": symbol_index_diagnostic,
+        "symbols": symbols,
+        "vendor_usages": vendor_usages,
+    }
+
+
+def source_symbol_profile(conn: sqlite3.Connection, name: str) -> list[dict]:
+    """Every `source_symbols` row named `name`, across every first-party
+    file (names aren't globally unique across files — same posture
+    `symbol_profile` already has across vendors) — each with its
+    containing file's path and language.
+    """
+    return [
+        {
+            "name": name,
+            "kind": kind,
+            "source_file_path": path,
+            "language": language,
+            "line": line,
+            "purpose": purpose,
+            "exposure": exposure,
+        }
+        for kind, path, language, line, purpose, exposure in conn.execute(
+            """
+            SELECT ss.kind, sf.path, sf.language, ss.line, ss.purpose, ss.exposure
+            FROM source_symbols ss
+            JOIN source_files sf ON ss.source_file_id = sf.id
+            WHERE ss.name = ?
+            ORDER BY sf.path, ss.line
+            """,
+            (name,),
+        )
+    ]
 
 
 def doc_code_trace(conn: sqlite3.Connection, doc_path_or_vendor_name: str) -> list[dict]:

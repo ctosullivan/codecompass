@@ -126,13 +126,13 @@ codecompass sync --yes
 codecompass sync --budget 1.00
 ```
 
-## `codecompass query vendors|vendor|symbol|skills|relations|topology`
+## `codecompass query vendors|vendor|symbol|skills|relations|topology|source|source-symbol`
 
 **Status:** implemented (Phase 15; `relations` added Phase 21; `used_at`/
 package-code trace added Phase 30; `relation_label` added Phase 31;
 `heading` added Phase 32; `skills` widened to Cursor `.mdc` rules and the
 `/discovery` slash command, with a `kind` field, Phase 43a; `topology`
-added Phase 76).
+added Phase 76; `source`/`source-symbol` added Phase 77).
 
 Reads `context-graph.db` and renders the result as a Rich table by
 default, or raw JSON with `--json`. If `context-graph.db` doesn't exist
@@ -234,6 +234,56 @@ prints a one-line note pointing at `sync` rather than a traceback.
     also used unconditionally by this command's own detection — need
     2.7) — an older Git surfaces as "Git topology could not be
     determined," with an explicit version-naming reason, not a crash.
+- `codecompass query source <path> [--json]` — every first-party fact
+  known about one recognized source file (Phase 77), independent of
+  `vendor.toml` — works identically with 0 tracked vendors. Never
+  invokes a rebuild. Two distinguishable outcomes before any file
+  detail:
+  - **First-party source has never been indexed** — `context-graph.db`
+    doesn't exist yet, or exists but has never been synced under
+    Phase-77-aware code: "First-party source has not been indexed yet;
+    run `codecompass sync`." — `--json` → `{"indexed": false}`, no other
+    keys (mirrors `query topology`'s own identical concept —
+    `meta.source_index_version`'s own absence).
+  - **Indexed**: `language` (`python`/`rust`/`javascript`/`typescript`/
+    `haskell` — a first-party *language* classification, deliberately
+    not the same concept as a vendor's own package *ecosystem*: `npm`
+    covers both JavaScript and TypeScript dependencies identically, but
+    a project's own `.js`/`.ts` files are different languages here);
+    content hash, if computed; symbol-indexing status, rendered
+    explicitly and honestly as one of five states — `indexed (full
+    parse)` (a real structural parser — Python's own `ast`), `indexed
+    (coarse scan)` (a line-scan/regex technique — Rust/JS/TS today,
+    never implied to be as complete as a real parser), `no symbol
+    extractor available for this language` (Haskell — recognized as a
+    source file, symbols not extracted), `parse error: <diagnostic>`, or
+    `unreadable: <diagnostic>`; its own top-level implementation symbols
+    (name, kind, line, purpose, exposure); and any recorded vendor usage
+    from that file. If `<path>` has no `source_files` row at all
+    (indexed, but genuinely not found): "no source file `<path>` found in
+    context-graph.db" — `--json` → `{"indexed": true, "found": false,
+    "path": "<path>"}`.
+- `codecompass query source-symbol <name> [--json]` — every first-party
+  top-level implementation symbol named `<name>`, across every recognized
+  source file (names aren't globally unique across files — same posture
+  `query symbol` already has across vendors): its kind, source file
+  path, language, line, purpose, and **exposure** — a five-value,
+  cross-language classification (`public`, `restricted`, `internal`,
+  `conventional_private`, `unknown`), never a simplistic public/private
+  binary: Python's own leading-underscore convention maps to
+  `conventional_private` (a naming *convention*, not a language-enforced
+  boundary — deliberately distinct from `internal`); Rust's real
+  three-tier visibility maps to `public` (bare `pub`), `restricted`
+  (`pub(crate)`/`pub(super)`/`pub(in ...)`), or `internal` (no modifier);
+  JS/TS maps `export` to `public`, its absence to `internal`. **Includes
+  non-exported/private top-level declarations** — first-party symbol
+  extraction answers "what does this project implement," not "what
+  public API does this dependency expose" (the question `query
+  symbol`'s own vendor-facing extraction answers) — `exposure` is a
+  recorded property, never a filter. Every nullable field (`purpose`,
+  `exposure`, a file's own `language`) is rendered/emitted honestly —
+  `unknown`/`null`, never collapsed into a false certainty. Same
+  not-yet-indexed handling as `query source` above.
 
 ```bash
 codecompass query vendors
@@ -245,6 +295,8 @@ codecompass query relations architecture/overview.md
 codecompass query relations turndown
 codecompass query topology
 codecompass query topology --json
+codecompass query source src/models.py
+codecompass query source-symbol Posting --json
 ```
 
 ## `codecompass enrich apply <entries.json> --agent <name>`

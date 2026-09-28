@@ -2209,3 +2209,235 @@ def test_query_topology_json_preserves_nullable_values_unchanged(
     assert payload["worktrees"][0]["is_dirty"] is None
     assert payload["submodules"][0]["revision_matches_pin"] is None
     assert payload["submodules"][0]["child_is_dirty"] is None
+
+
+# --- Phase 77: query source / query source-symbol ---------------------------
+
+
+def _rebuild_with_source(
+    tmp_path: Path,
+    *,
+    source_files=(),
+    source_symbols=(),
+    source_index_version=None,
+) -> None:
+    conn = graph.open_graph(tmp_path)
+    graph.rebuild_deterministic(
+        conn,
+        vendors=[],
+        source_files=source_files,
+        symbols=[],
+        uses_edges=[],
+        doc_artifacts=[],
+        documents_edges=[],
+        skill_mentions_edges=[],
+        routes_via_edges=[],
+        depends_on_edges=[],
+        doc_relations_edges=[],
+        source_symbols=source_symbols,
+        source_index_version=source_index_version,
+    )
+    conn.close()
+
+
+def test_query_source_no_database_at_all_is_not_yet_indexed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(app, ["query", "source", "a.py"])
+    assert result.exit_code == 0, result.output
+    assert "not been indexed" in result.output.lower()
+
+
+def test_query_source_no_database_at_all_json(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(app, ["query", "source", "a.py", "--json"])
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output) == {"indexed": False}
+
+
+def test_query_source_database_exists_but_never_synced_under_phase_77_is_not_yet_indexed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A pre-Phase-77 upgraded database (context-graph.db exists, but
+    source_index_version was never written) must render the same
+    not-yet-indexed state, never a misleading "not found"."""
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_source(tmp_path)  # source_index_version=None
+    result = runner.invoke(app, ["query", "source", "a.py"])
+    assert result.exit_code == 0, result.output
+    assert "not been indexed" in result.output.lower()
+
+    result_symbol = runner.invoke(app, ["query", "source-symbol", "Posting", "--json"])
+    assert json.loads(result_symbol.output) == {"indexed": False}
+
+
+def test_query_source_never_invokes_a_rebuild(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Read-only, per Phase 77's own design: `query source` must never
+    trigger `rebuild_deterministic` (a real rebuild), even indirectly."""
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_source(
+        tmp_path,
+        source_files=[graph.SourceFileRow(path="a.py", language="python")],
+        source_index_version="1",
+    )
+
+    def _fail(*args, **kwargs):
+        raise AssertionError("query source must never invoke rebuild_deterministic")
+
+    monkeypatch.setattr(graph, "rebuild_deterministic", _fail)
+    result = runner.invoke(app, ["query", "source", "a.py"])
+    assert result.exit_code == 0, result.output
+    assert "language: python" in result.output
+
+
+def test_query_source_found_file_indexed_with_symbols(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_source(
+        tmp_path,
+        source_files=[
+            graph.SourceFileRow(
+                path="models.py",
+                language="python",
+                content_hash="abc123",
+                symbol_index_status="indexed",
+            )
+        ],
+        source_symbols=[
+            graph.SourceSymbolRow(
+                source_file_path="models.py",
+                name="Posting",
+                kind="class",
+                line=1,
+                purpose="A ledger posting.",
+                exposure="public",
+            ),
+            graph.SourceSymbolRow(
+                source_file_path="models.py",
+                name="_internal",
+                kind="function",
+                line=5,
+                exposure="conventional_private",
+            ),
+        ],
+        source_index_version="1",
+    )
+
+    result = runner.invoke(app, ["query", "source", "models.py"])
+    assert result.exit_code == 0, result.output
+    assert "language: python" in result.output
+    assert "indexed (full parse)" in result.output
+    assert "Posting" in result.output
+    assert "public" in result.output
+    assert "conventional_private" in result.output
+
+
+def test_query_source_indexed_partial_and_unsupported_and_parse_error_rendering(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_source(
+        tmp_path,
+        source_files=[
+            graph.SourceFileRow(
+                path="a.rs", language="rust", symbol_index_status="indexed_partial"
+            ),
+            graph.SourceFileRow(
+                path="b.hs", language="haskell", symbol_index_status="unsupported"
+            ),
+            graph.SourceFileRow(
+                path="c.py",
+                language="python",
+                symbol_index_status="parse_error",
+                symbol_index_diagnostic="invalid syntax (c.py, line 1)",
+            ),
+            graph.SourceFileRow(
+                path="d.py",
+                language="python",
+                symbol_index_status="unreadable",
+                symbol_index_diagnostic="[Errno 13] Permission denied",
+            ),
+        ],
+        source_index_version="1",
+    )
+
+    assert "indexed (coarse scan)" in runner.invoke(app, ["query", "source", "a.rs"]).output
+    assert "no symbol extractor available" in runner.invoke(app, ["query", "source", "b.hs"]).output
+    parse_error_output = runner.invoke(app, ["query", "source", "c.py"]).output
+    assert "parse error" in parse_error_output
+    assert "invalid syntax" in parse_error_output
+    unreadable_output = runner.invoke(app, ["query", "source", "d.py"]).output
+    assert "unreadable" in unreadable_output
+    assert "Permission denied" in unreadable_output
+
+
+def test_query_source_not_found_after_indexed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_source(tmp_path, source_index_version="1")
+    result = runner.invoke(app, ["query", "source", "nonexistent.py"])
+    assert result.exit_code == 0, result.output
+    assert "no source file" in result.output.lower()
+
+    result_json = runner.invoke(app, ["query", "source", "nonexistent.py", "--json"])
+    payload = json.loads(result_json.output)
+    assert payload == {"indexed": True, "found": False, "path": "nonexistent.py"}
+
+
+def test_query_source_symbol_not_found_after_indexed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_source(tmp_path, source_index_version="1")
+    result = runner.invoke(app, ["query", "source-symbol", "NoSuchSymbol"])
+    assert result.exit_code == 0, result.output
+    assert "no source symbol" in result.output.lower()
+
+    result_json = runner.invoke(app, ["query", "source-symbol", "NoSuchSymbol", "--json"])
+    assert json.loads(result_json.output) == {"indexed": True, "symbols": []}
+
+
+def test_query_source_json_round_trips_nullable_fields(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_source(
+        tmp_path,
+        source_files=[graph.SourceFileRow(path="a.py")],  # every field left None
+        source_index_version="1",
+    )
+    result = runner.invoke(app, ["query", "source", "a.py", "--json"])
+    payload = json.loads(result.output)
+    assert payload["language"] is None
+    assert payload["content_hash"] is None
+    assert payload["symbol_index_status"] is None
+    assert payload["symbol_index_diagnostic"] is None
+
+
+def test_query_source_symbol_json_preserves_unknown_exposure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _rebuild_with_source(
+        tmp_path,
+        source_files=[graph.SourceFileRow(path="a.py", language="python")],
+        source_symbols=[
+            graph.SourceSymbolRow(
+                source_file_path="a.py", name="foo", kind="function", line=1, exposure=None
+            )
+        ],
+        source_index_version="1",
+    )
+    result = runner.invoke(app, ["query", "source-symbol", "foo", "--json"])
+    payload = json.loads(result.output)
+    assert payload["symbols"][0]["exposure"] is None
+
+    text_result = runner.invoke(app, ["query", "source-symbol", "foo"])
+    assert "unknown" in text_result.output

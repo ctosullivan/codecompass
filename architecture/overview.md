@@ -826,6 +826,74 @@ path, including the "not yet indexed" one (see
 full, and `planning/phase-76-git-repository-topology.md` for the
 complete phase record.
 
+## First-party source awareness (`codecompass.source_symbols`)
+
+Phase 77. Closes `CG-009`: a project's own first-party source files and
+top-level implementation symbols become durable, queryable
+`context-graph.db` objects, independent of `vendor.toml` — works
+identically at 0 tracked vendors. `source_symbols.discover_source_files`/
+`extract_source_symbols_for_file` are a pure, graph-agnostic detection
+module (mirroring `git_topology.py`/`usage.py`'s own shape);
+`sync.py::rebuild_project_graph` is the only place their output is
+converted into `graph.py` row types.
+
+**A first-party *language*, not a dependency *package ecosystem*.**
+`core.Ecosystem` has one value (`NPM`) covering both JavaScript and
+TypeScript dependencies identically — correct for a package manager,
+wrong for classifying a project's own source, where `.js` and `.ts`
+files are observably different languages with different symbol-kind
+vocabularies. `source_symbols.Language` (`python`/`rust`/`javascript`/
+`typescript`/`haskell`) is a separate, narrower concept defined for this
+purpose alone.
+
+**Implementation scope, not API-surface scope.** The question here is
+"what does this project implement," not "what does this dependency
+expose" (the question vendor `symbols.py`'s extractors answer) — every
+extractor includes non-exported/private top-level declarations,
+recording an `exposure` classification (`public`/`restricted`/
+`internal`/`conventional_private`/`unknown`) as a separate property,
+never a filter. Python needed no scope change at all (it already has no
+export concept); Rust and JS/TS extractors are widened from their
+vendor-facing, export-only counterparts to match every top-level
+declaration regardless of visibility.
+
+**Occurrence-based symbol identity, not name-only.** A top-level
+declaration's identity includes its own `(source_file, name, kind,
+line)` — a real language feature (function overloading) produces
+multiple genuinely distinct declarations sharing one name, live-verified
+on both a real Python `@typing.overload` stack and a real overloaded
+TypeScript function declaration. `line` is `NOT NULL`: an extractor
+unable to determine a location for a candidate does not emit a row for
+it.
+
+**Explicit extraction-outcome model**, modeled directly on
+`git_topology.RepositoryTopology`'s own status+reason+data shape:
+`indexed` (a real structural parser — Python's `ast`) and
+`indexed_partial` (a coarse line-scan/regex technique — Rust/JS/TS,
+never implied to be as complete as a real parser) are both "succeeded"
+outcomes, distinguished only by technique fidelity; `unsupported`
+(Haskell — no in-process parser exists), `parse_error`, and `unreadable`
+are honest, distinguishable failure states — never a bare empty result
+standing in for more than one real cause.
+
+**Two-level uncertainty**, the same shape `git_topology_status`
+established for a different granularity: a whole-*project*
+`meta.source_index_version` (present or absent — has first-party
+indexing ever run at all) is kept structurally separate from a per-*file*
+`symbol_index_status` (always populated once indexing has run at all).
+See [`context-graph-schema.md`](context-graph-schema.md)'s own
+"First-party source tables" section for the full schema.
+
+**CLI surface**: `codecompass query source <path> [--json]` and
+`codecompass query source-symbol <name> [--json]` — deliberately
+separate from `query symbol` (a real vendor-vs-first-party axis
+difference, not a namespace an agent should need to disambiguate by
+guessing), reads `context-graph.db` only, never invokes a rebuild. See
+[`docs/cli-reference.md`](../docs/cli-reference.md) and
+`decisions/0065` for the full design rationale, and
+`planning/phase-77-first-party-source-and-template.md` for the complete
+phase record.
+
 ## `undo` — best-effort generated-artifact cleanup (`codecompass.cli`)
 
 `codecompass undo [--yes] [--dry-run]` (`decisions/0036`) is the only

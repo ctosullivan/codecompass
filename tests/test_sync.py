@@ -8,8 +8,11 @@ from codecompass.core import DepNode, Ecosystem, RepositoryLocation, VendorConfi
 from codecompass.filetree import iter_source_files
 from codecompass.graph import (
     doc_relations,
+    get_meta,
     open_graph,
     record_enrichment,
+    source_file_profile,
+    source_symbol_profile,
     topology_profile,
     unused_vendors,
     vendor_profile,
@@ -766,3 +769,96 @@ def test_rebuild_project_graph_topology_not_git_for_a_non_repository_project_roo
         "worktrees": [],
         "submodules": [],
     }
+
+
+# --- Phase 77: first-party source awareness, real call path -----------------
+
+
+def test_rebuild_project_graph_populates_first_party_source_zero_vendor(tmp_path: Path) -> None:
+    """`L-021`-required real-call-site test: exercises
+    `source_symbols.discover_source_files`/`extract_source_symbols_for_file`
+    -> `rebuild_deterministic` through the actual production entry point,
+    with **zero tracked vendors** -- the architectural acceptance test.
+    """
+    (tmp_path / "models.py").write_text(
+        "class Posting:\n"
+        "    '''A ledger posting.'''\n"
+        "    pass\n"
+        "\n"
+        "def _internal_helper():\n"
+        "    pass\n"
+    )
+
+    rebuild_project_graph([], tmp_path)
+
+    conn = open_graph(tmp_path)
+    assert get_meta(conn, "source_index_version") == "1"
+
+    file_profile = source_file_profile(conn, "models.py")
+    assert file_profile is not None
+    assert file_profile["language"] == "python"
+    assert file_profile["symbol_index_status"] == "indexed"
+    names = {s["name"] for s in file_profile["symbols"]}
+    assert names == {"Posting", "_internal_helper"}
+
+    symbol_profiles = source_symbol_profile(conn, "Posting")
+    assert len(symbol_profiles) == 1
+    assert symbol_profiles[0]["kind"] == "class"
+    assert symbol_profiles[0]["exposure"] == "public"
+
+    private_profile = source_symbol_profile(conn, "_internal_helper")
+    assert private_profile[0]["exposure"] == "conventional_private"
+
+    # No fake/self vendor was created to represent this project's own code.
+    (vendor_count,) = conn.execute("SELECT COUNT(*) FROM vendors").fetchone()
+    assert vendor_count == 0
+    (symbol_count,) = conn.execute("SELECT COUNT(*) FROM symbols").fetchone()
+    assert symbol_count == 0
+
+
+def test_rebuild_project_graph_source_index_version_set_even_with_no_source_files(
+    tmp_path: Path,
+) -> None:
+    """A project with zero recognized first-party source files still gets
+    `meta.source_index_version` written -- distinguishing "genuinely
+    indexed, nothing found" from "never indexed"."""
+    rebuild_project_graph([], tmp_path)
+    conn = open_graph(tmp_path)
+    assert get_meta(conn, "source_index_version") == "1"
+
+
+def test_rebuild_project_graph_handles_real_overload_without_crashing(tmp_path: Path) -> None:
+    """A real function overload (Python `@typing.overload`) must not
+    raise `sqlite3.IntegrityError` through the actual production entry
+    point."""
+    (tmp_path / "api.py").write_text(
+        "from typing import overload\n"
+        "\n"
+        "@overload\n"
+        "def foo(a: str) -> None: ...\n"
+        "@overload\n"
+        "def foo(a: int) -> None: ...\n"
+        "def foo(a):\n"
+        "    print(a)\n"
+    )
+
+    rebuild_project_graph([], tmp_path)  # must not raise
+
+    conn = open_graph(tmp_path)
+    profiles = source_symbol_profile(conn, "foo")
+    assert len(profiles) == 3
+    assert len({p["line"] for p in profiles}) == 3
+
+
+def test_rebuild_project_graph_first_party_files_include_tests(tmp_path: Path) -> None:
+    """Preserves first-party tests as source, per Phase 77's own
+    explicit requirement -- not pruned simply because they are tests."""
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_models.py").write_text("def test_something():\n    pass\n")
+
+    rebuild_project_graph([], tmp_path)
+
+    conn = open_graph(tmp_path)
+    profile = source_file_profile(conn, "tests/test_models.py")
+    assert profile is not None
+    assert {s["name"] for s in profile["symbols"]} == {"test_something"}

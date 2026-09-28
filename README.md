@@ -155,6 +155,12 @@ Running codecompass gets you, for every tracked dependency:
   separate project, and a submodule's parent-pinned commit from what's
   actually checked out — read-only, persisted at the last `sync`, never
   a live `git` call. Requires Git 2.7+.
+- **First-party source awareness** (`codecompass query source`/
+  `query source-symbol`): a project's own source files and top-level
+  implementation symbols — independent of `vendor.toml`, works with zero
+  tracked dependencies — with language, symbol kind, location, and a
+  cross-language exposure classification (public/restricted/internal/
+  convention-only-private).
 
 ## Evidence & provenance
 

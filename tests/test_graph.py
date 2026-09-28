@@ -12,6 +12,7 @@ from codecompass.graph import (
     RoutesViaEdgeRow,
     SkillMentionEdgeRow,
     SourceFileRow,
+    SourceSymbolRow,
     SymbolRow,
     UsesEdgeRow,
     VendorRow,
@@ -29,6 +30,8 @@ from codecompass.graph import (
     record_symbol_enrichment,
     relation_enrichment_candidates,
     skills_index,
+    source_file_profile,
+    source_symbol_profile,
     spec_docs_without_relations,
     symbol_profile,
     topology_profile,
@@ -171,7 +174,7 @@ def test_init_schema_seeds_schema_version(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "10"
+    assert value == "11"
 
 
 def test_init_schema_is_idempotent(tmp_path) -> None:
@@ -181,7 +184,7 @@ def test_init_schema_is_idempotent(tmp_path) -> None:
     (value,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert value == "10"
+    assert value == "11"
 
 
 def test_doc_artifacts_accepts_slash_command_kind(tmp_path) -> None:
@@ -294,7 +297,7 @@ def test_open_graph_migrates_pre_phase_17_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "10"
+    assert schema_version == "11"
 
     # Would raise sqlite3.IntegrityError under the pre-migration constraint.
     conn.execute(
@@ -368,7 +371,7 @@ def test_open_graph_migrates_pre_phase_21_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "10"
+    assert schema_version == "11"
 
     # Would raise sqlite3.IntegrityError under the pre-Phase-21 constraints.
     conn.execute(
@@ -426,7 +429,7 @@ def test_open_graph_migrates_pre_phase_27_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "10"
+    assert schema_version == "11"
 
     # Would raise sqlite3.IntegrityError under the pre-Phase-27 constraints.
     conn.execute(
@@ -462,7 +465,7 @@ def test_open_graph_does_not_drop_doc_artifacts_for_an_unrelated_schema_version_
     tables at all). Before this fix, `_migrate_doc_artifacts_constraints`
     triggered on any `meta.schema_version` mismatch, unconditionally —
     confirmed by this test to no longer be true: a pre-existing row
-    survives opening under the current (`"10"`) code with the stored
+    survives opening under the current (`"11"`) code with the stored
     version still at `"9"`.
     """
     db_path = tmp_path / "context-graph.db"
@@ -535,7 +538,7 @@ def test_open_graph_does_not_drop_doc_artifacts_for_an_unrelated_schema_version_
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "10"
+    assert schema_version == "11"
 
 
 def test_open_graph_migrates_pre_phase_31_schema_preserves_existing_rows(tmp_path) -> None:
@@ -1051,7 +1054,7 @@ def test_open_graph_migrates_pre_phase_32_schema_adds_chunk_id_columns(tmp_path)
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "10"
+    assert schema_version == "11"
 
     documents_edges_columns = {row[1] for row in conn.execute("PRAGMA table_info(documents_edges)")}
     doc_relations_edges_columns = {
@@ -1129,7 +1132,7 @@ def test_open_graph_migrates_pre_phase_54c_schema(tmp_path) -> None:
     (schema_version,) = conn.execute(
         "SELECT value FROM meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert schema_version == "10"
+    assert schema_version == "11"
 
     # Would raise sqlite3.IntegrityError under the pre-Phase-54c constraint.
     conn.execute(
@@ -1835,3 +1838,262 @@ def test_topology_profile_handles_not_git_status_with_no_repository_row(tmp_path
         "worktrees": [],
         "submodules": [],
     }
+
+
+# --- Phase 77: first-party source files/symbols -----------------------------
+
+
+def test_source_files_upserted_by_natural_key_preserves_id_across_rebuilds(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(
+        conn,
+        **_fixture_kwargs(),
+        source_symbols=[
+            SourceSymbolRow(source_file_path=_SOURCE_FILE, name="foo", kind="function", line=1)
+        ],
+    )
+    (id_before,) = conn.execute(
+        "SELECT id FROM source_files WHERE path = ?", (_SOURCE_FILE,)
+    ).fetchone()
+    (symbol_id_before,) = conn.execute(
+        "SELECT id FROM source_symbols WHERE name = 'foo'"
+    ).fetchone()
+
+    # Same path, same symbol, run again -- ids must not churn.
+    rebuild_deterministic(
+        conn,
+        **_fixture_kwargs(),
+        source_symbols=[
+            SourceSymbolRow(source_file_path=_SOURCE_FILE, name="foo", kind="function", line=1)
+        ],
+    )
+    (id_after,) = conn.execute(
+        "SELECT id FROM source_files WHERE path = ?", (_SOURCE_FILE,)
+    ).fetchone()
+    (symbol_id_after,) = conn.execute("SELECT id FROM source_symbols WHERE name = 'foo'").fetchone()
+    assert id_after == id_before
+    assert symbol_id_after == symbol_id_before
+
+
+def test_source_files_removed_from_fixture_are_deleted(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    kwargs = _fixture_kwargs()
+    kwargs["source_files"] = [SourceFileRow(path="a.py"), SourceFileRow(path="b.py")]
+    kwargs["uses_edges"] = []
+    kwargs["skill_mentions_edges"] = []
+    rebuild_deterministic(conn, **kwargs)
+    kwargs["source_files"] = [SourceFileRow(path="a.py")]
+    rebuild_deterministic(conn, **kwargs)
+    paths = {row[0] for row in conn.execute("SELECT path FROM source_files")}
+    assert paths == {"a.py"}
+
+
+def test_source_symbols_occurrence_identity_handles_overload_without_collision(tmp_path) -> None:
+    """A genuine function overload (three same-named declarations at
+    three distinct lines) must never raise sqlite3.IntegrityError."""
+    conn = open_graph(tmp_path)
+    kwargs = _fixture_kwargs()
+    kwargs["source_symbols"] = [
+        SourceSymbolRow(source_file_path=_SOURCE_FILE, name="foo", kind="function", line=1),
+        SourceSymbolRow(source_file_path=_SOURCE_FILE, name="foo", kind="function", line=2),
+        SourceSymbolRow(source_file_path=_SOURCE_FILE, name="foo", kind="function", line=3),
+    ]
+    rebuild_deterministic(conn, **kwargs)  # must not raise
+    rows = conn.execute(
+        "SELECT line FROM source_symbols WHERE name = 'foo' ORDER BY line"
+    ).fetchall()
+    assert [r[0] for r in rows] == [1, 2, 3]
+
+
+def test_source_index_version_absent_until_explicitly_supplied(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    rebuild_deterministic(conn, **_fixture_kwargs())
+    assert get_meta(conn, "source_index_version") is None
+
+    rebuild_deterministic(conn, **_fixture_kwargs(), source_index_version="1")
+    assert get_meta(conn, "source_index_version") == "1"
+
+
+def test_source_index_version_written_even_with_zero_source_files(tmp_path) -> None:
+    """A project with zero recognized first-party source files still
+    gets `source_index_version` written -- the same posture
+    `git_topology_status` already has for zero worktrees."""
+    conn = open_graph(tmp_path)
+    kwargs = _fixture_kwargs()
+    kwargs["source_files"] = []
+    kwargs["uses_edges"] = []
+    kwargs["skill_mentions_edges"] = []
+    rebuild_deterministic(conn, **kwargs, source_index_version="1")
+    assert get_meta(conn, "source_index_version") == "1"
+
+
+def test_source_file_profile_and_source_symbol_profile(tmp_path) -> None:
+    conn = open_graph(tmp_path)
+    kwargs = _fixture_kwargs()
+    kwargs["source_files"] = [
+        SourceFileRow(
+            path=_SOURCE_FILE,
+            language="python",
+            content_hash="abc123",
+            symbol_index_status="indexed",
+        )
+    ]
+    kwargs["source_symbols"] = [
+        SourceSymbolRow(
+            source_file_path=_SOURCE_FILE,
+            name="Posting",
+            kind="class",
+            line=5,
+            purpose="A ledger posting.",
+            exposure="public",
+        )
+    ]
+    rebuild_deterministic(conn, **kwargs, source_index_version="1")
+
+    file_profile = source_file_profile(conn, _SOURCE_FILE)
+    assert file_profile["language"] == "python"
+    assert file_profile["content_hash"] == "abc123"
+    assert file_profile["symbol_index_status"] == "indexed"
+    assert file_profile["symbols"][0]["name"] == "Posting"
+    assert file_profile["symbols"][0]["exposure"] == "public"
+
+    assert source_file_profile(conn, "nonexistent.py") is None
+
+    symbol_profiles = source_symbol_profile(conn, "Posting")
+    assert len(symbol_profiles) == 1
+    assert symbol_profiles[0]["source_file_path"] == _SOURCE_FILE
+    assert symbol_profiles[0]["language"] == "python"
+    assert symbol_profiles[0]["kind"] == "class"
+    assert symbol_profiles[0]["line"] == 5
+
+    assert source_symbol_profile(conn, "NoSuchSymbol") == []
+
+
+def test_migrate_source_files_columns_preserves_uses_edges_and_enrichment(tmp_path) -> None:
+    """Simulates a pre-Phase-77 `context-graph.db` (no `language`/
+    `content_hash`/`symbol_index_status`/`symbol_index_diagnostic`
+    columns, no `source_symbols` table) -- `open_graph` must add the four
+    columns in place via `ALTER TABLE`, never drop/recreate `source_files`
+    (which would cascade-delete `uses_edges`), and leave
+    `vendor_enrichment`/`symbol_enrichment` completely untouched.
+    """
+    db_path = tmp_path / "context-graph.db"
+    old_conn = sqlite3.connect(db_path)
+    old_conn.execute("PRAGMA foreign_keys = ON")
+    old_conn.executescript(
+        """
+        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE vendors (
+          id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE,
+          ecosystem TEXT NOT NULL, installed_version TEXT
+        );
+        CREATE TABLE symbols (
+          id INTEGER PRIMARY KEY,
+          vendor_id INTEGER NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+          name TEXT NOT NULL, purpose TEXT,
+          UNIQUE (vendor_id, name)
+        );
+        CREATE TABLE source_files (id INTEGER PRIMARY KEY, path TEXT NOT NULL UNIQUE);
+        CREATE TABLE uses_edges (
+          id INTEGER PRIMARY KEY,
+          source_file_id INTEGER NOT NULL REFERENCES source_files(id) ON DELETE CASCADE,
+          vendor_id INTEGER NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+          symbol_id INTEGER REFERENCES symbols(id) ON DELETE CASCADE,
+          line INTEGER
+        );
+        CREATE TABLE vendor_enrichment (
+          id INTEGER PRIMARY KEY,
+          vendor_id INTEGER NOT NULL UNIQUE REFERENCES vendors(id) ON DELETE CASCADE,
+          technical_description TEXT, symbol_set_hash TEXT NOT NULL,
+          model TEXT NOT NULL, generated_at TEXT NOT NULL
+        );
+        CREATE TABLE symbol_enrichment (
+          id INTEGER PRIMARY KEY,
+          symbol_id INTEGER NOT NULL UNIQUE REFERENCES symbols(id) ON DELETE CASCADE,
+          purpose TEXT NOT NULL, model TEXT, generated_at TEXT NOT NULL
+        );
+        """
+    )
+    old_conn.execute("INSERT INTO meta (key, value) VALUES ('schema_version', '9')")
+    old_conn.execute(
+        "INSERT INTO vendors (id, name, ecosystem, installed_version) "
+        "VALUES (1, 'demo', 'python', '1.0.0')"
+    )
+    old_conn.execute(
+        "INSERT INTO symbols (id, vendor_id, name, purpose) VALUES (1, 1, 'foo', 'a fn')"
+    )
+    old_conn.execute("INSERT INTO source_files (id, path) VALUES (1, 'a.py')")
+    old_conn.execute(
+        "INSERT INTO uses_edges (source_file_id, vendor_id, symbol_id, line) VALUES (1, 1, 1, 3)"
+    )
+    old_conn.execute(
+        "INSERT INTO vendor_enrichment "
+        "(vendor_id, technical_description, symbol_set_hash, model, generated_at) VALUES "
+        "(1, 'A demo library.', 'hash-abc', 'claude-haiku-4-5', '2026-01-01T00:00:00+00:00')"
+    )
+    old_conn.execute(
+        "INSERT INTO symbol_enrichment (symbol_id, purpose, model, generated_at) VALUES "
+        "(1, 'does a thing', 'claude-haiku-4-5', '2026-01-01T00:00:00+00:00')"
+    )
+    old_conn.commit()
+    old_conn.close()
+
+    conn = open_graph(tmp_path)
+
+    # uses_edges survived -- source_files was never dropped/recreated.
+    (edge_count,) = conn.execute("SELECT COUNT(*) FROM uses_edges").fetchone()
+    assert edge_count == 1
+    (path,) = conn.execute("SELECT path FROM source_files WHERE id = 1").fetchone()
+    assert path == "a.py"
+
+    # The four new columns exist, nullable, backfilled NULL for the
+    # pre-existing row.
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(source_files)")}
+    assert {"language", "content_hash", "symbol_index_status", "symbol_index_diagnostic"} <= columns
+    (language,) = conn.execute("SELECT language FROM source_files WHERE id = 1").fetchone()
+    assert language is None
+
+    # vendor_enrichment/symbol_enrichment untouched.
+    (technical_description,) = conn.execute(
+        "SELECT technical_description FROM vendor_enrichment WHERE vendor_id = 1"
+    ).fetchone()
+    assert technical_description == "A demo library."
+    (symbol_purpose,) = conn.execute(
+        "SELECT purpose FROM symbol_enrichment WHERE symbol_id = 1"
+    ).fetchone()
+    assert symbol_purpose == "does a thing"
+
+    # source_symbols table now exists too (a brand-new table for this db).
+    (source_symbols_exists,) = conn.execute(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'source_symbols'"
+    ).fetchone()
+    assert source_symbols_exists == 1
+
+
+def test_fresh_and_upgraded_source_files_schema_are_identical(tmp_path) -> None:
+    """The nullable-everywhere contract (Phase 77 second amendment):
+    `PRAGMA table_info(source_files)` must return identical column
+    names/types/nullability whether the database was created fresh or
+    migrated from a pre-Phase-77 shape."""
+    (tmp_path / "fresh").mkdir()
+    fresh_conn = open_graph(tmp_path / "fresh")
+
+    old_db_path = tmp_path / "upgraded" / "context-graph.db"
+    old_db_path.parent.mkdir()
+    old_conn = sqlite3.connect(old_db_path)
+    old_conn.executescript(
+        "CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);"
+        "CREATE TABLE source_files (id INTEGER PRIMARY KEY, path TEXT NOT NULL UNIQUE);"
+    )
+    old_conn.execute("INSERT INTO meta (key, value) VALUES ('schema_version', '9')")
+    old_conn.commit()
+    old_conn.close()
+    upgraded_conn = open_graph(tmp_path / "upgraded")
+
+    def _column_shape(conn) -> list[tuple]:
+        return [
+            (row[1], row[2], row[3])  # name, type, notnull
+            for row in conn.execute("PRAGMA table_info(source_files)")
+        ]
+
+    assert _column_shape(fresh_conn) == _column_shape(upgraded_conn)

@@ -7,12 +7,12 @@ for the system-at-a-glance entry point; the rest of this set:
 [`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md).
 
 Full schema as of `src/codecompass/graph.py`'s `_SCHEMA_SQL`, schema
-version `"10"`. One SQLite file at the project root, opened via
-`open_graph(project_root)`, which runs foreign-key-enabling PRAGMA, five
+version `"11"`. One SQLite file at the project root, opened via
+`open_graph(project_root)`, which runs foreign-key-enabling PRAGMA, six
 in-place migrations (for an on-disk database whose `doc_artifacts`/
-`symbols`/`vendors`/`doc_relation_enrichment`/`symbol_enrichment` shape
-predates the current one), then `init_schema`'s idempotent `CREATE TABLE
-IF NOT EXISTS`. See
+`symbols`/`vendors`/`doc_relation_enrichment`/`symbol_enrichment`/
+`source_files` shape predates the current one), then `init_schema`'s
+idempotent `CREATE TABLE IF NOT EXISTS`. See
 [`docs/domain/concepts/context.md`](../docs/domain/concepts/context.md)
 sense 1 and
 [`relationship-edge.md`](../docs/domain/concepts/relationship-edge.md)
@@ -22,10 +22,10 @@ for what this graph means conceptually; this page is the literal schema.
 
 | Table | Key columns | Notes |
 |---|---|---|
-| `meta` | `key` (PK), `value` | `schema_version` (informational bookkeeping since Phase 76 — no migration's own trigger condition reads it any more), `last_deterministic_rebuild_at`, `git_topology_status`/`git_topology_reason` (Phase 76 — see "Git topology tables" below; absent entirely, as opposed to any of the four real status values, means "never indexed under Phase-76-aware code"). |
+| `meta` | `key` (PK), `value` | `schema_version` (informational bookkeeping since Phase 76 — no migration's own trigger condition reads it any more), `last_deterministic_rebuild_at`, `git_topology_status`/`git_topology_reason` (Phase 76 — see "Git topology tables" below; absent entirely, as opposed to any of the four real status values, means "never indexed under Phase-76-aware code"), `source_index_version` (Phase 77 — see "First-party source tables" below; absent means "first-party source has never been indexed under Phase-77-aware code"). |
 | `vendors` | `name` UNIQUE, `ecosystem` CHECK'd to the 4-member set, `installed_version`, `repository_url`, `repository_subdirectory`, `source_resolved`, `source_resolution_error`, `last_synced_at` | **Upserted** by `name` on every rebuild — never deleted-and-reinserted while still present in the new fixture, so its integer `id` (and anything foreign-keying to it) is stable across syncs. |
-| `source_files` | `path` UNIQUE | Every project source file with at least one detected `uses_edges` row. |
-| `symbols` | `(vendor_id, name)` UNIQUE, `purpose`, `export_kind` CHECK'd `('export'\|'reexport'\|'undetermined')` default `'export'`, `note` | Also **upserted** by natural key, for the same enrichment-preservation reason as `vendors`. |
+| `source_files` | `path` UNIQUE, `language` (nullable — a *first-party* language, `('python'\|'rust'\|'javascript'\|'typescript'\|'haskell')` in practice, not `CHECK`-constrained; deliberately distinct from `vendors.ecosystem`, Phase 77), `content_hash` (nullable), `symbol_index_status` (nullable, CHECK'd to a 5-value set — see below), `symbol_index_diagnostic` (nullable) | **Every recognized first-party source file** (Phase 77 — broadened from "only a file with a detected vendor-import" to the full first-party file set, independent of `vendor.toml`). **Upserted** by `path`, same stability guarantee as `vendors`/`symbols`. All four non-`path` columns are nullable identically on a fresh or a migrated database (`decisions/0065`) — `NULL` means unresolved/legacy, never a database-history-dependent inconsistency. |
+| `symbols` | `(vendor_id, name)` UNIQUE, `purpose`, `export_kind` CHECK'd `('export'\|'reexport'\|'undetermined')` default `'export'`, `note` | Also **upserted** by natural key, for the same enrichment-preservation reason as `vendors`. Vendor API-surface symbols only — see `source_symbols` below for a project's own first-party implementation symbols, a structurally separate table, never a nullable `vendor_id` here. |
 | `doc_artifacts` | `path` UNIQUE, `kind` CHECK'd to a 7-value set, `origin` CHECK'd to a 6-value set, `vendor_id` (nullable), `name`, `description` | **Fully deleted and reinserted** every rebuild (not upserted) — this is why `doc_relation_enrichment` below is keyed by plain text, not a foreign key to this table. |
 | `doc_chunks` | `(doc_artifact_id, start_line)` unique in practice via natural key, `heading_path`, `end_line`, `content_hash` | Heading-scoped slices of a doc's text (`doc_chunking.chunk_markdown`). **Not** the `DocChunk`/`EXPLAINS` tables from a former, earlier design that `decisions/0032` explicitly excluded from this schema — same name, unrelated design (no embeddings, no semantic chunking; heading-boundary-only, additive to the mechanical mention-detection pipeline below). See `decisions/0032`/`decisions/0046`. |
 
@@ -167,6 +167,78 @@ unconditionally on every detection pass, need 2.7; no feature newer than
 detected via a single `git --version` check and surfaces as
 `unavailable` with an explicit, version-naming `git_topology_reason`,
 never a crash.
+
+## First-party source tables (Phase 77)
+
+`source_files` (extended, see above) plus a new `source_symbols` table,
+plus one `meta` key (`source_index_version`). Closes `CG-009`: a
+project's own first-party source files/top-level implementation symbols
+are now durable, queryable objects, independent of `vendor.toml` — works
+identically at 0 tracked vendors. Detection lives in
+`source_symbols.py`, entirely separate from `graph.py` (the same
+"detection module stays graph-agnostic" pattern `git_topology.py`/
+`usage.py` already establish); `sync.py::rebuild_project_graph` is the
+only place that converts its plain dataclasses into these row types. See
+`planning/phase-77-first-party-source-and-template.md` and
+`decisions/0065` for the full design rationale.
+
+| Table | Key columns | Notes |
+|---|---|---|
+| `source_symbols` | `(source_file_id, name, kind, line)` UNIQUE, `line` **`NOT NULL`**, `purpose` (nullable), `exposure` CHECK'd to a 5-value set | **Occurrence-based identity, not name-only** — a top-level declaration's identity includes its own location, since a real language feature (function overloading) produces multiple genuinely distinct declarations sharing one name (live-verified on both Python `@typing.overload` and TypeScript). `line` is never `NULL`: an extractor unable to determine a location for a candidate does not emit a row for it at all. **Upserted** by this natural key, same stability guarantee as `vendors`/`symbols`/`source_files`. |
+
+`source_files.symbol_index_status` closed set: `indexed` (a real
+structural parser ran — Python's own `ast`, today), `indexed_partial` (a
+coarse line-scan/regex technique ran — Rust and JS/TS, today; never
+implied to be as complete as a real parser), `unsupported` (no extractor
+exists for this file's language — Haskell, today), `parse_error` (the
+language's own parser rejected the file — Python-specific, since
+Rust/JS/TS's coarse techniques have no real "parse" step to fail
+structurally), `unreadable` (the file itself could not be read).
+`symbol_index_diagnostic` carries the caught exception's own message for
+`parse_error`/`unreadable`, `NULL` otherwise. Modeled directly on
+`git_topology.RepositoryTopology`'s own status+reason+data shape — an
+empty `symbols` list for `indexed`/`indexed_partial` is a real, valid,
+distinct outcome ("genuinely no top-level symbols"), never conflated
+with any failure state.
+
+`source_symbols.exposure` closed set: `public`, `restricted`,
+`internal`, `conventional_private`, `unknown` — a genuinely
+cross-language classification, not a simplistic public/private binary.
+Python's leading-underscore convention maps to `conventional_private`
+(a naming *convention* with one real language-level consequence, `from
+module import *`'s own exclusion — deliberately distinct from
+`internal`, which means a language *itself* enforces non-visibility).
+Rust's real three-tier visibility maps to `public` (bare `pub`),
+`restricted` (`pub(crate)`/`pub(super)`/`pub(in ...)`), or `internal` (no
+modifier) — live-verified against 8 representative declarations.
+JS/TS maps `export` to `public`, its absence to `internal` (no
+`restricted`-equivalent tier exists for these languages). `unknown` is
+reserved for a future, less-certain extractor — not actually produced by
+any extractor this phase ships. **Recorded as a separate property, never
+used to filter a symbol out of the table** — first-party symbol
+extraction answers "what does this project implement," not "what public
+API does this dependency expose" (the question vendor `symbols.export_kind`
+answers); a non-exported/private top-level declaration is still a real
+row.
+
+`meta.source_index_version` is a plain version marker (`"1"` today, not
+a multi-state status enum — first-party discovery has no "could the
+structure be enumerated at all" failure mode the way Git topology
+detection does; it either ran, or it hasn't yet), written unconditionally
+by `rebuild_deterministic` whenever a genuinely Phase-77-aware rebuild
+runs, **regardless of whether any first-party source files were actually
+found** (mirroring `git_topology_status`'s own "written even with zero
+worktrees" precedent). The key's own **absence** means "first-party
+source has never been indexed under Phase-77-aware code" —
+`cli.py::query_source`/`query_source_symbol` check for this before ever
+reading `source_files`/`source_symbols`, and remain read-only throughout
+(never invoke a rebuild). Kept structurally separate from the per-file
+`symbol_index_status` above — a whole-project "has indexing ever run"
+fact and a per-file "what happened when it did" fact answer different
+questions, the same two-level-uncertainty discipline `git_topology_status`
+(whole-pass) vs. its own per-row nullable columns already established,
+applied here as the same two-level shape at a different granularity
+(whole-*project* vs. per-*file*, rather than whole-*pass* vs. per-*row*).
 
 ## `RELATION_LABELS` — the closed taxonomy
 

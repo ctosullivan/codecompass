@@ -91,6 +91,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Full plan: `planning/phase-76-git-repository-topology.md` (thrice
   amended before implementation). Retro:
   `planning/retros/phase-76-git-repository-topology.md`.
+- **Phase 77** (First-party source awareness, closes `CG-009`): a
+  project's own first-party source files and top-level implementation
+  symbols are now durable, queryable `context-graph.db` objects,
+  independent of `vendor.toml` (works identically with 0 tracked
+  vendors). `source_files` gains a first-party **`language`** concept
+  (`python`/`rust`/`javascript`/`typescript`/`haskell`) — deliberately
+  not a reuse of `core.Ecosystem`, whose single `npm` value cannot
+  distinguish JavaScript from TypeScript (`decisions/0065`) — plus an
+  explicit, honest five-state symbol-indexing outcome (`indexed` — a
+  real parser, Python's own `ast`; `indexed_partial` — a coarse
+  line-scan/regex technique, Rust/JS/TS, never implied to be as complete
+  as a real parser; `unsupported`; `parse_error`; `unreadable`), all
+  nullable identically on a fresh or an upgraded database. New
+  `source_symbols` table with **occurrence-based identity**
+  (`UNIQUE(source_file_id, name, kind, line)`, `line NOT NULL`) —
+  live-verified that a name-only key crashes real `sync` on genuine
+  function overloads, confirmed on both a real Python `@typing.overload`
+  stack and a real overloaded TypeScript declaration. First-party symbol
+  extraction covers **implementation scope**, not an API surface —
+  non-exported/private top-level declarations are included, with a new,
+  genuinely cross-language `exposure` classification
+  (`public`/`restricted`/`internal`/`conventional_private`/`unknown`,
+  live-verified against Rust's real three-tier visibility model) recorded
+  as a property, never used to filter a symbol out. A new project-level
+  `meta.source_index_version` marker (mirroring `git_topology_status`'s
+  own absence-means-never-synced precedent) distinguishes "first-party
+  source has never been indexed" from "genuinely indexed, nothing
+  found." New `codecompass query source`/`query source-symbol` commands
+  (deliberately separate from `query symbol` — a real vendor-vs-
+  first-party axis, not a namespace to guess), reusing the CLI's own
+  tri-state-label rendering discipline from first implementation. New
+  `source_symbols.py` module reusing the existing per-language
+  extraction techniques (Python's AST walk needed no widening at all;
+  Rust/JS/TS's extractors widened to match with-or-without any
+  visibility/export modifier). `decisions/0065` records the full design
+  rationale. Full plan (twice amended before implementation):
+  `planning/phase-77-first-party-source-and-template.md`.
 
 ### Changed
 

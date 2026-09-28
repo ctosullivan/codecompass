@@ -47,6 +47,19 @@ and how a project's own docs relate to them.
   worktree of *this* repository from a genuinely separate project, and a
   submodule's parent-pinned commit from what's actually checked out.
   Requires Git 2.7+ (`decisions/0064`).
+- **First-party source awareness** (`codecompass query source`/
+  `query source-symbol`, Phase 77): a project's own source files and
+  top-level implementation symbols become queryable graph objects,
+  independent of `vendor.toml` (works with zero tracked dependencies) —
+  closing the structural gap where only a dependency's own API surface
+  was ever indexed as a "symbol." Each recognized file is classified by
+  first-party *language* (not the same concept as a dependency's package
+  *ecosystem* — `decisions/0065`), and each symbol carries a
+  cross-language `exposure` classification (`public`/`restricted`/
+  `internal`/`conventional_private`/`unknown`) — non-exported/private
+  declarations are included, never filtered out, since the question here
+  is "what does this project implement," not "what does this dependency
+  expose."
 
 ## What it does NOT do
 
