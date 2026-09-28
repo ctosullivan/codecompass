@@ -19,6 +19,11 @@ recommended") and are now `Accepted` at
 [`decisions/0052`](../../decisions/0052-ledgerkit-is-the-next-reference-project-not-technical-clipper.md)
 and
 [`decisions/0053`](../../decisions/0053-relicense-to-gpl-3.0-or-later.md).
+**§E (`L-050`) and §F (`L-065`)** are further, later `CLAUDE.md`
+corrections approved and landed the same way, outside any lettered gate
+(both are factual/consistency corrections of an already-false or
+self-contradictory claim about a doc `CLAUDE.md` itself governs, not new
+rules needing gate-style deliberation).
 
 ---
 
@@ -465,3 +470,75 @@ surface this).
   bullet is replaced with the text above; `planning/learnings/inbox.md`'s
   `L-050` flips to `status: promoted` with a `promoted.md` pointer line
   once the edit lands.
+
+## F. 2026-09-28 proposed correction (Phase 76 corrective pass — `L-065`)
+
+**Status:** approved by the user and landed, 2026-09-28 (`CLAUDE.md` §5,
+commit `feaaaa0`). Filed by the lead during a narrowly-scoped
+post-closeout corrective pass on the already-`done` Phase 76, confirmed
+sound by `knowledge-curator`'s own independent triage of `L-065`.
+
+### F1 — §5 "Definition of done, per phase": fix a genuine internal contradiction between the audit-voiding rule and the terminal reconciliation commit it requires
+
+- **Context:** `CLAUDE.md` §5 stated "any commit after the auditor's own
+  pass that touches audited scope voids that pass and requires a fresh
+  one before this transition happens." The same paragraph's own terminal
+  step — a `roadmap-context-curator` reconciliation flipping
+  `planning/ROADMAP.md`'s phase row to `done` — necessarily lands after
+  the audit and necessarily touches `planning/ROADMAP.md`/
+  `planning/CONTEXT.md`, files the auditor's own checklist item 2
+  explicitly checks as part of "audited scope." Read literally, the one
+  commit required to ever reach `done` voids the audit that authorizes
+  it — a real, structural contradiction, not a hypothetical one: every
+  phase closeout to date, including Phase 76's own original one
+  (`8c053f7`→`b3abe07`), had informally judged the curator's diff "narrow
+  enough" by eye, with no written standard to judge it against. Full
+  account: `planning/learnings/inbox.md`'s `L-065`.
+- **Proposed text — append to the existing final sentence of §5:**
+
+  > Current:
+  > — this is the terminal action of the sequence, not a condition the
+  > auditor checks alongside the others; any commit after the auditor's
+  > own pass that touches audited scope voids that pass and requires a
+  > fresh one before this transition happens. Not done until all of
+  > these.
+  >
+  > Proposed:
+  > — this is the terminal action of the sequence, not a condition the
+  > auditor checks alongside the others; any commit after the auditor's
+  > own pass that touches audited scope voids that pass and requires a
+  > fresh one before this transition happens — **with one explicit,
+  > narrow exemption**: the terminal `roadmap-context-curator`
+  > reconciliation commit itself (flipping `planning/ROADMAP.md`'s phase
+  > row to `done`, overwriting `planning/CONTEXT.md`'s current-state
+  > section, and updating the phase plan file's own Status line —
+  > nothing else) is not "audited scope" for this purpose, since the
+  > audit exists precisely to authorize that commit; treating it as
+  > self-invalidating would make the gate impossible to ever satisfy. If
+  > that commit touches anything beyond those three named targets (a
+  > changelog entry, `docs/`, `architecture/`, `decisions/*`, `src/`,
+  > tests, `planning/learnings/**`, `planning/context-gaps/**`, or any
+  > other file), the audit is voided and must be repeated against the new
+  > state, exactly as before — confirmed by the lead reading the commit's
+  > actual diff before treating the phase as done. Not done until all of
+  > these.
+
+- **Alternatives considered:** (a) the corrective pass's own alternative
+  model — a final post-curator audit pass instead of a pre-defined
+  exemption list — was offered to the user and explicitly declined in
+  favor of the exemption approach; (b) a broader "trust the curator's own
+  judgment" fix — rejected, since it would reintroduce exactly the
+  unrepeatable, ad hoc standard that let this contradiction go unnoticed
+  through every prior phase closeout; (c) leaving §5 as-is and only
+  documenting the exemption in `planning/agent-led-workflow.md` — rejected
+  because `CLAUDE.md` explicitly wins over any other guidance when they
+  disagree (its own preamble), so a workflow-doc-only fix would leave the
+  higher-precedence document self-contradictory.
+- **Consequences (already landed):** `CLAUDE.md` §5 carries the exemption
+  clause above (`feaaaa0`); `planning/agent-led-workflow.md` step 14 and
+  `.claude/agents/roadmap-context-curator.md` were updated to
+  operationalize it (`6d668db`); `planning/learnings/inbox.md`'s `L-065`
+  is `status: promoted` with a `promoted.md` pointer line, confirmed
+  sound by an independent `knowledge-curator` triage pass that read all
+  three affected documents directly and found no remaining ambiguity or
+  contradiction.
