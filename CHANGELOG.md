@@ -48,6 +48,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   prompt must never claim a fresh agent already has access to
   conversation-only content, now landed in `agent-led-workflow.md` step
   7).
+- **Phase 76** (Git repository topology awareness — worktrees +
+  submodules, new Priority A capability): `src/codecompass/git_topology.py`
+  — a new, read-only detection module (`detect_git_topology`) covering
+  repository/worktree/submodule facts via Git ≥2.5-compatible plumbing
+  only (`rev-parse --show-toplevel --git-common-dir`, `worktree list
+  --porcelain`, `config -f .gitmodules --list -z`, `ls-tree HEAD`,
+  `status --porcelain`, `symbolic-ref --short HEAD`) — never a mutating
+  command, never invoked outside `sync`. Three new `context-graph.db`
+  tables (`git_repositories`, `git_worktrees`, `git_submodules`, schema
+  version 9→10) and `codecompass query topology` (`--json` supported),
+  so a fresh agent can tell a worktree of *this* repository from a
+  genuinely separate project, and a submodule's parent-pinned commit
+  from what's actually checked out — including whether a mismatch is
+  committed parent state or only a local uncommitted checkout. A
+  brand-new, not-yet-synced project gets an explicit `{"indexed":
+  false}` outcome from a narrow `query topology`-specific graph-open
+  path (`_open_graph_for_topology`), rather than the shared
+  `_open_graph_or_note` helper's generic empty-graph message. Git URLs
+  are sanitized scheme-aware before storage (full userinfo stripped for
+  `http`/`https`; only the password stripped for `ssh`/`git`, preserving
+  a bare username; SCP-like syntax left untouched, having no parseable
+  userinfo). Bare repositories are explicitly out of scope (`UNAVAILABLE`
+  status with reason), not silently misdetected. Validated against this
+  repository's own real submodules (`decisions/0058`) and a disposable
+  worktree/clone, with mandatory cleanup. Independently rated by
+  `context-evaluator`: **PASS WITH GAPS, advantage MODERATE** — the
+  strongest Priority A result to date. New context gaps filed:
+  `CG-010` (submodule pin/checkout mismatch has no field distinguishing
+  committed-parent-state divergence from purely local uncommitted
+  checkout state — corroborated twice within the same trial) and
+  `CG-011` (a sibling worktree's dirtiness is honestly reported as
+  unprobed/stale rather than guessed, but nothing in the CLI output
+  itself signals *that this could be stale* without reading `--help`
+  first). New process learning `L-064`: a genuine recurrence of `L-063`
+  (a dispatch prompt again claimed a fresh subagent had conversation-only
+  content already delivered) — self-caught by the dispatched
+  `context-evaluator`, disclosed honestly, and compensated for by
+  independent re-derivation; filed with root-cause analysis and a
+  stronger proposed fix (write agent reports to disk immediately on
+  receipt, removing the temptation to claim conversation access at all).
+  Full plan: `planning/phase-76-git-repository-topology.md` (thrice
+  amended before implementation). Retro:
+  `planning/retros/phase-76-git-repository-topology.md`.
 
 ### Changed
 
@@ -175,6 +218,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   three patterns. `planning/retros/phase-74-provenance-hardening.md`'s
   own commit list was also corrected to include the post-audit fix
   commits, having fallen behind them.
+- **Phase 76** (real, pre-existing bug found via live testing, not
+  introduced this phase): `_migrate_doc_artifacts_constraints` fired on
+  *any* `meta.schema_version` mismatch, not only when `doc_artifacts`
+  itself actually needed migration — confirmed via `git log` that Phase
+  60 (`41bae257`, an unrelated `vendors.ecosystem` widening) and Phase 62
+  (`96428a8c`, an unrelated `symbols.export_kind`/`note` addition) both
+  bumped the schema version for reasons that had nothing to do with
+  `doc_artifacts`, and both would have triggered an unnecessary
+  drop-and-recreate of that table under the old trigger. Replaced with
+  `_doc_artifacts_schema_is_current()`, an introspection-based check
+  (`sqlite_master.sql` text plus `PRAGMA table_info`) matching the
+  pattern this project's other four migrations already used, plus a
+  regression test exercising the real `open_graph()` call path
+  (`test_open_graph_does_not_drop_doc_artifacts_for_an_unrelated_schema_version_bump`).
+  README.md's "Core idea" section and `ai-docs/README.md`'s "What it
+  does"/"It doesn't touch git" framing were both found, by this phase's
+  own drift audit, to never mention Git topology awareness at all —
+  fixed, including rewording the "It doesn't touch git" headline to "It
+  never mutates git state" with an explanation distinguishing Phase 76's
+  own read-only git plumbing (during `sync` only) from any mutating
+  command (never present anywhere in the codebase).
 
 ## [1.0.0] - 2026-09-24
 

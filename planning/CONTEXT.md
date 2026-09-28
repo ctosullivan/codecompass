@@ -22,20 +22,57 @@ not lettered stages. Priority A's first concrete deliverable
 (Phase 73, `CG-006`), Priority B's first hardening step (Phase 74,
 `L-031`/`L-032`), and Priority A's first real-task validation trial
 (Phase 75) are all done, audited, and closed. **Phase 76 (Git repository
-topology awareness — worktrees + submodules) is now planned** (direct
-user request, not yet implemented) — `planning/phase-76-git-repository-topology.md`.
+topology awareness — worktrees + submodules) is implemented and
+evaluated** — `context-evaluator` verdict **PASS WITH GAPS, advantage
+MODERATE** (the strongest Priority A result to date) — but not yet
+marked `done`: the independent `release-phase-auditor` DoD pass and
+final `roadmap-context-curator` reconciliation are still pending. Full
+plan: `planning/phase-76-git-repository-topology.md`. Retro:
+`planning/retros/phase-76-git-repository-topology.md`.
 Backlog, each with its own revisit trigger: Phases 24/25, Phase 50's
 remainder, `CG-003`, the `browser_api`/`platform_api` kind — full detail
 `planning/pre-v1-disposition.md`. Separately, a **second, differently-
 shaped Priority A Ledgerkit validation trial** was recommended at
-Phase 75's own closeout (see "Next concrete step" below) — this remains
-a live, valid recommendation, but it was never actually numbered (no
-plan file was ever written for it, so per `CLAUDE.md` §1 no phase number
-was ever reserved); Phase 76 went to the git-topology phase instead. The
-Ledgerkit trial recommendation is not abandoned, just not yet
-phase-numbered.
+Phase 75's own closeout — this remains a live, valid recommendation, but
+it was never actually numbered (no plan file was ever written for it, so
+per `CLAUDE.md` §1 no phase number was ever reserved); Phase 76 went to
+the git-topology phase instead, at direct user request. The Ledgerkit
+trial recommendation is not abandoned, just not yet phase-numbered.
 
 ## What was just completed
+
+**Phase 76 — Git repository topology awareness (worktrees + submodules),
+implemented and evaluated, not yet `done`.** New `git_topology.py`
+detection module (read-only, Git ≥2.5-compatible plumbing only, never
+invoked outside `sync`); three new `context-graph.db` tables
+(`git_repositories`, `git_worktrees`, `git_submodules`, schema version
+9→10); `codecompass query topology` (`--json`, plus a narrow
+not-yet-indexed path for brand-new projects via
+`_open_graph_for_topology`, deliberately not touching the shared
+`_open_graph_or_note` helper). Validated against this repository's own
+real submodules and a disposable worktree/clone (all cleaned up).
+Independently rated by `context-evaluator`: **PASS WITH GAPS, advantage
+MODERATE** — the strongest Priority A result to date. New gaps `CG-010`
+(submodule mismatch has no field distinguishing committed-parent-state
+divergence from local uncommitted checkout state) and `CG-011` (a
+sibling worktree's stale/unprobed dirtiness has no inline CLI signal)
+filed, both `candidate`. Process learning `L-064` filed: a genuine
+recurrence of `L-063` (one phase after it landed) — self-caught and
+disclosed by the dispatched `context-evaluator`, filed honestly with
+root-cause analysis. Also fixed a real, pre-existing bug found via live
+testing: `_migrate_doc_artifacts_constraints` fired on any unrelated
+`meta.schema_version` bump, not only when `doc_artifacts` itself needed
+migration — confirmed via `git log` that Phases 60 and 62 both would
+have triggered it unnecessarily; replaced with an introspection-based
+check. Docs-reconstructor drift audit found and fixed two real gaps
+(`README.md`/`ai-docs/README.md` never mentioned Git topology
+awareness); re-audit confirmed **NO DRIFT**. Full plan (thrice amended
+before implementation):
+`planning/phase-76-git-repository-topology.md`. Retro:
+`planning/retros/phase-76-git-repository-topology.md`. Remaining before
+`done`: `knowledge-curator` triage of `L-064`/`CG-010`/`CG-011`,
+independent `release-phase-auditor` DoD pass, and final
+`roadmap-context-curator` reconciliation.
 
 **Phase 75 — Priority A Ledgerkit validation (real-task evaluation, no
 `src/` change).** A genuine baseline-vs-CodeCompass-assisted comparison
@@ -51,8 +88,9 @@ dispatch prompt must never claim a fresh subagent already has access to
 conversation-only content, `agent-led-workflow.md` step 7). Full
 report: `planning/reference-projects/ledgerkit/04-cur-query-priority-a-validation.md`.
 Recommended next step: a second, differently-shaped Priority A
-validation trial before any funding decision on `CG-001`/`CG-007` (see
-"Next concrete step" below) — not a capability build.
+validation trial before any funding decision on `CG-001`/`CG-007` — this
+was superseded by the direct user request that produced Phase 76 above,
+not abandoned (see "Next concrete step" below).
 
 **Undocumented-elsewhere decisions from this phase's closeout, now
 recorded here:**
@@ -114,21 +152,26 @@ recorded here:**
   ecosystem (`CG-009`, filed Phase 75) — `vendor_id NOT NULL` FK means
   only tracked vendor dependencies are indexed, never a project's own
   code.
+- A submodule pin/checkout mismatch has no field distinguishing
+  committed-parent-state divergence from purely local uncommitted
+  checkout state (`CG-010`, filed Phase 76) — `codecompass query
+  topology` gives the two SHAs and a match/mismatch verdict, but
+  determining *why* they differ still requires `git status`/`git diff
+  --cached` directly.
+- A sibling worktree's dirtiness, when unprobed/stale, is honestly
+  reported as such but carries no inline CLI signal that this could be
+  the case — only `--help` text documents the sync-time-snapshot
+  guarantee (`CG-011`, filed Phase 76).
 - `vendor/` and a local `.venv/` exist in this checkout (both
   gitignored, freely regeneratable) — live artifacts, not fixtures.
 
 ## Next concrete step
 
-**Phase 76 is planned, not yet implemented**: Git repository topology
-awareness (worktrees + submodules), direct user request —
-`planning/phase-76-git-repository-topology.md`. Three new
-`context-graph.db` tables, a new `git_topology.py` detection module, and
-`codecompass query topology`; validated against this repository's own
-real submodules (`decisions/0058`) plus a disposable test worktree.
-Explicitly does not redefine deferred Phase 24 (chat project-root
-routing) — a different capability, cross-referenced only in the plan.
-Stopped after planning per direct user instruction — awaiting review
-before any `src/` implementation begins.
+**Phase 76's remaining closeout steps**: `knowledge-curator` triage of
+`L-064`/`CG-010`/`CG-011`, an independent `release-phase-auditor` DoD
+pass, and — only on a PASS/PASS WITH NON-BLOCKING OBSERVATIONS verdict —
+a fresh `roadmap-context-curator` reconciliation to flip Phase 76's
+`planning/ROADMAP.md` row to `done`, then a final push.
 
 Separately, still unclaimed by a phase number: a second, differently-
 shaped Priority A Ledgerkit validation trial (per
