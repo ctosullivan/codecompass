@@ -102,3 +102,5 @@ and how a project's own docs relate to them.
 | "How does `architecture/overview.md` relate to my dependencies?" | `codecompass query relations architecture/overview.md` |
 | "Set this project up with codecompass from scratch" | bare `codecompass` — zero-question bootstrap, see `docs/cli-reference.md` |
 | "Explore what codecompass knows about this project, read-only" | `/discovery`, inside a Claude Code session |
+| "What does this project's own `Posting` class do, and where is it?" | `codecompass query source-symbol Posting` — first-party, independent of any tracked vendor |
+| "I want to adopt codecompass in a new project without codecompass's own governance overhead" | [`codecompass-template`](https://github.com/ctosullivan/codecompass-template) — a separate, MIT-licensed scaffold, not a redistribution of this repository's own GPL text |

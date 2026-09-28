@@ -332,3 +332,11 @@ ahead of deeper source-assisted, hledger-facing development work).
 > contributed material under alternative or proprietary terms in
 > future. This does not remove or restrict anyone's rights to existing
 > GPL-licensed versions of CodeCompass.
+
+**Adopting CodeCompass in your own project?** See
+[`codecompass-template`](https://github.com/ctosullivan/codecompass-template)
+— a separate, **MIT-licensed** scaffold (Phase 77) that packages a
+lightweight downstream workflow shape, independently authored and
+freely reusable regardless of your own project's license (GPL,
+permissive, or proprietary). It is not a redistribution of this
+repository's own GPL-3.0-or-later source or documentation.
