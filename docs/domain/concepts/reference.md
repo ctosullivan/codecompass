@@ -120,7 +120,7 @@ unaddressed.
 - `CL-CTXT-004` / `DE-CTXT-004` — `planning/knowledge/codecompass-domain/`
 - `EV-CTXT-003`, `EV-CTXT-007`, `EV-CTXT-008` —
   `planning/knowledge/codecompass-domain/`
-- `src/codecompass/graph.py:104-122` (`doc_artifacts.origin` CHECK enum)
+- `src/codecompass/graph.py:143-161` (`doc_artifacts.origin` CHECK enum)
 - `planning/v1-redefinition/reference-project-protocol.md:1-30`
 - `planning/knowledge/doc-origin-pinned-reference/EV-DOCORIGIN-001.yaml`,
   `EV-DOCORIGIN-008.yaml`

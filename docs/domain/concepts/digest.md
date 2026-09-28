@@ -138,7 +138,7 @@ than resolved here (`docs/domain/open-questions.md`).
 - `EV-CTXT-006`, `EV-CTXT-009`, `EV-CTXT-010`, `EV-CTXT-013`,
   `EV-CTXT-014` — `planning/knowledge/codecompass-domain/`
 - `src/codecompass/core.py:66-103` (`VendorDigest`)
-- `src/codecompass/sync.py:160-202` (`sync_vendor`)
+- `src/codecompass/sync.py:162-204` (`sync_vendor`)
 - `src/codecompass/claude_md.py` (`render_vendor_claude_md`)
 - `src/codecompass/index.py:1,77,117` (project-root routing-table
   injection — the adjacent-but-distinct mechanism)

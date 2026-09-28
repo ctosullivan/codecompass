@@ -19,7 +19,7 @@ A **relationship**, precisely, is a real, typed row in one of
 | `doc_relations_edges` | `doc_artifact → vendor`/`doc_artifact` | `relation_kind` CHECK'd to `'mentions_dependency'`\|`'mentions_artifact'`; nullable `chunk_id` |
 
 Every one of these tables (except the natural-key-upserted `vendors`/
-`symbols` nodes they reference) is wiped and reinserted by
+`symbols`/`source_files` nodes they reference) is wiped and reinserted by
 `rebuild_deterministic` on every whole-project `sync` — a relationship,
 in this precise sense, is always a *current, mechanically re-provable*
 fact, never a standing record of something once true (`CL-CTXT-003`,
@@ -53,7 +53,7 @@ precise meaning, even though casual language could call either a
    `doc_artifacts` at all** — a deliberate design choice
    (`decisions/0038`) confirmed by a real, dedicated test
    (`test_doc_relation_enrichment_has_no_foreign_key`,
-   `tests/test_graph.py:1426-1436`) that asserts
+   `tests/test_graph.py:1611-1621`) that asserts
    `PRAGMA foreign_key_list(doc_relation_enrichment)` returns empty.
    `doc_relations_edges` is wiped every sync; `doc_relation_enrichment`
    survives every sync (it holds paid AI spend). These are structurally
@@ -129,10 +129,10 @@ here (`docs/domain/open-questions.md`).
 - `CL-CTXT-003` / `DE-CTXT-003` — `planning/knowledge/codecompass-domain/`
 - `EV-CTXT-003`, `EV-CTXT-004`, `EV-CTXT-011`, `EV-CTXT-012` —
   `planning/knowledge/codecompass-domain/`
-- `src/codecompass/graph.py:50-360` (schema), `:1184-1226`
+- `src/codecompass/graph.py:50-430` (schema), `:935-1084`
   (`rebuild_deterministic`)
-- `tests/test_graph.py:1426-1436`
+- `tests/test_graph.py:1611-1621`
   (`test_doc_relation_enrichment_has_no_foreign_key`)
 - `decisions/0051-agent-suggested-context-is-captured-not-graphed.md`
 - `decisions/0038-relation-enrichment-natural-key-only-no-fk-never-writes-spec-docs.md`
-- `architecture/overview.md:1050-1320`
+- `architecture/overview.md:688-734`

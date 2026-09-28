@@ -129,4 +129,4 @@ is left as an open observation, not resolved further here
 - `planning/context-health.md:1-30`
 - `planning/context-use-log.md:1-30`
 - `planning/v1-redefinition/context-quality-evaluation.md:1-60`
-- `src/codecompass/graph.py:50-360`
+- `src/codecompass/graph.py:50-430`

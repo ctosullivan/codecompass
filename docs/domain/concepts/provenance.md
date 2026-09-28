@@ -29,7 +29,7 @@ concrete shape in each of at least three independent mechanisms
    backfills `NULL` rather than a fabricated value, so a
    `symbol_enrichment` row written before this migration remains
    provenance-unknown in a way no sibling-table row can be
-   (`src/codecompass/graph.py:164-182, 515-549`; see "Counterexample"
+   (`src/codecompass/graph.py:204-222, 717-751`; see "Counterexample"
    below; `EV-EVID-015`).
 3. **`context-gaps`/`context-observations` entries** carry four fixed
    narrative fields: `origin`, `date`, `codecompass_revision`,
@@ -66,7 +66,7 @@ concrete shape in each of at least three independent mechanisms
 
 ## Example
 
-`vendor_enrichment.model` (`src/codecompass/graph.py:165-175`): a single
+`vendor_enrichment.model` (`src/codecompass/graph.py:205-215`): a single
 `TEXT NOT NULL` column. A row with `model = 'claude-sonnet-...'` was
 produced by a direct, budget-gated API call; a row with
 `model = 'agent:context-enrichment-agent'` was produced by a Claude
@@ -78,7 +78,7 @@ record exists for either.
 ## Counterexample / edge case
 
 **Closed as of Phase 74 (`L-031`) — `symbol_enrichment` now has a
-`model` column.** `src/codecompass/graph.py:176-182` shows five
+`model` column.** `src/codecompass/graph.py:216-222` shows five
 columns, not four: `id, symbol_id, purpose, model, generated_at`. The
 column was added via `_migrate_symbol_enrichment_model_column` (an
 `ALTER TABLE ... ADD COLUMN`, never a drop-and-recreate — this table
@@ -126,7 +126,7 @@ this record either way.
   `OBS-EVID-018.yaml`, `OBS-EVID-019.yaml`.
 - `planning/phase-54c-evidence-knowledge-workflow.md:320-336` (§2.3,
   the adopted provenance-fields table).
-- `src/codecompass/graph.py:164-203, 515-549` (the real enrichment-table
+- `src/codecompass/graph.py:204-243, 717-751` (the real enrichment-table
   schema, including `symbol_enrichment`'s `model` column and its own
   migration function).
 - `decisions/0054-agent-driven-enrichment-is-a-second-non-authoritative-producer.md`.
