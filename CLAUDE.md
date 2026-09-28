@@ -99,8 +99,20 @@ every one of the above genuinely holds does `planning/ROADMAP.md` mark
 the phase `done`** — this is the terminal action of the sequence, not a
 condition the auditor checks alongside the others; any commit after the
 auditor's own pass that touches audited scope voids that pass and
-requires a fresh one before this transition happens. Not done until all
-of these.
+requires a fresh one before this transition happens — **with one
+explicit, narrow exemption**: the terminal `roadmap-context-curator`
+reconciliation commit itself (flipping `planning/ROADMAP.md`'s phase
+row to `done`, overwriting `planning/CONTEXT.md`'s current-state
+section, and updating the phase plan file's own Status line — nothing
+else) is not "audited scope" for this purpose, since the audit exists
+precisely to authorize that commit; treating it as self-invalidating
+would make the gate impossible to ever satisfy. If that commit touches
+anything beyond those three named targets (a changelog entry, `docs/`,
+`architecture/`, `decisions/*`, `src/`, tests,
+`planning/learnings/**`, `planning/context-gaps/**`, or any other
+file), the audit is voided and must be repeated against the new state,
+exactly as before — confirmed by the lead reading the commit's actual
+diff before treating the phase as done. Not done until all of these.
 
 ## 6. Commits and milestones
 
