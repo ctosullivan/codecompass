@@ -159,8 +159,8 @@ Running codecompass gets you, for every tracked dependency:
   `query source-symbol`): a project's own source files and top-level
   implementation symbols — independent of `vendor.toml`, works with zero
   tracked dependencies — with language, symbol kind, location, and a
-  cross-language exposure classification (public/restricted/internal/
-  convention-only-private).
+  cross-language exposure classification (`public`/`restricted`/
+  `internal`/`conventional_private`/`unknown`).
 
 ## Evidence & provenance
 

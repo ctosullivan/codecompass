@@ -301,9 +301,9 @@ Called from exactly one place: `sync.rebuild_project_graph` — see
 [`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md) for
 what assembles the row lists this function is handed.
 
-## Migrations — why five separate functions, not one
+## Migrations — why six separate functions, not one
 
-`open_graph` runs five migration functions before `init_schema`, each
+`open_graph` runs six migration functions before `init_schema`, each
 independently idempotent and **each checking its own precondition
 directly** (`PRAGMA table_info`, or the stored `CREATE TABLE` SQL text)
 — **none of them gates on `meta.schema_version`** (Phase 76:
@@ -332,6 +332,14 @@ introspection style):
   `vendor_enrichment`/`symbol_enrichment` cascade from these tables and
   must not be destroyed by a schema upgrade on an existing project's
   database.
+- `_migrate_source_files_columns` (Phase 77) — adds `source_files`'s four
+  new nullable columns (`language`, `content_hash`,
+  `symbol_index_status`, `symbol_index_diagnostic`) via `ALTER TABLE ADD
+  COLUMN`, for the identical reason: `source_files.id` is referenced by
+  `uses_edges.source_file_id ON DELETE CASCADE`, so a drop-and-recreate
+  here would destroy real usage-edge data on an existing project's
+  database, exactly the class of risk `decisions/0064` fixed for
+  `doc_artifacts`.
 
 `meta.schema_version` itself is updated unconditionally, on every
 `open_graph` call, regardless of what any migration above decided —

@@ -172,10 +172,14 @@ rendering — plus one module that fits neither:
   plain terminal, or some other agent runtime is driving it):
   `discovery.py`, `config.py`, `adapters/**` (the *ecosystem* adapters —
   see **Adapter interface** above), `sync.py`, `symbols.py`,
-  `filetree.py`, `deptree.py`, `usage.py`, `source_resolution.py`,
+  `filetree.py`, `deptree.py`, `usage.py`, `git_topology.py` (Phase 76),
+  `source_symbols.py` (Phase 77), `source_resolution.py`,
   `staleness.py`, `graph.py`, `claude_md.py`, `doc_mapping.py`,
   `doc_chunking.py`, `skill_scan.py`, `spec_docs.py`, the `query` CLI
-  subgroup, and `enrich apply`.
+  subgroup, and `enrich apply`. (This list omitted `git_topology.py`
+  entirely from Phase 76 through Phase 77's own first commit — found and
+  fixed here while touching this section for `source_symbols.py`'s own
+  addition.)
 - **AGENT** (interchangeable content producers, each writing through
   CORE's own graph tables rather than through one another):
   `enrichment.py` and `relation_enrichment.py` (direct-Anthropic-API
