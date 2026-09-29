@@ -39,11 +39,29 @@ its terminal `roadmap-context-curator` reconciliation. Fully closed and
 pushed to `origin`.
 
 **Phase 78 (Priority A backlog rationalisation + second Ledgerkit
-validation trial) is `planned`, direct user request, 2026-09-29 —
-planning only, not yet implemented.** Audits every still-open Priority A
-item/context gap (`CG-001`/`CG-003`/`CG-007`/`CG-010`/`CG-011`, Phase
-24/25/50) and dispositions each against real evidence; designs (does not
-run) a second, differently-shaped Ledgerkit trial against a genuine,
+validation trial) is `planned`, direct user request, 2026-09-29, amended
+same day — planning only, not yet implemented.** The amendment fixed six
+real issues in the first draft: an exit-gate contradiction
+(`task-not-applicable` was wrongly treated as equivalent to
+`not-recurred` for closing Priority A — now evidence-neutral, triggers a
+re-run via a new applicability gate, §7.2.0), a `CG-010`/Priority-A-closure
+inconsistency (now resolved by an explicit strategic-closure-vs-
+maintenance-backlog distinction, §3.1), a trial-design confound (both
+arms independently inventing different implementation contracts and
+comparing the implementations, not the context — restructured into a
+discovery/design comparison, an independent evaluation, and an optional
+shared-contract implementation check, §5.3), a missing observable-
+evidence requirement (both arms' reports must now record files read,
+queries run, commands executed — never private chain-of-thought, §5.3.4),
+residual pre-judgment of the trial's own likely result (removed, §1), and
+imprecise evaluation terminology (`internal` exposure is not uncertainty;
+an omission is a completeness gap, not automatically a safety failure,
+§6). Full amendment log: the plan's own §13.
+
+Audits every still-open Priority A item/context gap
+(`CG-001`/`CG-003`/`CG-007`/`CG-010`/`CG-011`, Phase 24/25/50) and
+dispositions each against real evidence; designs (does not run) a second,
+differently-shaped Ledgerkit trial against a genuine,
 currently-unimplemented Stage D task (journal-comment `ReportSpec`
 parsing, verified live as `[DEFERRED — Milestone 3]` in Ledgerkit's own
 `dev-docs/api-spec.md`), specifically to test whether `CG-001`'s
@@ -57,9 +75,12 @@ and scoped, not abandoned. Full plan:
 See "Next concrete step" below.
 
 Backlog, each with its own revisit trigger: Phases 24/25, Phase 50's
-remainder, `CG-003`, `CG-007`, `CG-010`, `CG-011`, the `browser_api`/
-`platform_api` kind — full detail `planning/pre-v1-disposition.md` and
-Phase 78's own §3 disposition table.
+remainder, `CG-003`, `CG-007`, `CG-011`, the `browser_api`/`platform_api`
+kind — full detail `planning/pre-v1-disposition.md` and Phase 78's own §3
+disposition table. `CG-010` is tracked separately as already-evidenced,
+ready-to-fund Git-topology maintenance backlog (Phase 78's own §3.1) —
+not waiting on a revisit trigger, and not gated on Priority A's own
+strategic exit decision either way.
 
 ## What was just completed
 
@@ -181,16 +202,24 @@ above). Full report:
 
 ## Next concrete step
 
-**Phase 78's plan awaits direct user review** (per its own explicit
-instruction: "produce a planning document only... do not implement until
-the plan is reviewed"). Once approved (or amended and re-approved), the
-next concrete step is executing its §5 trial: dispatch fresh baseline/
-treatment agents against seed-then-fork Ledgerkit scratch clones (frozen
-at `6c90b4ca3e6c10951cb400e43db4b90bfccc5909`) on the journal-comment
-`ReportSpec` parsing task, then an independent `context-evaluator`
-assessment, then an independent `knowledge-curator` triage applying
-Phase 78's own §7.2 decision gate (Priority A closure, or one
-narrowly-scoped final follow-on) — full detail:
+**Phase 78's twice-drafted plan awaits direct user review** (per its own
+explicit instruction: "planning only... do not execute the trial or
+implement CodeCompass/Ledgerkit code"). Once approved (or amended and
+re-approved), the next concrete step is executing its §5 trial in stages:
+Stage 1 — dispatch fresh baseline/treatment agents against seed-then-fork
+Ledgerkit scratch clones (frozen at
+`6c90b4ca3e6c10951cb400e43db4b90bfccc5909`) for discovery/design only (no
+implementation) on the journal-comment `ReportSpec` parsing task, with
+mandatory observable research traces (§5.3.4); Stage 2 — an independent
+`context-evaluator` assessment producing the three-outcome `CG-001`
+verdict (`recurred`/`not-recurred`/`task-not-applicable`, §4); if
+`task-not-applicable`, re-run against the fallback task before proceeding
+(§7.2.0); Stage 3 (optional, evaluator's own call) — a shared,
+human-approved implementation contract given to fresh implementation
+agents in both arms; then an independent `knowledge-curator` triage
+applying Phase 78's own §7.2 exit gate (Priority A closure only on an
+applicable `not-recurred` result, or the smallest evidence-supported
+follow-on on `recurred`) — full detail:
 `planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
 
 Per `CLAUDE.md` §6, Phases 75, 76 (including its corrective pass), and 77
