@@ -35,24 +35,31 @@ closed and pushed to `origin`; no further action needed. Full history in
 `codecompass-template`, Priority A + Priority D) is `done`,** including
 its independent `release-phase-auditor` completion audit (**PASS**,
 `planning/retros/_audit-phase-77.md`, against final HEAD `d74ee47`) and
-this terminal `roadmap-context-curator` reconciliation. Fully closed;
-push to `origin` remains. See "What was just completed" and "Next
-concrete step" below for the full account.
+its terminal `roadmap-context-curator` reconciliation. Fully closed and
+pushed to `origin`.
+
+**Phase 78 (Priority A backlog rationalisation + second Ledgerkit
+validation trial) is `planned`, direct user request, 2026-09-29 —
+planning only, not yet implemented.** Audits every still-open Priority A
+item/context gap (`CG-001`/`CG-003`/`CG-007`/`CG-010`/`CG-011`, Phase
+24/25/50) and dispositions each against real evidence; designs (does not
+run) a second, differently-shaped Ledgerkit trial against a genuine,
+currently-unimplemented Stage D task (journal-comment `ReportSpec`
+parsing, verified live as `[DEFERRED — Milestone 3]` in Ledgerkit's own
+`dev-docs/api-spec.md`), specifically to test whether `CG-001`'s
+first-party-relationship hypothesis (Phase 77's own explicitly-deferred
+follow-on, §13 of that plan) is a real blocker before any such capability
+is built. This is the second, differently-shaped Priority A Ledgerkit
+trial Phase 75's own closeout recommended and Phase 77's own plan
+explicitly deferred (precedes, does not replace) — now finally claimed
+and scoped, not abandoned. Full plan:
+`planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
+See "Next concrete step" below.
 
 Backlog, each with its own revisit trigger: Phases 24/25, Phase 50's
-remainder, `CG-003`, the `browser_api`/`platform_api` kind — full detail
-`planning/pre-v1-disposition.md`. Separately, a **second, differently-
-shaped Priority A Ledgerkit validation trial** was recommended at
-Phase 75's own closeout — this remains a live, valid recommendation, but
-it was never actually numbered (no plan file was ever written for it, so
-per `CLAUDE.md` §1 no phase number was ever reserved); Phase 76 went to
-the git-topology phase instead, at direct user request, and Phase 77
-goes to first-party source awareness next, also at direct user request.
-Phase 77's own plan explicitly analyses this: it **precedes, does not
-replace,** the second trial, since that trial's own `CG-001` motivating
-shape needs first-party *relationships* (Phase 77's own explicitly-
-deferred follow-on) to even be attemptable. The Ledgerkit trial
-recommendation is not abandoned, just not yet phase-numbered.
+remainder, `CG-003`, `CG-007`, `CG-010`, `CG-011`, the `browser_api`/
+`platform_api` kind — full detail `planning/pre-v1-disposition.md` and
+Phase 78's own §3 disposition table.
 
 ## What was just completed
 
@@ -174,22 +181,18 @@ above). Full report:
 
 ## Next concrete step
 
-Phase 77 is fully closed (`done`, per `planning/ROADMAP.md`'s Phase 77
-row and this reconciliation). Push the closing commit(s) to `origin` per
-`CLAUDE.md` §6 (the DoD gate has passed: `PASS`).
+**Phase 78's plan awaits direct user review** (per its own explicit
+instruction: "produce a planning document only... do not implement until
+the plan is reviewed"). Once approved (or amended and re-approved), the
+next concrete step is executing its §5 trial: dispatch fresh baseline/
+treatment agents against seed-then-fork Ledgerkit scratch clones (frozen
+at `6c90b4ca3e6c10951cb400e43db4b90bfccc5909`) on the journal-comment
+`ReportSpec` parsing task, then an independent `context-evaluator`
+assessment, then an independent `knowledge-curator` triage applying
+Phase 78's own §7.2 decision gate (Priority A closure, or one
+narrowly-scoped final follow-on) — full detail:
+`planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
 
-Still live and unclaimed (not superseded by Phase 77, which precedes but
-does not replace it): a **second, differently-shaped Priority A
-Ledgerkit validation trial** recommended at Phase 75's closeout, needing
-first-party *relationships* that Phase 77 explicitly deferred as its own
-follow-on (§13 of Phase 77's own plan). No plan file exists for it yet
-and no phase number has been reserved (per `CLAUDE.md` §1) — writing
-that plan file is the next concrete piece of unclaimed work, pending
-direct user instruction on whether to pick it up next or pursue a
-different priority.
-
-Per `CLAUDE.md` §6, Phases 75 and 76 (including Phase 76's corrective
-pass) are fully closed and already pushed to `origin` — no further
-action needed on either. Phase 77 is fully closed as of this
-reconciliation commit; only its push to `origin` remains, per the first
-paragraph above.
+Per `CLAUDE.md` §6, Phases 75, 76 (including its corrective pass), and 77
+are fully closed and already pushed to `origin` — no further action
+needed on any of them.
