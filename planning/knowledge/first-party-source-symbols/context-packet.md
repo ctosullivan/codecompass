@@ -1,8 +1,10 @@
 # Coding-context packet: first-party-source-symbols
 
-**Snapshot cited:** `first-party-source-symbols@v1`
-(`planning/knowledge/first-party-source-symbols/snapshots/snapshot-v1.toml`,
-frozen at repository revision `98c3fba438246ad35914d96b9ba6ba3bebb5b2ca`).
+**Snapshot cited:** `first-party-source-symbols@v2`
+(`planning/knowledge/first-party-source-symbols/snapshots/snapshot-v2.toml`).
+Originally assembled against `@v1`; re-cited against `@v2` after a
+comparison-mode pass added `CL-FPSS-008` (see new bullet below) — no
+other content in this packet changed as a result.
 
 **Source discipline (per this session's task instructions, Phase 79
 clean-room workflow, `decisions/0066`):** every fact below is drawn only
@@ -97,6 +99,19 @@ existing languages.
   leave `status` at `indexed_partial` and `diagnostic` at `None`, with
   nothing in the returned data distinguishing them from genuine
   declarations. [`CL-FPSS-007`, depends on `CL-FPSS-003`]
+- **The two existing `indexed_partial`-family extractors (Rust, JS/TS)
+  have known, undocumented scope/fidelity gaps a new extractor copying
+  their pattern should not silently repeat**: Python's own extractor is
+  top-level-only (no descent into class/function bodies — not itself a
+  template for this task, but the general lesson applies); and a JS/TS
+  `const` binding's `kind` is recorded literally as `"const"` regardless
+  of what it's bound to (never inspects the right-hand side), making
+  `export const foo = () => {}` schema-indistinguishable from a plain
+  constant. Neither gap is mentioned by the ADR/plan — both were found by
+  independent code inspection. A new extractor should decide its own
+  scope (top-level-only vs. nested) and `kind`-assignment precision
+  deliberately, not by uncritically mirroring the existing regex
+  extractors' unexamined shortcuts. [`CL-FPSS-008`]
 
 ## Requirements
 
@@ -337,12 +352,12 @@ stated rather than omitted silently.
 ## Provenance references
 
 `CL-FPSS-001`, `CL-FPSS-002`, `CL-FPSS-003`, `CL-FPSS-004`,
-`CL-FPSS-007`, `DE-FPSS-001`, `DE-FPSS-002`, `DE-FPSS-003`,
-`DE-FPSS-004`, `DE-FPSS-007`, `EV-FPSS-001`, `EV-FPSS-002`,
+`CL-FPSS-007`, `CL-FPSS-008`, `DE-FPSS-001`, `DE-FPSS-002`, `DE-FPSS-003`,
+`DE-FPSS-004`, `DE-FPSS-007`, `DE-FPSS-008`, `EV-FPSS-001`, `EV-FPSS-002`,
 `EV-FPSS-003`, `EV-FPSS-004`, `EV-FPSS-005`, `EV-FPSS-006`,
 `EV-FPSS-007`, `EV-FPSS-008`, `EV-FPSS-009`, `EV-FPSS-010`,
 `EV-FPSS-011`, `EV-FPSS-012`, `EV-FPSS-016`, `EV-FPSS-017`,
-`EV-FPSS-020`, `EV-FPSS-021`.
+`EV-FPSS-020`, `EV-FPSS-021`, `EV-FPSS-022`, `EV-FPSS-023`.
 
 Not cited (deliberately excluded, see above):
 `CL-FPSS-005`, `CL-FPSS-006`, `DE-FPSS-005`, `DE-FPSS-006`,
