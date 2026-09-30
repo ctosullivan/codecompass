@@ -12,21 +12,30 @@ It does not restate Phase 54c's own detailed record shapes, agent
 briefs, or lifecycle mechanics — those stay defined once, in that plan
 and in `.claude/agents/*.md`, and are only pointed to here.
 
-**Amendment, 2026-09-30 (`decisions/0066`, planned Phase 79 —
-`planning/phase-79-clean-room-understanding-and-documentation-
+**Amendment, 2026-09-30, revised same day (`decisions/0066`, planned
+Phase 79 — `planning/phase-79-clean-room-understanding-and-documentation-
 reconstruction.md`):** direct inspection of Phases 63D/64/65 found the
 Domain stage's own isolation from legacy narrative was prompt-instructed
 only, never mechanically enforced. Phase 79 extends the Claim record
 shape below with `assertion_kind`/`basis`/`examples`/`counterexamples`/
-`depends_on`/`open_questions`/`evidence_support_state`/
-`human_review_state` (the Design stage's own record shapes are
-unaffected), and hardens both `context-researcher`'s and
-`docs-reconstructor`'s input boundaries with curated, `.git`-free
-filesystem exports rather than dispatch-prompt instruction alone. This
-document's own content below is not rewritten by that phase — the
-substantive extension lives in the phase plan and `decisions/0066`,
-matching this document's own existing amendment convention (see the
-"Traceability spine" section's own 2026-09-20 correction note, below).
+`depends_on`/`open_questions`/`evidence_support_state` (the **real**
+`status` enum — `proposed`/`supported`/`contradicted`/`superseded`/
+`verified` — is unchanged; no `human_review_state` field is added — see
+below), and hardens `context-researcher`'s and `docs-reconstructor`'s
+input boundaries with a verified, tiered isolation mechanism (a curated,
+`.git`-free export is input packaging only, paired with either genuine
+separate-environment isolation or an honestly-labelled best-effort
+fallback — never dispatch-prompt instruction alone). Conceptual
+understanding produced this way is published **directly into project
+documentation**, with no separate review-gated packet and no
+human-acceptance precondition for publication — the Domain stage's own
+`domain-skeptic` adversarial review (unchanged) remains the quality
+check; a human review event is never this phase's own blocking
+completion condition. This document's own content below is not rewritten
+by that phase — the substantive extension lives in the phase plan and
+`decisions/0066`, matching this document's own existing amendment
+convention (see the "Traceability spine" section's own 2026-09-20
+correction note, below).
 
 ## Why five stages, not the existing two
 
