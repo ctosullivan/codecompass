@@ -12,6 +12,22 @@ It does not restate Phase 54c's own detailed record shapes, agent
 briefs, or lifecycle mechanics — those stay defined once, in that plan
 and in `.claude/agents/*.md`, and are only pointed to here.
 
+**Amendment, 2026-09-30 (`decisions/0066`, planned Phase 79 —
+`planning/phase-79-clean-room-understanding-and-documentation-
+reconstruction.md`):** direct inspection of Phases 63D/64/65 found the
+Domain stage's own isolation from legacy narrative was prompt-instructed
+only, never mechanically enforced. Phase 79 extends the Claim record
+shape below with `assertion_kind`/`basis`/`examples`/`counterexamples`/
+`depends_on`/`open_questions`/`evidence_support_state`/
+`human_review_state` (the Design stage's own record shapes are
+unaffected), and hardens both `context-researcher`'s and
+`docs-reconstructor`'s input boundaries with curated, `.git`-free
+filesystem exports rather than dispatch-prompt instruction alone. This
+document's own content below is not rewritten by that phase — the
+substantive extension lives in the phase plan and `decisions/0066`,
+matching this document's own existing amendment convention (see the
+"Traceability spine" section's own 2026-09-20 correction note, below).
+
 ## Why five stages, not the existing two
 
 `CLAUDE.md` §1 already requires two of these (Scope is implicit in a

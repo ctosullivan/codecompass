@@ -72,6 +72,42 @@ trial Phase 75's own closeout recommended and Phase 77's own plan
 explicitly deferred (precedes, does not replace) — now finally claimed
 and scoped, not abandoned. Full plan:
 `planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
+
+**Phase 79 (Clean-room conceptual understanding + documentation
+reconstruction, methodology hardening + Priority D template delivery) is
+`planned`, direct user request, 2026-09-30, `decisions/0066` — planning
+only, not yet implemented. Does not touch, reorder, or depend on Phase
+78.** Direct inspection of Phases 63D/64/65 (the existing Domain/
+blank-slate-reconstruction mechanism) found a real, previously-
+undiagnosed gap: `docs-reconstructor` MODE 2 and `context-researcher`
+were only *told* not to anchor on legacy narrative documentation, with
+full read access to it the entire time — no mechanical boundary, no
+access-log, no breach detection. This phase extends the existing Claim
+record shape (no new record kind/database) with `assertion_kind`/
+`basis`/`examples`/`counterexamples`/`depends_on`/`open_questions`/
+`evidence_support_state`/`human_review_state` (the last two kept
+explicitly separate); renders a human-readable understanding-review
+packet with a real, non-fabricable human-review gate (the actual user/
+domain owner, `decisions/0060`'s existing "no stand-in" rule, unchanged);
+replaces prompt-only isolation with genuinely mechanical, `.git`-free
+curated exports per evidence-layer scope (reusing Phase 78's own
+observable-research-trace convention) and a breach → discard → restart
+protocol; adds one new role, `implementation-reconstructor` (recovers
+as-built architecture from primary implementation evidence only,
+model-blind), and extends `domain-skeptic` (not a second new role) to
+classify alignment in both directions without forcing either side to
+match the other; drafts and commits clean-room documentation before
+legacy reconciliation begins; independently verifies a fresh
+documentation-only Q&A pass against real repository evidence
+(`context-evaluator`, reused unchanged); and delivers six portable
+`TEMPLATE.md` files plus `docs/mechanical-isolation.md` to
+`codecompass-template`, with no CodeCompass-specific agent roster.
+Validated on one real, proposed topic: Phase 77's own first-party
+source/symbol subsystem — not the whole `docs/domain/` corpus.
+**Explicitly not Priority B** (no `src/codecompass/` change at all —
+`decisions/0066` item 6). Full plan:
+`planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`.
+
 See "Next concrete step" below.
 
 Backlog, each with its own revisit trigger: Phases 24/25, Phase 50's
@@ -221,6 +257,25 @@ applying Phase 78's own §7.2 exit gate (Priority A closure only on an
 applicable `not-recurred` result, or the smallest evidence-supported
 follow-on on `recurred`) — full detail:
 `planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
+
+**Phase 79's plan also awaits direct user review**, independently of
+Phase 78 (neither touches, reorders, or depends on the other — both may
+be reviewed and executed in either order, or in parallel). Once
+approved, the next concrete step is: confirm the validation topic (§13,
+proposed: the first-party source/symbol subsystem) live against the
+repository; build the Understanding-reconstruction isolated export;
+dispatch `context-researcher` to produce the extended-schema assertion
+records; dispatch `domain-skeptic` to adversarially review them; render
+the understanding-review packet; **request the actual user/domain
+owner's real review (§11 gate 3 — the one genuinely human-blocking gate
+in this phase; do not proceed to closeout without it)**; in parallel,
+build the Implementation-reconstruction isolated export and dispatch the
+new `implementation-reconstructor` role (model-blind); once both exist,
+dispatch a fresh `domain-skeptic` instance for alignment classification;
+then clean-room documentation writing, legacy reconciliation, and
+documentation-only Q&A + verification, per
+`planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`'s
+own §11 gate sequence.
 
 Per `CLAUDE.md` §6, Phases 75, 76 (including its corrective pass), and 77
 are fully closed and already pushed to `origin` — no further action

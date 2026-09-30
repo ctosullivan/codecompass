@@ -12,6 +12,24 @@ F/G +4 renumbering `decisions/0056` performed). Preceded by Phase 63D
 Owned by `docs-maintainer` (incremental) and `docs-reconstructor`
 (blank-slate).
 
+**Amendment, 2026-09-30 (`decisions/0066`, planned Phase 79 —
+`planning/phase-79-clean-room-understanding-and-documentation-
+reconstruction.md`):** direct inspection found `docs-reconstructor`
+MODE 2's own blank-slate isolation (§3, below) was never mechanically
+enforced — full read access to `docs/`/`README.md`/`architecture/`
+remained available throughout, with only a dispatch-prompt instruction
+not to use it as a starting structure. Phase 79 hardens MODE 2, for any
+topic with a reviewed Understanding snapshot, with a curated `.git`-free
+export in place of prompt-only exclusion, and adds a genuinely
+independent implementation-reconstruction-and-alignment-classification
+step (a new `implementation-reconstructor` role plus an extended
+`domain-skeptic`) between the domain corpus and the documentation draft.
+§4's reconciliation step is extended with an explicit five-way
+historical-claim classification and a hard ordering rule: reconciliation
+never starts before the clean-room draft is committed. This document's
+own content below is not rewritten by that phase — the substantive
+extension lives in the phase plan and `decisions/0066`.
+
 ## 1. Three distinct documentation roles
 
 ### 1.1 Current truth — active documentation
