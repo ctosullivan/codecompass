@@ -842,13 +842,14 @@ module (mirroring `git_topology.py`/`usage.py`'s own shape);
 converted into `graph.py` row types.
 
 **A first-party *language*, not a dependency *package ecosystem*.**
-`core.Ecosystem` has one value (`NPM`) covering both JavaScript and
-TypeScript dependencies identically — correct for a package manager,
-wrong for classifying a project's own source, where `.js` and `.ts`
-files are observably different languages with different symbol-kind
-vocabularies. `source_symbols.Language` (`python`/`rust`/`javascript`/
-`typescript`/`haskell`) is a separate, narrower concept defined for this
-purpose alone.
+`core.Ecosystem` is a 4-value enum (`npm`/`python`/`cargo`/`haskell`)
+whose single `NPM` value covers both JavaScript and TypeScript
+dependencies identically — correct for a package manager (there is one
+npm registry for both), wrong for classifying a project's own source,
+where `.js` and `.ts` files are observably different languages with
+different symbol-kind vocabularies. `source_symbols.Language`
+(`python`/`rust`/`javascript`/`typescript`/`haskell`) is a separate,
+narrower concept defined for this purpose alone.
 
 **Implementation scope, not API-surface scope.** The question here is
 "what does this project implement," not "what does this dependency
