@@ -8,6 +8,246 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-069 — a hand-built curated code export (manual `sed` line-range extraction) produced two real truncation bugs that reached an isolated dispatch and caused a wasted pass and a false "internal inconsistency" finding
+
+- **origin:** Phase 79 (clean-room conceptual understanding +
+  documentation reconstruction, `decisions/0066`), retro "What didn't
+  work" (first bullet); filed at this triage's own initiative per the
+  retro's own explicit candidate-learning proposal, deferring the
+  promote/retain/discard decision to `knowledge-curator` per usual
+  practice.
+- **date:** 2026-10-01
+- **project_revision:** `a1144f9` (Phase 79's latest closeout-adjacent
+  commit at filing time; `planning/retros/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  itself uncommitted at filing time, per this session's own git status)
+- **observation:** the Implementation-reconstruction export for the
+  first-party-source-symbols pilot topic (`src/codecompass/source_symbols.py`
+  plus `graph_schema_fragment.py`) was hand-curated via manual `sed`
+  line-range extraction. Two separate truncation bugs made it into the
+  version handed to the *first* `implementation-reconstructor` dispatch:
+  a dataclass cut off mid-definition, and a dangling function signature.
+  That dispatch's own report surfaced an apparent internal inconsistency
+  — `SourceSymbolRow` reported as missing `line`/`purpose`/`exposure`
+  fields that `_sync_source_symbols` reads off it — which traced back to
+  the truncated export, not a real code defect. It was caught (per the
+  retro's own "What worked" bullet on reading dispatch reports carefully
+  rather than rubber-stamping them) before being trusted, the export was
+  corrected, and a second dispatch confirmed the inconsistency was an
+  artifact of the truncation, not a real finding — but the first dispatch
+  was fully wasted and a false finding was live, disclosed, and had to be
+  walked back before the re-run.
+- **evidence:** `planning/retros/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  "What didn't work" bullet 1 ("Building the curated schema-extract
+  export by hand with `sed` line ranges was error-prone..."); independently
+  cross-checked against `planning/knowledge/first-party-source-symbols/implementation-reconstruction.md`
+  lines 15-20 ("Note on this revision: this export was corrected since a
+  prior reconstruction pass. That pass reported `SourceSymbolRow` as
+  missing `line`/`purpose`/`exposure` fields... an apparent internal
+  inconsistency. Re-reading the export fresh: this is no longer
+  present.") and lines 156-165 ("Verification of the previously-reported
+  inconsistency (now resolved)") — both independently confirm the retro's
+  account, not just restate it.
+- **classification:** workflow
+- **status:** promoted
+- **recurrence:** first occurrence
+- **promoted_to:** `planning/agent-led-workflow.md` step 5, new paragraph
+  ("A hand-curated code export built via manual `sed`/line-range
+  extraction should be self-validated before being handed to an isolated
+  dispatch...") @ (this phase's own closeout commit)
+- **curation (Phase 79 triage, 2026-10-01, knowledge-curator):**
+  provenance accepted — all required fields present. Independently
+  re-read the retro's "What didn't work" bullet 1 directly, then verified
+  it against the actual knowledge-base artifact it describes
+  (`implementation-reconstruction.md`'s own two self-disclosing sections)
+  rather than trusting the retro's summary alone — both match exactly,
+  including the two specific truncation shapes (mid-definition dataclass,
+  dangling signature) and the false-finding mechanism.
+
+  Checked for a merge/duplicate candidate: grepped this inbox for
+  "sed"/"truncat"/"curated export" — no prior candidate addresses
+  hand-built export construction quality; not a duplicate of `L-019`
+  (a *different* export-construction failure mode: a hand-written
+  placeholder fixture causing one-time content-hash "false churn," not a
+  structural truncation bug) or `L-062` (restricts *reads*, not export
+  *construction correctness*). Checked whether this belongs in
+  `context-gaps/` or `context-observations/` instead: no to both — this
+  is not a relationship CodeCompass's own graph is missing, nor an
+  experience with an existing graph edge; it is a dispatch-preparation
+  discipline gap in this project's own agent-led workflow, so it
+  correctly stays in `planning/learnings/`.
+
+  **Outcome: promote (recommendation + draft; does not land here — the
+  recommended destination, `planning/agent-led-workflow.md`, is outside
+  this agent's write boundary).** Real, specific, single-occurrence, but
+  cheap to fix and cheap to verify (a parse check costs near nothing next
+  to a full wasted dispatch), matching the same "close it while the
+  fallback is evidenced" reasoning `L-018`/`L-023`/`L-046` already used
+  rather than waiting for a second phase to independently rediscover the
+  same failure mode. Scoped narrowly to *hand-built* exports constructed
+  via manual line-range extraction specifically — not a general claim
+  that every export needs validation (a mechanically-generated export,
+  e.g. one produced by a script, doesn't have this specific failure
+  mode).
+
+  **Recommended fix — add a note near step 5 of
+  `planning/agent-led-workflow.md`, alongside the existing `L-018`/`L-023`/
+  `L-062` dispatch-preparation cluster** (draft, for the lead to review
+  and land; not applied here):
+
+  > **Before handing a hand-curated code export (e.g. built via manual
+  > `sed` line-range extraction) to an isolated dispatch, self-validate
+  > that the extracted fragment is actually well-formed** — for Python,
+  > confirm it parses (e.g. `ast.parse` against the fragment) before
+  > treating it as dispatch-ready; for another language, the closest
+  > equivalent. Observed at Phase 79: a hand-built export had two separate
+  > `sed` line-range truncation bugs (a dataclass cut off mid-definition,
+  > a dangling function signature) that reached the first
+  > `implementation-reconstructor` dispatch and produced a false "internal
+  > inconsistency" finding, wasting a full dispatch pass before being
+  > caught and corrected on a re-run. A parse check before dispatch would
+  > have caught both for near-zero cost. (Phase 79 — L-069.)
+
+  Revisit/withdraw if a future isolation-sensitive phase builds its
+  curated export via a small script rather than hand-editing line ranges
+  (removing the failure mode structurally, per the retro's own
+  suggestion) and the user judges the process-doc note no longer earns
+  its keep.
+
+### L-068 — a legacy-reconciliation `supported` classification based on cross-document agreement is not the same as the claim being checked against primary evidence, and both can independently echo the same wording error
+
+- **origin:** Phase 79 (clean-room conceptual understanding +
+  documentation reconstruction, `decisions/0066`), retro "What worked"
+  (last bullet) + "Anything worth remembering" (first bullet); filed at
+  this triage's own initiative per the retro's own explicit candidate-
+  learning proposal, deferring the promote/retain/discard decision to
+  `knowledge-curator` per usual practice.
+- **date:** 2026-10-01
+- **project_revision:** `a1144f9` ("fix(phase-79): correct core.Ecosystem
+  cardinality in architecture/overview.md" — the fix commit itself;
+  `planning/retros/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  uncommitted at filing time, per this session's own git status)
+- **observation:** `planning/knowledge/first-party-source-symbols/legacy-reconciliation.md`
+  classified the legacy claim "`core.Ecosystem` can't distinguish JS/TS;
+  `source_symbols.Language` exists for that reason" as `supported`, with
+  disposition "Unchanged — matches CL-FPSS-001 exactly." Both the legacy
+  prose (`architecture/overview.md:845` at the time) and `CL-FPSS-001`
+  stated `core.Ecosystem` "has one value (`NPM`)" — actually wrong:
+  `src/codecompass/core.py`'s `Ecosystem` enum has **four** values
+  (`NPM`, `PYTHON`, `CARGO`, `HASKELL`); only the `NPM` value collapses
+  JS/TS. The wrong cardinality traces to `decisions/0065`'s own
+  already-Accepted prose ("`core.Ecosystem` has exactly one value
+  (`NPM`) covering both JavaScript and TypeScript dependencies
+  identically"), echoed near-verbatim into `architecture/overview.md`,
+  and echoed again into `CL-FPSS-001` during this same phase's own
+  clean-room research — three documents in full agreement, all wrong the
+  same way, because none had been checked against `core.py` directly.
+  The legacy-reconciliation classification pass matched the clean-room
+  draft's wording against the legacy doc's wording and treated that
+  agreement as sufficient for `supported`, without an independent
+  primary-evidence check of the one specific, checkable fact involved
+  (the enum's cardinality). The error was caught only by a later,
+  separate documentation-only Q&A verification pass that read `core.py`
+  directly and flagged the claim **WRONG**; the doc fix landed in commit
+  `a1144f9`.
+- **evidence:** `planning/knowledge/first-party-source-symbols/legacy-reconciliation.md:40`
+  (the `supported` classification row and its "matches CL-FPSS-001
+  exactly" disposition); `decisions/0065-first-party-source-is-language-classified-occurrence-identified-and-honestly-graded.md:37-39`
+  (the original "`core.Ecosystem` has exactly one value (`NPM`)" prose,
+  the root of the error); `planning/knowledge/first-party-source-symbols/implementation-reconstruction.md:46-79`
+  ("1. `Language` vs `core.Ecosystem` — **WRONG**" — the independent
+  verification against `src/codecompass/core.py:13-19`'s real four-value
+  enum) and `:189-208` (summary table + recommended fix); `architecture/overview.md:845`
+  (current, fixed text: "`core.Ecosystem` is a 4-value enum..."), fixed at
+  commit `a1144f9`; `planning/retros/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  "What worked" last bullet + "Anything worth remembering" first bullet —
+  both independently re-read directly, not taken on the task's own
+  summary alone, and both match this entry's account exactly.
+- **classification:** scoped-rule
+- **status:** promoted
+- **recurrence:** first occurrence of this specific failure shape (a
+  `supported` classification granted on cross-document/draft agreement
+  alone, with no primary-evidence spot-check of a concrete, checkable
+  fact embedded in the claim) — distinct in kind from `L-033`'s
+  within-page-consistency gap and `L-058`'s whole-repository-grep gap,
+  both of which are about search *completeness*, not about what evidence
+  bar a `supported` classification itself requires.
+- **promoted_to:** `.claude/agents/docs-maintainer.md` "Legacy
+  reconciliation mode," extending the `supported` bullet @ (this phase's
+  own closeout commit)
+- **curation (Phase 79 triage, 2026-10-01, knowledge-curator):**
+  provenance accepted — all required fields present. Independently
+  re-read the retro's two cited sections directly, then traced the claim
+  through all four artifacts it touches (`decisions/0065`,
+  `architecture/overview.md`, `legacy-reconciliation.md`,
+  `implementation-reconstruction.md`) rather than trusting the retro's
+  characterization alone — every link in the chain checks out exactly as
+  the retro describes, including the specific line numbers and the exact
+  wording each document independently echoed.
+
+  Checked for a merge/duplicate candidate: grepped this inbox for
+  "legacy reconcil"/"cross-document"/"primary evidence"/"Ecosystem" — no
+  prior candidate addresses the legacy-reconciliation `supported` bar
+  specifically. Not a duplicate of `L-033` (within-*page* self-
+  contradiction, a `domain-skeptic` step) or `L-058` (whole-*repository*
+  grep completeness, a `docs-maintainer` current-truth-reconciliation
+  step) — both of those are about search breadth; this is about the
+  evidentiary bar a specific classification value (`supported`) requires
+  once a candidate passage has already been found and compared, a
+  distinct failure stage. Checked whether this belongs in `context-gaps/`
+  or `context-observations/` instead: no to both — this is not a
+  relationship CodeCompass's own graph is missing, nor an experience with
+  an existing graph edge; it is a process gap in how this project's own
+  Phase-79 legacy-reconciliation mode (`.claude/agents/docs-maintainer.md`
+  "Legacy reconciliation mode") defines its own `supported` bar, so it
+  correctly stays in `planning/learnings/`. Also note: `decisions/0065`
+  itself is out of scope for a fix — per `CLAUDE.md` §0/§2, ADRs are
+  append-only and this isn't a reversed decision, only an easily-misread
+  sentence in an already-Accepted ADR; the actual, already-landed fix
+  (commit `a1144f9`) correctly targeted the living `architecture/`
+  doc, not the ADR.
+
+  **Outcome: promote (recommendation + draft; does not land here — the
+  recommended destination, `.claude/agents/docs-maintainer.md`, is
+  outside this agent's write boundary, and this task did not grant a
+  narrow direct-edit exception the way Phase 54c's triage did for
+  `L-024`).** Real, specific, single-occurrence, but structurally
+  significant: this failure mode survived an ADR, a phase plan, and this
+  phase's own dedicated legacy-reconciliation pass, three independent-
+  looking checks that all shared the same blind spot (agreement between
+  documents, never a primary-source check) — exactly the shape
+  `L-018`/`L-023` used to justify closing a real, disclosed gap on first
+  occurrence rather than waiting for recurrence, since the fallback
+  (a targeted primary-evidence spot-check) is already concrete, cheap,
+  and evidenced as sufficient (the actual catch here took one read of
+  `core.py`).
+
+  **Recommended fix — extend the `supported` bullet in
+  `.claude/agents/docs-maintainer.md`'s "Legacy reconciliation mode"
+  section** (draft, for the lead to review and land; not applied here):
+
+  > **A `supported` classification needs at least one primary-evidence
+  > check, not only cross-document agreement.** If the legacy claim
+  > states a concrete, checkable fact (a cardinality, a count, an
+  > enumerated value set, a specific number or threshold), verify that
+  > specific fact directly against the real source (the actual code,
+  > schema, or config) before classifying it `supported` — matching the
+  > clean-room draft's own wording, or another architecture page's
+  > wording, is not sufficient by itself, because multiple documents can
+  > independently echo the same original wording error and all agree
+  > while all being wrong. Observed at Phase 79: `core.Ecosystem`'s
+  > cardinality was classified `supported` because it matched
+  > `CL-FPSS-001` exactly — both had silently inherited a wrong "has
+  > exactly one value" claim from `decisions/0065`'s own prose, uncaught
+  > until a separate documentation-only Q&A pass read `core.py` directly.
+  > (Phase 79 — L-068.)
+
+  Revisit/withdraw if a future legacy-reconciliation pass shows this
+  primary-evidence check adding overhead disproportionate to the defects
+  it catches (e.g. if most legacy claims are non-quantitative/non-
+  checkable and the check rarely applies) — not expected given how cheap
+  the actual catch was here, but named as the honest revisit condition
+  rather than treating this as permanent on one occurrence alone.
+
 ### L-067 — two related schema/plan-design heuristics surfaced during Phase 77's second amendment (binary-first-guess is often wrong for a cross-language concept; live-verify a natural key against ordinary, non-edge-case real code before committing to schema) — real and evidenced, but single-phase, not yet promotable to one specific artifact
 
 - **origin:** Phase 77 (First-party source awareness + `codecompass-template`)
@@ -4568,7 +4808,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   (schema/migration-mechanism test-file check) @ (this phase's own
   closeout commit)
 
-### L-023 — a newly-created `.claude/agents/*.md` file is not immediately dispatchable by its own type name
+### L-023 — a newly-created `.claude/agents/*.md` file is not immediately dispatchable by its own type name (refined at Phase 79: a startup-latency condition, not a whole-session one)
 
 - **origin:** Phase 54c (evidence-backed, knowledge-based,
   documentation-first workflow), retro "What didn't work" + "Lessons
@@ -4608,7 +4848,17 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   — `L-006`/`L-013`/`L-018` — even though the underlying cause here is
   outside this project's own control)
 - **status:** promoted
-- **recurrence:** first occurrence
+- **recurrence:** first occurrence at Phase 54c; **recurred at Phase 79**
+  (2026-10-01) — the same pattern (`implementation-reconstructor`, a
+  newly-created type for that phase, failed its first dispatch with
+  `Agent type 'implementation-reconstructor' not found`, was substituted
+  with `general-purpose` for that first pass, then dispatched
+  successfully under its real name later the same session, per a system
+  notification) with a new detail the first occurrence didn't establish:
+  once the real type name succeeded once, it kept working for every
+  subsequent dispatch that session — the limitation is a one-time
+  startup-latency condition per session, not one that recurs on every
+  dispatch attempt within a session. See the Phase 79 curation note below.
 - **curation (Phase 54c triage, 2026-09-18, knowledge-curator):**
   provenance accepted — all required fields present. Independently
   re-read the retro's own "What didn't work" and "Lessons learnt"
@@ -4673,6 +4923,64 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   rather than a standing property of new-file registration), or if the
   user judges a single, self-resolving incident with a working fallback
   already in hand doesn't warrant a standing process-doc note.
+- **curation (Phase 79 triage, 2026-10-01, knowledge-curator) — recurrence
+  + wording refinement, not a new candidate:** origin: Phase 79
+  (clean-room conceptual understanding + documentation reconstruction,
+  `decisions/0066`) retro "What didn't work" (second bullet). Checked
+  first, per this triage's own instruction, whether `L-023` already
+  exists before filing anything new — it does (above) — so this is
+  logged as a recurrence + refinement of that entry, not a new `L-NNN`.
+  Independently re-read `planning/retros/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  "What didn't work" (second bullet) directly: confirms the
+  `implementation-reconstructor` type (newly created this phase, per
+  `decisions/0066`) was used via the `general-purpose` substitute for its
+  first dispatch, then dispatched successfully by its own type name later
+  the same session, "confirmed by a system notification" — the same
+  failure→fallback→later-success shape `L-023` already documents, not a
+  new mechanism.
+
+  The retro's own proposal is a *wording* refinement, not a new rule:
+  the landed text in `planning/agent-led-workflow.md` step 5 (the
+  paragraph beginning "If this phase created a new
+  `.claude/agents/*.md` file in this same session...") already tells a
+  future session to retry the real type name later and not treat the
+  first failure as a blocker, but it stops short of saying what to do
+  *after* that retry succeeds — a future session reading only "it has,
+  so far, always become available later in the same session" could
+  reasonably (over-)read this as "keep using the `general-purpose`
+  substitute for the rest of the session to be safe," which is not what
+  either occurrence actually showed: at both Phase 54c and Phase 79, once
+  the real type name worked once, it worked for every subsequent
+  dispatch, with no further degradation. That is a startup-latency
+  condition (the registry refreshes once, at some point outside the
+  session's visibility, and then stays refreshed), not a whole-session
+  limitation — worth saying explicitly so a future phase doesn't over-apply
+  the workaround.
+
+  **Outcome: merge/refine `L-023` in place — recommend appending one
+  clarifying sentence to the already-landed
+  `planning/agent-led-workflow.md` step 5 paragraph** (draft, for the
+  lead to review and land; not applied here, since `agent-led-workflow.md`
+  is outside this agent's write boundary):
+
+  > **This is a startup-latency condition, not a whole-session
+  > limitation.** Once the real type name succeeds on a retry, treat it as
+  > available for every remaining dispatch that session — don't keep
+  > using the `general-purpose` substitute on the assumption that one
+  > early failure means it's needed for the rest of the session. Confirmed
+  > at Phase 79: the same failure → substitute → later-success pattern
+  > recurred for a different newly-created type
+  > (`implementation-reconstructor`), and once it worked once, it worked
+  > for every subsequent dispatch that phase, with no further failures.
+  > (Phase 79 — L-023.)
+
+  Does not withdraw or weaken the original note — the first-dispatch
+  failure and its fallback are still real and still recurred exactly as
+  described; this only adds the missing "and then what" half. Recommend
+  a corresponding `promoted.md` addendum once landed: `L-023 |
+  2026-10-01 | workflow | planning/agent-led-workflow.md step 5 (refined:
+  explicit startup-latency framing, confirmed by a second, independent
+  recurrence at Phase 79) @ (Phase 79's own closeout commit)`.
 - **promoted_to:** — (pending; recommendation drafted above, awaiting
   lead review — `agent-led-workflow.md` is outside this agent's write
   boundary)

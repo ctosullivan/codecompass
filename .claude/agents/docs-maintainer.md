@@ -132,6 +132,18 @@ Classify every relevant historical claim in the legacy documentation:
 
 - **`supported`** — still accurate; the clean-room draft already says the
   same thing, or is silently missing a true detail worth folding in.
+  **Agreement between the legacy claim and the clean-room draft is not
+  by itself evidence the claim is true** — both can independently echo
+  the same upstream source's own wording, including its errors, without
+  either ever checking that wording against primary evidence. Before
+  marking a claim `supported` on the strength of draft/legacy agreement
+  alone, confirm the claim traces to a specific `CL-*` record whose own
+  supporting evidence checked it directly (a real file, a real test, a
+  real observed behaviour) — not just to another document's own prose,
+  however corroborating that prose looks. (`L-068`, found when a legacy
+  claim, its citing ADR, and a freshly-derived Claim all independently
+  stated the same wrong enum cardinality, none having checked the real
+  enum.)
 - **`stale_or_contradicted`** — now wrong; not restored.
 - **`rationale_requiring_verification`** — states a *reason* for
   something that needs checking against real evidence before being

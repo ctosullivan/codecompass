@@ -113,6 +113,20 @@ default.
   `README.md`, `ai-docs/`, `CONTRIBUTING.md`. Not `decisions/`, not
   `CLAUDE.md`, not `src/`.
 - **Active in:** most phases.
+- **A second mode, added Phase 79 (`decisions/0066`): legacy
+  reconciliation.** Given a fresh clean-room documentation draft and the
+  pre-existing legacy documentation on the same topic, classifies each
+  legacy claim (`supported`/`stale_or_contradicted`/
+  `rationale_requiring_verification`/`useful_example`/`obsolete`) and
+  re-grounds the published result rather than defaulting to restoring
+  the old text — a `supported` classification still needs the legacy
+  claim checked against primary evidence, not only against the fresh
+  draft's own agreement with it. Also owns fixing (not just recording) a
+  documentation-verification finding from `context-evaluator`'s
+  independent Q&A check. Writes its own reconciliation record to
+  `planning/v1-docs-reconstruction/<topic-slug>/reconciliation.md`, in
+  addition to its normal `docs/`/`architecture/`/`README.md`/`ai-docs/`
+  write boundary above.
 
 ### 2.5 `roadmap-context-curator` — planning-state truth
 - Reconciles `ROADMAP.md`, `CONTEXT.md`, phase status, newly discovered
@@ -162,6 +176,18 @@ docs and self-certifies them.
   must *not* read `README.md` / `architecture/overview.md` as a starting
   structure. Output: a shadow proposal under
   `planning/v1-docs-reconstruction/` (proposed docs + `concepts-to-retire.md`).
+- **Hardened, topic-scoped route (added Phase 79, `decisions/0066`),
+  the default whenever a frozen knowledge snapshot and a model-blind
+  implementation-reconstruction report both exist for a topic** — not an
+  opt-in alternative to the two modes above. Dispatched into an isolated
+  export of just those two inputs (no legacy narrative, no live
+  knowledge base beyond the snapshot's own citations); selects its own
+  documentation architecture from what the topic's assertions actually
+  are, rather than a fixed template; commits its draft before any
+  reconciliation with legacy content begins (`docs-maintainer`'s legacy
+  reconciliation mode, §2.4); blocks on a missing prerequisite (no
+  snapshot, no reconstruction report) rather than silently falling back
+  to the blank-slate mode above.
 - **Never edits** `docs/` / `README.md` / `architecture/` / `ai-docs/` /
   `CLAUDE.md` / `decisions/*` / `src/`. Findings and proposals only.
 - **Tools:** read/search + Bash (read-only) + Write to its own report /
@@ -417,7 +443,7 @@ docs and self-certifies them.
 | Lead | everything | everything (commits) | everything | n/a |
 | `context-evaluator` | CodeCompass repo (read), pinned target clone | its report only | read-only tools; target clone inspection | **yes** — direct target inspection, blind to hoped answer |
 | `reference-project-tester` | CodeCompass repo, pinned target clone | `planning/learnings/**`, `planning/reference-projects/**` findings | CodeCompass CLI against target | partial — uses CodeCompass, files findings, no `src/` writes |
-| `docs-maintainer` | everything | `docs/`, `architecture/`, `README.md`, `ai-docs/`, `CONTRIBUTING.md` | tests/lint, deterministic doc checks | no — participant |
+| `docs-maintainer` | everything | `docs/`, `architecture/`, `README.md`, `ai-docs/`, `CONTRIBUTING.md`; legacy reconciliation mode (Phase 79) additionally writes `planning/v1-docs-reconstruction/<topic-slug>/reconciliation.md` | tests/lint, deterministic doc checks | no — participant |
 | `roadmap-context-curator` | everything | `ROADMAP.md`, `CONTEXT.md`, `CHANGELOG.md`, `planning/**` | git log/status | no — participant |
 | `knowledge-curator` | everything | `planning/learnings/**`, `planning/` drafts | — | no — participant |
 | `docs-reconstructor` | the phase diff + code/`--help` (drift audit); source/tests/CLI/schema/ADRs, not narrative docs (blank-slate) | its drift-audit report / `planning/v1-docs-reconstruction/` | CLI `--help`, tests (read-only) | **yes** — independent of `docs-maintainer` |

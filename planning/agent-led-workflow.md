@@ -126,7 +126,29 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
    as a blocker — fall back to dispatching `general-purpose` with the
    new role's full brief embedded in the prompt for that first pass, and
    retry the real type name on a later dispatch; it has, so far, always
-   become available later in the same session. (Phase 54c — L-023.)
+   become available later in the same session. **This is a startup-
+   latency condition, not a whole-session block**: once the real type
+   name is confirmed dispatchable (recurred and reconfirmed at Phase 79
+   with `implementation-reconstructor`, which failed by name on its
+   first dispatch attempt but was successfully dispatched by name for a
+   later, unrelated task the same session), switch back to dispatching
+   it by its real name for the rest of the session — don't keep using
+   the `general-purpose` substitute "to be safe" once it's confirmed
+   unnecessary. (Phase 54c — L-023; recurrence/refinement Phase 79.)
+
+   **A hand-curated code export built via manual `sed`/line-range
+   extraction should be self-validated before being handed to an
+   isolated dispatch** — e.g. confirm an extracted Python fragment still
+   parses (`ast.parse`) before shipping it as another dispatch's sole
+   input. At Phase 79, two separate line-range errors (a dataclass cut
+   off mid-definition; a dangling function signature) made it into a
+   curated export unnoticed, and the resulting dispatch dutifully
+   reported the export's own damage as a genuine "internal
+   inconsistency" in the real codebase — a wasted dispatch and a false
+   finding that had to be caught, disclosed, and re-run. The cost of a
+   parse-check before dispatch is near zero; the cost of not doing one
+   is a full dispatch cycle plus a credibility risk if the false finding
+   isn't caught. (Phase 79 — L-069.)
 
    **Before dispatching a milestone-scoped agent brief (one exercised
    once per milestone rather than every phase — e.g. `docs-reconstructor`

@@ -133,7 +133,10 @@ CodeCompass is developed by a lead Claude Code session acting as project
 lead, delegating bounded work to a small set of specialist agents in
 `.claude/agents/` (`context-evaluator`, `reference-project-tester`,
 `docs-maintainer`, `roadmap-context-curator`, `knowledge-curator`,
-`docs-reconstructor`, `release-phase-auditor`). The full model —
+`docs-reconstructor`, `release-phase-auditor`, `domain-skeptic`,
+`context-researcher`, `documentation-agent`, `context-health-planner`,
+`context-enrichment-agent`, `implementation-reconstructor`). The full
+model —
 responsibilities, write boundaries, independence requirements — is
 [`planning/v1-redefinition/agent-led-development.md`](planning/v1-redefinition/agent-led-development.md);
 the per-session procedure is `planning/agent-led-workflow.md`. Fixed
