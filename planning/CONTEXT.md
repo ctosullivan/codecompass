@@ -398,27 +398,8 @@ section, and updating the phase plan's own Status line — per
 Both repositories' commits should be pushed to `origin` once that gate
 passes, per `CLAUDE.md` §6.
 
-**Phase 78's twice-drafted plan still awaits direct user review**
-(independently of Phase 79 — neither touches, reorders, or depends on
-the other), per its own explicit instruction: "planning only... do not
-execute the trial or implement CodeCompass/Ledgerkit code." Once
-approved (or amended and re-approved), the next concrete step is
-executing its §5 trial in stages: Stage 1 — dispatch fresh
-baseline/treatment agents against seed-then-fork Ledgerkit scratch
-clones (frozen at `6c90b4ca3e6c10951cb400e43db4b90bfccc5909`) for
-discovery/design only (no implementation) on the journal-comment
-`ReportSpec` parsing task, with mandatory observable research traces
-(§5.3.4); Stage 2 — an independent `context-evaluator` assessment
-producing the three-outcome `CG-001` verdict
-(`recurred`/`not-recurred`/`task-not-applicable`, §4); if
-`task-not-applicable`, re-run against the fallback task before
-proceeding (§7.2.0); Stage 3 (optional, evaluator's own call) — a
-shared, human-approved implementation contract given to fresh
-implementation agents in both arms; then an independent
-`knowledge-curator` triage applying Phase 78's own §7.2 exit gate
-(Priority A closure only on an applicable `not-recurred` result, or the
-smallest evidence-supported follow-on on `recurred`) — full detail:
-`planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
+(The Phase 78 plan's own next-step description, immediately above, is
+independent of Phase 79 and unaffected by any of this.)
 
 Per `CLAUDE.md` §6, Phases 75, 76 (including its corrective pass), and 77
 are fully closed and already pushed to `origin` — no further action
