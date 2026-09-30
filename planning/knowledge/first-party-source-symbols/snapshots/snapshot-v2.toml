@@ -1,0 +1,200 @@
+snapshot_id = "first-party-source-symbols@v2"
+created = "2026-10-01T00:00:00Z"
+repository_revision_at_freeze = "73899f25ae4603f0982ab31f3d2c5645c2d4979f"
+excluded_assertions = []
+
+[assertions."CL-FPSS-001"]
+path = "planning/knowledge/first-party-source-symbols/CL-FPSS-001.yaml"
+repository_revision = "98c3fba438246ad35914d96b9ba6ba3bebb5b2ca"
+content_hash = "36ddf18f0638184992eb7d3235aaaf8d39713dd66340a3e273e1b216bc84abdf"
+
+[assertions."CL-FPSS-001".supporting_evidence."EV-FPSS-001"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-001.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "0de9e705af2c546f1e8214f1023f9af010eb4fff38e3a6e00c723c2fe47942a2"
+
+[assertions."CL-FPSS-001".supporting_evidence."EV-FPSS-002"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-002.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "302d165a9fd57c51bc972597bb28dedee39d1013bbc7023e9e73f8d2e9493537"
+
+[assertions."CL-FPSS-001".supporting_evidence."EV-FPSS-016"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-016.yaml"
+repository_revision = "98c3fba438246ad35914d96b9ba6ba3bebb5b2ca"
+content_hash = "39ec8379acb4fbe4e97d749baaa684fbd10fe1c1bd3888c6f54895afa9589211"
+
+[assertions."CL-FPSS-001".derivation."DE-FPSS-001"]
+path = "planning/knowledge/first-party-source-symbols/DE-FPSS-001.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "c2aab4b8c25376cab23a5c679f20e15ecf5c7843879745c970402bc4200cfe0e"
+
+[assertions."CL-FPSS-002"]
+path = "planning/knowledge/first-party-source-symbols/CL-FPSS-002.yaml"
+repository_revision = "98c3fba438246ad35914d96b9ba6ba3bebb5b2ca"
+content_hash = "84b9a0ef0af5c96661d6947c574e0680223aa75805224bb6c25da49f4aea6b13"
+
+[assertions."CL-FPSS-002".supporting_evidence."EV-FPSS-003"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-003.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "5dde8c0e0397826bd0622d4a60280d5db08575bf0fed1bd89bb093f60162a9c8"
+
+[assertions."CL-FPSS-002".supporting_evidence."EV-FPSS-004"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-004.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "3b9852a909806d395b3dffd29fb5fffb5b885b82bb5d977357651fbcee819fb2"
+
+[assertions."CL-FPSS-002".supporting_evidence."EV-FPSS-005"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-005.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "25c980b036a9e11d7b176e29cbb404e99fbf49e5f75a670f5e43b7a7faa47281"
+
+[assertions."CL-FPSS-002".supporting_evidence."EV-FPSS-020"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-020.yaml"
+repository_revision = "98c3fba438246ad35914d96b9ba6ba3bebb5b2ca"
+content_hash = "7e2d9ccce07c8500e9c2fbeae4b8c4e5d3f4e0e247dfa18306608028260f45c1"
+
+[assertions."CL-FPSS-002".derivation."DE-FPSS-002"]
+path = "planning/knowledge/first-party-source-symbols/DE-FPSS-002.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "b43c125a713e7c3e4ac5f48640c4e5700acf3104d2d5361e738a45c42742dfb6"
+
+[assertions."CL-FPSS-003"]
+path = "planning/knowledge/first-party-source-symbols/CL-FPSS-003.yaml"
+repository_revision = "98c3fba438246ad35914d96b9ba6ba3bebb5b2ca"
+content_hash = "ffcd040d6eb8c25fefadae9bce540b5a3fe5ccd71b08316d4d33a08a516ab5f0"
+
+[assertions."CL-FPSS-003".supporting_evidence."EV-FPSS-006"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-006.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "d08848186adfcad1cefeb4e268131ba120293a6fe26eb0750ee2e1194d6e3167"
+
+[assertions."CL-FPSS-003".supporting_evidence."EV-FPSS-007"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-007.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "5490bd647c2c0e72cf6b2664f371f2df3b58d2dc717bc0531c8077520e62e7f3"
+
+[assertions."CL-FPSS-003".supporting_evidence."EV-FPSS-020"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-020.yaml"
+repository_revision = "98c3fba438246ad35914d96b9ba6ba3bebb5b2ca"
+content_hash = "7e2d9ccce07c8500e9c2fbeae4b8c4e5d3f4e0e247dfa18306608028260f45c1"
+
+[assertions."CL-FPSS-003".derivation."DE-FPSS-003"]
+path = "planning/knowledge/first-party-source-symbols/DE-FPSS-003.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "407b16dc722b13f5505148e1beeb003eb53fcb955176e43f2921a1d44cba36c3"
+
+[assertions."CL-FPSS-004"]
+path = "planning/knowledge/first-party-source-symbols/CL-FPSS-004.yaml"
+repository_revision = "98c3fba438246ad35914d96b9ba6ba3bebb5b2ca"
+content_hash = "46b9e3c6e5afe4445cd4bc859f2f2af19e6e718c6ce565da266e0b29c652a610"
+
+[assertions."CL-FPSS-004".supporting_evidence."EV-FPSS-010"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-010.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "1b83fbe192172a5941a5d37dcfeac08d1f8d8c8b0afbc4f4ea1790be1840682e"
+
+[assertions."CL-FPSS-004".supporting_evidence."EV-FPSS-011"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-011.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "465e2a56b26520eb7a958ac9ea0f032c7b6af840a64918c93004e349a05edca4"
+
+[assertions."CL-FPSS-004".supporting_evidence."EV-FPSS-012"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-012.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "88459b1a22d64be3ef798d69a9e29980bdd54033f7f7a54c80e48d36f75d88ea"
+
+[assertions."CL-FPSS-004".supporting_evidence."EV-FPSS-017"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-017.yaml"
+repository_revision = "98c3fba438246ad35914d96b9ba6ba3bebb5b2ca"
+content_hash = "a97ee5d3ae5137a513667a01b8c8ffb7ffeabc7bffa2f911330b8f258b734232"
+
+[assertions."CL-FPSS-004".derivation."DE-FPSS-004"]
+path = "planning/knowledge/first-party-source-symbols/DE-FPSS-004.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "bb08f7ab4e91ca11c6341ae65bbb9cbf4dbdb51d36949f6b1bd5699b0032bcdb"
+
+[assertions."CL-FPSS-005"]
+path = "planning/knowledge/first-party-source-symbols/CL-FPSS-005.yaml"
+repository_revision = "98c3fba438246ad35914d96b9ba6ba3bebb5b2ca"
+content_hash = "9ede5989bba2837c01ee3283c297a02160029323868f110cc5093ba55eb82200"
+
+[assertions."CL-FPSS-005".supporting_evidence."EV-FPSS-014"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-014.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "8bfb148005d5f42901ad80ce711d2e763f55a6eb027466577288ba4b098566b8"
+
+[assertions."CL-FPSS-005".supporting_evidence."EV-FPSS-018"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-018.yaml"
+repository_revision = "98c3fba438246ad35914d96b9ba6ba3bebb5b2ca"
+content_hash = "c4340ced2a756967227d5653e339d1f7a70ec7e1f25e62fe2ccdc289b5204320"
+
+[assertions."CL-FPSS-005".derivation."DE-FPSS-005"]
+path = "planning/knowledge/first-party-source-symbols/DE-FPSS-005.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "6ce8a951edefb849e93412fe12ef749526a32886e33000165752ad000e30d526"
+
+[assertions."CL-FPSS-006"]
+path = "planning/knowledge/first-party-source-symbols/CL-FPSS-006.yaml"
+repository_revision = "98c3fba438246ad35914d96b9ba6ba3bebb5b2ca"
+content_hash = "82145aa4c47d0ce5af9087d9b738b02e3afd99e22c0ce40e73701b5a6b9406d2"
+
+[assertions."CL-FPSS-006".supporting_evidence."EV-FPSS-015"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-015.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "e7f2b828a24d642f3c46b46f97df4a47bd7d326f36ec9111c126bb8215e1548a"
+
+[assertions."CL-FPSS-006".supporting_evidence."EV-FPSS-019"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-019.yaml"
+repository_revision = "98c3fba438246ad35914d96b9ba6ba3bebb5b2ca"
+content_hash = "25f9f0190f733eb71848c555cd771d46f733fc465cfacd530baa9447c27e6a0e"
+
+[assertions."CL-FPSS-006".derivation."DE-FPSS-006"]
+path = "planning/knowledge/first-party-source-symbols/DE-FPSS-006.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "a63ff9bad92dc9fc9394ded3a39229ea9d6388071aca99f2e26665d33e944634"
+
+[assertions."CL-FPSS-007"]
+path = "planning/knowledge/first-party-source-symbols/CL-FPSS-007.yaml"
+repository_revision = "73899f25ae4603f0982ab31f3d2c5645c2d4979f"
+content_hash = "f42da56a0ecc1447c046ea24c8fafa6397d43760815cd399de42ec749d31a7a1"
+
+[assertions."CL-FPSS-007".supporting_evidence."EV-FPSS-008"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-008.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "ebc2e7cb02314ae50cb822f327910e2cf5c547f5484ebc7561f3650a8aa9c90c"
+
+[assertions."CL-FPSS-007".supporting_evidence."EV-FPSS-009"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-009.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "5af54f4e3dcba20f5b57a90d70b29db009f96774b786b37d89000204c4b63dc9"
+
+[assertions."CL-FPSS-007".supporting_evidence."EV-FPSS-021"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-021.yaml"
+repository_revision = "98c3fba438246ad35914d96b9ba6ba3bebb5b2ca"
+content_hash = "d5197a0c57505e9f0854152b28273bcb72bc5e84a885b005e59786e8508105e4"
+
+[assertions."CL-FPSS-007".supporting_evidence."EV-FPSS-022"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-022.yaml"
+repository_revision = "73899f25ae4603f0982ab31f3d2c5645c2d4979f"
+content_hash = "5b3e7f521ace43448b63640efdb7c72f1cc0a8040b50bd78f6315410a4fa176f"
+
+[assertions."CL-FPSS-007".derivation."DE-FPSS-007"]
+path = "planning/knowledge/first-party-source-symbols/DE-FPSS-007.yaml"
+repository_revision = "b42e6c897ac1a00e65104274a77cbccafd195b04"
+content_hash = "1b7f971b7a30cbb5dd46666f9155508e4467ff295f8a7089066df08c4a6e5fb8"
+
+[assertions."CL-FPSS-008"]
+path = "planning/knowledge/first-party-source-symbols/CL-FPSS-008.yaml"
+repository_revision = "73899f25ae4603f0982ab31f3d2c5645c2d4979f"
+content_hash = "5099b8635d182acb1b6b89a775cee29938e2dea4d31f1de66a7645d5bd66947e"
+
+[assertions."CL-FPSS-008".supporting_evidence."EV-FPSS-023"]
+path = "planning/knowledge/first-party-source-symbols/EV-FPSS-023.yaml"
+repository_revision = "73899f25ae4603f0982ab31f3d2c5645c2d4979f"
+content_hash = "56e1af1e2445be1f618837045055ccf8400c8c3f36d91031cb058e85624ff0bc"
+
+[assertions."CL-FPSS-008".derivation."DE-FPSS-008"]
+path = "planning/knowledge/first-party-source-symbols/DE-FPSS-008.yaml"
+repository_revision = "73899f25ae4603f0982ab31f3d2c5645c2d4979f"
+content_hash = "8249d7423f01b51b01cfc62be94951dfc90bcda8cddf82fd0d28fe6720d111f8"
+
