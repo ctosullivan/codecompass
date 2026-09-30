@@ -1,8 +1,14 @@
 # Phase 79 — Clean-room conceptual understanding + documentation reconstruction (methodology hardening + template delivery)
 
-**Status: approved, amended 2026-10-01 (fourth revision) — proceeding
-directly into implementation per this same instruction. No further
-planning-review round-trip requested.**
+**Status: done.** Approved 2026-10-01 (fourth revision), implemented the
+same day. Independent `release-phase-auditor` completion audit found
+three real Track 1 (workflow/template completion) gaps against `cbf3582`
+(`planning/retros/_audit-phase-79.md`); all three fixed (`d9b9175`); a
+re-audit (`planning/retros/_audit-phase-79-reaudit.md`) returned Track 1
+PASS and Track 2 (strict clean-room isolation validation) PASS
+(reconfirmed), with two further trivial non-blocking observations fixed
+in `a119f4c`. Terminal `roadmap-context-curator` reconciliation flips
+this phase to `done` on `planning/ROADMAP.md`.
 
 Direct user request, 2026-09-30, amended three times (twice same day,
 once the following day). Full initiating prompts saved verbatim:

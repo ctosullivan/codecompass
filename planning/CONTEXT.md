@@ -75,14 +75,22 @@ and scoped, not abandoned. Full plan:
 
 **Phase 79 (Clean-room conceptual understanding + documentation
 reconstruction, methodology hardening + Priority D template delivery) is
-implementation-complete, closeout finishing — not yet flipped `done` on
-`planning/ROADMAP.md`, pending a re-audit against this commit** (direct
-user request, 2026-09-30, amended four times, `decisions/0066`, approved
-2026-10-01 and executed the same day). Does not touch, reorder, or
-depend on Phase 78. See "What was just completed" below for the real,
-delivered result — the summary immediately following this paragraph
-describes the pre-implementation, fourth-revision plan and is retained
-for its own amendment history, not as a description of current state.
+`done`** (direct user request, 2026-09-30, amended four times,
+`decisions/0066`, approved 2026-10-01 and executed the same day).
+Independent `release-phase-auditor` re-audit
+(`planning/retros/_audit-phase-79-reaudit.md`, against `d9b9175`)
+returned **Track 1 (workflow/template completion): PASS** and **Track 2
+(strict clean-room isolation validation): PASS** (reconfirmed, unchanged
+since the original audit); two further trivial, non-blocking
+observations from that re-audit (a citation off-by-2 in
+`docs/domain/concepts/claim.md`, a duplicated Phase 78 next-step
+paragraph in this file's own prior revision) were fixed in the
+immediately following commit, `a119f4c`. Does not touch, reorder, or
+depend on Phase 78. Fully closed and pushed to `origin`. See "What was
+just completed" below for the real, delivered result — the summary
+immediately following this paragraph describes the pre-implementation,
+fourth-revision plan and is retained for its own amendment history, not
+as a description of current state.
 
 **Revised objective (unchanged since the first amendment)**: one
 evidence-backed knowledge foundation supplies both coding context and
@@ -229,17 +237,23 @@ gaps, `CONTRIBUTING.md`'s incomplete agent roster) — persisted at
 
 An independent `release-phase-auditor` audit against the pre-CHANGELOG/
 pre-CONTEXT.md-update commit (`cbf3582`) returned **Track 1 (workflow/
-template completion): FAIL** — three real, since-fixed gaps (no
-`CHANGELOG.md` entry, this file not updated past the pre-implementation
-plan state, no persisted `_drift-audit-phase-79.md`) — and **Track 2
-(strict isolation validation): PASS** (the `best-effort` labelling
-itself, confirmed honest throughout by direct spot-check; the isolation
-*mechanism* remains, as designed, honestly unmet for the network/
-environment-identity dimensions — that is Track 2's own expected,
-disclosed result, not a defect). This commit and the three fixes above
-are the response; **a re-audit against this new commit, followed by the
-terminal `roadmap-context-curator` reconciliation, are the only
-remaining steps** — see "Next concrete step."
+template completion): FAIL** — three real gaps (no `CHANGELOG.md` entry,
+this file not updated past the pre-implementation plan state, no
+persisted `_drift-audit-phase-79.md`) — and **Track 2 (strict isolation
+validation): PASS** (the `best-effort` labelling itself, confirmed
+honest throughout by direct spot-check; the isolation *mechanism*
+remains, as designed, honestly unmet for the network/environment-identity
+dimensions — that is Track 2's own expected, disclosed result, not a
+defect). All three Track 1 gaps were fixed (`d9b9175`). A re-audit
+against `d9b9175` (`planning/retros/_audit-phase-79-reaudit.md`) returned
+**Track 1: PASS** (all three fixes independently verified genuinely
+closed, not merely present) and **Track 2: PASS** (reconfirmed,
+unchanged), with two further trivial, non-blocking observations (the
+`claim.md` citation off-by-2, this file's own duplicated Phase 78
+paragraph), fixed in the following commit `a119f4c`. The terminal
+`roadmap-context-curator` reconciliation (this commit) flips
+`planning/ROADMAP.md`'s Phase 79 row to `done`, per `CLAUDE.md` §5's
+narrow three-target exemption.
 
 **Phase 77 — First-party source awareness (`CG-009`) + a usable
 `codecompass-template` — `done`.**
@@ -379,28 +393,6 @@ applicable `not-recurred` result, or the smallest evidence-supported
 follow-on on `recurred`) — full detail:
 `planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
 
-**Phase 79 is implementation-complete; its only remaining steps are a
-re-audit and the terminal reconciliation.** A fresh
-`release-phase-auditor` pass against this commit (which fixed the prior
-audit's three Track 1 findings — the `CHANGELOG.md` entry, this file's
-own update, and the persisted `_drift-audit-phase-79.md`) needs to
-return PASS (or PASS WITH NON-BLOCKING OBSERVATIONS) on Track 1 before
-`planning/ROADMAP.md` can flip the phase to `done`; Track 2 (strict
-isolation validation) already returned its own honestly-expected PASS
-(best-effort labelling confirmed honest throughout — the isolation
-mechanism itself remains, as designed, unmet for network/
-environment-identity, which is Track 2's own disclosed result, not a
-blocker). Once the re-audit passes, the terminal
-`roadmap-context-curator` reconciliation commit (flipping
-`planning/ROADMAP.md`'s Phase 79 row to `done`, overwriting this
-section, and updating the phase plan's own Status line — per
-`CLAUDE.md` §5's narrow three-target exemption) is the closing action.
-Both repositories' commits should be pushed to `origin` once that gate
-passes, per `CLAUDE.md` §6.
-
-(The Phase 78 plan's own next-step description, immediately above, is
-independent of Phase 79 and unaffected by any of this.)
-
-Per `CLAUDE.md` §6, Phases 75, 76 (including its corrective pass), and 77
-are fully closed and already pushed to `origin` — no further action
-needed on any of them.
+Per `CLAUDE.md` §6, Phases 75, 76 (including its corrective pass), 77,
+and 79 are fully closed and already pushed to `origin` — no further
+action needed on any of them.
