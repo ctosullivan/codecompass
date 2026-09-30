@@ -873,12 +873,18 @@ it.
 **Explicit extraction-outcome model**, modeled directly on
 `git_topology.RepositoryTopology`'s own status+reason+data shape:
 `indexed` (a real structural parser — Python's `ast`) and
-`indexed_partial` (a coarse line-scan/regex technique — Rust/JS/TS,
-never implied to be as complete as a real parser) are both "succeeded"
-outcomes, distinguished only by technique fidelity; `unsupported`
-(Haskell — no in-process parser exists), `parse_error`, and `unreadable`
-are honest, distinguishable failure states — never a bare empty result
-standing in for more than one real cause.
+`indexed_partial` (a coarse line-scan/regex technique — Rust/JS/TS) are
+both "succeeded" outcomes, distinguished only by technique fidelity;
+`unsupported` (Haskell — no in-process parser exists), `parse_error`, and
+`unreadable` are honest, distinguishable failure states — never a bare
+empty result standing in for more than one real cause. `indexed_partial`'s
+own fidelity limits are specific and reproducible, not a diffuse
+"unusual formatting" risk, and Python's own top-level-only extraction
+scope and JS/TS's `const`-as-literal-kind limitation are separate,
+structural scope gaps — see
+[`context-graph-schema.md`](context-graph-schema.md)'s own "Known
+fidelity limitations of `indexed_partial` and Python extraction" section
+for the concrete shapes.
 
 **Two-level uncertainty**, the same shape `git_topology_status`
 established for a different granularity: a whole-*project*

@@ -188,12 +188,12 @@ only place that converts its plain dataclasses into these row types. See
 
 `source_files.symbol_index_status` closed set: `indexed` (a real
 structural parser ran — Python's own `ast`, today), `indexed_partial` (a
-coarse line-scan/regex technique ran — Rust and JS/TS, today; never
-implied to be as complete as a real parser), `unsupported` (no extractor
-exists for this file's language — Haskell, today), `parse_error` (the
-language's own parser rejected the file — Python-specific, since
-Rust/JS/TS's coarse techniques have no real "parse" step to fail
-structurally), `unreadable` (the file itself could not be read).
+coarse line-scan/regex technique ran — Rust and JS/TS, today; concrete
+fidelity limits below), `unsupported` (no extractor exists for this
+file's language — Haskell, today), `parse_error` (the language's own
+parser rejected the file — Python-specific, since Rust/JS/TS's coarse
+techniques have no real "parse" step to fail structurally), `unreadable`
+(the file itself could not be read).
 `symbol_index_diagnostic` carries the caught exception's own message for
 `parse_error`/`unreadable`, `NULL` otherwise. Modeled directly on
 `git_topology.RepositoryTopology`'s own status+reason+data shape — an
@@ -239,6 +239,53 @@ questions, the same two-level-uncertainty discipline `git_topology_status`
 (whole-pass) vs. its own per-row nullable columns already established,
 applied here as the same two-level shape at a different granularity
 (whole-*project* vs. per-*file*, rather than whole-*pass* vs. per-*row*).
+
+### Known fidelity limitations of `indexed_partial` and Python extraction
+
+`decisions/0065` and the Phase 77 plan describe `indexed_partial`'s
+coarse-technique risk only in general prose ("a multi-line signature, an
+unusual formatting style, or a false match inside a string/comment can
+defeat them"). Live probing against real Rust/JS/TS/Python source
+narrows that down to specific, reproducible shapes, not a diffuse
+"unusual formatting" risk:
+
+- A parameter list spanning multiple physical lines does **not** defeat
+  either regex-based extractor — both item regexes only need to match
+  the keyword+name text on the line where a declaration's own name first
+  appears.
+- A single-line `//` comment or single-line string literal containing
+  declaration-like text does **not** produce a false match — both regexes
+  anchor against each line's own stripped leading content.
+- A multi-line Rust raw-string literal whose interior line matches the
+  anchored pattern **does** produce a genuine, silent false-positive
+  `source_symbols` row — e.g. a raw string embedding `pub fn
+  embedded_in_string() {}` on its own line.
+- A plain `/* ... */` block comment in JS/TS — as opposed to a `/**`
+  JSDoc comment, which is specially recognized — is not treated as a
+  comment at all, so a commented-out declaration inside one **does**
+  produce a genuine, silent false-positive row.
+
+Both real false-positive shapes are silent: `symbol_index_status` stays
+`indexed_partial`, `symbol_index_diagnostic` stays `NULL`, and nothing in
+the returned extraction result distinguishes the false-positive row from
+a genuine declaration.
+
+Two further limitations affect extraction *scope* rather than
+correctness of what's matched, independent of the false-positive
+boundary above, and are structural properties of how the extractors are
+built rather than untested edge cases:
+
+- **Python extraction is top-level-only.** Only the module's own direct
+  children are visited (`ast.iter_child_nodes` on the module node, not a
+  recursive walk) — a method defined inside a class, or a function nested
+  inside another function, is never visited and never emitted as its own
+  `source_symbols` row.
+- **A JS/TS `const` binding's `kind` is always recorded literally as
+  `"const"`, never `"function"`**, regardless of what it's bound to — the
+  extractor assigns `kind` directly from the matched keyword with no
+  inspection of the right-hand side of an `=`. `export const useWidget =
+  () => {}` is therefore schema-indistinguishable from `export const PI =
+  3.14`.
 
 ## `RELATION_LABELS` — the closed taxonomy
 
