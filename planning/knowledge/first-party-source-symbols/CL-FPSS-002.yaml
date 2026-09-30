@@ -1,0 +1,37 @@
+id: CL-FPSS-002
+kind: claim
+statement: >
+  The five-value exposure classification (public/restricted/internal/
+  conventional_private/unknown) is applied per-language as a strict,
+  disjoint subset of the vocabulary, never the full five values by any
+  one language's real extractor: Python produces only public (no leading
+  underscore) or conventional_private (leading underscore) -- e.g.
+  `def public_fn(): ...` -> public, `def _private_fn(): ...` ->
+  conventional_private. Rust produces public (bare `pub`),
+  restricted (any `pub(crate)`/`pub(super)`/`pub(in path)`/`pub(self)`
+  form), or internal (no modifier) -- e.g. `pub fn foo() {}` -> public,
+  `pub(crate) fn bar() {}` -> restricted, `fn internal_fn() {}` ->
+  internal. JavaScript/TypeScript produce only public (leading `export`
+  present) or internal (absent) -- e.g. `export function add(...) {}`
+  -> public, `function internalHelper() {}` -> internal. `unknown` is
+  never produced by any of the three real extractors this module ships;
+  it exists only as a schema-level/vocabulary allowance for a
+  hypothetical future, less-certain extractor. `conventional_private`
+  is deliberately distinct from `internal`: the former names a naming
+  *convention* a caller can freely ignore, the latter names a
+  language-enforced non-visibility default -- Python's leading-underscore
+  convention is never classified as `internal`.
+derivation: DE-FPSS-002
+assertion_kind: rule
+basis: observed_behaviour
+supporting_evidence: ["EV-FPSS-003", "EV-FPSS-004", "EV-FPSS-005"]
+contradicting_evidence: []
+examples: ["Python `_private_fn` -> conventional_private (real test + real probe)", "Rust `pub(in crate::module) enum Qux {}` -> restricted (real test)", "TS `export interface Shape {}` -> public (real test)"]
+counterexamples: ["no real extractor call in any of the 22 fixtures exercised (17 pre-existing tests + 5 ad hoc probes) ever produced exposure='unknown'"]
+depends_on: []
+open_questions: []
+evidence_support_state: supported
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: supported

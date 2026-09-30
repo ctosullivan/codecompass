@@ -1,0 +1,31 @@
+id: DE-FPSS-005
+kind: derivation
+claim: CL-FPSS-005
+method: >
+  Read decisions/0065 point 7 (OBS-FPSS-001) and planning/phase-77
+  section 3.4/7 (OBS-FPSS-002) for the full design rationale, both of
+  which describe this marker only in prose, with no accompanying code
+  excerpt for either the write side or the read side (unlike, say,
+  section 3.2's occurrence-identity design, which both documents pair
+  with real schema/enum source text). I then read
+  graph_schema_fragment.py in full (OBS-FPSS-004) specifically looking
+  for any reference to source_index_version, and found exactly one: a
+  single sentence in Block 3's own docstring stating the marker is "not
+  this migration's own concern" -- itself only naming
+  rebuild_deterministic in prose, not including that function. I
+  initially considered treating this claim the same way as the schema/
+  migration claims (CL-FPSS-006), on the reasoning that "the ADR and the
+  plan both independently describe the same mechanism in detail, so it
+  is probably real" -- I corrected this because "probably real given
+  two documents' shared prose" is a materially weaker evidentiary basis
+  than "confirmed by reading the actual mechanism's own code," which is
+  exactly the distinction TASK.md's own instructions ask this claim set
+  to preserve (intent/rationale vs. behaviour proof). I therefore set
+  basis to proposed_policy and evidence_support_state to unsupported
+  rather than supported, and named the missing code explicitly as an
+  open question instead of letting the claim read as settled.
+inputs: ["EV-FPSS-014"]
+open_questions: ["write-path and read-path code for source_index_version is absent from this export"]
+performed_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"

@@ -1,0 +1,22 @@
+id: EV-FPSS-012
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  graph_schema_fragment.py's Block 1 declares source_symbols with
+  UNIQUE(source_file_id, name, kind, line) and line INTEGER NOT NULL,
+  matching the key the ADR describes. Block 5 (_sync_source_symbols)
+  computes both its "existing" and "incoming" sets as
+  (source_file_id, name, kind, line) 4-tuples and performs an
+  INSERT ... ON CONFLICT(source_file_id, name, kind, line) DO UPDATE,
+  consistent with this 4-tuple being the real natural key used for
+  upsert at the graph.py layer. This evidence could not be independently
+  executed: graph_schema_fragment.py does not parse as valid standalone
+  Python (confirmed by direct ast.parse attempt, OBS-FPSS-013), so it is
+  treated here as directly_stated code evidence (a faithful, cited
+  transcription of real graph.py lines), not as observed_behaviour in
+  the way source_symbols.py's own claims are.
+observations: ["OBS-FPSS-004", "OBS-FPSS-013"]
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: current

@@ -1,0 +1,19 @@
+id: EV-FPSS-003
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  Each of source_symbols.py's three per-language extraction functions
+  assigns exposure from a fixed, disjoint subset of the five-value
+  vocabulary: Python assigns only 'conventional_private' (leading
+  underscore) or 'public' (otherwise); Rust assigns only 'public' (bare
+  pub), 'restricted' (any pub(...) form), or 'internal' (no modifier);
+  JS/TS assigns only 'public' (export keyword present) or 'internal'
+  (absent). The literal 'unknown' appears nowhere in the module's
+  executable code -- only in one inline comment documenting the full
+  five-value vocabulary next to the exposure field -- confirmed by a
+  direct grep of the file's own text.
+observations: ["OBS-FPSS-003", "OBS-FPSS-012"]
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: current

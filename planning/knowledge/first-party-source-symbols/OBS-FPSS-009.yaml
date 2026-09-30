@@ -1,0 +1,24 @@
+id: OBS-FPSS-009
+kind: observation
+method: targeted_probe
+performed_by: context-researcher
+what_was_done: >
+  Probed a Python file with a class containing a method and a function
+  containing a nested function, against the real, unmodified Python
+  extractor, to check whether the stated top-level-only scope boundary
+  (plan section 2, non-goals) is real in the code rather than merely
+  asserted in the plan.
+location: >
+  File m.py written with content:
+  "class Outer:\n    def method(self):\n        pass\ndef top():\n    def nested():\n        pass\n    return nested\n"
+  Called extract_source_symbols_for_file(f, Language.PYTHON).
+raw_result: >
+  symbols = [('Outer', 'class'), ('top', 'function')] only -- `method`
+  (a class body member) and `nested` (a function-body-local function)
+  were both correctly excluded. Consistent with the module's own use of
+  ast.iter_child_nodes(tree) (direct children of the module node only,
+  no recursive walk into class or function bodies).
+tool_version: "python3 3.13.5, real unmodified source_symbols.py"
+repository_revision: "b4641cc (per MANIFEST.md)"
+timestamp: "2026-10-01"
+status: recorded

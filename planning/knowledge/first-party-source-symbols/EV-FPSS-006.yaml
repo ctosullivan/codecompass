@@ -1,0 +1,22 @@
+id: EV-FPSS-006
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  source_symbols.py defines SymbolIndexStatus(StrEnum) with exactly five
+  members (INDEXED, INDEXED_PARTIAL, UNSUPPORTED, PARSE_ERROR,
+  UNREADABLE). Dispatch is unconditional per language, not
+  content-dependent: Python always returns INDEXED (successful ast.parse)
+  or PARSE_ERROR (SyntaxError) or UNREADABLE (read failure) -- there is
+  no code path in _extract_python_source_symbols that returns
+  INDEXED_PARTIAL. Rust and JS/TS always return INDEXED_PARTIAL on
+  successful read (there is no parse step in either function to fail, so
+  neither can ever return PARSE_ERROR) or UNREADABLE on read failure.
+  Any language not equal to PYTHON/RUST/JAVASCRIPT/TYPESCRIPT
+  (i.e. HASKELL, the only other Language member) returns UNSUPPORTED
+  unconditionally, with diagnostic=None and symbols=(), without the
+  dispatching function ever attempting to open the file.
+observations: ["OBS-FPSS-003"]
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: current

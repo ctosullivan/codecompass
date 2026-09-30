@@ -1,0 +1,34 @@
+id: DE-FPSS-004
+kind: derivation
+claim: CL-FPSS-004
+method: >
+  Read decisions/0065 point 4 and planning/phase-77 sections 0/3.2
+  (OBS-FPSS-001/002), which describe a live-verification step performed
+  during planning (not independently reproducible by me as that exact
+  planning-time event) showing overloaded Python/TypeScript functions
+  produce 3 same-named rows. Per TASK.md's own instruction to check the
+  real evidence for *why* this identity rule exists rather than
+  restating the docstring's claim, I did not stop at the ADR's own
+  prose: I read source_symbols.py directly (OBS-FPSS-003) to see that
+  SourceSymbol.line actually is a required int (never Optional) in the
+  dataclass, then ran the module's own two overload-specific tests for
+  real (OBS-FPSS-006) to independently reproduce the exact "3 rows, 3
+  distinct lines, no crash" outcome the ADR describes -- not merely
+  trusting the ADR's retrospective description of its own planning-time
+  check. I then read graph_schema_fragment.py (OBS-FPSS-004) to confirm
+  the schema-level UNIQUE/NOT NULL constraints and the sync function's
+  own diff-by-4-tuple logic match this design. While doing so I noticed
+  Block 2's SourceSymbolRow dataclass body contradicts its own docstring
+  and contradicts Block 5's own field usage (s.line/s.purpose/s.exposure)
+  -- my first instinct was to silently assume the dataclass "really" has
+  4-6 fields and move on, since the surrounding evidence is
+  overwhelmingly consistent with that; I corrected this instinct because
+  doing so would mean inferring content from outside my assigned
+  directory (the real graph.py) rather than reporting what the export
+  itself actually shows, so I recorded it explicitly as an open question
+  and as contradicting_evidence rather than resolving it.
+inputs: ["EV-FPSS-010", "EV-FPSS-011", "EV-FPSS-012", "EV-FPSS-013"]
+open_questions: ["SourceSymbolRow's true field list in real graph.py could not be confirmed from this export alone"]
+performed_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"

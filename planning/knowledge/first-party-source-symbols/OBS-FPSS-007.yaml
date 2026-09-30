@@ -1,0 +1,29 @@
+id: OBS-FPSS-007
+kind: observation
+method: targeted_probe
+performed_by: context-researcher
+what_was_done: >
+  Probed a genuinely multi-line TypeScript function signature (parameter
+  list spanning multiple lines) against the real, unmodified
+  extract_source_symbols_for_file, to check the ADR's own prose claim
+  that "a multi-line signature ... can defeat" the coarse regex
+  technique.
+location: >
+  File m.ts written with content:
+  "export function add(\n  a: number,\n  b: number\n): number {\n  return a + b;\n}\n"
+  -- i.e. `export function add(` on its own line, then parameters, then
+  the closing `): number {` several lines later. Called
+  extract_source_symbols_for_file(f, Language.TYPESCRIPT) in the same
+  sandboxed environment as OBS-FPSS-006 (real, unmodified module).
+raw_result: >
+  status=indexed_partial, symbols=(SourceSymbol(name='add',
+  kind='function', line=1, purpose=None, exposure='public'),) -- the
+  declaration was captured correctly. The regex only needs to match the
+  export/function keyword and name on the line where they physically
+  appear (line 1 here); it does not need to see the rest of the
+  parameter list or the function body, so a parameter list spanning
+  multiple lines does not, by itself, defeat this extractor.
+tool_version: "python3 3.13.5, real unmodified source_symbols.py"
+repository_revision: "b4641cc (per MANIFEST.md)"
+timestamp: "2026-10-01"
+status: recorded

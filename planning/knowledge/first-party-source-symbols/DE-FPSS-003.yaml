@@ -1,0 +1,28 @@
+id: DE-FPSS-003
+kind: derivation
+claim: CL-FPSS-003
+method: >
+  Read decisions/0065 point 6 and planning/phase-77 section 6
+  (OBS-FPSS-001/002) for the stated rationale, which frames
+  indexed_partial as a corrective second amendment over an initial
+  design that gave regex-based extraction the same status as real
+  parsing -- an explicit, named self-correction within the plan's own
+  history, which I treated as informative about how seriously this
+  distinction is meant, but not as proof the code actually implements it
+  that way. I then read source_symbols.py's dispatch logic directly
+  (OBS-FPSS-003) function-by-function to confirm each language's status
+  outcomes are hard-coded per function (Python's function has no
+  INDEXED_PARTIAL return anywhere in its body; Rust's and the JS/TS
+  function each have no INDEXED or PARSE_ERROR return anywhere in their
+  bodies), rather than assuming the prose description was already
+  sufficient. tests/test_source_symbols.py's own dedicated coverage of
+  all five states (one test function per state, per OBS-FPSS-005)
+  independently corroborates this from a different angle (test intent),
+  and running all of them for real (OBS-FPSS-006) corroborates it a
+  third way (actual runtime behaviour). All three angles agree, so I did
+  not need a further follow-up experiment for this claim specifically.
+inputs: ["EV-FPSS-006", "EV-FPSS-007"]
+open_questions: []
+performed_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"

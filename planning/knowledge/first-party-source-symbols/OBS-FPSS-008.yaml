@@ -1,0 +1,25 @@
+id: OBS-FPSS-008
+kind: observation
+method: targeted_probe
+performed_by: context-researcher
+what_was_done: >
+  Probed a single-line "//" comment and a single-line string literal,
+  each containing declaration-like text, against the real, unmodified
+  Rust extractor, to check whether the coarse regex produces a false
+  match for text embedded in an ordinary single-line comment or string.
+location: >
+  File m.rs written with content:
+  '// fn not_real() {}\nlet s = "fn also_not_real() {}";\npub fn genuinely_real() {}\n'
+  Called extract_source_symbols_for_file(f, Language.RUST).
+raw_result: >
+  symbols = [('genuinely_real', 3)] only -- neither the commented-out
+  line nor the string-literal line produced a spurious row. Both
+  _RUST_ITEM_RE and (separately confirmed by reading) _JS_FAMILY_ITEM_RE
+  anchor with `^` against each line's own stripped leading content, so a
+  line that does not *begin* with the pub/fn/struct/enum/trait (or
+  export/function/class/...) keyword sequence is never matched, even if
+  matching text appears later in the same line.
+tool_version: "python3 3.13.5, real unmodified source_symbols.py"
+repository_revision: "b4641cc (per MANIFEST.md)"
+timestamp: "2026-10-01"
+status: recorded

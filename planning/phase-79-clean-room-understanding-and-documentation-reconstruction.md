@@ -1163,7 +1163,7 @@ not a failure condition to be argued around.
 
 ### 13.3 At implementation time — `codecompass-template` repository
 
-- The eight `TEMPLATE.md`/guide files named in §11 (descriptions revised,
+- The nine `TEMPLATE.md`/guide files named in §11 (descriptions revised,
   file list unchanged in count from the second revision).
 - `README.md` cross-link update.
 

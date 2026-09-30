@@ -1,0 +1,41 @@
+id: OBS-FPSS-001
+kind: observation
+method: doc_read
+performed_by: context-researcher
+what_was_done: "Read the full contents of the governing ADR file."
+location: "decisions/0065-first-party-source-is-language-classified-occurrence-identified-and-honestly-graded.md (full file, 202 lines)"
+raw_result: >
+  ADR 0065, status Accepted (2026-09-29). Nine numbered decision points:
+  (1) source_symbols as a new table, not nullable symbols.vendor_id;
+  (2) a new Language concept (python/rust/javascript/typescript/haskell)
+  distinct from core.Ecosystem (whose single NPM value covers JS and TS
+  identically), defined in source_symbols.py not core.py;
+  (3) source_files's four new columns (language, content_hash,
+  symbol_index_status, symbol_index_diagnostic) nullable identically on
+  fresh and upgraded databases, verified via test_graph.py per the ADR's
+  own text (test_graph.py itself is not part of this export);
+  (4) occurrence-based symbol identity, UNIQUE(source_file_id, name,
+  kind, line), line NOT NULL, adopted after live-verifying that a real
+  @typing.overload-stacked Python function and a real overloaded
+  TypeScript function declaration each produce three same-named rows at
+  three distinct lines;
+  (5) a five-value exposure model (public/restricted/internal/
+  conventional_private/unknown), live-verified against eight
+  representative Rust declarations;
+  (6) a five-state SymbolIndexStatus model (indexed/indexed_partial/
+  unsupported/parse_error/unreadable), modeled on
+  git_topology.RepositoryTopology's status+reason+data shape (that
+  module is not part of this export);
+  (7) a project-level meta.source_index_version marker, value "1",
+  written unconditionally by rebuild_deterministic whenever a
+  Phase-77-aware rebuild runs, whose absence (not NULL) means "never
+  indexed under Phase-77-aware code," mirroring meta.git_topology_status
+  (also not part of this export);
+  (8) query source/query source-symbol stay structurally separate from
+  query symbol;
+  (9) Haskell is file-recognized but symbol-extraction-unsupported.
+  Consequences section states schema version "10"->"11".
+tool_version: "Read tool"
+repository_revision: "b4641cc (per MANIFEST.md)"
+timestamp: "2026-10-01"
+status: recorded

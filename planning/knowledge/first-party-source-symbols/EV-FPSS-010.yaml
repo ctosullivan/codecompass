@@ -1,0 +1,21 @@
+id: EV-FPSS-010
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  decisions/0065 point 4 and planning/phase-77 sections 0/3.2 state that
+  the occurrence-based key UNIQUE(source_file_id, name, kind, line), with
+  line NOT NULL, was adopted specifically after a described live
+  verification (performed during planning, not part of this export as a
+  separate artifact) that a real @typing.overload-stacked Python function
+  and a real overloaded TypeScript function declaration each produce
+  three same-named, same-kind rows at three distinct lines -- which an
+  initially-considered name-only UNIQUE(source_file_id, name) key would
+  have made collide as a real sqlite3.IntegrityError on the first genuine
+  overload encountered. Both documents explicitly reject an alternative
+  "logical-symbol/collapse" design (merging same-name declarations into
+  one row) as discarding real information.
+observations: ["OBS-FPSS-001", "OBS-FPSS-002"]
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: current

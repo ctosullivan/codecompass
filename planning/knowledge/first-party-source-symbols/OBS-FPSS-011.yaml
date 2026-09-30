@@ -1,0 +1,25 @@
+id: OBS-FPSS-011
+kind: observation
+method: targeted_probe
+performed_by: context-researcher
+what_was_done: >
+  Probed a plain (non-JSDoc) "/* ... */" block comment spanning multiple
+  lines, containing declaration-like text on its own interior line,
+  against the real, unmodified JS/TS extractor -- since reading
+  _extract_js_family_source_symbols (OBS-FPSS-003) showed it only
+  special-cases lines starting with "/**" (JSDoc) or continuation lines
+  starting with "*", with no handling at all for a plain "/*" opener.
+location: >
+  File m.ts written with content:
+  "/*\nexport function commented_out(): void {}\n*/\nexport function real_fn(): void {}\n"
+  Called extract_source_symbols_for_file(f, Language.TYPESCRIPT).
+raw_result: >
+  symbols = [('commented_out', 2), ('real_fn', 4)] -- the line inside the
+  plain block comment was scanned and matched exactly like real code,
+  producing a false-positive row for a commented-out declaration. status
+  remained indexed_partial, diagnostic None, with nothing distinguishing
+  this outcome from two genuinely real declarations.
+tool_version: "python3 3.13.5, real unmodified source_symbols.py"
+repository_revision: "b4641cc (per MANIFEST.md)"
+timestamp: "2026-10-01"
+status: recorded

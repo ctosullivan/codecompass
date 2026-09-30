@@ -1,0 +1,39 @@
+id: CL-FPSS-007
+kind: claim
+statement: >
+  The indexed_partial techniques' "honest, coarse" fidelity limitation
+  that decisions/0065/planning/phase-77 describe only in general prose
+  ("a multi-line signature, an unusual formatting style, or (rarely) a
+  false match inside a string/comment can defeat them") is real and
+  trivially reproducible with ordinary Rust/TypeScript constructs, but
+  its concrete shape is narrower and more specific than a first reading
+  of that prose suggests. Specifically: (a) a parameter list spanning
+  multiple physical lines does NOT, by itself, defeat either extractor,
+  because both regexes only need to match the keyword+name text on the
+  line where a declaration's own name first appears; (b) a single-line
+  "//" comment or a single-line string literal containing
+  declaration-like text does NOT produce a false match, because both
+  item regexes anchor with `^` against each line's own stripped leading
+  content; but (c) a multi-line Rust raw-string literal whose own
+  interior line matches the anchored pattern DOES produce a genuine
+  false-positive source_symbols row, and (d) a plain "/* ... */" block
+  comment in JS/TS (as opposed to a "/**" JSDoc comment, which is
+  specially recognized) is not treated as a comment at all, so a
+  commented-out declaration inside one DOES produce a genuine
+  false-positive row. Both real false positives are silent: status stays
+  indexed_partial, diagnostic stays None, with nothing in the returned
+  SourceFileExtraction distinguishing them from genuine declarations.
+derivation: DE-FPSS-007
+assertion_kind: boundary
+basis: observed_behaviour
+supporting_evidence: ["EV-FPSS-008", "EV-FPSS-009"]
+contradicting_evidence: []
+examples: ["a Rust file containing `let s = r#\"\\npub fn embedded_in_string() {}\\n\"#;` produces a real, silent false-positive `embedded_in_string` row (real probe)", "a TS file containing `/*\\nexport function commented_out(): void {}\\n*/` produces a real, silent false-positive `commented_out` row (real probe)"]
+counterexamples: ["a genuinely multi-line function signature is handled correctly (real probe)", "a single-line comment or string containing declaration-like text is handled correctly (real probe)"]
+depends_on: ["CL-FPSS-003"]
+open_questions: ["whether these two specific false-positive shapes (multi-line raw strings, plain block comments) are the ones decisions/0065's own prose intended to describe, or merely two of possibly several unenumerated ones, could not be determined from the documents alone -- this claim adds evidence the ADR/plan do not themselves contain, rather than merely restating them"]
+evidence_support_state: supported
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: supported

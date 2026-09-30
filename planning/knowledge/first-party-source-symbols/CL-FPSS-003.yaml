@@ -1,0 +1,37 @@
+id: CL-FPSS-003
+kind: claim
+statement: >
+  The five-state SymbolIndexStatus model (indexed/indexed_partial/
+  unsupported/parse_error/unreadable) exists to prevent a bare empty
+  symbols list from ambiguously standing in for more than one real
+  cause. indexed and indexed_partial are distinguished purely by
+  extraction *technique fidelity*, never by whether anything was found:
+  indexed means a real structural parser (Python's ast.parse) ran and
+  either succeeded (possibly finding zero symbols) or the extractor
+  never reaches this status if parsing itself failed; indexed_partial
+  means a coarse line-scan/regex heuristic ran (Rust, JS, TypeScript) --
+  a technique with no real parse step, so it can never fail
+  structurally the way ast.parse can, and is dispatched unconditionally
+  on successful file read regardless of what (if anything) it finds.
+  unsupported means no extractor exists for the file's language at all
+  (Haskell today) -- the file is never even opened. parse_error is
+  Python-specific (ast.parse raising SyntaxError) since Rust/JS/TS have
+  no real parse step to fail. unreadable applies to any language (OSError
+  or UnicodeDecodeError on read). No code path in this module ever
+  returns indexed_partial for Python or indexed for Rust/JS/TS --
+  the mapping from language to indexed-vs-indexed_partial is fixed, not
+  content-dependent.
+derivation: DE-FPSS-003
+assertion_kind: state_transformation
+basis: observed_behaviour
+supporting_evidence: ["EV-FPSS-006", "EV-FPSS-007"]
+contradicting_evidence: []
+examples: ["a syntactically valid, symbol-free Python file -> INDEXED with symbols=() (real test)", "a Python file with a genuine SyntaxError -> PARSE_ERROR with a populated diagnostic and symbols=() (real test)", "a Haskell file, however well-formed, -> UNSUPPORTED without ever being opened (real test)"]
+counterexamples: []
+depends_on: []
+open_questions: []
+evidence_support_state: supported
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: supported

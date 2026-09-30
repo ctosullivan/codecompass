@@ -1,0 +1,34 @@
+id: DE-FPSS-006
+kind: derivation
+claim: CL-FPSS-006
+method: >
+  Read decisions/0065 point 3 and planning/phase-77 sections 3.1/4
+  (OBS-FPSS-001/002) for the stated rationale (an earlier, rejected
+  design would have made a fresh schema NOT NULL while an upgraded one
+  stayed nullable until repopulated; direct review rejected this
+  divergence). Read graph_schema_fragment.py's Block 1 (CREATE TABLE)
+  and Block 3 (_migrate_source_files_columns) directly (OBS-FPSS-004) to
+  check the actual SQL text against this claim, rather than trusting the
+  ADR's summary alone -- confirmed both declare the same four columns
+  with identical nullability, and confirmed the migration function's own
+  guard (checking sqlite_master for the table's existence, then PRAGMA
+  table_info for each column) matches the "never drop/recreate,
+  introspection-gated" description exactly. I attempted to verify the
+  ADR's own "verified directly (test_graph.py)" sentence by looking for
+  any such test in my assigned directory and found none --
+  tests/test_source_symbols.py (the only test file I have) contains no
+  reference to source_files, migration, or PRAGMA table_info at all. I
+  initially almost treated the ADR's self-citation of test_graph.py as
+  sufficient corroboration on its own (since it names a specific,
+  plausible-sounding test), then corrected this: a document *asserting*
+  a test exists and passes is not the same evidence as the test itself,
+  and TASK.md's own framing explicitly distinguishes "intent/rationale"
+  documents from "behaviour proof" for exactly this reason. I therefore
+  scoped supporting_evidence to what the schema/migration code itself
+  directly shows and flagged the test_graph.py gap as an open question
+  rather than letting the claim imply it was independently reproduced.
+inputs: ["EV-FPSS-015"]
+open_questions: ["test_graph.py's own fresh-vs-upgraded equivalence test, cited by the ADR, is outside this export and unverified"]
+performed_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"

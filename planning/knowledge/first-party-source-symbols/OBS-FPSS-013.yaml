@@ -1,0 +1,30 @@
+id: OBS-FPSS-013
+kind: observation
+method: static_analysis
+performed_by: context-researcher
+what_was_done: >
+  Attempted to parse graph_schema_fragment.py as standalone Python, to
+  check whether it is executable as-is (as source_symbols.py genuinely
+  is, per OBS-FPSS-006) or is a read-only illustrative extract whose
+  claims must be weighted as directly_stated code evidence rather than
+  observed_behaviour.
+location: "python3 -c \"import ast; ast.parse(open('src/codecompass/graph_schema_fragment.py').read())\""
+raw_result: >
+  SyntaxError: leading zeros in decimal integer literals are not
+  permitted; use an 0o prefix for octal integers (line 16) -- the file
+  does not parse as valid standalone Python. This is expected given the
+  MANIFEST's own description ("six named blocks... not the whole
+  module") and the header comment's own framing ("Extracted, not the
+  whole module"): Block 1's SQL text (CREATE TABLE statements with `--`
+  comments) is pasted as bare top-level text rather than inside the
+  triple-quoted string literal it presumably lives inside in the real
+  graph.py, and a decision-record cross-reference like "0064" is parsed
+  as an invalid numeric literal outside of any string context. This
+  confirms the fragment cannot be executed or imported as-is; every
+  claim drawn from it in this research is treated as directly_stated
+  (read) evidence, never as observed_behaviour, unlike source_symbols.py
+  (OBS-FPSS-006 through OBS-FPSS-011).
+tool_version: "python3 3.13.5"
+repository_revision: "b4641cc (per MANIFEST.md)"
+timestamp: "2026-10-01"
+status: recorded

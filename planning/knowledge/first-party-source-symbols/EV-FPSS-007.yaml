@@ -1,0 +1,17 @@
+id: EV-FPSS-007
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  decisions/0065 point 6 and planning/phase-77 section 6 both state that
+  the INDEXED/INDEXED_PARTIAL split exists specifically to avoid treating
+  a coarse line-scan/regex technique as equivalent in fidelity to a real
+  structural parser (ast.parse), and both explicitly describe rejecting
+  an earlier design that gave both the same "INDEXED" status. Both
+  documents state the distinction is about technique fidelity, not about
+  whether any symbols were actually found (an INDEXED or INDEXED_PARTIAL
+  file may legitimately have zero symbols).
+observations: ["OBS-FPSS-001", "OBS-FPSS-002"]
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: current

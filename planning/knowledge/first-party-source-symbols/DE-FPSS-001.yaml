@@ -1,0 +1,31 @@
+id: DE-FPSS-001
+kind: derivation
+claim: CL-FPSS-001
+method: >
+  Read decisions/0065 first (OBS-FPSS-001), which states the
+  Language-vs-Ecosystem decision as point 2, then cross-checked the same
+  claim against planning/phase-77 (OBS-FPSS-002), which restates it
+  nearly verbatim with the same JS/TS example and adds the exact
+  Language StrEnum source text. Both documents describe core.Ecosystem
+  entirely in prose; neither is core.py itself. I initially treated this
+  as fully verified because two independent-looking documents agreed,
+  but corrected that assumption on noticing core.py is not in
+  MANIFEST.md's allow-list at all -- so "two documents agree" here means
+  "the ADR and the plan it summarizes agree with each other," not "two
+  independent sources independently confirm core.py's real content."
+  I then read source_symbols.py directly (OBS-FPSS-003) and confirmed
+  the Language enum's actual five members and values match both
+  documents' descriptions exactly, and confirmed by inspection that the
+  module never imports or references core.Ecosystem -- this part is
+  directly, independently verifiable from the file I do have, and is
+  the strongest part of this claim. The comparison *to* Ecosystem itself
+  remains an open question rather than a fact I independently
+  confirmed, which is why I marked evidence_support_state as
+  partially_supported rather than supported outright, and recorded the
+  open question explicitly on the claim itself rather than silently
+  treating the ADR's own self-description as settled.
+inputs: ["EV-FPSS-001", "EV-FPSS-002"]
+open_questions: ["core.Ecosystem's actual definition is unverified in this research scope"]
+performed_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"

@@ -1,0 +1,42 @@
+id: OBS-FPSS-005
+kind: observation
+method: code_read
+performed_by: context-researcher
+what_was_done: "Read the full contents of the real test suite for this module."
+location: "tests/test_source_symbols.py (full file, 249 lines, unmodified per MANIFEST.md)"
+raw_result: >
+  17 top-level test functions, none using any fixture beyond pytest's
+  built-in tmp_path. Discovery: classifies all five languages by suffix
+  including .jsx/.tsx distinctness; confirms tests/ directories are kept
+  (not pruned) while node_modules/ and vendor/ are pruned; confirms
+  discover_source_files's own signature takes only project_root (no
+  vendor-config parameter), used as the test's own evidence for
+  zero-vendor independence "by construction". Python: full-scope
+  extraction (public function with docstring, leading-underscore private
+  function, public class) all INDEXED with correct kind/exposure/
+  purpose; zero-symbol file still INDEXED with symbols == (); a syntax
+  error yields PARSE_ERROR with non-None diagnostic and empty symbols;
+  an undecodable byte file yields UNREADABLE with non-None diagnostic; a
+  @typing.overload-stacked triple-defined `foo` yields exactly 3 rows
+  named foo with 3 distinct line values, status INDEXED. Rust: eight
+  declarations (bare pub, pub(crate), pub(super), pub(in
+  crate::module), pub(self), and two no-modifier forms) all classified
+  exposure correctly (public/restricted/restricted/restricted/
+  restricted/internal/internal) under INDEXED_PARTIAL, with a leading
+  `///` doc comment captured as purpose for the pub fn case; two
+  same-file non-overload declarations (foo, foo_two) both retained
+  without collision; an undecodable byte file yields UNREADABLE.
+  JS: exported function/class get exposure 'public', a non-exported
+  function gets 'internal', all under INDEXED_PARTIAL; an undecodable
+  byte file yields UNREADABLE. TS: interface/type/enum kinds recognized,
+  JSDoc purpose captured, export-based exposure applied identically to
+  JS; a genuinely overloaded exported TypeScript function declaration
+  (three `export function foo(...)` lines, two signature-only plus one
+  implementation) yields exactly 3 rows named foo with 3 distinct line
+  values, status INDEXED_PARTIAL. Haskell: UNSUPPORTED, diagnostic None,
+  symbols == () for a syntactically valid .hs file, i.e. the file is
+  never even opened for this language.
+tool_version: "Read tool"
+repository_revision: "b4641cc (per MANIFEST.md)"
+timestamp: "2026-10-01"
+status: recorded

@@ -1,0 +1,16 @@
+id: EV-FPSS-011
+kind: evidence
+evidence_kind: executable
+what_it_shows: >
+  Real execution of the unmodified extraction functions against the same
+  overload shapes the ADR/plan describe (a @typing.overload-stacked
+  Python function, a signature-overloaded TypeScript function
+  declaration) directly reproduces the stated outcome: exactly 3
+  SourceSymbol rows are produced for each, all sharing the same name and
+  kind, each with a distinct .line value, with no exception raised in
+  either language's extractor.
+observations: ["OBS-FPSS-006"]
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: current

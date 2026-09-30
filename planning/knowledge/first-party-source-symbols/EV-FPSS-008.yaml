@@ -1,0 +1,24 @@
+id: EV-FPSS-008
+kind: evidence
+evidence_kind: executable
+what_it_shows: >
+  Real execution against the unmodified Rust and TypeScript/JavaScript
+  extractors demonstrates that the coarse-technique fidelity limitation
+  the ADR describes only in prose is genuine and trivially reproducible
+  with ordinary (not contrived-adversarial) constructs: a multi-line
+  Rust raw-string literal (`r#"..."#`) whose own interior line, once
+  stripped, textually matches the anchored item regex produces a real
+  false-positive source-symbol row (embedded_in_string); a plain
+  "/* ... */" block comment in JS/TS -- as opposed to a "/**" JSDoc
+  comment, which the extractor does specially recognize -- is not
+  recognized as a comment at all, so its interior content is scanned
+  identically to real code and likewise produces a false-positive row
+  for a commented-out declaration (commented_out). In both cases the
+  returned SourceFileExtraction's status remained INDEXED_PARTIAL and
+  diagnostic remained None, with nothing in the returned data
+  distinguishing these false positives from genuine declarations.
+observations: ["OBS-FPSS-010", "OBS-FPSS-011"]
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: current

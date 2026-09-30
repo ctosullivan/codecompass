@@ -1,0 +1,16 @@
+id: EV-FPSS-002
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  source_symbols.py itself defines Language(StrEnum) with exactly five
+  members (PYTHON, RUST, JAVASCRIPT, TYPESCRIPT, HASKELL = "python",
+  "rust", "javascript", "typescript", "haskell"), with a module- and
+  class-level docstring stating it is "distinct from core.Ecosystem" for
+  the same JS/TS reason given in decisions/0065 and the phase-77 plan.
+  The module contains no import of, or reference to, core.Ecosystem
+  anywhere in its own code -- Language is used standalone throughout.
+observations: ["OBS-FPSS-003"]
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: current

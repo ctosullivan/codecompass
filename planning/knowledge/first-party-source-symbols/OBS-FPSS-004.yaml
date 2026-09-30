@@ -1,0 +1,70 @@
+id: OBS-FPSS-004
+kind: observation
+method: code_read
+performed_by: context-researcher
+what_was_done: "Read the full contents of the curated graph.py schema extract."
+location: "src/codecompass/graph_schema_fragment.py (full file, 337 lines; header states this is six named blocks each cited to its own real graph.py line range at HEAD b4641cc, not the whole module)"
+raw_result: >
+  Block 1 (graph.py:66-110, per its own citation): CREATE TABLE
+  source_files with path TEXT NOT NULL UNIQUE and four nullable columns
+  (language, content_hash, symbol_index_status with a five-value CHECK,
+  symbol_index_diagnostic) -- no NOT NULL on any of the four; CREATE
+  TABLE source_symbols with source_file_id INTEGER NOT NULL REFERENCES
+  source_files(id) ON DELETE CASCADE, name TEXT NOT NULL, kind TEXT NOT
+  NULL, line INTEGER NOT NULL, purpose TEXT, exposure TEXT with a
+  five-value CHECK, UNIQUE(source_file_id, name, kind, line), plus an
+  index on source_file_id.
+  Block 2 (graph.py:308-339): SourceFileRow frozen dataclass (path,
+  language, content_hash, symbol_index_status, symbol_index_diagnostic,
+  all but path defaulting to None) with a docstring stating it is
+  "upserted across rebuilds ... not cleared-and-reinserted". Immediately
+  followed by a SourceSymbolRow frozen dataclass whose docstring states
+  it is "keyed by (source_file_path, name, kind, line)" and that "line
+  is never None -- an extractor unable to determine one does not produce
+  a row at all" -- but the dataclass body shown in this extract lists
+  only three fields: source_file_path: str, name: str, kind: str. No
+  line, purpose, or exposure field appears in the shown body, even
+  though the docstring names line as part of the key.
+  Block 3 (graph.py:754-804): _migrate_source_files_columns(conn) --
+  checks sqlite_master for a source_files table (returns immediately if
+  absent, i.e. a brand-new database never runs this migration path at
+  all, relying on init_schema's own CREATE TABLE IF NOT EXISTS instead);
+  reads PRAGMA table_info(source_files) into a column-name set; for each
+  of the four Phase-77 columns not already present, runs a single
+  ALTER TABLE source_files ADD COLUMN statement (symbol_index_status's
+  ALTER includes the same five-value CHECK as the CREATE TABLE form);
+  never drops or recreates the table. Docstring states an existing row's
+  four new columns "start NULL ... until the next rebuild_deterministic
+  call repopulates them," and that "every real production call path
+  (sync.py::rebuild_project_graph) always calls rebuild_deterministic
+  immediately after open_graph, so this transient state is never
+  user-visible in practice" -- rebuild_project_graph and
+  rebuild_deterministic's own bodies are not part of this export.
+  Block 4 (graph.py:1169-1204): _sync_source_files(conn, source_files) --
+  computes existing paths via SELECT, deletes stale paths, then INSERT
+  ... ON CONFLICT(path) DO UPDATE SET for every incoming row, keyed on
+  path alone.
+  Block 5 (graph.py:1207-1253): _sync_source_symbols(conn, source_symbols,
+  source_file_ids) -- computes existing (source_file_id, name, kind,
+  line) 4-tuples via SELECT, deletes stale tuples, then INSERT ... ON
+  CONFLICT(source_file_id, name, kind, line) DO UPDATE SET purpose =
+  excluded.purpose, exposure = excluded.exposure for every incoming row.
+  This function body references s.line, s.purpose, and s.exposure as
+  attributes of each SourceSymbolRow instance -- attributes not present
+  in Block 2's own shown three-field dataclass body.
+  Block 6 (graph.py:1922-2013): source_file_profile(conn, path) -> dict |
+  None -- returns None only when no source_files row exists at all for
+  path (docstring explicitly distinguishes this from "never indexed",
+  stating cli.py::query_source checks meta.source_index_version's
+  presence *before* calling this function -- that check's own code is
+  not part of this export); otherwise returns a dict with path,
+  language, content_hash, symbol_index_status, symbol_index_diagnostic,
+  symbols (list, always present once the file row exists), and
+  vendor_usages (joined against uses_edges/vendors/symbols).
+  source_symbol_profile(conn, name) -> list[dict] -- returns every
+  source_symbols row named name across every file, each annotated with
+  its containing file's path and language.
+tool_version: "Read tool"
+repository_revision: "b4641cc (per MANIFEST.md)"
+timestamp: "2026-10-01"
+status: recorded

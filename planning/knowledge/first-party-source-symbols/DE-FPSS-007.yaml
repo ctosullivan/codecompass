@@ -1,0 +1,36 @@
+id: DE-FPSS-007
+kind: derivation
+claim: CL-FPSS-007
+method: >
+  This claim originated from following TASK.md's own instruction (and
+  this role's own standing method) to not stop at a documentation-only
+  reading: decisions/0065 point 6 asserts, without demonstrating, that
+  coarse techniques "can" be defeated by three named scenarios. Rather
+  than restate that sentence as a claim, I designed five real probes
+  against the real, unmodified extractors: first testing the two
+  scenarios the ADR names most concretely (multi-line signature,
+  string/comment false match) as literally as I could construct them
+  (OBS-FPSS-007, OBS-FPSS-008) -- both came back NOT reproducing a
+  defect, which was itself a genuine surprise relative to my working
+  assumption going in (that the ADR's prose directly described real,
+  reproducible failure modes). I corrected that assumption rather than
+  discarding the investigation: since the code itself is anchored (`^`)
+  and only needs to match a declaration's own first line, I reasoned
+  through what *would* defeat that anchoring (something that puts
+  matching text at the very start of an interior line without it being a
+  real declaration) and designed two sharper follow-up probes -- a
+  multi-line raw string (Rust) and a plain, non-JSDoc block comment
+  (JS/TS) -- both of which did reproduce a genuine, silent false
+  positive (OBS-FPSS-010, OBS-FPSS-011). I treated this as a materially
+  useful finding beyond the six required topics (per TASK.md's own
+  "materially useful... not exhaustive catalogue" framing) because it
+  gives CL-FPSS-003's indexed_partial concept a concrete, falsifiable
+  boundary instead of leaving it only as documented intent, and named
+  explicitly which of the ADR's own named scenarios I could and could
+  not reproduce, rather than implying I had confirmed the ADR's prose
+  exactly as written.
+inputs: ["EV-FPSS-008", "EV-FPSS-009"]
+open_questions: ["whether the ADR's own authors intended exactly these two reproduced scenarios, or different ones, when they wrote 'a false match inside a string/comment' is unknown"]
+performed_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"

@@ -1,0 +1,33 @@
+id: OBS-FPSS-006
+kind: observation
+method: test_execution
+performed_by: context-researcher
+what_was_done: >
+  Executed the real, unmodified source_symbols.py against its own real,
+  unmodified test suite (tests/test_source_symbols.py), outside my
+  assigned directory only to the extent of writing two minimal
+  from-scratch stub modules (codecompass/filetree.py,
+  codecompass/usage.py) sufficient to satisfy source_symbols.py's two
+  external imports -- iter_source_files(project_root, prune_dirs=...)
+  and _PROJECT_PRUNE_DIR_NAMES -- since the real filetree.py/usage.py are
+  outside my assigned directory and were not read or copied from
+  anywhere. pytest was not available on the machine's bare python3, so
+  each of the 17 test_* functions was invoked manually with a real
+  tempfile.TemporaryDirectory() standing in for pytest's tmp_path
+  fixture.
+location: >
+  Commands run in /tmp/.../scratchpad/fpss-exec-test/ (a fresh sandbox
+  directory, not the assigned export directory): copied
+  source_symbols.py and test_source_symbols.py verbatim; wrote stub
+  filetree.py (iter_source_files walking Path.rglob, honoring
+  prune_dirs against relative path parts) and usage.py
+  (_PROJECT_PRUNE_DIR_NAMES = frozenset of common build/dep dir names);
+  ran `python3 run_tests_manually.py`, a harness importing
+  tests.test_source_symbols, iterating every test_-prefixed function,
+  calling it with Path(tempfile.mkdtemp()), and catching/reporting any
+  exception.
+raw_result: "PASSED: 17/17 -- no failures, no exceptions."
+tool_version: "python3 3.13.5 (bare system interpreter, no pytest installed)"
+repository_revision: "b4641cc (per MANIFEST.md) -- source_symbols.py and test_source_symbols.py content copied verbatim, unmodified"
+timestamp: "2026-10-01"
+status: recorded

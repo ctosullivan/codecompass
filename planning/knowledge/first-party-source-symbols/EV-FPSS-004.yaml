@@ -1,0 +1,18 @@
+id: EV-FPSS-004
+kind: evidence
+evidence_kind: executable
+what_it_shows: >
+  Real execution of the unmodified extraction functions against
+  representative fixtures reproduces every exposure value the ADR/plan
+  describe: Python 'public'/'conventional_private'; Rust
+  'public'/'restricted' (across all three pub(...) forms:
+  pub(crate)/pub(super)/pub(in path))/'internal'; JS/TS
+  'public'/'internal'. Across every probe run (OBS-FPSS-006 through
+  OBS-FPSS-011, covering 17 pre-existing test cases plus 5 additional
+  ad hoc probes), no call to any real extractor ever produced
+  exposure='unknown'.
+observations: ["OBS-FPSS-006", "OBS-FPSS-007", "OBS-FPSS-008", "OBS-FPSS-009", "OBS-FPSS-010", "OBS-FPSS-011"]
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: current

@@ -1,0 +1,34 @@
+id: CL-FPSS-005
+kind: claim
+statement: >
+  meta.source_index_version is documented (by decisions/0065 and the
+  phase-77 plan) as a project-level marker whose *absence* (not a NULL
+  value -- its total absence as a key) is meant to mean "first-party
+  source has never been indexed under Phase-77-aware code," distinct
+  from a per-file symbol_index_status value, and is meant to be written
+  unconditionally by rebuild_deterministic on every Phase-77-aware
+  rebuild (even one finding zero first-party files) so that a genuine
+  "not yet indexed" project state is never confused with a genuine
+  "indexed, but this symbol doesn't exist" negative result. This
+  statement describes documented design *intent*, as both source
+  documents themselves frame it (the ADR's own "Decision" section, the
+  plan's own "new, this amendment" section) -- no code implementing
+  either the write path (rebuild_deterministic) or the read/gate path
+  (the pre-check that decisions/0065 point 7 says query source / query
+  source-symbol perform) is present anywhere in this export, so this
+  claim cannot be treated as independently confirmed current behaviour
+  the way CL-FPSS-002/003/004 are.
+derivation: DE-FPSS-005
+assertion_kind: invariant
+basis: proposed_policy
+supporting_evidence: ["EV-FPSS-014"]
+contradicting_evidence: []
+examples: []
+counterexamples: []
+depends_on: []
+open_questions: ["No code implementing rebuild_deterministic's own write of meta.source_index_version, nor cli.py's own read/gate check of its presence, is included in this export -- this claim rests entirely on decisions/0065 and the phase-77 plan's own stated intent, consistent with TASK.md's own caveat that both documents are 'intent/rationale evidence, not proof of current behaviour on its own'.", "Whether meta.git_topology_status (the precedent this design is explicitly modeled on) actually behaves the way decisions/0065 assumes could also not be checked -- git_topology.py is not part of this export."]
+evidence_support_state: unsupported
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: proposed

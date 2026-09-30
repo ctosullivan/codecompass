@@ -1,0 +1,34 @@
+id: OBS-FPSS-002
+kind: observation
+method: doc_read
+performed_by: context-researcher
+what_was_done: "Read the full contents of the phase plan that implemented this subsystem."
+location: "planning/phase-77-first-party-source-and-template.md (full file, 1148 lines)"
+raw_result: >
+  Phase 77 plan, status done (2026-09-29), amended twice. Contains the
+  same nine design points as decisions/0065 in much fuller detail,
+  including: the exact Language StrEnum source text and suffix mapping
+  table (.py/.rs/.js+variants/.ts+variants/.hs); the exact source_files
+  and source_symbols CREATE TABLE SQL; the exact SourceSymbol/
+  SourceFileExtraction/SymbolIndexStatus dataclass/enum definitions; a
+  live-verification log (section 0) describing real regex/AST runs
+  against overloaded Python/TypeScript functions and eight Rust
+  visibility forms, performed during planning; a per-language
+  extraction-scope table (section 12) stating exact index-status and
+  exposure-value outcomes per language; a full test list (section 15)
+  naming tests in tests/test_source_symbols.py, tests/test_graph.py,
+  tests/test_sync.py, and tests/test_cli.py -- only the first of these
+  four files is included in this export. Section 3.4 describes the
+  meta.source_index_version marker and its query-layer contract in
+  detail: absence checked before running query source/query
+  source-symbol's normal profile logic, rendering {"indexed": false} or
+  an explicit "run codecompass sync" message, with both commands
+  remaining read-only. Section 4 and the migration bullet describe
+  _migrate_source_files_columns as ALTER TABLE ADD COLUMN only, gated by
+  PRAGMA table_info introspection, never drop-and-recreate, because
+  source_files.id is referenced by uses_edges.source_file_id ON DELETE
+  CASCADE.
+tool_version: "Read tool"
+repository_revision: "b4641cc (per MANIFEST.md)"
+timestamp: "2026-10-01"
+status: recorded

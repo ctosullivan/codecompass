@@ -1,0 +1,18 @@
+id: EV-FPSS-005
+kind: evidence
+evidence_kind: test
+what_it_shows: >
+  tests/test_source_symbols.py's own test bodies assert exactly these
+  same per-language exposure mappings (e.g.
+  test_rust_extraction_is_indexed_partial_with_full_exposure_model
+  asserts all three pub(...) forms map to 'restricted', a bare `pub` to
+  'public', and no-modifier declarations to 'internal'). All 17 of the
+  file's own test functions passed when executed directly against the
+  real, unmodified source_symbols.py module in a sandbox using only
+  from-scratch stub replacements for two unrelated, out-of-scope imports
+  (filetree.iter_source_files, usage._PROJECT_PRUNE_DIR_NAMES).
+observations: ["OBS-FPSS-005", "OBS-FPSS-006"]
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: current

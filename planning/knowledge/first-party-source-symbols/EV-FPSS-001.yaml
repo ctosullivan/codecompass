@@ -1,0 +1,18 @@
+id: EV-FPSS-001
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  decisions/0065 point 2 and planning/phase-77's section 3.1 each state
+  that core.Ecosystem has exactly one value (NPM) that covers both
+  JavaScript and TypeScript dependencies identically, and that this is
+  described as an ontology mismatch for classifying first-party source
+  (a .js file has no interface/type construct, a .ts file does). Neither
+  document's own text is corroborated against core.py directly -- core.py
+  is not included in this export -- so this statement's description of
+  core.Ecosystem's own current definition rests entirely on these two
+  documents' own prose.
+observations: ["OBS-FPSS-001", "OBS-FPSS-002"]
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: current

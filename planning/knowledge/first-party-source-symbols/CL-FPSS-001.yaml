@@ -1,0 +1,26 @@
+id: CL-FPSS-001
+kind: claim
+statement: >
+  source_symbols.Language is a new, narrow, five-value concept
+  (python/rust/javascript/typescript/haskell) introduced specifically
+  because the pre-existing core.Ecosystem concept cannot distinguish
+  JavaScript from TypeScript (both collapse to a single NPM value there,
+  a *package-ecosystem* concept), whereas first-party symbol-kind
+  extraction genuinely needs that distinction (e.g. only TypeScript
+  files can declare interface/type constructs). Language is defined in
+  source_symbols.py itself, not core.py, and is not imported or
+  referenced by core.Ecosystem or vice versa within this module.
+derivation: DE-FPSS-001
+assertion_kind: definition
+basis: directly_stated
+supporting_evidence: ["EV-FPSS-001", "EV-FPSS-002"]
+contradicting_evidence: []
+examples: ["a `.ts` file classifies as Language.TYPESCRIPT and can be scanned for `interface`/`type` constructs; a `.js` file classifies as Language.JAVASCRIPT and is scanned with the same regex but can never match those two keywords in practice since JS has no such syntax"]
+counterexamples: []
+depends_on: []
+open_questions: ["core.Ecosystem's own real current definition/values could not be independently verified in this research -- core.py is not part of this export. This claim's description of core.Ecosystem rests entirely on decisions/0065's and the phase-77 plan's own prose about it, not on direct inspection of core.py itself."]
+evidence_support_state: partially_supported
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: supported

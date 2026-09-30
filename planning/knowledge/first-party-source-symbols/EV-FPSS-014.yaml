@@ -1,0 +1,24 @@
+id: EV-FPSS-014
+kind: evidence
+evidence_kind: documentation
+what_it_shows: >
+  decisions/0065 point 7 and planning/phase-77 section 3.4 state that
+  meta.source_index_version is a new project-level meta key, value "1",
+  written unconditionally by rebuild_deterministic whenever a
+  "genuinely Phase-77-aware rebuild" runs (including a run that finds
+  zero first-party files), and that the key's total absence -- not a
+  NULL value -- means "first-party source has never been indexed under
+  Phase-77-aware code", explicitly modeled on meta.git_topology_status's
+  own precedent (a different table's marker, not included in this
+  export). No code implementing either the write side
+  (rebuild_deterministic) or the read side (cli.py's pre-check before
+  query source / query source-symbol) appears anywhere in this export --
+  graph_schema_fragment.py's Block 3 docstring explicitly states this
+  marker is "not this migration's own concern" and only names
+  rebuild_deterministic in prose, without including that function's own
+  body.
+observations: ["OBS-FPSS-001", "OBS-FPSS-002", "OBS-FPSS-004"]
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: current

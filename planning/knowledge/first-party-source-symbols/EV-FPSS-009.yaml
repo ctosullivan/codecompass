@@ -1,0 +1,20 @@
+id: EV-FPSS-009
+kind: evidence
+evidence_kind: executable
+what_it_shows: >
+  Real execution also shows two adjacent scenarios that might plausibly
+  have been expected to defeat the coarse regex technique do not: a
+  function signature whose parameter list spans multiple physical lines
+  is still captured correctly, because the regex only needs to match the
+  keyword-and-name text on the line where the declaration itself begins,
+  not the full signature; and declaration-like text embedded in a
+  single-line "//" comment or a single-line string literal is correctly
+  excluded, because both _RUST_ITEM_RE and _JS_FAMILY_ITEM_RE anchor
+  with `^` against each line's own stripped leading content, so matching
+  text appearing anywhere other than the very start of a line is never
+  matched.
+observations: ["OBS-FPSS-007", "OBS-FPSS-008"]
+derived_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"
+status: current

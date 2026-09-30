@@ -1,0 +1,28 @@
+id: DE-FPSS-002
+kind: derivation
+claim: CL-FPSS-002
+method: >
+  Read decisions/0065 point 5 and planning/phase-77's section 3.2 first
+  (OBS-FPSS-001/002), which describe the five-value model and the
+  Rust three-tier-visibility rationale entirely in prose, including a
+  claim of a "live-verified against eight representative Rust
+  declarations" check performed during planning. Rather than accept that
+  self-report, I read source_symbols.py's own three extraction functions
+  directly (OBS-FPSS-003) to see the actual conditional logic assigning
+  exposure, then grepped for the literal 'unknown' to confirm it is
+  genuinely unreachable code, not merely rare (OBS-FPSS-012). I then
+  independently executed the real module against its own real test
+  suite (OBS-FPSS-006, all 17 tests passing) and against my own five
+  follow-up probes (OBS-FPSS-007 through 011), which happened to also
+  exercise exposure values as a side effect (e.g. the multi-line-TS,
+  false-match, and nested-scope probes all still produced correct
+  exposure values on their genuine declarations). This directly
+  reproduces the ADR's own eight-Rust-form claim via the pre-existing
+  test file's own fixture (which covers all eight forms) rather than
+  merely trusting the ADR's retrospective description of a planning-time
+  check I could not otherwise observe.
+inputs: ["EV-FPSS-003", "EV-FPSS-004", "EV-FPSS-005"]
+open_questions: []
+performed_by: context-researcher
+repository_revision: "b4641cc"
+timestamp: "2026-10-01"

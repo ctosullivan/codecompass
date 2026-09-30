@@ -1,0 +1,20 @@
+id: OBS-FPSS-012
+kind: observation
+method: grep_search
+performed_by: context-researcher
+what_was_done: >
+  Searched source_symbols.py's own text for the literal "unknown", to
+  check whether any real extractor in this module can actually produce
+  exposure='unknown' or whether it is a schema-level-only allowance.
+location: 'grep -n "unknown" src/codecompass/source_symbols.py'
+raw_result: >
+  One match: line 133, a trailing inline comment on the SourceSymbol
+  dataclass ("# 'public' | 'restricted' | 'internal' |
+  'conventional_private' | 'unknown' | None") documenting the full
+  allowed vocabulary. No other occurrence anywhere in the file's
+  executable code -- none of the three per-language extraction functions
+  contains any code path that assigns the string 'unknown' to exposure.
+tool_version: "GNU grep (via Bash tool)"
+repository_revision: "b4641cc (per MANIFEST.md)"
+timestamp: "2026-10-01"
+status: recorded

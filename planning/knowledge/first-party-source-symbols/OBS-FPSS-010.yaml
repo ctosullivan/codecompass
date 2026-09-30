@@ -1,0 +1,29 @@
+id: OBS-FPSS-010
+kind: observation
+method: targeted_probe
+performed_by: context-researcher
+what_was_done: >
+  Probed a multi-line Rust raw-string literal whose own content, once
+  line-stripped, textually matches the anchored item regex, against the
+  real, unmodified Rust extractor -- a follow-up experiment after
+  OBS-FPSS-008 showed single-line embedded text does NOT produce a false
+  match, to find a concrete construct where the ADR's "a false match
+  inside a string/comment" caveat actually does manifest.
+location: >
+  File m.rs written with content:
+  'let s = r#"\npub fn embedded_in_string() {}\n"#;\npub fn genuinely_real() {}\n'
+  (a raw string literal opened on line 1, with a line inside it, on line
+  2, that itself looks exactly like a real `pub fn` declaration once
+  stripped). Called extract_source_symbols_for_file(f, Language.RUST).
+raw_result: >
+  symbols = [('embedded_in_string', 2, 'public'), ('genuinely_real', 4,
+  'public')] -- the extractor produced a genuine false-positive row for
+  text inside a multi-line raw string literal, with no error, no
+  diagnostic, and no signal in the returned SourceFileExtraction that
+  anything other than two real public functions was found. status
+  remained indexed_partial in both cases (confirmed by re-running with a
+  print of result.status).
+tool_version: "python3 3.13.5, real unmodified source_symbols.py"
+repository_revision: "b4641cc (per MANIFEST.md)"
+timestamp: "2026-10-01"
+status: recorded

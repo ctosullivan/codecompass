@@ -1,0 +1,54 @@
+id: OBS-FPSS-003
+kind: observation
+method: code_read
+performed_by: context-researcher
+what_was_done: "Read the full contents of the real extraction module."
+location: "src/codecompass/source_symbols.py (full file, 294 lines, unmodified per MANIFEST.md)"
+raw_result: >
+  Module docstring states three deliberate corrections over a superseded
+  design: Language not core.Ecosystem; implementation scope not
+  API-surface scope; occurrence-based identity with non-null location.
+  Contains: Language(StrEnum) with exactly PYTHON/RUST/JAVASCRIPT/
+  TYPESCRIPT/HASKELL; SymbolIndexStatus(StrEnum) with exactly INDEXED/
+  INDEXED_PARTIAL/UNSUPPORTED/PARSE_ERROR/UNREADABLE;
+  _LANGUAGE_BY_SUFFIX dict mapping .py/.rs/.hs individually and
+  .js/.jsx/.mjs/.cjs to JAVASCRIPT, .ts/.tsx to TYPESCRIPT;
+  _RUST_ITEM_RE = r"^(pub(?:\((?:crate|super|self|in\s+[\w:]+)\))?\s+)?(fn|struct|enum|trait)\s+(\w+)";
+  _JS_FAMILY_ITEM_RE = r"^(export\s+)?(?:default\s+)?(?:declare\s+)?(function|class|interface|const|type|enum)\s+(\w+)";
+  SourceSymbol frozen dataclass (name, kind, line: int [never None per
+  docstring], purpose, exposure); SourceFileExtraction frozen dataclass
+  (status, diagnostic, symbols: tuple); discover_source_files (walks via
+  filetree.iter_source_files with usage._PROJECT_PRUNE_DIR_NAMES,
+  classifies by suffix, skips unrecognized suffixes, independent of any
+  vendor config parameter -- discover_source_files takes only
+  project_root); extract_source_symbols_for_file dispatches by Language
+  to _extract_python_source_symbols / _extract_rust_source_symbols /
+  _extract_js_family_source_symbols, or returns UNSUPPORTED with
+  diagnostic=None for any other language (Haskell) without ever
+  attempting to read the file.
+  _extract_python_source_symbols: reads text (OSError/UnicodeDecodeError
+  -> UNREADABLE), ast.parse (SyntaxError -> PARSE_ERROR), else walks
+  ast.iter_child_nodes(tree) for FunctionDef|AsyncFunctionDef|ClassDef
+  only (top-level, no recursion into class/function bodies), exposure =
+  'conventional_private' if name.startswith('_') else 'public' (no other
+  value ever assigned), kind = 'function' or 'class', line = node.lineno,
+  purpose = ast.get_docstring(node); always returns INDEXED.
+  _extract_rust_source_symbols: reads text (UNREADABLE on failure), walks
+  lines tracking `///` doc-comment lines into doc_lines (reset after any
+  non-doc-comment line, whether matched or not), matches _RUST_ITEM_RE
+  against each stripped line; modifier is None -> 'internal', modifier
+  == 'pub' -> 'public', otherwise (any pub(...) form) -> 'restricted';
+  always returns INDEXED_PARTIAL (no PARSE_ERROR path exists in this
+  function).
+  _extract_js_family_source_symbols: reads lines (UNREADABLE on
+  failure); tracks a single pending_doc string set from a line starting
+  with /** (JSDoc opener) or continued via lines starting with `*` (not
+  starting with @); blank lines are skipped via `continue` without
+  clearing pending_doc; any other non-blank, non-comment line clears
+  pending_doc after processing, whether or not _JS_FAMILY_ITEM_RE
+  matched it; exposure = 'public' if the captured export-group text is
+  truthy else 'internal'; always returns INDEXED_PARTIAL.
+tool_version: "Read tool"
+repository_revision: "b4641cc (per MANIFEST.md)"
+timestamp: "2026-10-01"
+status: recorded
