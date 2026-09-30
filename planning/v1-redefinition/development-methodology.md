@@ -12,26 +12,36 @@ It does not restate Phase 54c's own detailed record shapes, agent
 briefs, or lifecycle mechanics — those stay defined once, in that plan
 and in `.claude/agents/*.md`, and are only pointed to here.
 
-**Amendment, 2026-09-30, revised same day (`decisions/0066`, planned
-Phase 79 — `planning/phase-79-clean-room-understanding-and-documentation-
-reconstruction.md`):** direct inspection of Phases 63D/64/65 found the
-Domain stage's own isolation from legacy narrative was prompt-instructed
-only, never mechanically enforced. Phase 79 extends the Claim record
-shape below with `assertion_kind`/`basis`/`examples`/`counterexamples`/
-`depends_on`/`open_questions`/`evidence_support_state` (the **real**
-`status` enum — `proposed`/`supported`/`contradicted`/`superseded`/
-`verified` — is unchanged; no `human_review_state` field is added — see
-below), and hardens `context-researcher`'s and `docs-reconstructor`'s
-input boundaries with a verified, tiered isolation mechanism (a curated,
-`.git`-free export is input packaging only, paired with either genuine
-separate-environment isolation or an honestly-labelled best-effort
-fallback — never dispatch-prompt instruction alone). Conceptual
-understanding produced this way is published **directly into project
-documentation**, with no separate review-gated packet and no
-human-acceptance precondition for publication — the Domain stage's own
-`domain-skeptic` adversarial review (unchanged) remains the quality
-check; a human review event is never this phase's own blocking
-completion condition. This document's own content below is not rewritten
+**Amendment, 2026-09-30, revised twice same day (`decisions/0066`,
+planned Phase 79 — `planning/phase-79-clean-room-understanding-and-
+documentation-reconstruction.md`):** direct inspection of Phases 63D/64/65
+found the Domain stage's own isolation from legacy narrative was
+prompt-instructed only, never mechanically enforced. Phase 79 extends the
+Claim record shape below with `assertion_kind`/`basis`/`examples`/
+`counterexamples`/`depends_on`/`open_questions`/`evidence_support_state`
+(list-valued fields require the inline `[a, b]` form — a YAML block list
+is confirmed, empirically, invisible to this project's own validation;
+the **real** `status` enum — `proposed`/`supported`/`contradicted`/
+`superseded`/`verified` — is unchanged; no `human_review_state` field is
+added), and hardens `context-researcher`'s and `docs-reconstructor`'s
+input boundaries with a verified, multi-route isolation mechanism (a
+curated, `.git`-free export is input packaging only; a same-host fallback
+is always labelled best-effort, never verified, regardless of any one
+probe's result; **CodeCompass being a public repository means network
+egress through a granted `Bash` is expected to reach the "excluded"
+content anyway, a limit this phase reports honestly rather than
+papering over** — never dispatch-prompt instruction alone). Canonical
+assertions are frozen into a versioned, integrity-checked **snapshot**
+before independent implementation reconstruction, comparison, and
+documentation writing each consume it in turn (replacing an earlier,
+circular draft of this same idea) — conceptual understanding is
+incorporated **directly into project documentation** at the real end of
+that chain, with no separate review-gated packet and no human-acceptance
+precondition for publication. The Domain stage's own `domain-skeptic`
+adversarial review (unchanged) remains the quality check; a human review
+event is never this phase's own blocking completion condition, though
+strict clean-room isolation validation is tracked separately and may
+honestly remain unmet. This document's own content below is not rewritten
 by that phase — the substantive extension lives in the phase plan and
 `decisions/0066`, matching this document's own existing amendment
 convention (see the "Traceability spine" section's own 2026-09-20

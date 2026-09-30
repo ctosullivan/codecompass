@@ -1,269 +1,255 @@
-# 0066. Clean-room conceptual understanding is published directly into documentation from one shared, correctly-schemaed knowledge foundation, isolated by a verified mechanism, not prompt discipline alone
+# 0066. Clean-room conceptual understanding is published directly into documentation from one shared, correctly-schemaed knowledge foundation, isolated by a verified — and honestly limited — mechanism, not prompt discipline alone
 
 ## Status
 
-Accepted (2026-09-30, direct user instruction). **Amended in place,
-same date, second revision, direct user instruction.** Not yet acted
-upon by any implementation (Phase 79 remains planning-only), so this is
-a pre-implementation correction, not a reversal of shipped work — edited
+Accepted (2026-09-30, direct user instruction). **Amended in place twice,
+same date, direct user instruction each time.** Not yet acted upon by any
+implementation (Phase 79 remains planning-only), so each amendment is a
+pre-implementation correction, not a reversal of shipped work — edited
 directly rather than superseded by a new numbered decision, consistent
 with `CLAUDE.md` §2's append-only rule applying to decisions that have
-already informed real, executed work. The amendment corrects six things
-found wrong or missing in the first version, listed in the Context
-section below; the Decision section reflects the corrected design
-directly rather than layering an addendum on top of stale text.
+already informed real, executed work. This third revision corrects six
+further defects found in the second, listed in the Context section below.
 
 ## Context
 
 `decisions/0060` formalized Scope → Plan → Domain → Design → Implement
-and, at its Domain stage, built a real, working mechanism: `context-
-researcher` derives Observation/Evidence/Claim/Derivation records from
-evidence; `domain-skeptic` adversarially reviews them; the actual user/
-domain owner approves a `docs/domain/` corpus (Phase 63D). Phase 64 then
-derived a "blank-slate" documentation proposal from current project
-reality, explicitly instructed (in its own dispatch prompt and in
-`.claude/agents/docs-reconstructor.md`'s MODE 2 section) not to treat
-`README.md`/`architecture/overview.md` as a starting structure.
+and built `context-researcher`/`domain-skeptic`/a `docs/domain/` corpus
+(Phase 63D) and a blank-slate documentation proposal (Phase 64), neither
+mechanically isolated from the legacy narrative each was instructed to
+disregard, and neither checked against a genuinely independent
+implementation reconstruction.
 
-Direct inspection of what Phase 64 actually built finds a real,
-previously-undiagnosed gap: **the "don't read the old docs" instruction
-was never mechanically enforced.** `docs-reconstructor` MODE 2's own
-dispatch retains full `Read`/`Grep`/`Bash` access to every file in the
-working tree; `agent-led-development.md`'s own write-boundary table
-states `context-researcher`'s read scope as "everything" — no boundary
-beyond the role's own stated methodology.
+**This decision's first version addressed both gaps but itself contained
+six defects**, corrected the same day in a second version: it gated
+publication on a separate, human-reviewed `understanding-review.md`
+artifact; it risked a parallel documentation-only knowledge store; it
+stated the wrong `Claim` status enum; it overclaimed a curated `.git`-free
+export as sufficient isolation; it left `docs-reconstructor`'s old MODE 2
+as a silent fallback and the result as a permanent shadow proposal; and
+its template list still carried the removed review-gate artifacts.
 
-Separately, no phase to date has performed a genuinely **independent
-implementation reconstruction** — recovering the as-built architecture
-from primary evidence *before* consulting any conceptual model, then
-classifying alignment against it in both directions.
+**The second version itself contained six further defects**, found by
+direct technical inspection (not assumption) before any implementation
+began, corrected in this third revision:
 
-**This decision's first version (2026-09-30) addressed both gaps but
-itself contained six real defects**, found and corrected the same day,
-also by direct user instruction, before any implementation began:
+1. **Isolation verification remained too weak, and its own completion
+   criteria let a real gap through.** A single self-reported failed read
+   of one absolute path is not proof of a boundary — the second version's
+   own preflight design relied on exactly that. It also omitted three
+   real routes: search (`Grep`/`Glob` can locate excluded content without
+   knowing its exact path), command (arbitrary `Bash` can reach or reveal
+   excluded content many ways), and — the most consequential omission —
+   **network**. Omitting `WebFetch`/`WebSearch` from a role's tool grant
+   does nothing to stop a granted `Bash` from reaching the network via
+   `curl`/`wget`/a scripting language's own HTTP client. **Direct fact,
+   confirmed, not assumed: CodeCompass is a public GitHub repository** —
+   its own "excluded" `README.md`/`docs/`/`architecture/` content is
+   reachable at a public URL regardless of any local filesystem
+   isolation. The second version's own Definition of Done let a
+   `best-effort` isolation label stand alongside an otherwise-complete
+   phase report with no separate, load-bearing acknowledgment that
+   strict clean-room validation had not actually been achieved.
+2. **The pipeline was circular.** The second version's comparison stage
+   required "the published Understanding documentation"; its writing
+   stage required that same published documentation *and* the
+   comparison's own output; its publication stage happened only after
+   writing. The artifact both earlier stages needed did not exist until
+   the very end of the same sequence they were supposedly feeding.
+3. **Snapshots and propagation were underspecified.** No concrete
+   snapshot artifact, citation format, or integrity mechanism was
+   defined; propagation started from an assertion already identified by
+   hand, never from a changed source file; the transitive-dependency walk
+   had no stated cycle-safety.
+4. **A dependency-validation claim was verified false.** Direct,
+   empirical testing of `scripts/check_knowledge_base.py::parse_record`
+   confirms its hand-rolled, line-oriented parser cannot see a YAML
+   *block*-style list (`depends_on:` followed by indented `- ID` lines)
+   — it silently parses an empty value, so a dangling reference written
+   that way would never be caught. The *inline* `[ID, ID]` form (this
+   project's own existing, universal convention for every list field
+   today, confirmed by reading every real record) works correctly. The
+   second version's own claim that `depends_on` "already validates with
+   zero code change" was true only for the form nobody had tested against
+   the alternative.
+5. **Alignment and verification were conflated.** The second version let
+   an `aligned` comparison finding automatically move a Claim's own
+   `status` to `verified` — wrong for a domain rule or proposed policy,
+   where implementation conformance shows only that the *code* currently
+   matches the *stated* rule, never that the rule itself is correct.
+6. **Only documentation was independently validated.** The second version
+   demonstrated that propagation *reaches* a coding-context packet — a
+   citation check — but never independently assessed whether that packet
+   is actually accurate, sufficient, or honest about uncertainty for a
+   real task, leaving the revised objective's own central claim (one
+   foundation usefully serves both outputs) asserted rather than shown for
+   the coding-context half.
 
-1. It invented a separate `understanding-review.md` artifact gated on a
-   human-review event, contradicting the corrected objective that
-   conceptual understanding should be published directly into project
-   documentation, auditable by its own evidence citations, without a
-   human-acceptance precondition.
-2. It risked describing a parallel, documentation-only assertion store
-   rather than making explicit that one shared knowledge foundation
-   (the existing Observation/Evidence/Claim/Derivation records) must
-   feed both a coding-context packet and topic-level documentation.
-3. **It stated the wrong `Claim` status enum** — `current`/`superseded`
-   — when the real, mechanically-enforced enum
-   (`scripts/check_knowledge_base.py::_STATUS_ENUMS["claim"]`) is
-   `proposed`/`supported`/`contradicted`/`superseded`/`verified`. It also
-   proposed a mandatory `human_review_state` field, which the corrected
-   design removes along with the review gate itself, and it did not
-   scope checker changes or require `check_knowledge_base.py --strict`.
-4. **It substantially overclaimed its own isolation mechanism.** A
-   curated, `.git`-free export with an undisclosed source path is input
-   packaging, not enforcement — the `Read` tool's own documented
-   behaviour ("able to read all files on the machine") means an agent
-   granted that tool is not stopped by a withheld path. No preflight
-   test verified this before trusting a stage's output, and no indirect-
-   leakage channel (a synced `context-graph.db` embedding narrative doc
-   content; a real, confirmed editable install of `codecompass` that
-   resolves to the actual checkout regardless of an export's own working
-   directory; auto-loaded `CLAUDE.md` content; inherited conversation
-   context via a `fork`-type dispatch) was checked.
-5. It left `docs-reconstructor`'s old, unrestricted MODE 2 as a silent
-   fallback whenever a topic's own prerequisites were missing, and had
-   the lead (not a fresh, isolated dispatch) author the documentation-
-   architecture outline. It also left the clean-room draft as a
-   permanent shadow proposal rather than publishing the reconciled result
-   into real, active project documentation.
-6. Its template deliverable list still included the removed
-   understanding-review/review-decision templates and had no coding-
-   context-selection template, despite coding packets now being a
-   co-equal derived output.
-
-Direct user instruction (2026-09-30, second revision): correct all six,
-consistently, throughout the ADR, the phase plan, and related planning
-notes. Full specification:
+Direct user instruction (2026-09-30, third revision): correct all six.
+Full specification:
 `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`.
 
 ## Decision
 
-1. **Reuse the existing Claim record shape, extended with optional
-   fields, using the real status enum — no new record kind, no new
-   database, no graph subsystem.** `planning/knowledge/<topic-slug>/`
-   Claim records keep their real, unmodified `status` lifecycle
-   (`proposed`/`supported`/`contradicted`/`superseded`/`verified`) and
-   gain optional `assertion_kind`
-   (`definition`/`relationship`/`rule`/`invariant`/`state_transformation`/
-   `boundary`), `basis`
-   (`directly_stated`/`inferred`/`proposed_policy`/`observed_behaviour`),
-   `examples`, `counterexamples`, `depends_on` (assertion IDs —
-   validated by the existing, already-generic
-   `check_cross_references_resolve` with no code change), `open_questions`,
-   and a qualitative `evidence_support_state`
-   (`supported`/`partially_supported`/`unsupported`/`conflicting`, never
-   a number). **No `human_review_state` field** — there is nothing a
-   human must act on before a record is usable. `Observation`/`Evidence`/
-   `Derivation` are unchanged. `scripts/check_knowledge_base.py` gains one
-   new, small closed-enum validator for the three new enum-shaped fields
-   above (mirroring its existing `check_status_enums`); `--strict` passing
-   is a Definition-of-Done condition.
+1. **The Claim schema extension is unchanged in field set from the second
+   version, with one addition: every list-valued field (`depends_on`
+   included) is required to use the inline `[a, b]` form, and a new
+   checker rejects the block-list form outright** (confirmed empirically
+   to be otherwise invisible to validation). `scripts/
+   check_knowledge_base.py` gains two checks — the closed-enum validator
+   for `assertion_kind`/`basis`/`evidence_support_state`, and the new
+   block-list rejection — plus a third, `check_snapshot_integrity` (item
+   2, below). `--strict` passing covers all three.
 
-2. **One shared knowledge foundation feeds two derived outputs — a
-   task-specific coding-context packet (Phase 54c's existing mechanism,
-   unchanged) and topic-level documentation (this decision's own
-   contribution) — never a second, parallel store.** A documentation-time
-   discovery becomes a canonical Observation/Evidence/Claim record before
-   it appears in either derived output. Documentation prose is never
-   itself treated as evidence for a claim — provenance always traces back
-   through the record to its original source.
+2. **The circular "comparison and writing both require published
+   documentation that doesn't exist yet" pipeline is replaced with a
+   linear one, via a new intermediate artifact: a frozen knowledge
+   snapshot.** Canonical assertions (adversarially reviewed by
+   `domain-skeptic`, no human gate) are frozen into a versioned,
+   citable snapshot — `planning/knowledge/<topic-slug>/snapshots/
+   snapshot-v<N>.md` (human-readable: included/excluded assertion ids,
+   source coverage) plus `snapshot-v<N>.yaml` (machine-checkable: each
+   assertion's id, a SHA-256 hash of its own `.yaml` file's content at
+   freeze time, its `repository_revision`/`timestamp`). Citation format:
+   `<topic-slug>@v<N>#<assertion-id>`. A new `check_snapshot_integrity`
+   check re-hashes each cited assertion's *current* content against what
+   a snapshot recorded, catching a later mutation the versioning
+   convention alone cannot prevent (no write-time enforcement exists or
+   is added — this is a detection backstop, not a prevention mechanism,
+   stated honestly). Independent implementation reconstruction, then
+   comparison (against the snapshot, not undefined "published prose"),
+   then documentation architecture selection and the first draft (also
+   from the snapshot), then legacy reconciliation, then publication into
+   real, active documentation — in that order, with no stage requiring an
+   artifact a later stage produces. Understanding is incorporated
+   directly into documentation exactly once, at the real end of this
+   chain, not implied to already exist earlier in it.
 
-3. **Conceptual understanding is published directly into project
-   documentation — no separate review-gated packet, no human-acceptance
-   precondition for publication.** Definitions, relationships, rules,
-   invariants, transformations, examples, counterexamples, assumptions,
-   alternative interpretations, and unresolved questions are written into
-   the topic's own documentation page, with source coverage and evidence
-   citations inline so a reader can audit the understanding directly.
-   `domain-skeptic`'s adversarial review (unsupported claims, internal
-   contradictions, missing counterexamples) is retained — an agent-level
-   quality check, not a human-approval gate. Any existing page-level
-   review-metadata convention (`docs/domain/`'s own Phase-63D-era
-   frontmatter) is preserved where it already exists and is not required
-   of this phase's own new content. This does not relax this repository's
-   ordinary planning/ADR review conventions (`CLAUDE.md` §0-§2), which
-   this decision and its own phase plan continue to go through unchanged.
+3. **Isolation verification is strengthened to cover every real route,
+   with an honest, load-bearing acknowledgment of a limit this project's
+   available tools cannot close.** Required preflight probes now cover
+   filesystem, search, command, network, and delegation routes, each
+   checked via the dispatched agent's own **raw tool-call transcript**
+   (never its self-reported prose summary), run in the exact dispatch
+   configuration the real stage will use. **CodeCompass being a public
+   repository means the network probe is expected to succeed** (i.e. the
+   leak is real and open) for any role that needs `Bash`, since neither
+   `Agent(isolation: "remote")` nor omitting named network tools
+   constrains what a granted `Bash` can reach over the network. A stage
+   is labelled `verified` only if **both** the filesystem/search/command
+   probes and the network probe fail to reach excluded content;
+   `filesystem-only, network-exposed` if only the network probe succeeds;
+   `best-effort` — **always**, regardless of any single probe's
+   incidental result — for Tier 2 (the same-host curated export, which
+   provides no architectural guarantee regardless of what one test finds).
+   **The Definition of Done is split into two explicitly separate,
+   separately-reported tracks**: workflow/template completion (fully
+   satisfiable) and strict clean-room isolation validation (honestly
+   expected to remain **unmet**, per scope, for any role needing `Bash`)
+   — removing the second version's own human-review gate must not, and
+   does not, relax this second track into something that can be quietly
+   folded into an overall "done" verdict.
 
-4. **Mechanical isolation uses a verified, tiered enforcement mechanism,
-   with curated `.git`-free exports demoted to input packaging.** Tier 1
-   (preferred): `Agent(isolation: "remote")`, a genuinely separate
-   environment with no shared filesystem — used only after a preflight
-   denial test (attempt to read a known-excluded absolute path; confirm
-   failure) confirms it actually works, since its availability is gated
-   and not assumed. Tier 2 (fallback): the curated export, on the same
-   host, with the narrowest tool-category grant each role's job allows
-   (no network tools, no `Agent`, per-role `.claude/agents/*.md`
-   frontmatter — a genuinely enforceable boundary, unlike path-scoping
-   within a granted `Read`/`Bash`) — every Tier-2 output is labelled
-   `isolation: best-effort`, never `clean-room`, and "strict clean-room"
-   acceptance is explicitly left unmet for that stage. A named
-   indirect-leakage checklist is checked for every export: a synced
-   `context-graph.db` (excluded — it structurally embeds narrative
-   content from an ordinary `sync`), symlinks (dereferenced on copy),
-   caches, a **confirmed** editable-install leak (`codecompass` resolves
-   to the real checkout regardless of an export's own working directory
-   — verified directly via `pip show`), auto-loaded `CLAUDE.md` content
-   (each export gets a minimal, purpose-written one), and inherited
-   conversation context (never a `fork`-type dispatch, never the lead
-   itself, for an isolation-sensitive stage). A detected breach voids
-   that stage's output and requires a fresh export and a fresh agent —
-   never a retroactive claim that contamination "probably didn't matter."
+4. **`implementation-reconstructor` and the extended `domain-skeptic`
+   comparison role are unchanged from the second version, with one
+   correction: alignment is not verification.** An `aligned`/`partial`/
+   `conflicting`/`not_implemented`/`insufficiently_verified` comparison
+   finding is recorded in the alignment report only and never
+   automatically written back into a Claim's own `status`. Moving a
+   Claim to `verified` requires a separate, claim-specific check against
+   primary evidence, recorded on that Claim's own trail — a materially
+   higher bar for a `rule`/`invariant`/`proposed_policy`-basis assertion,
+   where implementation conformance alone never establishes the rule's
+   own correctness.
 
-5. **One new agent role, `implementation-reconstructor`**, unchanged from
-   the first version: recovers the as-built architecture from the
-   Implementation-reconstruction export alone, with no access to the
-   published Understanding documentation at that stage. A **fresh**
-   `domain-skeptic` dispatch (its own existing adversarial charter
-   extended, not a second new role) classifies alignment
-   (`aligned`/`partial`/`conflicting`/`not_implemented`/
-   `insufficiently_verified`) against the published documentation, in
-   both directions, without either side forced to match the other. An
-   `aligned` finding is a legitimate basis for moving the cited Claim's
-   own real `status` to `verified` — reusing the existing enum value
-   rather than adding a new one.
+5. **Propagation now starts from a changed source, not a manually-
+   identified assertion, and is explicitly cycle-safe.** `Evidence`
+   records' own `source_ref`/`doc_ref`/`test_ref` fields (simple scalar
+   strings, confirmed reliably parseable) are `grep`ed for a changed
+   file's own path to find affected Evidence; affected Claims follow via
+   the existing `supporting_evidence`/`contradicting_evidence` citation.
+   The transitive `depends_on` walk maintains a visited-id set, never
+   re-queuing an id already seen — safe against a dependency cycle by
+   construction, not by assumption. "Needs reassessment" and "proven
+   incorrect" remain explicitly distinguished. **The demonstration runs
+   in a disposable fixture** (a scratch copy of the topic's snapshot,
+   packet, and documentation page, outside either repository's tracked
+   tree), never against real canonical knowledge or real published
+   documentation — the fixture is deleted once the demonstration is
+   recorded, leaving no synthetic contradiction anywhere real.
 
-6. **`docs-reconstructor`'s old, unrestricted MODE 2 is retired as a
-   silent fallback.** The staged route (Understanding → Implementation
-   reconstruction → comparison → a fresh, isolated dispatch that selects
-   its own documentation architecture and writes the complete first
-   draft → committed preservation → legacy reconciliation → publication
-   into real, active documentation) is the **default** ground-up
-   documentation path from this phase forward; a topic missing its own
-   Understanding or Implementation-reconstruction prerequisite is a named
-   blocker requiring those stages first, never a silent revert to
-   unrestricted reading. `docs-maintainer`'s existing reconciliation
-   charter (Phase 65's own precedent, no new role) gains the five-way
-   historical-claim classification and a hard draft-before-reconciliation
-   ordering rule, plus a requirement to fix (not merely record) a
-   documentation-verification finding. `context-evaluator`'s existing
-   charter is reused, unchanged, for that verification.
+6. **A new coding-context validation step is added, independent of and
+   parallel to the documentation validation the second version already
+   had.** A bounded, task-specific question is frozen before a real
+   `context-packet.md` is generated from the *same* snapshot the
+   documentation cites; a fresh `context-evaluator` dispatch independently
+   assesses it against primary evidence using this project's own
+   existing `context-quality-evaluation.md` rubric (Accuracy/Relevance/
+   Completeness/Freshness/Grounding/Noise/Safety, plus a LOW/MODERATE/
+   HIGH advantage rating) — not a new rubric. A LOW rating is an
+   acceptable, honest outcome (this project's own established
+   precedent); an inaccurate or unsupported packet is the real failure
+   this step exists to catch.
 
-7. **Change propagation is minimal and file-based**: a `grep`-driven
-   traversal from a changed source through Evidence, the affected Claim,
-   its transitive `depends_on` dependents, and every citing coding
-   packet or documentation page — no new dependency database. "Needs
-   reassessment" and "proven incorrect" are distinguished explicitly. One
-   explicitly labelled controlled test correction demonstrates
-   propagation into both a coding-context artifact and a documentation
-   page from the same underlying change — a real human correction is not
-   required for this demonstration, but a synthetic one is never
-   presented as if it were real or as human approval.
-
-8. **This is not Priority B**, unchanged: `decisions/0062`'s Priority B is
-   a future, not-yet-planned `src/`-level capability for a downstream
-   user's own runtime project data. This decision and its phase make
-   zero `src/codecompass/` changes — every artifact is a planning
-   document, a `docs/domain/`/`docs/`/`architecture/` page, an agent
-   brief, or a `codecompass-template` file.
-
-9. **The template gets portable, CodeCompass-agnostic instructions and
-   minimal templates** for shared knowledge/assertions, snapshots,
-   writing conceptual understanding directly into documentation, coding-
-   context selection, isolation (including the two-tier mechanism and an
-   honest best-effort fallback for a project whose own tools cannot
-   enforce it at all), implementation comparison, propagation,
-   reconciliation, and documentation verification — the removed
-   understanding-review/review-decision templates are not part of this
-   list. Committed template files plus a fresh downstream usability
-   exercise (not committed files alone) are required.
+7. **This is not Priority B; the template gets portable, CodeCompass-
+   agnostic instructions; MIT licensing is preserved** — all unchanged
+   from the second version.
 
 ## Alternatives considered
 
-- **Keep the first version's separate review-gated packet, only fix the
-  schema and isolation defects.** Rejected per the user's own explicit
-  revised objective: gating publication on a human-review event that may
-  never occur was itself a defect, not a feature to preserve alongside
-  the other fixes — the corrected design publishes understanding directly
-  and audits it through its own evidence citations instead.
-- **Treat curated `.git`-free exports as sufficient isolation, since they
-  worked well enough as *input scoping* for the schema/role changes.**
-  Rejected: this is precisely the overclaim the user's own review found —
-  demoted to input packaging, paired with a verified tiered mechanism and
-  a required preflight test, per Decision item 4.
-- **Full OS-level sandboxing (containers, filesystem namespaces) for
-  every dispatch, guaranteed present.** Rejected as still disproportionate
-  to what this project's own tools can reliably build: `Agent(isolation:
-  "remote")` is the strongest *available* primitive, and its own
-  availability is gated, not guaranteed — the tiered design with an
-  honest best-effort fallback is the most rigorous mechanism this
-  environment can actually verify, not an aspirational claim of a stronger
-  one.
-- **A second new agent role for the implementation-vs-understanding
-  comparison, instead of extending `domain-skeptic`.** Rejected, unchanged
-  from the first version: `domain-skeptic`'s existing charter already
-  generalizes to this job.
-- **Fold this into Priority B's own future planning instead of a separate
-  phase now.** Rejected, unchanged: this phase is methodology hardening
-  plus a template deliverable, not a runtime capability of the shipped
-  tool.
+- **Accept a single-probe, self-reported isolation check as sufficient,
+  since it at least tests something.** Rejected: this is precisely the
+  gap this revision's own direct inspection found — a self-reported
+  result is not independently checkable, and omits routes (search,
+  command, network, delegation) a real adversarial reading of "prevent
+  indirect narrative leakage" must cover.
+- **Treat the public-repository network leak as out of scope, since this
+  project cannot configure the underlying sandbox's own network policy
+  anyway.** Rejected: not being able to *close* a gap is not a reason to
+  omit *reporting* it — the corrected design probes for it explicitly and
+  reports the resulting label honestly, including when that label is
+  `filesystem-only, network-exposed` rather than `verified`.
+- **Keep "published Understanding documentation" as comparison's and
+  writing's own input, and simply reorder the sections without
+  introducing a new snapshot artifact.** Rejected: the circularity is
+  structural (an artifact both earlier stages need does not exist until a
+  later stage produces it), not a presentation-order problem — a genuine
+  intermediate artifact (the frozen snapshot) is required to break it.
+- **Auto-promote to `verified` on any `aligned` finding, since it is
+  simpler than a separate claim-specific check.** Rejected: this
+  conflates two different questions (does the code match the stated rule;
+  is the stated rule itself correct) that this project's own evidence-
+  layer discipline (Knowledge sources / Project understanding /
+  Implementation evidence, kept distinct throughout this whole phase) 
+  requires to stay separate.
+- **Demonstrate propagation against real canonical data, then restore it
+  afterward.** Rejected in favour of a disposable fixture: restoration
+  completeness is itself a real, avoidable risk (a botched revert leaves
+  a synthetic contradiction in real knowledge or real published
+  documentation), whereas a fixture that is simply deleted carries no
+  such risk.
 
 ## Consequences
 
 - Rewritten files: `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
-  (full second revision), this decision record (amended in place), a new
+  (third revision), this decision record (amended in place again), a new
   saved verbatim prompt file for this revision.
 - `development-methodology.md` and `documentation-lifecycle.md`'s own
-  forward-pointing amendment notes are updated to match the corrected
-  design (no human-review gate; publication into real documentation; the
-  corrected status enum).
+  forward-pointing amendment notes are updated to match (snapshot-based
+  ordering; alignment-is-not-verification; the public-repository
+  isolation finding).
 - No `src/codecompass/` change. No `context-graph.db` schema change. No
   new database or graph subsystem.
-- The phase's own implementation (the actual `.claude/agents/
-  implementation-reconstructor.md` file, the extended `docs-reconstructor`/
-  `domain-skeptic`/`docs-maintainer`/`context-researcher` operating modes,
-  the `check_knowledge_base.py` checker change, the real dispatches, the
-  real publication into `docs/domain/`/`docs/`/`architecture/` for the
-  validation topic, and the `codecompass-template` additions) is that
-  phase's own scoped work, not started by this decision, and requires its
-  own plan-file review per `CLAUDE.md` §1 before implementation begins
-  (already satisfied by the phase plan named above, rewritten in this
-  same commit).
+- The phase's own implementation — including, now, `scripts/
+  check_knowledge_base.py`'s three checker additions, the disposable-
+  fixture propagation demonstration, and the coding-context validation
+  step's own dispatches — remains that phase's own scoped work, not
+  started by this decision, requiring its own plan-file review per
+  `CLAUDE.md` §1 before implementation begins (already satisfied by the
+  phase plan named above, rewritten in this same commit). **This
+  decision's own honest expectation, stated for the record, is that
+  strict clean-room isolation validation will likely remain unmet for at
+  least the network dimension when this phase is actually executed** —
+  that is a disclosed, accepted limitation of this project's currently
+  available tools against a publicly-hosted repository, not a defect in
+  this decision's own design.

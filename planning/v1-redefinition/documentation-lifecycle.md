@@ -12,31 +12,40 @@ F/G +4 renumbering `decisions/0056` performed). Preceded by Phase 63D
 Owned by `docs-maintainer` (incremental) and `docs-reconstructor`
 (blank-slate).
 
-**Amendment, 2026-09-30, revised same day (`decisions/0066`, planned
-Phase 79 — `planning/phase-79-clean-room-understanding-and-documentation-
-reconstruction.md`):** direct inspection found `docs-reconstructor`
-MODE 2's own blank-slate isolation (§3, below) was never mechanically
-enforced — full read access to `docs/`/`README.md`/`architecture/`
-remained available throughout, with only a dispatch-prompt instruction
-not to use it as a starting structure. A curated `.git`-free export alone
-does not fix this (a tool able to read arbitrary paths is not stopped by
-withholding one, confirmed against this environment's own tool
-descriptions) — Phase 79 instead verifies and uses a genuinely enforcing
-mechanism (real separate-environment isolation where available, an
-honestly-labelled best-effort fallback where not) and adds a genuinely
-independent implementation-reconstruction-and-alignment-classification
-step (a new `implementation-reconstructor` role plus an extended
-`domain-skeptic`) between the domain corpus and the documentation draft.
-**MODE 2's old, unrestricted behaviour is retired as a silent fallback**
-— the hardened, staged route becomes the default ground-up documentation
-path; a missing prerequisite blocks rather than reverting to the old
-behaviour. §4's reconciliation step is extended with an explicit
-five-way historical-claim classification and a hard ordering rule
-(reconciliation never starts before the clean-room draft is committed),
-and the reconciled result is published into **real, active project
-documentation** for the topic, not left as a permanent shadow proposal.
-This document's own content below is not rewritten by that phase — the
-substantive extension lives in the phase plan and `decisions/0066`.
+**Amendment, 2026-09-30, revised twice same day (`decisions/0066`,
+planned Phase 79 — `planning/phase-79-clean-room-understanding-and-
+documentation-reconstruction.md`):** direct inspection found
+`docs-reconstructor` MODE 2's own blank-slate isolation (§3, below) was
+never mechanically enforced — full read access to `docs/`/`README.md`/
+`architecture/` remained available throughout, with only a
+dispatch-prompt instruction not to use it as a starting structure. A
+curated `.git`-free export alone does not fix this (a tool able to read
+arbitrary paths is not stopped by withholding one, confirmed against this
+environment's own tool descriptions), and — a further, more consequential
+finding — **CodeCompass being a public repository means its own excluded
+narrative content is reachable over the network regardless of local
+filesystem isolation**, a limit no available tool-grant restriction
+fully closes; Phase 79's own multi-route preflight probing is designed to
+detect this honestly (typically finding an isolation label short of
+"verified") rather than assume it away. Comparison and the first
+documentation draft now consume a frozen, versioned knowledge **snapshot**
+(not "published documentation," which doesn't yet exist at that point) —
+correcting a circular ordering an earlier draft of this same phase had.
+Phase 79 adds a genuinely independent implementation-reconstruction-and-
+alignment-classification step (a new `implementation-reconstructor` role
+plus an extended `domain-skeptic`, with an `aligned` finding never
+automatically promoting a Claim to `verified`) between the domain corpus
+and the documentation draft. **MODE 2's old, unrestricted behaviour is
+retired as a silent fallback** — the hardened, staged route becomes the
+default ground-up documentation path; a missing prerequisite blocks
+rather than reverting to the old behaviour. §4's reconciliation step is
+extended with an explicit five-way historical-claim classification and a
+hard ordering rule (reconciliation never starts before the clean-room
+draft is committed), and the reconciled result is published into **real,
+active project documentation** for the topic, not left as a permanent
+shadow proposal. This document's own content below is not rewritten by
+that phase — the substantive extension lives in the phase plan and
+`decisions/0066`.
 
 ## 1. Three distinct documentation roles
 

@@ -75,62 +75,74 @@ and scoped, not abandoned. Full plan:
 
 **Phase 79 (Clean-room conceptual understanding + documentation
 reconstruction, methodology hardening + Priority D template delivery) is
-`planned`, direct user request, 2026-09-30, amended same day
+`planned`, direct user request, 2026-09-30, amended twice same day
 (`decisions/0066`) — planning only, not yet implemented. Does not touch,
 reorder, or depend on Phase 78.**
 
-**Revised objective**: one evidence-backed knowledge foundation supplies
-both coding context and project documentation — conceptual understanding
-is incorporated directly into documentation, mechanical context
-separation is preserved. Six corrections from the first draft, same day:
-(1) the separate `understanding-review.md` deliverable, its human-review
-gate, and its `review-decisions.md` log are **removed** — understanding
-is written directly into the topic's own published documentation
-(definitions/relationships/rules/invariants/examples/counterexamples/
-open questions/evidence citations), auditable by its own citations, never
-gated on human acceptance; `domain-skeptic`'s adversarial review is
-retained as an agent-level quality check, not a human gate. (2) One
-shared knowledge foundation: the same assertion records render both a
-coding-context packet and topic documentation; a documentation-time
-discovery must become a canonical record first. (3) **The assertion
-schema was factually wrong and is corrected** — the real `Claim` status
-enum, verified directly against `scripts/check_knowledge_base.py`, is
-`proposed`/`supported`/`contradicted`/`superseded`/`verified`, not the
-invented `current`/`superseded`; `human_review_state` is removed;
-`check_knowledge_base.py` gains a new optional-enum checker and
-`--strict` is a required verification command. (4) **Isolation is
-substantially hardened**: a curated `.git`-free export is now correctly
-described as input packaging, not enforcement (the `Read` tool's own
-documented behaviour is "able to read all files on the machine") —
-replaced with a verified, preflight-tested, two-tier mechanism
-(`Agent(isolation: "remote")` where available, an honestly-labelled
-best-effort tool-restricted fallback otherwise) plus a named
-indirect-leakage checklist including one **confirmed** real leak
-(`codecompass`'s own editable install resolves to the real checkout
-regardless of an isolated export's own working directory, verified via
-`pip show`). (5) `docs-reconstructor` MODE 2's old unrestricted behaviour
-is **retired as a silent fallback** (a missing prerequisite blocks the
-new default route, it does not revert to unrestricted reading); a fresh
-isolated dispatch (not the lead) selects the documentation architecture;
-the reconciled result is **published into real, active project
-documentation** for the topic, not left as a shadow proposal. (6) The
-template list drops the removed review-gate templates, adds a
-coding-context-selection template, and requires a fresh downstream
-usability exercise, not just committed files.
+**Revised objective (unchanged since the first amendment)**: one
+evidence-backed knowledge foundation supplies both coding context and
+project documentation — conceptual understanding is incorporated
+directly into documentation, mechanical context separation is preserved.
 
-Adds one new agent role, `implementation-reconstructor` (model-blind,
-legacy-blind as-built reconstruction), and extends `domain-skeptic` (not
-a second new role) to classify alignment (`aligned`/`partial`/
-`conflicting`/`not_implemented`/`insufficiently_verified`) in both
-directions. Change propagation is minimal and `grep`-based (transitive
-`depends_on` dependents, both coding-packet and documentation citers,
-"needs reassessment" vs. "proven incorrect"), demonstrated with one
-explicitly labelled controlled test correction — no real human correction
-required. Validated on one real, proposed topic: Phase 77's own
-first-party source/symbol subsystem — an internal-intent-only case that
-does not validate the richer external-manual case — as a complete
-topic-level pilot, not whole-project redocumentation. **Explicitly not
-Priority B** (no `src/codecompass/` change at all). Full plan:
+**Third-revision corrections, same day, found by direct technical
+inspection before any implementation began:**
+
+1. **Isolation verification was too weak; completion criteria now split
+   honestly.** A single self-reported failed read is not proof of a
+   boundary — replaced with observed (raw tool-call transcript, not
+   self-report) probes across filesystem, search, command, network, and
+   delegation routes. **Most consequential finding: CodeCompass is a
+   public GitHub repository, so network egress through a granted `Bash`
+   can reach the "excluded" narrative content regardless of local
+   filesystem isolation** — omitting `WebFetch`/`WebSearch` does not
+   close this. Tier 2 (same-host export) is now *always* `best-effort`,
+   never upgraded by an incidental probe result. The Definition of Done
+   is split into two separately-reported tracks: workflow/template
+   completion (fully satisfiable) and strict clean-room validation
+   (honestly expected to remain **unmet** for the network dimension) —
+   removing the human-review gate does not relax this.
+2. **The pipeline was circular** — comparison needed "published
+   documentation," writing needed that plus comparison, publication
+   happened only after writing. Replaced with a linear chain: canonical
+   assertions → a new **frozen knowledge snapshot** (versioned, hash-
+   integrity-checked, cited as `<topic-slug>@v<N>#<id>`) → independent
+   implementation reconstruction → comparison → documentation
+   architecture/draft (consuming the snapshot, not not-yet-existing
+   prose) → legacy reconciliation → publication. Understanding still
+   lands directly in the final published documentation — once, at the
+   real end of the chain.
+3. **Dependency validation was verified false, not merely restated.**
+   Direct, empirical testing confirms `scripts/check_knowledge_base.py`'s
+   parser cannot see a YAML *block*-style list — `depends_on:` in that
+   form parses as empty, silently passing validation with zero ids
+   checked. The inline `[a, b]` form (this project's own universal
+   existing convention) works correctly. This project's own prior claim
+   that `depends_on` "already validates with zero code change" is
+   corrected: true for inline, false in general — a new check now rejects
+   the block form outright.
+4. **Alignment no longer auto-promotes to `verified`.** An `aligned`
+   comparison finding is recorded in the alignment report only — moving a
+   Claim to `verified` needs its own claim-specific check against primary
+   evidence, since implementation conformance never by itself proves a
+   domain rule or proposed policy is correct.
+5. **Coding context is now independently validated, not just cited.** A
+   frozen, bounded task generates a real packet from the same snapshot
+   the documentation uses; a fresh `context-evaluator` dispatch assesses
+   it with this project's own existing `context-quality-evaluation.md`
+   rubric (LOW/MODERATE/HIGH advantage) — reused, not invented.
+6. **The propagation demonstration now runs in a disposable fixture**,
+   deleted afterward — never leaving a synthetic `CONTROLLED TEST`
+   contradiction in real canonical knowledge or real published
+   documentation. Propagation also now starts from a changed *source
+   file* (via Evidence's own citation fields), not an assertion already
+   identified by hand, and the transitive `depends_on` walk is explicitly
+   cycle-safe.
+
+Everything else (the schema's field set minus `human_review_state`, the
+`implementation-reconstructor` role, the draft-before-reconciliation
+ordering, the Priority-B boundary, the validation topic) carries forward
+unchanged. **Explicitly not Priority B** (no `src/codecompass/` change at
+all). Full plan:
 `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`.
 
 See "Next concrete step" below.
@@ -283,35 +295,42 @@ applicable `not-recurred` result, or the smallest evidence-supported
 follow-on on `recurred`) — full detail:
 `planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
 
-**Phase 79's twice-drafted plan also awaits direct user review**,
+**Phase 79's three-times-drafted plan also awaits direct user review**,
 independently of Phase 78 (neither touches, reorders, or depends on the
-other — both may be reviewed and executed in either order, or in
-parallel). Once approved, the next concrete step is: confirm the
-validation topic (§13, proposed: the first-party source/symbol
-subsystem) live against the repository; **run the §6.3 preflight denial
-test first**, against both candidate isolation tiers, to determine
-live (not assumed) which one this execution environment actually
-supports, and label every subsequent stage's own manifest accordingly
-(`verified` or `best-effort`); build the Understanding-reconstruction
-export and dispatch `context-researcher` to produce the corrected-schema
-assertion records; dispatch `domain-skeptic` to adversarially review
-them (no human-review gate follows — publication proceeds once this
-review is satisfied); in parallel, build the Implementation-
-reconstruction export (excluding `context-graph.db` per §6.4's confirmed
-leak risk) and dispatch the new `implementation-reconstructor` role
-(model-blind, legacy-blind); once both exist, dispatch a fresh
-`domain-skeptic` instance for alignment classification; then a fresh,
-isolated documentation dispatch selects its own architecture and drafts
-the complete first version (committed before reconciliation begins);
-legacy reconciliation; **publication into real `docs/domain/`/`docs/`/
-`architecture/` content for the topic**; frozen-question documentation-
-only Q&A + independent verification, with findings fixed; the one
-explicitly labelled controlled-correction propagation demonstration
-(§9.1); and the `codecompass-template` deliverables plus a fresh
-downstream usability exercise — per
+other). Once approved, the next concrete step is: confirm the validation
+topic (§14, proposed: the first-party source/symbol subsystem) live
+against the repository; **run the full §6.3 multi-route preflight probe
+set first** (filesystem, search, command, network, delegation), using
+the observed raw tool-call transcript for each — not self-report — to
+determine live which isolation label (`verified` / `filesystem-only,
+network-exposed` / `best-effort`) each scope actually earns, **expecting
+the network probe to succeed given CodeCompass's own public-repository
+status**; produce the assertion records (`context-researcher`) and
+adversarially review them (`domain-skeptic`, no human-review gate
+follows); freeze the reviewed assertions into a versioned, hash-
+integrity-checked snapshot (§5.2) — the shared input everything else
+consumes; in parallel, build the Implementation-reconstruction export
+(excluding `context-graph.db`) and dispatch the new
+`implementation-reconstructor` role (model-blind, legacy-blind); once
+both exist, dispatch a fresh `domain-skeptic` instance to classify
+alignment against the snapshot (never auto-promoting a Claim to
+`verified`); a fresh, isolated documentation dispatch selects its own
+architecture and drafts the complete first version from the snapshot
+(committed before reconciliation begins); legacy reconciliation;
+**publication into real `docs/domain/`/`docs/`/`architecture/` content
+for the topic**; frozen-question documentation-only Q&A + independent
+verification, with findings fixed; a new frozen coding-context task,
+packet, and independent `context-evaluator` assessment against the same
+snapshot; the propagation demonstration in a disposable fixture (deleted
+afterward, never touching real canonical knowledge or documentation);
+and the `codecompass-template` deliverables plus a fresh downstream
+usability exercise — per
 `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`'s
-own §11 gate sequence, none of which requires a specific named human to
-act before the phase can be reported done.
+own §12 gate sequence, whose two tracks (workflow/template completion,
+and strict clean-room validation) are reported separately — the second
+is honestly expected to remain unmet for at least the network dimension,
+which is not a human-decision gate and not grounds to delay reporting
+the first track's own real completion.
 
 Per `CLAUDE.md` §6, Phases 75, 76 (including its corrective pass), and 77
 are fully closed and already pushed to `origin` — no further action
