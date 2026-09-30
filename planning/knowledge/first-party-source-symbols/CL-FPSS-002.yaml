@@ -24,7 +24,7 @@ statement: >
 derivation: DE-FPSS-002
 assertion_kind: rule
 basis: observed_behaviour
-supporting_evidence: ["EV-FPSS-003", "EV-FPSS-004", "EV-FPSS-005"]
+supporting_evidence: ["EV-FPSS-003", "EV-FPSS-004", "EV-FPSS-005", "EV-FPSS-020"]
 contradicting_evidence: []
 examples: ["Python `_private_fn` -> conventional_private (real test + real probe)", "Rust `pub(in crate::module) enum Qux {}` -> restricted (real test)", "TS `export interface Shape {}` -> public (real test)"]
 counterexamples: ["no real extractor call in any of the 22 fixtures exercised (17 pre-existing tests + 5 ad hoc probes) ever produced exposure='unknown'"]

@@ -1,0 +1,15 @@
+id: EV-FPSS-020
+kind: evidence
+evidence_kind: test
+what_it_shows: >
+  The real tests/test_source_symbols.py (17 tests) passes in full
+  against the real, unmodified src/codecompass/source_symbols.py with no
+  stubbing required, corroborating CL-FPSS-002 and CL-FPSS-003's
+  per-language exposure and status claims against the true production
+  code path (the original dispatch's own run used a sandboxed copy with
+  two stubbed imports; this run uses the real repository directly).
+observations: ["OBS-FPSS-018"]
+derived_by: domain-skeptic
+repository_revision: "b42e6c8"
+timestamp: "2026-10-01"
+status: current

@@ -1,0 +1,31 @@
+id: EV-FPSS-018
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  Both the write path (sync.py::rebuild_project_graph unconditionally
+  passing source_index_version="1" into graph.py::rebuild_deterministic,
+  which INSERTs/UPSERTs meta.source_index_version whenever a non-None
+  value is supplied) and the read/gate path (cli.py::query_source and
+  the equivalent query_source_symbol command, both checking
+  graph.get_meta(conn, "source_index_version") is None before reading
+  source_files/source_symbols, and rendering an explicit
+  not-yet-indexed message otherwise) genuinely exist in the real
+  codebase and genuinely implement decisions/0065 point 7 and the
+  phase-77 plan's stated design exactly as described -- including the
+  specific detail that the marker is written even when zero first-party
+  files are found (the write is unconditional on the literal source_
+  index_version="1" argument, never conditioned on source_file_rows/
+  source_symbol_rows contents). This resolves CL-FPSS-005's own open
+  question: code for both the write and read path, absent from the
+  original dispatch's export, is now directly confirmed to exist and to
+  match the documented intent. This upgrades CL-FPSS-005 from
+  documented-intent-only (basis: proposed_policy, evidence_support_state:
+  unsupported) to independently confirmed current behaviour for the
+  mechanical write/gate facts specifically -- see this review's own
+  report for the precise recommended reclassification, which is not
+  applied to the Claim record directly by this evidence alone.
+observations: ["OBS-FPSS-016"]
+derived_by: domain-skeptic
+repository_revision: "b42e6c8"
+timestamp: "2026-10-01"
+status: current

@@ -1,0 +1,40 @@
+id: OBS-FPSS-016
+kind: observation
+method: code_read
+performed_by: domain-skeptic
+what_was_done: >
+  Read src/codecompass/sync.py, src/codecompass/graph.py, and
+  src/codecompass/cli.py directly to independently check CL-FPSS-005's
+  own open question: whether meta.source_index_version's write path
+  (rebuild_deterministic, invoked from sync.py) and read/gate path
+  (cli.py) actually exist and behave as decisions/0065 point 7 and the
+  phase-77 plan describe -- neither file was part of the original
+  dispatch's export.
+location: "src/codecompass/sync.py:417-438 (rebuild_project_graph's call site); src/codecompass/graph.py:998-1010, :1071-1076 (rebuild_deterministic docstring + write); src/codecompass/cli.py:1059, :1094, :1157 (query_source/query_source_symbol gate check)"
+raw_result: >
+  Write path: sync.py's rebuild_project_graph calls
+  rebuild_deterministic(..., source_index_version="1") unconditionally
+  -- the literal string "1" is passed on every real call, not
+  conditioned on source_file_rows or source_symbol_rows being
+  non-empty. graph.py's rebuild_deterministic then executes: `if
+  source_index_version is not None: INSERT INTO meta (key, value)
+  VALUES ('source_index_version', ?) ON CONFLICT(key) DO UPDATE SET
+  value = excluded.value`. The function's own docstring states this
+  explicitly: "every real production call... always supplies a real
+  value, regardless of whether any first-party source files were
+  actually found... its absence is what cli.py::query_source/
+  query_source_symbol treat as 'first-party source has never been
+  indexed'". Read path: cli.py's query_source (line 1094) and the
+  equivalent query_source_symbol command (line 1157) both guard with
+  `if conn is None or graph.get_meta(conn, "source_index_version") is
+  None:` before ever reading source_files/source_symbols, rendering an
+  explicit "not indexed yet" message (_SOURCE_NOT_INDEXED_NOTE) instead
+  of a bare "not found." Both commands are documented as read-only,
+  never invoking a rebuild themselves. This matches decisions/0065 point
+  7 and CL-FPSS-005's own statement of intent exactly, and demonstrates
+  the intent is actually implemented current behaviour, not merely
+  aspirational prose.
+tool_version: "Read tool"
+repository_revision: "b42e6c8"
+timestamp: "2026-10-01"
+status: recorded

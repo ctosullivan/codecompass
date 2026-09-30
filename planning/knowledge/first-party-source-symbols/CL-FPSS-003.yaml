@@ -24,7 +24,7 @@ statement: >
 derivation: DE-FPSS-003
 assertion_kind: state_transformation
 basis: observed_behaviour
-supporting_evidence: ["EV-FPSS-006", "EV-FPSS-007"]
+supporting_evidence: ["EV-FPSS-006", "EV-FPSS-007", "EV-FPSS-020"]
 contradicting_evidence: []
 examples: ["a syntactically valid, symbol-free Python file -> INDEXED with symbols=() (real test)", "a Python file with a genuine SyntaxError -> PARSE_ERROR with a populated diagnostic and symbols=() (real test)", "a Haskell file, however well-formed, -> UNSUPPORTED without ever being opened (real test)"]
 counterexamples: []

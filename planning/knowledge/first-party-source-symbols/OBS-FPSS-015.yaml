@@ -1,0 +1,30 @@
+id: OBS-FPSS-015
+kind: observation
+method: code_read
+performed_by: domain-skeptic
+what_was_done: >
+  Read the real src/codecompass/graph.py directly (SourceSymbolRow
+  dataclass, the source_symbols CREATE TABLE statement, and
+  _sync_source_symbols's body) to independently check CL-FPSS-004's own
+  open question: whether graph_schema_fragment.py's apparently
+  incomplete 3-field SourceSymbolRow (EV-FPSS-013) reflects the real
+  graph.py or is an export-curation artifact.
+location: "src/codecompass/graph.py:327-342 (SourceSymbolRow), :95-109 (CREATE TABLE source_symbols), :1207-1253 (_sync_source_symbols)"
+raw_result: >
+  The real SourceSymbolRow is a frozen dataclass with six fields:
+  source_file_path: str, name: str, kind: str, line: int, purpose:
+  str | None = None, exposure: str | None = None -- matching its own
+  docstring ("keyed by (source_file_path, name, kind, line)... line is
+  never None") exactly, and matching what _sync_source_symbols's real
+  body actually reads (s.line, s.purpose, s.exposure as real attributes
+  on each instance). The CREATE TABLE source_symbols statement declares
+  line INTEGER NOT NULL and UNIQUE(source_file_id, name, kind, line),
+  confirming the 4-field occurrence-based key exactly as CL-FPSS-004
+  states. graph_schema_fragment.py's Block 2 (3-field dataclass body)
+  does not match the real file -- it is a curation/transcription gap
+  in the export given to the original dispatch, not evidence of any
+  real inconsistency in graph.py itself.
+tool_version: "Read tool"
+repository_revision: "b42e6c8"
+timestamp: "2026-10-01"
+status: recorded

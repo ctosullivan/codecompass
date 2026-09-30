@@ -21,13 +21,13 @@ statement: >
 derivation: DE-FPSS-004
 assertion_kind: invariant
 basis: observed_behaviour
-supporting_evidence: ["EV-FPSS-010", "EV-FPSS-011", "EV-FPSS-012"]
-contradicting_evidence: ["EV-FPSS-013"]
+supporting_evidence: ["EV-FPSS-010", "EV-FPSS-011", "EV-FPSS-012", "EV-FPSS-017"]
+contradicting_evidence: []
 examples: ["a real @typing.overload-stacked Python `foo` (two @overload stubs + one implementation) produces 3 rows named foo, each at a distinct line, none dropped (real execution)", "a real overloaded TypeScript `foo` (two signature-only declarations + one implementation) produces 3 rows named foo, each at a distinct line, none dropped (real execution)"]
 counterexamples: []
 depends_on: []
-open_questions: ["graph_schema_fragment.py's own Block 2 shows the SourceSymbolRow dataclass with only 3 fields (source_file_path, name, kind), omitting line/purpose/exposure -- inconsistent with its own docstring (which names line as part of the key) and with Block 5's own function body (which reads s.line/s.purpose/s.exposure as real attributes). This is treated as a curation gap in this specific export, not as evidence that the real graph.py's SourceSymbolRow actually lacks these fields -- the source-level extraction logic and the schema's own UNIQUE/NOT NULL constraints (both independently confirmed) make the 4-field key the only self-consistent reading, but this discrepancy could not be resolved from the files given and is named here rather than silently smoothed over."]
-evidence_support_state: partially_supported
+open_questions: []
+evidence_support_state: supported
 derived_by: context-researcher
 repository_revision: "b4641cc"
 timestamp: "2026-10-01"

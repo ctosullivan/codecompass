@@ -16,20 +16,26 @@ statement: >
   TABLE source_files statement used for a brand-new database, so a
   fresh and a migrated database are meant to end up with identical
   column definitions. The additional claim that this equivalence is
-  "verified directly (test_graph.py)" is the ADR's own self-report --
-  tests/test_graph.py is not part of this export, so that specific test's
-  existence and outcome could not be independently confirmed here.
+  "verified directly (test_graph.py)" is the ADR's own self-report; the
+  original dispatch's export did not include tests/test_graph.py, so
+  that specific test's existence and outcome could not be independently
+  confirmed at that time. A subsequent adversarial review with full
+  repository access located
+  tests/test_graph.py::test_fresh_and_upgraded_source_files_schema_are_identical,
+  read it, and ran it plus its sibling migration-safety test against the
+  real, unmodified code -- both PASS. The ADR's self-citation is
+  accurate, not merely asserted.
 derivation: DE-FPSS-006
 assertion_kind: rule
-basis: directly_stated
-supporting_evidence: ["EV-FPSS-015"]
+basis: observed_behaviour
+supporting_evidence: ["EV-FPSS-015", "EV-FPSS-019"]
 contradicting_evidence: []
 examples: ["CREATE TABLE source_files declares `language TEXT` (no NOT NULL); _migrate_source_files_columns's own ALTER TABLE for the same column also omits NOT NULL and any DEFAULT"]
 counterexamples: []
 depends_on: []
-open_questions: ["tests/test_graph.py, which the ADR itself cites as the source of the 'verified directly' claim for fresh-vs-upgraded column-definition equivalence, is not part of this export and its existence/content/pass status could not be independently checked here -- this claim is supported for what the schema/migration code itself directly shows, not for the ADR's own claim about a specific external test."]
-evidence_support_state: partially_supported
+open_questions: []
+evidence_support_state: supported
 derived_by: context-researcher
 repository_revision: "b4641cc"
 timestamp: "2026-10-01"
-status: supported
+status: verified

@@ -1,0 +1,21 @@
+id: EV-FPSS-021
+kind: evidence
+evidence_kind: executable
+what_it_shows: >
+  Direct execution against the real, unmodified source_symbols.py
+  reproduces both false positives CL-FPSS-007 describes (a Rust
+  multi-line raw string whose interior line matches the anchored item
+  regex; a plain JS/TS block comment not recognized as a comment at
+  all) and both counterexamples it describes (a genuinely multi-line
+  function signature is handled correctly; single-line comments/strings
+  containing declaration-like text are correctly excluded), each
+  silently -- status remains INDEXED_PARTIAL, diagnostic remains None,
+  with nothing distinguishing the false-positive rows from genuine ones.
+  This fully confirms CL-FPSS-007 against the real production module,
+  closing out any residual doubt that the original dispatch's own
+  sandboxed probe results might not generalize to the real repository.
+observations: ["OBS-FPSS-019"]
+derived_by: domain-skeptic
+repository_revision: "b42e6c8"
+timestamp: "2026-10-01"
+status: current

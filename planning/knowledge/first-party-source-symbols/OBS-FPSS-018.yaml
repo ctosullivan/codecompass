@@ -1,0 +1,38 @@
+id: OBS-FPSS-018
+kind: observation
+method: executable
+performed_by: domain-skeptic
+what_was_done: >
+  Ran the real tests/test_source_symbols.py file directly against the
+  real, unmodified src/codecompass/source_symbols.py (full repo access,
+  no stubbing needed), to confirm EV-FPSS-005's claim (originally
+  produced against a sandboxed copy with two stubbed unrelated imports)
+  holds against the actual repository as-is.
+location: "command: .venv/bin/python -m pytest tests/test_source_symbols.py -v"
+raw_result: >
+  All 17 tests passed: test_discover_source_files_classifies_every_
+  supported_language, test_discover_source_files_distinguishes_js_from_ts,
+  test_discover_source_files_keeps_tests_prunes_build_noise,
+  test_discover_source_files_works_with_zero_vendor_config,
+  test_python_extraction_is_indexed_with_full_scope,
+  test_python_extraction_indexed_with_zero_symbols_is_distinguishable_from_failure,
+  test_python_syntax_error_is_parse_error_not_empty_result,
+  test_python_unreadable_file,
+  test_python_overload_produces_distinct_rows_never_crashes,
+  test_rust_extraction_is_indexed_partial_with_full_exposure_model,
+  test_rust_overload_like_repeated_declarations_produce_distinct_rows,
+  test_rust_unreadable_file,
+  test_js_extraction_is_indexed_partial_with_export_based_exposure,
+  test_ts_extraction_supports_interface_type_enum_and_jsdoc,
+  test_ts_overload_produces_distinct_rows_never_crashes,
+  test_js_unreadable_file,
+  test_haskell_is_unsupported_not_a_silent_empty_result. No stubbing was
+  required in this run since the real repository has real
+  filetree.iter_source_files and usage._PROJECT_PRUNE_DIR_NAMES
+  available. This confirms CL-FPSS-002/CL-FPSS-003's underlying test
+  evidence against the true production module, not only a sandboxed
+  reconstruction of it.
+tool_version: "pytest-9.1.1, python 3.13.5"
+repository_revision: "b42e6c8"
+timestamp: "2026-10-01"
+status: recorded

@@ -1,0 +1,34 @@
+id: OBS-FPSS-017
+kind: observation
+method: executable
+performed_by: domain-skeptic
+what_was_done: >
+  Read tests/test_graph.py directly and executed the two relevant tests
+  against the real, unmodified codebase, to independently check
+  CL-FPSS-006's own open question: whether the ADR's self-citation
+  "verified directly (test_graph.py)" for fresh-vs-upgraded
+  source_files column-definition equivalence actually exists and
+  actually verifies what the ADR claims.
+location: "tests/test_graph.py:1972 (test_migrate_source_files_columns_preserves_uses_edges_and_enrichment), :2073-2099 (test_fresh_and_upgraded_source_files_schema_are_identical); command: .venv/bin/python -m pytest tests/test_graph.py -k \"test_fresh_and_upgraded_source_files_schema_are_identical or test_migrate_source_files_columns_preserves_uses_edges_and_enrichment\" -v"
+raw_result: >
+  tests/test_graph.py genuinely contains
+  test_fresh_and_upgraded_source_files_schema_are_identical, whose own
+  docstring states exactly the fact the ADR cites ("PRAGMA
+  table_info(source_files) must return identical column names/types/
+  nullability whether the database was created fresh or migrated from a
+  pre-Phase-77 shape"). The test builds a fresh database via open_graph,
+  builds a second database seeded with only a pre-Phase-77 shape
+  (meta + a bare source_files(id, path) table) then opened via
+  open_graph (triggering the migration path), and asserts
+  `_column_shape(fresh_conn) == _column_shape(upgraded_conn)` where
+  _column_shape returns (name, type, notnull) triples from PRAGMA
+  table_info. Both this test and
+  test_migrate_source_files_columns_preserves_uses_edges_and_enrichment
+  (which separately confirms the migration doesn't cascade-delete
+  uses_edges/enrichment rows) PASSED when run directly against the real,
+  unmodified codebase. The ADR's self-citation is accurate: the test
+  exists, and it verifies precisely the claim attributed to it.
+tool_version: "pytest-9.1.1, python 3.13.5"
+repository_revision: "b42e6c8"
+timestamp: "2026-10-01"
+status: recorded

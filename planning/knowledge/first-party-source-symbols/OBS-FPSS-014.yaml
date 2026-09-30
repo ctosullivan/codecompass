@@ -1,0 +1,22 @@
+id: OBS-FPSS-014
+kind: observation
+method: code_read
+performed_by: domain-skeptic
+what_was_done: >
+  Read src/codecompass/core.py directly (not part of the original
+  context-researcher dispatch's export) to independently check
+  CL-FPSS-001's own open question: whether core.Ecosystem's real
+  definition actually matches decisions/0065 point 2's and the phase-77
+  plan's prose description of it.
+location: "src/codecompass/core.py:13-19"
+raw_result: >
+  class Ecosystem(StrEnum) has exactly four members: NPM = "npm",
+  PYTHON = "python", CARGO = "cargo", HASKELL = "haskell". There is no
+  separate JAVASCRIPT or TYPESCRIPT member -- NPM is the sole value
+  covering both, exactly as decisions/0065 point 2 and EV-FPSS-001
+  describe. Also confirmed by grep that source_symbols.py contains no
+  import of, or reference to, codecompass.core anywhere.
+tool_version: "Read tool"
+repository_revision: "b42e6c8"
+timestamp: "2026-10-01"
+status: recorded

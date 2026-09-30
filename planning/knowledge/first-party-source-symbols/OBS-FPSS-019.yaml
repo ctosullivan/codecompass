@@ -1,0 +1,33 @@
+id: OBS-FPSS-019
+kind: observation
+method: executable
+performed_by: domain-skeptic
+what_was_done: >
+  Ran a fresh ad hoc probe script directly against the real,
+  unmodified src/codecompass/_extract_rust_source_symbols and
+  _extract_js_family_source_symbols (full repo access), to independently
+  check CL-FPSS-007's specific false-positive and counterexample claims
+  against the real production module rather than trusting the original
+  dispatch's own sandboxed probes.
+location: "ad hoc script, src/codecompass/source_symbols.py imported directly; five fixtures: (a) Rust raw-string r#\"...\"# with an embedded `pub fn embedded_in_string() {}`-looking interior line, (b) a genuinely multi-line Rust function signature, (c) a Rust `//` comment containing decl-like text, (d) a plain JS/TS `/* ... */` block comment containing a commented-out `export function commented_out()`, (e) a JS/TS single-line string literal containing decl-like text"
+raw_result: >
+  (a) produced a real, silent false-positive row: SourceSymbol(name=
+  'embedded_in_string', line=2), status stayed INDEXED_PARTIAL,
+  diagnostic None -- confirms CL-FPSS-007(c). (b) produced exactly one
+  correct row (multi_line, line 1, public) with no false positive or
+  omission -- confirms CL-FPSS-007's counterexample (a) (multi-line
+  signatures do not defeat the extractor). (c) produced only the real
+  declaration (real_fn); the commented text (fake_in_comment) was
+  correctly excluded -- confirms CL-FPSS-007's counterexample (b).
+  (d) produced a real, silent false-positive row: SourceSymbol(name=
+  'commented_out', line=2, exposure='public'), alongside the genuine
+  real_fn row -- confirms CL-FPSS-007(d). (e) produced only real_fn2 and
+  an incidental `const s` binding; the string-embedded text
+  (fake_in_string) was correctly excluded -- confirms CL-FPSS-007's
+  counterexample (b) for the JS/TS case as well. All five outcomes match
+  CL-FPSS-007's stated claim exactly, now against the real production
+  module rather than only the original dispatch's own sandbox copy.
+tool_version: "python 3.13.5 (.venv)"
+repository_revision: "b42e6c8"
+timestamp: "2026-10-01"
+status: recorded

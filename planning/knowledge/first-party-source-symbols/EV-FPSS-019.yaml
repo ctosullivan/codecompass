@@ -1,0 +1,21 @@
+id: EV-FPSS-019
+kind: evidence
+evidence_kind: test
+what_it_shows: >
+  tests/test_graph.py::test_fresh_and_upgraded_source_files_schema_are_identical
+  genuinely exists, genuinely exercises fresh-vs-migrated
+  source_files column definitions via PRAGMA table_info, and passes
+  against the real, unmodified codebase -- directly confirming the
+  ADR's own "verified directly (test_graph.py)" self-citation that
+  CL-FPSS-006's own open question could not previously check (the
+  original dispatch's export did not include tests/test_graph.py).
+  test_migrate_source_files_columns_preserves_uses_edges_and_enrichment
+  also passes, independently confirming the migration's
+  never-drop-or-recreate discipline the ADR also claims. This closes
+  CL-FPSS-006's own open question: the ADR's self-citation is not merely
+  asserted, it is real and accurate.
+observations: ["OBS-FPSS-017"]
+derived_by: domain-skeptic
+repository_revision: "b42e6c8"
+timestamp: "2026-10-01"
+status: current

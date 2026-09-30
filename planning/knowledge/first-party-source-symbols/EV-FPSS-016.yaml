@@ -1,0 +1,20 @@
+id: EV-FPSS-016
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  core.py's own Ecosystem StrEnum genuinely has exactly four members
+  (NPM, PYTHON, CARGO, HASKELL), with NPM the single value covering both
+  JavaScript and TypeScript dependencies -- directly confirming, not
+  merely repeating, decisions/0065 point 2's and the phase-77 plan's
+  prose description that CL-FPSS-001/EV-FPSS-001 could previously only
+  cite as documentation, not as independently verified source. This
+  closes CL-FPSS-001's own open question: the claim's description of
+  core.Ecosystem is accurate against the real module, not merely against
+  the ADR's self-description of it. source_symbols.py's Language remains
+  confirmed (EV-FPSS-002) as unrelated -- no import or reference to
+  core.Ecosystem anywhere in the module.
+observations: ["OBS-FPSS-014"]
+derived_by: domain-skeptic
+repository_revision: "b42e6c8"
+timestamp: "2026-10-01"
+status: current

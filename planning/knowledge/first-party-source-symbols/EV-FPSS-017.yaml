@@ -1,0 +1,24 @@
+id: EV-FPSS-017
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  The real graph.py SourceSymbolRow has all six fields (source_file_path,
+  name, kind, line, purpose, exposure), the real CREATE TABLE
+  source_symbols statement declares UNIQUE(source_file_id, name, kind,
+  line) with line INTEGER NOT NULL, and the real _sync_source_symbols
+  function body genuinely reads s.line/s.purpose/s.exposure as real
+  attributes -- fully confirming CL-FPSS-004's occurrence-based-identity
+  statement against primary source, not merely against the curated
+  export's own internally-inconsistent fragment. EV-FPSS-013's flagged
+  discrepancy (Block 2 showing only 3 fields) is resolved: it is a
+  transcription/curation artifact specific to graph_schema_fragment.py,
+  not a real property of graph.py. CL-FPSS-004's own open question is
+  closed by this evidence -- the "4-field key is the only self-consistent
+  reading" inference the original dispatch made from indirect evidence
+  (the schema constraint and the function body) is now directly
+  confirmed against the real dataclass itself.
+observations: ["OBS-FPSS-015"]
+derived_by: domain-skeptic
+repository_revision: "b42e6c8"
+timestamp: "2026-10-01"
+status: current
