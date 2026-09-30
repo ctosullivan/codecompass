@@ -128,6 +128,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   visibility/export modifier). `decisions/0065` records the full design
   rationale. Full plan (twice amended before implementation):
   `planning/phase-77-first-party-source-and-template.md`.
+- **Phase 79** (Clean-room conceptual understanding + documentation
+  reconstruction, methodology hardening + template delivery,
+  `decisions/0066`): `scripts/check_knowledge_base.py` gains four new
+  checks — a fail-closed inline-list-form validator (replacing a
+  narrower pattern-match that missed comments/blank-lines/indentless
+  lists, and which immediately found 15 real pre-existing violations on
+  its first run), an optional-enum-field validator for a Claim's new
+  `assertion_kind`/`basis`/`evidence_support_state` fields, and a
+  historical-integrity/current-divergence pair for a new frozen
+  knowledge-snapshot format (`snapshot-v<N>.toml`) that hashes a
+  record's exact historical git-blob content, never the live file, so a
+  legitimate supersession is never mistaken for tampering. New agent
+  role `implementation-reconstructor` (model-blind, legacy-blind as-built
+  reconstruction from primary implementation evidence alone); extends
+  `domain-skeptic` with a comparison mode (`aligned`/`partial`/
+  `conflicting`/`not_implemented`/`insufficiently_verified` — alignment
+  never by itself promotes a Claim to `verified`) and `docs-reconstructor`
+  with a hardened, topic-scoped documentation route. Validated end to
+  end on one real, previously-undocumented topic (the Phase 77
+  first-party source/symbol subsystem): 8 reviewed Claims, a frozen and
+  re-frozen snapshot, an independent implementation reconstruction, an
+  alignment comparison, publication into `architecture/overview.md`/
+  `architecture/context-graph-schema.md` (merged into existing sections,
+  not a new page), a legacy-reconciliation pass, and two independent
+  verification passes — one of which found and fixed a real,
+  pre-existing `core.Ecosystem`-cardinality documentation defect
+  unrelated to this phase's own new content. A live preflight probe
+  found the strongest available isolation mechanism
+  (`Agent(isolation: "remote")`) fails on all five tested routes in this
+  environment (a same-host git worktree, not a separate environment); every
+  isolation-sensitive stage is honestly labelled `best-effort`, never
+  `verified`, accordingly. Nine portable workflow/guide templates
+  delivered to the `codecompass-template` repository. Full plan
+  (amended four times before implementation):
+  `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`.
 
 ### Changed
 

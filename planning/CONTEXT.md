@@ -75,9 +75,14 @@ and scoped, not abandoned. Full plan:
 
 **Phase 79 (Clean-room conceptual understanding + documentation
 reconstruction, methodology hardening + Priority D template delivery) is
-`in progress`, direct user request, 2026-09-30, amended three times
-(`decisions/0066`), approved 2026-10-01 and now executing. Does not
-touch, reorder, or depend on Phase 78.**
+implementation-complete, closeout finishing — not yet flipped `done` on
+`planning/ROADMAP.md`, pending a re-audit against this commit** (direct
+user request, 2026-09-30, amended four times, `decisions/0066`, approved
+2026-10-01 and executed the same day). Does not touch, reorder, or
+depend on Phase 78. See "What was just completed" below for the real,
+delivered result — the summary immediately following this paragraph
+describes the pre-implementation, fourth-revision plan and is retained
+for its own amendment history, not as a description of current state.
 
 **Revised objective (unchanged since the first amendment)**: one
 evidence-backed knowledge foundation supplies both coding context and
@@ -157,6 +162,84 @@ not waiting on a revisit trigger, and not gated on Priority A's own
 strategic exit decision either way.
 
 ## What was just completed
+
+**Phase 79 — Clean-room conceptual understanding + documentation
+reconstruction — implementation complete, closeout finishing.**
+
+Four checker functions landed in `scripts/check_knowledge_base.py`
+(`check_optional_enum_fields`, `check_list_fields_are_inline` — fail-
+closed, immediately found and fixed 15 real pre-existing YAML
+block-list violations — `check_snapshot_historical_integrity`,
+`check_snapshot_current_divergence`), 14 new tests, all passing
+(`b42e6c8`/`38c8d7a`-range). New agent role `implementation-reconstructor`
+plus extensions to `domain-skeptic` (comparison mode), `context-researcher`
+(isolated mode), `docs-reconstructor` (hardened topic-scoped route),
+`docs-maintainer` (legacy reconciliation mode), and
+`planning/v1-redefinition/agent-led-development.md`'s own catalogue/
+write-boundary table.
+
+A live Tier-1 isolation preflight (`Agent(isolation: "remote")`) was run
+for real and **failed all five tested routes** in this environment —
+filesystem, search, command, network, and environment-identity all
+reached content it was supposed to exclude (a same-host git worktree,
+not a separate environment). Every downstream stage used Tier 2 and is
+labelled `best-effort`, never `verified`, accordingly
+(`planning/knowledge/first-party-source-symbols/isolation/tier1-preflight.md`).
+
+Validated end to end on the real pilot topic (Phase 77's first-party
+source/symbol subsystem, previously undocumented): 8 reviewed Claims
+(`context-researcher` → `domain-skeptic` adversarial review, which
+independently resolved all five of the research dispatch's own disclosed
+open questions), a frozen-then-re-frozen snapshot (v1→v2, both with
+passing historical-integrity/zero-divergence checks against real git
+history), a model-blind `implementation-reconstructor` report (one
+export-curation bug found and fixed mid-phase, disclosed rather than
+silently corrected), a fresh comparison-mode `domain-skeptic` alignment
+pass (promoted one Claim to `verified` via a real separate check, found
+one genuine new knowledge-base gap), a disposable propagation-
+demonstration fixture proving the full source→evidence→assertions→
+transitive-dependents→snapshots→both-outputs chain including real
+two-node cycle-safety (deleted afterward, zero survivors), published
+documentation merged into `architecture/overview.md`/
+`architecture/context-graph-schema.md` (not a new `docs/domain/` page —
+that corpus turned out to be a separate, already-approved one for
+CodeCompass's own meta-level concepts, not implementation subsystem
+detail), a legacy-reconciliation pass (all 7 pre-existing claims
+`supported`, one real documentation-verification gap fixed directly),
+and two independent verification passes — one (coding-context packet)
+**PASS, LOW advantage**; one (documentation Q&A) **5/6 confirmed, 1/6
+wrong-and-fixed** (a real, pre-existing `core.Ecosystem`-cardinality
+defect in `architecture/overview.md`, unrelated to this phase's own new
+content, caught only by this independent check).
+
+Nine portable workflow/guide templates delivered to
+`https://github.com/ctosullivan/codecompass-template` and pushed
+(confirmed via `git log origin/main..HEAD` empty), verified via a fresh-
+clone link-integrity check before pushing.
+
+Full test suite: 747 passed, 2 skipped. `ruff check .`: clean.
+`check_knowledge_base.py --strict` / `check_user_docs.py --strict`:
+clean (one expected, disclosed informational snapshot-divergence
+finding). Retro: `planning/retros/phase-79-clean-room-understanding-and-documentation-reconstruction.md`.
+Learning triage landed `L-068`/`L-069`, refined `L-023`. A docs-drift
+audit found and fixed 4 non-blocking findings (a stale line-citation in
+`docs/domain/concepts/claim.md`, two `agent-led-development.md` staleness
+gaps, `CONTRIBUTING.md`'s incomplete agent roster) — persisted at
+`planning/retros/_drift-audit-phase-79.md`.
+
+An independent `release-phase-auditor` audit against the pre-CHANGELOG/
+pre-CONTEXT.md-update commit (`cbf3582`) returned **Track 1 (workflow/
+template completion): FAIL** — three real, since-fixed gaps (no
+`CHANGELOG.md` entry, this file not updated past the pre-implementation
+plan state, no persisted `_drift-audit-phase-79.md`) — and **Track 2
+(strict isolation validation): PASS** (the `best-effort` labelling
+itself, confirmed honest throughout by direct spot-check; the isolation
+*mechanism* remains, as designed, honestly unmet for the network/
+environment-identity dimensions — that is Track 2's own expected,
+disclosed result, not a defect). This commit and the three fixes above
+are the response; **a re-audit against this new commit, followed by the
+terminal `roadmap-context-curator` reconciliation, are the only
+remaining steps** — see "Next concrete step."
 
 **Phase 77 — First-party source awareness (`CG-009`) + a usable
 `codecompass-template` — `done`.**
@@ -296,42 +379,46 @@ applicable `not-recurred` result, or the smallest evidence-supported
 follow-on on `recurred`) — full detail:
 `planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
 
-**Phase 79's three-times-drafted plan also awaits direct user review**,
-independently of Phase 78 (neither touches, reorders, or depends on the
-other). Once approved, the next concrete step is: confirm the validation
-topic (§14, proposed: the first-party source/symbol subsystem) live
-against the repository; **run the full §6.3 multi-route preflight probe
-set first** (filesystem, search, command, network, delegation), using
-the observed raw tool-call transcript for each — not self-report — to
-determine live which isolation label (`verified` / `filesystem-only,
-network-exposed` / `best-effort`) each scope actually earns, **expecting
-the network probe to succeed given CodeCompass's own public-repository
-status**; produce the assertion records (`context-researcher`) and
-adversarially review them (`domain-skeptic`, no human-review gate
-follows); freeze the reviewed assertions into a versioned, hash-
-integrity-checked snapshot (§5.2) — the shared input everything else
-consumes; in parallel, build the Implementation-reconstruction export
-(excluding `context-graph.db`) and dispatch the new
-`implementation-reconstructor` role (model-blind, legacy-blind); once
-both exist, dispatch a fresh `domain-skeptic` instance to classify
-alignment against the snapshot (never auto-promoting a Claim to
-`verified`); a fresh, isolated documentation dispatch selects its own
-architecture and drafts the complete first version from the snapshot
-(committed before reconciliation begins); legacy reconciliation;
-**publication into real `docs/domain/`/`docs/`/`architecture/` content
-for the topic**; frozen-question documentation-only Q&A + independent
-verification, with findings fixed; a new frozen coding-context task,
-packet, and independent `context-evaluator` assessment against the same
-snapshot; the propagation demonstration in a disposable fixture (deleted
-afterward, never touching real canonical knowledge or documentation);
-and the `codecompass-template` deliverables plus a fresh downstream
-usability exercise — per
-`planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`'s
-own §12 gate sequence, whose two tracks (workflow/template completion,
-and strict clean-room validation) are reported separately — the second
-is honestly expected to remain unmet for at least the network dimension,
-which is not a human-decision gate and not grounds to delay reporting
-the first track's own real completion.
+**Phase 79 is implementation-complete; its only remaining steps are a
+re-audit and the terminal reconciliation.** A fresh
+`release-phase-auditor` pass against this commit (which fixed the prior
+audit's three Track 1 findings — the `CHANGELOG.md` entry, this file's
+own update, and the persisted `_drift-audit-phase-79.md`) needs to
+return PASS (or PASS WITH NON-BLOCKING OBSERVATIONS) on Track 1 before
+`planning/ROADMAP.md` can flip the phase to `done`; Track 2 (strict
+isolation validation) already returned its own honestly-expected PASS
+(best-effort labelling confirmed honest throughout — the isolation
+mechanism itself remains, as designed, unmet for network/
+environment-identity, which is Track 2's own disclosed result, not a
+blocker). Once the re-audit passes, the terminal
+`roadmap-context-curator` reconciliation commit (flipping
+`planning/ROADMAP.md`'s Phase 79 row to `done`, overwriting this
+section, and updating the phase plan's own Status line — per
+`CLAUDE.md` §5's narrow three-target exemption) is the closing action.
+Both repositories' commits should be pushed to `origin` once that gate
+passes, per `CLAUDE.md` §6.
+
+**Phase 78's twice-drafted plan still awaits direct user review**
+(independently of Phase 79 — neither touches, reorders, or depends on
+the other), per its own explicit instruction: "planning only... do not
+execute the trial or implement CodeCompass/Ledgerkit code." Once
+approved (or amended and re-approved), the next concrete step is
+executing its §5 trial in stages: Stage 1 — dispatch fresh
+baseline/treatment agents against seed-then-fork Ledgerkit scratch
+clones (frozen at `6c90b4ca3e6c10951cb400e43db4b90bfccc5909`) for
+discovery/design only (no implementation) on the journal-comment
+`ReportSpec` parsing task, with mandatory observable research traces
+(§5.3.4); Stage 2 — an independent `context-evaluator` assessment
+producing the three-outcome `CG-001` verdict
+(`recurred`/`not-recurred`/`task-not-applicable`, §4); if
+`task-not-applicable`, re-run against the fallback task before
+proceeding (§7.2.0); Stage 3 (optional, evaluator's own call) — a
+shared, human-approved implementation contract given to fresh
+implementation agents in both arms; then an independent
+`knowledge-curator` triage applying Phase 78's own §7.2 exit gate
+(Priority A closure only on an applicable `not-recurred` result, or the
+smallest evidence-supported follow-on on `recurred`) — full detail:
+`planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
 
 Per `CLAUDE.md` §6, Phases 75, 76 (including its corrective pass), and 77
 are fully closed and already pushed to `origin` — no further action
