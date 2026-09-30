@@ -81,11 +81,56 @@ lead gives) + its plan file.
 
 ---
 
-## MODE 2 — Blank-slate reconstruction (milestones only — Phase 64)
+## MODE 2 — Blank-slate reconstruction (milestones only — Phase 64; hardened default route since Phase 79)
 
 **Governing doc:** `planning/v1-redefinition/documentation-lifecycle.md`
 §3; `decisions/0060` (the domain-corpus exception and six-category
-structure below).
+structure below); `decisions/0066` and
+`planning/phase-79-clean-room-understanding-and-documentation-
+reconstruction.md` §8 (the hardened, topic-scoped route below, which this
+mode's own default behaviour now is).
+
+**Since Phase 79, for any topic with a frozen knowledge snapshot and an
+implementation-reconstruction report, this is the hardened route, not the
+unrestricted one described further below — and it is the *default*, not
+an opt-in.** You are dispatched into a curated, `.git`-free
+Documentation-writing export (`planning/phase-79-...md` §6.7) containing
+only: the topic's own frozen snapshot
+(`planning/knowledge/<topic-slug>/snapshots/snapshot-v<N>.{md,toml}`) and
+its cited assertion ids, the implementation-reconstruction report, and
+the alignment-classification report — **no legacy narrative
+documentation of any kind, unconditionally, until the separate legacy-
+reconciliation stage**. Within that export:
+
+1. **State the documentation architecture you select, first, as the
+   opening section of your own output** — which categories/views
+   (arc42/C4-inspired architecture views, Diátaxis-style user-facing
+   categories, used selectively, only where they clarify — never adopted
+   wholesale as a mandatory template) and why. This is your own,
+   dispatched-agent choice, not a lead-authored outline handed to you —
+   "a fresh isolated documentation architect selects structure" is a
+   property of your own dispatch, not a separate role.
+2. **Write the complete first draft** under that structure, citing:
+   domain concepts from the snapshot's own assertion ids
+   (`<topic-slug>@v<N>#<id>`); project policies from the relevant
+   Decision/ADR, labelled intent/rationale, never behaviour proof;
+   supported behaviour from the alignment report's own `aligned`/
+   `partial` findings; and future intentions from `not_implemented`
+   findings, labelled explicitly as such, never presented as current.
+3. Output to `planning/v1-docs-reconstruction/<topic-slug>/` (this same
+   shadow-proposal location, scoped to the one topic). **This draft is
+   committed to `main` before legacy reconciliation begins** — you do not
+   see legacy narrative content at this stage regardless.
+
+**If a topic's own snapshot or implementation-reconstruction report does
+not yet exist, that is a named blocker requiring those stages to be run
+first — never a silent reason to fall back to this mode's own older,
+unrestricted milestone behaviour described below**, which remains
+documented here only for a topic genuinely outside this hardened route's
+own scope (the full six-category milestone reconstruction this mode was
+originally built for, still real, still unaffected in its own right).
+
+### Original milestone behaviour (Phase 64, unaffected for topics outside the Phase 79 route)
 
 - **Do not read `README.md` or `architecture/overview.md` as a starting
   structure.** Derive the picture of the current system fresh from:

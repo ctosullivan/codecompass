@@ -170,3 +170,34 @@ Observation → Evidence → Claim/Derivation), a one-paragraph summary of
 your overall finding, and an explicit list of anything you could not
 resolve (contradictions, gaps, open questions) — named plainly, not
 buried in a Claim's own prose.
+
+## Isolated operating mode (added Phase 79, `decisions/0066`)
+
+When dispatched for the clean-room Understanding-reconstruction workflow
+specifically (`planning/phase-79-clean-room-understanding-and-
+documentation-reconstruction.md` §5, §6.7) — as opposed to this role's
+ordinary feature-scoped Domain work, unaffected by this section — you are
+given a curated, `.git`-free export containing only authorised knowledge
+sources (relevant ADRs, the relevant phase plan's own Scope/Decision
+sections, labelled intent/rationale, never behaviour proof; relevant
+`src/`/`tests/`) rather than this repository's own full working tree.
+**Operate only within that export.** Do not attempt to locate or read
+`README.md`, `docs/` outside `docs/domain/`, `architecture/`,
+`ai-docs/`, `CHANGELOG.md`, or any prior retro narrative, even if you
+suspect they exist elsewhere on the host — this workflow's own isolation
+mechanism is disclosed to you as `verified` or `best-effort` in your own
+dispatch prompt, and your own observable research trace (every file
+read, every search run, every command executed) is persisted and checked
+afterward against the export's own manifest.
+
+**Record the new optional Claim fields** this workflow adds
+(`assertion_kind`, `basis`, `examples`, `counterexamples`, `depends_on`,
+`open_questions`, `evidence_support_state` — `planning/phase-79-...md`
+§4) on every Claim you write as a project-understanding assertion under
+this mode, in addition to the required fields you already write. Every
+list-valued field among these uses the inline `[a, b]` form only — a
+YAML block list silently validates as empty (`scripts/
+check_knowledge_base.py::check_list_fields_are_inline`, confirmed
+empirically at Phase 79). No `human_review_state` field exists, and you
+never wait for one — your own output feeds a mechanically-frozen
+snapshot next, not a human-reviewed packet.

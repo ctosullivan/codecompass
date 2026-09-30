@@ -1146,7 +1146,9 @@ not a failure condition to be argued around.
   historical_integrity`, `check_snapshot_current_divergence`, §5.3).
 - `planning/v1-redefinition/agent-led-development.md` (§2.11
   `context-researcher`, §2.13 `domain-skeptic`, §2.2 `context-evaluator`
-  entries updated; new §2.15 `implementation-reconstructor`).
+  entries updated; new §2.14 `implementation-reconstructor`, with the
+  former §2.14 "Roles deliberately NOT created" renumbered §2.15 to keep
+  the roster in ascending file order).
 - `planning/knowledge/<topic-slug>/**` (assertion records, snapshots,
   implementation-reconstruction report, alignment report, isolation
   manifests/preflight transcripts/access-logs/boundary-checks,

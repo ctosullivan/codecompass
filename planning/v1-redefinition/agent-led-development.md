@@ -74,6 +74,13 @@ default.
 - **Isolation:** fresh context each evaluation; not told the lead's
   hoped-for answer.
 - **Active in:** Stages B, C (Phase 51), D, F (63/64).
+- **A second task type, added Phase 79 (`decisions/0066`):**
+  independently assessing a task-specific *coding-context packet*
+  (assembled by `knowledge-curator` from the same frozen knowledge
+  snapshot a documentation page also cites), not only documentation-
+  supplied context — same method (inspect the target directly, re-derive
+  ground truth from primary evidence before judging), same
+  PASS/PASS WITH GAPS/FAIL + LOW/MODERATE/HIGH rubric, no new role.
 
 ### 2.3 `reference-project-tester` — exercises CodeCompass on real projects
 - **Finds:** dependency-discovery failures; stale context; incorrect
@@ -255,6 +262,16 @@ docs and self-certifies them.
 - **Tools:** Read, Grep, Glob, Bash, Write.
 - **Active in:** any phase running the Domain stage of
   Scope→Plan→Domain→Design→Implement (Phase 60, 63D on).
+- **A third application, added Phase 79 (`decisions/0066`)**: the
+  clean-room Understanding-reconstruction workflow. Dispatched into a
+  curated, `.git`-free export (authorised knowledge sources only,
+  legacy narrative excluded) rather than this role's own default
+  "everything" read scope — a real, mechanical narrowing for this
+  specific workflow, not a charter change to the role's ordinary
+  feature-scoped work. Records the workflow's own new optional Claim
+  fields (`assertion_kind`/`basis`/`examples`/`counterexamples`/
+  `depends_on`/`open_questions`/`evidence_support_state`, inline-list
+  form only) alongside the six record kinds above, unchanged.
 
 ### 2.12 `documentation-agent` — pre-implementation design proposal (added Phase 54c; catalogued here `decisions/0060`)
 - **Question:** given an `APPROVED`-reachable knowledge base for one
@@ -332,8 +349,58 @@ docs and self-certifies them.
   staleness candidate accumulated since (`documentation-lifecycle.md`
   §4.1, added 2026-09-20) — the same role and write boundary, not a
   second one.
+- **A second mode, added Phase 79 (`decisions/0066`): comparison.** Given
+  a frozen knowledge snapshot and a fresh `implementation-reconstructor`
+  dispatch's own as-built report, classifies alignment
+  (`aligned`/`partial`/`conflicting`/`not_implemented`/
+  `insufficiently_verified`) between them, in both directions, without
+  either side forced to match the other. **An `aligned` finding never
+  automatically promotes the cited Claim's own `status` to `verified`** —
+  that needs a separate, claim-specific check against primary evidence,
+  a materially higher bar for a `rule`/`invariant`/`proposed_policy`-
+  basis assertion than for directly-observable behaviour. Write boundary
+  unchanged (its own alignment report, plus Observation/Evidence only if
+  resolving a finding itself).
 
-### 2.14 Roles deliberately NOT created
+### 2.14 `implementation-reconstructor` — independent, model-blind implementation reconstruction (added Phase 79, `decisions/0066`)
+- **Question:** given only primary implementation evidence for one named
+  topic — source, tests, schema, config, package metadata, CI/build
+  files, real runtime observation — what does the code actually do,
+  established *before* consulting any reviewed conceptual model or
+  legacy narrative documentation?
+- **Method:** recovers modules, APIs/CLI surface, data/persistence,
+  dependencies, runtime paths, extension points, build/config, tests,
+  and limitations, from an isolated Implementation-reconstruction export
+  (`planning/phase-79-...md` §6.7) — never the reviewed knowledge
+  snapshot, never legacy documentation, at this stage. Model-blind by
+  design: the point is a reconstruction uninfluenced by what a concept
+  model claims, checked against it only afterward, by a separate,
+  fresh `domain-skeptic` comparison dispatch — never by this role itself.
+- **Distinct from `context-researcher`**: that role investigates a
+  feature/behavioural *question*, often starting from or alongside
+  documentation; this role investigates *what code as a whole does*,
+  structurally excluded from any conceptual model or narrative at the
+  point of investigation, precisely so its own output is a genuinely
+  independent check rather than a confirmation of what it was already
+  told to expect.
+- **Write boundary**: its own report only —
+  `planning/knowledge/<topic-slug>/implementation-reconstruction.md`.
+  Nothing else — no edits to source, tests, or any other file; never
+  performs its own comparison or alignment classification.
+- **Tools:** Read, Grep, Glob, Bash (read-only in effect: no `sync
+  --yes` outside its own export, no `enrich apply`, no writes beyond its
+  own report). No network-capable tool, no `Agent`.
+- **A known, disclosed session limitation (`L-023`)**: a newly-created
+  `.claude/agents/*.md` file is not immediately dispatchable by its own
+  type name within the same session that creates it. Where this applies,
+  a `general-purpose` dispatch carrying this role's own full charter
+  inline substitutes for a true `implementation-reconstructor`-typed
+  one — the isolation label for that stage is `best-effort`, never
+  `verified`, regardless of which name the dispatch ran under.
+- **Active in:** the clean-room Understanding/Implementation-
+  reconstruction workflow, Phase 79 on.
+
+### 2.15 Roles deliberately NOT created
 - No "implementer" agent — the lead implements or delegates ad hoc to a
   general-purpose subagent per the existing
   `v0.2-implementation-execution-plan.md` pattern; a standing role adds
@@ -357,9 +424,10 @@ docs and self-certifies them.
 | `release-phase-auditor` | everything | its audit report only | tests/lint, re-runs plan verification | **yes** — read-only, no repair |
 | `context-health-planner` | `context-graph.db`, `codecompass query` output, `ROADMAP.md` | `planning/context-health.md` only | read-only `codecompass query` (no `sync`/`--yes`) | partial — uses CodeCompass, writes one planning file |
 | `context-enrichment-agent` | source doc excerpts, `codecompass query relations` output | nothing directly — `context-graph.db` only via `codecompass enrich apply` | `codecompass query`, `codecompass enrich apply` | no — participant, but the CLI itself enforces its trust boundary mechanically |
-| `context-researcher` | everything (behaviour-first: runs real examples/commands before reading docs) | `planning/knowledge/<slug>/**` only | real examples/commands/tests as evidence | partial — independent investigation, but not adversarial toward its own findings |
+| `context-researcher` | everything (behaviour-first: runs real examples/commands before reading docs); **since Phase 79, a curated `.git`-free export only, for the clean-room Understanding workflow specifically** | `planning/knowledge/<slug>/**` only | real examples/commands/tests as evidence | partial — independent investigation, but not adversarial toward its own findings |
 | `documentation-agent` | `planning/knowledge/<slug>/**` | `planning/knowledge/<slug>/design.md` only | — | no — participant, projects from the knowledge base only |
-| `domain-skeptic` (added Phase 63D) | source, implementation, design, approved domain corpus (read-only toward all four — never edits any) | its review report / `planning/knowledge/**` Observation-Evidence only (only when resolving a finding itself; never a Claim/Derivation/Decision) | read-only `codecompass query`, tests, greps | **yes** — independent of `context-researcher`/`documentation-agent`, never repairs what it reviews, never rules on a genuine ambiguity in the user's place |
+| `domain-skeptic` (added Phase 63D; comparison mode added Phase 79) | source, implementation, design, approved domain corpus (read-only toward all four — never edits any); comparison mode: a frozen snapshot + an as-built report | its review report / alignment report / `planning/knowledge/**` Observation-Evidence only (only when resolving a finding itself; never a Claim/Derivation/Decision; never edits either input in comparison mode) | read-only `codecompass query`, tests, greps | **yes** — independent of `context-researcher`/`documentation-agent`/`implementation-reconstructor`, never repairs what it reviews, never rules on a genuine ambiguity in the user's place, never auto-promotes a Claim's own `verified` status from a comparison finding |
+| `implementation-reconstructor` (added Phase 79) | an isolated Implementation-reconstruction export only — source/tests/schema/config/CI/build/runtime observation; never a knowledge snapshot, never legacy narrative | `planning/knowledge/<slug>/implementation-reconstruction.md` only | real commands/tests as evidence, read-only | partial — independent, model-blind reconstruction; never compares its own output against anything (`domain-skeptic`'s own separate job) |
 
 **No agent** writes `CLAUDE.md`, `decisions/*` (except the lead via the
 ADR process), or `src/` (except the lead / ad-hoc implementer subagent).

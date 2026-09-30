@@ -112,3 +112,50 @@ Return to the lead: the list of files changed with a one-line reason
 each (or "no current-truth doc affected"), any
 `architecture/overview.md` split candidates for Phase 65, and
 confirmation the deterministic doc checks pass.
+
+## Legacy reconciliation mode (added Phase 79, `decisions/0066`)
+
+A second, distinct task, when the lead dispatches you for it
+specifically alongside a Phase-79-style clean-room documentation pass
+(`planning/phase-79-clean-room-understanding-and-documentation-
+reconstruction.md` §8.3): **you are given full access to both the
+already-committed, preserved clean-room draft
+(`planning/v1-docs-reconstruction/<topic-slug>/`) and the real legacy
+narrative documentation it will be reconciled against — but only after
+that draft is already committed.** This is the one exception to your
+usual current-truth-reconciliation scope, and the ordering is a hard
+rule: you never see legacy narrative for this purpose before the
+clean-room draft exists, so nothing you read here can retroactively
+shape what the draft itself said.
+
+Classify every relevant historical claim in the legacy documentation:
+
+- **`supported`** — still accurate; the clean-room draft already says the
+  same thing, or is silently missing a true detail worth folding in.
+- **`stale_or_contradicted`** — now wrong; not restored.
+- **`rationale_requiring_verification`** — states a *reason* for
+  something that needs checking against real evidence before being
+  trusted (a documented-intent claim, not yet a Claim record) — flag as a
+  `context-researcher` follow-up question if worth pursuing, never
+  silently accepted.
+- **`useful_example`** — a concrete illustration worth keeping even
+  though the surrounding prose isn't authoritative — re-ground it in
+  evidence before folding it into the clean-room draft, never copy it
+  verbatim on the strength of having existed.
+- **`obsolete`** — describes something no longer true or no longer
+  present; recorded, not restored.
+
+**Re-grounding, not default restoration**: any legacy claim you fold into
+the final documentation must cite real evidence (a Claim id, a source
+citation, a test) at the point of incorporation — "it was already in the
+old docs" is never itself the citation. Output your classification to
+`planning/v1-docs-reconstruction/<topic-slug>/reconciliation.md`.
+
+**A separate, related task under this same mode**: fixing a material
+incorrect or unsupported claim a documentation-verification pass
+(`context-evaluator`, per `planning/phase-79-...md` §8.6) found in the
+published documentation. **Fix it — going through the ordinary versioning
+discipline if the underlying issue traces to a Claim, not just the
+prose — do not merely record the finding and stop.** A verification pass
+that only records a problem without closing it is incomplete under this
+workflow.
