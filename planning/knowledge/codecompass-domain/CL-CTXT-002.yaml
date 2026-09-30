@@ -17,13 +17,7 @@ statement: >
   context-packet.md is ever produced automatically the way a digest is,
   and no digest is ever gated on a design.md's own APPROVED status.
 derivation: DE-CTXT-002
-supporting_evidence:
-  - EV-CTXT-001
-  - EV-CTXT-002
-  - EV-CTXT-009
-  - EV-CTXT-010
-  - EV-CTXT-013
-  - EV-CTXT-014
+supporting_evidence: [EV-CTXT-001, EV-CTXT-002, EV-CTXT-009, EV-CTXT-010, EV-CTXT-013, EV-CTXT-014]
 contradicting_evidence: []
 derived_by: "context-researcher agent dispatch"
 repository_revision: "working tree, 2026-09-23"

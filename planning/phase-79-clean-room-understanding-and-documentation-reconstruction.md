@@ -462,34 +462,53 @@ gate), a snapshot is created:
   list of included assertion ids with a one-line restatement of each
   `statement`, and an explicit list of assertions considered but
   **excluded** (still `proposed`, insufficiently evidenced).
-- **`planning/knowledge/<topic-slug>/snapshots/snapshot-v<N>.yaml`**
-  (machine-checkable sidecar): for every included assertion, a full
-  **evidentiary chain**, not just the Claim itself — corrected this
-  revision per the user's own explicit instruction that only preserving
-  Claim hashes is insufficient to reconstruct the supporting evidence:
+- **`planning/knowledge/<topic-slug>/snapshots/snapshot-v<N>.toml`**
+  (machine-checkable sidecar — **TOML, not YAML**, corrected during
+  implementation to match this project's own already-established
+  convention: `pyproject.toml` itself notes `requires-python >=3.11`
+  specifically so stdlib `tomllib` can parse structured config with no
+  new dependency, and this script's own docstring already cites
+  `reference_pipeline.py::load_references_toml` as the precedent for "a
+  comparably simple format" — the snapshot's own genuinely nested
+  structure, unlike every other flat record this checker parses, is
+  better served by a real, stdlib-parseable format than by extending the
+  hand-rolled flat parser to handle nesting it was never designed for):
+  for every included assertion, a full **evidentiary chain**, not just
+  the Claim itself — corrected this revision per the user's own explicit
+  instruction that only preserving Claim hashes is insufficient to
+  reconstruct the supporting evidence:
 
-  ```yaml
-  snapshot_id: <topic-slug>@v1
-  created: <timestamp>
-  repository_revision_at_freeze: <CodeCompass HEAD sha at freeze time>
-  assertions:
-    CL-XYZ-001:
-      repository_revision: <the exact commit this Claim cites>
-      content_hash: <sha256 of `git show <rev>:<path-to-CL-XYZ-001.yaml>`>
-      supporting_evidence:
-        EV-XYZ-001:
-          repository_revision: <rev>
-          content_hash: <sha256 of the Evidence record's own content at that rev>
-          source_ref: "<verbatim, from the Evidence record itself>"
-          doc_ref: "<verbatim>"
-          test_ref: "<verbatim>"
-      contradicting_evidence: {}   # same shape, if any
-      derivation:
-        DE-XYZ-001:
-          repository_revision: <rev>
-          content_hash: <sha256 at that rev>
-  excluded_assertions: [CL-XYZ-004, ...]
+  ```toml
+  snapshot_id = "<topic-slug>@v1"
+  created = "<timestamp>"
+  repository_revision_at_freeze = "<CodeCompass HEAD sha at freeze time>"
+  excluded_assertions = ["CL-XYZ-004"]
+
+  [assertions."CL-XYZ-001"]
+  path = "planning/knowledge/<topic-slug>/CL-XYZ-001.yaml"
+  repository_revision = "<the exact commit this Claim cites>"
+  content_hash = "<sha256 of `git show <rev>:<path>`>"
+
+  [assertions."CL-XYZ-001".supporting_evidence."EV-XYZ-001"]
+  path = "planning/knowledge/<topic-slug>/EV-XYZ-001.yaml"
+  repository_revision = "<rev>"
+  content_hash = "<sha256 of the Evidence record's own content at that rev>"
+  source_ref = "<verbatim, from the Evidence record itself>"
+  doc_ref = "<verbatim>"
+  test_ref = "<verbatim>"
+
+  # contradicting_evidence: same shape, if any
+
+  [assertions."CL-XYZ-001".derivation."DE-XYZ-001"]
+  path = "planning/knowledge/<topic-slug>/DE-XYZ-001.yaml"
+  repository_revision = "<rev>"
+  content_hash = "<sha256 at that rev>"
   ```
+
+  (`path` is stored explicitly, per record — never inferred from the id —
+  since this workflow's own convention allows a record file to be named
+  however is convenient, matching `check_knowledge_base.py`'s own existing
+  docstring.)
 
   Every hash is computed from `git show <repository_revision>:<path>` —
   the exact historical git blob — never the live working-tree file. This
@@ -922,7 +941,7 @@ identified by hand.** This revision adds the missing first step:
    depends_on A`) — a real possibility this project's own minimal,
    `grep`-based traversal must handle explicitly rather than assume away.
 4. **Snapshot-level citations**: any snapshot (§5.2) whose own
-   `snapshot-v<N>.yaml` lists an affected assertion id is itself flagged
+   `snapshot-v<N>.toml` lists an affected assertion id is itself flagged
    — a snapshot is immutable and is never edited, but the *fact* that a
    published, cited snapshot now rests on since-changed evidence is
    itself a finding worth surfacing, recorded without altering the

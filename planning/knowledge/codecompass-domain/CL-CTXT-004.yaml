@@ -20,10 +20,7 @@ statement: >
   in this repository has no single place that names all three
   side-by-side before this concept page.
 derivation: DE-CTXT-004
-supporting_evidence:
-  - EV-CTXT-003
-  - EV-CTXT-007
-  - EV-CTXT-008
+supporting_evidence: [EV-CTXT-003, EV-CTXT-007, EV-CTXT-008]
 contradicting_evidence: []
 derived_by: "context-researcher agent dispatch"
 repository_revision: "working tree, 2026-09-23"

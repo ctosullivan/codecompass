@@ -25,8 +25,7 @@ statement: >
   practice remains untested and is named here as an open question, not
   quietly assumed solved.
 derivation: DE-HSAPI-006
-supporting_evidence:
-  - EV-HSAPI-004
+supporting_evidence: [EV-HSAPI-004]
 contradicting_evidence: []
 derived_by: "context-researcher agent dispatch"
 repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"

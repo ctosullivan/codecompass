@@ -20,10 +20,7 @@ statement: >
   capability this module does not have today) — it cannot be done by
   refining the existing glob/title logic alone.
 derivation: DE-DOCORIGIN-002
-supporting_evidence:
-  - EV-DOCORIGIN-002
-  - EV-DOCORIGIN-006
-  - EV-DOCORIGIN-007
+supporting_evidence: [EV-DOCORIGIN-002, EV-DOCORIGIN-006, EV-DOCORIGIN-007]
 contradicting_evidence: []
 derived_by: "context-researcher agent dispatch"
 repository_revision: "working tree, 2026-09-18"

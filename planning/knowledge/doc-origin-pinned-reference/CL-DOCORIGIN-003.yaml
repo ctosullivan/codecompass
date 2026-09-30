@@ -14,8 +14,7 @@ statement: >
   resolvable vendor_name) without CodeCompass itself ever checking or
   enforcing that invariant at the schema level.
 derivation: DE-DOCORIGIN-003
-supporting_evidence:
-  - EV-DOCORIGIN-003
+supporting_evidence: [EV-DOCORIGIN-003]
 contradicting_evidence: []
 derived_by: "context-researcher agent dispatch"
 repository_revision: "working tree, 2026-09-18"

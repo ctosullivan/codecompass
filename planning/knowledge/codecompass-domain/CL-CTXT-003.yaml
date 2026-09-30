@@ -21,11 +21,7 @@ statement: >
   candidate; AI commentary about an edge), and only the first is ever a
   context-graph.db row.
 derivation: DE-CTXT-003
-supporting_evidence:
-  - EV-CTXT-003
-  - EV-CTXT-004
-  - EV-CTXT-011
-  - EV-CTXT-012
+supporting_evidence: [EV-CTXT-003, EV-CTXT-004, EV-CTXT-011, EV-CTXT-012]
 contradicting_evidence: []
 derived_by: "context-researcher agent dispatch"
 repository_revision: "working tree, 2026-09-23"

@@ -24,9 +24,7 @@ statement: >
   common, correct outcome for many real exported names (accountLeafName
   being a direct, confirmed example), not a sign of scanner failure.
 derivation: DE-HSAPI-004
-supporting_evidence:
-  - EV-HSAPI-002
-  - EV-HSAPI-003
+supporting_evidence: [EV-HSAPI-002, EV-HSAPI-003]
 contradicting_evidence: []
 derived_by: "context-researcher agent dispatch"
 repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"

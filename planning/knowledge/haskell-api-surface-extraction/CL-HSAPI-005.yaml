@@ -26,8 +26,7 @@ statement: >
   machinery that will matter for other, differently-structured Haskell
   packages.
 derivation: DE-HSAPI-005
-supporting_evidence:
-  - EV-HSAPI-006
+supporting_evidence: [EV-HSAPI-006]
 contradicting_evidence: []
 derived_by: "context-researcher agent dispatch"
 repository_revision: "33fa849e7ae841968bd21c427094c4fb4a4ec38d"

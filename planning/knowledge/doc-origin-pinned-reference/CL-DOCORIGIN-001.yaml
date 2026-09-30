@@ -16,11 +16,7 @@ statement: >
   scan_spec_docs decides when to assign the new value (see
   CL-DOCORIGIN-002).
 derivation: DE-DOCORIGIN-001
-supporting_evidence:
-  - EV-DOCORIGIN-001
-  - EV-DOCORIGIN-003
-  - EV-DOCORIGIN-004
-  - EV-DOCORIGIN-005
+supporting_evidence: [EV-DOCORIGIN-001, EV-DOCORIGIN-003, EV-DOCORIGIN-004, EV-DOCORIGIN-005]
 contradicting_evidence: []
 derived_by: "context-researcher agent dispatch"
 repository_revision: "working tree, 2026-09-18"

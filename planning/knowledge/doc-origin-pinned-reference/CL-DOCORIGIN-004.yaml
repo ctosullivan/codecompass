@@ -17,8 +17,7 @@ statement: >
   anticipate a future non-Git source is a naming/scope judgment call
   this research does not resolve.
 derivation: DE-DOCORIGIN-004
-supporting_evidence:
-  - EV-DOCORIGIN-009
+supporting_evidence: [EV-DOCORIGIN-009]
 contradicting_evidence: []
 derived_by: "context-researcher agent dispatch"
 repository_revision: "working tree, 2026-09-18"
