@@ -2,14 +2,19 @@
 
 ## Status
 
-Accepted (2026-09-30, direct user instruction). **Amended in place twice,
-same date, direct user instruction each time.** Not yet acted upon by any
-implementation (Phase 79 remains planning-only), so each amendment is a
-pre-implementation correction, not a reversal of shipped work — edited
-directly rather than superseded by a new numbered decision, consistent
-with `CLAUDE.md` §2's append-only rule applying to decisions that have
-already informed real, executed work. This third revision corrects six
-further defects found in the second, listed in the Context section below.
+Accepted (2026-09-30, direct user instruction). **Amended in place three
+times, same date, direct user instruction each time.** Not yet acted upon
+by any implementation until this fourth revision's own approval, so each
+amendment through the third revision is a pre-implementation correction,
+not a reversal of shipped work — edited directly rather than superseded
+by a new numbered decision, consistent with `CLAUDE.md` §2's append-only
+rule applying to decisions that have already informed real, executed
+work. **This fourth revision corrects four further defects found in the
+third**, approves the overall approach subject to those corrections, and
+proceeds directly into implementation — see the dated addendum at the end
+of the Decision section for what changed this time and why this is the
+point past which the ADR's own content stops being purely pre-
+implementation.
 
 ## Context
 
@@ -195,6 +200,68 @@ Full specification:
    agnostic instructions; MIT licensing is preserved** — all unchanged
    from the second version.
 
+### Fourth-revision addendum (2026-09-30, approved, proceeding to implementation)
+
+Four further defects, found by direct inspection of the third revision
+before implementation began, corrected here; the overall approach is
+then approved and this same instruction proceeds directly into building
+it:
+
+8. **Snapshot integrity item 2, above, conflated three questions.**
+   Hashing a cited assertion's *current, live* file and comparing against
+   a freeze-time hash treats a legitimate lifecycle transition (the very
+   next commit that supersedes or withdraws that same assertion, editing
+   its own `status` field in place) as indistinguishable from tampering.
+   **Corrected**: a snapshot's own hash is computed from `git show
+   <repository_revision>:<path>` — the exact historical git blob — never
+   the live file, and the snapshot's own sidecar preserves the full
+   evidentiary chain (each cited Claim's `supporting_evidence`/
+   `contradicting_evidence`/`derivation`, each with its own
+   `repository_revision` and original `source_ref`/`doc_ref`/`test_ref`),
+   not only the Claim's own hash. Three distinct checks replace the one:
+   `check_snapshot_historical_integrity` (the historical git blob still
+   matches the recorded hash — should always pass; a failure means
+   tampering or rewritten history), `check_snapshot_current_divergence`
+   (informational only: does the *current* live file still say the same
+   thing — a legitimate supersession is expected to diverge here, without
+   ever failing the first check), and evidence/source staleness named
+   distinctly within that divergence report.
+9. **The block-list checker (item 1, above) could be bypassed.** Direct
+   re-review found it missed an intervening comment or blank line before
+   the first list item, and an indentless block list (no leading
+   whitespace on the `- item` lines, which its own `^\s+-\s` pattern
+   never matches). **Corrected**: validate the *parsed field value*
+   directly against the inline-form regex, rather than pattern-matching
+   the raw YAML text for one named bad shape — this catches every
+   representation the hand-rolled parser cannot reconstruct, uniformly,
+   not only the one first found.
+10. **The propagation demonstration (item 5, above) never actually
+    exercised source-to-evidence discovery, a dependency cycle, or a
+    snapshot-level citation** — it edited an assertion directly, the
+    thing this revision's own item 5 added a discovery step specifically
+    to avoid starting from. **Corrected**: the disposable fixture now
+    includes a real source file, the Evidence record citing it, three
+    assertions arranged in a genuine cycle (`A depends_on B depends_on A`),
+    and a snapshot citing one of them — the demonstrated change is to the
+    fixture's own source file, and the traversal is shown to discover the
+    evidence, walk the cycle exactly once each ID (terminating, not
+    looping), flag the snapshot, and reach both derived-output kinds.
+11. **Two remaining statements were factually imprecise**, corrected
+    directly: Phase 78 (still `planned`, never executed or evaluated) is
+    removed from any list of phases whose real LOW-advantage results this
+    decision cites as precedent (Phases 75 and 77 only); and every
+    roadmap/context restatement of this ADR's own pipeline is reconciled
+    to state plainly that independent implementation reconstruction is
+    model-blind — it does not consume the snapshot at all — and that
+    comparison and documentation writing are what consume it, afterward.
+
+**The overall approach, corrected as above, is approved.** This same
+instruction directs proceeding directly into implementation and
+validation of the corrected phase, without a further planning-review
+round-trip — the phase's own Definition of Done (§12 of the phase plan,
+its two separately-reported tracks unchanged by this addendum) remains
+the standard implementation is checked against.
+
 ## Alternatives considered
 
 - **Accept a single-probe, self-reported isolation check as sufficient,
@@ -240,16 +307,19 @@ Full specification:
   isolation finding).
 - No `src/codecompass/` change. No `context-graph.db` schema change. No
   new database or graph subsystem.
-- The phase's own implementation — including, now, `scripts/
-  check_knowledge_base.py`'s three checker additions, the disposable-
-  fixture propagation demonstration, and the coding-context validation
-  step's own dispatches — remains that phase's own scoped work, not
-  started by this decision, requiring its own plan-file review per
-  `CLAUDE.md` §1 before implementation begins (already satisfied by the
-  phase plan named above, rewritten in this same commit). **This
-  decision's own honest expectation, stated for the record, is that
-  strict clean-room isolation validation will likely remain unmet for at
-  least the network dimension when this phase is actually executed** —
-  that is a disclosed, accepted limitation of this project's currently
-  available tools against a publicly-hosted repository, not a defect in
-  this decision's own design.
+- The phase's own implementation — `scripts/check_knowledge_base.py`'s
+  four checker additions (`check_optional_enum_fields`,
+  `check_list_fields_are_inline`, `check_snapshot_historical_integrity`,
+  `check_snapshot_current_divergence`), the source-originating,
+  cycle-and-snapshot-covering disposable-fixture propagation
+  demonstration, and the coding-context validation step's own
+  dispatches — **begins immediately following this fourth revision's own
+  approval**, per this same instruction's own explicit direction not to
+  request a further planning-review round-trip. **This decision's own
+  honest expectation, stated for the record, is that strict clean-room
+  isolation validation will likely remain unmet for at least the network
+  dimension when this phase is actually executed** — a disclosed,
+  accepted limitation of this project's currently available tools against
+  a publicly-hosted repository, not a defect in this decision's own
+  design, and not a reason to delay reporting the workflow/template
+  track's own real completion separately.

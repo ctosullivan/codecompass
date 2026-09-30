@@ -75,9 +75,9 @@ and scoped, not abandoned. Full plan:
 
 **Phase 79 (Clean-room conceptual understanding + documentation
 reconstruction, methodology hardening + Priority D template delivery) is
-`planned`, direct user request, 2026-09-30, amended twice same day
-(`decisions/0066`) — planning only, not yet implemented. Does not touch,
-reorder, or depend on Phase 78.**
+`in progress`, direct user request, 2026-09-30, amended three times
+(`decisions/0066`), approved 2026-10-01 and now executing. Does not
+touch, reorder, or depend on Phase 78.**
 
 **Revised objective (unchanged since the first amendment)**: one
 evidence-backed knowledge foundation supplies both coding context and
@@ -106,11 +106,12 @@ inspection before any implementation began:**
    happened only after writing. Replaced with a linear chain: canonical
    assertions → a new **frozen knowledge snapshot** (versioned, hash-
    integrity-checked, cited as `<topic-slug>@v<N>#<id>`) → independent
-   implementation reconstruction → comparison → documentation
-   architecture/draft (consuming the snapshot, not not-yet-existing
-   prose) → legacy reconciliation → publication. Understanding still
-   lands directly in the final published documentation — once, at the
-   real end of the chain.
+   implementation reconstruction (model-blind — no access to the
+   snapshot at this stage) → comparison → documentation architecture/
+   draft (comparison and writing are what actually consume the
+   snapshot, not not-yet-existing prose) → legacy reconciliation →
+   publication. Understanding still lands directly in the final
+   published documentation — once, at the real end of the chain.
 3. **Dependency validation was verified false, not merely restated.**
    Direct, empirical testing confirms `scripts/check_knowledge_base.py`'s
    parser cannot see a YAML *block*-style list — `depends_on:` in that

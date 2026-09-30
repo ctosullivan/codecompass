@@ -1,20 +1,21 @@
 # Phase 79 — Clean-room conceptual understanding + documentation reconstruction (methodology hardening + template delivery)
 
-**Status: planned, amended 2026-09-30 (third revision). Planning only —
-implementation (dispatching agents, building exports, touching either
-repository's real content) does not begin until this plan is reviewed
-and approved.**
+**Status: approved, amended 2026-10-01 (fourth revision) — proceeding
+directly into implementation per this same instruction. No further
+planning-review round-trip requested.**
 
-Direct user request, 2026-09-30, amended twice same day. Full initiating
-prompts saved verbatim:
+Direct user request, 2026-09-30, amended three times (twice same day,
+once the following day). Full initiating prompts saved verbatim:
 `planning/phase-79-clean-room-understanding-and-documentation-reconstruction-prompt.md`
 (original),
 `planning/phase-79-clean-room-understanding-and-documentation-reconstruction-amendment-prompt.md`
-(second revision), and
+(second revision),
 `planning/phase-79-clean-room-understanding-and-documentation-reconstruction-second-amendment-prompt.md`
-(this revision). Governing ADR: `decisions/0066` (amended in place again,
-same date — not yet acted upon by any implementation, so this remains a
-pre-implementation correction, not a reversal of shipped work).
+(third revision), and
+`planning/phase-79-clean-room-understanding-and-documentation-reconstruction-third-amendment-prompt.md`
+(this revision). Governing ADR: `decisions/0066` (amended in place a
+third time, this date — its own fourth-revision addendum records approval
+to proceed).
 
 **Revised objective, unchanged from the second revision**: *one
 evidence-backed knowledge foundation supplies both coding context and
@@ -29,8 +30,43 @@ inspection before any implementation began.
 
 ## 0. What changed in this revision, and why (read this first)
 
-Six corrections, on top of the second revision, made before any
-implementation began:
+**Fourth revision (2026-10-01) — four corrections, approved to proceed
+directly into implementation, no further planning round-trip:**
+
+1. **Snapshot integrity conflated three questions** (§5.3): hashing a
+   cited assertion's *current, live* file treated a legitimate
+   supersession/withdrawal (which legitimately edits that same file's own
+   `status` field in place) as indistinguishable from tampering. Fixed by
+   hashing the exact historical `git show <repository_revision>:<path>`
+   blob instead of the live file, preserving the full evidentiary chain
+   (Evidence/Derivation, their own revisions and original source
+   locators — not just the Claim), and splitting one check into three:
+   historical-content integrity (should always pass), current-record
+   divergence (informational, expected over time), and evidence/source
+   staleness named distinctly within it.
+2. **List validation did not fail closed** (§4.2): the block-list
+   detector missed an intervening comment/blank line and an indentless
+   list (no leading whitespace, which its own pattern never matched).
+   Fixed by validating the *parsed field value* directly against the
+   inline-form regex, uniformly, rather than pattern-matching the raw
+   text for one named bad shape.
+3. **The propagation demonstration never exercised source-to-evidence
+   discovery, a cycle, or a snapshot citation** (§10.4): it edited an
+   assertion directly. Fixed: the fixture now includes a real source
+   file, its citing Evidence, three assertions in a genuine dependency
+   cycle, and a snapshot citing one of them — the change is to the
+   fixture's own source file, and the traversal is shown to discover the
+   evidence, terminate on the cycle, flag the snapshot, and reach both
+   derived-output kinds.
+4. **Two statements were factually imprecise**: Phase 78 (still
+   `planned`, never executed or evaluated) removed from the LOW-advantage
+   precedent list (§9.4); every roadmap/context restatement of the
+   pipeline corrected to state implementation reconstruction is
+   model-blind and does not consume the snapshot, which comparison and
+   writing consume only afterward.
+
+**Third revision (2026-09-30) — six corrections, on top of the second
+revision, made before any implementation began:**
 
 1. **Isolation verification was too weak and its completion criteria let
    a real gap through.** A single self-reported failed read is not proof
@@ -241,10 +277,10 @@ optional fields:
 |---|---|---|---|
 | `assertion_kind` | `definition` \| `relationship` \| `rule` \| `invariant` \| `state_transformation` \| `boundary` | New closed-enum check, when present (§4.2) | What kind of statement this is. |
 | `basis` | `directly_stated` \| `inferred` \| `proposed_policy` \| `observed_behaviour` | New closed-enum check, when present | How the statement was arrived at. |
-| `examples` | list of short strings/citations, **inline `[...]` form only** | Presence-optional, no enum | Concrete illustrating cases. |
-| `counterexamples` | list of short strings/citations, **inline `[...]` form only** | Presence-optional, no enum | Cases that test or bound the assertion; an empty list means "none found." |
-| `depends_on` | list of assertion ids, **inline `[ID, ID]` form only — required, not merely conventional** | Validated by the existing `check_cross_references_resolve` (works today for the inline form, confirmed empirically, §1); **a new check rejects the block-list form outright** (§4.2) | Explicit dependency edges, for transitive propagation (§10). |
-| `open_questions` | list of short strings, **inline `[...]` form only** | Presence-optional, no enum | Genuinely unresolved matters. |
+| `examples` | list of short strings/citations, **inline `[...]` form only** | `check_list_fields_are_inline`, when present (§4.2) | Concrete illustrating cases. |
+| `counterexamples` | list of short strings/citations, **inline `[...]` form only** | `check_list_fields_are_inline`, when present | Cases that test or bound the assertion; an empty list means "none found." |
+| `depends_on` | list of assertion ids, **inline `[ID, ID]` form only — required, not merely conventional** | `check_list_fields_are_inline` (fail-closed, §4.2) plus the existing `check_cross_references_resolve` (works today for the inline form, confirmed empirically, §1) | Explicit dependency edges, for transitive propagation (§10). |
+| `open_questions` | list of short strings, **inline `[...]` form only** | `check_list_fields_are_inline`, when present | Genuinely unresolved matters. |
 | `evidence_support_state` | `supported` \| `partially_supported` \| `unsupported` \| `conflicting` | New closed-enum check, when present | A qualitative read of evidence completeness — never a number, never conflated with `status`. |
 
 **No `human_review_state` field.** Publication and phase completion never
@@ -304,53 +340,84 @@ def check_optional_enum_fields(feature_dir: Path) -> list[Finding]:
     must use one of its own closed values."""
 ```
 
-**2. Rejection of unsupported block-style list syntax — new, added this
-revision to close the confirmed gap (§1):**
+**2. Positive, fail-closed validation of the inline form — corrected
+this revision.** The second revision's own detector looked for a
+specific *bad pattern* (a bare `key:` line immediately followed by an
+indented `- item` line) — found, on direct re-review, to miss three real
+cases: a comment or blank line between the key and its first list item
+(the detector only inspects the *immediately next* line), an **indentless**
+block list (`- item` with no leading whitespace at all, which the
+detector's own `^\s+-\s` pattern requires and therefore never matches),
+and a malformed non-bracket value like `depends_on: CL-1, CL-2`. Rather
+than continue enumerating bad shapes, this revision validates the
+*parsed field value directly* — **fail closed**: if a list-valued field
+is present at all, its value must match the inline form exactly; anything
+else fails, regardless of what YAML shape produced it:
 
 ```python
 _LIST_VALUED_FIELDS = {
     "supporting_evidence", "contradicting_evidence",
     "examples", "counterexamples", "depends_on", "open_questions",
 }
+_INLINE_LIST_RE = re.compile(r"^\[.*\]$")
 
 
-def check_no_block_style_lists(feature_dir: Path) -> list[Finding]:
-    """A list-valued field must use the inline `[a, b]` form. A bare
-    `key:` (empty value) immediately followed by an indented `- item`
-    line is a YAML block list this project's hand-rolled parser cannot
-    see — confirmed empirically to silently produce zero validated
-    references rather than a parse error. Flag it explicitly rather than
-    let it fail open."""
+def check_list_fields_are_inline(feature_dir: Path) -> list[Finding]:
+    """Every list-valued field this parser can validate at all must use
+    the inline `[a, b]` form. Rather than pattern-match the raw YAML
+    text for known-bad shapes (which a comment line, a blank line, or an
+    indentless list can each slip past), this validates the *parsed*
+    value directly: parse_record's own single-line key:value capture
+    means any of those alternate forms parses to an empty or malformed
+    string regardless of surrounding whitespace/comments, so checking
+    the parsed value catches all of them uniformly, including shapes not
+    enumerated here by name."""
     findings: list[Finding] = []
     for yaml_path in sorted(feature_dir.glob("*.yaml")):
-        lines = yaml_path.read_text(encoding="utf-8").splitlines()
-        for i, line in enumerate(lines):
-            match = re.match(r"^([a-zA-Z_][a-zA-Z0-9_]*):\s*$", line)
-            if not match or match.group(1) not in _LIST_VALUED_FIELDS:
-                continue
-            if i + 1 < len(lines) and re.match(r"^\s+-\s", lines[i + 1]):
+        fields = parse_record(yaml_path)
+        if fields.get("kind") != "claim":
+            continue
+        for field in _LIST_VALUED_FIELDS:
+            if field not in fields:
+                continue  # absent is fine -- every one of these is optional
+            value = fields[field]
+            if not _INLINE_LIST_RE.match(value):
                 findings.append(
                     Finding(
-                        "knowledge-base-block-style-list",
-                        f"{yaml_path.relative_to(ROOT)}: field "
-                        f"{match.group(1)!r} is written as a YAML block "
-                        "list, which this project's own parser cannot "
-                        "see — rewrite as an inline `[a, b]` list "
-                        "(every existing record already uses this form)",
+                        "knowledge-base-non-inline-list",
+                        f"{yaml_path.relative_to(ROOT)}: field {field!r} "
+                        f"is present but its parsed value {value!r} is "
+                        "not the inline `[a, b]` form this parser can "
+                        "validate -- if this was written as a YAML block "
+                        "list (indented or not, with or without "
+                        "intervening comments), it parses as an empty "
+                        "string and would otherwise silently skip all "
+                        "cross-reference/dangling-id checking",
                     )
                 )
     return findings
 ```
 
-— both registered in `CHECKS`. **Correction from the second revision**:
-that draft claimed `depends_on` "already validates with zero code
-change." This is now stated precisely instead: cross-reference
-resolution for the *inline* form works today with no change (verified
-empirically, §1); the block-style-list *rejection* is new code, added
-because the gap is real, not because the existing mechanism already
-covered it. `python3 scripts/check_knowledge_base.py --strict` remains a
-required Definition-of-Done verification command (§12), now covering
-both new checks.
+Verified compatible with every existing record: every real
+`supporting_evidence`/`contradicting_evidence` value in
+`planning/knowledge/codecompass-domain/*.yaml` is already inline
+(confirmed by direct `grep`, §1), so this check produces zero findings
+against current content. Dangling-id checking for a confirmed-inline
+`depends_on` still runs through the existing, unmodified
+`check_cross_references_resolve` (verified empirically to work for this
+form, §1) — this check only guards the representation, not the
+reference resolution itself, which was never broken for the inline form.
+
+— both checks registered in `CHECKS`, alongside `check_snapshot_
+historical_integrity` and `check_snapshot_current_divergence` (§5.3).
+**Correction from the second revision, restated precisely**: cross-
+reference resolution for the *inline* form works today with no change
+(verified empirically); the inline-form *validation* is new code, added
+because a record author has no way today to know the block form silently
+fails open, not because the existing mechanism already covered every
+representation. `python3 scripts/check_knowledge_base.py --strict`
+remains a required Definition-of-Done verification command (§12), now
+covering all four checks.
 
 ## 5. Frozen knowledge snapshot (replaces the second revision's circular "published understanding")
 
@@ -373,7 +440,18 @@ counterexamples) — an agent-level quality check, not a human-approval
 gate — resolving what it can with further evidence, recording the rest
 as genuine `open_questions`.
 
-### 5.2 Snapshot creation — the exact artifact, format, and citation
+### 5.2 Snapshot creation — the exact artifact, format, and citation (corrected this revision)
+
+**Correction, this revision**: the second revision's own design hashed
+each cited assertion's *current, live* file — which legitimately changes
+the moment that same assertion is superseded or withdrawn (its own
+`status` field is edited in place, by design, per §4's versioning
+discipline), so a routine, correct lifecycle transition would have been
+indistinguishable from tampering. The fix: **preserve the assertion's
+content exactly as it was at freeze time, using the assertion's own
+`repository_revision` and this repository's own git history — not the
+live file** — so a later, legitimate status change on the *current* file
+never touches what the snapshot itself represents.
 
 Once the assertions have been through adversarial review (no further
 gate), a snapshot is created:
@@ -383,33 +461,89 @@ gate), a snapshot is created:
   timestamp, the CodeCompass repository revision at freeze time, the full
   list of included assertion ids with a one-line restatement of each
   `statement`, and an explicit list of assertions considered but
-  **excluded** (still `proposed`, insufficiently evidenced) — coverage
-  and omissions stated plainly, per this workflow's own existing
-  discipline.
+  **excluded** (still `proposed`, insufficiently evidenced).
 - **`planning/knowledge/<topic-slug>/snapshots/snapshot-v<N>.yaml`**
-  (machine-checkable sidecar, the same `FILETREE.md`+`filetree.json`-style
-  dual-rendering pattern this project already uses elsewhere): for every
-  included assertion, its id, a SHA-256 hash of that assertion's own
-  `.yaml` file's full raw content *at freeze time*, and its own
-  `repository_revision`/`timestamp` fields (already required, unchanged).
+  (machine-checkable sidecar): for every included assertion, a full
+  **evidentiary chain**, not just the Claim itself — corrected this
+  revision per the user's own explicit instruction that only preserving
+  Claim hashes is insufficient to reconstruct the supporting evidence:
+
+  ```yaml
+  snapshot_id: <topic-slug>@v1
+  created: <timestamp>
+  repository_revision_at_freeze: <CodeCompass HEAD sha at freeze time>
+  assertions:
+    CL-XYZ-001:
+      repository_revision: <the exact commit this Claim cites>
+      content_hash: <sha256 of `git show <rev>:<path-to-CL-XYZ-001.yaml>`>
+      supporting_evidence:
+        EV-XYZ-001:
+          repository_revision: <rev>
+          content_hash: <sha256 of the Evidence record's own content at that rev>
+          source_ref: "<verbatim, from the Evidence record itself>"
+          doc_ref: "<verbatim>"
+          test_ref: "<verbatim>"
+      contradicting_evidence: {}   # same shape, if any
+      derivation:
+        DE-XYZ-001:
+          repository_revision: <rev>
+          content_hash: <sha256 at that rev>
+  excluded_assertions: [CL-XYZ-004, ...]
+  ```
+
+  Every hash is computed from `git show <repository_revision>:<path>` —
+  the exact historical git blob — never the live working-tree file. This
+  makes the snapshot self-sufficient to trace all the way back to
+  original source locators (`source_ref`/`doc_ref`/`test_ref`) without
+  depending on any other record staying unchanged.
 - **Citation format**: `<topic-slug>@v<N>#<assertion-id>` — used by a
-  coding-context packet (§9), a documentation page (§8), or a `design.md`
-  to pin exactly which snapshot, and which assertion within it, it relied
-  on.
+  coding-context packet (§9), a documentation page (§8), or a `design.md`.
 
-### 5.3 Integrity validation — later mutation cannot silently alter an earlier snapshot
+### 5.3 Integrity validation — three distinct questions, not one (corrected this revision)
 
-A new checker function, `check_snapshot_integrity(snapshot_dir)`, re-hashes
-each cited assertion's **current** `.yaml` file content and compares it
-to the hash stored in every snapshot that cites it. A mismatch is a
-finding: `"canonical record CL-X was mutated after snapshot
-<topic-slug>@v1 cited it — violates the supersedes-only discipline
-(development-methodology.md's 'never edit in place' rule) without a
-detectable trail otherwise."` This is the mechanical backstop for §4's
-own disclosed gap (the versioning *convention* has no write-time
-enforcement) — it cannot prevent a bad edit, but it makes one impossible
-to miss after the fact, using only a file hash comparison, no new
-database.
+**Correction, this revision**: a single "does the live file still match
+the stored hash" check conflates three genuinely different questions,
+which the second revision's own design could not tell apart. This
+revision names and checks each separately:
+
+1. **Historical-content integrity (corruption)** — `check_snapshot_
+   historical_integrity(snapshot_path)`: for every assertion (and its
+   evidence/derivation) the snapshot cites, re-run `git show
+   <recorded-repository_revision>:<path>` and hash it; compare against
+   the snapshot's own stored hash. **This should always pass** in normal
+   operation — git history at an already-committed revision does not
+   change on its own. A mismatch means either the snapshot's own sidecar
+   file was hand-edited after the fact, or git history itself was
+   rewritten (rebase/force-push) since that revision — a genuine,
+   serious finding, reported as `knowledge-base-snapshot-tampering`.
+   **A legitimate supersession or withdrawal never triggers this** —
+   editing the *current* file's `status` field, or creating a brand-new
+   successor record, never touches the historical git blob at the old
+   revision the snapshot actually cites.
+2. **Current-record divergence (informational, not corruption)** —
+   `check_snapshot_current_divergence(snapshot_path)`: compare the same
+   historical, git-revision-pinned content against the assertion's
+   **current, live** `.yaml` file at the same path. A difference here is
+   expected and healthy over time (the assertion may have been
+   legitimately superseded, or its `status` moved to `contradicted`) —
+   reported as an **informational** finding only
+   (`knowledge-base-snapshot-current-divergence`, never `--strict`-blocking),
+   naming exactly what changed (e.g. `status: supported → superseded`).
+   This is also the mechanical hook propagation (§10.2) uses to flag a
+   snapshot-level citation as `needs reassessment`.
+3. **Evidence/source staleness** — a divergence found in step 2 that
+   traces to the assertion's own **evidence**, not merely its lifecycle
+   `status`, is the specific signal that should trigger re-derivation
+   (a fresh `context-researcher` pass), not just a documentation update —
+   named distinctly in the divergence report so a reader can tell "the
+   record was formally superseded" (expected, routine) apart from "the
+   underlying evidence itself may now be wrong" (worth investigating).
+
+This three-way split is what lets **a normal supersession preserve an
+intact historical snapshot's own integrity** (check 1 keeps passing)
+while **still surfacing that something has moved on** (check 2 reports
+the divergence, non-blocking) — exactly the distinction the second
+revision's single-hash design could not make.
 
 ### 5.4 No human-acceptance gate (unchanged principle, now attached to the correct artifact)
 
@@ -734,7 +868,9 @@ both derived-output paths.
 A fresh `context-evaluator` dispatch independently assesses the packet
 against the frozen task, using the **existing**
 `context-quality-evaluation.md` rubric this project already applies to
-every Priority A trial (Phases 75-78) — no new rubric invented:
+every real-task Priority A trial run to date (Phases 75-77; Phase 78 is
+still `planned` and has not itself been evaluated) — no new rubric
+invented:
 Accuracy / Relevance / Completeness / Freshness / Grounding-provenance /
 Noise / Safety-trustworthiness, plus a **LOW / MODERATE / HIGH** context-
 advantage rating specifically for this task. The evaluator independently
@@ -746,7 +882,9 @@ already has.
 ### 9.4 What this demonstrates, and what it does not
 
 A LOW advantage rating is an honest, acceptable outcome (this project's
-own established precedent, Phases 75/77/78) — it is not, by itself, a
+own established precedent — Phases 75 and 77 both rated LOW; Phase 78,
+still `planned`, is not part of this precedent since it has not been
+executed or evaluated) — it is not, by itself, a
 failure of this phase. What this step exists to catch is a packet that
 is **inaccurate or unsupported**, which would be a real failure: the
 shared foundation producing something *wrong*, not merely something
@@ -799,36 +937,67 @@ A citer is *proven incorrect* only if it asserted the specific thing the
 new evidence contradicts; every other citer found above is *needs
 reassessment*.
 
-### 10.4 Demonstration — in a disposable fixture, never in canonical data
+### 10.4 Demonstration — from a changed *source*, in a disposable fixture, with cycle and snapshot coverage (corrected this revision)
 
-**Corrected this revision**: the second revision's own demonstration
-risked leaving a labelled-but-real `CONTROLLED TEST CORRECTION` sitting
-inside the actual `planning/knowledge/<topic-slug>/` store and the actual
-published documentation. This revision instead:
+**Two defects in the second revision's own demonstration, corrected
+here**: (a) it changed an *assertion* directly, never exercising §10.1's
+own source-to-evidence discovery step at all — the very thing this
+revision added because the second revision's traversal skipped it; and
+(b) it never included a dependency cycle or a snapshot-level citation, so
+§10.2's own cycle-safety and snapshot-flagging logic were never actually
+exercised, only described. This revision's demonstration fixture is built
+to exercise the **entire** chain named in §10's own header
+(`source → evidence → assertions → transitive dependents → snapshots →
+both outputs`), not a shortened version of it:
 
-1. Copies the validation topic's own real, already-frozen snapshot and
-   its cited assertion files, a representative `context-packet.md`, and
-   the published documentation page into a **disposable fixture
-   directory** under the session scratchpad — never inside either
-   repository's own tracked tree.
-2. Introduces one deliberate, disclosed test change **only inside the
-   fixture** (e.g. a corrected `examples` entry, or a `status:
-   contradicted` transition on a fixture copy of one assertion).
-3. Runs the full propagation traversal (§10.1-10.3) against the fixture,
-   producing a `propagation-deltas.md` naming every citer found —
-   including the fixture's own copy of the coding-context packet and the
-   fixture's own copy of the documentation page, both re-flagged `needs
-   reassessment` from the **same** underlying fixture change.
-4. **Deletes the fixture** once the demonstration is recorded (the
-   `propagation-deltas.md` output itself, and a short description of the
-   exercise, are what's preserved — not the contaminated fixture copies).
-   **No synthetic contradiction, correction, or `CONTROLLED TEST` label
-   is left in real canonical `planning/knowledge/<topic-slug>/` records
-   or in the real published documentation at any point.**
+1. **Fixture contents** — copied into a disposable directory under the
+   session scratchpad, never inside either repository's tracked tree:
+   - the validation topic's real, relevant **source file(s)** (e.g. a
+     copy of `src/codecompass/source_symbols.py`);
+   - the real Evidence record(s) whose `source_ref` cites that file;
+   - at least three real Claim/assertion records arranged so that **one
+     depends on another which depends on the first** — a genuine cycle
+     (`CL-A depends_on: [CL-B]`, `CL-B depends_on: [CL-A]`), constructed
+     deliberately for this fixture specifically to exercise §10.2's own
+     visited-set termination logic, not found by chance in real data;
+   - the real, already-frozen snapshot that cites at least one of these
+     assertions;
+   - a representative coding-context packet and the published
+     documentation page, both citing the same assertion(s).
+2. **The demonstrated change is to the fixture's own copy of the source
+   file** — a deliberate, disclosed edit (e.g. a changed docstring or a
+   renamed parameter in the fixture's own copy) — never to an assertion
+   directly, so the discovery step (§10.1: source → Evidence via
+   `source_ref`, Evidence → Claim via `supporting_evidence`) is the thing
+   actually exercised, not skipped.
+3. **Run the full traversal (§10.1-10.3) against the fixture**, and
+   confirm, concretely:
+   - the changed source file's own path is found in the fixture's
+     Evidence record (§10.1 step 1);
+   - the correct Claim(s) are found via that Evidence (§10.1 step 2);
+   - **the cycle is walked exactly once each and the traversal
+     terminates** — the visited-set mechanism (§10.2) is what makes this
+     provable, not merely assumed; the demonstration report states the
+     visit order and confirms no infinite loop occurred;
+   - the fixture's own snapshot is flagged as citing an affected
+     assertion (§10.2 step 4) — proving snapshot-level citation discovery
+     works, not only direct/transitive assertion citers;
+   - both the fixture's coding-context packet and its documentation page
+     are re-flagged `needs reassessment` (§10.2 step 5), from the
+     **same** underlying source change.
+4. **Delete the fixture** once the demonstration is recorded — only
+   `propagation-deltas.md` (naming every citer found, the cycle-traversal
+   order, and the snapshot-level flag) and a short description of the
+   exercise are preserved. **No synthetic change, contradiction, or
+   `CONTROLLED TEST` label is left in real canonical
+   `planning/knowledge/<topic-slug>/` records, real snapshots, or real
+   published documentation at any point.**
 
-Both derived-output kinds re-flagging from the same fixture change is
-the concrete evidence the shared foundation genuinely feeds both — proven
-without touching real project state.
+A changed *source* file reaching both derived-output kinds — through a
+genuine multi-hop, cycle-containing dependency graph and a flagged
+snapshot citation, not a direct one-hop assertion edit — is the concrete
+evidence this revision's own corrected propagation design actually works
+end to end, proven without touching real project state.
 
 ## 11. Template delivery (`codecompass-template`)
 
@@ -953,9 +1122,9 @@ not a failure condition to be argued around.
 - `.claude/agents/context-evaluator.md` (new task type: coding-context
   packet assessment, §9.3 — reuses its existing charter, documented as
   an additional use case, not a new role).
-- `scripts/check_knowledge_base.py` (two new checks, §4.2:
-  `check_optional_enum_fields`, `check_no_block_style_lists`, plus
-  `check_snapshot_integrity`, §5.3).
+- `scripts/check_knowledge_base.py` (four new checks: `check_optional_
+  enum_fields`, `check_list_fields_are_inline`, §4.2; `check_snapshot_
+  historical_integrity`, `check_snapshot_current_divergence`, §5.3).
 - `planning/v1-redefinition/agent-led-development.md` (§2.11
   `context-researcher`, §2.13 `domain-skeptic`, §2.2 `context-evaluator`
   entries updated; new §2.15 `implementation-reconstructor`).
@@ -1012,8 +1181,10 @@ tracked content.
 - `.venv/bin/pytest -q`
 - `.venv/bin/ruff check .`
 - `python3 scripts/check_user_docs.py --strict`
-- `python3 scripts/check_knowledge_base.py --strict` (now covering three
-  checks: the two from §4.2 plus §5.3's snapshot-integrity check).
+- `python3 scripts/check_knowledge_base.py --strict` (now covering four
+  new checks: the two from §4.2 plus §5.3's two snapshot checks —
+  `check_snapshot_current_divergence` is informational/non-blocking by
+  design, §5.3 point 2, and never fails `--strict` on its own).
 - At implementation time: every scope's own `<scope>.preflight.md`
   (§6.10, now covering all five probe routes) checked before that
   scope's output is treated as valid at any label; `propagation-deltas.md`
