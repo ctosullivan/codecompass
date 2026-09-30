@@ -1,0 +1,22 @@
+id: DE-FPSS-008
+kind: derivation
+claim: CL-FPSS-008
+method: >
+  Discovered independently by implementation-reconstructor's model-blind
+  as-built reconstruction (implementation-reconstruction.md §9), which
+  had no access to the knowledge snapshot or any Claim at the time it was
+  produced. During the comparison-mode alignment pass against
+  snapshot-v1.toml, checked both limitations against all 7 existing
+  Claims (CL-FPSS-001..007) and confirmed neither is stated, qualified,
+  or contradicted by any of them -- a genuine knowledge-base gap, not an
+  alignment conflict. Independently re-confirmed by direct re-reading of
+  _extract_python_source_symbols (source_symbols.py:188-218) and
+  _JS_FAMILY_ITEM_RE/_extract_js_family_source_symbols
+  (source_symbols.py:109-112,281-289) during the same pass, rather than
+  taking the reconstruction's own finding on trust. Written up as a new
+  Claim per the comparison report's own recommendation (the comparing
+  dispatch does not draft Claims itself, per its write boundary).
+inputs:
+  - EV-FPSS-023
+performed_by: "lead (from domain-skeptic comparison-mode recommendation)"
+timestamp: "2026-10-01"

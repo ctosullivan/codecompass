@@ -1,0 +1,35 @@
+id: CL-FPSS-008
+kind: claim
+statement: >
+  Two further extraction-scope/fidelity limitations exist beyond
+  CL-FPSS-007's indexed_partial false-positive boundary, neither
+  mentioned by decisions/0065 or the phase-77 plan, both structural
+  properties of the extractors rather than untested edge cases: (a)
+  Python extraction is top-level-only -- _extract_python_source_symbols
+  walks only ast.iter_child_nodes(tree), the module's own direct
+  children, with no recursive descent into a ClassDef's or FunctionDef's
+  own body, so a method defined inside a class or a function nested
+  inside another function is never visited and never emitted as its own
+  SourceSymbol row; (b) a JS/TS const binding's kind is recorded
+  literally as "const", never "function", regardless of what it's bound
+  to -- _JS_FAMILY_ITEM_RE's third capture group is one of the literal
+  keywords (function/class/interface/const/type/enum), and
+  _extract_js_family_source_symbols assigns kind=kind directly from that
+  match with no inspection of the right-hand side of an "=", so
+  `export const foo = () => {}` is schema-indistinguishable from
+  `export const PI = 3.14`.
+derivation: DE-FPSS-008
+assertion_kind: boundary
+basis: observed_behaviour
+supporting_evidence: ["EV-FPSS-023"]
+contradicting_evidence: []
+examples: ["a Python class with a method `def bar(self): ...` produces zero SourceSymbol rows for `bar` -- only top-level module members are ever visited (real source read)", "a TS file containing `export const useWidget = () => {}` produces a row with kind=\"const\", not kind=\"function\" (real source read)"]
+counterexamples: []
+depends_on: []
+open_questions: []
+evidence_support_state: supported
+derived_by: domain-skeptic
+repository_revision: "1fe7c61"
+timestamp: "2026-10-01"
+status: supported
+supersedes: null

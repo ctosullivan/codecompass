@@ -1,0 +1,20 @@
+id: EV-FPSS-022
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  CL-FPSS-007's four specific sub-claims (a: multi-line param lists don't
+  defeat the extractors; b: single-line comments/strings don't produce
+  false matches; c: a multi-line Rust raw-string literal's interior line
+  DOES produce a genuine false-positive row; d: a plain JS/TS block
+  comment DOES produce a genuine false-positive row) are fully consistent
+  with source_symbols.py's real, current regex and loop logic, confirmed
+  by direct re-reading during this comparison-mode pass -- independent of
+  both the claim's own originally-cited probes (EV-FPSS-008/009/021) and
+  of implementation-reconstruction.md, which does not address these
+  specific edge cases at all. No conflict found between either artifact
+  and the real source on this point.
+observations: ["OBS-FPSS-020"]
+derived_by: domain-skeptic
+repository_revision: "1fe7c61"
+timestamp: "2026-10-01"
+status: current

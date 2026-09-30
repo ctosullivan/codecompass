@@ -26,7 +26,7 @@ statement: >
 derivation: DE-FPSS-007
 assertion_kind: boundary
 basis: observed_behaviour
-supporting_evidence: ["EV-FPSS-008", "EV-FPSS-009", "EV-FPSS-021"]
+supporting_evidence: ["EV-FPSS-008", "EV-FPSS-009", "EV-FPSS-021", "EV-FPSS-022"]
 contradicting_evidence: []
 examples: ["a Rust file containing `let s = r#\"\\npub fn embedded_in_string() {}\\n\"#;` produces a real, silent false-positive `embedded_in_string` row (real probe)", "a TS file containing `/*\\nexport function commented_out(): void {}\\n*/` produces a real, silent false-positive `commented_out` row (real probe)"]
 counterexamples: ["a genuinely multi-line function signature is handled correctly (real probe)", "a single-line comment or string containing declaration-like text is handled correctly (real probe)"]
@@ -36,4 +36,4 @@ evidence_support_state: supported
 derived_by: context-researcher
 repository_revision: "b4641cc"
 timestamp: "2026-10-01"
-status: supported
+status: verified

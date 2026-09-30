@@ -1,0 +1,53 @@
+id: OBS-FPSS-021
+kind: observation
+method: code_read
+performed_by: domain-skeptic
+what_was_done: >
+  During the same comparison-mode pass, directly re-read
+  `_extract_python_source_symbols` (source_symbols.py:188-218), the
+  `_JS_FAMILY_ITEM_RE` definition (lines 109-112), and
+  `_extract_js_family_source_symbols`'s kind-assignment (lines 281-289),
+  plus `discover_source_files` (lines 149-169) and `_LANGUAGE_BY_SUFFIX`
+  (lines 85-91), to independently re-confirm three real limitations
+  implementation-reconstruction.md names in its own §9 that no Claim in
+  snapshot-v1.toml (CL-FPSS-001 through CL-FPSS-007) covers at all.
+location: "src/codecompass/source_symbols.py:85-91, :109-112, :149-169, :188-218, :281-289"
+raw_result: >
+  (1) Python top-level-only scope, confirmed: `_extract_python_source_symbols`
+  walks only `ast.iter_child_nodes(tree)` -- direct children of the module
+  node. No `ast.walk`, no recursive descent into a `ClassDef`'s own body
+  or a `FunctionDef`'s own body, appears anywhere in the function. A
+  method defined inside a class, or a function nested inside another
+  function, is structurally unreachable: never visited, never emitted as
+  its own `SourceSymbol` row. This is a real, source-confirmed scope
+  limitation, not a hypothetical or untested one -- and no existing Claim
+  states or qualifies it (CL-FPSS-004's overload example is itself
+  top-level, so it does not surface this gap).
+  (2) JS/TS `const`-as-literal-kind, confirmed: `_JS_FAMILY_ITEM_RE`'s
+  third capture group is one of the literal keywords
+  `function|class|interface|const|type|enum`; `_extract_js_family_source_symbols`
+  (line 283) assigns `kind=kind` straight from the regex match with no
+  inspection of the right-hand side of an `=`. A declaration such as
+  `export const foo = () => {}` therefore produces a row with
+  `kind="const"`, not `kind="function"` -- indistinguishable at the
+  schema/row level from `export const PI = 3.14`. No existing Claim
+  mentions this.
+  (3) A narrower, related nuance (not itself a full gap, offered as
+  context for CL-FPSS-003): Haskell's UNSUPPORTED outcome
+  (CL-FPSS-003's own example) and a totally-unrecognized suffix's
+  invisibility are two distinct mechanisms at two different pipeline
+  stages, not one. `.hs` IS present in `_LANGUAGE_BY_SUFFIX` (mapped to
+  `Language.HASKELL`), so `discover_source_files` reports it and it
+  reaches `extract_source_symbols_for_file`, which then falls through to
+  its final `return ... UNSUPPORTED` because no `Language.HASKELL` branch
+  exists. A suffix absent from `_LANGUAGE_BY_SUFFIX` entirely (e.g.
+  `.go`, `.java`) is filtered out inside `discover_source_files` itself
+  (`if language is None: continue`) and never becomes a
+  `(path, Language)` pair at all -- it never reaches
+  `extract_source_symbols_for_file`'s UNSUPPORTED branch in the first
+  place. CL-FPSS-003 describes only the Haskell/UNSUPPORTED case; it does
+  not state or contradict this discovery-level distinction.
+tool_version: "Read tool"
+repository_revision: "1fe7c61"
+timestamp: "2026-10-01"
+status: recorded

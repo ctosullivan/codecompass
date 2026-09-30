@@ -1,0 +1,59 @@
+id: OBS-FPSS-020
+kind: observation
+method: code_read
+performed_by: domain-skeptic
+what_was_done: >
+  During a comparison-mode pass reconciling snapshot-v1.toml's seven
+  Claims against implementation-reconstruction.md's independently-produced
+  as-built findings, directly re-read
+  src/codecompass/source_symbols.py's `_extract_rust_source_symbols` and
+  `_extract_js_family_source_symbols` (lines 221-293) to verify
+  CL-FPSS-007's four specific sub-claims (a)-(d) about indexed_partial's
+  fidelity boundary against the real, current regex/loop logic -- the
+  reconstruction itself does not address these specific edge cases (it
+  describes the general "single anchored regex, one physical line at a
+  time" limitation but is silent on raw-string literals and plain block
+  comments specifically), so this check was run independently of both
+  artifacts rather than treated as resolved by either.
+location: "src/codecompass/source_symbols.py:99-113 (regex definitions), :221-254 (_extract_rust_source_symbols), :257-293 (_extract_js_family_source_symbols)"
+raw_result: >
+  (a) confirmed: both `_RUST_ITEM_RE` and `_JS_FAMILY_ITEM_RE` are matched
+  with `.match()` against a single stripped line and require only the
+  modifier/keyword+name text on that one line -- neither regex requires
+  matching to a line's end or to a closing paren/brace, so a parameter
+  list continuing onto subsequent physical lines does not prevent a match
+  on the declaration's own first line.
+  (b) confirmed: because both regexes are anchored with `^` against each
+  line's *stripped* content, a line beginning with `//` (a single-line
+  Rust/JS comment) or with a string-literal opening character never
+  matches -- `//`, `"`, `let`, etc. are never equal to `pub`/`fn`/
+  `struct`/`enum`/`trait`/`export`/`function`/`class`/`interface`/
+  `const`/`type` at position 0, so no false match occurs for single-line
+  comments or strings containing declaration-like text elsewhere on the
+  line.
+  (c) confirmed: `_extract_rust_source_symbols` tracks exactly one piece
+  of cross-line state (`doc_lines`, populated only by `///`-prefixed
+  lines) and nothing else -- there is no tracking of "currently inside a
+  multi-line raw string literal" at all. A raw-string literal's own
+  interior line (e.g. the body of `r#"..."#`) is scanned by the same
+  per-line loop as any other line; if that interior line's stripped text
+  happens to match `_RUST_ITEM_RE` (e.g. it literally reads
+  `pub fn embedded_in_string() {}`), it is captured as a real
+  `SourceSymbol` row with no distinguishing signal. This is a genuine,
+  source-confirmed false-positive path, not merely an asserted one.
+  (d) confirmed: `_extract_js_family_source_symbols`'s only comment-aware
+  state is JSDoc detection: `_JS_FAMILY_JSDOC_START_RE` matches only a
+  line starting with `/**` (two stars), and the only other comment-aware
+  branch is `stripped.startswith("*")` (a JSDoc continuation line). A
+  plain `/* ... */` block comment (single leading star, e.g. `/*`) matches
+  neither branch, so its interior lines fall through to the ordinary
+  `_JS_FAMILY_ITEM_RE` match attempt exactly as if they were live code. A
+  commented-out declaration inside such a block (e.g.
+  `export function commented_out(): void {}` between a `/*` and `*/`
+  line) is captured as a real, silent false-positive row.
+  All four sub-claims of CL-FPSS-007 are fully consistent with the code
+  as it stands today at 1fe7c61.
+tool_version: "Read tool"
+repository_revision: "1fe7c61"
+timestamp: "2026-10-01"
+status: recorded

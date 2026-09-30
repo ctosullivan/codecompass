@@ -1,0 +1,32 @@
+id: EV-FPSS-023
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  Two real, source-confirmed limitations of the first-party symbol
+  extractors are named by implementation-reconstruction.md's own §9 and
+  are not covered by any Claim in snapshot-v1.toml
+  (CL-FPSS-001..CL-FPSS-007): (1) Python's top-level-only extraction
+  scope -- no nested function or method is ever visited or emitted as its
+  own symbol row, a structural property of `_extract_python_source_symbols`
+  not an untested edge case; (2) JS/TS's `const`-as-literal-kind capture
+  -- a `const` bound to an arrow function or function expression is
+  recorded with `kind="const"`, never `kind="function"`, since the
+  extractor never inspects the right-hand side. Both were independently
+  discovered by implementation-reconstruction.md and independently
+  re-confirmed here by direct source re-reading during this comparison
+  pass -- this is a genuine knowledge-base gap (no Claim exists to
+  compare against), not a comparison conflict. A third, narrower nuance
+  (Haskell's UNSUPPORTED-via-fallthrough vs. a wholly unrecognized
+  suffix's earlier invisibility inside `discover_source_files` -- two
+  distinct mechanisms, not one) supplements but does not contradict
+  CL-FPSS-003, and is offered as a smaller-priority refinement rather
+  than a standalone claim. Recommended: context-researcher drafts one new
+  Claim (or amends CL-FPSS-003's own scope note) covering (1) and (2) as
+  named, evidence-based extraction-scope/fidelity limitations, in the
+  same spirit as CL-FPSS-007's own boundary treatment of indexed_partial.
+  This role does not draft or write that Claim itself.
+observations: ["OBS-FPSS-021"]
+derived_by: domain-skeptic
+repository_revision: "1fe7c61"
+timestamp: "2026-10-01"
+status: current
