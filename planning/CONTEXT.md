@@ -77,12 +77,27 @@ not yet committed into the repo — will move into
 `planning/knowledge/codecompass-domain/` at Stage 5 reconciliation,
 matching Phase 79's own pattern).
 
-**Part 2, Stage 3 (comparison) is in progress** — a `domain-skeptic`
-dispatch classifying alignment between the frozen snapshot and the
-reconstruction report. Stages 4 (fresh draft) and 5 (reconciliation +
-publish) not yet started. Parts 3-4 (lighter template application,
-verification/closeout) not yet started — see the plan file's own §§3-9
-and "Next concrete step" below.
+**Part 2 (Stages 1-5) is done.** Stage 3 (comparison): 3 aligned, 8
+partial, 14 insufficiently_verified, 0 conflicting, 0 not_implemented —
+no real conflicts anywhere the snapshot and reconstruction actually
+overlap (`4965384`→`7134f3e`). Stage 4: a fresh, isolated
+`docs-reconstructor` dispatch wrote a complete 9-file documentation
+draft from only the frozen snapshot + reconstruction + alignment
+guidance (zero access to existing docs), staged at
+`planning/phase-80-docs-draft/`, mechanical boundary-check clean
+(`743df80`). Stage 5: reconciled the draft against the real live docs —
+11 supported, 0 stale, 1 genuine gap found and fixed (`docs/cli-reference.md`
+was missing a Haskell `when:`-block limitations bullet parallel to its
+existing Python one, independently re-verified against
+`discovery.py:90-109` before accepting), 0 obsolete pages to
+redirect/remove (`911981f`). Confirms Stage 3's own "zero real
+conflicts" finding — the existing documentation corpus was already
+substantially accurate. Full test suite (767 passed, 2 skipped), `ruff
+check .`, and both strict doc checkers clean throughout.
+
+**Part 3 (lighter-weight `codecompass-template` application) and Part 4
+(verification/closeout for both repositories) are not yet started** —
+see the plan file's own §§7-9 and "Next concrete step" below.
 
 ---
 

@@ -413,6 +413,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   inside that exercise's own git history and independently reviewed by a
   fresh dispatch explicitly tasked with trying to falsify the corrected
   claim (found no counterexample).
+- **Phase 80, Part 2** (CodeCompass-wide documentation reconstruction,
+  Stages 1-5 of the clean-room pipeline, no `src/` change): a freshness
+  review of all 28 Claim clusters backing `docs/domain/`'s 19 concept
+  pages found two genuine staleness issues — `CL-ADPT-009` was never
+  superseded after Phase 74 added real ecosystem-mismatch detection to
+  `external_process.py`, and `relationship-edge.md`'s "precisely six
+  edge tables" count didn't account for Phase 76's git-topology tables
+  (resolved as a genuine, previously-unstated architectural distinction,
+  not an undercount) — both fixed via new superseding/corroborating
+  Claims. A frozen project-wide snapshot (`codecompass-overview@v1`,
+  25 active Claims) was then compared against an independent, model-blind
+  reconstruction of the CLI/sync/graph-schema/adapter-pattern core: zero
+  real conflicts found. A fresh documentation draft, written in total
+  isolation from the existing docs, was reconciled against them — one
+  genuine gap found and fixed (`docs/cli-reference.md` was missing a
+  Haskell `when:`-block limitations bullet parallel to its existing
+  Python one) — confirming the existing documentation corpus was already
+  substantially accurate.
 
 ## [1.0.0] - 2026-09-24
 
