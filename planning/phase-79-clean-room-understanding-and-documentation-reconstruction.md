@@ -143,13 +143,17 @@ directly into implementation, no further planning round-trip:**
    found. Full exercise report and the complete adopted-project tree
    preserved as checkable evidence, not just narrated.
 
-**Next step**: a fresh `release-phase-auditor` pass against this
-amendment's own final commit, then `roadmap-context-curator`
-reconciliation updating `planning/ROADMAP.md`'s Phase 79 row,
+**Closeout complete**: the `release-phase-auditor` pass
+(`planning/retros/_audit-phase-79-fifth-amendment.md`, plus its
+re-confirmation addendum against `0e1c63a`) returned Track 1 (workflow/
+template completion): **PASS WITH NON-BLOCKING OBSERVATIONS** (both
+observations fixed in `0e1c63a`) and Track 2 (strict isolation): **UNMET**
+(the amendment's own correctly, honestly reported final verdict, not a
+defect). The terminal `roadmap-context-curator` reconciliation
+(`8911be1`) updated `planning/ROADMAP.md`'s Phase 79 row,
 `planning/CONTEXT.md`'s current-state section, and this file's own
-Status line to reflect the amendment's own completion — the same
-closeout sequence the fourth revision itself used, applied again to this
-fifth revision's own result.
+Status line accordingly. Phase 79 itself remains `done`, unchanged —
+this amendment corrected its delivered result, it did not reopen it.
 
 ---
 
