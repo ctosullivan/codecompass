@@ -1,0 +1,31 @@
+snapshot_id = "id-reuse@v2"
+created = "2026-10-02T00:00:00Z"
+repository_revision_at_freeze = "95b0e311473d10d2c825ff2fe60c01e194b814bd"
+excluded_assertions = ["id-reuse-001"]
+supersedes = "id-reuse@v1"
+supersession_reason = "id-reuse-001's own causal rule ('reuse depends on whether the most-recently-deleted task held the current maximum id') was independently reproduced as false. Superseded by id-reuse-002, cited below. id-reuse-001 is excluded from this snapshot's own active assertion set (its own file is preserved with a correction notice, not deleted)."
+
+[assertions."id-reuse-002"]
+path = "planning/knowledge/assertions/id-reuse-002.md"
+repository_revision = "76adc714ea5700b5ffe0cdd74ce8889a993214c4"
+content_hash = "327ad7c40fb86d24b7aaf26c0c3d4c194bd0ef3a0d7e993b3773874ee0e3d7bc"
+
+[assertions."id-reuse-002".supporting_evidence."src-next-id-prefix"]
+path = "src/tinytodo.py"
+repository_revision = "b6a1bb5e4c8364848e60462aaf8e7a8bc52002cb"
+content_hash = "273073f2cfffce9984160ccb6c5098b334f67e538e4d2b808c55831f6abd153b"
+
+[assertions."id-reuse-002".supporting_evidence."existing-tests"]
+path = "tests/test_tinytodo.py"
+repository_revision = "b6a1bb5e4c8364848e60462aaf8e7a8bc52002cb"
+content_hash = "236eb39ced55603939dc9cd2cc99b74096ea81939b0f43a18a6ec7e11b0cff4d"
+
+[assertions."id-reuse-002".supporting_evidence."reference-model-reproduction"]
+path = "corrections/id-reuse-reference-model.md"
+repository_revision = "76adc714ea5700b5ffe0cdd74ce8889a993214c4"
+content_hash = "17d863ab18462cd92e3fc585589965952af2298cd0294d03bb27f3f5194c1302"
+
+[assertions."id-reuse-002".supporting_evidence."independent-falsification-review"]
+path = "planning/knowledge/documentation-verification-id-reuse-002.md"
+repository_revision = "a35ba5f38b8b11e50f6e5895439d0fc27f38365e"
+content_hash = "6467475d128e0939ccefde53dba38b645240d80f4a4add5cebdc55abea0de75a"

@@ -1,5 +1,46 @@
 # Assertion: id-reuse-001
 
+**CORRECTION (2026-10-02): the Statement below is itself overgeneralized
+and, in its specific causal claim, FALSE — independently reproduced and
+disproven. Superseded by `id-reuse-002.md`.** It claimed reuse "happens
+... whenever that deleted task held the highest id among the tasks live
+at the moment of its deletion" — i.e. that whether a specific id gets
+reused can be determined from which task was most recently deleted and
+whether that task held the max at that moment. Two real counterexamples,
+run against the real, unmodified pre-fix `_next_id`:
+
+```
+add 1, 2, 3 -> delete 2 (NOT the max at its own deletion -- 3 still is)
+            -> delete 3 (now the max)
+            -> add: new id = 2
+```
+
+By this assertion's own rule, deleting id 2 (not the max at that moment)
+should never cause reuse, and deleting id 3 (the max at that moment)
+should make *3* available for reuse. Neither prediction holds: the id
+that actually gets reused is **2**, the one this assertion's own rule
+said was safe — and a further `add` immediately after this sequence
+produces id 4, never id 3, showing id 3 is never reused in this sequence
+at all. The rule this assertion stated is not a looser approximation of
+the truth; it makes a wrong prediction about *which specific id* gets
+reused.
+
+The actual mechanism (verified against a reference model tracking every
+id ever assigned, across multiple sequences including both this one and
+the add/add/add/add→delete-4→delete-1→add sequence): `_next_id` computes
+one global candidate, `max(current live ids) + 1` (or `1` if the list is
+empty), with **no memory of which specific task was most recently
+deleted or whether it held the max** — whether that candidate happens to
+be a reuse depends only on whether that specific number was ever
+assigned before, which depends on the *entire* sequence of adds and
+deletes, not on any single most-recent deletion. Full reproduction:
+`../../../corrections/id-reuse-reference-model.md`. The rest of this
+file is preserved unedited as the historical record of this exercise's
+own second, still-incorrect attempt at generalizing `_next_id`'s real
+behavior — not current truth.
+
+---
+
 ## Statement
 
 `_next_id` (`src/tinytodo.py:36-55`) does **not** implement "task ids

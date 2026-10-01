@@ -1,5 +1,23 @@
 # Template usability exercise 2: complete, commit-permitting run
 
+**Corrected 2026-10-02 (Phase 80, defect 2 of the initiating prompt)**:
+this exercise's own `id-reuse-001` assertion (step 3 below) overgeneralized
+its causal rule to "reuse depends on whether the most-recently-deleted
+task held the current maximum id." Independently reproduced as false —
+`add 1,2,3 → delete 2, then 3 → add` yields id `2`, not the rule's own
+predicted `3`, and id `3` is never reused in that sequence at all. The
+bundle and final-tree below now include four further real commits (14–17)
+correcting the assertion (`id-reuse-002.md`, superseding `id-reuse-001.md`,
+which is preserved with a correction notice, not rewritten), its
+downstream documentation and coding-context packet, a new snapshot
+version (`id-reuse@v2.toml`), and an independent falsification review
+that tried, and failed, to break the corrected claim. Full detail:
+`tinytodo2-final-tree/corrections/id-reuse-reference-model.md`. The
+steps below (1–13) describe the exercise's original run; they are
+historically accurate for what happened at the time, not for the
+assertion's own final, correct content — read step 3 together with this
+notice, not in isolation.
+
 Phase 79 sixth amendment, correction 3. Distinct from
 `../template-usability-exercise/` (the original exercise, which
 prohibited commits and left its snapshot `UNCOMMITTED`, and whose
@@ -12,8 +30,9 @@ run could not.
 ## What's here
 
 - **`tinytodo2-full-history.bundle`** — a `git bundle` containing the
-  complete, real, reproducible commit history (13 commits) of the
-  exercise project, `tinytodo2`. Clone it directly:
+  complete, real, reproducible commit history (17 commits, after the
+  2026-10-02 correction added 4 more) of the exercise project,
+  `tinytodo2`. Clone it directly:
   `git clone tinytodo2-full-history.bundle tinytodo2` to get a fully
   working repository with every commit, in order, independently
   re-inspectable. This is the authoritative record — real commits, not a
@@ -79,6 +98,40 @@ run could not.
     transcripts) confirming both stayed within their assigned export
     directories, plus an honest, explicit statement that this does not
     amount to strict, mechanically-enforced isolation.
+
+## Correction commits (14–17, added 2026-10-02)
+
+14. **Correct `id-reuse-001`'s overgeneralized causal rule**: both
+    counterexamples named in the correction request reproduced directly
+    against the real, unmodified pre-fix `_next_id`, confirming the
+    "most recently deleted task held the max" rule predicts the wrong
+    specific id in the first sequence. A reference model tracking every
+    id ever assigned (not inferring it from a single deletion) confirms
+    the real mechanism: `candidate = max(live)+1`, reuse iff that
+    candidate was ever assigned before. `id-reuse-001.md` gets a dated
+    correction notice, original text preserved unedited below it;
+    `id-reuse-002.md` records the corrected mechanism.
+15. **Independent falsification review**: a fresh dispatch, given only
+    `id-reuse-002`'s own corrected claim, tried to actively break it —
+    its own independently-written reference model, 18 self-designed
+    sequences (none from the assertion's own examples), several
+    thousand operations, plus a CLI subprocess cross-check. No
+    counterexample found; the claim survived.
+16. **Correct downstream documentation and coding-context packet**:
+    `docs/id-reuse.md` and `context-packet-fix-id-reuse.md` both
+    repeated the overgeneralized rule throughout. Both corrected and
+    re-cited to `id-reuse-002`; the context packet's recommended fix
+    (persist a high-water-mark counter) was already correct regardless
+    of the precise trigger rule and is unchanged, but its bug-mechanism
+    description and regression-test rationale were corrected, and a new
+    required test case was added matching the actual falsifying
+    counterexample.
+17. **Freeze snapshot `id-reuse@v2.toml`**, superseding `id-reuse@v1`:
+    cites `id-reuse-002` and its supporting evidence (the pre-fix source/
+    tests at the same unchanged historical hashes as v1, the reference-
+    model reproduction, and the falsification review). Verified clean
+    against the real `check_snapshot_completeness`/
+    `check_snapshot_historical_integrity` checks.
 
 ## Final verdicts for this exercise
 

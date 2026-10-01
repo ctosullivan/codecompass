@@ -3,6 +3,21 @@
 A packet assembled from a frozen knowledge snapshot for one specific,
 bounded coding task — not a topic overview of `tinytodo.py`.
 
+**CORRECTED (2026-10-02)**: this packet previously described the bug's
+precise trigger as "the deleted task held the current maximum id at the
+moment of its deletion," and separately claimed reviewer scenarios D/G/
+J/K ruled out any dependency on prior reuse history or repeated cycles.
+Both statements were independently reproduced as false: whether reuse
+occurs is governed by the current live maximum at `add` time (across
+the *entire* history of adds/deletes), never by any single deletion
+event in isolation — see `id-reuse-002.md`'s own correction of
+`id-reuse-001.md` and `../../corrections/id-reuse-reference-model.md`
+for the full counterexample. **The recommended fix approach below
+(persist a high-water-mark counter) is unaffected by this correction**
+— it eliminates reuse unconditionally regardless of the precise trigger
+rule — but the bug-mechanism description and the regression-test
+rationale that follow have been corrected to match the real mechanism.
+
 ## The task
 
 Fix `_next_id` (`src/tinytodo.py`) so that a deleted task's id is
@@ -12,44 +27,53 @@ docstring claim — without breaking the existing two tests
 
 ## Snapshot cited
 
-`id-reuse@v1` — frozen at `repository_revision_at_freeze =
-1d2e6b87b081baefa774382a87aa7c1baa42428d`. If the live knowledge base or
-the live repository has moved past this version since, that divergence
-is expected and informational — it doesn't invalidate this packet, but
+`id-reuse@v2` (superseding `id-reuse@v1`, which cited `id-reuse-001`'s
+own since-corrected rule) — frozen at `repository_revision_at_freeze =
+76adc71` (the correction commit). If the live knowledge base or the live
+repository has moved past this version since, that divergence is
+expected and informational — it doesn't invalidate this packet, but
 staleness against a later revision should be rechecked before relying on
 it further.
 
 ## Assertions included, and why each one
 
-- **`id-reuse-001`** (`planning/knowledge/assertions/id-reuse-001.md`,
-  `repository_revision = 641daf64be3e6ef7daec0d57c08ac17fd52bc708`) —
-  the governing assertion. Included in full because it is the only
-  record that states *why* the bug happens (no persisted high-water-mark,
-  only `max(current ids) + 1`), the precise condition under which it
-  fires (deleted task held the current maximum id — not merely "list
-  became empty"), and the one existing test's exact coverage gap. The
-  task cannot be done correctly without this causal mechanism; without
-  it, a fix might only patch the fully-emptied case the docstring
-  already (correctly) admits, leaving the more general defect in place.
-- **`id-reuse-001-review-evidence.md`** (supplementary evidence,
-  `repository_revision = 641daf64be3e6ef7daec0d57c08ac17fd52bc708`) —
-  included for three specific, task-relevant facts it adds beyond the
-  base assertion, not for its full scenario list:
-  1. Independent re-confirmation (item 3) that `src/tinytodo.py` has
-     **no separate counter, no module-level state, and only one
-     persisted file (`todo.json`, via `STORE_PATH`)** — this directly
-     bounds the fix: there is currently nowhere for a high-water mark to
-     live, so the fix must add storage, not just change an expression.
-  2. Confirmation (scenarios D, G, J, K) that the reuse condition has
-     **no hidden interaction with an id's own reuse history** — a
-     previously-reused id gets reused again under the same single rule,
-     with no special-casing needed in the fix or its tests.
-  3. Confirmation (item 4) that the two existing tests were executed
-     literally (not hand-retyped) and still only exercise the
-     non-maximum-delete path — raising confidence that the "existing
-     two tests don't break" and "existing two tests don't already catch
-     this" claims are solid, not an artifact of the original record's
-     own hand-reproduction method.
+- **`id-reuse-002`** (`planning/knowledge/assertions/id-reuse-002.md`)
+  — the governing assertion, superseding `id-reuse-001` (whose own
+  causal rule, "reuse depends on whether the most-recently-deleted task
+  held the current maximum id," was independently reproduced as false —
+  see `id-reuse-001.md`'s own correction notice). Included in full
+  because it is the only record that states *why* the bug happens (no
+  persisted high-water-mark, only `max(current live ids) + 1`) and the
+  precise, history-dependent condition under which reuse actually
+  occurs (the current candidate was ever assigned before — not "list
+  became empty," and not "the most recently deleted task held the max").
+  The task cannot be done correctly without this causal mechanism;
+  without it, a fix might only patch the fully-emptied case the
+  docstring already (correctly) admits, leaving the more general defect
+  in place.
+- **`id-reuse-001-review-evidence.md`** (supplementary evidence) —
+  included for two specific, task-relevant facts it adds, with one of
+  its own original claims now corrected:
+  1. Independent re-confirmation that `src/tinytodo.py` has **no
+     separate counter, no module-level state, and only one persisted
+     file (`todo.json`, via `STORE_PATH`)** — this directly bounds the
+     fix: there is currently nowhere for a high-water mark to live, so
+     the fix must add storage, not just change an expression.
+  2. Confirmation that the two existing tests were executed literally
+     (not hand-retyped) and still only exercise the non-maximum-delete
+     path — raising confidence that the "existing two tests don't
+     break" and "existing two tests don't already catch this" claims
+     are solid, not an artifact of the original record's own
+     hand-reproduction method.
+  3. **Corrected**: this evidence file's own scenarios D/G/J/K were
+     originally read as confirming "no hidden interaction with an id's
+     own reuse history" under the old (wrong) "most recent deletion"
+     rule. That reading does not carry over to the corrected mechanism
+     — reuse genuinely does depend on the complete add/delete history,
+     not on any single event — so this packet no longer cites those
+     scenarios as evidence of "no interaction effects." They remain
+     valid as raw observations; only their interpretation under the old
+     rule is withdrawn.
 
 ## What was deliberately left out
 
@@ -63,14 +87,15 @@ it further.
   does not substitute for reading the five-line function being changed.
 - **Other `planning/knowledge/` records** (`documentation-verification.md`,
   `implementation-reconstruction.md`, `alignment-report.md`) — none of
-  these are cited by `id-reuse@v1`'s own snapshot manifest, so none are
+  these are cited by `id-reuse@v2`'s own snapshot manifest, so none are
   in scope for this packet regardless of topical adjacency.
 - **The eight additional lettered scenarios (D–L)** from the review
-  evidence, verbatim — only the *generalized rule* they corroborate
-  ("reuse iff the deleted task held the current maximum id at the
-  moment of deletion; no history or interaction effects") is carried
-  into this packet below. The scenario-by-scenario narrative is detail
-  the task doesn't need once the rule itself is stated and trusted.
+  evidence, verbatim — only the *corrected, generalized rule* is carried
+  into this packet below: reuse occurs iff the current `max(live)+1`
+  candidate was ever assigned before, which depends on the full
+  add/delete history, not on any single deletion event. The
+  scenario-by-scenario narrative is detail the task doesn't need once
+  the rule itself is stated and trusted.
 - **The assertion's first Open Question** ("is 'ids are never reused' a
   product requirement this project actually needs, or dead/aspirational
   docstring text?"). The frozen task already answers this for us — fix
@@ -92,28 +117,32 @@ it further.
 `_next_id` computes `max(id of every task currently in the on-disk
 list) + 1` (or `1` if the list is empty). It has **no separate
 high-water-mark counter or any other record of ids that existed in the
-past** — confirmed by direct source inspection in the review evidence
-(no `counter`, no second persisted file, no module-level state; the
-function's only input is the freshly-loaded `tasks` list).
+past** — confirmed by direct source inspection (no `counter`, no second
+persisted file, no module-level state; the function's only input is the
+freshly-loaded `tasks` list).
 
 Consequence: a newly added task reuses a previously-deleted task's id
-**whenever the deleted task held the current-maximum id at the moment
-of its deletion** — this fires even while other, older, lower-numbered
-tasks are still live. It is not limited to the fully-emptied-list case
-the docstring's own closing paragraph already (correctly) concedes;
-that case is simply the degenerate instance of the same root cause.
-Deleting a non-maximum id never causes reuse, because the surviving
-maximum is untouched by that deletion and still yields a strictly new
-id on the next add.
+whenever that candidate number (`max(current live ids) + 1`) was ever
+assigned to some earlier, now-deleted task — this is **not** determined
+by which task was most recently deleted, or by whether that task held
+the maximum id at its own deletion. It depends on the complete history
+of every add/delete call in sequence. This fires even while other,
+older, lower-numbered tasks are still live, and is not limited to the
+fully-emptied-list case the docstring's own closing paragraph already
+(correctly) concedes; that case is simply the degenerate instance of the
+same root cause (`candidate = 1` once the list is empty).
 
-Directly observed (id-reuse-001, Scenario B): ids `[1,2,3]` → delete
-id `3` (the current max, with `1` and `2` still live) → add → new id is
-`3` again. Reuse, with two older tasks still present and unaffected.
-
-Confirmed to have no further hidden conditions (review evidence,
-scenarios D/G/J/K): the rule is exactly "reuse iff the deleted task was
-the current max at deletion time," with no dependency on an id's own
-reuse history and no interaction between repeated delete/add cycles.
+Directly observed counterexample to "look at the most recent deletion":
+ids `[1,2,3]` → delete `2` (not the max at that moment — `3` still is)
+→ delete `3` (now the max) → add → new id is **`2`**, not `3`. The task
+whose own deletion "held the max" (`3`) is never reused in this
+sequence at all; the task whose own deletion did *not* hold the max
+(`2`) is the one that gets reused. A further add immediately afterward
+produces `4`, confirming `3` stays permanently unreused in this
+sequence. Verified against a reference model tracking every id ever
+assigned, across 5 sequences plus an independent 18-sequence
+falsification attempt, with zero deviation from the `max(live)+1`/
+`ever-assigned-before` formula.
 
 ### An approach that would close it
 
@@ -156,10 +185,20 @@ New case(s) required:
 1. **Direct regression test for Scenario B**: add three tasks (ids `1`,
    `2`, `3`); delete the task holding the *current maximum* id (`3`),
    leaving `1` and `2` live; add a new task; assert its id is **not**
-   `3` (i.e. is `4`). This is the one case that actually exercises the
-   bug described above — deleting the max while older tasks survive —
-   and the one the current test suite has no equivalent of.
-2. **Multi-cycle persistence check** (recommended, not strictly
+   `3` (i.e. is `4`). This exercises one real reuse case — deleting the
+   max while older tasks survive — the current test suite has no
+   equivalent of.
+2. **Multi-deletion regression test (required, not merely
+   recommended)**: add three tasks (ids `1`, `2`, `3`); delete `2` (not
+   the max at that moment), then delete `3` (now the max); add a new
+   task; assert its id is `2`, **not** `3`. This is the counterexample
+   that falsifies a fix (or a test) built around "reuse happens iff the
+   *most recently deleted* task held the max" — a plausible-looking but
+   wrong simplification this packet's own earlier draft made. A fix
+   that merely special-cases "the task that was deleted right before
+   this add" rather than genuinely tracking a persisted high-water mark
+   could pass case 1 above while still failing this one.
+3. **Multi-cycle persistence check** (recommended, not strictly
    required to catch the base bug but needed to catch a fix that
    "accidentally" avoids reuse once without truly persisting a
    high-water mark): repeat delete-the-current-max → add → assert
@@ -167,7 +206,7 @@ New case(s) required:
    scenario D/G), so a fix that merely nudges `max()` by one in some ad
    hoc way, rather than tracking a real persisted counter, cannot pass
    by coincidence.
-3. **Persistence-across-reload check** (recommended if the fix persists
+4. **Persistence-across-reload check** (recommended if the fix persists
    the counter to disk, which the approach above requires): after an
    add/delete/add sequence, reload the store from disk (simulating a
    fresh process) and confirm the next id still continues from the
