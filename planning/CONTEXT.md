@@ -95,9 +95,35 @@ conflicts" finding — the existing documentation corpus was already
 substantially accurate. Full test suite (767 passed, 2 skipped), `ruff
 check .`, and both strict doc checkers clean throughout.
 
-**Part 3 (lighter-weight `codecompass-template` application) and Part 4
-(verification/closeout for both repositories) are not yet started** —
-see the plan file's own §§7-9 and "Next concrete step" below.
+**Part 3 (lighter-weight `codecompass-template` application) is done.**
+Read-through inspection alone wasn't trusted as proof of usability — a
+genuinely fresh, context-free agent actually adopted the template into
+both a new toy project and an existing one (its own pre-existing
+README/Apache-2.0-LICENSE/CLAUDE.md with real rules). Found real,
+concrete friction: `CLAUDE.md` wasn't named alongside README/LICENSE as
+needing careful merge rather than blind overwrite (the adopter had to
+invent a merge convention with nothing to check it against);
+`docs/architecture.md` (copied into every adopting project) ended with a
+first-person section describing the template repository's own
+relationship to CodeCompass — copied verbatim, every adopter's
+architecture doc would wrongly claim to itself be a template; the
+"heavier, optional" clean-room workflow (7 template folders + 2 guides)
+physically lived inside `planning/knowledge/`/`docs/`, the exact
+directories the everyday adoption step says to copy, so "most projects
+won't need this" was true in prose but not mechanically; no worked
+example existed anywhere. All four fixed: explicit `CLAUDE.md` merge
+guidance added; the self-referential section removed from
+`docs/architecture.md` (content already existed, correctly scoped, in
+`README.md`'s own License note); the whole heavier workflow moved to a
+new top-level `optional-clean-room-workflow/` directory with its own
+README explaining when to use it; two short worked examples added
+(`docs/worked-example.md` for the everyday loop,
+`optional-clean-room-workflow/worked-example.md` for the clean-room
+loop). Pushed to the real `codecompass-template` remote: `68bae8e`.
+
+**Part 4 (verification/closeout for both repositories) is not yet
+started** — see the plan file's own §8-9 and "Next concrete step"
+below.
 
 ---
 

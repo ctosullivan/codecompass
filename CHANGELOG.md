@@ -431,6 +431,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Haskell `when:`-block limitations bullet parallel to its existing
   Python one) — confirming the existing documentation corpus was already
   substantially accurate.
+- **Phase 80, Part 3** (lighter-weight `codecompass-template` refresh,
+  separate repository, pushed `68bae8e`): a fresh-adopter exercise (a
+  context-free agent actually adopting the template into both a new
+  project and an existing one with its own README/LICENSE/`CLAUDE.md`)
+  found and fixed four real usability gaps — `CLAUDE.md` wasn't named
+  alongside README/LICENSE as needing careful merge rather than a blind
+  overwrite; `docs/architecture.md` ended with a first-person section
+  describing the template repository itself, which every adopting
+  project would otherwise inherit verbatim; the "optional, heavier"
+  clean-room workflow physically lived inside the directories the
+  everyday adoption step says to copy, so it wasn't actually optional at
+  adoption time; no worked example existed anywhere for either the
+  everyday or the heavier workflow.
 
 ## [1.0.0] - 2026-09-24
 
