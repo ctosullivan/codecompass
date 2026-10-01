@@ -8,6 +8,90 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-080 — never construct a multi-line `git commit -m` message containing backtick-quoted code identifiers as an interpolated shell string
+
+- **origin:** Phase 80 (CodeCompass-wide documentation reconstruction),
+  Part 4 verification commit
+- **date:** 2026-10-02
+- **project_revision:** `3bfcc4d` (corrupted), amended to `33bc68a`
+  (corrected, not yet pushed at time of amend)
+- **observation:** a multi-line commit message containing backtick-
+  quoted code identifiers (e.g. `` `codecompass query source-stats` ``)
+  was passed to `git commit -m` as an interpolated shell string. The
+  backticks were interpreted as command substitution before `git`
+  itself ever saw the text — the enclosed span was executed as a real
+  shell command (a genuine CLI invocation in this project's own venv,
+  which failed with a Typer usage error) and the commit landed with that
+  span silently replaced by the failed command's own stderr text,
+  instead of the intended words.
+- **evidence:** `git log -1 --format=%B` immediately after the commit
+  showed the corrupted span directly; confirmed the cause by noting the
+  missing text was exactly the one backtick-quoted phrase in that
+  paragraph, and that the stray output matched a real Typer "Missing
+  command" error for the literal command the backticked text would
+  execute if run.
+- **classification:** tool-usage pitfall (Claude Code / shell quoting),
+  not a CodeCompass development-process rule — does not belong in
+  `CLAUDE.md`.
+- **status:** candidate
+- **recurrence:** first occurrence noticed; the same construction
+  (interpolated `-m` string with backtick-quoted code) had very likely
+  been used safely many times earlier in this same phase purely by
+  chance (no command-shaped backtick content happened to appear) — this
+  is a latent risk in an established habit, not a one-off slip.
+- **moves forward when:** a future commit-message construction habit
+  change — e.g. routing every multi-line, backtick-containing commit
+  message through `git commit -F <file>` instead of an interpolated
+  `-m` string — can cite this as the concrete, evidenced reason. Also
+  filed as Claude-Code product feedback (not duplicated here as a
+  CodeCompass rule, since the fix belongs in session habits, not this
+  project's own files).
+
+### L-079 — documentation-accuracy and coding-context-advantage checks are not substitutes for each other, even run back-to-back through the same pipeline, because their own ground truth operates at different levels of detail
+
+- **origin:** Phase 80 (CodeCompass-wide documentation reconstruction),
+  Part 4 verification
+- **date:** 2026-10-02
+- **project_revision:** `33bc68a`
+- **observation:** a bounded coding-context packet built from this
+  phase's own frozen snapshot and model-blind reconstruction contained a
+  real, consequential factual error (a conflation of two distinct graph-
+  opening helper functions, `_open_graph_or_note`/`_graph_session` vs.
+  the actually-used `_open_graph_if_exists`, plus an invented NULL-value
+  label inconsistent with the real, already-established one). This error
+  originated in the Stage 2 reconstruction's own summary prose and
+  **survived two independent checks untouched**: Stage 3's comparison
+  (against the frozen snapshot's own Claims, which are conceptual/
+  meta-level and never described CLI-helper-naming at this granularity)
+  and Stage 5's reconciliation (against the real published docs, which
+  — correctly, for their own audience — also never state this
+  implementation-level detail either way). The error was invisible to
+  both checks not because either was performed carelessly, but because
+  neither check's own evidentiary scope covered this level of detail. It
+  only surfaced when the packet was independently evaluated against raw
+  source by `context-evaluator`, for its own, separate, intended
+  purpose.
+- **evidence:** `planning/phase-80-docs-draft/_part4-coding-context-packet-evaluation.md`
+  — full root-cause trace, FAIL verdict, LOW advantage rating, with
+  direct `cli.py`/`graph.py` line citations for both the error and the
+  correct behavior.
+- **classification:** process/methodology principle (validates, with
+  real first-party evidence, a design decision this phase's own
+  governing instruction already mandated — keeping the two results
+  separate — rather than introducing a new rule).
+- **status:** candidate
+- **recurrence:** first occurrence this specific error shape; the
+  general pattern ("a check's own scope has a blind spot one level more
+  granular than what it compares against") echoes `L-075`'s "scope vs.
+  depth" distinction from a different lineage (fail-closed validation),
+  suggesting this may be a recurring shape worth a shared principle
+  rather than two independent one-off learnings, if it recurs again in a
+  third context.
+- **moves forward when:** a future phase considers merging or
+  sequencing documentation-accuracy and coding-context-advantage checks
+  for efficiency — this learning is the evidenced reason to keep them
+  separate and both mandatory, not optional belt-and-suspenders.
+
 ### L-078 — a post-`done` corrective amendment to an already-implemented, reconciled phase gets a new numbered ADR in the same lineage, not an in-place edit — now confirmed repeatable, not a one-off
 
 - **origin:** Phase 79 (clean-room conceptual understanding + documentation
