@@ -7,6 +7,54 @@ session-resumption, not a project history.
 
 ## Current phase
 
+**Phase 80 (CodeCompass-wide documentation reconstruction + lightweight
+template refresh) is `in progress`** — direct user request, 2026-10-02,
+approved to proceed directly into implementation, no planning
+round-trip. Full plan: `planning/phase-80-codecompass-documentation-reconstruction.md`.
+Full initiating prompt saved verbatim:
+`planning/phase-80-documentation-reconstruction-prompt.md`.
+
+**Part 1 (two further Phase 79 defects, found by direct user review) is
+done:**
+
+1. `check_snapshot_completeness`'s identity/kind checks used a truthy
+   guard (`if real_id and real_id != expected_id`) that silently skipped
+   validation when historical content had no `id:`/`kind:` field at all.
+   Independently reproduced in a disposable git fixture (an Assertion
+   slot, then an Evidence slot, pointed at a plain identity-less
+   committed file with its own correct historical hash — both produced
+   zero findings pre-fix). Fixed via two new Finding rules
+   (`knowledge-base-snapshot-identity-missing`/`-kind-missing`),
+   generalized to the top-level assertion slot (which also gained a kind
+   check it never had, and now reads historical content via `git show`,
+   not the live file) and every nested Evidence/Derivation entry. Three
+   new regression tests (34 total, up from 31). Committed `a1f12b3`.
+2. `template-usability-exercise-2`'s `id-reuse-001` assertion
+   overgeneralized its causal rule to "reuse depends on whether the
+   most-recently-deleted task held the current maximum id." Both
+   counterexamples named in the correction request were independently
+   reproduced against the real pre-fix `_next_id`, directly disproving
+   the rule (`add 1,2,3 → delete 2, then 3 → add` yields id `2`, not the
+   rule's own predicted `3`; id `3` is never reused in that sequence at
+   all). A reference model tracking every id ever assigned confirmed the
+   real mechanism (`candidate = max(live)+1`, reuse iff ever-assigned-
+   before) across 5 sequences with zero deviation, then survived an
+   independent falsification attempt (18 self-designed sequences,
+   several thousand operations, a CLI cross-check — found no
+   counterexample). Corrected via `id-reuse-002.md` superseding
+   `id-reuse-001.md` (dated correction notice, original preserved),
+   corrected `docs/id-reuse.md` and `context-packet-fix-id-reuse.md`,
+   and a new snapshot `id-reuse@v2.toml` — all as four real commits
+   inside `template-usability-exercise-2`'s own git history (17 commits
+   total, up from 13), re-bundled and replacing the preserved evidence
+   in the main repo. Committed `024efcd`.
+
+**Parts 2-4 (broader CodeCompass reconstruction, lighter template
+application, verification/closeout) are not yet started** — see the
+plan file's own §§2-9 and "Next concrete step" below.
+
+---
+
 **CodeCompass v1.0.0 is released.** The redefined-v1 milestone group
 (`decisions/0048`, Phases 0–70) is complete and closed: published to
 PyPI as the `codecompass-context` distribution (CLI command and Python
@@ -227,8 +275,16 @@ strategic exit decision either way.
 
 ## What was just completed
 
+**Phase 80, Part 1 — the two further Phase 79 defects described above —
+done, committed `a1f12b3`/`024efcd`.** Full test suite (34/34 in
+`tests/test_check_knowledge_base.py`), `ruff check .`, and
+`check_knowledge_base.py --strict` all clean after both fixes (one
+expected, unchanged informational divergence finding on the main
+project's own corpus). Parts 2-4 not yet started.
+
 **Phase 79 — Clean-room conceptual understanding + documentation
-reconstruction — implementation complete, closeout finishing.**
+reconstruction — `done` (historical; see above for Phase 80's own
+corrections to two of its downstream artifacts).**
 
 Four checker functions landed in `scripts/check_knowledge_base.py`
 (`check_optional_enum_fields`, `check_list_fields_are_inline` — fail-
@@ -435,26 +491,26 @@ above). Full report:
 
 ## Next concrete step
 
-**Phase 78's twice-drafted plan awaits direct user review** (per its own
-explicit instruction: "planning only... do not execute the trial or
-implement CodeCompass/Ledgerkit code"). Once approved (or amended and
-re-approved), the next concrete step is executing its §5 trial in stages:
-Stage 1 — dispatch fresh baseline/treatment agents against seed-then-fork
-Ledgerkit scratch clones (frozen at
-`6c90b4ca3e6c10951cb400e43db4b90bfccc5909`) for discovery/design only (no
-implementation) on the journal-comment `ReportSpec` parsing task, with
-mandatory observable research traces (§5.3.4); Stage 2 — an independent
-`context-evaluator` assessment producing the three-outcome `CG-001`
-verdict (`recurred`/`not-recurred`/`task-not-applicable`, §4); if
-`task-not-applicable`, re-run against the fallback task before proceeding
-(§7.2.0); Stage 3 (optional, evaluator's own call) — a shared,
-human-approved implementation contract given to fresh implementation
-agents in both arms; then an independent `knowledge-curator` triage
-applying Phase 78's own §7.2 exit gate (Priority A closure only on an
-applicable `not-recurred` result, or the smallest evidence-supported
-follow-on on `recurred`) — full detail:
-`planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
+**Phase 80, Part 2**: the broader CodeCompass-wide documentation
+reconstruction (plan file §§2-6) — a freshness review of the existing
+`docs/domain/` corpus, new research for any named coverage category not
+yet Claim-backed, a frozen project-wide snapshot, a model-blind
+`implementation-reconstructor` dispatch against CodeCompass's own core
+(CLI/sync/graph/adapter pattern), a comparison, a fresh documentation
+draft staged before reconciliation, and reconciliation/publication. Then
+Part 3 (lighter-weight `codecompass-template` refresh) and Part 4
+(verification/closeout for both repositories, separate workflow-
+completion and strict-isolation verdicts). Full detail:
+`planning/phase-80-codecompass-documentation-reconstruction.md`.
+
+Phase 78's twice-drafted plan still awaits direct user review (unchanged
+by Phase 80, per direct instruction) — see
+`planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`
+for its own next-step detail when resumed.
 
 Per `CLAUDE.md` §6, Phases 75, 76 (including its corrective pass), 77,
 and 79 are fully closed and already pushed to `origin` — no further
-action needed on any of them.
+action needed on any of them. Phase 80's own commits so far
+(`a1f12b3`/`024efcd`/`d53a25f`) are **not yet pushed** — pending the
+phase's own DoD gate per §6, which has not yet passed (the phase is
+still in progress).

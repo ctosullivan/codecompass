@@ -389,6 +389,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   §5 amendment, presented to and approved by the user per §0's own
   approval-gate requirement) plus operationalizing updates to
   `planning/agent-led-workflow.md` and the affected agent definitions.
+- **Phase 80, Part 1** (two further Phase 79 defects, found by direct
+  user review): `check_snapshot_completeness`'s identity/kind checks
+  used a truthy guard (`if real_id and real_id != expected_id`) that
+  silently skipped validation when historical content had no
+  `id:`/`kind:` field at all — a committed, correctly-hashed, but
+  completely unidentified file passed as if it correctly identified the
+  record it claimed to. Independently reproduced in a disposable git
+  fixture before fixing; two new Finding rules
+  (`knowledge-base-snapshot-identity-missing`/`-kind-missing`) now cover
+  the absent-field case, generalized to the top-level assertion slot
+  (which also gained a kind check it never had, and now reads historical
+  content via `git show`, not the live file) and every nested
+  Evidence/Derivation entry. Separately,
+  `template-usability-exercise-2`'s own `id-reuse-001` assertion
+  overgeneralized its causal rule to "reuse depends on whether the
+  most-recently-deleted task held the current maximum id" — both named
+  counterexamples independently reproduced as false against the real
+  pre-fix `_next_id`; corrected via `id-reuse-002.md` (superseding
+  `id-reuse-001.md`, preserved with a dated correction notice), corrected
+  downstream `docs/id-reuse.md` and `context-packet-fix-id-reuse.md`,
+  and a new snapshot `id-reuse@v2.toml`, all landed as real commits
+  inside that exercise's own git history and independently reviewed by a
+  fresh dispatch explicitly tasked with trying to falsify the corrected
+  claim (found no counterexample).
 
 ## [1.0.0] - 2026-09-24
 
