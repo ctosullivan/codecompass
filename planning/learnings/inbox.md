@@ -30,10 +30,14 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   paragraph, and that the stray output matched a real Typer "Missing
   command" error for the literal command the backticked text would
   execute if run.
-- **classification:** tool-usage pitfall (Claude Code / shell quoting),
-  not a CodeCompass development-process rule — does not belong in
-  `CLAUDE.md`.
-- **status:** candidate
+- **classification:** workflow — scoped to this project's own
+  session/git practice (`planning/agent-led-workflow.md`), not
+  project-rule/`CLAUDE.md`-tier. Retains the filer's own correct call
+  that this is a Claude Code tool-usage pitfall, not a CodeCompass
+  development-process rule in the `CLAUDE.md` §1/§5 sense — but "not
+  CLAUDE.md-tier" and "not this project's queue at all" are different
+  claims, and only the first is true (see curation note).
+- **status:** promoted
 - **recurrence:** first occurrence noticed; the same construction
   (interpolated `-m` string with backtick-quoted code) had very likely
   been used safely many times earlier in this same phase purely by
@@ -46,6 +50,50 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   filed as Claude-Code product feedback (not duplicated here as a
   CodeCompass rule, since the fix belongs in session habits, not this
   project's own files).
+- **curation (this triage, 2026-10-02, knowledge-curator):** **promote
+  (narrow)** — not discard. The entry's own classification is right that
+  this isn't `CLAUDE.md`/project-rule material, and it's reasonable that
+  it was separately filed as Claude Code product feedback — but that
+  filing addresses the *tool's* underlying shell-quoting behavior, which
+  is out of this project's control either way. It doesn't address this
+  project's own concrete, recurring exposure: this repo's commit
+  convention (`CLAUDE.md` §6, `type(phase-N): summary`) and its own
+  practice of citing code/CLI identifiers in backticks inside commit
+  bodies (visible throughout `planning/learnings/promoted.md`'s own
+  pointer lines and this phase's own corrupted commit) make the specific
+  precondition for this failure — a backtick-quoted identifier inside a
+  multi-line `-m` string — a routine occurrence in *this* repo, not an
+  edge case. Whether or not Claude Code's own product behavior ever
+  changes, a future session working in this exact repo benefits from a
+  standing habit, independent of the product-feedback outcome. Scoped
+  narrowly (one short paragraph, no new process), not promoted to
+  `CLAUDE.md` per the entry's own correct scoping call.
+
+  **Destination:** `planning/agent-led-workflow.md` step 6 (implementation
+  step — the existing `L-046` credential-probe paragraph is embedded in
+  this exact step already, same "a concrete tooling pitfall discovered
+  mid-phase" shape). Outside this curator's own write scope, so landing
+  it is the lead's action. Draft paragraph, ready to append after the
+  existing `L-046` paragraph in step 6:
+
+  > **Before running `git commit -m` with a multi-line message that
+  > contains backtick-quoted code identifiers (e.g. `` `codecompass query
+  > source-stats` ``), write the message to a file and use
+  > `git commit -F <file>` instead.** An interpolated `-m` shell string
+  > executes backtick-enclosed spans as command substitution before `git`
+  > ever sees the text, silently replacing that span with whatever the
+  > resulting (likely failing) command printed to stderr — not a `git`
+  > error, so nothing stops the commit from landing corrupted. Confirmed
+  > at Phase 80 (`L-080`): a real commit landed with a backtick-quoted CLI
+  > phrase replaced by a failed Typer invocation's own error text, caught
+  > only by reading the commit back immediately with
+  > `git log -1 --format=%B` and fixed via `git commit --amend -F <file>`
+  > before it reached `origin`. Reading a just-made commit back this way
+  > remains good practice regardless.
+
+  **Landed**: `planning/agent-led-workflow.md` step 6, appended after the
+  `L-046` paragraph. Status flipped to `promoted`; `promoted.md` pointer
+  line added.
 
 ### L-079 — documentation-accuracy and coding-context-advantage checks are not substitutes for each other, even run back-to-back through the same pipeline, because their own ground truth operates at different levels of detail
 
@@ -75,11 +123,11 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   — full root-cause trace, FAIL verdict, LOW advantage rating, with
   direct `cli.py`/`graph.py` line citations for both the error and the
   correct behavior.
-- **classification:** process/methodology principle (validates, with
-  real first-party evidence, a design decision this phase's own
-  governing instruction already mandated — keeping the two results
-  separate — rather than introducing a new rule).
-- **status:** candidate
+- **classification:** workflow (normalized from the filer's own
+  "process/methodology principle" to the nearest §3 canonical value,
+  since the destination is a methodology-spec ground rule, same tier as
+  `L-027`/`L-062`/`L-074`, not an ADR or architecture doc).
+- **status:** promoted
 - **recurrence:** first occurrence this specific error shape; the
   general pattern ("a check's own scope has a blind spot one level more
   granular than what it compares against") echoes `L-075`'s "scope vs.
@@ -91,6 +139,69 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   sequencing documentation-accuracy and coding-context-advantage checks
   for efficiency — this learning is the evidenced reason to keep them
   separate and both mandatory, not optional belt-and-suspenders.
+- **curation (this triage, 2026-10-02, knowledge-curator):** **promote**
+  — provenance accepted (all required fields present once classification
+  normalized above). Independently re-read
+  `planning/phase-80-docs-draft/_part4-coding-context-packet-evaluation.md`
+  directly: it confirms the FAIL/LOW verdict, the specific helper-function
+  conflation (`_open_graph_or_note`/`_graph_session` vs. the real
+  `_open_graph_if_exists`), and traces the error's survival through
+  Stage 3 and Stage 5 exactly as this entry states — a real, concrete,
+  single-instance-but-costly finding, not a hypothetical.
+
+  **Checked the proposed `L-075` merge/link first, since the entry itself
+  raises it.** Decision: **do not merge** — these are related but
+  distinct failure shapes, not one recurrence of the other. `L-075`
+  describes a *single* check that correctly widened its own scope but
+  left one axis (value-depth) of *that same check* shallow. `L-079`
+  describes *two separate, each-individually-correct* checks
+  (documentation-accuracy, coding-context-advantage) that were never
+  designed to cover the same granularity in the first place — nothing
+  about either check is shallow or incomplete on its own terms; the gap
+  exists only in the space between them. Cross-linking both as "the
+  general shape of 'a check's designed scope has a boundary, and an
+  error can hide exactly past that boundary' recurs across unrelated
+  lineages" is worth a shared one-line pointer, but a merge would
+  misleadingly collapse "fix this one checker's depth" (L-075's actual
+  remedy) with "never collapse these two whole evaluation tracks into
+  one" (L-079's actual remedy) into a single recurrence count neither
+  remedy satisfies alone.
+
+  **Destination:** `planning/v1-redefinition/context-quality-evaluation.md`
+  §1 "Ground rules" — the same file/section `L-027` and the Phase 61
+  single-trial-comparison ground rule already landed in, for the same
+  reason (a design-level pitfall in how the evaluation pipeline itself is
+  run, applicable to every future phase that runs both checks, not just
+  Phase 80's own). This is outside this curator's own write scope
+  (`planning/v1-redefinition/**` is not in the allowed-write list), so
+  landing it is the lead's (or `docs-maintainer`'s) action, not mine.
+  Draft ground-rule bullet, ready to append to §1 after the existing
+  `L-062`/Phase 75 cross-reference bullet:
+
+  > - **A documentation-accuracy check and a coding-context-advantage
+  >   check are not substitutes for each other, even when both compare
+  >   against the same frozen snapshot/reconstruction materials.** Their
+  >   own evidentiary standards operate at different levels of
+  >   granularity — a documentation-accuracy comparison's ground truth is
+  >   published, conceptual prose (a Claim, a README paragraph); a
+  >   coding-context-advantage evaluation's ground truth is literal,
+  >   implementation-level call-site behaviour (the actual helper function
+  >   invoked, its actual signature). An error below the documentation
+  >   check's own granularity can cleanly survive a correct, careful
+  >   documentation-accuracy comparison and still mislead an implementer,
+  >   because neither check was ever scoped to catch it. Confirmed at
+  >   Phase 80 (`L-079`): a coding-context packet's own real
+  >   helper-function conflation survived both the model-blind
+  >   reconstruction's comparison against the frozen snapshot's Claims and
+  >   reconciliation against the real published docs untouched, and was
+  >   only caught when the packet was evaluated, separately and for its
+  >   own stated purpose, against raw source. Do not merge, skip, or
+  >   sequence-and-shortcut one of these two checks on the assumption that
+  >   passing the other makes the other redundant.
+
+  **Landed**: `planning/v1-redefinition/context-quality-evaluation.md`
+  §1 "Ground rules", appended after the `L-062` cross-reference bullet.
+  Status flipped to `promoted`; `promoted.md` pointer line added.
 
 ### L-078 — a post-`done` corrective amendment to an already-implemented, reconciled phase gets a new numbered ADR in the same lineage, not an in-place edit — now confirmed repeatable, not a one-off
 

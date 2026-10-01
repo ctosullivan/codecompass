@@ -239,6 +239,21 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
    the credential-requiring action itself to the user's own shell instead
    (the token/secret never needs to enter this agent's own context), the
    posture Phase 70 ultimately used correctly.
+
+   **Before running `git commit -m` with a multi-line message that
+   contains backtick-quoted code identifiers (e.g. `` `codecompass query
+   source-stats` ``), write the message to a file and use
+   `git commit -F <file>` instead.** An interpolated `-m` shell string
+   executes backtick-enclosed spans as command substitution before `git`
+   ever sees the text, silently replacing that span with whatever the
+   resulting (likely failing) command printed to stderr — not a `git`
+   error, so nothing stops the commit from landing corrupted. Confirmed
+   at Phase 80 (`L-080`): a real commit landed with a backtick-quoted CLI
+   phrase replaced by a failed Typer invocation's own error text, caught
+   only by reading the commit back immediately with
+   `git log -1 --format=%B` and fixed via `git commit --amend -F <file>`
+   before it reached `origin`. Reading a just-made commit back this way
+   remains good practice regardless.
 7. **Obtain independent testing/evaluation.**
    - Internal phase → `release-phase-auditor` (read-only DoD check).
    - Reference-project phase → `reference-project-tester` (friction) +

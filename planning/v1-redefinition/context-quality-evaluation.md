@@ -60,6 +60,25 @@ reference-project evaluation, not just Phase 61's own.
   75) for the design-time complement: state explicitly, for both arms of
   any comparison, whether reads are scoped to the assigned scratch clone
   or intentionally left unscoped.
+- **A documentation-accuracy check and a coding-context-advantage check
+  are not substitutes for each other, even when both compare against the
+  same frozen snapshot/reconstruction materials.** Their own evidentiary
+  standards operate at different levels of granularity — a documentation-
+  accuracy comparison's ground truth is published, conceptual prose (a
+  Claim, a README paragraph); a coding-context-advantage evaluation's
+  ground truth is literal, implementation-level call-site behaviour (the
+  actual helper function invoked, its actual signature). An error below
+  the documentation check's own granularity can cleanly survive a
+  correct, careful documentation-accuracy comparison and still mislead an
+  implementer, because neither check was ever scoped to catch it.
+  Confirmed at Phase 80 (`L-079`): a coding-context packet's own real
+  helper-function conflation survived both the model-blind
+  reconstruction's comparison against the frozen snapshot's Claims and
+  reconciliation against the real published docs untouched, and was only
+  caught when the packet was evaluated, separately and for its own stated
+  purpose, against raw source. Do not merge, skip, or sequence-and-
+  shortcut one of these two checks on the assumption that passing the
+  other makes the other redundant.
 
 ## 2. Report structure
 
