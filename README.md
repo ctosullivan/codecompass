@@ -270,11 +270,18 @@ consumption modes (standalone vendor folder vs. routed from project
 root), staleness checking, and the chat REPL.
 
 **What to commit**: `vendor.toml` is a small, hand-edited config file —
-commit it. Everything `codecompass` generates (`vendor/`,
-`context-graph.db`, the generated Skills and `/discovery` command) is
-gitignored by default and deterministically regenerated from
-`vendor.toml` plus your project's own current source — never hand-edit
-or commit these (`decisions/0010`, `decisions/0024`).
+commit it. `vendor/` and `context-graph.db` are deterministically
+regenerated from `vendor.toml` plus your project's own current source,
+gitignored by default, and never hand-edited or committed
+(`decisions/0010`, `decisions/0024`). The generated Skills, `/discovery`
+command, and Cursor `.mdc` rules are equally deterministic regenerations
+— safe to gitignore the same way — but codecompass itself takes no
+position on it: unlike `vendor/`/`context-graph.db`, no ADR requires
+gitignoring them, and this project's own repository commits its own
+generated `.claude/skills/`, `.claude/commands/discovery.md`, and
+`.cursor/rules/*.mdc` for contributor convenience, rather than requiring
+every fresh clone to run `codecompass` before an agent session can use
+them.
 
 ## Limitations
 
