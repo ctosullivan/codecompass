@@ -713,3 +713,347 @@ content_hash = "{content_hash}"
         assert len(identity_findings) == 1
         assert "CL-TEST-999" in identity_findings[0].message
         assert "CL-TEST-001" in identity_findings[0].message
+
+
+class TestNestedEntryValidation:
+    """Closes a real gap the sixth amendment found: a nested
+    `supporting_evidence`/`contradicting_evidence`/`derivation` entry's
+    own *key* being present was previously enough to count as "captured,"
+    regardless of whether the entry's own *value* was a well-formed table
+    or whether it actually identified the record its key claims to.
+    Exercises three real attack shapes against a real, disposable git
+    fixture: a nested table replaced by a scalar, a key kept but its
+    entry re-pointed at a *different* real record (an identity swap, not
+    a hash mismatch -- the swapped-in record's own hash is genuinely
+    correct for what it actually is), and the equivalent for Derivations.
+    """
+
+    def _build_repo_with_two_evidence_and_two_derivations(
+        self, tmp_path: Path
+    ) -> tuple[Path, str, dict[str, str]]:
+        feature_dir = tmp_path / "planning" / "knowledge" / "test-topic"
+        # Deliberately cites only ONE of each (EV-TEST-001, DE-TEST-001) --
+        # EV-TEST-002/DE-TEST-002 exist as real records this fixture can
+        # swap an entry's identity to point at, but are not themselves
+        # cited by CL-TEST-001, so a valid baseline snapshot need not
+        # capture them.
+        _write(
+            feature_dir / "CL-TEST-001.yaml",
+            "id: CL-TEST-001\nkind: claim\nstatement: test statement\n"
+            "derivation: DE-TEST-001\nsupporting_evidence: [EV-TEST-001]\n"
+            "contradicting_evidence: []\nderived_by: test\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-01T00:00:00Z"\n'
+            "status: supported\nsupersedes: null\n",
+        )
+        _write(
+            feature_dir / "EV-TEST-001.yaml",
+            "id: EV-TEST-001\nkind: evidence\nevidence_kind: source\n"
+            "what_it_shows: the real EV-TEST-001\n"
+            'repository_revision: "working tree"\nstatus: current\n',
+        )
+        _write(
+            feature_dir / "EV-TEST-002.yaml",
+            "id: EV-TEST-002\nkind: evidence\nevidence_kind: source\n"
+            "what_it_shows: a completely different real record, EV-TEST-002\n"
+            'repository_revision: "working tree"\nstatus: current\n',
+        )
+        _write(
+            feature_dir / "DE-TEST-001.yaml",
+            "id: DE-TEST-001\nkind: derivation\nclaim: CL-TEST-001\n"
+            "method: the real DE-TEST-001\ninputs: []\nperformed_by: test\n"
+            'timestamp: "2026-10-01T00:00:00Z"\n',
+        )
+        _write(
+            feature_dir / "DE-TEST-002.yaml",
+            "id: DE-TEST-002\nkind: derivation\nclaim: CL-TEST-001\n"
+            "method: a completely different real record, DE-TEST-002\n"
+            'inputs: []\nperformed_by: test\ntimestamp: "2026-10-01T00:00:00Z"\n',
+        )
+        _init_git_repo(tmp_path)
+        rev = _commit_all(tmp_path, "add CL-TEST-001 + two evidence + two derivations")
+
+        hashes = {
+            name: _sha256_file(feature_dir / f"{name}.yaml")
+            for name in ("CL-TEST-001", "EV-TEST-001", "EV-TEST-002", "DE-TEST-001", "DE-TEST-002")
+        }
+
+        snapshots_dir = feature_dir / "snapshots"
+        snapshots_dir.mkdir(parents=True)
+        prefix = "planning/knowledge/test-topic"
+        snapshot_toml = f"""\
+snapshot_id = "test-topic@v1"
+created = "2026-10-01T00:00:00Z"
+repository_revision_at_freeze = "{rev}"
+excluded_assertions = []
+
+[assertions."CL-TEST-001"]
+path = "{prefix}/CL-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{hashes["CL-TEST-001"]}"
+
+[assertions."CL-TEST-001".supporting_evidence."EV-TEST-001"]
+path = "{prefix}/EV-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{hashes["EV-TEST-001"]}"
+
+[assertions."CL-TEST-001".derivation."DE-TEST-001"]
+path = "{prefix}/DE-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{hashes["DE-TEST-001"]}"
+"""
+        snapshot_path = snapshots_dir / "snapshot-v1.toml"
+        _write(snapshot_path, snapshot_toml)
+        _commit_all(tmp_path, "freeze complete, valid snapshot-v1")
+        return feature_dir, rev, hashes
+
+    def test_baseline_complete_snapshot_passes(self, tmp_path):
+        feature_dir, rev, hashes = self._build_repo_with_two_evidence_and_two_derivations(
+            tmp_path
+        )
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        assert findings == []
+        integrity_findings = check_knowledge_base.check_snapshot_historical_integrity(
+            feature_dir, root=tmp_path
+        )
+        assert integrity_findings == []
+
+    def test_scalar_in_place_of_evidence_table_is_blocking_finding(self, tmp_path):
+        """Attack 1: a required nested Evidence table is replaced by a
+        scalar string. The key `EV-TEST-001` is still present, but a
+        checker that only inspects dict *keys* would wrongly treat this
+        as captured."""
+        feature_dir, rev, hashes = self._build_repo_with_two_evidence_and_two_derivations(
+            tmp_path
+        )
+        snapshot_path = feature_dir / "snapshots" / "snapshot-v1.toml"
+        text = f"""\
+snapshot_id = "test-topic@v1"
+created = "2026-10-01T00:00:00Z"
+repository_revision_at_freeze = "{rev}"
+excluded_assertions = []
+
+[assertions."CL-TEST-001"]
+path = "planning/knowledge/test-topic/CL-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{hashes["CL-TEST-001"]}"
+supporting_evidence = {{"EV-TEST-001" = "not a table at all"}}
+
+[assertions."CL-TEST-001".derivation."DE-TEST-001"]
+path = "planning/knowledge/test-topic/DE-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{hashes["DE-TEST-001"]}"
+"""
+        snapshot_path.write_text(text, encoding="utf-8")
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        malformed = [f for f in findings if f.rule == "knowledge-base-snapshot-malformed-structure"]
+        closure = [f for f in findings if f.rule == "knowledge-base-snapshot-incomplete-closure"]
+        assert len(malformed) == 1, findings
+        assert "EV-TEST-001" in malformed[0].message
+        assert malformed[0].strict
+        assert len(closure) == 1, (
+            "a malformed nested entry must not count as satisfying closure"
+        )
+        assert "EV-TEST-001" in closure[0].message
+        assert closure[0].strict
+
+        # Must not crash the hash-integrity pass either (it independently
+        # iterates well-formed dict entries only, via _iter_snapshot_entries).
+        check_knowledge_base.check_snapshot_historical_integrity(feature_dir, root=tmp_path)
+
+    def test_evidence_identity_swap_is_blocking_finding(self, tmp_path):
+        """Attack 2: the key `EV-TEST-001` is kept, but its entry's own
+        `path`/`content_hash` are re-pointed at the real `EV-TEST-002`
+        record, with `EV-TEST-002`'s own genuinely correct hash. The hash
+        itself is not tampered -- it is exactly right for what it points
+        to -- so a pure hash-integrity check would not catch this; only
+        checking the pointed-to record's own `id` against the key it was
+        filed under does."""
+        feature_dir, rev, hashes = self._build_repo_with_two_evidence_and_two_derivations(
+            tmp_path
+        )
+        snapshot_path = feature_dir / "snapshots" / "snapshot-v1.toml"
+        text = f"""\
+snapshot_id = "test-topic@v1"
+created = "2026-10-01T00:00:00Z"
+repository_revision_at_freeze = "{rev}"
+excluded_assertions = []
+
+[assertions."CL-TEST-001"]
+path = "planning/knowledge/test-topic/CL-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{hashes["CL-TEST-001"]}"
+
+[assertions."CL-TEST-001".supporting_evidence."EV-TEST-001"]
+path = "planning/knowledge/test-topic/EV-TEST-002.yaml"
+repository_revision = "{rev}"
+content_hash = "{hashes["EV-TEST-002"]}"
+
+[assertions."CL-TEST-001".derivation."DE-TEST-001"]
+path = "planning/knowledge/test-topic/DE-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{hashes["DE-TEST-001"]}"
+"""
+        snapshot_path.write_text(text, encoding="utf-8")
+
+        # The swapped-in hash is genuinely correct for EV-TEST-002's own
+        # content, so the pure tampering check must NOT flag this as a
+        # hash mismatch -- confirming the identity swap is invisible to
+        # hash-integrity alone, and only the identity check catches it.
+        integrity_findings = check_knowledge_base.check_snapshot_historical_integrity(
+            feature_dir, root=tmp_path
+        )
+        assert integrity_findings == [], (
+            "a correctly-hashed identity swap must not be reported as "
+            f"tampering (that would be the wrong diagnosis): {integrity_findings}"
+        )
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        identity = [f for f in findings if f.rule == "knowledge-base-snapshot-identity-mismatch"]
+        closure = [f for f in findings if f.rule == "knowledge-base-snapshot-incomplete-closure"]
+        assert len(identity) == 1, findings
+        assert "EV-TEST-001" in identity[0].message and "EV-TEST-002" in identity[0].message
+        assert identity[0].strict
+        assert len(closure) == 1, (
+            "an identity-swapped nested entry must not count as satisfying "
+            "closure for the id it claims to be"
+        )
+        assert closure[0].strict
+
+    def test_derivation_scalar_in_place_of_table_is_blocking_finding(self, tmp_path):
+        """Attack 3 (Derivation equivalent of attack 1)."""
+        feature_dir, rev, hashes = self._build_repo_with_two_evidence_and_two_derivations(
+            tmp_path
+        )
+        snapshot_path = feature_dir / "snapshots" / "snapshot-v1.toml"
+        text = f"""\
+snapshot_id = "test-topic@v1"
+created = "2026-10-01T00:00:00Z"
+repository_revision_at_freeze = "{rev}"
+excluded_assertions = []
+
+[assertions."CL-TEST-001"]
+path = "planning/knowledge/test-topic/CL-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{hashes["CL-TEST-001"]}"
+derivation = {{"DE-TEST-001" = "not a table at all"}}
+
+[assertions."CL-TEST-001".supporting_evidence."EV-TEST-001"]
+path = "planning/knowledge/test-topic/EV-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{hashes["EV-TEST-001"]}"
+"""
+        snapshot_path.write_text(text, encoding="utf-8")
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        malformed = [f for f in findings if f.rule == "knowledge-base-snapshot-malformed-structure"]
+        closure = [f for f in findings if f.rule == "knowledge-base-snapshot-incomplete-closure"]
+        assert len(malformed) == 1, findings
+        assert "DE-TEST-001" in malformed[0].message
+        assert len(closure) == 1
+        assert "DE-TEST-001" in closure[0].message
+
+    def test_derivation_identity_swap_is_blocking_finding(self, tmp_path):
+        """Attack 4 (Derivation equivalent of attack 2): key `DE-TEST-001`
+        kept, entry re-pointed at the real `DE-TEST-002` record with its
+        own genuinely correct hash."""
+        feature_dir, rev, hashes = self._build_repo_with_two_evidence_and_two_derivations(
+            tmp_path
+        )
+        snapshot_path = feature_dir / "snapshots" / "snapshot-v1.toml"
+        text = f"""\
+snapshot_id = "test-topic@v1"
+created = "2026-10-01T00:00:00Z"
+repository_revision_at_freeze = "{rev}"
+excluded_assertions = []
+
+[assertions."CL-TEST-001"]
+path = "planning/knowledge/test-topic/CL-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{hashes["CL-TEST-001"]}"
+
+[assertions."CL-TEST-001".supporting_evidence."EV-TEST-001"]
+path = "planning/knowledge/test-topic/EV-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{hashes["EV-TEST-001"]}"
+
+[assertions."CL-TEST-001".derivation."DE-TEST-001"]
+path = "planning/knowledge/test-topic/DE-TEST-002.yaml"
+repository_revision = "{rev}"
+content_hash = "{hashes["DE-TEST-002"]}"
+"""
+        snapshot_path.write_text(text, encoding="utf-8")
+
+        integrity_findings = check_knowledge_base.check_snapshot_historical_integrity(
+            feature_dir, root=tmp_path
+        )
+        assert integrity_findings == []
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        identity = [f for f in findings if f.rule == "knowledge-base-snapshot-identity-mismatch"]
+        closure = [f for f in findings if f.rule == "knowledge-base-snapshot-incomplete-closure"]
+        assert len(identity) == 1, findings
+        assert "DE-TEST-001" in identity[0].message and "DE-TEST-002" in identity[0].message
+        assert len(closure) == 1
+
+    def test_kind_mismatch_is_blocking_finding(self, tmp_path):
+        """A nested `supporting_evidence` key whose own entry points at a
+        real record of the *wrong kind* (a Claim, not an Evidence record)
+        must be flagged, even if the id happened to match and the hash is
+        genuinely correct for that (wrong-kind) file."""
+        feature_dir, rev, hashes = self._build_repo_with_two_evidence_and_two_derivations(
+            tmp_path
+        )
+        # Make a second claim whose id we can (ab)use as if it were an
+        # evidence id, to exercise the kind check independent of identity.
+        feature_dir2 = feature_dir
+        _write(
+            feature_dir2 / "CL-FAKE-EV.yaml",
+            "id: CL-FAKE-EV\nkind: claim\nstatement: wrong kind entirely\n"
+            "derivation: DE-TEST-001\nsupporting_evidence: []\n"
+            "contradicting_evidence: []\nderived_by: test\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-01T00:00:00Z"\n'
+            "status: supported\nsupersedes: null\n",
+        )
+        _commit_all(tmp_path, "add a wrong-kind record for the kind-mismatch test")
+        rev2 = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=tmp_path, capture_output=True, text=True, check=True
+        ).stdout.strip()
+        fake_hash = _sha256_file(feature_dir2 / "CL-FAKE-EV.yaml")
+
+        snapshot_path = feature_dir / "snapshots" / "snapshot-v1.toml"
+        text = f"""\
+snapshot_id = "test-topic@v1"
+created = "2026-10-01T00:00:00Z"
+repository_revision_at_freeze = "{rev2}"
+excluded_assertions = []
+
+[assertions."CL-TEST-001"]
+path = "planning/knowledge/test-topic/CL-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{hashes["CL-TEST-001"]}"
+
+[assertions."CL-TEST-001".supporting_evidence."EV-TEST-001"]
+path = "planning/knowledge/test-topic/CL-FAKE-EV.yaml"
+repository_revision = "{rev2}"
+content_hash = "{fake_hash}"
+
+[assertions."CL-TEST-001".derivation."DE-TEST-001"]
+path = "planning/knowledge/test-topic/DE-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{hashes["DE-TEST-001"]}"
+"""
+        snapshot_path.write_text(text, encoding="utf-8")
+        _commit_all(tmp_path, "freeze snapshot citing a wrong-kind record (via a fake matching id)")
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        kind_mismatch = [f for f in findings if f.rule == "knowledge-base-snapshot-kind-mismatch"]
+        identity_mismatch = [
+            f for f in findings if f.rule == "knowledge-base-snapshot-identity-mismatch"
+        ]
+        # The fake record's own id (CL-FAKE-EV) differs from the key
+        # (EV-TEST-001) too, so this also trips identity-mismatch --
+        # both are real, correct findings for this constructed case.
+        assert len(identity_mismatch) == 1
+        assert len(kind_mismatch) == 1, findings
+        assert "evidence" in kind_mismatch[0].message

@@ -594,6 +594,94 @@ _SNAPSHOT_REQUIRED_METADATA: dict[str, type] = {
 }
 
 
+_EXPECTED_KIND_FOR_SUB_KIND = {
+    "supporting_evidence": "evidence",
+    "contradicting_evidence": "evidence",
+    "derivation": "derivation",
+}
+
+
+def _validate_nested_entries(
+    root: Path,
+    rel: Path,
+    assertion_id: str,
+    sub_kind: str,
+    sub_table: object,
+) -> tuple[set[str], list[Finding]]:
+    """Validates every entry in one assertion's own nested
+    `supporting_evidence`/`contradicting_evidence`/`derivation` table --
+    closing the gap where a sub-table's own *keys* were previously treated
+    as "captured" regardless of whether each key's *value* was a
+    well-formed table, pointed at the record it claims to (by id), or
+    pointed at a record of the right *kind*. Returns the subset of keys
+    that are genuinely, validly captured (only these satisfy closure --
+    see `check_snapshot_completeness`'s own use of this), plus the
+    findings for everything that doesn't qualify. Never raises on a
+    malformed input; every malformed shape becomes its own Finding.
+    """
+    findings: list[Finding] = []
+    valid_ids: set[str] = set()
+    if not isinstance(sub_table, dict):
+        return valid_ids, findings  # reported separately, by the caller, as a top-level shape issue
+
+    expected_kind = _EXPECTED_KIND_FOR_SUB_KIND[sub_kind]
+    for entry_id, entry in sub_table.items():
+        label = f"assertions[{assertion_id!r}].{sub_kind}[{entry_id!r}]"
+        if not isinstance(entry, dict):
+            findings.append(
+                Finding(
+                    "knowledge-base-snapshot-malformed-structure",
+                    f"{rel}: {label} must be a table, got "
+                    f"{type(entry).__name__} ({entry!r}) -- a scalar here "
+                    "cannot carry a real path/repository_revision/"
+                    "content_hash, so this entry cannot be validated and "
+                    "does not count as capturing anything",
+                )
+            )
+            continue
+
+        entry_path = entry.get("path")
+        entry_rev = entry.get("repository_revision")
+        if not (isinstance(entry_path, str) and isinstance(entry_rev, str)):
+            # Already reported by check_snapshot_historical_integrity's own
+            # incomplete-entry finding (it walks every well-formed dict
+            # entry _iter_snapshot_entries yields, including nested ones).
+            continue
+
+        content = _git_show_content(root, entry_rev, entry_path)
+        if content is None:
+            continue  # already reported as unresolvable, by the same function
+
+        real_fields = parse_record_text(content)
+        real_id = real_fields.get("id")
+        real_kind = real_fields.get("kind")
+        ok = True
+        if real_id and real_id != entry_id:
+            findings.append(
+                Finding(
+                    "knowledge-base-snapshot-identity-mismatch",
+                    f"{rel}: {label} cites path {entry_path!r} at revision "
+                    f"{entry_rev!r}, whose own record id is {real_id!r}, "
+                    f"not {entry_id!r} -- this entry's key does not match "
+                    "what it actually points to",
+                )
+            )
+            ok = False
+        if real_kind and real_kind != expected_kind:
+            findings.append(
+                Finding(
+                    "knowledge-base-snapshot-kind-mismatch",
+                    f"{rel}: {label} must cite a {expected_kind!r}-kind "
+                    f"record, but {entry_path!r}@{entry_rev!r} is "
+                    f"kind={real_kind!r}",
+                )
+            )
+            ok = False
+        if ok:
+            valid_ids.add(entry_id)
+    return valid_ids, findings
+
+
 def check_snapshot_completeness(feature_dir: Path, root: Path = ROOT) -> list[Finding]:
     """Fail-closed structural/completeness validation for a snapshot
     sidecar -- distinct from `check_snapshot_historical_integrity`'s own
@@ -615,17 +703,28 @@ def check_snapshot_completeness(feature_dir: Path, root: Path = ROOT) -> list[Fi
     4. **Record identity**: every entry's own `path` resolves to a real
        file whose own `id:` field matches the key the snapshot filed it
        under (catches a copy-paste/key-typo mismatch).
-    5. **Evidence/Derivation closure**: for every assertion the snapshot
-       does capture, the real historical record's own
-       `supporting_evidence`/`contradicting_evidence`/`derivation`
-       citations (read from the exact git-blob content at the snapshot's
-       own recorded `repository_revision` for that assertion -- the same
-       historical source `check_snapshot_historical_integrity` hashes,
-       never the live file) must each have a matching nested entry in the
-       snapshot's own sidecar. A snapshot that captures an assertion but
-       silently drops one of its cited Evidence/Derivation records is
-       exactly the "remaining hashes still validate" truncation this
-       check exists to catch.
+    5. **Evidence/Derivation closure, including nested-entry validity**:
+       for every assertion the snapshot does capture, the real historical
+       record's own `supporting_evidence`/`contradicting_evidence`/
+       `derivation` citations (read from the exact git-blob content at
+       the snapshot's own recorded `repository_revision` for that
+       assertion -- the same historical source
+       `check_snapshot_historical_integrity` hashes, never the live file)
+       must each have a matching nested entry in the snapshot's own
+       sidecar -- and that nested entry must itself be a well-formed
+       table whose own `path`/`repository_revision` resolve to a real
+       record with a matching `id` *and* the expected `kind`
+       (`evidence` for `supporting_evidence`/`contradicting_evidence`,
+       `derivation` for `derivation`). A nested key is never treated as
+       "captured" merely for being present: a scalar standing in for the
+       required table, or a key that resolves to a *different* real
+       record than the id it's filed under (or a record of the wrong
+       kind), is exactly as much a gap as the key being absent outright,
+       and is reported as its own distinct finding
+       (`knowledge-base-snapshot-malformed-structure` /
+       `knowledge-base-snapshot-identity-mismatch` /
+       `knowledge-base-snapshot-kind-mismatch`) in addition to the
+       resulting incomplete-closure finding.
 
     Every condition below produces an actionable `Finding` -- never an
     uncaught exception -- regardless of how malformed the sidecar is.
@@ -770,39 +869,64 @@ def check_snapshot_completeness(feature_dir: Path, root: Path = ROOT) -> list[Fi
             historical_fields = parse_record_text(historical)
             for sub_kind in _SNAPSHOT_CLOSURE_SUB_KINDS:
                 cited_ids = set(_extract_id_strings(historical_fields.get(sub_kind, "")))
-                captured_sub_table = assertion.get(sub_kind, {})
-                captured_ids = (
-                    set(captured_sub_table) if isinstance(captured_sub_table, dict) else set()
+                sub_table = assertion.get(sub_kind, {})
+                if sub_kind not in assertion:
+                    sub_table = {}
+                elif not isinstance(sub_table, dict):
+                    findings.append(
+                        Finding(
+                            "knowledge-base-snapshot-malformed-structure",
+                            f"{rel}: assertions[{assertion_id!r}].{sub_kind} "
+                            f"must be a table, got {type(sub_table).__name__}",
+                        )
+                    )
+                    sub_table = {}
+                valid_ids, nested_findings = _validate_nested_entries(
+                    root, rel, assertion_id, sub_kind, sub_table
                 )
-                for missing_id in sorted(cited_ids - captured_ids):
+                findings.extend(nested_findings)
+                for missing_id in sorted(cited_ids - valid_ids):
                     findings.append(
                         Finding(
                             "knowledge-base-snapshot-incomplete-closure",
                             f"{rel}: assertions[{assertion_id!r}]'s real "
                             f"historical record cites {missing_id!r} in its "
                             f"own {sub_kind}, but this snapshot has no "
-                            f"corresponding assertions[{assertion_id!r}]."
-                            f"{sub_kind}[{missing_id!r}] entry -- incomplete "
-                            "Evidence/Derivation closure",
+                            f"corresponding, validly-identified "
+                            f"assertions[{assertion_id!r}].{sub_kind}[{missing_id!r}] "
+                            "entry -- incomplete Evidence/Derivation closure",
                         )
                     )
 
             derivation_id = historical_fields.get("derivation")
             if derivation_id:
-                captured_derivation = assertion.get("derivation", {})
-                captured_derivation_ids = (
-                    set(captured_derivation) if isinstance(captured_derivation, dict) else set()
+                derivation_table = assertion.get("derivation", {})
+                if "derivation" not in assertion:
+                    derivation_table = {}
+                elif not isinstance(derivation_table, dict):
+                    findings.append(
+                        Finding(
+                            "knowledge-base-snapshot-malformed-structure",
+                            f"{rel}: assertions[{assertion_id!r}].derivation "
+                            f"must be a table, got "
+                            f"{type(derivation_table).__name__}",
+                        )
+                    )
+                    derivation_table = {}
+                valid_derivation_ids, derivation_findings = _validate_nested_entries(
+                    root, rel, assertion_id, "derivation", derivation_table
                 )
-                if derivation_id not in captured_derivation_ids:
+                findings.extend(derivation_findings)
+                if derivation_id not in valid_derivation_ids:
                     findings.append(
                         Finding(
                             "knowledge-base-snapshot-incomplete-closure",
                             f"{rel}: assertions[{assertion_id!r}]'s real "
                             f"historical record cites derivation "
                             f"{derivation_id!r}, but this snapshot has no "
-                            f"corresponding assertions[{assertion_id!r}]."
-                            f"derivation[{derivation_id!r}] entry -- "
-                            "incomplete Evidence/Derivation closure",
+                            f"corresponding, validly-identified "
+                            f"assertions[{assertion_id!r}].derivation[{derivation_id!r}] "
+                            "entry -- incomplete Evidence/Derivation closure",
                         )
                     )
     return findings
