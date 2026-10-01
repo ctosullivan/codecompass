@@ -1,17 +1,29 @@
 # Phase 79 — Clean-room conceptual understanding + documentation reconstruction (methodology hardening + template delivery)
 
-**Status: amended a fifth time, 2026-10-01, implementing four further
-corrections identified by direct review of the `done`-flipped result**
+**Status: fifth amendment complete and closed, 2026-10-01.** Four further
+corrections identified by direct review of the `done`-flipped result
 (fail-closed snapshot validation, restored documentation citations, a
 corrected isolation verdict, and a real downstream template usability
-exercise — full detail in §0's new "Fifth revision" entry below). The
-phase's own prior terminal reconciliation (flipping it to `done` on
+exercise — full detail in §0's "Fifth revision" entry below) were
+implemented, then independently audited by `release-phase-auditor`
+(`planning/retros/_audit-phase-79-fifth-amendment.md`, against
+`b95a1f1`): **Track 1 (workflow/template completion): PASS WITH
+NON-BLOCKING OBSERVATIONS**. The two named observations (a "13 tests"
+miscount, actually 11; `CONTRIBUTING.md` not yet mirroring `CLAUDE.md`'s
+new `L-070` sentence) were fixed in the immediately following commit
+(`0e1c63a`), and the audit's own appended addendum re-confirmed against
+that final commit that both are genuinely closed with no scope creep.
+**Track 2 (strict clean-room isolation validation): UNMET**, confirmed
+as the amendment's own honestly-reported final verdict (not a defect).
+The phase's own prior terminal reconciliation (flipping it to `done` on
 `planning/ROADMAP.md`) is not reopened or reversed by this amendment —
 these are corrections to that already-`done` phase's own output,
 following the same amend-and-implement-directly pattern this phase has
-used throughout, not a reopening of the phase itself. A sixth-step
-re-audit against this amendment's own final commit is still pending as
-of this status line (see "Next step" at the end of §0).
+used throughout, not a reopening of the phase itself. The sixth-step
+re-audit this status line previously described as pending has now
+happened and passed; terminal `roadmap-context-curator` reconciliation
+for this amendment is this file's own commit, alongside
+`planning/ROADMAP.md` and `planning/CONTEXT.md`.
 
 Independent `release-phase-auditor` completion audit found three real
 Track 1 (workflow/template completion) gaps against `cbf3582`

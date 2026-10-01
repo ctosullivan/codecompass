@@ -75,27 +75,45 @@ and scoped, not abandoned. Full plan:
 
 **Phase 79 (Clean-room conceptual understanding + documentation
 reconstruction, methodology hardening + Priority D template delivery) is
-`done`** (direct user request, 2026-09-30, amended four times,
-`decisions/0066`, approved 2026-10-01 and executed the same day).
-Independent `release-phase-auditor` re-audit
-(`planning/retros/_audit-phase-79-reaudit.md`, against `d9b9175`)
-returned **Track 1 (workflow/template completion): PASS**; two further
-trivial, non-blocking observations from that re-audit (a citation
-off-by-2 in `docs/domain/concepts/claim.md`, a duplicated Phase 78
-next-step paragraph in this file's own prior revision) were fixed in the
-immediately following commit, `a119f4c`. **A fifth amendment, same day,
-corrected this report's own Track 2 language**: the original and
-re-audit reports both said "Track 2 (strict clean-room isolation
-validation): PASS," conflating honest `best-effort` labelling with
-strict isolation actually being achieved. The corrected, final verdict
-is **Track 2: UNMET** — see
+`done`** (direct user request, 2026-09-30, amended five times,
+`decisions/0066`/`decisions/0067`, approved 2026-10-01 and executed the
+same day). The phase's own prior terminal `done` flip is not reopened by
+any of this — each amendment corrects that already-`done` result's own
+output in place. A **fifth amendment** (`decisions/0067`), landed the
+day after the original `done` flip via direct review of the delivered
+result, implemented four further corrections: snapshot validation now
+genuinely fails closed against a minimal-content fixture (not merely
+against entries already present in a table), previously-dropped
+documentation citations were restored and content-matched, the Track 2
+isolation verdict was corrected with real new mechanical evidence (a
+boundary-check script run against all six original pilot dispatches'
+own still-extant transcripts, finding one real, previously-undetected
+boundary deviation), and the template usability "exercise" — previously
+only a link-integrity check — was replaced with a real downstream
+adoption attempt by a fresh, context-free agent (found and fixed a real
+`README.md`/`LICENSE` collision in the adoption instructions, pushed to
+the real `codecompass-template` remote). An independent
+`release-phase-auditor` audit of this fifth amendment
+(`planning/retros/_audit-phase-79-fifth-amendment.md`, against
+`b95a1f1`, re-confirmed in an appended addendum against the amendment's
+own final commit `0e1c63a`) returned **Track 1 (workflow/template
+completion): PASS WITH NON-BLOCKING OBSERVATIONS** — two trivial
+narrative-only gaps (a "13 new tests" miscount, actually 11;
+`CONTRIBUTING.md` not yet mirroring `CLAUDE.md`'s new `L-070` sentence)
+were both fixed in the immediately following commit (`0e1c63a`) and
+re-confirmed closed by the audit's own addendum. **Track 2 (strict
+clean-room isolation validation) is confirmed, final, and honestly
+reported as `UNMET`** — not a defect, the amendment's own intended
+outcome: honest `best-effort` labelling throughout is not the same as
+strict isolation actually being achieved; see
 `planning/knowledge/first-party-source-symbols/isolation/isolation-evidence-inventory.md`
-for the real, mechanically-derived evidence (recovered from the pilot
-dispatches' own original transcripts) behind this correction. Does not
-touch, reorder, or depend on Phase 78. Fully closed and pushed to
-`origin`. See "What was just completed" below for the real, delivered
-result — the summary
-immediately following this paragraph describes the pre-implementation,
+for the real, mechanically-derived evidence behind this verdict. This
+terminal reconciliation (this commit) is the fifth amendment's own
+closeout — the phase's `done` status on `planning/ROADMAP.md` is
+unchanged by it. Does not touch, reorder, or depend on Phase 78. Fully
+closed and pushed to `origin`. See "What was just completed" below for
+the pre-fifth-amendment delivered result; the summary immediately
+following this paragraph describes the pre-implementation,
 fourth-revision plan and is retained for its own amendment history, not
 as a description of current state.
 
