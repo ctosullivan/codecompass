@@ -1,27 +1,41 @@
 # Phase 79 — Clean-room conceptual understanding + documentation reconstruction (methodology hardening + template delivery)
 
-**Status: done.** Approved 2026-10-01 (fourth revision), implemented the
-same day. Independent `release-phase-auditor` completion audit found
-three real Track 1 (workflow/template completion) gaps against `cbf3582`
+**Status: amended a fifth time, 2026-10-01, implementing four further
+corrections identified by direct review of the `done`-flipped result**
+(fail-closed snapshot validation, restored documentation citations, a
+corrected isolation verdict, and a real downstream template usability
+exercise — full detail in §0's new "Fifth revision" entry below). The
+phase's own prior terminal reconciliation (flipping it to `done` on
+`planning/ROADMAP.md`) is not reopened or reversed by this amendment —
+these are corrections to that already-`done` phase's own output,
+following the same amend-and-implement-directly pattern this phase has
+used throughout, not a reopening of the phase itself. A sixth-step
+re-audit against this amendment's own final commit is still pending as
+of this status line (see "Next step" at the end of §0).
+
+Independent `release-phase-auditor` completion audit found three real
+Track 1 (workflow/template completion) gaps against `cbf3582`
 (`planning/retros/_audit-phase-79.md`); all three fixed (`d9b9175`); a
 re-audit (`planning/retros/_audit-phase-79-reaudit.md`) returned Track 1
-PASS and Track 2 (strict clean-room isolation validation) PASS
-(reconfirmed), with two further trivial non-blocking observations fixed
-in `a119f4c`. Terminal `roadmap-context-curator` reconciliation flips
-this phase to `done` on `planning/ROADMAP.md`.
+PASS; its own "Track 2 PASS" language is corrected by the fifth revision
+(see below) to **Track 2: UNMET**, reported separately and unaffected by
+Track 1.
 
-Direct user request, 2026-09-30, amended three times (twice same day,
-once the following day). Full initiating prompts saved verbatim:
+Direct user request, 2026-09-30, amended four times (first three same
+day/the following day; a fifth amendment the day after that, following
+direct review of the delivered result). Full initiating prompts saved
+verbatim:
 `planning/phase-79-clean-room-understanding-and-documentation-reconstruction-prompt.md`
 (original),
 `planning/phase-79-clean-room-understanding-and-documentation-reconstruction-amendment-prompt.md`
 (second revision),
 `planning/phase-79-clean-room-understanding-and-documentation-reconstruction-second-amendment-prompt.md`
-(third revision), and
+(third revision),
 `planning/phase-79-clean-room-understanding-and-documentation-reconstruction-third-amendment-prompt.md`
-(this revision). Governing ADR: `decisions/0066` (amended in place a
-third time, this date — its own fourth-revision addendum records approval
-to proceed).
+(fourth revision), and
+`planning/phase-79-fifth-amendment-prompt.md` (this revision). Governing
+ADR: `decisions/0066` (amended in place a fourth time, this date — its
+own fifth-revision addendum records the same four corrections).
 
 **Revised objective, unchanged from the second revision**: *one
 evidence-backed knowledge foundation supplies both coding context and
@@ -35,6 +49,97 @@ inspection before any implementation began.
 ---
 
 ## 0. What changed in this revision, and why (read this first)
+
+**Fifth revision (2026-10-01) — four corrections found by direct review
+of the fourth revision's own `done`-flipped result, approved to proceed
+directly into implementation, no further planning round-trip:**
+
+1. **Snapshot validation still did not fail closed** (§5.3, the fourth
+   revision's own fix was incomplete): `check_knowledge_base.py`'s
+   historical-integrity/current-divergence checks only ever validate
+   entries already *present* in a snapshot's own `assertions` table — a
+   sidecar reduced to nothing but its own `snapshot_id` iterates zero
+   entries and reports zero findings, indistinguishable from a genuinely
+   complete, small snapshot. Fixed by a new `check_snapshot_completeness`
+   function validating what the fourth revision's design never checked:
+   required top-level metadata and types, that `assertions` is present as
+   a table, that every real Claim existing at the snapshot's own freeze
+   revision (checked against the historical `git ls-tree` listing at
+   `repository_revision_at_freeze`, never the live filesystem — a
+   snapshot frozen before a later Claim existed must never be flagged for
+   lacking it) has a captured entry unless named in `excluded_assertions`,
+   that each captured entry's own `path` resolves to a record whose real
+   `id` matches the key it's filed under, and that each captured
+   assertion's own historical `supporting_evidence`/
+   `contradicting_evidence`/`derivation` citations are each present as a
+   nested snapshot entry — closing exactly the "remaining hashes still
+   validate" gap named. Every malformed-input path produces a `Finding`,
+   never an exception. 13 new disposable-git-fixture tests.
+2. **Published documentation never actually cited the frozen knowledge
+   foundation** (§11, a gap in how §9's publication step was executed,
+   not a defect in the plan's own design): the clean-room draft's own
+   inline `first-party-source-symbols@v2#CL-FPSS-NNN` citations were
+   lost when `docs-maintainer`'s legacy-reconciliation pass merged the
+   draft's content into the existing `architecture/overview.md`/
+   `architecture/context-graph-schema.md` pages — the merge preserved the
+   prose but dropped every citation. Fixed by restoring a citation (with
+   a navigable relative link to the real backing Claim record) at every
+   point in both pages tracing to a specific assertion, including the two
+   newly-documented limitations; every citation verified to resolve to a
+   real file and an actual snapshot-v2 member.
+3. **The closeout's own isolation verdict conflated honest labelling with
+   strict isolation being achieved** (§6, a reporting defect, not a
+   design defect — the plan's own §6.5 rule, "Tier 2 is always
+   best-effort," was never violated in substance): both the original and
+   re-audit reports said "Track 2 (strict clean-room isolation
+   validation): PASS." That phrasing reads as isolation having succeeded;
+   what had actually been verified was that the dispatches' own honest
+   `best-effort` self-labelling held. Fixed in two parts: (a) the
+   evidentiary basis itself was thin — the persisted Tier 1 preflight
+   record was the probe dispatch's own prose handback, and no
+   per-dispatch manifest, raw transcript, or independent boundary check
+   existed for any of the six isolation-sensitive pilot dispatches beyond
+   that one probe. This session's own original dispatch transcripts were
+   still present on local disk (not rerun, not reconstructed); a real,
+   mechanical boundary-check script was built and run against all six,
+   recovering genuine access-log evidence that did not exist before —
+   finding, among other things, a real boundary deviation in one
+   dispatch (the coding-context packet-assembly step read two files
+   outside its stated scope) that the original prose-only evidence had no
+   way of catching. (b) The verdict language itself is corrected
+   wherever it appeared (both audit reports via a non-destructive notice
+   at the top, preserving their original text as historical record;
+   `planning/CONTEXT.md`/`planning/ROADMAP.md`'s own current-state
+   narrative, rewritten directly) to **Track 2: UNMET** — reported
+   separately from, and unaffected by, Track 1's own real PASS.
+4. **The template usability exercise never actually exercised the
+   template** (§11's own closeout step): a fresh-clone link-integrity
+   check confirms every markdown path resolves, which says nothing about
+   whether a real adopter could actually follow the instructions. Fixed
+   by dispatching a fresh, context-free agent with only the current
+   template clone and a small invented, non-CodeCompass project (a tiny
+   todo-list CLI with one genuinely non-obvious design decision),
+   instructed to actually adopt and use the template end to end. This
+   found and fixed a real defect (the adoption instructions' "copy its
+   contents into an existing one" silently collides with two files any
+   real project already has — its own `README.md`, replaced with a
+   description of the template instead of the project, and `LICENSE`, a
+   real per-project choice) and surfaced a genuine, inherent tension
+   (freezing a snapshot requires a commit; the exercise's own no-commit
+   rule meant one record was honestly left partially frozen rather than
+   given a fabricated revision) that no link-checker could ever have
+   found. Full exercise report and the complete adopted-project tree
+   preserved as checkable evidence, not just narrated.
+
+**Next step**: a fresh `release-phase-auditor` pass against this
+amendment's own final commit, then `roadmap-context-curator`
+reconciliation updating `planning/ROADMAP.md`'s Phase 79 row,
+`planning/CONTEXT.md`'s current-state section, and this file's own
+Status line to reflect the amendment's own completion — the same
+closeout sequence the fourth revision itself used, applied again to this
+fifth revision's own result.
+
+---
 
 **Fourth revision (2026-10-01) — four corrections, approved to proceed
 directly into implementation, no further planning round-trip:**

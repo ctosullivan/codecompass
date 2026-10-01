@@ -160,8 +160,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   environment (a same-host git worktree, not a separate environment); every
   isolation-sensitive stage is honestly labelled `best-effort`, never
   `verified`, accordingly. Nine portable workflow/guide templates
-  delivered to the `codecompass-template` repository. Full plan
-  (amended four times before implementation):
+  delivered to the `codecompass-template` repository.
+  **Fifth amendment, direct review of the delivered result
+  (`decisions/0067`):** `check_knowledge_base.py` gains
+  `check_snapshot_completeness`, closing a real fail-open gap in the
+  four checks above — a snapshot sidecar reduced to only its own
+  `snapshot_id` previously produced zero findings; now validates
+  required metadata/types, assertion-inventory completeness (checked
+  against the real historical directory listing at a snapshot's own
+  freeze revision, never the live filesystem), record identity, and
+  Evidence/Derivation closure, with 13 new disposable-git-fixture tests.
+  `architecture/overview.md`/`architecture/context-graph-schema.md`
+  regain the `first-party-source-symbols@v2#CL-FPSS-NNN` citations lost
+  during the original legacy-reconciliation merge. The closeout's own
+  "Track 2 (strict clean-room isolation validation): PASS" language is
+  corrected to **Track 2: UNMET** — honest `best-effort` labelling is
+  not the same as strict isolation being achieved — backed by new,
+  genuinely mechanical boundary-check evidence recovered from the
+  original pilot dispatches' own still-extant transcripts (not a rerun),
+  which found one real, previously-undetected boundary deviation. A
+  real downstream usability exercise (a fresh agent actually adopting
+  and using the template against a small invented project) replaces the
+  original fresh-clone link-check, finding and fixing one genuine
+  adoption-instruction defect in `codecompass-template` (a README.md/
+  LICENSE overwrite collision). Full plan (amended five times, the fifth
+  the day after implementation, following direct review):
   `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`.
 
 ### Changed

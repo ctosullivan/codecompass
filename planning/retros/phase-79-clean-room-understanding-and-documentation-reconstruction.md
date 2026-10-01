@@ -137,3 +137,70 @@ completion audit (`release-phase-auditor`) checking both the
 workflow/template-completion track and the strict-isolation track
 separately, and the terminal `roadmap-context-curator` reconciliation —
 in that order, per this project's own Definition of Done.
+
+## Addendum: fifth amendment (2026-10-01, the day after `done`)
+
+A direct review of the delivered, already-`done` result found four real
+defects, corrected by `decisions/0067` and the plan's own §0 "Fifth
+revision" entry (full technical detail there, not repeated here). Worth
+recording here specifically because each defect was a genuine miss by
+this phase's own closeout process, not a hypothetical:
+
+- **The fail-closed snapshot-validation redesign (§5.3, fourth revision)
+  was itself still fail-open at the edges it didn't anticipate.** It
+  correctly fixed hashing-against-the-live-file, but never validated that
+  a snapshot's own *inventory* was complete — a sidecar with real content
+  removed still validated clean, because the check only ever examined
+  entries already present. The lesson generalizes past this specific
+  checker: a fail-closed redesign that fixes the *mechanism* it was asked
+  to fix can still leave a *different* fail-open gap at the mechanism's
+  own edge (here: completeness, not integrity), and "add a test for the
+  exact scenario named" doesn't substitute for asking "what would a
+  maximally-reduced malicious or accidental input look like, and does
+  this still catch it."
+- **A merge step silently dropped information a prior step had carefully
+  added.** The clean-room draft's own citations existed, were correct,
+  and were lost specifically at the one step (legacy reconciliation) that
+  wasn't itself re-checked for having preserved them — the independent
+  verification passes that *did* run (documentation Q&A, coding-context
+  evaluation) happened to check factual accuracy, not citation presence,
+  so neither caught this. Worth a general habit: when a merge/
+  reconciliation step is expected to preserve prior structure (not just
+  prior facts), check for that structure's survival explicitly, not only
+  for whether the resulting prose is still accurate.
+- **"Honestly labelled" and "achieved" are different claims, and a
+  closeout report can accidentally conflate them in exactly the place
+  that matters most** — a verdict line. Every piece of evidence behind
+  this phase's own Track 2 "PASS" was itself accurate (the labelling
+  really was honest, really was checked); the defect was purely in how
+  that accurate finding got summarized into one word. Worth a durable
+  habit for any future honesty-as-the-control workflow: a verdict line
+  for "was X achieved" and a verdict line for "was the claim about X
+  honest" should never share one `PASS`/`FAIL` token, even when both
+  happen to be favorable, because a reader cannot tell which one a
+  shared token refers to.
+- **A rerun's own transcripts turned out to still be real, original
+  evidence worth recovering**, not just a lesson for next time. The
+  original pilot dispatches' raw JSONL transcripts were still present on
+  local disk; a mechanical pass over them produced genuine boundary-check
+  evidence (including a real, previously-undetected finding) that didn't
+  require fabricating anything or claiming a fresh rerun was equivalent
+  to the original execution. Worth remembering structurally: this
+  project's own local Claude Code session state is itself a source of
+  recoverable evidence for a reasonable window after a dispatch
+  completes, not just the dispatch's own self-report — worth checking
+  before assuming evidence is unrecoverable.
+- **A link-resolution check and a usability check are different
+  instruments measuring different things**, and the former is cheap
+  enough to reach for by default even when the latter is what was
+  actually asked for. The real exercise (a fresh agent actually adopting
+  the template against a real small project) found a defect
+  (README/LICENSE collision) that is structurally invisible to any
+  link-checker, since every individual link in the offending instruction
+  resolves fine — the defect is in what a literal reading does to a
+  *second*, pre-existing file on the target side, a category of failure
+  a link-checker cannot model at all.
+
+Candidate learnings from this addendum are included in the triage
+dispatched for this amendment, alongside this phase's own original
+candidates.

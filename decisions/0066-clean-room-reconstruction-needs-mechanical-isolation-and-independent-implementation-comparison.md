@@ -16,6 +16,12 @@ of the Decision section for what changed this time and why this is the
 point past which the ADR's own content stops being purely pre-
 implementation.
 
+**Post-implementation note (2026-10-01): four defects found in the
+shipped result are corrected by `decisions/0067`, a new ADR, not a fifth
+in-place edit here** — per `0067`'s own reasoning, this ADR has already
+informed real, executed, `done`-flipped work, so its own content below
+is left exactly as the fourth revision wrote it.
+
 ## Context
 
 `decisions/0060` formalized Scope → Plan → Domain → Design → Implement
