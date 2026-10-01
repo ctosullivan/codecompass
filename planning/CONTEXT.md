@@ -49,9 +49,40 @@ done:**
    total, up from 13), re-bundled and replacing the preserved evidence
    in the main repo. Committed `024efcd`.
 
-**Parts 2-4 (broader CodeCompass reconstruction, lighter template
-application, verification/closeout) are not yet started** — see the
-plan file's own §§2-9 and "Next concrete step" below.
+**Part 2, Stage 1 (freshness review + frozen project-wide snapshot) is
+done.** A freshness review of all 28 Claim clusters backing
+`docs/domain/`'s 19 concept pages found 17/19 fresh, found and fixed two
+genuine staleness issues (`CL-ADPT-009` never superseded after Phase 74,
+`relationship-edge.md`'s "six edge tables" count not accounting for
+Phase 76's git-topology tables — both committed `e7eb22b`), then froze
+`planning/knowledge/codecompass-domain/snapshots/snapshot-codecompass-overview-v1.toml`
+citing all 25 active (non-superseded) Claims plus their full evidence/
+derivation closure (committed `4965384`).
+
+**Part 2, Stage 2 (model-blind implementation reconstruction) is done.**
+A fresh `implementation-reconstructor` dispatch, isolated to a bounded
+export (`cli.py`/`commands.py`/`config.py`/`sync.py`/`graph.py`/
+`core.py`/`discovery.py`/`adapters/{base,python}.py` + tests, zero access
+to any documentation), recovered the CLI command surface, the full
+`graph.py` schema/migration/rebuild-determinism behavior (confirmed live
+via 116/117 passing tests), and the adapter pattern — honestly
+disclosing that `cli.py`/`sync.py`/the adapter layer could only be
+reconstructed by reading, not running, since the bounded export wasn't a
+runnable whole (deliberately excluded sibling modules). Mechanical
+boundary-check (same method as Phase 79's fifth amendment) confirmed
+best-effort isolation held — the only out-of-scope path referenced was
+the dispatch's own disclosed scratch venv. Report:
+`/tmp/.../scratchpad/phase80-implementation-reconstruction.md` (scratch,
+not yet committed into the repo — will move into
+`planning/knowledge/codecompass-domain/` at Stage 5 reconciliation,
+matching Phase 79's own pattern).
+
+**Part 2, Stage 3 (comparison) is in progress** — a `domain-skeptic`
+dispatch classifying alignment between the frozen snapshot and the
+reconstruction report. Stages 4 (fresh draft) and 5 (reconciliation +
+publish) not yet started. Parts 3-4 (lighter template application,
+verification/closeout) not yet started — see the plan file's own §§3-9
+and "Next concrete step" below.
 
 ---
 
