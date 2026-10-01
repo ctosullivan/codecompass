@@ -656,7 +656,19 @@ def _validate_nested_entries(
         real_id = real_fields.get("id")
         real_kind = real_fields.get("kind")
         ok = True
-        if real_id and real_id != entry_id:
+        if not real_id:
+            findings.append(
+                Finding(
+                    "knowledge-base-snapshot-identity-missing",
+                    f"{rel}: {label} cites path {entry_path!r} at revision "
+                    f"{entry_rev!r}, whose historical content has no `id:` "
+                    f"field at all -- it cannot be confirmed to actually be "
+                    f"{entry_id!r} (or any record), not merely a hash match "
+                    "for some arbitrary committed content",
+                )
+            )
+            ok = False
+        elif real_id != entry_id:
             findings.append(
                 Finding(
                     "knowledge-base-snapshot-identity-mismatch",
@@ -667,7 +679,18 @@ def _validate_nested_entries(
                 )
             )
             ok = False
-        if real_kind and real_kind != expected_kind:
+        if not real_kind:
+            findings.append(
+                Finding(
+                    "knowledge-base-snapshot-kind-missing",
+                    f"{rel}: {label} cites path {entry_path!r} at revision "
+                    f"{entry_rev!r}, whose historical content has no `kind:` "
+                    f"field at all -- it cannot be confirmed to actually be "
+                    f"a {expected_kind!r}-kind record",
+                )
+            )
+            ok = False
+        elif real_kind != expected_kind:
             findings.append(
                 Finding(
                     "knowledge-base-snapshot-kind-mismatch",
@@ -845,20 +868,6 @@ def check_snapshot_completeness(feature_dir: Path, root: Path = ROOT) -> list[Fi
                 continue
 
             entry_path = assertion.get("path")
-            if isinstance(entry_path, str):
-                real_path = root / entry_path
-                if real_path.is_file():
-                    real_id = parse_record(real_path).get("id")
-                    if real_id and real_id != assertion_id:
-                        findings.append(
-                            Finding(
-                                "knowledge-base-snapshot-identity-mismatch",
-                                f"{rel}: assertions[{assertion_id!r}] cites "
-                                f"path {entry_path!r}, whose own record id is "
-                                f"{real_id!r}, not {assertion_id!r}",
-                            )
-                        )
-
             rev = assertion.get("repository_revision")
             if not (isinstance(entry_path, str) and isinstance(rev, str)):
                 continue  # already reported as an incomplete entry
@@ -867,6 +876,57 @@ def check_snapshot_completeness(feature_dir: Path, root: Path = ROOT) -> list[Fi
                 continue  # already reported as unresolvable
 
             historical_fields = parse_record_text(historical)
+
+            # Identity + kind, checked against the exact historical content
+            # at the snapshot's own recorded revision -- never the live
+            # file, for the same reason every other check here hashes
+            # history, not the working tree. A record with no `id:`/`kind:`
+            # field at all is not "fine because it doesn't contradict" --
+            # it is unidentified, which `if real_id and real_id != X` used
+            # to silently treat as a pass.
+            real_assertion_id = historical_fields.get("id")
+            if not real_assertion_id:
+                findings.append(
+                    Finding(
+                        "knowledge-base-snapshot-identity-missing",
+                        f"{rel}: assertions[{assertion_id!r}] cites path "
+                        f"{entry_path!r} at revision {rev!r}, whose "
+                        "historical content has no `id:` field at all -- it "
+                        f"cannot be confirmed to actually be {assertion_id!r} "
+                        "(or any record), not merely a hash match for some "
+                        "arbitrary committed content",
+                    )
+                )
+            elif real_assertion_id != assertion_id:
+                findings.append(
+                    Finding(
+                        "knowledge-base-snapshot-identity-mismatch",
+                        f"{rel}: assertions[{assertion_id!r}] cites "
+                        f"path {entry_path!r}, whose own record id is "
+                        f"{real_assertion_id!r}, not {assertion_id!r}",
+                    )
+                )
+            real_assertion_kind = historical_fields.get("kind")
+            if not real_assertion_kind:
+                findings.append(
+                    Finding(
+                        "knowledge-base-snapshot-kind-missing",
+                        f"{rel}: assertions[{assertion_id!r}] cites path "
+                        f"{entry_path!r} at revision {rev!r}, whose "
+                        "historical content has no `kind:` field at all -- "
+                        "it cannot be confirmed to actually be a 'claim'-kind "
+                        "record",
+                    )
+                )
+            elif real_assertion_kind != "claim":
+                findings.append(
+                    Finding(
+                        "knowledge-base-snapshot-kind-mismatch",
+                        f"{rel}: assertions[{assertion_id!r}] must cite a "
+                        f"'claim'-kind record, but {entry_path!r}@{rev!r} is "
+                        f"kind={real_assertion_kind!r}",
+                    )
+                )
             for sub_kind in _SNAPSHOT_CLOSURE_SUB_KINDS:
                 cited_ids = set(_extract_id_strings(historical_fields.get(sub_kind, "")))
                 sub_table = assertion.get(sub_kind, {})

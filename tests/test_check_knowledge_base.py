@@ -1057,3 +1057,156 @@ content_hash = "{hashes["DE-TEST-001"]}"
         assert len(identity_mismatch) == 1
         assert len(kind_mismatch) == 1, findings
         assert "evidence" in kind_mismatch[0].message
+
+
+class TestAbsentIdentityFields:
+    """A real gap found by direct review: `if real_id and real_id !=
+    expected_id` (and the equivalent for `kind`) is a truthy guard --
+    it silently skips validation when the historical content has no
+    `id:`/`kind:` field at all, rather than flagging "this isn't
+    identifiable as anything," which is strictly worse than a mismatch
+    (a mismatch at least proves the pointed-to content IS some other
+    real record). Exercises both the top-level assertion slot and a
+    nested Evidence slot pointed at a committed, genuinely plain file
+    (no `id:`, no `kind:` at all) with its own correct historical hash
+    -- a real hash match, not tampering, which is exactly why the old
+    truthy-guard code let it through."""
+
+    def _commit_plain_file(self, tmp_path: Path, feature_dir: Path) -> tuple[str, str]:
+        _write(
+            feature_dir / "plain-file.yaml",
+            "this is just some unrelated text content\n"
+            "with no id field and no kind field at all\n",
+        )
+        rev = _commit_all(tmp_path, "add a plain, identity-less file")
+        return rev, _sha256_file(feature_dir / "plain-file.yaml")
+
+    def test_assertion_slot_pointed_at_identity_less_file(self, tmp_path):
+        feature_dir = tmp_path / "planning" / "knowledge" / "test-topic"
+        feature_dir.mkdir(parents=True)
+        _init_git_repo(tmp_path)
+        rev, plain_hash = self._commit_plain_file(tmp_path, feature_dir)
+
+        snapshots_dir = feature_dir / "snapshots"
+        snapshots_dir.mkdir()
+        prefix = "planning/knowledge/test-topic"
+        _write(
+            snapshots_dir / "snapshot-v1.toml",
+            f"""\
+snapshot_id = "test-topic@v1"
+created = "2026-10-01T00:00:00Z"
+repository_revision_at_freeze = "{rev}"
+excluded_assertions = []
+
+[assertions."CL-TEST-001"]
+path = "{prefix}/plain-file.yaml"
+repository_revision = "{rev}"
+content_hash = "{plain_hash}"
+""",
+        )
+        _commit_all(tmp_path, "freeze assertion slot pointed at the plain file")
+
+        # The hash is genuinely correct for the plain file's own content --
+        # this must never be reported as tampering.
+        integrity_findings = check_knowledge_base.check_snapshot_historical_integrity(
+            feature_dir, root=tmp_path
+        )
+        assert integrity_findings == []
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        identity_missing = [
+            f for f in findings if f.rule == "knowledge-base-snapshot-identity-missing"
+        ]
+        kind_missing = [f for f in findings if f.rule == "knowledge-base-snapshot-kind-missing"]
+        assert len(identity_missing) == 1, findings
+        assert identity_missing[0].strict
+        assert len(kind_missing) == 1, findings
+        assert kind_missing[0].strict
+
+    def test_evidence_slot_pointed_at_identity_less_file(self, tmp_path):
+        feature_dir = tmp_path / "planning" / "knowledge" / "test-topic"
+        feature_dir.mkdir(parents=True)
+        _write(feature_dir / "CL-TEST-001.yaml", _CLAIM_HEADER)
+        _init_git_repo(tmp_path)
+        rev, plain_hash = self._commit_plain_file(tmp_path, feature_dir)
+        cl_hash = _sha256_file(feature_dir / "CL-TEST-001.yaml")
+
+        snapshots_dir = feature_dir / "snapshots"
+        snapshots_dir.mkdir()
+        prefix = "planning/knowledge/test-topic"
+        _write(
+            snapshots_dir / "snapshot-v1.toml",
+            f"""\
+snapshot_id = "test-topic@v1"
+created = "2026-10-01T00:00:00Z"
+repository_revision_at_freeze = "{rev}"
+excluded_assertions = []
+
+[assertions."CL-TEST-001"]
+path = "{prefix}/CL-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{cl_hash}"
+
+[assertions."CL-TEST-001".supporting_evidence."EV-TEST-001"]
+path = "{prefix}/plain-file.yaml"
+repository_revision = "{rev}"
+content_hash = "{plain_hash}"
+""",
+        )
+        _commit_all(tmp_path, "freeze evidence slot pointed at the plain file")
+
+        integrity_findings = check_knowledge_base.check_snapshot_historical_integrity(
+            feature_dir, root=tmp_path
+        )
+        assert integrity_findings == []
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        identity_missing = [
+            f for f in findings if f.rule == "knowledge-base-snapshot-identity-missing"
+        ]
+        kind_missing = [f for f in findings if f.rule == "knowledge-base-snapshot-kind-missing"]
+        assert len(identity_missing) == 1, findings
+        assert "EV-TEST-001" in identity_missing[0].message
+        assert len(kind_missing) == 1, findings
+        assert "EV-TEST-001" in kind_missing[0].message
+
+    def test_legitimate_well_formed_entries_still_pass(self, tmp_path):
+        """Regression guard: the new identity-missing/kind-missing checks
+        must not fire against genuinely well-formed records that do have
+        real id/kind fields."""
+        feature_dir = tmp_path / "planning" / "knowledge" / "test-topic"
+        _write(feature_dir / "CL-TEST-001.yaml", _CLAIM_HEADER)
+        _init_git_repo(tmp_path)
+        rev = _commit_all(tmp_path, "add a well-formed claim")
+        cl_hash = _sha256_file(feature_dir / "CL-TEST-001.yaml")
+
+        snapshots_dir = feature_dir / "snapshots"
+        snapshots_dir.mkdir()
+        prefix = "planning/knowledge/test-topic"
+        _write(
+            snapshots_dir / "snapshot-v1.toml",
+            f"""\
+snapshot_id = "test-topic@v1"
+created = "2026-10-01T00:00:00Z"
+repository_revision_at_freeze = "{rev}"
+excluded_assertions = []
+
+[assertions."CL-TEST-001"]
+path = "{prefix}/CL-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{cl_hash}"
+""",
+        )
+        _commit_all(tmp_path, "freeze a well-formed snapshot")
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        identity_or_kind = [
+            f
+            for f in findings
+            if f.rule
+            in (
+                "knowledge-base-snapshot-identity-missing",
+                "knowledge-base-snapshot-kind-missing",
+            )
+        ]
+        assert identity_or_kind == []
