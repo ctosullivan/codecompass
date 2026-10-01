@@ -204,3 +204,60 @@ this phase's own closeout process, not a hypothetical:
 Candidate learnings from this addendum are included in the triage
 dispatched for this amendment, alongside this phase's own original
 candidates.
+
+## Addendum 2: sixth amendment (2026-10-01, same day as the fifth)
+
+A direct, independent reproduction of three further defects in the fifth
+amendment's own delivered result — each a genuine miss by the very
+correction process that just landed, not a hypothetical:
+
+- **A fail-closed fix's own completeness check used the wrong unit of
+  "present."** The fifth amendment's `check_snapshot_completeness`
+  correctly started validating a snapshot's own *inventory* (which
+  assertions it captures), but its Evidence/Derivation *closure* check
+  still asked "is this key present in the dict," not "does this key's
+  own value actually, validly identify the record it claims to." A
+  scalar standing in for a required table, or a correctly-hashed pointer
+  to the *wrong* record, both satisfied "key present" while failing
+  every other meaningful sense of "captured." The general lesson: fixing
+  a validation check's *scope* (what it looks at) doesn't by itself fix
+  its *depth* (how carefully it checks what it finds) — these are
+  separable failure axes, and closing one doesn't imply the other is
+  closed too.
+- **A clean-room research pass's own narrow test coverage was mistaken
+  for completeness, a second time, within the same lineage of exercises.**
+  The original tinytodo exercise's test only deleted a non-maximum id
+  and concluded "never reused" generally; nothing in that exercise's own
+  process (single research pass, no independent adversarial check) was
+  positioned to notice the untested case was the one that mattered. This
+  session's own real pilot already had an answer for this (a separate,
+  independent adversarial-review dispatch) — the downstream *exercise*
+  evidence that demonstrates the template didn't have an equivalent step
+  built into its own lightweight default path, and paid for it with a
+  real, shipped false claim.
+- **Given the chance to run the workflow exercise the right way (real
+  commits, full pipeline, including independent adversarial review),
+  the same fresh research dispatch caught the exact bug the original,
+  constrained exercise missed — on its first pass, unprompted with the
+  answer.** The only material difference in the prompt was an explicit
+  instruction to test multiple, meaningfully different deletion
+  scenarios rather than one. This is a concrete, worked example of how
+  much of the earlier defect was a scoping/instruction gap, not a
+  fundamental limit of a single research pass — though the subsequent
+  independent adversarial review (which ran anyway, per the full
+  pipeline) still mattered: it found eight further scenarios beyond the
+  three the research pass tried, closing the gap between "got the right
+  answer" and "verified there wasn't a different wrong answer nearby."
+
+## Governing-ADR lineage note
+
+This phase has now produced three ADRs in one lineage
+(`decisions/0066` → `0067` → `0068`), each new rather than an in-place
+edit to its predecessor, following the reasoning `0067` first
+established: an ADR that has already informed real, executed, reconciled
+work is left as the historical record of what was decided under what
+understanding at the time. Worth watching whether this becomes a
+recurring pattern worth a named process note (e.g. in
+`planning/v1-redefinition/agent-led-development.md`) rather than
+something re-derived fresh each time a phase needs a second
+post-implementation correction.

@@ -1,42 +1,31 @@
 # Phase 79 — Clean-room conceptual understanding + documentation reconstruction (methodology hardening + template delivery)
 
-**Status: fifth amendment complete and closed, 2026-10-01.** Four further
-corrections identified by direct review of the `done`-flipped result
-(fail-closed snapshot validation, restored documentation citations, a
-corrected isolation verdict, and a real downstream template usability
-exercise — full detail in §0's "Fifth revision" entry below) were
-implemented, then independently audited by `release-phase-auditor`
-(`planning/retros/_audit-phase-79-fifth-amendment.md`, against
-`b95a1f1`): **Track 1 (workflow/template completion): PASS WITH
-NON-BLOCKING OBSERVATIONS**. The two named observations (a "13 tests"
-miscount, actually 11; `CONTRIBUTING.md` not yet mirroring `CLAUDE.md`'s
-new `L-070` sentence) were fixed in the immediately following commit
-(`0e1c63a`), and the audit's own appended addendum re-confirmed against
-that final commit that both are genuinely closed with no scope creep.
-**Track 2 (strict clean-room isolation validation): UNMET**, confirmed
-as the amendment's own honestly-reported final verdict (not a defect).
-The phase's own prior terminal reconciliation (flipping it to `done` on
-`planning/ROADMAP.md`) is not reopened or reversed by this amendment —
-these are corrections to that already-`done` phase's own output,
-following the same amend-and-implement-directly pattern this phase has
-used throughout, not a reopening of the phase itself. The sixth-step
-re-audit this status line previously described as pending has now
-happened and passed; terminal `roadmap-context-curator` reconciliation
-for this amendment is this file's own commit, alongside
-`planning/ROADMAP.md` and `planning/CONTEXT.md`.
+**Status: sixth amendment implemented, 2026-10-01, pending its own
+independent re-audit and terminal reconciliation** (see "Next step" at
+the end of §0's new "Sixth revision" entry below). Three further defects
+identified by direct review of the fifth amendment's own delivered
+result (nested snapshot-entry validation gaps, a false conceptual claim
+in downstream exercise evidence, and an incomplete — uncommitted —
+template workflow exercise) have been implemented and committed; full
+detail in §0's "Sixth revision" entry. The phase's own `done` status, and
+the fifth amendment's own closed status, are not reopened or reversed by
+this amendment — these are corrections to the fifth amendment's own
+output, following the same amend-and-implement-directly pattern this
+phase has used throughout.
 
-Independent `release-phase-auditor` completion audit found three real
-Track 1 (workflow/template completion) gaps against `cbf3582`
-(`planning/retros/_audit-phase-79.md`); all three fixed (`d9b9175`); a
-re-audit (`planning/retros/_audit-phase-79-reaudit.md`) returned Track 1
-PASS; its own "Track 2 PASS" language is corrected by the fifth revision
-(see below) to **Track 2: UNMET**, reported separately and unaffected by
-Track 1.
+**Prior closeout history, for context**: the original implementation
+(fourth revision) passed its own audit/re-audit with Track 1: PASS and
+(at the time) "Track 2: PASS" — the latter corrected by the fifth
+amendment to **Track 2: UNMET**, reported separately from and unaffected
+by Track 1, which itself returned **PASS WITH NON-BLOCKING OBSERVATIONS**
+on its own independent audit (`planning/retros/_audit-phase-79-fifth-amendment.md`,
+both named observations fixed and re-confirmed against `0e1c63a`).
 
-Direct user request, 2026-09-30, amended four times (first three same
-day/the following day; a fifth amendment the day after that, following
-direct review of the delivered result). Full initiating prompts saved
-verbatim:
+Direct user request, 2026-09-30, amended five times (first three same
+day/the following day; a fifth amendment the day after that; a sixth
+amendment the same day as the fifth, following direct, independent
+reproduction of three further defects in that amendment's own delivered
+result). Full initiating prompts saved verbatim:
 `planning/phase-79-clean-room-understanding-and-documentation-reconstruction-prompt.md`
 (original),
 `planning/phase-79-clean-room-understanding-and-documentation-reconstruction-amendment-prompt.md`
@@ -44,10 +33,17 @@ verbatim:
 `planning/phase-79-clean-room-understanding-and-documentation-reconstruction-second-amendment-prompt.md`
 (third revision),
 `planning/phase-79-clean-room-understanding-and-documentation-reconstruction-third-amendment-prompt.md`
-(fourth revision), and
-`planning/phase-79-fifth-amendment-prompt.md` (this revision). Governing
-ADR: `decisions/0066` (amended in place a fourth time, this date — its
-own fifth-revision addendum records the same four corrections).
+(fourth revision),
+`planning/phase-79-fifth-amendment-prompt.md` (fifth revision), and
+`planning/phase-79-sixth-amendment-prompt.md` (this revision). Governing
+ADR lineage: `decisions/0066` (amended in place through the fourth
+revision, left unedited since) → `decisions/0067` (fifth-amendment
+corrections, left unedited since) → `decisions/0068` (sixth-amendment
+corrections, this revision) — each new ADR rather than a further
+in-place edit, per `0067`'s own established reasoning: an ADR that has
+already informed real, executed, reconciled work is left as the
+historical record of what was decided under what understanding at the
+time.
 
 **Revised objective, unchanged from the second revision**: *one
 evidence-backed knowledge foundation supplies both coding context and
@@ -61,6 +57,84 @@ inspection before any implementation began.
 ---
 
 ## 0. What changed in this revision, and why (read this first)
+
+**Sixth revision (2026-10-01) — three corrections found by direct,
+independent reproduction against the fifth revision's own delivered
+result, approved to proceed directly into implementation, no further
+planning round-trip:**
+
+1. **Nested snapshot-entry validation still had a real gap** (§5.3, the
+   fifth revision's own `check_snapshot_completeness` fix was
+   incomplete): its Evidence/Derivation closure check compared a real
+   historical record's own cited ids against the raw *keys* of a
+   snapshot's nested `supporting_evidence`/`contradicting_evidence`/
+   `derivation` tables, never checking whether each key's own *value*
+   was a well-formed table or actually identified the record its key
+   claims to. Independently reproduced two real attack shapes before
+   fixing: a nested table replaced by a scalar string (the key survives,
+   `_iter_snapshot_entries` silently skips the malformed value, and the
+   old closure check still saw the key as "captured"); and an identity
+   swap (key `EV-TEST-001` kept, its own `path`/`content_hash` re-pointed
+   at the real `EV-TEST-002` record with *that* record's own genuinely
+   correct hash — invisible to pure hash-integrity checking, since the
+   hash is exactly right for what it actually points to). Fixed via a
+   new `_validate_nested_entries` helper that returns only the subset of
+   a sub-table's keys that are genuinely, validly captured (well-formed
+   table, matching `id`, matching `kind`); closure comparison now uses
+   this set, never raw dict keys. A new
+   `knowledge-base-snapshot-kind-mismatch` finding additionally catches a
+   nested entry whose real record has the wrong `kind` even when id and
+   hash both happen to check out. 6 new disposable-git-fixture tests
+   (`TestNestedEntryValidation`) exercise exactly these reported
+   scenarios for both Evidence and Derivation.
+2. **The fifth amendment's own downstream exercise evidence asserted a
+   false conceptual claim** (`template-usability-exercise/tinytodo-after-adoption/`):
+   its assertion, documentation, and decision record all claimed
+   `tinytodo`'s `_next_id` guarantees a deleted task's id is "never
+   reused" (narrowed, still wrongly, to "as long as the task list hasn't
+   been fully emptied"). Independently reproduced and disproven: add
+   tasks 1 and 2, delete task 2 (the higher id, not the lower one the
+   original exercise's own test happened to delete), add a third task —
+   it receives id 2 again, while task 1 remains live and the list was
+   never emptied. The real, implemented guarantee is narrower than either
+   version of the original claim: an id is safe from reuse only if the
+   deleted task was not, at the moment of its own deletion, the holder of
+   the current maximum id. Corrected via dated correction notices in the
+   affected assertion, documentation, decision-record, and
+   snapshot-sidecar files, each preserving its own original, incorrect
+   conclusion as historical record underneath — not silently rewritten.
+   Full reproduction evidence, including the specific logical error in
+   the original assertion's own "Counterexamples" reasoning, preserved
+   separately.
+3. **The template workflow exercise was left genuinely incomplete**
+   (§11's own closeout step): the fifth amendment's own exercise
+   prohibited commits (leaving its snapshot structurally `UNCOMMITTED`)
+   and inspected several downstream templates rather than actually
+   exercising them end to end with independent evaluation and
+   demonstrated propagation. Fixed by running a fresh, complete,
+   commit-permitting exercise in a disposable git repository: a
+   fully-committed frozen snapshot, a real model-blind implementation
+   reconstruction, a real alignment comparison, real conceptual
+   documentation, a real task-specific coding-context packet, independent
+   assessment of both outputs (documentation Q&A, a `context-evaluator`
+   packet assessment), and a real propagation demonstration — a genuine
+   source fix (not a synthetic change), mechanically shown to surface as
+   evidence-staleness divergence against the frozen snapshot and to reach
+   both derived outputs through that one shared foundation. No new
+   template usability defect was found this run (the prior exercise's own
+   README/LICENSE fix held up correctly against a real adoption). Full
+   reproducible history preserved as a verified git bundle plus the final
+   working tree.
+
+**Next step**: a fresh `release-phase-auditor` pass against this
+amendment's own final commit, then `roadmap-context-curator`
+reconciliation updating `planning/ROADMAP.md`'s Phase 79 row,
+`planning/CONTEXT.md`'s current-state section, and this file's own
+Status line to reflect the amendment's own completion — the same
+closeout sequence the fifth revision itself used, applied again to this
+sixth revision's own result.
+
+---
 
 **Fifth revision (2026-10-01) — four corrections found by direct review
 of the fourth revision's own `done`-flipped result, approved to proceed

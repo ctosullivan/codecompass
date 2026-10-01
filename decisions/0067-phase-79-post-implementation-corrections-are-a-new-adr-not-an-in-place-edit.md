@@ -4,6 +4,13 @@
 
 Accepted (2026-10-01, direct user instruction).
 
+**Post-implementation note (2026-10-01): three further defects found in
+the shipped fifth-amendment result are corrected by `decisions/0068`, a
+new ADR, not a sixth in-place edit here** — by the exact same reasoning
+this ADR's own Decision section gives for not editing `decisions/0066`:
+this ADR has already informed real, executed, reconciled work, so its
+own content below is left exactly as originally written.
+
 ## Context
 
 `decisions/0066` was amended in place four times, all same-day or the

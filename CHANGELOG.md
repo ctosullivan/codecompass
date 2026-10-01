@@ -183,8 +183,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and using the template against a small invented project) replaces the
   original fresh-clone link-check, finding and fixing one genuine
   adoption-instruction defect in `codecompass-template` (a README.md/
-  LICENSE overwrite collision). Full plan (amended five times, the fifth
-  the day after implementation, following direct review):
+  LICENSE overwrite collision).
+  **Sixth amendment, direct independent reproduction against the fifth
+  amendment's own delivered result (`decisions/0068`):**
+  `check_snapshot_completeness`'s own Evidence/Derivation closure check
+  (added by the fifth amendment) compared a real historical record's
+  cited ids against the raw *keys* of a snapshot's nested tables, never
+  checking whether each key's own *value* was a well-formed table or
+  actually identified the record its key claims to — closed via a new
+  `_validate_nested_entries` helper plus a new
+  `knowledge-base-snapshot-kind-mismatch` finding, with 6 new
+  disposable-git-fixture tests reproducing a scalar-in-place-of-table
+  attack and a hash-correct identity swap for both Evidence and
+  Derivation. The fifth amendment's own downstream usability-exercise
+  evidence asserted a false conceptual claim (`tinytodo`'s `_next_id`
+  "never reuses" a deleted task's id) — independently reproduced as
+  false (deleting whichever task holds the current maximum id reuses it,
+  even with other tasks still live) and corrected via dated notices
+  preserving the original, incorrect conclusion as historical record. A
+  fresh, complete, commit-permitting template exercise (13 real commits,
+  nothing `UNCOMMITTED`) replaces the prior exercise's own
+  commit-prohibited run: a real model-blind implementation
+  reconstruction, alignment comparison, documentation, coding-context
+  packet, independent assessment of both (PASS, PASS), and a real
+  propagation demonstration (a genuine source fix mechanically shown to
+  surface as evidence-staleness divergence against the frozen snapshot,
+  reaching both derived outputs through the shared foundation). Full
+  plan (amended six times, the sixth the same day as the fifth):
   `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`.
 
 ### Changed
