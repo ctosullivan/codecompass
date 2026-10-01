@@ -163,6 +163,16 @@ citation, a test) at the point of incorporation — "it was already in the
 old docs" is never itself the citation. Output your classification to
 `planning/v1-docs-reconstruction/<topic-slug>/reconciliation.md`.
 
+**Check that merging preserves structure, not only facts** (`L-071`,
+Phase 79's own fifth amendment): a clean-room draft's own inline
+citations (to a Claim, a snapshot, an assertion id) are real structure,
+not decoration — merging the draft's *prose* into an existing page
+while dropping its *citations* is exactly as much a defect as merging in
+a wrong fact, even though the resulting page can still read as
+internally accurate. Before treating a merge as done, re-read the
+draft's own citation list and confirm each one survived into the
+published result, the same way you'd confirm a fact survived.
+
 **A separate, related task under this same mode**: fixing a material
 incorrect or unsupported claim a documentation-verification pass
 (`context-evaluator`, per `planning/phase-79-...md` §8.6) found in the

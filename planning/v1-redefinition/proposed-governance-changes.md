@@ -542,3 +542,74 @@ sound by `knowledge-curator`'s own independent triage of `L-065`.
   sound by an independent `knowledge-curator` triage pass that read all
   three affected documents directly and found no remaining ambiguity or
   contradiction.
+
+## G. 2026-10-01 proposed addition (Phase 79 fifth amendment — `L-070`)
+
+**Status:** proposed, not yet presented to the user. Filed by
+`knowledge-curator` during the fifth-amendment triage pass, independent
+of (but alongside) the other four candidate learnings that same addendum
+named.
+
+### G1 — §1 "Plan before implementing": require a minimal-input edge-case test for any fail-closed validation/detection mechanism a phase's plan verifies
+
+- **Context:** Phase 79's fourth revision redesigned
+  `scripts/check_knowledge_base.py`'s snapshot-validation checks (§5.3)
+  to fail closed against a real gap (hashing a live, legitimately-
+  superseded file against its own historical content). The fifth
+  revision, a direct review of the already-`done` result, found the
+  redesign still didn't fail closed at a *different* edge of the same
+  mechanism: it only ever validated assertion entries already *present*
+  in a snapshot's own table, so a sidecar reduced to nothing but its own
+  `snapshot_id` iterated zero entries and reported zero findings —
+  indistinguishable from a genuinely complete, small snapshot. This is
+  the second such gap found in the same checker across two consecutive
+  revisions of the same ADR (the fourth revision's own list-validation
+  fix, §4.2, had the same shape: a pattern-matching detector missing an
+  indentless list shape its own pattern never matched). Both times, the
+  fix that was approved and verified covered the exact scenario named in
+  the defect report, not the minimal/empty-content case a maximally
+  adversarial or accidental input could still produce. Full account:
+  `planning/learnings/inbox.md`'s `L-070`;
+  `decisions/0067` Decision item 1;
+  `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  §0 "Fifth revision" entry 1 and "Fourth revision" entries 1-2.
+- **Proposed text — append to §1, after the existing `L-021` sentence
+  ("If a phase adds behavior to an existing function that already has a
+  real production call site... (Phase 55b — L-021.)"):**
+
+  > If a phase's verification step tests a fail-closed validation or
+  > detection mechanism (a check meant to catch malformed, incomplete, or
+  > malicious input), the plan's verification section must include a test
+  > against the mechanism's own minimal-content edge case (e.g. an
+  > empty, truncated, or otherwise maximally-reduced input that is still
+  > technically well-formed enough to be accepted for processing) in
+  > addition to the originally-named failure scenario — a test that only
+  > covers the scenario the phase's own prose describes is not
+  > sufficient on its own, since fixing one fail-open gap in a validation
+  > mechanism can leave a different one at the mechanism's own edge
+  > untested. (Phase 79 fifth amendment — L-070.)
+
+- **Alternatives considered:** (a) leave §1 as-is, treat this as a
+  one-off incident specific to `check_knowledge_base.py` — rejected: the
+  same shape recurred twice within one phase across two genuinely
+  different checks (snapshot validation, list validation), which is
+  exactly the kind of cross-instance recurrence this project's own
+  learning-lifecycle treats as sufficient for a project-wide rule, not a
+  scoped one; (b) route this to `planning/agent-led-workflow.md` instead
+  of `CLAUDE.md` §1 — considered, but mirrors `L-021`'s own reasoning
+  (`proposed-governance-changes.md` §D) exactly: this is about what a
+  phase *plan's own content* must specify regardless of which agent or
+  the lead writes the check, not about agent-orchestration procedure, so
+  it fits better alongside `L-021`'s own sentence in the same section
+  than as a new workflow step; (c) a broader "every validation check
+  needs exhaustive adversarial-input testing" rule — rejected as
+  over-broad for what two incidents evidence; scoped instead to the
+  precise shape that actually failed twice (a fail-closed check, a
+  minimal/empty-content edge case the originally-named scenario didn't
+  cover).
+- **Consequences if approved:** `CLAUDE.md` §1 gains the sentence above;
+  `CONTRIBUTING.md`'s mirrored "plan before implementing" section gets
+  the same addition in the same commit (existing `decisions/0022`/`0030`
+  precedent for keeping the two in sync); `planning/learnings/inbox.md`'s
+  `L-070` flips to `status: promoted` with a `promoted.md` pointer line
+  once the edit lands.

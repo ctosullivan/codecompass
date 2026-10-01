@@ -8,6 +8,571 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-070 — a fail-closed redesign that fixes the mechanism it was asked to fix can still leave a different fail-open gap at the mechanism's own edge
+
+- **origin:** Phase 79 (clean-room conceptual understanding + documentation
+  reconstruction), fifth amendment / `decisions/0067` item 1; retro
+  addendum "Addendum: fifth amendment" bullet 1; filed at this triage's
+  own initiative per the addendum's explicit candidate-learning naming,
+  deferring the promote/retain/discard decision to `knowledge-curator`
+  per usual practice.
+- **date:** 2026-10-01
+- **project_revision:** `36986d3` (the fifth-amendment plan/changelog/retro
+  reconciliation commit at filing time)
+- **observation:** the fourth revision's own fix to
+  `scripts/check_knowledge_base.py`'s snapshot-validation checks (§5.3)
+  correctly addressed hashing-against-the-live-file (a legitimate
+  supersession wrongly flagged as tampering) — but the historical-
+  integrity/current-divergence checks it produced only ever validated
+  entries already *present* in a snapshot's own `assertions` table. A
+  sidecar reduced to nothing but its own `snapshot_id` iterates zero
+  entries and reports zero findings, indistinguishable from a genuinely
+  complete, small snapshot — a fail-open gap in *completeness*, not
+  *integrity*, at a different edge of the same mechanism the fourth
+  revision had just redesigned to fail closed. Fixed by a new
+  `check_snapshot_completeness` function (required-metadata/type
+  validation; assertion-inventory completeness checked against the real
+  historical `git ls-tree` listing at the snapshot's own freeze revision,
+  never the live filesystem; record-identity checking; Evidence/
+  Derivation closure checking), with 13 new disposable-git-fixture tests.
+  This is the *second* fail-open gap found and fixed in this same
+  checker's own validation logic within two consecutive revisions of the
+  same ADR (the fourth revision's own list-validation fix, §4.2, was a
+  structurally similar prior instance: a block-pattern-matching detector
+  missing an indentless list shape its own pattern never matched).
+- **evidence:** `decisions/0067` Decision item 1 ("`check_snapshot_completeness`...
+  Closes the specific gap named: a snapshot sidecar reduced to only its
+  own `snapshot_id` previously produced zero findings");
+  `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  §0 "Fifth revision" entry 1 (full technical account) and "Fourth
+  revision" entries 1-2 (the two prior, structurally similar fail-open
+  fixes in the same checker/plan section); `planning/retros/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  "Addendum: fifth amendment," bullet 1 (independently re-read directly —
+  matches the ADR/plan account exactly, including the explicit
+  generalization: "'add a test for the exact scenario named' doesn't
+  substitute for asking 'what would a maximally-reduced malicious or
+  accidental input look like, and does this still catch it'"); `scripts/check_knowledge_base.py`
+  / `tests/test_check_knowledge_base.py` (the actual landed fix and its
+  tests, confirming the account is not just narrative).
+- **classification:** project-rule
+- **status:** candidate
+- **recurrence:** second occurrence within this same phase/ADR (fourth
+  revision's list-validation fix, then fifth revision's snapshot-
+  completeness fix — both are "a fail-closed redesign still missed an
+  edge the originally-named scenario didn't cover," in the same checker
+  family), satisfying this project's own recurrence bar for a
+  project-wide rule even though both instances are within one phase.
+- **promoted_to:** (pending — see curation note; not yet approved/landed)
+- **curation (this triage, 2026-10-01, knowledge-curator):** provenance
+  accepted — all required fields present. Independently re-read the
+  retro addendum's bullet 1, `decisions/0067`'s Decision item 1, and both
+  the plan's "Fifth revision" and "Fourth revision" §0 entries directly —
+  confirmed the two-instance recurrence claim by reading the fourth
+  revision's own entries 1-2, not just taking the addendum's framing on
+  faith; both are real, separate, structurally similar fail-open gaps in
+  the same validation mechanism found across two consecutive revisions.
+
+  Checked for a merge/duplicate candidate: grepped this inbox for
+  "fail-open", "fail closed", "maximally-reduced" — no prior candidate
+  addresses validation/detection-check design completeness specifically.
+  `L-021` (CLAUDE.md §1, test-through-real-call-site) is the closest
+  structural relative — both are "a plan's own verification section
+  needs to require testing a specific additional shape, not just the
+  scenario the phase's own prose names" — but `L-021` is about *wiring*
+  (does the new behavior actually get called), while this is about
+  *edge-case coverage* of a fail-closed check's own minimal-input case; a
+  related family, not a duplicate, and not a merge target (merging would
+  blur two genuinely different failure shapes under one recurrence
+  count). Checked whether this belongs in `context-gaps/` or
+  `context-observations/` instead: no to both — this is not a
+  relationship CodeCompass's own graph is missing, nor an experience with
+  an existing graph edge; it is a plan/test-design discipline gap
+  applicable project-wide, so it correctly stays in `planning/learnings/`.
+
+  **Outcome: promote, classification `project-rule`, destination
+  `CLAUDE.md` §1 — pending explicit `CLAUDE.md` §0 approval before this
+  status flips to `promoted`.** Unlike the other four fifth-amendment
+  candidates (all scoped-rule/workflow, landable by the lead without a
+  formal gate), a project-rule destined for `CLAUDE.md` requires the
+  diff-and-approval step `CLAUDE.md` §0 mandates, so this entry stays
+  `status: candidate` — matching this project's own established
+  precedent (`planning/v1-redefinition/proposed-governance-changes.md`
+  §D/E/F each record their own `L-NNN` as flipping to `promoted` only
+  once the user actually approved and the edit landed, not at the
+  curator's own recommendation stage). The recurrence bar is met (two
+  structurally similar instances within the same phase/ADR, see above),
+  and the fix is cheap and already evidenced as sufficient (the actual
+  Phase 79 fix cost one new function and 13 tests, built the moment the
+  gap was actually looked for). This generalizes past this specific
+  checker, matching the retro addendum's own framing exactly.
+
+  **Recommended `CLAUDE.md` §1 addition, drafted into
+  `planning/v1-redefinition/proposed-governance-changes.md` as a new §G**
+  (not applied to `CLAUDE.md` directly — outside this agent's write
+  boundary and requires explicit user approval per §0): see that file for
+  the full proposal, context, and alternatives-considered writeup. In
+  summary — append to §1, after the existing `L-021` sentence:
+
+  > If a phase's verification step tests a fail-closed validation or
+  > detection mechanism (a check meant to catch malformed, incomplete, or
+  > malicious input), the plan's verification section must include a test
+  > against the mechanism's own minimal-content edge case (e.g. an
+  > empty, truncated, or otherwise maximally-reduced input that is still
+  > technically well-formed enough to be accepted for processing) in
+  > addition to the originally-named failure scenario — a test that only
+  > covers the scenario the phase's own prose describes is not
+  > sufficient on its own, since fixing one fail-open gap in a validation
+  > mechanism can leave a different one at the mechanism's own edge
+  > untested. (Phase 79 fifth amendment — L-070.)
+
+  Revisit/withdraw if the user declines the `CLAUDE.md` change — the
+  underlying observation would then most likely retain as a documented,
+  evidenced pattern (e.g. folded into `planning/agent-led-workflow.md`'s
+  implementation step as a non-`CLAUDE.md` reminder instead) rather than
+  being discarded outright, since the two-instance recurrence is real
+  regardless of which artifact ultimately owns the rule.
+
+### L-074 — a link/reference-resolution check and a real usability exercise measure different things, and the former is cheap enough to reach for even when the latter is what was actually asked for
+
+- **origin:** Phase 79 (clean-room conceptual understanding + documentation
+  reconstruction), fifth amendment / `decisions/0067` item 4; retro
+  addendum "Addendum: fifth amendment" bullet 5; filed at this triage's
+  own initiative per the addendum's explicit candidate-learning naming,
+  deferring the promote/retain/discard decision to `knowledge-curator`
+  per usual practice.
+- **date:** 2026-10-01
+- **project_revision:** `36986d3` (the fifth-amendment plan/changelog/retro
+  reconciliation commit at filing time)
+- **observation:** the original Phase 79 closeout validated
+  `codecompass-template`'s usability with a fresh-clone link-integrity
+  check (every markdown path resolves). A direct review found this
+  doesn't test what "usability" actually means for a template meant to
+  be adopted by a real downstream project. A real exercise — a fresh,
+  context-free agent given only the template clone and a small invented
+  non-CodeCompass project, instructed to actually adopt and use the
+  template end to end — found a genuine defect invisible to any
+  link-checker: an adoption instruction's "copy its contents into an
+  existing one" silently collides with two files any real project
+  already has (`README.md`, overwritten with a template description
+  instead of the project's own; `LICENSE`, a real per-project choice).
+  Every individual link in the offending instruction still resolved
+  fine — the defect is in what a literal reading does to a second,
+  pre-existing file on the target side, a category of failure a
+  link-checker cannot model at all. The exercise also surfaced a
+  genuine, inherent tension (freezing a snapshot requires a commit; the
+  exercise's own no-commit rule meant one record was honestly left
+  partially frozen) that again no link-checker could find.
+- **evidence:** `decisions/0067` Decision item 4 ("A real downstream
+  usability exercise... replaces the original fresh-clone link-check...
+  finding and fixing one genuine adoption-instruction defect"); `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  §0 "Fifth revision" entry 4 (full technical account, including the
+  README/LICENSE collision and the snapshot/no-commit tension);
+  `planning/retros/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  "Addendum: fifth amendment," bullet 5 (independently re-read directly,
+  not taken on the addendum's own summary alone — matches the ADR/plan
+  account exactly).
+- **classification:** workflow
+- **status:** promoted
+- **recurrence:** first occurrence of this specific substitution (a
+  cheap structural check standing in for a real usability exercise);
+  conceptually related to, but a distinct shape from, `L-021`'s already-
+  landed `CLAUDE.md` §1 rule (a test that only exercises a function in
+  isolation isn't sufficient when a real call site exists) — this
+  generalizes that same "narrow proxy isn't a substitute for the real
+  exercise" principle from a code call site to a downstream deliverable's
+  usability claim.
+- **promoted_to:** `planning/agent-led-workflow.md` step 7, new paragraph
+  (link-check-vs-usability-exercise distinction) @ (this phase's own
+  closeout commit)
+- **curation (this triage, 2026-10-01, knowledge-curator):** provenance
+  accepted — all required fields present. Independently re-read the
+  retro addendum's bullet 5, `decisions/0067`'s Decision item 4, and the
+  plan's own §0 "Fifth revision" entry 4 directly, rather than trusting
+  any one summary alone — all three agree on the exact mechanism (a
+  link-checker cannot model a same-filename collision on the adopting
+  side) and the exact defect found.
+
+  Checked for a merge/duplicate candidate: grepped this inbox for
+  "usability", "link-check", "link-resolution" — no prior candidate
+  addresses this substitution. Related in spirit to `L-021` (CLAUDE.md
+  §1, narrow-scope test insufficiency) and `L-027` (single-trial
+  baseline/treatment comparisons can't separate tool contribution from
+  diligence variance) but distinct in shape from both — not a duplicate
+  or a merge target for either. Checked whether this belongs in
+  `context-gaps/` or `context-observations/` instead: no to both — this
+  is not a relationship CodeCompass's own graph is missing, nor an
+  experience with an existing graph edge; it is a verification-design gap
+  in how this project's own workflow validates a downstream deliverable,
+  so it correctly stays in `planning/learnings/`.
+
+  **Outcome: promote (recommendation + draft; does not land here — the
+  recommended destination, `planning/agent-led-workflow.md`, is outside
+  this agent's write boundary).** Real, specific, structurally
+  significant (the original check gave a false sense of validation — it
+  passed cleanly while a real defect sat one layer below what it could
+  see), and cheap to generalize into a standing habit: whenever a plan's
+  verification step is meant to validate a deliverable's real-world
+  usability, name the real exercise explicitly rather than accepting a
+  cheaper structural proxy as sufficient. Matches the same "close it
+  while the fallback is evidenced" reasoning `L-018`/`L-023`/`L-046`/
+  `L-069` already used.
+
+  **Recommended fix — add a note near step 7 of
+  `planning/agent-led-workflow.md`, in the independent-evaluation
+  cluster** (draft, for the lead to review and land; not applied here):
+
+  > **A link/reference-resolution check and a real usability exercise
+  > measure different things, and the former is cheap enough to reach
+  > for by default even when the latter is what was actually asked
+  > for.** If a plan's verification step is meant to validate that a
+  > deliverable (a template, a generated artifact meant for downstream
+  > human/agent use) is actually usable, name the real exercise
+  > explicitly — a fresh, context-limited agent actually adopting/using
+  > it against a small real or invented target — rather than treating a
+  > check that every link resolves as sufficient. A link-checker cannot
+  > find a defect that is only visible when the instructions are
+  > followed literally against a real second target (e.g. a filename
+  > collision the instructions don't anticipate), even when every
+  > individual link in the offending instruction resolves fine.
+  > Generalizes `CLAUDE.md` §1's `L-021` rule (a narrow-scope test isn't
+  > sufficient on its own) from code call sites to deliverable-usability
+  > claims. Observed at Phase 79's fifth amendment: a fresh-clone
+  > link-integrity check passed cleanly on `codecompass-template`; a
+  > real adoption exercise against a small invented project found a
+  > genuine defect (a `README.md`/`LICENSE` collision) invisible to any
+  > link-checker. (Phase 79 fifth amendment — L-074.)
+
+  Revisit/withdraw if a future phase shows the real-exercise requirement
+  adding disproportionate dispatch cost for deliverables where a
+  structural check is genuinely sufficient (e.g. a deliverable with no
+  "a human/agent follows these steps against their own project" shape at
+  all) — not expected given how directly a template fits this shape, but
+  named as the honest revisit condition.
+
+### L-073 — this session's own local dispatch transcripts remained genuine, recoverable evidence well after each dispatch completed, worth checking before assuming a rerun is the only way to get missing evidence
+
+- **origin:** Phase 79 (clean-room conceptual understanding + documentation
+  reconstruction), fifth amendment / `decisions/0067` item 3(a); retro
+  addendum "Addendum: fifth amendment" bullet 4; filed at this triage's
+  own initiative per the addendum's explicit candidate-learning naming,
+  deferring the promote/retain/discard decision to `knowledge-curator`
+  per usual practice.
+- **date:** 2026-10-01
+- **project_revision:** `36986d3` (the fifth-amendment plan/changelog/retro
+  reconciliation commit at filing time)
+- **observation:** the original Phase 79 closeout's isolation-verdict
+  evidence was thin: the persisted Tier 1 preflight record was the probe
+  dispatch's own prose handback, and no per-dispatch manifest, raw
+  transcript, or independent boundary check existed for any of the six
+  isolation-sensitive pilot dispatches beyond that one probe. Rather than
+  treating this gap as unrecoverable (requiring either an unsupported
+  claim or a fresh rerun, which could not have reproduced the *original*
+  execution anyway), this session's own original dispatch transcripts
+  were found still present on local disk, not rerun or reconstructed. A
+  real, mechanical boundary-check script was built and run against all
+  six raw transcripts, recovering genuine access-log evidence that did
+  not exist before — including a real boundary deviation in one dispatch
+  (the coding-context packet-assembly step read two files outside its
+  stated scope) that the original prose-only evidence had no way of
+  catching.
+- **evidence:** `decisions/0067` Decision item 3 ("newly-recovered,
+  genuinely mechanical boundary-check evidence (derived from the original
+  pilot dispatches' own still-extant transcripts, not a rerun)");
+  `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  §0 "Fifth revision" entry 3(a) (full technical account, including the
+  specific boundary deviation found); `planning/retros/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  "Addendum: fifth amendment," bullet 4 (independently re-read directly —
+  matches the ADR/plan account exactly).
+- **classification:** workflow
+- **status:** promoted
+- **recurrence:** first occurrence of this specific recovery technique
+  being used (and recorded) in this project.
+- **promoted_to:** `planning/agent-led-workflow.md` step 7, new paragraph
+  (check local transcript/session state before assuming evidence is
+  unrecoverable) @ (this phase's own closeout commit)
+- **curation (this triage, 2026-10-01, knowledge-curator):** provenance
+  accepted — all required fields present. Independently re-read the
+  retro addendum's bullet 4, `decisions/0067`'s Decision item 3, and the
+  plan's own §0 "Fifth revision" entry 3(a) directly — all three agree on
+  the mechanism (original transcripts read directly, not a rerun) and the
+  specific real finding recovered (the packet-assembly boundary
+  deviation).
+
+  Checked for a merge/duplicate candidate: grepped this inbox for
+  "transcript" and "session state" — the only prior transcript-related
+  entries (the `L-046` cluster, token-exposure-in-transcript) address a
+  different concern entirely (a secret typed into the visible
+  conversation transcript), not evidence recoverable from a *dispatched
+  subagent's own* transcript after the fact — not a duplicate or merge
+  target. Checked whether this belongs in `context-gaps/` or
+  `context-observations/` instead: no to both — this is not a
+  relationship CodeCompass's own graph is missing, nor an experience with
+  an existing graph edge; it is a workflow-level evidence-gathering habit
+  for this project's own agent-led development process, so it correctly
+  stays in `planning/learnings/`.
+
+  **Outcome: promote (recommendation + draft; does not land here — the
+  recommended destination, `planning/agent-led-workflow.md`, is outside
+  this agent's write boundary).** Real, specific, and genuinely useful:
+  it changed what was actually possible at Phase 79 (recovering real
+  evidence instead of either leaving a gap unaddressed or fabricating
+  equivalence with a rerun), so it earns a standing reminder on first
+  occurrence rather than waiting for recurrence, matching
+  `L-018`/`L-023`/`L-046`/`L-069`/`L-074`'s own reasoning. Noted
+  explicitly as a *check this before assuming otherwise* habit, not a
+  guarantee — the entry itself flags the recoverability window is not
+  indefinite.
+
+  **Recommended fix — add a note near step 7 of
+  `planning/agent-led-workflow.md`, in the independent-evaluation
+  cluster** (draft, for the lead to review and land; not applied here):
+
+  > **Before concluding a piece of boundary/compliance evidence is
+  > unrecoverable and that a dispatch must be rerun to produce it, check
+  > whether the original dispatch's own transcript/session state is
+  > still present on local disk.** This session's own prior dispatch
+  > transcripts remained available well after each dispatch completed,
+  > and a mechanical pass over them produced genuine, previously-missing
+  > evidence (including a real finding no prior prose self-report had
+  > caught) without needing to fabricate anything or treat a fresh rerun
+  > as equivalent to the original execution (a rerun cannot reproduce the
+  > *original* execution's own state regardless). Observed at Phase 79's
+  > fifth amendment: the original isolation-verdict evidence was one
+  > dispatch's own prose handback; reading the six pilot dispatches' own
+  > still-extant raw transcripts directly recovered real, previously
+  > unavailable boundary-check evidence, including a genuine deviation.
+  > Check for this before assuming a rerun — or an unsupported claim — is
+  > the only option; the recoverability window is not known to be
+  > indefinite, so check promptly rather than assuming it will still be
+  > there much later. (Phase 79 fifth amendment — L-073.)
+
+  Revisit/withdraw if a future phase shows local transcripts are
+  reliably *not* recoverable after some specific, now-known window
+  (narrowing the note's usefulness to "check immediately, never later")
+  — not yet known from a single occurrence, so left as an open question
+  rather than asserted as a guarantee.
+
+### L-072 — "honestly labelled" and "achieved" are different claims and must never share one verdict token, even when both happen to be favorable
+
+- **origin:** Phase 79 (clean-room conceptual understanding + documentation
+  reconstruction), fifth amendment / `decisions/0067` item 3(b); retro
+  addendum "Addendum: fifth amendment" bullet 3; filed at this triage's
+  own initiative per the addendum's explicit candidate-learning naming,
+  deferring the promote/retain/discard decision to `knowledge-curator`
+  per usual practice.
+- **date:** 2026-10-01
+- **project_revision:** `36986d3` (the fifth-amendment plan/changelog/retro
+  reconciliation commit at filing time)
+- **observation:** both the original Phase 79 closeout audit report and
+  its re-audit stated "Track 2 (strict clean-room isolation validation):
+  PASS." Every piece of evidence behind that line was itself accurate —
+  the `best-effort` self-labelling by the isolation-sensitive dispatches
+  really had been checked and really did hold, and the plan's own §6.5
+  rule ("Tier 2 is always best-effort") was never violated in substance.
+  The defect was purely in how that accurate finding got summarized: the
+  phrase reads as isolation having actually succeeded, when what had been
+  verified was only that the dispatches' own honest labelling of
+  themselves as best-effort was accurate. Corrected to "Track 2: UNMET,"
+  reported separately from, and unaffected by, Track 1's own real PASS.
+- **evidence:** `decisions/0067` Decision item 3 ("The closeout's own
+  'Track 2... PASS' language... is corrected to Track 2: UNMET");
+  `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  §0 "Fifth revision" entry 3 ("a reporting defect, not a design defect —
+  the plan's own §6.5 rule... was never violated in substance") and its
+  own Status line ("its own 'Track 2 PASS' language is corrected by the
+  fifth revision... to Track 2: UNMET, reported separately and
+  unaffected by Track 1"); `planning/retros/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  "Addendum: fifth amendment," bullet 3 (independently re-read directly —
+  matches the ADR/plan account exactly).
+- **classification:** scoped-rule
+- **status:** promoted
+- **recurrence:** first occurrence of this specific conflation (a
+  single verdict token standing in for two distinct claims); distinct
+  from `L-001`'s conflation (highest-done-phase vs. product-completeness,
+  a different pair of claims) but the same general failure family
+  (one summary word carrying more than one meaning).
+- **promoted_to:** `.claude/agents/release-phase-auditor.md` "Hard rules"
+  (verdict-token rule) @ (this phase's own closeout commit)
+- **curation (this triage, 2026-10-01, knowledge-curator):** provenance
+  accepted — all required fields present. Independently re-read the
+  retro addendum's bullet 3, `decisions/0067`'s Decision item 3, and the
+  plan's own §0 "Fifth revision" entry 3 and Status line directly — all
+  agree exactly, including the explicit "reporting defect, not a design
+  defect" framing.
+
+  Checked for a merge/duplicate candidate: grepped this inbox for
+  "verdict", "PASS", "conflat" — `L-001` (conflates "highest done phase"
+  with "product completeness," a `check_readme_phase_count` defect) and
+  `L-043` (no mechanical check cross-references a learning candidate's
+  own status against its curation-note verdict) are related in *theme*
+  (summary tokens hiding more than they say) but address different
+  artifacts and different pairs of claims — not duplicates or merge
+  targets. Checked whether this belongs in `context-gaps/` or
+  `context-observations/` instead: no to both — this is not a
+  relationship CodeCompass's own graph is missing, nor an experience with
+  an existing graph edge; it is a reporting-discipline gap in how this
+  project's own closeout/audit process communicates verdicts, so it
+  correctly stays in `planning/learnings/`.
+
+  **Outcome: promote (recommendation + draft; does not land here — the
+  recommended destination, `.claude/agents/release-phase-auditor.md`, is
+  outside this agent's write boundary).** Real, specific, and about
+  exactly the artifact (a verdict line) a reader relies on most and reads
+  most superficially — worth a standing rule on first occurrence rather
+  than waiting for recurrence, matching this inbox's own established
+  practice for a cheap, concrete, already-evidenced fix.
+
+  **Recommended fix — add to `.claude/agents/release-phase-auditor.md`
+  "Hard rules"** (draft, for the lead to review and land; not applied
+  here):
+
+  > **Never let one verdict token answer two different questions.** If a
+  > report must state both whether something was *honestly labelled*
+  > (e.g. a best-effort boundary accurately disclosed as best-effort)
+  > and whether it was *actually achieved* (e.g. strict isolation
+  > genuinely enforced), give each its own verdict line — never a single
+  > shared `PASS`/`FAIL` covering both, even when both happen to be
+  > favorable. A reader of a shared token cannot tell which claim it
+  > refers to. When auditing a phase whose own design draws this
+  > distinction (e.g. a multi-track verification scheme with an
+  > honesty-as-the-control track), check the phase's own report for this
+  > conflation specifically, and do not reproduce it in this agent's own
+  > audit verdict either. Observed at Phase 79's fifth amendment: a
+  > closeout report's "Track 2 (strict clean-room isolation validation):
+  > PASS" was accurate about honest labelling but was read as isolation
+  > having succeeded; corrected to "Track 2: UNMET," reported separately
+  > from Track 1's own real PASS. (Phase 79 fifth amendment — L-072.)
+
+  Revisit/withdraw if a future phase shows this rule producing verdict
+  reports that are harder to act on (e.g. too many separately-tracked
+  tokens for a reader to follow) — not expected given the rule only
+  applies when a phase's own design already draws the distinction, not
+  to every verdict generally.
+
+### L-071 — a merge/reconciliation step that preserves prior facts can still silently drop prior structure, and no later verification pass is guaranteed to check for that structure's survival specifically
+
+- **origin:** Phase 79 (clean-room conceptual understanding + documentation
+  reconstruction), fifth amendment / `decisions/0067` item 2; retro
+  addendum "Addendum: fifth amendment" bullet 2; filed at this triage's
+  own initiative per the addendum's explicit candidate-learning naming,
+  deferring the promote/retain/discard decision to `knowledge-curator`
+  per usual practice.
+- **date:** 2026-10-01
+- **project_revision:** `36986d3` (the fifth-amendment plan/changelog/retro
+  reconciliation commit at filing time)
+- **observation:** the clean-room draft's own inline
+  `first-party-source-symbols@v2#CL-FPSS-NNN` citations existed, were
+  correct, and were lost specifically at the one step —
+  `docs-maintainer`'s legacy-reconciliation merge of the draft's content
+  into the existing `architecture/overview.md`/`architecture/context-graph-schema.md`
+  pages — that was never itself re-checked for having preserved them.
+  The merge preserved the prose but dropped every citation. Two
+  independent verification passes that *did* run afterward (documentation
+  Q&A, coding-context evaluation) both happened to check factual
+  accuracy, not citation presence, so neither caught the loss. Fixed by
+  restoring a citation (with a navigable relative link to the real
+  backing Claim record) at every point in both pages tracing to a
+  specific assertion, each verified to resolve to a real file and an
+  actual snapshot-v2 member.
+- **evidence:** `decisions/0067` Decision item 2 ("`architecture/overview.md`/
+  `architecture/context-graph-schema.md` regain their... citations, lost
+  during the legacy-reconciliation merge"); `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  §0 "Fifth revision" entry 2 (full technical account, including which
+  pass was responsible and what the two later verification passes
+  checked instead); `planning/retros/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  "Addendum: fifth amendment," bullet 2 (independently re-read directly —
+  matches the ADR/plan account exactly).
+- **classification:** scoped-rule
+- **status:** promoted
+- **recurrence:** first occurrence of this specific failure shape (a
+  merge step dropping structural elements, e.g. citations, while
+  preserving factual prose); related in *family* to `L-068` (also a
+  Phase-79 legacy-reconciliation-mode gap) but a distinct failure stage —
+  `L-068` is about the evidentiary bar a `supported` classification
+  requires once a passage has already been compared; this is about
+  verifying the merge *output itself* retained a structural element the
+  input had, a check that happens (or doesn't) after the classification
+  step `L-068` covers.
+- **promoted_to:** `.claude/agents/docs-maintainer.md` "Legacy
+  reconciliation mode" (post-merge citation-survival check) @ (this
+  phase's own closeout commit)
+- **curation (this triage, 2026-10-01, knowledge-curator):** provenance
+  accepted — all required fields present. Independently re-read the
+  retro addendum's bullet 2, `decisions/0067`'s Decision item 2, and the
+  plan's own §0 "Fifth revision" entry 2 directly — all agree exactly,
+  including which two verification passes ran and what each one actually
+  checked.
+
+  Checked for a merge/duplicate candidate: grepped this inbox for
+  "citation" broadly — the `L-048`/`L-051`/`L-055` citation-fragility
+  cluster is a *different* failure mode (a citation going stale because
+  the thing it points at moved or was restructured, not a citation being
+  dropped entirely during a content merge) and a different artifact class
+  (domain-corpus illustrative citations of planning documents, not
+  architecture-doc citations of frozen knowledge-base Claims) — not a
+  duplicate or merge target, though related in the general sense that
+  this project's own citation mechanisms keep surfacing new failure
+  shapes. Also not a duplicate of `L-068` (see recurrence note above).
+  Checked whether this belongs in `context-gaps/` or
+  `context-observations/` instead: no to both — this is not a
+  relationship CodeCompass's own graph is missing, nor an experience with
+  an existing graph edge; it is a process gap in how this project's own
+  `docs-maintainer` "Legacy reconciliation mode" verifies its own merge
+  output, so it correctly stays in `planning/learnings/`.
+
+  **Outcome: promote (recommendation + draft; does not land here — the
+  recommended destination, `.claude/agents/docs-maintainer.md`, is
+  outside this agent's write boundary).** Real, specific, and
+  structurally significant in the same way `L-068` was: it survived two
+  independent verification passes because neither was looking for this
+  particular kind of loss — exactly the shape that justifies closing a
+  real, disclosed gap on first occurrence (`L-018`/`L-023`/`L-068`'s own
+  reasoning) with a concrete, cheap fallback (a direct pre/post citation
+  diff) rather than waiting for recurrence. The general habit — when a
+  merge/reconciliation step is expected to preserve prior *structure*,
+  not only prior *facts*, check for that structure's survival explicitly
+  — generalizes past citations specifically, but the recommended fix
+  below is scoped to the one concrete instance this phase evidenced.
+
+  **Recommended fix — add to `.claude/agents/docs-maintainer.md`
+  "Legacy reconciliation mode," after the existing "Re-grounding, not
+  default restoration" paragraph** (draft, for the lead to review and
+  land; not applied here):
+
+  > **Verify structure survived the merge, not only that the resulting
+  > prose is still accurate.** When merging a clean-room draft's content
+  > into existing narrative documentation, any inline citation (or other
+  > structural element the draft deliberately carried — a cross-
+  > reference, a navigable link) must still be present in the merged
+  > output. Before considering a legacy-reconciliation merge complete,
+  > diff the draft's own citation list against the merged page directly
+  > — the published narrative reading as factually accurate is not
+  > evidence its citations survived, since a prose-preserving merge can
+  > silently drop them. Observed at Phase 79 (fifth amendment, `L-071`):
+  > the clean-room draft's own `first-party-source-symbols@v2#CL-FPSS-NNN`
+  > citations were present pre-merge and entirely absent post-merge, and
+  > two later independent verification passes (documentation Q&A,
+  > coding-context evaluation) both checked factual accuracy and neither
+  > checked citation presence, so the loss went undetected until a direct
+  > review.
+
+  Also worth the lead's consideration (not drafted in full here, to keep
+  this recommendation narrowly scoped to the one agent whose own output
+  this is): whether `release-phase-auditor`'s docs-drift-audit DoD check
+  (`CLAUDE.md` §5, "What to check" item 3) should gain a cross-check that
+  a legacy-reconciliation merge's citation count didn't drop, as a
+  second line of defense independent of `docs-maintainer`'s own
+  self-check above — left as an open question since `L-071` alone only
+  evidences the self-check's absence, not a case where a second
+  independent layer would have mattered differently.
+
+  Revisit/withdraw if a future legacy-reconciliation merge shows this
+  check adding overhead disproportionate to the defects it catches (e.g.
+  if dropped citations turn out to be rare once the merge step is done
+  more carefully in general) — not expected given how cheap the actual
+  catch would have been here (a direct citation-count diff), but named as
+  the honest revisit condition.
+
 ### L-069 — a hand-built curated code export (manual `sed` line-range extraction) produced two real truncation bugs that reached an isolated dispatch and caused a wasted pass and a false "internal inconsistency" finding
 
 - **origin:** Phase 79 (clean-room conceptual understanding +

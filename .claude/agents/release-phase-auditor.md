@@ -84,6 +84,16 @@ without fixing anything — that a phase is actually done.
 - **A `FAIL` blocks completion.** Do not soften a real FAIL to "PASS WITH
   OBSERVATIONS" to be helpful.
 - Verdicts: `PASS` / `PASS WITH NON-BLOCKING OBSERVATIONS` / `FAIL`.
+- **A verdict token answers exactly one question — never let two
+  different questions share one `PASS`/`FAIL` word** (`L-072`, Phase 79's
+  own fifth amendment). "Was X honestly labelled" and "was X actually
+  achieved" are different questions; a track that honestly reports
+  itself as `best-effort` rather than fully achieved should never be
+  verdicted `PASS` on that track's own achievement question — the
+  honesty of the labelling and the shortfall it's labelling are both
+  real findings, and need two separately-legible statements, not one
+  favorable-sounding token that papers over which question it's actually
+  answering.
 
 ## Output
 

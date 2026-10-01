@@ -267,6 +267,35 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
    instance retained any fallback trace of either prior agent's work.
    **See also step 5's own receipt-time action, added after this rule's
    first real-world violation at Phase 76 (`L-064`).**
+
+   **Before assuming a prior dispatch's own evidence is lost, check
+   whether its real transcript is still recoverable from this session's
+   own local Claude Code state** (`L-073`, Phase 79's own fifth
+   amendment): a dispatched agent's complete, original JSONL transcript
+   persists on local disk for a reasonable window after it completes,
+   independent of whatever summary it returned. When a later review needs
+   stronger evidence than a prior dispatch's own self-report — a genuine
+   access log, a raw tool-call record, an independent boundary check —
+   look for that transcript before concluding a rerun is the only option.
+   A rerun is never a substitute for the original execution's own
+   evidence and must never be presented as if it were; recovering and
+   mechanically analyzing the real original transcript is not fabrication
+   and should be preferred whenever it's available.
+
+   **A fresh-clone or link-resolution check is not a usability check, and
+   should not be substituted for one when a usability claim is actually
+   being made** (`L-074`, Phase 79's own fifth amendment — generalizes
+   `L-021`'s own "a described capability needs a real demonstration, not
+   an assumed one" rule from a code call-site to a documentation/template
+   deliverable). Confirming that every link resolves and every referenced
+   file exists says nothing about whether a real adopter could actually
+   follow the instructions — a defect can be structurally invisible to a
+   link-checker (e.g. an instruction that collides with a file the target
+   already has) while every individual link in it still resolves fine.
+   Where a deliverable's own value is "can someone actually use this,"
+   test that directly: dispatch a fresh agent to actually use it against
+   a small, real (or realistically invented) target, not just to confirm
+   its parts are internally well-formed.
 8. **Reconcile current documentation.** Dispatch `docs-maintainer` with
    the phase diff. It fixes wrong paragraphs (not appends caveats),
    deletes false statements, runs the deterministic doc checks.
