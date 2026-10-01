@@ -75,25 +75,26 @@ and scoped, not abandoned. Full plan:
 
 **Phase 79 (Clean-room conceptual understanding + documentation
 reconstruction, methodology hardening + Priority D template delivery) is
-`done`** (direct user request, 2026-09-30, amended five times,
-`decisions/0066`/`decisions/0067`, approved 2026-10-01 and executed the
-same day). The phase's own prior terminal `done` flip is not reopened by
-any of this — each amendment corrects that already-`done` result's own
-output in place. A **fifth amendment** (`decisions/0067`), landed the
-day after the original `done` flip via direct review of the delivered
-result, implemented four further corrections: snapshot validation now
-genuinely fails closed against a minimal-content fixture (not merely
-against entries already present in a table), previously-dropped
-documentation citations were restored and content-matched, the Track 2
-isolation verdict was corrected with real new mechanical evidence (a
-boundary-check script run against all six original pilot dispatches'
-own still-extant transcripts, finding one real, previously-undetected
-boundary deviation), and the template usability "exercise" — previously
-only a link-integrity check — was replaced with a real downstream
-adoption attempt by a fresh, context-free agent (found and fixed a real
-`README.md`/`LICENSE` collision in the adoption instructions, pushed to
-the real `codecompass-template` remote). An independent
-`release-phase-auditor` audit of this fifth amendment
+`done`** (direct user request, 2026-09-30, amended six times,
+`decisions/0066`/`decisions/0067`/`decisions/0068`, approved 2026-10-01
+and executed the same day). The phase's own prior terminal `done` flip
+is not reopened by any of this — each amendment corrects that
+already-`done` result's own output in place. A **fifth amendment**
+(`decisions/0067`), landed the day after the original `done` flip via
+direct review of the delivered result, implemented four further
+corrections: snapshot validation now genuinely fails closed against a
+minimal-content fixture (not merely against entries already present in a
+table), previously-dropped documentation citations were restored and
+content-matched, the Track 2 isolation verdict was corrected with real
+new mechanical evidence (a boundary-check script run against all six
+original pilot dispatches' own still-extant transcripts, finding one
+real, previously-undetected boundary deviation), and the template
+usability "exercise" — previously only a link-integrity check — was
+replaced with a real downstream adoption attempt by a fresh,
+context-free agent (found and fixed a real `README.md`/`LICENSE`
+collision in the adoption instructions, pushed to the real
+`codecompass-template` remote). An independent `release-phase-auditor`
+audit of this fifth amendment
 (`planning/retros/_audit-phase-79-fifth-amendment.md`, against
 `b95a1f1`, re-confirmed in an appended addendum against the amendment's
 own final commit `0e1c63a`) returned **Track 1 (workflow/template
@@ -102,20 +103,50 @@ narrative-only gaps (a "13 new tests" miscount, actually 11;
 `CONTRIBUTING.md` not yet mirroring `CLAUDE.md`'s new `L-070` sentence)
 were both fixed in the immediately following commit (`0e1c63a`) and
 re-confirmed closed by the audit's own addendum. **Track 2 (strict
-clean-room isolation validation) is confirmed, final, and honestly
-reported as `UNMET`** — not a defect, the amendment's own intended
-outcome: honest `best-effort` labelling throughout is not the same as
-strict isolation actually being achieved; see
+clean-room isolation validation) was, at that point, confirmed and
+honestly reported as `UNMET`** — not a defect, the amendment's own
+intended outcome: honest `best-effort` labelling throughout is not the
+same as strict isolation actually being achieved; see
 `planning/knowledge/first-party-source-symbols/isolation/isolation-evidence-inventory.md`
-for the real, mechanically-derived evidence behind this verdict. This
-terminal reconciliation (this commit) is the fifth amendment's own
-closeout — the phase's `done` status on `planning/ROADMAP.md` is
-unchanged by it. Does not touch, reorder, or depend on Phase 78. Fully
-closed and pushed to `origin`. See "What was just completed" below for
-the pre-fifth-amendment delivered result; the summary immediately
-following this paragraph describes the pre-implementation,
-fourth-revision plan and is retained for its own amendment history, not
-as a description of current state.
+for the real, mechanically-derived evidence behind this verdict.
+
+A **sixth amendment** (`decisions/0068`), landed the same day as the
+fifth via direct, independent reproduction of three further defects in
+that amendment's own delivered result, implemented three corrections:
+(1) **nested snapshot-entry validation gaps closed** —
+`_validate_nested_entries` (`scripts/check_knowledge_base.py`) now
+closes `check_snapshot_completeness`'s Evidence/Derivation checks
+against validated ids rather than raw dict keys, catching malformed
+nested entries (scalars, identity swaps, kind mismatches, empty dicts,
+and whole-table-shape errors) that previously passed silently; (2) **a
+false conceptual claim corrected** — `task-ids-001`'s "ids are never
+reused" claim was independently reproduced false (a just-deleted
+current-maximum id is in fact reused by the next `add`) and fixed via
+dated correction notices preserving the original, incorrect text as
+historical record across the assertion, `docs/task-ids.md`,
+`decisions/0001`, and the snapshot sidecar; (3) **a complete,
+commit-permitting template exercise** replaced the fifth amendment's own
+no-commit limitation — a fresh disposable repository with a verified
+13-commit git bundle, a real persisted-`next_id` counter fix, and a
+passing test suite (5 tests, including 3 new regressions), finding no
+new template usability defect. An independent `release-phase-auditor`
+audit of this sixth amendment
+(`planning/retros/_audit-phase-79-sixth-amendment.md`, against
+`9982d22`) returned **Track 1 (workflow/template completion): PASS WITH
+NON-BLOCKING OBSERVATIONS** — one trivial, accepted-as-is observation
+(two compiled `.pyc` files tracked in the disposable exercise's own
+bundle history, explicitly not a defect in the corrections or in
+CodeCompass's own source) — and **Track 2 (strict clean-room isolation
+validation): UNMET**, honestly and correctly re-confirmed rather than
+newly assessed; this is the fifth amendment's own established verdict
+holding, not a new gap. This terminal reconciliation (this commit) is
+the sixth amendment's own closeout — the phase's `done` status on
+`planning/ROADMAP.md` is unchanged by it. Does not touch, reorder, or
+depend on Phase 78. Fully closed and pushed to `origin`. See "What was
+just completed" below for the pre-fifth-amendment delivered result; the
+summary immediately following this paragraph describes the
+pre-implementation, fourth-revision plan and is retained for its own
+amendment history, not as a description of current state.
 
 **Revised objective (unchanged since the first amendment)**: one
 evidence-backed knowledge foundation supplies both coding context and
@@ -278,10 +309,13 @@ genuinely closed, not merely present) and reconfirmed the same Track 2
 language, since corrected identically; two further trivial, non-blocking
 observations (the `claim.md` citation off-by-2, this file's own
 duplicated Phase 78 paragraph) were fixed in the following commit
-`a119f4c`. The terminal `roadmap-context-curator` reconciliation (this
-commit) flips `planning/ROADMAP.md`'s Phase 79 row to `done`, per
-`CLAUDE.md` §5's
-narrow three-target exemption.
+`a119f4c`. A fourth-revision terminal `roadmap-context-curator`
+reconciliation then flipped `planning/ROADMAP.md`'s Phase 79 row to
+`done`. The fifth and sixth amendments described above, and their own
+respective terminal reconciliations, followed afterward and corrected
+that already-`done` result's own output in place — see the "Current
+phase" section above for their full detail; the phase's `done` status
+itself has not changed since.
 
 **Phase 77 — First-party source awareness (`CG-009`) + a usable
 `codecompass-template` — `done`.**

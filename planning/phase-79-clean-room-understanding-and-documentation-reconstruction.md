@@ -1,17 +1,26 @@
 # Phase 79 — Clean-room conceptual understanding + documentation reconstruction (methodology hardening + template delivery)
 
-**Status: sixth amendment implemented, 2026-10-01, pending its own
-independent re-audit and terminal reconciliation** (see "Next step" at
-the end of §0's new "Sixth revision" entry below). Three further defects
-identified by direct review of the fifth amendment's own delivered
-result (nested snapshot-entry validation gaps, a false conceptual claim
-in downstream exercise evidence, and an incomplete — uncommitted —
-template workflow exercise) have been implemented and committed; full
-detail in §0's "Sixth revision" entry. The phase's own `done` status, and
-the fifth amendment's own closed status, are not reopened or reversed by
-this amendment — these are corrections to the fifth amendment's own
-output, following the same amend-and-implement-directly pattern this
-phase has used throughout.
+**Status: sixth amendment implemented and closed, 2026-10-01.** An
+independent `release-phase-auditor` pass
+(`planning/retros/_audit-phase-79-sixth-amendment.md`, against
+`9982d22`) returned **Track 1 (workflow/template completion): PASS WITH
+NON-BLOCKING OBSERVATIONS** (one trivial, accepted-as-is observation —
+two compiled `.pyc` files tracked in the disposable exercise's own
+bundle history, not a defect in the corrections or CodeCompass's own
+source) and **Track 2 (strict clean-room isolation validation): UNMET**,
+honestly and correctly re-confirmed rather than newly assessed. The
+terminal `roadmap-context-curator` reconciliation this audit authorized
+has now updated `planning/ROADMAP.md`'s Phase 79 row,
+`planning/CONTEXT.md`'s current-state section, and this Status line.
+Three further defects identified by direct review of the fifth
+amendment's own delivered result (nested snapshot-entry validation gaps,
+a false conceptual claim in downstream exercise evidence, and an
+incomplete — uncommitted — template workflow exercise) were implemented
+and committed; full detail in §0's "Sixth revision" entry. The phase's
+own `done` status, and the fifth amendment's own closed status, are not
+reopened or reversed by this amendment — these are corrections to the
+fifth amendment's own output, following the same amend-and-implement-
+directly pattern this phase has used throughout.
 
 **Prior closeout history, for context**: the original implementation
 (fourth revision) passed its own audit/re-audit with Track 1: PASS and
@@ -126,13 +135,18 @@ planning round-trip:**
    reproducible history preserved as a verified git bundle plus the final
    working tree.
 
-**Next step**: a fresh `release-phase-auditor` pass against this
-amendment's own final commit, then `roadmap-context-curator`
-reconciliation updating `planning/ROADMAP.md`'s Phase 79 row,
-`planning/CONTEXT.md`'s current-state section, and this file's own
-Status line to reflect the amendment's own completion — the same
-closeout sequence the fifth revision itself used, applied again to this
-sixth revision's own result.
+**Closeout complete**: the `release-phase-auditor` pass
+(`planning/retros/_audit-phase-79-sixth-amendment.md`, against
+`9982d22`) returned Track 1 (workflow/template completion): **PASS WITH
+NON-BLOCKING OBSERVATIONS** (one trivial, accepted-as-is observation —
+two compiled `.pyc` files tracked in the disposable exercise's own
+bundle history) and Track 2 (strict isolation): **UNMET** (honestly and
+correctly re-confirmed, not a defect). The terminal
+`roadmap-context-curator` reconciliation updated
+`planning/ROADMAP.md`'s Phase 79 row, `planning/CONTEXT.md`'s
+current-state section, and this file's own Status line accordingly.
+Phase 79 itself remains `done`, unchanged — this amendment corrected its
+delivered result, it did not reopen it.
 
 ---
 
