@@ -1,0 +1,15 @@
+# CodeCompass-generated state — reproducible from your project's own
+# current source/dependencies via `codecompass sync`, never hand-authored,
+# never committed.
+vendor/
+context-graph.db
+.claude/skills/codecompass*/
+.claude/commands/discovery.md
+
+# Secrets
+.env
+*.env
+
+# Add your own project's language/toolchain-specific ignores below
+# (e.g. __pycache__/, node_modules/, target/, .venv/) — this template
+# deliberately doesn't assume one.

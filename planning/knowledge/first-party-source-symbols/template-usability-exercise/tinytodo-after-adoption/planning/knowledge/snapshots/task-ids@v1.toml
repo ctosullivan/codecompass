@@ -1,0 +1,48 @@
+# Snapshot: task-ids@v1
+#
+# NOTE ON FREEZE COMPLETENESS (see exercise log for full context):
+# This snapshot cites `planning/knowledge/assertions/task-ids-001.md`,
+# which was written as part of this same adoption exercise and is still
+# UNCOMMITTED in this working tree (the exercise's own instructions say
+# not to commit anything). A snapshot's historical-integrity check only
+# means something against a real commit (`git show <rev>:<path>`) — there
+# is no such commit yet for this file, so `repository_revision` for the
+# assertion itself is left as "UNCOMMITTED" rather than a fabricated
+# hash. This is not a template defect: a snapshot is fundamentally a
+# freeze of *committed* history, and freezing an uncommitted record is a
+# contradiction in terms. The two source-evidence files it cites
+# (`src/tinytodo.py`, `tests/test_tinytodo.py`) WERE already committed
+# (at df80660, the project's initial commit, unmodified since) and are
+# frozen for real below, with real, re-checkable hashes.
+
+snapshot_id = "task-ids@v1"
+created = "2026-10-01"
+repository_revision_at_freeze = "UNCOMMITTED — working tree at df80660 plus an uncommitted assertion record; see note above"
+excluded_assertions = []
+
+[assertions."task-ids-001"]
+path = "planning/knowledge/assertions/task-ids-001.md"
+repository_revision = "UNCOMMITTED"
+content_hash = "sha256:ae3b7132f56503151e8064dcf7c2e551519eb3c1b1c74e3ccbe7f1c0a32850b9"
+# ^ hash of the current working-tree file. Re-checkable today by
+# `sha256sum planning/knowledge/assertions/task-ids-001.md`, but NOT
+# historical-integrity-checkable the way the template describes
+# (`git show <rev>:<path>` has nothing to show until this is committed).
+
+[assertions."task-ids-001".supporting_evidence."src-next-id"]
+path = "src/tinytodo.py"
+repository_revision = "df80660"
+content_hash = "sha256:273073f2cfffce9984160ccb6c5098b334f67e538e4d2b808c55831f6abd153b"
+source_ref = "src/tinytodo.py:36-55 (_next_id, including its docstring)"
+
+[assertions."task-ids-001".supporting_evidence."existing-tests"]
+path = "tests/test_tinytodo.py"
+repository_revision = "df80660"
+content_hash = "sha256:236eb39ced55603939dc9cd2cc99b74096ea81939b0f43a18a6ec7e11b0cff4d"
+test_ref = "tests/test_tinytodo.py:9-25 (test_ids_are_never_reused_after_delete, test_fresh_store_starts_at_one); ran manually 2026-10-01, both passed (pytest unavailable in this sandbox — ran the test bodies directly with plain Python)"
+
+[assertions."task-ids-001".supporting_evidence."manual-empty-store-check"]
+path = "(not a file — ad hoc command, see assertion's own Evidence section)"
+repository_revision = "n/a"
+content_hash = "n/a"
+source_ref = "manual python3 -c check, 2026-10-01: delete all tasks then add one -> id resets to 1"
