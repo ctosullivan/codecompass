@@ -216,16 +216,19 @@ def _strip_inline_comment(value: str) -> str:
     return (value[:idx] if idx != -1 else value).strip()
 
 
-def parse_record(path: Path) -> dict[str, str]:
-    """Hand-rolled, deliberately minimal parse of one record YAML file:
-    every top-level (column-0) `key: value` pair. Multi-line `>`/`|`
-    block scalars are recognised (the key is present) but their
-    continuation lines are not reconstructed — this checker only needs
-    field *presence* and short scalar/list values (ids, statuses), never
-    a record's own prose content.
+def parse_record_text(text: str) -> dict[str, str]:
+    """Same hand-rolled, deliberately minimal parse as `parse_record`,
+    operating on already-read text rather than a filesystem path — so a
+    historical git-blob string (never written to disk) can be parsed the
+    same way a live file is, without a temp-file detour. Every top-level
+    (column-0) `key: value` pair. Multi-line `>`/`|` block scalars are
+    recognised (the key is present) but their continuation lines are not
+    reconstructed — this checker only needs field *presence* and short
+    scalar/list values (ids, statuses), never a record's own prose
+    content.
     """
     fields: dict[str, str] = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
+    for line in text.splitlines():
         if not line or line[0] in " \t#":
             continue
         match = re.match(r"^([a-zA-Z_][a-zA-Z0-9_]*):\s*(.*)$", line)
@@ -234,6 +237,11 @@ def parse_record(path: Path) -> dict[str, str]:
         key, value = match.group(1), _strip_inline_comment(match.group(2))
         fields[key] = value
     return fields
+
+
+def parse_record(path: Path) -> dict[str, str]:
+    """`parse_record_text`, reading `path` first."""
+    return parse_record_text(path.read_text(encoding="utf-8"))
 
 
 def _extract_id_strings(value: str) -> list[str]:
@@ -505,6 +513,38 @@ def _sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def _git_list_files_at_revision(root: Path, revision: str, dir_path: Path) -> list[str] | None:
+    """Every file git tracked under `dir_path` (relative-to-`root`
+    already resolved by the caller into a real path) at `revision` --
+    the historical directory listing, never the live filesystem's own
+    `glob`. Returns `None` if the revision can't be resolved (shallow
+    clone, bad ref), the same "unresolvable, report it, don't crash"
+    contract `_git_show_content` already uses. Used specifically so a
+    snapshot's own assertion-inventory completeness is checked against
+    what existed *at its own freeze revision* -- a snapshot frozen before
+    a later Claim was ever created must never be flagged as "incomplete"
+    for not capturing it (that is ordinary, healthy history, not
+    truncation).
+    """
+    try:
+        rel_dir = dir_path.relative_to(root)
+    except ValueError:
+        rel_dir = dir_path
+    try:
+        result = subprocess.run(
+            ["git", "ls-tree", "-r", "--name-only", revision, "--", str(rel_dir)],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if result.returncode != 0:
+        return None
+    return [line for line in result.stdout.splitlines() if line]
+
+
 def _iter_snapshot_files(feature_dir: Path):
     snapshots_dir = feature_dir / "snapshots"
     if not snapshots_dir.is_dir():
@@ -512,19 +552,260 @@ def _iter_snapshot_files(feature_dir: Path):
     yield from sorted(snapshots_dir.glob("snapshot-*.toml"))
 
 
+_SNAPSHOT_CLOSURE_SUB_KINDS = ("supporting_evidence", "contradicting_evidence")
+
+
 def _iter_snapshot_entries(snapshot: dict):
     """Yield `(dotted_label, entry_dict)` for every assertion and its
     `supporting_evidence`/`contradicting_evidence`/`derivation` entries in
-    a parsed snapshot TOML structure (planning/phase-79-...md §5.2)."""
-    for assertion_id, assertion in snapshot.get("assertions", {}).items():
+    a parsed snapshot TOML structure (planning/phase-79-...md §5.2).
+    Defensive against a malformed/truncated sidecar (a non-dict
+    `assertions` table, a non-dict assertion/sub-entry) -- silently skips
+    what it can't iterate rather than raising, since `check_snapshot_completeness`
+    is what reports a malformed structure as its own actionable finding;
+    the hash-integrity/divergence checks below must still be able to
+    process whatever *is* well-formed in the same snapshot."""
+    assertions = snapshot.get("assertions", {})
+    if not isinstance(assertions, dict):
+        return
+    for assertion_id, assertion in assertions.items():
+        if not isinstance(assertion, dict):
+            continue
         yield assertion_id, assertion
         for sub_kind in (
             "supporting_evidence",
             "contradicting_evidence",
             "derivation",
         ):
-            for sub_id, sub_entry in assertion.get(sub_kind, {}).items():
+            sub_table = assertion.get(sub_kind, {})
+            if not isinstance(sub_table, dict):
+                continue
+            for sub_id, sub_entry in sub_table.items():
+                if not isinstance(sub_entry, dict):
+                    continue
                 yield f"{assertion_id}.{sub_kind}.{sub_id}", sub_entry
+
+
+_SNAPSHOT_REQUIRED_METADATA: dict[str, type] = {
+    "snapshot_id": str,
+    "created": str,
+    "repository_revision_at_freeze": str,
+    "excluded_assertions": list,
+}
+
+
+def check_snapshot_completeness(feature_dir: Path, root: Path = ROOT) -> list[Finding]:
+    """Fail-closed structural/completeness validation for a snapshot
+    sidecar -- distinct from `check_snapshot_historical_integrity`'s own
+    hash-tampering check (which only validates entries already *present*,
+    and so returns zero findings against a sidecar truncated down to
+    nothing but its own `snapshot_id`). This check validates that the
+    sidecar is actually the complete thing it claims to be:
+
+    1. Required top-level metadata (`snapshot_id`/`created`/
+       `repository_revision_at_freeze`/`excluded_assertions`) is present
+       and correctly typed.
+    2. `assertions` is present and is a table (never silently treated as
+       "zero assertions is fine" the way a missing key would be).
+    3. **Assertion inventory**: every real `CL-*.yaml` Claim record in
+       `feature_dir`, not named in `excluded_assertions`, has a matching
+       entry in the snapshot's own `assertions` table -- this is what
+       catches a sidecar reduced to only `snapshot_id`, where real Claims
+       exist on disk but none were actually captured.
+    4. **Record identity**: every entry's own `path` resolves to a real
+       file whose own `id:` field matches the key the snapshot filed it
+       under (catches a copy-paste/key-typo mismatch).
+    5. **Evidence/Derivation closure**: for every assertion the snapshot
+       does capture, the real historical record's own
+       `supporting_evidence`/`contradicting_evidence`/`derivation`
+       citations (read from the exact git-blob content at the snapshot's
+       own recorded `repository_revision` for that assertion -- the same
+       historical source `check_snapshot_historical_integrity` hashes,
+       never the live file) must each have a matching nested entry in the
+       snapshot's own sidecar. A snapshot that captures an assertion but
+       silently drops one of its cited Evidence/Derivation records is
+       exactly the "remaining hashes still validate" truncation this
+       check exists to catch.
+
+    Every condition below produces an actionable `Finding` -- never an
+    uncaught exception -- regardless of how malformed the sidecar is.
+    `root` defaults to the real repository but is threaded through
+    explicitly so tests can point this at a disposable git fixture.
+    """
+    findings: list[Finding] = []
+
+    for snapshot_path in _iter_snapshot_files(feature_dir):
+        try:
+            snapshot = tomllib.loads(snapshot_path.read_text(encoding="utf-8"))
+        except tomllib.TOMLDecodeError:
+            continue  # already reported by check_snapshot_historical_integrity
+        rel = snapshot_path.relative_to(root) if root in snapshot_path.parents else snapshot_path
+
+        for field, expected_type in _SNAPSHOT_REQUIRED_METADATA.items():
+            if field not in snapshot:
+                findings.append(
+                    Finding(
+                        "knowledge-base-snapshot-missing-metadata",
+                        f"{rel}: missing required top-level field {field!r}",
+                    )
+                )
+            elif not isinstance(snapshot[field], expected_type):
+                findings.append(
+                    Finding(
+                        "knowledge-base-snapshot-malformed-structure",
+                        f"{rel}: top-level field {field!r} must be a "
+                        f"{expected_type.__name__}, got "
+                        f"{type(snapshot[field]).__name__}",
+                    )
+                )
+
+        excluded = snapshot.get("excluded_assertions", [])
+        if not isinstance(excluded, list):
+            excluded = []  # already reported above; don't let it crash this pass
+        excluded = {x for x in excluded if isinstance(x, str)}
+
+        assertions = snapshot.get("assertions")
+        if assertions is None:
+            findings.append(
+                Finding(
+                    "knowledge-base-snapshot-missing-metadata",
+                    f"{rel}: missing required top-level field 'assertions'",
+                )
+            )
+            assertions = {}
+        elif not isinstance(assertions, dict):
+            findings.append(
+                Finding(
+                    "knowledge-base-snapshot-malformed-structure",
+                    f"{rel}: top-level field 'assertions' must be a table, "
+                    f"got {type(assertions).__name__}",
+                )
+            )
+            assertions = {}
+
+        # 3. Assertion inventory: every Claim that existed at this
+        # snapshot's own freeze revision, and isn't excluded, must be
+        # captured -- checked against the historical directory listing at
+        # `repository_revision_at_freeze`, never the live filesystem, so
+        # a snapshot frozen before a later Claim existed is never wrongly
+        # flagged for "missing" it (that's ordinary history, not
+        # truncation -- the same distinction check_snapshot_current_divergence
+        # already draws between tampering and legitimate change).
+        freeze_rev = snapshot.get("repository_revision_at_freeze")
+        if isinstance(freeze_rev, str):
+            historical_files = _git_list_files_at_revision(root, freeze_rev, feature_dir)
+            if historical_files is None:
+                findings.append(
+                    Finding(
+                        "knowledge-base-snapshot-unresolvable-revision",
+                        f"{rel}: its own repository_revision_at_freeze "
+                        f"{freeze_rev!r} could not be resolved by `git "
+                        "ls-tree` -- cannot check assertion-inventory "
+                        "completeness against it",
+                    )
+                )
+            else:
+                real_claim_ids: set[str] = set()
+                for rel_path in historical_files:
+                    if not Path(rel_path).name.startswith("CL-"):
+                        continue
+                    content = _git_show_content(root, freeze_rev, rel_path)
+                    if content is None:
+                        continue
+                    record_id = parse_record_text(content).get("id")
+                    if record_id:
+                        real_claim_ids.add(record_id)
+                for claim_id in sorted(real_claim_ids):
+                    if claim_id in excluded:
+                        continue
+                    if claim_id not in assertions:
+                        findings.append(
+                            Finding(
+                                "knowledge-base-snapshot-missing-assertion",
+                                f"{rel}: real record {claim_id!r} existed at "
+                                f"this snapshot's own freeze revision "
+                                f"({freeze_rev!r}) and is not listed in "
+                                "excluded_assertions, but has no entry in "
+                                "this snapshot's own assertions table -- "
+                                "the snapshot is incomplete",
+                            )
+                        )
+
+        # 4 & 5: per-captured-assertion identity + closure, only for
+        # well-formed entries (a malformed one was already reported by
+        # check_snapshot_historical_integrity's own incomplete-entry finding).
+        for assertion_id, assertion in assertions.items():
+            if not isinstance(assertion, dict):
+                findings.append(
+                    Finding(
+                        "knowledge-base-snapshot-malformed-structure",
+                        f"{rel}: assertions[{assertion_id!r}] must be a "
+                        f"table, got {type(assertion).__name__}",
+                    )
+                )
+                continue
+
+            entry_path = assertion.get("path")
+            if isinstance(entry_path, str):
+                real_path = root / entry_path
+                if real_path.is_file():
+                    real_id = parse_record(real_path).get("id")
+                    if real_id and real_id != assertion_id:
+                        findings.append(
+                            Finding(
+                                "knowledge-base-snapshot-identity-mismatch",
+                                f"{rel}: assertions[{assertion_id!r}] cites "
+                                f"path {entry_path!r}, whose own record id is "
+                                f"{real_id!r}, not {assertion_id!r}",
+                            )
+                        )
+
+            rev = assertion.get("repository_revision")
+            if not (isinstance(entry_path, str) and isinstance(rev, str)):
+                continue  # already reported as an incomplete entry
+            historical = _git_show_content(root, rev, entry_path)
+            if historical is None:
+                continue  # already reported as unresolvable
+
+            historical_fields = parse_record_text(historical)
+            for sub_kind in _SNAPSHOT_CLOSURE_SUB_KINDS:
+                cited_ids = set(_extract_id_strings(historical_fields.get(sub_kind, "")))
+                captured_sub_table = assertion.get(sub_kind, {})
+                captured_ids = (
+                    set(captured_sub_table) if isinstance(captured_sub_table, dict) else set()
+                )
+                for missing_id in sorted(cited_ids - captured_ids):
+                    findings.append(
+                        Finding(
+                            "knowledge-base-snapshot-incomplete-closure",
+                            f"{rel}: assertions[{assertion_id!r}]'s real "
+                            f"historical record cites {missing_id!r} in its "
+                            f"own {sub_kind}, but this snapshot has no "
+                            f"corresponding assertions[{assertion_id!r}]."
+                            f"{sub_kind}[{missing_id!r}] entry -- incomplete "
+                            "Evidence/Derivation closure",
+                        )
+                    )
+
+            derivation_id = historical_fields.get("derivation")
+            if derivation_id:
+                captured_derivation = assertion.get("derivation", {})
+                captured_derivation_ids = (
+                    set(captured_derivation) if isinstance(captured_derivation, dict) else set()
+                )
+                if derivation_id not in captured_derivation_ids:
+                    findings.append(
+                        Finding(
+                            "knowledge-base-snapshot-incomplete-closure",
+                            f"{rel}: assertions[{assertion_id!r}]'s real "
+                            f"historical record cites derivation "
+                            f"{derivation_id!r}, but this snapshot has no "
+                            f"corresponding assertions[{assertion_id!r}]."
+                            f"derivation[{derivation_id!r}] entry -- "
+                            "incomplete Evidence/Derivation closure",
+                        )
+                    )
+    return findings
 
 
 def check_snapshot_historical_integrity(
@@ -675,6 +956,7 @@ CHECKS = [
     check_cross_references_resolve,
     check_supersedes_never_crosses_kind,
     check_design_doc_citations_resolve,
+    check_snapshot_completeness,
     check_snapshot_historical_integrity,
     check_snapshot_current_divergence,
 ]
@@ -699,6 +981,7 @@ def run_all(root: Path) -> list[Finding]:
             elif check in (
                 check_optional_enum_fields,
                 check_list_fields_are_inline,
+                check_snapshot_completeness,
                 check_snapshot_historical_integrity,
                 check_snapshot_current_divergence,
             ):

@@ -850,6 +850,7 @@ where `.js` and `.ts` files are observably different languages with
 different symbol-kind vocabularies. `source_symbols.Language`
 (`python`/`rust`/`javascript`/`typescript`/`haskell`) is a separate,
 narrower concept defined for this purpose alone.
+([`first-party-source-symbols@v2#CL-FPSS-001`](../planning/knowledge/first-party-source-symbols/CL-FPSS-001.yaml))
 
 **Implementation scope, not API-surface scope.** The question here is
 "what does this project implement," not "what does this dependency
@@ -861,6 +862,7 @@ never a filter. Python needed no scope change at all (it already has no
 export concept); Rust and JS/TS extractors are widened from their
 vendor-facing, export-only counterparts to match every top-level
 declaration regardless of visibility.
+([`first-party-source-symbols@v2#CL-FPSS-002`](../planning/knowledge/first-party-source-symbols/CL-FPSS-002.yaml))
 
 **Occurrence-based symbol identity, not name-only.** A top-level
 declaration's identity includes its own `(source_file, name, kind,
@@ -870,6 +872,7 @@ on both a real Python `@typing.overload` stack and a real overloaded
 TypeScript function declaration. `line` is `NOT NULL`: an extractor
 unable to determine a location for a candidate does not emit a row for
 it.
+([`first-party-source-symbols@v2#CL-FPSS-004`](../planning/knowledge/first-party-source-symbols/CL-FPSS-004.yaml))
 
 **Explicit extraction-outcome model**, modeled directly on
 `git_topology.RepositoryTopology`'s own status+reason+data shape:
@@ -878,12 +881,15 @@ it.
 both "succeeded" outcomes, distinguished only by technique fidelity;
 `unsupported` (Haskell — no in-process parser exists), `parse_error`, and
 `unreadable` are honest, distinguishable failure states — never a bare
-empty result standing in for more than one real cause. `indexed_partial`'s
-own fidelity limits are specific and reproducible, not a diffuse
-"unusual formatting" risk, and Python's own top-level-only extraction
-scope and JS/TS's `const`-as-literal-kind limitation are separate,
-structural scope gaps — see
-[`context-graph-schema.md`](context-graph-schema.md)'s own "Known
+empty result standing in for more than one real cause.
+([`first-party-source-symbols@v2#CL-FPSS-003`](../planning/knowledge/first-party-source-symbols/CL-FPSS-003.yaml))
+`indexed_partial`'s own fidelity limits are specific and reproducible,
+not a diffuse "unusual formatting" risk
+([`first-party-source-symbols@v2#CL-FPSS-007`](../planning/knowledge/first-party-source-symbols/CL-FPSS-007.yaml)),
+and Python's own top-level-only extraction scope and JS/TS's
+`const`-as-literal-kind limitation are separate, structural scope gaps
+([`first-party-source-symbols@v2#CL-FPSS-008`](../planning/knowledge/first-party-source-symbols/CL-FPSS-008.yaml))
+— see [`context-graph-schema.md`](context-graph-schema.md)'s own "Known
 fidelity limitations of `indexed_partial` and Python extraction" section
 for the concrete shapes.
 
@@ -892,6 +898,7 @@ established for a different granularity: a whole-*project*
 `meta.source_index_version` (present or absent — has first-party
 indexing ever run at all) is kept structurally separate from a per-*file*
 `symbol_index_status` (always populated once indexing has run at all).
+([`first-party-source-symbols@v2#CL-FPSS-005`](../planning/knowledge/first-party-source-symbols/CL-FPSS-005.yaml))
 See [`context-graph-schema.md`](context-graph-schema.md)'s own
 "First-party source tables" section for the full schema.
 

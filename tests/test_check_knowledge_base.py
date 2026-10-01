@@ -196,8 +196,22 @@ class TestSnapshotIntegrity:
         feature_dir = tmp_path / "planning" / "knowledge" / "test-topic"
         claim_path = feature_dir / "CL-TEST-001.yaml"
         _write(claim_path, _CLAIM_HEADER)
+        ev_path = feature_dir / "EV-TEST-001.yaml"
+        _write(
+            ev_path,
+            "id: EV-TEST-001\nkind: evidence\nevidence_kind: source\n"
+            "what_it_shows: test\nrepository_revision: \"working tree\"\n"
+            "status: current\n",
+        )
+        de_path = feature_dir / "DE-TEST-001.yaml"
+        _write(
+            de_path,
+            "id: DE-TEST-001\nkind: derivation\nclaim: CL-TEST-001\n"
+            "method: test\ninputs: []\nperformed_by: test\n"
+            'timestamp: "2026-10-01T00:00:00Z"\n',
+        )
         _init_git_repo(tmp_path)
-        rev = _commit_all(tmp_path, "add CL-TEST-001")
+        rev = _commit_all(tmp_path, "add CL-TEST-001 + its cited evidence/derivation")
         content_hash = _sha256_file(claim_path)
 
         snapshots_dir = feature_dir / "snapshots"
@@ -207,11 +221,22 @@ class TestSnapshotIntegrity:
 snapshot_id = "test-topic@v1"
 created = "2026-10-01T00:00:00Z"
 repository_revision_at_freeze = "{rev}"
+excluded_assertions = []
 
 [assertions."CL-TEST-001"]
 path = "{rel_path}"
 repository_revision = "{rev}"
 content_hash = "{content_hash}"
+
+[assertions."CL-TEST-001".supporting_evidence."EV-TEST-001"]
+path = "planning/knowledge/test-topic/EV-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{_sha256_file(ev_path)}"
+
+[assertions."CL-TEST-001".derivation."DE-TEST-001"]
+path = "planning/knowledge/test-topic/DE-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{_sha256_file(de_path)}"
 """
         snapshot_path = snapshots_dir / "snapshot-v1.toml"
         _write(snapshot_path, snapshot_toml)
@@ -302,3 +327,389 @@ content_hash = "{content_hash}"
         assert not divergence_findings[0].strict, (
             "a current-record divergence must never fail --strict on its own"
         )
+
+    def test_legitimate_supersession_is_also_completeness_clean(self, tmp_path):
+        """The same legitimate-supersession scenario above must also
+        produce zero completeness findings -- a lifecycle transition is
+        not truncation."""
+        feature_dir, rev, content_hash = self._build_base_repo(tmp_path)
+        claim_path = feature_dir / "CL-TEST-001.yaml"
+        claim_path.write_text(
+            claim_path.read_text().replace("status: supported", "status: superseded"),
+            encoding="utf-8",
+        )
+        _commit_all(tmp_path, "supersede CL-TEST-001 in place")
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        assert findings == [], f"a legitimate lifecycle change must not be flagged: {findings}"
+
+
+_CLAIM_WITH_EVIDENCE_HEADER = """\
+id: CL-TEST-001
+kind: claim
+statement: test statement
+derivation: DE-TEST-001
+supporting_evidence: [EV-TEST-001, EV-TEST-002]
+contradicting_evidence: []
+derived_by: test
+repository_revision: "working tree"
+timestamp: "2026-10-01T00:00:00Z"
+status: supported
+supersedes: null
+"""
+
+
+class TestSnapshotCompleteness:
+    """`check_snapshot_completeness` — fail-closed structural/completeness
+    validation, distinct from `check_snapshot_historical_integrity`'s own
+    hash-tampering check (which only validates entries already present,
+    and so accepts a sidecar truncated down to nothing). Exercised
+    against real, disposable git fixtures per the user's own explicit
+    instruction covering: incomplete snapshots, omitted closure entries,
+    malformed structures, tampering (already covered above, unaffected by
+    this check), and legitimate lifecycle changes (immediately above)."""
+
+    def _build_repo_with_evidence(self, tmp_path: Path) -> tuple[Path, str]:
+        """A base repo with one Claim citing two Evidence records plus a
+        Derivation, and a complete snapshot capturing all of it —
+        returned alongside the freeze revision so each test can mutate
+        the snapshot (not the records) into a specific broken shape."""
+        feature_dir = tmp_path / "planning" / "knowledge" / "test-topic"
+        _write(feature_dir / "CL-TEST-001.yaml", _CLAIM_WITH_EVIDENCE_HEADER)
+        _write(
+            feature_dir / "EV-TEST-001.yaml",
+            "id: EV-TEST-001\nkind: evidence\nevidence_kind: source\n"
+            "what_it_shows: test\nrepository_revision: \"working tree\"\n"
+            "status: current\n",
+        )
+        _write(
+            feature_dir / "EV-TEST-002.yaml",
+            "id: EV-TEST-002\nkind: evidence\nevidence_kind: source\n"
+            "what_it_shows: test\nrepository_revision: \"working tree\"\n"
+            "status: current\n",
+        )
+        _write(
+            feature_dir / "DE-TEST-001.yaml",
+            "id: DE-TEST-001\nkind: derivation\nclaim: CL-TEST-001\n"
+            "method: test\ninputs: []\nperformed_by: test\n"
+            'timestamp: "2026-10-01T00:00:00Z"\n',
+        )
+        _init_git_repo(tmp_path)
+        rev = _commit_all(tmp_path, "add CL-TEST-001 + evidence + derivation")
+
+        def _hash(name: str) -> str:
+            return _sha256_file(feature_dir / name)
+
+        snapshots_dir = feature_dir / "snapshots"
+        snapshots_dir.mkdir(parents=True)
+        prefix = "planning/knowledge/test-topic"
+        snapshot_toml = f"""\
+snapshot_id = "test-topic@v1"
+created = "2026-10-01T00:00:00Z"
+repository_revision_at_freeze = "{rev}"
+excluded_assertions = []
+
+[assertions."CL-TEST-001"]
+path = "{prefix}/CL-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{_hash("CL-TEST-001.yaml")}"
+
+[assertions."CL-TEST-001".supporting_evidence."EV-TEST-001"]
+path = "{prefix}/EV-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{_hash("EV-TEST-001.yaml")}"
+
+[assertions."CL-TEST-001".supporting_evidence."EV-TEST-002"]
+path = "{prefix}/EV-TEST-002.yaml"
+repository_revision = "{rev}"
+content_hash = "{_hash("EV-TEST-002.yaml")}"
+
+[assertions."CL-TEST-001".derivation."DE-TEST-001"]
+path = "{prefix}/DE-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{_hash("DE-TEST-001.yaml")}"
+"""
+        snapshot_path = snapshots_dir / "snapshot-v1.toml"
+        _write(snapshot_path, snapshot_toml)
+        _commit_all(tmp_path, "freeze complete snapshot-v1")
+        return feature_dir, rev
+
+    def test_complete_snapshot_has_no_findings(self, tmp_path):
+        feature_dir, rev = self._build_repo_with_evidence(tmp_path)
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        assert findings == []
+
+    def test_gutted_snapshot_reduced_to_only_snapshot_id(self, tmp_path):
+        """The exact scenario named explicitly: a sidecar reduced to only
+        `snapshot_id` must not silently validate clean just because it
+        has no entries left to hash."""
+        feature_dir, rev = self._build_repo_with_evidence(tmp_path)
+        snapshot_path = feature_dir / "snapshots" / "snapshot-v1.toml"
+        snapshot_path.write_text('snapshot_id = "test-topic@v1"\n', encoding="utf-8")
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        rules = {f.rule for f in findings}
+        assert "knowledge-base-snapshot-missing-metadata" in rules
+        assert all(f.strict for f in findings), "a gutted snapshot must fail --strict"
+        # historical-integrity must not crash on this either, even though
+        # it has nothing left to hash:
+        integrity_findings = check_knowledge_base.check_snapshot_historical_integrity(
+            feature_dir, root=tmp_path
+        )
+        assert integrity_findings == []
+
+    def _write_cl_test_001_and_closure(self, feature_dir: Path) -> None:
+        """`CL-TEST-001` plus the real `EV-TEST-001`/`DE-TEST-001` records
+        it cites (`_CLAIM_HEADER`'s own `supporting_evidence`/
+        `derivation` fields) — shared setup for tests whose own subject
+        is the assertion-inventory logic, not closure, so a captured
+        `CL-TEST-001` entry should itself be closure-complete and produce
+        no incidental closure findings."""
+        _write(feature_dir / "CL-TEST-001.yaml", _CLAIM_HEADER)
+        _write(
+            feature_dir / "EV-TEST-001.yaml",
+            "id: EV-TEST-001\nkind: evidence\nevidence_kind: source\n"
+            "what_it_shows: test\nrepository_revision: \"working tree\"\n"
+            "status: current\n",
+        )
+        _write(
+            feature_dir / "DE-TEST-001.yaml",
+            "id: DE-TEST-001\nkind: derivation\nclaim: CL-TEST-001\n"
+            "method: test\ninputs: []\nperformed_by: test\n"
+            'timestamp: "2026-10-01T00:00:00Z"\n',
+        )
+
+    def test_missing_assertion_entirely_omitted(self, tmp_path):
+        """An entire real Claim silently dropped from the snapshot's own
+        assertions table (not excluded) must be flagged — the case a
+        naive per-entry-only hash check cannot see at all."""
+        feature_dir = tmp_path / "planning" / "knowledge" / "test-topic"
+        self._write_cl_test_001_and_closure(feature_dir)
+        _write(
+            feature_dir / "CL-TEST-002.yaml",
+            _CLAIM_HEADER.replace("CL-TEST-001", "CL-TEST-002"),
+        )
+        _init_git_repo(tmp_path)
+        rev = _commit_all(tmp_path, "add two claims + CL-TEST-001's closure")
+        snapshots_dir = feature_dir / "snapshots"
+        snapshots_dir.mkdir(parents=True)
+        prefix = "planning/knowledge/test-topic"
+        cl_hash = _sha256_file(feature_dir / "CL-TEST-001.yaml")
+        ev_hash = _sha256_file(feature_dir / "EV-TEST-001.yaml")
+        de_hash = _sha256_file(feature_dir / "DE-TEST-001.yaml")
+        # Snapshot captures CL-TEST-001 completely (including its own
+        # closure), but silently omits CL-TEST-002 entirely -- never
+        # excluded, just dropped.
+        snapshot_toml = f"""\
+snapshot_id = "test-topic@v1"
+created = "2026-10-01T00:00:00Z"
+repository_revision_at_freeze = "{rev}"
+excluded_assertions = []
+
+[assertions."CL-TEST-001"]
+path = "{prefix}/CL-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{cl_hash}"
+
+[assertions."CL-TEST-001".supporting_evidence."EV-TEST-001"]
+path = "{prefix}/EV-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{ev_hash}"
+
+[assertions."CL-TEST-001".derivation."DE-TEST-001"]
+path = "{prefix}/DE-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{de_hash}"
+"""
+        _write(snapshots_dir / "snapshot-v1.toml", snapshot_toml)
+        _commit_all(tmp_path, "freeze incomplete snapshot")
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        assert len(findings) == 1
+        assert findings[0].rule == "knowledge-base-snapshot-missing-assertion"
+        assert "CL-TEST-002" in findings[0].message
+        assert findings[0].strict
+
+    def test_excluded_assertion_is_not_flagged_missing(self, tmp_path):
+        """A real Claim explicitly named in `excluded_assertions` (e.g.
+        still `proposed`, deliberately left out of the frozen set) must
+        never be flagged as missing — this is the documented, legitimate
+        exclusion mechanism, not truncation."""
+        feature_dir = tmp_path / "planning" / "knowledge" / "test-topic"
+        self._write_cl_test_001_and_closure(feature_dir)
+        _write(
+            feature_dir / "CL-TEST-002.yaml",
+            _CLAIM_HEADER.replace("CL-TEST-001", "CL-TEST-002"),
+        )
+        _init_git_repo(tmp_path)
+        rev = _commit_all(tmp_path, "add two claims + CL-TEST-001's closure")
+        snapshots_dir = feature_dir / "snapshots"
+        snapshots_dir.mkdir(parents=True)
+        prefix = "planning/knowledge/test-topic"
+        cl_hash = _sha256_file(feature_dir / "CL-TEST-001.yaml")
+        ev_hash = _sha256_file(feature_dir / "EV-TEST-001.yaml")
+        de_hash = _sha256_file(feature_dir / "DE-TEST-001.yaml")
+        snapshot_toml = f"""\
+snapshot_id = "test-topic@v1"
+created = "2026-10-01T00:00:00Z"
+repository_revision_at_freeze = "{rev}"
+excluded_assertions = ["CL-TEST-002"]
+
+[assertions."CL-TEST-001"]
+path = "{prefix}/CL-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{cl_hash}"
+
+[assertions."CL-TEST-001".supporting_evidence."EV-TEST-001"]
+path = "{prefix}/EV-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{ev_hash}"
+
+[assertions."CL-TEST-001".derivation."DE-TEST-001"]
+path = "{prefix}/DE-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{de_hash}"
+"""
+        _write(snapshots_dir / "snapshot-v1.toml", snapshot_toml)
+        _commit_all(tmp_path, "freeze snapshot excluding CL-TEST-002")
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        assert findings == []
+
+    def test_a_claim_created_after_freeze_is_not_flagged_missing(self, tmp_path):
+        """A Claim created *after* a snapshot's own freeze revision must
+        never be flagged as missing from it — ordinary history, exactly
+        the scenario that motivated checking the historical directory
+        listing at `repository_revision_at_freeze`, never the live
+        filesystem."""
+        feature_dir, rev = self._build_repo_with_evidence(tmp_path)
+        # A later Claim, added after the snapshot above was already frozen.
+        _write(
+            feature_dir / "CL-TEST-999.yaml",
+            _CLAIM_HEADER.replace("CL-TEST-001", "CL-TEST-999"),
+        )
+        _commit_all(tmp_path, "add a later claim, after the snapshot was frozen")
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        assert findings == [], (
+            f"a Claim created after freeze time must not be flagged: {findings}"
+        )
+
+    def test_omitted_evidence_closure_entry_flagged(self, tmp_path):
+        """A captured assertion that silently drops one of its own real,
+        cited Evidence records — the exact "missing Evidence/Derivation
+        tables are not checked against historical Claims" gap named
+        explicitly."""
+        feature_dir, rev = self._build_repo_with_evidence(tmp_path)
+        snapshot_path = feature_dir / "snapshots" / "snapshot-v1.toml"
+        text = snapshot_path.read_text()
+        # Remove the EV-TEST-002 sub-table entirely, leaving EV-TEST-001
+        # and the derivation intact -- the claim itself still "validates"
+        # by its own top-level hash.
+        import re as _re
+
+        text = _re.sub(
+            r'\[assertions\."CL-TEST-001"\.supporting_evidence\."EV-TEST-002"\]\n'
+            r"(?:.+\n)*?(?=\n|\Z)",
+            "",
+            text,
+        )
+        snapshot_path.write_text(text, encoding="utf-8")
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        closure_findings = [
+            f for f in findings if f.rule == "knowledge-base-snapshot-incomplete-closure"
+        ]
+        assert len(closure_findings) == 1
+        assert "EV-TEST-002" in closure_findings[0].message
+        assert closure_findings[0].strict
+
+    def test_omitted_derivation_closure_entry_flagged(self, tmp_path):
+        feature_dir, rev = self._build_repo_with_evidence(tmp_path)
+        snapshot_path = feature_dir / "snapshots" / "snapshot-v1.toml"
+        text = snapshot_path.read_text()
+        import re as _re
+
+        text = _re.sub(
+            r'\[assertions\."CL-TEST-001"\.derivation\."DE-TEST-001"\]\n'
+            r"(?:.+\n)*?(?=\n|\Z)",
+            "",
+            text,
+        )
+        snapshot_path.write_text(text, encoding="utf-8")
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        closure_findings = [
+            f for f in findings if f.rule == "knowledge-base-snapshot-incomplete-closure"
+        ]
+        assert len(closure_findings) == 1
+        assert "DE-TEST-001" in closure_findings[0].message
+
+    def test_malformed_assertions_table_is_a_finding_not_a_crash(self, tmp_path):
+        """`assertions` present but the wrong TOML type (a string instead
+        of a table) must produce an actionable finding, never an uncaught
+        exception."""
+        feature_dir, rev = self._build_repo_with_evidence(tmp_path)
+        snapshot_path = feature_dir / "snapshots" / "snapshot-v1.toml"
+        snapshot_path.write_text(
+            'snapshot_id = "test-topic@v1"\n'
+            'created = "2026-10-01T00:00:00Z"\n'
+            f'repository_revision_at_freeze = "{rev}"\n'
+            "excluded_assertions = []\n"
+            'assertions = "not a table"\n',
+            encoding="utf-8",
+        )
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        assert any(f.rule == "knowledge-base-snapshot-malformed-structure" for f in findings)
+        # must not have crashed the other snapshot checks either:
+        check_knowledge_base.check_snapshot_historical_integrity(feature_dir, root=tmp_path)
+        check_knowledge_base.check_snapshot_current_divergence(feature_dir, root=tmp_path)
+
+    def test_malformed_excluded_assertions_is_a_finding_not_a_crash(self, tmp_path):
+        feature_dir, rev = self._build_repo_with_evidence(tmp_path)
+        snapshot_path = feature_dir / "snapshots" / "snapshot-v1.toml"
+        text = snapshot_path.read_text().replace(
+            "excluded_assertions = []", 'excluded_assertions = "CL-TEST-001"'
+        )
+        snapshot_path.write_text(text, encoding="utf-8")
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        assert any(f.rule == "knowledge-base-snapshot-malformed-structure" for f in findings)
+
+    def test_identity_mismatch_flagged(self, tmp_path):
+        """An assertion's own `path` resolves to a real record whose `id:`
+        field doesn't match the key it was filed under in the snapshot —
+        a copy-paste/key-typo defect, not tampering (the hash itself may
+        still be internally consistent)."""
+        feature_dir = tmp_path / "planning" / "knowledge" / "test-topic"
+        _write(feature_dir / "CL-TEST-001.yaml", _CLAIM_HEADER)
+        _init_git_repo(tmp_path)
+        rev = _commit_all(tmp_path, "add CL-TEST-001")
+        content_hash = _sha256_file(feature_dir / "CL-TEST-001.yaml")
+        snapshots_dir = feature_dir / "snapshots"
+        snapshots_dir.mkdir(parents=True)
+        prefix = "planning/knowledge/test-topic"
+        # Filed under the wrong key, "CL-TEST-999", even though the real
+        # record's own id: field says CL-TEST-001.
+        snapshot_toml = f"""\
+snapshot_id = "test-topic@v1"
+created = "2026-10-01T00:00:00Z"
+repository_revision_at_freeze = "{rev}"
+excluded_assertions = ["CL-TEST-001"]
+
+[assertions."CL-TEST-999"]
+path = "{prefix}/CL-TEST-001.yaml"
+repository_revision = "{rev}"
+content_hash = "{content_hash}"
+"""
+        _write(snapshots_dir / "snapshot-v1.toml", snapshot_toml)
+        _commit_all(tmp_path, "freeze snapshot with a key/id mismatch")
+
+        findings = check_knowledge_base.check_snapshot_completeness(feature_dir, root=tmp_path)
+        identity_findings = [
+            f for f in findings if f.rule == "knowledge-base-snapshot-identity-mismatch"
+        ]
+        assert len(identity_findings) == 1
+        assert "CL-TEST-999" in identity_findings[0].message
+        assert "CL-TEST-001" in identity_findings[0].message

@@ -3,6 +3,21 @@
 **Date:** 2026-10-01. **Outcome: Tier 1 FAILED its own preflight on all
 five routes. Not used for any stage of this pilot.**
 
+**Evidentiary correction, 2026-10-01 (fifth amendment)**: the "Raw
+result" section below was, at the time it was written, the probe
+dispatch's own prose handback — not the dispatch's actual raw tool-call
+transcript. The substantive finding (all five probes succeeded in
+reaching excluded content) is independently reconfirmed and still
+stands — see `isolation-evidence-inventory.md` in this same directory,
+which locates the real, original JSONL transcript for this exact
+dispatch (agent id `a067b85bd9ed05746`) still present in this session's
+own local Claude Code state, and states plainly what is and is not
+preserved from it. The handback prose below is retained as the
+dispatch's own contemporaneous account, not deleted or rewritten, but it
+should not be read as a raw transcript or a mechanically-verified
+access log — see the inventory document for what those actually require
+and what was and wasn't produced for each pilot dispatch.
+
 ## Probe prompt (verbatim)
 
 > You are a preflight isolation probe for a software project's own

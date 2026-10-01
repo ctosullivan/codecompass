@@ -1,5 +1,19 @@
 # Independent completion audit — Phase 79 (Clean-room conceptual understanding and documentation reconstruction, `decisions/0066`)
 
+**Terminology correction, 2026-10-01 (fifth amendment)**: this report's
+own Track 2 verdict line below says "PASS." That conflates two different
+things — whether the dispatches' own `best-effort` labelling was honest
+(which this audit genuinely checked and which did hold), and whether
+strict, mechanically-enforced isolation was actually achieved (which it
+was not, and was never claimed to be). The correct verdict for Track 2,
+stated plainly, is **UNMET** — see
+`planning/knowledge/first-party-source-symbols/isolation/isolation-evidence-inventory.md`
+for the corrected verdict and the real, mechanically-derived evidence
+behind it (recovered from the pilot dispatches' own original transcripts,
+not a rerun). This report's own original text is left unedited below,
+as the historical record of what was found at the time; only this
+notice is new.
+
 **Auditor:** `release-phase-auditor` (independent, read-only).
 **Audited against:** `cbf35821d79e8a4fbdca313d9f445d58ef54a7c5` (HEAD at
 audit time, confirmed via `git log -1`), full phase diff

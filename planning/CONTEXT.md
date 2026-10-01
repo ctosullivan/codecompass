@@ -79,15 +79,22 @@ reconstruction, methodology hardening + Priority D template delivery) is
 `decisions/0066`, approved 2026-10-01 and executed the same day).
 Independent `release-phase-auditor` re-audit
 (`planning/retros/_audit-phase-79-reaudit.md`, against `d9b9175`)
-returned **Track 1 (workflow/template completion): PASS** and **Track 2
-(strict clean-room isolation validation): PASS** (reconfirmed, unchanged
-since the original audit); two further trivial, non-blocking
-observations from that re-audit (a citation off-by-2 in
-`docs/domain/concepts/claim.md`, a duplicated Phase 78 next-step
-paragraph in this file's own prior revision) were fixed in the
-immediately following commit, `a119f4c`. Does not touch, reorder, or
-depend on Phase 78. Fully closed and pushed to `origin`. See "What was
-just completed" below for the real, delivered result — the summary
+returned **Track 1 (workflow/template completion): PASS**; two further
+trivial, non-blocking observations from that re-audit (a citation
+off-by-2 in `docs/domain/concepts/claim.md`, a duplicated Phase 78
+next-step paragraph in this file's own prior revision) were fixed in the
+immediately following commit, `a119f4c`. **A fifth amendment, same day,
+corrected this report's own Track 2 language**: the original and
+re-audit reports both said "Track 2 (strict clean-room isolation
+validation): PASS," conflating honest `best-effort` labelling with
+strict isolation actually being achieved. The corrected, final verdict
+is **Track 2: UNMET** — see
+`planning/knowledge/first-party-source-symbols/isolation/isolation-evidence-inventory.md`
+for the real, mechanically-derived evidence (recovered from the pilot
+dispatches' own original transcripts) behind this correction. Does not
+touch, reorder, or depend on Phase 78. Fully closed and pushed to
+`origin`. See "What was just completed" below for the real, delivered
+result — the summary
 immediately following this paragraph describes the pre-implementation,
 fourth-revision plan and is retained for its own amendment history, not
 as a description of current state.
@@ -239,20 +246,23 @@ An independent `release-phase-auditor` audit against the pre-CHANGELOG/
 pre-CONTEXT.md-update commit (`cbf3582`) returned **Track 1 (workflow/
 template completion): FAIL** — three real gaps (no `CHANGELOG.md` entry,
 this file not updated past the pre-implementation plan state, no
-persisted `_drift-audit-phase-79.md`) — and **Track 2 (strict isolation
-validation): PASS** (the `best-effort` labelling itself, confirmed
-honest throughout by direct spot-check; the isolation *mechanism*
-remains, as designed, honestly unmet for the network/environment-identity
-dimensions — that is Track 2's own expected, disclosed result, not a
-defect). All three Track 1 gaps were fixed (`d9b9175`). A re-audit
-against `d9b9175` (`planning/retros/_audit-phase-79-reaudit.md`) returned
-**Track 1: PASS** (all three fixes independently verified genuinely
-closed, not merely present) and **Track 2: PASS** (reconfirmed,
-unchanged), with two further trivial, non-blocking observations (the
-`claim.md` citation off-by-2, this file's own duplicated Phase 78
-paragraph), fixed in the following commit `a119f4c`. The terminal
-`roadmap-context-curator` reconciliation (this commit) flips
-`planning/ROADMAP.md`'s Phase 79 row to `done`, per `CLAUDE.md` §5's
+persisted `_drift-audit-phase-79.md`) — and (at the time) reported
+**Track 2 (strict isolation validation): "PASS"**, language a fifth
+amendment the same day corrected: that audit genuinely confirmed the
+`best-effort` labelling was honest throughout, but honest labelling of
+an unenforced boundary is not the same as strict isolation being
+achieved — the corrected verdict is **Track 2: UNMET**, unaffected by
+and independent of any Track 1 fix (see the isolation-evidence-inventory
+document cited above). All three Track 1 gaps were fixed (`d9b9175`). A
+re-audit against `d9b9175` (`planning/retros/_audit-phase-79-reaudit.md`)
+returned **Track 1: PASS** (all three fixes independently verified
+genuinely closed, not merely present) and reconfirmed the same Track 2
+language, since corrected identically; two further trivial, non-blocking
+observations (the `claim.md` citation off-by-2, this file's own
+duplicated Phase 78 paragraph) were fixed in the following commit
+`a119f4c`. The terminal `roadmap-context-curator` reconciliation (this
+commit) flips `planning/ROADMAP.md`'s Phase 79 row to `done`, per
+`CLAUDE.md` §5's
 narrow three-target exemption.
 
 **Phase 77 — First-party source awareness (`CG-009`) + a usable

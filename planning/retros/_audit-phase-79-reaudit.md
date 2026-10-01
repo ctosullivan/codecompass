@@ -1,5 +1,15 @@
 # Independent re-audit — Phase 79 (Clean-room conceptual understanding and documentation reconstruction, `decisions/0066`)
 
+**Terminology correction, 2026-10-01 (fifth amendment)**: this report's
+own Track 2 verdict line below says "PASS (reconfirmed, unchanged)" —
+the same conflation the original audit's own report carries (honest
+`best-effort` labelling vs. actual strict isolation). The correct Track 2
+verdict is **UNMET** — see
+`planning/knowledge/first-party-source-symbols/isolation/isolation-evidence-inventory.md`
+for the corrected verdict and the real evidence behind it. This report's
+own original text is left unedited below, as the historical record of
+what this re-audit found at the time; only this notice is new.
+
 **Auditor:** `release-phase-auditor` (independent, read-only).
 **Purpose:** re-audit of the three Track 1 gaps found by the prior
 independent audit (`planning/retros/_audit-phase-79.md`, against

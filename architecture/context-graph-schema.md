@@ -184,7 +184,7 @@ only place that converts its plain dataclasses into these row types. See
 
 | Table | Key columns | Notes |
 |---|---|---|
-| `source_symbols` | `(source_file_id, name, kind, line)` UNIQUE, `line` **`NOT NULL`**, `purpose` (nullable), `exposure` CHECK'd to a 5-value set | **Occurrence-based identity, not name-only** — a top-level declaration's identity includes its own location, since a real language feature (function overloading) produces multiple genuinely distinct declarations sharing one name (live-verified on both Python `@typing.overload` and TypeScript). `line` is never `NULL`: an extractor unable to determine a location for a candidate does not emit a row for it at all. **Upserted** by this natural key, same stability guarantee as `vendors`/`symbols`/`source_files`. |
+| `source_symbols` | `(source_file_id, name, kind, line)` UNIQUE, `line` **`NOT NULL`**, `purpose` (nullable), `exposure` CHECK'd to a 5-value set | **Occurrence-based identity, not name-only** — a top-level declaration's identity includes its own location, since a real language feature (function overloading) produces multiple genuinely distinct declarations sharing one name (live-verified on both Python `@typing.overload` and TypeScript). `line` is never `NULL`: an extractor unable to determine a location for a candidate does not emit a row for it at all. **Upserted** by this natural key, same stability guarantee as `vendors`/`symbols`/`source_files`. ([`first-party-source-symbols@v2#CL-FPSS-004`](../planning/knowledge/first-party-source-symbols/CL-FPSS-004.yaml)) |
 
 `source_files.symbol_index_status` closed set: `indexed` (a real
 structural parser ran — Python's own `ast`, today), `indexed_partial` (a
@@ -200,6 +200,7 @@ techniques have no real "parse" step to fail structurally), `unreadable`
 empty `symbols` list for `indexed`/`indexed_partial` is a real, valid,
 distinct outcome ("genuinely no top-level symbols"), never conflated
 with any failure state.
+([`first-party-source-symbols@v2#CL-FPSS-003`](../planning/knowledge/first-party-source-symbols/CL-FPSS-003.yaml))
 
 `source_symbols.exposure` closed set: `public`, `restricted`,
 `internal`, `conventional_private`, `unknown` — a genuinely
@@ -220,6 +221,7 @@ extraction answers "what does this project implement," not "what public
 API does this dependency expose" (the question vendor `symbols.export_kind`
 answers); a non-exported/private top-level declaration is still a real
 row.
+([`first-party-source-symbols@v2#CL-FPSS-002`](../planning/knowledge/first-party-source-symbols/CL-FPSS-002.yaml))
 
 `meta.source_index_version` is a plain version marker (`"1"` today, not
 a multi-state status enum — first-party discovery has no "could the
@@ -239,6 +241,11 @@ questions, the same two-level-uncertainty discipline `git_topology_status`
 (whole-pass) vs. its own per-row nullable columns already established,
 applied here as the same two-level shape at a different granularity
 (whole-*project* vs. per-*file*, rather than whole-*pass* vs. per-*row*).
+([`first-party-source-symbols@v2#CL-FPSS-005`](../planning/knowledge/first-party-source-symbols/CL-FPSS-005.yaml);
+the nullable-everywhere migration contract for `source_files`'s own four
+new columns is
+[`first-party-source-symbols@v2#CL-FPSS-006`](../planning/knowledge/first-party-source-symbols/CL-FPSS-006.yaml),
+see "Migrations" below)
 
 ### Known fidelity limitations of `indexed_partial` and Python extraction
 
@@ -247,7 +254,8 @@ coarse-technique risk only in general prose ("a multi-line signature, an
 unusual formatting style, or a false match inside a string/comment can
 defeat them"). Live probing against real Rust/JS/TS/Python source
 narrows that down to specific, reproducible shapes, not a diffuse
-"unusual formatting" risk:
+"unusual formatting" risk
+([`first-party-source-symbols@v2#CL-FPSS-007`](../planning/knowledge/first-party-source-symbols/CL-FPSS-007.yaml)):
 
 - A parameter list spanning multiple physical lines does **not** defeat
   either regex-based extractor — both item regexes only need to match
@@ -273,7 +281,8 @@ a genuine declaration.
 Two further limitations affect extraction *scope* rather than
 correctness of what's matched, independent of the false-positive
 boundary above, and are structural properties of how the extractors are
-built rather than untested edge cases:
+built rather than untested edge cases
+([`first-party-source-symbols@v2#CL-FPSS-008`](../planning/knowledge/first-party-source-symbols/CL-FPSS-008.yaml)):
 
 - **Python extraction is top-level-only.** Only the module's own direct
   children are visited (`ast.iter_child_nodes` on the module node, not a
