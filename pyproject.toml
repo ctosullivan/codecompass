@@ -54,12 +54,13 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-# Phase 79 fifth amendment: preserved, real evidence of an invented
-# non-CodeCompass project's own code (the downstream template-usability
-# exercise's actual end state) -- not this project's own source, never
-# meant to meet this project's own lint conventions.
+# Phase 79 fifth/sixth amendments: preserved, real evidence of an
+# invented non-CodeCompass project's own code (two separate downstream
+# template-usability exercises' actual end states) -- not this project's
+# own source, never meant to meet this project's own lint conventions.
 extend-exclude = [
     "planning/knowledge/first-party-source-symbols/template-usability-exercise/tinytodo-after-adoption",
+    "planning/knowledge/first-party-source-symbols/template-usability-exercise-2/tinytodo2-final-tree",
 ]
 
 [tool.ruff.lint]

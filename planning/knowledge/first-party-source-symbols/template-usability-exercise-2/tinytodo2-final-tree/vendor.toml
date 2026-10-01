@@ -1,0 +1,12 @@
+# CodeCompass dependency-tracking config.
+#
+# Starts empty. Run bare `codecompass` (no arguments) in this project
+# once your own dependencies exist, and it will discover them from your
+# project's real manifest (package.json, pyproject.toml, Cargo.toml,
+# etc.) and offer to populate this file for you.
+#
+# Example entry, once you have one:
+#
+# [[vendor]]
+# name = "requests"
+# ecosystem = "python"

@@ -1,0 +1,24 @@
+snapshot_id = "id-reuse@v1"
+created = "2026-10-01T00:00:00Z"
+repository_revision_at_freeze = "1d2e6b87b081baefa774382a87aa7c1baa42428d"
+excluded_assertions = []
+
+[assertions."id-reuse-001"]
+path = "planning/knowledge/assertions/id-reuse-001.md"
+repository_revision = "641daf64be3e6ef7daec0d57c08ac17fd52bc708"
+content_hash = "5e6dba992ba98f09891610a9d21bf1e9c0704470c117b188c609433dcebb680a"
+
+[assertions."id-reuse-001".supporting_evidence."src-next-id"]
+path = "src/tinytodo.py"
+repository_revision = "b6a1bb5e4c8364848e60462aaf8e7a8bc52002cb"
+content_hash = "273073f2cfffce9984160ccb6c5098b334f67e538e4d2b808c55831f6abd153b"
+
+[assertions."id-reuse-001".supporting_evidence."existing-tests"]
+path = "tests/test_tinytodo.py"
+repository_revision = "b6a1bb5e4c8364848e60462aaf8e7a8bc52002cb"
+content_hash = "236eb39ced55603939dc9cd2cc99b74096ea81939b0f43a18a6ec7e11b0cff4d"
+
+[assertions."id-reuse-001".supporting_evidence."adversarial-review-evidence"]
+path = "planning/knowledge/assertions/id-reuse-001-review-evidence.md"
+repository_revision = "1d2e6b87b081baefa774382a87aa7c1baa42428d"
+content_hash = "472d30ef9c20369cb7ffe54398c28ccc8d20c1fb14a73ad294638081dcb50fae"

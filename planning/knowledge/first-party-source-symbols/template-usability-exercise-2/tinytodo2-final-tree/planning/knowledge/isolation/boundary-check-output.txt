@@ -1,0 +1,13 @@
+=== Implementation reconstruction (a7a85573d995b51ed) ===
+Assigned: fresh-exercise-impl-export/
+  No path outside the assigned directory referenced.
+
+=== Documentation draft (af63f14cd78db492c) ===
+Assigned: fresh-exercise-docs-export/
+  No path outside the assigned directory referenced.
+
+(Mechanically derived from each dispatch's own real, original JSONL
+transcript in this session's local Claude Code state -- not a rerun,
+not self-report. Same method as
+codecompass/planning/knowledge/first-party-source-symbols/isolation/boundary_check.py,
+applied here to this exercise's own two isolation-sensitive dispatches.)
