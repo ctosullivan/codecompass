@@ -1,5 +1,26 @@
 # Task ids
 
+**CORRECTION (2026-10-01, Phase 79 sixth amendment): both "The
+guarantee" and its own "fixed, narrower" restatement below are FALSE,
+independently reproduced and disproven.** Reproduced directly: add two
+tasks (ids 1, 2), delete id 2 (the higher one, not the lower), add a
+third task — the new task receives id **2**, reusing the just-deleted
+id, while task 1 (a different, unrelated, still-live task) remains. The
+task list was never emptied at any point in this sequence. This page's
+own "So the real guarantee is narrower... ids are never reused as long
+as the task list hasn't been fully emptied out in between" is also
+false: this reproduction never empties the list and reuse still occurs.
+**The actual, implemented guarantee**: an id is safe from reuse only if
+the task holding it is deleted while a strictly higher id is still live.
+Deleting whichever task currently holds the highest live id makes that
+id available for reuse by the very next `add`, independent of how many
+other tasks exist. Full reproduction and representative deletion cases:
+`../../corrections/task-ids-reproduction.md`. Everything below this notice
+is preserved unedited as this exercise's own original (incorrect)
+conclusion, not current truth.
+
+---
+
 Every task has an integer `id`, assigned once when it's added
 (`add` -> `_next_id` in `src/tinytodo.py`) and never changed afterward.
 

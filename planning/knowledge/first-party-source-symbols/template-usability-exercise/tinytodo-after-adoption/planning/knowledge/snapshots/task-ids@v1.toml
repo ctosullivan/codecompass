@@ -1,5 +1,15 @@
 # Snapshot: task-ids@v1
 #
+# CORRECTION (2026-10-01, Phase 79 sixth amendment): the assertion this
+# snapshot cites, task-ids-001, was found false by direct reproduction --
+# see planning/knowledge/assertions/task-ids-001.md's own correction
+# notice and ../../../../corrections/task-ids-reproduction.md. This sidecar
+# is left unedited as the historical freeze of what was (wrongly)
+# asserted at the time; it is not re-frozen against the corrected text,
+# since this snapshot's own real, un-correctable limitation (freezing an
+# uncommitted file) already meant it could never be historical-integrity-
+# checked the normal way.
+#
 # NOTE ON FREEZE COMPLETENESS (see exercise log for full context):
 # This snapshot cites `planning/knowledge/assertions/task-ids-001.md`,
 # which was written as part of this same adoption exercise and is still

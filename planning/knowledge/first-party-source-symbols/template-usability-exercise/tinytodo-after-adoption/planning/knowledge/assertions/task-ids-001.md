@@ -1,5 +1,50 @@
 # Assertion: task-ids-001
 
+**CORRECTION (2026-10-01, Phase 79 sixth amendment, CodeCompass
+`planning/knowledge/first-party-source-symbols/`): the Statement below
+is FALSE, independently reproduced and disproven.** It claimed "a task
+id, once assigned, is never reassigned to a different task... including
+after the task holding it is deleted," scoped only by "unless the task
+list has been fully emptied." That scoping is itself still wrong. Real,
+independently-run reproduction:
+
+```
+add "first"  -> id 1
+add "second" -> id 2
+delete(2)                      # delete the HIGHEST id, list NOT emptied
+add "third"  -> id 2           # REUSED -- task 1 still exists
+```
+
+Both ids present after this sequence: `[(1, "first"), (2, "third")]` —
+the original task-2 is gone, its id handed to an unrelated new task,
+while task 1 (a different, still-live task) remains. The list was never
+emptied. The assertion's own "Counterexamples" section claimed to have
+"looked for a case where a deleted id gets reused *while other tasks
+still exist* — found none," reasoning that `max(...)+1` over a
+non-empty list "can never produce an id already present, since by
+definition it exceeds every id in the list, live or not." That reasoning
+conflates "exceeds every id *currently* in the list" with "exceeds every
+id *ever* assigned" — exactly the distinction `_next_id`'s own docstring
+claims to draw correctly and does not. The counterexample was not found
+because it was not actually searched for along the one axis that matters
+(which specific id gets deleted — highest vs. not), only varied along
+irrelevant axes (how many tasks, which one tested first).
+
+**The real, implemented guarantee** is narrower than either the original
+Statement or its own "fixed" rescoping below: an id is safe from reuse
+only if the task holding it is deleted while a *strictly higher* id is
+still live (or added afterward before any further add). Deleting
+whichever task currently holds the *highest* live id, at any point,
+makes that id available for reuse by the very next `add` — regardless of
+how many other tasks exist or survive. Full reproduction, including the
+representative deletion cases below, is at
+`../../../../corrections/task-ids-reproduction.md` in this same exercise
+evidence tree. The rest of this file is preserved unedited as the
+historical record of what this exercise originally (wrongly) concluded
+and why — including the flawed reasoning above — not as current truth.
+
+---
+
 ## Statement
 
 Within one `todo.json`'s continuous history (i.e. since the file was last

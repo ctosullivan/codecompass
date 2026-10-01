@@ -2,7 +2,15 @@
 
 ## Status
 
-Accepted (2026-10-01).
+Accepted (2026-10-01). **Factually corrected (2026-10-01, Phase 79 sixth
+amendment)**: the Decision section's own reasoning below is disproven by
+direct reproduction — see the correction notice inserted into that
+section. The title and this ADR's own real, intended design rationale
+(Context, Alternatives) are not reversed by this correction; what's
+wrong is the Decision section's own factual claim about what
+`_next_id`'s actual behavior achieves. Left in place, not superseded by
+a new ADR, since this is a toy invented project's own preserved
+evidence file, not a live governing decision record.
 
 ## Context
 
@@ -22,14 +30,25 @@ number.
 ## Decision
 
 `_next_id` (`src/tinytodo.py`) always returns one more than the highest
-id *currently present* in the task list (`max(t.id for t in tasks) + 1`),
-and ids are never reassigned once a task holding them is deleted. In
-practice this produces the "never reused" guarantee with no extra
-persisted state, because within a single `todo.json`'s continuous
-history the highest id ever assigned is always exactly the highest id
-currently present until something is deleted — and `_next_id` is only
-ever called to produce a new, larger id, never to backfill a gap left by
-a deletion.
+id *currently present* in the task list (`max(t.id for t in tasks) + 1`).
+
+**CORRECTION (2026-10-01): the paragraph below is false, independently
+reproduced and disproven — preserved unedited as the historical record
+of this ADR's own original, incorrect reasoning.** It claimed: "ids are
+never reassigned once a task holding them is deleted... because within
+a single todo.json's continuous history the highest id ever assigned is
+always exactly the highest id currently present until something is
+deleted." This is wrong specifically when the deleted task *is* the one
+holding the current highest id: deleting it immediately lowers "highest
+id currently present" below "highest id ever assigned," and the very
+next `_next_id` call computes from the now-lower current maximum,
+reproducing the just-deleted id. Reproduced directly: add ids 1 and 2,
+delete id 2, add a new task — it receives id 2 again, while id 1's task
+is still live and the list was never emptied. Full reproduction:
+`../../corrections/task-ids-reproduction.md`. The real, implemented
+guarantee is narrower than this Decision claims: an id is safe from
+reuse only if the task deleted was not, at the moment of its own
+deletion, the holder of the current maximum id.
 
 ## Alternatives considered
 

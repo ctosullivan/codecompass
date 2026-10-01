@@ -231,3 +231,50 @@ field rather than confirm the TOML schema is well-formed. All three of
 these came from actually walking through the adoption and the workflow
 end to end with a real (if small) piece of subject matter, not from
 checking that every markdown path mentioned in the repo exists.
+
+## Addendum (2026-10-01, Phase 79 sixth amendment): the exercise's own central conceptual claim was false
+
+A direct review of this exercise's own delivered result found that its
+own headline conclusion — `_next_id` guarantees a deleted task's id is
+"never reused" — is **false**, independently reproduced and disproven.
+Real reproduction: add tasks with ids 1 and 2, delete id 2 (the *higher*
+one, not the lower one this exercise's own test happened to delete), add
+a new task — it receives id 2 again, while task 1 (a different,
+unrelated, still-live task) remains. The list was never emptied.
+
+This is a genuinely significant finding about the exercise itself, not
+just about tinytodo: the clean-room research step (§5 above) reasoned
+"looked for a case where a deleted id gets reused while other tasks
+still exist — found none," and that reasoning contained a real logical
+error (conflating "exceeds every id currently present" with "exceeds
+every id ever assigned") that a single research pass's own self-review
+did not catch. The two deletion scenarios this exercise actually tried
+(delete a non-maximum id; empty the whole list) both happen to leave the
+false claim looking true — the one scenario that falsifies it (delete
+whichever task currently holds the maximum id, while others survive)
+was never tried. Full reproduction, including representative deletion
+cases: `corrections/task-ids-reproduction.md`.
+
+Corrections were applied, as correction notices (not silent rewrites),
+to `tinytodo-after-adoption/planning/knowledge/assertions/task-ids-001.md`,
+`tinytodo-after-adoption/docs/task-ids.md`, and
+`tinytodo-after-adoption/decisions/0001-task-ids-are-never-reused.md` —
+each preserves its own original, incorrect conclusion below a prominent,
+dated correction. No file under `tinytodo-after-adoption/src/` or
+`tests/` was modified; the implementation itself was never in question,
+only what this exercise's own research concluded about it.
+
+**What this changes about this report's own earlier verdict**: the
+"heavier-weight workflow" section (§5) above is not retracted as a
+demonstration that the workflow's *mechanics* function (an assertion was
+written, a snapshot was attempted, documentation was produced, in the
+right order, citing the right things) — but its own substantive content
+was wrong, and no step in the exercise as originally run was positioned
+to catch that on its own. This is itself the strongest evidence yet,
+independent of anything else in Phase 79, for why the real CodeCompass
+pilot's own separate, independent adversarial-review step
+(`domain-skeptic`, dispatched with no knowledge of the research pass's
+own conclusions, specifically tasked with hunting for missing
+counterexamples) is not optional ceremony — this exercise's own
+single-pass research process produced exactly the kind of error that
+step exists to catch, and had no equivalent step to catch it.
