@@ -50,12 +50,19 @@ time, not a silent partial adapter.
    parameters, printing via the project's shared `rich.Console`
    instance, raising `typer.Exit(code=1)` on failure rather than letting
    exceptions propagate uncaught.
-3. If the command needs the graph, use the existing
+3. If the command needs ordinary graph access, use the existing
    `_graph_session`/`_open_graph_or_note` context-manager pattern rather
    than opening a raw `sqlite3.connect` call directly. This gets you the
    established "graceful note, no traceback, no silent empty-database
    creation" behavior for free — see `07-agent-orientation.md` for why
-   this specific guarantee matters to a caller.
+   this specific guarantee matters to a caller. **Correction, 2026-10-02:**
+   if your command also needs to distinguish "database exists but this
+   specific thing was never indexed" (as `query topology`/`query
+   source`/`query source-symbol` do), use `_open_graph_if_exists`
+   (`cli.py:895-912`) instead — a related but distinct helper this
+   draft originally conflated with the one above; found by an
+   independent `context-evaluator` assessment of a packet built from
+   this draft (`_part4-coding-context-packet-evaluation.md`).
 
 ## Add a new graph row or table
 

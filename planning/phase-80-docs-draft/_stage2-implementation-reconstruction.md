@@ -184,6 +184,27 @@ Top-level `app = typer.Typer(...)`, plus two sub-apps: `query_app`
 missing `context-graph.db` prints a one-line yellow note and returns
 cleanly rather than crashing or silently creating an empty DB.
 
+**CORRECTION (2026-10-02, found by an independent `context-evaluator`
+assessment of a coding-context packet built from this report — see
+`_part4-coding-context-packet-evaluation.md`): this is an
+overgeneralization, not accurate for every `query` subcommand.**
+`query topology`/`query source`/`query source-symbol` actually use a
+*different* helper, `_open_graph_if_exists` (`cli.py:895-912`), not
+`_open_graph_or_note`/`_graph_session` — confirmed by direct, independent
+re-reading of `cli.py`. `_open_graph_if_exists` prints nothing itself
+(each caller renders its own specific "not yet indexed" outcome) and is
+additionally gated on `meta.source_index_version`/topology-sync state,
+which `_open_graph_or_note` has no equivalent of. This distinction is
+exactly the kind of thing a model-blind, read-only reconstruction (this
+export could not execute `cli.py` — see §0) is vulnerable to missing:
+both helpers *look* similar at a skim (same `None`-on-missing-db
+contract) and the difference only matters at the call-site level this
+summary paragraph over-collapsed. The rest of this report's claims about
+these three commands remain accurate; only this one shared-helper
+generalization is wrong. Not fixed in place — left as the historical
+record of what this reconstruction actually said, per this project's own
+correction-notice convention.
+
 ## 3. Data & persistence — `graph.py`'s schema (confirmed live via `test_graph.py`, 75 tests, 100% passing in isolation)
 
 SQLite file `context-graph.db`, schema version string `"11"`
@@ -418,11 +439,17 @@ beyond the vendor.toml path itself (`cli.py::_load_config` defaults to
   `cli.py`, following the existing pattern of a plain function with
   Typer-annotated parameters, printing via the shared `rich.Console`
   instance, and raising `typer.Exit(code=1)` on failure rather than
-  letting exceptions propagate. Commands needing the graph should use
-  the existing `_graph_session`/`_open_graph_or_note` context-manager
-  pattern rather than opening `sqlite3.connect` directly, to get the
-  established "graceful note, no traceback, no silent empty-DB
-  creation" behavior for free.
+  letting exceptions propagate. Commands needing ordinary graph access
+  should use the existing `_graph_session`/`_open_graph_or_note`
+  context-manager pattern rather than opening `sqlite3.connect`
+  directly, to get the established "graceful note, no traceback, no
+  silent empty-DB creation" behavior for free. **Correction added
+  2026-10-02** (see this file's own correction note in §2 above): a
+  command that also needs to distinguish "database exists but this
+  specific thing was never indexed" (as `query topology`/`query source`/
+  `query source-symbol` all do) should follow `_open_graph_if_exists`
+  (`cli.py:895-912`) instead — a related but distinct helper this
+  report originally failed to name as a separate pattern.
 - **New graph row/table**: add a dataclass row type in `graph.py` next
   to the existing ones, a `CREATE TABLE IF NOT EXISTS` clause in
   `_SCHEMA_SQL`, an insertion/sync helper function (`_insert_*` for

@@ -269,6 +269,13 @@ the context graph schema, generated Skills/`/discovery`, the two
 consumption modes (standalone vendor folder vs. routed from project
 root), staleness checking, and the chat REPL.
 
+**What to commit**: `vendor.toml` is a small, hand-edited config file —
+commit it. Everything `codecompass` generates (`vendor/`,
+`context-graph.db`, the generated Skills and `/discovery` command) is
+gitignored by default and deterministically regenerated from
+`vendor.toml` plus your project's own current source — never hand-edit
+or commit these (`decisions/0010`, `decisions/0024`).
+
 ## Limitations
 
 Honestly disclosed, not hidden:

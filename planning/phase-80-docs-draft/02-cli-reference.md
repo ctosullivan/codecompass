@@ -152,9 +152,18 @@ imported for live `--help` output.)
 
 ## A consistent pattern across graph-dependent commands
 
-Every `query`/`enrich` subcommand that needs the graph uses the same
-"open-or-note" pattern: if `context-graph.db` does not exist, the command
-prints a one-line note and returns cleanly, rather than crashing with a
-traceback or silently creating an empty database. See
-`07-agent-orientation.md` for why this is worth relying on if you are an
-agent calling these commands programmatically.
+**CORRECTED 2026-10-02** (found by an independent `context-evaluator`
+assessment downstream of this draft — see
+`_part4-coding-context-packet-evaluation.md`): every `query`/`enrich`
+subcommand that needs the graph does, uniformly, return cleanly with a
+one-line note rather than crashing or silently creating an empty
+database when `context-graph.db` doesn't exist — that much is accurate.
+What this draft originally got wrong is claiming that's all *one*
+pattern/helper pair: `query topology`/`query source`/`query
+source-symbol` actually use a distinct helper (`_open_graph_if_exists`)
+with an additional gate on whether that specific thing has ever been
+indexed, printing their own specific "not yet indexed" message rather
+than the shared generic note. See `07-agent-orientation.md` for why the
+*outcome* (clean, no traceback) is worth relying on either way if you
+are an agent calling these commands programmatically — but do not assume
+all graph-reading commands share one literal code path.

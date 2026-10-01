@@ -433,3 +433,46 @@ uses_edges`); given a vendor name instead, it returns that vendor's own
 `uses_edges` directly. `'documents'`/`'mentions_dependency'` rows also
 carry `heading` — the doc-side heading enclosing the edge, when it has a
 `chunk_id`.
+
+## Checklist for a new table
+
+1. Add a `CREATE TABLE IF NOT EXISTS` clause (`_SCHEMA_SQL`) and, if it
+   has one, a row dataclass alongside the existing ones (see "Row
+   dataclasses and natural keys" above).
+2. Decide which of this schema's three lifecycles it belongs to —
+   **deleted-and-reinserted** (an edge/leaf table, the default for
+   anything mechanically re-derivable every `sync`), **upserted by
+   natural key** (an identity-preserving node table like `vendors`/
+   `symbols`/`source_files`, when something elsewhere needs a stable
+   integer id to survive across rebuilds), or **never touched by
+   `rebuild_deterministic`** (an enrichment-style table holding something
+   expensive to reproduce, like paid AI output) — see "Enrichment
+   tables" above for why that third category exists and how its own
+   tests prove it.
+3. Wire it into `rebuild_deterministic` at the matching step (see that
+   function's own fixed six-step order above) — a new deleted-and-
+   reinserted table joins step 1/4, a new upserted table joins step 2,
+   never silently appended after `meta.last_deterministic_rebuild_at` is
+   written.
+4. If an existing table's schema needs to change (a new column, a wider
+   `CHECK` constraint) rather than a wholly new table, add a migration
+   function gated by direct schema introspection (`PRAGMA table_info` or
+   inspecting `sqlite_master.sql`), never by comparing
+   `meta.schema_version` — see "Migrations" above for why.
+5. Add a read/query function if anything needs to consult the new table
+   (see "Read/query functions" above for the existing shape) and a
+   `codecompass query` subcommand if a human/agent should be able to
+   reach it from the CLI.
+6. **Test coverage expected, following `tests/test_graph.py`'s own
+   existing per-table pattern** (per `CLAUDE.md` §1 — a check that only
+   calls the changed function in isolation is not sufficient if it has a
+   real call site): a round-trip test that a row inserted via
+   `rebuild_deterministic` is actually readable back; for an upserted
+   table, a test that its own id is stable across two rebuilds with the
+   same natural key, and a test that a row whose natural key disappears
+   from the new fixture is deleted; for a never-touched (enrichment-style)
+   table, a test that writes a row, runs `rebuild_deterministic` again,
+   and asserts the row is byte-identical afterward (mirroring
+   `test_rebuild_deterministic_never_touches_vendor_enrichment`); for any
+   accompanying migration, a test against a hand-built pre-migration
+   schema, not just the post-migration shape.

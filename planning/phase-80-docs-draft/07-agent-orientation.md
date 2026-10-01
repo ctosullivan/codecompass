@@ -13,13 +13,22 @@ base as the rest of this draft, with each item's own tag.
   If you write enrichment through the proper channel and a mechanical
   `sync` runs afterward, your enrichment survives byte-identical. See
   `04-architecture-persistence.md`.
-- **CONFIRMED-BY-READING**: every `query`/`enrich` subcommand that needs
-  the graph uses a consistent "open-or-note" pattern — a missing
-  `context-graph.db` produces a one-line note and a clean return, never
-  a traceback and never a silently-created empty database. If you are
-  scripting against this CLI, you can treat "graph absent" as a
-  distinguishable, calm failure mode rather than something you need to
-  pre-check yourself.
+- **CONFIRMED-BY-READING, corrected 2026-10-02**: every `query`/`enrich`
+  subcommand that needs the graph behaves consistently when
+  `context-graph.db` is entirely missing — a one-line note and a clean
+  return, never a traceback and never a silently-created empty database.
+  If you are scripting against this CLI, you can treat "graph absent" as
+  a distinguishable, calm failure mode rather than something you need to
+  pre-check yourself. This draft originally overgeneralized this into
+  one single shared code path; it is actually two related helpers
+  (`_open_graph_or_note`/`_graph_session` for most commands,
+  `_open_graph_if_exists` for `query topology`/`query source`/`query
+  source-symbol`, which also gate on whether that specific thing was
+  ever indexed) — the *outcome* you can rely on is the same either way,
+  but do not assume one literal shared function if you're reading the
+  source yourself. Found by an independent `context-evaluator`
+  assessment of a packet built from this draft
+  (`_part4-coding-context-packet-evaluation.md`).
 - **CONFIRMED-BY-READING**: `enrich apply` has a real mechanical trust
   boundary, not merely an instruction. An entry you submit is accepted
   only if it exactly matches a currently-pending candidate from the
