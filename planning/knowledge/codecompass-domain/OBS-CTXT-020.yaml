@@ -1,0 +1,32 @@
+id: OBS-CTXT-020
+kind: observation
+method: source_read
+what_was_done: >
+  Read src/codecompass/cli.py's `query relations` command (lines
+  826-858) and `query topology` command (lines 918-944), plus
+  graph.py's `topology_profile` (lines 1503-1608 region), directly, to
+  check whether the git-topology tables are exposed through the same
+  CLI query surface as the six edge tables (which `query relations`
+  reads) or through a structurally separate command.
+tool: null
+tool_version: null
+repository_revision: "fbb637b50953de1de726291c26f0d6c58d7cb5fc"
+location: "src/codecompass/cli.py:826-858, 918-944; src/codecompass/graph.py:1503-1608"
+raw_result: >
+  `query relations` (cli.py:826-858) reads `doc_relations_edges` only
+  (per its own docstring, "vendor/Skill (given its name) --
+  doc_relations_edges"), returning `{"relations": [...], ...}`. It has
+  no awareness of git_repositories/git_worktrees/git_submodules
+  anywhere in its body. `query topology` (cli.py:918-944) is a
+  completely separate `@query_app.command`, with its own
+  `_open_graph_if_exists`/`graph.topology_profile`/`_render_topology`
+  call chain, never invoking or being invoked by `query relations`'s own
+  code path. `topology_profile` (graph.py) reads only
+  `git_repositories`/`git_worktrees`/`git_submodules` and the
+  `meta.git_topology_status`/`git_topology_reason` keys -- it never
+  joins against vendors/symbols/source_files/doc_artifacts or any of the
+  six edge tables. The two query surfaces are fully separate code paths
+  with no shared traversal.
+timestamp: "2026-10-02T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

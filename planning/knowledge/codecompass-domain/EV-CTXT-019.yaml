@@ -1,0 +1,26 @@
+id: EV-CTXT-019
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  `git_worktrees.repository_id` and `git_submodules.parent_repository_id`
+  are real, typed `INTEGER NOT NULL REFERENCES ... ON DELETE CASCADE`
+  foreign keys -- structurally identical in shape to any of the six
+  edge tables' own FK columns -- and `rebuild_deterministic` wipes and
+  reinserts all three git-topology tables inside the identical
+  `# Edge / leaf tables carry no cross-rebuild identity -- clear and
+  reinsert unconditionally.` code block it uses for the six edge tables
+  and `doc_artifacts`/`doc_chunks`, immediately before reinserting them
+  (`src/codecompass/graph.py:1013-1054`). In isolation, this satisfies
+  relationship-edge.md's own Definition's stated lifecycle test for a
+  "relationship" ("always a current, mechanically re-provable fact,
+  never a standing record of something once true") exactly as literally
+  as any of the six named edge tables. The schema comment and
+  docstring the implementation itself uses (`graph.py:244-250, 977-987`)
+  independently describe these three tables as "same category as
+  doc_artifacts/every edge table above."
+observations: [OBS-CTXT-017]
+source_ref: "src/codecompass/graph.py:244-287, 935-1065"
+doc_ref: null
+test_ref: null
+repository_revision: "fbb637b50953de1de726291c26f0d6c58d7cb5fc"
+status: current

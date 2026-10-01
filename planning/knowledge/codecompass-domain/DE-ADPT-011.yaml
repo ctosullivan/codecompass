@@ -1,0 +1,42 @@
+id: DE-ADPT-011
+kind: derivation
+claim: CL-ADPT-011
+method: >
+  Phase 80's own freshness review (`domain-skeptic` dispatch,
+  `planning/knowledge/codecompass-domain/phase-80-freshness-review.md`,
+  Finding 1) flagged that CL-ADPT-009's "currently-inert"/"no observed
+  behaviour" language was overtaken by Phase 74 (`L-032`) and never
+  superseded, even though the four published concept pages it backs
+  were already correctly updated at the time by a prior `domain-skeptic`
+  pass (`planning/retros/_domain-skeptic-review-phase-74.md`). Rather
+  than taking either report's characterization on faith, re-read
+  `src/codecompass/adapters/external_process.py:1-110` and
+  `src/codecompass/adapters/haskell.py:175-196` directly on the current
+  working tree (not the retro's quoted excerpts) to confirm the
+  `expected_ecosystem` parameter, the mismatch check, and the one real
+  call site still exist exactly as described; re-ran
+  `grep -rn "ExternalAdapterProcess(" src/codecompass/` and
+  `grep -rn "\.initialize(" src/codecompass/` myself to independently
+  reconfirm `haskell.py:187-188` is the only production construction/
+  call site (not trusting OBS-ADPT-019's own prior grep result without
+  re-running it); and re-ran
+  `.venv/bin/python -m pytest tests/test_adapters_external_process.py -q`
+  myself (10 passed) rather than citing the retro's own 32-pass figure
+  (a different, broader test-file set) uncritically. Cross-checked that
+  the already-on-file `EV-ADPT-012`/`OBS-ADPT-018`-`020` records
+  (written by the Phase 74 `domain-skeptic` pass, named by Phase 80's
+  review as citable without new research) match what was just
+  independently re-confirmed -- they do, so this record cites them
+  directly rather than duplicating new Observation/Evidence records for
+  a fact already evidenced on file. Also checked `capability.md`,
+  `protocol.md`, `ecosystem.md`, and `open-questions.md` item 10
+  directly to confirm none of the four published pages cites CL-ADPT-009
+  for content that would itself need correcting (only `ecosystem.md`'s
+  own References section names CL-ADPT-009 at all, as a bare
+  cross-reference, not as the source of any stated fact on the page) --
+  so the only remaining fix is this Claim-level supersession plus
+  updating that one References entry, not a further docs/domain/ content
+  edit.
+inputs: [EV-ADPT-010, EV-ADPT-012]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-10-02T00:00:00Z"

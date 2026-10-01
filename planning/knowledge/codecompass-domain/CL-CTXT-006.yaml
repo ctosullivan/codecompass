@@ -1,0 +1,53 @@
+id: CL-CTXT-006
+kind: claim
+statement: >
+  relationship-edge.md's Definition ("a relationship, precisely, is a
+  real, typed row in one of context-graph.db's six edge tables ...
+  wiped and reinserted by rebuild_deterministic on every whole-project
+  sync") is incomplete, not merely unclear, against Phase 76's
+  git-topology schema when judged purely against its own stated test:
+  `git_worktrees.repository_id` and `git_submodules.parent_repository_id`
+  are real, typed, FK'd rows that `rebuild_deterministic` also wipes and
+  reinserts unconditionally on every sync (EV-CTXT-019) -- satisfying
+  the Definition's literal lifecycle criterion exactly as fully as any
+  of the named six.
+
+  However, a real, substantive, previously-unstated architectural line
+  does exist and does distinguish these two columns from the six named
+  edge tables, rather than this being an arbitrary omission (EV-CTXT-020):
+  every one of the six edge tables has at least one endpoint among the
+  four content entities a vendor/doc/symbol query traverses (vendors,
+  symbols, source_files, doc_artifacts); git_worktrees/git_submodules
+  connect only to git_repositories, a self-contained Phase-76 entity
+  that no content table ever references and that never references any
+  content table. decisions/0063, the ADR introducing these tables,
+  explicitly frames them as "mechanical facts only -- no semantic
+  relationship edges," deliberately rejected modelling them via
+  vendors/doc_artifacts, and gave them a wholly separate CLI query
+  surface (`codecompass query topology`) with no shared code path or
+  traversal with `codecompass query relations` (the six edge tables'
+  own query surface).
+
+  This Claim resolves the disambiguation question named by the Phase 80
+  freshness review (relationship-edge.md's own "precisely six" count)
+  in favour of interpretation (b): there is a real, principled reason
+  git-topology rows are a structurally different thing from the six
+  content-graph edge tables (self-describing the project's own
+  repository structure vs. connecting two first-class content
+  entities a vendor/doc/symbol query would traverse), not merely an
+  arbitrary gap -- but this distinction has never been stated anywhere
+  in the corpus before this record, and relationship-edge.md's own
+  silence on git-topology rows is therefore a real, if narrow, content
+  gap, not a false statement (the "six" count is accurate once this
+  previously-implicit line is made explicit, not before). This Claim
+  does not decide whether a future graph capability might ever need to
+  treat these as the same family -- only describes the current,
+  evidenced state of the implementation and its own governing ADR.
+derivation: DE-CTXT-006
+supporting_evidence: [EV-CTXT-019, EV-CTXT-020]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "fbb637b50953de1de726291c26f0d6c58d7cb5fc"
+timestamp: "2026-10-02T00:00:00Z"
+status: supported
+supersedes: null

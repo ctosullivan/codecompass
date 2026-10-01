@@ -1,0 +1,47 @@
+id: OBS-CTXT-017
+kind: observation
+method: source_read
+what_was_done: >
+  Read src/codecompass/graph.py's git-topology schema block (lines
+  244-287: git_repositories/git_worktrees/git_submodules table
+  definitions and the comment immediately preceding them) and
+  rebuild_deterministic's own body (lines 935-1065, including its own
+  docstring) directly, on the current working tree, to check whether
+  Phase 76's three git-topology tables meet relationship-edge.md's own
+  stated Definition criterion for a "relationship" (a real, typed,
+  FK'd row that rebuild_deterministic wipes and reinserts on every
+  whole-project sync, never a standing record) -- not taking the Phase
+  80 freshness review's own line-number citations on faith.
+tool: null
+tool_version: null
+repository_revision: "fbb637b50953de1de726291c26f0d6c58d7cb5fc"
+location: "src/codecompass/graph.py:244-287, 935-1065"
+raw_result: >
+  Confirmed: `git_worktrees.repository_id` and
+  `git_submodules.parent_repository_id` are both
+  `INTEGER NOT NULL REFERENCES git_repositories(id) ON DELETE CASCADE`
+  -- real, typed foreign keys between typed entities, exactly the same
+  shape as any of the six edge tables' own FK columns. The comment
+  immediately preceding the schema block (lines 244-250) states these
+  three tables are "Fully cleared and reinserted every
+  rebuild_deterministic call, same category as doc_artifacts/every edge
+  table above -- no cross-rebuild identity to preserve, no AI/agent
+  involvement, no `origin`-style provenance enum." `rebuild_deterministic`
+  itself (lines 1013-1026) issues `DELETE FROM git_worktrees`/
+  `git_submodules`/`git_repositories` inside the same code block, under
+  the same `# Edge / leaf tables carry no cross-rebuild identity --
+  clear and reinsert unconditionally.` comment, as `doc_relations_edges`/
+  `depends_on_edges`/`routes_via_edges`/`skill_mentions_edges`/
+  `documents_edges`/`uses_edges`/`doc_chunks`/`doc_artifacts` -- then
+  reinserts all three via `_insert_git_repositories`/
+  `_insert_git_worktrees`/`_insert_git_submodules` (lines 1052-1054),
+  immediately after the six edge tables' own insert calls. The
+  docstring's own Phase 76 paragraph (lines 977-987) states explicitly:
+  "git_repositories/git_worktrees/git_submodules ... are likewise fully
+  cleared and reinserted -- no cross-rebuild identity to preserve, no
+  AI/agent involvement." Lifecycle-wise, these three tables are treated
+  identically to the six edge tables by the implementation itself, in
+  the same code block, under the same comment.
+timestamp: "2026-10-02T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

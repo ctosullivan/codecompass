@@ -93,7 +93,8 @@ point, not unified into one type.
   `planning/knowledge/codecompass-domain/`
 - `OBS-ADPT-018`, `OBS-ADPT-019`, `OBS-ADPT-020` —
   `planning/knowledge/codecompass-domain/`
-- `CL-ADPT-005`, `CL-ADPT-009` — `planning/knowledge/codecompass-domain/`
+- `CL-ADPT-005`, `CL-ADPT-009` (superseded), `CL-ADPT-011` (the
+  resolution) — `planning/knowledge/codecompass-domain/`
 - `src/codecompass/core.py:13-19`
 - `src/codecompass/adapters/__init__.py:1-32`
 - `src/codecompass/adapters/external_process.py:49-84`

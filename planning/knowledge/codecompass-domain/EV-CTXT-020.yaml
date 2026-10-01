@@ -1,0 +1,40 @@
+id: EV-CTXT-020
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  Despite meeting the lifecycle test (EV-CTXT-019), the git-topology
+  tables are foreign-key-isolated from, and never queried alongside,
+  the six content-graph edge tables. Exhaustive grep
+  (`OBS-CTXT-018`) shows every one of the six edge tables has at least
+  one endpoint in {`vendors`, `symbols`, `source_files`, `doc_artifacts`},
+  while `git_worktrees`/`git_submodules` reference only
+  `git_repositories` -- a Phase-76 entity no content table ever
+  references and that never references any content table either.
+  `decisions/0063` (`OBS-CTXT-019`), the ADR that introduced these
+  tables, explicitly rejects modelling them by widening `vendors`/
+  `doc_artifacts` ("a submodule has no Ecosystem, no vendor.toml entry,
+  and is a Git-level construct independent of any package manager"),
+  titles its own Decision point 2 "Mechanical facts only -- no semantic
+  relationship edges," and distinguishes a `git_submodules` row's own
+  mechanical fact from anything requiring "independent evidence and its
+  own relation kind" the way `doc_relations_edges.relation_kind`'s
+  closed enum does. At the CLI/query-surface level (`OBS-CTXT-020`),
+  `codecompass query relations` (the pre-existing, six-edge-table-facing
+  command) and `codecompass query topology` (the git-topology-facing
+  command `decisions/0063` adds) are two structurally separate command
+  implementations with no shared code path or shared traversal --
+  `topology_profile` never joins against any of the six edge tables or
+  their four content entities. Together this is a real, previously
+  unstated architectural line: the project treats "git-topology
+  relationship rows" and "content-graph edge-table rows" as two
+  conceptually and operationally separate families that happen to share
+  one implementation detail (the wipe-and-reinsert-every-sync lifecycle),
+  not as members of the same "relationship/edge" concept
+  relationship-edge.md's Definition currently describes with a single,
+  lifecycle-only test.
+observations: [OBS-CTXT-018, OBS-CTXT-019, OBS-CTXT-020]
+source_ref: "src/codecompass/graph.py (schema-wide grep); src/codecompass/cli.py:826-858, 918-944"
+doc_ref: "decisions/0063-git-repository-topology-as-a-new-graph-capability.md"
+test_ref: null
+repository_revision: "fbb637b50953de1de726291c26f0d6c58d7cb5fc"
+status: current

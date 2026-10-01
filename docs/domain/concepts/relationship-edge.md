@@ -23,12 +23,14 @@ Every one of these tables (except the natural-key-upserted `vendors`/
 `rebuild_deterministic` on every whole-project `sync` — a relationship,
 in this precise sense, is always a *current, mechanically re-provable*
 fact, never a standing record of something once true (`CL-CTXT-003`,
-`EV-CTXT-003`).
+`EV-CTXT-003`). "Precisely six" names *content-graph* edges specifically
+— two further Phase-76 foreign keys pass the same lifecycle test for a
+structurally different reason; see "What this is NOT" item 3 below.
 
 ## What this is NOT
 
-This project deliberately keeps two neighbouring things **out** of this
-precise meaning, even though casual language could call either a
+This project deliberately keeps three neighbouring things **out** of this
+precise meaning, even though casual language could call any of them a
 "relationship":
 
 1. **An agent-suggested relationship is not an edge, ever, until
@@ -59,14 +61,52 @@ precise meaning, even though casual language could call either a
    survives every sync (it holds paid AI spend). These are structurally
    different kinds of row with different lifecycles, not merely
    described differently in prose (`EV-CTXT-011`).
+3. **A git-topology relationship row (`git_worktrees.repository_id`,
+   `git_submodules.parent_repository_id`) is a different kind of thing
+   from these six, even though it also passes this page's own lifecycle
+   test.** Both columns are real, typed `... REFERENCES
+   git_repositories(id) ON DELETE CASCADE` foreign keys, and
+   `rebuild_deterministic` wipes and reinserts all three Phase-76
+   git-topology tables (`git_repositories`, `git_worktrees`,
+   `git_submodules`) exactly as unconditionally as it does the six edge
+   tables above (`src/codecompass/graph.py:1013-1054`) — "current,
+   mechanically re-provable, never a standing record" holds for these
+   rows too. What keeps them out of the "six edge tables" count is a
+   different, substantive line: every one of the six tables above has
+   at least one endpoint among the four content entities a vendor/doc/
+   symbol query traverses (`vendors`, `symbols`, `source_files`,
+   `doc_artifacts`); `git_worktrees`/`git_submodules` reference only
+   `git_repositories`, a self-contained entity that no content table
+   ever references and that never references any content table back
+   (confirmed by an exhaustive grep of every `REFERENCES` clause in the
+   schema). `decisions/0063`, the ADR that introduced these tables,
+   independently confirms this is a considered design choice, not an
+   implementation accident: it explicitly rejects widening `vendors`/
+   `doc_artifacts` to hold this data, titles its own second Decision
+   point "Mechanical facts only — no semantic relationship edges," and
+   gives git topology a wholly separate CLI query surface
+   (`codecompass query topology`) that shares no code path or traversal
+   with `codecompass query relations` (the six edge tables' own query
+   surface). This project therefore keeps "git-topology relationship
+   row" (self-describing the project's own repository structure) and
+   "content-graph edge" (connecting two first-class content entities) as
+   two conceptually and operationally separate families that happen to
+   share one implementation detail — the wipe-and-reinsert-every-sync
+   lifecycle — not as members of one six-or-more-member set
+   (`CL-CTXT-006`, superseding no prior record — this line was never
+   stated anywhere in the corpus before this record).
 
-So "relationship," used casually, spans three tiers: a mechanically-
-proven edge (real, current, re-provable); an agent-suggested candidate
-(provenance-carrying observation, never a graph fact); and enrichment
-commentary about an edge (AI-authored interpretation, never itself a
-fact or an edge). This three-tier structure is assembled here from three
-separately-documented mechanisms — it was not stated as one unified
-taxonomy anywhere in the repository before this phase (`DE-CTXT-003`).
+So "relationship," used casually, spans at least four tiers: a
+mechanically-proven content-graph edge (real, current, re-provable,
+connecting two content entities); a git-topology relationship row (real,
+current, re-provable, but self-describing the project's own repository
+structure rather than connecting content entities); an agent-suggested
+candidate (provenance-carrying observation, never a graph fact); and
+enrichment commentary about an edge (AI-authored interpretation, never
+itself a fact or an edge). This structure is assembled here from
+separately-documented mechanisms — it was not stated as one taxonomy
+anywhere in the repository before this phase (`DE-CTXT-003`,
+`DE-CTXT-006`).
 
 ## Invariants
 
@@ -120,6 +160,11 @@ here (`docs/domain/open-questions.md`).
   both are related concepts likely covered by this phase's evidence/
   observation/claim cluster and by `decisions/0051`/`0054`, not
   re-derived in full here.
+- **Is never conflated with**: a git-topology relationship row
+  (`git_worktrees`/`git_submodules`, Phase 76) — same wipe-and-reinsert
+  lifecycle, but self-describing the project's own repository structure
+  rather than connecting two first-class content entities; see "What
+  this is NOT" item 3 above and `decisions/0063`.
 - **Is cited by**: an Evidence record's `source_ref` (see
   [`reference.md`](reference.md) sense (c)) when a Claim's evidence is a
   specific edge-table row or schema location.
@@ -127,12 +172,17 @@ here (`docs/domain/open-questions.md`).
 ## References
 
 - `CL-CTXT-003` / `DE-CTXT-003` — `planning/knowledge/codecompass-domain/`
-- `EV-CTXT-003`, `EV-CTXT-004`, `EV-CTXT-011`, `EV-CTXT-012` —
+- `CL-CTXT-006` / `DE-CTXT-006` (git-topology disambiguation, Phase 80) —
+  `planning/knowledge/codecompass-domain/`
+- `EV-CTXT-003`, `EV-CTXT-004`, `EV-CTXT-011`, `EV-CTXT-012`,
+  `EV-CTXT-019`, `EV-CTXT-020` — `planning/knowledge/codecompass-domain/`
+- `OBS-CTXT-017`, `OBS-CTXT-018`, `OBS-CTXT-019`, `OBS-CTXT-020` —
   `planning/knowledge/codecompass-domain/`
 - `src/codecompass/graph.py:50-430` (schema), `:935-1084`
-  (`rebuild_deterministic`)
+  (`rebuild_deterministic`), `:244-287` (git-topology schema)
 - `tests/test_graph.py:1611-1621`
   (`test_doc_relation_enrichment_has_no_foreign_key`)
 - `decisions/0051-agent-suggested-context-is-captured-not-graphed.md`
 - `decisions/0038-relation-enrichment-natural-key-only-no-fk-never-writes-spec-docs.md`
+- `decisions/0063-git-repository-topology-as-a-new-graph-capability.md`
 - `architecture/overview.md:688-734`

@@ -1,0 +1,59 @@
+id: CL-ADPT-011
+kind: claim
+statement: >
+  The external adapter protocol's own `ecosystem` field (returned in an
+  adapter's initialize response) remains deliberately unconstrained free
+  text at the protocol-specification level (SCHEMA.md still states
+  outright "this protocol does not define a closed ecosystem enum"), in
+  contrast to CodeCompass's own internal Ecosystem enum (a closed
+  4-member set) -- that part of CL-ADPT-009's statement is unaffected
+  and does not need re-deriving. But CL-ADPT-009's further claim that
+  this was, in the current implementation, "an observed, currently-inert
+  gap" with "no observed behaviour" to detect a mismatch is false as of
+  Phase 74 (`L-032`, landed `050e366993a8831beda9f3a729bbdbaae22cc029`):
+  `ExternalAdapterProcess.initialize` now takes a required keyword-only
+  `expected_ecosystem: str` argument and, immediately after setting
+  `self.ecosystem` from the wire response, raises `AdapterError`
+  ("external adapter ecosystem mismatch: CodeCompass configured this
+  adapter under {expected_ecosystem!r}, adapter responded with
+  {self.ecosystem!r}") if the two disagree
+  (`src/codecompass/adapters/external_process.py:53-98`, directly
+  re-confirmed by this record's own derivation). `HaskellAdapter._analyze`
+  -- the one production call site -- passes
+  `expected_ecosystem=self.config.ecosystem`, a real `core.Ecosystem`
+  value fixed via `vendor.toml` before the adapter process is even
+  spawned (`src/codecompass/adapters/haskell.py:184-195`), and `grep`
+  confirms it is the only construction/call site of
+  `ExternalAdapterProcess`/`initialize` anywhere in `src/codecompass/`.
+  The wire field is therefore no longer write-only telemetry from
+  CodeCompass's own perspective: something in the current implementation
+  now does detect and surface an external adapter reporting an
+  `ecosystem` string that disagrees with the `Ecosystem` value
+  CodeCompass configured it under, contradicting CL-ADPT-009's own
+  "nothing currently prevents ... no observed behaviour would currently
+  detect" language precisely.
+
+  Narrower point preserved unchanged from CL-ADPT-009: adapter
+  *dispatch* (`get_adapter`) is still driven entirely by
+  `VendorConfig.ecosystem`, never by the wire-reported value -- this fix
+  adds a validation check at `initialize` time, not a new dispatch path.
+  The two values remain independently-typed things (one free text, one
+  closed enum); they are now compared for equality at one point, not
+  unified into one type.
+
+  This Claim supersedes CL-ADPT-009 for exactly this reason: the
+  protocol-specification half of CL-ADPT-009's statement is still
+  accurate, but its implementation-behaviour half was overtaken by a
+  real `src/` change the published concept pages
+  (`capability.md`, `protocol.md`, `ecosystem.md`,
+  `open-questions.md` item 10) already correctly reflect -- this record
+  closes the one place that fix was never mechanically carried through:
+  the Claim record itself.
+derivation: DE-ADPT-011
+supporting_evidence: [EV-ADPT-010, EV-ADPT-012]
+contradicting_evidence: []
+derived_by: "context-researcher agent dispatch"
+repository_revision: "fbb637b50953de1de726291c26f0d6c58d7cb5fc"
+timestamp: "2026-10-02T00:00:00Z"
+status: supported
+supersedes: CL-ADPT-009

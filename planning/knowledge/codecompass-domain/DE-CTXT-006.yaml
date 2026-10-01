@@ -1,0 +1,49 @@
+id: DE-CTXT-006
+kind: derivation
+claim: CL-CTXT-006
+method: >
+  Phase 80's own freshness review (domain-skeptic dispatch, Finding 2)
+  named this as a genuine, unresolved disambiguation question it could
+  not settle by inspection alone, rather than a mechanical citation
+  fix, and gave two candidate resolutions: (a) the Definition's "six"
+  undercounts and should be extended, or (b) a real, principled reason
+  exists that the corpus has simply never stated. Rather than accepting
+  either framing on the review's own word, re-read
+  relationship-edge.md's full Definition/"What this is NOT" sections
+  myself first, to pin down exactly what test the page's own prose
+  actually states for distinguishing a relationship from its two named
+  neighbours (an agent-suggested candidate, enrichment commentary) --
+  found the stated test is purely lifecycle-based ("current,
+  mechanically re-provable, never a standing record"), with no other
+  criterion given anywhere in the page's own current text. Then read
+  graph.py's git-topology schema and rebuild_deterministic directly
+  (OBS-CTXT-017) and confirmed, rather than assumed, that the two FK
+  columns do satisfy that literal lifecycle test -- so option (a) could
+  not be dismissed on lifecycle grounds alone. Per this role's own
+  "trace every real path, don't stop at the first plausible one"
+  discipline, did not stop there: ran a targeted follow-up grep
+  (OBS-CTXT-018) checking whether the git-topology tables are actually
+  wired into the same traversable graph as the six edge tables via any
+  FK to/from vendors/symbols/source_files/doc_artifacts -- found they
+  are not, which is the first real evidence for option (b) rather than
+  (a). Read decisions/0063 in full (OBS-CTXT-019), the actual ADR that
+  introduced these tables, specifically to check whether the project's
+  own governing design document ever states an intent either way --
+  found it explicitly frames these as "mechanical facts only, no
+  semantic relationship edges" and deliberately rejects modelling them
+  via the existing content entities, which is real evidence of a
+  considered design choice, not merely an implementation accident.
+  Finally checked the CLI/query-surface level (OBS-CTXT-020) as a
+  further, independent signal of whether the project treats these as
+  the same concept operationally -- found a fully separate `query
+  topology` command with no shared traversal with `query relations`,
+  reinforcing (b). Synthesized all four observations into EV-CTXT-019/
+  EV-CTXT-020 before writing this Claim, concluding (b) is the
+  evidence-backed resolution: a real, principled, previously-unstated
+  line exists, so the fix is an explicit new "What this is NOT" entry
+  on relationship-edge.md (matching its own existing treatment of the
+  other two neighbouring exclusions), not a revision of the "six" count
+  itself.
+inputs: [EV-CTXT-019, EV-CTXT-020]
+performed_by: "context-researcher agent dispatch"
+timestamp: "2026-10-02T00:00:00Z"

@@ -1,0 +1,47 @@
+id: OBS-CTXT-019
+kind: observation
+method: doc_read
+what_was_done: >
+  Read decisions/0063-git-repository-topology-as-a-new-graph-capability.md
+  in full (Context, all 11 numbered Decision points, Alternatives
+  considered, Consequences) to check whether the ADR that actually
+  introduced git_repositories/git_worktrees/git_submodules states any
+  intent, explicit or implicit, about whether these rows are meant to be
+  the same kind of thing as context-graph.db's six existing edge tables.
+tool: null
+tool_version: null
+repository_revision: "fbb637b50953de1de726291c26f0d6c58d7cb5fc"
+location: "decisions/0063-git-repository-topology-as-a-new-graph-capability.md"
+raw_result: >
+  Decision point 1 explicitly rejects modelling this as a widened
+  `vendors` or `doc_artifacts` table: "A submodule has no `Ecosystem`,
+  no `vendor.toml` entry, and is a Git-level construct independent of
+  any package manager ... a worktree/submodule is neither a document
+  nor addressable by doc_artifacts's word-boundary mention matchers."
+  Decision point 2, titled "Mechanical facts only -- no semantic
+  relationship edges," states: "A git_submodules row never asserts,
+  e.g., that codecompass-adaptor-haskell *implements*
+  codecompass-adaptor-protocol -- that would need independent evidence
+  and its own relation kind, the same posture CG-007's own precedent
+  already establishes for keeping mechanical and semantic relationships
+  separate." The "Alternatives considered" section, rejecting recursive
+  submodule materialisation, uses the phrase "a git_submodules row is a
+  topology *relationship* fact about the parent repository being
+  inspected" (ADR's own emphasis). Consequences names
+  `codecompass query topology [--json]` as "a new, permanent CLI
+  surface," distinct from the pre-existing `codecompass query relations`
+  command (confirmed separately, OBS-CTXT-020). The ADR therefore uses
+  "relationship" once, in passing, to describe what a git_submodules row
+  factually is (a topology fact connecting parent to child), while
+  simultaneously and repeatedly emphasizing these are "mechanical facts
+  only," deliberately kept structurally and conceptually separate from
+  anything requiring "independent evidence and its own relation kind"
+  the way doc_relations_edges's closed relation_kind enum does. No
+  statement anywhere in this ADR says these rows either are or are not
+  members of context-graph.db's "six edge tables" as
+  relationship-edge.md's own Definition uses that phrase -- the question
+  this research was dispatched to resolve is not pre-answered by the
+  ADR itself, only informed by it.
+timestamp: "2026-10-02T00:00:00Z"
+performed_by: "context-researcher agent dispatch"
+status: recorded

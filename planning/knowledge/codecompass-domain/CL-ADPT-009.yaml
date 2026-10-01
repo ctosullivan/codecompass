@@ -25,5 +25,5 @@ contradicting_evidence: []
 derived_by: "context-researcher agent dispatch"
 repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
 timestamp: "2026-09-23T00:00:00Z"
-status: supported
+status: superseded
 supersedes: null
