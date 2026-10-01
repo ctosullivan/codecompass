@@ -545,10 +545,10 @@ sound by `knowledge-curator`'s own independent triage of `L-065`.
 
 ## G. 2026-10-01 proposed addition (Phase 79 fifth amendment — `L-070`)
 
-**Status:** proposed, not yet presented to the user. Filed by
-`knowledge-curator` during the fifth-amendment triage pass, independent
-of (but alongside) the other four candidate learnings that same addendum
-named.
+**Status:** approved by the user (explicit diff approval, 2026-10-01, per
+`CLAUDE.md` §0) and landed. Filed by `knowledge-curator` during the
+fifth-amendment triage pass, independent of (but alongside) the other
+four candidate learnings that same addendum named.
 
 ### G1 — §1 "Plan before implementing": require a minimal-input edge-case test for any fail-closed validation/detection mechanism a phase's plan verifies
 

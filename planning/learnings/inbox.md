@@ -55,14 +55,16 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   / `tests/test_check_knowledge_base.py` (the actual landed fix and its
   tests, confirming the account is not just narrative).
 - **classification:** project-rule
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** second occurrence within this same phase/ADR (fourth
   revision's list-validation fix, then fifth revision's snapshot-
   completeness fix — both are "a fail-closed redesign still missed an
   edge the originally-named scenario didn't cover," in the same checker
   family), satisfying this project's own recurrence bar for a
   project-wide rule even though both instances are within one phase.
-- **promoted_to:** (pending — see curation note; not yet approved/landed)
+- **promoted_to:** `CLAUDE.md` §1, new sentence after the existing
+  `L-021` sentence — approved by the user (explicit diff approval per
+  `CLAUDE.md` §0) and landed @ (this phase's own closeout commit)
 - **curation (this triage, 2026-10-01, knowledge-curator):** provenance
   accepted — all required fields present. Independently re-read the
   retro addendum's bullet 1, `decisions/0067`'s Decision item 1, and both

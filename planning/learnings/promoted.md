@@ -76,3 +76,4 @@ L-071 | 2026-10-01 | scoped-rule | .claude/agents/docs-maintainer.md "Legacy rec
 L-072 | 2026-10-01 | scoped-rule | .claude/agents/release-phase-auditor.md "Hard rules" (verdict-token rule — never collapse "honestly labelled" and "achieved" into one PASS/FAIL token) @ (this phase's own closeout commit)
 L-073 | 2026-10-01 | workflow | planning/agent-led-workflow.md step 7 (check local dispatch transcript/session state before assuming evidence is unrecoverable) @ (this phase's own closeout commit)
 L-074 | 2026-10-01 | workflow | planning/agent-led-workflow.md step 7 (a link/reference-resolution check is not a substitute for a real usability exercise) @ (this phase's own closeout commit)
+L-070 | 2026-10-01 | project-rule | CLAUDE.md §1 (a fail-closed validation mechanism's own verification must also test its minimal-content edge case, not only the originally-named scenario -- user-approved per §0) @ (this phase's own closeout commit)
