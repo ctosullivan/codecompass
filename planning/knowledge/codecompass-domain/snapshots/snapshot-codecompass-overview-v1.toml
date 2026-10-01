@@ -1,0 +1,610 @@
+snapshot_id = "codecompass-overview@v1"
+created = "2026-10-02T00:00:00Z"
+repository_revision_at_freeze = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+excluded_assertions = ["CL-ADPT-008", "CL-ADPT-009", "CL-EVID-003", "CL-EVID-008", "CL-EVID-009"]
+
+[assertions."CL-ADPT-001"]
+path = "planning/knowledge/codecompass-domain/CL-ADPT-001.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "cf7790b7a636ed9f1c2d951734c886e8d2481da9e59af4c91c593e4080084775"
+
+[assertions."CL-ADPT-001".supporting_evidence."EV-ADPT-001"]
+path = "planning/knowledge/codecompass-domain/EV-ADPT-001.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "a8599a19b9559dd8db71bc34ddc4ed9871510bf88212ce43b65cc70b0824e97f"
+
+[assertions."CL-ADPT-001".supporting_evidence."EV-ADPT-006"]
+path = "planning/knowledge/codecompass-domain/EV-ADPT-006.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "3513668e9eaded212b389e5c343951a55bb2467125f23e41018016d4e654b8bd"
+
+[assertions."CL-ADPT-001".derivation."DE-ADPT-001"]
+path = "planning/knowledge/codecompass-domain/DE-ADPT-001.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "1b6e45b95aca0c2266d45296f24c516b806738046099cba3442b142cf77ad3d8"
+
+[assertions."CL-ADPT-002"]
+path = "planning/knowledge/codecompass-domain/CL-ADPT-002.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "ec0c8620c30f3c9adedbc406c5e312efe008539c7439762b72120c54124fbb56"
+
+[assertions."CL-ADPT-002".supporting_evidence."EV-ADPT-002"]
+path = "planning/knowledge/codecompass-domain/EV-ADPT-002.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "99e08ecba230e141b17751ec985c48d8a5bc2067b13d1484f6002ef07daca474"
+
+[assertions."CL-ADPT-002".supporting_evidence."EV-ADPT-003"]
+path = "planning/knowledge/codecompass-domain/EV-ADPT-003.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "96e28c7dcd235b0b53821ffba3ea7604f355ee1ca5015da2f4a2caca27d52af5"
+
+[assertions."CL-ADPT-002".supporting_evidence."EV-ADPT-006"]
+path = "planning/knowledge/codecompass-domain/EV-ADPT-006.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "3513668e9eaded212b389e5c343951a55bb2467125f23e41018016d4e654b8bd"
+
+[assertions."CL-ADPT-002".derivation."DE-ADPT-002"]
+path = "planning/knowledge/codecompass-domain/DE-ADPT-002.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "06680f2d8b7c50587fe128fb43cbda338b54853eea2e26a82309399e4553610f"
+
+[assertions."CL-ADPT-003"]
+path = "planning/knowledge/codecompass-domain/CL-ADPT-003.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "91b32b490ed513ee53db2eb896adb22199c182b15dae40a44d689b5d5fe64938"
+
+[assertions."CL-ADPT-003".supporting_evidence."EV-ADPT-003"]
+path = "planning/knowledge/codecompass-domain/EV-ADPT-003.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "96e28c7dcd235b0b53821ffba3ea7604f355ee1ca5015da2f4a2caca27d52af5"
+
+[assertions."CL-ADPT-003".supporting_evidence."EV-ADPT-006"]
+path = "planning/knowledge/codecompass-domain/EV-ADPT-006.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "3513668e9eaded212b389e5c343951a55bb2467125f23e41018016d4e654b8bd"
+
+[assertions."CL-ADPT-003".derivation."DE-ADPT-003"]
+path = "planning/knowledge/codecompass-domain/DE-ADPT-003.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "a6e370d09f7488f7d5ff8fa1a4dba8eb0c8ff5a7b8d0b14aa6e21eb40c79bef8"
+
+[assertions."CL-ADPT-004"]
+path = "planning/knowledge/codecompass-domain/CL-ADPT-004.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "2349624b91e90dfab7c01b9878017500e119684970cf27f0bdaf646161675a21"
+
+[assertions."CL-ADPT-004".supporting_evidence."EV-ADPT-004"]
+path = "planning/knowledge/codecompass-domain/EV-ADPT-004.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "100cece3c68a62277d7aac5e4e5c343805cbd934f24280a050b4fa60677b07c7"
+
+[assertions."CL-ADPT-004".derivation."DE-ADPT-004"]
+path = "planning/knowledge/codecompass-domain/DE-ADPT-004.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "f52668776e2ab466d59643e017b998fe71b339aad2a21046c20b5b97fb2612fb"
+
+[assertions."CL-ADPT-005"]
+path = "planning/knowledge/codecompass-domain/CL-ADPT-005.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "dfa8664717c3d1fdd20668d45e8e7e8f035cec9a5ac1ab2ec12c2dda09af580e"
+
+[assertions."CL-ADPT-005".supporting_evidence."EV-ADPT-005"]
+path = "planning/knowledge/codecompass-domain/EV-ADPT-005.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "a7294839f4b9f1de75821f359bec24e6ccb79c81b509619d8c41cb152645e904"
+
+[assertions."CL-ADPT-005".supporting_evidence."EV-ADPT-002"]
+path = "planning/knowledge/codecompass-domain/EV-ADPT-002.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "99e08ecba230e141b17751ec985c48d8a5bc2067b13d1484f6002ef07daca474"
+
+[assertions."CL-ADPT-005".derivation."DE-ADPT-005"]
+path = "planning/knowledge/codecompass-domain/DE-ADPT-005.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "ac49d1a796c04bd0abe8a45e5f060f35204822f76a8cadac70e727f3cfcf88bb"
+
+[assertions."CL-ADPT-006"]
+path = "planning/knowledge/codecompass-domain/CL-ADPT-006.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "25f24ebe1fb7ffd844d2f9f7b626b77af9b1b6b733fb7f7ff044b26c06028014"
+
+[assertions."CL-ADPT-006".supporting_evidence."EV-ADPT-009"]
+path = "planning/knowledge/codecompass-domain/EV-ADPT-009.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "985c92fd626c1874a990fd214aec924341c43c048cd0d8dcdd9b29e07a862df9"
+
+[assertions."CL-ADPT-006".derivation."DE-ADPT-006"]
+path = "planning/knowledge/codecompass-domain/DE-ADPT-006.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "601583a587059bc596d0f710f1e8dbd7d9f234dabb6219828c917f6d96d369f3"
+
+[assertions."CL-ADPT-007"]
+path = "planning/knowledge/codecompass-domain/CL-ADPT-007.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "70cc3f2061b8446eec891b378625ae1a95f7147839cd2ffb63947a1c69c399a5"
+
+[assertions."CL-ADPT-007".supporting_evidence."EV-ADPT-007"]
+path = "planning/knowledge/codecompass-domain/EV-ADPT-007.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "22ff5c9366fc3a458648ca333d2175688a5002bf94caab9d5537d8c670dec574"
+
+[assertions."CL-ADPT-007".derivation."DE-ADPT-007"]
+path = "planning/knowledge/codecompass-domain/DE-ADPT-007.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "bf0e30e28263e23bc0450e87e12f353715eeaa2f77e3e06864b3b2e193189dff"
+
+[assertions."CL-ADPT-010"]
+path = "planning/knowledge/codecompass-domain/CL-ADPT-010.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "6b97abddf0bb2069356b6b608e8b430598173e7842a1c4063c80dd099f7b266c"
+
+[assertions."CL-ADPT-010".supporting_evidence."EV-ADPT-008"]
+path = "planning/knowledge/codecompass-domain/EV-ADPT-008.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "3c2d3db9ef5e55d94f6f215015d40426189434768c8a1df30694cdf595c8b9bb"
+
+[assertions."CL-ADPT-010".supporting_evidence."EV-SKEP-001"]
+path = "planning/knowledge/codecompass-domain/EV-SKEP-001.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "e16a68ab3af07a7be319961697566735df54e87a3f0308f50c9151a1a9d75b8c"
+
+[assertions."CL-ADPT-010".derivation."DE-ADPT-010"]
+path = "planning/knowledge/codecompass-domain/DE-ADPT-010.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "4e707acc6d3fc9db82d1014da3d0b4f525ac80d71a0b2484f5c3e45252a30950"
+
+[assertions."CL-ADPT-011"]
+path = "planning/knowledge/codecompass-domain/CL-ADPT-011.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "b8bd54e0238417bf8ee7b63c1feaaa0157f7cc9c6abb6df88cbfa52cdef16cb9"
+
+[assertions."CL-ADPT-011".supporting_evidence."EV-ADPT-010"]
+path = "planning/knowledge/codecompass-domain/EV-ADPT-010.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "3d3d06b112b3ce28b0d3693343e9892c18e2259b9943464287b52b0056a9f87d"
+
+[assertions."CL-ADPT-011".supporting_evidence."EV-ADPT-012"]
+path = "planning/knowledge/codecompass-domain/EV-ADPT-012.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "9b76c51f4a09e05fe355d08b082c611ec687c86cea5f4c33674bf472830f3780"
+
+[assertions."CL-ADPT-011".derivation."DE-ADPT-011"]
+path = "planning/knowledge/codecompass-domain/DE-ADPT-011.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "b71d2471732fd2434a2f5ecf049a7dc8565a4232428eef2415643140a93ab150"
+
+[assertions."CL-CTXT-001"]
+path = "planning/knowledge/codecompass-domain/CL-CTXT-001.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "75c33ffea722df5c2d454ba8f814b5339bcbfccb6865f908126895b35c0b612c"
+
+[assertions."CL-CTXT-001".supporting_evidence."EV-CTXT-001"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-001.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "821588f076072c21ee2323cd0e14561d0e7ac02f35c38037d63225017274663b"
+
+[assertions."CL-CTXT-001".supporting_evidence."EV-CTXT-003"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-003.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "64e94cca70ea91df11b10063b448d3da585d3cf671b3d8c3ba37f0815b03d03e"
+
+[assertions."CL-CTXT-001".supporting_evidence."EV-CTXT-004"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-004.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "0c40554687b72a0ebc9aa9a8f0e293828281f618897a5b8b0555124bc6e192f5"
+
+[assertions."CL-CTXT-001".supporting_evidence."EV-CTXT-005"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-005.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "802163d4515ac29a08a328460f5e2d8276f2939ee480ab5522ad9712fd0e00e8"
+
+[assertions."CL-CTXT-001".supporting_evidence."EV-CTXT-006"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-006.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "b433c988628061c68d7d17e7ce0c02a73f07d19fff03e25fb67a8093ef957610"
+
+[assertions."CL-CTXT-001".derivation."DE-CTXT-001"]
+path = "planning/knowledge/codecompass-domain/DE-CTXT-001.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "41a7addba53cffd12443fab6c800586618f144a5df9ebe80a5aee5ac3a256e3c"
+
+[assertions."CL-CTXT-002"]
+path = "planning/knowledge/codecompass-domain/CL-CTXT-002.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "ebe338b18509e54c3c2586f4fd8a4c77a63bacfb36fd04f6245447495b59981b"
+
+[assertions."CL-CTXT-002".supporting_evidence."EV-CTXT-001"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-001.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "821588f076072c21ee2323cd0e14561d0e7ac02f35c38037d63225017274663b"
+
+[assertions."CL-CTXT-002".supporting_evidence."EV-CTXT-002"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-002.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "13175c489dbfa101b57b0526fbaf9eb732f3c291a1dd3a3fd1298964bd2ebcf4"
+
+[assertions."CL-CTXT-002".supporting_evidence."EV-CTXT-009"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-009.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "5c2808a01825e95a47158af91f81c9051d95292170d2dda43199c3c21e5d6a83"
+
+[assertions."CL-CTXT-002".supporting_evidence."EV-CTXT-010"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-010.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "03445c12a4c279e40a3473939a7007897de22d08e2958507c94433b69fb11108"
+
+[assertions."CL-CTXT-002".supporting_evidence."EV-CTXT-013"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-013.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "f6c3e697cc314afe0d0b823da9c8fc6898e408ddf79dba02b7913b4db538b971"
+
+[assertions."CL-CTXT-002".supporting_evidence."EV-CTXT-014"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-014.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "4be438381589849466802a54aa393207ef0dacf37b6211bd6b4a018853ce3190"
+
+[assertions."CL-CTXT-002".derivation."DE-CTXT-002"]
+path = "planning/knowledge/codecompass-domain/DE-CTXT-002.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "b1fba1fcad629a736d408f697da93863ca422e83c818b77c853707cc0c9bec4d"
+
+[assertions."CL-CTXT-003"]
+path = "planning/knowledge/codecompass-domain/CL-CTXT-003.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "13ef6a5758a951392caea2934ad27b31fd042b657643ba7a63eeb9133d0d3ff9"
+
+[assertions."CL-CTXT-003".supporting_evidence."EV-CTXT-003"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-003.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "64e94cca70ea91df11b10063b448d3da585d3cf671b3d8c3ba37f0815b03d03e"
+
+[assertions."CL-CTXT-003".supporting_evidence."EV-CTXT-004"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-004.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "0c40554687b72a0ebc9aa9a8f0e293828281f618897a5b8b0555124bc6e192f5"
+
+[assertions."CL-CTXT-003".supporting_evidence."EV-CTXT-011"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-011.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "a026f4db65772732e8526260698acae4a10d836fbc9fa542492e153dc20cc634"
+
+[assertions."CL-CTXT-003".supporting_evidence."EV-CTXT-012"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-012.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "0c3faa09cefad28033963c49152c1e9c07ee442db6e50572fec8ce63fb6de86c"
+
+[assertions."CL-CTXT-003".derivation."DE-CTXT-003"]
+path = "planning/knowledge/codecompass-domain/DE-CTXT-003.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "a4ca423227da0d358842f66e4c2060a999076398882ce81eecc5fadf7762ed2f"
+
+[assertions."CL-CTXT-004"]
+path = "planning/knowledge/codecompass-domain/CL-CTXT-004.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "e00c7cc8050d72dee8e924ca769297f8dae239eb33b6cfa789b1993828fc08ea"
+
+[assertions."CL-CTXT-004".supporting_evidence."EV-CTXT-003"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-003.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "64e94cca70ea91df11b10063b448d3da585d3cf671b3d8c3ba37f0815b03d03e"
+
+[assertions."CL-CTXT-004".supporting_evidence."EV-CTXT-007"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-007.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "25ea7824ad34f1c9f63c11228b70828e6e24e14067936fd67f892642973a8c4e"
+
+[assertions."CL-CTXT-004".supporting_evidence."EV-CTXT-008"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-008.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "8f088cbd77c6bce3b92f5d0b5e3c789038c8bf1a320a191831fbdf0c3d2062d8"
+
+[assertions."CL-CTXT-004".derivation."DE-CTXT-004"]
+path = "planning/knowledge/codecompass-domain/DE-CTXT-004.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "250b2164d2dad09a2432c8144d6483816d543a663c89611559b3e322564d9245"
+
+[assertions."CL-CTXT-005"]
+path = "planning/knowledge/codecompass-domain/CL-CTXT-005.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "234bebf28720c2b1dc7cd3c116a5472d0d2dfd904f85145a85e359775fdded2c"
+
+[assertions."CL-CTXT-005".supporting_evidence."EV-CTXT-006"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-006.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "b433c988628061c68d7d17e7ce0c02a73f07d19fff03e25fb67a8093ef957610"
+
+[assertions."CL-CTXT-005".supporting_evidence."EV-CTXT-009"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-009.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "5c2808a01825e95a47158af91f81c9051d95292170d2dda43199c3c21e5d6a83"
+
+[assertions."CL-CTXT-005".supporting_evidence."EV-CTXT-010"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-010.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "03445c12a4c279e40a3473939a7007897de22d08e2958507c94433b69fb11108"
+
+[assertions."CL-CTXT-005".supporting_evidence."EV-CTXT-013"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-013.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "f6c3e697cc314afe0d0b823da9c8fc6898e408ddf79dba02b7913b4db538b971"
+
+[assertions."CL-CTXT-005".supporting_evidence."EV-CTXT-014"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-014.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "4be438381589849466802a54aa393207ef0dacf37b6211bd6b4a018853ce3190"
+
+[assertions."CL-CTXT-005".derivation."DE-CTXT-005"]
+path = "planning/knowledge/codecompass-domain/DE-CTXT-005.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "7dfd70523407734a8a0d055414309852bd256edb48eaaa3309e82ee29a1a8f00"
+
+[assertions."CL-CTXT-006"]
+path = "planning/knowledge/codecompass-domain/CL-CTXT-006.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "abd80c1e7f63603073316e2492ae491ea81e47f9da913ad63af0487fea90502e"
+
+[assertions."CL-CTXT-006".supporting_evidence."EV-CTXT-019"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-019.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "79813e683a70a1ff8c0026d8d779a836f08cda98135c79eb2111b768ae321754"
+
+[assertions."CL-CTXT-006".supporting_evidence."EV-CTXT-020"]
+path = "planning/knowledge/codecompass-domain/EV-CTXT-020.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "279ad7b5dc77b0013973fe67055da037e27fa6885b259a482f3ebb6912990333"
+
+[assertions."CL-CTXT-006".derivation."DE-CTXT-006"]
+path = "planning/knowledge/codecompass-domain/DE-CTXT-006.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "8d45e749ba9ccca7b4e9a69471b5b80a6f75dda551990b42c0172b77b0781846"
+
+[assertions."CL-EVID-001"]
+path = "planning/knowledge/codecompass-domain/CL-EVID-001.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "d3481a6c13a535b77038c0d36108b3d45d1d33ae3eb64c1d264562f7b2ac1a4a"
+
+[assertions."CL-EVID-001".supporting_evidence."EV-EVID-001"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-001.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "ecdef96a76d91aea2ce72063c86afe0fe7483744751c8edb9c436c4a35c7fe70"
+
+[assertions."CL-EVID-001".supporting_evidence."EV-EVID-002"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-002.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "ec8b7ff912fec78435bf744c20391e1cf46d0025f24530efd62ee94b011b3d60"
+
+[assertions."CL-EVID-001".supporting_evidence."EV-EVID-013"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-013.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "78ec70aa85e865d843f10d1281a302f7ba38f9a08eec287938b88397d772d72a"
+
+[assertions."CL-EVID-001".derivation."DE-EVID-001"]
+path = "planning/knowledge/codecompass-domain/DE-EVID-001.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "0e71ffc3ce2a226d2c5629145559a4c5201f8f30c5b25e026375dbd518749be1"
+
+[assertions."CL-EVID-002"]
+path = "planning/knowledge/codecompass-domain/CL-EVID-002.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "3c8fa343a15161be744e571e2d14f01089a0e02ae649dbada6b12a2dbd61edf5"
+
+[assertions."CL-EVID-002".supporting_evidence."EV-EVID-001"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-001.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "ecdef96a76d91aea2ce72063c86afe0fe7483744751c8edb9c436c4a35c7fe70"
+
+[assertions."CL-EVID-002".supporting_evidence."EV-EVID-009"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-009.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "2c97c51f01d46024d4b141f2e93833d13959ed84b17ce9ee041ba26523c770eb"
+
+[assertions."CL-EVID-002".supporting_evidence."EV-EVID-010"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-010.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "a13af1c92af986595a9d0df64eee516d6f86a1d9a066db593bf58a98464c73db"
+
+[assertions."CL-EVID-002".supporting_evidence."EV-EVID-014"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-014.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "1df8f6ea40068b877b98cf11396be3c5a025b65862293b5d6597650cf79d21a7"
+
+[assertions."CL-EVID-002".derivation."DE-EVID-002"]
+path = "planning/knowledge/codecompass-domain/DE-EVID-002.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "da9b83b593fe3317bb73970631eab61fc777add154e8e809c192487fa847588c"
+
+[assertions."CL-EVID-004"]
+path = "planning/knowledge/codecompass-domain/CL-EVID-004.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "69ff9719a52900fe41521637d317b923957503f62033ed7b2475e94738f70acc"
+
+[assertions."CL-EVID-004".supporting_evidence."EV-EVID-002"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-002.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "ec8b7ff912fec78435bf744c20391e1cf46d0025f24530efd62ee94b011b3d60"
+
+[assertions."CL-EVID-004".derivation."DE-EVID-004"]
+path = "planning/knowledge/codecompass-domain/DE-EVID-004.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "899ff430b9dfa3c74768314c8947cee934bc9ad41119d824ed6ce5e910fef183"
+
+[assertions."CL-EVID-005"]
+path = "planning/knowledge/codecompass-domain/CL-EVID-005.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "504768b5678a2311ede48463ad9b34dad9c2851c5b1f0f3e32dd16349fd8b5b9"
+
+[assertions."CL-EVID-005".supporting_evidence."EV-EVID-003"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-003.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "f5599a3060e171bb71dd21acf66398c7048945c3077d45e758a5c0e479a273c5"
+
+[assertions."CL-EVID-005".supporting_evidence."EV-EVID-006"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-006.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "ad6c386619312367782ba32c33e41b8e645d2fd3e51418f9e640686117f50621"
+
+[assertions."CL-EVID-005".derivation."DE-EVID-005"]
+path = "planning/knowledge/codecompass-domain/DE-EVID-005.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "3d30e6f73ff54af844dfa0098c1091e69ab3b13fa0575f2150aef3b2bd9b71cb"
+
+[assertions."CL-EVID-006"]
+path = "planning/knowledge/codecompass-domain/CL-EVID-006.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "5652fcf659b97c4d8e5e20ac2adb82d3f5db016b2ccb85c446599d2a90928eb9"
+
+[assertions."CL-EVID-006".supporting_evidence."EV-EVID-002"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-002.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "ec8b7ff912fec78435bf744c20391e1cf46d0025f24530efd62ee94b011b3d60"
+
+[assertions."CL-EVID-006".supporting_evidence."EV-EVID-012"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-012.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "624a8c3ff62d251ba48d9a7ede26757ee7ab56fcd4dd8a388c5e4f25b4b13020"
+
+[assertions."CL-EVID-006".derivation."DE-EVID-006"]
+path = "planning/knowledge/codecompass-domain/DE-EVID-006.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "ba61f62cdba2d45ea39943cb87151dc7a500bd3d89dbda2d177b656345e959d8"
+
+[assertions."CL-EVID-007"]
+path = "planning/knowledge/codecompass-domain/CL-EVID-007.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "13e31da4fbeb54a60d2f16048e944b57d1715403bac20ddb891b245cf808e01a"
+
+[assertions."CL-EVID-007".supporting_evidence."EV-EVID-011"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-011.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "e10137ca1092b9d86ffce3fc422190255827ce3239f0079a5777a50760805c35"
+
+[assertions."CL-EVID-007".supporting_evidence."EV-EVID-012"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-012.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "624a8c3ff62d251ba48d9a7ede26757ee7ab56fcd4dd8a388c5e4f25b4b13020"
+
+[assertions."CL-EVID-007".derivation."DE-EVID-007"]
+path = "planning/knowledge/codecompass-domain/DE-EVID-007.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "85503b1341e50b41e036d78ce63210efa7165bd2fd970d4230ac1f5826108512"
+
+[assertions."CL-EVID-010"]
+path = "planning/knowledge/codecompass-domain/CL-EVID-010.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "d1c352e6c48ee4140912c4d6c5e93f606a59ea6159dae409652fe2a62f6d2c07"
+
+[assertions."CL-EVID-010".supporting_evidence."EV-EVID-007"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-007.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "1978f9e29edd52bdecfec2ede51ecd86b5c8262a5b1a2b137b25d5bf611a970b"
+
+[assertions."CL-EVID-010".supporting_evidence."EV-EVID-008"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-008.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "3e2f0cc052f632bbc89483fe83656fce3757472422c7a6e4c0b8ed48f9d8c53c"
+
+[assertions."CL-EVID-010".supporting_evidence."EV-EVID-009"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-009.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "2c97c51f01d46024d4b141f2e93833d13959ed84b17ce9ee041ba26523c770eb"
+
+[assertions."CL-EVID-010".supporting_evidence."EV-EVID-010"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-010.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "a13af1c92af986595a9d0df64eee516d6f86a1d9a066db593bf58a98464c73db"
+
+[assertions."CL-EVID-010".supporting_evidence."EV-EVID-011"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-011.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "e10137ca1092b9d86ffce3fc422190255827ce3239f0079a5777a50760805c35"
+
+[assertions."CL-EVID-010".derivation."DE-EVID-010"]
+path = "planning/knowledge/codecompass-domain/DE-EVID-010.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "1571e4439ed8361f976ed5777b386395f436ebb9d6ef823c8f700a9286a51763"
+
+[assertions."CL-EVID-011"]
+path = "planning/knowledge/codecompass-domain/CL-EVID-011.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "9082a79f06a13e5e185bf943e787844194378ed8d310ee6e28e3a731dc4b95fc"
+
+[assertions."CL-EVID-011".supporting_evidence."EV-EVID-006"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-006.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "ad6c386619312367782ba32c33e41b8e645d2fd3e51418f9e640686117f50621"
+
+[assertions."CL-EVID-011".supporting_evidence."EV-SKEP-006"]
+path = "planning/knowledge/codecompass-domain/EV-SKEP-006.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "b4c254a78d001857cd1a2398377a8347f23f8ad6b5d9337fd93304e4207ea37a"
+
+[assertions."CL-EVID-011".derivation."DE-EVID-011"]
+path = "planning/knowledge/codecompass-domain/DE-EVID-011.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "3ee37091f5da8f723d3e1c7dd522896cd6f4cf2875284d9a5e287be7fc2c6ae4"
+
+[assertions."CL-EVID-012"]
+path = "planning/knowledge/codecompass-domain/CL-EVID-012.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "9ca0495809323b346c4e3193dfe9a012e3af502b8d999898c69ca9e891b30119"
+
+[assertions."CL-EVID-012".supporting_evidence."EV-EVID-002"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-002.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "ec8b7ff912fec78435bf744c20391e1cf46d0025f24530efd62ee94b011b3d60"
+
+[assertions."CL-EVID-012".supporting_evidence."EV-EVID-003"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-003.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "f5599a3060e171bb71dd21acf66398c7048945c3077d45e758a5c0e479a273c5"
+
+[assertions."CL-EVID-012".supporting_evidence."EV-EVID-004"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-004.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "e97c822dd9b4227ef3473b4917953e55155fba1057c79ffd51a64077822546a1"
+
+[assertions."CL-EVID-012".supporting_evidence."EV-EVID-005"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-005.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "abbf3f7338ad9297fb92a0b826e37f8b42ac0dcb361273e16f2a8a0914434cd2"
+
+[assertions."CL-EVID-012".supporting_evidence."EV-EVID-006"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-006.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "ad6c386619312367782ba32c33e41b8e645d2fd3e51418f9e640686117f50621"
+
+[assertions."CL-EVID-012".supporting_evidence."EV-SKEP-006"]
+path = "planning/knowledge/codecompass-domain/EV-SKEP-006.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "b4c254a78d001857cd1a2398377a8347f23f8ad6b5d9337fd93304e4207ea37a"
+
+[assertions."CL-EVID-012".derivation."DE-EVID-012"]
+path = "planning/knowledge/codecompass-domain/DE-EVID-012.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "fa28eb34dcc01305c8d2351c384b6a4312069250cbf34b6a12443cf47adde235"
+
+[assertions."CL-EVID-013"]
+path = "planning/knowledge/codecompass-domain/CL-EVID-013.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "237fff7f4077c01482957a2253a952d9c6d3c09218e170bc059db7c8500cb2b0"
+
+[assertions."CL-EVID-013".supporting_evidence."EV-EVID-013"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-013.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "78ec70aa85e865d843f10d1281a302f7ba38f9a08eec287938b88397d772d72a"
+
+[assertions."CL-EVID-013".supporting_evidence."EV-EVID-014"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-014.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "1df8f6ea40068b877b98cf11396be3c5a025b65862293b5d6597650cf79d21a7"
+
+[assertions."CL-EVID-013".supporting_evidence."EV-EVID-015"]
+path = "planning/knowledge/codecompass-domain/EV-EVID-015.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "593d2929741a7687b7dabf70fcab9c403820fc3baa1b60487db135433950f6a9"
+
+[assertions."CL-EVID-013".derivation."DE-EVID-013"]
+path = "planning/knowledge/codecompass-domain/DE-EVID-013.yaml"
+repository_revision = "e7eb22bc09ee9e5b92134f11fddb7332cf3c3a30"
+content_hash = "590d3c02cf12fc18324341fbe9825c34a8e88cb40aa04213addf15201f16f644"
+
