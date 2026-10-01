@@ -28,7 +28,17 @@ section must name that call site explicitly and include at least one
 test that exercises it directly — a test that only calls the changed
 function in isolation is not sufficient on its own, no matter how
 thorough, since it cannot catch the function's new behavior never
-actually being wired into its caller. (Phase 55b — L-021.)
+actually being wired into its caller. (Phase 55b — L-021.) If a phase's
+verification step tests a fail-closed validation or detection mechanism
+(a check meant to catch malformed, incomplete, or malicious input), the
+"Verification" section must include a test against the mechanism's own
+minimal-content edge case (e.g. an empty, truncated, or otherwise
+maximally-reduced input that is still technically well-formed enough to
+be accepted for processing) in addition to the originally-named failure
+scenario — a test that only covers the scenario the phase's own prose
+describes is not sufficient on its own, since fixing one fail-open gap
+in a validation mechanism can leave a different one at the mechanism's
+own edge untested. (Phase 79 fifth amendment — L-070.)
 
 When the agent-led development model is in effect (see below), a phase is
 not started until any human-decision gate recorded against it in

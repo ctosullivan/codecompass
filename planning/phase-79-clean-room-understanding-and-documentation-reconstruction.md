@@ -74,7 +74,7 @@ directly into implementation, no further planning round-trip:**
    `contradicting_evidence`/`derivation` citations are each present as a
    nested snapshot entry — closing exactly the "remaining hashes still
    validate" gap named. Every malformed-input path produces a `Finding`,
-   never an exception. 13 new disposable-git-fixture tests.
+   never an exception. 11 new disposable-git-fixture tests.
 2. **Published documentation never actually cited the frozen knowledge
    foundation** (§11, a gap in how §9's publication step was executed,
    not a defect in the plan's own design): the clean-room draft's own

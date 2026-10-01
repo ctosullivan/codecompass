@@ -34,7 +34,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   validation; assertion-inventory completeness checked against the real
   historical `git ls-tree` listing at the snapshot's own freeze revision,
   never the live filesystem; record-identity checking; Evidence/
-  Derivation closure checking), with 13 new disposable-git-fixture tests.
+  Derivation closure checking), with 11 new disposable-git-fixture tests.
   This is the *second* fail-open gap found and fixed in this same
   checker's own validation logic within two consecutive revisions of the
   same ADR (the fourth revision's own list-validation fix, §4.2, was a

@@ -169,7 +169,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   required metadata/types, assertion-inventory completeness (checked
   against the real historical directory listing at a snapshot's own
   freeze revision, never the live filesystem), record identity, and
-  Evidence/Derivation closure, with 13 new disposable-git-fixture tests.
+  Evidence/Derivation closure, with 11 new disposable-git-fixture tests.
   `architecture/overview.md`/`architecture/context-graph-schema.md`
   regain the `first-party-source-symbols@v2#CL-FPSS-NNN` citations lost
   during the original legacy-reconciliation merge. The closeout's own
