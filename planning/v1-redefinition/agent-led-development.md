@@ -29,6 +29,21 @@ Implemented by Phase 40 (roster + workflow) and proven by Phase 43
 - **An agent observation is not authoritative because an agent recorded
   it.** It enters the learning lifecycle (`learning-lifecycle.md`) as a
   candidate; only curation + evidence promotes it.
+- **A post-`done` corrective amendment to an already-implemented,
+  independently-reconciled phase gets a new numbered ADR in the same
+  lineage, never a further in-place edit to the ADR that already informed
+  the real, executed work it is correcting** — the same append-only
+  reasoning `CLAUDE.md` §2 states for ADRs generally, applied specifically
+  to this narrower, recurring case. Established at `decisions/0067`
+  (correcting `decisions/0066`'s already-`done`-flipped Phase 79 result)
+  and confirmed as repeatable, not a one-off, at `decisions/0068`
+  (correcting `decisions/0067`'s own already-implemented and reconciled
+  corrections) — a future phase facing the same situation can cite this
+  precedent directly rather than re-deriving it from `CLAUDE.md` §2's more
+  general wording each time. Revisit/withdraw if a third instance shows
+  the "new ADR every time" convention producing an unwieldy lineage for a
+  single phase (e.g. four or more ADRs correcting one another) — not
+  observed yet. (Phase 79 sixth amendment — L-078.)
 
 ## 2. The roster
 

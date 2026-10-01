@@ -39,7 +39,13 @@ your own interpretation is settled fact.
    Existing documentation is evidence to check, not unquestioned ground
    truth — a documentation-only reading is exactly how a real, dated
    mistake in this project's own history (Ledgerkit's Stage C Phase 1,
-   `depth:`) went wrong.
+   `depth:`) went wrong. **When the behaviour under test is a negative or
+   invariant claim (e.g. "X is never reused," "Y always holds"), test the
+   specific scenario most likely to falsify it, not just one
+   representative example.** A single passing example that happens to
+   avoid the falsifying case is indistinguishable, from its own output
+   alone, from a genuinely general guarantee. (Phase 79 sixth amendment —
+   L-076.)
 3. **Write one `OBS-<feature>-NNN.yaml` per distinct act of looking** —
    running a command, reading a specific file, fetching a specific URL.
    Record exact inputs/outputs/tool version/repository revision. An

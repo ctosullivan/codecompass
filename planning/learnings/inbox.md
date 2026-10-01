@@ -8,6 +8,486 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-078 — a post-`done` corrective amendment to an already-implemented, reconciled phase gets a new numbered ADR in the same lineage, not an in-place edit — now confirmed repeatable, not a one-off
+
+- **origin:** Phase 79 (clean-room conceptual understanding + documentation
+  reconstruction), sixth amendment / `decisions/0068` "Consequences"; retro
+  "Governing-ADR lineage note"; filed at this triage's own initiative per
+  the retro's own explicit question ("worth watching whether this becomes
+  a recurring pattern worth a named process note"), deferring the
+  promote/retain/discard decision to `knowledge-curator` per usual
+  practice.
+- **date:** 2026-10-01
+- **project_revision:** `94f1e51`
+- **observation:** `decisions/0067` first reasoned that the fifth
+  amendment's corrections to the fourth revision's `done`-flipped,
+  already-executed result belonged in a *new* numbered ADR
+  (`decisions/0067`) rather than a further in-place edit to
+  `decisions/0066`, specifically because `0066` had "already informed
+  real, executed, `done`-flipped work" — editing it further would quietly
+  rewrite the historical record of what was decided under what
+  understanding at the time. The sixth amendment applied the identical
+  reasoning a second time: `decisions/0067`'s own corrections had
+  themselves since been implemented, independently re-audited, and
+  terminally reconciled, so the sixth amendment's three further
+  corrections went into a new `decisions/0068` rather than a further edit
+  to `0067`. This is now a two-instance lineage
+  (`0066` → `0067` → `0068`) of the identical pattern — a post-`done`
+  corrective amendment to a phase always produces a new numbered ADR, by
+  the same append-only reasoning `CLAUDE.md` §2 already states for ADRs
+  generally, but applied specifically to the narrower case of *correcting
+  an already-reconciled phase's own prior correction*. `decisions/0068`'s
+  own "Consequences" section already draws this conclusion explicitly:
+  "the pattern `0067` established... is confirmed as a repeatable one,
+  not a one-off... A future phase in the same situation can cite this
+  precedent directly rather than re-deriving it from `CLAUDE.md` §2's more
+  general wording."
+- **evidence:** `decisions/0067` "Alternatives considered" (the original
+  reasoning for not editing `0066` in place); `decisions/0068` "Decision"
+  ("By the exact same reasoning `0067` applied to `0066`") and
+  "Consequences" (the explicit "confirmed as a repeatable one... second
+  application" language, quoted above); `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  line 38-46 ("Governing ADR lineage: `decisions/0066`... →
+  `decisions/0067`... → `decisions/0068`... each new ADR rather than a
+  further in-place edit, per `0067`'s own established reasoning");
+  `planning/retros/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  "Governing-ADR lineage note" (independently re-read directly — matches
+  the ADR/plan account exactly, including the explicit "worth watching
+  whether this becomes a recurring pattern" framing).
+- **classification:** workflow
+- **status:** promoted
+- **recurrence:** second application of the identical reasoning within
+  one phase's own lineage (`0066`→`0067` established it; `0067`→`0068`
+  confirmed it) — meets this project's own recurrence bar for codifying a
+  process note, though both instances are within a single phase (the same
+  caveat `L-070`'s own curation note raised and accepted for its own
+  two-instance, single-phase recurrence).
+- **promoted_to:** `planning/v1-redefinition/agent-led-development.md` Sec 1 "Principles," new bullet after the existing "An agent observation is not authoritative..." bullet @ (this phase's own closeout commit)
+- **curation (this triage, 2026-10-01, knowledge-curator):** provenance
+  accepted — all required fields present (filed fresh at this triage,
+  per the retro's own explicit question rather than a prior candidate
+  naming). Independently re-read `decisions/0067`'s "Alternatives
+  considered," `decisions/0068`'s "Decision"/"Consequences," the plan's
+  own lineage line, and the retro's "Governing-ADR lineage note" directly
+  — all four agree exactly on the mechanism (a new ADR per post-`done`
+  correction) and the explicit "confirmed as repeatable" framing.
+
+  Checked for a merge/duplicate candidate: grepped this inbox for
+  "ADR lineage," "in-place edit," "append-only" — no prior candidate
+  addresses this specific pattern (when a *post-`done` corrective
+  amendment* gets its own new ADR vs. editing the prior one). Distinct
+  from `CLAUDE.md` §2's own general ADR append-only rule (which already
+  covers "a reversed decision gets a new numbered file") — this candidate
+  is narrower and more specific: it is about an ADR that was never
+  reversed, only further corrected after its own content had already
+  shipped, a case `CLAUDE.md` §2's existing wording doesn't explicitly
+  name. Checked whether this belongs in `context-gaps/` or
+  `context-observations/` instead: no to both — this is not a
+  relationship CodeCompass's own graph is missing, nor an experience with
+  an existing graph edge; it is a documentation-governance convention for
+  this project's own ADR-authorship practice, so it correctly stays in
+  `planning/learnings/`.
+
+  **Outcome: promote (recommendation + draft; does not land here — the
+  recommended destination, `planning/v1-redefinition/agent-led-development.md`,
+  is outside this agent's write boundary).** Real, specific, and already
+  self-identified by `decisions/0068`'s own "Consequences" section as
+  worth a standing citation point for a future phase — the retro's own
+  question ("worth a named process note... rather than something
+  re-derived fresh each time") is itself the strongest argument for
+  promoting now rather than waiting for a third instance: the whole point
+  of naming the pattern is to let a future phase cite it directly instead
+  of re-deriving `0067`'s reasoning from `CLAUDE.md` §2's more general
+  wording a third time. Classified `workflow` (a repeatable
+  project-process pattern, not a new rule imposed on agent behavior)
+  rather than `project-rule`/`CLAUDE.md`, since this doesn't change what
+  any agent or the lead is required to do differently — `CLAUDE.md` §2's
+  append-only ADR rule already covers the underlying requirement; this is
+  a named-precedent note for the planning doc that already describes how
+  the agent-led model's artifacts relate to each other.
+
+  **Recommended fix — add a new bullet to
+  `planning/v1-redefinition/agent-led-development.md` §1 "Principles,"
+  after the existing "An agent observation is not authoritative..."
+  bullet** (draft, for the lead to review and land; not applied here):
+
+  > **A post-`done` corrective amendment to an already-implemented,
+  > independently-reconciled phase gets a new numbered ADR in the same
+  > lineage, never a further in-place edit to the ADR that already
+  > informed the real, executed work it is correcting** — the same
+  > append-only reasoning `CLAUDE.md` §2 states for ADRs generally,
+  > applied specifically to this narrower, recurring case. Established at
+  > `decisions/0067` (correcting `decisions/0066`'s already-`done`-flipped
+  > Phase 79 result) and confirmed as repeatable, not a one-off, at
+  > `decisions/0068` (correcting `decisions/0067`'s own already-
+  > implemented and reconciled corrections) — a future phase facing the
+  > same situation can cite this precedent directly rather than
+  > re-deriving it from `CLAUDE.md` §2's more general wording each time.
+  > (Phase 79 sixth amendment — L-078.)
+
+  Revisit/withdraw if a third instance of this pattern shows the
+  "new ADR every time" convention producing an unwieldy, hard-to-follow
+  lineage for a single phase (e.g. four or more ADRs correcting one
+  another) — not observed yet (two instances, both still easy to follow
+  in sequence), but named as the honest revisit condition.
+
+### L-077 — an explicit instruction to test multiple, meaningfully different scenarios caught the exact bug a narrower exercise missed, unprompted, on first pass — but the independent adversarial-review step still found further scenarios beyond what that instructed pass tried
+
+- **origin:** Phase 79 (clean-room conceptual understanding + documentation
+  reconstruction), sixth amendment / `decisions/0068` item 2 (second half);
+  retro Addendum 2, bullet 3; filed at this triage's own initiative per
+  the addendum's explicit candidate-learning naming, deferring the
+  promote/retain/discard decision to `knowledge-curator` per usual
+  practice.
+- **date:** 2026-10-01
+- **project_revision:** `94f1e51`
+- **observation:** given the chance to re-run the `tinytodo` workflow
+  exercise properly (real commits, full pipeline, independent adversarial
+  review), the same fresh research dispatch caught the exact `_next_id`
+  reuse bug the original, narrower exercise missed — on its first pass,
+  unprompted with the answer. The only material difference in the prompt
+  was an explicit instruction to test multiple, meaningfully different
+  deletion scenarios rather than one. This is a concrete, worked
+  demonstration that much of the original defect was a scoping/
+  instruction gap in the research-dispatch prompt, not a fundamental
+  limit of what a single research pass can catch. The subsequent
+  independent adversarial review — which ran anyway, as part of the full
+  pipeline, not skipped because the research pass had already found the
+  bug — still mattered: it found eight further scenarios beyond the three
+  the research pass itself tried, closing the gap between "got the right
+  answer" and "verified there wasn't a different wrong answer nearby."
+- **evidence:** `decisions/0068` item 2 ("Independently reproduced and
+  disproven... a case the original exercise's own single test never
+  exercised"); `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  §0 "Sixth revision" entry 2 (full technical account); `planning/retros/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  "Addendum 2: sixth amendment," bullet 3 (independently re-read directly
+  — matches the ADR/plan account exactly, including the explicit "eight
+  further scenarios beyond the three the research pass tried" figure).
+- **classification:** workflow
+- **status:** retained
+- **recurrence:** first occurrence of this specific demonstration (an
+  instructed re-run isolating scoping-vs-fundamental-limitation); directly
+  paired with `L-076` (same incident, the diagnosis half) — this entry is
+  the *remedy-confirmation* half.
+- **promoted_to:** (none yet — see outcome below)
+- **curation (this triage, 2026-10-01, knowledge-curator):** provenance
+  accepted — all required fields present. Independently re-read the
+  retro addendum's bullet 3, `decisions/0068`'s item 2, and the plan's own
+  §0 "Sixth revision" entry 2 directly — all three agree on the exact
+  mechanism (one changed prompt instruction; eight further scenarios
+  found by the independent review beyond the research pass's own three).
+
+  Checked for a merge/duplicate candidate: this is the direct companion to
+  `L-076` filed in this same triage pass (the diagnosis of the original
+  gap) — not a duplicate of it, since it evidences a different, additional
+  claim (the fix actually works, *and* the independent-review step
+  remains necessary even after the fix). Not a duplicate of `L-027`
+  (single-trial baseline/treatment comparisons can't separate tool
+  contribution from diligence variance) — related in spirit (both are
+  about what a single trial can and can't tell you) but this entry's
+  trial was deliberately controlled (one prompt variable changed, same
+  dispatch mechanism) rather than an uncontrolled baseline/treatment
+  comparison, so it doesn't inherit `L-027`'s specific confound. Checked
+  whether this belongs in `context-gaps/` or `context-observations/`
+  instead: no to both — this is not a relationship CodeCompass's own
+  graph is missing, nor an experience with an existing graph edge; it is
+  a research-methodology/process-design finding, so it correctly stays in
+  `planning/learnings/`.
+
+  **Outcome: retain, cross-referenced with `L-076`.** This entry's own
+  actionable content (the research-dispatch prompt needs an explicit
+  scenario-diversity instruction) is identical to what `L-076` already
+  recommends promoting — duplicating the same fix under a second entry
+  would double-count one recommendation. What this entry adds *beyond*
+  `L-076` is purely evidentiary/confirmatory: (a) proof the fix actually
+  works, on first try, for the exact bug it was meant to catch; (b) a
+  reaffirmation, not a new rule, that the independent adversarial-review
+  step must stay mandatory even when the research-dispatch prompt
+  improves — the pipeline already treats independent review as a
+  separate, required step (`decisions/0049`'s roster model; `domain-skeptic`'s
+  own adversarial-review role), and this finding is evidence *for*
+  keeping that design exactly as it is, not evidence of a gap in it. No
+  new artifact change is recommended for this half; it is recorded here
+  as the supporting evidence for `L-076`'s recommendation and as a
+  standing reminder (should a future phase ever propose relying on an
+  improved prompt alone and dropping independent review) that the two are
+  not substitutes for each other even when the prompt fix is shown to
+  work.
+
+  Revisit/withdraw if a future phase's own retain-vs-promote review
+  judges this reminder valuable enough to also land as an explicit
+  sentence somewhere (e.g. `.claude/agents/domain-skeptic.md` or wherever
+  the adversarial-review step is specified) — not recommended now since
+  no actual proposal to drop or weaken independent review has ever been
+  made in this project; this would be a defense against a hypothetical,
+  not an observed, failure.
+
+### L-076 — a clean-room/template research pass's own narrow test coverage was mistaken for completeness a second time within the same exercise lineage, because nothing in its lightweight process explicitly required testing more than one scenario of a negative/invariant claim
+
+- **origin:** Phase 79 (clean-room conceptual understanding + documentation
+  reconstruction), sixth amendment / `decisions/0068` item 2 (first half);
+  retro Addendum 2, bullet 2; filed at this triage's own initiative per
+  the addendum's explicit candidate-learning naming, deferring the
+  promote/retain/discard decision to `knowledge-curator` per usual
+  practice.
+- **date:** 2026-10-01
+- **project_revision:** `94f1e51`
+- **observation:** the fifth amendment's own downstream exercise evidence
+  (`template-usability-exercise/tinytodo-after-adoption/`) asserted that
+  `tinytodo`'s `_next_id` guarantees a deleted task's id is "never
+  reused" (later narrowed, still wrongly, to "as long as the task list
+  hasn't been fully emptied"). The sixth amendment independently
+  reproduced and disproved this: deleting whichever task currently holds
+  the maximum live id causes the very next `add` to reuse that id, even
+  with other, older tasks still present and the list never emptied. The
+  original exercise's own single test happened to delete a non-maximum
+  id — the one case that doesn't falsify the "never reused" claim — and
+  nothing in that exercise's own process (a single research pass, no
+  independent adversarial check built into the template's own lightweight
+  default path) was positioned to notice the untested case was the one
+  that actually mattered. This is the same general failure shape (a
+  narrow test mistaken for proof of a general claim) recurring within one
+  exercise lineage, now caught a second time by direct review rather than
+  by the exercise's own design.
+- **evidence:** `decisions/0068` item 2 ("a case the original exercise's
+  own single test never exercised (it only ever deleted a non-maximum
+  id)"); `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  §0 "Sixth revision" entry 2 (full technical account, including "the
+  specific logical error in the original assertion's own 'Counterexamples'
+  reasoning"); `planning/retros/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  "Addendum 2: sixth amendment," bullet 2 (independently re-read directly
+  — matches the ADR/plan account exactly); `.claude/agents/context-researcher.md`
+  step 2 ("Run representative examples and edge cases yourself") —
+  confirmed this existing guidance is general enough that it did not, by
+  itself, prevent this exact mistake, since "representative" does not by
+  itself require testing the scenario most likely to falsify a negative
+  claim.
+- **classification:** scoped-rule
+- **status:** promoted
+- **recurrence:** second occurrence within this same exercise lineage of
+  "a single test's own narrow coverage mistaken for a general proof" (the
+  original fourth-revision exercise's mistake; now independently confirmed
+  and diagnosed by the sixth amendment's direct review) — structurally
+  related to, but a distinct shape from, `L-069` (a hand-curated export's
+  mechanical truncation bug, not a test-design gap) and `L-027`
+  (single-trial baseline/treatment comparisons, a different confound) —
+  not a duplicate of either.
+- **promoted_to:** `.claude/agents/context-researcher.md` step 2, new sentence after "Run representative examples and edge cases yourself" @ (this phase's own closeout commit)
+- **curation (this triage, 2026-10-01, knowledge-curator):** provenance
+  accepted — all required fields present. Independently re-read the
+  retro addendum's bullet 2, `decisions/0068`'s item 2, and the plan's own
+  §0 "Sixth revision" entry 2 directly — all three agree exactly, and I
+  separately opened `.claude/agents/context-researcher.md` to confirm its
+  existing step 2 guidance ("run representative examples and edge cases
+  yourself") does not already explicitly require testing the scenario
+  most likely to falsify a negative/invariant claim specifically — it
+  does not; the wording is general enough that this exact mistake was
+  still possible under it.
+
+  Checked for a merge/duplicate candidate: grepped this inbox for
+  "tinytodo," "_next_id," "never reused," "single test," "narrow test
+  coverage" — no prior candidate addresses this. `L-021` (CLAUDE.md §1,
+  a narrow-scope test isn't sufficient when a real call site exists) and
+  `L-074` (a link-check isn't a substitute for a real usability exercise)
+  are related in the same general family ("a cheap/narrow check creates
+  false confidence") but address different artifacts and different
+  failure shapes — not duplicates or merge targets. Paired with `L-077`
+  (filed alongside this entry, same underlying incident) as the
+  diagnosis half of one finding — see `L-077`'s own curation note for why
+  these are kept as two entries rather than one. Checked whether this
+  belongs in `context-gaps/` or `context-observations/` instead: no to
+  both — this is not a relationship CodeCompass's own graph is missing,
+  nor an experience with an existing graph edge; it is a research-
+  methodology gap in how this project's own primary-research role (and
+  the `codecompass-template` deliverable modeling the same role for
+  downstream adopters) tests a negative/invariant claim, so it correctly
+  stays in `planning/learnings/`.
+
+  **Outcome: promote (recommendation + draft for the in-repo portion;
+  does not land here — the recommended destination,
+  `.claude/agents/context-researcher.md`, is outside this agent's write
+  boundary; the `codecompass-template` portion is outside this
+  repository entirely and is flagged to the lead as a manual follow-up,
+  not drafted here).** Real, specific, and already evidenced twice within
+  one lineage — worth a standing rule on this occurrence rather than
+  waiting for a third, matching this inbox's established practice for a
+  cheap, concrete, already-evidenced fix (`L-018`/`L-023`/`L-068`'s own
+  reasoning).
+
+  **Recommended fix — add to `.claude/agents/context-researcher.md` step 2
+  ("If executable behaviour exists... start there"), as a new sentence**
+  (draft, for the lead to review and land; not applied here):
+
+  > **When the behaviour under test is a negative or invariant claim
+  > (e.g. "X is never reused," "Y always holds"), test the specific
+  > scenario most likely to falsify it, not just one representative
+  > example.** A single passing example that happens to avoid the
+  > falsifying case is indistinguishable, from its own output alone, from
+  > a genuinely general guarantee. Observed at Phase 79's sixth amendment:
+  > an exercise's own single test deleted a non-maximum-id task and
+  > concluded a deleted task's id is "never reused" generally; the real,
+  > narrower guarantee (safe only if the deleted task was not, at the
+  > moment of deletion, the maximum-id task) was found only once a
+  > research dispatch was explicitly instructed to try multiple,
+  > meaningfully different scenarios (see `L-077` for that confirmation).
+  > (Phase 79 sixth amendment — L-076.)
+
+  **Also flagged for the lead (not drafted, outside this repository):**
+  the same gap most likely exists in whichever of the nine
+  `codecompass-template` files models this project's own research-dispatch
+  step for a downstream adopter — that template's own lightweight default
+  path is the artifact the retro's bullet 2 actually describes as lacking
+  "an equivalent step... built into its own lightweight default path."
+  This curator cannot inspect or edit `codecompass-template` (a separate
+  repository, not present in this working tree) — the lead should check
+  it directly and apply the same scenario-diversity instruction there if
+  confirmed missing.
+
+  Revisit/withdraw if a future phase shows this instruction added to
+  `context-researcher.md` producing disproportionate dispatch cost for
+  claims where one representative example is genuinely sufficient (e.g. a
+  claim with no plausible falsifying scenario distinct from the one
+  tested) — not expected given how cheap the actual fix was here, but
+  named as the honest revisit condition.
+
+### L-075 — a fail-closed check's own completeness fix can correctly widen *scope* (what it looks at) while leaving *depth* (how carefully it checks what it finds) still shallow — these are separable failure axes, and closing one does not imply the other is closed
+
+- **origin:** Phase 79 (clean-room conceptual understanding + documentation
+  reconstruction), sixth amendment / `decisions/0068` item 1; retro
+  Addendum 2, bullet 1; filed at this triage's own initiative per the
+  addendum's explicit candidate-learning naming, deferring the
+  promote/retain/discard decision to `knowledge-curator` per usual
+  practice.
+- **date:** 2026-10-01
+- **project_revision:** `94f1e51`
+- **observation:** the fifth amendment's own `check_snapshot_completeness`
+  (the fix behind `L-070`) correctly widened the checker's *scope* —
+  validating a snapshot's own assertion-inventory completeness, not just
+  hash integrity. Its Evidence/Derivation *closure* check, however, still
+  only asked "is this key present in the dict," never "does this key's
+  own value actually, validly identify the record it claims to." Two real
+  attack shapes were independently reproduced before the sixth amendment's
+  own fix: (1) a nested table replaced by a scalar string — the key
+  survives, the existing entry-iteration helper silently skips the
+  malformed value, and the old closure check still counted the key as
+  "captured"; (2) an identity swap — a key kept, its own `path`/
+  `content_hash` re-pointed at a *different* real record with that
+  record's own genuinely correct hash, invisible to pure hash-integrity
+  checking since the hash is exactly right for what it actually points
+  to. Fixed via a new `_validate_nested_entries` helper (returns only the
+  subset of keys that are genuinely, validly captured — well-formed
+  table, matching `id`, matching `kind`) and a new
+  `knowledge-base-snapshot-kind-mismatch` finding, with 6 new
+  `TestNestedEntryValidation` tests. This is the *third* fail-open gap
+  found in the same checker's own validation logic within three
+  consecutive revisions of the same ADR lineage (fourth revision's
+  list-validation fix; fifth revision's snapshot-completeness fix,
+  `L-070`; sixth revision's closure-value-validity fix, this entry) — and
+  the general lesson this specific instance newly makes explicit is that
+  "scope" and "depth" are separable failure axes: `L-070`'s own already-
+  landed `CLAUDE.md` §1 sentence requires testing a mechanism's
+  *minimal-content edge case*, which is a scope-shaped requirement (does
+  the check look at small/empty input at all) — it does not, on its own
+  wording, require testing that a key's own *value* is valid once found,
+  which is what this third instance actually needed and is a depth-shaped
+  requirement. A future phase following `L-070`'s landed rule to the
+  letter would still not have been required to write the test that caught
+  this specific bug.
+- **evidence:** `decisions/0068` item 1 (full technical account of both
+  attack shapes and the fix); `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  §0 "Sixth revision" entry 1; `planning/retros/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  "Addendum 2: sixth amendment," bullet 1 (independently re-read directly
+  — matches the ADR/plan account exactly, including the explicit
+  scope-vs-depth generalization); `scripts/check_knowledge_base.py`
+  (`_validate_nested_entries`, the `knowledge-base-snapshot-kind-mismatch`
+  finding) / `tests/test_check_knowledge_base.py::TestNestedEntryValidation`
+  (confirmed present in the actual landed code and tests, not just
+  narrative); `CLAUDE.md` §1 (confirmed by direct read: the already-landed
+  `L-070` sentence's exact wording — "an empty, truncated, or otherwise
+  maximally-reduced input" — does not mention value-validity-of-a-present-key
+  at all, confirming the gap this entry identifies in that sentence's own
+  coverage).
+- **classification:** project-rule
+- **status:** candidate
+- **recurrence:** third occurrence within this same checker/ADR lineage of
+  "a fail-closed redesign still missed an edge the originally-named
+  scenario didn't cover" (see `L-070`'s own recurrence note for the first
+  two instances) — now a three-instance recurrence in one lineage, and
+  the first instance to identify the *scope-vs-depth* distinction
+  explicitly rather than just another instance of the same already-named
+  pattern.
+- **promoted_to:** (none yet — see outcome below)
+- **curation (this triage, 2026-10-01, knowledge-curator):** provenance
+  accepted — all required fields present. Independently re-read the
+  retro addendum's bullet 1, `decisions/0068`'s item 1, and the plan's own
+  §0 "Sixth revision" entry 1 directly — all three agree exactly,
+  including the two specific attack shapes and the fix. I separately
+  re-read `CLAUDE.md` §1's actual, currently-landed `L-070` text in full
+  (not just its summary in `promoted.md`/`proposed-governance-changes.md`
+  §G) specifically to check whether it already covers this third
+  instance — it does not: the landed sentence's own example parenthetical
+  ("an empty, truncated, or otherwise maximally-reduced input") is a
+  scope/minimal-content requirement, and a nested table silently replaced
+  by a scalar, or a key re-pointed at a different valid record, is neither
+  empty nor truncated — it is normal-sized, well-formed-looking, and
+  wrong. This is a genuine gap in `L-070`'s own landed generalization, not
+  a restatement of it.
+
+  Checked for a merge/duplicate candidate: this is the most direct
+  relative of any candidate in this inbox — `L-070` itself, exactly as
+  this triage's own instructions anticipated. **Decision: file as a new,
+  distinct entry rather than `status: merged:L-070`, because merging
+  would hide a real, additional finding under a recurrence count for a
+  pattern `L-070`'s own landed text does not yet fully cover** — a bare
+  merge-and-increment would make it look like `L-070`'s existing
+  `CLAUDE.md` rule already handles this shape (it doesn't) and would lose
+  the scope-vs-depth generalization as a citable, separate finding. The
+  right relationship is "builds on and extends `L-070`," recorded as a
+  separate id but explicitly recommending its destination be a *second
+  sentence appended to the same already-landed `CLAUDE.md` §1 passage*,
+  not a competing or duplicate rule elsewhere. Checked whether this
+  belongs in `context-gaps/` or `context-observations/` instead: no to
+  both — this is not a relationship CodeCompass's own graph is missing,
+  nor an experience with an existing graph edge; it is a validation-check
+  design-discipline gap applicable project-wide, so it correctly stays in
+  `planning/learnings/`.
+
+  **Outcome: promote (recommendation + draft; does not land here — the
+  recommended destination, `CLAUDE.md` §1, requires the diff-and-approval
+  step `CLAUDE.md` §0 mandates, so this entry stays `status: candidate`
+  until the user explicitly approves, matching `L-070`'s own precedent in
+  `proposed-governance-changes.md` §G).** The recurrence bar is met (three
+  structurally similar instances in one lineage, the same bar `L-070`
+  itself already cleared at two), the fix is cheap (one additional
+  sentence, already evidenced as sufficient to describe the actual Phase
+  79 fix), and it closes a real, now-demonstrated gap in an existing,
+  already-approved `CLAUDE.md` rule rather than proposing a new one from
+  scratch.
+
+  **Recommended `CLAUDE.md` §1 addition, drafted into
+  `planning/v1-redefinition/proposed-governance-changes.md` as a new §H**
+  (not applied to `CLAUDE.md` directly — outside this agent's write
+  boundary and requires explicit user approval per §0): append a second
+  sentence directly after the existing `L-070` sentence ("...can leave a
+  different one at the mechanism's own edge untested. (Phase 79 fifth
+  amendment — L-070.)"):
+
+  > The same verification step must also cover the mechanism's *depth*,
+  > not only its *scope*: when a check confirms that some expected key,
+  > field, or entry is present, the test must separately confirm that the
+  > entry's own value is well-formed and genuinely identifies or matches
+  > what it claims to — a scope fix (checking that the right things are
+  > looked at) does not by itself fix a depth gap (how carefully what is
+  > found is checked), and closing one does not imply the other is
+  > closed. (Phase 79 sixth amendment — L-075.)
+
+  Revisit/withdraw if a future phase shows this sentence, combined with
+  `L-070`'s own, making §1 read as an exhaustive validation-design
+  checklist that invites skipping a genuinely different failure shape not
+  named by either sentence — not expected given both are scoped narrowly
+  to the two specific, evidenced shapes found so far, but named as the
+  honest revisit condition.
+
 ### L-070 — a fail-closed redesign that fixes the mechanism it was asked to fix can still leave a different fail-open gap at the mechanism's own edge
 
 - **origin:** Phase 79 (clean-room conceptual understanding + documentation

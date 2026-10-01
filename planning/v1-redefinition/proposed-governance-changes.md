@@ -613,3 +613,66 @@ four candidate learnings that same addendum named.
   precedent for keeping the two in sync); `planning/learnings/inbox.md`'s
   `L-070` flips to `status: promoted` with a `promoted.md` pointer line
   once the edit lands.
+
+## H. 2026-10-01 proposed addition (Phase 79 sixth amendment — `L-075`)
+
+**Status:** proposed, not yet presented to the user. Filed by
+`knowledge-curator` during the sixth-amendment triage pass, alongside two
+other candidate learnings from the same addendum (`L-076`/`L-077`,
+routed to `.claude/agents/context-researcher.md` instead — see
+`planning/learnings/inbox.md`) and one workflow-pattern candidate
+(`L-078`, routed to `planning/v1-redefinition/agent-led-development.md`).
+
+### H1 — §1 "Plan before implementing": extend the already-landed `L-070` sentence to also require testing a present key/entry's own *value validity*, not only a mechanism's minimal-content edge case
+
+- **Context:** `L-070`'s own already-landed `CLAUDE.md` §1 sentence (§G
+  above) requires a fail-closed check's verification step to test the
+  mechanism's *minimal-content edge case* — an empty, truncated, or
+  otherwise maximally-reduced input. Phase 79's sixth amendment found a
+  *third* fail-open gap in the same checker lineage that this sentence,
+  read literally, would not have required catching: `check_snapshot_completeness`'s
+  own Evidence/Derivation closure check validated only that an expected
+  key was *present*, never that its own value was well-formed or
+  genuinely identified the record it claimed to. Two real attack shapes
+  (a nested table silently replaced by a scalar string; an identity swap
+  re-pointing a kept key at a different, genuinely-valid record) are
+  neither empty nor truncated — both are normal-sized, well-formed-
+  looking, and simply wrong. This is a *depth* gap, not a *scope* gap,
+  and is a distinct failure shape from the one `L-070`'s own text names.
+  Full account: `planning/learnings/inbox.md`'s `L-075`; `decisions/0068`
+  item 1; `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`
+  §0 "Sixth revision" entry 1.
+- **Proposed text — append, as a new sentence, directly after the
+  existing `L-070` sentence in §1 ("...can leave a different one at the
+  mechanism's own edge untested. (Phase 79 fifth amendment — L-070.)"):**
+
+  > The same verification step must also cover the mechanism's *depth*,
+  > not only its *scope*: when a check confirms that some expected key,
+  > field, or entry is present, the test must separately confirm that the
+  > entry's own value is well-formed and genuinely identifies or matches
+  > what it claims to — a scope fix (checking that the right things are
+  > looked at) does not by itself fix a depth gap (how carefully what is
+  > found is checked), and closing one does not imply the other is
+  > closed. (Phase 79 sixth amendment — L-075.)
+
+- **Alternatives considered:** (a) treat this as already covered by
+  `L-070`'s own wording — rejected: independently re-read `CLAUDE.md`
+  §1's actual landed text, and its "empty, truncated, or otherwise
+  maximally-reduced input" framing does not reach a normal-sized,
+  well-formed-looking, but substantively wrong value; a future phase
+  following that sentence to the letter would not have been required to
+  write the test that caught this bug; (b) replace `L-070`'s sentence
+  entirely with a single broader one covering both scope and depth —
+  rejected: `L-070` is already landed and user-approved as its own
+  citable unit; appending rather than rewriting preserves that approval
+  and the phase-attribution trail, matching how `L-021`/`L-070` were
+  themselves appended to, not merged into, the paragraph before them; (c)
+  route this to `planning/agent-led-workflow.md` instead of `CLAUDE.md`
+  §1 — rejected for the same reason `L-021`/`L-070` gave: this is about
+  what a phase *plan's own content* must specify regardless of which
+  agent or the lead writes the check, not agent-orchestration procedure.
+- **Consequences if approved:** `CLAUDE.md` §1 gains the sentence above,
+  directly after the `L-070` sentence; `CONTRIBUTING.md`'s mirrored
+  section gets the same addition in the same commit; `planning/learnings/inbox.md`'s
+  `L-075` flips to `status: promoted` with a `promoted.md` pointer line
+  once the edit lands.
