@@ -80,6 +80,11 @@ call, and no cloning either (that's a bare `codecompass`/whole-project
   contract for scripted use.
 - `[project.optional-dependencies]` in `pyproject.toml` is not scanned —
   only `[project.dependencies]`.
+- Haskell's `package.yaml` (hpack format) discovery reads the top-level
+  `dependencies:` list only — a conditional `when:`-block dependency
+  (hpack's own flag-gated dependency mechanism) is not expanded. Both
+  this and the `pyproject.toml` limitation above are documented,
+  accepted gaps in their respective discoverers, not bugs.
 
 ```bash
 codecompass init --scan package.json --scan pyproject.toml --scan Cargo.toml
