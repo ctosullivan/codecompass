@@ -120,7 +120,7 @@ example.
   through `CL-DOCORIGIN-004.yaml`;
   `planning/knowledge/haskell-api-surface-extraction/CL-HSAPI-001.yaml`
   through `CL-HSAPI-006.yaml`.
-- `scripts/check_knowledge_base.py:419-449`
+- `scripts/check_knowledge_base.py:427-457`
   (`check_supersedes_never_crosses_kind`, the mechanical hard-rule
   check).
 - `planning/retros/phase-54c-evidence-knowledge-workflow.md:164-178,249-261`
