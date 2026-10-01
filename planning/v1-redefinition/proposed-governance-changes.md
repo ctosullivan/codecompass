@@ -616,10 +616,11 @@ four candidate learnings that same addendum named.
 
 ## H. 2026-10-01 proposed addition (Phase 79 sixth amendment — `L-075`)
 
-**Status:** proposed, not yet presented to the user. Filed by
-`knowledge-curator` during the sixth-amendment triage pass, alongside two
-other candidate learnings from the same addendum (`L-076`/`L-077`,
-routed to `.claude/agents/context-researcher.md` instead — see
+**Status:** approved by the user (explicit diff approval, 2026-10-02, per
+`CLAUDE.md` §0) and landed. Filed by `knowledge-curator` during the
+sixth-amendment triage pass, alongside two other candidate learnings from
+the same addendum (`L-076`/`L-077`, routed to
+`.claude/agents/context-researcher.md` instead — see
 `planning/learnings/inbox.md`) and one workflow-pattern candidate
 (`L-078`, routed to `planning/v1-redefinition/agent-led-development.md`).
 

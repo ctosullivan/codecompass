@@ -38,7 +38,15 @@ be accepted for processing) in addition to the originally-named failure
 scenario — a test that only covers the scenario the phase's own prose
 describes is not sufficient on its own, since fixing one fail-open gap
 in a validation mechanism can leave a different one at the mechanism's
-own edge untested. (Phase 79 fifth amendment — L-070.)
+own edge untested. (Phase 79 fifth amendment — L-070.) The same
+verification step must also cover the mechanism's *depth*, not only its
+*scope*: when a check confirms that some expected key, field, or entry is
+present, the test must separately confirm that the entry's own value is
+well-formed and genuinely identifies or matches what it claims to — a
+scope fix (checking that the right things are looked at) does not by
+itself fix a depth gap (how carefully what is found is checked), and
+closing one does not imply the other is closed. (Phase 79 sixth
+amendment — L-075.)
 
 When the agent-led development model is in effect (see below), a phase is
 not started until any human-decision gate recorded against it in

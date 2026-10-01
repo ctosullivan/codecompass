@@ -408,7 +408,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   at all, confirming the gap this entry identifies in that sentence's own
   coverage).
 - **classification:** project-rule
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** third occurrence within this same checker/ADR lineage of
   "a fail-closed redesign still missed an edge the originally-named
   scenario didn't cover" (see `L-070`'s own recurrence note for the first
@@ -416,7 +416,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   the first instance to identify the *scope-vs-depth* distinction
   explicitly rather than just another instance of the same already-named
   pattern.
-- **promoted_to:** (none yet — see outcome below)
+- **promoted_to:** `CLAUDE.md` §1, new sentence appended directly after the existing `L-070` sentence; mirrored into `CONTRIBUTING.md` -- user-approved per §0 @ (this phase's own closeout commit)
 - **curation (this triage, 2026-10-01, knowledge-curator):** provenance
   accepted — all required fields present. Independently re-read the
   retro addendum's bullet 1, `decisions/0068`'s item 1, and the plan's own
