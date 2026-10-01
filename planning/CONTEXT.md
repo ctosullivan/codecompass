@@ -121,9 +121,56 @@ README explaining when to use it; two short worked examples added
 `optional-clean-room-workflow/worked-example.md` for the clean-room
 loop). Pushed to the real `codecompass-template` remote: `68bae8e`.
 
-**Part 4 (verification/closeout for both repositories) is not yet
-started** — see the plan file's own §8-9 and "Next concrete step"
-below.
+**Part 4 (verification/closeout for both repositories) is done.** 15
+reader questions frozen (`planning/phase-80-frozen-reader-questions.md`)
+before evaluating anything, then verified against primary evidence: 13/15
+CORRECT, 2/15 INCOMPLETE (no WRONG/AMBIGUOUS), both fixed (`README.md`'s
+"What to commit" paragraph; `architecture/context-graph-schema.md`'s new
+"Checklist for a new table" section). Separately, a bounded
+coding-context packet (add `codecompass query source-stats`) was
+independently assessed by `context-evaluator`: **FAIL, advantage LOW** —
+a genuine, consequential finding, not softened to pass. Root cause
+traced to a real helper-function conflation
+(`_open_graph_or_note`/`_graph_session` vs. the actually-used
+`_open_graph_if_exists`) originating in the Stage 2 reconstruction's own
+summary prose, which had survived Stage 3's comparison and Stage 5's
+reconciliation untouched because neither check's own evidentiary scope
+covered that level of detail — corrected at the source in all four
+affected Stage 2/4 draft files, and never reached the real published
+docs. A follow-on docs-drift audit (scoped to everything this phase
+touched) found one further real inaccuracy in the Part 4 README fix
+itself (Skills/`/discovery`/`.mdc` rules were wrongly described as
+gitignored, when this repository actually tracks and commits them) —
+corrected (`672881d`). Documentation-accuracy and coding-context-
+advantage reported as two separate, independently-run results
+throughout, never merged into one verdict.
+
+**Phase retro filed** (`planning/retros/phase-80-codecompass-documentation-reconstruction.md`,
+`78fdf35`), naming the coding-context-packet FAIL as this phase's single
+most important methodological result. Two candidate learnings
+(`L-079`/`L-080`) triaged by `knowledge-curator` and **both promoted**:
+`L-080` landed in `planning/agent-led-workflow.md` step 6 (never
+construct a multi-line `git commit -m` message containing backtick-
+quoted code identifiers as an interpolated shell string — discovered
+mid-phase when exactly this corrupted a real commit, fixed via
+`git commit --amend -F` before it reached `origin`); `L-079` landed in
+`planning/v1-redefinition/context-quality-evaluation.md` §1 Ground rules
+(a documentation-accuracy check and a coding-context-advantage check are
+not substitutes for each other, since their own ground truth operates at
+different levels of granularity) (`5344e5d`).
+
+An independent `release-phase-auditor` completion audit against this
+exact state (`5344e5d`) returned **FAIL** — one genuine, well-evidenced
+blocking finding: this file (`planning/CONTEXT.md`) had not been synced
+past Part 3's own completion (last synced `8ab50e0`), so its own
+sections contradicted the phase's real, independently-re-verified final
+state (every other Part 1-4 claim above was independently re-confirmed
+accurate by that same audit, including re-cloning the exercise-2 bundle
+to confirm 17 commits, re-reading `cli.py` directly to confirm the
+packet-evaluation's central claim, and re-cloning `codecompass-template`
+to confirm the push). This file is the fix for that finding — a re-audit
+against the commit that lands it is the next concrete step before the
+terminal `done` flip.
 
 ---
 
@@ -347,12 +394,15 @@ strategic exit decision either way.
 
 ## What was just completed
 
-**Phase 80, Part 1 — the two further Phase 79 defects described above —
-done, committed `a1f12b3`/`024efcd`.** Full test suite (34/34 in
-`tests/test_check_knowledge_base.py`), `ruff check .`, and
-`check_knowledge_base.py --strict` all clean after both fixes (one
-expected, unchanged informational divergence finding on the main
-project's own corpus). Parts 2-4 not yet started.
+**Phase 80 (CodeCompass-wide documentation reconstruction + lightweight
+template refresh) — all four parts done; a first completion-audit pass
+FAILed on exactly this file being unsynced, now fixed by this update.**
+See "Current phase" above for full detail on all four parts. Full test
+suite (767 passed, 2 skipped), `ruff check .`, and both strict doc
+checkers clean throughout the whole phase. Retro filed; both candidate
+learnings (`L-079`/`L-080`) promoted and landed. Not yet marked `done` on
+`planning/ROADMAP.md` — awaiting a clean re-audit against the commit
+that lands this file's own correction, per `CLAUDE.md` §5.
 
 **Phase 79 — Clean-room conceptual understanding + documentation
 reconstruction — `done` (historical; see above for Phase 80's own
@@ -563,17 +613,18 @@ above). Full report:
 
 ## Next concrete step
 
-**Phase 80, Part 2**: the broader CodeCompass-wide documentation
-reconstruction (plan file §§2-6) — a freshness review of the existing
-`docs/domain/` corpus, new research for any named coverage category not
-yet Claim-backed, a frozen project-wide snapshot, a model-blind
-`implementation-reconstructor` dispatch against CodeCompass's own core
-(CLI/sync/graph/adapter pattern), a comparison, a fresh documentation
-draft staged before reconciliation, and reconciliation/publication. Then
-Part 3 (lighter-weight `codecompass-template` refresh) and Part 4
-(verification/closeout for both repositories, separate workflow-
-completion and strict-isolation verdicts). Full detail:
-`planning/phase-80-codecompass-documentation-reconstruction.md`.
+**Phase 80 is functionally complete (all four parts) but not yet marked
+`done`.** A first independent `release-phase-auditor` completion audit
+(`planning/retros/_audit-phase-80.md`) returned **FAIL** on exactly one
+finding — this file (`planning/CONTEXT.md`) unsynced past Part 3 — with
+every other Part 1-4 claim independently re-verified accurate. This
+update is that fix. Next: a fresh `release-phase-auditor` re-audit
+against the commit that lands this file's own correction; if it returns
+PASS or PASS WITH NON-BLOCKING OBSERVATIONS, the terminal
+`roadmap-context-curator` reconciliation flips Phase 80's `planning/ROADMAP.md`
+row to `done` (the narrow §5 three-target exemption covers that one
+commit only) and the phase's commits are pushed to `origin` per §6.
+Full plan: `planning/phase-80-codecompass-documentation-reconstruction.md`.
 
 Phase 78's twice-drafted plan still awaits direct user review (unchanged
 by Phase 80, per direct instruction) — see
@@ -582,7 +633,6 @@ for its own next-step detail when resumed.
 
 Per `CLAUDE.md` §6, Phases 75, 76 (including its corrective pass), 77,
 and 79 are fully closed and already pushed to `origin` — no further
-action needed on any of them. Phase 80's own commits so far
-(`a1f12b3`/`024efcd`/`d53a25f`) are **not yet pushed** — pending the
-phase's own DoD gate per §6, which has not yet passed (the phase is
-still in progress).
+action needed on any of them. Phase 80's own commits are **not yet
+pushed** — pending its own DoD gate per §6, which has not yet passed
+(awaiting the re-audit above).
