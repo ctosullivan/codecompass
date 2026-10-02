@@ -8,11 +8,22 @@ session-resumption, not a project history.
 ## Current phase
 
 **Phase 80 (CodeCompass-wide documentation reconstruction + lightweight
-template refresh) is `in progress`** — direct user request, 2026-10-02,
+template refresh) is `done`** — direct user request, 2026-10-02,
 approved to proceed directly into implementation, no planning
-round-trip. Full plan: `planning/phase-80-codecompass-documentation-reconstruction.md`.
-Full initiating prompt saved verbatim:
-`planning/phase-80-documentation-reconstruction-prompt.md`.
+round-trip. Independent `release-phase-auditor` completion audit: first
+pass **FAIL** on one finding (this file unsynced past Part 3, every
+other claim independently re-verified accurate,
+`planning/retros/_audit-phase-80.md`), fixed, re-audited **PASS**
+(`planning/retros/_audit-phase-80-reaudit.md`). Terminal
+`roadmap-context-curator` reconciliation (this update) flips
+`planning/ROADMAP.md`'s Phase 80 row to `done` and the plan file's own
+Status line, per `CLAUDE.md` §5's narrow three-target exemption. Fully
+closed; commits for both repositories pushed to their own `origin`
+immediately after this reconciliation, per §6. Full plan:
+`planning/phase-80-codecompass-documentation-reconstruction.md`. Full
+initiating prompt saved verbatim:
+`planning/phase-80-documentation-reconstruction-prompt.md`. Retro:
+`planning/retros/phase-80-codecompass-documentation-reconstruction.md`.
 
 **Part 1 (two further Phase 79 defects, found by direct user review) is
 done:**
@@ -613,26 +624,17 @@ above). Full report:
 
 ## Next concrete step
 
-**Phase 80 is functionally complete (all four parts) but not yet marked
-`done`.** A first independent `release-phase-auditor` completion audit
-(`planning/retros/_audit-phase-80.md`) returned **FAIL** on exactly one
-finding — this file (`planning/CONTEXT.md`) unsynced past Part 3 — with
-every other Part 1-4 claim independently re-verified accurate. This
-update is that fix. Next: a fresh `release-phase-auditor` re-audit
-against the commit that lands this file's own correction; if it returns
-PASS or PASS WITH NON-BLOCKING OBSERVATIONS, the terminal
-`roadmap-context-curator` reconciliation flips Phase 80's `planning/ROADMAP.md`
-row to `done` (the narrow §5 three-target exemption covers that one
-commit only) and the phase's commits are pushed to `origin` per §6.
-Full plan: `planning/phase-80-codecompass-documentation-reconstruction.md`.
+**Phase 80 is `done`, fully closed.** `planning/ROADMAP.md`'s Phase 80
+row and this file's own "Current phase" section were both flipped in the
+same terminal reconciliation commit. No further action needed on Phase
+80 itself.
 
-Phase 78's twice-drafted plan still awaits direct user review (unchanged
-by Phase 80, per direct instruction) — see
+**Phase 78's twice-drafted plan still awaits direct user review**
+(unchanged by Phase 80, per direct instruction) — see
 `planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`
-for its own next-step detail when resumed.
+for its own next-step detail when resumed. That remains the next
+concrete step for active roadmap work.
 
 Per `CLAUDE.md` §6, Phases 75, 76 (including its corrective pass), 77,
-and 79 are fully closed and already pushed to `origin` — no further
-action needed on any of them. Phase 80's own commits are **not yet
-pushed** — pending its own DoD gate per §6, which has not yet passed
-(awaiting the re-audit above).
+79, and now 80 are fully closed and pushed to `origin` — no further
+action needed on any of them.

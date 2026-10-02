@@ -1,8 +1,10 @@
 # Phase 80 — CodeCompass-wide documentation reconstruction + lightweight template refresh
 
-**Status: approved, proceeding directly into implementation per direct
-user instruction — no further planning round-trip.** Direct user
-request, 2026-10-02. Full initiating prompt saved verbatim:
+**Status: done (2026-10-02).** All four parts complete; independent
+`release-phase-auditor` completion audit PASS after one fix
+(`planning/retros/_audit-phase-80.md`, `_audit-phase-80-reaudit.md`).
+Retro: `planning/retros/phase-80-codecompass-documentation-reconstruction.md`.
+Direct user request, 2026-10-02. Full initiating prompt saved verbatim:
 `planning/phase-80-documentation-reconstruction-prompt.md`. Builds on
 and reuses Phase 79's own clean-room methodology
 (`decisions/0066`/`0067`/`0068`) and its own established workflow
