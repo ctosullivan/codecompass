@@ -8,8 +8,7 @@ session-resumption, not a project history.
 ## Current phase
 
 **Phase 78 (Priority A backlog rationalisation + second Ledgerkit
-validation trial) — trial run, Priority A closed, standing on the
-standard closeout sequence before the terminal `done` flip.** Direct
+validation trial) is `done`.** Direct
 user request, 2026-10-02 ("Implement phase 78 plan"). §5's trial ran to
 an applicable result: seed-then-fork Ledgerkit scratch clones,
 fixture-equivalence confirmed clean, Stage 1 discovery/design comparison
@@ -32,10 +31,19 @@ backlog funding explicitly unaffected. Phase retro filed, two candidate
 learnings triaged (`L-081` promoted into
 `planning/v1-redefinition/reference-project-protocol.md` §2.2, `L-082`
 retained), a docs-drift audit found NO DRIFT (one trivial citation-line
-staleness fixed, unrelated to this phase's own findings). Not yet marked
-`done` — awaiting the independent `release-phase-auditor` completion
-audit and terminal `roadmap-context-curator` reconciliation. Full plan:
+staleness fixed, unrelated to this phase's own findings). Independent
+`release-phase-auditor` completion audit: **PASS WITH NON-BLOCKING
+OBSERVATIONS** (`planning/retros/_audit-phase-78.md`) — one missing
+durable artifact (`planning/retros/_drift-audit-phase-78.md`, the drift
+audit's own work was genuine, only its report file was never persisted)
+backfilled before this terminal reconciliation. Terminal
+`roadmap-context-curator` reconciliation (this update) flips
+`planning/ROADMAP.md`'s Phase 78 row to `done` and the plan file's own
+Status line, per `CLAUDE.md` §5's narrow three-target exemption. Fully
+closed; commits pushed to `origin` immediately after this reconciliation,
+per §6. Full plan:
 `planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
+Retro: `planning/retros/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
 
 ---
 
@@ -439,12 +447,13 @@ strategic exit decision either way.
 ## What was just completed
 
 **Phase 78 (Priority A backlog rationalisation + second Ledgerkit
-validation trial) — trial run, Priority A closed via `decisions/0069`,
-standing on the independent completion audit before the terminal `done`
-flip.** See "Current phase" above for full detail. Retro filed;
-`L-081` promoted, `L-082` retained; docs-drift audit NO DRIFT (one
-trivial citation fix). `planning/ROADMAP.md`'s Phase 78 row still reads
-`in progress` — correct, not yet flipped to `done` pending the audit.
+validation trial) — `done`, fully closed.** Priority A closed via
+`decisions/0069`. See "Current phase" above for full detail. Retro
+filed; `L-081` promoted, `L-082` retained; docs-drift audit NO DRIFT
+(one trivial citation fix). Independent completion audit **PASS WITH
+NON-BLOCKING OBSERVATIONS**, one missing artifact backfilled.
+`planning/ROADMAP.md`'s Phase 78 row flipped to `done` by the terminal
+reconciliation; commits pushed to `origin`.
 
 **Phase 80 (CodeCompass-wide documentation reconstruction + lightweight
 template refresh) — `done`, fully closed.** See "Current phase" above
@@ -682,16 +691,19 @@ row and this file's own "Current phase" section were both flipped in the
 same terminal reconciliation commit. No further action needed on Phase
 80 itself.
 
-**Phase 78's own trial has run and Priority A is closed** (see "Current
-phase" above) — next concrete step: dispatch an independent
-`release-phase-auditor` completion audit against the phase's full
-commit range, then (if PASS or PASS WITH NON-BLOCKING OBSERVATIONS) the
-terminal `roadmap-context-curator` reconciliation flipping
-`planning/ROADMAP.md`'s Phase 78 row to `done`.
+**Phase 78 is `done`, fully closed.** `planning/ROADMAP.md`'s Phase 78
+row and this file's own "Current phase" section were both flipped in the
+same terminal reconciliation commit. No further action needed on Phase
+78 itself.
 
 Per `CLAUDE.md` §6, Phases 75, 76 (including its corrective pass), 77,
-79, and now 80 are fully closed and pushed to `origin` — no further
+78, 79, and 80 are fully closed and pushed to `origin` — no further
 action needed on any of them.
+
+**Phase 78's own closure leaves no active roadmap phase in progress.**
+The next open item requiring a decision is Priorities B/C/E/F (all
+`decisions/0062`'s own "not yet planned" state, unaffected by Priority
+A's own closure) — none currently claimed by a drafted plan.
 
 A new unscheduled backlog item (`planning/strict-isolation-for-documentation-reconstruction.md`,
 recorded 2026-10-02) is **not** a next concrete step to execute — it is

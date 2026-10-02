@@ -1,7 +1,12 @@
 # Phase 78 — Priority A backlog rationalisation + second Ledgerkit validation trial
 
-**Status: in progress. Implementation approved and begun 2026-10-02 at
-direct user request ("Implement phase 78 plan").** §0's "verified current
+**Status: done (2026-10-02).** The trial ran to an applicable result;
+§7.2 Branch A fired (Priority A closed, `decisions/0069`); independent
+`release-phase-auditor` completion audit PASS WITH NON-BLOCKING
+OBSERVATIONS (`planning/retros/_audit-phase-78.md`). Retro:
+`planning/retros/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
+Implementation approved and begun 2026-10-02 at
+direct user request ("Implement phase 78 plan"). §0's "verified current
 state" was re-confirmed live at the start of implementation: CodeCompass
 HEAD `d0d8709` (Phases 79/80 and the strict-isolation backlog item have
 landed since this plan was written; none bear on this phase's own scope
