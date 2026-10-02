@@ -95,6 +95,7 @@ GATE DB input: **Q1 partially, Q2 yes, Q3 no.**
 
 | 01 | `9c33e37` | Genuine task: hledger 1.52 query-term semantics (`acct:`/`desc:`/`date:`/`depth:`/`status:`/`not:`) — Stage C Phase 1, reconfirmed live (Milestone-5-style roadmap movement happened again: Ledgerkit's Stage B closed and Stage C opened between Phase 45 and Phase 46) | `b0717ee` | **FAIL** | LOW (negative) | [`ledgerkit/01-query-semantics.md`](ledgerkit/01-query-semantics.md) |
 | 01 (Phase 51 re-run — **GATE DC**) | `05218e3` | Same task, re-run after Phase 49's fix; also checked a brand-new file (`17-query-semantics-brief.md`) that didn't exist at the original pin, to test generalisation | `cea0b1c` | PASS WITH GAPS *(moved from FAIL)* | LOW, not negative *(moved off negative)* | [`ledgerkit/01-query-semantics.md`](ledgerkit/01-query-semantics.md) (Phase 51 section, appended) |
+| 06 (Phase 78 — second Priority A trial, `CG-001`) | `6c90b4ca3e6c10951cb400e43db4b90bfccc5909` | Genuine, currently-unimplemented Stage D task (journal-comment `ReportSpec` parsing) — discovery/design comparison, baseline (no CodeCompass) vs. treatment (full current CodeCompass) | `d0d8709` | PASS WITH GAPS | LOW | [`ledgerkit/06-stage-d-reportspec-priority-a-validation.md`](ledgerkit/06-stage-d-reportspec-priority-a-validation.md) |
 
 **Row 01 is CodeCompass's second FAIL verdict, same failure shape as
 Phase 45's Q2 but now on live, in-progress work rather than a spot
@@ -108,6 +109,25 @@ hledger 1.52 behaviour itself — filed as **`CG-003`** (no glob fix could
 ever cover it). The retrieval-cost angle of using an external manual as a
 fallback (two failed `WebFetch` attempts on a large page) filed as
 **`L-017`**.
+
+**Row 06 (Phase 78) is the second, differently-shaped Priority A trial
+Phase 75's own retro and Phase 77's own deferred-item note both
+recommended before any `CG-001`-relationship-capability funding
+decision.** A three-stage design (discovery/design comparison →
+independent evaluation → optional shared-contract implementation check,
+the last skipped here on the evaluator's own documented call) tested, on
+a genuine Stage D task, whether CodeCompass's existing surfaces could
+answer `CG-001`'s own producer/consumer-relationship question even in
+combination — confirmed they genuinely cannot (`query relations` errors
+on both the relevant symbols) — but found the treatment agent
+reconstructed the real chain at no greater cost than the baseline's own
+direct exploration, the pre-registered `not-recurred` bar (Phase 78's
+plan §4), independently re-confirmed by a second, separate
+`knowledge-curator` triage pass. This result closed Priority A as a
+strategic track (`decisions/0069`) — `CG-001` itself stays `candidate`,
+unaffected in status by this one trial, per its own established
+edge-recurrence discipline. Full detail:
+`planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
 
 **GATE DC (Phase 51) — did Phase 49's fix work?** Yes, on the narrow
 dimension it targeted: both `00.Q2` and `01` moved from **FAIL** to
@@ -136,3 +156,13 @@ phases.)*
   committed, pushed, or proposed upstream. No CodeCompass repair was made
   to force a result — the near-empty baseline and the `dev-docs/` gap
   were recorded exactly as found.
+- **Phase 78:** confirmed. Two disposable scratch clones
+  (`ledgerkit-baseline`, `ledgerkit-treatment`), seed-then-forked at the
+  frozen commit, outside this repository's own tree, never added to
+  `vendor.toml`/`context-graph.db`/git here, never committed or pushed to
+  Ledgerkit's own real upstream under any circumstance. No implementation
+  code was written in either clone (discovery/design only, per Stage 1's
+  own instruction); Stage 3 (which would have dispatched fresh
+  implementation agents) was not run, per the independent evaluator's own
+  documented decision that it wasn't needed. Both clones deleted after
+  their evaluation reports were persisted (§11).
