@@ -1957,3 +1957,35 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   touches REPL routing, transport, or shared-agent entry points —
   unaffected. §3's table is re-confirmed accurate at closeout; nothing
   requires updating.
+- **curation (Phase 78 corrective amendment, 2026-10-02,
+  `decisions/0070` — supersedes the Priority A closure the above entry's
+  own evidence fed into, not this entry's own `candidate` status, which
+  is unaffected by this correction either):** a post-completion review
+  found the Phase 78 trial's own `not-recurred` classification (above)
+  rested on a logically insufficient rule — relative cost-parity between
+  treatment and baseline, not absolute materiality (would a plausible
+  relationship capability have actually avoided real, avoidable work) —
+  and that the trial's own producer/consumer chain mixed one genuinely
+  existing relationship with four proposed, not-yet-existing ones no
+  indexing capability could ever discover. A fresh, independent
+  re-evaluation of the *existing* trial evidence (no re-run; full detail
+  `planning/reference-projects/ledgerkit/07-cg001-corrective-reevaluation.md`)
+  confirmed the one genuinely-tested existing relationship
+  (`ReportSpec`/`ReportSection` ↔ `balance_from_spec`) still reads
+  `not-recurred` under the corrected, absolute-materiality rule — but
+  found the trial's own **applicability was only partial** (one of five
+  chain links genuinely existing, the rest proposed design work), which
+  the corrective amendment's own decision structure treats as
+  insufficient to carry a strategic Priority A closure decision, whichever
+  way the one thin tested slice reads. **This entry's own `status` field
+  is explicitly, symmetrically unaffected by this correction** — the
+  symmetric evidence rule `decisions/0070` establishes holds that a
+  differently-shaped instance of this entry's own broader §2.6 hypothesis
+  tests the hypothesis at the track level only, never this entry's own
+  status field, regardless of which direction its own result reads. What
+  *does* change, at the track level: Priority A is reopened (not closed)
+  pending one additional, better-targeted trial whose task exercises only
+  already-existing relationships — named, not run, in
+  `planning/phase-78-amendment-followup-plan.md`. `decisions/0069`
+  (the original closure) is superseded by `decisions/0070`, preserved
+  unedited as historical record.

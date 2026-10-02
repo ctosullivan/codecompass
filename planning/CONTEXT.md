@@ -7,8 +7,45 @@ session-resumption, not a project history.
 
 ## Current phase
 
+**Phase 78's own exit decision has been corrected by amendment, 2026-10-02
+(`decisions/0070`, direct user request, following a post-completion
+review of `decisions/0069`).** Phase 78 itself (the trial's own
+execution, evidence, and standard closeout sequence, narrated in full
+below) remains `done` and is not reopened or re-run — only the exit
+decision's own conclusion, drawn from that evidence, is corrected. The
+original `CG-001` `not-recurred` rule relied on relative cost-parity
+(treatment vs. baseline), not absolute materiality (would a plausible
+relationship capability have actually avoided real, avoidable work) —
+logically insufficient, since both arms could incur the same cost
+precisely because the capability is missing. A fresh, independent
+re-evaluation of the *existing* trial evidence (no re-run; full detail
+`planning/reference-projects/ledgerkit/07-cg001-corrective-reevaluation.md`)
+confirmed the one genuinely-existing relationship the trial actually
+tested (`ReportSpec`/`ReportSection` ↔ `balance_from_spec`) still reads
+`not-recurred` under the corrected rule, but found the trial's own
+**applicability was only partial** — four of its five derived chain
+links were proposed, not-yet-existing design work no capability could
+ever discover. Per the corrective amendment's own decision structure, a
+partial applicability finding is treated the same as inconclusive for
+deciding Priority A's own exit question. **Priority A is reopened, not
+closed**: further capability investment is not currently justified by
+demonstrated marginal benefit — a materially weaker, more honest claim
+than "the success criterion is met" — pending one additional, better-
+targeted trial exercising only already-existing relationships, named
+(not run) in `planning/phase-78-amendment-followup-plan.md`. `CG-001`
+stays `candidate`, explicitly unaffected by this correction either way,
+per a new symmetric evidence rule: a differently-shaped instance of its
+own broader hypothesis tests the hypothesis at the track level only,
+never this entry's own status, regardless of which direction its own
+result reads. `decisions/0069` is superseded by `decisions/0070`,
+preserved unedited as historical record. Full corrective detail:
+`planning/retros/phase-78-amendment-corrective-exit-decision.md`.
+
+---
+
 **Phase 78 (Priority A backlog rationalisation + second Ledgerkit
-validation trial) is `done`.** Direct
+validation trial) is `done`** (historical account below — see the
+correction above for what has since changed). Direct
 user request, 2026-10-02 ("Implement phase 78 plan"). §5's trial ran to
 an applicable result: seed-then-fork Ledgerkit scratch clones,
 fixture-equivalence confirmed clean, Stage 1 discovery/design comparison
@@ -446,14 +483,17 @@ strategic exit decision either way.
 
 ## What was just completed
 
-**Phase 78 (Priority A backlog rationalisation + second Ledgerkit
-validation trial) — `done`, fully closed.** Priority A closed via
-`decisions/0069`. See "Current phase" above for full detail. Retro
-filed; `L-081` promoted, `L-082` retained; docs-drift audit NO DRIFT
-(one trivial citation fix). Independent completion audit **PASS WITH
-NON-BLOCKING OBSERVATIONS**, one missing artifact backfilled.
-`planning/ROADMAP.md`'s Phase 78 row flipped to `done` by the terminal
-reconciliation; commits pushed to `origin`.
+**Phase 78's exit decision — corrected by amendment.** Priority A's
+original closure (`decisions/0069`) is superseded by `decisions/0070`:
+reopened, not closed, after a fresh independent re-evaluation of the
+existing trial evidence found the original `CG-001` rule logically
+insufficient and the trial's own applicability only partial. See
+"Current phase" above for full detail. `CG-001` stays `candidate`,
+unaffected either way, under a new symmetric evidence rule. A narrowly-
+scoped follow-up trial candidate is named (not run) for review:
+`planning/phase-78-amendment-followup-plan.md`. Phase 78 itself remains
+`done` — its own trial execution, evidence, and closeout sequence are
+unaffected and not reopened.
 
 **Phase 80 (CodeCompass-wide documentation reconstruction + lightweight
 template refresh) — `done`, fully closed.** See "Current phase" above
@@ -691,14 +731,23 @@ row and this file's own "Current phase" section were both flipped in the
 same terminal reconciliation commit. No further action needed on Phase
 80 itself.
 
-**Phase 78 is `done`, fully closed.** `planning/ROADMAP.md`'s Phase 78
-row and this file's own "Current phase" section were both flipped in the
-same terminal reconciliation commit. No further action needed on Phase
-78 itself.
+**Phase 78 itself is `done`, fully closed and unaffected by this
+correction.** Its own exit decision has been corrected by amendment
+(`decisions/0070`, see "Current phase" above) — Priority A is now
+**reopened**, not closed. The next concrete step for Priority A is a
+human/lead decision on whether to approve and run the narrowly-scoped
+follow-up trial sketched (not started) in
+`planning/phase-78-amendment-followup-plan.md` — an existing-relationship-
+only task (Ledgerkit's own `stats` query-support extension), designed
+specifically to avoid repeating the original trial's own partial-
+applicability flaw. Not approved, not scheduled, no phase number
+assigned.
 
 Per `CLAUDE.md` §6, Phases 75, 76 (including its corrective pass), 77,
 78, 79, and 80 are fully closed and pushed to `origin` — no further
-action needed on any of them.
+action needed on any of them. Phase 78's own corrective-amendment
+commits are **not yet pushed** — pending this amendment's own DoD gate
+(an independent audit of the corrective decision itself).
 
 **Phase 78's own closure leaves no active roadmap phase in progress.**
 The next open item requiring a decision is Priorities B/C/E/F (all

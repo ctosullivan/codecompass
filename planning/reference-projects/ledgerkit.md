@@ -129,6 +129,24 @@ unaffected in status by this one trial, per its own established
 edge-recurrence discipline. Full detail:
 `planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
 
+**Corrective amendment, 2026-10-02 (`decisions/0070`, supersedes
+`decisions/0069`)**: a post-completion review found Row 06's own
+`not-recurred` rule relied on relative cost-parity (treatment vs.
+baseline), not absolute materiality, and that its own producer/consumer
+chain mixed one genuinely existing relationship
+(`ReportSpec`/`ReportSection` ↔ `balance_from_spec`) with four proposed,
+not-yet-existing ones no capability could discover — a fresh, independent
+re-evaluation of the existing evidence
+(`ledgerkit/07-cg001-corrective-reevaluation.md`) confirmed the one
+genuinely-tested relationship still reads `not-recurred`, but found the
+trial's own applicability only *partial*, insufficient to carry Priority
+A's own closure decision. **Priority A is reopened, not closed.** A
+narrowly-scoped follow-up candidate — Ledgerkit's own backlogged `stats`
+query-support extension (every relevant relationship already exists
+today, unlike Row 06's own task) — is named, not run, in
+`planning/phase-78-amendment-followup-plan.md`, pending review. Full
+detail: `planning/retros/phase-78-amendment-corrective-exit-decision.md`.
+
 **GATE DC (Phase 51) — did Phase 49's fix work?** Yes, on the narrow
 dimension it targeted: both `00.Q2` and `01` moved from **FAIL** to
 **PASS WITH GAPS**, and "would this have misled the agent?" moved from

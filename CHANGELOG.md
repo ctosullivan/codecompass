@@ -226,6 +226,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Phase 78 amendment** (corrective, no `src/` change): a post-completion
+  review found Phase 78's own `CG-001` `not-recurred` rule logically
+  insufficient — it relied on relative cost-parity between treatment and
+  baseline, not absolute materiality (both arms could incur the same
+  substantial cost precisely because the capability is missing, which
+  proves nothing about whether the capability would help) — and found
+  the trial's own producer/consumer chain mixed one genuinely existing
+  relationship with four proposed, not-yet-existing ones no capability
+  could ever discover. A fresh, independent re-evaluation of the
+  *existing* trial evidence (no re-run) confirmed the one genuinely-
+  tested existing relationship still reads `not-recurred` under the
+  corrected rule, but found the trial's own applicability only *partial*
+  — insufficient, under the corrected decision structure, to carry a
+  strategic closure decision. **`decisions/0070` supersedes
+  `decisions/0069`: Priority A is reopened, not closed** — further
+  capability investment not currently justified by demonstrated marginal
+  benefit, pending one additional, better-targeted trial (an existing-
+  relationship-only task, named but not run) before any real exit
+  decision is made. `CG-001` stays `candidate`, explicitly unaffected by
+  this correction either way, under a new symmetric evidence rule
+  (a differently-shaped instance tests the broader hypothesis at the
+  track level only, never this entry's own status, regardless of which
+  direction its own result reads). Phase 78's own trial execution and
+  evidence are unaffected and preserved unaltered.
 - **Phase 78** (Priority A backlog rationalisation + second Ledgerkit
   validation trial, no `src/` change): a second, differently-shaped
   Ledgerkit trial — a genuine, currently-unimplemented Stage D task
