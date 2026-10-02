@@ -7,6 +7,22 @@ session-resumption, not a project history.
 
 ## Current phase
 
+**Phase 78 (Priority A backlog rationalisation + second Ledgerkit
+validation trial) is `in progress`** — direct user request, 2026-10-02
+("Implement phase 78 plan"), approving the plan that had been `planned`
+since 2026-09-29. §0's verified-current-state re-confirmed live at
+implementation start: CodeCompass HEAD `d0d8709`; Ledgerkit unchanged at
+`6c90b4ca3e6c10951cb400e43db4b90bfccc5909`; the §5.1 task (journal-comment
+`ReportSpec` parsing) re-verified still unimplemented. Executing §5's
+trial design now: seed-then-fork Ledgerkit scratch clones, fixture-
+equivalence check, Stage 1 discovery/design comparison (baseline vs.
+treatment), Stage 2 independent `context-evaluator` assessment (the
+`CG-001` three-outcome determination), optionally Stage 3, then §7.2's
+Priority A exit-decision gate via independent `knowledge-curator` triage.
+Full plan: `planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
+
+---
+
 **Phase 80 (CodeCompass-wide documentation reconstruction + lightweight
 template refresh) is `done`** — direct user request, 2026-10-02,
 approved to proceed directly into implementation, no planning
@@ -642,11 +658,10 @@ row and this file's own "Current phase" section were both flipped in the
 same terminal reconciliation commit. No further action needed on Phase
 80 itself.
 
-**Phase 78's twice-drafted plan still awaits direct user review**
-(unchanged by Phase 80, per direct instruction) — see
-`planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`
-for its own next-step detail when resumed. That remains the next
-concrete step for active roadmap work.
+**Phase 78 is now `in progress`** (see "Current phase" above) — its
+twice-drafted plan was approved by direct user instruction 2026-10-02.
+Next concrete step: set up the Ledgerkit seed-then-fork scratch clones
+and dispatch Stage 1 (§5.3.1).
 
 Per `CLAUDE.md` §6, Phases 75, 76 (including its corrective pass), 77,
 79, and now 80 are fully closed and pushed to `origin` — no further

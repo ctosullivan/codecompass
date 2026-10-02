@@ -1,8 +1,17 @@
 # Phase 78 — Priority A backlog rationalisation + second Ledgerkit validation trial
 
-**Status: planned. Planning only — implementation (dispatching agents,
-touching Ledgerkit, changing CodeCompass code) does not begin until this
-plan is reviewed and approved.**
+**Status: in progress. Implementation approved and begun 2026-10-02 at
+direct user request ("Implement phase 78 plan").** §0's "verified current
+state" was re-confirmed live at the start of implementation: CodeCompass
+HEAD `d0d8709` (Phases 79/80 and the strict-isolation backlog item have
+landed since this plan was written; none bear on this phase's own scope
+or re-open it); Ledgerkit still at the identical frozen commit
+`6c90b4ca3e6c10951cb400e43db4b90bfccc5909`, working tree clean, no
+advance; the §5.1 task re-verified still unimplemented (`grep` for `;
+report`/`end report` across `parser.py`/`reports.py`/`cli.py`: zero
+matches; `balance_from_spec` still unwired from `cli.py`); Ledgerkit's
+own test suite re-run directly, 906 passed / 29 skipped (pandas-optional,
+pre-existing, unrelated).
 
 Direct user request, 2026-09-29 (amended 2026-09-29, second revision, to
 fix a real exit-gate contradiction, an unresolved backlog-classification
