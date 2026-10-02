@@ -8,6 +8,81 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-082 — the three-stage comparative-trial structure (discovery/design → evaluator-sufficient evaluation → evaluator-gated optional implementation check) works cleanly on its first real exercise
+
+- **origin:** Phase 78 (Priority A backlog rationalisation + second
+  Ledgerkit validation trial)
+- **date:** 2026-10-02
+- **project_revision:** `7e4907c`
+- **observation:** Phase 78's plan (second revision) restructured an
+  originally confounded "design-and-implement independently, then
+  compare" trial design into three explicit stages specifically to
+  prevent differing implementation choices being mistaken for differing
+  context quality: Stage 1 (discovery/design comparison only, no code),
+  Stage 2 (an independent evaluation sufficient on its own to decide the
+  exit question), and an optional Stage 3 (a shared, human-approved
+  implementation contract) whose go/no-go is explicitly the Stage 2
+  evaluator's own call, never the lead's. On this first real run, the
+  evaluator declined Stage 3 with a specific, evidenced reason (the
+  `CG-001` question was already decisively answered by Stage 2's own
+  independent re-derivation; the remaining open questions from Stage 1
+  were product-design uncertainties unrelated to CodeCompass's own
+  availability) rather than defaulting to running it "to be thorough" —
+  the delegation worked as designed, not just in principle.
+- **evidence:**
+  `planning/reference-projects/ledgerkit/06-stage-d-reportspec-priority-a-validation.md`'s
+  own "Stage 3 decision" section; cross-checked independently by the
+  separate `knowledge-curator` §7.2 triage
+  (`planning/reference-projects/ledgerkit/06-priority-a-exit-decision-triage.md`),
+  which reviewed the same evidence and reached the same conclusion via a
+  different evidence path (direct schema/code re-reading plus both
+  agents' own contemporaneous research traces) rather than simply
+  trusting Stage 2's own report.
+- **classification:** workflow
+- **status:** candidate
+- **recurrence:** first occurrence of this specific three-stage structure
+  being run for real (it was designed, not yet exercised, at the time
+  Phase 78's plan was amended).
+- **moves forward when:** a future comparative CodeCompass-advantage
+  trial (any reference project, any task) adopts this three-stage shape
+  as its own default template rather than re-deriving a trial structure
+  from scratch each time.
+
+### L-081 — for a reference-project trial with no Anthropic API key configured, use `codecompass --budget 0` directly, not `--yes`
+
+- **origin:** Phase 78 (Priority A backlog rationalisation + second
+  Ledgerkit validation trial), treatment-clone setup
+- **date:** 2026-10-02
+- **project_revision:** `bd8f48c`
+- **observation:** running bare `codecompass --yes` in the Ledgerkit
+  treatment scratch clone (zero third-party dependencies tracked)
+  attempted real AI-enrichment calls for 388 doc-relationship mentions
+  (enrichment is not gated on vendor count — zero tracked vendors does
+  not imply zero enrichment candidates) and failed with an unrelated-
+  looking Anthropic SDK error (`TypeError: "Could not resolve
+  authentication method..."`) before ever reaching the actual, intended
+  budget-estimate message. Re-running with `--budget 0` instead produced
+  the real, informative message directly ("estimated cost $0.16 for 8
+  batch(es)... exceeds --budget $0.00") and the deterministic graph
+  rebuild (first-party source/symbol indexing, the generated `.claude/`
+  artifacts) completed successfully regardless, since enrichment is a
+  separate, later pipeline step that aborting does not block.
+- **evidence:** direct reproduction during Phase 78's own treatment-clone
+  setup — first attempt (`--yes`) failed with the SDK error; second
+  attempt (`--budget 0`) succeeded with the graph rebuild intact and a
+  clean, correctly-worded budget-exceeded message.
+- **classification:** workflow
+- **status:** candidate
+- **recurrence:** first occurrence noticed; the underlying condition
+  (enrichment cost estimation runs regardless of tracked-vendor count,
+  and `--yes` alone does not cap spend) is a standing, mechanical fact
+  about `codecompass`'s own bootstrap sequence, not a one-off fluke — so
+  this will recur identically for any future reference-project dispatch
+  run without a configured API key.
+- **moves forward when:** a future reference-project trial's own setup
+  instructions default to `--budget 0` for any dispatch environment
+  without a configured Anthropic API key, rather than `--yes`.
+
 ### L-080 — never construct a multi-line `git commit -m` message containing backtick-quoted code identifiers as an interpolated shell string
 
 - **origin:** Phase 80 (CodeCompass-wide documentation reconstruction),
