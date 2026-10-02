@@ -8,18 +8,34 @@ session-resumption, not a project history.
 ## Current phase
 
 **Phase 78 (Priority A backlog rationalisation + second Ledgerkit
-validation trial) is `in progress`** — direct user request, 2026-10-02
-("Implement phase 78 plan"), approving the plan that had been `planned`
-since 2026-09-29. §0's verified-current-state re-confirmed live at
-implementation start: CodeCompass HEAD `d0d8709`; Ledgerkit unchanged at
-`6c90b4ca3e6c10951cb400e43db4b90bfccc5909`; the §5.1 task (journal-comment
-`ReportSpec` parsing) re-verified still unimplemented. Executing §5's
-trial design now: seed-then-fork Ledgerkit scratch clones, fixture-
-equivalence check, Stage 1 discovery/design comparison (baseline vs.
-treatment), Stage 2 independent `context-evaluator` assessment (the
-`CG-001` three-outcome determination), optionally Stage 3, then §7.2's
-Priority A exit-decision gate via independent `knowledge-curator` triage.
-Full plan: `planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
+validation trial) — trial run, Priority A closed, standing on the
+standard closeout sequence before the terminal `done` flip.** Direct
+user request, 2026-10-02 ("Implement phase 78 plan"). §5's trial ran to
+an applicable result: seed-then-fork Ledgerkit scratch clones,
+fixture-equivalence confirmed clean, Stage 1 discovery/design comparison
+(both arms independently derived the identical real `parser.py`→`Journal`→
+`reports.py::balance_from_spec`→`cli.py` producer/consumer chain, clean
+read-scope-symmetric boundary checks), Stage 2 independent
+`context-evaluator` assessment — **PASS WITH GAPS, advantage LOW, `CG-001`
+outcome not-recurred** on a confirmed-applicable task (CodeCompass's
+existing surfaces genuinely cannot answer the relationship question —
+`query relations` errors on both symbols, confirmed against the real
+schema — but the treatment agent reconstructed the chain at no greater
+cost than the baseline) — Stage 3 correctly not run (the evaluator's own
+documented call). A second, independent `knowledge-curator` triage
+re-verified this classification from scratch (not a rubber-stamp) and
+confirmed **§7.2 Branch A fires: Priority A is closed as a strategic
+capability-building track** (`decisions/0069`) — `CG-001` itself stays
+`candidate`, unaffected in status, reopenable by new evidence of a
+different, not-yet-tested shape; `CG-010`'s own independent maintenance-
+backlog funding explicitly unaffected. Phase retro filed, two candidate
+learnings triaged (`L-081` promoted into
+`planning/v1-redefinition/reference-project-protocol.md` §2.2, `L-082`
+retained), a docs-drift audit found NO DRIFT (one trivial citation-line
+staleness fixed, unrelated to this phase's own findings). Not yet marked
+`done` — awaiting the independent `release-phase-auditor` completion
+audit and terminal `roadmap-context-curator` reconciliation. Full plan:
+`planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`.
 
 ---
 
@@ -422,6 +438,14 @@ strategic exit decision either way.
 
 ## What was just completed
 
+**Phase 78 (Priority A backlog rationalisation + second Ledgerkit
+validation trial) — trial run, Priority A closed via `decisions/0069`,
+standing on the independent completion audit before the terminal `done`
+flip.** See "Current phase" above for full detail. Retro filed;
+`L-081` promoted, `L-082` retained; docs-drift audit NO DRIFT (one
+trivial citation fix). `planning/ROADMAP.md`'s Phase 78 row still reads
+`in progress` — correct, not yet flipped to `done` pending the audit.
+
 **Phase 80 (CodeCompass-wide documentation reconstruction + lightweight
 template refresh) — `done`, fully closed.** See "Current phase" above
 for full detail on all four parts, including the first completion-audit
@@ -658,10 +682,12 @@ row and this file's own "Current phase" section were both flipped in the
 same terminal reconciliation commit. No further action needed on Phase
 80 itself.
 
-**Phase 78 is now `in progress`** (see "Current phase" above) — its
-twice-drafted plan was approved by direct user instruction 2026-10-02.
-Next concrete step: set up the Ledgerkit seed-then-fork scratch clones
-and dispatch Stage 1 (§5.3.1).
+**Phase 78's own trial has run and Priority A is closed** (see "Current
+phase" above) — next concrete step: dispatch an independent
+`release-phase-auditor` completion audit against the phase's full
+commit range, then (if PASS or PASS WITH NON-BLOCKING OBSERVATIONS) the
+terminal `roadmap-context-curator` reconciliation flipping
+`planning/ROADMAP.md`'s Phase 78 row to `done`.
 
 Per `CLAUDE.md` §6, Phases 75, 76 (including its corrective pass), 77,
 79, and now 80 are fully closed and pushed to `origin` — no further

@@ -226,6 +226,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Phase 78** (Priority A backlog rationalisation + second Ledgerkit
+  validation trial, no `src/` change): a second, differently-shaped
+  Ledgerkit trial — a genuine, currently-unimplemented Stage D task
+  (journal-comment `ReportSpec` parsing), with its evidence bar for
+  `CG-001`'s own first-party-relationship hypothesis fixed in advance —
+  structured as discovery/design comparison (baseline vs. treatment) →
+  an independent `context-evaluator` assessment sufficient on its own to
+  decide the exit question → an optional, evaluator-gated shared-contract
+  implementation check (correctly not run: the evaluator judged the
+  question already decisively answered). Verdict: PASS WITH GAPS,
+  advantage LOW, `CG-001` outcome **not-recurred** on a confirmed-
+  applicable task — CodeCompass's existing surfaces genuinely cannot
+  answer the relationship question (`query relations` errors on both
+  relevant symbols, confirmed against the real schema), but the
+  treatment agent reconstructed the chain at no greater cost than the
+  baseline. Independently re-verified by a second, separate
+  `knowledge-curator` triage before the exit decision was applied — not
+  a rubber-stamp of the evaluator's own report. **`decisions/0069`
+  closes Priority A (task-context completeness) as a strategic
+  capability-building track**: its own success criterion judged met
+  across three structurally different capability areas (Phases 75/76/77)
+  plus this explicit, pre-registered, evidence-checked negative result.
+  `CG-001`'s own inbox entry stays `candidate`, unaffected in status by
+  this one trial, per its own established edge-recurrence discipline.
+  Closure is strategic, not operational — `CG-010`'s own independent
+  Git-topology maintenance-backlog funding and every already-shipped
+  Priority A capability's own ongoing maintenance are explicitly
+  unaffected.
 - **Phase 71**: `README.md` rewritten ground-up against verified
   current v1.0.0 state (status, capabilities, architecture-at-a-glance,
   ecosystems/adapters, realistic Ledgerkit-evaluation positioning).
