@@ -179,9 +179,10 @@ state (every other Part 1-4 claim above was independently re-confirmed
 accurate by that same audit, including re-cloning the exercise-2 bundle
 to confirm 17 commits, re-reading `cli.py` directly to confirm the
 packet-evaluation's central claim, and re-cloning `codecompass-template`
-to confirm the push). This file is the fix for that finding — a re-audit
-against the commit that lands it is the next concrete step before the
-terminal `done` flip.
+to confirm the push). That fix (`2acd63b`) was re-audited and returned
+**PASS** with no further findings (`planning/retros/_audit-phase-80-reaudit.md`),
+after which the terminal `roadmap-context-curator` reconciliation above
+flipped the phase to `done`.
 
 ---
 
@@ -406,14 +407,26 @@ strategic exit decision either way.
 ## What was just completed
 
 **Phase 80 (CodeCompass-wide documentation reconstruction + lightweight
-template refresh) — all four parts done; a first completion-audit pass
-FAILed on exactly this file being unsynced, now fixed by this update.**
-See "Current phase" above for full detail on all four parts. Full test
-suite (767 passed, 2 skipped), `ruff check .`, and both strict doc
-checkers clean throughout the whole phase. Retro filed; both candidate
-learnings (`L-079`/`L-080`) promoted and landed. Not yet marked `done` on
-`planning/ROADMAP.md` — awaiting a clean re-audit against the commit
-that lands this file's own correction, per `CLAUDE.md` §5.
+template refresh) — `done`, fully closed.** See "Current phase" above
+for full detail on all four parts, including the first completion-audit
+pass's one real finding (this file unsynced past Part 3), its fix, and
+the clean re-audit `PASS` that followed. Full test suite (767 passed, 2
+skipped), `ruff check .`, and both strict doc checkers clean throughout
+the whole phase. Retro filed; both candidate learnings (`L-079`/`L-080`)
+promoted and landed. `planning/ROADMAP.md`'s Phase 80 row flipped to
+`done` by the terminal reconciliation; commits pushed to `origin` for
+both repositories.
+
+**Separately, a new unscheduled backlog item was recorded** (direct user
+request, 2026-10-02, planning-only, no implementation):
+`planning/strict-isolation-for-documentation-reconstruction.md` —
+strict mechanical isolation for the clean-room documentation-
+reconstruction methodology's isolation-sensitive stages, linking rather
+than duplicating the existing Tier-1-failed/Tier-2-best-effort isolation
+evidence (`decisions/0066`, `planning/knowledge/first-party-source-symbols/isolation/`).
+Cross-referenced from `planning/ROADMAP.md`'s Priority D row and its
+"Backlog, not absorbed into A-F" table. Does not gate or reopen Phase
+78, 79, or 80.
 
 **Phase 79 — Clean-room conceptual understanding + documentation
 reconstruction — `done` (historical; see above for Phase 80's own
@@ -638,3 +651,10 @@ concrete step for active roadmap work.
 Per `CLAUDE.md` §6, Phases 75, 76 (including its corrective pass), 77,
 79, and now 80 are fully closed and pushed to `origin` — no further
 action needed on any of them.
+
+A new unscheduled backlog item (`planning/strict-isolation-for-documentation-reconstruction.md`,
+recorded 2026-10-02) is **not** a next concrete step to execute — it is
+`candidate, not funded, not scheduled`, revisited only on a third
+independent recurrence of the same isolation gap or a genuinely separate
+execution substrate becoming available, per its own "Suggested priority"
+section.

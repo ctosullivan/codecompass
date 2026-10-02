@@ -211,6 +211,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reaching both derived outputs through the shared foundation). Full
   plan (amended six times, the sixth the same day as the fifth):
   `planning/phase-79-clean-room-understanding-and-documentation-reconstruction.md`.
+- **Planning-only** (direct user request, 2026-10-02, no `src/` change,
+  no phase number): a new unscheduled backlog item,
+  `planning/strict-isolation-for-documentation-reconstruction.md`,
+  recording strict mechanical isolation for the clean-room documentation-
+  reconstruction methodology's three isolation-sensitive stages as a
+  future capability — linking, not duplicating, the existing isolation
+  evidence (`decisions/0066`, the Tier-1 preflight failure, the
+  corrected isolation-evidence inventory) that already shows no stage to
+  date has had a mechanically-enforced boundary. Cross-referenced from
+  `planning/ROADMAP.md`'s Priority D row and its "Backlog, not absorbed
+  into A-F" table. Does not implement anything, does not gate current or
+  future documentation work, and does not reopen Phase 78, 79, or 80.
 
 ### Changed
 
