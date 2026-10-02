@@ -1827,3 +1827,133 @@ Statuses: `candidate` → `recurred` → `promoted-to-roadmap` / `discarded`.
   substantive verdict (PASS WITH GAPS, advantage LOW) or its `CG-009`
   filing, both independently re-verified separately in this same triage
   pass — only this one specific status transition is corrected.
+- **curation (Phase 78 closeout — Priority A exit decision, 2026-10-02,
+  knowledge-curator):** independent re-verification of the second,
+  deliberately-designed `CG-001`/§2.6 trial
+  (`planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`
+  §4/§7.2), not a rubber-stamp of the Stage 2
+  `context-evaluator`'s own report
+  (`planning/reference-projects/ledgerkit/06-stage-d-reportspec-priority-a-validation.md`).
+  Read the Stage 1 baseline and treatment reports in full
+  (`06-stage-d-reportspec-stage1-{baseline,treatment}-report.md`) and the
+  Stage 2 validation report in full, and independently re-derived the two
+  load-bearing claims by direct code reading rather than taking either
+  report's word:
+  1. **Schema claim** (no first-party symbol-relationship edge exists):
+     read `src/codecompass/graph.py`'s full `CREATE TABLE` block directly
+     and confirmed `source_symbols` has no outgoing/incoming edge table of
+     any kind (`uses_edges` joins `source_file_id` to `vendor_id`/
+     `symbol_id` — vendor symbols only, not `source_symbols`); read
+     `src/codecompass/cli.py::_resolve_relations` directly and confirmed
+     it resolves exactly three lookup shapes (`doc_artifacts.path`,
+     `vendors.name`, `doc_artifacts.name`) and returns `None` →
+     `_not_found_error` for anything else, including `ReportSpec`/
+     `balance_from_spec` — so `query relations`'s two "not found" errors
+     the Stage 2 report cites are correctly explained by the code, not an
+     artifact of a particular database state.
+  2. **Cost-parity claim** (the treatment agent reconstructed the chain
+     at no greater cost than baseline): read both Stage 1 reports' own
+     "Research trace" sections directly. The treatment report's own
+     ordering (full reads of `models.py`, `reports.py`, and the decisive
+     `parser.py` 955-1240 range, all logged *before* any
+     `codecompass query relations` call) and its own explicit
+     "Duplicated-research note" ("none of [the CodeCompass queries] told
+     me something I'd already fully established from direct source
+     reading... they functioned as independent confirmation... rather
+     than my primary discovery mechanism") independently corroborate the
+     Stage 2 evaluator's characterization — this is not merely the
+     evaluator's gloss on the agent's self-report, the agent's own trace
+     says the same thing in its own words, logged before the evaluator's
+     report existed. The baseline report independently reached the
+     identical chain (parser.py's comment-line branch → `Journal` →
+     `reports.py::balance_from_spec` → `cli.py`, no `report` command) via
+     the same files, at comparable depth, with zero CodeCompass access —
+     confirming the gap in CodeCompass's own surfaces (`query relations`
+     erroring on both symbols) did not force the treatment arm into any
+     extra work the baseline arm was spared.
+
+  **Applicability — independently confirmed, not Outcome 3.** Both
+  reports' own §2 sections derive the identical real producer/consumer
+  chain (parser.py as new producer → `Journal` as new storage →
+  `reports.py::balance_from_spec` as existing, unchanged consumer →
+  `cli.py` as new, currently-nonexistent consumer) from a real,
+  currently-unimplemented Stage D task — this is not a task that happened
+  to skip the relationship question.
+
+  **Outcome — independently confirmed: `not-recurred`.** The evidence
+  cited (both schema- and cost-parity claims above) genuinely supports
+  Outcome 2's own bar ("completed with existing surfaces at a cost no
+  worse than the baseline's own direct exploration") rather than Outcome
+  1 (`recurred` — would require material, avoidable cost the tooling gap
+  specifically caused) or a mislabelled Outcome 3. No reason found to
+  disagree with the Stage 2 report's own classification.
+
+  **This entry's own `status` field is left unchanged at `candidate`,
+  not moved to `recurred` or any other value, by this trial's result —
+  applying the same discipline this entry's own three prior triage
+  passes (Phase 43c, 47, and the Phase 75 reversion above) have
+  consistently applied: a different concrete edge, on a different
+  project, independently derived by a different observer, is this
+  entry's own broader §2.6 hypothesis being tested again, not *this*
+  entry's own founding A↔B↔C edge (`graph.py::skills_index` ↔
+  `cli.py::query_skills` ↔ `skill.py::render_tool_skill`) recurring. The
+  Phase 75 reversion note above is explicit that a laxer standard should
+  not be applied "for this one instance" than every prior pass applied —
+  that discipline is kept here too, in both directions: a differently-
+  shaped instance that happens to land as `not-recurred` does not move
+  this entry's own status any more than a differently-shaped instance
+  landing as a stronger echo did at Phase 47 or Phase 75.
+
+  **What this trial's result *does* do, at the track level rather than
+  this entry's own status field:** per `planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md`
+  §4/§7.2, this is the first time the broader `CG-001`/§2.6 hypothesis
+  was tested by a trial *designed in advance, with its evidence bar fixed
+  before the trial ran* (§4's three-outcome model), specifically to
+  settle whether it justifies building new Priority A capability — and it
+  returned an applicable, independently-evidence-checked negative result,
+  not an inconclusive echo. That is a materially different evidentiary
+  event from the Phase 47/Phase 75 cross-references (which were
+  incidental findings on tasks designed for something else), even though
+  it does not change *this* entry's own recurrence-bar status. **This
+  independently confirms §7.2 Branch A fires**: Priority A's own
+  closeout rationale rests on this applicable, negative result plus the
+  three prior trials' own LOW-to-MODERATE track record (Phases 75/76/77),
+  not on a status change to this entry. `CG-001` itself is not discarded
+  — it remains `candidate`, available to be reopened by a genuinely new,
+  differently-shaped occurrence, exactly as §7.2 Branch A's own closing
+  rationale states ("Priority A is not reopened absent new evidence of a
+  different, not-yet-tested shape").
+
+  **No `promoted.md` line added for `CG-001` itself** — this entry was
+  not promoted (it stays `candidate`), so `promoted.md`'s own "pointers
+  to a landed artifact" convention does not apply here the way it did for
+  `CG-008`/`CG-009`. The landed artifact this trial's evidence actually
+  produces is the Priority A closure ADR (drafted, not yet landed, in
+  `planning/reference-projects/ledgerkit/06-priority-a-exit-decision-triage.md`
+  for the lead) — once that ADR lands, the lead/`roadmap-context-curator`
+  may add its own `promoted.md` line for the ADR as the landed artifact of
+  this evidence trail; that is outside this triage's own write scope to
+  decide or add.
+
+  **Backlog disposition re-confirmation (§3, DoD item 4):** checked each
+  of `CG-003`/`CG-007`/`CG-009`/`CG-010`/`CG-011`/Phase 24/25/50
+  individually against this trial's real evidence (not assumed
+  unaffected): `CG-003` (external hledger manual) — the trial never
+  queried or needed external hledger-manual representation; the
+  treatment report's own open question 6.1 ("is `; report` a real hledger
+  construct?") was answered by internal `dev-docs/hledger-compatibility.md`
+  absence-checking, not by needing the external manual itself — unaffected.
+  `CG-007` (symbol-level cross-references between pinned reference-doc
+  excerpts) — the trial ingested no pinned reference material at all —
+  unaffected. `CG-009` (first-party source symbol path, resolved Phase 77)
+  — re-confirmed *working*, not merely unaffected: `query source-symbol
+  ReportSpec`/`balance_from_spec` both returned correct, accurate rows
+  (independently cross-checked against live source), consistent with
+  Phase 77's fix remaining intact. `CG-010`/`CG-011` (Git topology) — no
+  submodule or worktree topology was exercised by this task — unaffected,
+  independent funding (§3.1) unchanged. Phase 24 (project-root REPL
+  routing)/Phase 25 (MCP server)/Phase 50 remainder (shared-agent
+  context) — none of this trial's task, tooling, or dispatch shape
+  touches REPL routing, transport, or shared-agent entry points —
+  unaffected. §3's table is re-confirmed accurate at closeout; nothing
+  requires updating.
