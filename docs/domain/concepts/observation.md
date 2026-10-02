@@ -127,6 +127,6 @@ named in writing.
   through `OBS-DEPTH-005.yaml`.
 - `planning/context-observations/README.md`, `TEMPLATE.md`,
   `inbox.md:1-85` (the colliding "OBS-016" entry).
-- `planning/context-gaps/README.md`, `inbox.md:1042-1144` (`CG-001`).
+- `planning/context-gaps/README.md`, `inbox.md:1587-1959` (`CG-001`).
 - `planning/learnings/README.md`.
 - `decisions/0054-agent-driven-enrichment-is-a-second-non-authoritative-producer.md`.

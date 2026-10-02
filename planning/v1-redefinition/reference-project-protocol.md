@@ -119,6 +119,26 @@ from an unscoped `find /` locating a sibling checkout of the real
 upstream project; the baseline agent could equally have run the same
 command but ran a scoped `find .` instead and found nothing.
 
+**Added 2026-10-02 (`L-081`, Phase 78):** when bootstrapping a
+reference-project scratch clone in a dispatch environment with no
+Anthropic API key configured, run `codecompass --budget 0` (or a small
+explicit cap) directly — **not** `codecompass --yes`. `--yes` does not
+itself cap AI-enrichment spend, and doc-relation enrichment cost
+estimation runs regardless of tracked-vendor count (zero third-party
+dependencies does not imply zero enrichment candidates — doc-relationship
+*mentions* are what's estimated, not vendor count). Bare `--yes`
+therefore still attempts real enrichment calls and fails with an
+unrelated-looking Anthropic SDK authentication error (`TypeError: "Could
+not resolve authentication method..."`) before ever reaching the real,
+intended budget-gate message. `--budget 0` reaches that message directly
+("estimated cost $X for N batch(es)... exceeds --budget $0.00") and the
+deterministic graph rebuild (first-party source/symbol indexing,
+generated `.claude/` artifacts) completes successfully regardless, since
+enrichment is a separate, later pipeline step that aborting does not
+block. Confirmed at Phase 78: the Ledgerkit treatment scratch clone's
+first sync attempt (`--yes`) failed this way; the second (`--budget 0`)
+succeeded cleanly.
+
 ### 2.3 Task selection — genuine work only
 
 Tasks come from the reference project's **own** roadmap, deferred-work

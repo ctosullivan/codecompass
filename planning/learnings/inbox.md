@@ -39,7 +39,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   agents' own contemporaneous research traces) rather than simply
   trusting Stage 2's own report.
 - **classification:** workflow
-- **status:** candidate
+- **status:** retained
 - **recurrence:** first occurrence of this specific three-stage structure
   being run for real (it was designed, not yet exercised, at the time
   Phase 78's plan was amended).
@@ -47,6 +47,29 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   trial (any reference project, any task) adopts this three-stage shape
   as its own default template rather than re-deriving a trial structure
   from scratch each time.
+- **curation (this triage, 2026-10-02, knowledge-curator):** **retain**,
+  not promote. The observation is real and the evidence genuinely
+  independent (two separate verification paths converged, per the
+  entry's own evidence field) — but it is a confirmation of a design
+  that was itself only just exercised for the first time this phase.
+  The entry's own "moves forward when" condition ("a future comparative
+  trial adopts this three-stage shape as its own default template") has
+  not yet happened; one successful run is evidence the shape *can* work,
+  not yet evidence it has become this project's default. Promoting a
+  single-instance confirmation into `reference-project-protocol.md` or
+  `context-quality-evaluation.md` as a named default template now would
+  be writing a rule from n=1, before a second trial has had the chance
+  to either confirm the pattern or surface a case where the three-stage
+  split doesn't fit as cleanly. Leave as a retained candidate: the next
+  comparative CodeCompass-advantage trial (reference project, any task)
+  should explicitly consider reusing this shape, and if it does (or
+  deliberately doesn't, for a stated reason), that's the recurrence this
+  candidate needs to become promotable — most naturally into
+  `planning/v1-redefinition/context-quality-evaluation.md` (where the
+  comparative-trial methodology already lives, e.g. `L-027`'s
+  single-trial-variance caveat) or `reference-project-protocol.md` §2.4
+  (the per-task procedure), whichever a future curator judges the better
+  fit once there's a second data point to generalise from.
 
 ### L-081 — for a reference-project trial with no Anthropic API key configured, use `codecompass --budget 0` directly, not `--yes`
 
@@ -72,7 +95,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   attempt (`--budget 0`) succeeded with the graph rebuild intact and a
   clean, correctly-worded budget-exceeded message.
 - **classification:** workflow
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** first occurrence noticed; the underlying condition
   (enrichment cost estimation runs regardless of tracked-vendor count,
   and `--yes` alone does not cap spend) is a standing, mechanical fact
@@ -82,6 +105,50 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 - **moves forward when:** a future reference-project trial's own setup
   instructions default to `--budget 0` for any dispatch environment
   without a configured Anthropic API key, rather than `--yes`.
+- **curation (this triage, 2026-10-02, knowledge-curator):** **promote**.
+  This is a concrete, evidenced, mechanical fact about CodeCompass's own
+  bootstrap sequence (not an opinion about process), it will recur
+  identically for any future reference-project dispatch run without a
+  configured API key (per the entry's own recurrence note), and a future
+  dispatch-setup step is exactly where a reader needs it *before* hitting
+  the same failed attempt — the same shape `L-046`'s credential-probe
+  paragraph and `L-080`'s commit-message paragraph already have in
+  `planning/agent-led-workflow.md` step 6. This candidate, though, is
+  specific to *reference-project trial* scratch-clone setup, not general
+  implementation work — `planning/v1-redefinition/reference-project-protocol.md`
+  §2.2 ("Working copy discipline," the section that already covers
+  "CodeCompass is run against that clone from CodeCompass's installed
+  CLI") is the better-fitting destination, matching the precedent of
+  `L-022` and `L-062`, both already landed in this same section.
+  **Destination:** `planning/v1-redefinition/reference-project-protocol.md`
+  §2.2, added paragraph (drafted below). Outside this curator's own write
+  scope, so landing it is the lead's action — append after the existing
+  `L-062` paragraph in §2.2:
+
+  > **Added 2026-10-02 (`L-081`, Phase 78):** when bootstrapping a
+  > reference-project scratch clone in a dispatch environment with no
+  > Anthropic API key configured, run `codecompass --budget 0` (or a
+  > small explicit cap) directly — **not** `codecompass --yes`. `--yes`
+  > does not itself cap AI-enrichment spend, and doc-relation enrichment
+  > cost estimation runs regardless of tracked-vendor count (zero
+  > third-party dependencies does not imply zero enrichment candidates —
+  > doc-relationship *mentions* are what's estimated, not vendor count).
+  > Bare `--yes` therefore still attempts real enrichment calls and fails
+  > with an unrelated-looking Anthropic SDK authentication error
+  > (`TypeError: "Could not resolve authentication method..."`) before
+  > ever reaching the real, intended budget-gate message. `--budget 0`
+  > reaches that message directly ("estimated cost $X for N
+  > batch(es)... exceeds --budget $0.00") and the deterministic graph
+  > rebuild (first-party source/symbol indexing, generated `.claude/`
+  > artifacts) completes successfully regardless, since enrichment is a
+  > separate, later pipeline step that aborting does not block. Confirmed
+  > at Phase 78: the Ledgerkit treatment scratch clone's first sync
+  > attempt (`--yes`) failed this way; the second (`--budget 0`)
+  > succeeded cleanly.
+
+  **Landed**: `planning/v1-redefinition/reference-project-protocol.md`
+  §2.2, appended after the `L-062` paragraph. `promoted.md` pointer line
+  added.
 
 ### L-080 — never construct a multi-line `git commit -m` message containing backtick-quoted code identifiers as an interpolated shell string
 
