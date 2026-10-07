@@ -1,0 +1,12 @@
+id: CL-HLEDGERDEPTH-002
+kind: claim
+statement: >
+  External proposal (simulating an outside tool/contributor, not yet verified by this project): the balancesheet and incomestatement report commands likely apply depth the same display-only clipping way balance does, since they are documented as thin wrappers around the same balance-report machinery -- but this has not been directly observed against the real hledger binary here and should be checked before being trusted.
+derivation: null
+supporting_evidence: []
+contradicting_evidence: []
+derived_by: "external:unknown"
+repository_revision: "working tree"
+timestamp: "2026-10-07T05:44:25.469211+00:00"
+status: proposed
+basis: proposed_policy
