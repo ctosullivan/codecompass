@@ -1042,6 +1042,11 @@ class TestFactualHypothesisVsDeclaredIntent:
         new_id = result.applied[0].new_record_id
         records = ki.load_slug_records(sdir)
         assert records[new_id].fields.get("basis") == "proposed_policy"
+        # decisions/0074, point 7: the "Type: Intent" header itself must
+        # never leak into the canonical statement.
+        statement = records[new_id].fields["statement"]
+        assert "Type: Intent" not in statement
+        assert statement.strip() == "The system should do X."
 
 
 class TestProvenanceDerivationCorrected:
@@ -1434,3 +1439,143 @@ class TestPostApplyGroundingReconciliation:
         hits = ki.find_grounded_doc_regions(tmp_path, new_id)
         assert len(hits) == 1
         assert hits[0][0] == readme
+
+
+class TestCandidateDisappearanceFailsClosed:
+    """decisions/0074, point 8 -- an ordinary candidate's own fail-closed
+    branch when its text has disappeared with no matching record."""
+
+    def test_disappeared_candidate_with_no_match_fails_closed(self, tmp_path):
+        sdir = _make_slug(tmp_path)
+        ki.render_slug(tmp_path, "demo-slug")
+        overview = sdir / "intermediate" / "overview.md"
+        text = overview.read_text(encoding="utf-8")
+        text = text.replace(
+            ki.CANDIDATE_START + ki.CANDIDATE_END,
+            ki.CANDIDATE_START + "\nA genuinely new fact, soon to be deleted.\n" + ki.CANDIDATE_END,
+        )
+        overview.write_text(text, encoding="utf-8")
+        candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
+        manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
+        _accept_all(manifest_path)
+
+        # The candidate text is manually deleted from the live file AFTER
+        # the manifest was written, BEFORE apply -- no matching canonical
+        # record exists anywhere, so this must never be read as "already
+        # applied."
+        overview.write_text(
+            overview.read_text(encoding="utf-8").replace(
+                "A genuinely new fact, soon to be deleted.\n", ""
+            ),
+            encoding="utf-8",
+        )
+        records_before = set(ki.load_slug_records(sdir))
+        result = ki.apply_manifest(tmp_path, manifest_path)
+        assert result.applied == []
+        assert result.skipped and "race" in result.skipped[0].reason
+        records_after = set(ki.load_slug_records(sdir))
+        assert records_after == records_before, "no record may be created from a stale manifest"
+
+    def test_disappeared_candidate_already_promoted_is_a_safe_noop(self, tmp_path):
+        """The other half of the same branch: when the text is gone
+        BECAUSE it was already genuinely promoted (a real matching record
+        exists), that is still correctly reported as success -- the fix
+        narrows the branch, it does not make it always fail."""
+        sdir = _make_slug(tmp_path)
+        ki.render_slug(tmp_path, "demo-slug")
+        overview = sdir / "intermediate" / "overview.md"
+        text = overview.read_text(encoding="utf-8")
+        text = text.replace(
+            ki.CANDIDATE_START + ki.CANDIDATE_END,
+            ki.CANDIDATE_START + "\nA fact that will be promoted twice over.\n" + ki.CANDIDATE_END,
+        )
+        overview.write_text(text, encoding="utf-8")
+        candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
+        manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
+        _accept_all(manifest_path)
+
+        # Simulate "already reconciled": a matching Claim already exists,
+        # and the candidate text has already been consumed from the file
+        # (as a correctly-applied manifest would have done), independent
+        # of this specific manifest's own state field.
+        (sdir / "CL-DEMO-099.yaml").write_text(
+            "id: CL-DEMO-099\nkind: claim\n"
+            "statement: A fact that will be promoted twice over.\nderivation: null\n"
+            "supporting_evidence: []\ncontradicting_evidence: []\nderived_by: t\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+            "status: proposed\n",
+            encoding="utf-8",
+        )
+        overview.write_text(
+            overview.read_text(encoding="utf-8").replace(
+                "A fact that will be promoted twice over.\n", ""
+            ),
+            encoding="utf-8",
+        )
+        result = ki.apply_manifest(tmp_path, manifest_path)
+        assert len(result.applied) == 1
+        assert result.applied[0].new_record_id == "CL-DEMO-099"
+
+
+class TestCrossKindDeduplicationIndependence:
+    """decisions/0074, point 9 -- a Claim and a Requirement with identical
+    statement text must never cross-dedup in either direction."""
+
+    def test_preexisting_claim_does_not_block_new_requirement(self, tmp_path):
+        sdir = _make_slug(tmp_path, decision=_DECISION_APPROVED)
+        same_text = "The CLI must expose a --json flag for status output."
+        (sdir / "CL-PRE-001.yaml").write_text(
+            f"id: CL-PRE-001\nkind: claim\nstatement: {same_text}\nderivation: null\n"
+            "supporting_evidence: []\ncontradicting_evidence: []\nderived_by: t\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+            "status: supported\n",
+            encoding="utf-8",
+        )
+        ki.render_slug(tmp_path, "demo-slug")
+        overview = sdir / "intermediate" / "overview.md"
+        block = (
+            "Type: Requirement\nDecision: DEC-DEMO-001\n"
+            f"Statement: {same_text}\n"
+            "Example: Given the status command runs with --json, when output is "
+            "captured, then it is valid JSON.\n"
+        )
+        candidate_block = ki.CANDIDATE_START + "\n" + block + ki.CANDIDATE_END
+        text = overview.read_text(encoding="utf-8").replace(
+            ki.CANDIDATE_START + ki.CANDIDATE_END, candidate_block
+        )
+        overview.write_text(text, encoding="utf-8")
+        candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
+        manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
+        _accept_all(manifest_path)
+        result = ki.apply_manifest(tmp_path, manifest_path)
+        assert len(result.applied) == 1
+        new_id = result.applied[0].new_record_id
+        assert new_id.startswith("REQ-"), "a pre-existing Claim must not block a new Requirement"
+        records = ki.load_slug_records(sdir)
+        assert records[new_id].fields["statement"] == same_text
+
+    def test_preexisting_requirement_does_not_satisfy_claim_dedup(self, tmp_path):
+        sdir = _make_slug(tmp_path)
+        same_text = "The sync pipeline retries transient failures automatically."
+        (sdir / "REQ-PRE-001.yaml").write_text(
+            f"id: REQ-PRE-001\nkind: requirement\nstatement: {same_text}\n"
+            "decision: DEC-DEMO-001\nexample: Given a transient failure, when sync "
+            "retries, then it eventually succeeds.\nstatus: approved\n",
+            encoding="utf-8",
+        )
+        ki.render_slug(tmp_path, "demo-slug")
+        overview = sdir / "intermediate" / "overview.md"
+        text = overview.read_text(encoding="utf-8").replace(
+            ki.CANDIDATE_START + ki.CANDIDATE_END,
+            ki.CANDIDATE_START + f"\n{same_text}\n" + ki.CANDIDATE_END,
+        )
+        overview.write_text(text, encoding="utf-8")
+        candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
+        manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
+        _accept_all(manifest_path)
+        result = ki.apply_manifest(tmp_path, manifest_path)
+        assert len(result.applied) == 1
+        new_id = result.applied[0].new_record_id
+        assert new_id.startswith("CL-"), "a pre-existing Requirement must not satisfy Claim dedup"
+        records = ki.load_slug_records(sdir)
+        assert records[new_id].fields["statement"] == same_text

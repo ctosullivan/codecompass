@@ -65,11 +65,44 @@ mechanical-only, reconciliation stays detect → review → validated apply,
 zero new persisted canonical fields beyond what `decisions/0071`/`0072`
 already established.
 
-Next concrete step: run the remaining closeout sequence — fresh
-per-phase docs-drift audit, learning/context-gap triage, and a fresh
-independent completion audit (explicitly inspecting all areas
-`decisions/0074` touched) — and only restore Phase 81 to `done` once that
-audit genuinely passes.
+A fresh per-phase docs-drift audit has since run (`docs-reconstructor`,
+NO DRIFT in the scope this pass's own diff touched; one small pre-existing
+gap it noticed — `ai-docs/README.md`'s knowledge-command list missing
+`doc-select-candidates` from the *first* corrective pass — was fixed in
+the same sitting, commit `42f9486`). Learning/context-gap triage has also
+run (`knowledge-curator`): three candidates filed and promoted —
+`L-086` (`.claude/agents/release-phase-auditor.md`, a corrective pass's
+own new code is full audited scope, commit `2e1b5a7`), and `L-087`/`L-088`
+(`CLAUDE.md` §1, user-approved per §0, commit `1c3981b` — a persisted
+"last-known-state" mechanism's plan must state how detection differs from
+acknowledgement; a new tracked re-orderable entity's plan must check for
+an existing identity convention and test insertion/reordering).
+
+**A first independent completion audit (`release-phase-auditor`) returned
+FAIL** (`planning/retros/_audit-phase-81-second-corrective-pass.md`,
+audited HEAD `a9bcd02`) — not on the production code (every one of the
+ten code-behaviour checks it ran came back genuinely correct, verified by
+direct reading plus its own independent test run, lint, strict
+validation, and a real `git fetch` against the public `codecompass-template`
+remote), but on verification/closeout-documentation integrity: three
+claimed test-coverage items (`Type: Intent` header-stripping, candidate-
+disappearance fail-closed behaviour, cross-kind dedup independence) were
+not actually exercised by any persisted test despite being named in
+`decisions/0074`/the retro; this file (`CONTEXT.md`) was stale (written
+before the drift audit/learning triage above actually landed); no
+persisted drift-audit record existed; and the second corrective-pass
+retro was missing most of `TEMPLATE.md`'s own sections. All four are now
+fixed: three tests added (`TestCandidateDisappearanceFailsClosed`,
+`TestCrossKindDeduplicationIndependence`, plus a strengthened assertion on
+the existing `Type: Intent` test — 65 tests total in
+`tests/test_knowledge_intermediate.py`); this file updated (this
+paragraph); the drift audit's own account is now recorded above; and the
+retro (`planning/retros/phase-81-second-corrective-pass.md`) is being
+expanded with the missing sections.
+
+Next concrete step: a fresh independent completion audit (the prior pass
+is voided per `CLAUDE.md` §5 by the commits fixing its own findings) —
+only restore Phase 81 to `done` once that audit genuinely passes.
 
 ---
 
