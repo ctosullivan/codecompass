@@ -60,6 +60,12 @@ _DEFAULT_GLOBS = (
     "ARCHITECTURE.md",
     "REQUIREMENTS.md",
     "PRD.md",
+    # Phase 81: brought into scope alongside README.md -- previously
+    # listed only in `_EXCLUDED_ROOT_NAMES`, which turned out to have no
+    # actual effect for this file, since it was never matched by any
+    # glob pattern below in the first place. Explicitly globbed now so
+    # it genuinely becomes a scanned `doc_artifacts` row.
+    "CONTRIBUTING.md",
     "docs/**/*.md",
     "architecture/**/*.md",
     "decisions/**/*.md",
@@ -71,12 +77,19 @@ _DEFAULT_GLOBS = (
     "dev-docs/**/*.md",
 )
 
-# Root-level-only exclusions: a log (CHANGELOG.md), process docs
-# (CONTRIBUTING.md), license text, and this project's own governance file
-# (CLAUDE.md, already special-cased elsewhere in this codebase) — none of
-# these are a spec even though some sit right next to real specs at the
-# project root.
-_EXCLUDED_ROOT_NAMES = {"CHANGELOG.md", "CONTRIBUTING.md", "CLAUDE.md"}
+# Root-level-only exclusions: a log (CHANGELOG.md), license text, and
+# this project's own governance file (CLAUDE.md, already special-cased
+# elsewhere in this codebase, self-governing under its own rules) — none
+# of these are a spec even though they sit right next to real specs at
+# the project root.
+#
+# Phase 81 (planning/phase-81-intermediate-knowledge-layer.md §0.2/§9/
+# §10): CONTRIBUTING.md was previously excluded alongside CLAUDE.md but
+# is now brought into scope, since it is a real, factual project
+# document that can carry explicit `codecompass-grounded-by` knowledge
+# markers (§9.2) exactly like README.md already can. CLAUDE.md stays
+# excluded.
+_EXCLUDED_ROOT_NAMES = {"CHANGELOG.md", "CLAUDE.md"}
 
 
 def _is_pruned(rel_path: Path) -> bool:
@@ -188,8 +201,9 @@ def _detect_origin(path: Path) -> str:
 
 def scan_spec_docs(project_root: Path) -> list[DocArtifactRow]:
     """Globs the fixed default spec-doc pattern set rooted at
-    `project_root`, excluding `CHANGELOG.md`/`CONTRIBUTING.md`/`LICENSE*`/
-    root `CLAUDE.md` and anything under `usage._PROJECT_PRUNE_DIR_NAMES`.
+    `project_root`, excluding `CHANGELOG.md`/`LICENSE*`/root `CLAUDE.md`
+    and anything under `usage._PROJECT_PRUNE_DIR_NAMES`. `CONTRIBUTING.md`
+    is now scanned like any other spec doc (Phase 81).
     Deterministic, sorted output; a path matching more than one glob
     pattern is only ever recorded once. Each row's `name` is its own
     first H1 heading, or its filename stem if it has none (`_extract_title`,

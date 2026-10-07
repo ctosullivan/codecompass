@@ -62,19 +62,24 @@ def test_scan_spec_docs_finds_dot_spec_dot_md_suffix(tmp_path: Path) -> None:
     assert [row.path for row in rows] == ["checkout.spec.md"]
 
 
-def test_scan_spec_docs_excludes_changelog_contributing_license_and_root_claude_md(
+def test_scan_spec_docs_excludes_changelog_license_and_root_claude_md(
     tmp_path: Path,
 ) -> None:
+    """Phase 81 (planning/phase-81-intermediate-knowledge-layer.md
+    §0.2/§9/§10): CONTRIBUTING.md is no longer excluded -- it is a real,
+    factual project document that may carry explicit
+    `codecompass-grounded-by` knowledge markers, exactly like README.md.
+    CLAUDE.md stays excluded, self-governing under its own rules."""
     _write(tmp_path, "CHANGELOG.md")
     _write(tmp_path, "CONTRIBUTING.md")
     _write(tmp_path, "CLAUDE.md")
     _write(tmp_path, "LICENSE")
     _write(tmp_path, "LICENSE.md")
-    _write(tmp_path, "README.md")  # the one real spec doc among these
+    _write(tmp_path, "README.md")
 
     rows = scan_spec_docs(tmp_path)
 
-    assert [row.path for row in rows] == ["README.md"]
+    assert sorted(row.path for row in rows) == ["CONTRIBUTING.md", "README.md"]
 
 
 def test_scan_spec_docs_prunes_nested_build_or_dependency_noise_dirs(tmp_path: Path) -> None:
