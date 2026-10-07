@@ -31,13 +31,15 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   identity convention from the start"); `planning/retros/phase-81-second-corrective-pass.md`
   Lessons-learnt bullet 3.
 - **classification:** project-rule
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** second instance of the same shape within one effort
   (anchored knowledge blocks, then grounded-document regions) — treated
   as sufficient per this project's own precedent for within-lineage
   recurrence (`L-070`/`L-075`, each promoted on two instances inside one
   phase).
-- **promoted_to:** (not yet landed)
+- **promoted_to:** `CLAUDE.md` §1 (new tracked re-orderable entity needs
+  an explicit identity-stability check against existing conventions, plus
+  an insertion/reordering test — user-approved per §0) @ `1c3981b`
 - **curation (this triage, 2026-10-07, knowledge-curator):** checked
   `inbox.md` for a prior entry on positional/identity stability — none
   found (grepped for "positional identity", "region:<id>", "stable
@@ -74,13 +76,15 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   by observing it"); `planning/retros/phase-81-second-corrective-pass.md`
   Lessons-learnt bullet 2.
 - **classification:** project-rule
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** third instance of the same discipline being needed
   (canonical dedup, apply-time concurrency, now baseline advancement),
   the first two already landed as architecture before this phase; this is
   the first time the *general* principle itself (not a specific
   instance) is being proposed as a project-wide rule.
-- **promoted_to:** (not yet landed)
+- **promoted_to:** `CLAUDE.md` §1 (a new persisted "last-known-state"
+  mechanism's plan must state how detection differs from acknowledgement
+  — user-approved per §0) @ `1c3981b`
 - **curation (this triage, 2026-10-07, knowledge-curator):** checked
   `inbox.md` for a prior entry — none found (grepped "detection...
   acknowledg", "observe vs. commit"). **Recommend promote** — project-rule,

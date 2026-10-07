@@ -677,3 +677,112 @@ the same addendum (`L-076`/`L-077`, routed to
   section gets the same addition in the same commit; `planning/learnings/inbox.md`'s
   `L-075` flips to `status: promoted` with a `promoted.md` pointer line
   once the edit lands.
+
+## I. 2026-10-07 proposed addition (Phase 81 second corrective pass — `L-087`)
+
+**Status:** approved by the user and landed (`CLAUDE.md`/`CONTRIBUTING.md`
+commit `1c3981b`). Filed by
+`knowledge-curator` during the Phase 81 second corrective-pass triage,
+alongside `L-088` (§J) and a separate scoped-rule recommendation (`L-086`,
+routed to `.claude/agents/release-phase-auditor.md` instead — see
+`planning/learnings/inbox.md`).
+
+### I1 — §1 "Plan before implementing": require a plan to state how detection differs from acknowledgement, for any new persisted "last-known-state" mechanism
+
+- **Context:** `decisions/0074` point 1 found that `doc-select-candidates`
+  advanced both `.grounding-state.toml` and `.doc-chunk-state.toml`
+  immediately after every detection run, regardless of whether a finding
+  was actually applied or acknowledged — a detected-but-unreviewed
+  finding would silently vanish from the next run. This project had
+  already independently learned "detection must never itself count as
+  acknowledgement" twice before, for two different mechanisms (canonical
+  Claim dedup; apply-time concurrency checks, both `decisions/0071`-`0073`)
+  — but nothing required that lesson to be checked against a *new* such
+  mechanism before it shipped, so it had to be rediscovered a third time
+  by a corrective-pass review rather than caught at plan time. Full
+  account: `planning/learnings/inbox.md`'s `L-087`; `decisions/0074` §1;
+  `planning/retros/phase-81-second-corrective-pass.md` Lessons-learnt
+  bullet 2.
+- **Proposed text — append to §1, as a new sentence directly after the
+  existing `L-075` sentence ("...closing one does not imply the other is
+  closed. (Phase 79 sixth amendment — L-075.)"):**
+
+  > If a phase's design introduces a mechanism that persists a
+  > "last-known-state" used to decide whether something still needs
+  > attention (a baseline, cache, or similar advisory marker), the plan
+  > must state explicitly how observing a change differs from acting on
+  > it — the persisted state may advance only when an explicit apply or
+  > acknowledgement action succeeds, never merely because a detection/scan
+  > step ran and found a difference. (Phase 81 second corrective pass —
+  > L-087.)
+
+- **Alternatives considered:** (a) treat this as fully covered by the two
+  prior, already-landed architecture instances — rejected: both prior
+  fixes live in `decisions/0071`-`0073`'s own design, not in `CLAUDE.md`
+  §1's plan-content requirements, so a future phase introducing a fourth
+  such mechanism has nothing in the governing plan-writing rule itself
+  prompting the check; (b) route this to `architecture/overview.md`
+  "Known footguns" instead — considered, but a footgun entry documents
+  *current* architecture state, while this is a requirement on *future*
+  plan content before code is written, matching `L-021`/`L-070`/`L-075`'s
+  own placement in §1 rather than `architecture/`; (c) a broader
+  "consider all prior ADRs before designing a new mechanism" rule —
+  rejected as unenforceable and already implicitly required; scoped
+  instead to the one specific, now-thrice-evidenced failure shape.
+- **Consequences if approved:** `CLAUDE.md` §1 gains the sentence above;
+  `CONTRIBUTING.md`'s mirrored section gets the same addition in the same
+  commit; `planning/learnings/inbox.md`'s `L-087` flips to `status:
+  promoted` with a `promoted.md` pointer line once the edit lands.
+
+## J. 2026-10-07 proposed addition (Phase 81 second corrective pass — `L-088`)
+
+**Status:** approved by the user and landed (`CLAUDE.md`/`CONTRIBUTING.md`
+commit `1c3981b`). Filed by `knowledge-curator` alongside `L-087` (§I)
+during the same triage.
+
+### J1 — §1 "Plan before implementing": require an identity-convention check and an insertion/reordering test for any new tracked, re-orderable entity
+
+- **Context:** `decisions/0074` point 10 found grounded-document-region
+  baseline identity was purely positional (`"README.md::0"`) — fragile
+  under insertion/reordering. This is the exact same failure mode this
+  project had already corrected once before, for a different tracked
+  entity (anchored intermediate-knowledge blocks, `decisions/0073`'s own
+  stable-anchor work), mere hours earlier in the same effort. The two
+  mechanisms were implemented separately with no shared identity
+  convention, so the fix (a stable explicit id, falling back to positional
+  identity only for an un-migrated case, failing closed on a duplicate id)
+  had to be independently rediscovered rather than reused. Full account:
+  `planning/learnings/inbox.md`'s `L-088`; `decisions/0074` §10;
+  `planning/retros/phase-81-second-corrective-pass.md` Lessons-learnt
+  bullet 3.
+- **Proposed text — append to §1, as a new sentence directly after the
+  `L-087` sentence proposed in §I above:**
+
+  > If a phase introduces a new mechanism for tracking a mutable,
+  > re-orderable entity (e.g., a document region, anchor, or similar
+  > marker that can be inserted, deleted, or reordered), the plan must
+  > state whether an existing identity convention elsewhere in the
+  > codebase already solves this and, if a new one is introduced instead,
+  > the plan's verification section must include a test exercising
+  > insertion/reordering of that entity specifically, not only its
+  > initial creation. (Phase 81 second corrective pass — L-088.)
+
+- **Alternatives considered:** (a) treat this as a one-off, since the
+  first instance (anchored knowledge blocks) was already fixed —
+  rejected: the whole point of this filing is that the first fix did not
+  generalise to the second mechanism, which is exactly what a plan-time
+  check would have caught; (b) require a single shared identity module/
+  helper instead of a plan-time question — considered as a stronger fix,
+  but out of scope for a governance-doc change (that's a `src/`
+  refactor the lead can pursue separately; this amendment only ensures
+  the *question* gets asked at plan time, which is cheap and immediate);
+  (c) fold into `L-087`'s own sentence as one combined rule — rejected:
+  the two failure shapes (state-advancement discipline vs. entity-identity
+  stability) are independent enough to warrant separate, separately-citable
+  sentences, matching how `L-070`/`L-075` stayed separate despite both
+  concerning the same checker.
+- **Consequences if approved:** `CLAUDE.md` §1 gains the sentence above,
+  directly after the `L-087` sentence; `CONTRIBUTING.md`'s mirrored
+  section gets the same addition in the same commit; `planning/learnings/inbox.md`'s
+  `L-088` flips to `status: promoted` with a `promoted.md` pointer line
+  once the edit lands.
