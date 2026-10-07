@@ -8,6 +8,90 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-085 — a two-list filter mechanism (positive glob + negative exclusion) needs both halves checked, not just the one named in an instruction
+
+- **origin:** Phase 81 (persistent bidirectional intermediate knowledge
+  layer — bringing `CONTRIBUTING.md` into `spec_docs.py`'s scanning
+  scope)
+- **date:** 2026-10-07
+- **project_revision:** `d7a7b6f` (observed); fixed same phase
+- **observation:** `spec_docs.py` gates a path through two filters: a
+  positive `_DEFAULT_GLOBS` match, then a negative `_EXCLUDED_ROOT_NAMES`
+  check. The Phase 81 plan's own instruction was "remove `CONTRIBUTING.md`
+  from `_EXCLUDED_ROOT_NAMES`" — doing only that had **zero effect**,
+  since `CONTRIBUTING.md` was never in `_DEFAULT_GLOBS` to begin with
+  (unlike README.md, which is). The real existing test
+  (`test_scan_spec_docs_excludes_changelog_contributing_license_and_root_claude_md`)
+  would have kept passing either way, since it only asserted
+  `CONTRIBUTING.md` was absent from the result — true before the "fix"
+  and (wrongly) still true immediately after it, until the test itself
+  was updated and re-run against the real scan.
+- **evidence:** `src/codecompass/spec_docs.py` (`_DEFAULT_GLOBS`,
+  `_EXCLUDED_ROOT_NAMES`, `scan_spec_docs`); `tests/test_spec_docs.py`
+  (updated to assert `CONTRIBUTING.md` actually appears in a real scan
+  result, not just that it's missing from the exclusion list).
+- **classification:** scoped-rule
+- **status:** candidate
+- **recurrence:** first occurrence
+
+### L-084 — `_next_id`-style slug-token derivation should detect and reuse an existing id convention, not re-derive one from the slug name every time
+
+- **origin:** Phase 81 (persistent bidirectional intermediate knowledge
+  layer — the real `hledger-depth` dogfood run)
+- **date:** 2026-10-07
+- **project_revision:** `d7a7b6f`
+- **observation:** `knowledge_intermediate._next_id` derives a slug
+  token by truncating the slug's own name (`hledger-depth` →
+  `HLEDGERDEPT`). The real `hledger-depth` slug's own pre-existing
+  records already use a different, shorter, deliberately-chosen token
+  (`CL-DEPTH-NNN`). Applying a candidate addition to that real slug
+  produced `CL-HLEDGERDEPTH-002` — unique, schema-valid, not a
+  correctness defect, but a visibly inconsistent id style within one
+  slug's own corpus.
+- **evidence:** `planning/knowledge/hledger-depth/CL-HLEDGERDEPTH-002.yaml`
+  alongside the slug's own pre-existing `CL-DEPTH-001.yaml`.
+- **classification:** future-improvement
+- **status:** candidate
+- **recurrence:** first occurrence
+- **moves forward when:** a second real slug exercises `_next_id` and
+  either confirms the same mismatch recurs (promote: scan existing
+  `<PREFIX>-<TOKEN>-NNN.yaml` filenames in the target directory and
+  reuse `<TOKEN>` when exactly one already exists) or shows the naive
+  derivation was a one-off (retain/discard).
+
+### L-083 — a render/detect hash-consistency bug only surfaces under a genuine byte-for-byte round-trip assertion, not code review
+
+- **origin:** Phase 81 (persistent bidirectional intermediate knowledge
+  layer — stage 2/3 implementation)
+- **date:** 2026-10-07
+- **project_revision:** `d7a7b6f`
+- **observation:** `knowledge_intermediate.render_block` computed its
+  own `projection_hash` over the rendered body text alone, while
+  `detect_anchor_changes` read back the body text *plus* the literal
+  newline the render template actually writes immediately after the
+  anchor's opening comment. A byte-for-byte no-op re-render was
+  misclassified as an edited projection as a direct result. A related,
+  independent regex bug (`_GROUNDING_OPEN_RE`'s character class,
+  `[^->]+?`, excluded both `-` and `>`, which also excludes the `-` in
+  every real record id) meant no grounding marker ever matched anything
+  with a real id in it. Both were caught by this project's own new test
+  suite on first run, not by review of the implementation.
+- **evidence:** `tests/test_knowledge_intermediate.py::TestNoOpRoundTrip`
+  (caught the hash bug); `TestExplicitDocumentGrounding`/
+  `TestPresentationIndependence`/`TestGroundingCoverageAdvisory` (caught
+  the regex bug, 4 failures in one run). Both fixed in
+  `src/codecompass/knowledge_intermediate.py` before this phase's own
+  implementation commit.
+- **classification:** invariant
+- **status:** candidate
+- **recurrence:** first occurrence
+- **moves forward when:** a future anchor/marker-syntax change in this
+  module should explicitly re-run the no-op-round-trip and grounding
+  tests as its own first check, given both bug classes are easy,
+  specific mistakes to repeat (hashing a different substring than the
+  one read back; a negated character class that excludes a character the
+  payload itself legitimately contains).
+
 ### L-082 — the three-stage comparative-trial structure (discovery/design → evaluator-sufficient evaluation → evaluator-gated optional implementation check) works cleanly on its first real exercise
 
 - **origin:** Phase 78 (Priority A backlog rationalisation + second

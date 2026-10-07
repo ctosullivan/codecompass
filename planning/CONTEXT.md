@@ -8,12 +8,34 @@ session-resumption, not a project history.
 ## Current phase
 
 **Phase 81 (persistent bidirectional intermediate knowledge layer) is
-`planned`, amended twice, implementation now in progress** — direct
-user request, 2026-10-07. **Central decision, approved and unchanged
-across both amendments**: the canonical knowledge model is the existing
-`planning/knowledge/` Observation/Evidence/Claim/Derivation/Decision/
-Requirement corpus, reused unchanged — not a `context-graph.db` schema
-extension.
+`planned`, amended twice, implemented and dogfooded, awaiting the
+standard closeout audit sequence (`CLAUDE.md` §5) before being marked
+`done`** — direct user request, 2026-10-07. **Central decision, approved
+and unchanged across both amendments**: the canonical knowledge model is
+the existing `planning/knowledge/` Observation/Evidence/Claim/Derivation/
+Decision/Requirement corpus, reused unchanged — not a `context-graph.db`
+schema extension.
+
+**Implementation summary** (full detail in
+`planning/retros/phase-81-intermediate-knowledge-layer.md`): new
+`codecompass knowledge render|select-candidates|apply|status` commands
+(`src/codecompass/knowledge_intermediate.py`), two new validator checks
+(`check_anchor_integrity`, `check_requirement_cites_approved_decision`
+in `scripts/check_knowledge_base.py`), `CONTRIBUTING.md` brought into
+`spec_docs.py`'s scanning scope, `docs/codecompass-knowledge-workflow.md`,
+README/CONTRIBUTING updates, `decisions/0071`/`0072`, 26 new tests
+(`tests/test_knowledge_intermediate.py`), all passing alongside the full
+existing suite. Validated against this project's own real 182-record
+`codecompass-domain` slug (rendered, a real grounded README region added
+and confirmed live) and a real, pre-existing, evidence-backed
+Ledgerkit-relevant slug (`hledger-depth`) exercised end to end: a
+simulated external candidate addition went through detect → review →
+apply for real, landing unconfirmed with zero fabricated Observation/
+Evidence records. `codecompass-template` gained a matching
+`optional-intermediate-knowledge/` directory, **committed locally but
+not yet pushed** — its remote is HTTPS with no stored credentials in
+this environment (unlike the main `codecompass` repo's SSH remote);
+flagged for the maintainer to push directly.
 
 **First amendment** corrected twelve issues in the original draft: no
 account of concurrent editing; a presentation-only wording edit being
@@ -544,10 +566,13 @@ strategic exit decision either way.
 
 ## What was just completed
 
-**Phase 81's plan was written, then amended twice, all committed and
-pushed; implementation is now proceeding directly per explicit user
-instruction.** See "Current phase" above for the full detail of both
-amendments.
+**Phase 81 was planned, amended twice, implemented, and dogfooded
+against real content, all in one session per explicit user instruction.**
+See "Current phase" above for the full implementation summary and
+`planning/retros/phase-81-intermediate-knowledge-layer.md` for the full
+retro, including two real bugs the new test suite caught and fixed
+before this work was committed (a render/detect hash-consistency bug; a
+grounding-marker regex bug).
 
 **Phase 78's exit decision — corrected by amendment.** Priority A's
 original closure (`decisions/0069`) is superseded by `decisions/0070`:
@@ -792,17 +817,17 @@ above). Full report:
 
 ## Next concrete step
 
-**Phase 81 implementation is proceeding now**, per explicit direct user
-instruction following the second amendment — no further decision-
-gathering step remains. The staged sequence (plan §19, governing prompt
-point 6): (1) validator/schema foundations — the two new
-`assertion_kind` enum values plus `check_anchor_integrity`/
-`check_requirement_cites_approved_decision`; (2) `knowledge_intermediate.py`
-rendering with dual-hash anchors; (3) mechanical candidate detection;
-(4) the review/apply boundary; (5) project-document grounding; (6) phase
-knowledge packages; (7) the workflow guide; (8) `codecompass-template`
-support; (9) Ledgerkit dogfood validation; then the standard Phase
-closeout sequence (`CLAUDE.md` §5) before Phase 81 is marked `done`.
+**All nine implementation stages are complete and dogfooded** (plan
+§19, governing prompt point 6) — see "What was just completed" above.
+**Next**: the standard Phase closeout sequence (`CLAUDE.md` §5) —
+per-phase drift audit (`docs-reconstructor`), learning triage
+(`knowledge-curator`, three candidates already logged:
+`L-083`/`L-084`/`L-085`), an independent completion audit
+(`release-phase-auditor`), and only then the terminal
+`roadmap-context-curator` reconciliation flipping Phase 81 to `done`.
+One outstanding non-blocking item for the maintainer: push the already-
+committed `codecompass-template` commit (`a429f04`) — this session could
+not authenticate to its HTTPS remote.
 
 **Phase 80 is `done`, fully closed.** `planning/ROADMAP.md`'s Phase 80
 row and this file's own "Current phase" section were both flipped in the

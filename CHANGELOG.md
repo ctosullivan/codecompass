@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 81** (persistent bidirectional intermediate knowledge layer):
+  new `codecompass knowledge render|select-candidates|apply|status`
+  commands (`src/codecompass/knowledge_intermediate.py`) project a
+  project's own `planning/knowledge/<slug>/` canonical records (Phase
+  54c's Observation/Evidence/Claim/Derivation/Decision/Requirement
+  model, reused unchanged — adds zero new persisted fields, see
+  `decisions/0071`/`0072`) into editable Markdown, detect human/AI-tool
+  edits via two independent hashes per rendered block (never comparing
+  a canonical record's own hash against a rendered projection's own
+  hash directly), and reconcile them back through a strict
+  detect/review/apply separation that never bypasses mechanical
+  validation. External additions always enter as a candidate Claim —
+  never a fabricated Observation, and never a Requirement without
+  citing a real, already-approved Decision (`check_requirement_cites_approved_decision`,
+  new in `scripts/check_knowledge_base.py`, alongside
+  `check_anchor_integrity`). Project documentation (`README.md`,
+  `CONTRIBUTING.md` — now scanned by `spec_docs.py` alongside README;
+  `CLAUDE.md` stays excluded) can optionally cite the knowledge record
+  that grounds a region via a `codecompass-grounded-by` marker, surfaced
+  by a small, advisory-only grounding-coverage report. New guide:
+  `docs/codecompass-knowledge-workflow.md`. `codecompass-template` gained
+  a matching, lightweight `optional-intermediate-knowledge/` directory.
+  Validated against this project's own real 182-record
+  `codecompass-domain` slug and a real `hledger-depth`
+  (Ledgerkit-relevant) dogfood run, plus 26 new deterministic tests
+  (`tests/test_knowledge_intermediate.py`).
 - **Phase 71** (Post-v1 documentation refresh, done): `README.md`
   gained a "Limitations" section (8 concrete, honestly-disclosed gaps)
   and an "Evidence & provenance" section, neither of which existed
