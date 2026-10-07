@@ -8,47 +8,49 @@ session-resumption, not a project history.
 ## Current phase
 
 **Phase 81 (persistent bidirectional intermediate knowledge layer) is
-`reopened` for a third, narrowly-scoped corrective pass** — direct user
-request, 2026-10-08. The original implementation, a first corrective pass
-(`decisions/0073`, nine defects), and a second corrective pass
-(`decisions/0074`, fourteen more defects and gaps) were all closed out
-`done` 2026-10-07. Full history preserved, not rewritten:
+`done`** — original implementation plus three corrective passes
+(`decisions/0073`, nine defects; `decisions/0074`, fourteen defects;
+`decisions/0075`, two defects) all closed out, 2026-10-07/08. Full
+history preserved, not rewritten:
 `planning/retros/phase-81-intermediate-knowledge-layer.md` (original),
 `planning/retros/_audit-phase-81.md` (original audit),
 `planning/retros/phase-81-corrective-pass.md` (first corrective pass),
 `planning/retros/phase-81-second-corrective-pass.md` (second corrective
 pass), `planning/retros/_drift-audit-phase-81-second-corrective-pass.md`,
-`planning/retros/_audit-phase-81-second-corrective-pass.md`.
+`planning/retros/_audit-phase-81-second-corrective-pass.md`,
+`planning/retros/phase-81-third-corrective-pass.md` (third corrective
+pass), `planning/retros/_audit-phase-81-third-corrective-pass.md`.
 
-**This third pass corrects two further real defects** found reviewing
-the second corrective pass's own work (full account: `decisions/0075`):
+**The third pass** corrected two further real defects found reviewing
+the second corrective pass's own work: (1) a valid `Type: Requirement`
+candidate could skip the live-presence/race check other candidate types
+already had — fixed via a single `_CandidateIdentity`
+(kind/statement/decision) derived once, before the presence check, and
+reused for the real apply, never re-derived per branch; (2) grounded-
+region concurrency identity omitted the cited-id *set* itself — removing
+or adding a cited id from a `codecompass-grounded-by` marker, with the
+region's own prose and every still-cited record's own content unchanged,
+was silently `noop` at detection and passed silently at apply — fixed by
+comparing cited-id membership (order-insensitive, add/remove-sensitive)
+at both detection (folded into the existing `doc_candidate` case, never
+`noop`) and apply time (a new explicit concurrency check). Stable
+`region:<id>` identity (`decisions/0074` point 10) is unaffected —
+region identity and grounding membership are distinct concepts.
 
-1. A valid `Type: Requirement` candidate skipped the live-presence/race
-   check every other candidate type already had —
-   `_apply_candidate_addition` branched into Requirement-specific apply
-   *before* checking candidate-text presence, so a stale manifest could
-   still create a Requirement whose live candidate text had already been
-   deleted or materially changed. Fixed via a single `_CandidateIdentity`
-   (kind/statement/decision) derived once, before the presence check,
-   and reused for the real apply — never re-derived per branch.
-2. Grounded-region concurrency identity omitted the cited-id *set*
-   itself — removing (or adding) a cited id from a
-   `codecompass-grounded-by` marker, with the region's own prose and
-   every still-cited record's own content both unchanged, was silently
-   classified `noop` at detection and passed silently at apply. Fixed:
-   `detect_grounded_region_changes` now compares cited-id membership
-   (order-insensitive — a reorder is not a change — but add/remove-
-   sensitive) and folds a membership change into the existing
-   `doc_candidate` structural-change case, never `noop`; `_apply_doc_region_edit`
-   gained a matching apply-time membership check alongside its existing
-   region-text and per-id-content checks.
-
-8 new tests added (73 total in `tests/test_knowledge_intermediate.py`);
-full project suite 853 passed, 2 skipped; lint and strict knowledge-base/
-user-docs validation clean. Stable `region:<id>` identity
-(`decisions/0074` point 10) is explicitly unaffected — region identity
-and grounding membership are distinct concepts, both now independently
-correct.
+Final state: 73 tests in `tests/test_knowledge_intermediate.py`, full
+project suite 853 passed, 2 skipped, lint and strict knowledge-base/
+user-docs validation clean. Dogfooded for real against a scratch copy of
+the live `codecompass-domain` corpus's real grounded README region
+(adding a real citation surfaced as a candidate, never `noop`; a
+membership mutation before apply failed closed, zero stray records) and
+a disposable throwaway slug for the Requirement scenario (a deleted valid
+Requirement candidate fails closed, zero records created). Independent
+completion audit: **PASS**
+(`planning/retros/_audit-phase-81-third-corrective-pass.md`), every claim
+independently re-derived from the real code/tests, not trusted from the
+commit message or retro. Docs-drift audit: NO DRIFT. Learning triage:
+both retro-surfaced observations found adequately covered by existing
+`L-075`/`L-085`/`L-087` — no new candidates filed.
 
 Central architecture is unchanged and remains approved: canonical
 knowledge stays in `planning/knowledge/`, `context-graph.db` stays
@@ -56,12 +58,8 @@ mechanical-only, reconciliation stays detect → review → validated apply,
 zero new persisted canonical fields beyond what `decisions/0071`/`0072`
 already established.
 
-Next concrete step: dogfood against a scratch copy, a fresh per-phase
-docs-drift audit, learning/context-gap triage if warranted, and a fresh
-independent completion audit (explicitly inspecting Requirement
-candidate disappearance/idempotency, grounding-id add/remove/reorder
-detection and apply-time race, and stable-region-id non-regression) —
-only restore Phase 81 to `done` once that audit genuinely passes.
+Next concrete step: none outstanding for Phase 81. Next phase not yet
+chosen — consult `planning/ROADMAP.md`'s open rows for what's next.
 
 ---
 
