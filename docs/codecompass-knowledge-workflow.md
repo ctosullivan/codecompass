@@ -205,7 +205,7 @@ A documentation region can optionally cite the exact knowledge records
 that ground it:
 
 ```markdown
-<!-- codecompass-grounded-by: CL-ARCH-014, REQ-ARCH-002 -->
+<!-- codecompass-grounded-by: CL-ARCH-014, REQ-ARCH-002 region:sync-idempotency -->
 ### How sync handles idempotency
 ...ordinary, hand-authored prose...
 <!-- /codecompass-grounded-by -->
@@ -215,31 +215,73 @@ This is **optional and per-region** — not every sentence needs one.
 Where it's absent, nothing breaks — the region is just ordinary,
 untracked prose, the same as any other documentation today.
 
-Where it's present, a grounded region genuinely participates in
-reconciliation, in both directions — run
+The trailing `region:<id>` token is optional but recommended for any
+marker you intend to keep long-term: it gives the region a **stable
+identity** that survives you inserting or reordering content around it
+later. A marker with no `region:` token still works, identified instead
+by its position among grounded regions in the same file — fine for a
+short-lived marker, fragile if you later add or move a region above it.
+Two markers must never claim the same explicit `region:<id>` — detection
+fails closed (loudly, non-zero exit) rather than silently picking one.
+
+Where a grounding marker is present, that region genuinely participates
+in reconciliation, in both directions — run
 `codecompass knowledge doc-select-candidates`:
 
 - **You edit the factual prose, the cited record doesn't change**: the
   edit becomes a real reconciliation candidate, written into the cited
   record's own slug and reconciled through the exact same review/apply
-  path as any other knowledge edit — no canonical mutation happens until
-  that review/apply actually runs.
+  path as any other knowledge edit. Reviewing it requires one more
+  explicit call than an ordinary candidate: set the item's own
+  `semantic_change` field to `false` if this is purely presentational
+  (rewording, a typo fix — canonical knowledge is untouched, nothing new
+  is created once applied) or `true` if it asserts something new about
+  the system (a candidate Claim is created, never auto-promoted to
+  verified truth, exactly like any other new candidate). This is always a
+  reviewer's own judgment call — never something `apply` mechanically
+  proves. Immediately before writing, `apply` re-verifies *both* the
+  region's own text *and* every cited record's own content against what
+  was true at detection time — either moving refuses the apply closed,
+  the same concurrency protection an intermediate-document anchor edit
+  already gets.
 - **The cited record changes, the prose doesn't**: surfaced as
   "potentially stale, worth a look" — informational only, no manifest
   item, since there's a human judgment call about whether the prose
-  still reads accurately, not a mechanical edit to reconcile.
+  still reads accurately, not a mechanical edit to reconcile. This stays
+  flagged on every subsequent detection run until explicitly dismissed
+  with `codecompass knowledge doc-acknowledge-stale <doc> <region>`
+  (`<region>` being the region's own `region:<id>` value, or its
+  positional index if it has none) — merely detecting the staleness again
+  never clears it on its own.
 - **Both change at once**: an explicit concurrent-change conflict,
   reported clearly; neither side is touched, the same as an intermediate-
-  document conflict.
+  document conflict. This is never auto-resolved — it keeps being
+  reported until the underlying facts genuinely change again.
+
+When a semantic documentation edit is applied, the region's own marker is
+updated to also cite the newly created Claim (`grounded-by: CL-OLD,
+CL-NEW`) — the connection to prior knowledge is preserved, not dropped,
+and the new Claim becomes discoverable from this region going forward.
+
+**Detecting a change is never the same as acknowledging it.** None of the
+three cases above, nor running `doc-select-candidates` itself, ever moves
+a baseline on its own — the one exception is a region seen for the very
+first time, where there's no prior state to lose by establishing one
+immediately. A `doc_candidate` only advances its own baseline once
+actually applied; a `claims_changed` finding only clears once explicitly
+acknowledged.
 
 `codecompass knowledge status` also reports a real, advisory-only
 grounding-coverage summary: how many regions are grounded, how many
 *changed* grounded regions there are, and — reusing the same heading-
 based chunking `context-graph.db`'s own documentation tracking already
 uses — how many *changed but ungrounded* regions exist, worth a look.
-None of this ever blocks anything, and it never converts ungrounded
-prose into a canonical Claim on its own; that always requires an
-explicit grounding marker and an explicit reconciliation step.
+This, too, is never auto-cleared by merely looking — dismiss it
+explicitly with `codecompass knowledge doc-acknowledge-chunks` once
+you've actually reviewed the changes. None of this ever blocks anything,
+and it never converts ungrounded prose into a canonical Claim on its own;
+that always requires an explicit grounding marker and an explicit
+reconciliation step.
 
 ## Phase knowledge packages
 

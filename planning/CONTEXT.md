@@ -8,38 +8,56 @@ session-resumption, not a project history.
 ## Current phase
 
 **Phase 81 (persistent bidirectional intermediate knowledge layer) is
-`reopened` for a focused corrective pass** — direct user request,
-2026-10-07, same day it was first closed `done`. The original
-implementation, dogfood runs, drift audit, learning triage, and first
-completion audit (PASS WITH NON-BLOCKING OBSERVATIONS) all genuinely
-happened and are preserved unedited
+`reopened` for a second, focused corrective pass** — direct user
+request, 2026-10-07, same day as the first corrective pass
+(`decisions/0073`). That first pass's own implementation, tests, and real
+dogfood validation (against `codecompass-domain` and the real
+`hledger-depth` slug) were complete, but a further, more detailed review
+of the pass itself — not of the original Phase 81 design — found
+fourteen more real defects and gaps, nearly all in the grounded-document
+reconciliation path `decisions/0073` point 3 introduced. The original
+implementation/audit history and the first corrective pass's own history
+are both preserved unedited
 (`planning/retros/phase-81-intermediate-knowledge-layer.md`,
-`planning/retros/_audit-phase-81.md`) — this reopening does not rewrite
-that history, it corrects real behavioural defects a post-completion
-review found that the original audit's own scope didn't catch.
+`planning/retros/_audit-phase-81.md`,
+`planning/retros/phase-81-corrective-pass.md`) — this second reopening
+corrects further real behavioural defects, it does not rewrite that
+history.
 
-Defects being corrected (full detail: `decisions/0073`,
-`planning/retros/phase-81-corrective-pass.md` once written): (1) an
-unsafe whole-slug automatic refresh in `knowledge select-candidates`
-that could erase an unrelated pending edit elsewhere in the same slug or
-file before it was ever detected; (2) non-idempotent reconciliation —
-re-applying the same manifest, or re-discovering an already-applied
-candidate on a fresh `select-candidates` run, could duplicate a
-canonical record; (3) grounded README/CONTRIBUTING regions could be
-*identified* but a factual edit to one never actually became a
-reconciliation candidate; (4) the advisory grounding-coverage report
-didn't track changed regions at all, only static counts; (5) a
-mistaken `semantic_change: false` review annotation could let cached
-presentation wording become the *only* agent-visible representation of
-a Claim, silently diverging from its real canonical meaning; (6) any
-candidate prose merely mentioning an approved `DEC-*` id was treated as
-a Requirement proposal, far too permissive, and a placeholder
-Given/When/Then was auto-generated rather than required; (7) every
-external candidate Claim defaulted to `basis: proposed_policy`
-regardless of whether it expressed a factual hypothesis or a policy
-intent; (8) `derive_provenance_label`'s `directly_stated` branch used
-`Evidence.evidence_kind` as a proxy for "traces to a real Observation"
-instead of actually walking the real, existing `observations:` field.
+**All fourteen corrections are now implemented** (full detail:
+`decisions/0074`, `planning/retros/phase-81-second-corrective-pass.md`):
+(1) detection no longer advances a grounding/chunk baseline merely by
+observing drift — only an actual `apply`, a brand-new region's first
+sighting, or one of two new explicit commands
+(`doc-acknowledge-stale`/`doc-acknowledge-chunks`) does; (2) a grounded-
+document `apply` now re-verifies every cited record's own content hash,
+not just the region's own text, before writing; (3) a `doc_region_edit`
+item's own `semantic_change` field distinguishes a presentation-only edit
+(acknowledged, no Claim) from a factual one (creates a candidate Claim);
+(4) a semantic edit's new Claim is added back to the region's own
+grounding marker, preserving discoverability; (5) the rendered candidate
+instructions now describe the real `Type: Requirement`/`Type: Intent`
+protocol instead of the pre-`decisions/0073` rule; (6) the public
+`codecompass-template` is rewritten for the corrected workflow and pushed
+(commit `bd2420d`, verified on the real remote); (7) a `Type: Intent`
+block's own header no longer leaks into the resulting Claim's
+`statement`; (8) a disappeared candidate with no matching canonical
+record now fails closed instead of reporting false success; (9)
+deduplication is kind-aware (and decision-aware for a Requirement), so a
+Claim and a Requirement with identical statement text can never
+cross-dedup; (10) grounded regions can carry a stable `region:<id>`
+identity surviving insertion/reordering, duplicate explicit ids failing
+closed — the real README.md's own marker was migrated to this form,
+confirmed to re-detect clean with no spurious drift.
+
+29 new tests (61 total in `tests/test_knowledge_intermediate.py`); full
+project suite 830 passed, 2 skipped. Real dogfood run against a scratch
+copy of the live `codecompass-domain` corpus and its real grounded README
+region, exercising the full lifecycle (presentation edit → apply →
+acknowledged, zero Claims; factual edit → apply → new Claim → post-apply
+grounding update → discoverable from the new Claim; a cited Claim
+mutated between detection and apply → apply fails closed, zero stray
+records).
 
 Central architecture is unchanged and remains approved: canonical
 knowledge stays in `planning/knowledge/`, `context-graph.db` stays
@@ -47,11 +65,11 @@ mechanical-only, reconciliation stays detect → review → validated apply,
 zero new persisted canonical fields beyond what `decisions/0071`/`0072`
 already established.
 
-Next concrete step: implement the nine corrections, expand regression
-coverage (including the combination cases the original suite missed),
-real dogfood validation of the corrected behaviour, a fresh drift audit
-and learning triage, and a fresh independent completion audit before
-restoring Phase 81 to `done`.
+Next concrete step: run the remaining closeout sequence — fresh
+per-phase docs-drift audit, learning/context-gap triage, and a fresh
+independent completion audit (explicitly inspecting all areas
+`decisions/0074` touched) — and only restore Phase 81 to `done` once that
+audit genuinely passes.
 
 ---
 

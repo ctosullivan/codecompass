@@ -1,15 +1,41 @@
 # Phase 81 — persistent bidirectional intermediate knowledge layer
 
-**Status: corrective pass complete, pending fresh completion audit.**
-Originally implemented, dogfooded, and closed `done` 2026-10-07 (first
-completion audit: PASS WITH NON-BLOCKING OBSERVATIONS,
+**Status: second corrective pass complete, pending fresh completion
+audit.** Originally implemented, dogfooded, and closed `done` 2026-10-07
+(first completion audit: PASS WITH NON-BLOCKING OBSERVATIONS,
 `planning/retros/_audit-phase-81.md`). **Reopened the same day**, direct
 user request, after post-completion review found nine real
-implementation defects the original audit's own scope did not catch.
-The original retro (`planning/retros/phase-81-intermediate-knowledge-layer.md`)
-and the original audit report are preserved unedited as the historical
-record; this reopening corrects behaviour, it does not rewrite that
-history.
+implementation defects the original audit's own scope did not catch
+(`decisions/0073`). **Reopened a second time, same day**, direct user
+request, after further review of that corrective pass itself found
+fourteen more real defects and gaps, mostly in the grounded-document
+reconciliation path (`decisions/0074`). The original retro
+(`planning/retros/phase-81-intermediate-knowledge-layer.md`), the
+original audit report, and the first corrective-pass retro
+(`planning/retros/phase-81-corrective-pass.md`) are preserved unedited as
+the historical record; each reopening corrects behaviour, it does not
+rewrite that history.
+
+**Second corrective-pass amendment note**: see `decisions/0074` for the
+full, authoritative account of all fourteen corrections (baseline
+advancement now requires an actual apply or explicit acknowledgement,
+never mere detection; apply-time concurrency checks for a grounded
+document's own cited records, not just its own text; an explicit
+`semantic_change` distinction between a presentation-only and a factual
+grounded-document edit; a semantic edit's new Claim gets added back to
+the region's own grounding marker; corrected inline candidate
+instructions; the public `codecompass-template` updated and pushed;
+`Type: Intent`'s own header no longer leaks into canonical statement
+text; a disappeared candidate now fails closed instead of reporting false
+success; type-aware deduplication so a Claim and a Requirement never
+cross-dedup; and stable `region:<id>` grounded-region identity,
+surviving insertion/reordering). §9 below still describes this phase's
+*original, pre-implementation* design sketch (graph-table-based
+grounding scanning that was never actually built this way) and was left
+as historical planning narrative by the first corrective pass; for the
+real, current grounded-document mechanism, see
+`docs/codecompass-knowledge-workflow.md`'s "Project documentation"
+section and `decisions/0073`/`0074` directly, not §9.
 
 **Corrective-pass amendment note**: see `decisions/0073` for the full,
 authoritative account of all nine corrections (targeted per-block
@@ -722,11 +748,27 @@ on blank-line/heading boundaries, and for each block:
 - **Never a Decision.** A Decision stays a human-alone-authored record
   via its existing path; the candidate-region mechanism cannot
   manufacture one.
-- **Never a duplicate.** Once a block's content is promoted into a real
-  record, its raw text is removed from the live candidate region — a
-  later `select-candidates` run will not rediscover it. Two blocks with
-  byte-identical text (after trimming) are treated as the same
-  contribution by design, producing exactly one record.
+- **Never a duplicate, but never cross-kind either** (sharpened by the
+  second corrective pass, `decisions/0074` point 9). Once a block's
+  content is promoted into a real record, its raw text is removed from
+  the live candidate region — a later `select-candidates` run will not
+  rediscover it. Two blocks with byte-identical text (after trimming),
+  *of the same record kind*, are treated as the same contribution by
+  design, producing exactly one record — but a pre-existing Claim never
+  blocks an explicit, valid Requirement proposal with identical wording
+  from being created, and vice versa.
+- **Never leaking control metadata into canonical content**
+  (`decisions/0074` point 7). A `Type: Intent` block's own header line is
+  stripped before the remaining text becomes the resulting Claim's
+  `statement` — the same principle the `Type: Requirement` path's own
+  `Decision:`/`Statement:`/`Example:` lines already followed from the
+  start.
+- **Never a false "already applied."** If a block's text is no longer
+  present in the live candidate region at apply time, that is only
+  reported as success when a genuinely matching canonical record can
+  still be found; otherwise it fails closed as an apply-time race or a
+  stale manifest (`decisions/0074` point 8) — disappearance alone is
+  never read as proof of prior success.
 
 Moving headings, reformatting, or adding commentary anywhere else in the
 file has no effect on canonical knowledge — the parser only ever looks
@@ -1110,7 +1152,26 @@ Directly mirrors `enrich select-candidates`/`enrich apply` (§0.2):
   manifest item in the owning Claim's own slug, reconciled through the
   exact same `apply` as any other item; a cited record changing on its
   own is reported read-only ("potentially stale"); both changing is an
-  explicit conflict, neither side touched.
+  explicit conflict, neither side touched. **Corrected by the second
+  corrective pass (`decisions/0074`, points 1/10)**: detection is now
+  entirely read-only except for establishing a brand-new region's first
+  baseline — a `doc_candidate` or `claims_changed` finding is never
+  acknowledged merely by being detected, only by an actual `apply` or the
+  two commands below. Each region is identified by a stable
+  `region:<id>` marker token when present (surviving insertion/
+  reordering), falling back to the pre-existing positional identity
+  otherwise; two markers claiming the same explicit id fail closed.
+- **`codecompass knowledge doc-acknowledge-stale <doc> <region>`** (new,
+  `decisions/0074` point 1) — the explicit resolution for a
+  `claims_changed` finding: a cited record moved, the region's own prose
+  didn't, and a human has reviewed it and decided the prose still reads
+  accurately. `<region>` is the region's own `region:<id>` value, or its
+  positional index if it has none. Refuses (exit 1) if the named region
+  isn't genuinely `claims_changed`.
+- **`codecompass knowledge doc-acknowledge-chunks`** (new, `decisions/0074`
+  point 1) — the explicit resolution for the separate, purely advisory
+  ungrounded-document-chunk tracker (§9.6) `knowledge status` surfaces.
+  Never advanced automatically.
 - **`codecompass knowledge apply <manifest-path> [--strict]`** — Stage 3.
   The **only** command that writes `planning/knowledge/*/*.yaml`.
   Requires the manifest's items to already be annotated (Stage 2's own
@@ -1132,7 +1193,18 @@ Directly mirrors `enrich select-candidates`/`enrich apply` (§0.2):
   after every genuine success; and content-addressed-dedups against
   existing records as a second line of defence, so neither re-applying
   the same manifest nor a fresh `select-candidates` rediscovering
-  already-promoted content can ever create a duplicate.
+  already-promoted content can ever create a duplicate. **Further
+  corrected by the second corrective pass (`decisions/0074`, points
+  2/3/4/8/9)**: a `doc_region_edit` item's apply now also re-verifies
+  every cited record's own content hash, not just the region's own text,
+  failing closed on either moving since detection; the item's own
+  `semantic_change` field (reviewer-set, default `false`) decides whether
+  a presentation-only edit is merely acknowledged (no Claim) or a
+  semantic edit creates one, which then also gets added back to the
+  region's own grounding marker; a disappeared candidate with no matching
+  record now fails closed rather than reporting false success; and
+  dedup is kind-aware (plus decision-aware for a Requirement), so a Claim
+  and a Requirement with identical statement text can never cross-dedup.
 - **`codecompass knowledge status [<slug>]`** — reports every record at
   `status: contradicted`/`proposed`-with-`unsupported`-evidence, every
   mechanically-derived `STALE` record (§1.2), every unresolved
@@ -1403,6 +1475,22 @@ report, and the detect/review/apply separation:
   depth-vs-scope rules for any new fail-closed mechanism.
 - `derive_provenance_label`: an ordinary unit test covering each of the
   five labels plus the ambiguous `directly_stated` case.
+
+**Second corrective-pass additions (`decisions/0074`)**: stable region
+identity surviving insertion above an existing region, and duplicate
+explicit `region:<id>` rejection; a grounded `doc_candidate` detected but
+not applied stays pending on repeated detection, a `claims_changed`
+finding stays stale until explicitly acknowledged, and an ungrounded
+chunk advisory persists until explicitly acknowledged; a grounded-doc
+apply refuses when its cited record changes before apply, and succeeds
+when nothing changed; a presentation-only grounded-doc edit creates zero
+Claims and only advances its baseline after apply, while a semantic one
+creates a candidate Claim; a semantic edit's new Claim is discoverable
+from its region after reconciliation; a `Type: Intent` block's own header
+never appears in the resulting Claim's statement; a disappeared candidate
+with no matching record fails closed rather than reporting success; and
+a pre-existing Claim/Requirement with identical statement text never
+cross-dedups in either direction.
 
 ### 16.2 Realistic dogfood scenarios (reusing `reference-project-protocol.md`'s own conventions)
 

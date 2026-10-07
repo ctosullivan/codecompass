@@ -4,7 +4,8 @@
 > first-run walkthrough before this full reference.
 
 > `init`, `sync`, `index`, `check`, `query`, `chat`, `undo`, `enrich
-> apply`, and `knowledge render|select-candidates|apply|status` are
+> apply`, and `knowledge render|select-candidates|doc-select-candidates|
+> apply|status|doc-acknowledge-stale|doc-acknowledge-chunks` are
 > implemented. `promote` was removed in Phase 15 (`decisions/0033`) —
 > its three former jobs (clone, enrich, generate Skill) are now automatic
 > outcomes of bootstrap/`sync`. The context graph (`query`), generated
@@ -344,10 +345,10 @@ anything was rejected.
 codecompass enrich apply entries.json --agent context-enrichment-agent
 ```
 
-## `codecompass knowledge render|select-candidates|apply|status`
+## `codecompass knowledge render|select-candidates|doc-select-candidates|apply|status|doc-acknowledge-stale|doc-acknowledge-chunks`
 
-**Status:** implemented (Phase 81). See
-[`codecompass-knowledge-workflow.md`](codecompass-knowledge-workflow.md)
+**Status:** implemented (Phase 81, corrected `decisions/0073`/`0074`).
+See [`codecompass-knowledge-workflow.md`](codecompass-knowledge-workflow.md)
 for the full, narrative guide — this section is the terse reference.
 
 Projects a project's own `planning/knowledge/<slug>/` canonical records
@@ -386,12 +387,43 @@ canonical record field (`decisions/0071`/`0072`).
   advisory-only documentation-grounding coverage report (never
   blocking). `--strict` exits 1 only for a genuine unresolved
   concurrent-change conflict, never for a coverage gap.
+- **`codecompass knowledge doc-select-candidates [--dry-run]`** —
+  mechanical only, no AI call, for explicitly grounded project-document
+  regions (`<!-- codecompass-grounded-by: CL-X [region:<id>] -->` ...
+  `<!-- /codecompass-grounded-by -->` in README.md/CONTRIBUTING.md). A
+  factual prose edit becomes a real candidate, written into the cited
+  record's own slug and reconciled via the exact same `apply`; a cited
+  record changing on its own is reported as "potentially stale," never
+  mutated; both at once is an explicit, unresolved conflict. **Detecting
+  a change never by itself acknowledges it** — a region's baseline only
+  advances when it's seen for the first time, when its own
+  `doc_candidate` is actually applied, or via the two explicit commands
+  below.
+- **`codecompass knowledge doc-acknowledge-stale <doc> <region>`** —
+  explicitly dismisses a "potentially stale" finding once reviewed
+  (`<region>` is the region's own `region:<id>` value, or its positional
+  index if it has none). Refuses (exit 1) if the named region isn't
+  genuinely in that state.
+- **`codecompass knowledge doc-acknowledge-chunks`** — explicitly
+  dismisses the separate, purely advisory *ungrounded*-document-change
+  tracker `knowledge status` surfaces. Never automatic.
+
+A `doc_region_edit` manifest item additionally requires one more review
+field before `apply`: `semantic_change` (`true`/`false`, default
+`false`) — `false` acknowledges a purely presentational edit (no Claim
+created, canonical knowledge untouched); `true` creates a candidate Claim
+exactly like any other proposed addition. `apply` re-verifies both the
+region's own text and every cited record's own content immediately
+before writing, failing closed on either moving since detection.
 
 ```bash
 codecompass knowledge render
 codecompass knowledge select-candidates codecompass-domain
 codecompass knowledge apply planning/knowledge/codecompass-domain/reconciliation/20261007T054415Z.toml
 codecompass knowledge status
+codecompass knowledge doc-select-candidates
+codecompass knowledge doc-acknowledge-stale README.md sync-idempotency
+codecompass knowledge doc-acknowledge-chunks
 ```
 
 ## `codecompass index`

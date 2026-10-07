@@ -349,6 +349,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Phase 81** (post-`done`, first corrective pass, direct user request,
+  nine real implementation defects found after closeout — `decisions/0073`):
+  targeted per-block refresh (`refresh_safe_anchors`) replacing an unsafe
+  whole-slug `render_slug` call that could erase a pending edit elsewhere
+  in the same file; idempotent, consumable reconciliation (a real
+  manifest `state` lifecycle, content-addressed dedup, candidate-text
+  consumption, per-anchor post-apply refresh so a promoted edit can't be
+  rediscovered as new); grounded README/CONTRIBUTING regions now
+  participate in real, bidirectional reconciliation via a new
+  `codecompass knowledge doc-select-candidates` command, not just
+  identification; honest, real-change-tracking advisory grounding
+  coverage reusing `doc_chunking.chunk_markdown`; a rendered
+  presentation-cache override still embeds the record's own real
+  canonical statement as a machine-facing comment; Requirement proposals
+  now require an explicit, structured `Type: Requirement` block rather
+  than any mere mention of an approved Decision; external candidates now
+  default to an honest `UNCLASSIFIED` basis instead of being guessed as
+  `proposed_policy`; `derive_provenance_label`'s `directly_stated` branch
+  now walks the real `Evidence.observations:` field instead of using
+  `evidence_kind` as a wrong proxy; and the `codecompass-template`
+  delivery, previously stuck on an HTTPS remote with no stored
+  credentials, was verified against and pushed to the real public
+  repository via SSH.
+- **Phase 81** (post-`done`, second corrective pass, direct user request,
+  fourteen further defects and gaps found reviewing the first corrective
+  pass itself — `decisions/0074`): a grounded document's baseline no
+  longer advances merely because drift was detected — only an actual
+  `apply`, an explicit `doc-acknowledge-stale`/`doc-acknowledge-chunks`
+  (both new commands), or a brand-new region's own first sighting moves
+  it; `apply` for a grounded-document edit now also re-verifies every
+  cited record's own content hash, not just the region's own text, before
+  writing; a `doc_region_edit` manifest item's own `semantic_change`
+  field now distinguishes a presentation-only edit (acknowledged, no
+  Claim created) from a factual one (creates a candidate Claim); a
+  semantic edit's new Claim is now added back to the region's own
+  grounding marker so it stays discoverable; the rendered candidate
+  instructions were rewritten to describe the real `Type: Requirement`/
+  `Type: Intent` protocol instead of the pre-correction "cite an approved
+  Decision" rule; a `Type: Intent` block's own header no longer leaks
+  into the resulting Claim's `statement`; a disappeared candidate with no
+  matching canonical record now fails closed instead of reporting false
+  success; deduplication is now kind-aware (and decision-aware for a
+  Requirement), so a Claim and a Requirement with identical statement
+  text can never cross-dedup; grounded regions can now carry a stable
+  `region:<id>` identity surviving insertion/reordering, with duplicate
+  explicit ids failing closed (the real README.md's own marker migrated
+  to this form); and the public `codecompass-template`'s
+  `optional-intermediate-knowledge/` docs, which predated every one of
+  these corrections, were rewritten to match and pushed to the real
+  public default branch.
 - `README.md`'s own "Status" section still said "Pre-release, not yet
   published" and its dev-install comment still said "not yet published
   to PyPI" after `1.0.0` was actually published to PyPI as

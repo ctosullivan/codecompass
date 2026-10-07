@@ -162,19 +162,31 @@ def extract_canonical_statement(block_text: str) -> str | None:
 
 _GROUNDING_OPEN_RE = re.compile(r"<!--\s*codecompass-grounded-by:\s*(.+?)\s*-->")
 _GROUNDING_CLOSE = "<!-- /codecompass-grounded-by -->"
+_REGION_ID_RE = re.compile(r"\bregion:([A-Za-z0-9_-]+)\b")
 
 
-def parse_grounding_markers(text: str) -> list[tuple[list[str], str]]:
+class DuplicateGroundingRegionIdError(ValueError):
+    """A `region:<id>` token (second corrective pass, point 10) must be
+    unique project-wide — two markers claiming the same stable identity
+    is ambiguous and must fail closed rather than silently pick one."""
+
+
+def parse_grounding_markers(text: str) -> list[tuple[list[str], str, str | None]]:
     """Every explicit `codecompass-grounded-by` region in `text` (§9.2) —
-    returns `(cited_record_ids, region_body)` pairs. Used in both
+    returns `(cited_record_ids, region_body, region_id)` triples. The
+    optional `region_id` (second corrective pass, point 10) comes from a
+    `region:<id>` token anywhere in the marker's own header, e.g.
+    `<!-- codecompass-grounded-by: CL-X region:readme-sync-behaviour -->`
+    — a stable identity that survives insertion/reordering, unlike a
+    positional index. A marker with no `region:` token still works (back-
+    compat with every marker this phase shipped before this correction);
+    its own identity falls back to `{doc_name}::{index}`, which is
+    fragile under insertion but never breaks outright. Used in both
     directions: given a changed record id, find which doc regions cite it
     (`find_grounded_doc_regions`); given a changed doc region, read off
-    the exact ids it already cites (the tuple's own first element) —
-    both deterministic, no dispatch call needed for the strong,
-    explicitly-grounded case (§9.2's own "canonical knowledge changes ->
-    affected doc region identified" / "factual doc changes -> relevant
-    canonical knowledge identified" pair)."""
-    results: list[tuple[list[str], str]] = []
+    the exact ids it already cites — both deterministic, no dispatch call
+    needed for the strong, explicitly-grounded case."""
+    results: list[tuple[list[str], str, str | None]] = []
     pos = 0
     while True:
         match = _GROUNDING_OPEN_RE.search(text, pos)
@@ -184,10 +196,43 @@ def parse_grounding_markers(text: str) -> list[tuple[list[str], str]]:
         if close_idx == -1:
             pos = match.end()
             continue
-        ids = _extract_id_strings(match.group(1))
-        results.append((ids, text[match.end() : close_idx]))
+        header = match.group(1)
+        ids = _extract_id_strings(header)
+        region_id_match = _REGION_ID_RE.search(header)
+        region_id = region_id_match.group(1) if region_id_match else None
+        results.append((ids, text[match.end() : close_idx], region_id))
         pos = close_idx + len(_GROUNDING_CLOSE)
     return results
+
+
+def _region_state_key(doc_name: str, index: int, region_id: str | None) -> str:
+    """The stable identity a grounding baseline is keyed by — an explicit
+    `region:<id>` when present (project-wide namespace, survives insertion/
+    reordering within its own doc), else the legacy, insertion-fragile
+    positional fallback (`decisions/0074`, point 10)."""
+    return f"id:{region_id}" if region_id else f"{doc_name}::{index}"
+
+
+def _check_no_duplicate_region_ids(
+    project_root: Path, doc_names: tuple[str, ...]
+) -> None:
+    seen: dict[str, tuple[str, int]] = {}
+    for doc_name in doc_names:
+        doc_path = project_root / doc_name
+        if not doc_path.is_file():
+            continue
+        text = doc_path.read_text(encoding="utf-8")
+        for index, (_ids, _region, region_id) in enumerate(parse_grounding_markers(text)):
+            if region_id is None:
+                continue
+            if region_id in seen:
+                other_doc, other_index = seen[region_id]
+                raise DuplicateGroundingRegionIdError(
+                    f"region id {region_id!r} is used by both {other_doc} "
+                    f"region #{other_index} and {doc_name} region #{index} — "
+                    "region ids must be unique project-wide"
+                )
+            seen[region_id] = (doc_name, index)
 
 
 def find_grounded_doc_regions(
@@ -207,7 +252,7 @@ def find_grounded_doc_regions(
         if not doc_path.is_file():
             continue
         text = doc_path.read_text(encoding="utf-8")
-        for ids, region in parse_grounding_markers(text):
+        for ids, region, _region_id in parse_grounding_markers(text):
             if record_id in ids:
                 hits.append((doc_path, region))
     return hits
@@ -264,14 +309,28 @@ def _owning_slug_for_record(project_root: Path, record_id: str) -> str | None:
     return None
 
 
+def _current_cited_hashes(project_root: Path, cited_ids: list[str]) -> dict[str, str]:
+    current: dict[str, str] = {}
+    for rid in cited_ids:
+        record = _find_record_in_any_slug(project_root, rid)
+        if record is not None:
+            current[rid] = sha256_text(record.path.read_text(encoding="utf-8"))
+    return current
+
+
 @dataclass
 class GroundedRegionFinding:
     doc_name: str
     index: int
+    region_id: str | None
     cited_ids: list[str]
     region_text: str
     region_hash: str
     case: str  # "new" | "noop" | "doc_candidate" | "claims_changed" | "concurrent_conflict"
+
+    @property
+    def state_key(self) -> str:
+        return _region_state_key(self.doc_name, self.index, self.region_id)
 
 
 def detect_grounded_region_changes(
@@ -282,11 +341,19 @@ def detect_grounded_region_changes(
     a safe concurrency model for docs, per `decisions/0073` point 3.
     Compares the region's own current text hash, and each cited record's
     own current content hash, against a persisted baseline
-    (`.grounding-state.toml`). A region seen for the first time
-    establishes no finding to compare against yet (`"new"`, not a false
-    positive) — pure, read-only; never mutates the baseline itself (see
-    `advance_grounding_baseline`).
+    (`.grounding-state.toml`), keyed by each region's own stable identity
+    (`decisions/0074`, point 10 — an explicit `region:<id>` token when
+    present, a positional fallback otherwise).
+
+    Entirely read-only (`decisions/0074`, point 1): a region with no
+    baseline entry at all is reported as `"new"` but its baseline is
+    *not* established here — establishing it is the caller's own explicit
+    act (`establish_new_region_baselines`), since even that is a state
+    mutation this function itself must never perform as a side effect of
+    merely looking. Raises `DuplicateGroundingRegionIdError` if two
+    markers claim the same explicit `region:<id>`.
     """
+    _check_no_duplicate_region_ids(project_root, doc_names)
     state = _read_simple_toml_tables(grounding_state_path(project_root))
     findings: list[GroundedRegionFinding] = []
     for doc_name in doc_names:
@@ -294,20 +361,18 @@ def detect_grounded_region_changes(
         if not doc_path.is_file():
             continue
         text = doc_path.read_text(encoding="utf-8")
-        for index, (ids, region) in enumerate(parse_grounding_markers(text)):
-            key = f"{doc_name}::{index}"
+        for index, (ids, region, region_id) in enumerate(parse_grounding_markers(text)):
+            key = _region_state_key(doc_name, index, region_id)
             baseline = state.get(key)
             region_hash = sha256_text(region)
             if baseline is None:
                 findings.append(
-                    GroundedRegionFinding(doc_name, index, ids, region, region_hash, "new")
+                    GroundedRegionFinding(
+                        doc_name, index, region_id, ids, region, region_hash, "new"
+                    )
                 )
                 continue
-            current_hashes: dict[str, str] = {}
-            for rid in ids:
-                record = _find_record_in_any_slug(project_root, rid)
-                if record is not None:
-                    current_hashes[rid] = sha256_text(record.path.read_text(encoding="utf-8"))
+            current_hashes = _current_cited_hashes(project_root, ids)
             base_cited_ids = baseline.get("cited_ids", [])
             base_cited_hashes = baseline.get("cited_hashes", [])
             baseline_by_id = dict(zip(base_cited_ids, base_cited_hashes, strict=False))
@@ -325,32 +390,83 @@ def detect_grounded_region_changes(
                 case = "claims_changed"
             else:
                 case = "concurrent_conflict"
-            findings.append(GroundedRegionFinding(doc_name, index, ids, region, region_hash, case))
+            findings.append(
+                GroundedRegionFinding(doc_name, index, region_id, ids, region, region_hash, case)
+            )
     return findings
 
 
-def advance_grounding_baseline(project_root: Path, findings: list[GroundedRegionFinding]) -> None:
-    """Persists the current region/claim hashes as the new baseline for
-    every finding except an unresolved `concurrent_conflict`, which must
-    keep being flagged until a human actually resolves it — mirrors the
-    intermediate-doc anchor rule that a conflict is never silently
-    accepted on either side."""
+def _write_region_baseline(
+    project_root: Path,
+    key: str,
+    region_hash: str,
+    cited_ids: list[str],
+    cited_hashes: dict[str, str],
+) -> None:
     state = _read_simple_toml_tables(grounding_state_path(project_root))
-    for finding in findings:
-        if finding.case == "concurrent_conflict":
-            continue
-        current_hashes = {}
-        for rid in finding.cited_ids:
-            record = _find_record_in_any_slug(project_root, rid)
-            if record is not None:
-                current_hashes[rid] = sha256_text(record.path.read_text(encoding="utf-8"))
-        key = f"{finding.doc_name}::{finding.index}"
-        state[key] = {
-            "region_hash": finding.region_hash,
-            "cited_ids": finding.cited_ids,
-            "cited_hashes": [current_hashes.get(rid, "") for rid in finding.cited_ids],
-        }
+    state[key] = {
+        "region_hash": region_hash,
+        "cited_ids": cited_ids,
+        "cited_hashes": [cited_hashes.get(rid, "") for rid in cited_ids],
+    }
     _write_simple_toml_tables(grounding_state_path(project_root), state)
+
+
+def establish_new_region_baselines(
+    project_root: Path, findings: list[GroundedRegionFinding]
+) -> list[str]:
+    """The only automatic baseline write left (`decisions/0074`, point 1)
+    — bootstrapping a region's *first-ever* baseline is not "clearing
+    drift" (there is no prior state to lose), unlike advancing an
+    existing baseline past a detected `doc_candidate`/`claims_changed`/
+    `concurrent_conflict`, which now only ever happens through an
+    explicit resolution: `apply` for a `doc_candidate`
+    (`_apply_doc_region_edit`), or the dedicated `doc-acknowledge-stale`
+    command for `claims_changed`. A `concurrent_conflict` is never
+    auto-resolved at all — it keeps being reported until the underlying
+    facts actually change again. Returns the state keys established."""
+    established: list[str] = []
+    for finding in findings:
+        if finding.case != "new":
+            continue
+        current_hashes = _current_cited_hashes(project_root, finding.cited_ids)
+        _write_region_baseline(
+            project_root, finding.state_key, finding.region_hash, finding.cited_ids, current_hashes
+        )
+        established.append(finding.state_key)
+    return established
+
+
+def acknowledge_stale_grounded_region(
+    project_root: Path, doc_name: str, region_locator: str
+) -> GroundedRegionFinding | None:
+    """Explicit resolution for a `claims_changed` finding (`decisions/0074`,
+    point 1) — a cited record moved, the document's own prose didn't; a
+    human has looked at the region and decided the prose still reads
+    accurately (or has edited it separately as its own `doc_candidate`
+    reconciliation). `region_locator` is either an explicit `region:<id>`
+    value or a positional index as a string (`"0"`, `"1"`, ...), matching
+    whichever identity the region's own marker actually uses. Returns the
+    finding that was acknowledged, or `None` if no matching, genuinely
+    `claims_changed` region was found (never silently acknowledges a
+    `doc_candidate` or `concurrent_conflict` — those have their own,
+    separate resolution paths)."""
+    findings = detect_grounded_region_changes(project_root, (doc_name,))
+    for finding in findings:
+        locator_matches = (
+            finding.region_id == region_locator or str(finding.index) == region_locator
+        )
+        if locator_matches and finding.case == "claims_changed":
+            current_hashes = _current_cited_hashes(project_root, finding.cited_ids)
+            _write_region_baseline(
+                project_root,
+                finding.state_key,
+                finding.region_hash,
+                finding.cited_ids,
+                current_hashes,
+            )
+            return finding
+    return None
 
 
 def write_doc_candidates_to_manifests(
@@ -367,6 +483,11 @@ def write_doc_candidates_to_manifests(
     for every slug an item was actually written for; a finding whose
     cited ids resolve to no real slug at all is skipped (nowhere to attach
     it) but remains visible via `detect_grounded_region_changes` itself.
+
+    Each item records both its own `base_region_hash` *and* every cited
+    id's own content hash at write time (`decisions/0074`, point 2) — the
+    concurrency check at apply time re-verifies both, not just the
+    region's own text.
     """
     by_slug: dict[str, list[GroundedRegionFinding]] = {}
     for finding in findings:
@@ -392,16 +513,22 @@ def write_doc_candidates_to_manifests(
             "items": [],
         }
         for finding in slug_findings:
+            cited_hashes = _current_cited_hashes(project_root, finding.cited_ids)
             data["items"].append(
                 {
                     "kind": "doc_region_edit",
                     "doc_name": finding.doc_name,
                     "region_index": finding.index,
+                    "region_id": finding.region_id or "",
                     "cited_ids": finding.cited_ids,
+                    "cited_hashes_at_detection": [
+                        cited_hashes.get(rid, "") for rid in finding.cited_ids
+                    ],
                     "region_text": finding.region_text,
                     "base_region_hash": finding.region_hash,
                     "state": "pending",
                     "decision": "undecided",
+                    "semantic_change": False,
                 }
             )
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
@@ -410,32 +537,144 @@ def write_doc_candidates_to_manifests(
     return written
 
 
+def _locate_live_region(
+    doc_path: Path, region_index: int, region_id: str
+) -> tuple[int, list[str], str] | None:
+    """Resolves a manifest item's own recorded region back to its live
+    position in the document — by stable `region_id` first when one was
+    recorded, falling back to the positional index otherwise. Returns
+    `(index, cited_ids, region_text)` or `None` if it no longer exists."""
+    regions = parse_grounding_markers(doc_path.read_text(encoding="utf-8"))
+    if region_id:
+        for index, (ids, region, rid) in enumerate(regions):
+            if rid == region_id:
+                return index, ids, region
+        return None
+    if region_index < len(regions):
+        ids, region, _rid = regions[region_index]
+        return region_index, ids, region
+    return None
+
+
+def _add_cited_id_to_grounding_marker(
+    doc_path: Path, region_index: int, region_id: str, new_id: str
+) -> bool:
+    """Post-apply grounding update (`decisions/0074`, point 4): after a
+    semantic document edit is reconciled into a new Claim, the region's
+    own marker is rewritten to additionally cite that new Claim —
+    `grounded-by: CL-OLD, CL-NEW` — preserving the relationship to prior
+    knowledge rather than silently dropping it, while making the new
+    Claim deterministically discoverable from this region from now on.
+    Rewrites only the one marker's own opening comment line; the region's
+    own prose and every other marker in the document are untouched."""
+    text = doc_path.read_text(encoding="utf-8")
+    pos = 0
+    index = 0
+    while True:
+        match = _GROUNDING_OPEN_RE.search(text, pos)
+        if not match:
+            return False
+        header = match.group(1)
+        region_id_match = _REGION_ID_RE.search(header)
+        this_region_id = region_id_match.group(1) if region_id_match else None
+        is_target = (
+            (region_id and this_region_id == region_id) or (not region_id and index == region_index)
+        )
+        if is_target:
+            ids = _extract_id_strings(header)
+            if new_id in ids:
+                return False  # already cited -- nothing to do, idempotent
+            suffix = f" region:{this_region_id}" if this_region_id else ""
+            new_header = f"{', '.join([*ids, new_id])}{suffix}"
+            new_text = (
+                text[: match.start()]
+                + f"<!-- codecompass-grounded-by: {new_header} -->"
+                + text[match.end() :]
+            )
+            doc_path.write_text(new_text, encoding="utf-8")
+            return True
+        close_idx = text.find(_GROUNDING_CLOSE, match.end())
+        pos = (close_idx + len(_GROUNDING_CLOSE)) if close_idx != -1 else match.end()
+        index += 1
+
+
 def _apply_doc_region_edit(project_root: Path, slug: str, item: dict) -> ApplyOutcome:
     doc_name = item.get("doc_name", "")
     doc_path = project_root / doc_name
     if not doc_path.is_file():
         return ApplyOutcome(False, item, f"{doc_name} no longer exists")
-    regions = parse_grounding_markers(doc_path.read_text(encoding="utf-8"))
-    index = item.get("region_index")
-    if not isinstance(index, int) or index >= len(regions):
-        return ApplyOutcome(False, item, "grounded region no longer exists at this index")
-    cited_ids, current_region = regions[index]
-    current_hash = sha256_text(current_region)
-    if current_hash != item.get("base_region_hash"):
+    region_id = item.get("region_id") or ""
+    region_index = item.get("region_index")
+    safe_index = region_index if isinstance(region_index, int) else -1
+    located = _locate_live_region(doc_path, safe_index, region_id)
+    if located is None:
+        return ApplyOutcome(False, item, "grounded region no longer exists")
+    live_index, cited_ids, current_region = located
+    current_region_hash = sha256_text(current_region)
+    if current_region_hash != item.get("base_region_hash"):
         return ApplyOutcome(
             False,
             item,
             "apply-time race: the grounded region's own text changed since "
             "detection — refusing to write; re-run doc detection and review again",
         )
+    # decisions/0074, point 2: concurrency protection equivalent to
+    # intermediate-doc anchors -- re-verify every cited record's own
+    # content hash too, not just the region's own text.
+    expected_hashes = dict(
+        zip(item.get("cited_ids", []), item.get("cited_hashes_at_detection", []), strict=False)
+    )
+    current_hashes = _current_cited_hashes(project_root, cited_ids)
+    for rid in cited_ids:
+        if current_hashes.get(rid, "") != expected_hashes.get(rid, ""):
+            return ApplyOutcome(
+                False,
+                item,
+                f"apply-time concurrency conflict: {rid}'s own content changed since "
+                "detection — refusing to write; re-run doc detection and review again",
+            )
+
     sdir = slug_dir(project_root, slug)
     records = load_slug_records(sdir)
     statement = current_region.strip()
-    existing = _find_existing_promoted_record(records, statement)
+    state_key = _region_state_key(doc_name, live_index, region_id or None)
+    # The region's own hash is computed over the body text between the
+    # marker comments only (never the opening comment's own header line),
+    # so adding a cited id to the header below never changes this value --
+    # computed once, reused for every baseline write in this function.
+    region_hash_for_baseline = current_region_hash
+
+    if not item.get("semantic_change", False):
+        # decisions/0074, point 3: a presentation-only document edit is a
+        # reviewer's own judgment call (never mechanically proven semantic
+        # equivalence, same honesty as the intermediate-doc case) -- no
+        # Claim is created; only the region's own baseline advances, and
+        # only because this is the explicit, successful resolution this
+        # phase requires before any baseline may move.
+        _write_region_baseline(
+            project_root, state_key, region_hash_for_baseline, cited_ids, current_hashes
+        )
+        return ApplyOutcome(
+            True,
+            item,
+            "presentation-only document edit acknowledged; canonical knowledge unchanged",
+        )
+
+    existing = _find_existing_promoted_record(records, statement, kind="claim")
     if existing:
+        _add_cited_id_to_grounding_marker(doc_path, live_index, region_id, existing)
+        new_cited_ids = cited_ids if existing in cited_ids else [*cited_ids, existing]
+        _write_region_baseline(
+            project_root,
+            state_key,
+            region_hash_for_baseline,
+            new_cited_ids,
+            _current_cited_hashes(project_root, new_cited_ids),
+        )
         return ApplyOutcome(
             True, item, f"already applied — {existing} already exists with this content", existing
         )
+
     new_id = _next_id(sdir, "CL")
     fields = {
         "id": new_id,
@@ -451,6 +690,19 @@ def _apply_doc_region_edit(project_root: Path, slug: str, item: dict) -> ApplyOu
         "depends_on": f"[{', '.join(cited_ids)}]" if cited_ids else "[]",
     }
     _write_record(sdir / f"{new_id}.yaml", fields)
+    # decisions/0074, point 4: the region now also cites the new Claim,
+    # preserving the relationship to prior knowledge rather than dropping
+    # it, and making CL-new deterministically discoverable from this
+    # region going forward.
+    _add_cited_id_to_grounding_marker(doc_path, live_index, region_id, new_id)
+    new_cited_ids = [*cited_ids, new_id]
+    _write_region_baseline(
+        project_root,
+        state_key,
+        region_hash_for_baseline,
+        new_cited_ids,
+        _current_cited_hashes(project_root, new_cited_ids),
+    )
     return ApplyOutcome(True, item, f"created {new_id} from a grounded document edit", new_id)
 
 
@@ -533,10 +785,13 @@ def detect_doc_chunk_changes(
 def advance_doc_chunk_baseline(
     project_root: Path, doc_names: tuple[str, ...] = _DEFAULT_GROUNDED_DOCS
 ) -> None:
-    """The explicit write step — recomputes every chunk's current hash and
-    persists it as the new baseline. Always advances (this tracking is
-    advisory-only; nothing depends on withholding an update the way a
-    concurrent-conflict anchor does)."""
+    """The explicit acknowledgement step (`decisions/0074`, point 1) —
+    recomputes every chunk's current hash and persists it as the new
+    baseline. **Never called automatically by detection or `knowledge
+    status`** — a human must explicitly run
+    `codecompass knowledge doc-acknowledge-chunks` to dismiss an advisory
+    ungrounded-change finding; merely observing a change is not
+    acknowledgement."""
     from codecompass.doc_chunking import chunk_markdown
 
     new_state: dict[str, dict] = {}
@@ -747,10 +1002,27 @@ _CANDIDATE_INSTRUCTIONS = (
     "below, strictly between the two marker comments. Content outside this "
     "region — including this paragraph — is never read as knowledge; it is "
     "just narrative framing CodeCompass leaves untouched.\n\n"
-    "To propose a Requirement rather than a Claim, cite an existing, "
-    'already-approved Decision id explicitly (e.g. "per DEC-ARCH-003") — '
-    "CodeCompass never invents a Decision on your behalf; without a cited, "
-    "approved Decision, your addition becomes a Claim."
+    "Plain prose becomes an unclassified Claim (a factual hypothesis, not "
+    "yet evidence-backed) — this is the default and the common case. "
+    "Merely mentioning a Decision id anywhere in your prose does NOT make "
+    "your addition a Requirement, and merely using the word \"should\" or "
+    "\"must\" does NOT make it declared intent — both need the explicit "
+    "structured forms below.\n\n"
+    "To propose a REQUIREMENT, start the block with a line reading exactly "
+    '"Type: Requirement", followed by:\n'
+    "  Decision: <id of an existing, already-approved Decision>\n"
+    "  Statement: <the requirement itself, one line>\n"
+    "  Example: <a Given/When/Then acceptance example>\n"
+    "CodeCompass never invents a Decision on your behalf — a missing or "
+    "not-yet-approved Decision id, or an Example that doesn't structurally "
+    "read as Given/When/Then, falls back to an ordinary Claim using your "
+    "Statement text, never a fabricated placeholder example.\n\n"
+    'To declare project INTENT (a proposed policy, not yet a fact about '
+    'the system), start the block with a line reading exactly "Type: '
+    'Intent", followed by the intended behaviour as plain prose on the '
+    "lines after it.\n\n"
+    "Anything else — plain prose with no Type: header — stays an "
+    "unclassified Claim until a reviewer looks at it."
 )
 
 
@@ -1004,13 +1276,14 @@ class AnchorFinding:
 class CandidateFinding:
     file: Path
     index: int
-    text: str
+    text: str  # the exact raw block, as it appears live -- for presence/consumption checks
     # Explicit structured metadata (decisions/0073, points 6/7) — never
     # inferred from merely mentioning an id anywhere in ordinary prose.
     requirement_decision: str | None = None  # set only if "Type: Requirement"
     requirement_statement: str | None = None
     requirement_example: str | None = None
     declared_intent: bool = False  # set only if "Type: Intent"
+    intent_statement: str | None = None  # the body, with the "Type: Intent" header stripped
 
 
 def detect_anchor_changes(project_root: Path, slug: str) -> list[AnchorFinding]:
@@ -1085,7 +1358,10 @@ def _parse_candidate_block(block: str) -> dict:
 
     `Type: Intent` marks the block as expressing declared project intent
     (eligible for `basis: proposed_policy`) rather than the default,
-    unclassified factual hypothesis a plain candidate becomes.
+    unclassified factual hypothesis a plain candidate becomes. Its own
+    `"statement"` key (`decisions/0074`, point 7) is the block's body with
+    the `Type: Intent` header line itself stripped — control metadata
+    must never leak into canonical semantic content.
     """
     lines = block.splitlines()
     if not lines:
@@ -1099,7 +1375,8 @@ def _parse_candidate_block(block: str) -> dict:
                 fields[match.group(1).lower()] = match.group(2).strip()
         return {"requirement": fields}
     if first == "Type: Intent":
-        return {"intent": True}
+        statement = "\n".join(lines[1:]).strip()
+        return {"intent": True, "statement": statement}
     return {}
 
 
@@ -1133,7 +1410,15 @@ def detect_candidate_additions(project_root: Path, slug: str) -> list[CandidateF
                     )
                 )
             elif parsed.get("intent"):
-                findings.append(CandidateFinding(md_path, index, block, declared_intent=True))
+                findings.append(
+                    CandidateFinding(
+                        md_path,
+                        index,
+                        block,
+                        declared_intent=True,
+                        intent_statement=parsed.get("statement") or "",
+                    )
+                )
             else:
                 findings.append(CandidateFinding(md_path, index, block))
     return findings
@@ -1253,10 +1538,14 @@ _MANIFEST_ITEM_FIELD_ORDER = [
     "requirement_statement",
     "requirement_example",
     "declared_intent",
+    "intent_statement",
     "doc_name",
+    "region_id",
     "region_index",
     "cited_ids",
+    "cited_hashes_at_detection",
     "region_text",
+    "base_region_hash",
     "state",
     "decision",
     "semantic_change",
@@ -1373,6 +1662,7 @@ def write_manifest(
             item["requirement_example"] = c.requirement_example or ""
         if c.declared_intent:
             item["declared_intent"] = True
+            item["intent_statement"] = c.intent_statement or ""
         data["items"].append(item)
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(_serialize_manifest(data), encoding="utf-8")
@@ -1454,26 +1744,46 @@ def _write_record(path: Path, fields: dict[str, str]) -> None:
 
 
 def _find_existing_promoted_record(
-    records: dict[str, KnowledgeRecord], statement: str, depends_on: str | None = None
+    records: dict[str, KnowledgeRecord],
+    statement: str,
+    kind: str = "claim",
+    depends_on: str | None = None,
+    decision: str | None = None,
 ) -> str | None:
-    """Content-addressed idempotency check (`decisions/0073`, point 2):
-    before creating a new record from external text, check whether an
-    equivalent one already exists — from a prior apply of the same or an
-    overlapping manifest. Avoids a separate ledger file by reusing the
-    canonical records themselves as the single source of truth for "has
-    this already happened." Two candidates with byte-identical text
-    (after trimming) are treated as the same contribution by design — see
-    `docs/codecompass-knowledge-workflow.md`'s own documented rationale."""
+    """Content-addressed idempotency check (`decisions/0073` point 2,
+    tightened by `decisions/0074` point 9): before creating a new record
+    from external text, check whether an equivalent one already exists —
+    from a prior apply of the same or an overlapping manifest. Avoids a
+    separate ledger file by reusing the canonical records themselves as
+    the single source of truth for "has this already happened."
+
+    **Type-aware**: `kind` is always checked (defaults to `"claim"`, the
+    overwhelmingly common case) — a pre-existing Claim with identical
+    prose must never block an explicit Requirement proposal from actually
+    being created, and a Requirement must never accidentally satisfy a
+    Claim-kind dedup check just because its own statement text matches.
+    `decision`, when given, additionally requires a Requirement's own
+    `decision:` field to match (two Requirements with the same statement
+    text but different authorising Decisions are not the same
+    contribution). Two candidates with byte-identical text (after
+    trimming) *of the same kind* are treated as the same contribution by
+    design — see `docs/codecompass-knowledge-workflow.md`'s own documented
+    rationale.
+    """
     target = statement.strip()
     if not target:
         return None
     for record in records.values():
+        if record.kind != kind:
+            continue
         if record.fields.get("statement", "").strip() != target:
             continue
         if depends_on is not None:
             deps = _extract_id_strings(record.fields.get("depends_on", ""))
             if depends_on not in deps:
                 continue
+        if decision is not None and record.fields.get("decision") != decision:
+            continue
         return record.record_id
     return None
 
@@ -1569,7 +1879,9 @@ def _apply_anchor_edit(project_root: Path, slug: str, item: dict) -> ApplyOutcom
         return outcome
     # A semantic edit never overwrites the original record directly (§7) —
     # it always creates a new, competing candidate Claim instead.
-    existing = _find_existing_promoted_record(records, edited_text, depends_on=record_id)
+    existing = _find_existing_promoted_record(
+        records, edited_text, kind="claim", depends_on=record_id
+    )
     if existing:
         return ApplyOutcome(
             True, item, f"already applied — {existing} already exists with this content", existing
@@ -1626,7 +1938,9 @@ def _apply_requirement_proposal(
     valid_example = all(word in lowered for word in ("given", "when", "then"))
     if not (valid_decision and statement and valid_example):
         return None
-    existing = _find_existing_promoted_record(records, statement)
+    existing = _find_existing_promoted_record(
+        records, statement, kind="requirement", decision=decision_id
+    )
     if existing:
         return ApplyOutcome(
             True, item, f"already applied — {existing} already exists with this content", existing
@@ -1664,28 +1978,47 @@ def _apply_candidate_addition(project_root: Path, slug: str, item: dict) -> Appl
         # block (which still carries the "Type: Requirement"/"Decision:"
         # header lines), as the resulting Claim's own statement.
         claim_statement = (item.get("requirement_statement") or "").strip() or text
+    elif item.get("declared_intent"):
+        # decisions/0074, point 7: control metadata ("Type: Intent") must
+        # never leak into canonical semantic content -- use the already-
+        # stripped body captured at detection time.
+        claim_statement = (item.get("intent_statement") or "").strip() or text
     else:
         claim_statement = text
 
-    if md_path.is_file() and not _candidate_text_present(md_path, text):
-        # Idempotency, second line of defence (decisions/0073, point 2):
-        # the manifest's own `state` field (checked by `apply_manifest`
-        # before this function is ever called) catches re-applying the
-        # *same* manifest; this catches a *different* manifest proposing
-        # the same already-consumed text.
-        existing = _find_existing_promoted_record(records, claim_statement)
+    text_present = md_path.is_file() and _candidate_text_present(md_path, text)
+    if not text_present:
+        # decisions/0074, point 8: a missing candidate is NOT automatically
+        # "already applied" -- that conflated two different situations.
+        # Only report success if a matching canonical record can actually
+        # be found (genuinely already reconciled); otherwise this is a
+        # stale manifest (the text was manually deleted/changed after
+        # detection, or something else is wrong) and must fail closed,
+        # never silently report success.
+        existing = _find_existing_promoted_record(records, claim_statement, kind="claim")
+        if existing:
+            return ApplyOutcome(
+                True,
+                item,
+                f"already applied — {existing} already exists with this content",
+                existing,
+            )
         return ApplyOutcome(
-            True,
+            False,
             item,
-            "already applied — candidate text no longer present"
-            + (f" ({existing} already exists)" if existing else ""),
-            existing,
+            "apply-time race: candidate text no longer present in the live "
+            "candidate region, and no matching canonical record exists — "
+            "refusing to apply; re-run select-candidates and review again",
         )
 
-    existing = _find_existing_promoted_record(records, claim_statement)
+    # decisions/0074, point 9: dedup is type-aware -- a pre-existing Claim
+    # with identical prose must never block an explicit Requirement from
+    # being created (handled above, via _apply_requirement_proposal's own
+    # kind="requirement" dedup), and a pre-existing Requirement must never
+    # satisfy this Claim-kind dedup check either.
+    existing = _find_existing_promoted_record(records, claim_statement, kind="claim")
     if existing:
-        if md_path.is_file():
-            _consume_candidate_text(md_path, text)
+        _consume_candidate_text(md_path, text)
         return ApplyOutcome(
             True, item, f"already applied — {existing} already exists with this content", existing
         )
@@ -1709,8 +2042,7 @@ def _apply_candidate_addition(project_root: Path, slug: str, item: dict) -> Appl
     if item.get("declared_intent"):
         fields["basis"] = "proposed_policy"
     _write_record(sdir / f"{new_id}.yaml", fields)
-    if md_path.is_file():
-        _consume_candidate_text(md_path, text)
+    _consume_candidate_text(md_path, text)
     return ApplyOutcome(True, item, f"created {new_id}", new_id)
 
 
@@ -1856,7 +2188,7 @@ def knowledge_status(project_root: Path, slug: str | None = None) -> StatusRepor
         marked_regions = parse_grounding_markers(text)
         grounded_ids: list[str] = []
         needing_review: list[str] = []
-        for ids, _region in marked_regions:
+        for ids, _region, _region_id in marked_regions:
             grounded_ids.extend(ids)
             for record_id in ids:
                 for s in slugs:

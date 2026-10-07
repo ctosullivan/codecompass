@@ -1693,26 +1693,38 @@ def knowledge_doc_select_candidates(
     a cited Claim changing on its own is surfaced as "potentially stale,
     worth a look" with no mutation; both changing at once is an explicit
     conflict, resolved by neither side.
+
+    Detection never acknowledges a change merely by observing it
+    (`decisions/0074`, point 1): a region's baseline only advances once
+    its own `doc_candidate` is actually applied (`knowledge apply`), or a
+    `claims_changed` finding is explicitly dismissed via
+    `knowledge doc-acknowledge-stale`. The one exception is a region seen
+    for the very first time (`"new"`) — there is no prior baseline to lose
+    by establishing one immediately.
     """
     project_root = Path.cwd()
     findings = knowledge_intermediate.detect_grounded_region_changes(project_root)
+    established = knowledge_intermediate.establish_new_region_baselines(project_root, findings)
+    if established:
+        console.print(f"[green]baseline established[/green] for {len(established)} new region(s)")
     doc_candidates = [f for f in findings if f.case == "doc_candidate"]
     claims_changed = [f for f in findings if f.case == "claims_changed"]
     conflicts = [f for f in findings if f.case == "concurrent_conflict"]
     for f in claims_changed:
+        locator = f.region_id or str(f.index)
         console.print(
-            f"[cyan]potentially stale[/cyan]: {f.doc_name} region #{f.index} cites "
-            f"{', '.join(f.cited_ids)}, which changed — worth a documentation review"
+            f"[cyan]potentially stale[/cyan]: {f.doc_name} region {locator} cites "
+            f"{', '.join(f.cited_ids)}, which changed — worth a documentation review. "
+            f"Dismiss with: codecompass knowledge doc-acknowledge-stale {f.doc_name} {locator}"
         )
     for f in conflicts:
+        locator = f.region_id or str(f.index)
         console.print(
-            f"[red]concurrent conflict[/red]: {f.doc_name} region #{f.index} — both the "
+            f"[red]concurrent conflict[/red]: {f.doc_name} region {locator} — both the "
             "region's own prose and its cited record changed; neither side touched"
         )
     if not doc_candidates and not claims_changed and not conflicts:
-        console.print("[green]nothing to review[/green]")
-        knowledge_intermediate.advance_grounding_baseline(project_root, findings)
-        knowledge_intermediate.advance_doc_chunk_baseline(project_root)
+        console.print("[green]nothing further to review[/green]")
         return
     if dry_run:
         console.print(
@@ -1723,8 +1735,52 @@ def knowledge_doc_select_candidates(
     written = knowledge_intermediate.write_doc_candidates_to_manifests(project_root, findings)
     for doc_slug, path in written.items():
         console.print(f"[green]manifest written[/green] ({doc_slug}): {path}")
-    knowledge_intermediate.advance_grounding_baseline(project_root, findings)
+        console.print(
+            "  review each item's own `semantic_change` field before accepting: "
+            "false = presentation-only wording, true = a factual change needing a new Claim"
+        )
+
+
+@knowledge_app.command("doc-acknowledge-stale")
+def knowledge_doc_acknowledge_stale(
+    doc_name: str = typer.Argument(..., help="e.g. README.md"),
+    region: str = typer.Argument(
+        ..., help="The region's own region:<id> value, or its positional index as a number."
+    ),
+) -> None:
+    """Explicit resolution for a `claims_changed` finding (`decisions/0074`,
+    point 1) — a cited record moved, the document's own prose didn't. A
+    human has reviewed the region and decided its current prose still
+    reads accurately. Refuses (no-op, exit 1) if the named region isn't
+    currently in a genuine `claims_changed` state — this command never
+    silently acknowledges a `doc_candidate` or `concurrent_conflict`,
+    which have their own, separate resolution paths.
+    """
+    project_root = Path.cwd()
+    finding = knowledge_intermediate.acknowledge_stale_grounded_region(
+        project_root, doc_name, region
+    )
+    if finding is None:
+        console.print(
+            f"[red]error:[/red] {doc_name} region {region} is not currently "
+            "in a claims_changed state — nothing to acknowledge"
+        )
+        raise typer.Exit(code=1)
+    console.print(f"[green]acknowledged[/green]: {doc_name} region {region} baseline advanced")
+
+
+@knowledge_app.command("doc-acknowledge-chunks")
+def knowledge_doc_acknowledge_chunks() -> None:
+    """Explicit resolution for the advisory, ungrounded-change chunk
+    tracker (`decisions/0074`, point 1) — never advanced automatically by
+    detection or `knowledge status`. Run this only after a human has
+    actually looked at the changed, currently-ungrounded regions
+    `knowledge status` reports and is satisfied nothing there needs
+    grounding or a knowledge update.
+    """
+    project_root = Path.cwd()
     knowledge_intermediate.advance_doc_chunk_baseline(project_root)
+    console.print("[green]acknowledged[/green]: ungrounded-chunk baseline advanced")
 
 
 if __name__ == "__main__":

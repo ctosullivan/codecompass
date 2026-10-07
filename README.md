@@ -283,7 +283,7 @@ generated `.claude/skills/`, `.claude/commands/discovery.md`, and
 every fresh clone to run `codecompass` before an agent session can use
 them.
 
-<!-- codecompass-grounded-by: CL-KNOW-001 -->
+<!-- codecompass-grounded-by: CL-KNOW-001 region:intermediate-knowledge-layer -->
 CodeCompass also supports a persistent, human/tool-editable Markdown
 layer over a project's own structured knowledge (concepts, invariants,
 behaviours, open questions) — editable by you, ChatGPT, Copilot, Claude

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from codecompass import knowledge_intermediate as ki
@@ -62,6 +63,18 @@ def _make_slug(tmp_path: Path, slug: str = "demo-slug", decision: str | None = N
 def _accept_all(manifest_path: Path) -> None:
     text = manifest_path.read_text(encoding="utf-8")
     text = text.replace('decision = "undecided"', 'decision = "accept"')
+    manifest_path.write_text(text, encoding="utf-8")
+
+
+def _accept_all_as_semantic(manifest_path: Path) -> None:
+    """Accept every item AND mark it a semantic change (decisions/0074,
+    point 3) — a `doc_region_edit` item defaults to `semantic_change =
+    false` (presentation-only), so a test exercising the "this is a real
+    factual edit, create a Claim" path must explicitly opt in, exactly as
+    a human reviewer would."""
+    text = manifest_path.read_text(encoding="utf-8")
+    text = text.replace('decision = "undecided"', 'decision = "accept"')
+    text = text.replace("semantic_change = false", "semantic_change = true")
     manifest_path.write_text(text, encoding="utf-8")
 
 
@@ -417,9 +430,22 @@ class TestExplicitDocumentGrounding:
         )
         marked = ki.parse_grounding_markers(text)
         assert len(marked) == 1
-        ids, region = marked[0]
+        ids, region, region_id = marked[0]
         assert ids == ["CL-DEMO-001", "REQ-DEMO-002"]
         assert "just changed" in region
+        assert region_id is None
+
+    def test_grounded_region_change_with_stable_region_id(self, tmp_path):
+        text = (
+            "<!-- codecompass-grounded-by: CL-DEMO-001 region:sync-behaviour -->\n"
+            "Some factual prose.\n"
+            "<!-- /codecompass-grounded-by -->\n"
+        )
+        marked = ki.parse_grounding_markers(text)
+        assert len(marked) == 1
+        ids, _region, region_id = marked[0]
+        assert ids == ["CL-DEMO-001"]
+        assert region_id == "sync-behaviour"
 
 
 class TestGroundingCoverageAdvisory:
@@ -844,7 +870,7 @@ class TestExplicitDocumentGroundingReconciliation:
     def test_grounded_edit_becomes_reconciliation_candidate(self, tmp_path):
         sdir, readme = self._ground(tmp_path)
         findings = ki.detect_grounded_region_changes(tmp_path)
-        ki.advance_grounding_baseline(tmp_path, findings)  # establish baseline
+        ki.establish_new_region_baselines(tmp_path, findings)  # establish baseline
 
         readme.write_text(
             readme.read_text(encoding="utf-8").replace(
@@ -858,7 +884,7 @@ class TestExplicitDocumentGroundingReconciliation:
         written = ki.write_doc_candidates_to_manifests(tmp_path, findings2)
         assert "demo-slug" in written
         manifest_path = written["demo-slug"]
-        _accept_all(manifest_path)
+        _accept_all_as_semantic(manifest_path)
         result = ki.apply_manifest(tmp_path, manifest_path)
 
         assert len(result.applied) == 1
@@ -868,7 +894,7 @@ class TestExplicitDocumentGroundingReconciliation:
     def test_grounded_edit_plus_claim_change_is_conflict(self, tmp_path):
         sdir, readme = self._ground(tmp_path)
         findings = ki.detect_grounded_region_changes(tmp_path)
-        ki.advance_grounding_baseline(tmp_path, findings)
+        ki.establish_new_region_baselines(tmp_path, findings)
 
         readme.write_text(
             readme.read_text(encoding="utf-8").replace(
@@ -895,7 +921,7 @@ class TestExplicitDocumentGroundingReconciliation:
     def test_canonical_change_surfaces_grounded_region_as_potentially_stale(self, tmp_path):
         sdir, readme = self._ground(tmp_path)
         findings = ki.detect_grounded_region_changes(tmp_path)
-        ki.advance_grounding_baseline(tmp_path, findings)
+        ki.establish_new_region_baselines(tmp_path, findings)
 
         (sdir / "CL-X-001.yaml").write_text(
             (sdir / "CL-X-001.yaml").read_text(encoding="utf-8").replace(
@@ -1096,3 +1122,315 @@ class TestProvenanceDerivationCorrected:
         )
         records = ki.load_slug_records(sdir)
         assert ki.derive_provenance_label(records["CL-X-004"], records) == "MIXED"
+
+
+class TestStableGroundedRegionIdentity:
+    """decisions/0074, point 10 -- an explicit region:<id> token survives
+    insertion/reordering; duplicate explicit ids fail closed."""
+
+    def test_region_id_survives_insertion_above(self, tmp_path):
+        sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
+        sdir.mkdir(parents=True)
+        (sdir / "CL-X-001.yaml").write_text(
+            "id: CL-X-001\nkind: claim\nstatement: Sync is idempotent.\nderivation: null\n"
+            "supporting_evidence: []\ncontradicting_evidence: []\nderived_by: t\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+            "status: supported\n",
+            encoding="utf-8",
+        )
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            "<!-- codecompass-grounded-by: CL-X-001 region:sync-behaviour -->\n"
+            "Sync is idempotent.\n"
+            "<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        findings = ki.detect_grounded_region_changes(tmp_path)
+        ki.establish_new_region_baselines(tmp_path, findings)
+
+        # Insert a brand-new grounded region ABOVE the existing one.
+        readme.write_text(
+            "<!-- codecompass-grounded-by: CL-X-001 region:new-first -->\n"
+            "A brand new region.\n"
+            "<!-- /codecompass-grounded-by -->\n\n" + readme.read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        findings2 = ki.detect_grounded_region_changes(tmp_path)
+        by_id = {f.region_id: f for f in findings2}
+        assert by_id["new-first"].case == "new"
+        # The ORIGINAL region, now at a different positional index, must
+        # still be recognised via its own stable id -- not misclassified
+        # as "new" or spuriously changed just because it moved.
+        assert by_id["sync-behaviour"].case == "noop"
+
+    def test_duplicate_region_ids_fail_closed(self, tmp_path):
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            "<!-- codecompass-grounded-by: CL-X-001 region:dup -->\n"
+            "First.\n"
+            "<!-- /codecompass-grounded-by -->\n\n"
+            "<!-- codecompass-grounded-by: CL-X-002 region:dup -->\n"
+            "Second.\n"
+            "<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        with pytest.raises(ki.DuplicateGroundingRegionIdError):
+            ki.detect_grounded_region_changes(tmp_path)
+
+
+class TestBaselineAdvancementRequiresAcknowledgement:
+    """decisions/0074, point 1 -- detection alone never acknowledges a
+    change; only an explicit apply or acknowledge call does."""
+
+    def _grounded_setup(self, tmp_path: Path, statement: str = "Sync is idempotent.") -> Path:
+        sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
+        sdir.mkdir(parents=True)
+        (sdir / "CL-X-001.yaml").write_text(
+            f"id: CL-X-001\nkind: claim\nstatement: {statement}\nderivation: null\n"
+            "supporting_evidence: []\ncontradicting_evidence: []\nderived_by: t\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+            "status: supported\n",
+            encoding="utf-8",
+        )
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            "<!-- codecompass-grounded-by: CL-X-001 region:sync-behaviour -->\n"
+            f"{statement}\n"
+            "<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        ki.establish_new_region_baselines(
+            tmp_path, ki.detect_grounded_region_changes(tmp_path)
+        )
+        return sdir
+
+    def test_detected_doc_candidate_not_applied_stays_pending_on_redetect(self, tmp_path):
+        self._grounded_setup(tmp_path)
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            readme.read_text(encoding="utf-8").replace(
+                "Sync is idempotent.", "Sync can run any number of times safely."
+            ),
+            encoding="utf-8",
+        )
+        first = ki.detect_grounded_region_changes(tmp_path)
+        assert first[0].case == "doc_candidate"
+        # Detecting again, without applying, must keep surfacing the SAME
+        # pending edit -- detection itself must never have advanced the
+        # baseline.
+        second = ki.detect_grounded_region_changes(tmp_path)
+        assert second[0].case == "doc_candidate"
+        assert second[0].region_hash == first[0].region_hash
+
+    def test_claims_changed_stays_stale_until_explicitly_acknowledged(self, tmp_path):
+        sdir = self._grounded_setup(tmp_path)
+        (sdir / "CL-X-001.yaml").write_text(
+            (sdir / "CL-X-001.yaml").read_text(encoding="utf-8").replace(
+                "status: supported", "status: verified"
+            ),
+            encoding="utf-8",
+        )
+        first = ki.detect_grounded_region_changes(tmp_path)
+        assert first[0].case == "claims_changed"
+        second = ki.detect_grounded_region_changes(tmp_path)
+        assert second[0].case == "claims_changed", "must still be reported -- never auto-cleared"
+
+        finding = ki.acknowledge_stale_grounded_region(tmp_path, "README.md", "sync-behaviour")
+        assert finding is not None
+        third = ki.detect_grounded_region_changes(tmp_path)
+        assert third[0].case == "noop", "explicit acknowledgement clears the staleness"
+
+    def test_acknowledge_refuses_a_doc_candidate_or_conflict(self, tmp_path):
+        self._grounded_setup(tmp_path)
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            readme.read_text(encoding="utf-8").replace(
+                "Sync is idempotent.", "Sync can run any number of times safely."
+            ),
+            encoding="utf-8",
+        )
+        assert ki.detect_grounded_region_changes(tmp_path)[0].case == "doc_candidate"
+        # acknowledge_stale_grounded_region must only ever resolve a
+        # genuine claims_changed finding -- never silently absorb a
+        # doc_candidate (which has its own apply-based resolution path).
+        result = ki.acknowledge_stale_grounded_region(tmp_path, "README.md", "sync-behaviour")
+        assert result is None
+
+    def test_ungrounded_chunk_advisory_persists_until_acknowledged(self, tmp_path):
+        readme = tmp_path / "README.md"
+        readme.write_text("# Title\n\nSome ungrounded prose.\n", encoding="utf-8")
+        baseline_before = ki.detect_doc_chunk_changes(tmp_path, ("README.md",))
+        # No baseline established yet -- establish once, matching real
+        # first-run usage (the chunk tracker's own "new" equivalent).
+        ki.advance_doc_chunk_baseline(tmp_path, ("README.md",))
+        readme.write_text("# Title\n\nSome ungrounded prose, now edited.\n", encoding="utf-8")
+        first = ki.detect_doc_chunk_changes(tmp_path, ("README.md",))
+        assert any(first.get("README.md", {}).values())
+        second = ki.detect_doc_chunk_changes(tmp_path, ("README.md",))
+        assert any(second.get("README.md", {}).values()), "must still be reported, unacknowledged"
+        ki.advance_doc_chunk_baseline(tmp_path, ("README.md",))
+        third = ki.detect_doc_chunk_changes(tmp_path, ("README.md",))
+        assert not any(third.get("README.md", {}).values()), "cleared only after explicit ack"
+        assert baseline_before is not None  # sanity: first call didn't crash with no baseline
+
+
+class TestGroundedDocApplyTimeConcurrency:
+    """decisions/0074, point 2 -- apply-time concurrency check covers both
+    the region's own text AND every cited record's own content hash."""
+
+    def _setup_and_detect_candidate(self, tmp_path: Path):
+        sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
+        sdir.mkdir(parents=True)
+        (sdir / "CL-X-001.yaml").write_text(
+            "id: CL-X-001\nkind: claim\nstatement: Sync is idempotent.\nderivation: null\n"
+            "supporting_evidence: []\ncontradicting_evidence: []\nderived_by: t\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+            "status: supported\n",
+            encoding="utf-8",
+        )
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            "<!-- codecompass-grounded-by: CL-X-001 region:sync-behaviour -->\n"
+            "Sync is idempotent.\n"
+            "<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        ki.establish_new_region_baselines(tmp_path, ki.detect_grounded_region_changes(tmp_path))
+        readme.write_text(
+            readme.read_text(encoding="utf-8").replace(
+                "Sync is idempotent.", "Sync can run any number of times safely."
+            ),
+            encoding="utf-8",
+        )
+        findings = ki.detect_grounded_region_changes(tmp_path)
+        written = ki.write_doc_candidates_to_manifests(tmp_path, findings)
+        return sdir, readme, written["demo-slug"]
+
+    def test_apply_refuses_when_cited_claim_changes_before_apply(self, tmp_path):
+        sdir, _readme, manifest_path = self._setup_and_detect_candidate(tmp_path)
+        _accept_all_as_semantic(manifest_path)
+        # The grounding Claim's own content changes AFTER detection/manifest
+        # creation, but BEFORE apply.
+        (sdir / "CL-X-001.yaml").write_text(
+            (sdir / "CL-X-001.yaml").read_text(encoding="utf-8").replace(
+                "status: supported", "status: verified"
+            ),
+            encoding="utf-8",
+        )
+        result = ki.apply_manifest(tmp_path, manifest_path)
+        assert result.applied == []
+        assert result.skipped and "concurrency" in result.skipped[0].reason
+        # No new Claim was created from the stale manifest.
+        assert len([r for r in ki.load_slug_records(sdir) if r != "CL-X-001"]) == 0
+
+    def test_apply_succeeds_when_nothing_changed_since_detection(self, tmp_path):
+        sdir, _readme, manifest_path = self._setup_and_detect_candidate(tmp_path)
+        _accept_all_as_semantic(manifest_path)
+        result = ki.apply_manifest(tmp_path, manifest_path)
+        assert len(result.applied) == 1
+
+
+class TestPresentationVsSemanticDocEdit:
+    """decisions/0074, point 3 -- a doc_region_edit item's own
+    semantic_change field decides whether a Claim is created at all."""
+
+    def _setup(self, tmp_path: Path):
+        sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
+        sdir.mkdir(parents=True)
+        (sdir / "CL-X-001.yaml").write_text(
+            "id: CL-X-001\nkind: claim\nstatement: Sync is idempotent.\nderivation: null\n"
+            "supporting_evidence: []\ncontradicting_evidence: []\nderived_by: t\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+            "status: supported\n",
+            encoding="utf-8",
+        )
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            "<!-- codecompass-grounded-by: CL-X-001 region:sync-behaviour -->\n"
+            "Sync is idempotent.\n"
+            "<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        ki.establish_new_region_baselines(tmp_path, ki.detect_grounded_region_changes(tmp_path))
+        return sdir, readme
+
+    def test_presentation_only_edit_creates_zero_claims(self, tmp_path):
+        sdir, readme = self._setup(tmp_path)
+        readme.write_text(
+            readme.read_text(encoding="utf-8").replace(
+                "Sync is idempotent.", "SYNC IS IDEMPOTENT."
+            ),
+            encoding="utf-8",
+        )
+        findings = ki.detect_grounded_region_changes(tmp_path)
+        written = ki.write_doc_candidates_to_manifests(tmp_path, findings)
+        manifest_path = written["demo-slug"]
+        _accept_all(manifest_path)  # default semantic_change = false
+        result = ki.apply_manifest(tmp_path, manifest_path)
+        assert len(result.applied) == 1
+        assert "presentation" in result.applied[0].reason
+        assert len([r for r in ki.load_slug_records(sdir) if r != "CL-X-001"]) == 0
+        # Baseline only advances AFTER this successful apply/acknowledgement.
+        assert ki.detect_grounded_region_changes(tmp_path)[0].case == "noop"
+
+    def test_semantic_edit_creates_candidate_claim(self, tmp_path):
+        sdir, readme = self._setup(tmp_path)
+        readme.write_text(
+            readme.read_text(encoding="utf-8").replace(
+                "Sync is idempotent.", "Sync can be safely re-run after a crash."
+            ),
+            encoding="utf-8",
+        )
+        findings = ki.detect_grounded_region_changes(tmp_path)
+        written = ki.write_doc_candidates_to_manifests(tmp_path, findings)
+        manifest_path = written["demo-slug"]
+        _accept_all_as_semantic(manifest_path)
+        result = ki.apply_manifest(tmp_path, manifest_path)
+        assert len(result.applied) == 1
+        new_records = [r for r in ki.load_slug_records(sdir) if r != "CL-X-001"]
+        assert len(new_records) == 1
+
+
+class TestPostApplyGroundingReconciliation:
+    """decisions/0074, point 4 -- a semantic doc edit's new Claim gets
+    added to the region's own marker, preserving discoverability."""
+
+    def test_new_claim_is_discoverable_from_region_after_reconciliation(self, tmp_path):
+        sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
+        sdir.mkdir(parents=True)
+        (sdir / "CL-X-001.yaml").write_text(
+            "id: CL-X-001\nkind: claim\nstatement: Sync is idempotent.\nderivation: null\n"
+            "supporting_evidence: []\ncontradicting_evidence: []\nderived_by: t\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+            "status: supported\n",
+            encoding="utf-8",
+        )
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            "<!-- codecompass-grounded-by: CL-X-001 region:sync-behaviour -->\n"
+            "Sync is idempotent.\n"
+            "<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        ki.establish_new_region_baselines(tmp_path, ki.detect_grounded_region_changes(tmp_path))
+        readme.write_text(
+            readme.read_text(encoding="utf-8").replace(
+                "Sync is idempotent.", "Sync can be safely re-run after a crash."
+            ),
+            encoding="utf-8",
+        )
+        written = ki.write_doc_candidates_to_manifests(
+            tmp_path, ki.detect_grounded_region_changes(tmp_path)
+        )
+        manifest_path = written["demo-slug"]
+        _accept_all_as_semantic(manifest_path)
+        result = ki.apply_manifest(tmp_path, manifest_path)
+        new_id = result.applied[0].new_record_id
+
+        final_text = readme.read_text(encoding="utf-8")
+        assert f"CL-X-001, {new_id}" in final_text or new_id in final_text.splitlines()[0]
+        # CL-NEW later changing must make the region deterministically
+        # discoverable -- find_grounded_doc_regions is the real lookup path.
+        hits = ki.find_grounded_doc_regions(tmp_path, new_id)
+        assert len(hits) == 1
+        assert hits[0][0] == readme
