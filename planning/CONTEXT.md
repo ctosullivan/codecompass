@@ -8,57 +8,60 @@ session-resumption, not a project history.
 ## Current phase
 
 **Phase 81 (persistent bidirectional intermediate knowledge layer) is
-`done`** — original implementation, a first corrective pass
+`reopened` for a third, narrowly-scoped corrective pass** — direct user
+request, 2026-10-08. The original implementation, a first corrective pass
 (`decisions/0073`, nine defects), and a second corrective pass
-(`decisions/0074`, fourteen more defects and gaps, nearly all in the
-first pass's own grounded-document reconciliation code) all closed out,
-2026-10-07. Full history preserved, not rewritten:
+(`decisions/0074`, fourteen more defects and gaps) were all closed out
+`done` 2026-10-07. Full history preserved, not rewritten:
 `planning/retros/phase-81-intermediate-knowledge-layer.md` (original),
 `planning/retros/_audit-phase-81.md` (original audit),
 `planning/retros/phase-81-corrective-pass.md` (first corrective pass),
 `planning/retros/phase-81-second-corrective-pass.md` (second corrective
-pass, full `TEMPLATE.md` shape), `planning/retros/_drift-audit-phase-81-second-corrective-pass.md`,
-`planning/retros/_audit-phase-81-second-corrective-pass.md` (a first FAIL
-verdict, preserved, superseded in the same file by a fresh PASS after
-the four gaps it found were fixed).
+pass), `planning/retros/_drift-audit-phase-81-second-corrective-pass.md`,
+`planning/retros/_audit-phase-81-second-corrective-pass.md`.
 
-The feature: `codecompass knowledge render|select-candidates|
-doc-select-candidates|apply|status|doc-acknowledge-stale|
-doc-acknowledge-chunks` projects a project's own `planning/knowledge/<slug>/`
-canonical records into editable Markdown, detects human/AI-tool edits via
-dual-hash comparison, and reconciles them back through a strict detect →
-review → apply separation — now also covering explicitly-grounded project
-documentation (README/CONTRIBUTING) in both directions, with apply-time
-concurrency, idempotency, type-aware deduplication, and stable
-`region:<id>` identity all independently verified. Central architecture
-unchanged throughout: canonical knowledge stays in `planning/knowledge/`,
-`context-graph.db` stays mechanical-only, zero new persisted canonical
-fields beyond what `decisions/0071`/`0072` established. The public
-`codecompass-template` carries a matching, corrected
-`optional-intermediate-knowledge/` guide (commit `bd2420d` on its own
-remote).
+**This third pass corrects two further real defects** found reviewing
+the second corrective pass's own work (full account: `decisions/0075`):
 
-Two new project-wide plan-time requirements landed in `CLAUDE.md` §1
-during this phase's own learning triage (user-approved per §0, commit
-`1c3981b`): a plan introducing a persisted "last-known-state" mechanism
-must state how detection differs from acknowledgement (`L-087`); a plan
-introducing a new tracked, re-orderable entity must check for an existing
-identity convention and test insertion/reordering (`L-088`). A third,
-scoped addition landed in `.claude/agents/release-phase-auditor.md`
-(`L-086`): a corrective pass's own newly-written code is full audited
-scope, never a lighter-touch re-check.
+1. A valid `Type: Requirement` candidate skipped the live-presence/race
+   check every other candidate type already had —
+   `_apply_candidate_addition` branched into Requirement-specific apply
+   *before* checking candidate-text presence, so a stale manifest could
+   still create a Requirement whose live candidate text had already been
+   deleted or materially changed. Fixed via a single `_CandidateIdentity`
+   (kind/statement/decision) derived once, before the presence check,
+   and reused for the real apply — never re-derived per branch.
+2. Grounded-region concurrency identity omitted the cited-id *set*
+   itself — removing (or adding) a cited id from a
+   `codecompass-grounded-by` marker, with the region's own prose and
+   every still-cited record's own content both unchanged, was silently
+   classified `noop` at detection and passed silently at apply. Fixed:
+   `detect_grounded_region_changes` now compares cited-id membership
+   (order-insensitive — a reorder is not a change — but add/remove-
+   sensitive) and folds a membership change into the existing
+   `doc_candidate` structural-change case, never `noop`; `_apply_doc_region_edit`
+   gained a matching apply-time membership check alongside its existing
+   region-text and per-id-content checks.
 
-Final state: 65 tests in `tests/test_knowledge_intermediate.py`, full
-project suite 845 passed, 2 skipped, lint clean, strict knowledge-base/
-user-docs validation clean. Independent completion audit: **PASS**
-(`planning/retros/_audit-phase-81-second-corrective-pass.md`, HEAD
-`a420541`), following one FAIL-and-fix round on verification/closeout-
-documentation completeness (not the production code, which was correct
-throughout).
+8 new tests added (73 total in `tests/test_knowledge_intermediate.py`);
+full project suite 853 passed, 2 skipped; lint and strict knowledge-base/
+user-docs validation clean. Stable `region:<id>` identity
+(`decisions/0074` point 10) is explicitly unaffected — region identity
+and grounding membership are distinct concepts, both now independently
+correct.
 
-Next concrete step: none outstanding for Phase 81. Next phase not yet
-chosen — consult `planning/ROADMAP.md`'s open rows (Priorities A-E) for
-what's next.
+Central architecture is unchanged and remains approved: canonical
+knowledge stays in `planning/knowledge/`, `context-graph.db` stays
+mechanical-only, reconciliation stays detect → review → validated apply,
+zero new persisted canonical fields beyond what `decisions/0071`/`0072`
+already established.
+
+Next concrete step: dogfood against a scratch copy, a fresh per-phase
+docs-drift audit, learning/context-gap triage if warranted, and a fresh
+independent completion audit (explicitly inspecting Requirement
+candidate disappearance/idempotency, grounding-id add/remove/reorder
+detection and apply-time race, and stable-region-id non-regression) —
+only restore Phase 81 to `done` once that audit genuinely passes.
 
 ---
 

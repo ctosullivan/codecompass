@@ -1,8 +1,7 @@
 # Phase 81 — persistent bidirectional intermediate knowledge layer
 
-**Status: done** (second corrective pass's own fresh independent
-completion audit PASSED, `planning/retros/_audit-phase-81-second-corrective-pass.md`,
-HEAD `a420541`, 2026-10-07). Originally implemented, dogfooded, and closed `done` 2026-10-07
+**Status: reopened for a third, narrowly-scoped corrective pass**, direct
+user request, 2026-10-08. Originally implemented, dogfooded, and closed `done` 2026-10-07
 (first completion audit: PASS WITH NON-BLOCKING OBSERVATIONS,
 `planning/retros/_audit-phase-81.md`). **Reopened the same day**, direct
 user request, after post-completion review found nine real
@@ -10,12 +9,39 @@ implementation defects the original audit's own scope did not catch
 (`decisions/0073`). **Reopened a second time, same day**, direct user
 request, after further review of that corrective pass itself found
 fourteen more real defects and gaps, mostly in the grounded-document
-reconciliation path (`decisions/0074`). The original retro
+reconciliation path (`decisions/0074`) — closed `done` again 2026-10-07
+after a fresh independent completion audit PASSED
+(`planning/retros/_audit-phase-81-second-corrective-pass.md`, HEAD
+`a420541`). **Reopened a third time, 2026-10-08**, direct user request,
+after further post-completion review found two more real defects in the
+second corrective pass's own work: a valid `Type: Requirement` candidate
+skipped the live-presence/race check other candidate types already had
+(`_apply_candidate_addition` branched into Requirement-specific apply
+before checking candidate-text presence); and grounded-region
+concurrency identity omitted the cited-id *set* itself — removing a
+cited id from a `codecompass-grounded-by` marker, with the region's own
+prose and every still-cited record's own content unchanged, was silently
+classified `noop`. See `decisions/0075` for the corrected design. The
+original retro
 (`planning/retros/phase-81-intermediate-knowledge-layer.md`), the
 original audit report, and the first corrective-pass retro
 (`planning/retros/phase-81-corrective-pass.md`) are preserved unedited as
 the historical record; each reopening corrects behaviour, it does not
 rewrite that history.
+
+**Third corrective-pass amendment note**: see `decisions/0075` for the
+full, authoritative account of the two corrections (candidate-presence
+validation now applies before all candidate-type branches, via a single
+`_CandidateIdentity` derived once and reused — a valid `Type: Requirement`
+candidate can no longer be created from a manifest whose own live
+candidate text already disappeared; grounded-region concurrency identity
+now includes the cited-id *set* itself, order-insensitive but
+add/remove-sensitive, at both detection and apply time). Both are
+implementation corrections already implied by `decisions/0074`'s own
+principles, applied more completely — no new architecture. §4.4 and §9
+below are unaffected in substance (the protocol/flow they describe is
+unchanged); see `decisions/0075` directly for the exact defect/fix
+detail.
 
 **Second corrective-pass amendment note**: see `decisions/0074` for the
 full, authoritative account of all fourteen corrections (baseline

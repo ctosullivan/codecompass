@@ -257,6 +257,20 @@ in reconciliation, in both directions — run
   reported clearly; neither side is touched, the same as an intermediate-
   document conflict. This is never auto-resolved — it keeps being
   reported until the underlying facts genuinely change again.
+- **The marker's own cited-id list changes** — a record added to or
+  removed from `codecompass-grounded-by: ...`, with the region's own
+  prose and every still-cited record's own content both unchanged — is
+  **never** treated as `noop`, even though no tracked content byte
+  actually moved: the grounding *relationship* itself changed, and that
+  is reviewable exactly like a prose edit (same `doc-select-candidates` /
+  `semantic_change` review/apply path above). **Reordering the same ids
+  is not a change** — `CL-A, CL-B` and `CL-B, CL-A` are identical for
+  this purpose, so tidying up a citation list's own order never creates
+  false drift. Adding or removing an id does. `apply` re-verifies this
+  cited-id set too, immediately before writing — if the set changed
+  between detection and apply (even if every individual id's own content
+  hash still matches), the apply refuses, exactly like a text or
+  cited-content race.
 
 When a semantic documentation edit is applied, the region's own marker is
 updated to also cite the newly created Claim (`grounded-by: CL-OLD,

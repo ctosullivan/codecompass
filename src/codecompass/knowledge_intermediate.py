@@ -352,6 +352,18 @@ def detect_grounded_region_changes(
     mutation this function itself must never perform as a side effect of
     merely looking. Raises `DuplicateGroundingRegionIdError` if two
     markers claim the same explicit `region:<id>`.
+
+    **The cited-id set itself is part of this region's own concurrency
+    identity (`decisions/0075`, point 2)**: a marker's own list of cited
+    ids changing — an id added or removed — is a relationship-level
+    change even when the region's own prose and every still-cited
+    record's own content are both byte-identical to the baseline. Order
+    is not significant (reordering `CL-A, CL-B` to `CL-B, CL-A` is not a
+    change), so membership is compared as a set, not a sequence; a
+    changed set is treated the same as a changed region body (`case`
+    becomes `"doc_candidate"`, never silently `"noop"`), since both are
+    edits to the region's own definition, as opposed to a cited record's
+    *own* content moving independently elsewhere.
     """
     _check_no_duplicate_region_ids(project_root, doc_names)
     state = _read_simple_toml_tables(grounding_state_path(project_root))
@@ -377,16 +389,28 @@ def detect_grounded_region_changes(
             base_cited_hashes = baseline.get("cited_hashes", [])
             baseline_by_id = dict(zip(base_cited_ids, base_cited_hashes, strict=False))
             region_changed = region_hash != baseline.get("region_hash", "")
+            # decisions/0075, point 2: the cited-id SET is itself part of
+            # this region's own identity -- order-insensitive (a mere
+            # reorder is not a change), but an id added or removed is,
+            # even when the region's own prose is untouched.
+            membership_changed = sorted(ids) != sorted(base_cited_ids)
+            # Content drift is only meaningful for an id cited in BOTH the
+            # baseline and the live marker -- an id's own absence/presence
+            # is membership_changed's concern, not this one's, so a newly
+            # added or just-removed id is never double-counted as "its own
+            # content changed" too.
+            common_ids = set(ids) & set(base_cited_ids)
             claims_changed = [
                 rid
-                for rid in ids
+                for rid in common_ids
                 if rid in current_hashes and current_hashes.get(rid) != baseline_by_id.get(rid)
             ]
-            if not region_changed and not claims_changed:
+            structural_changed = region_changed or membership_changed
+            if not structural_changed and not claims_changed:
                 case = "noop"
-            elif region_changed and not claims_changed:
+            elif structural_changed and not claims_changed:
                 case = "doc_candidate"
-            elif not region_changed and claims_changed:
+            elif not structural_changed and claims_changed:
                 case = "claims_changed"
             else:
                 case = "concurrent_conflict"
@@ -617,6 +641,22 @@ def _apply_doc_region_edit(project_root: Path, slug: str, item: dict) -> ApplyOu
             item,
             "apply-time race: the grounded region's own text changed since "
             "detection — refusing to write; re-run doc detection and review again",
+        )
+    # decisions/0075, point 3: the cited-id SET itself is part of this
+    # region's own concurrency identity, not just its own text -- a
+    # membership change (an id added or removed from the marker) between
+    # detection and apply must fail closed exactly like a text change,
+    # even when every still-cited record's own content hash still matches.
+    # Order-insensitive, matching detection's own membership comparison
+    # (decisions/0075, point 2) -- a mere reorder is never a conflict.
+    manifest_cited_ids = item.get("cited_ids", [])
+    if sorted(cited_ids) != sorted(manifest_cited_ids):
+        return ApplyOutcome(
+            False,
+            item,
+            "apply-time concurrency conflict: the grounded region's own cited-record "
+            "membership changed since detection — refusing to write; re-run doc "
+            "detection and review again",
         )
     # decisions/0074, point 2: concurrency protection equivalent to
     # intermediate-doc anchors -- re-verify every cited record's own
@@ -1911,17 +1951,16 @@ def _apply_anchor_edit(project_root: Path, slug: str, item: dict) -> ApplyOutcom
     return ApplyOutcome(True, item, f"created {new_id} as a competing candidate", new_id)
 
 
-def _apply_requirement_proposal(
-    sdir: Path, records: dict[str, KnowledgeRecord], item: dict
-) -> ApplyOutcome | None:
-    """Explicit `Type: Requirement` candidates only (`decisions/0073`,
-    point 6) — a candidate block merely *mentioning* an approved Decision
-    id is never enough. Returns `None` (never a Requirement) if the
-    explicit proposal is missing a real approved Decision, a statement, or
-    a meaningful acceptance example — callers fall back to an ordinary
-    Claim proposal in that case, never silently dropping the contribution,
-    and never auto-generating a placeholder example to paper over the
-    gap."""
+def _requirement_proposal_validity(
+    records: dict[str, KnowledgeRecord], item: dict
+) -> tuple[bool, str, str]:
+    """Pure validity check, no side effects — whether an explicit `Type:
+    Requirement` candidate resolves to a real, already-`approved` Decision
+    plus a meaningful Given/When/Then example (`decisions/0073`, point 6).
+    Returns `(valid, decision_id, statement)`. Factored out of
+    `_apply_requirement_proposal` so a candidate's own intended canonical
+    identity (`_derive_candidate_identity`) can be derived once, before any
+    presence check or record creation, without duplicating this logic."""
     decision_id = item.get("requirement_decision") or ""
     statement = (item.get("requirement_statement") or "").strip()
     example = (item.get("requirement_example") or "").strip()
@@ -1936,8 +1975,24 @@ def _apply_requirement_proposal(
     # semantic validation, which this project does not attempt.
     lowered = example.lower()
     valid_example = all(word in lowered for word in ("given", "when", "then"))
-    if not (valid_decision and statement and valid_example):
+    return bool(valid_decision and statement and valid_example), decision_id, statement
+
+
+def _apply_requirement_proposal(
+    sdir: Path, records: dict[str, KnowledgeRecord], item: dict
+) -> ApplyOutcome | None:
+    """Explicit `Type: Requirement` candidates only (`decisions/0073`,
+    point 6) — a candidate block merely *mentioning* an approved Decision
+    id is never enough. Returns `None` (never a Requirement) if the
+    explicit proposal is missing a real approved Decision, a statement, or
+    a meaningful acceptance example — callers fall back to an ordinary
+    Claim proposal in that case, never silently dropping the contribution,
+    and never auto-generating a placeholder example to paper over the
+    gap."""
+    valid, decision_id, statement = _requirement_proposal_validity(records, item)
+    if not valid:
         return None
+    example = (item.get("requirement_example") or "").strip()
     existing = _find_existing_promoted_record(
         records, statement, kind="requirement", decision=decision_id
     )
@@ -1958,6 +2013,45 @@ def _apply_requirement_proposal(
     return ApplyOutcome(True, item, f"created {new_id}", new_id)
 
 
+@dataclass
+class _CandidateIdentity:
+    """A candidate's own intended canonical identity — derived exactly
+    once, before any presence check or record creation (`decisions/0075`,
+    point 1), and reused for both. Previously a Requirement candidate's
+    presence/race check used a different, later-computed statement than
+    its own actual creation path, which let a Requirement's live-text
+    presence go unchecked entirely — this type makes "what kind of record
+    would this become, and under what statement/decision" a single,
+    unambiguous value computed up front."""
+
+    kind: str  # "claim" | "requirement"
+    statement: str
+    decision: str | None = None  # only ever set when kind == "requirement"
+
+
+def _derive_candidate_identity(
+    records: dict[str, KnowledgeRecord], item: dict, text: str
+) -> _CandidateIdentity:
+    """The single source of truth for "what would this candidate become,
+    and under what identity" — computed once, before the live-text
+    presence/race check, and reused for the real apply so the two can
+    never disagree (`decisions/0075`, point 1). An explicit, *valid*
+    `Type: Requirement` resolves to a Requirement identity (statement +
+    authorising decision); an incomplete one falls back to a Claim using
+    its own Statement text, exactly as `decisions/0073` point 6 already
+    established; `Type: Intent` resolves to a Claim identity using the
+    already-stripped body (`decisions/0074`, point 7); plain prose is a
+    Claim using the raw text."""
+    if item.get("requirement_decision"):
+        valid, decision_id, statement = _requirement_proposal_validity(records, item)
+        if valid:
+            return _CandidateIdentity("requirement", statement, decision_id)
+        return _CandidateIdentity("claim", statement or text)
+    if item.get("declared_intent"):
+        return _CandidateIdentity("claim", (item.get("intent_statement") or "").strip() or text)
+    return _CandidateIdentity("claim", text)
+
+
 def _apply_candidate_addition(project_root: Path, slug: str, item: dict) -> ApplyOutcome:
     sdir = slug_dir(project_root, slug)
     records = load_slug_records(sdir)
@@ -1965,37 +2059,29 @@ def _apply_candidate_addition(project_root: Path, slug: str, item: dict) -> Appl
     md_path = project_root / file_rel
     text = item.get("text", "")  # the exact raw block, as it appears live
 
-    if item.get("requirement_decision"):
-        requirement_outcome = _apply_requirement_proposal(sdir, records, item)
-        if requirement_outcome is not None:
-            if requirement_outcome.ok:
-                _consume_candidate_text(md_path, text)
-            return requirement_outcome
-        # Falls through to the ordinary Claim path below -- an explicit
-        # but incomplete Requirement proposal is preserved as a Claim,
-        # never rejected outright (§4.4/§14.3, decisions/0073 point 6).
-        # Use the proposal's own Statement field, not the raw structured
-        # block (which still carries the "Type: Requirement"/"Decision:"
-        # header lines), as the resulting Claim's own statement.
-        claim_statement = (item.get("requirement_statement") or "").strip() or text
-    elif item.get("declared_intent"):
-        # decisions/0074, point 7: control metadata ("Type: Intent") must
-        # never leak into canonical semantic content -- use the already-
-        # stripped body captured at detection time.
-        claim_statement = (item.get("intent_statement") or "").strip() or text
-    else:
-        claim_statement = text
+    # decisions/0075, point 1: the candidate's own intended identity is
+    # derived ONCE, before the presence/race check below -- a Requirement
+    # candidate used to branch into its own apply path (and get created)
+    # before this check ever ran, letting a stale manifest create a
+    # Requirement whose live candidate text had already been deleted or
+    # materially changed. Every candidate type now goes through the exact
+    # same presence/race gate first.
+    identity = _derive_candidate_identity(records, item, text)
 
     text_present = md_path.is_file() and _candidate_text_present(md_path, text)
     if not text_present:
-        # decisions/0074, point 8: a missing candidate is NOT automatically
-        # "already applied" -- that conflated two different situations.
-        # Only report success if a matching canonical record can actually
-        # be found (genuinely already reconciled); otherwise this is a
-        # stale manifest (the text was manually deleted/changed after
-        # detection, or something else is wrong) and must fail closed,
-        # never silently report success.
-        existing = _find_existing_promoted_record(records, claim_statement, kind="claim")
+        # decisions/0074, point 8 (now type-generalised by decisions/0075,
+        # point 1): a missing candidate is NOT automatically "already
+        # applied" -- that conflates two different situations. Only report
+        # success if a matching canonical record can actually be found,
+        # using this candidate's own real kind/decision identity (a Claim
+        # with identical statement text must never satisfy a Requirement's
+        # own already-applied check, and vice versa); otherwise this is a
+        # stale manifest and must fail closed, never silently report
+        # success.
+        existing = _find_existing_promoted_record(
+            records, identity.statement, kind=identity.kind, decision=identity.decision
+        )
         if existing:
             return ApplyOutcome(
                 True,
@@ -2010,6 +2096,21 @@ def _apply_candidate_addition(project_root: Path, slug: str, item: dict) -> Appl
             "candidate region, and no matching canonical record exists — "
             "refusing to apply; re-run select-candidates and review again",
         )
+
+    # Live text is genuinely present -- proceed with the real,
+    # type-specific apply, using the SAME identity derived above.
+    if identity.kind == "requirement":
+        requirement_outcome = _apply_requirement_proposal(sdir, records, item)
+        if requirement_outcome is not None:
+            if requirement_outcome.ok:
+                _consume_candidate_text(md_path, text)
+            return requirement_outcome
+        # Unreachable in practice: identity derivation already confirmed
+        # validity against this same `records` snapshot moments ago. Falls
+        # through to the Claim path below as a safe default rather than an
+        # assumption this can never happen.
+
+    claim_statement = identity.statement
 
     # decisions/0074, point 9: dedup is type-aware -- a pre-existing Claim
     # with identical prose must never block an explicit Requirement from

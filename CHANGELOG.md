@@ -349,6 +349,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Phase 81** (post-`done`, third corrective pass, direct user request,
+  two further defects found reviewing the second corrective pass's own
+  work — `decisions/0075`): an explicit `Type: Requirement` candidate
+  skipped the live-presence/race check every other candidate type already
+  had — `_apply_candidate_addition` branched into Requirement-specific
+  apply *before* checking candidate-text presence, so a stale manifest
+  could still create a Requirement whose live candidate text had already
+  been deleted or materially changed; fixed via a single
+  `_CandidateIdentity` (kind/statement/decision) derived once before the
+  presence check and reused for the real apply, never re-derived per
+  branch. Grounded-region concurrency identity omitted the cited-id *set*
+  itself — removing or adding a cited id from a `codecompass-grounded-by`
+  marker, with the region's own prose and every still-cited record's own
+  content unchanged, was silently classified `noop` at detection and
+  passed silently at apply; fixed by comparing cited-id membership
+  (order-insensitive — a reorder is not a change — but add/remove-
+  sensitive) at both detection (folded into the existing `doc_candidate`
+  structural-change case) and apply time (a new explicit concurrency
+  check alongside the existing region-text and per-id-content checks).
 - **Phase 81** (post-`done`, first corrective pass, direct user request,
   nine real implementation defects found after closeout — `decisions/0073`):
   targeted per-block refresh (`refresh_safe_anchors`) replacing an unsafe

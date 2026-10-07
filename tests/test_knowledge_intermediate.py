@@ -1579,3 +1579,244 @@ class TestCrossKindDeduplicationIndependence:
         assert new_id.startswith("CL-"), "a pre-existing Requirement must not satisfy Claim dedup"
         records = ki.load_slug_records(sdir)
         assert records[new_id].fields["statement"] == same_text
+
+
+class TestRequirementCandidateStaleManifest:
+    """decisions/0075, point 1 -- a Requirement candidate must go through
+    the exact same live-presence/race check as any other candidate type,
+    before (not after) its own type-specific apply path."""
+
+    def _requirement_block(self) -> str:
+        return (
+            "Type: Requirement\nDecision: DEC-DEMO-001\n"
+            "Statement: Add Y.\n"
+            "Example: Given X, when Y happens, then Z follows.\n"
+        )
+
+    def test_deleted_requirement_candidate_with_no_match_fails_closed(self, tmp_path):
+        sdir = _make_slug(tmp_path, decision=_DECISION_APPROVED)
+        ki.render_slug(tmp_path, "demo-slug")
+        overview = sdir / "intermediate" / "overview.md"
+        block = self._requirement_block()
+        candidate_block = ki.CANDIDATE_START + "\n" + block + ki.CANDIDATE_END
+        text = overview.read_text(encoding="utf-8").replace(
+            ki.CANDIDATE_START + ki.CANDIDATE_END, candidate_block
+        )
+        overview.write_text(text, encoding="utf-8")
+        candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
+        manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
+        _accept_all(manifest_path)
+
+        # The candidate is deleted from the live file AFTER the manifest
+        # was written, BEFORE apply -- no matching Requirement (or
+        # anything else) exists anywhere.
+        overview.write_text(
+            overview.read_text(encoding="utf-8").replace(block, ""), encoding="utf-8"
+        )
+        records_before = set(ki.load_slug_records(sdir))
+        result = ki.apply_manifest(tmp_path, manifest_path)
+        assert result.applied == []
+        assert result.skipped and "race" in result.skipped[0].reason
+        records_after = set(ki.load_slug_records(sdir))
+        assert records_after == records_before, "no Requirement/Claim may be created"
+        assert not any(r.startswith("REQ-") for r in records_after)
+
+    def test_deleted_requirement_candidate_already_applied_is_safe_noop(self, tmp_path):
+        sdir = _make_slug(tmp_path, decision=_DECISION_APPROVED)
+        ki.render_slug(tmp_path, "demo-slug")
+        overview = sdir / "intermediate" / "overview.md"
+        block = self._requirement_block()
+        candidate_block = ki.CANDIDATE_START + "\n" + block + ki.CANDIDATE_END
+        text = overview.read_text(encoding="utf-8").replace(
+            ki.CANDIDATE_START + ki.CANDIDATE_END, candidate_block
+        )
+        overview.write_text(text, encoding="utf-8")
+        candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
+        manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
+        _accept_all(manifest_path)
+
+        # Simulate "already reconciled": a real, equivalent Requirement
+        # already exists (same statement, same authorising decision), and
+        # the candidate text has already been consumed independently of
+        # this specific manifest's own state field.
+        (sdir / "REQ-DEMOSLUG-099.yaml").write_text(
+            "id: REQ-DEMOSLUG-099\nkind: requirement\nstatement: Add Y.\n"
+            "example: Given X, when Y happens, then Z follows.\n"
+            "decision: DEC-DEMO-001\nstatus: proposed\n",
+            encoding="utf-8",
+        )
+        overview.write_text(
+            overview.read_text(encoding="utf-8").replace(block, ""), encoding="utf-8"
+        )
+        result = ki.apply_manifest(tmp_path, manifest_path)
+        assert len(result.applied) == 1
+        assert result.applied[0].new_record_id == "REQ-DEMOSLUG-099"
+        records = ki.load_slug_records(sdir)
+        assert [r for r in records if r.startswith("REQ-")] == ["REQ-DEMOSLUG-099"], (
+            "must not duplicate the already-applied Requirement"
+        )
+
+    def test_ordinary_claim_candidate_disappearance_still_fails_closed(self, tmp_path):
+        """Regression guard: fixing the Requirement path must not disturb
+        the existing plain-Claim candidate-disappearance behaviour."""
+        sdir = _make_slug(tmp_path)
+        ki.render_slug(tmp_path, "demo-slug")
+        overview = sdir / "intermediate" / "overview.md"
+        text = overview.read_text(encoding="utf-8").replace(
+            ki.CANDIDATE_START + ki.CANDIDATE_END,
+            ki.CANDIDATE_START + "\nA genuinely new fact, soon deleted.\n" + ki.CANDIDATE_END,
+        )
+        overview.write_text(text, encoding="utf-8")
+        candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
+        manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
+        _accept_all(manifest_path)
+        overview.write_text(
+            overview.read_text(encoding="utf-8").replace(
+                "A genuinely new fact, soon deleted.\n", ""
+            ),
+            encoding="utf-8",
+        )
+        result = ki.apply_manifest(tmp_path, manifest_path)
+        assert result.applied == []
+        assert result.skipped and "race" in result.skipped[0].reason
+
+
+class TestGroundingMembershipIdentity:
+    """decisions/0075, point 2 -- the cited-id set itself is part of a
+    grounded region's own concurrency identity, order-insensitive but
+    add/remove-sensitive."""
+
+    def _ground(
+        self, tmp_path: Path, marker_ids: str, body: str = "Some prose."
+    ) -> tuple[Path, Path]:
+        sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
+        sdir.mkdir(parents=True)
+        for rid, stmt in [("CL-X-001", "Fact A."), ("CL-X-002", "Fact B.")]:
+            (sdir / f"{rid}.yaml").write_text(
+                f"id: {rid}\nkind: claim\nstatement: {stmt}\nderivation: null\n"
+                "supporting_evidence: []\ncontradicting_evidence: []\nderived_by: t\n"
+                'repository_revision: "working tree"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+                "status: supported\n",
+                encoding="utf-8",
+            )
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            f"<!-- codecompass-grounded-by: {marker_ids} region:foo -->\n"
+            f"{body}\n<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        return sdir, readme
+
+    def test_removing_a_cited_id_is_not_noop(self, tmp_path):
+        _sdir, readme = self._ground(tmp_path, "CL-X-001, CL-X-002")
+        ki.establish_new_region_baselines(tmp_path, ki.detect_grounded_region_changes(tmp_path))
+        readme.write_text(
+            "<!-- codecompass-grounded-by: CL-X-001 region:foo -->\n"
+            "Some prose.\n<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        findings = ki.detect_grounded_region_changes(tmp_path)
+        assert findings[0].case != "noop"
+        assert findings[0].case == "doc_candidate"
+        # Stays pending on repeated detection, matching decisions/0074
+        # point 1's own non-acknowledgement-by-detection discipline.
+        findings2 = ki.detect_grounded_region_changes(tmp_path)
+        assert findings2[0].case == "doc_candidate"
+
+    def test_adding_a_cited_id_is_not_noop(self, tmp_path):
+        _sdir, readme = self._ground(tmp_path, "CL-X-001")
+        ki.establish_new_region_baselines(tmp_path, ki.detect_grounded_region_changes(tmp_path))
+        readme.write_text(
+            "<!-- codecompass-grounded-by: CL-X-001, CL-X-002 region:foo -->\n"
+            "Some prose.\n<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        findings = ki.detect_grounded_region_changes(tmp_path)
+        assert findings[0].case != "noop"
+
+    def test_reordering_cited_ids_only_is_noop(self, tmp_path):
+        """Documented order-insensitive policy: reordering is never
+        treated as semantic drift."""
+        _sdir, readme = self._ground(tmp_path, "CL-X-001, CL-X-002")
+        ki.establish_new_region_baselines(tmp_path, ki.detect_grounded_region_changes(tmp_path))
+        readme.write_text(
+            "<!-- codecompass-grounded-by: CL-X-002, CL-X-001 region:foo -->\n"
+            "Some prose.\n<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        findings = ki.detect_grounded_region_changes(tmp_path)
+        assert findings[0].case == "noop"
+
+
+class TestGroundingMembershipApplyTimeConcurrency:
+    """decisions/0075, point 3 -- apply must also re-verify cited-record
+    membership, not just the region's own text and each id's own hash."""
+
+    def _ground(self, tmp_path: Path) -> tuple[Path, Path]:
+        sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
+        sdir.mkdir(parents=True)
+        for rid, stmt in [("CL-X-001", "Fact A."), ("CL-X-002", "Fact B.")]:
+            (sdir / f"{rid}.yaml").write_text(
+                f"id: {rid}\nkind: claim\nstatement: {stmt}\nderivation: null\n"
+                "supporting_evidence: []\ncontradicting_evidence: []\nderived_by: t\n"
+                'repository_revision: "working tree"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+                "status: supported\n",
+                encoding="utf-8",
+            )
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            "<!-- codecompass-grounded-by: CL-X-001, CL-X-002 region:foo -->\n"
+            "Some prose.\n<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        return sdir, readme
+
+    def test_membership_removed_before_apply_fails_closed(self, tmp_path):
+        sdir, readme = self._ground(tmp_path)
+        ki.establish_new_region_baselines(tmp_path, ki.detect_grounded_region_changes(tmp_path))
+        readme.write_text(
+            "<!-- codecompass-grounded-by: CL-X-001, CL-X-002 region:foo -->\n"
+            "Some DIFFERENT prose.\n<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        findings = ki.detect_grounded_region_changes(tmp_path)
+        written = ki.write_doc_candidates_to_manifests(tmp_path, findings)
+        manifest_path = written["demo-slug"]
+        _accept_all_as_semantic(manifest_path)
+
+        # Remove CL-X-002 from the live marker AFTER detection, BEFORE
+        # apply -- the region's own prose is unaffected by this edit.
+        readme.write_text(
+            "<!-- codecompass-grounded-by: CL-X-001 region:foo -->\n"
+            "Some DIFFERENT prose.\n<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        result = ki.apply_manifest(tmp_path, manifest_path)
+        assert result.applied == []
+        assert result.skipped and "membership" in result.skipped[0].reason
+        new_records = [r for r in ki.load_slug_records(sdir) if r not in ("CL-X-001", "CL-X-002")]
+        assert new_records == [], "no stray record from a stale membership manifest"
+
+    def test_membership_reordered_only_does_not_block_apply(self, tmp_path):
+        """The apply-time membership check is order-insensitive too,
+        matching detection's own documented policy."""
+        sdir, readme = self._ground(tmp_path)
+        ki.establish_new_region_baselines(tmp_path, ki.detect_grounded_region_changes(tmp_path))
+        readme.write_text(
+            "<!-- codecompass-grounded-by: CL-X-001, CL-X-002 region:foo -->\n"
+            "Some DIFFERENT prose.\n<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        findings = ki.detect_grounded_region_changes(tmp_path)
+        written = ki.write_doc_candidates_to_manifests(tmp_path, findings)
+        manifest_path = written["demo-slug"]
+        _accept_all_as_semantic(manifest_path)
+
+        # Reorder only -- same set of cited ids, different order.
+        readme.write_text(
+            "<!-- codecompass-grounded-by: CL-X-002, CL-X-001 region:foo -->\n"
+            "Some DIFFERENT prose.\n<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        result = ki.apply_manifest(tmp_path, manifest_path)
+        assert len(result.applied) == 1

@@ -412,9 +412,15 @@ A `doc_region_edit` manifest item additionally requires one more review
 field before `apply`: `semantic_change` (`true`/`false`, default
 `false`) — `false` acknowledges a purely presentational edit (no Claim
 created, canonical knowledge untouched); `true` creates a candidate Claim
-exactly like any other proposed addition. `apply` re-verifies both the
-region's own text and every cited record's own content immediately
-before writing, failing closed on either moving since detection.
+exactly like any other proposed addition. `apply` re-verifies the
+region's own text, the *set* of cited records (order-insensitive — a
+reorder is not a change, but an id added or removed is), and every cited
+record's own content, immediately before writing, failing closed if any
+of the three moved since detection. A cited-id set change alone (the
+marker's own citation list edited, with the region's own prose and every
+still-cited record's own content unchanged) is likewise never classified
+as a no-op by `doc-select-candidates` — it is reviewable exactly like a
+prose edit.
 
 ```bash
 codecompass knowledge render
