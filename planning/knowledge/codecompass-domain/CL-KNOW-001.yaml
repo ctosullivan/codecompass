@@ -1,0 +1,23 @@
+id: CL-KNOW-001
+kind: claim
+statement: >
+  CodeCompass provides a persistent, bidirectional intermediate
+  knowledge layer: planning/knowledge/<slug>/ canonical records are
+  projected into human/tool-editable Markdown under
+  planning/knowledge/<slug>/intermediate/*.md, edits are mechanically
+  detected (never comparing a canonical record's own hash against a
+  rendered projection's own hash directly), a human or agent review
+  stage is required before any canonical mutation, and
+  `codecompass knowledge apply` is the sole, mechanically-revalidating
+  write path -- never bypassable by an external tool's or an
+  agent's own say-so.
+derivation: DE-KNOW-001
+supporting_evidence: [EV-KNOW-001]
+contradicting_evidence: []
+derived_by: "Claude Code orchestrator, direct user request"
+repository_revision: "working tree"
+timestamp: "2026-10-07T00:00:00Z"
+status: supported
+supersedes: null
+basis: observed_behaviour
+assertion_kind: definition

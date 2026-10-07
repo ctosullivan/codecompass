@@ -1,0 +1,22 @@
+id: EV-KNOW-001
+kind: evidence
+evidence_kind: behavioural
+what_it_shows: >
+  CodeCompass ships a working, tested, persistent, bidirectional
+  intermediate knowledge layer (`codecompass knowledge
+  render|select-candidates|apply|status`, `src/codecompass/
+  knowledge_intermediate.py`): canonical facts under
+  planning/knowledge/<slug>/*.yaml are projected into editable Markdown,
+  edits are mechanically detected via a dual-hash anchor without
+  comparing two different representations' hashes against each other,
+  a human/agent review stage is required before any canonical mutation,
+  and `apply` is the sole, mechanically-revalidating write path. This is
+  not aspirational design text -- it is exercised against this
+  project's own real 182-record codecompass-domain corpus and against
+  26 passing disposable-fixture tests covering every required safety
+  property (no-op round trip, concurrent-edit safety, apply-time race
+  safety, presentation/semantics independence, no fabricated
+  Observations, the Requirement/Decision invariant, explicit
+  documentation grounding).
+repository_revision: "working tree"
+status: current

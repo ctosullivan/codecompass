@@ -1,0 +1,14 @@
+id: DE-KNOW-001
+kind: derivation
+claim: CL-KNOW-001
+method: >
+  Direct behavioural verification, not inference from documentation:
+  the CLI commands were actually invoked against the real
+  codecompass-domain slug and against disposable fixtures built
+  specifically to exercise each of the safety properties the Phase 81
+  plan (planning/phase-81-intermediate-knowledge-layer.md) requires,
+  and the resulting files/manifests/test results were read directly
+  rather than assumed from the implementation's own intent.
+inputs: [OBS-KNOW-001, EV-KNOW-001]
+performed_by: "Claude Code orchestrator, direct user request"
+timestamp: "2026-10-07T00:00:00Z"

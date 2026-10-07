@@ -1,0 +1,33 @@
+id: OBS-KNOW-001
+kind: observation
+method: >
+  Direct exercise of the Phase 81 knowledge-reconciliation pipeline
+  end to end: rendered the real codecompass-domain slug
+  (`codecompass knowledge render codecompass-domain`), ran
+  `codecompass knowledge select-candidates`/`apply` against disposable
+  fixtures covering no-op round trip, projection-only edits, canonical-
+  only changes, concurrent-change conflicts, apply-time races,
+  presentation-cache independence, candidate-region boundaries, the
+  Requirement/Decision invariant, and explicit documentation grounding
+  (tests/test_knowledge_intermediate.py, 26 tests), plus a direct read
+  of the generated planning/knowledge/codecompass-domain/intermediate/
+  files and reconciliation manifests produced by real runs.
+what_was_done: >
+  Confirmed that planning/knowledge/<slug>/intermediate/*.md is rendered
+  deterministically from canonical records with per-record anchors
+  carrying two independent hashes (one for the canonical record, one for
+  the rendered projection); that a human/tool edit to the projection
+  alone is classified as a candidate for review without touching the
+  canonical record; that a canonical-only change is safely auto-
+  refreshed with no review needed; that a concurrent change to both
+  sides is flagged and neither side is overwritten; that `apply`
+  re-checks the canonical record's hash immediately before writing and
+  refuses a stale write; that a wording-only edit updates a presentation
+  cache without ever touching the canonical record's own semantic
+  field; and that an external candidate addition becomes a Claim
+  (or, only when it cites a real approved Decision, a Requirement),
+  never a fabricated Observation.
+repository_revision: "working tree"
+timestamp: "2026-10-07T00:00:00Z"
+performed_by: "Claude Code orchestrator, direct user request (Phase 81 implementation)"
+status: recorded
