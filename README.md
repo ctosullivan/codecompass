@@ -323,6 +323,8 @@ Full, current list (this one is not exhaustive of every open item):
 
 - [`docs/cli-reference.md`](docs/cli-reference.md) — CLI command reference
 - [`docs/config-schema.md`](docs/config-schema.md) — `vendor.toml` schema
+- [`docs/codecompass-knowledge-workflow.md`](docs/codecompass-knowledge-workflow.md)
+  — the persistent, human/AI-tool-editable knowledge layer
 - [`architecture/overview.md`](architecture/overview.md) — system design
 - [`decisions/`](decisions/) — architecture decision records
 - [`examples/`](examples/) — a small, real worked example with real

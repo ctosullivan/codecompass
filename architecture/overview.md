@@ -705,11 +705,13 @@ regeneratable artifact, same precedent as `vendor/` (`decisions/0010`).
 **Spec docs and vendor docs** (`codecompass.spec_docs`, extended
 `codecompass.doc_mapping`) are the two non-generated `doc_artifacts`
 sources: `spec_docs.scan_spec_docs` globs a fixed default pattern set
-rooted at the project (`README.md`, `ARCHITECTURE.md`, `docs/**/*.md`,
-`architecture/**/*.md`, `decisions/**/*.md`, `spec/**/*.md`,
-`ai-docs/**/*.md`, `dev-docs/**/*.md`, and similar), excluding
-`CHANGELOG.md`, `CONTRIBUTING.md`, `LICENSE*`, and root `CLAUDE.md`
-itself, plus anything under `vendor/` or another pruned directory;
+rooted at the project (`README.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md`,
+`docs/**/*.md`, `architecture/**/*.md`, `decisions/**/*.md`,
+`spec/**/*.md`, `ai-docs/**/*.md`, `dev-docs/**/*.md`, and similar),
+excluding `CHANGELOG.md`, `LICENSE*`, and root `CLAUDE.md` itself
+(`CONTRIBUTING.md` was excluded here before Phase 81; it is scanned like
+any other spec doc now), plus anything under `vendor/` or another pruned
+directory;
 `doc_mapping.collect_vendor_upstream_doc_artifacts` globs a small fixed
 root-level filename set (`README*.md`, `CHANGELOG.md`, `CONTRIBUTING.md`,
 `SECURITY.md`, `MIGRATION.md`) directly under each vendor's own cloned

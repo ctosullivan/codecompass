@@ -7,8 +7,9 @@ for the system-at-a-glance entry point; the rest of this set:
 [`context-graph-schema.md`](context-graph-schema.md),
 [`sync-and-enrichment-pipeline.md`](sync-and-enrichment-pipeline.md).
 
-`src/codecompass/` is 25 top-level modules plus a 6-module `adapters/`
-package (10,707 lines total). No package splits below
+`src/codecompass/` is 26 top-level modules (25 plus Phase 81's
+`knowledge_intermediate.py`) plus a 6-module `adapters/`
+package (11,880 lines total). No package splits below
 `codecompass`/`codecompass.adapters` exist.
 
 ## Layering, by dependency direction
@@ -77,6 +78,16 @@ in the current codebase.
 - **`staleness.py`** — compares a persisted `CLAUDE.md`'s recorded
   installed version against a live adapter read; severity per
   `decisions/0005` (patch=silent, minor=warn, major=hard-fail).
+- **`knowledge_intermediate.py`** (Phase 81) — renders a project's own
+  `planning/knowledge/<slug>/` canonical records (the Observation/
+  Evidence/Claim/Derivation/Decision/Requirement model) into editable
+  `intermediate/*.md` Markdown, detects human/AI-tool edits via two
+  independent content hashes per anchor (the canonical record's own, the
+  rendered projection's own — never compared against each other), and
+  reconciles them back through a strict detect/review/apply separation.
+  Does not import from, or get imported by, any other module in this
+  map — it only reads/writes `planning/knowledge/`, never
+  `context-graph.db` (`decisions/0071`).
 
 ### Layer 3 — persistence, orchestration, and generated-artifact rendering
 
@@ -114,10 +125,12 @@ in the current codebase.
 
 - **`cli.py`** — the Typer app: `init`, `sync`, `index`, `check`,
   `query` (a sub-app: `vendors`, `vendor`, `symbol`, `skills`,
-  `relations`, `topology`, `source`, `source-symbol`), `chat`, `undo`,
+  `relations`, `topology`, `source`, `source-symbol`), `enrich` (a
+  sub-app: `apply`), `knowledge` (a sub-app: `render`,
+  `select-candidates`, `apply`, `status` — Phase 81), `chat`, `undo`,
   plus bare `codecompass`'s own bootstrap/enrichment orchestration
   (`_bootstrap`, `_maybe_run_enrichment`, `_refresh_generated_artifacts`).
-  1,519 lines — the second-largest module (after `graph.py`, 2,428
+  1,662 lines — the second-largest module (after `graph.py`, 2,428
   lines), and the only one every other layer is invisible to (nothing in
   layers 1-3 imports `cli.py`).
 

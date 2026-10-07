@@ -46,8 +46,10 @@ Provenance: OBSERVED
 - **Provenance** tells you where this came from: `OBSERVED` (grounded in
   real, reproducible research), `DECLARED` (a maintainer's stated
   intent), `DECIDED` (authorised by an approved decision), `DERIVED`
-  (reasoned from evidence), or `HISTORICAL` (superseded, kept for its
-  own record).
+  (reasoned from evidence), `HISTORICAL` (superseded, kept for its own
+  record), or occasionally `MIXED` (the record's own evidence chain
+  combines both observed and non-observed sources — shown rather than
+  guessed at, the more cautious label).
 - **Never edit the anchor comment itself** — edit the prose between the
   markers. The anchor is how CodeCompass finds its way back to the
   exact record you changed.
@@ -86,8 +88,18 @@ does not itself constitute an observation of behaviour X.
 ## How changes are submitted and reconciled
 
 Submit your edit as an ordinary Git commit or pull request — no special
-submission channel. Reconciliation then runs in three distinct stages:
+submission channel. Before any of this, someone has to have run
+`codecompass knowledge render [<slug>]` at least once — this is what
+produces the editable projection in the first place, and it's also how
+you (or anyone) refresh a projection's own prose by hand later, outside
+the reconciliation flow below (reconciliation's own `apply` step never
+re-renders on its own — a later `select-candidates` run, or an explicit
+`render`, is what actually updates the Markdown file's wording).
+Reconciliation itself then runs in three stages requiring a human/agent
+decision, plus one purely mechanical step either side of them:
 
+0. **Render** (`codecompass knowledge render [<slug>]`) — deterministic,
+   no AI call, produces or refreshes the editable projection you edit.
 1. **Detect** (`codecompass knowledge select-candidates <slug>`) —
    purely mechanical, no AI call, writes nothing to any canonical
    record. It compares two independent hashes for every anchor: one for
@@ -106,6 +118,8 @@ submission channel. Reconciliation then runs in three distinct stages:
    review's own say-so: it re-validates everything mechanically and
    re-checks that the canonical record hasn't moved again since
    detection.
+4. **Render again** — run `codecompass knowledge render [<slug>]` once
+   more to see the newly-reconciled wording reflected in the projection.
 
 ## What happens when your edit disagrees with existing evidence
 
@@ -152,14 +166,17 @@ documentation on its own.
 
 ## Phase knowledge packages
 
-For a bounded piece of work, the same projection mechanism produces a
-**phase knowledge package** — the relevant slug's own `intermediate/`
-files, plus a `phase-brief.md` summarising feature intent, domain
-terminology, edge cases, invariants, existing/desired behaviour,
-compatibility constraints, affected interfaces, test scenarios,
-acceptance behaviour, and open questions. Refine it the same way you'd
-refine any other intermediate document — the candidate-addition region
-is there for exactly this.
+For a bounded piece of work, `codecompass knowledge render <slug>`
+already produces a **phase knowledge package** — the relevant slug's own
+`intermediate/` files, plus `phase-brief.md`: a single, mechanically-
+compiled entry point (record counts and ids per category — concepts/
+architecture, invariants/constraints, interfaces/behaviours, test
+scenarios where any Requirement exists, open questions) linking into the
+other files, never a separate representation of the same knowledge or a
+narrative summary written on your behalf. Refine the underlying files
+the same way you'd refine any other intermediate document — the
+candidate-addition region is there for exactly this, on `phase-brief.md`
+too.
 
 ## Using an AI coding tool
 

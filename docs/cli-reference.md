@@ -3,15 +3,18 @@
 > New to codecompass? See [`quickstart.md`](quickstart.md) for a
 > first-run walkthrough before this full reference.
 
-> `init`, `sync`, `index`, `check`, `query`, `chat`, `undo`, and
-> `enrich apply` are implemented. `promote` was removed in Phase 15
-> (`decisions/0033`) — its three former jobs (clone, enrich, generate
-> Skill) are now automatic outcomes of bootstrap/`sync`. The context graph
-> (`query`), generated Skills, and the `/discovery` slash command are the
-> primary way to consult codecompass's output day to day; `chat` is a
-> secondary, digest-only terminal Q&A tool (`decisions/0034`); `enrich
-> apply` is agent/developer-facing (`decisions/0054`), not part of normal
-> day-to-day use. See [`planning/`](../planning/) for current status.
+> `init`, `sync`, `index`, `check`, `query`, `chat`, `undo`, `enrich
+> apply`, and `knowledge render|select-candidates|apply|status` are
+> implemented. `promote` was removed in Phase 15 (`decisions/0033`) —
+> its three former jobs (clone, enrich, generate Skill) are now automatic
+> outcomes of bootstrap/`sync`. The context graph (`query`), generated
+> Skills, and the `/discovery` slash command are the primary way to
+> consult codecompass's output day to day; `chat` is a secondary,
+> digest-only terminal Q&A tool (`decisions/0034`); `enrich apply` is
+> agent/developer-facing (`decisions/0054`), not part of normal
+> day-to-day use; `knowledge` is for a project that has adopted the
+> optional intermediate-knowledge-layer workflow (Phase 81). See
+> [`planning/`](../planning/) for current status.
 
 ## `codecompass [--yes] [--budget <amount>]` (no subcommand)
 
@@ -339,6 +342,56 @@ anything was rejected.
 
 ```bash
 codecompass enrich apply entries.json --agent context-enrichment-agent
+```
+
+## `codecompass knowledge render|select-candidates|apply|status`
+
+**Status:** implemented (Phase 81). See
+[`codecompass-knowledge-workflow.md`](codecompass-knowledge-workflow.md)
+for the full, narrative guide — this section is the terse reference.
+
+Projects a project's own `planning/knowledge/<slug>/` canonical records
+(six kinds: Observation/Evidence/Claim/Derivation/Decision/Requirement)
+into editable Markdown, detects human/AI-tool edits, and reconciles them
+back through a strict detect/review/apply separation. Adds no new
+canonical record field (`decisions/0071`/`0072`).
+
+- **`codecompass knowledge render [<slug>]`** — deterministic, no AI
+  call, idempotent. Writes `planning/knowledge/<slug>/intermediate/*.md`
+  (`overview.md`, `invariants-and-constraints.md`,
+  `interfaces-and-behaviours.md`, `open-questions-and-conflicts.md`,
+  `phase-brief.md`, plus `tests-and-acceptance.md` when the slug has any
+  Requirement). Omit `<slug>` to render every slug under
+  `planning/knowledge/`. Preserves any not-yet-reconciled candidate-
+  region content already on disk, and any still-valid presentation-cache
+  wording.
+- **`codecompass knowledge select-candidates <slug> [--dry-run]`** —
+  mechanical only, no AI call, writes nothing canonical. Classifies every
+  anchor via two independent hashes (the canonical record's own content
+  hash; the rendered projection's own content — never compared against
+  each other) into no-op / candidate / safe-auto-refresh /
+  concurrent-change-conflict, and reads every `## Candidate additions`
+  region for new proposals. Writes a durable manifest to
+  `planning/knowledge/<slug>/reconciliation/<timestamp>.toml`.
+  `--dry-run` reports counts without writing the manifest.
+- **`codecompass knowledge apply <manifest-path> [--strict]`** — the
+  only command that writes `planning/knowledge/<slug>/*.yaml`. Requires
+  the manifest's items to already be annotated (`decision = "accept"` or
+  `"reject"`, set during review); re-validates every item mechanically
+  regardless of that annotation, re-checks the canonical record's hash
+  immediately before writing, and refuses any item still marked
+  `concurrent_conflict`.
+- **`codecompass knowledge status [<slug>] [--strict]`** — records
+  needing review, unresolved concurrent-change conflicts, and a small
+  advisory-only documentation-grounding coverage report (never
+  blocking). `--strict` exits 1 only for a genuine unresolved
+  concurrent-change conflict, never for a coverage gap.
+
+```bash
+codecompass knowledge render
+codecompass knowledge select-candidates codecompass-domain
+codecompass knowledge apply planning/knowledge/codecompass-domain/reconciliation/20261007T054415Z.toml
+codecompass knowledge status
 ```
 
 ## `codecompass index`
