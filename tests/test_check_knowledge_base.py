@@ -1210,3 +1210,204 @@ content_hash = "{cl_hash}"
             )
         ]
         assert identity_or_kind == []
+
+
+_DECISION_HEADER = """\
+id: DEC-TEST-001
+kind: decision
+decides: a test decision
+rationale: because this is a test
+supersedes: null
+decided_by: test
+timestamp: "2026-10-01T00:00:00Z"
+status: {status}
+"""
+
+_REQUIREMENT_HEADER = """\
+id: REQ-TEST-001
+kind: requirement
+statement: a test requirement
+example: |
+  Given a test
+  When it runs
+  Then it passes
+decision: DEC-TEST-001
+status: proposed
+"""
+
+
+class TestRequirementCitesApprovedDecision:
+    """Phase 81 (planning/phase-81-intermediate-knowledge-layer.md
+    §11/§14.3): the real gap this check closes — before it existed, a
+    Requirement's `decision:` field was only checked for *resolving* to
+    some real record (`check_cross_references_resolve`), never for that
+    record actually being an `approved` Decision. Reproduced here before
+    confirming the fix, per this project's own established discipline."""
+
+    def test_approved_decision_no_finding(self, tmp_path):
+        _write(tmp_path / "DEC-TEST-001.yaml", _DECISION_HEADER.format(status="approved"))
+        _write(tmp_path / "REQ-TEST-001.yaml", _REQUIREMENT_HEADER)
+        findings = check_knowledge_base.check_requirement_cites_approved_decision(
+            tmp_path, root=tmp_path
+        )
+        assert findings == []
+
+    def test_proposed_decision_flagged(self, tmp_path):
+        """The real gap: a Requirement citing a merely-`proposed` (not yet
+        human-approved) Decision must be rejected — a Requirement is never
+        free-floating, unauthorised implementation guidance
+        (docs/domain/concepts/requirement.md's own invariant)."""
+        _write(tmp_path / "DEC-TEST-001.yaml", _DECISION_HEADER.format(status="proposed"))
+        _write(tmp_path / "REQ-TEST-001.yaml", _REQUIREMENT_HEADER)
+        findings = check_knowledge_base.check_requirement_cites_approved_decision(
+            tmp_path, root=tmp_path
+        )
+        assert len(findings) == 1
+        assert findings[0].rule == "knowledge-base-requirement-cites-unapproved-decision"
+        assert findings[0].strict
+
+    def test_rejected_decision_flagged(self, tmp_path):
+        _write(tmp_path / "DEC-TEST-001.yaml", _DECISION_HEADER.format(status="rejected"))
+        _write(tmp_path / "REQ-TEST-001.yaml", _REQUIREMENT_HEADER)
+        findings = check_knowledge_base.check_requirement_cites_approved_decision(
+            tmp_path, root=tmp_path
+        )
+        assert len(findings) == 1
+        assert findings[0].rule == "knowledge-base-requirement-cites-unapproved-decision"
+
+    def test_superseded_decision_flagged(self, tmp_path):
+        _write(tmp_path / "DEC-TEST-001.yaml", _DECISION_HEADER.format(status="superseded"))
+        _write(tmp_path / "REQ-TEST-001.yaml", _REQUIREMENT_HEADER)
+        findings = check_knowledge_base.check_requirement_cites_approved_decision(
+            tmp_path, root=tmp_path
+        )
+        assert len(findings) == 1
+
+    def test_cross_directory_approved_decision_via_fallback_map(self, tmp_path):
+        """A Requirement may legitimately cite a Decision recorded in a
+        different feature directory, exactly as check_cross_references_resolve
+        already allows — resolved here via the all_decision_status fallback
+        map, the same two-tier (local-then-global) resolution order."""
+        req_dir = tmp_path / "req-feature"
+        req_dir.mkdir()
+        _write(req_dir / "REQ-TEST-001.yaml", _REQUIREMENT_HEADER)
+        findings = check_knowledge_base.check_requirement_cites_approved_decision(
+            req_dir, all_decision_status={"DEC-TEST-001": "approved"}
+        )
+        assert findings == []
+
+    def test_dangling_decision_not_double_reported(self, tmp_path):
+        """A decision id that resolves nowhere at all is
+        check_cross_references_resolve's own concern, not this check's --
+        this check must stay silent rather than crash or double-report."""
+        _write(tmp_path / "REQ-TEST-001.yaml", _REQUIREMENT_HEADER)
+        findings = check_knowledge_base.check_requirement_cites_approved_decision(
+            tmp_path, root=tmp_path
+        )
+        assert findings == []
+
+    def test_missing_decision_field_not_double_reported(self, tmp_path):
+        """A Requirement missing `decision:` entirely is
+        check_required_fields's own concern."""
+        no_decision = _REQUIREMENT_HEADER.replace("decision: DEC-TEST-001\n", "")
+        _write(tmp_path / "REQ-TEST-001.yaml", no_decision)
+        findings = check_knowledge_base.check_requirement_cites_approved_decision(
+            tmp_path, root=tmp_path
+        )
+        assert findings == []
+
+    def test_real_repository_satisfies_this_check(self):
+        """Confirmed by direct inspection before adding this check: all
+        nine pre-existing Requirement records already cite an approved
+        Decision, so adding this fail-closed check breaks nothing real."""
+        all_decision_status: dict[str, str] = {}
+        knowledge_dir = REPO_ROOT / "planning" / "knowledge"
+        for feature_dir in sorted(p for p in knowledge_dir.iterdir() if p.is_dir()):
+            for yaml_path in feature_dir.glob("*.yaml"):
+                fields = check_knowledge_base.parse_record(yaml_path)
+                if fields.get("kind") == "decision" and fields.get("id"):
+                    all_decision_status[fields["id"]] = fields.get("status", "")
+        findings: list[check_knowledge_base.Finding] = []
+        for feature_dir in sorted(p for p in knowledge_dir.iterdir() if p.is_dir()):
+            findings.extend(
+                check_knowledge_base.check_requirement_cites_approved_decision(
+                    feature_dir, all_decision_status
+                )
+            )
+        assert findings == []
+
+
+class TestAnchorIntegrity:
+    """Phase 81 (§4.3/§11): a stable knowledge anchor in an
+    `intermediate/*.md` projection must resolve to a real record of the
+    matching kind — identity, not merely presence."""
+
+    def test_no_intermediate_dir_no_finding(self, tmp_path):
+        findings = check_knowledge_base.check_anchor_integrity(tmp_path, root=tmp_path)
+        assert findings == []
+
+    def test_valid_anchor_no_finding(self, tmp_path):
+        _write(tmp_path / "CL-TEST-001.yaml", _CLAIM_HEADER)
+        _write(
+            tmp_path / "intermediate" / "overview.md",
+            "<!-- codecompass-knowledge: CL-TEST-001 "
+            "semantic-sha256:abc projection-sha256:def -->\n"
+            "### A test claim\n\ntest statement\n"
+            "<!-- /codecompass-knowledge -->\n",
+        )
+        findings = check_knowledge_base.check_anchor_integrity(tmp_path, root=tmp_path)
+        assert findings == []
+
+    def test_dangling_anchor_flagged(self, tmp_path):
+        """The real failure mode: an anchor citing an id with no matching
+        record at all — e.g. the record was deleted but the projection was
+        never re-rendered."""
+        _write(
+            tmp_path / "intermediate" / "overview.md",
+            "<!-- codecompass-knowledge: CL-GHOST-001 "
+            "semantic-sha256:abc projection-sha256:def -->\n"
+            "### A ghost claim\n\nno such record exists\n"
+            "<!-- /codecompass-knowledge -->\n",
+        )
+        findings = check_knowledge_base.check_anchor_integrity(tmp_path, root=tmp_path)
+        assert len(findings) == 1
+        assert findings[0].rule == "knowledge-base-dangling-anchor"
+        assert findings[0].strict
+
+    def test_real_kind_mismatch_flagged(self, tmp_path):
+        _write(tmp_path / "CL-TEST-001.yaml", _CLAIM_HEADER)
+        _write(
+            tmp_path / "intermediate" / "overview.md",
+            # Deliberately contrived: rename the claim's own id so its
+            # prefix (DEC-) disagrees with its real kind (claim) -- this can
+            # only happen if a record's id and kind fields disagree with
+            # each other, which check_required_fields's own id-prefix check
+            # already guards against for the record itself; this test
+            # exercises the anchor-side half of that same discipline.
+            "<!-- codecompass-knowledge: DEC-MISLABEL-001 "
+            "semantic-sha256:abc projection-sha256:def -->\n"
+            "### Mislabelled anchor\n\ntext\n"
+            "<!-- /codecompass-knowledge -->\n",
+        )
+        # Inject a record whose id disagrees with its own kind, to exercise
+        # the anchor-side mismatch path directly.
+        _write(
+            tmp_path / "DEC-MISLABEL-001.yaml",
+            _CLAIM_HEADER.replace("id: CL-TEST-001", "id: DEC-MISLABEL-001"),
+        )
+        findings = check_knowledge_base.check_anchor_integrity(tmp_path, root=tmp_path)
+        assert len(findings) == 1
+        assert findings[0].rule == "knowledge-base-anchor-kind-mismatch"
+        assert findings[0].strict
+
+    def test_real_repository_has_no_dangling_anchors(self):
+        """No intermediate/ directories exist yet in the real repository at
+        the time this check was added -- confirms the check is a true
+        no-op against real content until Phase 81's own rendering ships."""
+        knowledge_dir = REPO_ROOT / "planning" / "knowledge"
+        findings: list[check_knowledge_base.Finding] = []
+        for feature_dir in sorted(p for p in knowledge_dir.iterdir() if p.is_dir()):
+            findings.extend(
+                check_knowledge_base.check_anchor_integrity(feature_dir, root=REPO_ROOT)
+            )
+        assert findings == []

@@ -60,6 +60,15 @@ Checks added Phase 79 (planning/phase-79-...md §4.2, §5.3):
   current, live record (`check_snapshot_current_divergence` —
   informational only, never `--strict`-blocking; a legitimate
   supersession or withdrawal is *expected* to diverge here).
+
+Checks added Phase 81 (planning/phase-81-intermediate-knowledge-layer.md
+§11/§14.3): a Requirement's `decision:` field must resolve to a Decision
+whose own `status` is `approved`, not merely to any resolvable record
+(`check_requirement_cites_approved_decision`); every stable knowledge
+anchor in a slug's own `intermediate/*.md` projection must resolve to a
+real record of the matching kind (`check_anchor_integrity`). Phase 81
+adds no new record kind and no new persisted field — both checks operate
+entirely on the existing schema.
 """
 
 from __future__ import annotations
@@ -167,6 +176,12 @@ _OPTIONAL_ENUM_FIELDS: dict[str, dict[str, set[str]]] = {
             "invariant",
             "state_transformation",
             "boundary",
+            # Phase 81: a named, ordered sequence of claims (expressible via
+            # depends_on, but losing real meaning if forced into
+            # "relationship") and a cross-cutting limitation distinct from a
+            # "rule" in the narrower sense already covered above.
+            "workflow",
+            "constraint",
         },
         "basis": {
             "directly_stated",
@@ -452,6 +467,111 @@ def check_supersedes_never_crosses_kind(feature_dir: Path) -> list[Finding]:
                         f"{expected_prefix}-... id — a {kind} may only "
                         f"supersede another {kind} (see §5.2's hard rule: "
                         "a Decision must never supersede a Claim)",
+                    )
+                )
+    return findings
+
+
+def check_requirement_cites_approved_decision(
+    feature_dir: Path,
+    all_decision_status: dict[str, str] | None = None,
+    root: Path = ROOT,
+) -> list[Finding]:
+    """Phase 81 (§11/§14.3): a Requirement's `decision:` field must not
+    merely *resolve* to a real record (already covered by
+    `check_cross_references_resolve`) — the record it resolves to must be
+    a Decision whose own `status` is `approved`. Closes a real,
+    previously-unenforced gap: nothing before this checked that a
+    Requirement's authorising Decision was ever actually approved, rather
+    than merely proposed, rejected, or superseded. `all_decision_status`,
+    when given, is the id->status map for every Decision across every
+    `planning/knowledge/*/` directory (a Requirement may legitimately cite
+    a Decision recorded in a different feature directory, exactly as
+    `check_cross_references_resolve` already allows for cross-directory
+    citation) — checked as a fallback only after the local (same-
+    directory) scope fails to resolve.
+    """
+    findings: list[Finding] = []
+    local_decision_status: dict[str, str] = {}
+    for yaml_path in feature_dir.glob("*.yaml"):
+        fields = parse_record(yaml_path)
+        if fields.get("kind") == "decision" and fields.get("id"):
+            local_decision_status[fields["id"]] = fields.get("status", "")
+
+    for yaml_path in sorted(feature_dir.glob("*.yaml")):
+        fields = parse_record(yaml_path)
+        if fields.get("kind") != "requirement":
+            continue
+        decision_id = fields.get("decision", "")
+        referenced = _extract_id_strings(decision_id)
+        if not referenced:
+            continue  # missing entirely is already reported by check_required_fields
+        cited = referenced[0]
+        status = local_decision_status.get(cited)
+        if status is None and all_decision_status is not None:
+            status = all_decision_status.get(cited)
+        if status is None:
+            continue  # dangling reference already reported by check_cross_references_resolve
+        if status != "approved":
+            findings.append(
+                Finding(
+                    "knowledge-base-requirement-cites-unapproved-decision",
+                    f"{yaml_path.relative_to(root)}: decision={cited!r} has "
+                    f"status={status!r}, not 'approved' — a Requirement must "
+                    "cite a Decision that has actually been approved, never "
+                    "one that is merely proposed, rejected, or superseded",
+                )
+            )
+    return findings
+
+
+def check_anchor_integrity(feature_dir: Path, root: Path = ROOT) -> list[Finding]:
+    """Phase 81 (§4.3/§11): every stable knowledge anchor in a slug's own
+    `intermediate/*.md` projection must resolve to a real record, and that
+    record's own `kind` must match the id's own prefix — identity, not
+    merely a hash match, the same discipline Phase 80 hardened for
+    snapshots, applied here to live projections. The anchor's own
+    semantic/projection hashes are reconciliation's own concern
+    (`knowledge select-candidates`), not this structural check's.
+    """
+    findings: list[Finding] = []
+    intermediate_dir = feature_dir / "intermediate"
+    if not intermediate_dir.is_dir():
+        return findings
+    known_kind_by_id: dict[str, str] = {}
+    for yaml_path in feature_dir.glob("*.yaml"):
+        fields = parse_record(yaml_path)
+        if fields.get("id"):
+            known_kind_by_id[fields["id"]] = fields.get("kind", "")
+
+    anchor_re = re.compile(
+        r"<!--\s*codecompass-knowledge:\s*([A-Z]+-[A-Z0-9]+-\d+)\b"
+    )
+    for md_path in sorted(intermediate_dir.glob("*.md")):
+        text = md_path.read_text(encoding="utf-8")
+        for match in anchor_re.finditer(text):
+            anchor_id = match.group(1)
+            prefix = anchor_id.split("-", 1)[0]
+            expected_kind = {
+                v: k for k, v in _ID_PREFIX_FOR_KIND.items()
+            }.get(prefix)
+            kind = known_kind_by_id.get(anchor_id)
+            if kind is None:
+                findings.append(
+                    Finding(
+                        "knowledge-base-dangling-anchor",
+                        f"{md_path.relative_to(root)}: anchor cites "
+                        f"{anchor_id!r}, which has no matching record in "
+                        f"{feature_dir.relative_to(root)}",
+                    )
+                )
+            elif expected_kind is not None and kind != expected_kind:
+                findings.append(
+                    Finding(
+                        "knowledge-base-anchor-kind-mismatch",
+                        f"{md_path.relative_to(root)}: anchor cites "
+                        f"{anchor_id!r} as if it were a {expected_kind!r}, "
+                        f"but the matching record's own kind is {kind!r}",
                     )
                 )
     return findings
@@ -1139,6 +1259,8 @@ CHECKS = [
     check_list_fields_are_inline,
     check_cross_references_resolve,
     check_supersedes_never_crosses_kind,
+    check_requirement_cites_approved_decision,
+    check_anchor_integrity,
     check_design_doc_citations_resolve,
     check_snapshot_completeness,
     check_snapshot_historical_integrity,
@@ -1153,18 +1275,25 @@ def run_all(root: Path) -> list[Finding]:
         return findings
     feature_dirs = sorted(p for p in knowledge_dir.iterdir() if p.is_dir())
     all_known_ids: set[str] = set()
+    all_decision_status: dict[str, str] = {}
     for feature_dir in feature_dirs:
         for yaml_path in feature_dir.glob("*.yaml"):
-            record_id = parse_record(yaml_path).get("id")
+            fields = parse_record(yaml_path)
+            record_id = fields.get("id")
             if record_id:
                 all_known_ids.add(record_id)
+                if fields.get("kind") == "decision":
+                    all_decision_status[record_id] = fields.get("status", "")
     for feature_dir in feature_dirs:
         for check in CHECKS:
             if check is check_cross_references_resolve:
                 findings.extend(check(feature_dir, all_known_ids))
+            elif check is check_requirement_cites_approved_decision:
+                findings.extend(check(feature_dir, all_decision_status, root))
             elif check in (
                 check_optional_enum_fields,
                 check_list_fields_are_inline,
+                check_anchor_integrity,
                 check_snapshot_completeness,
                 check_snapshot_historical_integrity,
                 check_snapshot_current_divergence,
