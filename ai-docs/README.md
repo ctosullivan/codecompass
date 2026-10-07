@@ -61,13 +61,17 @@ and how a project's own docs relate to them.
   is "what does this project implement," not "what does this dependency
   expose."
 - **A persistent, human/AI-tool-editable knowledge layer**
-  (`codecompass knowledge render|select-candidates|apply|status`, Phase
-  81): a project's own structured knowledge (concepts, invariants,
+  (`codecompass knowledge render|select-candidates|doc-select-candidates|
+  apply|status|doc-acknowledge-stale|doc-acknowledge-chunks`, Phase 81):
+  a project's own structured knowledge (concepts, invariants,
   behaviours, decisions, requirements) projects into editable Markdown;
   an edit from you, ChatGPT, Copilot, Claude Code, or a plain Git PR is
   mechanically detected and reconciled back only after review — never
   fabricating an observed fact, never bypassing a human-authorised
-  decision, never conflating wording with meaning. See
+  decision, never conflating wording with meaning. Project documentation
+  (README/CONTRIBUTING) can be explicitly grounded in that same knowledge
+  too; detecting a drift there never by itself acknowledges it — only an
+  actual apply or an explicit acknowledge command does. See
   [`docs/codecompass-knowledge-workflow.md`](../docs/codecompass-knowledge-workflow.md).
 
 ## What it does NOT do
