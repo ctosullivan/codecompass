@@ -8,6 +8,147 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-088 — positional-only identity for a tracked, re-orderable entity recurred independently a second time, for a second mechanism, after already being fixed once for a different one
+
+- **origin:** Phase 81 second corrective pass (`decisions/0074` point 10),
+  reviewing `decisions/0073`'s own corrective-pass code
+- **date:** 2026-10-07
+- **project_revision:** `7a0e270` (second corrective-pass commit)
+- **observation:** grounded-document-region baseline identity was purely
+  positional (`"README.md::0"`) — fragile under any insertion/reordering
+  of grounded regions. This is the exact same failure mode CodeCompass had
+  already corrected once before, for a different tracked entity (anchored
+  intermediate-knowledge blocks), in `decisions/0073`'s own stable-anchor
+  work, which the second corrective pass's own code predates by only
+  hours. The two mechanisms were implemented separately with no shared
+  identity convention, so the "give it a stable explicit id, fall back to
+  positional for the un-migrated case, fail closed on a duplicate id" fix
+  had to be independently rediscovered and reapplied rather than reused.
+- **evidence:** `decisions/0074` §10 ("the same failure mode CodeCompass
+  had already corrected once before for anchored knowledge blocks...
+  recurred independently in the newer grounded-document code, because the
+  two mechanisms were implemented separately rather than sharing an
+  identity convention from the start"); `planning/retros/phase-81-second-corrective-pass.md`
+  Lessons-learnt bullet 3.
+- **classification:** project-rule
+- **status:** candidate
+- **recurrence:** second instance of the same shape within one effort
+  (anchored knowledge blocks, then grounded-document regions) — treated
+  as sufficient per this project's own precedent for within-lineage
+  recurrence (`L-070`/`L-075`, each promoted on two instances inside one
+  phase).
+- **promoted_to:** (not yet landed)
+- **curation (this triage, 2026-10-07, knowledge-curator):** checked
+  `inbox.md` for a prior entry on positional/identity stability — none
+  found (grepped for "positional identity", "region:<id>", "stable
+  identity", "anchor identity"; no matches). **Recommend promote** —
+  project-rule, `CLAUDE.md` §1 (requires user approval per §0). Drafted as
+  proposal §J in `planning/v1-redefinition/proposed-governance-changes.md`
+  (this curation's own write scope). The lead presents the diff to the
+  user; once approved and landed, flip this candidate to `promoted` and
+  add the `promoted.md` pointer line:
+  `L-088 | 2026-10-07 | project-rule | CLAUDE.md §1 (new tracked
+  re-orderable entity needs an explicit identity-stability check against
+  existing conventions, plus an insertion/reordering test -- user-approved
+  per §0) @ <landing commit>`.
+
+### L-087 — "detection must never itself count as acknowledgement" was a principle this project had already applied twice elsewhere, but not yet generalised as a design-review question for every new persisted-state mechanism
+
+- **origin:** Phase 81 second corrective pass (`decisions/0074` point 1),
+  reviewing `decisions/0073`'s own corrective-pass code
+- **date:** 2026-10-07
+- **project_revision:** `7a0e270` (second corrective-pass commit)
+- **observation:** `doc-select-candidates` advanced both
+  `.grounding-state.toml` and `.doc-chunk-state.toml` immediately after
+  every detection run, regardless of whether anything was actually
+  applied or acknowledged — meaning a detected-but-unreviewed finding
+  would silently vanish from the next run. The same discipline ("observe
+  vs. commit are different verbs") this project had already independently
+  applied to canonical Claim dedup and to apply-time concurrency checks
+  (`decisions/0071`-`0073`) was not carried over to this third,
+  structurally identical persisted-"last-known-state" mechanism until this
+  review caught it — the principle was real and twice-proven but had not
+  yet become a standing design-review question asked of every *new* such
+  mechanism up front.
+- **evidence:** `decisions/0074` §1 ("Detection never acknowledges drift
+  by observing it"); `planning/retros/phase-81-second-corrective-pass.md`
+  Lessons-learnt bullet 2.
+- **classification:** project-rule
+- **status:** candidate
+- **recurrence:** third instance of the same discipline being needed
+  (canonical dedup, apply-time concurrency, now baseline advancement),
+  the first two already landed as architecture before this phase; this is
+  the first time the *general* principle itself (not a specific
+  instance) is being proposed as a project-wide rule.
+- **promoted_to:** (not yet landed)
+- **curation (this triage, 2026-10-07, knowledge-curator):** checked
+  `inbox.md` for a prior entry — none found (grepped "detection...
+  acknowledg", "observe vs. commit"). **Recommend promote** — project-rule,
+  `CLAUDE.md` §1 (requires user approval per §0). Drafted as proposal §I in
+  `planning/v1-redefinition/proposed-governance-changes.md`. Once approved
+  and landed:
+  `L-087 | 2026-10-07 | project-rule | CLAUDE.md §1 (a new persisted
+  "last-known-state" mechanism's plan must state how detection differs
+  from acknowledgement -- user-approved per §0) @ <landing commit>`.
+
+### L-086 — a corrective pass fixing real defects can introduce new ones in the same review cycle, concentrated in the code it just wrote
+
+- **origin:** Phase 81 second corrective pass (`decisions/0074`), a
+  further review of `decisions/0073`'s own corrective-pass code
+- **date:** 2026-10-07
+- **project_revision:** `7a0e270` (second corrective-pass commit)
+- **observation:** of this pass's fourteen findings, nearly all were
+  located in the grounded-document reconciliation path that the *first*
+  corrective pass (`decisions/0073` point 3) had itself just written —
+  not in the original Phase 81 design. This is the second instance of the
+  same two-levels-deep shape inside one closeout: the original Phase 81
+  work needed a corrective pass (nine defects, `decisions/0073`), and that
+  corrective pass's own newly-written code then itself needed a further
+  corrective pass (fourteen more, `decisions/0074`). Both rounds of new
+  code were written to resolve a previously-found problem, under the same
+  same-day scope/time pressure, and both needed a further independent
+  look before being trusted as closed.
+- **evidence:** `decisions/0074` Context ("A further, more detailed
+  review of that corrective pass itself... found fourteen more real
+  defects, mostly in the grounded-document reconciliation path
+  `decisions/0073` point 3 introduced"); `planning/retros/phase-81-second-corrective-pass.md`
+  Lessons-learnt bullet 1.
+- **classification:** scoped-rule
+- **status:** promoted
+- **recurrence:** second instance of the same shape within one phase's
+  closeout lineage (first corrective pass fixing the original work, then
+  a second fixing the first's own new code).
+- **promoted_to:** `.claude/agents/release-phase-auditor.md` "What to
+  check" item 10 (a corrective pass's own newly-written code is full
+  audited scope) @ `2e1b5a7`
+- **curation (this triage, 2026-10-07, knowledge-curator):** checked
+  `inbox.md` for a prior entry — none found. **Recommend promote** —
+  scoped-rule, `.claude/agents/release-phase-auditor.md` "What to check,"
+  new item 10 (within this curator's recommend-only reach; `.claude/agents/`
+  is outside this role's own write scope — the lead or `docs-maintainer`
+  finalises). Draft text:
+
+  > **10. A corrective pass's own newly-written code is full audited
+  > scope, not a lighter-touch re-check.** When the phase under audit is
+  > itself a corrective pass (fixing defects found in an earlier version
+  > of the same phase), scrutinize the code that corrective pass *itself
+  > introduced* with the same depth as original phase implementation —
+  > never grant it a presumption of correctness merely because it is a
+  > fix for something already found wrong. Confirmed necessary at Phase
+  > 81 (`L-086`): a first corrective pass's own new code (the
+  > grounded-document reconciliation path) needed a second, independent
+  > corrective pass days later, because nothing in the audit step treated
+  > "newly-written fix code" as higher-risk than "already-stable code
+  > being lightly patched."
+
+  Once the lead/`docs-maintainer` lands this in
+  `.claude/agents/release-phase-auditor.md`, flip to `promoted` and add:
+  `L-086 | 2026-10-07 | scoped-rule | .claude/agents/release-phase-auditor.md
+  "What to check" item 10 (a corrective pass's own newly-written code is
+  full audited scope) @ <landing commit>`.
+
+---
+
 ### L-085 — a two-list filter mechanism (positive glob + negative exclusion) needs both halves checked, not just the one named in an instruction
 
 - **origin:** Phase 81 (persistent bidirectional intermediate knowledge
