@@ -13,7 +13,7 @@ what_it_shows: >
   and `apply` is the sole, mechanically-revalidating write path. This is
   not aspirational design text -- it is exercised against this
   project's own real 182-record codecompass-domain corpus and against
-  26 passing disposable-fixture tests covering every required safety
+  30 passing disposable-fixture tests covering every required safety
   property (no-op round trip, concurrent-edit safety, apply-time race
   safety, presentation/semantics independence, no fabricated
   Observations, the Requirement/Decision invariant, explicit

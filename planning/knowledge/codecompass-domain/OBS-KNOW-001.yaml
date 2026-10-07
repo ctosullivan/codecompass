@@ -9,7 +9,7 @@ method: >
   only changes, concurrent-change conflicts, apply-time races,
   presentation-cache independence, candidate-region boundaries, the
   Requirement/Decision invariant, and explicit documentation grounding
-  (tests/test_knowledge_intermediate.py, 26 tests), plus a direct read
+  (tests/test_knowledge_intermediate.py, 30 tests), plus a direct read
   of the generated planning/knowledge/codecompass-domain/intermediate/
   files and reconciliation manifests produced by real runs.
 what_was_done: >

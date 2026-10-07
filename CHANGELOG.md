@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a matching, lightweight `optional-intermediate-knowledge/` directory.
   Validated against this project's own real 182-record
   `codecompass-domain` slug and a real `hledger-depth`
-  (Ledgerkit-relevant) dogfood run, plus 26 new deterministic tests
+  (Ledgerkit-relevant) dogfood run, plus 30 new deterministic tests
   (`tests/test_knowledge_intermediate.py`).
 - **Phase 71** (Post-v1 documentation refresh, done): `README.md`
   gained a "Limitations" section (8 concrete, honestly-disclosed gaps)
