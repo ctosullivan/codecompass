@@ -76,6 +76,18 @@ without fixing anything — that a phase is actually done.
    contradicting its own already-corrected "Counterexample" section two
    headings below in the same file — found only once a pass was
    explicitly scoped to read every section of every touched page.
+10. **A corrective pass's own newly-written code is full audited scope,
+    not a lighter-touch re-check.** When the phase under audit is itself
+    a corrective pass (fixing defects found in an earlier version of the
+    same phase), scrutinize the code that corrective pass *itself
+    introduced* with the same depth as original phase implementation —
+    never grant it a presumption of correctness merely because it is a
+    fix for something already found wrong. Confirmed necessary at Phase
+    81 (`L-086`): a first corrective pass's own new code (the
+    grounded-document reconciliation path) needed a second, independent
+    corrective pass days later, because nothing in the audit step
+    treated "newly-written fix code" as higher-risk than "already-stable
+    code being lightly patched."
 
 ## Hard rules
 
