@@ -483,13 +483,61 @@ class TestDeriveProvenanceLabel:
         assert ki.derive_provenance_label(records["CL-DEMO-001"], records) == "DECLARED"
 
 
+class TestPhaseBrief:
+    """§5.2's own single entry point into a phase knowledge package --
+    a mechanically-compiled index, not a separate representation of the
+    same knowledge. Found missing (planned, never implemented) by the
+    independent per-phase docs-drift audit and added here."""
+
+    def test_render_slug_produces_phase_brief(self, tmp_path):
+        _make_slug(tmp_path)
+        written = ki.render_slug(tmp_path, "demo-slug")
+        assert any(p.name == "phase-brief.md" for p in written)
+        brief = (
+            (tmp_path / "planning" / "knowledge" / "demo-slug" / "intermediate" / "phase-brief.md")
+            .read_text(encoding="utf-8")
+        )
+        assert "CL-DEMO-001" in brief
+        assert "## Candidate additions" in brief
+
+    def test_no_records_no_brief(self, tmp_path):
+        sdir = tmp_path / "planning" / "knowledge" / "empty-slug"
+        sdir.mkdir(parents=True)
+        assert ki.render_phase_brief(tmp_path, "empty-slug") is None
+
+    def test_requirement_gets_its_own_line(self, tmp_path):
+        sdir = _make_slug(tmp_path, decision=_DECISION_APPROVED)
+        (sdir / "REQ-DEMO-001.yaml").write_text(
+            "id: REQ-DEMO-001\nkind: requirement\nstatement: a requirement\n"
+            "example: Given/When/Then\ndecision: DEC-DEMO-001\nstatus: proposed\n",
+            encoding="utf-8",
+        )
+        ki.render_slug(tmp_path, "demo-slug")
+        brief = (sdir / "intermediate" / "phase-brief.md").read_text(encoding="utf-8")
+        assert "REQ-DEMO-001" in brief
+        assert "tests-and-acceptance.md" in brief
+
+    def test_candidate_region_preserved_across_rerender(self, tmp_path):
+        sdir = _make_slug(tmp_path)
+        ki.render_slug(tmp_path, "demo-slug")
+        brief_path = sdir / "intermediate" / "phase-brief.md"
+        text = brief_path.read_text(encoding="utf-8")
+        text = text.replace(
+            ki.CANDIDATE_START + ki.CANDIDATE_END,
+            ki.CANDIDATE_START + "\nnot yet processed\n" + ki.CANDIDATE_END,
+        )
+        brief_path.write_text(text, encoding="utf-8")
+        ki.render_slug(tmp_path, "demo-slug")
+        assert "not yet processed" in brief_path.read_text(encoding="utf-8")
+
+
 class TestCLI:
     def test_render_select_candidates_status_via_cli(self, tmp_path, monkeypatch):
         _make_slug(tmp_path)
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(app, ["knowledge", "render", "demo-slug"])
         assert result.exit_code == 0
-        assert "rendered 4 file(s)" in result.output
+        assert "rendered 5 file(s)" in result.output
 
         result = runner.invoke(app, ["knowledge", "select-candidates", "demo-slug"])
         assert result.exit_code == 0

@@ -505,7 +505,91 @@ def render_slug(project_root: Path, slug: str) -> list[Path]:
         out_dir.mkdir(parents=True, exist_ok=True)
         target_path.write_text(content, encoding="utf-8")
         written.append(target_path)
+
+    brief_path = render_phase_brief(project_root, slug, records, by_file)
+    if brief_path:
+        written.append(brief_path)
     return written
+
+
+def render_phase_brief(
+    project_root: Path,
+    slug: str,
+    records: dict[str, KnowledgeRecord] | None = None,
+    by_file: dict[str, list[KnowledgeRecord]] | None = None,
+) -> Path | None:
+    """Phase knowledge package's own single entry point (§5.2) — not a
+    separate representation of the same knowledge, a mechanically
+    compiled index into the slug's own `intermediate/*.md` files: feature
+    intent/domain knowledge (-> overview.md), invariants/constraints,
+    interfaces/behaviours, test scenarios (-> tests-and-acceptance.md,
+    when present), and open questions. No AI call — purely a count/list
+    compiled from records this module already loaded for `render_slug`
+    (callers may pass `records`/`by_file` to avoid a second file-system
+    scan; both are recomputed when omitted, so this function also works
+    standalone). Returns `None` for a slug with no records at all, rather
+    than writing an empty placeholder (§4.1's own rule, applied here too).
+    """
+    sdir = slug_dir(project_root, slug)
+    if records is None:
+        records = load_slug_records(sdir)
+    if not records:
+        return None
+    if by_file is None:
+        by_file = {}
+        for record in records.values():
+            target = _file_for_record(record)
+            if target:
+                by_file.setdefault(target, []).append(record)
+
+    def _ids(filename: str) -> list[str]:
+        return sorted(r.record_id for r in by_file.get(filename, []))
+
+    overview_ids = _ids("overview.md")
+    invariant_ids = _ids("invariants-and-constraints.md")
+    behaviour_ids = _ids("interfaces-and-behaviours.md")
+    open_ids = _ids("open-questions-and-conflicts.md")
+    requirement_ids = _ids("tests-and-acceptance.md")
+
+    lines = [
+        f"# {slug} — phase brief",
+        "",
+        "A single entry point into this slug's own `intermediate/*.md` "
+        "files — mechanically compiled from the same records they "
+        "render, never a separate representation of the same knowledge "
+        "(planning/phase-81-intermediate-knowledge-layer.md §5.2).",
+        "",
+        f"- **Concepts, architecture, domain knowledge** — "
+        f"`overview.md` ({len(overview_ids)}: {', '.join(overview_ids) or 'none yet'})",
+        f"- **Invariants and constraints** — `invariants-and-constraints.md` "
+        f"({len(invariant_ids)}: {', '.join(invariant_ids) or 'none yet'})",
+        f"- **Interfaces and behaviours** — `interfaces-and-behaviours.md` "
+        f"({len(behaviour_ids)}: {', '.join(behaviour_ids) or 'none yet'})",
+        f"- **Open questions and conflicts** — `open-questions-and-conflicts.md` "
+        f"({len(open_ids)}: {', '.join(open_ids) or 'none'})",
+    ]
+    if requirement_ids:
+        lines.append(
+            f"- **Test scenarios and acceptance behaviour** — "
+            f"`tests-and-acceptance.md` ({len(requirement_ids)}: "
+            f"{', '.join(requirement_ids)})"
+        )
+    lines.append("")
+    lines.append(
+        "Edge cases and compatibility constraints are recorded as ordinary "
+        "Claims above (typically under invariants/constraints or open "
+        "questions) rather than in a separate section here — see each "
+        "file's own content for the real detail; this brief only indexes "
+        "it."
+    )
+    lines.append("")
+
+    brief_path = intermediate_dir(project_root, slug) / "phase-brief.md"
+    existing_candidate = _extract_existing_candidate_text(brief_path)
+    content = "\n".join(lines) + "\n" + _render_candidate_section(existing_candidate)
+    brief_path.parent.mkdir(parents=True, exist_ok=True)
+    brief_path.write_text(content, encoding="utf-8")
+    return brief_path
 
 
 # ---------------------------------------------------------------------------
