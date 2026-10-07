@@ -1,7 +1,8 @@
 # Phase 81 — persistent bidirectional intermediate knowledge layer
 
-**Status: second corrective pass complete, pending fresh completion
-audit.** Originally implemented, dogfooded, and closed `done` 2026-10-07
+**Status: done** (second corrective pass's own fresh independent
+completion audit PASSED, `planning/retros/_audit-phase-81-second-corrective-pass.md`,
+HEAD `a420541`, 2026-10-07). Originally implemented, dogfooded, and closed `done` 2026-10-07
 (first completion audit: PASS WITH NON-BLOCKING OBSERVATIONS,
 `planning/retros/_audit-phase-81.md`). **Reopened the same day**, direct
 user request, after post-completion review found nine real

@@ -8,101 +8,57 @@ session-resumption, not a project history.
 ## Current phase
 
 **Phase 81 (persistent bidirectional intermediate knowledge layer) is
-`reopened` for a second, focused corrective pass** — direct user
-request, 2026-10-07, same day as the first corrective pass
-(`decisions/0073`). That first pass's own implementation, tests, and real
-dogfood validation (against `codecompass-domain` and the real
-`hledger-depth` slug) were complete, but a further, more detailed review
-of the pass itself — not of the original Phase 81 design — found
-fourteen more real defects and gaps, nearly all in the grounded-document
-reconciliation path `decisions/0073` point 3 introduced. The original
-implementation/audit history and the first corrective pass's own history
-are both preserved unedited
-(`planning/retros/phase-81-intermediate-knowledge-layer.md`,
-`planning/retros/_audit-phase-81.md`,
-`planning/retros/phase-81-corrective-pass.md`) — this second reopening
-corrects further real behavioural defects, it does not rewrite that
-history.
+`done`** — original implementation, a first corrective pass
+(`decisions/0073`, nine defects), and a second corrective pass
+(`decisions/0074`, fourteen more defects and gaps, nearly all in the
+first pass's own grounded-document reconciliation code) all closed out,
+2026-10-07. Full history preserved, not rewritten:
+`planning/retros/phase-81-intermediate-knowledge-layer.md` (original),
+`planning/retros/_audit-phase-81.md` (original audit),
+`planning/retros/phase-81-corrective-pass.md` (first corrective pass),
+`planning/retros/phase-81-second-corrective-pass.md` (second corrective
+pass, full `TEMPLATE.md` shape), `planning/retros/_drift-audit-phase-81-second-corrective-pass.md`,
+`planning/retros/_audit-phase-81-second-corrective-pass.md` (a first FAIL
+verdict, preserved, superseded in the same file by a fresh PASS after
+the four gaps it found were fixed).
 
-**All fourteen corrections are now implemented** (full detail:
-`decisions/0074`, `planning/retros/phase-81-second-corrective-pass.md`):
-(1) detection no longer advances a grounding/chunk baseline merely by
-observing drift — only an actual `apply`, a brand-new region's first
-sighting, or one of two new explicit commands
-(`doc-acknowledge-stale`/`doc-acknowledge-chunks`) does; (2) a grounded-
-document `apply` now re-verifies every cited record's own content hash,
-not just the region's own text, before writing; (3) a `doc_region_edit`
-item's own `semantic_change` field distinguishes a presentation-only edit
-(acknowledged, no Claim) from a factual one (creates a candidate Claim);
-(4) a semantic edit's new Claim is added back to the region's own
-grounding marker, preserving discoverability; (5) the rendered candidate
-instructions now describe the real `Type: Requirement`/`Type: Intent`
-protocol instead of the pre-`decisions/0073` rule; (6) the public
-`codecompass-template` is rewritten for the corrected workflow and pushed
-(commit `bd2420d`, verified on the real remote); (7) a `Type: Intent`
-block's own header no longer leaks into the resulting Claim's
-`statement`; (8) a disappeared candidate with no matching canonical
-record now fails closed instead of reporting false success; (9)
-deduplication is kind-aware (and decision-aware for a Requirement), so a
-Claim and a Requirement with identical statement text can never
-cross-dedup; (10) grounded regions can carry a stable `region:<id>`
-identity surviving insertion/reordering, duplicate explicit ids failing
-closed — the real README.md's own marker was migrated to this form,
-confirmed to re-detect clean with no spurious drift.
+The feature: `codecompass knowledge render|select-candidates|
+doc-select-candidates|apply|status|doc-acknowledge-stale|
+doc-acknowledge-chunks` projects a project's own `planning/knowledge/<slug>/`
+canonical records into editable Markdown, detects human/AI-tool edits via
+dual-hash comparison, and reconciles them back through a strict detect →
+review → apply separation — now also covering explicitly-grounded project
+documentation (README/CONTRIBUTING) in both directions, with apply-time
+concurrency, idempotency, type-aware deduplication, and stable
+`region:<id>` identity all independently verified. Central architecture
+unchanged throughout: canonical knowledge stays in `planning/knowledge/`,
+`context-graph.db` stays mechanical-only, zero new persisted canonical
+fields beyond what `decisions/0071`/`0072` established. The public
+`codecompass-template` carries a matching, corrected
+`optional-intermediate-knowledge/` guide (commit `bd2420d` on its own
+remote).
 
-29 new tests (61 total in `tests/test_knowledge_intermediate.py`); full
-project suite 830 passed, 2 skipped. Real dogfood run against a scratch
-copy of the live `codecompass-domain` corpus and its real grounded README
-region, exercising the full lifecycle (presentation edit → apply →
-acknowledged, zero Claims; factual edit → apply → new Claim → post-apply
-grounding update → discoverable from the new Claim; a cited Claim
-mutated between detection and apply → apply fails closed, zero stray
-records).
+Two new project-wide plan-time requirements landed in `CLAUDE.md` §1
+during this phase's own learning triage (user-approved per §0, commit
+`1c3981b`): a plan introducing a persisted "last-known-state" mechanism
+must state how detection differs from acknowledgement (`L-087`); a plan
+introducing a new tracked, re-orderable entity must check for an existing
+identity convention and test insertion/reordering (`L-088`). A third,
+scoped addition landed in `.claude/agents/release-phase-auditor.md`
+(`L-086`): a corrective pass's own newly-written code is full audited
+scope, never a lighter-touch re-check.
 
-Central architecture is unchanged and remains approved: canonical
-knowledge stays in `planning/knowledge/`, `context-graph.db` stays
-mechanical-only, reconciliation stays detect → review → validated apply,
-zero new persisted canonical fields beyond what `decisions/0071`/`0072`
-already established.
+Final state: 65 tests in `tests/test_knowledge_intermediate.py`, full
+project suite 845 passed, 2 skipped, lint clean, strict knowledge-base/
+user-docs validation clean. Independent completion audit: **PASS**
+(`planning/retros/_audit-phase-81-second-corrective-pass.md`, HEAD
+`a420541`), following one FAIL-and-fix round on verification/closeout-
+documentation completeness (not the production code, which was correct
+throughout).
 
-A fresh per-phase docs-drift audit has since run (`docs-reconstructor`,
-NO DRIFT in the scope this pass's own diff touched; one small pre-existing
-gap it noticed — `ai-docs/README.md`'s knowledge-command list missing
-`doc-select-candidates` from the *first* corrective pass — was fixed in
-the same sitting, commit `42f9486`). Learning/context-gap triage has also
-run (`knowledge-curator`): three candidates filed and promoted —
-`L-086` (`.claude/agents/release-phase-auditor.md`, a corrective pass's
-own new code is full audited scope, commit `2e1b5a7`), and `L-087`/`L-088`
-(`CLAUDE.md` §1, user-approved per §0, commit `1c3981b` — a persisted
-"last-known-state" mechanism's plan must state how detection differs from
-acknowledgement; a new tracked re-orderable entity's plan must check for
-an existing identity convention and test insertion/reordering).
-
-**A first independent completion audit (`release-phase-auditor`) returned
-FAIL** (`planning/retros/_audit-phase-81-second-corrective-pass.md`,
-audited HEAD `a9bcd02`) — not on the production code (every one of the
-ten code-behaviour checks it ran came back genuinely correct, verified by
-direct reading plus its own independent test run, lint, strict
-validation, and a real `git fetch` against the public `codecompass-template`
-remote), but on verification/closeout-documentation integrity: three
-claimed test-coverage items (`Type: Intent` header-stripping, candidate-
-disappearance fail-closed behaviour, cross-kind dedup independence) were
-not actually exercised by any persisted test despite being named in
-`decisions/0074`/the retro; this file (`CONTEXT.md`) was stale (written
-before the drift audit/learning triage above actually landed); no
-persisted drift-audit record existed; and the second corrective-pass
-retro was missing most of `TEMPLATE.md`'s own sections. All four are now
-fixed: three tests added (`TestCandidateDisappearanceFailsClosed`,
-`TestCrossKindDeduplicationIndependence`, plus a strengthened assertion on
-the existing `Type: Intent` test — 65 tests total in
-`tests/test_knowledge_intermediate.py`); this file updated (this
-paragraph); the drift audit's own account is now recorded above; and the
-retro (`planning/retros/phase-81-second-corrective-pass.md`) is being
-expanded with the missing sections.
-
-Next concrete step: a fresh independent completion audit (the prior pass
-is voided per `CLAUDE.md` §5 by the commits fixing its own findings) —
-only restore Phase 81 to `done` once that audit genuinely passes.
+Next concrete step: none outstanding for Phase 81. Next phase not yet
+chosen — consult `planning/ROADMAP.md`'s open rows (Priorities A-E) for
+what's next.
 
 ---
 
