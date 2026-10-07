@@ -31,8 +31,58 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   (updated to assert `CONTRIBUTING.md` actually appears in a real scan
   result, not just that it's missing from the exclusion list).
 - **classification:** scoped-rule
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** first occurrence
+- **promoted_to:** `planning/agent-led-workflow.md` step 5, new paragraph
+  (landed same phase, following the existing `L-069` paragraph) —
+  recorded in `promoted.md`.
+- **curation (this triage, 2026-10-07, knowledge-curator):** **promote**
+  (recommended; status stays `candidate` until the destination paragraph
+  actually lands — `scripts/check_user_docs.py`'s
+  `check_learnings_promoted_has_pointer` fails `--strict` on any
+  `status: promoted` candidate with no matching `promoted.md` line, and
+  that line should only ever be added once the artifact is real, per
+  `learning-lifecycle.md` §2/§5).
+  The specific bug (`CONTRIBUTING.md` wrongly absent from `spec_docs.py`
+  scan results) is already fixed and already pinned by the corrected
+  `tests/test_spec_docs.py` assertion against a real scan — that part
+  needs no further action. What's left to promote is the *generalizable*
+  procedural lesson: a two-part gate mechanism (positive match list +
+  negative exclusion list) needs both halves checked before an edit to
+  either one is considered complete, and the regression test guarding it
+  needs to exercise the real end-to-end mechanism, not just the
+  component named in the instruction. This is implementation-diligence
+  advice applicable whenever the lead or an ad-hoc implementer subagent
+  edits any multi-part filter/gate mechanism in `src/`, not specific to
+  one agent role — `planning/agent-led-workflow.md` step 5 is the right
+  home, immediately after the existing `L-069` paragraph (also an
+  implementation self-verification lesson), matching the precedent of
+  `L-022`/`L-062`/`L-081` landing scoped-rule/workflow lessons directly
+  in a procedural doc rather than a `.claude/agents/*.md` brief.
+  **Destination:** `planning/agent-led-workflow.md` step 5, new paragraph
+  (drafted below). Outside this curator's own write scope — landing it,
+  and then adding the `promoted.md` pointer line once it's landed, is
+  the lead's action:
+
+  > **When a plan instruction edits one half of a two-part filter/gate
+  > mechanism (e.g., a negative exclusion list paired with a separate
+  > positive inclusion/match list), check both halves before considering
+  > the edit complete.** At Phase 81, the plan's own instruction was
+  > "remove `CONTRIBUTING.md` from `_EXCLUDED_ROOT_NAMES`" in
+  > `spec_docs.py` — doing only that had zero effect, since
+  > `CONTRIBUTING.md` was never matched by the positive `_DEFAULT_GLOBS`
+  > list in the first place. The existing regression test didn't catch
+  > this either, since it only asserted the file's continued absence
+  > from the scan result, which stayed true before and after the no-op
+  > edit. Confirm the mechanism's real end-to-end output actually
+  > changed — ideally via a test exercising the real scan/match, not one
+  > that only checks the component named in the instruction — before
+  > treating a two-list gate fix as done. (Phase 81 — `L-085`.)
+
+  Once the lead applies the drafted paragraph to
+  `planning/agent-led-workflow.md` step 5, flip this candidate's status
+  to `promoted` and add this line to `promoted.md`:
+  `L-085 | 2026-10-07 | scoped-rule | planning/agent-led-workflow.md step 5 (two-part filter/gate mechanisms need both halves checked) @ <landing commit>`
 
 ### L-084 — `_next_id`-style slug-token derivation should detect and reuse an existing id convention, not re-derive one from the slug name every time
 
@@ -51,13 +101,34 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 - **evidence:** `planning/knowledge/hledger-depth/CL-HLEDGERDEPTH-002.yaml`
   alongside the slug's own pre-existing `CL-DEPTH-001.yaml`.
 - **classification:** future-improvement
-- **status:** candidate
+- **status:** retained
 - **recurrence:** first occurrence
 - **moves forward when:** a second real slug exercises `_next_id` and
   either confirms the same mismatch recurs (promote: scan existing
   `<PREFIX>-<TOKEN>-NNN.yaml` filenames in the target directory and
   reuse `<TOKEN>` when exactly one already exists) or shows the naive
   derivation was a one-off (retain/discard).
+- **curation (this triage, 2026-10-07, knowledge-curator):** **retain**,
+  not promote. This mirrors `L-082`'s own curation reasoning: the
+  observation is real, specific, and evidenced (a concrete, inspectable
+  artifact — `CL-HLEDGERDEPTH-002.yaml` sitting next to `CL-DEPTH-001.yaml`
+  in the same slug directory), but it is n=1. The phase's own retro is
+  explicit that fixing `_next_id` now, from a single example, "risks
+  overfitting to one example" — scanning for and reusing an existing
+  token convention is a reasonable fix *shape*, but whether the right
+  trigger condition is "exactly one existing token", "the most common
+  existing token", or something else can't be decided from one slug.
+  Not a correctness or safety defect (ids stay unique and schema-valid
+  either way), so there's no urgency pushing against waiting for the
+  second data point the entry's own "moves forward when" field already
+  asks for. Leave as **retained**: the next real slug that exercises
+  `knowledge apply`'s candidate-addition path (not a synthetic/demo slug)
+  should explicitly check whether `_next_id`'s derived token matches that
+  slug's own existing convention, and if it recurs, promote a fix
+  (classification stays `future-improvement` → a `ROADMAP.md` row, per
+  `learning-lifecycle.md` §4, finalised by `roadmap-context-curator`) to
+  scan existing `<PREFIX>-<TOKEN>-NNN.yaml` filenames in the target
+  directory and reuse `<TOKEN>` when exactly one already exists.
 
 ### L-083 — a render/detect hash-consistency bug only surfaces under a genuine byte-for-byte round-trip assertion, not code review
 
@@ -83,7 +154,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   `src/codecompass/knowledge_intermediate.py` before this phase's own
   implementation commit.
 - **classification:** invariant
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** first occurrence
 - **moves forward when:** a future anchor/marker-syntax change in this
   module should explicitly re-run the no-op-round-trip and grounding
@@ -91,6 +162,30 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   specific mistakes to repeat (hashing a different substring than the
   one read back; a negated character class that excludes a character the
   payload itself legitimately contains).
+- **promoted_to:** `tests/test_knowledge_intermediate.py::TestNoOpRoundTrip`
+  (render/detect hash consistency) +
+  `::TestExplicitDocumentGrounding`/`::TestPresentationIndependence`/
+  `::TestGroundingCoverageAdvisory` (grounding-marker regex) @ this
+  phase's own closeout commit
+- **curation (this triage, 2026-10-07, knowledge-curator):** **promote**.
+  Unlike most invariant candidates, this one needs no further action to
+  land the artifact — the regression tests that pin both bug classes
+  (confirmed present by direct read: `TestNoOpRoundTrip` at line 80,
+  `TestPresentationIndependence` at line 186, `TestExplicitDocumentGrounding`
+  at line 344, `TestGroundingCoverageAdvisory` at line 371 of
+  `tests/test_knowledge_intermediate.py`) already exist in the committed
+  tree, written and passing before this phase's own implementation
+  commit per the entry's own evidence field. The invariant is already
+  authoritative, not merely observed. The entry's own forward-looking
+  "moves forward when" note (re-run these tests first for any future
+  anchor/marker-syntax change) needs no separate artifact: `CLAUDE.md`
+  §1 already requires a phase's plan to name its verification step, and
+  any phase touching `knowledge_intermediate.py`'s render/detect pairing
+  or `_GROUNDING_OPEN_RE` will run the full test suite as part of that
+  same requirement — the existing, already-landed tests themselves are
+  the enforcement mechanism, not a new rule layered on top. No separate
+  scoped-rule or workflow-doc promotion needed beyond the `promoted.md`
+  pointer below.
 
 ### L-082 — the three-stage comparative-trial structure (discovery/design → evaluator-sufficient evaluation → evaluator-gated optional implementation check) works cleanly on its first real exercise
 

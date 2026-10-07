@@ -150,6 +150,21 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
    is a full dispatch cycle plus a credibility risk if the false finding
    isn't caught. (Phase 79 — L-069.)
 
+   **When a plan instruction edits one half of a two-part filter/gate
+   mechanism (e.g., a negative exclusion list paired with a separate
+   positive inclusion/match list), check both halves before considering
+   the edit complete.** At Phase 81, the plan's own instruction was
+   "remove `CONTRIBUTING.md` from `_EXCLUDED_ROOT_NAMES`" in
+   `spec_docs.py` — doing only that had zero effect, since
+   `CONTRIBUTING.md` was never matched by the positive `_DEFAULT_GLOBS`
+   list in the first place. The existing regression test didn't catch
+   this either, since it only asserted the file's continued absence from
+   the scan result, which stayed true before and after the no-op edit.
+   Confirm the mechanism's real end-to-end output actually changed —
+   ideally via a test exercising the real scan/match, not one that only
+   checks the component named in the instruction — before treating a
+   two-list gate fix as done. (Phase 81 — L-085.)
+
    **Before dispatching a milestone-scoped agent brief (one exercised
    once per milestone rather than every phase — e.g. `docs-reconstructor`
    MODE 2), re-read it against every ADR/decision landed since its own
