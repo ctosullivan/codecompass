@@ -1560,13 +1560,22 @@ def knowledge_select_candidates(
     manifest. Never writes a canonical record.
     """
     project_root = Path.cwd()
-    refreshed = knowledge_intermediate.apply_automatic_refreshes(project_root, slug)
+    # Corrective pass, point 1: classify every anchor BEFORE any mutation
+    # happens, then refresh ONLY the safe-refresh blocks, by targeted
+    # per-block substitution -- never a whole-slug re-render. Refreshing
+    # record A must never erase an unrelated pending edit to record B in
+    # the same file; reusing the single `anchors` snapshot computed here
+    # for both the refresh and the manifest is what guarantees that (the
+    # "candidate"/"concurrent_conflict" findings below are unaffected by
+    # refreshing an unrelated block, since refresh only ever touches the
+    # exact blocks named in the "refresh" case).
+    anchors = knowledge_intermediate.detect_anchor_changes(project_root, slug)
+    refreshed = knowledge_intermediate.refresh_safe_anchors(project_root, slug, anchors)
     if refreshed:
         console.print(
             f"[green]auto-refreshed[/green] {len(refreshed)} block(s) with no "
             f"review needed (canonical changed, projection untouched): {', '.join(refreshed)}"
         )
-    anchors = knowledge_intermediate.detect_anchor_changes(project_root, slug)
     candidates = knowledge_intermediate.detect_candidate_additions(project_root, slug)
     reviewable = [a for a in anchors if a.case in ("candidate", "concurrent_conflict")]
     conflicts = [a for a in anchors if a.case == "concurrent_conflict"]
@@ -1628,9 +1637,11 @@ def knowledge_status_cmd(
 ) -> None:
     """Reports records needing review (`status: contradicted`, or
     `status: proposed` with no evidence_support_state yet), any unresolved
-    concurrent-change conflict, and a small, advisory-only
-    documentation-grounding coverage report (never blocking — see
-    §9.6 of planning/phase-81-intermediate-knowledge-layer.md).
+    concurrent-change conflict, and a real, advisory-only documentation-
+    grounding coverage report — grounded region count, changed grounded
+    regions, and changed *ungrounded* regions needing a look (never
+    blocking — see §9.6 of planning/phase-81-intermediate-knowledge-layer.md
+    and `decisions/0073` point 4).
     """
     project_root = Path.cwd()
     report = knowledge_intermediate.knowledge_status(project_root, slug)
@@ -1647,6 +1658,15 @@ def knowledge_status_cmd(
         for doc_name, info in report.grounding.items():
             console.print(f"  {doc_name}")
             console.print(f"    grounded regions: {info['grounded_regions']}")
+            console.print(f"    changed grounded regions: {info['changed_grounded_regions']}")
+            for detail in info["changed_grounded_region_detail"]:
+                console.print(f"      - {detail}")
+            console.print(
+                "    changed ungrounded regions needing review: "
+                f"{info['changed_ungrounded_regions_needing_review']}"
+            )
+            if info["changed_ungrounded_chunks"]:
+                console.print(f"      - {', '.join(info['changed_ungrounded_chunks'])}")
             if info["regions_needing_review"]:
                 console.print(
                     f"    regions citing a contradicted record, needs a look: "
@@ -1656,6 +1676,55 @@ def knowledge_status_cmd(
         console.print("[green]nothing to report[/green]")
     if strict and report.concurrent_conflicts:
         raise typer.Exit(code=1)
+
+
+@knowledge_app.command("doc-select-candidates")
+def knowledge_doc_select_candidates(
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print what would be written without writing a manifest."
+    ),
+) -> None:
+    """Stage 1, for explicitly grounded project-document regions
+    (`decisions/0073`, point 3) — mechanical only, no AI call. Compares
+    each `codecompass-grounded-by` region's own text, and its cited
+    records' own content, against a persisted baseline. A factual edit to
+    a grounded region becomes a real reconciliation candidate (written
+    into the owning Claim's own slug, reusing `knowledge apply` directly);
+    a cited Claim changing on its own is surfaced as "potentially stale,
+    worth a look" with no mutation; both changing at once is an explicit
+    conflict, resolved by neither side.
+    """
+    project_root = Path.cwd()
+    findings = knowledge_intermediate.detect_grounded_region_changes(project_root)
+    doc_candidates = [f for f in findings if f.case == "doc_candidate"]
+    claims_changed = [f for f in findings if f.case == "claims_changed"]
+    conflicts = [f for f in findings if f.case == "concurrent_conflict"]
+    for f in claims_changed:
+        console.print(
+            f"[cyan]potentially stale[/cyan]: {f.doc_name} region #{f.index} cites "
+            f"{', '.join(f.cited_ids)}, which changed — worth a documentation review"
+        )
+    for f in conflicts:
+        console.print(
+            f"[red]concurrent conflict[/red]: {f.doc_name} region #{f.index} — both the "
+            "region's own prose and its cited record changed; neither side touched"
+        )
+    if not doc_candidates and not claims_changed and not conflicts:
+        console.print("[green]nothing to review[/green]")
+        knowledge_intermediate.advance_grounding_baseline(project_root, findings)
+        knowledge_intermediate.advance_doc_chunk_baseline(project_root)
+        return
+    if dry_run:
+        console.print(
+            f"[yellow]--dry-run[/yellow]: {len(doc_candidates)} grounded document edit(s) "
+            f"({len(conflicts)} concurrent conflict(s)) — no manifest written"
+        )
+        return
+    written = knowledge_intermediate.write_doc_candidates_to_manifests(project_root, findings)
+    for doc_slug, path in written.items():
+        console.print(f"[green]manifest written[/green] ({doc_slug}): {path}")
+    knowledge_intermediate.advance_grounding_baseline(project_root, findings)
+    knowledge_intermediate.advance_doc_chunk_baseline(project_root)
 
 
 if __name__ == "__main__":

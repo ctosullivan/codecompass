@@ -263,29 +263,20 @@ class TestUnsupportedExternalAssertion:
         assert fabricated == []
 
 
+_VALID_REQUIREMENT_BLOCK = (
+    "Type: Requirement\n"
+    "Decision: DEC-DEMO-001\n"
+    "Statement: The CLI must expose a --json flag for status output.\n"
+    "Example: Given the status command runs with --json, when output is "
+    "captured, then it is valid JSON.\n"
+)
+
+
 class TestRequirementInvariant:
-    def test_unapproved_decision_falls_back_to_claim(self, tmp_path):
-        sdir = _make_slug(tmp_path, decision=_DECISION_PROPOSED)
-        ki.render_slug(tmp_path, "demo-slug")
-        overview_path = sdir / "intermediate" / "overview.md"
-        text = overview_path.read_text(encoding="utf-8")
-        text = text.replace(
-            ki.CANDIDATE_START + ki.CANDIDATE_END,
-            ki.CANDIDATE_START + "\nPer DEC-DEMO-001, add a feature.\n" + ki.CANDIDATE_END,
-        )
-        overview_path.write_text(text, encoding="utf-8")
-
-        candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
-        manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
-        _accept_all(manifest_path)
-        result = ki.apply_manifest(tmp_path, manifest_path)
-
-        new_id = result.applied[0].new_record_id
-        assert new_id.startswith("CL-")
-        records = ki.load_slug_records(sdir)
-        assert records[new_id].kind == "claim"
-
-    def test_approved_decision_may_create_requirement(self, tmp_path):
+    def test_mere_mention_of_approved_decision_does_not_create_requirement(self, tmp_path):
+        """decisions/0073, point 6: ordinary prose merely mentioning an
+        approved Decision id is never enough -- only an explicit
+        `Type: Requirement` proposal may create one."""
         sdir = _make_slug(tmp_path, decision=_DECISION_APPROVED)
         ki.render_slug(tmp_path, "demo-slug")
         overview_path = sdir / "intermediate" / "overview.md"
@@ -299,7 +290,50 @@ class TestRequirementInvariant:
         overview_path.write_text(text, encoding="utf-8")
 
         candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
-        assert candidates[0].cited_decision == "DEC-DEMO-001"
+        assert candidates[0].requirement_decision is None
+        manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
+        _accept_all(manifest_path)
+        result = ki.apply_manifest(tmp_path, manifest_path)
+
+        new_id = result.applied[0].new_record_id
+        assert new_id.startswith("CL-")
+        records = ki.load_slug_records(sdir)
+        assert records[new_id].kind == "claim"
+
+    def test_unapproved_decision_falls_back_to_claim(self, tmp_path):
+        sdir = _make_slug(tmp_path, decision=_DECISION_PROPOSED)
+        ki.render_slug(tmp_path, "demo-slug")
+        overview_path = sdir / "intermediate" / "overview.md"
+        text = overview_path.read_text(encoding="utf-8")
+        text = text.replace(
+            ki.CANDIDATE_START + ki.CANDIDATE_END,
+            ki.CANDIDATE_START + "\n" + _VALID_REQUIREMENT_BLOCK + ki.CANDIDATE_END,
+        )
+        overview_path.write_text(text, encoding="utf-8")
+
+        candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
+        manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
+        _accept_all(manifest_path)
+        result = ki.apply_manifest(tmp_path, manifest_path)
+
+        new_id = result.applied[0].new_record_id
+        assert new_id.startswith("CL-")
+        records = ki.load_slug_records(sdir)
+        assert records[new_id].kind == "claim"
+
+    def test_explicit_proposal_with_approved_decision_may_create_requirement(self, tmp_path):
+        sdir = _make_slug(tmp_path, decision=_DECISION_APPROVED)
+        ki.render_slug(tmp_path, "demo-slug")
+        overview_path = sdir / "intermediate" / "overview.md"
+        text = overview_path.read_text(encoding="utf-8")
+        text = text.replace(
+            ki.CANDIDATE_START + ki.CANDIDATE_END,
+            ki.CANDIDATE_START + "\n" + _VALID_REQUIREMENT_BLOCK + ki.CANDIDATE_END,
+        )
+        overview_path.write_text(text, encoding="utf-8")
+
+        candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
+        assert candidates[0].requirement_decision == "DEC-DEMO-001"
         manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
         _accept_all(manifest_path)
         result = ki.apply_manifest(tmp_path, manifest_path)
@@ -309,6 +343,26 @@ class TestRequirementInvariant:
         records = ki.load_slug_records(sdir)
         assert records[new_id].kind == "requirement"
         assert records[new_id].fields["decision"] == "DEC-DEMO-001"
+        assert "to be refined" not in records[new_id].fields["example"]
+
+    def test_explicit_proposal_missing_acceptance_example_fails_closed(self, tmp_path):
+        sdir = _make_slug(tmp_path, decision=_DECISION_APPROVED)
+        ki.render_slug(tmp_path, "demo-slug")
+        overview_path = sdir / "intermediate" / "overview.md"
+        text = overview_path.read_text(encoding="utf-8")
+        block = "Type: Requirement\nDecision: DEC-DEMO-001\nStatement: Needs a flag.\n"
+        new_region = ki.CANDIDATE_START + "\n" + block + ki.CANDIDATE_END
+        text = text.replace(ki.CANDIDATE_START + ki.CANDIDATE_END, new_region)
+        overview_path.write_text(text, encoding="utf-8")
+
+        candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
+        manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
+        _accept_all(manifest_path)
+        result = ki.apply_manifest(tmp_path, manifest_path)
+
+        new_id = result.applied[0].new_record_id
+        records = ki.load_slug_records(sdir)
+        assert records[new_id].kind == "claim"
 
 
 class TestCandidateRegionBoundary:
@@ -552,3 +606,493 @@ class TestCLI:
         result = runner.invoke(app, ["knowledge", "apply", "no-such-manifest.toml"])
         assert result.exit_code == 1
         assert "no such manifest" in result.output
+
+
+# ---------------------------------------------------------------------------
+# Corrective pass (decisions/0073) -- regression coverage for the nine
+# defects found by post-completion review, plus the combination cases the
+# original suite missed.
+# ---------------------------------------------------------------------------
+
+_DECISION_APPROVED_2 = _DECISION_APPROVED
+
+
+def _make_two_record_slug(tmp_path: Path, slug: str = "demo-slug") -> Path:
+    """Two Claims with no `assertion_kind`, so both land in the SAME
+    rendered file (`overview.md`) -- required for the same-file
+    safe-refresh/concurrent-conflict combination tests."""
+    sdir = tmp_path / "planning" / "knowledge" / slug
+    sdir.mkdir(parents=True)
+    (sdir / "CL-A-001.yaml").write_text(
+        "id: CL-A-001\nkind: claim\nstatement: Fact A original.\nderivation: null\n"
+        "supporting_evidence: []\ncontradicting_evidence: []\nderived_by: t\n"
+        'repository_revision: "working tree"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+        "status: supported\n",
+        encoding="utf-8",
+    )
+    (sdir / "CL-B-001.yaml").write_text(
+        "id: CL-B-001\nkind: claim\nstatement: Fact B original.\nderivation: null\n"
+        "supporting_evidence: []\ncontradicting_evidence: []\nderived_by: t\n"
+        'repository_revision: "working tree"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+        "status: supported\n",
+        encoding="utf-8",
+    )
+    return sdir
+
+
+class TestUnsafeRefreshCorrected:
+    """decisions/0073, point 1: `select-candidates` must classify every
+    anchor before any mutation, then refresh ONLY safe-refresh blocks --
+    never a whole-slug render that could erase an unrelated pending edit."""
+
+    def test_safe_refresh_a_plus_edited_b_same_file(self, tmp_path):
+        sdir = _make_two_record_slug(tmp_path)
+        ki.render_slug(tmp_path, "demo-slug")
+        overview = sdir / "intermediate" / "overview.md"
+        assert overview.read_text(encoding="utf-8").count("codecompass-knowledge:") == 2
+
+        (sdir / "CL-A-001.yaml").write_text(
+            (sdir / "CL-A-001.yaml").read_text(encoding="utf-8").replace(
+                "Fact A original.", "Fact A UPDATED."
+            ),
+            encoding="utf-8",
+        )
+        overview.write_text(
+            overview.read_text(encoding="utf-8").replace(
+                "Fact B original.", "Fact B HUMAN EDIT."
+            ),
+            encoding="utf-8",
+        )
+
+        anchors = ki.detect_anchor_changes(tmp_path, "demo-slug")
+        cases = {a.record_id: a.case for a in anchors}
+        assert cases == {"CL-A-001": "refresh", "CL-B-001": "candidate"}
+
+        refreshed = ki.refresh_safe_anchors(tmp_path, "demo-slug", anchors)
+        assert refreshed == ["CL-A-001"]
+
+        final_text = overview.read_text(encoding="utf-8")
+        assert "Fact A UPDATED." in final_text
+        assert "Fact B HUMAN EDIT." in final_text, "B's edit must survive byte-for-byte"
+
+        manifest_path = ki.write_manifest(tmp_path, "demo-slug", anchors, [])
+        manifest_text = manifest_path.read_text(encoding="utf-8")
+        assert "CL-B-001" in manifest_text
+        assert "CL-A-001" not in manifest_text
+
+    def test_safe_refresh_a_plus_edited_b_different_files(self, tmp_path):
+        sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
+        sdir.mkdir(parents=True)
+        (sdir / "CL-A-001.yaml").write_text(
+            "id: CL-A-001\nkind: claim\nstatement: Fact A.\nderivation: null\n"
+            "supporting_evidence: []\ncontradicting_evidence: []\nderived_by: t\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+            "status: supported\nassertion_kind: invariant\n",
+            encoding="utf-8",
+        )
+        (sdir / "CL-B-001.yaml").write_text(
+            "id: CL-B-001\nkind: claim\nstatement: Fact B.\nderivation: null\n"
+            "supporting_evidence: []\ncontradicting_evidence: []\nderived_by: t\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+            "status: supported\nassertion_kind: relationship\n",
+            encoding="utf-8",
+        )
+        ki.render_slug(tmp_path, "demo-slug")
+        invariants = sdir / "intermediate" / "invariants-and-constraints.md"
+        behaviours = sdir / "intermediate" / "interfaces-and-behaviours.md"
+        assert "CL-A-001" in invariants.read_text(encoding="utf-8")
+        assert "CL-B-001" in behaviours.read_text(encoding="utf-8")
+
+        (sdir / "CL-A-001.yaml").write_text(
+            (sdir / "CL-A-001.yaml").read_text(encoding="utf-8").replace("Fact A.", "Fact A!"),
+            encoding="utf-8",
+        )
+        behaviours.write_text(
+            behaviours.read_text(encoding="utf-8").replace("Fact B.", "Fact B edited."),
+            encoding="utf-8",
+        )
+
+        anchors = ki.detect_anchor_changes(tmp_path, "demo-slug")
+        cases = {a.record_id: a.case for a in anchors}
+        assert cases == {"CL-A-001": "refresh", "CL-B-001": "candidate"}
+        ki.refresh_safe_anchors(tmp_path, "demo-slug", anchors)
+        assert "Fact A!" in invariants.read_text(encoding="utf-8")
+        assert "Fact B edited." in behaviours.read_text(encoding="utf-8")
+
+    def test_safe_refresh_a_plus_concurrent_conflict_b(self, tmp_path):
+        sdir = _make_two_record_slug(tmp_path)
+        ki.render_slug(tmp_path, "demo-slug")
+        overview = sdir / "intermediate" / "overview.md"
+
+        (sdir / "CL-A-001.yaml").write_text(
+            (sdir / "CL-A-001.yaml").read_text(encoding="utf-8").replace(
+                "Fact A original.", "Fact A UPDATED."
+            ),
+            encoding="utf-8",
+        )
+        (sdir / "CL-B-001.yaml").write_text(
+            (sdir / "CL-B-001.yaml").read_text(encoding="utf-8").replace(
+                "status: supported", "status: verified"
+            ),
+            encoding="utf-8",
+        )
+        overview.write_text(
+            overview.read_text(encoding="utf-8").replace(
+                "Fact B original.", "Fact B HUMAN EDIT."
+            ),
+            encoding="utf-8",
+        )
+
+        anchors = ki.detect_anchor_changes(tmp_path, "demo-slug")
+        cases = {a.record_id: a.case for a in anchors}
+        assert cases == {"CL-A-001": "refresh", "CL-B-001": "concurrent_conflict"}
+
+        before_refresh = overview.read_text(encoding="utf-8")
+        ki.refresh_safe_anchors(tmp_path, "demo-slug", anchors)
+        after_refresh = overview.read_text(encoding="utf-8")
+        assert "Fact A UPDATED." in after_refresh
+        assert "Fact B HUMAN EDIT." in after_refresh, "conflict block must never be rewritten"
+        # Only A's own block should have changed between the two reads.
+        assert "Fact B HUMAN EDIT." in before_refresh
+
+
+class TestIdempotencyCombinations:
+    """decisions/0073, point 2 and point 11's own combination cases."""
+
+    def test_candidate_apply_then_detect_again_not_rediscovered(self, tmp_path):
+        sdir = _make_slug(tmp_path)
+        ki.render_slug(tmp_path, "demo-slug")
+        overview = sdir / "intermediate" / "overview.md"
+        text = overview.read_text(encoding="utf-8")
+        text = text.replace(
+            ki.CANDIDATE_START + ki.CANDIDATE_END,
+            ki.CANDIDATE_START + "\nA genuinely new fact.\n" + ki.CANDIDATE_END,
+        )
+        overview.write_text(text, encoding="utf-8")
+
+        candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
+        manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
+        _accept_all(manifest_path)
+        ki.apply_manifest(tmp_path, manifest_path)
+
+        assert ki.detect_candidate_additions(tmp_path, "demo-slug") == []
+
+    def test_apply_manifest_twice_exactly_one_record(self, tmp_path):
+        sdir = _make_slug(tmp_path)
+        ki.render_slug(tmp_path, "demo-slug")
+        overview = sdir / "intermediate" / "overview.md"
+        text = overview.read_text(encoding="utf-8")
+        text = text.replace(
+            ki.CANDIDATE_START + ki.CANDIDATE_END,
+            ki.CANDIDATE_START + "\nSome new candidate fact.\n" + ki.CANDIDATE_END,
+        )
+        overview.write_text(text, encoding="utf-8")
+
+        candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
+        manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
+        _accept_all(manifest_path)
+        ki.apply_manifest(tmp_path, manifest_path)
+        ki.apply_manifest(tmp_path, manifest_path)
+
+        new_records = [r for r in ki.load_slug_records(sdir) if r != "CL-DEMO-001"]
+        assert len(new_records) == 1
+
+    def test_identical_prose_two_candidates_deterministic(self, tmp_path):
+        sdir = _make_slug(tmp_path)
+        ki.render_slug(tmp_path, "demo-slug")
+        overview = sdir / "intermediate" / "overview.md"
+        text = overview.read_text(encoding="utf-8")
+        text = text.replace(
+            ki.CANDIDATE_START + ki.CANDIDATE_END,
+            ki.CANDIDATE_START + "\nIdentical fact.\n\nIdentical fact.\n" + ki.CANDIDATE_END,
+        )
+        overview.write_text(text, encoding="utf-8")
+
+        candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
+        assert len(candidates) == 2
+        manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
+        _accept_all(manifest_path)
+        ki.apply_manifest(tmp_path, manifest_path)
+
+        new_records = [r for r in ki.load_slug_records(sdir) if r != "CL-DEMO-001"]
+        assert len(new_records) == 1, "identical text is one contribution by documented design"
+
+
+class TestExplicitDocumentGroundingReconciliation:
+    """decisions/0073, point 3: grounded regions now participate in real
+    reconciliation, not just identification."""
+
+    def _ground(self, tmp_path: Path, statement: str = "Sync is idempotent.") -> tuple[Path, Path]:
+        sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
+        sdir.mkdir(parents=True)
+        (sdir / "CL-X-001.yaml").write_text(
+            f"id: CL-X-001\nkind: claim\nstatement: {statement}\nderivation: null\n"
+            "supporting_evidence: []\ncontradicting_evidence: []\nderived_by: t\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+            "status: supported\n",
+            encoding="utf-8",
+        )
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            "<!-- codecompass-grounded-by: CL-X-001 -->\n"
+            f"{statement}\n"
+            "<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        return sdir, readme
+
+    def test_grounded_edit_becomes_reconciliation_candidate(self, tmp_path):
+        sdir, readme = self._ground(tmp_path)
+        findings = ki.detect_grounded_region_changes(tmp_path)
+        ki.advance_grounding_baseline(tmp_path, findings)  # establish baseline
+
+        readme.write_text(
+            readme.read_text(encoding="utf-8").replace(
+                "Sync is idempotent.", "Sync can run any number of times safely."
+            ),
+            encoding="utf-8",
+        )
+        findings2 = ki.detect_grounded_region_changes(tmp_path)
+        assert findings2[0].case == "doc_candidate"
+
+        written = ki.write_doc_candidates_to_manifests(tmp_path, findings2)
+        assert "demo-slug" in written
+        manifest_path = written["demo-slug"]
+        _accept_all(manifest_path)
+        result = ki.apply_manifest(tmp_path, manifest_path)
+
+        assert len(result.applied) == 1
+        new_records = [r for r in ki.load_slug_records(sdir) if r != "CL-X-001"]
+        assert len(new_records) == 1
+
+    def test_grounded_edit_plus_claim_change_is_conflict(self, tmp_path):
+        sdir, readme = self._ground(tmp_path)
+        findings = ki.detect_grounded_region_changes(tmp_path)
+        ki.advance_grounding_baseline(tmp_path, findings)
+
+        readme.write_text(
+            readme.read_text(encoding="utf-8").replace(
+                "Sync is idempotent.", "Sync can run as often as needed."
+            ),
+            encoding="utf-8",
+        )
+        (sdir / "CL-X-001.yaml").write_text(
+            (sdir / "CL-X-001.yaml").read_text(encoding="utf-8").replace(
+                "status: supported", "status: verified"
+            ),
+            encoding="utf-8",
+        )
+        findings2 = ki.detect_grounded_region_changes(tmp_path)
+        assert findings2[0].case == "concurrent_conflict"
+
+        readme_before = readme.read_text(encoding="utf-8")
+        claim_before = (sdir / "CL-X-001.yaml").read_text(encoding="utf-8")
+        written = ki.write_doc_candidates_to_manifests(tmp_path, findings2)
+        assert written == {}, "a conflict must never be silently turned into a candidate"
+        assert readme.read_text(encoding="utf-8") == readme_before
+        assert (sdir / "CL-X-001.yaml").read_text(encoding="utf-8") == claim_before
+
+    def test_canonical_change_surfaces_grounded_region_as_potentially_stale(self, tmp_path):
+        sdir, readme = self._ground(tmp_path)
+        findings = ki.detect_grounded_region_changes(tmp_path)
+        ki.advance_grounding_baseline(tmp_path, findings)
+
+        (sdir / "CL-X-001.yaml").write_text(
+            (sdir / "CL-X-001.yaml").read_text(encoding="utf-8").replace(
+                "status: supported", "status: verified"
+            ),
+            encoding="utf-8",
+        )
+        findings2 = ki.detect_grounded_region_changes(tmp_path)
+        assert findings2[0].case == "claims_changed"
+        readme_before = readme.read_text(encoding="utf-8")
+        written = ki.write_doc_candidates_to_manifests(tmp_path, findings2)
+        assert written == {}
+        assert readme.read_text(encoding="utf-8") == readme_before
+
+
+class TestAdvisoryGroundingCoverageHonest:
+    """decisions/0073, point 4."""
+
+    def test_ungrounded_readme_change_is_advisory_only(self, tmp_path):
+        readme = tmp_path / "README.md"
+        readme.write_text("# Demo\n\n## Section\n\nSome prose.\n", encoding="utf-8")
+        ki.advance_doc_chunk_baseline(tmp_path)
+
+        readme.write_text(
+            readme.read_text(encoding="utf-8").replace("Some prose.", "Totally new prose."),
+            encoding="utf-8",
+        )
+        report = ki.detect_doc_chunk_changes(tmp_path)
+        assert report["README.md"]["changed_ungrounded_chunks"] != []
+        assert report["README.md"]["changed_grounded_chunks"] == []
+
+        kdir = tmp_path / "planning" / "knowledge"
+        yaml_files = list(kdir.rglob("*.yaml")) if kdir.exists() else []
+        assert yaml_files == [], "ungrounded prose must never become a canonical Claim"
+
+    def test_grounded_readme_change_reported_as_grounded(self, tmp_path):
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            "# Demo\n\n## Section\n\n"
+            "<!-- codecompass-grounded-by: CL-X-001 -->\n"
+            "Grounded fact.\n"
+            "<!-- /codecompass-grounded-by -->\n",
+            encoding="utf-8",
+        )
+        ki.advance_doc_chunk_baseline(tmp_path)
+        readme.write_text(
+            readme.read_text(encoding="utf-8").replace("Grounded fact.", "Updated grounded fact."),
+            encoding="utf-8",
+        )
+        report = ki.detect_doc_chunk_changes(tmp_path)
+        assert report["README.md"]["changed_grounded_chunks"] != []
+        assert report["README.md"]["changed_ungrounded_chunks"] == []
+
+
+class TestPresentationOverrideRetainsCanonicalMeaning:
+    """decisions/0073, point 5."""
+
+    def test_canonical_statement_retrievable_despite_presentation_override(self, tmp_path):
+        sdir = _make_slug(tmp_path)
+        ki.render_slug(tmp_path, "demo-slug")
+        cache_path = ki.presentation_cache_path(tmp_path, "demo-slug")
+        sem_hash = ki.sha256_text((sdir / "CL-DEMO-001.yaml").read_text(encoding="utf-8"))
+        ki.write_presentation_cache(
+            cache_path,
+            {
+                "CL-DEMO-001": ki.PresentationEntry(
+                    accepted_for_semantic_hash=sem_hash,
+                    wording="Materially different presentation wording.",
+                )
+            },
+        )
+        ki.render_slug(tmp_path, "demo-slug")
+        overview = (sdir / "intermediate" / "overview.md").read_text(encoding="utf-8")
+        assert "Materially different presentation wording." in overview
+        canonical = ki.extract_canonical_statement(overview)
+        assert canonical is not None
+        assert "idempotent" in canonical, "canonical meaning must remain retrievable"
+
+
+class TestFactualHypothesisVsDeclaredIntent:
+    """decisions/0073, point 7."""
+
+    def test_factual_hypothesis_is_not_misclassified_as_proposed_policy(self, tmp_path):
+        sdir = _make_slug(tmp_path)
+        ki.render_slug(tmp_path, "demo-slug")
+        overview = sdir / "intermediate" / "overview.md"
+        text = overview.read_text(encoding="utf-8")
+        text = text.replace(
+            ki.CANDIDATE_START + ki.CANDIDATE_END,
+            ki.CANDIDATE_START
+            + "\nThe system currently does X, not yet verified.\n"
+            + ki.CANDIDATE_END,
+        )
+        overview.write_text(text, encoding="utf-8")
+        candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
+        manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
+        _accept_all(manifest_path)
+        result = ki.apply_manifest(tmp_path, manifest_path)
+        new_id = result.applied[0].new_record_id
+        records = ki.load_slug_records(sdir)
+        assert "basis" not in records[new_id].fields
+
+    def test_declared_intent_via_explicit_type_becomes_proposed_policy(self, tmp_path):
+        sdir = _make_slug(tmp_path)
+        ki.render_slug(tmp_path, "demo-slug")
+        overview = sdir / "intermediate" / "overview.md"
+        text = overview.read_text(encoding="utf-8")
+        text = text.replace(
+            ki.CANDIDATE_START + ki.CANDIDATE_END,
+            ki.CANDIDATE_START + "\nType: Intent\nThe system should do X.\n" + ki.CANDIDATE_END,
+        )
+        overview.write_text(text, encoding="utf-8")
+        candidates = ki.detect_candidate_additions(tmp_path, "demo-slug")
+        assert candidates[0].declared_intent is True
+        manifest_path = ki.write_manifest(tmp_path, "demo-slug", [], candidates)
+        _accept_all(manifest_path)
+        result = ki.apply_manifest(tmp_path, manifest_path)
+        new_id = result.applied[0].new_record_id
+        records = ki.load_slug_records(sdir)
+        assert records[new_id].fields.get("basis") == "proposed_policy"
+
+
+class TestProvenanceDerivationCorrected:
+    """decisions/0073, point 8 -- real-shaped Evidence/Observation records."""
+
+    def _slug_with_evidence(self, tmp_path: Path, slug: str = "demo-slug") -> Path:
+        sdir = tmp_path / "planning" / "knowledge" / slug
+        sdir.mkdir(parents=True)
+        return sdir
+
+    def test_directly_stated_with_real_observation_is_observed(self, tmp_path):
+        sdir = self._slug_with_evidence(tmp_path)
+        (sdir / "OBS-X-001.yaml").write_text(
+            'id: OBS-X-001\nkind: observation\nmethod: m\nwhat_was_done: w\n'
+            'repository_revision: "x"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+            "performed_by: p\nstatus: recorded\n",
+            encoding="utf-8",
+        )
+        (sdir / "EV-X-001.yaml").write_text(
+            "id: EV-X-001\nkind: evidence\nevidence_kind: source\nwhat_it_shows: w\n"
+            'observations: [OBS-X-001]\nrepository_revision: "x"\nstatus: current\n',
+            encoding="utf-8",
+        )
+        (sdir / "CL-X-002.yaml").write_text(
+            "id: CL-X-002\nkind: claim\nstatement: observed fact\nderivation: null\n"
+            "supporting_evidence: [EV-X-001]\ncontradicting_evidence: []\nderived_by: t\n"
+            'repository_revision: "x"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+            "status: supported\nbasis: directly_stated\n",
+            encoding="utf-8",
+        )
+        records = ki.load_slug_records(sdir)
+        assert ki.derive_provenance_label(records["CL-X-002"], records) == "OBSERVED"
+
+    def test_directly_stated_with_direct_source_no_observation_is_cautious(self, tmp_path):
+        """The real schema (docs/domain/concepts/evidence.md): Evidence may
+        cite source/doc/test directly with no Observation at all -- must
+        never be mistaken for OBSERVED provenance."""
+        sdir = self._slug_with_evidence(tmp_path)
+        (sdir / "EV-X-002.yaml").write_text(
+            "id: EV-X-002\nkind: evidence\nevidence_kind: source\nwhat_it_shows: w\n"
+            'source_ref: "x:1"\nrepository_revision: "x"\nstatus: current\n',
+            encoding="utf-8",
+        )
+        (sdir / "CL-X-003.yaml").write_text(
+            "id: CL-X-003\nkind: claim\nstatement: direct source cite\nderivation: null\n"
+            "supporting_evidence: [EV-X-002]\ncontradicting_evidence: []\nderived_by: t\n"
+            'repository_revision: "x"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+            "status: supported\nbasis: directly_stated\n",
+            encoding="utf-8",
+        )
+        records = ki.load_slug_records(sdir)
+        assert ki.derive_provenance_label(records["CL-X-003"], records) != "OBSERVED"
+
+    def test_mixed_evidence_chain_is_mixed(self, tmp_path):
+        sdir = self._slug_with_evidence(tmp_path)
+        (sdir / "OBS-X-001.yaml").write_text(
+            'id: OBS-X-001\nkind: observation\nmethod: m\nwhat_was_done: w\n'
+            'repository_revision: "x"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+            "performed_by: p\nstatus: recorded\n",
+            encoding="utf-8",
+        )
+        (sdir / "EV-X-001.yaml").write_text(
+            "id: EV-X-001\nkind: evidence\nevidence_kind: source\nwhat_it_shows: w\n"
+            'observations: [OBS-X-001]\nrepository_revision: "x"\nstatus: current\n',
+            encoding="utf-8",
+        )
+        (sdir / "EV-X-002.yaml").write_text(
+            "id: EV-X-002\nkind: evidence\nevidence_kind: source\nwhat_it_shows: w\n"
+            'source_ref: "x:1"\nrepository_revision: "x"\nstatus: current\n',
+            encoding="utf-8",
+        )
+        (sdir / "CL-X-004.yaml").write_text(
+            "id: CL-X-004\nkind: claim\nstatement: mixed\nderivation: null\n"
+            "supporting_evidence: [EV-X-001, EV-X-002]\ncontradicting_evidence: []\n"
+            'derived_by: t\nrepository_revision: "x"\ntimestamp: "2026-10-07T00:00:00Z"\n'
+            "status: supported\nbasis: directly_stated\n",
+            encoding="utf-8",
+        )
+        records = ki.load_slug_records(sdir)
+        assert ki.derive_provenance_label(records["CL-X-004"], records) == "MIXED"

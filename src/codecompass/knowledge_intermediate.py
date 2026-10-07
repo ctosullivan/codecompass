@@ -143,6 +143,22 @@ _ANCHOR_OPEN_RE = re.compile(
     r"semantic-sha256:(\S+)\s+projection-sha256:(\S+)\s*-->"
 )
 _ANCHOR_CLOSE = "<!-- /codecompass-knowledge -->"
+_CANONICAL_STATEMENT_RE = re.compile(r"<!--\s*codecompass-canonical-statement:\s*(.*?)\s*-->")
+
+
+def extract_canonical_statement(block_text: str) -> str | None:
+    """Corrective pass, point 5: when a rendered block is showing accepted
+    presentation wording instead of the record's own canonical statement,
+    the canonical statement is still embedded as a machine-facing HTML
+    comment (invisible to an ordinary rendered-Markdown reader, present in
+    the raw text any agent/dev-context consumer actually reads) — this
+    reads it back out. Returns `None` for a block with no override in
+    effect (the visible wording already *is* the canonical statement in
+    that case)."""
+    match = _CANONICAL_STATEMENT_RE.search(block_text)
+    if not match:
+        return None
+    return match.group(1).replace("--&gt;", "-->")
 
 _GROUNDING_OPEN_RE = re.compile(r"<!--\s*codecompass-grounded-by:\s*(.+?)\s*-->")
 _GROUNDING_CLOSE = "<!-- /codecompass-grounded-by -->"
@@ -197,6 +213,344 @@ def find_grounded_doc_regions(
     return hits
 
 
+# ---------------------------------------------------------------------------
+# Grounded project-document reconciliation (`decisions/0073`, point 3) —
+# completes §9.2's bidirectional flow: a factual edit to an explicitly
+# grounded region now becomes a real reconciliation candidate, not just
+# something `find_grounded_doc_regions` can locate after the fact.
+# ---------------------------------------------------------------------------
+
+_DEFAULT_GROUNDED_DOCS = ("README.md", "CONTRIBUTING.md")
+
+
+def grounding_state_path(project_root: Path) -> Path:
+    return knowledge_dir(project_root) / ".grounding-state.toml"
+
+
+def _read_simple_toml_tables(path: Path) -> dict[str, dict]:
+    if not path.is_file():
+        return {}
+    import tomllib
+
+    try:
+        return tomllib.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _write_simple_toml_tables(path: Path, tables: dict[str, dict]) -> None:
+    lines: list[str] = []
+    for table_name in sorted(tables):
+        lines.append(f"[{_toml_escape(table_name)}]")
+        for key in sorted(tables[table_name]):
+            lines.append(f"{_toml_escape(key)} = {_serialize_toml_value(tables[table_name][key])}")
+        lines.append("")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+
+
+def _find_record_in_any_slug(project_root: Path, record_id: str) -> KnowledgeRecord | None:
+    for slug in _list_slugs(project_root):
+        record = load_slug_records(slug_dir(project_root, slug)).get(record_id)
+        if record is not None:
+            return record
+    return None
+
+
+def _owning_slug_for_record(project_root: Path, record_id: str) -> str | None:
+    for slug in _list_slugs(project_root):
+        if record_id in load_slug_records(slug_dir(project_root, slug)):
+            return slug
+    return None
+
+
+@dataclass
+class GroundedRegionFinding:
+    doc_name: str
+    index: int
+    cited_ids: list[str]
+    region_text: str
+    region_hash: str
+    case: str  # "new" | "noop" | "doc_candidate" | "claims_changed" | "concurrent_conflict"
+
+
+def detect_grounded_region_changes(
+    project_root: Path, doc_names: tuple[str, ...] = _DEFAULT_GROUNDED_DOCS
+) -> list[GroundedRegionFinding]:
+    """Dual-baseline detection for explicitly grounded project-document
+    regions, analogous to intermediate-doc anchor reconciliation (§1.5) —
+    a safe concurrency model for docs, per `decisions/0073` point 3.
+    Compares the region's own current text hash, and each cited record's
+    own current content hash, against a persisted baseline
+    (`.grounding-state.toml`). A region seen for the first time
+    establishes no finding to compare against yet (`"new"`, not a false
+    positive) — pure, read-only; never mutates the baseline itself (see
+    `advance_grounding_baseline`).
+    """
+    state = _read_simple_toml_tables(grounding_state_path(project_root))
+    findings: list[GroundedRegionFinding] = []
+    for doc_name in doc_names:
+        doc_path = project_root / doc_name
+        if not doc_path.is_file():
+            continue
+        text = doc_path.read_text(encoding="utf-8")
+        for index, (ids, region) in enumerate(parse_grounding_markers(text)):
+            key = f"{doc_name}::{index}"
+            baseline = state.get(key)
+            region_hash = sha256_text(region)
+            if baseline is None:
+                findings.append(
+                    GroundedRegionFinding(doc_name, index, ids, region, region_hash, "new")
+                )
+                continue
+            current_hashes: dict[str, str] = {}
+            for rid in ids:
+                record = _find_record_in_any_slug(project_root, rid)
+                if record is not None:
+                    current_hashes[rid] = sha256_text(record.path.read_text(encoding="utf-8"))
+            base_cited_ids = baseline.get("cited_ids", [])
+            base_cited_hashes = baseline.get("cited_hashes", [])
+            baseline_by_id = dict(zip(base_cited_ids, base_cited_hashes, strict=False))
+            region_changed = region_hash != baseline.get("region_hash", "")
+            claims_changed = [
+                rid
+                for rid in ids
+                if rid in current_hashes and current_hashes.get(rid) != baseline_by_id.get(rid)
+            ]
+            if not region_changed and not claims_changed:
+                case = "noop"
+            elif region_changed and not claims_changed:
+                case = "doc_candidate"
+            elif not region_changed and claims_changed:
+                case = "claims_changed"
+            else:
+                case = "concurrent_conflict"
+            findings.append(GroundedRegionFinding(doc_name, index, ids, region, region_hash, case))
+    return findings
+
+
+def advance_grounding_baseline(project_root: Path, findings: list[GroundedRegionFinding]) -> None:
+    """Persists the current region/claim hashes as the new baseline for
+    every finding except an unresolved `concurrent_conflict`, which must
+    keep being flagged until a human actually resolves it — mirrors the
+    intermediate-doc anchor rule that a conflict is never silently
+    accepted on either side."""
+    state = _read_simple_toml_tables(grounding_state_path(project_root))
+    for finding in findings:
+        if finding.case == "concurrent_conflict":
+            continue
+        current_hashes = {}
+        for rid in finding.cited_ids:
+            record = _find_record_in_any_slug(project_root, rid)
+            if record is not None:
+                current_hashes[rid] = sha256_text(record.path.read_text(encoding="utf-8"))
+        key = f"{finding.doc_name}::{finding.index}"
+        state[key] = {
+            "region_hash": finding.region_hash,
+            "cited_ids": finding.cited_ids,
+            "cited_hashes": [current_hashes.get(rid, "") for rid in finding.cited_ids],
+        }
+    _write_simple_toml_tables(grounding_state_path(project_root), state)
+
+
+def write_doc_candidates_to_manifests(
+    project_root: Path, findings: list[GroundedRegionFinding]
+) -> dict[str, Path]:
+    """For every `doc_candidate` finding (a grounded region's own prose
+    changed, its cited Claims didn't), writes a manifest item into the
+    *owning slug of its first cited id* — reusing the exact same
+    manifest/apply/idempotency machinery `write_manifest`/`apply_manifest`
+    already provide for intermediate-doc candidates, rather than a second,
+    parallel apply path (`decisions/0073`, point 3). A region citing ids
+    from more than one slug attaches to the first one's own slug only —
+    documented, not silently arbitrary. Returns `{slug: manifest_path}`
+    for every slug an item was actually written for; a finding whose
+    cited ids resolve to no real slug at all is skipped (nowhere to attach
+    it) but remains visible via `detect_grounded_region_changes` itself.
+    """
+    by_slug: dict[str, list[GroundedRegionFinding]] = {}
+    for finding in findings:
+        if finding.case != "doc_candidate":
+            continue
+        owning: str | None = None
+        for rid in finding.cited_ids:
+            owning = _owning_slug_for_record(project_root, rid)
+            if owning:
+                break
+        if owning is None:
+            continue
+        by_slug.setdefault(owning, []).append(finding)
+
+    written: dict[str, Path] = {}
+    for slug, slug_findings in by_slug.items():
+        ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+        manifest_path = reconciliation_dir(project_root, slug) / f"{ts}-doc.toml"
+        data: dict = {
+            "manifest_id": f"{slug}@{ts}-doc",
+            "created": datetime.now(UTC).isoformat(),
+            "slug": slug,
+            "items": [],
+        }
+        for finding in slug_findings:
+            data["items"].append(
+                {
+                    "kind": "doc_region_edit",
+                    "doc_name": finding.doc_name,
+                    "region_index": finding.index,
+                    "cited_ids": finding.cited_ids,
+                    "region_text": finding.region_text,
+                    "base_region_hash": finding.region_hash,
+                    "state": "pending",
+                    "decision": "undecided",
+                }
+            )
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        manifest_path.write_text(_serialize_manifest(data), encoding="utf-8")
+        written[slug] = manifest_path
+    return written
+
+
+def _apply_doc_region_edit(project_root: Path, slug: str, item: dict) -> ApplyOutcome:
+    doc_name = item.get("doc_name", "")
+    doc_path = project_root / doc_name
+    if not doc_path.is_file():
+        return ApplyOutcome(False, item, f"{doc_name} no longer exists")
+    regions = parse_grounding_markers(doc_path.read_text(encoding="utf-8"))
+    index = item.get("region_index")
+    if not isinstance(index, int) or index >= len(regions):
+        return ApplyOutcome(False, item, "grounded region no longer exists at this index")
+    cited_ids, current_region = regions[index]
+    current_hash = sha256_text(current_region)
+    if current_hash != item.get("base_region_hash"):
+        return ApplyOutcome(
+            False,
+            item,
+            "apply-time race: the grounded region's own text changed since "
+            "detection — refusing to write; re-run doc detection and review again",
+        )
+    sdir = slug_dir(project_root, slug)
+    records = load_slug_records(sdir)
+    statement = current_region.strip()
+    existing = _find_existing_promoted_record(records, statement)
+    if existing:
+        return ApplyOutcome(
+            True, item, f"already applied — {existing} already exists with this content", existing
+        )
+    new_id = _next_id(sdir, "CL")
+    fields = {
+        "id": new_id,
+        "kind": "claim",
+        "statement": statement,
+        "derivation": "null",
+        "supporting_evidence": "[]",
+        "contradicting_evidence": "[]",
+        "derived_by": '"external:unknown"',
+        "repository_revision": '"working tree"',
+        "timestamp": f'"{datetime.now(UTC).isoformat()}"',
+        "status": "proposed",
+        "depends_on": f"[{', '.join(cited_ids)}]" if cited_ids else "[]",
+    }
+    _write_record(sdir / f"{new_id}.yaml", fields)
+    return ApplyOutcome(True, item, f"created {new_id} from a grounded document edit", new_id)
+
+
+# ---------------------------------------------------------------------------
+# Advisory whole-document chunk tracking (§9.6, `decisions/0073` point 4) —
+# reuses `doc_chunking.chunk_markdown`'s own already-proven heading-based
+# chunking (the same mechanism `context-graph.db`'s `doc_chunks` table is
+# built from) rather than inventing a parallel chunker. Purely advisory:
+# never creates a canonical record, never blocks anything.
+# ---------------------------------------------------------------------------
+
+
+def doc_chunk_state_path(project_root: Path) -> Path:
+    return knowledge_dir(project_root) / ".doc-chunk-state.toml"
+
+
+def _grounding_marker_line_spans(text: str) -> list[tuple[int, int]]:
+    """1-indexed inclusive `(start_line, end_line)` for every grounded
+    region's own span — used to classify a changed chunk as grounded or
+    not."""
+    spans: list[tuple[int, int]] = []
+    pos = 0
+    while True:
+        match = _GROUNDING_OPEN_RE.search(text, pos)
+        if not match:
+            break
+        close_idx = text.find(_GROUNDING_CLOSE, match.end())
+        if close_idx == -1:
+            pos = match.end()
+            continue
+        start_line = text.count("\n", 0, match.start()) + 1
+        end_line = text.count("\n", 0, close_idx) + 1
+        spans.append((start_line, end_line))
+        pos = close_idx + len(_GROUNDING_CLOSE)
+    return spans
+
+
+def _chunk_key(heading_path: str, start_line: int, end_line: int) -> str:
+    return heading_path or f"<lines {start_line}-{end_line}>"
+
+
+def detect_doc_chunk_changes(
+    project_root: Path, doc_names: tuple[str, ...] = _DEFAULT_GROUNDED_DOCS
+) -> dict[str, dict]:
+    """Pure, read-only: for each doc, which heading-scoped chunks changed
+    since the last `advance_doc_chunk_baseline` call, split into those
+    overlapping an explicit grounding marker and those that don't. Never
+    mutates the baseline itself — safe to call from `knowledge status`
+    (advisory reporting) without side effects."""
+    from codecompass.doc_chunking import chunk_markdown
+
+    state = _read_simple_toml_tables(doc_chunk_state_path(project_root))
+    report: dict[str, dict] = {}
+    for doc_name in doc_names:
+        doc_path = project_root / doc_name
+        if not doc_path.is_file():
+            continue
+        text = doc_path.read_text(encoding="utf-8")
+        chunks = chunk_markdown(text)
+        grounded_spans = _grounding_marker_line_spans(text)
+        baseline = state.get(doc_name, {})
+        changed_grounded: list[str] = []
+        changed_ungrounded: list[str] = []
+        for chunk in chunks:
+            key = _chunk_key(chunk.heading_path, chunk.start_line, chunk.end_line)
+            if baseline.get(key) == chunk.content_hash:
+                continue
+            overlaps = any(
+                chunk.start_line <= end and chunk.end_line >= start
+                for start, end in grounded_spans
+            )
+            (changed_grounded if overlaps else changed_ungrounded).append(key)
+        report[doc_name] = {
+            "changed_grounded_chunks": changed_grounded,
+            "changed_ungrounded_chunks": changed_ungrounded,
+        }
+    return report
+
+
+def advance_doc_chunk_baseline(
+    project_root: Path, doc_names: tuple[str, ...] = _DEFAULT_GROUNDED_DOCS
+) -> None:
+    """The explicit write step — recomputes every chunk's current hash and
+    persists it as the new baseline. Always advances (this tracking is
+    advisory-only; nothing depends on withholding an update the way a
+    concurrent-conflict anchor does)."""
+    from codecompass.doc_chunking import chunk_markdown
+
+    new_state: dict[str, dict] = {}
+    for doc_name in doc_names:
+        doc_path = project_root / doc_name
+        if not doc_path.is_file():
+            continue
+        chunks = chunk_markdown(doc_path.read_text(encoding="utf-8"))
+        new_state[doc_name] = {
+            _chunk_key(c.heading_path, c.start_line, c.end_line): c.content_hash for c in chunks
+        }
+    _write_simple_toml_tables(doc_chunk_state_path(project_root), new_state)
+
+
 @dataclass
 class KnowledgeRecord:
     record_id: str
@@ -228,11 +582,23 @@ def load_slug_records(slug: Path) -> dict[str, KnowledgeRecord]:
 def derive_provenance_label(
     record: KnowledgeRecord, records_by_id: dict[str, KnowledgeRecord]
 ) -> str:
-    """OBSERVED / DECLARED / DECIDED / DERIVED / HISTORICAL / MIXED,
-    computed purely from existing kind/basis/status fields — see
-    planning/phase-81-intermediate-knowledge-layer.md §1.2.1. Ambiguity
-    (`basis: directly_stated` with a mixed evidence chain) always
-    resolves to the more cautious label, never the stronger one.
+    """OBSERVED / DECLARED / DECIDED / DERIVED / HISTORICAL / MIXED /
+    UNCLASSIFIED, computed purely from existing kind/basis/status fields
+    — see planning/phase-81-intermediate-knowledge-layer.md §1.2.1 and
+    `decisions/0073` (corrective pass). Ambiguity (`basis: directly_stated`
+    with a mixed evidence chain) always resolves to the more cautious
+    label, never the stronger one.
+
+    Corrected by `decisions/0073` (point 8): the original `directly_stated`
+    branch used `Evidence.evidence_kind` as a proxy for "this evidence
+    traces to a real Observation" — but the real schema
+    (`docs/domain/concepts/evidence.md`) already has the actual link: "One
+    Evidence record cites one or more Observations via its own
+    `observations:` field, or cites source/doc/test directly... when no
+    discrete Observation exists to point at." This now walks that real
+    field instead of guessing from `evidence_kind`, which an Evidence
+    citing a source/doc/test directly (no Observation at all) can equally
+    carry.
     """
     fields = record.fields
     if fields.get("status") == "superseded":
@@ -250,6 +616,11 @@ def derive_provenance_label(
         return "DERIVED"
 
     basis = fields.get("basis")
+    if not basis:
+        # No basis at all -- an unclassified external hypothesis
+        # (decisions/0073, point 7): never guess OBSERVED/DECLARED/DERIVED
+        # for a candidate nobody has classified yet.
+        return "UNCLASSIFIED"
     if basis == "observed_behaviour":
         return "OBSERVED"
     if basis == "proposed_policy":
@@ -267,13 +638,18 @@ def derive_provenance_label(
             if ev is None:
                 saw_non_observed = True
                 continue
-            # Evidence has no `basis` field of its own; an Evidence record
-            # is "observed" in this sense only if it cites a real
-            # Observation at all (even an inferential Evidence usually
-            # traces back to one) — checked via evidence_kind as the
-            # closest existing signal, defaulting to the cautious label
-            # when genuinely unclear rather than guessing.
-            if ev.fields.get("evidence_kind") in ("source", "test", "behavioural"):
+            # The real link (docs/domain/concepts/evidence.md): Evidence
+            # cites a real Observation via its own `observations:` field.
+            # Must actually resolve to a real Observation record -- a
+            # dangling/unresolvable id is not evidence of observation.
+            observation_ids = _extract_id_strings(ev.fields.get("observations", ""))
+            resolved_observations = [
+                oid
+                for oid in observation_ids
+                if records_by_id.get(oid) is not None
+                and records_by_id[oid].kind == "observation"
+            ]
+            if resolved_observations:
                 saw_observed = True
             else:
                 saw_non_observed = True
@@ -410,18 +786,31 @@ def render_block(
     two marker comments — never including the marker comments themselves,
     so recomputing it on reimport is unambiguous."""
     semantic_hash = sha256_text(record.path.read_text(encoding="utf-8"))
+    canonical_statement = (
+        record.fields.get("statement")
+        or record.fields.get("decides")
+        or record.fields.get("what_it_shows")
+        or ""
+    ).strip()
     cached = presentation_cache.get(record.record_id)
-    if cached is not None and cached.accepted_for_semantic_hash == semantic_hash:
-        wording = cached.wording
-    else:
-        wording = (
-            record.fields.get("statement")
-            or record.fields.get("decides")
-            or record.fields.get("what_it_shows")
-            or ""
-        )
+    using_presentation_override = (
+        cached is not None and cached.accepted_for_semantic_hash == semantic_hash
+    )
+    wording = cached.wording if using_presentation_override else canonical_statement
     label = derive_provenance_label(record, records_by_id)
-    lines = [f"### {record.record_id}", "", wording.strip(), ""]
+    lines = [f"### {record.record_id}", ""]
+    if using_presentation_override:
+        # Corrective pass, point 5: `presentation_only` is a reviewer
+        # classification, never mechanically proven semantic equivalence
+        # (the apply step cannot verify that; see docs/codecompass-
+        # knowledge-workflow.md). A human reader sees the accepted
+        # wording as the main prose (clean, no visible duplication); an
+        # agent/dev-context consumer reading the raw file always has the
+        # real canonical statement available too, so cached wording can
+        # never become the *only* representation of canonical meaning.
+        escaped_canonical = canonical_statement.replace("-->", "--&gt;")
+        lines.append(f"<!-- codecompass-canonical-statement: {escaped_canonical} -->")
+    lines += [wording.strip(), ""]
     supporting = record.fields.get("supporting_evidence", "")
     if supporting and supporting != "[]":
         lines.append(f"Supporting evidence: {supporting}")
@@ -616,7 +1005,12 @@ class CandidateFinding:
     file: Path
     index: int
     text: str
-    cited_decision: str | None
+    # Explicit structured metadata (decisions/0073, points 6/7) — never
+    # inferred from merely mentioning an id anywhere in ordinary prose.
+    requirement_decision: str | None = None  # set only if "Type: Requirement"
+    requirement_statement: str | None = None
+    requirement_example: str | None = None
+    declared_intent: bool = False  # set only if "Type: Intent"
 
 
 def detect_anchor_changes(project_root: Path, slug: str) -> list[AnchorFinding]:
@@ -673,6 +1067,42 @@ def detect_anchor_changes(project_root: Path, slug: str) -> list[AnchorFinding]:
     return findings
 
 
+_REQUIREMENT_FIELD_RE = re.compile(r"^(Decision|Statement|Example):\s*(.*)$")
+
+
+def _parse_candidate_block(block: str) -> dict:
+    """Explicit, structured candidate-block metadata (`decisions/0073`,
+    points 6/7) — deliberately *not* inferred from merely mentioning an id
+    or a word anywhere in ordinary prose. The first line of a block, if it
+    is exactly `Type: Requirement` or `Type: Intent`, opts that block into
+    one of two recognised structured shapes; anything else (the common
+    case — plain prose) stays an ordinary, unclassified factual candidate.
+
+    `Type: Requirement` expects `Decision:`/`Statement:`/`Example:` lines
+    immediately following (single-line values) — a Requirement is only
+    ever created from this explicit shape, never from prose that happens
+    to mention an approved Decision's id.
+
+    `Type: Intent` marks the block as expressing declared project intent
+    (eligible for `basis: proposed_policy`) rather than the default,
+    unclassified factual hypothesis a plain candidate becomes.
+    """
+    lines = block.splitlines()
+    if not lines:
+        return {}
+    first = lines[0].strip()
+    if first == "Type: Requirement":
+        fields: dict[str, str] = {}
+        for line in lines[1:]:
+            match = _REQUIREMENT_FIELD_RE.match(line.strip())
+            if match:
+                fields[match.group(1).lower()] = match.group(2).strip()
+        return {"requirement": fields}
+    if first == "Type: Intent":
+        return {"intent": True}
+    return {}
+
+
 def detect_candidate_additions(project_root: Path, slug: str) -> list[CandidateFinding]:
     """§4.4 — only text strictly between the candidate-region markers is
     ever read as a proposal; everything else in the file is narrative
@@ -689,22 +1119,201 @@ def detect_candidate_additions(project_root: Path, slug: str) -> list[CandidateF
             continue
         blocks = [b.strip() for b in re.split(r"\n\s*\n", region) if b.strip()]
         for index, block in enumerate(blocks):
-            decision_ids = [i for i in _extract_id_strings(block) if i.startswith("DEC-")]
-            findings.append(
-                CandidateFinding(md_path, index, block, decision_ids[0] if decision_ids else None)
-            )
+            parsed = _parse_candidate_block(block)
+            if "requirement" in parsed:
+                req = parsed["requirement"]
+                findings.append(
+                    CandidateFinding(
+                        md_path,
+                        index,
+                        block,
+                        requirement_decision=req.get("decision"),
+                        requirement_statement=req.get("statement"),
+                        requirement_example=req.get("example"),
+                    )
+                )
+            elif parsed.get("intent"):
+                findings.append(CandidateFinding(md_path, index, block, declared_intent=True))
+            else:
+                findings.append(CandidateFinding(md_path, index, block))
     return findings
 
 
+def _replace_anchor_blocks(
+    md_path: Path, replacements: dict[str, str]
+) -> bool:
+    """Targeted, in-place replacement of exactly the named anchors' own
+    blocks — every other byte in the file (other anchors, the candidate
+    region, any narrative prose) is left completely untouched. `replacements`
+    maps `record_id` to the *exact* new full block text (anchor comments
+    included) to substitute in place of the existing one. Returns whether
+    anything was actually rewritten.
+
+    Corrective pass, point 1: this replaces the original draft's own
+    `apply_automatic_refreshes`, which called whole-slug `render_slug` the
+    moment *any* anchor needed a safe refresh — regenerating every block in
+    every file of the slug from scratch, including blocks a human/external
+    tool had just edited but that had not yet been captured in a manifest.
+    A refresh of record A must never erase record B's own pending edit in
+    the same file; targeted single-block substitution is what guarantees
+    that, since a block this function is not told to replace is never
+    touched at the byte level.
+    """
+    text = md_path.read_text(encoding="utf-8")
+    pieces: list[str] = []
+    last_end = 0
+    pos = 0
+    changed = False
+    while True:
+        match = _ANCHOR_OPEN_RE.search(text, pos)
+        if not match:
+            break
+        record_id = match.group(1)
+        close_idx = text.find(_ANCHOR_CLOSE, match.end())
+        if close_idx == -1:
+            pos = match.end()
+            continue
+        full_end = close_idx + len(_ANCHOR_CLOSE)
+        if record_id in replacements:
+            pieces.append(text[last_end : match.start()])
+            new_block = replacements[record_id]
+            # The original slice stops right at the literal close marker,
+            # with no trailing newline consumed (whatever newline(s) follow
+            # it in the file are preserved verbatim via `text[last_end:]`
+            # below) -- strip render_block's own single trailing "\n" so
+            # substitution doesn't introduce an extra blank line.
+            pieces.append(new_block[:-1] if new_block.endswith("\n") else new_block)
+            last_end = full_end
+            changed = True
+        pos = full_end
+    if not changed:
+        return False
+    pieces.append(text[last_end:])
+    md_path.write_text("".join(pieces), encoding="utf-8")
+    return True
+
+
+def refresh_safe_anchors(
+    project_root: Path, slug: str, anchor_findings: list[AnchorFinding] | None = None
+) -> list[str]:
+    """`canonical_changed=True, projection_edited=False` (§8's table)
+    needs no human review at all — but, corrected per `decisions/0073`
+    (point 1), this is now a *targeted* per-block substitution, never a
+    whole-slug `render_slug`. Required flow: scan the complete projection,
+    classify every anchor, partition into no-op/safe-refresh/candidate/
+    concurrent-conflict, then refresh ONLY the safe-refresh blocks —
+    candidate and concurrent-conflict blocks are never rewritten by this
+    function, regardless of which file they share with a block being
+    refreshed. Pass `anchor_findings` through when the caller already ran
+    `detect_anchor_changes` once (the required flow classifies before any
+    mutation happens); omitted, this recomputes them itself.
+    """
+    if anchor_findings is None:
+        anchor_findings = detect_anchor_changes(project_root, slug)
+    to_refresh = [f for f in anchor_findings if f.case == "refresh"]
+    if not to_refresh:
+        return []
+    records = load_slug_records(slug_dir(project_root, slug))
+    cache = read_presentation_cache(presentation_cache_path(project_root, slug))
+    by_file: dict[Path, set[str]] = {}
+    for finding in to_refresh:
+        by_file.setdefault(finding.file, set()).add(finding.record_id)
+    refreshed_ids: list[str] = []
+    for md_path, record_ids in by_file.items():
+        replacements = {
+            rid: render_block(records[rid], records, cache)
+            for rid in record_ids
+            if rid in records
+        }
+        if replacements and _replace_anchor_blocks(md_path, replacements):
+            refreshed_ids.extend(sorted(replacements))
+    return refreshed_ids
+
+
 def apply_automatic_refreshes(project_root: Path, slug: str) -> list[str]:
-    """`canonical_changed=True, projection_edited=False` (§8's table) needs
-    no human review at all — it's just `render_slug` re-run; exposed here
-    so `select-candidates` can report how many blocks it silently refreshed
-    without creating a manifest entry for them."""
-    findings = [f for f in detect_anchor_changes(project_root, slug) if f.case == "refresh"]
-    if findings:
-        render_slug(project_root, slug)
-    return [f.record_id for f in findings]
+    """Deprecated name, kept as a thin alias for `refresh_safe_anchors` —
+    the original draft's own whole-slug-render implementation is gone
+    (`decisions/0073`, point 1); this now delegates to the corrected,
+    targeted mechanism."""
+    return refresh_safe_anchors(project_root, slug)
+
+
+_MANIFEST_ITEM_FIELD_ORDER = [
+    "kind",
+    "record_id",
+    "file",
+    "base_semantic_hash",
+    "base_projection_hash",
+    "current_semantic_hash",
+    "current_projection_hash",
+    "edited_text",
+    "index",
+    "text",
+    "requirement_decision",
+    "requirement_statement",
+    "requirement_example",
+    "declared_intent",
+    "doc_name",
+    "region_index",
+    "cited_ids",
+    "region_text",
+    "state",
+    "decision",
+    "semantic_change",
+    "proposed_basis",
+    "applied_record_id",
+    "applied_at",
+]
+
+
+def _serialize_toml_value(value: object) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, list):
+        return "[" + ", ".join(_toml_escape(str(v)) for v in value) + "]"
+    return _toml_escape(str(value))
+
+
+def _serialize_manifest_item(item: dict) -> list[str]:
+    """Field order is fixed (`_MANIFEST_ITEM_FIELD_ORDER`) for a stable,
+    diffable manifest file; any field not in that list (forward
+    compatibility) is still written, just after the known ones. Comments
+    are not round-tripped — `tomllib` (the only reader, stdlib, read-only)
+    discards them on parse, so preserving them through a read-modify-write
+    cycle would be inconsistent; the field names themselves are written to
+    be self-explanatory instead."""
+    lines = ["[[items]]"]
+    seen: set[str] = set()
+    for key in _MANIFEST_ITEM_FIELD_ORDER:
+        if key not in item:
+            continue
+        lines.append(f"{key} = {_serialize_toml_value(item[key])}")
+        seen.add(key)
+    for key, value in item.items():
+        if key in seen:
+            continue
+        lines.append(f"{key} = {_serialize_toml_value(value)}")
+    lines.append("")
+    return lines
+
+
+def _serialize_manifest(data: dict) -> str:
+    """The single source of truth for the manifest's own TOML shape —
+    used both to write a brand-new manifest and, by `apply_manifest`
+    (`decisions/0073`, point 2), to read-modify-write an existing one so
+    an applied item's own state becomes durable and mechanically
+    distinguishable from a still-pending one."""
+    lines = [
+        f"manifest_id = {_toml_escape(data['manifest_id'])}",
+        f"created = {_toml_escape(data['created'])}",
+        f"slug = {_toml_escape(data['slug'])}",
+        "",
+    ]
+    for item in data.get("items", []):
+        lines += _serialize_manifest_item(item)
+    return "\n".join(lines).rstrip() + "\n"
 
 
 def write_manifest(
@@ -715,51 +1324,58 @@ def write_manifest(
 ) -> Path | None:
     """The reconciliation manifest (§8/§11) — durable, committed, TOML,
     reusing the frozen-snapshot format's own shape. Returns `None` (and
-    writes nothing) if there is genuinely nothing to review."""
+    writes nothing) if there is genuinely nothing to review. Every item
+    starts at `state = "pending"` (or `"concurrent_conflict"`) — never
+    `"applied"`; only `apply_manifest` ever writes that state, and only
+    after a real, successful write."""
     reviewable = [f for f in anchor_findings if f.case in ("candidate", "concurrent_conflict")]
     if not reviewable and not candidate_findings:
         return None
     ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     manifest_path = reconciliation_dir(project_root, slug) / f"{ts}.toml"
-    lines = [
-        f'manifest_id = "{slug}@{ts}"',
-        f'created = "{datetime.now(UTC).isoformat()}"',
-        f'slug = "{slug}"',
-        "",
-    ]
+    data: dict = {
+        "manifest_id": f"{slug}@{ts}",
+        "created": datetime.now(UTC).isoformat(),
+        "slug": slug,
+        "items": [],
+    }
     for f in reviewable:
         state = "concurrent_conflict" if f.case == "concurrent_conflict" else "pending"
-        lines += [
-            "[[items]]",
-            'kind = "anchor_edit"',
-            f'record_id = "{f.record_id}"',
-            f"file = {_toml_escape(str(f.file.relative_to(project_root)))}",
-            f'base_semantic_hash = "{f.base_semantic_hash}"',
-            f'base_projection_hash = "{f.base_projection_hash}"',
-            f"current_semantic_hash = {_toml_escape(f.current_semantic_hash or '')}",
-            f'current_projection_hash = "{f.current_projection_hash}"',
-            f'state = "{state}"',
-            f"edited_text = {_toml_escape(f.body_text)}",
-            '# Stage 2 (human/agent review) sets these two before apply:',
-            'decision = "undecided"  # "accept" or "reject"',
-            "semantic_change = false  # true if this is more than wording",
-            "",
-        ]
+        data["items"].append(
+            {
+                "kind": "anchor_edit",
+                "record_id": f.record_id,
+                "file": str(f.file.relative_to(project_root)),
+                "base_semantic_hash": f.base_semantic_hash,
+                "base_projection_hash": f.base_projection_hash,
+                "current_semantic_hash": f.current_semantic_hash or "",
+                "current_projection_hash": f.current_projection_hash,
+                "state": state,
+                "edited_text": f.body_text,
+                # Stage 2 (human/agent review) sets these before apply:
+                "decision": "undecided",  # "accept" or "reject"
+                "semantic_change": False,  # true if this is more than wording
+                "proposed_basis": "",  # e.g. "proposed_policy" -- empty = unclassified
+            }
+        )
     for c in candidate_findings:
-        lines += [
-            "[[items]]",
-            'kind = "candidate_addition"',
-            f"file = {_toml_escape(str(c.file.relative_to(project_root)))}",
-            f"index = {c.index}",
-            f"text = {_toml_escape(c.text)}",
-            f"cited_decision = {_toml_escape(c.cited_decision or '')}",
-            'state = "pending"',
-            '# Stage 2 (human/agent review) sets this before apply:',
-            'decision = "undecided"  # "accept" or "reject"',
-            "",
-        ]
+        item: dict = {
+            "kind": "candidate_addition",
+            "file": str(c.file.relative_to(project_root)),
+            "index": c.index,
+            "text": c.text,
+            "state": "pending",
+            "decision": "undecided",  # Stage 2 sets this before apply
+        }
+        if c.requirement_decision is not None:
+            item["requirement_decision"] = c.requirement_decision
+            item["requirement_statement"] = c.requirement_statement or ""
+            item["requirement_example"] = c.requirement_example or ""
+        if c.declared_intent:
+            item["declared_intent"] = True
+        data["items"].append(item)
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    manifest_path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+    manifest_path.write_text(_serialize_manifest(data), encoding="utf-8")
     return manifest_path
 
 
@@ -837,6 +1453,90 @@ def _write_record(path: Path, fields: dict[str, str]) -> None:
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def _find_existing_promoted_record(
+    records: dict[str, KnowledgeRecord], statement: str, depends_on: str | None = None
+) -> str | None:
+    """Content-addressed idempotency check (`decisions/0073`, point 2):
+    before creating a new record from external text, check whether an
+    equivalent one already exists — from a prior apply of the same or an
+    overlapping manifest. Avoids a separate ledger file by reusing the
+    canonical records themselves as the single source of truth for "has
+    this already happened." Two candidates with byte-identical text
+    (after trimming) are treated as the same contribution by design — see
+    `docs/codecompass-knowledge-workflow.md`'s own documented rationale."""
+    target = statement.strip()
+    if not target:
+        return None
+    for record in records.values():
+        if record.fields.get("statement", "").strip() != target:
+            continue
+        if depends_on is not None:
+            deps = _extract_id_strings(record.fields.get("depends_on", ""))
+            if depends_on not in deps:
+                continue
+        return record.record_id
+    return None
+
+
+def _consume_candidate_text(md_path: Path, text: str) -> bool:
+    """Removes every occurrence of `text` as its own candidate block from
+    the live candidate region (`decisions/0073`, point 2) — once a
+    candidate's content becomes a real canonical record, that record is
+    the one place its provenance now lives; leaving the raw text behind
+    would let a fresh `select-candidates` run rediscover it as if it were
+    still new. Two blocks with byte-identical text are the same
+    contribution (see `_find_existing_promoted_record`), so both are
+    consumed together here rather than leaving a duplicate to be
+    rediscovered later. Only ever touches the candidate region of this
+    one file; everything else, including other still-pending candidate
+    blocks, is untouched. Returns whether anything was actually removed
+    (`False` if the text is no longer present — already consumed by an
+    earlier apply)."""
+    full_text = md_path.read_text(encoding="utf-8")
+    start = full_text.find(CANDIDATE_START)
+    end = full_text.find(CANDIDATE_END)
+    if start == -1 or end == -1 or end < start:
+        return False
+    region_start = start + len(CANDIDATE_START)
+    region = full_text[region_start:end]
+    blocks = [b.strip() for b in re.split(r"\n\s*\n", region.strip("\n")) if b.strip()]
+    target = text.strip()
+    if target not in blocks:
+        return False
+    remaining = [b for b in blocks if b != target]
+    new_region = ("\n\n" + "\n\n".join(remaining) + "\n") if remaining else ""
+    full_text = full_text[:region_start] + new_region + full_text[end:]
+    md_path.write_text(full_text, encoding="utf-8")
+    return True
+
+
+def _refresh_single_anchor_after_apply(
+    project_root: Path, slug: str, file_rel: str, record_id: str
+) -> None:
+    """After a successful anchor-edit apply (either branch), the original
+    anchor's own `base_projection_hash` must be brought back in sync with
+    whatever is now live — otherwise a later `select-candidates` run would
+    see `projection_edited=True` again against the *stale* base and
+    rediscover the same already-applied edit as a brand-new candidate
+    (`decisions/0073`, point 2). For a presentation-only apply this
+    re-renders using the now-cached wording (so the hash matches what the
+    reader already sees); for a promoted semantic edit, it resets the
+    original block back to the original record's own canonical content,
+    since the edit's own content now lives in the new, separately-rendered
+    competing Claim. Reuses the exact same targeted single-block
+    substitution `refresh_safe_anchors` uses — never a whole-file
+    re-render."""
+    md_path = project_root / file_rel
+    if not md_path.is_file():
+        return
+    records = load_slug_records(slug_dir(project_root, slug))
+    record = records.get(record_id)
+    if record is None:
+        return
+    cache = read_presentation_cache(presentation_cache_path(project_root, slug))
+    _replace_anchor_blocks(md_path, {record_id: render_block(record, records, cache)})
+
+
 def _apply_anchor_edit(project_root: Path, slug: str, item: dict) -> ApplyOutcome:
     record_id = item.get("record_id", "")
     sdir = slug_dir(project_root, slug)
@@ -853,22 +1553,32 @@ def _apply_anchor_edit(project_root: Path, slug: str, item: dict) -> ApplyOutcom
             "(base_semantic_hash no longer matches) — refusing to write; "
             "re-run `knowledge select-candidates` and review again",
         )
+    edited_text = item.get("edited_text", "").strip()
     if not item.get("semantic_change", False):
         cache_path = presentation_cache_path(project_root, slug)
         cache = read_presentation_cache(cache_path)
         cache[record_id] = PresentationEntry(
             accepted_for_semantic_hash=live_hash,
-            wording=item.get("edited_text", "").strip(),
+            wording=edited_text,
         )
         write_presentation_cache(cache_path, cache)
-        return ApplyOutcome(True, item, "presentation cache updated; canonical record untouched")
+        outcome = ApplyOutcome(
+            True, item, "presentation cache updated; canonical record untouched"
+        )
+        _refresh_single_anchor_after_apply(project_root, slug, item.get("file", ""), record_id)
+        return outcome
     # A semantic edit never overwrites the original record directly (§7) —
     # it always creates a new, competing candidate Claim instead.
+    existing = _find_existing_promoted_record(records, edited_text, depends_on=record_id)
+    if existing:
+        return ApplyOutcome(
+            True, item, f"already applied — {existing} already exists with this content", existing
+        )
     new_id = _next_id(sdir, "CL")
     fields = {
         "id": new_id,
         "kind": "claim",
-        "statement": item.get("edited_text", "").strip(),
+        "statement": edited_text,
         "derivation": "null",
         "supporting_evidence": "[]",
         "contradicting_evidence": "[]",
@@ -876,68 +1586,174 @@ def _apply_anchor_edit(project_root: Path, slug: str, item: dict) -> ApplyOutcom
         "repository_revision": '"working tree"',
         "timestamp": f'"{datetime.now(UTC).isoformat()}"',
         "status": "proposed",
-        "basis": "proposed_policy",
         "depends_on": f"[{record_id}]",
     }
+    # decisions/0073, point 7: basis is only ever proposed_policy when
+    # Stage 2 review explicitly classifies this as declared intent --
+    # otherwise it stays unclassified (omitted), never guessed.
+    proposed_basis = item.get("proposed_basis") or ""
+    if proposed_basis:
+        fields["basis"] = proposed_basis
     _write_record(sdir / f"{new_id}.yaml", fields)
+    _refresh_single_anchor_after_apply(project_root, slug, item.get("file", ""), record_id)
     return ApplyOutcome(True, item, f"created {new_id} as a competing candidate", new_id)
+
+
+def _apply_requirement_proposal(
+    sdir: Path, records: dict[str, KnowledgeRecord], item: dict
+) -> ApplyOutcome | None:
+    """Explicit `Type: Requirement` candidates only (`decisions/0073`,
+    point 6) — a candidate block merely *mentioning* an approved Decision
+    id is never enough. Returns `None` (never a Requirement) if the
+    explicit proposal is missing a real approved Decision, a statement, or
+    a meaningful acceptance example — callers fall back to an ordinary
+    Claim proposal in that case, never silently dropping the contribution,
+    and never auto-generating a placeholder example to paper over the
+    gap."""
+    decision_id = item.get("requirement_decision") or ""
+    statement = (item.get("requirement_statement") or "").strip()
+    example = (item.get("requirement_example") or "").strip()
+    decision_record = records.get(decision_id)
+    valid_decision = (
+        decision_record is not None
+        and decision_record.kind == "decision"
+        and decision_record.fields.get("status") == "approved"
+    )
+    # A "meaningful" Given/When/Then example is checked structurally only
+    # (does it contain the three words at all) -- deliberately not full
+    # semantic validation, which this project does not attempt.
+    lowered = example.lower()
+    valid_example = all(word in lowered for word in ("given", "when", "then"))
+    if not (valid_decision and statement and valid_example):
+        return None
+    existing = _find_existing_promoted_record(records, statement)
+    if existing:
+        return ApplyOutcome(
+            True, item, f"already applied — {existing} already exists with this content", existing
+        )
+    new_id = _next_id(sdir, "REQ")
+    fields = {
+        "id": new_id,
+        "kind": "requirement",
+        "statement": statement,
+        "example": example,
+        "decision": decision_id,
+        "status": "proposed",
+    }
+    _write_record(sdir / f"{new_id}.yaml", fields)
+    return ApplyOutcome(True, item, f"created {new_id}", new_id)
 
 
 def _apply_candidate_addition(project_root: Path, slug: str, item: dict) -> ApplyOutcome:
     sdir = slug_dir(project_root, slug)
     records = load_slug_records(sdir)
-    cited = item.get("cited_decision") or ""
-    decision_record = records.get(cited) if cited else None
-    if (
-        decision_record is not None
-        and decision_record.kind == "decision"
-        and decision_record.fields.get("status") == "approved"
-    ):
-        new_id = _next_id(sdir, "REQ")
-        fields = {
-            "id": new_id,
-            "kind": "requirement",
-            "statement": item.get("text", ""),
-            "example": (
-                "Given/When/Then: to be refined during review "
-                "(auto-created from an external candidate addition)."
-            ),
-            "decision": cited,
-            "status": "proposed",
-        }
+    file_rel = item.get("file", "")
+    md_path = project_root / file_rel
+    text = item.get("text", "")  # the exact raw block, as it appears live
+
+    if item.get("requirement_decision"):
+        requirement_outcome = _apply_requirement_proposal(sdir, records, item)
+        if requirement_outcome is not None:
+            if requirement_outcome.ok:
+                _consume_candidate_text(md_path, text)
+            return requirement_outcome
+        # Falls through to the ordinary Claim path below -- an explicit
+        # but incomplete Requirement proposal is preserved as a Claim,
+        # never rejected outright (§4.4/§14.3, decisions/0073 point 6).
+        # Use the proposal's own Statement field, not the raw structured
+        # block (which still carries the "Type: Requirement"/"Decision:"
+        # header lines), as the resulting Claim's own statement.
+        claim_statement = (item.get("requirement_statement") or "").strip() or text
     else:
-        # No cited id, or it doesn't resolve to an approved Decision --
-        # falls back to a Claim-level proposal, never rejected outright
-        # and never inventing/approving a Decision on the author's behalf
-        # (§4.4/§14.3).
-        new_id = _next_id(sdir, "CL")
-        fields = {
-            "id": new_id,
-            "kind": "claim",
-            "statement": item.get("text", ""),
-            "derivation": "null",
-            "supporting_evidence": "[]",
-            "contradicting_evidence": "[]",
-            "derived_by": '"external:unknown"',
-            "repository_revision": '"working tree"',
-            "timestamp": f'"{datetime.now(UTC).isoformat()}"',
-            "status": "proposed",
-            "basis": "proposed_policy",
-        }
+        claim_statement = text
+
+    if md_path.is_file() and not _candidate_text_present(md_path, text):
+        # Idempotency, second line of defence (decisions/0073, point 2):
+        # the manifest's own `state` field (checked by `apply_manifest`
+        # before this function is ever called) catches re-applying the
+        # *same* manifest; this catches a *different* manifest proposing
+        # the same already-consumed text.
+        existing = _find_existing_promoted_record(records, claim_statement)
+        return ApplyOutcome(
+            True,
+            item,
+            "already applied — candidate text no longer present"
+            + (f" ({existing} already exists)" if existing else ""),
+            existing,
+        )
+
+    existing = _find_existing_promoted_record(records, claim_statement)
+    if existing:
+        if md_path.is_file():
+            _consume_candidate_text(md_path, text)
+        return ApplyOutcome(
+            True, item, f"already applied — {existing} already exists with this content", existing
+        )
+
+    new_id = _next_id(sdir, "CL")
+    fields = {
+        "id": new_id,
+        "kind": "claim",
+        "statement": claim_statement,
+        "derivation": "null",
+        "supporting_evidence": "[]",
+        "contradicting_evidence": "[]",
+        "derived_by": '"external:unknown"',
+        "repository_revision": '"working tree"',
+        "timestamp": f'"{datetime.now(UTC).isoformat()}"',
+        "status": "proposed",
+    }
+    # decisions/0073, point 7: an ordinary external candidate is an
+    # unclassified factual hypothesis by default (basis omitted) -- only
+    # an explicit `Type: Intent` block earns `basis: proposed_policy`.
+    if item.get("declared_intent"):
+        fields["basis"] = "proposed_policy"
     _write_record(sdir / f"{new_id}.yaml", fields)
+    if md_path.is_file():
+        _consume_candidate_text(md_path, text)
     return ApplyOutcome(True, item, f"created {new_id}", new_id)
+
+
+def _candidate_text_present(md_path: Path, text: str) -> bool:
+    full_text = md_path.read_text(encoding="utf-8")
+    start = full_text.find(CANDIDATE_START)
+    end = full_text.find(CANDIDATE_END)
+    if start == -1 or end == -1 or end < start:
+        return False
+    region = full_text[start + len(CANDIDATE_START) : end]
+    blocks = [b.strip() for b in re.split(r"\n\s*\n", region.strip("\n")) if b.strip()]
+    return text.strip() in blocks
 
 
 def apply_manifest(project_root: Path, manifest_path: Path) -> ApplyResult:
     """The only function in this module (and the only CLI command, §11)
     allowed to write `planning/knowledge/*/*.yaml`. Never trusts Stage 2's
-    own annotation at face value — every item is mechanically re-checked."""
+    own annotation at face value — every item is mechanically re-checked.
+
+    Idempotent (`decisions/0073`, point 2): an item already at
+    `state = "applied"` is skipped immediately, with no re-check and no
+    re-write — the manifest file itself is the durable, mechanically
+    checkable record of what has already happened, rewritten in place
+    (read-modify-write, `_serialize_manifest`) after every successful
+    apply so a second run of this same manifest can never create a second
+    record."""
     import tomllib
 
     data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
     slug = data.get("slug", "")
     result = ApplyResult()
+    changed = False
     for item in data.get("items", []):
+        if item.get("state") == "applied":
+            result.skipped.append(
+                ApplyOutcome(
+                    False,
+                    item,
+                    "already applied (state=applied)",
+                    item.get("applied_record_id") or None,
+                )
+            )
+            continue
         decision = item.get("decision", "undecided")
         if decision == "reject":
             result.skipped.append(ApplyOutcome(False, item, "rejected at review"))
@@ -961,9 +1777,20 @@ def apply_manifest(project_root: Path, manifest_path: Path) -> ApplyResult:
             outcome = _apply_anchor_edit(project_root, slug, item)
         elif item.get("kind") == "candidate_addition":
             outcome = _apply_candidate_addition(project_root, slug, item)
+        elif item.get("kind") == "doc_region_edit":
+            outcome = _apply_doc_region_edit(project_root, slug, item)
         else:
             outcome = ApplyOutcome(False, item, f"unknown item kind {item.get('kind')!r}")
-        (result.applied if outcome.ok else result.skipped).append(outcome)
+        if outcome.ok:
+            item["state"] = "applied"
+            item["applied_record_id"] = outcome.new_record_id or ""
+            item["applied_at"] = datetime.now(UTC).isoformat()
+            changed = True
+            result.applied.append(outcome)
+        else:
+            result.skipped.append(outcome)
+    if changed:
+        manifest_path.write_text(_serialize_manifest(data), encoding="utf-8")
     return result
 
 
@@ -1019,7 +1846,9 @@ def knowledge_status(project_root: Path, slug: str | None = None) -> StatusRepor
                             f"see {manifests[-1].name}"
                         )
 
-    for doc_name in ("README.md", "CONTRIBUTING.md"):
+    grounded_findings = detect_grounded_region_changes(project_root, _DEFAULT_GROUNDED_DOCS)
+    chunk_report = detect_doc_chunk_changes(project_root, _DEFAULT_GROUNDED_DOCS)
+    for doc_name in _DEFAULT_GROUNDED_DOCS:
         doc_path = project_root / doc_name
         if not doc_path.is_file():
             continue
@@ -1034,14 +1863,32 @@ def knowledge_status(project_root: Path, slug: str | None = None) -> StatusRepor
                     record = load_slug_records(slug_dir(project_root, s)).get(record_id)
                     if record and record.fields.get("status") == "contradicted":
                         needing_review.append(record_id)
+
+        # decisions/0073, point 4: real changed-region tracking, not just
+        # static counts -- a grounded region's own prose change (doc_candidate),
+        # its cited Claim(s) moving (claims_changed), or both at once
+        # (concurrent_conflict) all count as a "changed grounded region";
+        # a changed chunk overlapping no grounding marker at all is
+        # reported separately, purely advisory, never auto-converted into
+        # a Claim.
+        doc_findings = [f for f in grounded_findings if f.doc_name == doc_name]
+        _changed_cases = ("doc_candidate", "claims_changed", "concurrent_conflict")
+        changed_grounded = [f for f in doc_findings if f.case in _changed_cases]
+        chunks = chunk_report.get(doc_name, {})
         report.grounding[doc_name] = {
             "grounded_regions": len(marked_regions),
             "grounded_ids": sorted(set(grounded_ids)),
-            # Advisory only (§9.6) — this build reports regions whose own
-            # cited record is currently contradicted/unresolved as the
-            # practical "needs a look" signal, rather than a raw text-diff
-            # against a stored baseline (no such baseline is kept). Never
-            # blocking; see docs/codecompass-knowledge-workflow.md.
+            # Advisory only (§9.6) — regions whose own cited record is
+            # currently contradicted/unresolved, the practical "needs a
+            # look" signal. Never blocking.
             "regions_needing_review": sorted(set(needing_review)),
+            "changed_grounded_regions": len(changed_grounded),
+            "changed_grounded_region_detail": [
+                f"region #{f.index} ({', '.join(f.cited_ids)}): {f.case}" for f in changed_grounded
+            ],
+            "changed_ungrounded_regions_needing_review": len(
+                chunks.get("changed_ungrounded_chunks", [])
+            ),
+            "changed_ungrounded_chunks": chunks.get("changed_ungrounded_chunks", []),
         }
     return report
