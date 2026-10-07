@@ -24,7 +24,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from codecompass import enrichment, graph, relation_enrichment
+from codecompass import enrichment, graph, knowledge_intermediate, relation_enrichment
 from codecompass.adapters import AdapterError
 from codecompass.chat import ChatError, run_chat
 from codecompass.commands import write_discovery_command
@@ -57,6 +57,13 @@ enrich_app = typer.Typer(
     help="Apply agent-authored enrichment to an already-existing mechanical edge."
 )
 app.add_typer(enrich_app, name="enrich")
+knowledge_app = typer.Typer(
+    help=(
+        "Render, detect, and apply changes to a persistent, human/tool-editable "
+        "Markdown projection of planning/knowledge/<slug>/ (Phase 81)."
+    )
+)
+app.add_typer(knowledge_app, name="knowledge")
 console = Console()
 
 _STRICT_FAIL_SEVERITIES = {Severity.MAJOR, Severity.UNKNOWN}
@@ -1512,6 +1519,142 @@ def enrich_apply(
         console.print(f"[yellow]rejected {len(rejected)} entrie(s):[/yellow]")
         for reason in rejected:
             console.print(f"  - {reason}")
+        raise typer.Exit(code=1)
+
+
+@knowledge_app.command("render")
+def knowledge_render(
+    slug: str | None = typer.Argument(
+        None, help="A planning/knowledge/<slug> to render. Omit to render every slug."
+    ),
+) -> None:
+    """Stage 4 of Phase 81's reconciliation pipeline (and the initial
+    projection): deterministic, no AI call, safe to run any number of
+    times. Writes `planning/knowledge/<slug>/intermediate/*.md` from the
+    slug's own canonical records, preserving presentation wording and any
+    not-yet-processed candidate-region content already on disk. See
+    docs/codecompass-knowledge-workflow.md.
+    """
+    project_root = Path.cwd()
+    slugs = [slug] if slug else knowledge_intermediate._list_slugs(project_root)
+    if not slugs:
+        console.print("[yellow]no planning/knowledge/<slug> directories found[/yellow]")
+        return
+    for s in slugs:
+        written = knowledge_intermediate.render_slug(project_root, s)
+        console.print(f"[green]{s}[/green]: rendered {len(written)} file(s)")
+
+
+@knowledge_app.command("select-candidates")
+def knowledge_select_candidates(
+    slug: str = typer.Argument(..., help="The planning/knowledge/<slug> to scan."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print what would be written without writing a manifest."
+    ),
+) -> None:
+    """Stage 1: mechanical only, read-only, no AI call. Classifies every
+    rendered anchor's dual-hash state (base_semantic_hash/
+    base_projection_hash vs. their current values — never comparing a
+    semantic hash against a projection hash) and every new
+    candidate-region block, writing a durable, committed reconciliation
+    manifest. Never writes a canonical record.
+    """
+    project_root = Path.cwd()
+    refreshed = knowledge_intermediate.apply_automatic_refreshes(project_root, slug)
+    if refreshed:
+        console.print(
+            f"[green]auto-refreshed[/green] {len(refreshed)} block(s) with no "
+            f"review needed (canonical changed, projection untouched): {', '.join(refreshed)}"
+        )
+    anchors = knowledge_intermediate.detect_anchor_changes(project_root, slug)
+    candidates = knowledge_intermediate.detect_candidate_additions(project_root, slug)
+    reviewable = [a for a in anchors if a.case in ("candidate", "concurrent_conflict")]
+    conflicts = [a for a in anchors if a.case == "concurrent_conflict"]
+    if not reviewable and not candidates:
+        console.print(f"[green]{slug}[/green]: nothing to review")
+        return
+    if dry_run:
+        console.print(
+            f"[yellow]--dry-run[/yellow]: {len(reviewable)} anchor edit(s) "
+            f"({len(conflicts)} concurrent conflict(s)), {len(candidates)} "
+            "candidate addition(s) — no manifest written"
+        )
+        return
+    manifest_path = knowledge_intermediate.write_manifest(project_root, slug, anchors, candidates)
+    console.print(f"[green]manifest written[/green]: {manifest_path}")
+    if conflicts:
+        console.print(
+            f"[red]{len(conflicts)} unresolved concurrent-change conflict(s)[/red] — "
+            "neither side has been touched; see the manifest for details"
+        )
+
+
+@knowledge_app.command("apply")
+def knowledge_apply_manifest(
+    manifest_path: Path = typer.Argument(
+        ..., help="A reconciliation manifest, annotated (decision=accept/reject) during review."
+    ),
+) -> None:
+    """Stage 3: the only command that writes `planning/knowledge/*/*.yaml`.
+    Requires the manifest to already be annotated by a human or an agent
+    dispatch (`decision = "accept"`/`"reject"` per item) — re-validates
+    mechanically regardless of that annotation, re-checks
+    `base_semantic_hash` against the live record to catch a race since
+    detection, and refuses to touch any item still marked
+    `concurrent_conflict`.
+    """
+    project_root = Path.cwd()
+    if not manifest_path.is_file():
+        console.print(f"[red]error:[/red] no such manifest: {manifest_path}")
+        raise typer.Exit(code=1)
+    result = knowledge_intermediate.apply_manifest(project_root, manifest_path)
+    for outcome in result.applied:
+        console.print(f"[green]applied[/green]: {outcome.reason}")
+    for outcome in result.skipped:
+        console.print(f"[yellow]skipped[/yellow]: {outcome.reason}")
+    if not result.applied and not result.skipped:
+        console.print("[yellow]manifest had no items[/yellow]")
+
+
+@knowledge_app.command("status")
+def knowledge_status_cmd(
+    slug: str | None = typer.Argument(None, help="Limit to one slug. Omit for every slug."),
+    strict: bool = typer.Option(
+        False,
+        "--strict",
+        help="Exit 1 if a genuine reconciliation-mechanism failure (an unresolved "
+        "concurrent-change conflict) is found. Coverage gaps never trigger this.",
+    ),
+) -> None:
+    """Reports records needing review (`status: contradicted`, or
+    `status: proposed` with no evidence_support_state yet), any unresolved
+    concurrent-change conflict, and a small, advisory-only
+    documentation-grounding coverage report (never blocking — see
+    §9.6 of planning/phase-81-intermediate-knowledge-layer.md).
+    """
+    project_root = Path.cwd()
+    report = knowledge_intermediate.knowledge_status(project_root, slug)
+    if report.needs_review:
+        console.print("[yellow]records needing review:[/yellow]")
+        for line in report.needs_review:
+            console.print(f"  - {line}")
+    if report.concurrent_conflicts:
+        console.print("[red]unresolved concurrent-change conflicts:[/red]")
+        for line in report.concurrent_conflicts:
+            console.print(f"  - {line}")
+    if report.grounding:
+        console.print("[cyan]documentation grounding coverage (advisory):[/cyan]")
+        for doc_name, info in report.grounding.items():
+            console.print(f"  {doc_name}")
+            console.print(f"    grounded regions: {info['grounded_regions']}")
+            if info["regions_needing_review"]:
+                console.print(
+                    f"    regions citing a contradicted record, needs a look: "
+                    f"{', '.join(info['regions_needing_review'])}"
+                )
+    if not report.needs_review and not report.concurrent_conflicts and not report.grounding:
+        console.print("[green]nothing to report[/green]")
+    if strict and report.concurrent_conflicts:
         raise typer.Exit(code=1)
 
 
