@@ -43,13 +43,17 @@ Provenance: OBSERVED
 <!-- /codecompass-knowledge -->
 ```
 
-- **Provenance** tells you where this came from: `OBSERVED` (grounded in
-  real, reproducible research), `DECLARED` (a maintainer's stated
-  intent), `DECIDED` (authorised by an approved decision), `DERIVED`
+- **Provenance** tells you where this came from: `OBSERVED` (every
+  relevant piece of evidence actually traces to a real, recorded
+  Observation), `DECLARED` (a maintainer's stated intent, or evidence
+  that cites a source/doc/test directly with no discrete Observation
+  behind it), `DECIDED` (authorised by an approved decision), `DERIVED`
   (reasoned from evidence), `HISTORICAL` (superseded, kept for its own
-  record), or occasionally `MIXED` (the record's own evidence chain
-  combines both observed and non-observed sources — shown rather than
-  guessed at, the more cautious label).
+  record), `MIXED` (the record's own evidence chain combines both
+  observed and non-observed sources), or `UNCLASSIFIED` (a brand-new
+  external candidate nobody has classified yet — see "How to add new
+  material" below). Ambiguity always resolves to the more cautious
+  label, never the stronger one.
 - **Never edit the anchor comment itself** — edit the prose between the
   markers. The anchor is how CodeCompass finds its way back to the
   exact record you changed.
@@ -72,18 +76,57 @@ the file — including reorganising headings, adding commentary, or
 reformatting — is never read as knowledge; it's just narrative framing
 CodeCompass leaves untouched.
 
-To propose a **Requirement** rather than a general **Claim**, cite an
-existing, already-approved Decision id explicitly in your own text (for
-example, "per DEC-ARCH-003"). CodeCompass never invents a Decision on
-your behalf — if you don't cite a real, approved one, your addition
-becomes a Claim instead, never rejected outright.
+**An ordinary block of prose becomes a Claim — a plain, unclassified
+factual statement.** Writing "the system currently does X" does not
+itself constitute an observation of X, so CodeCompass never guesses
+whether your statement expresses settled project intent or just an
+unverified hypothesis about current behaviour; it stays genuinely
+unclassified (`Provenance: UNCLASSIFIED`, no `basis` field at all) until
+someone actually checks it and the record's classification is set
+explicitly, by a human or an agent, during review.
+
+**To mark a block as declared project intent instead** (not a factual
+claim about current behaviour, but a statement of what *should* be
+true), start it with its own line, exactly:
+
+```
+Type: Intent
+The CLI should expose a --json flag for every reporting command.
+```
+
+**To propose a Requirement** rather than a Claim, the block must be
+explicit and structured — merely mentioning an approved Decision's id
+anywhere in ordinary prose is never enough on its own:
+
+```
+Type: Requirement
+Decision: DEC-ARCH-003
+Statement: The CLI must expose a --json flag for status output.
+Example: Given the status command runs with --json, when output is
+captured, then it is valid JSON matching the existing schema.
+```
+
+All four lines are required: a real, already-`approved` Decision id, a
+clear statement, and an Example that actually reads like a Given/When/
+Then acceptance scenario. CodeCompass never invents a Decision on your
+behalf, and never fabricates a placeholder example to paper over a gap
+— if the Decision doesn't resolve to something real and approved, or the
+example isn't genuinely there, your proposal is preserved as an ordinary
+Claim instead, never silently dropped.
 
 **Editing this file does not make your statement true in CodeCompass's
 own records until it has been reviewed and checked against evidence.** A
 brand-new addition starts out unconfirmed — real, visible, and not yet
 confirmed — because writing a sentence here is not the same thing as
-CodeCompass having actually observed it. Writing "behaviour X exists"
-does not itself constitute an observation of behaviour X.
+CodeCompass having actually observed it.
+
+**Submitting the same content twice never creates a duplicate record.**
+Once your candidate text has been promoted into a real record, it is
+removed from the live candidate region — a later `select-candidates` run
+will not rediscover it, and re-running `apply` against a manifest that
+has already succeeded is a safe no-op (it checks its own recorded state
+first). Two separate candidate blocks with byte-identical text, anywhere
+in the same file, are treated as one contribution by design.
 
 ## How changes are submitted and reconciled
 
@@ -103,23 +146,40 @@ decision, plus one purely mechanical step either side of them:
 1. **Detect** (`codecompass knowledge select-candidates <slug>`) —
    purely mechanical, no AI call, writes nothing to any canonical
    record. It compares two independent hashes for every anchor: one for
-   the canonical record, one for the rendered projection. If only the
-   projection changed, your edit becomes a candidate for review. If only
-   the canonical record changed (someone else reconciled a different
-   edit), your projection is safely, automatically refreshed — no review
-   needed. If **both** changed since you last saw this projection,
-   that's a concurrent-change conflict: neither side is touched, and
-   it's flagged for a human to look at.
+   the canonical record, one for the rendered projection — classifying
+   every block in the whole projection *before* touching anything. If
+   only the projection changed, your edit becomes a candidate for
+   review. If only the canonical record changed (someone else reconciled
+   a different edit), that one block is refreshed in place — targeted,
+   block-by-block, never a wholesale rewrite of the file, so refreshing
+   one block can never erase an unrelated pending edit sitting in
+   another block of the same file. If **both** changed since you last
+   saw this projection, that's a concurrent-change conflict: neither
+   side is touched, and it's flagged for a human to look at.
 2. **Review** — a human or an AI agent reads the resulting manifest,
    checks the proposed change against real evidence, and annotates it
-   accept or reject. This is the only stage where judgment is applied.
+   accept or reject. For a wording-only edit, review also marks it
+   `presentation_only` — **this is a reviewer's own judgment call, never
+   something `apply` mechanically proves** (checking whether two pieces
+   of prose mean the same thing isn't something this project attempts
+   to automate). This is the only stage where judgment is applied.
 3. **Apply** (`codecompass knowledge apply <manifest>`) — the only step
    that writes a canonical record, and it never simply trusts the
    review's own say-so: it re-validates everything mechanically and
    re-checks that the canonical record hasn't moved again since
-   detection.
+   detection. It's also idempotent — re-running `apply` against a
+   manifest it has already processed is a safe no-op, checked first,
+   before anything else.
 4. **Render again** — run `codecompass knowledge render [<slug>]` once
    more to see the newly-reconciled wording reflected in the projection.
+
+A rendered block showing accepted presentation wording always keeps the
+record's own real canonical statement available too — as a machine-facing
+HTML comment right above the visible prose, invisible to an ordinary
+rendered-Markdown reader but present in the raw file any agent or
+development-context consumer actually reads. Cached wording can diverge
+from canonical meaning in how it *reads*, but it can never become the
+only representation of what a record actually, canonically says.
 
 ## What happens when your edit disagrees with existing evidence
 
@@ -152,17 +212,34 @@ that ground it:
 ```
 
 This is **optional and per-region** — not every sentence needs one.
-Where it's present, a change to the cited record can be traced straight
-back to the documentation region it affects, and a factual edit to that
-region is traced back to the records it should be reconciled against.
 Where it's absent, nothing breaks — the region is just ordinary,
 untracked prose, the same as any other documentation today.
 
-`codecompass knowledge status` reports a small, purely advisory
-grounding-coverage summary (how many regions are grounded, and whether
-any grounded region cites a record that's since become contradicted or
-unresolved) — it never blocks anything and never rewrites your
-documentation on its own.
+Where it's present, a grounded region genuinely participates in
+reconciliation, in both directions — run
+`codecompass knowledge doc-select-candidates`:
+
+- **You edit the factual prose, the cited record doesn't change**: the
+  edit becomes a real reconciliation candidate, written into the cited
+  record's own slug and reconciled through the exact same review/apply
+  path as any other knowledge edit — no canonical mutation happens until
+  that review/apply actually runs.
+- **The cited record changes, the prose doesn't**: surfaced as
+  "potentially stale, worth a look" — informational only, no manifest
+  item, since there's a human judgment call about whether the prose
+  still reads accurately, not a mechanical edit to reconcile.
+- **Both change at once**: an explicit concurrent-change conflict,
+  reported clearly; neither side is touched, the same as an intermediate-
+  document conflict.
+
+`codecompass knowledge status` also reports a real, advisory-only
+grounding-coverage summary: how many regions are grounded, how many
+*changed* grounded regions there are, and — reusing the same heading-
+based chunking `context-graph.db`'s own documentation tracking already
+uses — how many *changed but ungrounded* regions exist, worth a look.
+None of this ever blocks anything, and it never converts ungrounded
+prose into a canonical Claim on its own; that always requires an
+explicit grounding marker and an explicit reconciliation step.
 
 ## Phase knowledge packages
 

@@ -1,10 +1,37 @@
 # Phase 81 — persistent bidirectional intermediate knowledge layer
 
-**Status: done.** Implemented and dogfooded 2026-10-07. Independent
-completion audit: PASS WITH NON-BLOCKING OBSERVATIONS
-(`planning/retros/_audit-phase-81.md`), re-confirmed after a trivial
-post-audit fix per `CLAUDE.md` §5's own voiding rule. Retro:
-`planning/retros/phase-81-intermediate-knowledge-layer.md`.
+**Status: corrective pass complete, pending fresh completion audit.**
+Originally implemented, dogfooded, and closed `done` 2026-10-07 (first
+completion audit: PASS WITH NON-BLOCKING OBSERVATIONS,
+`planning/retros/_audit-phase-81.md`). **Reopened the same day**, direct
+user request, after post-completion review found nine real
+implementation defects the original audit's own scope did not catch.
+The original retro (`planning/retros/phase-81-intermediate-knowledge-layer.md`)
+and the original audit report are preserved unedited as the historical
+record; this reopening corrects behaviour, it does not rewrite that
+history.
+
+**Corrective-pass amendment note**: see `decisions/0073` for the full,
+authoritative account of all nine corrections (targeted per-block
+refresh replacing an unsafe whole-slug render; idempotent, consumable
+reconciliation via a real manifest-state lifecycle plus content-addressed
+dedup; grounded README/CONTRIBUTING regions now participating in real,
+bidirectional reconciliation, not just identification; honest,
+real-change-tracking advisory grounding coverage reusing
+`doc_chunking.chunk_markdown`; canonical meaning remaining retrievable
+even under a presentation-cache override; Requirement proposals requiring
+an explicit, structured `Type: Requirement` block rather than any mere
+mention of an approved Decision; external candidates defaulting to an
+honestly unclassified `UNCLASSIFIED`/no-`basis` state rather than being
+guessed as `proposed_policy`; provenance derivation walking the real
+`Evidence.observations:` field rather than using `evidence_kind` as a
+proxy; and the `codecompass-template` delivery verified and completed
+against the real public repository). Everywhere below that described the
+pre-correction behaviour as the design is superseded by `decisions/0073`;
+this file's own prose is updated in the specific sections that need it
+(§4.4, §7, the CLI surface in §11, "Decisions requiring approval") rather
+than rewritten wholesale, since the underlying architecture these
+sections describe did not change.
 
 Direct user request, 2026-10-07. Evolves CodeCompass toward a model
 where its canonical knowledge is editable, through ordinary Markdown,
@@ -340,8 +367,8 @@ design decision worth a durable rationale trail.
 A rendering-time-only classification (`derive_provenance_label`, in the
 new `knowledge_intermediate.py`, not the validator) maps `kind`/`basis`/
 `status` onto a human-readable `OBSERVED`/`DECLARED`/`DECIDED`/`DERIVED`/
-`HISTORICAL` label for display purposes only (the provenance line shown
-in every rendered block, §3.1 point 3):
+`HISTORICAL`/`MIXED`/`UNCLASSIFIED` label for display purposes only (the
+provenance line shown in every rendered block, §3.1 point 3):
 
 - `OBSERVED` ⇐ `basis: observed_behaviour`.
 - `DECLARED` ⇐ `basis: proposed_policy`, or the record is itself a
@@ -351,12 +378,24 @@ in every rendered block, §3.1 point 3):
 - `HISTORICAL` ⇐ `status: superseded` (a lifecycle condition, not a
   provenance source — computed separately from the basis-driven labels
   above, and shown instead of them when it applies).
+- `UNCLASSIFIED` ⇐ no `basis` field at all — **corrected by the
+  corrective pass (`decisions/0073`, point 7)**: a brand-new external
+  candidate's own `basis` is omitted by default now, rather than being
+  defaulted to `proposed_policy` regardless of whether the text expresses
+  a factual hypothesis or declared intent; this label makes that honest
+  non-classification visible rather than silent.
 - The one ambiguous input, `basis: directly_stated`, is resolved by
-  walking the Claim's own cited Evidence chain: if every cited Evidence
-  traces to at least one `OBS-` Observation, label `OBSERVED`; if the
-  chain is a doc/design assertion only, label `DECLARED`; if genuinely
-  mixed, label `MIXED` — **ambiguity always resolves to the more
-  cautious, lower-confidence label, never the stronger one.**
+  walking the Claim's own cited Evidence chain — **corrected by the
+  corrective pass (`decisions/0073`, point 8)**: the real link is each
+  Evidence record's own `observations:` field (`docs/domain/concepts/evidence.md`:
+  "cites one or more Observations via its own `observations:` field, or
+  cites source/doc/test directly... when no discrete Observation exists
+  to point at"), not `evidence_kind` as the original draft used. If every
+  cited Evidence's own `observations:` field resolves to at least one
+  real `kind: observation` record, label `OBSERVED`; if the chain cites
+  source/doc/test directly with no Observation at all, label `DECLARED`;
+  if genuinely mixed, label `MIXED` — **ambiguity always resolves to the
+  more cautious, lower-confidence label, never the stronger one.**
 
 This remains purely a rendering convenience with no schema footprint —
 it cannot drift from the fields it derives, and needs no validator
@@ -639,39 +678,55 @@ Add new domain knowledge, edge cases, invariants, or open questions
 below, strictly between the two marker comments. Content outside this
 region — including this paragraph — is never read as knowledge.
 
-To propose a Requirement rather than a Claim, cite an existing,
-already-approved Decision id explicitly (e.g. "per DEC-ARCH-003") —
-CodeCompass never invents a Decision on your behalf; without a cited,
-approved Decision, your addition becomes a Claim.
+To propose a Requirement rather than a Claim, the block must start with
+`Type: Requirement` followed by `Decision:`/`Statement:`/`Example:`
+lines (see `docs/codecompass-knowledge-workflow.md`) — CodeCompass never
+invents a Decision on your behalf, and merely mentioning one anywhere in
+ordinary prose is never enough on its own.
 
 <!-- codecompass-candidates:start -->
 
 <!-- codecompass-candidates:end -->
 ```
 
-`select-candidates` reads only the text strictly between the two marker
-comments, splits it into blocks on blank-line/heading boundaries, and
-for each block:
+**Revised by the corrective pass (`decisions/0073`, points 6/7)** — the
+original draft's own "any block mentioning an approved `DEC-...` id
+becomes a Requirement" rule was found too permissive, and its own
+default Claim `basis: proposed_policy` was found to mis-classify a
+factual hypothesis as declared intent. `select-candidates` reads only
+the text strictly between the two marker comments, splits it into blocks
+on blank-line/heading boundaries, and for each block:
 
-- **Default**: proposes exactly one new candidate **Claim**, `status:
-  proposed`, `basis: proposed_policy` (an external assertion of intent)
-  or `basis: directly_stated` (if the text itself reads as a factual
-  assertion rather than a proposal) — never `basis: observed_behaviour`,
-  since no Observation was performed (§14.2).
-- **Only if the block explicitly cites a real id matching `DEC-...`**:
-  the manifest additionally checks, mechanically, whether that id
-  resolves to a real Decision record with `status: approved`. If it
-  does, the block may instead propose a candidate **Requirement** citing
-  that Decision in its own `decision:` field (satisfying
-  `check_requirement_cites_approved_decision`, §11, from the moment it
-  is created). If the cited id does not resolve, or resolves to a
-  Decision that is not `approved`, the proposal **falls back to a
-  Claim-level proposal** — it is never rejected outright, and it never
-  fabricates or silently approves a Decision on the external author's
-  behalf.
+- **Default — an ordinary block of prose**: proposes exactly one new
+  candidate **Claim**, `status: proposed`, with `basis` **omitted** (an
+  honestly unclassified factual hypothesis — see §1.2.1's own
+  `UNCLASSIFIED` provenance label) — never guessed as `proposed_policy`
+  or `observed_behaviour` merely from being external.
+- **A block whose first line is exactly `Type: Intent`**: the resulting
+  Claim's `basis` is set to `proposed_policy` — this is now the only way
+  a candidate becomes declared intent; an explicit act, never an
+  inference from wording.
+- **A block whose first line is exactly `Type: Requirement`**, followed
+  by `Decision:`/`Statement:`/`Example:` lines: the manifest checks,
+  mechanically, that the cited Decision resolves to a real record with
+  `status: approved` *and* that the Example structurally reads like a
+  Given/When/Then scenario (contains all three words — a minimal,
+  non-semantic check, never full validation). Only if both hold does the
+  block propose a candidate **Requirement**, citing that Decision in its
+  own `decision:` field (satisfying `check_requirement_cites_approved_decision`,
+  §11, from the moment it is created), with the Example used verbatim —
+  never a fabricated placeholder. If either check fails, the proposal
+  **falls back to a Claim-level proposal** using its own `Statement:`
+  text — never rejected outright, never silently dropped, and never
+  completed with an invented example.
 - **Never a Decision.** A Decision stays a human-alone-authored record
   via its existing path; the candidate-region mechanism cannot
   manufacture one.
+- **Never a duplicate.** Once a block's content is promoted into a real
+  record, its raw text is removed from the live candidate region — a
+  later `select-candidates` run will not rediscover it. Two blocks with
+  byte-identical text (after trimming) are treated as the same
+  contribution by design, producing exactly one record.
 
 Moving headings, reformatting, or adding commentary anywhere else in the
 file has no effect on canonical knowledge — the parser only ever looks
@@ -1040,6 +1095,22 @@ Directly mirrors `enrich select-candidates`/`enrich apply` (§0.2):
   to `planning/knowledge/<slug>/reconciliation/<timestamp>.toml` (reusing
   the frozen-snapshot TOML shape). Never invokes an AI model, never
   writes a canonical record. `--dry-run` prints without writing.
+  **Corrected by the corrective pass (`decisions/0073`, point 1)**:
+  classifies every anchor once, then refreshes only the safe-refresh
+  blocks by targeted, per-block substitution — never a whole-slug
+  re-render, which the original draft's own `apply_automatic_refreshes`
+  did, and which could silently erase an unrelated pending edit
+  elsewhere in the same file before it was ever captured in the manifest.
+- **`codecompass knowledge doc-select-candidates [--dry-run]`** (new,
+  `decisions/0073` point 3) — the Stage 1 equivalent for explicitly
+  grounded project-document regions, project-wide (not slug-scoped,
+  since a document isn't owned by one slug). Compares each region's own
+  text, and its cited records' own content, against a persisted baseline
+  (`.grounding-state.toml`); a factual edit becomes a `doc_region_edit`
+  manifest item in the owning Claim's own slug, reconciled through the
+  exact same `apply` as any other item; a cited record changing on its
+  own is reported read-only ("potentially stale"); both changing is an
+  explicit conflict, neither side touched.
 - **`codecompass knowledge apply <manifest-path> [--strict]`** — Stage 3.
   The **only** command that writes `planning/knowledge/*/*.yaml`.
   Requires the manifest's items to already be annotated (Stage 2's own
@@ -1054,11 +1125,24 @@ Directly mirrors `enrich select-candidates`/`enrich apply` (§0.2):
   `decided_by` free-text fields (`"external:<tool-name>"` or
   `"external:unknown"`, never a guess) alongside the existing
   `agent:<name>` convention where an agent performed Stage 2.
+  **Corrected by the corrective pass (`decisions/0073`, point 2)**: now
+  idempotent — checks the item's own manifest `state` first and skips
+  immediately if already `"applied"`; rewrites the manifest in place
+  (read-modify-write) recording `state`/`applied_record_id`/`applied_at`
+  after every genuine success; and content-addressed-dedups against
+  existing records as a second line of defence, so neither re-applying
+  the same manifest nor a fresh `select-candidates` rediscovering
+  already-promoted content can ever create a duplicate.
 - **`codecompass knowledge status [<slug>]`** — reports every record at
   `status: contradicted`/`proposed`-with-`unsupported`-evidence, every
   mechanically-derived `STALE` record (§1.2), every unresolved
-  concurrent-change conflict from the latest manifest, and the advisory
-  grounding-coverage report (§9.6) — reusing `check`'s own existing
+  concurrent-change conflict from the latest manifest, and a real,
+  advisory-only grounding-coverage report (§9.6, corrected by
+  `decisions/0073` point 4): grounded region count, *changed* grounded
+  regions (reusing the dual-baseline detection `doc-select-candidates`
+  also uses), and changed-but-*ungrounded* regions needing a look
+  (reusing `doc_chunking.chunk_markdown`'s own existing heading-based
+  chunker against a second baseline) — reusing `check`'s own existing
   reporting conventions (table/JSON, `--strict` exit-code semantics,
   where `--strict` covers only genuine reconciliation-mechanism failures,
   never coverage gaps).
@@ -1564,5 +1648,16 @@ dispositions, confirmed against repository evidence at each step:
    `authorised_by`), via a new fail-closed validator check (§11/§14.3).
 
 **This amendment introduces no new unresolved architectural blocker.**
-Per the governing prompt's own instruction, implementation proceeds
+Per the governing prompt's own instruction, implementation proceeded
 immediately following this commit.
+
+**Corrective pass (`decisions/0073`, same day, post-implementation)**:
+all nine corrections are implementation-level fixes within the
+architecture above, not a reopening of it. One disposition this pass
+makes explicit: the Requirement/Decision invariant's own candidate-side
+enforcement (§4.4) is tightened from "any approved-Decision mention" to
+an explicit, structured `Type: Requirement` proposal — the validator
+check named in point 6 above is unchanged, but what's allowed to reach
+it is now considerably narrower. No new architectural decision requires
+maintainer approval; the corrections are implementation corrections,
+reviewed and accepted via `decisions/0073` directly.
