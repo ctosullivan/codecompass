@@ -1,0 +1,13 @@
+manifest_id = "hledger-depth@20261007T123611Z"
+created = "2026-10-07T12:36:11.940327+00:00"
+slug = "hledger-depth"
+
+[[items]]
+kind = "candidate_addition"
+file = "planning/knowledge/hledger-depth/intermediate/overview.md"
+index = 0
+text = "External proposal (simulating an outside tool/contributor, not yet verified by this project): the balancesheet and incomestatement report commands likely apply depth the same display-only clipping way balance does, since they are documented as thin wrappers around the same balance-report machinery -- but this has not been directly observed against the real hledger binary here and should be checked before being trusted."
+state = "applied"
+decision = "accept"
+applied_record_id = "CL-HLEDGERDEPTH-002"
+applied_at = "2026-10-07T12:36:22.828688+00:00"
