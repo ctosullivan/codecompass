@@ -7,6 +7,29 @@ session-resumption, not a project history.
 
 ## Current phase
 
+**Phase 81 (persistent bidirectional intermediate knowledge layer) is
+`planned`** — direct user request, 2026-10-07, planning only, not yet
+implemented or reviewed. Three parallel research forks grounded the plan
+in current repository reality (the existing six-record-kind
+Observation/Evidence/Claim/Derivation/Decision/Requirement model and its
+frozen-snapshot machinery; `context-graph.db`'s schema and its
+deliberately-reaffirmed "mechanical facts only" boundary, including the
+discovery that `spec_docs.py` already tracks the project's own
+README/architecture/decisions as graph `doc_artifacts`; the clean-room
+ADR lineage, agent roster, and `codecompass-template`'s current
+structure). **Central decision**: the canonical knowledge model is the
+existing `planning/knowledge/` corpus, reused unchanged — not a
+`context-graph.db` schema extension. The genuinely new mechanism is a
+bidirectional Markdown↔record reconciliation loop (confirmed to not
+exist anywhere today, even partially — every existing projection is
+one-directional). Full plan:
+`planning/phase-81-intermediate-knowledge-layer.md`. Five decisions are
+flagged for explicit maintainer approval before implementation begins
+(see the plan's own closing section). Next concrete step: human review
+of the plan.
+
+---
+
 **Phase 78's own exit decision has been corrected by amendment, 2026-10-02
 (`decisions/0070`, direct user request, following a post-completion
 review of `decisions/0069`).** Phase 78 itself (the trial's own
@@ -483,6 +506,12 @@ strategic exit decision either way.
 
 ## What was just completed
 
+**Phase 81's plan was written and committed, not yet reviewed.** See
+"Current phase" above for full detail — this is planning output only,
+no `src/` change, no new record written, nothing implemented. Awaiting
+human review and resolution of the five flagged decisions before
+implementation begins.
+
 **Phase 78's exit decision — corrected by amendment.** Priority A's
 original closure (`decisions/0069`) is superseded by `decisions/0070`:
 reopened, not closed, after a fresh independent re-evaluation of the
@@ -725,6 +754,16 @@ above). Full report:
   gitignored, freely regeneratable) — live artifacts, not fixtures.
 
 ## Next concrete step
+
+**Phase 81's plan awaits direct user/maintainer review** — per its own
+Status line ("planning only — implementation does not begin until this
+plan is reviewed and approved") and `CLAUDE.md` §1's own standing rule.
+Five decisions are flagged explicitly for that review (plan's own
+closing section): the canonical-model-stays-outside-the-graph
+architectural choice, the two new schema fields/enum values, whether
+`CONTRIBUTING.md` joins `spec_docs.py`'s scan scope, the template's own
+directory structure, and the new CLI surface's exact naming. This is the
+next concrete step for active roadmap work.
 
 **Phase 80 is `done`, fully closed.** `planning/ROADMAP.md`'s Phase 80
 row and this file's own "Current phase" section were both flipped in the
