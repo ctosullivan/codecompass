@@ -7,86 +7,53 @@ session-resumption, not a project history.
 
 ## Current phase
 
-**Phase 81 (persistent bidirectional intermediate knowledge layer) is
-`planned`, amended twice, implemented and dogfooded, awaiting the
-standard closeout audit sequence (`CLAUDE.md` §5) before being marked
-`done`** — direct user request, 2026-10-07. **Central decision, approved
-and unchanged across both amendments**: the canonical knowledge model is
-the existing `planning/knowledge/` Observation/Evidence/Claim/Derivation/
-Decision/Requirement corpus, reused unchanged — not a `context-graph.db`
-schema extension.
+**No phase is currently in progress. Phase 81 (persistent bidirectional
+intermediate knowledge layer) is `done`** — direct user request,
+2026-10-07, planned (amended twice before implementation began),
+implemented, dogfooded, and closed out all in one session. Central
+decision: the canonical knowledge model is the existing
+`planning/knowledge/` Observation/Evidence/Claim/Derivation/Decision/
+Requirement corpus, reused unchanged, adding **zero new persisted
+canonical fields** — not a `context-graph.db` schema extension
+(`decisions/0071`/`0072`).
 
-**Implementation summary** (full detail in
-`planning/retros/phase-81-intermediate-knowledge-layer.md`): new
-`codecompass knowledge render|select-candidates|apply|status` commands
-(`src/codecompass/knowledge_intermediate.py`), two new validator checks
-(`check_anchor_integrity`, `check_requirement_cites_approved_decision`
-in `scripts/check_knowledge_base.py`), `CONTRIBUTING.md` brought into
-`spec_docs.py`'s scanning scope, `docs/codecompass-knowledge-workflow.md`,
-README/CONTRIBUTING updates, `decisions/0071`/`0072`, 26 new tests
-(`tests/test_knowledge_intermediate.py`), all passing alongside the full
-existing suite. Validated against this project's own real 182-record
-`codecompass-domain` slug (rendered, a real grounded README region added
-and confirmed live) and a real, pre-existing, evidence-backed
-Ledgerkit-relevant slug (`hledger-depth`) exercised end to end: a
-simulated external candidate addition went through detect → review →
-apply for real, landing unconfirmed with zero fabricated Observation/
-Evidence records. `codecompass-template` gained a matching
-`optional-intermediate-knowledge/` directory, **committed locally but
-not yet pushed** — its remote is HTTPS with no stored credentials in
-this environment (unlike the main `codecompass` repo's SSH remote);
-flagged for the maintainer to push directly.
+Delivered: `codecompass knowledge render|select-candidates|apply|status`
+(`src/codecompass/knowledge_intermediate.py`) — a dual-hash-anchored
+Markdown projection/reconciliation loop over a project's own structured
+knowledge, with a strict detect/review/apply separation, a presentation-
+wording cache keeping canonical semantics and projection wording
+independent, a bounded candidate-region marker for external additions
+(always a candidate Claim, never a fabricated Observation, never a
+Requirement without a cited approved Decision), and an advisory-only
+documentation-grounding report. Two new validator checks
+(`check_anchor_integrity`, `check_requirement_cites_approved_decision`),
+`CONTRIBUTING.md` brought into `spec_docs.py`'s scanning scope,
+`docs/codecompass-knowledge-workflow.md`, README/CONTRIBUTING updates,
+30 new tests (`tests/test_knowledge_intermediate.py`). Validated against
+this project's own real 182-record `codecompass-domain` slug (a real
+grounded README region, confirmed live) and a real, pre-existing,
+evidence-backed Ledgerkit-relevant slug (`hledger-depth`), exercised end
+to end through a real external-tool-simulated candidate addition.
+`codecompass-template` gained a matching `optional-intermediate-knowledge/`
+directory — **committed locally (`a429f04`) but not pushed**; its remote
+is HTTPS with no stored credentials in this session's environment
+(unlike this repo's own SSH remote) — **outstanding for the maintainer
+to push directly.**
 
-**First amendment** corrected twelve issues in the original draft: no
-account of concurrent editing; a presentation-only wording edit being
-written into canonical semantics; the candidate-region mechanism
-fabricating Observation provenance; no bounded region for candidate
-additions; project-doc grounding relying on AI rediscovery instead of a
-durable marker; one CLI verb conflating detection/judgment/mutation
-(split into `render`/`select-candidates`/`apply`/`status`, mirroring
-`enrich select-candidates`/`enrich apply`); a redundant persisted
-`provenance_dimension` field (dropped); confirmation semantics tightened
-so a human Decision can never stand in for an observation of
-implementation behaviour.
+Independent per-phase docs-drift audit found and the session fixed real
+drift (a missing CLI-reference section for the new commands; a stale
+architecture claim about `CONTRIBUTING.md`'s exclusion; a genuinely
+unimplemented `phase-brief.md` the plan had promised, now built).
+Learning triage processed three candidates (`L-083` already covered by
+landed tests, `L-084` retained pending a second real example, `L-085`
+promoted into `planning/agent-led-workflow.md` step 5). Independent
+completion audit: **PASS WITH NON-BLOCKING OBSERVATIONS**
+(`planning/retros/_audit-phase-81.md`), re-confirmed after a trivial
+post-audit test-count fix voided and required a fresh pass per
+`CLAUDE.md` §5's own rule. Full detail:
+`planning/retros/phase-81-intermediate-knowledge-layer.md`.
 
-**Second amendment** corrected four more issues found on further review:
-(1) the first amendment's own single BASE/CURRENT/EDITED hash compared a
-canonical YAML record's hash directly against a rendered Markdown
-block's hash — two different representations that could never
-meaningfully match. Corrected to two independent baselines,
-`base_semantic_hash`/`base_projection_hash`, each compared only against
-its own current value (§1.5). (2) The first amendment's own retained
-`reconciliation_state` field was found, on closer analysis, to be
-*also* unnecessary — every epistemic state it tracked is already fully
-expressible via the existing Claim `status`/`evidence_support_state`/
-`basis`/`contradicting_evidence` fields. **Phase 81 now adds zero new
-persisted canonical fields.** A cross-Claim disagreement (declared
-intent vs. observed reality) is filed as an ordinary disconfirming
-Evidence record — the governing distinction is now explicit: canonical
-records describe what the project knows/intends/requires; the
-reconciliation manifest alone describes the lifecycle of a proposed
-edit. (3) The candidate-region mechanism could produce a Requirement
-with no human-authorised Decision behind it, and the plan referred to a
-nonexistent field, `authorised_by` — the real schema field, confirmed
-directly from `scripts/check_knowledge_base.py`, is `decision:`.
-Corrected: a candidate addition defaults to a Claim; it may only become
-a Requirement when it cites a real, already-`approved` Decision,
-enforced by a new fail-closed validator check,
-`check_requirement_cites_approved_decision` (verified safe against all
-nine existing Requirement records). (4) Added a small, advisory-only
-grounding-coverage report (`knowledge status`) distinguishing grounded
-regions, changed grounded regions, and changed-but-ungrounded regions
-needing review — never blocking, pure visibility against documentation
-drift.
-
-Full plan: `planning/phase-81-intermediate-knowledge-layer.md`. All
-maintainer-approval decisions are resolved; the second amendment
-introduced no new unresolved architectural blocker, so implementation
-proceeds immediately per the governing prompt's own instruction. Next
-concrete step: staged implementation (schema/validator foundations →
-rendering → candidate detection → review/apply boundary → project-doc
-grounding → phase knowledge packages → workflow guide → template
-support → dogfood validation → closeout).
+Next concrete step: none queued. Awaiting the next direct instruction.
 
 ---
 
@@ -566,13 +533,15 @@ strategic exit decision either way.
 
 ## What was just completed
 
-**Phase 81 was planned, amended twice, implemented, and dogfooded
-against real content, all in one session per explicit user instruction.**
-See "Current phase" above for the full implementation summary and
+**Phase 81 was planned, amended twice, implemented, dogfooded, and
+closed out — `done` — all in one session per explicit user instruction.**
+See "Current phase" above for the full summary and
 `planning/retros/phase-81-intermediate-knowledge-layer.md` for the full
 retro, including two real bugs the new test suite caught and fixed
 before this work was committed (a render/detect hash-consistency bug; a
-grounding-marker regex bug).
+grounding-marker regex bug), and `planning/retros/_audit-phase-81.md`
+for the independent completion audit (PASS WITH NON-BLOCKING
+OBSERVATIONS, re-confirmed after a trivial fix).
 
 **Phase 78's exit decision — corrected by amendment.** Priority A's
 original closure (`decisions/0069`) is superseded by `decisions/0070`:
@@ -817,17 +786,10 @@ above). Full report:
 
 ## Next concrete step
 
-**All nine implementation stages are complete and dogfooded** (plan
-§19, governing prompt point 6) — see "What was just completed" above.
-**Next**: the standard Phase closeout sequence (`CLAUDE.md` §5) —
-per-phase drift audit (`docs-reconstructor`), learning triage
-(`knowledge-curator`, three candidates already logged:
-`L-083`/`L-084`/`L-085`), an independent completion audit
-(`release-phase-auditor`), and only then the terminal
-`roadmap-context-curator` reconciliation flipping Phase 81 to `done`.
-One outstanding non-blocking item for the maintainer: push the already-
-committed `codecompass-template` commit (`a429f04`) — this session could
-not authenticate to its HTTPS remote.
+**Phase 81 is fully closed — `done`.** No queued next step; awaiting the
+next direct instruction. One outstanding, non-blocking item for the
+maintainer: push the already-committed `codecompass-template` commit
+(`a429f04`) — this session could not authenticate to its HTTPS remote.
 
 **Phase 80 is `done`, fully closed.** `planning/ROADMAP.md`'s Phase 80
 row and this file's own "Current phase" section were both flipped in the

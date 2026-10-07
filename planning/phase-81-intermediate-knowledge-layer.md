@@ -1,6 +1,10 @@
 # Phase 81 — persistent bidirectional intermediate knowledge layer
 
-**Status: planned, amended twice, about to begin implementation.**
+**Status: done.** Implemented and dogfooded 2026-10-07. Independent
+completion audit: PASS WITH NON-BLOCKING OBSERVATIONS
+(`planning/retros/_audit-phase-81.md`), re-confirmed after a trivial
+post-audit fix per `CLAUDE.md` §5's own voiding rule. Retro:
+`planning/retros/phase-81-intermediate-knowledge-layer.md`.
 
 Direct user request, 2026-10-07. Evolves CodeCompass toward a model
 where its canonical knowledge is editable, through ordinary Markdown,
