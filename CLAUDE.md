@@ -47,7 +47,21 @@ well-formed and genuinely identifies or matches what it claims to — a
 scope fix (checking that the right things are looked at) does not by
 itself fix a depth gap (how carefully what is found is checked), and
 closing one does not imply the other is closed. (Phase 79 sixth
-amendment — L-075.)
+amendment — L-075.) If a phase's design introduces a mechanism that
+persists a "last-known-state" used to decide whether something still
+needs attention (a baseline, cache, or similar advisory marker), the plan
+must state explicitly how observing a change differs from acting on it —
+the persisted state may advance only when an explicit apply or
+acknowledgement action succeeds, never merely because a detection/scan
+step ran and found a difference. (Phase 81 second corrective pass —
+L-087.) If a phase introduces a new mechanism for tracking a mutable,
+re-orderable entity (e.g., a document region, anchor, or similar marker
+that can be inserted, deleted, or reordered), the plan must state whether
+an existing identity convention elsewhere in the codebase already solves
+this and, if a new one is introduced instead, the plan's verification
+section must include a test exercising insertion/reordering of that
+entity specifically, not only its initial creation. (Phase 81 second
+corrective pass — L-088.)
 
 When the agent-led development model is in effect (§8), establishing
 "current project state" and "the next approved work" is the
