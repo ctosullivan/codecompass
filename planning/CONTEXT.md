@@ -7,59 +7,61 @@ session-resumption, not a project history.
 
 ## Current phase
 
-**Phase 81 (persistent bidirectional intermediate knowledge layer) is
-`done`** — original implementation plus three corrective passes
-(`decisions/0073`, nine defects; `decisions/0074`, fourteen defects;
-`decisions/0075`, two defects) all closed out, 2026-10-07/08. Full
-history preserved, not rewritten:
-`planning/retros/phase-81-intermediate-knowledge-layer.md` (original),
-`planning/retros/_audit-phase-81.md` (original audit),
-`planning/retros/phase-81-corrective-pass.md` (first corrective pass),
-`planning/retros/phase-81-second-corrective-pass.md` (second corrective
-pass), `planning/retros/_drift-audit-phase-81-second-corrective-pass.md`,
-`planning/retros/_audit-phase-81-second-corrective-pass.md`,
-`planning/retros/phase-81-third-corrective-pass.md` (third corrective
-pass), `planning/retros/_audit-phase-81-third-corrective-pass.md`.
+**Phase 81B (clean-room project redocumentation from intermediary
+knowledge) is `planned` — committed, not started, direct user request,
+2026-10-08.** Implementation is explicitly gated on direct user approval
+of the committed plan (`planning/phase-81b-clean-room-redocumentation.md`).
+No clean-room branch, isolated workspace, writer dispatch, documentation
+deletion/archival, or `codecompass-template` change has happened — this
+was a planning-only task; the plan file, this file, and
+`planning/ROADMAP.md` are the only artefacts it produced.
 
-**The third pass** corrected two further real defects found reviewing
-the second corrective pass's own work: (1) a valid `Type: Requirement`
-candidate could skip the live-presence/race check other candidate types
-already had — fixed via a single `_CandidateIdentity`
-(kind/statement/decision) derived once, before the presence check, and
-reused for the real apply, never re-derived per branch; (2) grounded-
-region concurrency identity omitted the cited-id *set* itself — removing
-or adding a cited id from a `codecompass-grounded-by` marker, with the
-region's own prose and every still-cited record's own content unchanged,
-was silently `noop` at detection and passed silently at apply — fixed by
-comparing cited-id membership (order-insensitive, add/remove-sensitive)
-at both detection (folded into the existing `doc_candidate` case, never
-`noop`) and apply time (a new explicit concurrency check). Stable
-`region:<id>` identity (`decisions/0074` point 10) is unaffected —
-region identity and grounding membership are distinct concepts.
+What the plan commits to, grounded in real investigation (not assumed):
+a reproducible, mechanically-isolated whole-project clean-room
+documentation reconstruction workflow, run to completion against both
+`ctosullivan/codecompass` and `ctosullivan/codecompass-template`,
+operationalising Phase 79/80's clean-room methodology and Phase 81's own
+intermediary-knowledge layer together for the first time. Key findings
+the plan is built on: CodeCompass's own rendered intermediary knowledge
+is real but heavily concentrated (88% of `codecompass-domain`'s
+projection sits in `overview.md`, traced to 30 of 31 Claims having no
+`assertion_kind` set — a measured root cause the plan's own preparation
+stage enriches honestly, never fabricates); three of five knowledge
+slugs have never been rendered at all; a new candidate isolation
+mechanism (`unshare`-based Linux network/mount namespaces) was
+identified and minimally probed (confirmed to genuinely block outbound
+network — stronger than `Agent(isolation: "remote")`'s own
+already-tried, same-host result at Phase 79) but not yet proven against
+the full five-route-preflight-plus-active-escape protocol, and one real
+open sub-problem (an AI writer's own need for network access to its
+model provider) is named explicitly, not assumed solved. The plan
+explicitly adopts, rather than duplicates, the existing
+`planning/strict-isolation-for-documentation-reconstruction.md` backlog
+item's own scope and acceptance criteria — Phase 81B is, explicitly,
+that item's own named revisit trigger ("a third independent application
+of the clean-room methodology"); `planning/ROADMAP.md`'s backlog row for
+it now links forward to Phase 81B rather than restating it, with actual
+resolution (either a genuine `verified` isolation claim or an honest
+third `UNMET` reconfirmation) deferred to Phase 81B's own closeout, once
+real implementation evidence exists.
 
-Final state: 73 tests in `tests/test_knowledge_intermediate.py`, full
-project suite 853 passed, 2 skipped, lint and strict knowledge-base/
-user-docs validation clean. Dogfooded for real against a scratch copy of
-the live `codecompass-domain` corpus's real grounded README region
-(adding a real citation surfaced as a candidate, never `noop`; a
-membership mutation before apply failed closed, zero stray records) and
-a disposable throwaway slug for the Requirement scenario (a deleted valid
-Requirement candidate fails closed, zero records created). Independent
-completion audit: **PASS**
-(`planning/retros/_audit-phase-81-third-corrective-pass.md`), every claim
-independently re-derived from the real code/tests, not trusted from the
-commit message or retro. Docs-drift audit: NO DRIFT. Learning triage:
-both retro-surfaced observations found adequately covered by existing
-`L-075`/`L-085`/`L-087` — no new candidates filed.
+**Phase 81 (persistent bidirectional intermediate knowledge layer)
+remains `done`, unmodified, not reopened by this planning phase** —
+original implementation plus three corrective passes
+(`decisions/0073`/`0074`/`0075`) all closed out 2026-10-07/08; full
+history in `planning/retros/phase-81-*.md` and `CHANGELOG.md`, not
+repeated here per this file's own "history lives elsewhere" convention.
 
 Central architecture is unchanged and remains approved: canonical
 knowledge stays in `planning/knowledge/`, `context-graph.db` stays
 mechanical-only, reconciliation stays detect → review → validated apply,
-zero new persisted canonical fields beyond what `decisions/0071`/`0072`
-already established.
+zero new persisted canonical fields.
 
-Next concrete step: none outstanding for Phase 81. Next phase not yet
-chosen — consult `planning/ROADMAP.md`'s open rows for what's next.
+Next concrete step: await explicit user approval of the committed Phase
+81B plan (e.g. "Approve Phase 81B and implement the committed plan").
+Only on that approval does implementation begin, starting with §6.3's
+own isolation-mechanism investigation (the plan's own first concrete
+implementation step).
 
 ---
 
