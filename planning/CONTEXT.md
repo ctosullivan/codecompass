@@ -8,58 +8,63 @@ session-resumption, not a project history.
 ## Current phase
 
 **Phase 81 (persistent bidirectional intermediate knowledge layer) is
-`planned`** — direct user request, 2026-10-07, planning only, not yet
-implemented. **Amended the same day, before implementation began**,
-following a second direct user review that found twelve issues in the
-first draft. Three parallel research forks originally grounded the plan
-in current repository reality (the existing six-record-kind
-Observation/Evidence/Claim/Derivation/Decision/Requirement model and its
-frozen-snapshot machinery; `context-graph.db`'s schema and its
-deliberately-reaffirmed "mechanical facts only" boundary, including the
-discovery that `spec_docs.py` already tracks the project's own
-README/architecture/decisions as graph `doc_artifacts`; the clean-room
-ADR lineage, agent roster, and `codecompass-template`'s current
-structure). **Central decision, approved**: the canonical knowledge
-model is the existing `planning/knowledge/` corpus, reused unchanged —
-not a `context-graph.db` schema extension.
+`planned`, amended twice, implementation now in progress** — direct
+user request, 2026-10-07. **Central decision, approved and unchanged
+across both amendments**: the canonical knowledge model is the existing
+`planning/knowledge/` Observation/Evidence/Claim/Derivation/Decision/
+Requirement corpus, reused unchanged — not a `context-graph.db` schema
+extension.
 
-The amendment corrected: (1) no account of concurrent change — added
-explicit three-way (base/current/edited) reconciliation identity (§1.5)
-so a stale projection can never silently overwrite a canonical record
-that moved since it was rendered; (2) a presentation-only wording
-improvement was being written straight into the canonical Claim's own
-semantic field — added a separate presentation-wording cache so
-canonical semantics and presentation wording are now genuinely
-independent; (3) external Markdown additions were described as becoming
-an Observation+Claim pair, fabricating research provenance no one
-performed — corrected so an external addition only ever becomes a
-candidate Claim/Requirement at `UNVERIFIED`, never an Observation; (4)
-candidate additions had no bounded region — added an explicit
-`codecompass-candidates:start/end` marker pair, the only place new
-knowledge can be proposed; (5) project-doc grounding relied on an AI
-rediscovering relevant Claims each time — added an explicit, durable
-`codecompass-grounded-by` marker, falling back to existing
-mention-detection only as a weak signal; (6) the single `reconcile` CLI
-verb conflated detection/judgment/mutation — split into
-`render`/`select-candidates`/`apply`/`status`, directly mirroring the
-already-proven `enrich select-candidates`/`enrich apply` split; (7) the
-proposed `provenance_dimension` persisted field was dropped — every
-value it would carry is fully derivable from existing `kind`/`basis`/
-`status` fields at render time; `reconciliation_state` is the one
-field actually persisted, confirmed to represent genuinely new state;
-(8) confirmation semantics were tightened so a human Decision ratifying
-intent can never stand in for an actual observation of implementation
-behaviour — the two stay separate records, surfaced as an explicit
-`CONFLICT` if they disagree. Tests, the maintainer-approval section, and
-the rest of the document were updated to read coherently end to end,
-not just append a changelog of corrections.
+**First amendment** corrected twelve issues in the original draft: no
+account of concurrent editing; a presentation-only wording edit being
+written into canonical semantics; the candidate-region mechanism
+fabricating Observation provenance; no bounded region for candidate
+additions; project-doc grounding relying on AI rediscovery instead of a
+durable marker; one CLI verb conflating detection/judgment/mutation
+(split into `render`/`select-candidates`/`apply`/`status`, mirroring
+`enrich select-candidates`/`enrich apply`); a redundant persisted
+`provenance_dimension` field (dropped); confirmation semantics tightened
+so a human Decision can never stand in for an observation of
+implementation behaviour.
+
+**Second amendment** corrected four more issues found on further review:
+(1) the first amendment's own single BASE/CURRENT/EDITED hash compared a
+canonical YAML record's hash directly against a rendered Markdown
+block's hash — two different representations that could never
+meaningfully match. Corrected to two independent baselines,
+`base_semantic_hash`/`base_projection_hash`, each compared only against
+its own current value (§1.5). (2) The first amendment's own retained
+`reconciliation_state` field was found, on closer analysis, to be
+*also* unnecessary — every epistemic state it tracked is already fully
+expressible via the existing Claim `status`/`evidence_support_state`/
+`basis`/`contradicting_evidence` fields. **Phase 81 now adds zero new
+persisted canonical fields.** A cross-Claim disagreement (declared
+intent vs. observed reality) is filed as an ordinary disconfirming
+Evidence record — the governing distinction is now explicit: canonical
+records describe what the project knows/intends/requires; the
+reconciliation manifest alone describes the lifecycle of a proposed
+edit. (3) The candidate-region mechanism could produce a Requirement
+with no human-authorised Decision behind it, and the plan referred to a
+nonexistent field, `authorised_by` — the real schema field, confirmed
+directly from `scripts/check_knowledge_base.py`, is `decision:`.
+Corrected: a candidate addition defaults to a Claim; it may only become
+a Requirement when it cites a real, already-`approved` Decision,
+enforced by a new fail-closed validator check,
+`check_requirement_cites_approved_decision` (verified safe against all
+nine existing Requirement records). (4) Added a small, advisory-only
+grounding-coverage report (`knowledge status`) distinguishing grounded
+regions, changed grounded regions, and changed-but-ungrounded regions
+needing review — never blocking, pure visibility against documentation
+drift.
 
 Full plan: `planning/phase-81-intermediate-knowledge-layer.md`. All
-six previously-open maintainer-approval decisions were resolved by this
-amendment per the user's own explicit dispositions (see the plan's own
-closing section) — none remain open from the original draft. Next
-concrete step: a final human read-through of the amended plan, then a
-decision on whether to proceed to implementation.
+maintainer-approval decisions are resolved; the second amendment
+introduced no new unresolved architectural blocker, so implementation
+proceeds immediately per the governing prompt's own instruction. Next
+concrete step: staged implementation (schema/validator foundations →
+rendering → candidate detection → review/apply boundary → project-doc
+grounding → phase knowledge packages → workflow guide → template
+support → dogfood validation → closeout).
 
 ---
 
@@ -539,13 +544,10 @@ strategic exit decision either way.
 
 ## What was just completed
 
-**Phase 81's plan was written, then amended, both committed; still not
-yet approved for implementation.** See "Current phase" above for full
-detail — this remains planning output only, no `src/` change, no new
-record written, nothing implemented. The amendment resolved all six
-previously-open maintainer-approval decisions per the user's own
-explicit dispositions; none remain open. Awaiting a final human
-read-through before implementation begins.
+**Phase 81's plan was written, then amended twice, all committed and
+pushed; implementation is now proceeding directly per explicit user
+instruction.** See "Current phase" above for the full detail of both
+amendments.
 
 **Phase 78's exit decision — corrected by amendment.** Priority A's
 original closure (`decisions/0069`) is superseded by `decisions/0070`:
@@ -790,21 +792,17 @@ above). Full report:
 
 ## Next concrete step
 
-**Phase 81's amended plan awaits a final direct user/maintainer
-read-through** — per its own Status line ("planning only —
-implementation does not begin until this plan is reviewed and
-approved") and `CLAUDE.md` §1's own standing rule. All six previously-
-open maintainer-approval decisions were resolved by the amendment (plan's
-own closing section): the canonical-model-stays-outside-the-graph
-architectural choice (approved), `reconciliation_state` (retained),
-`provenance_dimension` (dropped — fully derivable), `CONTRIBUTING.md`
-joining `spec_docs.py`'s scan scope (decided: yes), the template's own
-directory structure (decided: separate
-`optional-intermediate-knowledge/`), and the CLI surface
-(`render`/`select-candidates`/`apply`/`status`, mirroring `enrich`'s own
-existing split). No open architectural decision remains; the next
-concrete step is a final read-through and a go/no-go call on
-implementation, not further decision-gathering.
+**Phase 81 implementation is proceeding now**, per explicit direct user
+instruction following the second amendment — no further decision-
+gathering step remains. The staged sequence (plan §19, governing prompt
+point 6): (1) validator/schema foundations — the two new
+`assertion_kind` enum values plus `check_anchor_integrity`/
+`check_requirement_cites_approved_decision`; (2) `knowledge_intermediate.py`
+rendering with dual-hash anchors; (3) mechanical candidate detection;
+(4) the review/apply boundary; (5) project-document grounding; (6) phase
+knowledge packages; (7) the workflow guide; (8) `codecompass-template`
+support; (9) Ledgerkit dogfood validation; then the standard Phase
+closeout sequence (`CLAUDE.md` §5) before Phase 81 is marked `done`.
 
 **Phase 80 is `done`, fully closed.** `planning/ROADMAP.md`'s Phase 80
 row and this file's own "Current phase" section were both flipped in the
