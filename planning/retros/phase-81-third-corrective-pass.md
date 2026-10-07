@@ -1,11 +1,12 @@
 # Phase 81 third corrective-pass retro
 
 - **Date:** 2026-10-08
-- **Commit(s):** (this pass's own implementation + validation commit(s),
-  recorded at closeout)
-- **Agents used:** `docs-reconstructor` (drift audit, if warranted),
-  `knowledge-curator` (learning/context-gap triage, if warranted),
-  `release-phase-auditor` (fresh completion audit)
+- **Commit(s):** `34f81fc` (implementation + tests + docs + ADR 0075),
+  `de8e627` (learning-triage outcome recorded)
+- **Agents used:** `docs-reconstructor` (drift audit — NO DRIFT),
+  `knowledge-curator` (learning/context-gap triage — no new candidates
+  warranted), `release-phase-auditor` (fresh completion audit — PASS,
+  `planning/retros/_audit-phase-81-third-corrective-pass.md`)
 
 ## Where we are
 
