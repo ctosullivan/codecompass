@@ -8,13 +8,15 @@ session-resumption, not a project history.
 ## Current phase
 
 **Phase 81B (clean-room project redocumentation from intermediary
-knowledge) is `planned` — committed, not started, direct user request,
-2026-10-08.** Implementation is explicitly gated on direct user approval
-of the committed plan (`planning/phase-81b-clean-room-redocumentation.md`).
-No clean-room branch, isolated workspace, writer dispatch, documentation
-deletion/archival, or `codecompass-template` change has happened — this
-was a planning-only task; the plan file, this file, and
-`planning/ROADMAP.md` are the only artefacts it produced.
+knowledge) is `planned` — committed and amended, not started, direct
+user request, 2026-10-08.** Implementation is explicitly gated on direct
+user approval of the committed, amended plan
+(`planning/phase-81b-clean-room-redocumentation.md`). No clean-room
+branch, isolated workspace, writer dispatch, documentation
+deletion/archival, or `codecompass-template` change has happened — both
+the original planning task and this same-day amendment were planning-only;
+the plan file, this file, and `planning/ROADMAP.md` are the only
+artefacts either produced.
 
 What the plan commits to, grounded in real investigation (not assumed):
 a reproducible, mechanically-isolated whole-project clean-room
@@ -34,16 +36,42 @@ network — stronger than `Agent(isolation: "remote")`'s own
 already-tried, same-host result at Phase 79) but not yet proven against
 the full five-route-preflight-plus-active-escape protocol, and one real
 open sub-problem (an AI writer's own need for network access to its
-model provider) is named explicitly, not assumed solved. The plan
-explicitly adopts, rather than duplicates, the existing
+model provider) is named explicitly, not assumed solved.
+
+**Same-day amendment (ten corrections)**: (1) verified Mode B isolation
+is now a **hard prerequisite** for the authoritative clean-room run — a
+`best-effort`/`UNMET` outcome **blocks** Phase 81B rather than
+satisfying it, correcting the first-committed version's own symmetric
+"either outcome is acceptable" framing; (2) no pre-existing human-facing
+narrative documentation may reach the writer in any form, including
+`docs/domain/**` and anything derived from the current `README.md` —
+old prose is preparation-side input only, re-grounded into validated
+knowledge before it can influence the handoff; (3) the clean-room branch
+now carries an explicit, named allowlist/exclusion list
+(`src/**`/`tests/**`/schemas/handoff vs. `README.md`/`docs/**`/
+`architecture/**`/`ai-docs/**`/`.git/**`/raw ADR history) with a
+fail-closed branch validator, replacing the ambiguous "handoff
+filesystem" description; (4) the cold-reader gate now runs inside the
+same verified Mode B boundary as the real writer — a Mode A cold-reader
+pass is no longer treated as sufficiency evidence; plus corrections
+tightening `codecompass-template`'s own preparation (no longer
+synthesising directly from its current README/docs prose), the
+render-everything-vs-include-everything distinction for knowledge slugs,
+the "full re-doc" completion bar (no narrative category implicitly
+exempt), an explicit preparation-side/writer-side trust-boundary
+statement, and the verification stage's own "informed but never relays
+old prose to the writer" rule. The plan explicitly adopts, rather than
+duplicates, the existing
 `planning/strict-isolation-for-documentation-reconstruction.md` backlog
 item's own scope and acceptance criteria — Phase 81B is, explicitly,
 that item's own named revisit trigger ("a third independent application
 of the clean-room methodology"); `planning/ROADMAP.md`'s backlog row for
-it now links forward to Phase 81B rather than restating it, with actual
-resolution (either a genuine `verified` isolation claim or an honest
-third `UNMET` reconfirmation) deferred to Phase 81B's own closeout, once
-real implementation evidence exists.
+it now links forward to Phase 81B rather than restating it. **Resolution
+is no longer symmetric**: only a genuine `verified` isolation outcome
+both closes that backlog item and allows Phase 81B to proceed to
+completion; an honest `UNMET` outcome (after genuinely investigating the
+`unshare`-based candidate and at least one alternative substrate) updates
+the backlog item but leaves Phase 81B itself `blocked`, not closed.
 
 **Phase 81 (persistent bidirectional intermediate knowledge layer)
 remains `done`, unmodified, not reopened by this planning phase** —
