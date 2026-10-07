@@ -77,6 +77,24 @@ updated in the **same commit** as any change that affects them:
 
 `CLAUDE.md` is **not** on this list — see the note on it below.
 
+## Knowledge-affecting changes
+
+When a code change also changes or reveals real project knowledge — a
+new invariant, a changed behaviour, a domain fact worth keeping — the
+accompanying commit should either cite the relevant existing knowledge
+record or add a new one through the intermediate-document candidate
+workflow, the same discipline "plan before implementing" already asks
+for code. See
+[`docs/codecompass-knowledge-workflow.md`](docs/codecompass-knowledge-workflow.md)
+for the full, self-contained guide: what's canonical, what you may
+edit, how to propose a new fact, and how it gets reconciled before
+becoming authoritative.
+
+If a factual statement here ever turns out to disagree with the
+reconciled knowledge layer, that disagreement is itself something to
+reconcile — never a correction to apply by hand to `planning/knowledge/`
+directly, and this file never becomes a second, competing authority.
+
 ## Changelog discipline
 
 `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com) and

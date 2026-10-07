@@ -283,6 +283,18 @@ generated `.claude/skills/`, `.claude/commands/discovery.md`, and
 every fresh clone to run `codecompass` before an agent session can use
 them.
 
+<!-- codecompass-grounded-by: CL-KNOW-001 -->
+CodeCompass also supports a persistent, human/tool-editable Markdown
+layer over a project's own structured knowledge (concepts, invariants,
+behaviours, open questions) — editable by you, ChatGPT, Copilot, Claude
+Code, or an ordinary Git PR, reconciled back against evidence before
+anything becomes canonical. See
+[`docs/codecompass-knowledge-workflow.md`](docs/codecompass-knowledge-workflow.md)
+— that guide is itself grounded in and reconciled against the same
+underlying knowledge, so this README never becomes a second, divergent
+description of what's canonical.
+<!-- /codecompass-grounded-by -->
+
 ## Limitations
 
 Honestly disclosed, not hidden:
