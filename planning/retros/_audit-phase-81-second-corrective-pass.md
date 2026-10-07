@@ -1,5 +1,256 @@
 # Phase 81 second corrective pass — independent completion audit
 
+**This file has been overwritten with a fresh, independent re-audit.**
+The prior audit below this notice (audited HEAD `a9bcd02`) returned
+**FAIL** on four verification/closeout-documentation integrity gaps. This
+re-audit (audited HEAD `a420541`) independently re-derived whether each
+of the four claimed fixes actually closes the gap found, and verdicts
+**PASS**. The full prior FAIL report is preserved verbatim below the
+line, per this project's own practice of not silently erasing audit
+history.
+
+---
+
+## Re-audit (this pass)
+
+- **Auditor:** `release-phase-auditor` (fresh, independent dispatch,
+  distinct from the instance that returned the prior FAIL)
+- **Audited HEAD:** `a420541` (`main`)
+- **Scope:** `git log a9bcd02..a420541 --stat` — one commit, touching
+  exactly `planning/CONTEXT.md`, `planning/retros/_audit-phase-81-second-corrective-pass.md`
+  (the prior FAIL report itself, read as evidence not re-verified as a
+  claim), `planning/retros/_drift-audit-phase-81-second-corrective-pass.md`,
+  `planning/retros/phase-81-second-corrective-pass.md`, and
+  `tests/test_knowledge_intermediate.py`. No `src/` file touched — the
+  prior audit was explicit that production code needed no further
+  change, and this commit honors that.
+
+### Verdict: **PASS**
+
+Every one of the four findings from the prior FAIL (Findings A, B, C, D)
+was independently re-derived to be genuinely closed — not merely
+re-asserted by this commit's own message. No new gap was found. The DoD
+checklist as a whole is intact.
+
+---
+
+### Finding A (overstated test coverage) — independently confirmed fixed
+
+Read the actual new/changed test code in
+`tests/test_knowledge_intermediate.py` directly (not the commit message
+or retro prose):
+
+1. **`test_declared_intent_via_explicit_type_becomes_proposed_policy`**
+   (line 1027) now reads the real produced record's `statement` field and
+   asserts both `"Type: Intent" not in statement` and
+   `statement.strip() == "The system should do X."` (lines 1046-1049) —
+   genuinely exercises the header-stripping fix; the test would now fail
+   if `item.get("intent_statement")` were not used. Cross-checked against
+   the real code path it exercises
+   (`_apply_candidate_addition`, `knowledge_intermediate.py:1981-1985`):
+   `claim_statement = (item.get("intent_statement") or "").strip() or
+   text` — the already-stripped body captured at detection, matching the
+   test's own expectation exactly.
+
+2. **`TestCandidateDisappearanceFailsClosed`** (line 1444) has two tests,
+   genuinely covering both sides of the same branch, not a restatement:
+   - `test_disappeared_candidate_with_no_match_fails_closed` (1448):
+     detects a real candidate, writes a manifest, then deletes the
+     candidate text from the live file with **no** matching canonical
+     record created anywhere. Asserts `result.applied == []`,
+     `"race" in result.skipped[0].reason`, and — critically, the *depth*
+     check the prior audit's own governing rules (`L-075`) require — that
+     `records_after == records_before`, i.e. genuinely zero records
+     created, not merely a non-crash. Cross-checked against
+     `_apply_candidate_addition` (`knowledge_intermediate.py:1989-2012`):
+     the `not text_present` branch with no `existing` match returns
+     `ApplyOutcome(False, item, "apply-time race: ...")` — exact string
+     match for the `"race"` substring the test checks, and no write call
+     precedes that return.
+   - `test_disappeared_candidate_already_promoted_is_a_safe_noop` (1479):
+     the genuine other half of the same branch — text is also gone from
+     the live file, but this time a real matching `CL-DEMO-099.yaml`
+     record exists. Asserts `result.applied[0].new_record_id ==
+     "CL-DEMO-099"`, confirming the branch still succeeds when a true
+     match exists rather than the fix over-correcting into always
+     failing. This is a distinct scenario from the first test (different
+     setup, different assertion, opposite outcome), not a restatement.
+
+3. **`TestCrossKindDeduplicationIndependence`** (line 1520) has two
+   tests, each genuinely creating a pre-existing record of one kind and a
+   new candidate of the other kind with byte-identical statement text:
+   - `test_preexisting_claim_does_not_block_new_requirement` (1524):
+     writes a real `CL-PRE-001.yaml` Claim, then a candidate block with
+     `Type: Requirement` / `Decision: DEC-DEMO-001` / `Statement:
+     <same_text>` (identical to the pre-existing Claim's statement).
+     Asserts the applied result's new id `startswith("REQ-")` and its
+     statement equals `same_text` — a pre-existing Claim did not block
+     creation of the Requirement.
+   - `test_preexisting_requirement_does_not_satisfy_claim_dedup` (1557):
+     the reverse — writes a real `REQ-PRE-001.yaml` Requirement, then an
+     ordinary (not `Type:`-tagged) candidate with the identical text.
+     Asserts the applied result's new id `startswith("CL-")` and its
+     statement equals `same_text` — a pre-existing Requirement did not
+     get mistaken for (or satisfy dedup against) the new Claim.
+   Both assert the correct record **kind** (via id prefix) and the
+   **statement content**, matching this audit brief's own bar. Cross-
+   checked against `_find_existing_promoted_record`
+   (`knowledge_intermediate.py:1746-1788`, `if record.kind != kind:
+   continue`) and its call sites (`kind="claim"` vs `kind="requirement"`)
+   — the tests exercise exactly the call-site-correctness the prior audit
+   confirmed by reading code but found had "zero regression protection."
+   That protection now exists.
+
+**My own fresh test runs** (not trusting the commit's reported counts):
+
+- `.venv/bin/python -m pytest tests/test_knowledge_intermediate.py -q` →
+  **65 passed** — matches the claimed count exactly.
+- `.venv/bin/python -m pytest -q` (full suite) → **845 passed, 2
+  skipped** in 211.17s — matches the claimed count exactly, and is
+  consistent with the prior audit's own 841-passed baseline plus these 4
+  new tests (841 + 4 = 845).
+
+Finding A is genuinely closed.
+
+### Finding B (`planning/CONTEXT.md` stale) — independently confirmed fixed
+
+Read `planning/CONTEXT.md`'s Phase 81 section directly (lines 8-105).
+It now narrates, in order: the second reopening and its fourteen
+corrections (unchanged from before); "a fresh per-phase docs-drift audit
+has since run... NO DRIFT" and "learning/context-gap triage has also
+run... three candidates filed and promoted" — both stated as **completed
+fact**, not pending; then a new paragraph (lines 81-101) stating **"A
+first independent completion audit... returned FAIL"**, naming all four
+gaps found, and stating **"All four are now fixed"** with one sentence
+per fix (tests added with the new count, this file's own update, the
+drift-audit record's existence, the retro's expansion). The final line
+(103-105) correctly states the next concrete step is a fresh independent
+completion audit, since the prior one is voided by the fix commit. This
+is an accurate, current, non-stale account of exactly the state this
+audit itself is now verifying — it does not merely claim the fixes
+happened, it correctly describes them at the right level of specificity
+to be checked against reality (which I did above). Finding B is
+genuinely closed.
+
+### Finding C (no persisted drift-audit report) — independently confirmed fixed
+
+Read `planning/retros/_drift-audit-phase-81-second-corrective-pass.md`
+directly in full. It is a real, substantive, scoped record — not a
+placeholder: names its own scope (commit `7a0e270`, specific doc files,
+specific code symbols cross-checked), states a method (read the two docs
+in full, cross-check against real code, grep sweep for stale patterns,
+check `docs/domain/concepts/*.md` References blocks), and gives a
+finding-by-finding account including the one real pre-existing gap it
+found and fixed (`ai-docs/README.md`'s stale command list, fixed in
+`42f9486`, confirmed via `git blame` to predate this pass).
+
+I independently spot-checked two of its central claims rather than
+trusting its own prose:
+
+- `docs/codecompass-knowledge-workflow.md`: confirmed by direct read that
+  it documents `region:<id>` syntax with duplicate-id fail-closed
+  behaviour, the three real baseline-advancement triggers (first
+  sighting / actual apply / explicit acknowledge command), the
+  `semantic_change` true/false branching, and both
+  `doc-acknowledge-stale`/`doc-acknowledge-chunks` commands — all
+  present and worded consistently with the drift audit's own summary.
+- `docs/cli-reference.md`: confirmed by direct read (`doc-select-candidates`,
+  `doc-acknowledge-stale <doc> <region>`, `doc-acknowledge-chunks`,
+  `semantic_change` field documentation) **and** by running the real
+  live CLI (`.venv/bin/python -m codecompass.cli knowledge --help`),
+  which lists `doc-select-candidates`, `doc-acknowledge-stale`,
+  `doc-acknowledge-chunks` as real registered subcommands with
+  descriptions matching the doc's own prose. No drift found between the
+  live CLI, the doc, and the drift audit's own account of either.
+
+Finding C is genuinely closed: a durable, checkable artifact exists and
+its claims hold up under independent spot-check.
+
+### Finding D (retro missing TEMPLATE.md sections) — independently confirmed fixed
+
+Read `planning/retros/phase-81-second-corrective-pass.md` directly
+against `planning/retros/TEMPLATE.md`'s own section list. Every required
+section is now present with real, phase-specific content, not
+boilerplate:
+
+- Header: Date, Commit(s) (lists all five relevant commits plus "the
+  post-audit fix commit(s) closing the findings below"), Agents used.
+- **Where we are** — orients this phase within Priority D's trajectory,
+  names what the first corrective pass established and what this one
+  reviewed.
+- **Goal**, **Scope delivered vs planned** (explicitly calls out the
+  unplanned extra verification step and the unplanned second audit
+  round), **What was achieved** (plus a bonus "Real dogfood validation"
+  section beyond the template's minimum).
+- **What worked** / **What didn't work** — genuinely distinct content,
+  not a restatement of each other; "What didn't work" honestly names the
+  overstated-coverage gap, the stale `CONTEXT.md`, and the missing
+  drift-audit record as real process failures of this very pass, which
+  is exactly the honest self-accounting the DoD's retro requirement
+  exists for.
+- **Lessons learnt** (four distinct, generalizable points, referencing
+  `L-086`/`L-087`/`L-088` where relevant), **Process-improvement
+  feedback** (two concrete, actionable suggestions, not vibes).
+- **Candidate learnings filed** — names `L-086`/`L-087`/`L-088`
+  explicitly.
+- **Where we're going** — states this closes Phase 81 as a whole once
+  the fresh audit passes, and that no stage gate is affected.
+- **Time / cost note** — names three same-day sessions and the
+  two-audit-round-trip cost explicitly.
+
+This phase is substantive (fourteen defects, a new ADR, a public-repo
+push, plus this audit-fix cycle itself) and the full template is applied
+in full. Finding D is genuinely closed.
+
+---
+
+### Re-confirmed broader DoD checklist (not re-litigating the ten
+code-behaviour checks the prior audit already ran to completion — spot
+checks only, per the task brief)
+
+| Condition | Result |
+|---|---|
+| `.venv/bin/ruff check src/ tests/ scripts/` | **PASS** — "All checks passed!" |
+| `.venv/bin/python scripts/check_knowledge_base.py --strict` | **PASS** — exit 0; one `info`-level finding on `first-party-source-symbols` (`CL-FPSS-007` status drift, `verified` vs `supported`), unrelated to Phase 81, pre-existing, honestly labelled "expected and healthy" by the tool itself — matches the task brief's own expectation exactly. |
+| `.venv/bin/python scripts/check_user_docs.py --strict` | **PASS** — "no findings", exit 0. |
+| Full test suite | **PASS** — 845 passed, 2 skipped, my own fresh run. |
+| `tests/test_knowledge_intermediate.py` alone | **PASS** — 65 passed, my own fresh run. |
+| No protected-file drift beyond what's accounted for | **PASS** — `git diff a9bcd02..a420541 --name-only` shows exactly `planning/CONTEXT.md`, both `_audit`/`_drift-audit` retro files, `phase-81-second-corrective-pass.md`, and `tests/test_knowledge_intermediate.py`. Nothing in `src/`, no `decisions/*` touched at all (`git diff a9bcd02..a420541 -- decisions/ CLAUDE.md` is empty), no `CLAUDE.md` change in this range. |
+| `L-086`/`L-087`/`L-088` still genuinely `status: promoted` | **PASS** — confirmed by direct read of `planning/learnings/inbox.md`: all three entries show `- **status:** promoted` in their own record. |
+
+---
+
+## What does NOT need to change
+
+Nothing. The four findings from the prior FAIL are each independently
+confirmed closed by direct reading of the actual test code, the actual
+`CONTEXT.md` prose, the actual drift-audit file (cross-checked against
+the live CLI and real docs), and the actual retro file against
+`TEMPLATE.md`'s own section list — not by trusting the fix commit's own
+description of itself. The underlying production code was already
+confirmed correct by the prior audit and was untouched by this fix
+commit (confirmed via `git diff --name-only`). No new gap, no
+regression, no scope creep.
+
+## Re-audit requirement
+
+None further required for this specific scope. Per CLAUDE.md §5, any
+further commit touching audited scope (the test file, `CONTEXT.md`, the
+drift-audit record, the retro, or `src/`) would void this audit and
+require a fresh pass before Phase 81 can be marked `done`. As of
+`a420541`, Phase 81 (original implementation + both corrective passes)
+has passed its completion audit and may proceed to the terminal
+`roadmap-context-curator` reconciliation commit per CLAUDE.md §5's named
+exemption.
+
+---
+
+---
+
+## Prior audit (superseded — preserved verbatim for history)
+
+# Phase 81 second corrective pass — independent completion audit
+
 - **Auditor:** `release-phase-auditor` (fresh, independent dispatch)
 - **Audited HEAD:** `a9bcd02` (`main`)
 - **Scope:** the second corrective pass (`decisions/0074`), i.e. the
