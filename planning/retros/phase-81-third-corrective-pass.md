@@ -169,8 +169,20 @@ genuinely also true for an explicit Requirement.
 
 ## Candidate learnings filed
 
-To be determined by this pass's own `knowledge-curator` triage step —
-recorded here once that step runs.
+Both retro-surfaced observations (concurrency-identity dimension
+completeness; "derive once, reuse everywhere" identity helpers) were
+assessed by `knowledge-curator` (2026-10-08) and found adequately
+covered by existing learnings — no new candidates filed. The first is
+already generalised by `L-075` (`CLAUDE.md` §1, scope≠depth for a
+fail-closed check) and the evidence base `L-087` itself already cites; a
+third near-duplicate `CLAUDE.md` §1 amendment would violate this
+project's own append-only, distinct-failure-shape convention. The second
+is generic single-source-of-truth code-review guidance, not a distinct
+recurring CodeCompass-specific failure shape beyond what `L-085` and
+ordinary review already cover. Context-gaps/context-observations queues
+checked and confirmed not applicable — both defects are internal
+implementation-correctness bugs, not context-graph/mechanical-detection
+gaps.
 
 ## Where we're going
 
