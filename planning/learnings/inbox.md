@@ -8,6 +8,288 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-091 — a filesystem-isolation deny-list design that looked reasonable on paper failed a real sibling-path-traversal escape test, before any real content was exposed to it
+
+- **origin:** Phase 81B (Mode B isolation investigation),
+  `planning/phase-81b-mode-b-isolation-investigation.md` "Attempt 1 —
+  deny-list (rejected after testing)"
+- **date:** 2026-10-08
+- **project_revision:** `547dd58` (isolation-investigation commit)
+- **observation:** the first candidate Mode B filesystem-isolation
+  mechanism mounted `tmpfs` *over* the one real project checkout
+  (`/home/cormac/projects/codecompass`) plus `~/.ssh`/`~/.claude`,
+  leaving everything else untouched — a deny-list, hide-the-specific-
+  sensitive-path design. Run against a disposable scratch fixture (never
+  real content), an active escape attempt
+  (`ls /home/cormac/projects/`) still listed every sibling checkout
+  (`codecompass-adaptor-haskell`, `codecompass-template`, `hledger`,
+  `ledgerkit`, etc.) in full — hiding the one named path did nothing for
+  its siblings. The design was rejected and replaced with an allow-list
+  (`pivot_root` into a freshly-constructed root containing only
+  explicitly bind-mounted paths) before any real content was exposed to
+  either version.
+- **evidence:** `planning/phase-81b-mode-b-isolation-investigation.md`
+  "Attempt 1" section, real unedited command output (`ls
+  /home/cormac/projects/` from inside the first sandbox, returning the
+  full sibling-checkout listing); confirmed independently by this
+  curator re-reading the same section verbatim — the observation
+  accurately describes a genuine escape, not a hypothetical one.
+- **classification:** scoped-rule
+- **status:** retained
+- **recurrence:** first occurrence
+- **curation (Phase 81B triage, 2026-10-08, knowledge-curator):** all
+  required fields present; checked against `inbox.md`/`promoted.md` for a
+  prior entry covering sandbox/isolation-testing methodology — none
+  found (`L-046`'s credential-probe rule and `decisions/0066`'s own
+  five-route preflight protocol are the closest precedent, but neither
+  names deny-list-vs-allow-list filesystem-mount design or sibling-path
+  traversal specifically; genuinely distinct, not a duplicate). This is a
+  real, narrow, evidenced methodology rule ("when testing a filesystem
+  deny-list isolation design, the active escape test must include a
+  sibling path under the same parent, not only the one path being
+  hidden") — but its natural promotion destination (an ADR documenting a
+  *finalized, production* isolation mechanism, or
+  `docs/development/clean-room-redocumentation.md`'s own design
+  rationale) does not yet exist: Phase 81B's own authoritative writer run
+  remains `blocked`, and per Amendment 3 no clean-room workflow document
+  is published from an investigation alone. Promoting into `decisions/0066`
+  directly would conflate that ADR's own different mechanism (dispatched-
+  agent `Agent(isolation: ...)` sandboxing, a five-route preflight of
+  filesystem/search/command/network/delegation) with Phase 81B's
+  materially different one (OS-level namespaces/`pivot_root`), which
+  `decisions/0066` does not itself govern — a new ADR for *that*
+  mechanism is the right home, but only once it is actually adopted for a
+  real run, not speculatively now. **Outcome: retained** — real, but not
+  yet actionable as a standalone artifact promotion. The finding is
+  already substantively preserved verbatim in
+  `planning/phase-81b-mode-b-isolation-investigation.md` itself (linked
+  from the phase retro), so nothing is lost while this stays retained.
+  Recommended forcing point: whenever the strict-isolation backlog item
+  (`planning/strict-isolation-for-documentation-reconstruction.md`) is
+  next picked up for a real writer run, its own plan file's verification
+  section should cite this candidate and the investigation doc's "Attempt
+  1" section as the required active-escape-test precedent, and a new ADR
+  for the finalized namespace/`pivot_root` mechanism (if and when one is
+  written) should fold this rule in directly rather than re-discovering
+  it. No promotion recommended at this time.
+
+### L-090 — a tool that builds its own output into a target directory still blindly `rmtree`s that directory even though the real destructive bug this phase found (a `git worktree`'s own `.git` link file being destroyed) was never fixed in the tool itself, only worked around procedurally
+
+- **origin:** Phase 81B (clean-room branch preparation),
+  `planning/retros/phase-81b-clean-room-redocumentation.md` "What didn't
+  work" + direct reading of `scripts/prepare_cleanroom_branch.py::cmd_build`
+  at the current commit (`d8b908f`)
+- **date:** 2026-10-08
+- **project_revision:** `d8b908f`
+- **observation:** `git worktree add --orphan` followed immediately by
+  `scripts/prepare_cleanroom_branch.py`'s own `cmd_build` (which runs
+  `shutil.rmtree(staging)` unconditionally whenever `staging.exists()`)
+  destroyed the worktree's own `.git` link file on the first real attempt
+  this phase, since the tool never anticipated its own staging target
+  already being a git worktree. The retro records this was "worked
+  around by building in a plain scratch directory first and copying the
+  validated result into the worktree afterward" — a **procedural**
+  workaround, not a code fix. Independently confirmed by reading the
+  current `cmd_build` directly: it still contains exactly
+  `if staging.exists(): shutil.rmtree(staging)` with no worktree check of
+  any kind — the underlying destructive-operation risk is unchanged in
+  the committed tool, and would recur for anyone who runs `build`
+  directly against a worktree path in the future without knowing to use
+  the same workaround.
+- **evidence:** `scripts/prepare_cleanroom_branch.py` lines 193-198
+  (`cmd_build`, current repository state, re-read directly for this
+  triage); `planning/retros/phase-81b-clean-room-redocumentation.md`
+  "What didn't work" second bullet.
+- **classification:** invariant
+- **status:** promoted
+- **recurrence:** first occurrence
+- **curation (Phase 81B triage, 2026-10-08, knowledge-curator):** all
+  required fields present; checked `inbox.md`/`promoted.md` for a prior
+  entry on destructive-operation/staging-target safety in a maintainer
+  tool — none found, genuinely distinct. Independently re-verified by
+  reading the current code rather than trusting the retro's own
+  characterization: confirmed the fix never landed, only the workaround
+  did. This is a real, cheap-to-fix behavioural invariant gap ("a tool
+  that `rmtree`s its own staging target must never do so if that target
+  is already a git worktree") with a clear, small fix and an obvious
+  regression test — a strong `promote` candidate, not a `retain`. Draft
+  supplied for the lead/implementer (this role cannot write `scripts/` or
+  `tests/` directly):
+
+  Code fix sketch (`cmd_build`, before the existing
+  `if staging.exists(): shutil.rmtree(staging)`):
+  ```python
+  if staging.exists():
+      if (staging / ".git").is_file():
+          print(
+              f"FAIL: {staging} is already a git worktree (has a `.git` "
+              "link file) -- refusing to rmtree it. Build into a plain "
+              "scratch directory and copy the validated result into the "
+              "worktree afterward instead.",
+              file=sys.stderr,
+          )
+          return 1
+      shutil.rmtree(staging)
+  ```
+
+  Regression test sketch (`tests/test_prepare_cleanroom_branch.py`):
+  ```python
+  def test_refuses_to_rmtree_an_existing_git_worktree(tmp_path):
+      """Regression test for the real bug this phase's own investigation
+      found: `git worktree add --orphan` followed immediately by
+      `cmd_build`'s own `shutil.rmtree(staging)` destroyed the worktree's
+      own `.git` link file, since the tool didn't anticipate its own
+      staging target already being a git worktree. `cmd_build` must
+      refuse rather than blindly `rmtree`."""
+      staging = tmp_path / "staging"
+      staging.mkdir()
+      (staging / ".git").write_text(
+          "gitdir: /some/real/worktrees/path\n", encoding="utf-8"
+      )
+      args = type(
+          "Args",
+          (),
+          {"staging": str(staging), "documented_revision": "test-revision", "slugs": ""},
+      )()
+      assert prepare_cleanroom_branch.cmd_build(args) == 1
+      assert (staging / ".git").exists()  # not destroyed
+  ```
+  **Outcome: promote** (code fix + regression test, lead/implementer
+  finalises). Not marked `status: promoted` here since neither the fix
+  nor the test has actually landed yet — per `check_user_docs.py`'s own
+  `status: promoted` requires a matching `promoted.md` line requirement.
+  **Lead: applied** — `cmd_build` now refuses with exit code 1 rather
+  than `rmtree`-ing an existing git-worktree staging target; regression
+  test `test_refuses_to_rmtree_an_existing_git_worktree` added and
+  passing (`pytest tests/test_prepare_cleanroom_branch.py`, 8/8 passed).
+  `promoted.md` line added (`L-090`).
+
+### L-089 — a clean-room/export tool's own file-inclusion list was switched to `git ls-files` after a real bug, but no regression test exists that would catch a reversion to a raw filesystem walk
+
+- **origin:** Phase 81B (clean-room branch preparation / Mode B isolation
+  investigation), `planning/phase-81b-mode-b-isolation-investigation.md`
+  "Confirmation against the real clean-room branch" + direct reading of
+  `scripts/prepare_cleanroom_branch.py` and
+  `tests/test_prepare_cleanroom_branch.py` at the current commit
+  (`d8b908f`)
+- **date:** 2026-10-08
+- **project_revision:** `d8b908f`
+- **observation:** the first build of the real clean-room tree used a raw
+  filesystem walk (`shutil.copytree`), which silently included three
+  local, `.gitignore`d, regenerated test-fixture artifacts
+  (`tests/fixtures/ledgerkit_lifecycle_demo/{CLAUDE.md,context-graph.db,vendor.toml}`)
+  that exist on disk but are not tracked by Git at all — the manifest
+  claimed they were included, but `git add -A` correctly refused to
+  commit them, and the branch validator's own "manifest-listed path is
+  missing" check caught the resulting mismatch. Fixed by switching to
+  `_git_tracked_files` (`git ls-files -z`), with an explanatory docstring
+  already in place explaining why a raw walk is unsafe for this purpose.
+  Independently confirmed by reading the current code: `_copy_allowed`
+  now calls `_git_tracked_files` for every allow-listed directory, and
+  the function's docstring already states the rationale verbatim.
+  However, re-reading `tests/test_prepare_cleanroom_branch.py` in full
+  found **no regression test** that would actually catch a future
+  reversion to a raw filesystem walk: the one test that builds against
+  the real repository (`test_real_build_validates_clean`) generates both
+  the copied files *and* the manifest from the same `included` list
+  `_copy_allowed` returns, so even a hypothetical reversion to
+  `shutil.copytree` would still produce an internally-consistent
+  manifest that the validator would pass — the real-world bug was only
+  ever caught downstream, by `git add -A`'s own refusal at commit time
+  (outside this tool and outside its test suite entirely), not by
+  anything in `prepare_cleanroom_branch.py`'s own test coverage.
+- **evidence:** `scripts/prepare_cleanroom_branch.py` lines 93-134
+  (`_git_tracked_files`, `_copy_allowed`, current repository state);
+  `tests/test_prepare_cleanroom_branch.py` (full file, 92 lines, read
+  directly — six tests, none constructs an untracked-vs-tracked file
+  scenario); `planning/phase-81b-mode-b-isolation-investigation.md`
+  "Confirmation against the real clean-room branch" section (the original
+  bug account).
+- **classification:** invariant
+- **status:** promoted
+- **recurrence:** first occurrence
+- **curation (Phase 81B triage, 2026-10-08, knowledge-curator):** all
+  required fields present; checked `inbox.md`/`promoted.md` for a prior
+  entry on git-tracked-vs-filesystem-walk file enumeration — none found
+  (the closest related precedent, `L-069`, concerns self-validating a
+  hand-curated code export's own parseability, not its file-inclusion
+  *source*; genuinely distinct, not a duplicate). The task framing that
+  prompted this triage assumed a regression test for this specific
+  scenario was "already present" — independently checked and found this
+  assumption **incorrect**: the code fix and its docstring are real and
+  landed, but the dedicated regression test is not. This is a real,
+  narrow, cheap-to-fix test-coverage gap for a genuine invariant ("this
+  tool's own file-inclusion list must only ever contain paths `git
+  ls-files` reports as tracked, never anything a raw filesystem walk
+  would additionally find") — a `promote` candidate. Draft supplied for
+  the lead/implementer (this role cannot write `tests/` directly):
+
+  Regression test sketch (`tests/test_prepare_cleanroom_branch.py`,
+  needs `import subprocess` added to the test file's own imports):
+  ```python
+  def test_untracked_gitignored_file_excluded_from_build(tmp_path, monkeypatch):
+      """Regression test for the real bug this tool's own history found:
+      a raw filesystem walk (shutil.copytree) would silently include a
+      local, untracked, .gitignore'd artifact that `git add -A` would
+      never actually commit, producing a manifest that claims more than a
+      real commit would contain. `_copy_allowed` must only ever include
+      paths `git ls-files` reports as tracked."""
+      scratch_root = tmp_path / "scratch_repo"
+      scratch_root.mkdir()
+      for cmd in (
+          ["git", "init", "-q"],
+          ["git", "config", "user.email", "test@test"],
+          ["git", "config", "user.name", "test"],
+      ):
+          subprocess.run(cmd, cwd=scratch_root, check=True)
+
+      allowed_dir = scratch_root / "allowed_dir"
+      allowed_dir.mkdir()
+      (allowed_dir / "tracked.txt").write_text("tracked\n", encoding="utf-8")
+      (scratch_root / ".gitignore").write_text(
+          "allowed_dir/untracked.txt\n", encoding="utf-8"
+      )
+      (allowed_dir / "untracked.txt").write_text("untracked\n", encoding="utf-8")
+      subprocess.run(["git", "add", "-A"], cwd=scratch_root, check=True)
+      subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=scratch_root, check=True)
+
+      monkeypatch.setattr(prepare_cleanroom_branch, "ALLOW_PATHS", ["allowed_dir"])
+
+      staging = tmp_path / "staging"
+      included = prepare_cleanroom_branch._copy_allowed(scratch_root, staging)
+
+      assert "allowed_dir/tracked.txt" in included
+      assert "allowed_dir/untracked.txt" not in included
+      assert not (staging / "allowed_dir" / "untracked.txt").exists()
+      assert (staging / "allowed_dir" / "tracked.txt").exists()
+  ```
+  On the task's own further question (whether `.claude/agents/` guidance
+  or a `CLAUDE.md` note is warranted beyond the code comment + test):
+  **no** — this is narrow enough (one maintainer-only script, one
+  specific export mechanism, not a repeatable pattern across multiple
+  tools yet) that a project-wide or scoped-rule promotion would be
+  premature on a single instance; the existing docstring plus the
+  regression test above is proportionate. If a *second*, independently
+  built export/handoff tool later repeats the same raw-filesystem-walk
+  mistake, that recurrence would be the trigger to promote this into a
+  `scoped-rule` (a `.claude/agents/` note for whichever agent builds such
+  tools) rather than leaving it as a per-script comment each time.
+  **Lead: applied** — rather than the scratch-git-repo sketch above,
+  landed as `test_build_excludes_untracked_gitignored_files`, which
+  writes a real untracked file directly into this repository's own
+  `tests/` (an allow-listed directory) and confirms `cmd_build` excludes
+  it from both the staging tree and the manifest, then cleans it up —
+  functionally equivalent coverage of the same invariant, exercised
+  against the real repository rather than a synthetic one. Passing
+  (`pytest tests/test_prepare_cleanroom_branch.py`, 8/8 passed).
+  `promoted.md` line added (`L-089`).
+  **Outcome: promote** (regression test only — the code fix already
+  landed; lead/implementer finalises the test). Not marked `status:
+  promoted` since the test has not actually landed yet. **Lead: add the
+  draft test above, run `pytest tests/test_prepare_cleanroom_branch.py`,
+  then update this entry's `status` to `promoted` with a `promoted.md`
+  line once it lands.**
+
 ### L-088 — positional-only identity for a tracked, re-orderable entity recurred independently a second time, for a second mechanism, after already being fixed once for a different one
 
 - **origin:** Phase 81 second corrective pass (`decisions/0074` point 10),

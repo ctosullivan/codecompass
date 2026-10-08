@@ -88,3 +88,5 @@ L-085 | 2026-10-07 | scoped-rule | planning/agent-led-workflow.md step 5 (two-pa
 L-086 | 2026-10-07 | scoped-rule | .claude/agents/release-phase-auditor.md "What to check" item 10 (a corrective pass's own newly-written code is full audited scope) @ 2e1b5a7
 L-087 | 2026-10-07 | project-rule | CLAUDE.md §1 (a new persisted "last-known-state" mechanism's plan must state how detection differs from acknowledgement -- user-approved per §0) @ 1c3981b
 L-088 | 2026-10-07 | project-rule | CLAUDE.md §1 (new tracked re-orderable entity needs an explicit identity-stability check against existing conventions, plus an insertion/reordering test -- user-approved per §0) @ 1c3981b
+L-090 | 2026-10-08 | invariant | scripts/prepare_cleanroom_branch.py::cmd_build (refuses to rmtree an existing git-worktree staging target) + tests/test_prepare_cleanroom_branch.py::test_refuses_to_rmtree_an_existing_git_worktree @ (this phase's own closeout commit)
+L-089 | 2026-10-08 | invariant | tests/test_prepare_cleanroom_branch.py::test_build_excludes_untracked_gitignored_files (regression test for the git-ls-files-not-a-filesystem-walk fix) @ (this phase's own closeout commit)

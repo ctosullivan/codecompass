@@ -77,6 +77,49 @@ def test_no_manifest_fails_closed(tmp_path):
     assert prepare_cleanroom_branch.cmd_validate(args) == 1
 
 
+def test_refuses_to_rmtree_an_existing_git_worktree(tmp_path):
+    """Regression test for the real bug this phase's own investigation
+    found: `git worktree add --orphan` followed immediately by
+    `cmd_build`'s own `shutil.rmtree(staging)` destroyed the worktree's
+    own `.git` link file, since the tool didn't anticipate its own
+    staging target already being a git worktree. `cmd_build` must refuse
+    rather than blindly `rmtree`."""
+    staging = tmp_path / "staging"
+    staging.mkdir()
+    (staging / ".git").write_text("gitdir: /some/real/worktrees/path\n", encoding="utf-8")
+    args = type(
+        "Args",
+        (),
+        {"staging": str(staging), "documented_revision": "test-revision", "slugs": ""},
+    )()
+    assert prepare_cleanroom_branch.cmd_build(args) == 1
+    assert (staging / ".git").exists()
+
+
+def test_build_excludes_untracked_gitignored_files(tmp_path):
+    """Regression test for the real bug this phase's own investigation
+    found: a raw filesystem walk (shutil.copytree) silently included
+    local, untracked, .gitignore'd artifacts that exist on disk but are
+    not tracked by git at all -- the manifest claimed they were included,
+    but `git add -A` in the real clean-room branch correctly refused to
+    commit them, producing a real manifest/reality mismatch. The build
+    must source its file list from `git ls-files`, never a directory
+    walk, so an untracked file sitting in an allow-listed directory never
+    makes it into the staging tree or the manifest at all."""
+    sneaky = REPO_ROOT / "tests" / "__phase81b_untracked_regression_test__.txt"
+    assert not sneaky.exists(), "fixture collision -- stale file from a prior failed run"
+    try:
+        sneaky.write_text(
+            "should never be picked up by a git-tracked-files build\n", encoding="utf-8"
+        )
+        staging = _build(tmp_path)
+        assert not (staging / "tests" / sneaky.name).exists()
+        manifest_text = (staging / "CLEANROOM-MANIFEST.yaml").read_text(encoding="utf-8")
+        assert sneaky.name not in manifest_text
+    finally:
+        sneaky.unlink(missing_ok=True)
+
+
 def test_allow_list_contains_no_narrative_documentation_paths():
     """Amendment 2/3: README.md/docs/**/architecture/**/ai-docs/** (and
     docs/domain/** specifically) must never appear in the allow-list

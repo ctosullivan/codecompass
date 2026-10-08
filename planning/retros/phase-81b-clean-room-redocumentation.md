@@ -164,15 +164,38 @@ repository) rather than a silent omission.
 
 ## Candidate learnings filed
 
-To be determined by this phase's own `knowledge-curator` triage step —
-recorded here once that step runs. Candidate observations for triage:
-(1) deny-list filesystem isolation approaches should be tested against
-sibling-path traversal specifically, not just the one path being hidden;
-(2) a tool that builds into a directory should explicitly handle (or
-refuse) the case where that directory is already a git worktree, rather
-than blindly `rmtree`-ing it; (3) a clean-room/export tool's own file
-inclusion must be sourced from `git ls-files`, never a raw filesystem
-walk, to avoid silently including local untracked artifacts.
+Triaged by `knowledge-curator` 2026-10-08 (`planning/learnings/inbox.md`):
+
+- **L-091** (deny-list filesystem isolation needs a sibling-path-traversal
+  escape test, not just the one path being hidden) — classification
+  `scoped-rule`, **status: retained**. Real and evidenced, but its own
+  promotion destination (an ADR for a *finalized, production* isolation
+  mechanism) doesn't exist yet while the authoritative writer run stays
+  `blocked`; already substantively preserved verbatim in
+  `planning/phase-81b-mode-b-isolation-investigation.md`.
+- **L-090** (a tool that `rmtree`s its own staging target never checks
+  whether that target is already a git worktree — the real bug this
+  phase hit was only worked around procedurally, never fixed in
+  `scripts/prepare_cleanroom_branch.py` itself) — classification
+  `invariant`, **status: promoted**. Landed: `cmd_build` now refuses
+  (exit 1) rather than `rmtree`-ing an existing git-worktree staging
+  target; `test_refuses_to_rmtree_an_existing_git_worktree` added and
+  passing.
+- **L-089** (the `git ls-files`-not-a-filesystem-walk fix landed, but no
+  regression test exists that would actually catch a reversion to a raw
+  walk) — classification `invariant`, **status: promoted**. Landed:
+  `test_build_excludes_untracked_gitignored_files` added and passing
+  (functionally equivalent to the curator's own scratch-repo sketch, run
+  against this repository's own real tree instead). A project-wide/
+  scoped-rule promotion was judged premature on a single instance
+  (narrow, one maintainer-only script) — revisit if a second,
+  independently-built export tool repeats the same mistake.
+
+Also checked `planning/context-gaps/inbox.md` and
+`planning/context-observations/inbox.md`: nothing from this phase's work
+belongs in either queue — these are tooling/methodology bugs the
+orchestrator itself found and fixed, not a context-graph/mechanical-
+detection gap.
 
 ## Where we're going
 

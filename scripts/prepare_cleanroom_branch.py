@@ -194,6 +194,15 @@ def cmd_build(args: argparse.Namespace) -> int:
     root = ROOT
     staging = Path(args.staging).resolve()
     if staging.exists():
+        if (staging / ".git").is_file():
+            print(
+                f"FAIL: {staging} is already a git worktree (has a `.git` "
+                "link file) -- refusing to rmtree it. Build into a plain "
+                "scratch directory and copy the validated result into the "
+                "worktree afterward instead.",
+                file=sys.stderr,
+            )
+            return 1
         shutil.rmtree(staging)
     staging.mkdir(parents=True)
 
