@@ -9,6 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 81B** (clean-room project redocumentation from intermediary
+  knowledge, `BLOCKED` — authoritative writer run did not and could not
+  run; see below): operationalises Phases 79-81 into a reproducible
+  clean-room documentation-reconstruction workflow. Delivered and
+  pushed: `documented_revision` knowledge preparation (26 previously-
+  unclassified `codecompass-domain` Claims given a real `assertion_kind`,
+  closing the root cause of 88% of the rendered projection defaulting
+  into `overview.md`; new `check_no_pending_reconciliation` check in
+  `scripts/check_knowledge_base.py`); a real, explicit-allowlist, fail-
+  closed-validated clean-room branch-preparation tool
+  (`scripts/prepare_cleanroom_branch.py`, 8 tests) that sources its file
+  list from `git ls-files` (never a raw filesystem walk, after a real
+  bug found exactly that gap) and refuses to `rmtree` a pre-existing git
+  worktree; a real, pushed clean-room branch (`cleanroom/redoc-46601a1`)
+  confirmed via Mode A diff review and a genuine `git archive` extraction
+  with zero `.git` directories; a rigorous Mode B isolation investigation
+  (`planning/phase-81b-mode-b-isolation-investigation.md`) — a Linux
+  namespace/`pivot_root` mechanism actively verified against every named
+  escape route (filesystem, parent-path traversal, `.git` history,
+  branches/remotes, network, filesystem/environment credentials, MCP,
+  agent context) except one: no separately-scoped model-API credential
+  (or local/offline model) exists in this environment to operate an AI
+  writer inside the verified boundary. Per the plan's own hard gate
+  (Amendment 1), the authoritative writer run, cold-reader, result
+  branches, and documentation disposition execution were correctly not
+  attempted rather than downgraded to a weaker "best-effort" claim — a
+  materially more precise result than Phase 79/80's own blanket `UNMET`.
+  `codecompass-template`'s own documentation disposition report was also
+  produced (`planning/documentation-handoff-template/DISPOSITION-REPORT.md`);
+  its own clean-room branch was not built, as a recorded scope decision
+  (the blocker is identical regardless of repository). No current-truth
+  documentation (`README.md`/`docs/`/`architecture/`/`ai-docs/`) was
+  touched by this phase.
 - **Phase 81** (persistent bidirectional intermediate knowledge layer):
   new `codecompass knowledge render|select-candidates|apply|status`
   commands (`src/codecompass/knowledge_intermediate.py`) project a

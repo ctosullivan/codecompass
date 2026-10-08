@@ -155,10 +155,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
       assert (staging / ".git").exists()  # not destroyed
   ```
   **Outcome: promote** (code fix + regression test, lead/implementer
-  finalises). Not marked `status: promoted` here since neither the fix
-  nor the test has actually landed yet — per `check_user_docs.py`'s own
-  `status: promoted` requires a matching `promoted.md` line requirement.
-  **Lead: applied** — `cmd_build` now refuses with exit code 1 rather
+  finalises). **Lead: applied** — `cmd_build` now refuses with exit code 1 rather
   than `rmtree`-ing an existing git-worktree staging target; regression
   test `test_refuses_to_rmtree_an_existing_git_worktree` added and
   passing (`pytest tests/test_prepare_cleanroom_branch.py`, 8/8 passed).
@@ -283,12 +280,6 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   against the real repository rather than a synthetic one. Passing
   (`pytest tests/test_prepare_cleanroom_branch.py`, 8/8 passed).
   `promoted.md` line added (`L-089`).
-  **Outcome: promote** (regression test only — the code fix already
-  landed; lead/implementer finalises the test). Not marked `status:
-  promoted` since the test has not actually landed yet. **Lead: add the
-  draft test above, run `pytest tests/test_prepare_cleanroom_branch.py`,
-  then update this entry's `status` to `promoted` with a `promoted.md`
-  line once it lands.**
 
 ### L-088 — positional-only identity for a tracked, re-orderable entity recurred independently a second time, for a second mechanism, after already being fixed once for a different one
 
