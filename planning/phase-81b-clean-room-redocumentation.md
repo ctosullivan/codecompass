@@ -33,8 +33,36 @@ is no longer treated as evidence the handoff is sufficient (§13); and the
 template, render/include, "full re-doc," and preparation/writer
 trust-boundary points below. Every section this touches is marked
 inline; nothing is silently rewritten without a trace, consistent with
-§24's own stated preference, now extended by a dedicated plan-review
-pass against seven named invariants (§24).
+§24's own stated preference, extended by a dedicated plan-review pass
+against seven named invariants (§24.1).
+
+**Second amendment note (2026-10-08, same day, before implementation
+began)**: four further corrections, same in-place convention. (1)
+**Template narrative isolation is now per-file, not per-directory** —
+`optional-intermediate-knowledge/**` and `optional-clean-room-workflow/**`
+are no longer classified wholesale as structural evidence; each file is
+inspected individually, and the nine blank `TEMPLATE.md` skeletons
+(genuinely structural) are now distinguished from the narrative
+`README.md`/`worked-example.md`/`conceptual-documentation-guide.md`/
+`mechanical-isolation.md` files living in the same directories
+(preparation-only, never writer-visible) (§9.5). (2) **Provenance is now
+two separate, explicitly frozen commits**: `documented_revision` (where
+preparation concludes, on `main`) and `handoff_commit` (the validated
+clean-room branch commit built from it), with an explicit invalidation
+rule — a cold-reader finding a knowledge gap invalidates the current
+`handoff_commit` and forces a fresh `documented_revision`/`handoff_commit`
+pair, never a silent in-place fix — recorded independently by each
+repository (§6.1, §4). (3) **A `blocked` outcome no longer produces any
+version of the stored workflow document** — `docs/development/clean-room-redocumentation.md`
+is published only once a verified full run has actually succeeded; a
+blocked attempt's own findings are investigation/retro evidence only,
+never a draft or best-effort version of the authoritative document (§17,
+§18 item 13). (4) **`architecture/historical-notes.md`'s "leave it
+untouched" option is removed** — it must be incorporated into the fresh
+documentation and deleted, or moved into the archive; remaining unchanged
+in the normal `architecture/` navigation is no longer an acceptable
+disposition (§7.2, §23). A further plan-review pass against eight named
+invariants follows (§24.2).
 
 ## 0. What this document is, and what it is not
 
@@ -317,11 +345,18 @@ explicit handoff selection (§9.6) — from validated, all-slugs-rendered
   knowledge, choose what's documentation-relevant; persist the selection
   criteria and the chosen ids/slugs in the manifest (Amendment 6)
         ↓
-clean-room handoff filesystem, under an explicit, named allowlist
-  (§6.1.1): planning/documentation-handoff/ (§8)
+COMMIT preparation to main → documented_revision (§6.1, Amendment 2) --
+  frozen, recorded, named explicitly; nothing "documented" floats free of
+  a real commit
         ↓
-durable clean-room Git branch: cleanroom/redoc-<source-revision> (§6),
-  manifest records the allowlist/exclusion list verbatim
+clean-room handoff filesystem, under an explicit, named allowlist
+  (§6.1.1): planning/documentation-handoff/ (§8), built FROM
+  documented_revision
+        ↓
+durable clean-room Git branch: cleanroom/redoc-<short SHA of
+  documented_revision> (§6) → validated against its own manifest (§6.1.1)
+  → COMMIT → handoff_commit (§6.1, Amendment 2) — the exact, frozen
+  clean-room input tree
         │
         ├──────── Mode A: git diff/checkout from the ordinary repo —
         │         human review, trusted-tool handoff, debugging ONLY
@@ -329,7 +364,8 @@ durable clean-room Git branch: cleanroom/redoc-<source-revision> (§6),
         │         sufficient for the real writer (Amendment 4)
         │
         ↓
-history-free isolated workspace, derived via `git archive` (§6.2)
+history-free isolated workspace, derived via `git archive` of
+  handoff_commit (§6.2)
         ↓
 PROVE Mode B isolation (§6.3/§21): active escape attempts against every
   named route — filesystem/history/branches/remotes/network/GitHub/
@@ -344,8 +380,12 @@ PROVE Mode B isolation (§6.3/§21): active escape attempts against every
 fresh cold-reader, dispatched INSIDE the same verified Mode B boundary
   (§13/Amendment 4) — not Mode A, not the orchestrator's own context
         │
-        ├── handoff insufficient → back to preparation (§9) /
-        │     handoff selection (§9.6), not forward
+        ├── handoff insufficient → INVALIDATE this handoff_commit
+        │     (§6.1's own invalidation rule) → back to preparation (§9) /
+        │     handoff selection (§9.6) → new documented_revision → new
+        │     handoff_commit → re-run the cold-reader against the NEW
+        │     handoff_commit inside a fresh verified Mode B workspace,
+        │     never the invalidated one
         │
         ↓ handoff sufficient
         ↓
@@ -400,14 +440,62 @@ mechanical enforcement Phase 64 never attempted — reusing Phase 64's
 
 ## 6. Clean-room Git branch design
 
-### 6.1 Branch, naming, and Mode A
+### 6.1 Branch, naming, Mode A, and frozen provenance (Amendment 2, third revision)
 
-`cleanroom/redoc-<source-revision>` for CodeCompass (`<source-revision>`
-= the short commit SHA Phase 81B's own implementation freezes against);
-`cleanroom/redoc-template-<source-revision>` for `codecompass-template`.
-Derived from a specific, recorded commit — never `main`'s own moving
-HEAD. Contains **only** the clean-room handoff filesystem (§11) plus
-three durable manifest/instruction files at its own root:
+**Two separate commits, two separate names, frozen in sequence — not one
+"source revision" standing in for both.** The second-committed version
+of this plan used a single `source_revision` field for both "where
+preparation concluded" and "what the clean-room branch contains," which
+blurs a real distinction: preparation (§9) happens entirely on the
+ordinary repository, producing ordinary commits; the clean-room branch
+is a separate, later artefact built *from* that prepared state. Conflating
+the two makes it impossible to tell, from the manifest alone, whether a
+later preparation commit silently invalidated an already-built handoff.
+
+1. **`documented_revision`** — the commit SHA on CodeCompass's own `main`
+   at which preparation (§9: reconcile, enrich, re-render, drift-check)
+   is genuinely complete and committed. This is an ordinary commit on
+   `main`, reached through the normal commit/push flow — not a special
+   branch of its own. Recorded the moment it exists, before any
+   clean-room branch is built from it.
+2. **`handoff_commit`** — the commit SHA *on* `cleanroom/redoc-<short-SHA
+   of documented_revision>` that contains the finalized, manifest-
+   validated clean-room tree (§6.1.1's own allowlist, the handoff package,
+   §8). Built *from* `documented_revision`, recorded only once the
+   branch's own validator (§6.1.1) passes against it.
+
+```
+prepared source + validated knowledge  (§9)
+        ↓
+documented_revision   (an ordinary commit on main)
+        ↓
+clean-room handoff branch: cleanroom/redoc-<short SHA of documented_revision>
+        ↓
+handoff_commit   (the validated commit on that branch)
+```
+
+**Invalidation rule, explicit (Amendment 2)**: if the cold-reader (§13)
+finds a knowledge gap requiring a change to preparation, the current
+`handoff_commit` is marked invalidated in the manifest's own revision
+history (never silently abandoned or overwritten in place) — the
+corrected preparation is committed to `main` as a **new**
+`documented_revision`, and a **new** clean-room branch/`handoff_commit`
+is built from it. The cold-reader then re-runs against the new
+`handoff_commit`, inside a fresh verified Mode B workspace (§13) — never
+against the invalidated one. This keeps the provenance chain honest: a
+given `handoff_commit` either passed its own cold-reader gate, or is
+recorded as invalidated and superseded, never silently "fixed in place."
+
+`cleanroom/redoc-<short SHA of documented_revision>` for CodeCompass;
+`cleanroom/redoc-template-<short SHA of codecompass-template's own
+documented_revision>` for `codecompass-template` — **each repository
+freezes and records its own `documented_revision`/`handoff_commit` pair
+independently** (they are two separate repositories with two separate
+preparation stages, §9.5/§11; there is no single shared revision number
+between them). Each branch is derived from its own specific, recorded
+commit — never a moving `HEAD`. Contains **only** the clean-room handoff
+filesystem (§8) plus three durable manifest/instruction files at its own
+root:
 
 ```
 CLEANROOM-MANIFEST.yaml
@@ -418,10 +506,11 @@ DOCUMENTATION-TARGET.md
 `CLEANROOM-MANIFEST.yaml` records at minimum:
 
 ```yaml
-source_repository: ctosullivan/codecompass
-source_revision: <commit sha>
+source_repository: ctosullivan/codecompass   # or ctosullivan/codecompass-template
+documented_revision: <commit sha on main -- preparation complete>
+handoff_commit: <commit sha on the cleanroom/redoc-* branch itself>
 generated_at: <ISO 8601 timestamp>
-codecompass_version: <pyproject.toml version string at source_revision>
+codecompass_version: <pyproject.toml version string at documented_revision>
 
 included_paths: [...]      # the FULL, explicit allowlist (§6.1.1) --
                             # every path actually present, listed, not
@@ -452,6 +541,8 @@ narrative_documentation_policy: "none of README.md/docs/**/architecture/**/
   ai-docs/**, including docs/domain/**, is present in this filesystem in
   its own original prose form -- see §6.1.1's own EXCLUDE list and
   Amendment 2"
+invalidated_by: null   # or a pointer to the handoff_commit that superseded
+                       # this one, if the cold-reader invalidated it
 ```
 
 ### 6.1.1 The explicit writer-visible allowlist (Amendment 3 — replaces "handoff filesystem" as an ambiguous term)
@@ -709,23 +800,37 @@ terminology is not rederived from scratch" exception
 concepts mean* — it was never a license to show the writer the original
 prose, and this plan does not read it that way.
 
-### 7.2 `architecture/historical-notes.md` is a named edge case, resolved explicitly
+### 7.2 `architecture/historical-notes.md` — a named edge case, "leave untouched" removed as an option (Amendment 4, third revision)
 
 It is currently kept **inline** in the normal `architecture/`
 navigation, deliberately historical in content but not removed from the
 reader's path — a different convention from what this phase proposes for
 newly-identified superseded documentation (§7.3's own navigation rule).
-Phase 81B's implementation must decide, during the disposition pass, one
-of: (a) leave it exactly as is (it already satisfies "clearly marked as
-historical," just not "out of the navigation path," and its own two
-narrated incidents remain genuinely load-bearing for understanding
-current code, per its own stated rationale) — the likely outcome, since
-rewriting a page that already works correctly for a different, narrower
-reason than this phase's own disposition work is unnecessary scope; or
-(b) if the fresh writer independently finds a cleaner place for that
-content, fold it in and archive the original. This is a **disposition
-report line item** (§8.3), decided during implementation with real
-evidence, not pre-decided here.
+**Corrected by the third revision**: the second-committed version of
+this plan offered "leave it exactly as is" as the likely, acceptable
+outcome. That option is removed — it is still a current-truth file
+sitting in the normal navigation path despite being narrative/historical
+in content, which is exactly the "old and new current-truth
+documentation coexisting" state §12.3/§18 item 11 forbids, regardless of
+how well-marked it already is. It must receive one of the same two
+dispositions as any other narrative file, decided during implementation
+with real evidence, not pre-decided here:
+
+- **(a) Incorporate** whatever of its own content remains genuinely
+  load-bearing for understanding current code (its own stated rationale
+  for existing at all) into the newly reconstructed documentation — most
+  naturally as part of the fresh writer's own architecture narrative, or
+  a dedicated current-truth "why this looks the way it does" note if the
+  writer's own evidence-based structure calls for one — and **delete the
+  original** file; or
+- **(b) Move it** into the explicitly historical archive (§7.3) with the
+  standard archive banner and navigation exclusion, if its own content is
+  judged genuinely historical narrative rather than something the fresh
+  documentation needs to restate.
+
+Either way, it does **not** remain, unchanged, inside `architecture/`'s
+own normal current-documentation path. This is a **disposition report
+line item** (§8.3) like any other.
 
 ### 7.3 Archive location and rule
 
@@ -957,31 +1062,51 @@ would risk converting old documentation into slightly reorganised new
 documentation — precisely the outcome this amendment exists to prevent.
 
 Corrected procedure, applying the same preparation/writer boundary as
-CodeCompass itself (§6.1.2):
+CodeCompass itself (§6.1.2). **Further corrected by the third revision**:
+the second revision's own text still classified
+`optional-intermediate-knowledge/` and (by omission)
+`optional-clean-room-workflow/` as if each directory were wholesale
+structural evidence. Both directories genuinely mix a structural half
+(blank, fillable `TEMPLATE.md` skeletons — the actual data shape a
+downstream adopter fills in, analogous to a schema) with a narrative
+half (prose explaining what the workflow *means* and *why*). Classifying
+either directory wholesale would let the narrative half back in through
+the structural label. Every file is now classified individually, by
+real inspection of its own content, not by which directory it lives in:
 
-- **Structural/product evidence** (potentially valid clean-room
-  evidence, allowlist-eligible): the actual directory structure;
-  workflow/template files themselves (the nine clean-room workflow
-  templates, the `optional-intermediate-knowledge/` files as
-  *structural* artefacts); configuration/scaffold files
-  (`vendor.toml`, `.gitignore`); any scripts; any tests; example
+- **Structural/product evidence** (allowlist-eligible): the actual
+  directory structure itself; the nine blank, fillable workflow
+  templates under `optional-clean-room-workflow/*/TEMPLATE.md`
+  (`assertions/`, `coding-context-selection/`,
+  `documentation-verification/`, `implementation-comparison/`,
+  `legacy-reconciliation/`, `propagation/`, `snapshots/` — each one a
+  genuine skeleton/schema, not explanatory prose); configuration/scaffold
+  files (`vendor.toml`, `.gitignore`); any scripts; any tests; example
   artefacts that are executable/structural rather than explanatory prose;
-  licence/package metadata (`LICENSE`, `CLAUDE.md`'s own structural
+  licence/package metadata (`LICENSE`); `CLAUDE.md`'s own structural
   routing content where it is genuinely instructional-for-a-tool rather
-  than narrative-for-a-human).
+  than narrative-for-a-human.
 - **Prior narrative documentation** (preparation-only, never
-  writer-visible): `README.md`, `docs/architecture.md`,
-  `docs/worked-example.md`, and any other explanatory Markdown
-  (adoption guides, prose inside the clean-room/intermediate-knowledge
-  guides that explains *concepts* rather than defining a *template
-  structure*). The orchestrator may read these to discover intended
-  concepts, structure, and potential gaps — exactly like the
+  writer-visible — classified individually, not by directory):
+  `README.md`; `docs/architecture.md`; `docs/worked-example.md`;
+  `optional-intermediate-knowledge/README.md`;
+  `optional-intermediate-knowledge/worked-example.md`;
+  `optional-clean-room-workflow/README.md`;
+  `optional-clean-room-workflow/conceptual-documentation-guide.md`;
+  `optional-clean-room-workflow/mechanical-isolation.md`;
+  `optional-clean-room-workflow/worked-example.md`; and any other
+  explanatory Markdown found by the same per-file inspection (adoption
+  guides, prose that explains *concepts* rather than defining a
+  *template structure*). The orchestrator may read these to discover
+  intended concepts, structure, and potential gaps — exactly like the
   CodeCompass-side preparation step — but any content carried forward
   must first be independently grounded against the structural/product
   evidence above and expressed as a provenance-aware intermediary
   note (a short, generated synthesis analogous to
   `decisions-and-rationale.md`, §8.2, not a copy), before it can enter
-  the handoff.
+  the handoff. **The writer never receives these files themselves, in
+  original or lightly-reorganised form, regardless of which directory
+  they live in.**
 
 The template's own redoc therefore demonstrates that the Phase 81B
 method is portable even when the target repository is itself
@@ -1318,12 +1443,22 @@ actual cold-reader check results, the actual writer invocation contract,
 actual verification and integration steps, deletion/archive rules as
 applied, validation commands, and failure/retry behaviour observed.
 **If Phase 81B is instead `blocked`** (§6.3 outcome 3 — no substrate
-achieved `VERIFIED`), no such document is written as a completed,
-repeatable process yet; the investigation itself (what was tried, what
-failed, why) is still recorded honestly in the retro and left as a
-pointer for a future attempt, exactly as Phase 79/80's own `UNMET`
-findings were recorded without being dressed up as a finished capability.
-If reusable scripts are written during implementation (the branch-manifest validator,
+achieved `VERIFIED`), **`docs/development/clean-room-redocumentation.md`
+is not created or published at all** — not as a draft, not marked
+"best-effort," not in any form presented as a current, repeatable,
+authoritative workflow. Per the third revision's own explicit rule:
+publishing it is conditioned on a verified full run having actually
+succeeded; a blocked attempt is not a smaller or partial version of that
+same claim. The investigation itself (what was tried, what failed, why,
+including every active escape-route attempt and its own result) is
+instead recorded as **investigation/retro evidence only** — a dedicated
+investigation report (e.g.
+`planning/knowledge/<...>/isolation/` or an equivalent
+Phase-81B-scoped location, mirroring the existing
+`isolation-evidence-inventory.md` convention, §1.3) plus the phase retro
+— left as a pointer for a future attempt, exactly as Phase 79/80's own
+`UNMET` findings were recorded without being dressed up as a finished
+capability. If reusable scripts are written during implementation (the branch-manifest validator,
 §6.1; the projection-drift checker, §10; any export/import helper), they
 live under `scripts/` and are referenced by the stored document, not
 left as one-off manual commands.
@@ -1378,6 +1513,11 @@ completion requires all sixteen of the following:
     (`docs/development/clean-room-redocumentation.md`, §17/§19) —
     reflecting what was proven, including the real isolation mechanism
     and tier achieved, not the original plan's own untested procedure.
+    **This document is published only if isolation reached `VERIFIED`
+    and a full run actually succeeded (Amendment 2, third revision,
+    §17)** — a `blocked` outcome records its own investigation as
+    retro/investigation evidence instead (§17), never as a published,
+    authoritative workflow document.
 14. Full test suite, lint, strict knowledge-base/user-docs validation
     all clean.
 15. Per-phase docs-drift audit (`docs-reconstructor`), learning/
@@ -1576,22 +1716,30 @@ remain genuinely undecided, named honestly rather than silently assumed:
 1. **Archive location naming** (`docs/archive/` for both repositories,
    §7.3) — a reasonable default consistent with existing conventions,
    open to a different choice at approval time.
-2. **Whether `architecture/historical-notes.md` is left untouched or
-   folded into the new structure** (§7.2) — recommended default is
-   "leave untouched," decided for real only once the clean-room writer's
-   own findings exist.
 
-Neither blocks approval of the plan as a whole — each has a stated,
-reasonable default this plan proceeds with unless the approval response
-says otherwise. **What is no longer open for discretion at
-implementation time**: whether to accept `best-effort` isolation as
-sufficient for the authoritative run (§6.3/§18/§21 make this a hard
-no), and whether `docs/domain/**` or any other narrative file gets a
-standing exemption from disposition (§7.1/§12.1 make this a hard no).
+**Corrected by the third revision**: the second-committed version's own
+point 2 ("whether `architecture/historical-notes.md` is left untouched
+or folded in," recommended default "leave untouched") is removed —
+Amendment 4 makes "leave untouched" a hard no (§7.2): the file must be
+either incorporated-then-deleted or moved into the archive, decided
+between those two options with real evidence during implementation, not
+a third, no-op option.
+
+This one remaining point does not block approval of the plan as a whole
+— it has a stated, reasonable default this plan proceeds with unless the
+approval response says otherwise. **What is no longer open for
+discretion at implementation time**: whether to accept `best-effort`
+isolation as sufficient for the authoritative run (§6.3/§18/§21 make
+this a hard no); whether `docs/domain/**` or any other narrative file
+gets a standing exemption from disposition (§7.1/§12.1 make this a hard
+no); whether `architecture/historical-notes.md` may remain unchanged in
+the normal documentation path (§7.2 makes this a hard no); and whether
+`docs/development/clean-room-redocumentation.md` may be published for a
+`blocked` outcome (§17 makes this a hard no).
 
 ---
 
-## 24. Plan-quality self-review (first-commit review, re-confirmed below; §24.1 is this amendment's own required second review)
+## 24. Plan-quality self-review (first-commit review, re-confirmed below; §24.1 is the second amendment's own review against seven invariants; §24.2 is this third amendment's own review against eight invariants)
 
 - **Does the writer truly lack access to `main`?** Only once Mode B is
   independently `VERIFIED` (§6.3/§21, now a hard gate, Amendment 1) —
@@ -1715,6 +1863,80 @@ this review, it would be recorded here rather than silently folded into
 the sections above without a trace, consistent with this project's own
 general preference for visible, explained revision over silent
 rewriting.)
+
+### 24.2 Third-revision review — the eight named invariants (this amendment's own required check)
+
+- **Isolation** ("the authoritative writer cannot technically access the
+  original repository, history, old docs, public repository, credentials,
+  connectors or inherited project context") — unchanged in substance from
+  §24.1's own check, re-confirmed: §21's own route list already names
+  MCP/connectors explicitly; §6.3/§18 still make `VERIFIED` a hard gate.
+  **Confirmed satisfied**, no new gap introduced by this amendment's own
+  four corrections.
+- **Narrative isolation** ("no pre-existing human-facing narrative prose
+  is visible to the writer") — **strengthened by this amendment**: the
+  per-file template classification (§9.5) closes the one remaining gap
+  §24.1's own review had not yet caught — a directory-level classification
+  that could have let `optional-intermediate-knowledge/README.md`'s own
+  narrative prose in under a structural label. **Confirmed satisfied**
+  after the correction; this is in fact the invariant this amendment's
+  own item 1 was written to close.
+- **Allowlist** ("every writer-visible file is explicitly allowlisted and
+  manifest-recorded") — §6.1.1 unchanged in mechanism, now additionally
+  correct in practice for the template given item 1's per-file fix (a
+  file is only ALLOW-eligible if it is genuinely structural, checked
+  individually, not by directory membership). **Confirmed satisfied.**
+- **Provenance** ("`documented_revision` represents the prepared
+  source/knowledge state and `handoff_commit` represents the exact
+  clean-room input tree") — this is a **new invariant this revision
+  itself introduces a mechanism for** (§6.1, Amendment 2): two separate,
+  explicitly named, sequentially-frozen commits, with an explicit
+  invalidation rule for the case a cold-reader finding forces a redo.
+  **Confirmed satisfied** by construction — re-checked that §4's own
+  lifecycle diagram, §13's cold-reader section, and §6.1 all now use the
+  same two field names consistently, not a mix of the old single
+  `source_revision` and the new split (grepped for `source_revision` as
+  a standalone field name after the edit; the only remaining uses are
+  descriptive prose referring to "a revision" generically or to the
+  superseded first-committed field name by name, never a live manifest
+  example still using it).
+- **Cold-reader** ("it runs inside the same verified Mode B isolation
+  class as the real writer") — unchanged from §24.1's own check, still
+  satisfied; now additionally cross-referenced to the invalidation rule
+  (§6.1) for what happens when it fails.
+- **Full reconstruction** ("both repositories receive genuinely fresh
+  complete documentation") — unchanged in mechanism from §24.1's own
+  check; **strengthened by item 4** (historical-notes.md can no longer
+  remain as a third, unchanged option, closing the one remaining
+  "old and new documentation coexist" gap §24.1's own review had not
+  caught in the architecture tree specifically). **Confirmed satisfied**
+  after the correction.
+- **Template isolation** ("old template prose cannot be laundered into
+  the new docs through a synthesis step") — this is the same invariant
+  §24.1 labelled "Template," re-named here to match this amendment's own
+  wording; **this is the invariant item 1 most directly targets** — the
+  second revision's own §9.5 already established the synthesis-must-be-
+  grounded rule, but still permitted a wholesale directory classification
+  that could have let narrative files in before any synthesis step was
+  even reached. **Confirmed satisfied** only after this amendment's own
+  per-file correction — this was the one genuine, real gap this review
+  found or would have found had it not already been fixed as part of
+  drafting item 1 above.
+- **Repeatability** ("the final proven workflow and reusable tooling are
+  stored durably in CodeCompass for later use") — **strengthened by item
+  3**: repeatability now explicitly means *repeatability of a proven
+  success*, not of an attempt — a `blocked` outcome stores its own
+  investigation as evidence (still durably, still in-repo, still
+  reusable as a pointer for a future attempt) but never as the
+  authoritative "do this" document a future run might otherwise
+  mistakenly treat as already-proven. **Confirmed satisfied** — re-checked
+  that §17/§18 item 13/§22 item 17 all now state this consistently, no
+  remaining sentence implies a blocked attempt still produces a
+  publishable workflow page.
+
+Every invariant above is satisfied by one of this amendment's own four
+corrections or by a re-confirmation that an earlier correction already
+covers it — no further amendment is required before implementation.
 
 ---
 

@@ -8,9 +8,26 @@ session-resumption, not a project history.
 ## Current phase
 
 **Phase 81B (clean-room project redocumentation from intermediary
-knowledge) is `planned` — committed and amended, not started, direct
-user request, 2026-10-08.** Implementation is explicitly gated on direct
-user approval of the committed, amended plan
+knowledge) is `planned` — committed and twice-amended, not started,
+direct user request, 2026-10-08.** A third amendment (same day) made
+four further corrections: template narrative isolation is now classified
+per-file rather than per-directory (`optional-intermediate-knowledge/**`/
+`optional-clean-room-workflow/**` each mix structural `TEMPLATE.md`
+skeletons with narrative README/guide prose — only the former is
+allowlist-eligible); provenance is now two explicitly frozen commits per
+repository (`documented_revision` on `main`, `handoff_commit` on the
+clean-room branch), with an explicit invalidation rule if a cold-reader
+finds a knowledge gap; `docs/development/clean-room-redocumentation.md`
+is now published only after a verified full run actually succeeds, never
+for a `blocked` attempt (a blocked attempt's own findings go to
+investigation/retro evidence only); and `architecture/historical-notes.md`'s
+own "leave untouched" disposition is removed — it must be
+incorporated-then-deleted or archived. This governing instruction also
+authorises proceeding directly to implementation once this amendment is
+committed and verified on the remote, without a further approval round —
+implementation begins immediately after this commit; see the next
+update to this file for real implementation progress. Implementation is
+explicitly gated on direct user approval of the committed, amended plan
 (`planning/phase-81b-clean-room-redocumentation.md`). No clean-room
 branch, isolated workspace, writer dispatch, documentation
 deletion/archival, or `codecompass-template` change has happened — both
