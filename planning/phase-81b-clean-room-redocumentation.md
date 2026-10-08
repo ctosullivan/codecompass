@@ -1,6 +1,11 @@
 # Phase 81B — Clean-room project redocumentation from intermediary knowledge
 
-**Status: planned.** Not started, not in progress. Direct user request,
+**Status: blocked** (implemented 2026-10-08; see
+`planning/phase-81b-mode-b-isolation-investigation.md` and
+`planning/retros/phase-81b-clean-room-redocumentation.md` for the full
+account — stopped at this plan's own §6.3/§18/§21 hard gate, not a
+partial or best-effort completion). *Original status line, preserved:*
+**planned.** Not started, not in progress. Direct user request,
 2026-10-08. **Implementation is explicitly gated on direct user approval
 of this committed plan.** No clean-room branch, isolated workspace,
 writer dispatch, documentation deletion, or `codecompass-template`
