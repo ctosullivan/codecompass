@@ -181,6 +181,36 @@ substrate becomes available" revisit trigger on its own terms — the
 namespace/`pivot_root` mechanism documented here is the substrate; what's
 missing is a way to run a real writer inside it.
 
+## Confirmation against the real clean-room branch
+
+The same mechanism was re-confirmed against **real** content, not only
+the disposable fixture above: the real `cleanroom/redoc-46601a1` branch
+(`handoff_commit` `468cffa4e013e56ad17df6c7536dd32a5774cd4b`, pushed to
+`origin`) was extracted via `git archive` and placed inside a fresh
+instance of the same namespace/`pivot_root` sandbox. Results: the real
+handoff content (`planning/documentation-handoff/README.md` and the rest
+of the real allow-listed tree) was readable exactly as expected; `/home`
+did not exist (the original repository checkout genuinely unreachable);
+`curl -m3 https://github.com` returned `HTTP:000` (network genuinely
+blocked). This closes the gap between "the mechanism works in the
+abstract" and "the mechanism works for CodeCompass's own real clean-room
+branch specifically."
+
+A real, genuine implementation bug was also found and fixed during this
+step: the first build of the clean-room tree used a raw filesystem walk
+(`shutil.copytree`), which silently included three local, `.gitignore`d,
+regenerated test-fixture artifacts
+(`tests/fixtures/ledgerkit_lifecycle_demo/{CLAUDE.md,context-graph.db,vendor.toml}`)
+that exist on disk locally but are not tracked by Git at all — the
+manifest claimed they were included, but `git add -A` correctly refused
+to commit them, and the branch validator's own "manifest-listed path is
+missing" check caught the resulting mismatch immediately. Fixed by
+switching `scripts/prepare_cleanroom_branch.py` to build its file list
+from `git ls-files` rather than a raw directory walk, so the manifest can
+never claim more than what a real commit would actually contain. Re-run
+end to end after the fix: `git archive` → validator → `PASS`, zero
+findings.
+
 ## Disposable fixtures used
 
 All testing was performed against a scratch directory under this

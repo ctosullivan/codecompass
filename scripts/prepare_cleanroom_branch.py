@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import shutil
+import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -85,11 +86,28 @@ EXCLUDED_PATHS: list[str] = [
 
 ROOT_FILES = ["CLEANROOM-MANIFEST.yaml", "CLEANROOM-INSTRUCTIONS.md", "DOCUMENTATION-TARGET.md"]
 
-_IGNORE_NAMES = shutil.ignore_patterns("__pycache__", "*.pyc", ".DS_Store")
-
-
 def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _git_tracked_files(root: Path, rel: str) -> list[str]:
+    """Only files `git` itself actually tracks under `rel` -- never a raw
+    filesystem walk. A local, `.gitignore`d, regenerated artifact (e.g. a
+    test fixture's own `context-graph.db` left over from a prior local
+    run) must never silently ride along into the clean-room tree just
+    because it happens to exist on disk at build time; it was never part
+    of the repository's own real content, and `git add -A` would skip it
+    in the real committed branch anyway -- using the same source of truth
+    here avoids a manifest that claims more than the actual commit
+    contains (exactly the mismatch the validator's own "manifest-listed
+    path is missing" check exists to catch)."""
+    result = subprocess.run(
+        ["git", "ls-files", "-z", "--", rel],
+        cwd=root,
+        capture_output=True,
+        check=True,
+    )
+    return [p for p in result.stdout.decode("utf-8").split("\0") if p]
 
 
 def _copy_allowed(root: Path, staging: Path) -> list[str]:
@@ -99,14 +117,18 @@ def _copy_allowed(root: Path, staging: Path) -> list[str]:
         if not src.exists():
             print(f"WARNING: allow-listed path does not exist, skipped: {rel}", file=sys.stderr)
             continue
-        dst = staging / rel
-        dst.parent.mkdir(parents=True, exist_ok=True)
         if src.is_dir():
-            shutil.copytree(src, dst, ignore=_IGNORE_NAMES, dirs_exist_ok=True)
-            for p in sorted(dst.rglob("*")):
-                if p.is_file():
-                    included.append(str(p.relative_to(staging)))
+            tracked = _git_tracked_files(root, rel)
+            if not tracked:
+                print(f"WARNING: allow-listed dir has no git-tracked files: {rel}", file=sys.stderr)
+            for tracked_rel in tracked:
+                dst = staging / tracked_rel
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(root / tracked_rel, dst)
+                included.append(tracked_rel)
         else:
+            dst = staging / rel
+            dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dst)
             included.append(rel)
     return included
