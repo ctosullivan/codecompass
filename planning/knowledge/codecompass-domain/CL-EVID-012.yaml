@@ -52,3 +52,4 @@ repository_revision: "c0c0d15319add8eceea535dadae566378e9896a9"
 timestamp: "2026-09-27T00:00:00Z"
 status: supported
 supersedes: CL-EVID-003
+assertion_kind: definition

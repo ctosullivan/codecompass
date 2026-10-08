@@ -1,13 +1,4 @@
-# hledger-depth — phase brief
-
-A single entry point into this slug's own `intermediate/*.md` files — mechanically compiled from the same records they render, never a separate representation of the same knowledge (planning/phase-81-intermediate-knowledge-layer.md §5.2).
-
-- **Concepts, architecture, domain knowledge** — `overview.md` (1: CL-DEPTH-001)
-- **Invariants and constraints** — `invariants-and-constraints.md` (0: none yet)
-- **Interfaces and behaviours** — `interfaces-and-behaviours.md` (0: none yet)
-- **Open questions and conflicts** — `open-questions-and-conflicts.md` (1: CL-HLEDGERDEPTH-002)
-
-Edge cases and compatibility constraints are recorded as ordinary Claims above (typically under invariants/constraints or open questions) rather than in a separate section here — see each file's own content for the real detail; this brief only indexes it.
+# doc-origin-pinned-reference — open questions and conflicts
 
 ## Candidate additions
 

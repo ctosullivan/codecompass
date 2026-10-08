@@ -57,3 +57,4 @@ repository_revision: "fbb637b50953de1de726291c26f0d6c58d7cb5fc"
 timestamp: "2026-10-02T00:00:00Z"
 status: supported
 supersedes: CL-ADPT-009
+assertion_kind: rule

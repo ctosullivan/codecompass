@@ -1401,13 +1401,103 @@ class TestAnchorIntegrity:
         assert findings[0].strict
 
     def test_real_repository_has_no_dangling_anchors(self):
-        """No intermediate/ directories exist yet in the real repository at
-        the time this check was added -- confirms the check is a true
-        no-op against real content until Phase 81's own rendering ships."""
+        """Every slug's own real, rendered intermediate/*.md anchors
+        resolve to a real, correctly-kinded record — confirmed directly
+        against the live repository, not merely against a disposable
+        fixture."""
         knowledge_dir = REPO_ROOT / "planning" / "knowledge"
         findings: list[check_knowledge_base.Finding] = []
         for feature_dir in sorted(p for p in knowledge_dir.iterdir() if p.is_dir()):
             findings.extend(
                 check_knowledge_base.check_anchor_integrity(feature_dir, root=REPO_ROOT)
+            )
+        assert findings == []
+
+
+class TestNoPendingReconciliation:
+    """Phase 81B (§10): a committed `intermediate/*.md` projection must
+    not be stale relative to its own canonical records. Reuses Phase 81's
+    own `detect_anchor_changes` rather than re-deriving the dual-hash
+    comparison a second time."""
+
+    def _make_slug(self, tmp_path: Path, slug: str = "demo-slug") -> Path:
+        sdir = tmp_path / "planning" / "knowledge" / slug
+        sdir.mkdir(parents=True)
+        _write(
+            sdir / "CL-DEMO-001.yaml",
+            "id: CL-DEMO-001\nkind: claim\nstatement: A test statement.\n"
+            "derivation: null\nsupporting_evidence: []\ncontradicting_evidence: []\n"
+            'derived_by: t\nrepository_revision: "working tree"\n'
+            'timestamp: "2026-10-08T00:00:00Z"\nstatus: supported\n',
+        )
+        return sdir
+
+    def test_no_intermediate_dir_no_finding(self, tmp_path):
+        sdir = tmp_path / "planning" / "knowledge" / "empty-slug"
+        sdir.mkdir(parents=True)
+        findings = check_knowledge_base.check_no_pending_reconciliation(sdir, root=tmp_path)
+        assert findings == []
+
+    def test_freshly_rendered_slug_has_no_finding(self, tmp_path):
+        from codecompass import knowledge_intermediate as ki
+
+        self._make_slug(tmp_path)
+        ki.render_slug(tmp_path, "demo-slug")
+        findings = check_knowledge_base.check_no_pending_reconciliation(
+            tmp_path / "planning" / "knowledge" / "demo-slug", root=tmp_path
+        )
+        assert findings == []
+
+    def test_stale_projection_after_canonical_change_is_flagged(self, tmp_path):
+        """The real failure mode this check exists to catch: a canonical
+        record changes, the committed projection is never re-rendered to
+        catch up, and nothing else in this project's own checkers notices
+        — check_anchor_integrity explicitly disclaims this in its own
+        docstring ('the anchor's own semantic/projection hashes are
+        reconciliation's own concern, not this structural check's')."""
+        from codecompass import knowledge_intermediate as ki
+
+        sdir = self._make_slug(tmp_path)
+        ki.render_slug(tmp_path, "demo-slug")
+        # The canonical record changes; the committed projection is never
+        # re-rendered -- exactly the gap check_anchor_integrity's own
+        # docstring names as out of its own scope.
+        (sdir / "CL-DEMO-001.yaml").write_text(
+            (sdir / "CL-DEMO-001.yaml").read_text().replace(
+                "status: supported", "status: verified"
+            ),
+            encoding="utf-8",
+        )
+        findings = check_knowledge_base.check_no_pending_reconciliation(sdir, root=tmp_path)
+        assert len(findings) == 1
+        assert findings[0].rule == "knowledge-base-stale-projection"
+        assert findings[0].strict
+
+    def test_live_candidate_region_addition_is_not_flagged(self, tmp_path):
+        """A not-yet-reviewed addition sitting in a live `## Candidate
+        additions` region is an open contribution, not drift — this check
+        has no opinion on whether it should be accepted."""
+        from codecompass import knowledge_intermediate as ki
+
+        sdir = self._make_slug(tmp_path)
+        ki.render_slug(tmp_path, "demo-slug")
+        overview = sdir / "intermediate" / "overview.md"
+        text = overview.read_text(encoding="utf-8").replace(
+            ki.CANDIDATE_START + ki.CANDIDATE_END,
+            ki.CANDIDATE_START + "\nA genuinely new, not-yet-reviewed fact.\n" + ki.CANDIDATE_END,
+        )
+        overview.write_text(text, encoding="utf-8")
+        findings = check_knowledge_base.check_no_pending_reconciliation(sdir, root=tmp_path)
+        assert findings == []
+
+    def test_real_repository_has_no_pending_reconciliation(self):
+        """The real repository's own committed projections, as they stand
+        right now, are not stale relative to their own canonical
+        records."""
+        knowledge_dir = REPO_ROOT / "planning" / "knowledge"
+        findings: list[check_knowledge_base.Finding] = []
+        for feature_dir in sorted(p for p in knowledge_dir.iterdir() if p.is_dir()):
+            findings.extend(
+                check_knowledge_base.check_no_pending_reconciliation(feature_dir, root=REPO_ROOT)
             )
         assert findings == []

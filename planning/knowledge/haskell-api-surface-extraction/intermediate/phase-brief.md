@@ -1,11 +1,12 @@
-# hledger-depth — phase brief
+# haskell-api-surface-extraction — phase brief
 
 A single entry point into this slug's own `intermediate/*.md` files — mechanically compiled from the same records they render, never a separate representation of the same knowledge (planning/phase-81-intermediate-knowledge-layer.md §5.2).
 
-- **Concepts, architecture, domain knowledge** — `overview.md` (1: CL-DEPTH-001)
+- **Concepts, architecture, domain knowledge** — `overview.md` (7: CL-HSAPI-001, CL-HSAPI-002, CL-HSAPI-003, CL-HSAPI-004, CL-HSAPI-005, CL-HSAPI-006, DEC-HSAPI-001)
 - **Invariants and constraints** — `invariants-and-constraints.md` (0: none yet)
 - **Interfaces and behaviours** — `interfaces-and-behaviours.md` (0: none yet)
-- **Open questions and conflicts** — `open-questions-and-conflicts.md` (1: CL-HLEDGERDEPTH-002)
+- **Open questions and conflicts** — `open-questions-and-conflicts.md` (0: none)
+- **Test scenarios and acceptance behaviour** — `tests-and-acceptance.md` (6: REQ-HSAPI-001, REQ-HSAPI-002, REQ-HSAPI-003, REQ-HSAPI-004, REQ-HSAPI-005, REQ-HSAPI-006)
 
 Edge cases and compatibility constraints are recorded as ordinary Claims above (typically under invariants/constraints or open questions) rather than in a separate section here — see each file's own content for the real detail; this brief only indexes it.
 

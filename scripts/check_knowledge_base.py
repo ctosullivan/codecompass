@@ -577,6 +577,82 @@ def check_anchor_integrity(feature_dir: Path, root: Path = ROOT) -> list[Finding
     return findings
 
 
+def _load_knowledge_intermediate():
+    """Import codecompass's own render/detect functions for
+    check_no_pending_reconciliation. Returns None if the package isn't
+    importable (informational finding, not a hard error — mirrors
+    scripts/check_user_docs.py's own `_load_codecompass_generators`
+    pattern for the same reason: a bare checkout shouldn't crash the
+    whole script)."""
+    src_path = ROOT / "src"
+    if str(src_path) not in sys.path:
+        sys.path.insert(0, str(src_path))
+    try:
+        from codecompass import knowledge_intermediate
+
+        return knowledge_intermediate
+    except Exception:
+        return None
+
+
+def check_no_pending_reconciliation(feature_dir: Path, root: Path = ROOT) -> list[Finding]:
+    """Phase 81B (§10): a committed `intermediate/*.md` projection must
+    not be stale relative to its own canonical records — i.e. nothing
+    reconcilable may be silently pending when this check runs. Reuses
+    Phase 81's own `detect_anchor_changes` (read-only; this check performs
+    no write) rather than re-deriving the dual-hash comparison a second
+    time, since the renderer's own logic is already the authority on what
+    "stale" means here.
+
+    Fails `--strict` only on `"refresh"` (a canonical record changed, the
+    committed projection hasn't caught up — nothing a human needs to
+    review, purely a staleness bug) or `"concurrent_conflict"` (both
+    sides changed — needs a real review via `knowledge select-candidates`,
+    never silently left in a committed file). Deliberately does **not**
+    fail on `"candidate"` — a live, not-yet-reviewed addition sitting in a
+    `## Candidate additions` region is an open contribution, not drift,
+    and this check has no opinion on whether it should be accepted.
+    """
+    findings: list[Finding] = []
+    if not (feature_dir / "intermediate").is_dir():
+        return findings
+    ki = _load_knowledge_intermediate()
+    if ki is None:
+        return [
+            Finding(
+                "no_pending_reconciliation",
+                "could not import codecompass (src/ not importable) — "
+                "skipped the projection-drift check",
+                strict=False,
+            )
+        ]
+    slug = feature_dir.name
+    for finding in ki.detect_anchor_changes(root, slug):
+        if finding.case == "refresh":
+            findings.append(
+                Finding(
+                    "knowledge-base-stale-projection",
+                    f"{feature_dir.relative_to(root)}/intermediate/: "
+                    f"{finding.record_id}'s own canonical record changed "
+                    "but the committed projection was never refreshed — "
+                    "run `codecompass knowledge select-candidates` to "
+                    "catch it up",
+                )
+            )
+        elif finding.case == "concurrent_conflict":
+            findings.append(
+                Finding(
+                    "knowledge-base-stale-projection",
+                    f"{feature_dir.relative_to(root)}/intermediate/: "
+                    f"{finding.record_id} has an unresolved concurrent-"
+                    "change conflict (both the canonical record and the "
+                    "projection changed) — needs human review via "
+                    "`knowledge select-candidates`, not left committed as is",
+                )
+            )
+    return findings
+
+
 def check_design_doc_citations_resolve(feature_dir: Path) -> list[Finding]:
     """Every id cited from `design.md`/`context-packet.md` must exist as
     a real record — the *only* direction required (§4's own explicit
@@ -1261,6 +1337,7 @@ CHECKS = [
     check_supersedes_never_crosses_kind,
     check_requirement_cites_approved_decision,
     check_anchor_integrity,
+    check_no_pending_reconciliation,
     check_design_doc_citations_resolve,
     check_snapshot_completeness,
     check_snapshot_historical_integrity,
@@ -1294,6 +1371,7 @@ def run_all(root: Path) -> list[Finding]:
                 check_optional_enum_fields,
                 check_list_fields_are_inline,
                 check_anchor_integrity,
+                check_no_pending_reconciliation,
                 check_snapshot_completeness,
                 check_snapshot_historical_integrity,
                 check_snapshot_current_divergence,

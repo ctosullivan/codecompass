@@ -1,13 +1,15 @@
-# hledger-depth — phase brief
+# first-party-source-symbols — overview
 
-A single entry point into this slug's own `intermediate/*.md` files — mechanically compiled from the same records they render, never a separate representation of the same knowledge (planning/phase-81-intermediate-knowledge-layer.md §5.2).
+<!-- codecompass-knowledge: CL-FPSS-001 semantic-sha256:36ddf18f0638184992eb7d3235aaaf8d39713dd66340a3e273e1b216bc84abdf projection-sha256:751f73b1aa783cb019c61fa9c2574b400ada4a5e466776fb6c242f5984ca1c36 -->
+### CL-FPSS-001
 
-- **Concepts, architecture, domain knowledge** — `overview.md` (1: CL-DEPTH-001)
-- **Invariants and constraints** — `invariants-and-constraints.md` (0: none yet)
-- **Interfaces and behaviours** — `interfaces-and-behaviours.md` (0: none yet)
-- **Open questions and conflicts** — `open-questions-and-conflicts.md` (1: CL-HLEDGERDEPTH-002)
+source_symbols.Language is a new, narrow, five-value concept (python/rust/javascript/typescript/haskell) introduced specifically because the pre-existing core.Ecosystem concept cannot distinguish JavaScript from TypeScript (both collapse to a single NPM value there, a *package-ecosystem* concept), whereas first-party symbol-kind extraction genuinely needs that distinction (e.g. only TypeScript files can declare interface/type constructs). Language is defined in source_symbols.py itself, not core.py, and is not imported or referenced by core.Ecosystem or vice versa within this module.
 
-Edge cases and compatibility constraints are recorded as ordinary Claims above (typically under invariants/constraints or open questions) rather than in a separate section here — see each file's own content for the real detail; this brief only indexes it.
+Supporting evidence: ["EV-FPSS-001", "EV-FPSS-002", "EV-FPSS-016"]
+Status: status=supported, evidence_support_state=supported
+Provenance: OBSERVED
+<!-- /codecompass-knowledge -->
+
 
 ## Candidate additions
 
