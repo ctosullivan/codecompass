@@ -17,6 +17,45 @@ sys.modules["cleanroom_prompt_assembler"] = assembler
 _spec.loader.exec_module(assembler)
 
 
+def test_revise_mode_requires_instructions_file(tmp_path, capsys):
+    rc = assembler.main([
+        "cleanroom_prompt_assembler.py",
+        "revise",
+        str(tmp_path),
+        "/tmp/nonexistent.sock",
+    ])
+    assert rc == 2
+    assert "revision-instructions-file" in capsys.readouterr().err
+
+
+def test_revise_mode_passes_instructions_and_current_draft_to_broker(tmp_path, monkeypatch):
+    (tmp_path / "current-draft").mkdir()
+    (tmp_path / "current-draft" / "existing.md").write_text("old content\n", encoding="utf-8")
+    instructions = tmp_path / "revision-instructions.txt"
+    instructions.write_text("fact 1: check src/foo.py line 10\n", encoding="utf-8")
+
+    captured = {}
+
+    def fake_call(socket_path, system_prompt, messages):
+        captured["system_prompt"] = system_prompt
+        captured["prompt"] = messages[0]["content"]
+        return {"ok": True, "output": "=== FILE: x.md ===\nnew\n=== END FILE ==="}
+
+    monkeypatch.setattr(assembler.client, "call", fake_call)
+    rc = assembler.main([
+        "cleanroom_prompt_assembler.py",
+        "revise",
+        str(tmp_path),
+        "/tmp/fake.sock",
+        str(instructions),
+    ])
+    assert rc == 0
+    assert captured["system_prompt"] == assembler._REVISE_SYSTEM_PROMPT
+    assert "fact 1: check src/foo.py line 10" in captured["prompt"]
+    assert "current-draft/existing.md" in captured["prompt"]
+    assert "old content" in captured["prompt"]
+
+
 def test_assembles_files_of_every_real_extension_in_the_handoff(tmp_path):
     """Regression test for a real cold-reader finding (fifth pass): a
     fixed suffix allow-list previously used here silently dropped real

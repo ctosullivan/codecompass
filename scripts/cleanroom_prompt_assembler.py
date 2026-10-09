@@ -113,15 +113,44 @@ def assemble_evidence_blob(evidence_root: Path) -> str:
     return "\n".join(parts)
 
 
+_REVISE_SYSTEM_PROMPT = """\
+You are a documentation-writing agent for a software project called
+CodeCompass, continuing a prior clean-room documentation effort. You
+have never seen this project before beyond what is supplied to you in
+this one request -- you do not have access to any other conversation,
+including whatever earlier draft produced the current state of these
+docs.
+
+You are asked to verify and, where necessary, revise specific existing
+documentation files so they fully cover a short list of specific,
+independently-verified facts. Each fact is given with its own exact
+source location in your workspace -- verify it yourself by reading that
+location, exactly as you would verify anything else, before adding it.
+Do not take the fact list on faith; confirm each one against the cited
+source first.
+
+Output ONLY the files that genuinely need a change, each one complete
+(not a diff/patch), delimited exactly like this:
+
+=== FILE: <relative/path.md> ===
+<complete, revised file content>
+=== END FILE ===
+
+If a named file already fully covers its assigned fact, do not include
+it in your output at all -- do not restate a file that needs no change.
+"""
+
+
 def main(argv: list[str]) -> int:
-    if len(argv) != 4:
+    if len(argv) not in (4, 5):
         print(
-            f"usage: {argv[0]} <cold-reader|writer> <evidence-root> <broker-socket>",
+            f"usage: {argv[0]} <cold-reader|writer|revise> <evidence-root> <broker-socket> "
+            "[revision-instructions-file]",
             file=sys.stderr,
         )
         return 2
     role, evidence_root_str, socket_path = argv[1], argv[2], argv[3]
-    if role not in ("cold-reader", "writer"):
+    if role not in ("cold-reader", "writer", "revise"):
         print(f"unknown role: {role!r}", file=sys.stderr)
         return 2
 
@@ -134,11 +163,22 @@ def main(argv: list[str]) -> int:
             "Here is the complete clean-room handoff package and allow-listed source/test "
             "evidence. Evaluate its sufficiency per your instructions."
         )
-    else:
+    elif role == "writer":
         system_prompt = _WRITER_SYSTEM_PROMPT
         instruction = (
             "Here is the complete clean-room handoff package and allow-listed source/test "
             "evidence. Write the complete documentation per your instructions."
+        )
+    else:
+        system_prompt = _REVISE_SYSTEM_PROMPT
+        if len(argv) != 5:
+            print("revise mode requires a revision-instructions-file argument", file=sys.stderr)
+            return 2
+        revision_instructions = Path(argv[4]).read_text(encoding="utf-8")
+        instruction = (
+            "Here is the complete clean-room handoff package and allow-listed source/test "
+            "evidence, followed by the specific facts to verify and incorporate:\n\n"
+            + revision_instructions
         )
 
     full_prompt = f"{instruction}\n\n{blob}"
