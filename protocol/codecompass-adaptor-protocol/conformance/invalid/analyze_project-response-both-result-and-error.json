@@ -1,0 +1,5 @@
+{
+  "id": 2,
+  "result": {},
+  "error": { "code": "internal_error", "message": "should never appear alongside result" }
+}

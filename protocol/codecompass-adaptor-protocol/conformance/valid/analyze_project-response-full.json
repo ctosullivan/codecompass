@@ -1,0 +1,25 @@
+{
+  "id": 2,
+  "result": {
+    "dependencies": {
+      "name": "example-package",
+      "version": "1.0.0",
+      "dev_only": false,
+      "children": [
+        { "name": "child-dep", "version": "0.2.0", "dev_only": true, "children": [] }
+      ]
+    },
+    "symbols": [{ "name": "doThing", "purpose": null, "module": "Example.Core" }],
+    "observations": [
+      {
+        "method": "executable",
+        "what_was_done": "ran the example tool",
+        "location": null,
+        "raw_result": "ok",
+        "tool": "example-tool",
+        "tool_version": "1.0"
+      }
+    ],
+    "diagnostics": [{ "severity": "warning", "message": "example diagnostic" }]
+  }
+}
