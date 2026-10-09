@@ -1,11 +1,11 @@
 # tests/
 
-No package exists yet (see
-[`planning/phase-0-repo-scaffolding.md`](../planning/phase-0-repo-scaffolding.md)).
-Real tests begin in Phase 1 alongside `src/codecompass/`, mirroring its
-module structure with one test module per source module minimum.
+895 tests across 39 modules, one test module per `src/codecompass/`
+module at minimum, run via `pytest` (`pyproject.toml`'s `testpaths =
+["tests"]`). `tests/fixtures/` holds shared, hand-written input fixtures
+(sample manifests, lock files, a small real demo project) used across
+several test modules rather than duplicated per-module.
 
-This directory exists now so `pyproject.toml`'s `testpaths` and future CI
-wiring (Phase 6) have a stable target from commit one. It intentionally
-contains no placeholder test files — an empty `assert True` test would
-give a false-green signal with nothing to verify.
+Maintainer-only scripts under `scripts/` (not part of the `codecompass`
+package) have their own test modules here too
+(e.g. `test_prepare_cleanroom_branch.py`, `test_cleanroom_broker.py`).

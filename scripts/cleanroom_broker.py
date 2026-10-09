@@ -27,7 +27,7 @@ import uuid
 from pathlib import Path
 
 CLAUDE_BIN = "claude"
-SUBPROCESS_TIMEOUT_S = 600
+SUBPROCESS_TIMEOUT_S = 1800
 MAX_REQUEST_BYTES = 8 * 1024 * 1024
 
 # A real, active sandbox test (Phase 81B Amendment 4) found that the

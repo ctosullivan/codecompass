@@ -15,7 +15,7 @@ import sys
 
 
 def call(
-    socket_path: str, system_prompt: str, messages: list[dict], timeout: float = 620.0
+    socket_path: str, system_prompt: str, messages: list[dict], timeout: float = 1830.0
 ) -> dict:
     req = json.dumps({"system_prompt": system_prompt, "messages": messages}).encode("utf-8")
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:

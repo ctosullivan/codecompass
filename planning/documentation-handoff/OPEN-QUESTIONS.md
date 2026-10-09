@@ -1,5 +1,53 @@
 # Open questions and conflicts (handoff selection)
 
+**Rebuilt 2026-10-09, Phase 81B Amendment 4, cold-reader finding #3**:
+the first version of this file contained only the unfilled candidate-
+submission template for each slug (mechanically correct — nothing in
+the selected Claims has `status: contradicted` — but it meant several
+real, already-stated open design questions sitting inside *supported*
+Claims' own prose never surfaced here, which is exactly the file whose
+name and purpose promises them). The section below is curated, pulling
+verbatim unresolved-question language the knowledge base's own Claims
+already state; nothing here is invented.
+
+## Known open design questions from supported Claims
+
+These Claims are `status: supported` — not contradicted, not wrong —
+but each one's own statement explicitly names a question its own
+research did not resolve. A writer should treat these as genuinely
+unresolved, not as settled behaviour to describe confidently.
+
+- **CL-HSAPI-002** (`haskell-api-surface-extraction`): a `module <Name>`
+  entry inside a Haskell export list cannot be resolved into a flat set
+  of exported names by reading that one line alone — it may need a
+  cross-file read of another module's own export list, a file-local
+  `import ... as <Name>` alias expansion, or resolve to "this module's
+  own complete surface." The Claim is explicit: *"a scope decision the
+  next design step must make explicitly, not an ambiguity this research
+  can resolve on its own."*
+- **CL-HSAPI-003** (`haskell-api-surface-extraction`): a real
+  C-preprocessor conditional (`#if MIN_VERSION_time(1,11,0)` /
+  `#endif`) can gate whether a name is exported at all (confirmed real
+  in `hledger-lib/Hledger/Data/Types.hs`, gating `Year`) — a
+  non-preprocessing line scanner cannot evaluate this from the file's
+  own text alone. Three handling strategies are named
+  (over-approximate / under-approximate / flag-for-follow-up); the
+  Claim states plainly: *"This research does not resolve which of
+  (a)/(b)/(c) is correct — it depends on... a design choice, not a fact
+  about hledger's own source."*
+- **CL-HSAPI-006** (`haskell-api-surface-extraction`): a module with no
+  export list at all is real (confirmed 17 times in a pinned hledger
+  checkout) and exports every top-level binding per Haskell's own
+  semantics — but *enumerating* those bindings mechanically, without a
+  full parser, depends on Haskell's own column/layout rule in a way
+  Rust's `pub fn` keyword-based approach does not need to. The Claim
+  states: *"whether a Rust-adapter-tier heuristic... is good enough in
+  practice remains untested and is named here as an open question, not
+  quietly assumed solved."*
+
+## Per-slug candidate-submission regions (structural, for future
+knowledge additions — not itself open-questions content)
+
 ## Source: `codecompass-domain`
 
 # codecompass-domain — open questions and conflicts
