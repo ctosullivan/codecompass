@@ -17,6 +17,51 @@ This pass used a systematic grep across all four selected slugs for
 self-described unresolved/untested/honest-gap language (not a manual
 skim), to avoid the same partial-coverage mistake twice.
 
+## A real, confirmed self-dogfooding inconsistency, with a deeper real cause (added 2026-10-09, cold-reader finding #1, sixth pass)
+
+The root `vendor.toml` (this project's own tracked-dependency manifest)
+lists only `anthropic`, `pipdeptree`, `rich`, `typer` — but
+`pyproject.toml` also declares `pyyaml>=6.0` as a required runtime
+dependency, genuinely imported in `src/codecompass/discovery.py` and
+`adapters/haskell.py` (confirmed directly: `import yaml` appears in
+both). This preparation pass investigated fixing it directly (adding a
+`[[vendor]]` entry and running `codecompass sync`) and found a real,
+deeper reason this specific dependency was never tracked: `PythonAdapter`
+(`src/codecompass/adapters/python.py`) uses one single `config.name`
+field for two different lookups that need two different strings for
+this package — `importlib.metadata.version()` needs the PyPI
+distribution name (`pyyaml`), while `importlib.util.find_spec()` needs
+the import name (`yaml`). Every other currently-tracked dependency
+happens to have identical PyPI and import names, which is why this
+split was never exposed before. Attempting `name = "pyyaml"` fails
+`find_spec`; attempting `name = "yaml"` fails `importlib.metadata.version`.
+This is a real, pre-existing adapter limitation, out of this
+preparation pass's own scope to fix (it needs a schema change to
+`VendorConfig`, not a one-line `vendor.toml` edit) — present it as a
+genuine, confirmed gap in CodeCompass's own self-dogfooding, with this
+specific root cause, rather than guessing at a simpler explanation or
+silently omitting it.
+
+## A real requirement stated nowhere in product-facing evidence, only corroborated indirectly (added 2026-10-09, cold-reader finding #2, sixth pass)
+
+`src/codecompass/enrichment.py:559`, `chat.py:73`, and
+`relation_enrichment.py:585` all construct `anthropic.Anthropic()` with
+no explicit credential argument — directly observable in your own
+workspace. No docstring, CLI help text, or knowledge Claim states what
+this means in practice. Two independent, workspace-visible facts
+corroborate the same conclusion: (1) this is the Anthropic Python SDK's
+own standard, publicly-documented default-credential convention (read an
+API key from the environment when none is passed explicitly — the same
+pattern used by comparable SDKs, not project-specific behaviour this
+preparation pass is asserting on its own authority); (2)
+`scripts/check_user_docs.py::check_api_key_documented` (your own
+workspace) mechanically asserts that the real `README.md` must mention
+the literal string `"ANTHROPIC_API_KEY"` — independent confirmation
+that this specific environment-variable name is the one this project
+itself expects. A getting-started/configuration section should state
+this requirement directly (Phase B enrichment needs `ANTHROPIC_API_KEY`
+set in the environment) rather than leaving a reader to infer it.
+
 ## Known limitations disclosed only in source comments (added 2026-10-09, cold-reader finding #5)
 
 The knowledge layer does not surface every disclosed limitation living
