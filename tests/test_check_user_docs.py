@@ -41,7 +41,7 @@ class TestCliCommandsDocumented:
             "import typer\napp = typer.Typer()\n\n\n"
             "@app.command()\ndef frobnicate():\n    pass\n",
         )
-        _write(tmp_path / "docs" / "cli-reference.md", "# CLI reference\n\nnothing here\n")
+        _write(tmp_path / "docs" / "reference" / "cli.md", "# CLI reference\n\nnothing here\n")
 
         findings = check_user_docs.check_cli_commands_documented(tmp_path)
 
@@ -55,54 +55,13 @@ class TestCliCommandsDocumented:
             "@app.command()\ndef frobnicate():\n    pass\n",
         )
         _write(
-            tmp_path / "docs" / "cli-reference.md",
+            tmp_path / "docs" / "reference" / "cli.md",
             "# CLI reference\n\n`codecompass frobnicate`\n",
         )
 
         findings = check_user_docs.check_cli_commands_documented(tmp_path)
 
         assert findings == []
-
-
-class TestReadmePhaseCount:
-    def test_flags_mismatch(self, tmp_path):
-        _write(tmp_path / "README.md", "Status: phases 0-5 all `done`.\n")
-        _write(
-            tmp_path / "planning" / "ROADMAP.md",
-            "In brief: the foundation (phases 0-1) is the tool.\n",
-        )
-
-        findings = check_user_docs.check_readme_phase_count(tmp_path)
-
-        assert len(findings) == 1
-        assert "0-5" in findings[0].message
-        assert "0-1" in findings[0].message
-
-    def test_no_finding_when_consistent(self, tmp_path):
-        _write(tmp_path / "README.md", "Status: phases 0-1 all `done`.\n")
-        _write(
-            tmp_path / "planning" / "ROADMAP.md",
-            "In brief: the foundation (phases 0-1) is the tool.\n",
-        )
-
-        findings = check_user_docs.check_readme_phase_count(tmp_path)
-
-        assert findings == []
-
-    def test_flags_missing_roadmap_claim(self, tmp_path):
-        # Phase 71's own ROADMAP.md restructure replaced per-phase `done`
-        # row tables with a concise "phases 0-N" prose claim -- if that
-        # claim itself goes missing, this is a real finding, not silence.
-        _write(tmp_path / "README.md", "Status: phases 0-38 all `done`.\n")
-        _write(
-            tmp_path / "planning" / "ROADMAP.md",
-            "No foundation claim in this file at all.\n",
-        )
-
-        findings = check_user_docs.check_readme_phase_count(tmp_path)
-
-        assert len(findings) == 1
-        assert "ROADMAP.md" in findings[0].message
 
 
 class TestApiKeyDocumented:
@@ -129,7 +88,7 @@ class TestVendorConfigFieldsDocumented:
             "@dataclass(frozen=True)\nclass VendorConfig:\n"
             "    name: str\n    ecosystem: str\n",
         )
-        _write(tmp_path / "docs" / "config-schema.md", "Fields: `name`\n")
+        _write(tmp_path / "docs" / "reference" / "configuration.md", "Fields: `name`\n")
 
         findings = check_user_docs.check_vendor_config_fields_documented(tmp_path)
 
@@ -143,7 +102,9 @@ class TestVendorConfigFieldsDocumented:
             "@dataclass(frozen=True)\nclass VendorConfig:\n"
             "    name: str\n    ecosystem: str\n",
         )
-        _write(tmp_path / "docs" / "config-schema.md", "Fields: `name`, `ecosystem`\n")
+        _write(
+            tmp_path / "docs" / "reference" / "configuration.md", "Fields: `name`, `ecosystem`\n"
+        )
 
         findings = check_user_docs.check_vendor_config_fields_documented(tmp_path)
 
@@ -488,6 +449,16 @@ class TestFencedCodecompassExamples:
         root = self._root(tmp_path, "Run `codecompass wibble` — not in a fence.\n")
         assert check_user_docs.check_fenced_codecompass_examples(root) == []
 
+    def test_accepts_bracketed_usage_synopsis(self, tmp_path):
+        """Regression test for a real finding from Phase 81B Amendment 4's
+        documentation disposition: a usage-synopsis line like
+        `codecompass [--yes] [--budget USD]` (square-bracket-optional-arg
+        convention) was wrongly flagged as an attempt to invoke a
+        subcommand literally named '[--yes]', since that token doesn't
+        start with '-' the way a bare flag would."""
+        root = self._root(tmp_path, "```\ncodecompass [--yes] [--budget USD]\n```\n")
+        assert check_user_docs.check_fenced_codecompass_examples(root) == []
+
 
 class TestAdrStatusAndSupersedes:
     def test_flags_missing_status(self, tmp_path):
@@ -625,13 +596,13 @@ class TestMainStrictExitCode:
             "In brief: the foundation (phases 0-0) is the tool.\n",
         )
         _write(tmp_path / "src" / "codecompass" / "cli.py", "import typer\napp = typer.Typer()\n")
-        _write(tmp_path / "docs" / "cli-reference.md", "# CLI reference\n")
+        _write(tmp_path / "docs" / "reference" / "cli.md", "# CLI reference\n")
         _write(
             tmp_path / "src" / "codecompass" / "core.py",
             "from dataclasses import dataclass\n\n\n"
             "@dataclass(frozen=True)\nclass VendorConfig:\n    pass\n",
         )
-        _write(tmp_path / "docs" / "config-schema.md", "# config schema\n")
+        _write(tmp_path / "docs" / "reference" / "configuration.md", "# config schema\n")
         _write(tmp_path / "ai-docs" / "README.md", "content\n")
         return tmp_path
 

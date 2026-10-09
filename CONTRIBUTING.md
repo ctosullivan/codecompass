@@ -99,7 +99,7 @@ accompanying commit should either cite the relevant existing knowledge
 record or add a new one through the intermediate-document candidate
 workflow, the same discipline "plan before implementing" already asks
 for code. See
-[`docs/codecompass-knowledge-workflow.md`](docs/codecompass-knowledge-workflow.md)
+[`docs/workflows/knowledge-reconciliation-loop.md`](docs/workflows/knowledge-reconciliation-loop.md)
 for the full, self-contained guide: what's canonical, what you may
 edit, how to propose a new fact, and how it gets reconciled before
 becoming authoritative.
@@ -236,8 +236,10 @@ pytest
 ruff check .
 ```
 
-See [`README.md`](README.md)'s Setup section for external requirements
-(Python version, `git`, the optional `ANTHROPIC_API_KEY`), and
+See [`README.md`](README.md)'s Installation section for external
+requirements (Python version, `git`, the optional `ANTHROPIC_API_KEY`),
+[`docs/development/contributing.md`](docs/development/contributing.md)
+for code-style conventions and maintainer-only tooling, and
 [`planning/CONTEXT.md`](planning/CONTEXT.md) for current phase status.
 
 ## License

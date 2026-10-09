@@ -96,7 +96,7 @@ def render_tool_skill(configs: list[VendorConfig], project_root: Path) -> str:
         "own): Skills, Cursor `.mdc` rules, and the `/discovery` slash "
         "command, each with its kind and what it mechanically mentions.",
         "  - `query relations <name> [--json]` — given a spec-doc path "
-        "(e.g. `architecture/overview.md`), what it mechanically "
+        "(e.g. `docs/architecture/overview.md`), what it mechanically "
         "mentions; given a vendor or Skill name, which spec docs "
         "mechanically mention it. Shows an AI-generated summary of *how* "
         "the two relate when one has been enriched.",
@@ -119,7 +119,7 @@ def render_tool_skill(configs: list[VendorConfig], project_root: Path) -> str:
         "  - If a question doesn't fit any of these — an ad hoc join or "
         "filter — query `context-graph.db` directly with `sqlite3` (a "
         "plain SQLite file at the project root); see "
-        "`architecture/overview.md`'s \"Context graph\" section for the "
+        "`docs/architecture/overview.md`'s \"Context graph\" section for the "
         "schema (`vendors`, `symbols`, `uses_edges`, `doc_artifacts`, "
         "`documents_edges`, `skill_mentions_edges`, `routes_via_edges`, "
         "`depends_on_edges`, `doc_relations_edges`, `vendor_enrichment`, "

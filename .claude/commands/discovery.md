@@ -33,7 +33,7 @@ writing, editing, or planning code.
    filter across the graph — fall back to direct, read-only SQL
    against `context-graph.db` in the project root, e.g.
    `sqlite3 context-graph.db "SELECT ..."`. See
-   `architecture/overview.md`'s "Context graph" section for the
+   `docs/architecture/overview.md`'s "Context graph" section for the
    schema (`vendors`, `symbols`, `uses_edges`, `doc_artifacts`,
    `documents_edges`, `skill_mentions_edges`, `routes_via_edges`,
    `depends_on_edges`, `doc_relations_edges`, `vendor_enrichment`,

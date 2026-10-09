@@ -1,370 +1,101 @@
-# codecompass
+# CodeCompass
 
-Grounded, version-pinned dependency reference docs for AI coding agents.
+**CodeCompass builds and maintains grounded, version-pinned dependency reference documentation for AI coding agents.** It inspects the packages a project actually depends on, renders deterministic structural facts about them (file trees, dependency trees, public API surfaces), optionally layers on AI-generated plain-language descriptions where the project's own source code proves a dependency is actually used, and publishes the result as files an agent (or a human) can read directly — plus a queryable SQLite graph, generated Agent Skills, Cursor rules, and a guided-exploration slash command.
 
-## Status
+This README and the accompanying `docs/` tree were reconstructed from the project's current source, tests, configuration, and a prepared evidence package — see each page's own notes for what is directly verified against source versus what remains an open question. Where the evidence does not resolve something, this documentation says so explicitly rather than guessing.
 
-**Released.** `codecompass` `1.0.0` is published on PyPI as the
-`codecompass-context` distribution (the installed CLI command and the
-Python package you `import` are both still `codecompass`). The
-**foundation** (phases 0-38) is complete: the npm/PyPI/Cargo/Haskell
-package/source-grounding tool — bare `codecompass`, `init`, `sync`,
-`index`, `check`, `query`, `chat`, and `undo`, all fully implemented
-(`promote` was removed in Phase 15, `decisions/0033`). Phase 52 added
-`codecompass enrich apply`
-(`decisions/0054`), a narrower agent/developer-facing command that lets a
-Claude Code agent supply spec-doc relationship enrichment when no
-`ANTHROPIC_API_KEY` is configured — see "Core idea" below.
+## Package names — two different ones, on purpose
 
-"CodeCompass v1" was **redefined** (`decisions/0048`,
-[`planning/v1-redefinition/`](planning/v1-redefinition/)) from a packaging
-milestone into a *product-validation* milestone: CodeCompass developed
-agent-led, validated against real external reference-project work,
-improved from that evidence, and released after a blank-slate
-documentation reconstruction and an independent audit
-(`planning/v1-closeout.md`). See [`planning/ROADMAP.md`](planning/ROADMAP.md)
-for current status and deferred/post-v1 work.
+- **PyPI distribution name:** `codecompass-context` (`pyproject.toml`'s `[project].name`). This is the name you `pip install`.
+- **Import package / CLI command name:** `codecompass` (the `src/codecompass/` package; the `pyproject.toml` entry point is `codecompass = "codecompass.cli:app"`).
 
-**Validated, honestly reported — not oversold.** CodeCompass was tested
-against a real external project ([Ledgerkit](https://github.com/ctosullivan/ledgerkit))
-at two points where its default context had previously given a wrong or
-misleadingly-confident answer. Both
-were fixed and the fix was re-confirmed live on a newer project pin.
-The measured result is **PASS WITH GAPS, LOW context advantage** — real
-and repeatable, but not dramatic: CodeCompass fixed a specific,
-evidenced failure mode (a real file mistaken for untracked), not a
-general "codecompass makes agents smarter" claim. The remaining
-ceiling is structural (see "Limitations" below), not a defect. Full
-results: `planning/v1-closeout.md` §5.
+Nothing in the available evidence explains *why* these differ (e.g. a PyPI name collision with another project) — this is stated as a fact, not a mystery solved. Use `codecompass-context` wherever you need the installable name, and `codecompass` wherever you need the command or the Python import.
 
-## What it is
+`pip install codecompass-context` is confirmed, by an external check performed outside this reconstruction's own workspace, to be a real, currently-published package on PyPI (version `1.0.0` at the time of that check), whose metadata matches this project's own `pyproject.toml` description and GitHub links.
 
-AI coding agents (Claude Code, Cursor) tend to answer questions about your
-dependencies from training-data memory, which drifts out of date the moment
-a library ships a new release. codecompass closes that gap: it inspects the
-dependencies actually installed in your project (npm, PyPI, crates.io,
-and — via a separate external adapter — Haskell/Stack),
-clones each one's upstream source, and generates per-vendor `CLAUDE.md`
-digests — grounded in the exact pinned version you're running — that an
-agent can consult instead of guessing. It also builds a SQLite context
-graph of your project's vendors, symbols, and actual usage, exposed to both
-humans and agents through `codecompass query` and a generated `/discovery`
-slash command.
-
-If you're an AI agent rather than a human reader, see
-[`ai-docs/README.md`](ai-docs/README.md) for a capability/boundary overview
-and example prompts, and [`ai-docs/CLAUDE.md`](ai-docs/CLAUDE.md) as an
-entrypoint.
-
-## Setup
-
-- **Python `>=3.11`** (see `pyproject.toml`).
-- **`git` installed and on `PATH`** — required locally; every tracked
-  vendor's source is cloned from its own upstream repository
-  (`decisions/0021`).
-- **`ANTHROPIC_API_KEY`** — optional. Read automatically from the
-  environment by the `anthropic` SDK (nothing in codecompass passes an
-  explicit key). Only needed if you want vendor AI enrichment (Phase B,
-  below) or `codecompass chat` to run; everything else works with it
-  unset — including spec-doc relationship summaries, which have a
-  separate, no-key-required path via `codecompass enrich apply` (see
-  "Core idea" below).
+## Installation
 
 ```bash
-pip install -e ".[dev]"    # editable local dev install; the published package is codecompass-context
+pip install codecompass-context
 ```
 
-## AI enrichment vs. no-AI usage
+Requires **Python ≥3.11** (`pyproject.toml`'s `requires-python`, and `decisions/0009`, referenced by the project's own decision log). Python 3.11+ is relied on specifically because `tomllib` (standard library since 3.11) replaces a third-party TOML-reading dependency (`config.py`, `discovery.py`).
 
-Everything below is **free and always-on, no API key needed**: file trees,
-dependency trees, public API surface extraction, pinned source snapshots,
-the SQLite context graph, staleness checking (`check`), the generated
-Skills scaffold and root `CLAUDE.md` routing table, `/discovery`, and
-`undo`. This is "Phase A" — it runs on every `codecompass`/`sync` call, no
-prompts, no cost.
+Runtime dependencies (from `pyproject.toml`): `typer>=0.27`, `rich>=15`, `anthropic>=0.109`, `pipdeptree>=4.2`, `pyyaml>=6.0`. Development/test dependencies: `pytest`, `ruff`, `jsonschema`.
 
-**Phase B** — usage-driven AI enrichment — only runs for vendors your
-project's own source actually imports, and only after disclosing an
-estimated cost and getting your confirmation (`--yes` to skip the prompt,
-`--budget` to cap spend). It adds: a grounded vendor description, a
-conversational overview, per-symbol purposes, and AI-generated summaries of
-how your own docs relate to your dependencies. Skip it entirely with
-`--budget 0` — Phase A's output is unaffected either way.
+## Quick start
 
-Real output from running `codecompass --budget 0` (from
-[`examples/README.md`](examples/README.md), which also shows what Phase B
-adds once you drop `--budget 0`):
-
-```
-$ codecompass --budget 0
-bootstrapped vendor.toml — 2 vendor(s) tracked, 2 newly discovered
-enrichment will make ~1 AI call(s) (~$0.02) using claude-haiku-4-5-20251001 to
-describe 2 vendor(s): click, requests, and 0 relationship(s)
-error: estimated cost $0.02 for 1 batch(es) covering 2 vendor(s) and 0
-relationship(s) exceeds --budget $0.00 — raise --budget or wait for fewer to
-need enrichment
-```
-
-Exit code is non-zero (Phase B was refused on cost grounds), but everything
-Phase A already wrote — trees, `CLAUDE.md`, the cloned source snapshot, the
-routing table, `context-graph.db` — stays in place; nothing rolls back.
-
-## Core idea
-
-Running codecompass gets you, for every tracked dependency:
-- A **file tree** and **dependency tree** of the vendor's source, deduplicated
-  and pruned for token efficiency — always free, no AI calls.
-- A **public API surface** extracted from the vendor's own type
-  definitions/docstrings/stubs, and a **pinned source snapshot**, cloned
-  from the vendor's own upstream repository, for standalone consultation
-  — both free, for every vendor, no escalation step required.
-- For vendors your project's own source actually imports: **usage-driven
-  AI enrichment** — a grounded description sourced from the vendor's own
-  upstream repository (not your project's docs or the model's training
-  knowledge), a conversational overview, and an action pointer into the
-  vendor's source. Auto-triggered after bootstrap/`sync`, but gated behind
-  a disclosed cost estimate and a confirmation prompt (`--yes` to skip it,
-  `--budget` to cap spend).
-- A **context graph** (`context-graph.db`, SQLite) recording every vendor,
-  symbol, usage edge, and generated doc artifact — queryable via
-  `codecompass query` or, inside a Claude Code session, the generated
-  `/discovery` slash command.
-- **Spec-doc relationship detection**: your own hand-authored docs
-  (README, `ARCHITECTURE.md`, `docs/**/*.md`, `decisions/**/*.md`, etc.)
-  are scanned and mechanically linked to the vendors and Skills they
-  mention — no AI call, and it never invents a relationship that isn't
-  mechanically detected first. For any relationship that mention-detection
-  proves real, a one- or two-sentence AI summary of *how* the two relate
-  can be added — either by codecompass's own batched Anthropic-API call
-  (same gate as usage-driven enrichment above), or, for edges that call
-  can't cover (no `ANTHROPIC_API_KEY` configured), a narrow Claude Code
-  agent writing through the same non-authoritative path (`codecompass
-  enrich apply`, `decisions/0054`). Either way the summary is written only
-  to the graph, never back into your spec doc's own file. Both are
-  queryable via `codecompass query relations`.
-- **Generated Skills** (`.claude/skills/`) and Cursor `.mdc` rules for
-  enriched vendors, plus a tool-level Skill and `/discovery` command
-  generated unconditionally — the steady-state way an agent consumes
-  codecompass's output without you doing anything further.
-- A **routing table** injected into your project's root `CLAUDE.md` so an
-  agent knows which vendor digest to consult and when.
-- **Staleness checking** that flags when a digest no longer matches the
-  installed version, severity-aware (patch/minor/major).
-- **Git repository topology awareness** (`codecompass query topology`):
-  distinguishes a worktree of *this* repository from a genuinely
-  separate project, and a submodule's parent-pinned commit from what's
-  actually checked out — read-only, persisted at the last `sync`, never
-  a live `git` call. Requires Git 2.7+.
-- **First-party source awareness** (`codecompass query source`/
-  `query source-symbol`): a project's own source files and top-level
-  implementation symbols — independent of `vendor.toml`, works with zero
-  tracked dependencies — with language, symbol kind, location, and a
-  cross-language exposure classification (`public`/`restricted`/
-  `internal`/`conventional_private`/`unknown`).
-
-## Evidence & provenance
-
-CodeCompass distinguishes two kinds of content, and never lets them
-blur together:
-
-- **Mechanically-detected facts** — dependency trees, file trees, API
-  surfaces, spec-doc relationship *existence* (does your `README.md`
-  mention `turndown`? — yes/no, by literal name-mention detection, no
-  AI call, never invented). These are always correct relative to what's
-  actually on disk and installed; there is no hallucination risk
-  because there is no generation step.
-- **AI-enriched content** — vendor descriptions, conversational
-  overviews, per-symbol purposes, and relationship *summaries* (given a
-  real, already-proven relationship, what does it mean?) are a
-  separate, clearly-disclosed layer: gated behind an upfront cost
-  estimate and your confirmation. Vendor descriptions and relationship
-  summaries record **which model or agent produced them** (a real
-  Anthropic model id, or `agent:<name>` for Claude-Code-agent-authored
-  content, `decisions/0054`) so they're never confused with a
-  mechanically-proven fact — per-symbol purposes carry this same
-  producer tag for every row written from Phase 74 onward; a row
-  written before that carries an honest `NULL` (producer genuinely
-  unknown for that history) rather than a guessed value. AI content is
-  grounded in the vendor's own
-  real, pinned upstream source — never your project's docs, and never
-  the model's own training-data memory of the library.
-
-This split — real fact vs. disclosed, attributed AI interpretation —
-is CodeCompass's own core design principle, not an afterthought. It is
-documented in full, evidence-by-evidence, in
-[`docs/domain/`](docs/domain/) — a from-scratch investigation of what
-CodeCompass's own concepts (evidence, observation, claim, provenance,
-adapter, and others) actually mean in this codebase, derived from
-source and tests rather than assumed.
-
-## Supported ecosystems
-
-npm, PyPI, and Cargo — all three ship from day one (see
-[`decisions/0008`](decisions/0008-mvp-ships-three-adapters-day-one.md)).
-Haskell/Stack is a fourth, added in Phase 60 — handled differently from
-the other three: it runs as a separate external adapter process rather
-than in-process Python code, checked out as git submodules (see
-[`docs/external-adapters.md`](docs/external-adapters.md)).
-
-## Quick example
-
-Bootstrapping a project is one command:
+From the root of a project you want CodeCompass to analyze:
 
 ```bash
 codecompass
 ```
 
-That auto-discovers manifests (`package.json`, `pyproject.toml`,
-`requirements.txt`, `Cargo.toml`, `package.yaml`), writes `vendor.toml`, clones every
-vendor's source, and generates trees + the root `CLAUDE.md` routing table
-+ the tool-level Skill + `/discovery` — no prompts, no AI calls. If any
-tracked vendor is actually imported by your project's source and isn't
-enriched yet, codecompass then discloses an estimated cost and asks to
-confirm before spending anything on AI enrichment for just those vendors.
-Re-running it later is a free, idempotent refresh.
+With no subcommand, `codecompass`:
 
-```bash
-codecompass --yes                # skip the enrichment confirmation prompt
-codecompass --budget 1.00        # cap estimated enrichment spend (USD)
-```
+1. Auto-discovers dependency manifests at the project root (`package.json`, `pyproject.toml`, `requirements.txt`, `Cargo.toml`, `package.yaml`) and writes or refreshes `vendor.toml` — no questions asked, no AI calls.
+2. Clones each newly-discovered dependency's own upstream source and renders its deterministic digest (`vendor/<name>/CLAUDE.md`, `FILETREE.md`, `DEPTREE.md`, plus JSON mirrors) — still no AI calls.
+3. Rebuilds the project-wide context graph (`context-graph.db`), detecting which vendors your own project code actually imports.
+4. If any vendor is **usage-proven** (your code genuinely imports it) and not yet AI-enriched, it discloses an estimated cost and asks you to confirm before making any Anthropic API call. `--yes` skips the prompt; `--budget <USD>` caps spend and aborts (before any call) if the estimate exceeds it.
 
-From there, the graph and generated Skills are the steady-state way to
-consult what codecompass knows:
+See `docs/getting-started.md` for a full walkthrough, including a real captured example run against a minimal two-dependency project.
 
-```bash
-codecompass query vendor turndown
-codecompass query relations architecture/overview.md
-codecompass check --strict
-```
+AI enrichment (step 4 above) requires `ANTHROPIC_API_KEY` to be set in the environment — the project's own Anthropic SDK calls (`enrichment.py`, `relation_enrichment.py`, `chat.py`) construct `anthropic.Anthropic()` with no explicit credential argument, relying on the SDK's own standard environment-variable convention.
 
-Inside a Claude Code session, typing `/discovery` gives an agent a guided,
-read-only way to explore the same graph. `codecompass chat <vendor>` is
-also available — a lightweight, digest-only terminal REPL for a quick
-question outside any agent session — but it's a secondary, narrower tool,
-not the primary way to consult codecompass's output.
+## What CodeCompass is — in one paragraph
 
-See [`docs/cli-reference.md`](docs/cli-reference.md) for the full command
-reference.
+CodeCompass tracks a project's dependencies ("vendors") against a small, closed set of package **ecosystems** (`npm`, `python`, `cargo`, `haskell`), using one **adapter** per ecosystem to extract real facts: installed version, source location, dependency tree, and a mechanically-extracted public API surface. It renders these facts into a per-vendor **digest** (`vendor/<name>/CLAUDE.md` and siblings), and — only once your own project's source code is proven to actually use a dependency — can layer a batched, cost-disclosed AI call on top to add a plain-language technical description. All of this is also recorded in a queryable SQLite **context graph** (`context-graph.db`), and surfaced to AI coding agents via generated Agent Skills, Cursor `.mdc` rules, and a read-only `/discovery` slash command. See `docs/concepts/` for CodeCompass's own vocabulary in more depth.
 
-## How it works
+## Status and maturity — stated plainly, not reconciled
 
-At a glance: a `VendorConfig` (name + ecosystem) is the unit of
-tracking; each ecosystem has an **adapter** — either in-process Python
-(npm/PyPI/Cargo) or a separate **external process** speaking a small
-JSON protocol over stdin/stdout (Haskell/Stack, and the model for any
-future ecosystem where in-process Python is the wrong fit, e.g. one
-requiring a proprietary or non-redistributable toolchain). Every `sync`
-rebuilds a SQLite **context graph** (`context-graph.db`) deterministically
-from what's actually on disk — usage edges, spec-doc relationships,
-vendor/symbol records — then, only for vendors actually used, offers
-AI enrichment as a second pass. Generated Skills and the `/discovery`
-command are rendered from that graph, not hand-maintained.
+`pyproject.toml` declares `version = "1.0.0"` **and** `classifiers = ["Development Status :: 4 - Beta", ...]` simultaneously. These are two different, independent signals (semantic version vs. PyPI maturity classifier) that disagree on how mature the project is. Nothing in the available evidence resolves which one should be trusted more — both facts are reported here rather than one being silently preferred.
 
-Full design: [`architecture/overview.md`](architecture/overview.md)
-(current-state entry point) and its companion files
-(`module-map.md`, `core-data-model.md`, `adapter-interface.md`,
-`context-graph-schema.md`, `sync-and-enrichment-pipeline.md`) — data
-model, ecosystem adapters, tree generation, usage-driven enrichment,
-the context graph schema, generated Skills/`/discovery`, the two
-consumption modes (standalone vendor folder vs. routed from project
-root), staleness checking, and the chat REPL.
+The project's own decision log records (`decisions/0048`) that its "v1" milestone was explicitly redefined as a **product-validation milestone, not a packaging milestone** — consistent with a project that is versioned 1.0.0 while still self-describing as Beta.
 
-**What to commit**: `vendor.toml` is a small, hand-edited config file —
-commit it. `vendor/` and `context-graph.db` are deterministically
-regenerated from `vendor.toml` plus your project's own current source,
-gitignored by default, and never hand-edited or committed
-(`decisions/0010`, `decisions/0024`). The generated Skills, `/discovery`
-command, and Cursor `.mdc` rules are equally deterministic regenerations
-— safe to gitignore the same way — but codecompass itself takes no
-position on it: unlike `vendor/`/`context-graph.db`, no ADR requires
-gitignoring them, and this project's own repository commits its own
-generated `.claude/skills/`, `.claude/commands/discovery.md`, and
-`.cursor/rules/*.mdc` for contributor convenience, rather than requiring
-every fresh clone to run `codecompass` before an agent session can use
-them.
+CodeCompass ships without a dedicated documentation site; this `README.md` plus the `docs/*.md` tree, rendered by GitHub, is the whole of its documentation delivery for v1.0 (`decisions/0039`).
+
+## Supported ecosystems
+
+A fixed, closed four-member enum (`src/codecompass/core.py::Ecosystem`): **npm**, **python**, **cargo**, **haskell**. Each has exactly one adapter class, selected by a closed dispatch table (`src/codecompass/adapters/__init__.py::get_adapter`) — never by naming convention, plugin discovery, or a config string.
+
+- **npm, python, cargo** — *in-process* adapters: ordinary importable Python classes inside `src/codecompass/adapters/` that shell out to the ecosystem's own native tooling (`npm ls`, `pipdeptree`, `cargo metadata`).
+- **haskell** — an *external-process* adapter: CodeCompass's own `HaskellAdapter` is a thin dispatcher that reads `package.yaml` directly and then delegates all real Haskell-specific analysis (dependency-tree construction via `stack`, API-surface extraction from `.hs` source) to an independent OS subprocess — `codecompass-adaptor-haskell`, a separate, publicly-hosted, GPL-3.0-or-later repository checked out as a git submodule — speaking a small JSON-Lines wire protocol.
+
+Both strategies are deliberate, current, and coexist by design (`decisions/0002`, `decisions/0057`) — the external-process strategy is not a replacement for the in-process one; it exists for ecosystems whose real analysis logic cannot or should not live inside CodeCompass's own GPL-covered Python process.
+
+## Repository layout you'll actually touch
+
+- `src/codecompass/` — the installed package.
+- `adapters/haskell/` — git submodule: the reference external Haskell adapter (`codecompass-adaptor-haskell`, GPL-3.0-or-later). Requires `git submodule update --init` and a working `stack build` to use.
+- `protocol/codecompass-adaptor-protocol/` — git submodule: the canonical specification (schemas, conformance vectors) for the external adapter wire protocol. Licensed **MIT** — different from both CodeCompass itself and the Haskell adapter, both GPL-3.0-or-later. This is a real, checked difference, not an assumption.
+- `tests/` — the test suite (`pytest`).
+- `scripts/` — maintainer-only tooling, not part of the installed `codecompass` package (see `docs/development/contributing.md`).
+- `examples/toy-project/` — a tiny, two-dependency (`click`, `requests`) real Python project used to demonstrate CodeCompass's own output; see `docs/getting-started.md`.
 
 <!-- codecompass-grounded-by: CL-KNOW-001 region:intermediate-knowledge-layer -->
 CodeCompass also supports a persistent, human/tool-editable Markdown
 layer over a project's own structured knowledge (concepts, invariants,
 behaviours, open questions) — editable by you, ChatGPT, Copilot, Claude
-Code, or an ordinary Git PR, reconciled back against evidence before
-anything becomes canonical. See
-[`docs/codecompass-knowledge-workflow.md`](docs/codecompass-knowledge-workflow.md)
+Code, or an ordinary Git PR, mechanically detected and reconciled back
+against evidence before anything becomes canonical; `codecompass
+knowledge apply` is the sole, mechanically-revalidating write path,
+never bypassable by an external tool's or an agent's own say-so. See
+[`docs/workflows/knowledge-reconciliation-loop.md`](docs/workflows/knowledge-reconciliation-loop.md)
 — that guide is itself grounded in and reconciled against the same
 underlying knowledge, so this README never becomes a second, divergent
 description of what's canonical.
 <!-- /codecompass-grounded-by -->
 
-## Limitations
+## Documentation map
 
-Honestly disclosed, not hidden:
-
-- **Context advantage is measured LOW**, not high, on the one real
-  external project tested end-to-end (Ledgerkit) — see "Status" above.
-  CodeCompass fixes specific, evidenced gaps; it is not a general
-  intelligence multiplier, and that hasn't been claimed or measured.
-- **The Cargo adapter has never been validated against real `cargo
-  metadata` output or a real crate** — no Rust toolchain has been
-  available during this project's own development so far.
-- **`extract_npm_symbols` is untested against real-world `.d.ts`
-  authoring styles** beyond hand-written fixtures.
-- **`codecompass chat` has never been run against the real Anthropic
-  API** in this project's own development environment — implemented
-  and unit-tested, not live-exercised.
-- **No formal trigger-accuracy evaluation exists yet** for when a
-  generated per-vendor Skill should or shouldn't fire.
-- **Cursor `.mdc` export has no `globs` field** — a documented future
-  refinement, not implemented.
-
-Full, current list (this one is not exhaustive of every open item):
-`planning/ROADMAP.md`'s "Future-improvement backlog."
-
-## Documentation
-
-- [`docs/cli-reference.md`](docs/cli-reference.md) — CLI command reference
-- [`docs/config-schema.md`](docs/config-schema.md) — `vendor.toml` schema
-- [`docs/codecompass-knowledge-workflow.md`](docs/codecompass-knowledge-workflow.md)
-  — the persistent, human/AI-tool-editable knowledge layer
-- [`architecture/overview.md`](architecture/overview.md) — system design
-- [`decisions/`](decisions/) — architecture decision records
-- [`examples/`](examples/) — a small, real worked example with real
-  codecompass output, for skimming without installing anything
-- [`ai-docs/`](ai-docs/) — a capability/boundary overview and entrypoint for
-  an AI agent orienting to this project (see "What it is" above)
-
-## Contributing
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the process this project
-follows (plan-before-implementing, kept-in-sync docs, changelog discipline).
-
-## Roadmap
-
-v1.0.0 is released. See [`planning/ROADMAP.md`](planning/ROADMAP.md)
-for what's deferred and what's next, and
-[`planning/v1-closeout.md`](planning/v1-closeout.md) for the full v1
-milestone record. [`planning/CONTEXT.md`](planning/CONTEXT.md) reflects
-current session-resumption state.
+- `docs/getting-started.md` — install, first run, a real captured example.
+- `docs/concepts/` — CodeCompass's own domain vocabulary: adapter, vendor/ecosystem, context, digest, protocol/capability, and the evidence/knowledge record model.
+- `docs/architecture/` — system overview, component map, data/control flow (including the context-graph schema).
+- `docs/workflows/` — the sync/enrichment pipeline and the knowledge-reconciliation loop, end to end.
+- `docs/reference/` — CLI reference, `vendor.toml` configuration, the external adapter wire protocol, and symbol-extraction behaviour.
+- `docs/development/` — contributing conventions, testing.
+- `docs/edge-cases-and-compatibility.md`, `docs/tests-and-acceptance.md`, `docs/decisions.md`, `docs/limitations.md`, `docs/open-questions.md` — cross-cutting material required for a complete picture, including everything this reconstruction could **not** resolve from available evidence.
 
 ## License
 
-GPL-3.0-or-later — see [`LICENSE`](LICENSE). Previously MIT; see
-[`decisions/0053`](decisions/0053-relicense-to-gpl-3.0-or-later.md) for
-the relicensing rationale (aligning with `hledger`'s own licence family
-ahead of deeper source-assisted, hledger-facing development work).
-
-> **Contributing?** CodeCompass remains GPL-3.0-or-later. External
-> contributors retain copyright in their own contributions, which are
-> additionally subject to the Contributor License Agreement in
-> [`CONTRIBUTING.md`](CONTRIBUTING.md#contributor-license-agreement)
-> (`decisions/0055`) — it permits the project owner to relicense
-> contributed material under alternative or proprietary terms in
-> future. This does not remove or restrict anyone's rights to existing
-> GPL-licensed versions of CodeCompass.
-
-**Adopting CodeCompass in your own project?** See
-[`codecompass-template`](https://github.com/ctosullivan/codecompass-template)
-— a separate, **MIT-licensed** scaffold (Phase 77) that packages a
-lightweight downstream workflow shape, independently authored and
-freely reusable regardless of your own project's license (GPL,
-permissive, or proprietary). It is not a redistribution of this
-repository's own GPL-3.0-or-later source or documentation.
+GPL-3.0-or-later (`pyproject.toml`; `decisions/0053` records the relicensing; `decisions/0055` records that contributor licensing terms were chosen to preserve future re/dual-licensing options). The external adapter *protocol* repository (`protocol/codecompass-adaptor-protocol/`) is licensed **MIT**, independently of CodeCompass's own license — checked directly against that submodule's own `LICENSE` file, not assumed to match.

@@ -50,9 +50,9 @@ def _read(path: Path) -> str:
 
 def check_cli_commands_documented(root: Path) -> list[Finding]:
     """Every @app.command()/@query_app.command() name in cli.py has a
-    matching mention in docs/cli-reference.md."""
+    matching mention in docs/reference/cli.md."""
     cli_path = root / "src" / "codecompass" / "cli.py"
-    doc_path = root / "docs" / "cli-reference.md"
+    doc_path = root / "docs" / "reference" / "cli.md"
     tree = ast.parse(_read(cli_path), filename=str(cli_path))
     doc_text = _read(doc_path)
 
@@ -85,60 +85,10 @@ def check_cli_commands_documented(root: Path) -> list[Finding]:
                     Finding(
                         "cli_commands_documented",
                         f"'{needle}' (from cli.py's @{base}.command on "
-                        f"{node.name!r}) not found in docs/cli-reference.md",
+                        f"{node.name!r}) not found in docs/reference/cli.md",
                     )
                 )
     return findings
-
-
-def check_readme_phase_count(root: Path) -> list[Finding]:
-    """README's Status-line phase-count claim matches planning/ROADMAP.md's
-    own "phases 0-N" claim for the foundation.
-
-    The README's "phases 0-N" claim describes the foundation (the
-    npm/PyPI/Cargo package/source tool, Phases 0-38) — a permanently fixed
-    historical fact as of v1.0.0 (Phase 70): the redefined-v1 effort never
-    renumbered or added to Phases 0-38, and post-v1 development is tracked
-    in ROADMAP.md's own "Post-v1 development" section, not the foundation
-    count. Since Phase 71's own restructure (ground-up documentation
-    refresh) replaced ROADMAP.md's per-phase row tables with a concise
-    summary, this check compares README.md's claim against ROADMAP.md's
-    own equivalent prose claim directly, rather than scanning individual
-    `done` rows that no longer exist in that form.
-    """
-    readme_text = _read(root / "README.md")
-    roadmap_text = _read(root / "planning" / "ROADMAP.md")
-
-    readme_match = re.search(r"phases 0-(\d+)", readme_text, re.IGNORECASE)
-    if not readme_match:
-        return [
-            Finding(
-                "readme_phase_count",
-                "README.md's Status section has no 'phases 0-N' claim to check",
-            )
-        ]
-    readme_n = int(readme_match.group(1))
-
-    roadmap_match = re.search(r"phases 0-(\d+)", roadmap_text, re.IGNORECASE)
-    if not roadmap_match:
-        return [
-            Finding(
-                "readme_phase_count",
-                "planning/ROADMAP.md has no 'phases 0-N' claim to check "
-                "README.md's own claim against",
-            )
-        ]
-    roadmap_n = int(roadmap_match.group(1))
-
-    if readme_n != roadmap_n:
-        return [
-            Finding(
-                "readme_phase_count",
-                f"README.md claims 'phases 0-{readme_n}' but "
-                f"planning/ROADMAP.md claims 'phases 0-{roadmap_n}'",
-            )
-        ]
-    return []
 
 
 def check_api_key_documented(root: Path) -> list[Finding]:
@@ -155,9 +105,9 @@ def check_api_key_documented(root: Path) -> list[Finding]:
 
 
 def check_vendor_config_fields_documented(root: Path) -> list[Finding]:
-    """Every VendorConfig field is mentioned in docs/config-schema.md."""
+    """Every VendorConfig field is mentioned in docs/reference/configuration.md."""
     core_path = root / "src" / "codecompass" / "core.py"
-    doc_path = root / "docs" / "config-schema.md"
+    doc_path = root / "docs" / "reference" / "configuration.md"
     tree = ast.parse(_read(core_path), filename=str(core_path))
     doc_text = _read(doc_path)
 
@@ -172,7 +122,7 @@ def check_vendor_config_fields_documented(root: Path) -> list[Finding]:
                             Finding(
                                 "vendor_config_fields_documented",
                                 f"VendorConfig field '{field_name}' not mentioned "
-                                "in docs/config-schema.md",
+                                "in docs/reference/configuration.md",
                             )
                         )
     return findings
@@ -668,8 +618,9 @@ def check_fenced_codecompass_examples(root: Path) -> list[Finding]:
             # strip an inline "# comment"
             if "#" in toks:
                 toks = toks[: toks.index("#")]
-            if not toks or toks[0].startswith("-"):
-                continue  # bare `codecompass` or only options — the app itself
+            if not toks or toks[0].startswith(("-", "[")):
+                continue  # bare `codecompass`, or only options (incl. a
+                # usage-synopsis "[--flag]" bracket) — the app itself
             sub = toks[0]
             if sub not in app_cmds:
                 findings.append(
@@ -756,8 +707,9 @@ _RETIRED_NAMES = (
 # (missing a genuinely stale claim) are recoverable at the next phase
 # that touches the passage; false positives (flagging correct history)
 # make the check noise that gets ignored. Calibrated against this repo's
-# own architecture/overview.md, which narrates its implementation history
-# extensively and correctly, at unit granularity, not a fixed line count.
+# own docs/architecture/overview.md, which narrates its implementation
+# history extensively and correctly, at unit granularity, not a fixed
+# line count.
 _HISTORICAL_MARKERS = (
     "retired",
     "removed",
@@ -967,7 +919,6 @@ def check_generated_artifacts_match_source(root: Path) -> list[Finding]:
 
 CHECKS = [
     check_cli_commands_documented,
-    check_readme_phase_count,
     check_api_key_documented,
     check_vendor_config_fields_documented,
     check_ai_docs_present,

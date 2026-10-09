@@ -113,7 +113,7 @@ never ran here (the `--budget 0` run above declined it).
 `codecompass check` reports both vendors current against their installed
 versions, plus report-only coverage-gap sections (unused vendors,
 documented-but-unused symbols, etc.) sourced from `context-graph.db`; see
-[`docs/cli-reference.md`](../docs/cli-reference.md) for what each column
+[`docs/reference/cli.md`](../docs/reference/cli.md) for what each column
 and section means.
 
 ## What Phase B adds (not run here — costs a small amount)
@@ -124,8 +124,8 @@ the vendor's own upstream repository, not training-data memory), an
 `OVERVIEW.md`, per-symbol purposes, and a generated Skill under
 `.claude/skills/codecompass-<vendor>/`. See the main
 [`README.md`](../README.md) and
-[`architecture/overview.md`](../architecture/overview.md) for the full
-picture.
+[`docs/architecture/overview.md`](../docs/architecture/overview.md) for
+the full picture.
 
 ## Note on generated output
 

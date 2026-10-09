@@ -1,119 +1,78 @@
-# codecompass — AI agent overview
+# CodeCompass — AI agent overview
 
-This file is for an AI agent that's just landed in this repository — either
-using codecompass in a project, or contributing to codecompass itself — and
-needs a fast, accurate picture of what it does before reading further. See
-[`ai-docs/CLAUDE.md`](CLAUDE.md) for where to go next depending on what
-you're here to do.
+This file is for an AI agent that has just landed in this repository —
+either using CodeCompass in a project, or contributing to CodeCompass
+itself — and needs a fast, accurate picture of what it does before
+reading further. See [`ai-docs/CLAUDE.md`](CLAUDE.md) for where to go
+next depending on what you're here to do.
 
 ## What it is
 
-codecompass generates grounded, version-pinned reference docs for a
-project's actual dependencies, so an agent doesn't have to answer questions
-about them from training-data memory (which drifts the moment a library
-ships a new release). It inspects what's really installed (npm, PyPI,
-Cargo, and — via a separate external adapter process — Haskell/Stack),
-clones each dependency's own upstream source, and produces
-per-vendor digests plus a SQLite context graph of vendors, symbols, usage,
-and how a project's own docs relate to them.
+CodeCompass builds and maintains grounded, version-pinned dependency
+reference documentation for AI coding agents. It inspects a project's
+actual dependencies, renders deterministic structural facts about them
+(file trees, dependency trees, public API surfaces), optionally layers
+on AI-generated plain-language descriptions where the project's own
+source proves a dependency is actually used, and publishes the result
+as files an agent (or a human) can read directly — plus a queryable
+SQLite context graph, generated Agent Skills, Cursor rules, and a
+read-only guided-exploration slash command (`/discovery`).
+
+See [`../README.md`](../README.md) for the full picture (installation,
+package naming, supported ecosystems, repository layout) and
+[`../docs/`](../docs/) for everything below in depth.
 
 ## What it does
 
-- **Deterministic, always-free output for every tracked vendor**: file
-  tree, dependency tree, public API surface (from the vendor's own type
-  stubs/docstrings), a pinned source clone. No AI, no cost, runs on every
-  `sync`.
-- **Usage-driven AI enrichment** ("Phase B") for vendors your project's
-  source actually imports: a grounded description, a conversational
-  overview, per-symbol purposes — sourced from the vendor's own upstream
-  repository, not the model's training knowledge. Cost-disclosed,
-  confirmable, budget-cappable.
-- **A queryable context graph** (`context-graph.db`) linking vendors,
-  symbols, real `(file, line)` usage sites, generated docs/Skills, and a
-  project's own hand-authored docs — via `codecompass query` or, inside
-  Claude Code, the generated `/discovery` slash command.
-- **Mechanical relationship detection** between a project's own docs
-  (README, `architecture/`, `decisions/`, etc.) and the dependencies/Skills
-  they mention, optionally AI-summarized (*how* they relate, never *whether*
-  they do) — either by codecompass's own batched Anthropic-API call, or, for
-  edges that call can't cover (no API key configured), a narrow Claude Code
-  agent writing through the same non-authoritative path (`codecompass enrich
-  apply`, `decisions/0054`).
-- **Staleness checking** (`codecompass check`) against installed versions,
-  and a clean `undo` of everything it generated.
-- **Git repository topology awareness** (`codecompass query topology`,
-  Phase 76): mechanical worktree and submodule facts — read-only,
-  never live (persisted at the last `sync`) — that distinguish a
-  worktree of *this* repository from a genuinely separate project, and a
-  submodule's parent-pinned commit from what's actually checked out.
-  Requires Git 2.7+ (`decisions/0064`).
-- **First-party source awareness** (`codecompass query source`/
-  `query source-symbol`, Phase 77): a project's own source files and
-  top-level implementation symbols become queryable graph objects,
-  independent of `vendor.toml` (works with zero tracked dependencies) —
-  closing the structural gap where only a dependency's own API surface
-  was ever indexed as a "symbol." Each recognized file is classified by
-  first-party *language* (not the same concept as a dependency's package
-  *ecosystem* — `decisions/0065`), and each symbol carries a
-  cross-language `exposure` classification (`public`/`restricted`/
-  `internal`/`conventional_private`/`unknown`) — non-exported/private
-  declarations are included, never filtered out, since the question here
-  is "what does this project implement," not "what does this dependency
-  expose."
+- **Deterministic, always-free output** for every tracked vendor: file
+  tree, dependency tree, public API surface, a pinned source clone — no
+  AI, no cost, on every `sync`.
+- **Usage-driven AI enrichment** ("Phase B") only for vendors a
+  project's own source actually imports — cost-disclosed,
+  confirmable, budget-cappable (`--budget`, `--yes`).
+- **A queryable context graph** (`context-graph.db`) — vendors, symbols,
+  real usage sites, generated docs/Skills, and a project's own
+  hand-authored docs — via `codecompass query` or, inside Claude Code,
+  `/discovery`.
+- **Mechanical relationship detection** between a project's own docs and
+  the dependencies/Skills they mention — never fabricated, deterministic
+  word-boundary matching decides *whether* a relationship exists; AI
+  only ever describes *how*.
+- **Staleness checking** (`codecompass check`) and a clean `undo`.
+- **Git repository topology awareness** (`codecompass query topology`) —
+  read-only, persisted at the last `sync`, never live.
+- **First-party source awareness** (`codecompass query source` /
+  `query source-symbol`) — a project's own implementation symbols,
+  independent of any tracked dependency.
 - **A persistent, human/AI-tool-editable knowledge layer**
-  (`codecompass knowledge render|select-candidates|doc-select-candidates|
-  apply|status|doc-acknowledge-stale|doc-acknowledge-chunks`, Phase 81):
-  a project's own structured knowledge (concepts, invariants,
-  behaviours, decisions, requirements) projects into editable Markdown;
-  an edit from you, ChatGPT, Copilot, Claude Code, or a plain Git PR is
-  mechanically detected and reconciled back only after review — never
-  fabricating an observed fact, never bypassing a human-authorised
-  decision, never conflating wording with meaning. Project documentation
-  (README/CONTRIBUTING) can be explicitly grounded in that same knowledge
-  too; detecting a drift there never by itself acknowledges it — only an
-  actual apply or an explicit acknowledge command does. See
-  [`docs/codecompass-knowledge-workflow.md`](../docs/codecompass-knowledge-workflow.md).
+  (`codecompass knowledge ...`) — see
+  [`../docs/workflows/knowledge-reconciliation-loop.md`](../docs/workflows/knowledge-reconciliation-loop.md).
 
 ## What it does NOT do
 
-- **It never invents a relationship that isn't mechanically detected
-  first.** AI enrichment only describes *how* a relationship relates —
-  which relationships exist is decided entirely by deterministic
-  word-boundary matching, never by a model. (`decisions/0031`,
-  `decisions/0045`)
-- **It never writes AI-generated content into your own hand-authored
-  files.** A spec doc's relationship summary is written only to the
-  gitignored graph — codecompass has no code path that writes back into a
-  README, an ADR, or any other file you wrote yourself. (`decisions/0038`)
-- **AI enrichment is optional, not required for the tool to function.**
-  Every deterministic output (trees, API surface, the graph, staleness
-  checking, generated Skills) works fully with `ANTHROPIC_API_KEY` unset.
-  (`decisions/0026`)
-- **`/discovery`'s read-only posture is a convention, not a mechanical
-  guarantee past its first turn.** Its tool grants are read-only for the
-  turn that invokes it, but nothing in Claude Code re-applies that
-  restriction to later turns in the same conversation — the read-only
-  discipline afterward is prompt-level, not enforced. (`decisions/0040`)
-- **It doesn't classify or cluster dependencies by concept/topic** — no
-  semantic grouping, no embeddings, nothing beyond mechanical name/symbol
-  matching anywhere in the graph.
-- **It never mutates git state.** No commits, no `git add`/`rm`, ever —
-  including in `undo`. As of Phase 76, it does *read* Git worktree/
-  submodule topology (`codecompass query topology`) — always read-only
-  plumbing commands (`rev-parse`, `worktree list`, `ls-tree`, `status
-  --porcelain`, `config -f .gitmodules`), never a command that changes
-  repository state, and only during `sync` — `query topology` itself
-  reads the persisted graph, never invoking `git` at all.
+- Never invents a relationship that wasn't mechanically detected first.
+- Never writes AI-generated content into a hand-authored file.
+- AI enrichment is optional — every deterministic output works fully
+  with `ANTHROPIC_API_KEY` unset.
+- `/discovery`'s read-only tool restriction is mechanically enforced for
+  the single turn that invokes it; nothing re-applies it to a later turn
+  in the same conversation.
+- Never mutates git state — no commits, no `git add`/`rm`, ever,
+  including in `undo` (`query topology` reads persisted state, never
+  invokes `git` itself).
 
-## Example prompts
+See [`../docs/limitations.md`](../docs/limitations.md) and
+[`../docs/open-questions.md`](../docs/open-questions.md) for everything
+this isn't certain of.
 
-| You ask | codecompass gives you |
+## Where to look for something specific
+
+| You want to know | See |
 |---|---|
-| "Is my `requests` digest stale?" | `codecompass check` (or `--strict` for a CI-style exit code) |
-| "What does this project actually use `anthropic` for?" | `codecompass query vendor anthropic` — real usage sites, or the generated Skill at `.claude/skills/codecompass-anthropic/` |
-| "Does anything in this repo mention `typer`?" | `codecompass query relations typer` |
-| "How does `architecture/overview.md` relate to my dependencies?" | `codecompass query relations architecture/overview.md` |
-| "Set this project up with codecompass from scratch" | bare `codecompass` — zero-question bootstrap, see `docs/cli-reference.md` |
-| "Explore what codecompass knows about this project, read-only" | `/discovery`, inside a Claude Code session |
-| "What does this project's own `Posting` class do, and where is it?" | `codecompass query source-symbol Posting` — first-party, independent of any tracked vendor |
-| "I want to adopt codecompass in a new project without codecompass's own governance overhead" | [`codecompass-template`](https://github.com/ctosullivan/codecompass-template) — a separate, MIT-licensed scaffold, not a redistribution of this repository's own GPL text |
+| How to install/run it | [`../docs/getting-started.md`](../docs/getting-started.md) |
+| CLI flags/commands | [`../docs/reference/cli.md`](../docs/reference/cli.md) |
+| `vendor.toml`/config shape | [`../docs/reference/configuration.md`](../docs/reference/configuration.md) |
+| The external adapter wire protocol | [`../docs/reference/protocols.md`](../docs/reference/protocols.md) |
+| System architecture | [`../docs/architecture/`](../docs/architecture/) |
+| Domain vocabulary (adapter, vendor, digest, ...) | [`../docs/concepts/`](../docs/concepts/) |
+| Adopting CodeCompass without its own governance overhead | [`codecompass-template`](https://github.com/ctosullivan/codecompass-template) (separate, MIT-licensed) |

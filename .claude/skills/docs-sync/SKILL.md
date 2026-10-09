@@ -22,20 +22,19 @@ python scripts/check_user_docs.py --strict   # exits 1 if any finding
 
 Mechanical rules, no AI, never edits a file. A finding tagged `(info)`
 never fails `--strict` — it just prompts a decision.
-1. Every `@app.command()`/`@query_app.command()` name in `src/codecompass/cli.py` is mentioned in `docs/cli-reference.md`.
-2. `README.md`'s "phases 0-N" claim matches the highest `done` phase in `planning/ROADMAP.md`'s *foundation* tables (the "Redefined CodeCompass v1" section is excluded — `decisions/0048`).
-3. `README.md` mentions `ANTHROPIC_API_KEY`.
-4. Every `VendorConfig` field (`src/codecompass/core.py`) is mentioned in `docs/config-schema.md`.
-5. Every file directly under `ai-docs/` exists and is non-empty.
-6. Every project-learning candidate (`planning/learnings/inbox.md`, `candidates/*.md`) carries all required provenance fields (`learning-lifecycle.md` §3).
-7. Every `status: promoted` candidate has a pointer line in `planning/learnings/promoted.md`.
-8. `(info)` — candidates sitting in `evidence-gathering` (prompts the `knowledge-curator` to decide).
-9. Every phase marked `done` in `planning/ROADMAP.md` with number ≥ 41 has a `planning/retros/phase-N-*.md` retro.
-10. Every relative Markdown link in `README.md` / `docs/` / `ai-docs/` / `architecture/` / `examples/` / `CONTRIBUTING.md` resolves to an existing file; `#anchor` fragments are checked against headings `(info)`.
-11. Fenced example lines invoking `codecompass` use a real subcommand / `query` subcommand (cross-checked against `cli.py`).
-12. Every `decisions/*.md` ADR has a Status line; every `decisions/NNNN` cross-reference resolves to a real ADR file.
-13. A retired identifier/config value (`grounded_description`, `Depth.FULL`, `depth = full`, `_ESTIMATED_COST_PER_CALL_USD`, `codecompass promote`, …) doesn't appear in a doc's prose with no historical marker anywhere in the same bullet/paragraph — the standing-content complement to the per-phase `docs-reconstructor` drift audit, which only catches what a phase's own diff breaks.
-14. The git-tracked generated artifacts a bare function call can reproduce (`.claude/skills/codecompass/SKILL.md`, `.claude/commands/discovery.md`) byte-match their generator (`skill.render_tool_skill`, `commands.render_discovery_command`) against this repo's real config/graph state.
+1. Every `@app.command()`/`@query_app.command()` name in `src/codecompass/cli.py` is mentioned in `docs/reference/cli.md`.
+2. `README.md` mentions `ANTHROPIC_API_KEY`.
+3. Every `VendorConfig` field (`src/codecompass/core.py`) is mentioned in `docs/reference/configuration.md`.
+4. Every file directly under `ai-docs/` exists and is non-empty.
+5. Every project-learning candidate (`planning/learnings/inbox.md`, `candidates/*.md`) carries all required provenance fields (`learning-lifecycle.md` §3).
+6. Every `status: promoted` candidate has a pointer line in `planning/learnings/promoted.md`.
+7. `(info)` — candidates sitting in `evidence-gathering` (prompts the `knowledge-curator` to decide).
+8. Every phase marked `done` in `planning/ROADMAP.md` with number ≥ 41 has a `planning/retros/phase-N-*.md` retro.
+9. Every relative Markdown link in `README.md` / `docs/` / `ai-docs/` / `architecture/` / `examples/` / `CONTRIBUTING.md` resolves to an existing file; `#anchor` fragments are checked against headings `(info)`.
+10. Fenced example lines invoking `codecompass` use a real subcommand / `query` subcommand (cross-checked against `cli.py`).
+11. Every `decisions/*.md` ADR has a Status line; every `decisions/NNNN` cross-reference resolves to a real ADR file.
+12. A retired identifier/config value (`grounded_description`, `Depth.FULL`, `depth = full`, `_ESTIMATED_COST_PER_CALL_USD`, `codecompass promote`, …) doesn't appear in a doc's prose with no historical marker anywhere in the same bullet/paragraph — the standing-content complement to the per-phase `docs-reconstructor` drift audit, which only catches what a phase's own diff breaks.
+13. The git-tracked generated artifacts a bare function call can reproduce (`.claude/skills/codecompass/SKILL.md`, `.claude/commands/discovery.md`) byte-match their generator (`skill.render_tool_skill`, `commands.render_discovery_command`) against this repo's real config/graph state.
 
 ## How to use this skill
 
