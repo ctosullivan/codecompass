@@ -84,6 +84,21 @@ workspace) is the real ingestion code these Claims describe, and
 constant you can check directly — prefer those over trusting the Claim
 text alone where you need to verify the real frontmatter shape.
 
+A third variant of the same limit (added 2026-10-09, cold-reader finding
+#1, tenth pass): several `first-party-source-symbols` Evidence entries
+in `knowledge/source-and-evidence-map.md` are grounded in a live,
+reproducible test fixture run during research (e.g. "write a file
+containing an embedded, decoy-looking `pub fn` inside a Rust raw string,
+then call the real extractor on it") rather than a static file/line
+citation. `src/codecompass/source_symbols.py` (your own workspace) is
+the real function under test, and you could in principle construct an
+equivalent fixture yourself to re-verify the described behaviour — but
+the original fixture's own exact input/output is recorded in a raw
+Observation record that is not included in your workspace (`planning/
+knowledge/` is excluded entirely), so you cannot open that specific
+record to confirm you're reproducing it faithfully. Treat these the same
+way as any other citation you cannot personally re-open.
+
 ## On synthesising architecture/workflow material directly from source (cold-reader finding #2)
 
 `knowledge/workflows-and-state-transitions.md` and the architecture-

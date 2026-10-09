@@ -16,6 +16,18 @@ file, prefer what the file's own content literally shows you over any
 revision number attached to it, and treat the manifest's own field as
 the one number that actually describes "now."
 
+**Format clarification (2026-10-09, cold-reader finding #2, tenth
+pass):** every `documented_revision`/`handoff_commit` value in this
+package — including the manifest's own authoritative one — is always a
+Git commit SHA (short or long form), never a sequential build number,
+timestamp, or anything else. A short SHA is 7+ hexadecimal characters
+(`0`–`9` and `a`–`f`); it can, by coincidence, consist entirely of
+digits with no letters (as the current `documented_revision` does) and
+still be a perfectly real, valid SHA — not a different kind of
+identifier. If you need to describe "the revision this documentation
+reflects," describe it as a Git commit reference, exactly as given,
+regardless of whether it happens to look numeric.
+
 ## Files in this handoff
 
 - `README.md` — what/why/how, start here.
