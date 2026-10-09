@@ -1,0 +1,250 @@
+source_repository: ctosullivan/codecompass
+documented_revision: f257cde
+handoff_commit: null  # filled in after this tree is committed to its own branch
+generated_at: "2026-10-09T04:36:12.409529+00:00"
+codecompass_version: "1.0.0"
+
+included_paths:
+  - .gitmodules
+  - adapters/haskell/app/Main.hs
+  - adapters/haskell/codecompass-adaptor-haskell.cabal
+  - adapters/haskell/package.yaml
+  - adapters/haskell/stack.yaml
+  - adapters/haskell/stack.yaml.lock
+  - adapters/haskell/test/Spec.hs
+  - adapters/haskell/test/fixtures/AccountName.hs
+  - adapters/haskell/test/fixtures/Hledger.hs
+  - adapters/haskell/test/fixtures/NoExportList.hs
+  - adapters/haskell/test/fixtures/TypeAllCtors.hs
+  - adapters/haskell/test/fixtures/Types.hs
+  - examples/toy-project/pyproject.toml
+  - examples/toy-project/src/toy_project/__init__.py
+  - examples/toy-project/src/toy_project/cli.py
+  - planning/documentation-handoff/CITED-EXCERPTS.md
+  - planning/documentation-handoff/DISPOSITION-REPORT.md
+  - planning/documentation-handoff/DOCUMENTATION-TARGET.md
+  - planning/documentation-handoff/INDEX.md
+  - planning/documentation-handoff/OPEN-QUESTIONS.md
+  - planning/documentation-handoff/README.md
+  - planning/documentation-handoff/SOURCE-OF-TRUTH.md
+  - planning/documentation-handoff/knowledge/decisions-and-rationale.md
+  - planning/documentation-handoff/knowledge/edge-cases-and-compatibility.md
+  - planning/documentation-handoff/knowledge/interfaces-and-behaviours.md
+  - planning/documentation-handoff/knowledge/invariants-and-constraints.md
+  - planning/documentation-handoff/knowledge/overview.md
+  - planning/documentation-handoff/knowledge/source-and-evidence-map.md
+  - planning/documentation-handoff/knowledge/tests-and-acceptance.md
+  - planning/documentation-handoff/knowledge/workflows-and-state-transitions.md
+  - protocol/codecompass-adaptor-protocol/SCHEMA.md
+  - protocol/codecompass-adaptor-protocol/conformance/README.md
+  - protocol/codecompass-adaptor-protocol/conformance/invalid/analyze_project-request-missing-package-name.json
+  - protocol/codecompass-adaptor-protocol/conformance/invalid/analyze_project-response-bad-symbol-kind.json
+  - protocol/codecompass-adaptor-protocol/conformance/invalid/analyze_project-response-both-result-and-error.json
+  - protocol/codecompass-adaptor-protocol/conformance/invalid/error-bad-code.json
+  - protocol/codecompass-adaptor-protocol/conformance/invalid/initialize-request-missing-protocol-version.json
+  - protocol/codecompass-adaptor-protocol/conformance/invalid/initialize-response-bad-capability.json
+  - protocol/codecompass-adaptor-protocol/conformance/invalid/shutdown-request-wrong-method.json
+  - protocol/codecompass-adaptor-protocol/conformance/manifest.json
+  - protocol/codecompass-adaptor-protocol/conformance/valid/analyze_project-request.json
+  - protocol/codecompass-adaptor-protocol/conformance/valid/analyze_project-response-full.json
+  - protocol/codecompass-adaptor-protocol/conformance/valid/analyze_project-response-minimal.json
+  - protocol/codecompass-adaptor-protocol/conformance/valid/analyze_project-response-symbol-kinds.json
+  - protocol/codecompass-adaptor-protocol/conformance/valid/error.json
+  - protocol/codecompass-adaptor-protocol/conformance/valid/initialize-request.json
+  - protocol/codecompass-adaptor-protocol/conformance/valid/initialize-response.json
+  - protocol/codecompass-adaptor-protocol/conformance/valid/shutdown-request.json
+  - protocol/codecompass-adaptor-protocol/conformance/valid/shutdown-response.json
+  - protocol/codecompass-adaptor-protocol/examples/analyze_project-request.json
+  - protocol/codecompass-adaptor-protocol/examples/analyze_project-response.json
+  - protocol/codecompass-adaptor-protocol/examples/error.json
+  - protocol/codecompass-adaptor-protocol/examples/initialize-request.json
+  - protocol/codecompass-adaptor-protocol/examples/initialize-response.json
+  - protocol/codecompass-adaptor-protocol/examples/shutdown-request.json
+  - protocol/codecompass-adaptor-protocol/examples/shutdown-response.json
+  - protocol/codecompass-adaptor-protocol/schemas/analyze_project-request.json
+  - protocol/codecompass-adaptor-protocol/schemas/analyze_project-response.json
+  - protocol/codecompass-adaptor-protocol/schemas/error.json
+  - protocol/codecompass-adaptor-protocol/schemas/initialize-request.json
+  - protocol/codecompass-adaptor-protocol/schemas/initialize-response.json
+  - protocol/codecompass-adaptor-protocol/schemas/shutdown-request.json
+  - protocol/codecompass-adaptor-protocol/schemas/shutdown-response.json
+  - pyproject.toml
+  - scripts/check_knowledge_base.py
+  - scripts/check_user_docs.py
+  - scripts/cleanroom_broker.py
+  - scripts/cleanroom_broker_client.py
+  - scripts/cleanroom_prompt_assembler.py
+  - scripts/prepare_cleanroom_branch.py
+  - src/codecompass/__init__.py
+  - src/codecompass/adapters/__init__.py
+  - src/codecompass/adapters/base.py
+  - src/codecompass/adapters/cargo.py
+  - src/codecompass/adapters/external_process.py
+  - src/codecompass/adapters/haskell.py
+  - src/codecompass/adapters/npm.py
+  - src/codecompass/adapters/python.py
+  - src/codecompass/chat.py
+  - src/codecompass/claude_md.py
+  - src/codecompass/cli.py
+  - src/codecompass/commands.py
+  - src/codecompass/config.py
+  - src/codecompass/core.py
+  - src/codecompass/deptree.py
+  - src/codecompass/discovery.py
+  - src/codecompass/doc_chunking.py
+  - src/codecompass/doc_mapping.py
+  - src/codecompass/enrichment.py
+  - src/codecompass/filetree.py
+  - src/codecompass/git_topology.py
+  - src/codecompass/graph.py
+  - src/codecompass/index.py
+  - src/codecompass/knowledge_intermediate.py
+  - src/codecompass/relation_enrichment.py
+  - src/codecompass/skill.py
+  - src/codecompass/skill_scan.py
+  - src/codecompass/source_resolution.py
+  - src/codecompass/source_symbols.py
+  - src/codecompass/spec_docs.py
+  - src/codecompass/staleness.py
+  - src/codecompass/symbols.py
+  - src/codecompass/sync.py
+  - src/codecompass/usage.py
+  - tests/README.md
+  - tests/fixtures/cargo_metadata.json
+  - tests/fixtures/fake_adapter.py
+  - tests/fixtures/generic_hash_comment.cfg
+  - tests/fixtures/generic_slash_comment.js
+  - tests/fixtures/ledgerkit_lifecycle_demo/.claude/commands/discovery.md
+  - tests/fixtures/ledgerkit_lifecycle_demo/.claude/skills/codecompass/SKILL.md
+  - tests/fixtures/ledgerkit_lifecycle_demo/.gitignore
+  - tests/fixtures/ledgerkit_lifecycle_demo/DEMO.md
+  - tests/fixtures/ledgerkit_lifecycle_demo/cycle1-enrichment.json
+  - tests/fixtures/ledgerkit_lifecycle_demo/cycle2-enrichment-with-rejection-demo.json
+  - tests/fixtures/ledgerkit_lifecycle_demo/cycle2-enrichment.json
+  - tests/fixtures/ledgerkit_lifecycle_demo/dev-docs/architecture.md
+  - tests/fixtures/ledgerkit_lifecycle_demo/dev-docs/planning/README.md
+  - tests/fixtures/ledgerkit_lifecycle_demo/dev-docs/retros/README.md
+  - tests/fixtures/npm_ls.json
+  - tests/fixtures/npm_package_root.json
+  - tests/fixtures/npm_package_with_postinstall.json
+  - tests/fixtures/pipdeptree_json_tree.json
+  - tests/fixtures/sample.d.ts
+  - tests/fixtures/sample.pyi
+  - tests/fixtures/sample_lib.rs
+  - tests/fixtures/sample_module_with_all.py
+  - tests/fixtures/sample_readme.md
+  - tests/fixtures/sample_with_jsdoc.d.ts
+  - tests/fixtures/vendor.toml
+  - tests/test_adapter_cargo.py
+  - tests/test_adapter_haskell.py
+  - tests/test_adapter_npm.py
+  - tests/test_adapter_python.py
+  - tests/test_adapters_base.py
+  - tests/test_adapters_dispatch.py
+  - tests/test_adapters_external_process.py
+  - tests/test_chat.py
+  - tests/test_check_knowledge_base.py
+  - tests/test_check_user_docs.py
+  - tests/test_claude_md.py
+  - tests/test_cleanroom_broker.py
+  - tests/test_cli.py
+  - tests/test_commands.py
+  - tests/test_config.py
+  - tests/test_core.py
+  - tests/test_deptree.py
+  - tests/test_discovery.py
+  - tests/test_doc_chunking.py
+  - tests/test_doc_mapping.py
+  - tests/test_enrichment.py
+  - tests/test_filetree.py
+  - tests/test_git_topology.py
+  - tests/test_graph.py
+  - tests/test_index.py
+  - tests/test_knowledge_intermediate.py
+  - tests/test_prepare_cleanroom_branch.py
+  - tests/test_protocol_conformance.py
+  - tests/test_relation_enrichment.py
+  - tests/test_skill.py
+  - tests/test_skill_scan.py
+  - tests/test_source_resolution.py
+  - tests/test_source_symbols.py
+  - tests/test_spec_docs.py
+  - tests/test_staleness.py
+  - tests/test_symbols.py
+  - tests/test_sync.py
+  - tests/test_undo.py
+  - tests/test_usage.py
+  - vendor.toml
+
+excluded_paths:
+  - README.md
+  - docs
+  - architecture
+  - ai-docs
+  - CONTRIBUTING.md
+  - CLAUDE.md
+  - decisions
+  - planning/retros
+  - planning/ROADMAP.md
+  - planning/CONTEXT.md
+  - planning/learnings
+  - planning/knowledge
+  - vendor
+  - examples/README.md
+  - protocol/codecompass-adaptor-protocol/.git
+  - protocol/codecompass-adaptor-protocol/README.md
+  - protocol/codecompass-adaptor-protocol/CHANGELOG.md
+  - protocol/codecompass-adaptor-protocol/LICENSE
+  - adapters/haskell/.git
+  - adapters/haskell/.stack-work
+  - adapters/haskell/README.md
+  - adapters/haskell/CHANGELOG.md
+  - adapters/haskell/LICENSE
+  - .git
+  - .claude
+  - .cursor
+  - dist
+  - .pytest_cache
+  - .ruff_cache
+  - .venv
+
+all_rendered_knowledge_slugs: ['codecompass-domain', 'doc-origin-pinned-reference', 'first-party-source-symbols', 'haskell-api-surface-extraction', 'hledger-depth']
+
+handoff_selected_slugs: ['codecompass-domain', 'doc-origin-pinned-reference', 'first-party-source-symbols', 'haskell-api-surface-extraction']
+
+intermediary_projection_hashes:
+  codecompass-domain:
+    interfaces-and-behaviours.md: ce31e48f704d1b36242c18e335887405ca688a753b0552913af0256d5a13b354
+    invariants-and-constraints.md: ba5b210b322f29cd1cd77a1bfe41c6523e75737e139a50e6aaf73bd3a4f50740
+    open-questions-and-conflicts.md: a62797cabfaa9184fd58ae2a4fdff0f65c037cadfc5dba77f283eb9f5fdb8d24
+    overview.md: bad868c5c404cba89e9abc19a5fb37e3337b5e5679e4895b718a21de1dc3c6cd
+    phase-brief.md: 5c739e0a6f7cb75ed289926d97ceab34c9c90467350fe776b0bef2ad1fc5d6b8
+  doc-origin-pinned-reference:
+    interfaces-and-behaviours.md: aead8b243376aef0a42e745a73f6d83f7d1f77fddd3dfcc764fafe05e682dedd
+    invariants-and-constraints.md: f171d4a34bc488e3cad3578419cfac6e90286d7bdefd2126b2f6d2bb089e9dc9
+    open-questions-and-conflicts.md: 6b720651b77e1c5c3f55230ba8fb7e5551f7c63b6ec4b40250c59e6cc71a855b
+    overview.md: 911d468bc80fc8cc2f2f88023ecc1f574e511173e8ef15a2e8db68e7caa84b5b
+    phase-brief.md: 22b8ccaf3eef98693d377bd0b55bd715f0716368b099d6df746f508f9867ca8d
+    tests-and-acceptance.md: febadd1fdbed9209bd39489e813b9aa9792d0e47308a8f4092880c791091fde0
+  first-party-source-symbols:
+    interfaces-and-behaviours.md: 1bdfc5264b8788cd1d1be585a6b4363cf9b23b7074b010de5854020f80099d3a
+    invariants-and-constraints.md: 4fdafa19b7df5d82eb196abf328e0e4f00d62d93edae318c72920d7cc8a79dec
+    open-questions-and-conflicts.md: dee963c7212084105f1e9046e357540386ec1188ff2998b39cefcbacaa31f529
+    overview.md: 6b478e7ebcaca46f411cc267cdc94f118e5cf8751d17a897891daedd66dadce1
+    phase-brief.md: 418da5132380d9e6e3254cbf7de9eb0dc8366647f8c017915b06ad591e4f4005
+  haskell-api-surface-extraction:
+    interfaces-and-behaviours.md: 02e659631697bb5de7b6efc2bdb2ffc34c949bf2c820df8758783016af60f9cf
+    invariants-and-constraints.md: 966494fbc2f69cbbc69f1d1717929bd607e31533b58c82f7622ace603bd5568b
+    open-questions-and-conflicts.md: b345de1c570ea8f88026c8211389ae9cc993c411f4a2b43b171e26f652034645
+    overview.md: d3b5755a784e2c6bc549d0de4ab2cb5b4b26c5f9836129a02869e23ad433b10c
+    phase-brief.md: fd59a76ff8c3474749303d83378275f767e2cb0b048d027abc09ebb4a969db37
+    tests-and-acceptance.md: 67832079e7748718cee73e7c51f4e32c20da63431f89206f121b10e8e7b1fd39
+
+documentation_disposition: planning/documentation-handoff/DISPOSITION-REPORT.md
+
+network_policy: "no network interfaces configured in the Mode B workspace -- see planning/phase-81b-mode-b-isolation-investigation.md"
+history_policy: "none -- this filesystem has no .git directory"
+credential_policy: "none -- no SSH keys, tokens, or env-var secrets included"
+narrative_documentation_policy: "none of README.md/docs/**/architecture/**/ai-docs/**, including docs/domain/**, is present in this filesystem in its own original prose form"
+invalidated_by: null
+supersedes: "documented_revision 33cfd24, handoff_commit 9568115ac08167e28c1c426d4489ca0af731e3f1 (branch cleanroom/redoc-33cfd24) -- superseded 2026-10-09, Phase 81B Amendment 4: a fourth real cold-reader run returned GAPS FOUND (5 findings): the Haskell adapter submodule was blanket-excluded leaving its own Requirements unverifiable, .gitmodules was missing, an ADR numbering gap was unexplained, a reproducibility caveat was missing from the toy-project capture, and a disclosed cargo.py limitation was not surfaced. All fixed on main; this handoff rebuilt accordingly."

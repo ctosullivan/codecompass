@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ctosullivan/codecompass-adaptor-protocol/schemas/error.json",
+  "title": "Adapter protocol error response",
+  "type": "object",
+  "properties": {
+    "id": { "$ref": "#/$defs/id" },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": ["not_found", "parse_error", "unsupported_capability", "internal_error"]
+        },
+        "message": { "type": "string" }
+      },
+      "required": ["code", "message"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["id", "error"],
+  "additionalProperties": false,
+  "$defs": {
+    "id": {
+      "oneOf": [{ "type": "string" }, { "type": "integer" }]
+    }
+  }
+}

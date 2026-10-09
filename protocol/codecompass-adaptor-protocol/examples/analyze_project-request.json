@@ -1,0 +1,8 @@
+{
+  "id": 2,
+  "method": "analyze_project",
+  "params": {
+    "project_root": "/home/cormac/projects/hledger/hledger-lib",
+    "package_name": "hledger-lib"
+  }
+}

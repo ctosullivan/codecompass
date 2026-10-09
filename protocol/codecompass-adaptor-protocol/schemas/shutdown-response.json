@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ctosullivan/codecompass-adaptor-protocol/schemas/shutdown-response.json",
+  "title": "shutdown response",
+  "type": "object",
+  "properties": {
+    "id": { "oneOf": [{ "type": "string" }, { "type": "integer" }] },
+    "result": {
+      "type": "object",
+      "additionalProperties": false
+    }
+  },
+  "required": ["id", "result"],
+  "additionalProperties": false
+}

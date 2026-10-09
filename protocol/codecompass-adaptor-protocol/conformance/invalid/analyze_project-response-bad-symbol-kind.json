@@ -1,0 +1,8 @@
+{
+  "id": 2,
+  "result": {
+    "symbols": [
+      { "name": "X", "purpose": null, "module": "Example.Core", "kind": "maybe-exported" }
+    ]
+  }
+}
