@@ -1,0 +1,62 @@
+{
+  "packages": [
+    {
+      "id": "demo-crate 0.1.0 (path+file:///demo-crate)",
+      "name": "demo-crate",
+      "version": "0.1.0",
+      "manifest_path": "/demo-crate/Cargo.toml",
+      "dependencies": [
+        {"name": "serde", "kind": null},
+        {"name": "serde_test", "kind": "dev"}
+      ]
+    },
+    {
+      "id": "serde 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+      "name": "serde",
+      "version": "1.0.0",
+      "manifest_path": "/registry/serde-1.0.0/Cargo.toml",
+      "dependencies": [
+        {"name": "serde_derive", "kind": null}
+      ]
+    },
+    {
+      "id": "serde_derive 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+      "name": "serde_derive",
+      "version": "1.0.0",
+      "manifest_path": "/registry/serde_derive-1.0.0/Cargo.toml",
+      "dependencies": []
+    },
+    {
+      "id": "serde_test 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+      "name": "serde_test",
+      "version": "1.0.0",
+      "manifest_path": "/registry/serde_test-1.0.0/Cargo.toml",
+      "dependencies": []
+    }
+  ],
+  "resolve": {
+    "nodes": [
+      {
+        "id": "demo-crate 0.1.0 (path+file:///demo-crate)",
+        "dependencies": [
+          "serde 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+          "serde_test 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)"
+        ]
+      },
+      {
+        "id": "serde 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+        "dependencies": [
+          "serde_derive 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)"
+        ]
+      },
+      {
+        "id": "serde_derive 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+        "dependencies": []
+      },
+      {
+        "id": "serde_test 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+        "dependencies": []
+      }
+    ]
+  }
+}

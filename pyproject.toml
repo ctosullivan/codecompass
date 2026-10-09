@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codecompass-context"
+version = "1.0.0"
+description = "Grounded, version-pinned dependency reference docs for AI coding agents."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "GPL-3.0-or-later" }
+authors = [{ name = "Cormac O' Sullivan" }]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "typer>=0.27",
+    "rich>=15",
+    "anthropic>=0.109",
+    "pipdeptree>=4.2",
+    "pyyaml>=6.0",
+]
+# Note: no `tomli` dependency — requires-python >=3.11 means `tomllib` is
+# available in the standard library (see decisions/0009).
+
+[project.urls]
+Homepage = "https://github.com/ctosullivan/codecompass"
+Repository = "https://github.com/ctosullivan/codecompass"
+Issues = "https://github.com/ctosullivan/codecompass/issues"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+    "jsonschema",
+]
+
+[project.scripts]
+codecompass = "codecompass.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "smoke: exercises a real external tool (npm/cargo) — network/toolchain dependent, skipped automatically when the tool isn't present",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# Phase 79 fifth/sixth amendments: preserved, real evidence of an
+# invented non-CodeCompass project's own code (two separate downstream
+# template-usability exercises' actual end states) -- not this project's
+# own source, never meant to meet this project's own lint conventions.
+extend-exclude = [
+    "planning/knowledge/first-party-source-symbols/template-usability-exercise/tinytodo-after-adoption",
+    "planning/knowledge/first-party-source-symbols/template-usability-exercise-2/tinytodo2-final-tree",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]

@@ -1,0 +1,466 @@
+"""Doc-artifact and dependency-edge mapping: pure transformations over
+already-generated per-vendor artifacts (`vendor/<name>/CLAUDE.md`,
+`vendor/<name>/OVERVIEW.md`, `vendor/<name>/deptree.json`) and the doc
+artifacts `skill_scan.py` collects — no new AI call, no new symbol
+extraction. See planning/phase-12-doc-and-wide-skill-mapping.md.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from collections import defaultdict
+from pathlib import Path
+
+from codecompass.core import VendorConfig
+from codecompass.doc_chunking import DocChunk, chunk_markdown
+from codecompass.graph import (
+    DependsOnEdgeRow,
+    DocArtifactRow,
+    DocChunkRow,
+    DocRelationEdgeRow,
+    DocumentsEdgeRow,
+    RoutesViaEdgeRow,
+    SymbolRow,
+)
+from codecompass.spec_docs import _is_specific_enough
+
+_DEPTREE_FILENAME = "deptree.json"
+
+# Root-level-only, fixed filename set (Phase 27, decisions/0041) — not a
+# recursive **/*.md glob, which would sweep up a vendor's own
+# node_modules/build output/nested-package docs inside a monorepo-shaped
+# clone, and not every language's `docs/`-folder convention either (a
+# larger dependency's own `docs/` can hold hundreds of arbitrarily nested,
+# uncurated files). `README*.md` matches every root-level README variant a
+# clone actually has (`README.md`, `README.cn.md`, etc.) rather than just
+# the bare `README.md` — simplest pattern that still satisfies the plan's
+# examples, at the cost of also picking up a vendor's own translated
+# READMEs when it has them at the root (see decisions/0041's Alternatives
+# considered).
+_VENDOR_UPSTREAM_DOC_GLOB_PATTERNS = (
+    "README*.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "MIGRATION.md",
+)
+
+
+def collect_vendor_doc_artifacts(
+    configs: list[VendorConfig], project_root: Path
+) -> list[DocArtifactRow]:
+    """One `kind='claude_md'` row per tracked vendor's `vendor/<name>/
+    CLAUDE.md` and one `kind='overview'` row for `vendor/<name>/
+    OVERVIEW.md` if it exists (only currently-`promote`d, `depth=full`
+    vendors have one) — both `origin='codecompass_vendor'`. A vendor
+    that hasn't been synced yet (no `CLAUDE.md` on disk) is skipped
+    rather than pointing a doc-artifact row at a nonexistent file.
+    """
+    rows: list[DocArtifactRow] = []
+    for config in configs:
+        vendor_dir = project_root / "vendor" / config.name
+
+        claude_md = vendor_dir / "CLAUDE.md"
+        if claude_md.exists():
+            rows.append(
+                DocArtifactRow(
+                    path=claude_md.relative_to(project_root).as_posix(),
+                    kind="claude_md",
+                    origin="codecompass_vendor",
+                    vendor_name=config.name,
+                    name=f"{config.name} CLAUDE.md",
+                )
+            )
+
+        overview = vendor_dir / "OVERVIEW.md"
+        if overview.exists():
+            rows.append(
+                DocArtifactRow(
+                    path=overview.relative_to(project_root).as_posix(),
+                    kind="overview",
+                    origin="codecompass_vendor",
+                    vendor_name=config.name,
+                    name=f"{config.name} OVERVIEW.md",
+                )
+            )
+    return rows
+
+
+def collect_vendor_upstream_doc_artifacts(
+    configs: list[VendorConfig], project_root: Path
+) -> list[DocArtifactRow]:
+    """One `kind='vendor_doc'` row per matched top-level doc file found
+    directly under each tracked vendor's *cloned source* root
+    (`vendor/<name>/src/` — the clone root `sync.sync_vendor`/
+    `source_resolution.resolve_and_clone` actually write to, not
+    `vendor/<name>/` itself, which only ever holds codecompass's own
+    generated `CLAUDE.md`/`OVERVIEW.md`/`FILETREE.md`/`DEPTREE.md`). All
+    rows are `origin='vendor_upstream'` — deliberately distinct from
+    `collect_vendor_doc_artifacts`'s `origin='codecompass_vendor'` above:
+    this is upstream-*authored* content codecompass merely indexes, not
+    content it generated itself (see decisions/0041).
+
+    Matched against `_VENDOR_UPSTREAM_DOC_GLOB_PATTERNS`, root-level only —
+    no recursion into subdirectories (so a vendor's own nested `docs/`
+    folder, `node_modules`, or monorepo sub-packages are never swept up). A
+    vendor with no clone on disk yet (unresolved source, or not yet synced)
+    is skipped entirely, the same tolerant posture `collect_vendor_doc_
+    artifacts` already takes toward a not-yet-synced vendor's missing
+    `CLAUDE.md`.
+    """
+    rows: list[DocArtifactRow] = []
+    for config in configs:
+        clone_root = project_root / "vendor" / config.name / "src"
+        if not clone_root.is_dir():
+            continue
+
+        matched: set[Path] = set()
+        for pattern in _VENDOR_UPSTREAM_DOC_GLOB_PATTERNS:
+            matched.update(p for p in clone_root.glob(pattern) if p.is_file())
+
+        for doc_path in sorted(matched):
+            rows.append(
+                DocArtifactRow(
+                    path=doc_path.relative_to(project_root).as_posix(),
+                    kind="vendor_doc",
+                    origin="vendor_upstream",
+                    vendor_name=config.name,
+                    name=f"{config.name} {doc_path.name}",
+                )
+            )
+    return rows
+
+
+# Doc kinds `build_documents_edges`/`build_doc_relations_edges` ever scan
+# as a mention-detection source or target (Phase 32) — chunking a Skill/
+# `.mdc` rule/slash-command doc would produce `doc_chunks` rows nothing
+# could ever reference, since neither builder function scans those kinds.
+_CHUNKABLE_DOC_KINDS = frozenset({"claude_md", "overview", "vendor_doc", "spec_doc"})
+
+
+def build_doc_chunks(
+    doc_artifact_rows: list[DocArtifactRow], project_root: Path
+) -> list[DocChunkRow]:
+    """Heading-based chunks (Phase 32, `doc_chunking.chunk_markdown`) for
+    every doc artifact whose kind can ever be a mention-detection source
+    or target — see `_CHUNKABLE_DOC_KINDS`. Reads each doc's text off disk
+    again (already read separately by `build_documents_edges`/`build_doc_
+    relations_edges` below) — an accepted small duplication, consistent
+    with this module's existing "each builder function reads its own
+    inputs" shape rather than threading a shared text cache through every
+    function. A doc with no headings at all produces zero chunk rows
+    (`chunk_markdown`'s own contract), not an error.
+    """
+    rows: list[DocChunkRow] = []
+    for row in doc_artifact_rows:
+        if row.kind not in _CHUNKABLE_DOC_KINDS:
+            continue
+        text = (project_root / row.path).read_text(encoding="utf-8")
+        for chunk in chunk_markdown(text):
+            rows.append(
+                DocChunkRow(
+                    doc_artifact_path=row.path,
+                    heading_path=chunk.heading_path,
+                    start_line=chunk.start_line,
+                    end_line=chunk.end_line,
+                    content_hash=chunk.content_hash,
+                )
+            )
+    return rows
+
+
+def _find_containing_chunk(
+    lines: list[str], chunks: list[DocChunk], needle: str
+) -> DocChunk | None:
+    """The one chunk (of `chunks`) whose own text contains a word-boundary
+    match for `needle`, or `None` if zero or more than one chunk does —
+    Phase 32's "attributable to exactly one chunk" rule (the phase plan's
+    two named reasons `chunk_id` stays `NULL`: no headings at all, which
+    `chunks` being empty already handles for free, or a match spanning a
+    boundary — treated here as "found in more than one chunk," since a
+    single word-boundary match can't literally straddle a heading line).
+    """
+    matches = [
+        chunk
+        for chunk in chunks
+        if re.search(
+            rf"\b{re.escape(needle)}\b",
+            "\n".join(lines[chunk.start_line - 1 : chunk.end_line]),
+        )
+    ]
+    return matches[0] if len(matches) == 1 else None
+
+
+def build_documents_edges(
+    doc_artifact_rows: list[DocArtifactRow],
+    symbol_rows: list[SymbolRow],
+    project_root: Path,
+) -> list[DocumentsEdgeRow]:
+    """For each `claude_md`/`overview`/`vendor_doc` doc artifact, read its
+    file text off disk and word-boundary-match it against *that same
+    vendor's* known symbol names — one edge per match. A coverage
+    heuristic ("this symbol's name appears in the vendor's own digest
+    text"), not a quality judgment. `vendor_doc` (Phase 27) was added to
+    this filter in Phase 29 — a vendor's own upstream README is at least
+    as authoritative a source of "this doc documents this symbol" as
+    codecompass's own generated `CLAUDE.md`/`OVERVIEW.md`, and it already
+    carries `vendor_name` (Phase 27), so no other change was needed here.
+
+    Phase 32: also attempts to attribute each match to exactly one of the
+    doc's own heading-scoped chunks (`doc_chunking.chunk_markdown`),
+    populating `chunk_start_line` when it can — additive, the whole-doc
+    edge is produced identically either way.
+    """
+    symbols_by_vendor: dict[str, list[str]] = defaultdict(list)
+    for symbol in symbol_rows:
+        symbols_by_vendor[symbol.vendor_name].append(symbol.name)
+
+    edges: list[DocumentsEdgeRow] = []
+    for row in doc_artifact_rows:
+        if row.kind not in ("claude_md", "overview", "vendor_doc") or row.vendor_name is None:
+            continue
+        vendor_symbols = symbols_by_vendor.get(row.vendor_name)
+        if not vendor_symbols:
+            continue
+        text = (project_root / row.path).read_text(encoding="utf-8")
+        lines = text.splitlines()
+        chunks = chunk_markdown(text)
+        for symbol_name in vendor_symbols:
+            if re.search(rf"\b{re.escape(symbol_name)}\b", text):
+                chunk = _find_containing_chunk(lines, chunks, symbol_name)
+                edges.append(
+                    DocumentsEdgeRow(
+                        doc_artifact_path=row.path,
+                        vendor_name=row.vendor_name,
+                        symbol_name=symbol_name,
+                        chunk_start_line=chunk.start_line if chunk else None,
+                    )
+                )
+    return edges
+
+
+def build_routes_via_edges(
+    configs: list[VendorConfig], doc_artifact_rows: list[DocArtifactRow]
+) -> list[RoutesViaEdgeRow]:
+    """Route each vendor to its own per-vendor Skill doc artifact
+    (`kind='skill'`, `origin='codecompass_vendor'`) if one exists;
+    otherwise to the shared tool-level Skill (`kind='skill'`,
+    `origin='codecompass_tool'`) if *that* is present in
+    `doc_artifact_rows`. Operationalizes `decisions/0013` point 6 as real
+    queryable data.
+    """
+    per_vendor_skill: dict[str, str] = {}
+    tool_skill_path: str | None = None
+    for row in doc_artifact_rows:
+        if row.kind != "skill":
+            continue
+        if row.origin == "codecompass_vendor" and row.vendor_name is not None:
+            per_vendor_skill.setdefault(row.vendor_name, row.path)
+        elif row.origin == "codecompass_tool" and tool_skill_path is None:
+            tool_skill_path = row.path
+
+    edges: list[RoutesViaEdgeRow] = []
+    for config in configs:
+        target = per_vendor_skill.get(config.name, tool_skill_path)
+        if target is not None:
+            edges.append(RoutesViaEdgeRow(vendor_name=config.name, doc_artifact_path=target))
+    return edges
+
+
+# Closed allow-set of scannable relationship-source kinds (Phase 29,
+# decisions/0043) — deliberately not "any kind not otherwise excluded".
+# A codecompass-*generated* artifact (`claude_md`, `overview`, `skill`,
+# `cursor_mdc`, `slash_command`) mentioning a vendor by name is structural,
+# not signal, so it stays out of this set; adding a new source kind later
+# is a deliberate one-line change here, not an accidental side effect of
+# some other doc kind's origin changing.
+_DOC_RELATION_SOURCE_KINDS = frozenset({"spec_doc", "vendor_doc"})
+
+
+def build_doc_relations_edges(
+    source_doc_rows: list[DocArtifactRow],
+    configs: list[VendorConfig],
+    other_doc_artifact_rows: list[DocArtifactRow],
+    project_root: Path,
+) -> list[DocRelationEdgeRow]:
+    """For each scannable source doc — `kind` in `_DOC_RELATION_SOURCE_KINDS`
+    (`spec_doc`, `vendor_doc`; a closed allow-set, see decisions/0043),
+    non-matching rows in `source_doc_rows` are skipped — read its file text
+    off disk once and word-boundary-match it
+    (`re.search(rf"\\b{re.escape(name)}\\b", text)`, same helper pattern as
+    `build_documents_edges`/`skill_scan.build_skill_mentions_edges`)
+    against: (a) every tracked vendor's name
+    (`relation_kind='mentions_dependency'`), and (b) every *other* doc
+    artifact's `name` field — a Skill's frontmatter `name`, a dependency
+    doc's `f"{vendor} CLAUDE.md"`-style name
+    (`relation_kind='mentions_artifact'`). A doc artifact with no `name`
+    set is never a match target — nothing to word-boundary-search for.
+
+    Phase 73 (closes `CG-006`): for an already-named target not matched
+    by its `.name`, also try its path's filename
+    (`Path(artifact.path).name`, e.g. `"07-query-regex.md"`) and stem
+    (`Path(artifact.path).stem`, e.g. `"07-query-regex"`) as additional
+    word-boundary patterns — a real, ordinary citation style ("see
+    `07-query-regex.md`") that title-only matching missed even after
+    `CG-004`'s own fix, found live on the exact real-world pair that
+    fix's motivating example named. Each candidate string is gated
+    through `spec_docs._is_specific_enough` (reused, not duplicated) so
+    a generic filename like `readme.md` doesn't become a universal
+    match target any more than the bare title "readme" already isn't.
+    Same relation kind, same self-mention exclusion, same chunk
+    attribution as title-based matching — this widens *which strings*
+    are tried per target, not *which targets* are eligible (an unnamed
+    artifact stays excluded, unchanged). **Known limitation, not fixed
+    here**: two files sharing an identical basename in different
+    directories are indistinguishable by this strategy, the same class
+    of limitation title-based matching already has for two docs sharing
+    an identical title.
+
+    Self-mention exclusion (Phase 29): a `vendor_doc` source row's own
+    vendor (its `vendor_name`) never produces a `mentions_dependency` edge
+    targeting that same vendor — a package's own README mentioning its own
+    name is guaranteed, universal noise, unlike a spec doc mentioning a
+    vendor, or a vendor doc mentioning a *different* tracked vendor, both
+    of which are real evidence of a relationship. None applies to
+    `spec_doc` sources for `mentions_dependency` at all (a spec doc has no
+    `vendor_name` of its own to compare against) — see decisions/0043.
+
+    A second, analogous self-mention exclusion (Phase 55b) applies to
+    `mentions_artifact`: a source row is never matched against itself as a
+    `named_artifacts` target (`artifact.path == row.path`). Before Phase
+    55b this was unreachable — no `_DOC_RELATION_SOURCE_KINDS` member
+    (`spec_doc`/`vendor_doc`) ever had its own `name` populated, so a
+    source row could never also be a `named_artifacts` target of itself.
+    Populating `name` for `spec_doc` rows (`spec_docs.py::_extract_title`)
+    made it reachable: a doc's own first-H1 title, once set as its `name`,
+    is trivially present in that same doc's own full text (the H1 heading
+    line itself contains it verbatim) — without this exclusion, every
+    titled `spec_doc` would generate a guaranteed, universal "doc mentions
+    itself" noise edge, discovered live while adding the Phase 55b test
+    below, not designed in speculatively.
+
+    Source-doc-outward scanning only (Phase 21's Explicitly deferred
+    section, widened to vendor docs by Phase 29): a Skill's or dependency
+    doc's own body mentioning a spec/vendor doc by name is not scanned for
+    here, and never will be from this function — that's a distinct,
+    deliberately deferred direction.
+
+    Phase 32: also attempts to attribute each match to exactly one of the
+    source doc's own heading-scoped chunks, populating `chunk_start_line`
+    when it can — additive, the whole-doc edge is produced identically
+    either way.
+    """
+    vendor_names = [config.name for config in configs]
+    named_artifacts = [row for row in other_doc_artifact_rows if row.name]
+
+    edges: list[DocRelationEdgeRow] = []
+    for row in source_doc_rows:
+        if row.kind not in _DOC_RELATION_SOURCE_KINDS:
+            continue
+        text = (project_root / row.path).read_text(encoding="utf-8")
+        lines = text.splitlines()
+        chunks = chunk_markdown(text)
+
+        for vendor_name in vendor_names:
+            if row.kind == "vendor_doc" and row.vendor_name == vendor_name:
+                continue
+            if re.search(rf"\b{re.escape(vendor_name)}\b", text):
+                chunk = _find_containing_chunk(lines, chunks, vendor_name)
+                edges.append(
+                    DocRelationEdgeRow(
+                        source_doc_artifact_path=row.path,
+                        relation_kind="mentions_dependency",
+                        target_vendor_name=vendor_name,
+                        chunk_start_line=chunk.start_line if chunk else None,
+                    )
+                )
+
+        for artifact in named_artifacts:
+            if artifact.path == row.path:
+                continue
+            match_string: str | None = None
+            if re.search(rf"\b{re.escape(artifact.name)}\b", text):
+                match_string = artifact.name
+            else:
+                filename = Path(artifact.path).name
+                stem = Path(artifact.path).stem
+                if _is_specific_enough(filename) and re.search(
+                    rf"\b{re.escape(filename)}\b", text
+                ):
+                    match_string = filename
+                elif (
+                    stem != filename
+                    and _is_specific_enough(stem)
+                    and re.search(rf"\b{re.escape(stem)}\b", text)
+                ):
+                    match_string = stem
+            if match_string is not None:
+                chunk = _find_containing_chunk(lines, chunks, match_string)
+                edges.append(
+                    DocRelationEdgeRow(
+                        source_doc_artifact_path=row.path,
+                        relation_kind="mentions_artifact",
+                        target_doc_artifact_path=artifact.path,
+                        chunk_start_line=chunk.start_line if chunk else None,
+                    )
+                )
+
+    return edges
+
+
+def _flatten_deptree(node: dict, out: dict[str, set[str]] | None = None) -> dict[str, set[str]]:
+    """Walks a `deptree.render_deptree_json`-shaped tree into a flat
+    `name -> {versions}` map, resolving `{"ref": "name@version"}` back-
+    references via `rpartition("@")` (not `split`) so scoped npm names
+    like `@babel/core` — which themselves contain `@` — parse correctly.
+    Mirrors `staleness._flatten`'s approach; duplicated locally rather
+    than imported, consistent with this project's existing style of
+    small, module-local private helpers.
+    """
+    if out is None:
+        out = {}
+    if "ref" in node:
+        name, sep, version = node["ref"].rpartition("@")
+        if sep:
+            out.setdefault(name, set()).add(version)
+        return out
+    name = node.get("name")
+    version = node.get("version")
+    if name is not None and version is not None:
+        out.setdefault(name, set()).add(version)
+    for child in node.get("children", []):
+        _flatten_deptree(child, out)
+    return out
+
+
+def build_depends_on_edges(
+    configs: list[VendorConfig], project_root: Path
+) -> list[DependsOnEdgeRow]:
+    """For each tracked vendor, read its persisted `vendor/<name>/
+    deptree.json` and flatten it — emitting a `Vendor → Vendor` edge
+    wherever a flattened name matches another *tracked* vendor's name
+    (checked against `configs`, not the flattened dependency's own
+    version). An untracked transitive dependency isn't a graph node, so
+    no edge for it. A missing or corrupt `deptree.json` (vendor not yet
+    synced) is skipped, best-effort — same tolerant posture
+    `staleness._detect_transitive_drift` already takes toward this exact
+    file.
+    """
+    tracked_names = {config.name for config in configs}
+    edges: list[DependsOnEdgeRow] = []
+    for config in configs:
+        deptree_path = project_root / "vendor" / config.name / _DEPTREE_FILENAME
+        if not deptree_path.exists():
+            continue
+        try:
+            tree = json.loads(deptree_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        flattened = _flatten_deptree(tree)
+        for name in sorted(flattened):
+            if name != config.name and name in tracked_names:
+                edges.append(
+                    DependsOnEdgeRow(vendor_name=config.name, depends_on_vendor_name=name)
+                )
+    return edges
