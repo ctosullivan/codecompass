@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ctosullivan/codecompass-adaptor-protocol/schemas/analyze_project-request.json",
+  "title": "analyze_project request",
+  "type": "object",
+  "properties": {
+    "id": { "oneOf": [{ "type": "string" }, { "type": "integer" }] },
+    "method": { "const": "analyze_project" },
+    "params": {
+      "type": "object",
+      "properties": {
+        "project_root": { "type": "string", "minLength": 1 },
+        "package_name": { "type": "string", "minLength": 1 }
+      },
+      "required": ["project_root", "package_name"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["id", "method", "params"],
+  "additionalProperties": false
+}

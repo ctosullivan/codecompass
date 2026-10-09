@@ -1,0 +1,27 @@
+from pathlib import Path
+
+from codecompass.adapters import get_adapter
+from codecompass.adapters.cargo import CargoAdapter
+from codecompass.adapters.haskell import HaskellAdapter
+from codecompass.adapters.npm import NpmAdapter
+from codecompass.adapters.python import PythonAdapter
+from codecompass.core import Ecosystem, VendorConfig
+
+
+def _config(ecosystem: Ecosystem) -> VendorConfig:
+    return VendorConfig(name="demo", ecosystem=ecosystem)
+
+
+def test_get_adapter_dispatches_by_ecosystem(tmp_path: Path) -> None:
+    assert isinstance(get_adapter(_config(Ecosystem.NPM), tmp_path), NpmAdapter)
+    assert isinstance(get_adapter(_config(Ecosystem.PYTHON), tmp_path), PythonAdapter)
+    assert isinstance(get_adapter(_config(Ecosystem.CARGO), tmp_path), CargoAdapter)
+    assert isinstance(get_adapter(_config(Ecosystem.HASKELL), tmp_path), HaskellAdapter)
+
+
+def test_get_adapter_passes_config_and_project_root_through(tmp_path: Path) -> None:
+    config = _config(Ecosystem.NPM)
+    adapter = get_adapter(config, tmp_path)
+
+    assert adapter.config is config
+    assert adapter.project_root == tmp_path
