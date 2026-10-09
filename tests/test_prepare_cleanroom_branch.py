@@ -120,6 +120,26 @@ def test_build_excludes_untracked_gitignored_files(tmp_path):
         sneaky.unlink(missing_ok=True)
 
 
+def test_git_tracked_files_resolves_paths_inside_a_submodule(tmp_path):
+    """Regression test for a real bug this phase's own cold-reader
+    testing found: a directory inside a Git submodule (e.g.
+    protocol/codecompass-adaptor-protocol/schemas) is invisible to
+    `git ls-files` run from the superproject's own root, since the
+    superproject only tracks the submodule as a single gitlink entry.
+    _git_tracked_files must resolve the real git toplevel for the
+    target path first, so it correctly descends into the submodule's
+    own separate repository."""
+    submodule_rel = "protocol/codecompass-adaptor-protocol"
+    assert (REPO_ROOT / submodule_rel / ".git").exists(), (
+        "fixture assumption broken: this is no longer a real submodule checkout"
+    )
+    tracked = prepare_cleanroom_branch._git_tracked_files(REPO_ROOT, f"{submodule_rel}/schemas")
+    assert tracked, "expected real tracked files inside the submodule's schemas/ directory"
+    assert all(t.startswith(f"{submodule_rel}/schemas/") for t in tracked)
+    for t in tracked:
+        assert (REPO_ROOT / t).is_file()
+
+
 def test_allow_list_contains_no_narrative_documentation_paths():
     """Amendment 2/3: README.md/docs/**/architecture/**/ai-docs/** (and
     docs/domain/** specifically) must never appear in the allow-list

@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import shutil
 import subprocess
 import sys
@@ -103,14 +104,38 @@ def _git_tracked_files(root: Path, rel: str) -> list[str]:
     in the real committed branch anyway -- using the same source of truth
     here avoids a manifest that claims more than the actual commit
     contains (exactly the mismatch the validator's own "manifest-listed
-    path is missing" check exists to catch)."""
+    path is missing" check exists to catch).
+
+    A real bug found by this phase's own cold-reader testing: a path
+    inside a Git submodule (e.g. protocol/codecompass-adaptor-protocol/
+    schemas) is invisible to `git ls-files` run from the superproject's
+    own root -- the superproject only tracks the submodule as a single
+    gitlink entry, never its individual files. Resolving the real git
+    toplevel for the target path first (which correctly descends into a
+    submodule's own separate repository) and running `ls-files` there,
+    rather than always against `root`, fixes this without needing any
+    submodule-specific special-casing in the caller."""
+    target = root / rel
+    toplevel_result = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=target if target.is_dir() else target.parent,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    toplevel = Path(toplevel_result.stdout.strip())
+    rel_to_toplevel = os.path.relpath(target, toplevel)
     result = subprocess.run(
-        ["git", "ls-files", "-z", "--", rel],
-        cwd=root,
+        ["git", "ls-files", "-z", "--", rel_to_toplevel],
+        cwd=toplevel,
         capture_output=True,
         check=True,
     )
-    return [p for p in result.stdout.decode("utf-8").split("\0") if p]
+    prefix = os.path.relpath(toplevel, root)
+    tracked = [p for p in result.stdout.decode("utf-8").split("\0") if p]
+    if prefix == ".":
+        return tracked
+    return [str(Path(prefix) / p) for p in tracked]
 
 
 def _copy_allowed(root: Path, staging: Path) -> list[str]:
