@@ -1,0 +1,36 @@
+{
+  "id": 2,
+  "result": {
+    "dependencies": {
+      "name": "hledger-lib",
+      "version": "1.52.4",
+      "dev_only": false,
+      "children": [
+        {
+          "name": "aeson",
+          "version": "2.2.5.1",
+          "dev_only": false,
+          "children": []
+        }
+      ]
+    },
+    "symbols": [
+      {
+        "name": "Query",
+        "purpose": null,
+        "module": "Hledger.Query"
+      }
+    ],
+    "observations": [
+      {
+        "method": "executable",
+        "what_was_done": "ran `stack dot --external` in the resolved package directory",
+        "location": null,
+        "raw_result": "\"hledger-lib\" -> \"aeson\";",
+        "tool": "stack",
+        "tool_version": "3.11.1"
+      }
+    ],
+    "diagnostics": []
+  }
+}

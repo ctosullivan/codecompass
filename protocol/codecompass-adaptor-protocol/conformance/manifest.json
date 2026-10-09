@@ -1,0 +1,21 @@
+{
+  "$comment": "Maps each conformance vector to the schema it must be checked against, and whether it is expected to validate. An implementation is conformant if, for every entry here, running its own JSON Schema validator over schemas/<schema> against conformance/<vector> agrees with expect.",
+  "vectors": [
+    { "schema": "schemas/initialize-request.json", "vector": "conformance/valid/initialize-request.json", "expect": "valid" },
+    { "schema": "schemas/initialize-response.json", "vector": "conformance/valid/initialize-response.json", "expect": "valid" },
+    { "schema": "schemas/analyze_project-request.json", "vector": "conformance/valid/analyze_project-request.json", "expect": "valid" },
+    { "schema": "schemas/analyze_project-response.json", "vector": "conformance/valid/analyze_project-response-minimal.json", "expect": "valid" },
+    { "schema": "schemas/analyze_project-response.json", "vector": "conformance/valid/analyze_project-response-full.json", "expect": "valid" },
+    { "schema": "schemas/analyze_project-response.json", "vector": "conformance/valid/analyze_project-response-symbol-kinds.json", "expect": "valid" },
+    { "schema": "schemas/shutdown-request.json", "vector": "conformance/valid/shutdown-request.json", "expect": "valid" },
+    { "schema": "schemas/shutdown-response.json", "vector": "conformance/valid/shutdown-response.json", "expect": "valid" },
+    { "schema": "schemas/error.json", "vector": "conformance/valid/error.json", "expect": "valid" },
+    { "schema": "schemas/initialize-request.json", "vector": "conformance/invalid/initialize-request-missing-protocol-version.json", "expect": "invalid" },
+    { "schema": "schemas/initialize-response.json", "vector": "conformance/invalid/initialize-response-bad-capability.json", "expect": "invalid" },
+    { "schema": "schemas/analyze_project-request.json", "vector": "conformance/invalid/analyze_project-request-missing-package-name.json", "expect": "invalid" },
+    { "schema": "schemas/analyze_project-response.json", "vector": "conformance/invalid/analyze_project-response-both-result-and-error.json", "expect": "invalid" },
+    { "schema": "schemas/shutdown-request.json", "vector": "conformance/invalid/shutdown-request-wrong-method.json", "expect": "invalid" },
+    { "schema": "schemas/analyze_project-response.json", "vector": "conformance/invalid/analyze_project-response-bad-symbol-kind.json", "expect": "invalid" },
+    { "schema": "schemas/error.json", "vector": "conformance/invalid/error-bad-code.json", "expect": "invalid" }
+  ]
+}
