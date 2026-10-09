@@ -8,6 +8,13 @@ Derived directly from current evidence — not carried forward from any assumpti
 - **npm, Cargo**: no minimum tool version is documented anywhere in the available evidence (unlike Python, `>=3.11`, or Git, `>=2.7`) — checked directly, genuinely absent, not merely hard to find.
 - **Haskell (external adapter)**: no minimum Stack/GHC version is documented for consuming the submodule's own pinned `nightly-2026-09-01` resolver snapshot. Setup instructions beyond `git submodule update --init` + `stack build` are only breadcrumb-deep in the available evidence (the in-repository error strings point at an excluded, more detailed document this reconstruction cannot see).
 
+## Dependency discovery
+
+Both disclosed directly in `discovery.py`'s own per-discoverer docstrings, not merely inferred:
+
+- **Python**: `discover_python` reads only `pyproject.toml`'s `[project.dependencies]` array — `[project.optional-dependencies]` is never scanned, by any discovery path (bare-command auto-discovery or `init --scan`).
+- **Haskell**: `discover_haskell` reads only `package.yaml`'s top-level `dependencies:` list. A conditional `when:`-block dependency (hpack's own flag-gated dependency mechanism) is never expanded — a dependency declared only inside a `when:` block is invisible to discovery.
+
 ## Self-dogfooding
 
 CodeCompass's own `vendor.toml` does not track `pyyaml`, despite it being a real, required runtime dependency genuinely imported in two modules. The root cause is a real, specific limitation in `PythonAdapter`: it has no way to represent "the PyPI distribution name and the import name for this package differ" with the current `VendorConfig(name, ecosystem)` schema. See `docs/reference/configuration.md`.

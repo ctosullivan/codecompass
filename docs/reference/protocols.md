@@ -35,7 +35,7 @@ Response `result` — up to four sections, present only if the matching capabili
 
 ### `shutdown`
 
-Request: `{"id", "method": "shutdown"}`. Response `result`: `{}`. The host then closes stdin and waits (with a timeout, then a hard kill) for the adapter process to exit.
+Request: `{"id", "method": "shutdown"}`. Response `result`: `{}`. The host then closes stdin and waits for the adapter process to exit — `external_process.py`'s own implementation of this wait gives the process up to `_SHUTDOWN_TIMEOUT_SECONDS` (`5.0` seconds) to exit cleanly after stdin closes before forcibly killing it.
 
 ## Errors
 

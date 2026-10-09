@@ -26,9 +26,18 @@ One paragraph per module under `src/codecompass/`, grounded in that module's own
 | `doc_chunking.py` | Deterministic heading-based Markdown chunking, sharpening mention-detection attribution to a specific section rather than a whole file. |
 | `skill_scan.py` | Indexes every Agent Skill and Cursor `.mdc` rule in the project (not just CodeCompass's own) and their mechanical mentions of vendors/source files. |
 | `skill.py` | Generates the tool-level Skill, per-vendor Skills, and Cursor `.mdc` rules. |
-| `commands.py` | Generates the `/discovery` slash command. |
+| `commands.py` | Generates the `/discovery` slash command. See "The `/discovery` slash command" below for its real, mechanically-enforced access-control shape. |
 | `index.py` | Idempotent routing-table injection into the project root `CLAUDE.md`, reading already-synced state only — never triggers a sync itself. |
 | `git_topology.py` | Git repository topology detection (worktrees, submodules) — mechanical facts only, no network/AI involvement; never invoked at query time, only at sync time. |
 | `usage.py` | (see above). |
 | `chat.py` | A secondary, digest-only chat REPL grounded entirely on already-persisted files. |
 | `knowledge_intermediate.py` | The intermediate knowledge layer — rendering, dual-hash change detection, manifest-based review, and the sole canonical-record write path. See `docs/concepts/knowledge-model.md` and `docs/workflows/knowledge-reconciliation-loop.md`. |
+
+## The `/discovery` slash command
+
+`commands.py` generates `.claude/commands/discovery.md`, a Claude Code custom slash command with real, specific access-control properties — not merely a prose instruction:
+
+- **Mechanically restricted**, via Claude Code's own `allowed-tools` frontmatter field (a real mechanism Claude Code itself enforces, confirmed against current Claude Code behaviour), to `Read`/`Grep`/`Glob` plus a narrow, explicitly-scoped `Bash(...)` allow-list: `Bash(codecompass query:*)`, `Bash(codecompass check:*)`, and `Bash(sqlite3 context-graph.db:*)` (read-only SQL against the context graph). `Write`/`Edit` are deliberately never granted in this frontmatter.
+- The command's own body text additionally states, explicitly and repeatedly, an in-body instruction never to create a plan or make a code change — "No `Write`. No `Edit`. No plan file. No code changes."
+
+This mechanical restriction has a real, disclosed limit, though: Claude Code's `allowed-tools` pre-approval from a slash command's own frontmatter only covers the single turn that invokes `/discovery` — it clears the moment a reply is sent, and nothing in Claude Code re-applies it or blocks `Write`/`Edit`/`ExitPlanMode` on a later turn in the same conversation (confirmed against current Claude Code behaviour, not assumed). The generated command's own body text is written knowing this: it explicitly instructs Claude to hold the read-only posture for the rest of the conversation by default, not just the one message that invoked it, since only the first turn is mechanically enforced — everything after that relies on the instruction being followed, not a mechanical guarantee (see `decisions/0040`).

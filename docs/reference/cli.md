@@ -133,6 +133,11 @@ codecompass undo [--yes] [--dry-run]
 
 Best-effort cleanup of everything CodeCompass generated in the project: every tracked vendor's `vendor/<name>/` directory, `vendor.toml`, `context-graph.db`, every CodeCompass-generated Skill/`.mdc`/slash-command artifact, and the root `CLAUDE.md` routing-table marker block (stripped in place; hand-written surrounding content is preserved). Never removes a hand-written or third-party Skill/`.mdc` file, and never runs any `git` command. Not a transactional rollback — a best-effort filesystem cleanup; committing the result is left to you.
 
+The *how* behind this cleanup depends on whether `context-graph.db` exists yet, via two structurally different enumeration strategies, each with a different precision guarantee:
+
+- **Graph-backed (precise)** — when `context-graph.db` already exists: `undo` queries it directly for every `doc_artifacts` row tagged `origin IN ('codecompass_tool', 'codecompass_vendor')` (`third_party`-origin rows are never selected, by construction, not by a filter applied after the fact), resolves each to a real path, and adds every tracked vendor's own `vendor/<name>/` directory from the `vendors` table. This correctly distinguishes a CodeCompass-generated artifact from a third-party one by its real, recorded origin.
+- **Pattern-based (fallback)** — when no `context-graph.db` exists yet (e.g. only `init --scan` has run, with no whole-project sync): `undo` instead matches a fixed set of path globs against the exact naming conventions `skill.py`/`commands.py` use (`.claude/skills/codecompass*`, `.cursor/rules/codecompass-*.mdc`, `.claude/commands/discovery.md`, plus each tracked vendor's `vendor/<name>/` directory from `vendor.toml`). This is **less precise**: because it has no recorded origin to check against, it cannot distinguish a hand-renamed third-party artifact that happens to match the same naming pattern from a real CodeCompass-generated one — a real, disclosed precision gap this fallback mode accepts in exchange for working without a prior sync.
+
 ## `codecompass enrich apply <entries_file> --agent <name>`
 
 ```
