@@ -1,5 +1,21 @@
 # Handoff index and selection criteria
 
+## A note on `documented_revision` values you may see mentioned in this package
+
+**Added 2026-10-09, cold-reader finding #3.** `CLEANROOM-MANIFEST.yaml`'s
+own `documented_revision` field is the single authoritative value for
+"what revision is this handoff built from" — always trust that field
+over any other number. Some individual files in this package may
+mention a different, older revision in their own prose (e.g. a note
+dated when that specific file was last substantively written or
+checked, as part of this handoff's own iterative preparation process).
+That is a record of *when that file's own content was last verified*,
+not a claim that the rest of the handoff reflects a different, older
+state than the manifest says. If you find this confusing for a specific
+file, prefer what the file's own content literally shows you over any
+revision number attached to it, and treat the manifest's own field as
+the one number that actually describes "now."
+
 ## Files in this handoff
 
 - `README.md` — what/why/how, start here.
@@ -7,6 +23,11 @@
 - `DOCUMENTATION-TARGET.md` — required output coverage/structure.
 - `OPEN-QUESTIONS.md` — every currently-known open question/conflict
   across the selected knowledge slugs.
+- `CITED-EXCERPTS.md` — real, verbatim excerpts from specific evidence
+  paths that are otherwise excluded from your workspace (e.g.
+  `vendor/typer/CLAUDE.md`, real captured `examples/toy-project/`
+  output), included because a specific Claim cites them and a citation
+  you cannot open at all is not independently verifiable.
 - `DISPOSITION-REPORT.md` — **orchestrator-facing only, not writer
   evidence** — records what happens to every pre-existing documentation
   file; included in this directory for the orchestrator's own later

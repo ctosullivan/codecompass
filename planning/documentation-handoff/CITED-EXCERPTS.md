@@ -11,19 +11,30 @@ verifiable, which defeats the purpose of citing it. This file exists so
 you *can* verify this specific citation, without the rest of `vendor/`
 being exposed.
 
-This is the complete, real, current content of that exact file — copied
-verbatim, not summarised or reconstructed — so you can judge for
-yourself whether it matches what the Claims above say it shows.
+This is the complete, real content of that exact file at the moment this
+excerpt was captured — copied verbatim, not summarised or reconstructed
+— so you can judge for yourself whether it matches what the Claims
+above say it shows.
 
-**Revision reconciliation (2026-10-09, cold-reader finding #2, second
-pass)**: this excerpt was originally captured against `documented_revision`
-`47c9ce7`; this handoff's own `documented_revision` is `72e59d0`.
-Directly re-checked (`git diff 47c9ce7..72e59d0 -- vendor/typer/CLAUDE.md`):
-**zero difference** — the file is byte-for-byte identical across both
-revisions, so the excerpt below is confirmed current as of this
-handoff's own `documented_revision`, not only the superseded one.
+**A structural limit on this excerpt's own currency (corrected
+2026-10-09, cold-reader findings #1/#2/#3, third pass)**: earlier
+versions of this note tried to assert the excerpt was "confirmed
+current as of documented_revision N" via a git diff between two
+commits. That check was meaningless and has been removed: `vendor/` is
+entirely `.gitignore`d (`decisions/0004`) — it is generated, regenerable
+output, never committed to this repository at all, so there is no git
+history for any revision of this file to diff against. This excerpt is,
+honestly, a **point-in-time capture**, not something whose exact byte
+content can be mechanically re-verified against "the current
+`documented_revision`" by anyone, including the orchestrator who
+prepared this handoff. Treat it as confirming the digest *format/shape*
+is real (the headings and structure below genuinely exist on disk for
+at least one real vendor, at least once) — not as a byte-exact guarantee
+that today's build would regenerate identical content, since the exact
+installed version of `typer` (and therefore some of this file's content)
+can change independently of this repository's own git history.
 
-## `vendor/typer/CLAUDE.md` (full file, confirmed unchanged `47c9ce7`→`72e59d0`)
+## `vendor/typer/CLAUDE.md` (a real, point-in-time capture — see note above)
 
 ```markdown
 # typer

@@ -18,7 +18,11 @@
    This is a title+status index, not full ADR text — treat a decision's
    own `status` field (approved/superseded/etc.) as authoritative for
    whether it's still in force; do not assume every listed decision is
-   still current practice.
+   still current practice. **Caveat (2026-10-09, cold-reader finding
+   #2)**: that `status` field is not cross-checked against later ADRs
+   that supersede an earlier one by title only — see
+   `knowledge/decisions-and-rationale.md`'s own known-limitation note
+   for a real example and what to watch for.
 
 ## When evidence conflicts
 

@@ -2,6 +2,20 @@
 
 A mechanically-generated title + status index over every ADR in `decisions/*.md` — **not** a hand-synthesized one-line rationale per decision (74 ADRs exist; genuinely summarising each one's own rationale is real synthesis work this preparation pass does not attempt rather than guess at). The writer consumes this index plus, where a specific decision's own reasoning materially matters to a documentation claim, the real file it points at — never the full ADR corpus wholesale (per the clean-room allowlist, `decisions/**` itself is excluded from the writer's own visible filesystem).
 
+**Known limitation, named explicitly (2026-10-09, cold-reader finding
+#2)**: the "Status" column below is read mechanically from each ADR's
+own first-line status field only — it is never cross-checked against
+whether some *later*, higher-numbered ADR's own title announces that it
+supersedes an earlier one. A real example exists in this exact table:
+`0019` shows status `Accepted`, but `0061`'s own title literally reads
+"`decisions/0019` is superseded by `decisions/0035`." This index cannot
+tell you, in general, which other rows have the same undetected-
+supersession problem — if you need to state a decision's *current*
+force confidently, scan later-numbered titles for a "supersedes NNNN" or
+"NNNN is superseded by" pattern before trusting this table's own Status
+column at face value, rather than assuming the mechanical column is
+always already reconciled.
+
 | ADR | Title | Status (first line) |
 |---|---|---|
 | `0001-depth-is-per-vendor-not-global.md` | 0001. Depth is per-vendor, not global | Accepted |
