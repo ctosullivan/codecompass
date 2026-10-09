@@ -10,6 +10,13 @@ name and purpose promises them). The section below is curated, pulling
 verbatim unresolved-question language the knowledge base's own Claims
 already state; nothing here is invented.
 
+**Second pass (2026-10-09, cold-reader finding #1, re-run)**: the first
+curation pass only swept `haskell-api-surface-extraction` and missed
+several more in `codecompass-domain` and `doc-origin-pinned-reference`.
+This pass used a systematic grep across all four selected slugs for
+self-described unresolved/untested/honest-gap language (not a manual
+skim), to avoid the same partial-coverage mistake twice.
+
 ## Known open design questions from supported Claims
 
 These Claims are `status: supported` — not contradicted, not wrong —
@@ -17,6 +24,37 @@ but each one's own statement explicitly names a question its own
 research did not resolve. A writer should treat these as genuinely
 unresolved, not as settled behaviour to describe confidently.
 
+- **CL-ADPT-007** (`codecompass-domain`): "adapter" is a genuinely fuzzy
+  boundary in this project's own vocabulary — the word names two
+  distinct, unrelated things (the real `EcosystemAdapter` ABC in
+  `src/codecompass/adapters/`, and a purely expository "host-output
+  adapter" label for `skill.py`/`commands.py`/`index.py` with no
+  corresponding class). The Claim notes this project's own
+  `architecture/overview.md` already flags the same ambiguity
+  independently.
+- **CL-EVID-004** (`codecompass-domain`, about this project's own
+  knowledge-record model, not CodeCompass's product behaviour): whether
+  a Derivation record must always be 1:1 with its Claim is "a genuine,
+  currently-unresolved boundary question — an honest 'none found yet'
+  for a real N:1 or 1:N counterexample, not a confirmed rule."
+- **CL-EVID-005** (same model, meta-level): the rule that only a
+  human/project-owner authors a Decision record has "never yet been
+  tested against a real, independent, non-standing-in human
+  decision-maker anywhere in this repository's history."
+- **CL-EVID-011** (same model, meta-level): a real, deliberately
+  unresolved naming collision between this project's own file-based
+  knowledge-record kinds and an unbuilt, unfunded graph-level entity
+  proposal sharing the same names — the Claim calls this "this
+  cluster's single most important open question."
+- **CL-EVID-012** (same model, meta-level): how the Claim-supersedes-Claim
+  mechanism behaves under a genuine contradiction (as opposed to this
+  Claim's own narrow, mechanical correction) is explicitly named as
+  untested — "a genuinely fuzzy, currently-unresolved boundary."
+- **CL-DOCORIGIN-004** (`doc-origin-pinned-reference`): whether a new
+  origin-tracking value's name/semantics should be scoped narrowly to
+  "Git-commit-pinned" (the only pipeline that currently exists) or
+  written more generally to anticipate a future non-Git source is "a
+  naming/scope judgment call this research does not resolve."
 - **CL-HSAPI-002** (`haskell-api-surface-extraction`): a `module <Name>`
   entry inside a Haskell export list cannot be resolved into a flat set
   of exported names by reading that one line alone — it may need a

@@ -49,8 +49,15 @@ docs/
 - Edge cases and compatibility
 - Tests and acceptance behaviour (where Requirement-shaped knowledge
   exists — see `knowledge/tests-and-acceptance.md`)
-- Decisions and current rationale (via `knowledge/decisions-and-rationale.md`,
-  never the raw ADR corpus, which you cannot see)
+- Decisions and current status (via `knowledge/decisions-and-rationale.md`,
+  never the raw ADR corpus, which you cannot see). **Clarified
+  2026-10-09, cold-reader finding #3**: that file is a title+status
+  index over the full decision history — genuine recoverable rationale
+  text exists for only a handful of decisions (the ones discussed inside
+  this handoff's own selected knowledge slugs); for the rest, list the
+  title and current status honestly and do not fabricate a "why" that
+  isn't there. A bare title+status line is a complete, correct entry for
+  this section, not an incomplete one.
 - Limitations (verify, do not invent — re-derive from current evidence,
   do not assume a limitation exists just because older documentation
   might have mentioned one)

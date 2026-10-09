@@ -66,3 +66,13 @@ call structure, the real CLI surface), using `knowledge/` only for the
 conceptual vocabulary and invariants it does cover. Say so if you find
 the source insufficient to confidently describe a given workflow end to
 end, rather than presenting a partial read as complete.
+
+## A directly-observable fact with no recorded "why" (cold-reader finding #6)
+
+`pyproject.toml` declares `name = "codecompass-context"`, but the
+importable package and CLI entry point are both `codecompass`. Nothing
+in your evidence explains why these differ (e.g. a PyPI name collision).
+You do not need to explain the history — document both names correctly
+wherever each is the one a reader actually needs (the PyPI/install name
+vs. the import/CLI name), rather than conflating them or guessing at a
+reason you cannot verify.

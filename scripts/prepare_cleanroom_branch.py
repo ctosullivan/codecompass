@@ -46,6 +46,9 @@ ALLOW_PATHS: list[str] = [
     "pyproject.toml",
     "vendor.toml",
     "protocol/codecompass-adaptor-protocol/SCHEMA.md",
+    "protocol/codecompass-adaptor-protocol/schemas",
+    "protocol/codecompass-adaptor-protocol/conformance",
+    "protocol/codecompass-adaptor-protocol/examples",
     "examples/toy-project",
     "planning/documentation-handoff",
 ]
