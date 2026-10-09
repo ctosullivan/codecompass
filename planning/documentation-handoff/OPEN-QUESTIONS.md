@@ -17,6 +17,58 @@ This pass used a systematic grep across all four selected slugs for
 self-described unresolved/untested/honest-gap language (not a manual
 skim), to avoid the same partial-coverage mistake twice.
 
+## Four structural clarifications (added 2026-10-09, cold-reader findings, eighth pass)
+
+**1. The shipped `codecompass knowledge` CLI only ever creates/mutates
+`Claim` or `Requirement` records — confirmed directly**
+(`_apply_candidate_addition`/`_apply_anchor_edit`/`_apply_doc_region_edit`
+in `knowledge_intermediate.py` only ever construct `kind="claim"` or
+`kind="requirement"`). This is not an omission to flag as a gap — it
+reflects a real, by-design split: `Observation`/`Evidence`/`Decision`/
+`Derivation` records are meant to be hand-authored YAML files following
+the documented schema (any text editor, any project, no CodeCompass-
+specific tooling required), never produced through this specific CLI
+command. State this split explicitly rather than implying the CLI is a
+complete authoring tool for all six record kinds, or silently describing
+only the Claim/Requirement half. The specialised agent roles
+(`context-researcher`, `documentation-agent`, `knowledge-curator`)
+sometimes used to author the other four kinds are this project's own
+Claude-Code-specific operational convention (`.claude/agents/`,
+excluded by design) — not required infrastructure a different adopting
+project/tool would need.
+
+**2. No packaged validator for an adopting project's own
+`planning/knowledge/` exists, distinct from `knowledge_intermediate.py`
+itself.** `scripts/check_knowledge_base.py` performs schema/field/status
+validation but is explicitly maintainer-only, hard-coded to this one
+repository (confirmed: its own docstring and `ROOT` wiring). An adopting
+project reusing the general `codecompass knowledge` CLI has no shipped
+equivalent validator shown anywhere in your evidence — state this
+plainly as a real limitation if your documentation describes this
+capability as something another project can adopt wholesale.
+
+**3. `codecompass-domain`'s own Claims mostly describe CodeCompass's own
+internal Phase 54c development-process history** (how CodeCompass's own
+maintainers produced this very knowledge base) — **not** how an end user
+would operate the shipped, general-purpose `codecompass knowledge` CLI
+on an arbitrary project. These are two different scopes sharing one
+knowledge slug. When writing a "knowledge layer" concepts page, be
+deliberate about which scope a given piece of evidence actually
+describes — do not blend CodeCompass's own bootstrapping history with
+the reusable, user-facing capability's own documentation without
+signalling the difference.
+
+**4. The protocol submodule's own license differs from the other two
+repositories — checked directly, not assumed.** `codecompass` itself
+(`pyproject.toml`) and the Haskell adapter
+(`codecompass-adaptor-haskell.cabal`) both state GPL-3.0-or-later, but
+`protocol/codecompass-adaptor-protocol/LICENSE` (excluded from your
+workspace by the allowlist, but checked by this preparation pass) is
+**MIT**, not GPL. State this explicitly and accurately if your
+documentation covers the protocol's own licensing — do not assume it
+matches the other two repositories just because they are related
+projects under the same account.
+
 ## Accepted evidence-depth limitations, not preparation gaps (added 2026-10-09, cold-reader findings, seventh pass)
 
 A seventh cold-reader pass found several real asymmetries in how much
