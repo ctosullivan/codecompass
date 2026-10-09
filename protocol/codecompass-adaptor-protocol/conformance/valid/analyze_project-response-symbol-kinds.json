@@ -1,0 +1,22 @@
+{
+  "id": 2,
+  "result": {
+    "symbols": [
+      { "name": "doThing", "purpose": "does the thing", "module": "Example.Core" },
+      {
+        "name": "X",
+        "purpose": null,
+        "module": "Example.Core",
+        "kind": "reexport",
+        "note": "alias for Example.Internal.A, Example.Internal.B"
+      },
+      {
+        "name": "Year",
+        "purpose": null,
+        "module": "Example.Types",
+        "kind": "undetermined",
+        "note": "gated by a CPP conditional the adapter cannot evaluate"
+      }
+    ]
+  }
+}

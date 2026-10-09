@@ -1,0 +1,100 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.39.6.
+--
+-- see: https://github.com/sol/hpack
+
+name:           codecompass-adaptor-haskell
+version:        0.1.0
+synopsis:       Reference external Haskell/Stack adapter for CodeCompass
+description:    An independent process that analyzes a Haskell/Stack package and
+                reports structured results back to CodeCompass
+                (https://github.com/ctosullivan/codecompass) over the small JSON
+                protocol defined by codecompass-adaptor-protocol
+                (https://github.com/ctosullivan/codecompass-adaptor-protocol).
+                .
+                Never imported as a library by CodeCompass -- runs as an independent
+                subprocess, speaking JSON Lines over stdin/stdout.
+category:       Development
+homepage:       https://github.com/ctosullivan/codecompass-adaptor-haskell#readme
+bug-reports:    https://github.com/ctosullivan/codecompass-adaptor-haskell/issues
+author:         Cormac O' Sullivan
+maintainer:     Cormac O' Sullivan
+license:        GPL-3.0-or-later
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/ctosullivan/codecompass-adaptor-haskell
+
+library
+  exposed-modules:
+      Adapter.Protocol
+      Adapter.Scanner
+      Adapter.Deps
+      Adapter.Manifest
+  other-modules:
+      Paths_codecompass_adaptor_haskell
+  autogen-modules:
+      Paths_codecompass_adaptor_haskell
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      aeson
+    , base >=4.18 && <5
+    , bytestring
+    , containers
+    , directory
+    , filepath
+    , process
+    , text
+  default-language: Haskell2010
+
+executable codecompass-adaptor-haskell-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_codecompass_adaptor_haskell
+  autogen-modules:
+      Paths_codecompass_adaptor_haskell
+  hs-source-dirs:
+      app
+  ghc-options: -Wall
+  build-depends:
+      aeson
+    , base >=4.18 && <5
+    , bytestring
+    , codecompass-adaptor-haskell
+    , containers
+    , directory
+    , filepath
+    , process
+    , text
+  default-language: Haskell2010
+
+test-suite codecompass-adaptor-haskell-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_codecompass_adaptor_haskell
+  autogen-modules:
+      Paths_codecompass_adaptor_haskell
+  hs-source-dirs:
+      test
+  ghc-options: -Wall
+  build-depends:
+      aeson
+    , base >=4.18 && <5
+    , bytestring
+    , codecompass-adaptor-haskell
+    , containers
+    , directory
+    , filepath
+    , hspec
+    , process
+    , text
+  default-language: Haskell2010

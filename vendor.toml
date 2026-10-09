@@ -1,0 +1,15 @@
+[[vendor]]
+name = "anthropic"
+ecosystem = "python"
+
+[[vendor]]
+name = "pipdeptree"
+ecosystem = "python"
+
+[[vendor]]
+name = "rich"
+ecosystem = "python"
+
+[[vendor]]
+name = "typer"
+ecosystem = "python"

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ctosullivan/codecompass-adaptor-protocol/schemas/initialize-request.json",
+  "title": "initialize request",
+  "type": "object",
+  "properties": {
+    "id": { "oneOf": [{ "type": "string" }, { "type": "integer" }] },
+    "method": { "const": "initialize" },
+    "params": {
+      "type": "object",
+      "properties": {
+        "protocol_version": { "type": "integer", "minimum": 1 }
+      },
+      "required": ["protocol_version"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["id", "method", "params"],
+  "additionalProperties": false
+}
