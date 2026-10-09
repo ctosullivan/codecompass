@@ -17,6 +17,33 @@ This pass used a systematic grep across all four selected slugs for
 self-described unresolved/untested/honest-gap language (not a manual
 skim), to avoid the same partial-coverage mistake twice.
 
+## Two more real, checked findings (added 2026-10-09, cold-reader findings, ninth pass)
+
+**Maturity classifier vs. version number genuinely disagree, checked
+directly.** `pyproject.toml` declares `classifiers = ["Development
+Status :: 4 - Beta", ...]` while the same file's own `version` is
+`1.0.0` — a real, confirmed mismatch (PyPI's own trove classifier
+convention treats "4 - Beta" and "5 - Production/Stable" as distinct
+maturity signals independent of semver). Nothing in the handoff
+resolves which one should govern how you describe the project's
+maturity in an overview or limitations section. State both facts
+plainly rather than picking one silently — e.g. "versioned 1.0.0;
+self-classified as Beta maturity" — rather than resolving the tension
+on the project's behalf.
+
+**`first-party-source-symbols` has no `Decision`/`Requirement` records,
+unlike the other two capability slugs selected into this handoff.**
+`doc-origin-pinned-reference` has `DEC-DOCORIGIN-001` +
+`REQ-DOCORIGIN-001..003`; `haskell-api-surface-extraction` has
+`DEC-HSAPI-001` + `REQ-HSAPI-001..006`. `first-party-source-symbols`'s
+only authorising reference is decisions/0065's bare title in the
+mechanical index, plus a Phase-77 plan file you cannot open. You can
+still describe current behaviour accurately from `source_symbols.py`/
+`graph.py` directly — you just cannot state *why* the design was chosen
+beyond the bare ADR title, an asymmetry versus the other two selected
+capabilities worth naming if your documentation explains design
+rationale for one but not the other.
+
 ## Four structural clarifications (added 2026-10-09, cold-reader findings, eighth pass)
 
 **1. The shipped `codecompass knowledge` CLI only ever creates/mutates

@@ -1,5 +1,21 @@
 # Cited excerpts from paths excluded by the clean-room allowlist
 
+## A second externally-verified fact (added 2026-10-09, cold-reader finding #3, ninth pass)
+
+`CL-ADPT-010` (`knowledge/overview.md`) states the two external adapter
+repositories are "confirmed independently reachable with real commit
+history and a real v0.1.0 tag each" without the same explicit
+"externally verified outside the sandbox" marker the PyPI fact below
+gets — leaving it unclear whether this was actually checked at
+preparation time or is a more confident restatement of an in-repository
+inference. Directly re-checked, right now, outside your sandbox:
+`git ls-remote --tags git@github.com:ctosullivan/codecompass-adaptor-protocol.git`
+and the equivalent for `codecompass-adaptor-haskell` both returned a
+real `v0.1.0` tag. This is, like the PyPI fact below, a directly-
+verified external check, not a workspace-evidence inference — treat
+`CL-ADPT-010`'s own reachability claim with the same confidence as this
+freshly-confirmed check, not as something you could verify yourself.
+
 ## An externally-verified fact (added 2026-10-09, cold-reader finding #3, sixth pass)
 
 Your own workspace cannot confirm whether this package is actually
