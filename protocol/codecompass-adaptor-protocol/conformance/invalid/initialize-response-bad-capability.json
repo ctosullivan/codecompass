@@ -1,0 +1,10 @@
+{
+  "id": 1,
+  "result": {
+    "protocol_version": 1,
+    "adapter_name": "example-adapter",
+    "adapter_version": "0.1.0",
+    "ecosystem": "example",
+    "capabilities": ["dependencies", "call_graph"]
+  }
+}

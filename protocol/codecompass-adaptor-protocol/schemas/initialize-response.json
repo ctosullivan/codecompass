@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ctosullivan/codecompass-adaptor-protocol/schemas/initialize-response.json",
+  "title": "initialize response",
+  "type": "object",
+  "properties": {
+    "id": { "oneOf": [{ "type": "string" }, { "type": "integer" }] },
+    "result": {
+      "type": "object",
+      "properties": {
+        "protocol_version": { "type": "integer", "minimum": 1 },
+        "adapter_name": { "type": "string", "minLength": 1 },
+        "adapter_version": { "type": "string", "minLength": 1 },
+        "ecosystem": { "type": "string", "minLength": 1 },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["dependencies", "symbols", "observations", "diagnostics"]
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "protocol_version",
+        "adapter_name",
+        "adapter_version",
+        "ecosystem",
+        "capabilities"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": ["id", "result"],
+  "additionalProperties": false
+}

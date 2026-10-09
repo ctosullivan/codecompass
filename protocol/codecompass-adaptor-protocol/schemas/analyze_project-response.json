@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ctosullivan/codecompass-adaptor-protocol/schemas/analyze_project-response.json",
+  "title": "analyze_project response",
+  "type": "object",
+  "properties": {
+    "id": { "oneOf": [{ "type": "string" }, { "type": "integer" }] },
+    "result": {
+      "type": "object",
+      "properties": {
+        "dependencies": { "$ref": "#/$defs/depNode" },
+        "symbols": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "purpose": { "type": ["string", "null"] },
+              "module": { "type": "string", "minLength": 1 },
+              "kind": {
+                "type": "string",
+                "enum": ["export", "reexport", "undetermined"],
+                "default": "export"
+              },
+              "note": { "type": ["string", "null"] }
+            },
+            "required": ["name", "purpose", "module"],
+            "additionalProperties": false
+          }
+        },
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "method": { "type": "string", "minLength": 1 },
+              "what_was_done": { "type": "string", "minLength": 1 },
+              "location": { "type": ["string", "null"] },
+              "raw_result": { "type": "string" },
+              "tool": { "type": ["string", "null"] },
+              "tool_version": { "type": ["string", "null"] }
+            },
+            "required": [
+              "method",
+              "what_was_done",
+              "location",
+              "raw_result",
+              "tool",
+              "tool_version"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "severity": { "type": "string", "enum": ["warning", "error"] },
+              "message": { "type": "string", "minLength": 1 }
+            },
+            "required": ["severity", "message"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["id", "result"],
+  "additionalProperties": false,
+  "$defs": {
+    "depNode": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "dev_only": { "type": "boolean" },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/depNode" }
+        }
+      },
+      "required": ["name", "version", "dev_only", "children"],
+      "additionalProperties": false
+    }
+  }
+}

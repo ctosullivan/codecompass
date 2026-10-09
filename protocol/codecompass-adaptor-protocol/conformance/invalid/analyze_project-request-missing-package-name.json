@@ -1,0 +1,5 @@
+{
+  "id": 2,
+  "method": "analyze_project",
+  "params": { "project_root": "/tmp/example-package" }
+}

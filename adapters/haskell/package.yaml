@@ -1,0 +1,61 @@
+name: codecompass-adaptor-haskell
+version: 0.1.0
+license: GPL-3.0-or-later
+license-file: LICENSE
+author: Cormac O' Sullivan
+maintainer: Cormac O' Sullivan
+synopsis: Reference external Haskell/Stack adapter for CodeCompass
+description: |
+  An independent process that analyzes a Haskell/Stack package and
+  reports structured results back to CodeCompass
+  (https://github.com/ctosullivan/codecompass) over the small JSON
+  protocol defined by codecompass-adaptor-protocol
+  (https://github.com/ctosullivan/codecompass-adaptor-protocol).
+
+  Never imported as a library by CodeCompass -- runs as an independent
+  subprocess, speaking JSON Lines over stdin/stdout.
+github: ctosullivan/codecompass-adaptor-haskell
+category: Development
+
+extra-source-files:
+- README.md
+- CHANGELOG.md
+
+dependencies:
+- base >=4.18 && <5
+- aeson
+- bytestring
+- containers
+- directory
+- filepath
+- process
+- text
+
+library:
+  source-dirs: src
+  exposed-modules:
+  - Adapter.Protocol
+  - Adapter.Scanner
+  - Adapter.Deps
+  - Adapter.Manifest
+  ghc-options:
+  - -Wall
+
+executables:
+  codecompass-adaptor-haskell-exe:
+    main: Main.hs
+    source-dirs: app
+    ghc-options:
+    - -Wall
+    dependencies:
+    - codecompass-adaptor-haskell
+
+tests:
+  codecompass-adaptor-haskell-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+    - -Wall
+    dependencies:
+    - codecompass-adaptor-haskell
+    - hspec
