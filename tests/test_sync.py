@@ -1,0 +1,864 @@
+import shutil
+from pathlib import Path
+
+import pytest
+
+import codecompass.sync as sync_module
+from codecompass.core import DepNode, Ecosystem, RepositoryLocation, VendorConfig
+from codecompass.filetree import iter_source_files
+from codecompass.graph import (
+    doc_relations,
+    get_meta,
+    open_graph,
+    record_enrichment,
+    source_file_profile,
+    source_symbol_profile,
+    topology_profile,
+    unused_vendors,
+    vendor_profile,
+)
+from codecompass.source_resolution import SourceResolutionError
+from codecompass.symbols import Symbol, extract_symbols_for_file
+from codecompass.sync import rebuild_project_graph, sync_all, sync_vendor
+
+
+class _FakeAdapter:
+    def __init__(
+        self,
+        config: VendorConfig,
+        project_root: Path,
+        *,
+        version: str = "1.0.0",
+        api_surface: str = "some_fn: does a thing.",
+        tree: DepNode | None = None,
+        source_dir: Path | None = None,
+        repository: RepositoryLocation | None = None,
+        symbols: list[Symbol] | None = None,
+    ) -> None:
+        self.config = config
+        self.project_root = project_root
+        self._version = version
+        self._api_surface = api_surface
+        self._tree = tree or DepNode(name=config.name, version=version)
+        self._source_dir = source_dir or project_root
+        self._repository = repository
+        self._symbols = symbols
+
+    def installed_version(self) -> str:
+        return self._version
+
+    def source_location(self) -> Path:
+        return self._source_dir
+
+    def readme_and_api_surface(self) -> str:
+        return self._api_surface
+
+    def dependency_tree(self) -> DepNode:
+        return self._tree
+
+    def repository_url(self) -> RepositoryLocation | None:
+        return self._repository
+
+    def symbols(self) -> list[Symbol]:
+        """Mirrors `EcosystemAdapter.symbols()`'s own default (a plain
+        walk+extract), unless a test supplies an explicit list — e.g. to
+        exercise `export_kind`/`note` passthrough (Phase 62), which no
+        real extractor in `codecompass.symbols` produces on its own.
+        """
+        if self._symbols is not None:
+            return self._symbols
+        result: list[Symbol] = []
+        for path in iter_source_files(self.source_location()):
+            result.extend(extract_symbols_for_file(path, self.config.ecosystem))
+        return result
+
+
+def _build_source_tree(root: Path) -> Path:
+    src = root / "pkgsrc"
+    (src).mkdir()
+    (src / "__init__.py").write_text(
+        '"""Entry point for the demo package."""\n\ndef main() -> None:\n    pass\n',
+        encoding="utf-8",
+    )
+    (src / "tests").mkdir()
+    (src / "tests" / "test_thing.py").write_text("def test_thing(): ...\n", encoding="utf-8")
+    (src / "dist").mkdir()
+    (src / "dist" / "bundle.js").write_text("built\n", encoding="utf-8")
+    return src
+
+
+def _patch_adapter(monkeypatch: pytest.MonkeyPatch, **adapter_kwargs: object) -> None:
+    monkeypatch.setattr(
+        sync_module,
+        "get_adapter",
+        lambda config, project_root: _FakeAdapter(config, project_root, **adapter_kwargs),
+    )
+
+
+def _fake_clone(fake_repo: Path):
+    def _resolve_and_clone(adapter, dest: Path) -> Path:
+        if dest.exists():
+            shutil.rmtree(dest)
+        shutil.copytree(fake_repo, dest)
+        return dest
+
+    return _resolve_and_clone
+
+
+def _build_fake_repo(root: Path) -> Path:
+    fake_repo = root / "fake_repo"
+    fake_repo.mkdir()
+    (fake_repo / "README.md").write_text("This is the readme.", encoding="utf-8")
+    return fake_repo
+
+
+def _record_enrichment_for(
+    project_root: Path,
+    vendor_name: str,
+    *,
+    ecosystem: str = "python",
+    technical_description: str = "Grounded technical description.",
+    conversational_overview: str = "Friendly overview.",
+    action_pointer_file: str | None = None,
+    action_pointer_note: str | None = None,
+) -> None:
+    """Write a `vendor_enrichment` row directly against `context-graph.db`
+    — the state `sync_vendor`'s new graph lookup (Phase 16, decisions/0035)
+    reads back, standing in for a real Phase B enrichment run.
+    """
+    conn = open_graph(project_root)
+    try:
+        conn.execute(
+            "INSERT OR IGNORE INTO vendors (name, ecosystem) VALUES (?, ?)",
+            (vendor_name, ecosystem),
+        )
+        conn.commit()
+        (vendor_id,) = conn.execute(
+            "SELECT id FROM vendors WHERE name = ?", (vendor_name,)
+        ).fetchone()
+        record_enrichment(
+            conn,
+            vendor_id,
+            technical_description=technical_description,
+            conversational_overview=conversational_overview,
+            action_pointer_file=action_pointer_file,
+            action_pointer_note=action_pointer_note,
+            symbol_set_hash="fake-hash",
+            model="claude-haiku-4-5-20251001",
+            generated_at="2026-01-01T00:00:00+00:00",
+        )
+    finally:
+        conn.close()
+
+
+def test_sync_vendor_writes_all_five_output_files(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, version="2.0.0", source_dir=src)
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+
+    digest = sync_vendor(config, tmp_path)
+
+    vendor_dir = tmp_path / "vendor" / "demo"
+    for filename in ("FILETREE.md", "DEPTREE.md", "filetree.json", "deptree.json", "CLAUDE.md"):
+        assert (vendor_dir / filename).exists(), filename
+
+    assert digest.installed_version == "2.0.0"
+    claude_md = (vendor_dir / "CLAUDE.md").read_text(encoding="utf-8")
+    assert "- **Installed version:** 2.0.0" in claude_md.splitlines()
+
+
+def test_sync_vendor_omits_test_dirs_from_filetree(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+
+    sync_vendor(config, tmp_path)
+
+    filetree_md = (tmp_path / "vendor" / "demo" / "FILETREE.md").read_text(encoding="utf-8")
+    assert "test_thing.py" not in filetree_md
+    assert "bundle.js" not in filetree_md
+    assert "__init__.py" in filetree_md
+
+
+def test_sync_vendor_clones_repo_into_src(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Cloning is unconditional (Phase 13, decisions/0033) — every vendor
+    gets a real `src/` clone attempt, independent of enrichment status.
+    """
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    fake_repo = _build_fake_repo(tmp_path)
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _fake_clone(fake_repo))
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+
+    digest = sync_vendor(config, tmp_path)
+
+    snapshot = tmp_path / "vendor" / "demo" / "src"
+    assert (snapshot / "README.md").exists()
+    assert digest.technical_description is None
+    assert digest.description_error is None
+    assert not (tmp_path / "vendor" / "demo" / "OVERVIEW.md").exists()
+
+
+def test_sync_vendor_filetree_reflects_clone_not_local_install(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """FILETREE.md renders from the clone root when cloning succeeds, for
+    every vendor (Phase 13) — a real, visible output change from always
+    reading `source_location()`.
+    """
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    fake_repo = _build_fake_repo(tmp_path)
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _fake_clone(fake_repo))
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+
+    sync_vendor(config, tmp_path)
+
+    filetree_md = (tmp_path / "vendor" / "demo" / "FILETREE.md").read_text(encoding="utf-8")
+    assert "README.md" in filetree_md
+    assert "__init__.py" not in filetree_md  # local-install content, not in the clone
+
+
+def test_sync_vendor_clone_failure_falls_back_to_local_snapshot(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+
+    digest = sync_vendor(config, tmp_path)  # should not raise; no repository configured
+
+    snapshot = tmp_path / "vendor" / "demo" / "src"
+    assert (snapshot / "tests" / "test_thing.py").exists()  # kept, unlike FILETREE.md
+    assert not (snapshot / "dist").exists()  # stripped, same as FILETREE.md
+    assert (snapshot / "__init__.py").exists()
+    assert digest.description_error is not None
+    assert digest.technical_description is None
+
+
+def test_sync_vendor_is_idempotent_on_repeat_runs(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    fake_repo = _build_fake_repo(tmp_path)
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _fake_clone(fake_repo))
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+
+    sync_vendor(config, tmp_path)
+    sync_vendor(config, tmp_path)  # should not raise
+
+    assert (tmp_path / "vendor" / "demo" / "src" / "README.md").exists()
+
+
+def test_sync_vendor_known_gotchas_from_dependency_tree_side_effects(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = _build_source_tree(tmp_path)
+    tree = DepNode(name="demo", version="1.0.0", side_effects=["postinstall: node build.js"])
+    _patch_adapter(monkeypatch, source_dir=src, tree=tree)
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+
+    digest = sync_vendor(config, tmp_path)
+
+    assert digest.side_effects == ["postinstall: node build.js"]
+    claude_md = (tmp_path / "vendor" / "demo" / "CLAUDE.md").read_text(encoding="utf-8")
+    assert "- postinstall: node build.js" in claude_md.splitlines()
+
+
+def test_sync_vendor_source_resolution_failure_falls_back_to_local_snapshot(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+
+    def _raise(*args: object, **kwargs: object) -> None:
+        raise SourceResolutionError("no repository found")
+
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _raise)
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+
+    digest = sync_vendor(config, tmp_path)  # should not raise
+
+    snapshot = tmp_path / "vendor" / "demo" / "src"
+    assert (snapshot / "tests" / "test_thing.py").exists()  # kept, unlike FILETREE.md
+    assert not (snapshot / "dist").exists()  # stripped, same as FILETREE.md
+    assert (snapshot / "__init__.py").exists()
+    assert digest.description_error == "no repository found"
+    assert digest.technical_description is None
+    vendor_dir = tmp_path / "vendor" / "demo"
+    for filename in ("FILETREE.md", "DEPTREE.md", "filetree.json", "deptree.json", "CLAUDE.md"):
+        assert (vendor_dir / filename).exists(), filename
+    assert not (vendor_dir / "OVERVIEW.md").exists()
+
+
+# --- graph-sourced enrichment (Phase 16, decisions/0035) --------------------
+
+
+def test_sync_vendor_reads_enrichment_from_graph_and_reproduces_description(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Direct regression test for the bug decisions/0035 describes: a
+    vendor with an existing `vendor_enrichment` row must have its
+    Description section (and OVERVIEW.md) reproduced by an ordinary,
+    from-scratch `sync_vendor` re-render — not silently erased, which is
+    exactly what happened on `main` before this fix (a whole-project
+    `sync` re-run used to blank out Phase B's enrichment output every
+    time, since `sync_vendor`'s digest never carried it).
+    """
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    fake_repo = _build_fake_repo(tmp_path)
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _fake_clone(fake_repo))
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+
+    _record_enrichment_for(
+        tmp_path,
+        "demo",
+        technical_description="Grounded technical description.",
+        conversational_overview="Friendly overview.",
+        action_pointer_file="README.md",
+        action_pointer_note="start here",
+    )
+
+    digest = sync_vendor(config, tmp_path)
+
+    assert digest.technical_description == "Grounded technical description."
+    assert digest.conversational_overview == "Friendly overview."
+    assert digest.action_pointer_file == "README.md"
+    assert digest.action_pointer_note == "start here"
+
+    vendor_dir = tmp_path / "vendor" / "demo"
+    claude_md = (vendor_dir / "CLAUDE.md").read_text(encoding="utf-8")
+    assert "## Description" in claude_md
+    assert "Grounded technical description." in claude_md
+    assert (vendor_dir / "OVERVIEW.md").read_text(encoding="utf-8") == "Friendly overview."
+    filetree_md = (vendor_dir / "FILETREE.md").read_text(encoding="utf-8")
+    assert "← ACTION TARGET: start here" in filetree_md
+
+    # An ordinary re-sync (no new enrichment, same graph state) reproduces
+    # the same Description section rather than blanking it — the literal
+    # regression the bug shipped as.
+    digest_again = sync_vendor(config, tmp_path)
+    assert digest_again.technical_description == "Grounded technical description."
+    claude_md_again = (vendor_dir / "CLAUDE.md").read_text(encoding="utf-8")
+    assert "## Description" in claude_md_again
+    assert "Grounded technical description." in claude_md_again
+
+
+def test_sync_vendor_no_enrichment_record_gets_no_description_section(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A `context-graph.db` exists (e.g. from a prior whole-project sync)
+    but carries no `vendor_enrichment` row for this vendor — same "nothing
+    to show" outcome as today, not an error.
+    """
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+
+    conn = open_graph(tmp_path)
+    conn.close()
+
+    digest = sync_vendor(config, tmp_path)
+
+    assert digest.technical_description is None
+    claude_md = (tmp_path / "vendor" / "demo" / "CLAUDE.md").read_text(encoding="utf-8")
+    assert "## Description" not in claude_md
+    assert not (tmp_path / "vendor" / "demo" / "OVERVIEW.md").exists()
+
+
+def test_sync_vendor_no_graph_at_all_gets_no_description_section(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """No `context-graph.db` yet (a project that's never run a
+    whole-project sync) — the enrichment lookup is skipped gracefully,
+    same posture as `index.py`'s existing "no graph yet" fallback. Crucially,
+    `sync_vendor` itself must never create the file — only a real
+    whole-project sync's `rebuild_project_graph` does that.
+    """
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+
+    assert not (tmp_path / "context-graph.db").exists()
+
+    digest = sync_vendor(config, tmp_path)
+
+    assert digest.technical_description is None
+    assert not (tmp_path / "context-graph.db").exists()
+
+
+def test_sync_all_syncs_every_config(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    configs = [
+        VendorConfig(name="a", ecosystem=Ecosystem.PYTHON),
+        VendorConfig(name="b", ecosystem=Ecosystem.PYTHON),
+    ]
+
+    digests = sync_all(configs, tmp_path)
+
+    assert [d.config.name for d in digests] == ["a", "b"]
+    assert (tmp_path / "vendor" / "a" / "CLAUDE.md").exists()
+    assert (tmp_path / "vendor" / "b" / "CLAUDE.md").exists()
+
+
+# --- rebuild_project_graph ----------------------------------------------------
+
+
+def test_rebuild_project_graph_records_vendor_and_resolved_symbol_usage(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = tmp_path / "vendor_src"
+    src.mkdir()
+    (src / "__init__.py").write_text(
+        '"""Demo vendor."""\n\ndef greet():\n    """Say hi."""\n    pass\n', encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        sync_module,
+        "get_adapter",
+        lambda config, project_root: _FakeAdapter(
+            config,
+            project_root,
+            version="3.1.4",
+            source_dir=src,
+            repository=RepositoryLocation(url="https://example.com/demo.git"),
+        ),
+    )
+    (tmp_path / "app.py").write_text("from demo import greet\n", encoding="utf-8")
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+
+    rebuild_project_graph([config], tmp_path)
+
+    conn = open_graph(tmp_path)
+    profile = vendor_profile(conn, "demo")
+    assert profile is not None
+    assert profile["vendor"]["installed_version"] == "3.1.4"
+    assert profile["vendor"]["repository_url"] == "https://example.com/demo.git"
+    assert profile["vendor"]["ecosystem"] == "python"
+    assert profile["usage_count"] == 1
+    assert [s["name"] for s in profile["symbols"]] == ["greet"]
+
+
+def test_rebuild_project_graph_carries_export_kind_and_note_through_adapter_symbols(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """`rebuild_project_graph` calls `adapter.symbols()` polymorphically
+    (Phase 62) — this is the generic wiring that, for a real
+    `HaskellAdapter`, closes `CG-008`. Exercised here with a fake adapter
+    supplying `export_kind`/`note` values no real in-process extractor
+    produces on its own, confirming the whole path (adapter → `SymbolRow`
+    → `symbols` table → `vendor_profile`'s own output dict) carries both
+    fields through end to end.
+    """
+    monkeypatch.setattr(
+        sync_module,
+        "get_adapter",
+        lambda config, project_root: _FakeAdapter(
+            config,
+            project_root,
+            symbols=[
+                Symbol(name="doThing", purpose="does the thing"),
+                Symbol(
+                    name="X",
+                    purpose=None,
+                    export_kind="reexport",
+                    note="alias for Internal.A",
+                ),
+            ],
+        ),
+    )
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.HASKELL)
+
+    rebuild_project_graph([config], tmp_path)
+
+    conn = open_graph(tmp_path)
+    profile = vendor_profile(conn, "demo")
+    assert profile is not None
+    by_name = {s["name"]: s for s in profile["symbols"]}
+    assert by_name["doThing"]["export_kind"] == "export"
+    assert by_name["doThing"]["note"] is None
+    assert by_name["X"]["export_kind"] == "reexport"
+    assert by_name["X"]["note"] == "alias for Internal.A"
+
+
+def test_rebuild_project_graph_includes_unused_vendor_with_zero_usage(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+
+    rebuild_project_graph([config], tmp_path)
+
+    conn = open_graph(tmp_path)
+    assert unused_vendors(conn) == ["demo"]
+
+
+def test_rebuild_project_graph_unresolved_symbol_name_stays_vendor_level_edge(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = tmp_path / "vendor_src"
+    src.mkdir()
+    (src / "__init__.py").write_text("def known(): ...\n", encoding="utf-8")
+    _patch_adapter(monkeypatch, source_dir=src)
+    (tmp_path / "app.py").write_text("from demo import unknown_symbol\n", encoding="utf-8")
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+
+    rebuild_project_graph([config], tmp_path)
+
+    conn = open_graph(tmp_path)
+    (symbol_id,) = conn.execute("SELECT symbol_id FROM uses_edges").fetchone()
+    assert symbol_id is None
+
+
+def test_rebuild_project_graph_scans_project_tests_directory(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    src = tmp_path / "vendor_src"
+    src.mkdir()
+    (src / "__init__.py").write_text("def greet(): ...\n", encoding="utf-8")
+    _patch_adapter(monkeypatch, source_dir=src)
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    (tests_dir / "test_app.py").write_text("from demo import greet\n", encoding="utf-8")
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+
+    rebuild_project_graph([config], tmp_path)
+
+    conn = open_graph(tmp_path)
+    (path,) = conn.execute("SELECT path FROM source_files").fetchone()
+    assert path == "tests/test_app.py"
+
+
+def test_rebuild_project_graph_registers_vendor_upstream_docs(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Phase 27: a vendor's cloned upstream `README.md` (root-level, at the
+    clone root `vendor/<name>/src/`) becomes a `doc_artifacts` row with
+    `kind='vendor_doc'`, `origin='vendor_upstream'` on an ordinary
+    whole-project sync — no separate opt-in needed.
+    """
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    fake_repo = _build_fake_repo(tmp_path)  # writes fake_repo/README.md
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _fake_clone(fake_repo))
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+    # `rebuild_project_graph` itself never clones — only `sync_vendor` does
+    # (the real whole-project `sync` flow always runs `sync_all` first, see
+    # `cli.py`), so the clone this scan reads from has to exist already.
+    sync_vendor(config, tmp_path)
+
+    rebuild_project_graph([config], tmp_path)
+
+    conn = open_graph(tmp_path)
+    row = conn.execute(
+        "SELECT kind, origin, path, name FROM doc_artifacts WHERE kind = 'vendor_doc'"
+    ).fetchone()
+    assert row is not None
+    kind, origin, path, name = row
+    assert kind == "vendor_doc"
+    assert origin == "vendor_upstream"
+    assert path == "vendor/demo/src/README.md"
+    assert name == "demo README.md"
+
+
+def test_rebuild_project_graph_vendor_upstream_docs_never_produce_uses_edges(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Phase 15's `vendor/`-exclusion fix (false-positive usage detection)
+    must still hold: registering a vendor's embedded doc as a `doc_
+    artifacts` row is purely additive and must never resurrect a `uses_
+    edges` row sourced from inside `vendor/`.
+    """
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    fake_repo = _build_fake_repo(tmp_path)
+    monkeypatch.setattr(sync_module, "resolve_and_clone", _fake_clone(fake_repo))
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+    sync_vendor(config, tmp_path)  # populates vendor/demo/src/ with the clone
+
+    rebuild_project_graph([config], tmp_path)
+
+    conn = open_graph(tmp_path)
+    source_file_paths = {
+        path for (path,) in conn.execute("SELECT path FROM source_files")
+    }
+    assert not any(p.startswith("vendor/") for p in source_file_paths)
+    (uses_count,) = conn.execute("SELECT COUNT(*) FROM uses_edges").fetchone()
+    assert uses_count == 0
+
+
+def test_rebuild_project_graph_skips_vendor_upstream_docs_when_clone_missing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """No `resolve_and_clone` patch here — cloning fails/falls back to the
+    local snapshot the same way `test_sync_vendor_clone_failure_falls_back_
+    to_local_snapshot` exercises for `sync_vendor` — so `vendor/demo/src/`
+    exists but was never populated from a real upstream repo. No crash, and
+    no `vendor_doc` rows manufactured from local-install content.
+    """
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    config = VendorConfig(name="demo", ecosystem=Ecosystem.PYTHON)
+    sync_vendor(config, tmp_path)  # clone fails; falls back to local snapshot
+
+    rebuild_project_graph([config], tmp_path)
+
+    conn = open_graph(tmp_path)
+    (vendor_doc_count,) = conn.execute(
+        "SELECT COUNT(*) FROM doc_artifacts WHERE kind = 'vendor_doc'"
+    ).fetchone()
+    assert vendor_doc_count == 0
+
+
+def test_rebuild_project_graph_reflects_full_tracked_list_not_a_subset(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The graph must represent every tracked vendor passed in, regardless
+    of whether this particular run is what synced each one's files.
+    """
+    src = _build_source_tree(tmp_path)
+    _patch_adapter(monkeypatch, source_dir=src)
+    configs = [
+        VendorConfig(name="a", ecosystem=Ecosystem.PYTHON),
+        VendorConfig(name="b", ecosystem=Ecosystem.PYTHON),
+    ]
+
+    rebuild_project_graph(configs, tmp_path)
+
+    conn = open_graph(tmp_path)
+    names = {name for (name,) in conn.execute("SELECT name FROM vendors")}
+    assert names == {"a", "b"}
+
+
+def test_rebuild_project_graph_relates_two_spec_docs_to_each_other(tmp_path: Path) -> None:
+    """Phase 55b (closes CG-004), through the real production entry point
+    `rebuild_project_graph` — not `build_doc_relations_edges` called
+    directly, unlike the unit tests in `test_doc_mapping.py`. Confirms
+    the fix is actually wired into `sync.py`'s call site, caught missing
+    by an independent `context-evaluator` pass before this test existed:
+    the unit-level tests passed even when `spec_doc_rows` was never
+    added to `build_doc_relations_edges`'s target argument in `sync.py`.
+    """
+    (tmp_path / "dev-docs").mkdir()
+    (tmp_path / "dev-docs" / "17-query-semantics-brief.md").write_text(
+        "# Query semantics brief\n\nResearch notes on query syntax.\n", encoding="utf-8"
+    )
+    (tmp_path / "dev-docs" / "07-query-regex.md").write_text(
+        "# Query regex plan\n\nImplements the Query semantics brief.\n", encoding="utf-8"
+    )
+
+    rebuild_project_graph([], tmp_path)
+
+    conn = open_graph(tmp_path)
+    relations = doc_relations(conn, "dev-docs/07-query-regex.md")
+    matches = [r for r in relations if r["relation_kind"] == "mentions_artifact"]
+    assert len(matches) == 1
+    assert matches[0]["target_doc_artifact_path"] == "dev-docs/17-query-semantics-brief.md"
+
+
+def test_rebuild_project_graph_relates_docs_citing_each_other_by_filename(
+    tmp_path: Path,
+) -> None:
+    """Phase 73 (closes `CG-006`), through the real production entry point
+    `rebuild_project_graph` — not `build_doc_relations_edges` called
+    directly, unlike the unit tests in `test_doc_mapping.py`. The exact
+    real-world Ledgerkit pair `CG-006`'s own filing named: a source doc
+    citing a target by its filename, never its H1 title.
+    """
+    (tmp_path / "dev-docs").mkdir()
+    (tmp_path / "dev-docs" / "17-query-semantics-brief.md").write_text(
+        "# Query semantics brief\n\nPer `07-query-regex.md` §7.1's phasing note.\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "dev-docs" / "07-query-regex.md").write_text(
+        "# Query language and regex extension plan\n\nDetails here.\n", encoding="utf-8"
+    )
+
+    rebuild_project_graph([], tmp_path)
+
+    conn = open_graph(tmp_path)
+    relations = doc_relations(conn, "dev-docs/17-query-semantics-brief.md")
+    matches = [r for r in relations if r["relation_kind"] == "mentions_artifact"]
+    assert len(matches) == 1
+    assert matches[0]["target_doc_artifact_path"] == "dev-docs/07-query-regex.md"
+
+
+def test_rebuild_project_graph_excludes_a_generic_bare_project_name_readme_title(
+    tmp_path: Path,
+) -> None:
+    """Regression test for the noise `context-evaluator` quantified
+    against the real Ledgerkit repository: a root README whose H1 is
+    just the bare project name (e.g. `# ledgerkit`) would otherwise
+    "mention" — and be mechanically "mentioned by" — nearly every other
+    doc in the project, since ordinary prose repeatedly says the
+    project's own name. `_is_specific_enough` rejects single bare words
+    with no digit/hyphen, so this never reaches the graph as an edge.
+    """
+    (tmp_path / "README.md").write_text(
+        "# demo\n\nA short project description.\n", encoding="utf-8"
+    )
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "usage.md").write_text(
+        "# Usage\n\nThis project, demo, works as follows.\n", encoding="utf-8"
+    )
+
+    rebuild_project_graph([], tmp_path)
+
+    conn = open_graph(tmp_path)
+    relations = doc_relations(conn, "docs/usage.md")
+    assert [r for r in relations if r["relation_kind"] == "mentions_artifact"] == []
+
+
+# --- Phase 76: Git repository topology, real production call path -----------
+
+
+def _git(args: list[str], cwd: Path) -> None:
+    import subprocess
+
+    subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=True)
+
+
+def test_rebuild_project_graph_populates_git_topology_via_real_call_path(tmp_path: Path) -> None:
+    """`L-021`-required real-call-site test (`CLAUDE.md` §1): exercises
+    `git_topology.detect_git_topology` -> `sync._build_git_topology_rows`
+    -> `rebuild_deterministic` through the actual production entry point,
+    not the isolated `git_topology`/`graph` functions alone.
+    """
+    _git(["init", "-q"], tmp_path)
+    _git(["config", "user.email", "test@example.com"], tmp_path)
+    _git(["config", "user.name", "Test"], tmp_path)
+    (tmp_path / "a.txt").write_text("hello", encoding="utf-8")
+    _git(["add", "-A"], tmp_path)
+    _git(["commit", "-q", "-m", "init"], tmp_path)
+
+    rebuild_project_graph([], tmp_path)
+
+    conn = open_graph(tmp_path)
+    profile = topology_profile(conn)
+    assert profile is not None
+    assert profile["status"] == "detected"
+    assert profile["repository"]["common_dir"] == str((tmp_path / ".git").resolve())
+    assert len(profile["worktrees"]) == 1
+    assert profile["worktrees"][0]["is_current"] is True
+
+
+def test_rebuild_project_graph_topology_not_git_for_a_non_repository_project_root(
+    tmp_path: Path,
+) -> None:
+    """A plain, non-Git project root (the common case for most existing
+    tests in this file, and for a real non-Git codecompass project) must
+    still sync cleanly -- topology status `not_git`, no crash, no
+    git_repositories row."""
+    rebuild_project_graph([], tmp_path)
+
+    conn = open_graph(tmp_path)
+    profile = topology_profile(conn)
+    assert profile == {
+        "status": "not_git",
+        "reason": None,
+        "repository": None,
+        "worktrees": [],
+        "submodules": [],
+    }
+
+
+# --- Phase 77: first-party source awareness, real call path -----------------
+
+
+def test_rebuild_project_graph_populates_first_party_source_zero_vendor(tmp_path: Path) -> None:
+    """`L-021`-required real-call-site test: exercises
+    `source_symbols.discover_source_files`/`extract_source_symbols_for_file`
+    -> `rebuild_deterministic` through the actual production entry point,
+    with **zero tracked vendors** -- the architectural acceptance test.
+    """
+    (tmp_path / "models.py").write_text(
+        "class Posting:\n"
+        "    '''A ledger posting.'''\n"
+        "    pass\n"
+        "\n"
+        "def _internal_helper():\n"
+        "    pass\n"
+    )
+
+    rebuild_project_graph([], tmp_path)
+
+    conn = open_graph(tmp_path)
+    assert get_meta(conn, "source_index_version") == "1"
+
+    file_profile = source_file_profile(conn, "models.py")
+    assert file_profile is not None
+    assert file_profile["language"] == "python"
+    assert file_profile["symbol_index_status"] == "indexed"
+    names = {s["name"] for s in file_profile["symbols"]}
+    assert names == {"Posting", "_internal_helper"}
+
+    symbol_profiles = source_symbol_profile(conn, "Posting")
+    assert len(symbol_profiles) == 1
+    assert symbol_profiles[0]["kind"] == "class"
+    assert symbol_profiles[0]["exposure"] == "public"
+
+    private_profile = source_symbol_profile(conn, "_internal_helper")
+    assert private_profile[0]["exposure"] == "conventional_private"
+
+    # No fake/self vendor was created to represent this project's own code.
+    (vendor_count,) = conn.execute("SELECT COUNT(*) FROM vendors").fetchone()
+    assert vendor_count == 0
+    (symbol_count,) = conn.execute("SELECT COUNT(*) FROM symbols").fetchone()
+    assert symbol_count == 0
+
+
+def test_rebuild_project_graph_source_index_version_set_even_with_no_source_files(
+    tmp_path: Path,
+) -> None:
+    """A project with zero recognized first-party source files still gets
+    `meta.source_index_version` written -- distinguishing "genuinely
+    indexed, nothing found" from "never indexed"."""
+    rebuild_project_graph([], tmp_path)
+    conn = open_graph(tmp_path)
+    assert get_meta(conn, "source_index_version") == "1"
+
+
+def test_rebuild_project_graph_handles_real_overload_without_crashing(tmp_path: Path) -> None:
+    """A real function overload (Python `@typing.overload`) must not
+    raise `sqlite3.IntegrityError` through the actual production entry
+    point."""
+    (tmp_path / "api.py").write_text(
+        "from typing import overload\n"
+        "\n"
+        "@overload\n"
+        "def foo(a: str) -> None: ...\n"
+        "@overload\n"
+        "def foo(a: int) -> None: ...\n"
+        "def foo(a):\n"
+        "    print(a)\n"
+    )
+
+    rebuild_project_graph([], tmp_path)  # must not raise
+
+    conn = open_graph(tmp_path)
+    profiles = source_symbol_profile(conn, "foo")
+    assert len(profiles) == 3
+    assert len({p["line"] for p in profiles}) == 3
+
+
+def test_rebuild_project_graph_first_party_files_include_tests(tmp_path: Path) -> None:
+    """Preserves first-party tests as source, per Phase 77's own
+    explicit requirement -- not pruned simply because they are tests."""
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_models.py").write_text("def test_something():\n    pass\n")
+
+    rebuild_project_graph([], tmp_path)
+
+    conn = open_graph(tmp_path)
+    profile = source_file_profile(conn, "tests/test_models.py")
+    assert profile is not None
+    assert {s["name"] for s in profile["symbols"]} == {"test_something"}
