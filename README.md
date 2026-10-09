@@ -93,7 +93,7 @@ description of what's canonical.
 - `docs/architecture/` — system overview, component map, data/control flow (including the context-graph schema).
 - `docs/workflows/` — the sync/enrichment pipeline and the knowledge-reconciliation loop, end to end.
 - `docs/reference/` — CLI reference, `vendor.toml` configuration, the external adapter wire protocol, and symbol-extraction behaviour.
-- `docs/development/` — contributing conventions, testing.
+- `docs/development/` — contributing conventions, testing, and the proven clean-room redocumentation workflow that produced this very `docs/` tree.
 - `docs/edge-cases-and-compatibility.md`, `docs/tests-and-acceptance.md`, `docs/decisions.md`, `docs/limitations.md`, `docs/open-questions.md` — cross-cutting material required for a complete picture, including everything this reconstruction could **not** resolve from available evidence.
 
 ## License
