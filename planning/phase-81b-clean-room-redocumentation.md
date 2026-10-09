@@ -1954,3 +1954,344 @@ only inventoried by class in prose above. No `codecompass-template`
 file has been touched. Implementation begins only on explicit approval
 of this committed plan — e.g. "Approve Phase 81B and implement the
 committed plan."
+
+*(Superseded by events, preserved as history: this section described the
+state before the original plan's implementation, which ran to completion
+through §1-§24 and reached `BLOCKED` — see
+`planning/retros/phase-81b-clean-room-redocumentation.md` and
+`planning/phase-81b-mode-b-isolation-investigation.md`. §26 below is a
+fourth amendment, authorising a new, narrower round of implementation
+specifically to attempt removing that block — it does not reopen or
+redo the already-completed, already-audited preparation work.)*
+
+## 26. Amendment 4 (2026-10-09) — model-broker inference boundary, unblocking the credential-provisioning gap
+
+**Direct user request, 2026-10-09.** Phase 81B's prior implementation
+(commits `46601a1`..`f96e165`, independently audited PASS WITH
+NON-BLOCKING OBSERVATIONS) reached a real, precisely-characterized
+`BLOCKED` outcome: the namespace/`pivot_root` Mode B isolation mechanism
+was `VERIFIED` against every named escape route, but no AI writer could
+be operated inside it because no separately-scoped model-API credential
+(or local/offline model) existed in this environment — granting the
+sandbox this session's own broader account credentials would not have
+satisfied "credentials are genuinely inaccessible."
+
+This amendment's premise, direct from the user: that blocker may be
+removable not by giving the sandbox a credential at all, but by giving
+it an *inference capability* instead — a narrowly-scoped broker process
+that stays outside the sandbox, holds the real subscription
+authentication, and exposes only "run this exact prompt, get this exact
+output" over a local IPC channel the sandbox cannot use for anything
+else. This section amends the plan to investigate, and (contingent on
+real verified evidence, not assumption) implement, exactly that.
+
+**This amendment does not reopen, redo, or invalidate anything in §1-§24
+or the prior implementation's own commits.** The existing
+`documented_revision`/`handoff_commit` pair, the handoff package, the
+branch-preparation tooling, and the Mode B filesystem/process isolation
+mechanism are all reused as-is, revalidated against current `main`
+(§26.6), not rebuilt from scratch, per the plan's own existing
+reuse-over-rebuild discipline (§6.1's invalidation rule already covered
+"what happens if main drifts"; it did not previously need to cover
+"what happens if the credential blocker is later resolved," which is
+what this amendment adds).
+
+### 26.1 Investigation: can subscription-backed inference reach the sandbox without a credential crossing the boundary?
+
+Conducted directly, 2026-10-09, against this project's own real working
+environment — every command below was actually run; outputs are real,
+unedited, not assumed.
+
+**Finding 1 — non-interactive subscription inference works today, with
+no new credential generated.** The installed `claude` CLI (`2.1.292`)
+supports `-p`/`--print` for non-interactive, single-turn invocation.
+Combined with `--restricted --strict-mcp-config --tools "" --no-session-persistence --output-format json --setting-sources ""`
+and a custom `--system-prompt`, it performs real inference
+(`claude-sonnet-5`, `firstParty` provider, real token/cost accounting)
+using the **existing, already-authenticated `claude.ai` subscription
+session** (`claude auth status` confirms `"loggedIn": true,
+"authMethod": "claude.ai", "subscriptionType": "pro"`) — no
+`claude setup-token` or any other new long-lived credential needed to be
+generated. This matters structurally: the broker can reuse the host's
+*already-existing* login state (`~/.claude/.credentials.json`, never
+copied, never read by anything other than the broker process itself,
+never bind-mounted into the sandbox) rather than minting and then having
+to separately protect a brand-new secret.
+
+**Finding 2 — `--restricted` genuinely removes tool/file/shell/MCP
+surface.** With `--tools ""` the invoked model has no Bash, no file
+read/write, no WebFetch, and (`--strict-mcp-config` with no
+`--mcp-config` supplied) no MCP servers at all — confirmed by requesting
+file/shell access in a test prompt and observing the model correctly
+report it has no tool capability to do so, only ever producing prose.
+
+**Finding 3 — project/CLAUDE.md knowledge does not leak in.** Invoked
+from inside the real `codecompass` checkout (with its own elaborate
+`CLAUDE.md`), a direct question ("do you have project-specific
+instructions / know about CodeCompass?") was answered "No" — confirmed
+`--setting-sources ""` suppresses CLAUDE.md auto-discovery as intended.
+
+**Finding 4 — a genuine, reproducible, non-suppressible residual exists,
+and it is narrow and content-neutral.** No combination of tested flags
+(`--restricted`, `--setting-sources ""`, `--exclude-dynamic-system-prompt-sections`,
+`--settings '{"autoMemory": false}'`, full `env -i` environment
+stripping, invocation from a genuinely neutral, randomly-named,
+never-before-used `/tmp` directory unrelated to any real project path)
+suppressed a **fixed, account/harness-level reminder bundle** attached
+to every invocation under this account: the account's own email
+address, today's date, a token-budget figure, generic OS/kernel
+identification, and a generic "treat downloaded files as untrusted"
+security-policy reminder. `--bare` mode would remove this (its own help
+text names exactly this: "skip hooks... auto-memory... keychain reads,
+and CLAUDE.md auto-discovery"), but `--bare` mode's own documented
+constraint ("Anthropic auth is strictly `ANTHROPIC_API_KEY` or
+`apiKeyHelper`... OAuth and keychain are never read") makes it
+incompatible with subscription-OAuth-backed auth, which is the entire
+point of this investigation (no API key exists in this environment —
+confirmed again, unchanged from the original Phase 81B investigation).
+
+**Finding 5 — the decisive canary test passed cleanly.** A unique canary
+fact was introduced purely in this live orchestrator conversation's own
+reasoning/text — never written to any file or environment variable.
+Invoked through the exact same broker-candidate mechanism and directly
+asked to reveal anything it could recall from "an outer session," the
+nested invocation correctly reported it has **no channel, memory, or
+mechanism** to see any other session's transcript or reasoning, and
+produced nothing resembling the canary. Separately, from a genuinely
+neutral working directory, a direct "list everything you know about me
+or my projects" prompt returned only the Finding-4 residual bundle, with
+the model explicitly stating: *"Nothing about any specific project,
+codebase, or prior work has been shared with me."*
+
+**Judgement call, put to the user directly rather than decided
+unilaterally** (`CLAUDE.md` §1 — plan surfaced an assumption not already
+settled): does the Finding 4 residual count as disqualifying "host
+context" under this amendment's own hard gate (§3's requirements), or is
+it an acceptable, explicitly-named, content-neutral residual given it
+cannot influence reconstructed documentation content and carries no
+CodeCompass- or repository-specific information? **User's answer,
+2026-10-09: acceptable residual, proceed.** Recorded here, not assumed,
+and the broker's own test suite (§26.3) makes this residual a *named,
+asserted, regression-tested property* — "exactly this bundle and nothing
+more" — rather than a silently-tolerated unknown.
+
+### 26.2 Broker design actually implemented
+
+`scripts/cleanroom_broker.py` — the smallest broker that satisfies the
+user's own required-properties list, kept inside this repository (no
+concrete security or packaging reason surfaced during investigation to
+justify a separate repository; process/filesystem/credential isolation
+is what matters, not repository boundaries, per the user's own framing).
+
+- **Transport**: a Unix domain socket (`AF_UNIX`, `SOCK_STREAM`), newline-
+  delimited single-line JSON request/response framing, listening only on
+  a filesystem path the orchestrator controls (not a TCP port — nothing
+  network-reachable). The broker binds the socket *outside* the sandbox's
+  future mount namespace; only that one socket file is bind-mounted into
+  the sandbox's view, read-write, nothing else from the broker's own
+  filesystem.
+- **Protocol** (provider-neutral on purpose, per the user's own "tiny
+  provider-neutral protocol... acceptable where it reduces coupling"
+  instruction, but not built out beyond what this phase needs):
+  request `{"system_prompt": str, "messages": [{"role": "user"|"assistant", "content": str}, ...], "max_turns": int}`;
+  response `{"ok": true, "output": str, "usage": {...}} | {"ok": false, "error": str}`.
+  No field for tools, file paths, shell commands, or MCP config exists in
+  either direction — the protocol has no syntax to ask for any of those,
+  not merely a runtime refusal.
+- **Execution**: each request spawns a fresh `claude -p` subprocess with
+  `--restricted --strict-mcp-config --tools "" --no-session-persistence
+  --output-format json --setting-sources ""` and a freshly-generated
+  `--session-id` (new UUID per request, never reused, never resumed) —
+  guaranteeing no two requests (cold-reader vs. writer, or two writer
+  turns) share hidden session state. The subprocess environment is
+  built with `env -i`, explicitly listing only `PATH` and `HOME` —
+  every other inherited variable (including the
+  `CLAUDE_CODE_MESSAGING_TOKEN`/`CLAUDE_CODE_SESSION_ID`/
+  `CLAUDE_CODE_BRIDGE_SESSION_ID`/`CLAUDECODE` family that caused the
+  original Phase 81B credential-leak finding, and whose regression test
+  already exists) is dropped before the subprocess is created, not
+  merely unset after.
+- **Response sanitisation**: before any broker response is written back
+  to the socket, it is scanned and the following are refused/stripped
+  rather than forwarded: anything matching a credential/token/key/secret
+  shape, the `--output-format json` envelope's own `session_id` field
+  (an internal identifier, not inference output), and any field not in
+  the fixed `{ok, output, usage}` response schema. `usage` itself is
+  reduced to a minimal numeric subset (input/output token counts, cost)
+  — no raw provider response is ever passed through unfiltered.
+- **Fail-closed behaviour**: if `claude auth status` (checked once at
+  broker startup, not per-request) does not report a usable logged-in
+  subscription session, or if a `claude -p` subprocess exits non-zero,
+  times out, or produces output that fails to parse as the expected JSON
+  envelope, the broker returns `{"ok": false, "error": "..."}` — it never
+  falls back to a weaker mechanism (an API key, a cached prior response,
+  a different auth path) silently.
+- **No automatic context injection beyond the model's own fixed,
+  documented, tested residual** (§26.1 Finding 4): the broker passes only
+  the caller-supplied `system_prompt`/`messages`, nothing else. It does
+  not read `planning/knowledge/`, does not read `CLAUDE.md`, does not
+  attach any CodeCompass-specific content of its own accord — every byte
+  of clean-room content the writer sees crosses the boundary because the
+  *caller* (the orchestrator, assembling the clean-room prompt from the
+  validated handoff package) explicitly put it in the request, never
+  because the broker reached out and fetched it.
+
+### 26.3 Broker-specific isolation tests (new Mode B test suite extension)
+
+Added as real, actively-run tests (not aspirational descriptions),
+split between a mechanical pytest suite (`tests/test_cleanroom_broker.py`)
+for what can be verified without a full namespace sandbox, and a real,
+hands-on investigation report (`planning/phase-81b-broker-isolation-investigation.md`)
+for the active-escape-attempt tests that need a genuine sandbox process
+boundary to mean anything:
+
+- No provider credential appears inside the sandbox (filesystem scan of
+  the sandbox's own mounted view for `.credentials.json`/API-key-shaped
+  strings — expected: absent, since `~/.claude/` is never mounted in).
+- No Claude authentication/session files appear inside the sandbox (same
+  scan, broadened to `~/.claude/**` entirely).
+- The broker protocol cannot return or reveal its own authentication
+  material (unit test: feed the sanitiser a synthetic response
+  containing a fake credential-shaped string in several field names and
+  positions; assert it is always stripped, never forwarded).
+- The broker cannot be used to read arbitrary host files (protocol has
+  no file-path-shaped field at all; test asserts a request containing
+  one is ignored/rejected, not silently honoured).
+- The broker cannot execute arbitrary host shell commands (same —
+  no command-shaped field exists; `--tools ""` independently confirmed
+  by direct test, §26.1 Finding 2).
+- The broker cannot act as an unrestricted network proxy (the protocol
+  has no destination/URL field; the underlying `claude -p` subprocess
+  itself has no network tool available to it under `--tools ""`).
+- The broker cannot invoke arbitrary MCP tools/connectors
+  (`--strict-mcp-config` with no `--mcp-config` supplied — zero MCP
+  servers available; independently confirmed).
+- The broker does not inherit or expose the orchestrator's existing
+  Claude conversation (the canary test, §26.1 Finding 5, is the
+  authoritative evidence for this; re-run as a permanent regression
+  fixture with a fresh, randomly-generated canary each run).
+- The model invocation begins from a fresh context (fresh `--session-id`
+  per request, `--no-session-persistence`, no `--resume`/`--continue` —
+  confirmed by requesting the model recall anything from a prior request
+  made moments earlier through the same broker process; it cannot).
+- Separate cold-reader and writer invocations do not share hidden
+  conversational state (same mechanism — distinct `--session-id` per
+  role, tested directly: a fact stated only in a "cold-reader" test
+  request is not recoverable from a subsequent "writer" test request).
+- The isolated writer can influence the model only through explicitly
+  transmitted clean-room content (the Finding-4 residual is constant and
+  independent of the transmitted prompt; varying only the transmitted
+  `messages` content is shown to vary only the corresponding part of the
+  output, with the fixed residual unchanged — i.e. the model is not
+  separately "primed" by anything the writer's own request didn't
+  supply).
+
+**Context-contamination canary test (user's required decisive evidence,
+re-run as a permanent fixture, not a one-off manual check):**
+
+1. A unique, freshly-generated secret phrase is placed only in
+   orchestrator/host-visible context (this plan file's own test runner,
+   never written into the clean-room handoff or any writer-visible
+   path).
+2. Confirmed absent from the clean-room handoff package and the
+   sandbox's own mounted filesystem view (`grep -r` for the phrase,
+   expected: zero matches).
+3. A fresh model invocation is made through the broker, exactly as the
+   writer would.
+4. The invocation is directly, adversarially asked to produce or
+   demonstrate knowledge of any such phrase.
+5. Assertion: the response does not contain the phrase, and the model
+   reports no access to any channel that could supply it.
+
+Both the Phase 81B-original `CLAUDE_CODE_MESSAGING_TOKEN` environment-
+inheritance regression test and this new canary test are wired into the
+same pytest suite so a future change cannot silently reintroduce either
+leak without a visible, immediate test failure.
+
+### 26.4 Revised trust-boundary diagram (supersedes §4's diagram for the writer/cold-reader stages only; §4's own branch/manifest lifecycle above the isolation boundary is unchanged)
+
+```
+TRUSTED HOST (this orchestrator's own machine, outside every sandbox)
+    │
+    ├── cleanroom_broker.py
+    │     - holds the existing claude.ai subscription session
+    │       (~/.claude/.credentials.json, read by the broker process
+    │       only, never copied, never bind-mounted anywhere)
+    │     - spawns one fresh, isolated `claude -p` subprocess per
+    │       request (fresh --session-id, env -i, --restricted,
+    │       --strict-mcp-config, --tools "", --setting-sources "")
+    │     - exposes only {system_prompt, messages, max_turns} in,
+    │       {ok, output, usage} out — no other field exists in the
+    │       protocol in either direction
+    │
+────┼──────────────── mechanical isolation boundary ────────────────
+    │   (unshare --user --map-root-user --mount --net --pid --fork
+    │    + pivot_root into an allow-list-only root -- unchanged from
+    │    the original, already-verified Phase 81B mechanism, §6.2/
+    │    the isolation investigation)
+    │
+    └── one bind-mounted Unix socket file (the broker's listening
+        socket) -- the sandbox's only reachable path to anything
+        outside its own allow-listed filesystem view
+                │
+                ▼
+        CLEAN-ROOM COLD-READER / WRITER (inside the sandbox)
+        - allowlisted evidence only (§6.1.1's existing ALLOW_PATHS)
+        - no original repository, no sibling repositories
+        - no .git/history/remotes anywhere in the mounted view
+        - no legacy documentation (unchanged from §7/§9.5's own rules)
+        - no ~/.claude, no provider/API credentials, no MCP config
+        - no parent-agent conversation/context (verified, §26.1
+          Finding 5's canary test)
+        - no general Internet access (the sandbox's own network
+          namespace remains fully isolated, §6.2 unchanged -- only
+          the broker, outside the boundary, has real network access)
+        - receives model inference only by writing a request to the
+          one bind-mounted socket and reading the matching response
+```
+
+### 26.5 Revised security/isolation acceptance criteria (extends §21's hard gate; does not relax it)
+
+§21's existing filesystem/process/network hard-gate routes are
+unchanged and must still each independently pass. This amendment adds,
+as equally hard (not advisory) gate conditions, every item in §26.3
+above, plus:
+
+- the broker process itself must not be reachable from inside the
+  sandbox by any path other than the one bind-mounted socket (verified
+  by attempting, from inside the sandbox, to reach the broker by PID,
+  by `/proc`, by any other socket/port, or by filesystem path — all
+  must fail);
+- the sandbox's own network namespace remains fully network-isolated
+  (unchanged from the original investigation — re-confirmed, not
+  re-litigated, since the broker sits entirely outside it).
+
+### 26.6 Resuming Phase 81B's durable state — revalidation, not redoing
+
+Before any broker/cold-reader/writer work begins, the existing
+`documented_revision` (`46601a1`) and `handoff_commit`
+(`468cffa4e013e56ad17df6c7536dd32a5774cd4b`, branch
+`cleanroom/redoc-46601a1`) are revalidated against current `main`
+(`f96e165` at the time this amendment is written) per §6.1's own
+existing invalidation rule: if `main` has materially changed (new
+knowledge slugs, changed `codecompass-domain` content, changed
+allow-listed source), a new `documented_revision`/`handoff_commit` pair
+is established and the supersession is recorded explicitly, rather than
+silently reusing a stale handoff. If no material drift is found, the
+existing pair is reused as-is — rebuilding it merely to obtain a
+fresh-looking artefact is explicitly out of scope (user's own
+instruction, §4 of this amendment's governing prompt).
+
+### 26.7 Everything else in this amendment follows the user's own governing instruction directly
+
+Sections 4-11 of the user's own 2026-10-09 governing prompt (cold-reader
+gate, authoritative writer run, legacy-document gap review, known-defect
+first-principles re-review, documentation disposition, persisting the
+durable workflow document only after real success) are adopted as this
+amendment's own scope **verbatim, by reference, not restated/duplicated
+here** — they do not change anything already decided in §1-§24 about
+*what* the redocumentation covers or *how* disposition works, only *that*
+the writer can now actually run. Implementation proceeds directly from
+this committed amendment, per the user's own instruction, without a
+further planning-approval round — matching the precedent already set by
+Amendment 2's own "implementation is approved by this instruction."

@@ -7,17 +7,29 @@ session-resumption, not a project history.
 
 ## Current phase
 
-**No roadmap phase is currently in progress.** Phase 81B (clean-room
-project redocumentation from intermediary knowledge) is **closed, result
-`blocked`** — implemented in full through its own plan's required first
-step, then correctly stopped at that plan's own hard gate
-(`planning/phase-81b-clean-room-redocumentation.md` §6.3/§18/§21) rather
-than completed or downgraded to best-effort. Full account:
-`planning/retros/phase-81b-clean-room-redocumentation.md` (retro) and
-`planning/phase-81b-mode-b-isolation-investigation.md` (the investigation
-itself). Independently audited: `planning/retros/_audit-phase-81b.md`,
-**PASS WITH NON-BLOCKING OBSERVATIONS**, both observations since closed
-in a follow-up commit, re-confirmed by a narrow second audit pass.
+**Phase 81B is reopened, in progress, under a fourth amendment
+(2026-10-09, direct user request)**, attempting to remove the specific
+credential-provisioning blocker its prior implementation honestly
+reached. Plan: `planning/phase-81b-clean-room-redocumentation.md` §26.
+The prior implementation (§1-§24, commits `46601a1`..`f96e165`) is not
+reopened, redone, or invalidated — it reached a real, audited `BLOCKED`
+outcome (PASS WITH NON-BLOCKING OBSERVATIONS, `planning/retros/_audit-phase-81b.md`)
+and remains exactly as delivered; this amendment adds a new mechanism on
+top of it rather than replacing anything.
+
+Amendment 4's premise: give the sandbox an *inference capability*
+instead of a *credential* — a narrowly-scoped broker process
+(`scripts/cleanroom_broker.py`) that stays outside the sandbox, holds
+the existing subscription authentication, and exposes only "run this
+exact prompt, get this exact output" over a local Unix-socket IPC
+channel. Investigation (real, 2026-10-09): non-interactive `claude -p`
+inference works using the existing, already-authenticated subscription
+session with no new credential generated; a canary test confirmed zero
+cross-session conversation leakage and zero CodeCompass-specific
+knowledge leakage; one narrow, content-neutral, non-suppressible
+account-level reminder residual (email/date/token-budget/OS-type/generic
+security policy) was found and named — user decided explicitly
+(2026-10-09) this is an acceptable residual, not disqualifying.
 
 What was delivered, for real, against this repository: knowledge
 preparation (`documented_revision` `46601a1` — 26 of 30 previously-
@@ -109,13 +121,24 @@ line reconciliation. All commits pushed to `origin/main`.
 
 ## Next concrete step
 
-**No roadmap phase is currently active.** Phases 75 through 81B are all
-closed (`done` or, for 81B, its own honest `blocked` terminal state) and
-pushed to `origin` — no further action needed on any of them per
-`CLAUDE.md` §6.
+**Phase 81B Amendment 4 implementation is in progress.** Next concrete
+steps, in order: build and test `scripts/cleanroom_broker.py` and its
+isolation/canary test suite; revalidate the existing
+`documented_revision`/`handoff_commit` against current `main`; run the
+cold-reader inside verified Mode B + broker; run the authoritative writer
+and preserve its output before any legacy comparison; perform the legacy
+gap review; perform documentation disposition for both repositories;
+persist the durable workflow document; run the full closeout sequence
+(defect re-review, tests/lint, docs-drift audit, learning triage, retro,
+independent completion audit); reconcile ROADMAP/CONTEXT/changelog to
+the final outcome (`done` only if every hard gate genuinely passes,
+`blocked` again with the precise new reason otherwise).
 
-The next open items requiring a human/lead decision, none currently
-claimed by a drafted plan or phase number:
+Phases 75 through 81 (not 81B) remain closed (`done`) and pushed to
+`origin` — no further action needed on any of them per `CLAUDE.md` §6.
+
+The next open items requiring a human/lead decision, unrelated to Phase
+81B and none currently claimed by a drafted plan or phase number:
 
 - Priority A's own narrowly-scoped follow-up trial, sketched (not
   started) in `planning/phase-78-amendment-followup-plan.md` — an
