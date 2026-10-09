@@ -17,6 +17,50 @@ This pass used a systematic grep across all four selected slugs for
 self-described unresolved/untested/honest-gap language (not a manual
 skim), to avoid the same partial-coverage mistake twice.
 
+## Accepted evidence-depth limitations, not preparation gaps (added 2026-10-09, cold-reader findings, seventh pass)
+
+A seventh cold-reader pass found several real asymmetries in how much
+evidence exists for different parts of the required documentation
+coverage. Unlike earlier findings, these are genuine, checked-and-
+confirmed *absences* in the underlying project itself (not something
+missing from this handoff that the preparation stage could add without
+either fabricating facts or disproportionately expanding the allowlist)
+— write around them honestly per `DOCUMENTATION-TARGET.md`'s own
+"Limitations (verify, do not invent)" guidance, rather than treating
+their absence as something this handoff failed to supply:
+
+- **Haskell adapter setup is only breadcrumb-deep.** `haskell.py`'s own
+  error strings point to the excluded `docs/external-adapters.md` for
+  full setup detail. You can derive the two real steps yourself
+  (`git submodule update --init` from `.gitmodules`; `stack build` from
+  the error text and `adapters/haskell/stack.yaml`/`package.yaml`), but
+  platform-specific Stack installation and build troubleshooting are not
+  CodeCompass-specific facts — general Stack/GHC knowledge, not
+  something this project's own evidence needs to teach you.
+- **No minimum npm or Cargo version is documented anywhere in the
+  evidence**, unlike Python (`>=3.11`, `decisions/0009`) or Git
+  (`>=2.7`, checked directly in `git_topology.py`). Checked directly:
+  genuinely absent, not merely hard to find. State "no documented
+  minimum" rather than guessing one.
+- **No minimum Stack/GHC version is documented** for consuming
+  `adapters/haskell/stack.yaml`'s own `resolver: nightly-2026-09-01`
+  snapshot. Same treatment.
+- **No captured end-to-end transcript exists for the knowledge-
+  intermediate-layer CLI workflow** (`codecompass knowledge render/
+  select-candidates/apply/...`), unlike the toy-project sync/enrichment
+  workflow (`CITED-EXCERPTS.md`). The behaviour is fully specified in
+  `knowledge_intermediate.py` and exhaustively unit-tested
+  (`test_knowledge_intermediate.py`) — describe it accurately from that,
+  without presenting a worked terminal session you don't actually have.
+- **Contributing/process-convention material is genuinely thin.** The
+  only process-relevant decisions
+  (`decisions/0007`/`0049`/`0050`/`0055`) are bare titles with no
+  rationale text recoverable — no branch strategy, PR-review
+  expectations, or commit-convention detail beyond "no AI attribution"
+  exists anywhere in your evidence. A minimal contributing section,
+  honestly scoped to what's real, is the correct output — not a
+  speculative, fuller-sounding one.
+
 ## A real, confirmed self-dogfooding inconsistency, with a deeper real cause (added 2026-10-09, cold-reader finding #1, sixth pass)
 
 The root `vendor.toml` (this project's own tracked-dependency manifest)
