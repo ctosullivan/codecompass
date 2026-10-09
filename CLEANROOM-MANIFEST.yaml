@@ -1,6 +1,6 @@
 source_repository: ctosullivan/codecompass
 documented_revision: 1bdc755
-handoff_commit: null  # filled in after this tree is committed to its own branch
+handoff_commit: 9192ed2b36182830cc1b6d34237ab69e2247e517
 generated_at: "2026-10-09T00:50:06.355840+00:00"
 codecompass_version: "1.0.0"
 
