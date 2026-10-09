@@ -85,6 +85,17 @@ surrounding prose explaining or framing it. Treat this the same way as
 the `vendor/typer/CLAUDE.md` excerpt above: verifiable raw evidence for
 you to describe in your own words, not text to copy.
 
+**Reproducibility caveat (2026-10-09, cold-reader finding #4)**: the
+exact version numbers below (`click 8.4.2`, `requests 2.34.2`) reflect
+whatever was actually installed at the moment this specific capture was
+taken — no Python version, OS, or dependency-resolution state is
+recorded alongside it, and nothing here guarantees a reader who runs
+this today gets byte-identical output. Treat the *shape* of this
+transcript (the commands, the kind of output each produces, the
+`--budget 0` cost-gating behaviour) as the durable, documentable fact;
+present the specific version numbers as "a real example from one real
+run," not as a promise of what any given future run will show.
+
 Running `codecompass --budget 0` against `toy-project/` (a minimal
 Python project whose `cli.py` genuinely imports and calls both `click`
 and `requests`):

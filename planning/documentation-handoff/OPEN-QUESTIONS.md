@@ -17,6 +17,24 @@ This pass used a systematic grep across all four selected slugs for
 self-described unresolved/untested/honest-gap language (not a manual
 skim), to avoid the same partial-coverage mistake twice.
 
+## Known limitations disclosed only in source comments (added 2026-10-09, cold-reader finding #5)
+
+The knowledge layer does not surface every disclosed limitation living
+in the allowlisted source's own comments — a writer who doesn't happen
+to read a given module's docstring could miss one. One confirmed,
+real example, checked directly: `src/codecompass/adapters/cargo.py`'s
+own module docstring states it is **"Unverified against real cargo
+output — no Rust toolchain in this dev environment... Built entirely
+against the `_run_json` seam so its parsing logic is unit-tested via
+hand-written fixture JSON modeled on cargo's public schema docs."** This
+is a real, material limitation worth a line in your own Limitations
+section. A systematic grep of `src/codecompass/adapters/*.py` for
+similar disclosed-limitation language (as of this preparation pass)
+found no other instance — but this was checked for this one pattern
+only; read each adapter module's own docstring yourself rather than
+assuming this is the only disclosed limitation in the allowlisted
+source.
+
 ## Known open design questions from supported Claims
 
 These Claims are `status: supported` — not contradicted, not wrong —

@@ -140,6 +140,36 @@ def test_git_tracked_files_resolves_paths_inside_a_submodule(tmp_path):
         assert (REPO_ROOT / t).is_file()
 
 
+def test_build_includes_real_haskell_adapter_source(tmp_path):
+    """Regression test for a real cold-reader finding: the Haskell
+    external-adapter's own Requirements/Claims describe exact scanning
+    behaviour of code that, before this fix, was entirely excluded from
+    the writer's workspace (the whole `adapters/` directory was
+    blanket-excluded) -- leaving nothing to verify those Requirements
+    against, unlike every other adapter whose Python source is directly
+    present. Narrative files (README/CHANGELOG/LICENSE) stay excluded,
+    matching the protocol submodule's own treatment."""
+    staging = _build(tmp_path)
+    assert (staging / "adapters" / "haskell" / "app" / "Main.hs").is_file()
+    assert (staging / "adapters" / "haskell" / "test" / "Spec.hs").is_file()
+    assert (staging / "adapters" / "haskell" / "codecompass-adaptor-haskell.cabal").is_file()
+    assert not (staging / "adapters" / "haskell" / "README.md").exists()
+    assert not (staging / "adapters" / "haskell" / "CHANGELOG.md").exists()
+    assert not (staging / "adapters" / "haskell" / "LICENSE").exists()
+    assert not (staging / "adapters" / "haskell" / ".git").exists()
+
+
+def test_build_includes_gitmodules(tmp_path):
+    """Regression test: a cold-reader finding noted the real remote URL
+    for the Haskell adapter submodule was never visible anywhere in the
+    writer's workspace, even though .gitmodules states it plainly and
+    is pure structural config, not narrative."""
+    staging = _build(tmp_path)
+    gitmodules = staging / ".gitmodules"
+    assert gitmodules.is_file()
+    assert "codecompass-adaptor-haskell" in gitmodules.read_text(encoding="utf-8")
+
+
 def test_allow_list_contains_no_narrative_documentation_paths():
     """Amendment 2/3: README.md/docs/**/architecture/**/ai-docs/** (and
     docs/domain/** specifically) must never appear in the allow-list

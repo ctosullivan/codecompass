@@ -2,6 +2,18 @@
 
 A mechanically-generated title + status index over every ADR in `decisions/*.md` — **not** a hand-synthesized one-line rationale per decision (74 ADRs exist; genuinely summarising each one's own rationale is real synthesis work this preparation pass does not attempt rather than guess at). The writer consumes this index plus, where a specific decision's own reasoning materially matters to a documentation claim, the real file it points at — never the full ADR corpus wholesale (per the clean-room allowlist, `decisions/**` itself is excluded from the writer's own visible filesystem).
 
+**Numbering gap, checked directly (2026-10-09, cold-reader finding #3)**:
+this index runs `0001`–`0075` with no row for `0044` — confirmed a real
+gap, not a rendering artefact: `git log --all --diff-filter=A -- decisions/0044*`
+and the equivalent `--diff-filter=D` search both return nothing, so
+`decisions/0044` was never created, committed, or deleted anywhere in
+this repository's own history. The most likely honest explanation is a
+reserved number never filled during drafting, not a withdrawn decision
+that was deleted outright — but this preparation pass has no stronger
+evidence than that, and says so rather than guessing further. If a
+documentation claim ever needs to cite "0044" specifically, there is
+nothing to cite.
+
 **Known limitation, named explicitly (2026-10-09, cold-reader finding
 #2)**: the "Status" column below is read mechanically from each ADR's
 own first-line status field only — it is never cross-checked against
