@@ -1,0 +1,16 @@
+[
+  {
+    "source_doc_path": "dev-docs/architecture.md",
+    "target_vendor_name": null,
+    "target_doc_path": ".claude/skills/codecompass/SKILL.md",
+    "ai_summary": "This architecture doc mentions the codecompass Skill as the reference for how the project keeps dependency context current, consistent with the same citation pattern the retros and planning docs use — a process/governance reference, not a description of a build-time or runtime dependency on codecompass itself.",
+    "relation_label": "explains_usage_of"
+  },
+  {
+    "source_doc_path": "dev-docs/retros/README.md",
+    "target_vendor_name": null,
+    "target_doc_path": ".claude/skills/codecompass/SKILL.md",
+    "ai_summary": "A second, unnecessary attempt to re-enrich an edge that was already enriched in cycle 1 and hasn't changed since.",
+    "relation_label": "explains_usage_of"
+  }
+]

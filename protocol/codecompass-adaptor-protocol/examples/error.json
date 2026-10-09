@@ -1,0 +1,7 @@
+{
+  "id": 2,
+  "error": {
+    "code": "not_found",
+    "message": "project_root does not exist or is not readable: /home/cormac/projects/hledger/does-not-exist"
+  }
+}
