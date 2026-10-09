@@ -28,12 +28,18 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import cleanroom_broker_client as client  # noqa: E402
 
-# Only files with these suffixes are pulled into the flattened prompt --
-# binary fixtures (e.g. tests/fixtures/*.db) are named but not inlined.
-_TEXT_SUFFIXES = {
-    ".py", ".md", ".toml", ".yaml", ".yml", ".json", ".txt", ".cfg", ".ini", ".sh",
-}
-_SKIP_DIR_NAMES = {"__pycache__", ".pytest_cache", ".ruff_cache"}
+# A real cold-reader finding (Phase 81B Amendment 4): a fixed suffix
+# allow-list here silently dropped real evidence content the writer
+# needed (.hs Haskell source, .cabal/.lock build files, .gitmodules) the
+# moment prepare_cleanroom_branch.py's own ALLOW_PATHS grew to cover new
+# file types -- the two lists drifted independently with nothing to keep
+# them in sync. Every allow-listed file is a real decision already made
+# by ALLOW_PATHS; this script's only remaining job is deciding whether
+# that file's own bytes are safely representable as text in the prompt,
+# which decoding itself answers directly -- no separate, parallel
+# extension list to maintain and forget to update.
+_SKIP_DIR_NAMES = {"__pycache__", ".pytest_cache", ".ruff_cache", ".stack-work"}
+_SKIP_BASENAMES = {".DS_Store"}
 
 _COLD_READER_SYSTEM_PROMPT = """\
 You are a cold-reader evaluating a documentation handoff package for a
@@ -85,7 +91,7 @@ def _iter_evidence_files(root: Path):
             continue
         if any(part in _SKIP_DIR_NAMES for part in p.parts):
             continue
-        if p.suffix not in _TEXT_SUFFIXES:
+        if p.name in _SKIP_BASENAMES:
             continue
         yield p
 
@@ -97,7 +103,11 @@ def assemble_evidence_blob(evidence_root: Path) -> str:
         rel = p.relative_to(root)
         try:
             text = p.read_text(encoding="utf-8")
-        except (UnicodeDecodeError, OSError):
+        except (UnicodeDecodeError, OSError) as exc:
+            print(
+                f"cleanroom_prompt_assembler: skipping non-text evidence file {rel}: {exc}",
+                file=sys.stderr,
+            )
             continue
         parts.append(f"=== EVIDENCE FILE: {rel} ===\n{text}\n")
     return "\n".join(parts)

@@ -58,6 +58,32 @@ cites workspace-visible evidence you *can* check) as your signal for how
 much independent confidence to place in it, rather than expecting every
 citation to be openable.
 
+**Extended (2026-10-09, cold-reader finding #2, fifth pass)**: this same
+accepted limit also covers citations into a *third-party reference
+project's own source tree* — specifically, `haskell-api-surface-extraction`'s
+Claims cite exact line ranges in a pinned `hledger`/`hledger-lib`
+checkout (e.g. `hledger-lib/Hledger/Query.hs:13-78`) that is not, and
+will not be, part of your workspace at all. This is the same kind of
+by-design exclusion as the ADR/architecture/planning case above, now
+named explicitly so it is not mistaken for an oversight: a reference
+project used to ground research about CodeCompass's own adapter
+behaviour is not itself CodeCompass source, and including an entire
+separate large codebase just so one set of Claims' citations could be
+re-opened was judged out of proportion to this handoff's own scope.
+Treat `CL-HSAPI-*`'s specific quantified claims (exact counts, exact
+line numbers) the same way you would any other citation you cannot
+personally re-open — real, evidence-backed, but not independently
+spot-checkable from inside your own workspace.
+
+The same reasoning covers `planning/reference-projects/ledgerkit/reference-experiment/`
+(cited by `CL-DOCORIGIN-002`/`CL-DOCORIGIN-004` for the real ingestion
+pipeline's frontmatter shape) — also excluded, also by design. Here the
+gap is largely covered already: `src/codecompass/spec_docs.py` (your own
+workspace) is the real ingestion code these Claims describe, and
+`tests/test_spec_docs.py` carries a concrete frontmatter fixture
+constant you can check directly — prefer those over trusting the Claim
+text alone where you need to verify the real frontmatter shape.
+
 ## On synthesising architecture/workflow material directly from source (cold-reader finding #2)
 
 `knowledge/workflows-and-state-transitions.md` and the architecture-

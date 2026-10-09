@@ -51,6 +51,7 @@ ALLOW_PATHS: list[str] = [
     "protocol/codecompass-adaptor-protocol/conformance",
     "protocol/codecompass-adaptor-protocol/examples",
     "adapters/haskell/app",
+    "adapters/haskell/src",
     "adapters/haskell/test",
     "adapters/haskell/codecompass-adaptor-haskell.cabal",
     "adapters/haskell/package.yaml",
