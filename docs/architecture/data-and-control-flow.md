@@ -44,6 +44,22 @@ A `doc_relation_enrichment.relation_label` value is one of: `documents_configura
 
 A real, load-bearing invariant of `graph.py`'s own migration machinery: no migration function decides whether it needs to act by comparing `meta.schema_version` against some expected value. Every migration (`_migrate_doc_artifacts_constraints`, `_migrate_vendors_ecosystem_constraint`, `_migrate_source_files_columns`, and the rest) checks the real, on-disk schema directly — via `PRAGMA table_info`, or by inspecting the stored `CREATE TABLE` text in `sqlite_master` — and only acts if that direct introspection shows the table is genuinely out of date. `meta.schema_version` itself is still written on every `open_graph` call, but **unconditionally**, as pure informational bookkeeping ("last schema-code vintage this database was opened under"), completely decoupled from whether any migration actually ran that time. This was a deliberate correction: an earlier version of `_migrate_doc_artifacts_constraints` triggered on any version-number mismatch, which meant an *unrelated* schema bump (e.g. widening `vendors.ecosystem` for a new ecosystem) could still cause `doc_artifacts` to be needlessly dropped and recreated, even though neither change touched it.
 
+### Historical note: why generated-artifact refresh runs where it does
+
+`cli._refresh_generated_artifacts` runs once, unconditionally, at the
+very end of a whole-project `sync`/bare-`codecompass` invocation — after
+the enrichment step returns, regardless of whether it succeeded, was
+declined, or was budget-aborted (a `try`/`finally` guarantees this). An
+earlier version regenerated the routing table and tool-level Skill
+*before* enrichment ran, so a vendor that was just AI-enriched in that
+same invocation still showed `Enriched: no` until a separate
+`codecompass index` ran afterward — confirmed directly during this
+project's own first live enrichment run. The whole-project `sync` branch
+also had a separate bug on top of this: it never called the
+regeneration step at all, only `index` and bare `codecompass` did. Both
+are fixed; this note exists only so the `try`/`finally` doesn't look
+like unexplained defensive code to a future reader.
+
 ## Reading the graph without writing SQL
 
 `codecompass query ...` covers the common cases (see `docs/reference/cli.md`). For anything else, `context-graph.db` is a plain SQLite file — `sqlite3 context-graph.db "SELECT ..."` works directly.
