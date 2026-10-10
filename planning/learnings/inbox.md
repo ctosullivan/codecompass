@@ -8,6 +8,196 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-097 — a clean-room export tool's file-inclusion list must resolve git-tracked files relative to the real git toplevel, not the superproject's own root
+
+- **origin:** Phase 81B Amendment 4 (model-broker inference boundary),
+  found while adding `protocol/codecompass-adaptor-protocol/{schemas,conformance,examples}`
+  and `adapters/haskell/src` to `scripts/prepare_cleanroom_branch.py`'s
+  own `ALLOW_PATHS`
+- **date:** 2026-10-09
+- **project_revision:** `1bdc755` (the fix landed in this commit)
+- **observation:** `_git_tracked_files` ran `git ls-files` with `cwd=root`
+  (the superproject's own root) for every allow-listed path, including
+  paths inside a Git submodule. A submodule is tracked by the
+  superproject as a single gitlink entry, never its individual files —
+  so `git ls-files` run from the wrong root silently returned nothing
+  for any allow-listed directory inside one, and the build logged only a
+  non-fatal `WARNING: allow-listed dir has no git-tracked files`,
+  easy to miss. Confirmed directly: the same real command, re-run with
+  `cwd` set to the submodule's own root instead, correctly listed its
+  real tracked files.
+- **evidence:** `scripts/prepare_cleanroom_branch.py::_git_tracked_files`
+  (current repository state) now resolves the real `git rev-parse
+  --show-toplevel` for the target path first, before running `ls-files`
+  there, translating paths back relative to the original root —
+  regression-tested directly against the real
+  `protocol/codecompass-adaptor-protocol` submodule in
+  `tests/test_prepare_cleanroom_branch.py::test_git_tracked_files_resolves_paths_inside_a_submodule`.
+- **classification:** invariant
+- **status:** promoted
+- **recurrence:** first occurrence
+- **promoted_to:** the fix + regression test above (already landed,
+  same commit as the finding)
+
+---
+
+### L-096 — a file-inclusion-decision list that duplicates a separate, independently-maintained allow-list drifts silently; prefer deriving inclusion from decode success, not a parallel list
+
+- **origin:** Phase 81B Amendment 4, found by a real cold-reader pass
+  (the first one to actually receive full file content after this fix,
+  pass 6 of 11) reporting it could not confirm content it had been told
+  was present
+- **date:** 2026-10-09
+- **project_revision:** `d421b5f` (the fix)
+- **observation:** `scripts/cleanroom_prompt_assembler.py`'s own
+  `_TEXT_SUFFIXES` was a fixed set of file extensions, maintained
+  entirely separately from `prepare_cleanroom_branch.py`'s own
+  `ALLOW_PATHS`. When `ALLOW_PATHS` grew to cover `.hs`/`.cabal`/`.lock`
+  files and a `.gitmodules` dotfile, `_TEXT_SUFFIXES` was never updated
+  to match — those real, correctly-allow-listed files were silently
+  dropped from every assembled prompt (cold-reader *and* writer) for
+  several rounds, with no warning, since the manifest itself still
+  listed them as included.
+- **evidence:** `scripts/cleanroom_prompt_assembler.py::assemble_evidence_blob`
+  (current repository state) now includes every file unless it
+  genuinely fails to decode as UTF-8 text (with a logged warning when
+  that happens) — no separate extension list to drift out of sync.
+  Regression-tested:
+  `tests/test_cleanroom_prompt_assembler.py::test_assembles_files_of_every_real_extension_in_the_handoff`.
+- **classification:** scoped-rule (any future tool that decides *what
+  content a downstream consumer sees* from a set of files already
+  decided by a separate allow-list should derive inclusion from the
+  content itself — e.g. decode success — rather than maintaining a
+  second, parallel decision surface)
+- **status:** promoted
+- **recurrence:** first occurrence
+- **promoted_to:** the fix + regression test above (already landed)
+
+---
+
+### L-095 — a mechanically-generated table reading a multi-line source field needs to read the field's full span, not a fixed line/character truncation, or it silently garbles output with no truncation marker
+
+- **origin:** Phase 81B Amendment 4, found by a real cold-reader pass
+  (pass 9 of 11)
+- **date:** 2026-10-09
+- **project_revision:** `1087383` (the fix)
+- **observation:** `planning/documentation-handoff/knowledge/decisions-and-rationale.md`'s
+  own "Status" column was built by reading each real ADR's `## Status`
+  section — but for roughly 13 of 74 rows (the ADRs with a longer,
+  multi-amendment Status section), the cell was cut off mid-sentence
+  with no ellipsis or truncation marker (e.g. ending `"Full plan:"` with
+  nothing after the colon). A fresh reader (the cold-reader) could not
+  tell a cut-off sentence from a complete one.
+- **evidence:** regenerated the whole table directly from each real
+  ADR's full `## Status` section (matched to the next `## ` heading or
+  end of file, not a fixed line count), confirmed zero truncated rows
+  remain by direct re-read after the fix.
+- **classification:** scoped-rule (any mechanical table/index generator
+  reading a multi-line prose field must read the field's own real
+  boundary, never a fixed line/character cap, or must emit an explicit
+  truncation marker if it does cap)
+- **status:** retained
+- **recurrence:** first occurrence
+- **curation note:** this was a one-off hand-built generation (no
+  reusable script exists for this specific table), so there is no
+  standing code artifact to attach a regression test to — retained as a
+  documented rule for whoever next builds a similar mechanical index,
+  rather than promoted into a test that would have nothing to guard.
+
+---
+
+### L-094 — a hand-built generator that reads raw YAML text instead of parsing it can leak YAML's own syntax markers into generated prose
+
+- **origin:** Phase 81B Amendment 4, found by the same cold-reader pass
+  as L-095 (pass 9 of 11)
+- **date:** 2026-10-09
+- **project_revision:** `1087383` (the fix)
+- **observation:** `planning/documentation-handoff/knowledge/source-and-evidence-map.md`
+  had a literal stray `>` character embedded in 5 citation cells
+  (`EV-DOCORIGIN-003`/`006`/`009`, `EV-HSAPI-010`). Root cause, confirmed
+  by reading the real source YAML directly: `source_ref: >` is YAML's
+  own folded-block-scalar syntax marker — whatever built this table
+  originally read the raw field text rather than parsing the YAML
+  properly, so the `>` (which is pure syntax, never part of the real
+  string value) ended up in the rendered cell.
+- **evidence:** stripped mechanically (`sed 's/source: > /source: /g'`),
+  verified zero remaining instances; the regenerated `decisions-and-rationale.md`
+  table (L-095, same pass) was built with real YAML parsing
+  (`yaml.safe_load`) specifically to avoid the same class of bug
+  recurring there.
+- **classification:** scoped-rule (never read a YAML field's raw text
+  when a real parser is available and cheap to use — this applies
+  narrowly to one-off generation scripts for this kind of mechanical
+  index, not a general codebase rule)
+- **status:** retained
+- **recurrence:** first occurrence
+- **curation note:** same reasoning as L-095 — no standing reusable
+  script to attach a regression test to for this specific table.
+
+---
+
+### L-093 — a self-dogfooding project's own adapter can conflate a package's distribution name and its import name, invisibly, until a dependency with genuinely different names for each is added
+
+- **origin:** Phase 81B Amendment 4, found while investigating a
+  cold-reader-flagged `vendor.toml`/`pyproject.toml` dependency-list
+  mismatch (pass 6 of 11)
+- **date:** 2026-10-09
+- **project_revision:** `3fa8258` (investigated; NOT fixed — see status)
+- **observation:** `src/codecompass/adapters/python.py::PythonAdapter`
+  uses one single `config.name` field for two different real lookups
+  that need two different strings for the `pyyaml` package specifically:
+  `importlib.metadata.version()` needs the PyPI distribution name
+  (`pyyaml`), while `importlib.util.find_spec()` needs the Python import
+  name (`yaml`). Every one of the four currently-tracked dependencies
+  (`anthropic`, `pipdeptree`, `rich`, `typer`) happens to have identical
+  distribution and import names, which is exactly why this split was
+  never exposed before — confirmed directly: adding a real `[[vendor]]
+  name = "pyyaml"` entry fails `find_spec`; `name = "yaml"` instead fails
+  `importlib.metadata.version`. Neither single string choice satisfies
+  both lookups.
+- **evidence:** real, reproduced failures (both directions) recorded in
+  `planning/documentation-handoff/OPEN-QUESTIONS.md`'s own "self-
+  dogfooding inconsistency" section. `vendor.toml` itself was reverted
+  to its original, unmodified state after the investigation — no
+  partial/inconsistent state was left behind.
+- **classification:** invariant (a real, confirmed limitation of the
+  current `VendorConfig`/`PythonAdapter` design)
+- **status:** retained
+- **recurrence:** first occurrence
+- **curation note:** genuinely out of this phase's own scope to fix —
+  resolving it needs a `VendorConfig` schema change (a second,
+  distinct name field) that would ripple through every adapter and the
+  `vendor.toml` file format, not a one-line fix. Retained as a real,
+  documented, not-yet-funded limitation rather than promoted into a
+  roadmap item unilaterally; revisit if a future dependency with
+  genuinely different distribution/import names is actually needed.
+
+---
+
+### L-092 — a documentation-fenced-example validator's subcommand-detection missed the square-bracket-optional-argument usage-synopsis convention
+
+- **origin:** Phase 81B Amendment 4's own documentation disposition,
+  found the moment the new `docs/reference/cli.md` (which genuinely
+  uses this convention) was checked against the real validator
+- **date:** 2026-10-09
+- **project_revision:** `7cb09c5` (the fix)
+- **observation:** `scripts/check_user_docs.py::check_fenced_codecompass_examples`
+  treated a token starting with `-` as "an option, not a subcommand" but
+  did not recognise a `[`-prefixed token (`codecompass [--yes] [--budget USD]`,
+  a standard usage-synopsis convention for an optional flag) the same
+  way — it was wrongly flagged as an attempt to invoke a subcommand
+  literally named `[--yes]`.
+- **evidence:** `scripts/check_user_docs.py` (current repository state)
+  now treats a token starting with either `-` or `[` as non-subcommand.
+  Regression-tested:
+  `tests/test_check_user_docs.py::TestFencedCodecompassExamples::test_accepts_bracketed_usage_synopsis`.
+- **classification:** invariant
+- **status:** promoted
+- **recurrence:** first occurrence
+- **promoted_to:** the fix + regression test above (already landed)
+
+---
+
 ### L-091 — a filesystem-isolation deny-list design that looked reasonable on paper failed a real sibling-path-traversal escape test, before any real content was exposed to it
 
 - **origin:** Phase 81B (Mode B isolation investigation),
