@@ -7,11 +7,14 @@ session-resumption, not a project history.
 
 ## Current phase
 
-**Phase 81B Amendment 4 is implemented and closed out; `planning/ROADMAP.md`'s
-own `done` flip is the one remaining step**, pending a passing re-audit
-(the first independent completion-audit pass, `planning/retros/_audit-phase-81b-amendment-4.md`,
-returned **FAIL** — this file itself being stale was the blocking
-finding; fixed in this same overwrite). Plan:
+**Phase 81B is `done`.** Amendment 4 (2026-10-09/10) removed the
+original credential-provisioning blocker and completed the
+authoritative clean-room redocumentation this phase was always meant to
+produce. A first independent completion-audit pass returned `FAIL`
+(this file's own staleness at the time, plus a missing ADR and an
+unfiled learning); all three were fixed, and a second, narrow re-audit
+pass confirmed `PASS`. `planning/ROADMAP.md`'s Phase 81B row is flipped
+to `done` in the same commit as this overwrite. Plan:
 `planning/phase-81b-clean-room-redocumentation.md` §26.
 
 Amendment 4 removed Phase 81B's original credential-provisioning
@@ -98,24 +101,27 @@ not repeated here (established at Phase 71, `planning/ROADMAP.md` §2).
 
 ## What was just completed
 
-Phase 81B Amendment 4's full implementation, across two sessions
-(2026-10-09/10): broker build + isolation investigation (including a
-real credential-leak-class defect found and fixed, the sandbox
-inheriting the broker's own launch directory) → 11 cold-reader passes
-to `SUFFICIENT` → the authoritative writer run, preserved → legacy-gap
-review and reconciliation → real documentation disposition against
-both repositories → the durable workflow document → a 12-class defect
-sweep → full test/lint validation → an independent per-phase drift
-audit (2 non-blocking observations: a self-disclosed `.claude/agents/`
-staleness list, and widespread stale doc-path references inside
-`src/codecompass/*.py` docstrings/error strings — both since fixed) →
-learning triage (lead-performed directly; the dispatched
+Phase 81B Amendment 4's full implementation through closeout, across
+two sessions (2026-10-09/10): broker build + isolation investigation
+(including a real credential-leak-class defect found and fixed, the
+sandbox inheriting the broker's own launch directory) → 11 cold-reader
+passes to `SUFFICIENT` → the authoritative writer run, preserved →
+legacy-gap review and reconciliation → real documentation disposition
+against both repositories → the durable workflow document → a
+12-class defect sweep → full test/lint validation → an independent
+per-phase drift audit (2 non-blocking observations: a self-disclosed
+`.claude/agents/` staleness list, and widespread stale doc-path
+references inside `src/codecompass/*.py` docstrings/error strings —
+both fixed) → learning triage (lead-performed directly; the dispatched
 `knowledge-curator` subagent failed with a session-level rate limit) →
 a phase retro update → a changelog rewrite → a first independent
-completion audit (**FAIL** — this file's own staleness, plus the two
-items named above) → the fixes in this same overwrite → a second,
-narrow re-audit pass is the next step before `planning/ROADMAP.md`'s
-own `done` flip.
+completion audit (**FAIL** — a stale `CONTEXT.md`, a missing ADR, an
+unfiled learning) → all three fixed → a second, narrow independent
+re-audit (**PASS**) → this terminal
+`planning/ROADMAP.md`/`planning/CONTEXT.md`/plan-file-Status-line
+reconciliation. Phase 81B's row in `planning/ROADMAP.md` is now `done`.
+All commits pushed to `origin/main` in both `codecompass` and
+`codecompass-template`.
 
 ## Known standing gaps (current-state facts, not phase history)
 
@@ -147,27 +153,15 @@ own `done` flip.
 
 ## Next concrete step
 
-**Dispatch a fresh, narrow independent completion-audit re-check**
-against the commit that lands this overwrite plus `decisions/0076` and
-`L-098`'s filing — the first pass (`planning/retros/_audit-phase-81b-amendment-4.md`)
-returned `FAIL` specifically for this file's own staleness, which is
-fixed in this same commit, and named two smaller, now-also-fixed gaps
-(the missing ADR; the unfiled `.claude/agents/` learning). Per
-`CLAUDE.md` §5, any commit touching audited scope voids a prior pass —
-a fresh one (it can be narrow, confirming only the three named fixes,
-matching the pattern already used once in this phase's own first
-implementation round) is required before `planning/ROADMAP.md`'s Phase
-81B row can flip to `done`.
-
-Once that re-audit passes (`PASS` or `PASS WITH NON-BLOCKING
-OBSERVATIONS`): flip `planning/ROADMAP.md`'s Phase 81B row to `done`,
-update this file's own "Current phase" section to reflect that, and
-update `planning/phase-81b-clean-room-redocumentation.md`'s own Status
-line — the narrow, three-target terminal reconciliation commit
-`CLAUDE.md` §5 names as exempt from re-auditing itself.
-
-Phases 75 through 81 (not 81B) remain closed (`done`) and pushed to
-`origin` — no further action needed on any of them per `CLAUDE.md` §6.
+**No roadmap phase is currently active.** Phases 75 through 81B are all
+closed (`done`) and pushed to `origin` — no further action needed on
+any of them per `CLAUDE.md` §6. The one real, known, deliberately-
+deferred gap Phase 81B's own closeout surfaced but did not fix —
+several `.claude/agents/*.md` files referencing the now-deleted
+`docs/domain/` and the moved `architecture/overview.md` as if current —
+is filed and findable at `planning/learnings/inbox.md` `L-098`, not a
+next concrete step to execute unilaterally (editing agent-workflow
+definitions is its own, separate decision).
 
 The next open items requiring a human/lead decision, unrelated to Phase
 81B and none currently claimed by a drafted plan or phase number:
