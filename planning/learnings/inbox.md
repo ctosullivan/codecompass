@@ -8,6 +8,57 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-098 — a real gap disclosed explicitly in a commit message still needs to be actually filed somewhere findable, or it is effectively dropped
+
+- **origin:** Phase 81B Amendment 4's documentation disposition
+  (commit `7cb09c5`), caught by the independent completion audit
+  (`planning/retros/_audit-phase-81b-amendment-4.md`) checking whether
+  a self-disclosed gap had actually been filed anywhere — it had not
+- **date:** 2026-10-10
+- **project_revision:** `027bd9a` (observed stale); this entry is the
+  fix for the filing gap, not for the underlying staleness itself
+- **observation:** commit `7cb09c5`'s own message explicitly named a
+  real, specific gap: several `.claude/agents/*.md` files
+  (`docs-reconstructor.md`, `docs-maintainer.md`, `context-researcher.md`,
+  `domain-skeptic.md`, `release-phase-auditor.md`) contain conditional
+  logic keyed on "once `docs/domain/` exists" and hardcoded bare
+  `architecture/overview.md` example paths — both now permanently
+  stale, since this phase's own disposition deleted `docs/domain/`
+  entirely and moved `architecture/overview.md` to
+  `docs/architecture/overview.md`. The commit message said this was
+  "flagged here explicitly for the closeout's own learning triage
+  rather than fixed now." The learning triage that followed (commit
+  `1a864df`, L-092 through L-097) never actually filed it — it was
+  named in prose, in a commit message, and then nowhere else. A
+  disclosure that exists only in a commit message is not discoverable
+  by someone who didn't read that specific commit.
+- **evidence:** confirmed directly (the independent audit's own
+  verification, re-confirmed here): `architecture/` and `docs/domain/`
+  are both fully gone from the real repository; the four named
+  `.claude/agents/*.md` files still reference one or both as if
+  current. Specific stale lines, located directly: `docs/domain/`
+  references at `context-researcher.md:114,129,157,191`,
+  `docs-reconstructor.md:48,49,55,65,143,147,154`,
+  `domain-skeptic.md:4,47,130`, `release-phase-auditor.md:58,68`; bare
+  `architecture/overview.md` references at `docs-reconstructor.md:135`,
+  `docs-maintainer.md:45,49,69,113`.
+- **classification:** workflow (a real-but-deferred finding needs a
+  standing, findable record — a commit message is not one, since it is
+  not revisited by anything except an audit that happens to read that
+  specific commit)
+- **status:** retained
+- **recurrence:** first occurrence
+- **curation note:** the underlying staleness itself is genuinely out
+  of this phase's own scope to fix (editing agent-workflow definitions
+  is "multi-agent workflow" territory the user's governing prompt named
+  explicitly as not to expand into). This entry exists so the gap is
+  now findable here, independent of which commit happened to first
+  notice it — the actual fix is a real, well-defined follow-up for
+  whoever next works on those agent definitions, not something to
+  promote into a roadmap item unilaterally.
+
+---
+
 ### L-097 — a clean-room export tool's file-inclusion list must resolve git-tracked files relative to the real git toplevel, not the superproject's own root
 
 - **origin:** Phase 81B Amendment 4 (model-broker inference boundary),
