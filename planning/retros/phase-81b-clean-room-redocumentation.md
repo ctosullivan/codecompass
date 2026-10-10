@@ -220,3 +220,123 @@ is exactly the kind of cost this project's own backlog item anticipated
 becomes available") and it was worth spending here specifically because
 the result (a real, substantive, reusable mechanism) is durable progress
 even though the overall phase remains blocked.
+
+---
+
+## Amendment 4 (2026-10-09/10) — the credential gap closed, the run completed
+
+### Goal
+
+Remove the one specific blocker the original implementation left: no AI
+writer could run inside the verified Mode B boundary without either
+weakening isolation (giving it broader session credentials) or lacking
+model access entirely. Give the sandbox an *inference capability*
+instead of a *credential*, and — contingent on that genuinely working —
+complete the full redocumentation this phase was always meant to
+produce, for both CodeCompass and `codecompass-template`.
+
+### Delivered vs. planned
+
+Everything the amendment's own plan (§26) committed to, delivered for
+real: a model-inference broker (`scripts/cleanroom_broker.py`) proven,
+by active test, to keep every credential outside the sandbox while
+giving it real inference; a broker-specific isolation investigation
+(including a context-contamination canary test) finding and fixing a
+real defect (the broker's own inference subprocess inheriting its
+launch directory) before reaching a clean verdict; 11 real cold-reader
+passes against the actual handoff, with 10 rounds of genuine
+reconciliation (not padding) — 6 of which were real bugs in the
+clean-room tooling itself, not missing content; a preserved first
+writer result; an independently-verified legacy-document gap review (6
+candidates, 5 real, reconciled via a second isolated writer context,
+never shown legacy prose); full documentation disposition execution
+against the real, live CodeCompass repository (77 files changed) and a
+lightweight pass against `codecompass-template` (9 files); the durable
+workflow document, written only once the run had actually succeeded;
+and a defect-class regression sweep confirming none of the twelve named
+failure categories recurred undetected.
+
+One piece of the plan's own closeout sequence did not go as planned:
+the dispatched `knowledge-curator` subagent for learning triage failed
+outright with a session-level rate limit. The lead performed that
+triage directly instead, rather than leaving it undone or silently
+skipping it.
+
+### What worked
+
+- The decision to test the broker against a disposable fixture *and*
+  the real handoff, with a real canary test each time, caught a real
+  defect (the launch-directory leak) before it could contaminate any
+  real documentation output.
+- Treating every cold-reader `GAPS FOUND` verdict as something to
+  investigate against real primary evidence — never patched reflexively
+  — caught multiple cases where the "obvious" fix would have been wrong
+  (the symbol-indexing-states finding on pass 6 was a false positive on
+  re-check; the `pyyaml`/`yaml` vendor.toml fix was reverted once the
+  real, deeper `PythonAdapter` limitation was found, rather than landing
+  a broken hand-edit).
+- Separating "give the writer a fresh context" from "give the writer
+  tool access" early — the broker's fixed, narrow
+  `{system_prompt, messages} -> {output}` protocol, with evidence
+  assembled up front rather than browsed interactively — avoided ever
+  needing to solve the much harder problem of proxying a full agentic
+  tool-use loop through the isolation boundary.
+- Reading real current repository content in depth before treating a
+  disposition plan's own prior classification as final — `CONTRIBUTING.md`
+  turned out to be primarily a CLAUDE.md-mirroring governance document,
+  not ordinary narrative documentation, and was correctly left
+  untouched instead of being overwritten with thinner content.
+
+### What didn't work
+
+- The suffix-based file-extension allow-list in the original prompt
+  assembler silently dropped real evidence for several cold-reader
+  rounds before being caught — a second, independently-maintained list
+  drifting out of sync with the real allow-list (L-096).
+- The first hand-edit attempt at fixing the `vendor.toml`/`pyyaml` gap
+  (adding an entry, then trying to regenerate its digest) surfaced a
+  real, deeper, pre-existing adapter limitation mid-attempt and had to
+  be reverted cleanly rather than landed half-finished.
+- The learning-triage subagent dispatch failed on a session-level rate
+  limit with no partial output — a real, external failure mode this
+  phase's own closeout sequence had to route around rather than retry
+  blindly.
+
+### Lessons learnt
+
+- A hard isolation gate (plan §26.5, extending §21) did its job a
+  second time: the broker-specific verdict kept "isolation mechanism
+  verified" and "authoritative writer run blocked" as separate
+  findings even as the blocker was being removed, so the amendment's
+  own eventual success is traceable to a real, demonstrated change
+  (the broker), not a redefinition of what counts as success.
+- An 11-round cold-reader cycle is not a sign the preparation work was
+  bad — it is the mechanism doing exactly what it is for. The real
+  value was concentrated in the rounds that found tooling bugs (which
+  would have silently affected any future redoc run) rather than the
+  rounds that found content gaps (which affect only this one run).
+- "Verify every agent/tool report against primary evidence before
+  acting on it" paid for itself concretely at least three times this
+  phase (the symbol-indexing false positive, the `pyyaml` adapter
+  limitation, and re-confirming the fork's legacy-gap findings against
+  real source before reconciling any of them).
+
+### Process-improvement feedback
+
+- When a dispatched subagent fails with a rate-limit error rather than
+  completing, the lead performing the same work directly — with a
+  clear note in the resulting commit that this happened and why — kept
+  the closeout sequence honest (no silently-skipped triage step) without
+  blocking on a retry that might hit the same limit again immediately.
+
+### Final status
+
+The credential-provisioning blocker that kept Phase 81B `blocked` is
+resolved; the authoritative redocumentation ran, succeeded, and was
+applied to both repositories; the closeout sequence this far (defect-
+class sweep, tests/lint, independent drift audit, learning triage, this
+retro) is complete. Per `CLAUDE.md` §5, `planning/ROADMAP.md` is marked
+`done` only after an independent `release-phase-auditor` pass confirms
+every one of these conditions against the exact commit about to be
+marked done — that pass is the next, final step, not yet run as of this
+retro.
