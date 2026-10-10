@@ -1,7 +1,7 @@
 """Deterministic FILETREE.md (+ filetree.json) rendering, plus a flat
 greppable symbol index, from a vendor's source directory.
 
-No AI calls, runs regardless of `depth`. See architecture/overview.md's
+No AI calls, runs regardless of `depth`. See docs/architecture/overview.md's
 "Tree generation" section and planning/phase-3-tree-generation.md.
 """
 

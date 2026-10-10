@@ -14,7 +14,7 @@ repository — `codecompass-adaptor-haskell` — never imported from here;
 this module only ever invokes its built executable as an opaque
 subprocess via `external_process.py`).
 
-See architecture/overview.md's "External adapters" section.
+See docs/architecture/overview.md's "External adapters" section.
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ from codecompass.symbols import Symbol
 # Where the built adapter executable is expected once
 # `codecompass-adaptor-haskell` (checked out at this path as a git
 # submodule) has been built with `stack build` — see
-# docs/external-adapters.md.
+# docs/reference/protocols.md.
 _ADAPTER_SUBMODULE_DIR = "adapters/haskell"
 
 
@@ -252,7 +252,7 @@ def _adapter_executable(project_root: Path) -> Path:
         raise AdapterError(
             f"{_ADAPTER_SUBMODULE_DIR} not found — has the "
             "codecompass-adaptor-haskell git submodule been checked out? "
-            "See docs/external-adapters.md."
+            "See docs/reference/protocols.md."
         )
     result = subprocess.run(
         [stack_exe, "path", "--local-install-root"],
@@ -266,14 +266,14 @@ def _adapter_executable(project_root: Path) -> Path:
             f"'stack path --local-install-root' failed in {submodule_dir} "
             f"(exit {result.returncode}): {result.stderr.strip()} — has "
             "'stack build' been run in adapters/haskell/? See "
-            "docs/external-adapters.md."
+            "docs/reference/protocols.md."
         )
     install_root = Path(result.stdout.strip())
     executable = install_root / "bin" / "codecompass-adaptor-haskell-exe"
     if not executable.is_file():
         raise AdapterError(
             f"{executable} not found — has 'stack build' been run in "
-            f"{submodule_dir}? See docs/external-adapters.md."
+            f"{submodule_dir}? See docs/reference/protocols.md."
         )
     return executable
 

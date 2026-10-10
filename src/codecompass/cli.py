@@ -4,7 +4,7 @@ Bare `codecompass` (no subcommand) runs the zero-question Phase A
 bootstrap (decisions/0017) and then, if usage-proven enrichment
 candidates exist, an auto-triggered but disclosed/confirmable Phase B
 (decisions/0031, decisions/0033). `init`, `sync`, `index`, `check`,
-`query`, and `chat` are all implemented — see docs/cli-reference.md.
+`query`, and `chat` are all implemented — see docs/reference/cli.md.
 `promote` was removed in Phase 15 (decisions/0033): its three former jobs
 (clone, enrich, generate Skill) are now automatic outcomes of
 bootstrap/`sync`.
@@ -933,7 +933,7 @@ def query_topology(
     Distinguishes three outcomes before rendering the normal four-state
     result: `context-graph.db` absent entirely, present but never synced
     under Phase-76-aware code, or genuinely indexed. See
-    architecture/context-graph-schema.md and docs/cli-reference.md for the
+    docs/architecture/data-and-control-flow.md and docs/reference/cli.md for the
     full status model.
     """
     project_root = Path.cwd()
@@ -1242,7 +1242,7 @@ def undo(
     exists yet: the precise graph-backed one (every `doc_artifacts` row
     tagged `codecompass_tool`/`codecompass_vendor`, never `third_party`),
     or a pattern-based fallback for a project that hasn't run a
-    whole-project sync yet. See docs/cli-reference.md.
+    whole-project sync yet. See docs/reference/cli.md.
     """
     project_root = Path.cwd()
     targets = _dedupe_contained(_codecompass_generated_paths(project_root))
@@ -1533,7 +1533,7 @@ def knowledge_render(
     times. Writes `planning/knowledge/<slug>/intermediate/*.md` from the
     slug's own canonical records, preserving presentation wording and any
     not-yet-processed candidate-region content already on disk. See
-    docs/codecompass-knowledge-workflow.md.
+    docs/workflows/knowledge-reconciliation-loop.md.
     """
     project_root = Path.cwd()
     slugs = [slug] if slug else knowledge_intermediate._list_slugs(project_root)

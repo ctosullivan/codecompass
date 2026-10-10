@@ -1,4 +1,4 @@
-"""Python (PyPI) ecosystem adapter. See architecture/overview.md's Adapter
+"""Python (PyPI) ecosystem adapter. See docs/architecture/overview.md's Adapter
 interface section and decisions/0002.
 """
 

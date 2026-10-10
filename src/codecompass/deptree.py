@@ -1,6 +1,6 @@
 """Deterministic DEPTREE.md (+ deptree.json) rendering from DepNode trees.
 
-No AI calls, runs regardless of `depth`. See architecture/overview.md's
+No AI calls, runs regardless of `depth`. See docs/architecture/overview.md's
 "Tree generation" section and planning/phase-3-tree-generation.md.
 """
 

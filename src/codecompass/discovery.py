@@ -3,7 +3,7 @@ entry points: `init --scan` (explicit manifests, `discover_all` +
 `write_vendor_toml`, unchanged since Phase 4) and bare `codecompass`'s
 zero-question auto-discovery (`discover_manifest_paths` + `discover_all`
 + `append_vendor_toml`, new in Phase 7 — decisions/0017). See
-docs/config-schema.md.
+docs/reference/configuration.md.
 """
 
 from __future__ import annotations

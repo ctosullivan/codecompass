@@ -220,7 +220,7 @@ def _render_filetree_with_symbol_index(
     tree_root: Path, config: VendorConfig, action_pointer: tuple[str, str] | None
 ) -> str:
     """The flat symbol index renders as a section within FILETREE.md
-    ("alongside the nested tree", architecture/overview.md) rather than a
+    ("alongside the nested tree", docs/architecture/overview.md) rather than a
     separate sidecar file — sync produces five deterministic output files
     per vendor (six for a vendor with an existing enrichment record, which
     additionally gets `OVERVIEW.md`). `tree_root` is the clone root when

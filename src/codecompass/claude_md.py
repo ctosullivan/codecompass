@@ -1,6 +1,6 @@
 """Per-vendor CLAUDE.md template rendering.
 
-See architecture/overview.md's "Per-vendor CLAUDE.md structure" section.
+See docs/architecture/overview.md's "Per-vendor CLAUDE.md structure" section.
 Description (section 4 in that spec) is populated whenever a vendor has an
 enrichment record — usage-driven, batched AI enrichment
 (`codecompass.enrichment`, decisions/0031), read from the context graph by

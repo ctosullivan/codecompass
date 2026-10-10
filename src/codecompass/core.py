@@ -1,6 +1,6 @@
 """Core, ecosystem-agnostic data models for codecompass.
 
-See architecture/core-data-model.md for the design rationale behind
+See docs/architecture/data-and-control-flow.md for the design rationale behind
 these types.
 """
 

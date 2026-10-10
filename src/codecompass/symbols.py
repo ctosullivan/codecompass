@@ -2,7 +2,7 @@
 
 Shared by the ecosystem adapters' API-surface extraction (Phase 2) and
 `filetree.py`'s per-file purpose annotations and flat symbol index
-(Phase 3). See architecture/overview.md's "Tree generation" section and
+(Phase 3). See docs/architecture/overview.md's "Tree generation" section and
 planning/phase-3-tree-generation.md's Design decisions.
 """
 

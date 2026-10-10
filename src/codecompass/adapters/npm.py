@@ -1,4 +1,4 @@
-"""npm ecosystem adapter. See architecture/overview.md's Adapter interface
+"""npm ecosystem adapter. See docs/architecture/overview.md's Adapter interface
 section and decisions/0002.
 """
 

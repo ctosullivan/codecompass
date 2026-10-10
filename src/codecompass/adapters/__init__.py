@@ -1,4 +1,4 @@
-"""Ecosystem adapter dispatch. See architecture/overview.md's "Adapter
+"""Ecosystem adapter dispatch. See docs/architecture/overview.md's "Adapter
 interface" section.
 """
 

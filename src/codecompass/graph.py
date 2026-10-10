@@ -4,7 +4,7 @@ A schema, a set of typed row dataclasses that form
 `rebuild_deterministic`'s insertion contract, a full-rebuild
 orchestrator, and read-only query functions, called from `sync.py`'s
 `rebuild_project_graph` on every whole-project `sync`. See
-architecture/context-graph-schema.md, planning/phase-10-sqlite-graph-foundation.md,
+docs/architecture/data-and-control-flow.md, planning/phase-10-sqlite-graph-foundation.md,
 [`decisions/0032`](../../decisions/0032-context-graph-stored-in-sqlite.md)
 (SQLite over the original `decisions/0024` JSON-file choice), and
 [`decisions/0025`](../../decisions/0025-context-graph-rebuilds-only-on-whole-project-sync.md)

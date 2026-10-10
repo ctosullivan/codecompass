@@ -4,7 +4,7 @@
 environment as of Phase 2. Built entirely against the `_run_json` seam so
 its parsing logic is unit-tested via hand-written fixture JSON modeled on
 cargo's public `cargo metadata --format-version 1` schema docs. See
-decisions/0014 and architecture/overview.md's Known footguns.
+decisions/0014 and docs/architecture/overview.md's Known footguns.
 """
 
 from __future__ import annotations

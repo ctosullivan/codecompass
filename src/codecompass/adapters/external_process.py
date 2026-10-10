@@ -10,7 +10,7 @@ configured to invoke, purely as an opaque subprocess, and is reusable by
 any future external-process adapter (a COBOL one, or a second Haskell
 variant) without modification.
 
-See architecture/overview.md's "External adapters" section.
+See docs/architecture/overview.md's "External adapters" section.
 """
 
 from __future__ import annotations

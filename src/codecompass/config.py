@@ -1,4 +1,4 @@
-"""Parsing for vendor.toml — see docs/config-schema.md for the file format."""
+"""Parsing for vendor.toml — see docs/reference/configuration.md for the file format."""
 
 from __future__ import annotations
 

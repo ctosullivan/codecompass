@@ -4,7 +4,7 @@ Deliberately reads already-synced per-vendor `CLAUDE.md` files rather than
 re-running `sync` — `index` must stay cheap and side-effect-free even
 after Phase 5 adds an AI-gated gap-analysis step to `sync`; if `index`
 triggered `sync` internally, running it would start silently paying that
-cost too. See architecture/overview.md's "Two consumption modes" section
+cost too. See docs/architecture/overview.md's "Two consumption modes" section
 and planning/phase-4-sync-index-init.md's Design decisions (this exact
 detail was left open there for implementation time to settle).
 """

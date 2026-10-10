@@ -1,6 +1,6 @@
 """EcosystemAdapter interface and the shared subprocess seam.
 
-See architecture/overview.md's "Adapter interface" section.
+See docs/architecture/overview.md's "Adapter interface" section.
 """
 
 from __future__ import annotations
