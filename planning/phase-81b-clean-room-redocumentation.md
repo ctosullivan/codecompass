@@ -1,6 +1,9 @@
 # Phase 81B — Clean-room project redocumentation from intermediary knowledge
 
-**Status: done** (Amendment 4, 2026-10-09/10 — see §26 and
+**Status: in progress — corrective Amendment 5** (2026-10-14, direct
+user request). Amendment 4's own redocumentation output is **not**
+being redone or invalidated by this amendment — see §27. *Prior status
+line, preserved:* **done** (Amendment 4, 2026-10-09/10 — see §26 and
 `planning/retros/phase-81b-clean-room-redocumentation.md`'s own
 "Amendment 4" section for the full account). The original
 implementation (§1-§24) reached `blocked` at this plan's own
@@ -2299,3 +2302,229 @@ the writer can now actually run. Implementation proceeds directly from
 this committed amendment, per the user's own instruction, without a
 further planning-approval round — matching the precedent already set by
 Amendment 2's own "implementation is approved by this instruction."
+
+## 27. Amendment 5 (corrective) — hardening the reusable clean-room
+    preparation/isolation machinery; no redocumentation performed
+
+Direct user request, 2026-10-14. Narrowly scoped: this amendment fixes
+real, confirmed defects in the *mechanism* Amendments 1-4 built — it
+does **not** rerun the cold-reader/writer/legacy-gap/disposition cycle
+against either repository, does not regenerate `README.md`/`docs/`, and
+does not touch `codecompass-template`'s documentation. Amendment 4's own
+reconstructed documentation (this repository and `codecompass-template`)
+remains the accepted, current documentation throughout.
+
+### 27.1 Defects found, and why they matter
+
+Investigated directly against the real, current `scripts/
+prepare_cleanroom_branch.py` and its test module before writing this
+section (not assumed from the original investigation prose):
+
+1. **Narrative leakage through the broad `tests/**` allow-list entry.**
+   `ALLOW_PATHS` names `"tests"` as a whole directory, and `_copy_allowed`
+   pulls in every `git`-tracked file beneath it with no per-file review.
+   Confirmed, by direct read, that this swept in genuine project-process
+   narrative: `tests/README.md` (describes this project's own test-suite
+   conventions) and, inside `tests/fixtures/ledgerkit_lifecycle_demo/`,
+   `DEMO.md` and `dev-docs/{architecture.md,planning/README.md,
+   retros/README.md}` — a fixture transcript and fixture docs that
+   explicitly narrate "the same practice codecompass's own project uses"
+   and reference "agent-led development" and the `codecompass` Skill by
+   name. This violates the plan's own standing invariant (§6.1.1, §26.2):
+   no pre-existing human-facing narrative documentation may reach the
+   writer. It matters because the whole point of the broker/sandbox
+   mechanism is a mechanically *provable* absence of narrative exposure,
+   and a silent per-directory sweep is exactly the kind of allow-list
+   discipline failure the plan has otherwise been careful to avoid
+   everywhere else (explicit per-file protocol-submodule/Haskell-adapter
+   entries, never a bare top-level directory name, for every *other*
+   source outside `src`/`tests`/`scripts`).
+2. **`documented_revision` was not mechanically enforced.**
+   `_copy_allowed` reads file content from `root` — the live, current
+   working-tree checkout — regardless of what string is passed as
+   `--documented-revision`. The manifest records the declared revision
+   as a trusted claim, never verified against what was actually copied.
+   A dirty working tree, or simply running `build` at the wrong time,
+   could silently produce a handoff whose manifest names one revision
+   while its bytes are drawn from another. This matters because
+   `documented_revision` is this mechanism's entire provenance claim —
+   every downstream consumer (cold-reader verdicts, the writer's own
+   trust in its evidence, this plan's own invalidation rule in §6.1)
+   assumes it is literally true.
+3. **`handoff_commit` is an inherently circular self-reference.** The
+   existing convention writes `handoff_commit: null` into the manifest,
+   commits the tree, then amends the manifest with the resulting SHA and
+   commits *again* purely to record it — confirmed by inspecting a real
+   branch (`cleanroom/redoc-b939d23`): its manifest's `handoff_commit`
+   names `5c96278...`, one commit behind the branch's real tip
+   `8325272...`. A commit cannot name its own SHA without changing that
+   SHA; the two-commit workaround papers over this rather than fixing
+   it, and leaves the manifest's self-description permanently one commit
+   stale relative to wherever the tree actually, finally lives.
+4. **Manifest validation was not self-contained.** `cmd_validate`'s
+   `intermediary_projection_hashes` check re-reads
+   `ROOT / planning/knowledge/<slug>/intermediate/*.md` — the live
+   parent repository — rather than validating the staged tree against
+   itself. A staged/exported clean-room tree copied anywhere else (a
+   fresh clone of the clean-room branch, a future project with no local
+   checkout of the parent repo at hand) cannot be independently
+   validated at all. Separately, the manifest records hashes only for
+   the intermediary-knowledge files, never for the source/test/config
+   payload itself — so validation could not actually detect a changed,
+   added, removed, or renamed payload file, only the four structural
+   conditions it already checked (confirmed by reading `cmd_validate` in
+   full: there is no per-payload-file content hash anywhere in the
+   manifest or the validator).
+5. **The Mode B isolation preflight exists only as investigation prose.**
+   `planning/phase-81b-mode-b-isolation-investigation.md` and
+   `planning/phase-81b-broker-isolation-investigation.md` record real,
+   valuable, actively-run escape attempts, but as a narrative report, not
+   executable tooling — a future maintainer re-establishing Mode B
+   isolation (for this project or, per the workflow doc's own "reusing
+   this for another project" section, a different one) would need to
+   reconstruct shell commands from prose rather than running a
+   repeatable gate.
+6. **A docstring claims untested coverage.**
+   `tests/test_prepare_cleanroom_branch.py`'s own module docstring
+   states "a hash mismatch must each independently fail," but no test in
+   that module actually mutates a hash and confirms the validator
+   catches it — confirmed by reading every test function in the file.
+
+### 27.2 Deliberately narrowed scope
+
+This amendment changes `scripts/prepare_cleanroom_branch.py`, adds
+`scripts/verify_cleanroom_isolation.py`, their test modules, this plan
+file, the retro, the changelog, learnings, and
+`docs/development/clean-room-redocumentation.md` (process description
+only). It explicitly does **not**:
+
+- run a cold-reader, writer, or legacy-gap-review pass against either
+  repository;
+- regenerate, replace, or compare against `README.md`/`docs/`/
+  `ai-docs/` on `codecompass`, or any file on `codecompass-template`;
+- rewrite history on any existing `cleanroom/redoc-*`/`cleanroom/
+  result-*` branch (the two-commit `handoff_commit` convention on those
+  branches is left exactly as committed — documented as superseded for
+  *future* exports, not corrected retroactively);
+- invoke the real model-inference broker against production credentials
+  for any purpose beyond what §27.5 below names as strictly necessary
+  for the isolation preflight's own IPC-boundary check (a fake, local,
+  content-neutral stand-in broker, never a real inference call).
+
+### 27.3 Corrected completion criteria (replaces this plan's prior
+     completion criteria for the purpose of returning Phase 81B to
+     `done`)
+
+Phase 81B returns to `done` only once all of the following hold, checked
+against the exact commit about to be marked done (CLAUDE.md §5):
+
+1. `scripts/prepare_cleanroom_branch.py` exports the exact declared
+   `documented_revision` from the Git object database (and, for
+   submodule paths, the exact pinned gitlink revision), never the live
+   working tree — proven by tests that a dirty working tree and a later
+   commit cannot leak into an export, and that an unresolvable/
+   unavailable revision fails closed.
+2. Narrative-shaped files beneath a broad allow-listed directory
+   (`src`, `tests`, `scripts`) are excluded at file level via an
+   explicit keep/exclude classification; a new, unclassified
+   narrative-shaped file fails the build closed rather than silently
+   riding along either way; the six confirmed real leaks from §27.1
+   item 1 are excluded; genuine structural/machine fixtures remain
+   available.
+3. The manifest cryptographically binds every writer-visible payload
+   file (content hash per file plus one canonical top-level digest,
+   excluding only the manifest's own file from that digest's own
+   input); `cmd_validate` detects a changed, added, removed, or renamed
+   payload file, and manifest-internal tampering, using only the staged
+   tree itself — no access to the parent repository.
+4. Handoff identity is non-circular: the manifest no longer tries to
+   name its own commit SHA; `documented_revision` +
+   `payload_tree_sha256` + `manifest_schema_version` are the manifest's
+   own identity claims (all computable before any commit exists), and
+   the actual branch/commit holding a given payload is recorded
+   externally (this plan file's own log, not inside the committed tree).
+5. `scripts/verify_cleanroom_isolation.py` exists as a repeatable,
+   executable preflight covering every mechanically-testable condition
+   in the user's own governing-prompt list (§27.5 below), honestly
+   reporting (not silently passing) any condition it cannot mechanically
+   test.
+6. Full test suite, lint, `check_knowledge_base.py --strict`,
+   `check_user_docs.py --strict` all pass; the new/changed tests above
+   are real and were watched to fail before the corresponding fix.
+7. The historical claim is corrected per §27.4 — qualified, not
+   overstated and not understated.
+8. A fresh independent audit (§27.6) attempts to falsify each of the
+   eight claims the user's own governing prompt names, inspecting real
+   code/tests and executing checks, not trusting commit messages.
+9. Amendment 4's redocumentation output on both repositories is
+   confirmed, by the audit, to be byte-for-byte unchanged by this
+   amendment's own commits.
+
+### 27.4 Corrected historical claim
+
+Amendment 4's retro/CONTEXT previously described the authoritative
+writer run as isolated from "zero pre-existing narrative prose of any
+kind." That overstates what was actually proven. The corrected framing
+(applied to the retro in this amendment, per §27.7 below):
+
+> The writer was mechanically isolated from the source repository, Git
+> history, normal legacy documentation surfaces, credentials, and
+> parent-agent context through the Phase 81B sandbox/broker mechanism.
+> A later corrective review (Amendment 5) found that six narrative
+> Markdown files nested beneath the broadly allow-listed `tests/**` tree
+> were nevertheless writer-visible during the Amendment 4 run. The
+> Phase 81B documentation output is retained as the accepted current
+> documentation, but the original run is not claimed to prove perfect
+> zero-prior-narrative exposure. This amendment closes that mechanism
+> defect for future runs without rerunning the redocumentation.
+
+Not overstated in the other direction either: the six leaked files are
+fixture-scale (a test-suite README and a demonstration-fixture's own
+docs), never the real `README.md`/`docs/`/`architecture/`/`ai-docs/`
+tree, which the allow-list has excluded by name since Amendment 2 and
+which this review re-confirms were never allow-listed at any point.
+
+### 27.5 Isolation preflight — what the governing prompt asked for,
+     mapped to what is mechanically testable
+
+| Condition | Mechanically tested? |
+|---|---|
+| `/evidence` readable | Yes |
+| `/output` writable | Yes |
+| Parent host paths unavailable | Yes (the real host checkout path) |
+| Sibling repositories unavailable | Yes (enumerates real sibling checkouts) |
+| Original `.git`/history unavailable | Yes |
+| Unexpected environment secrets absent | Yes (canary env var + credential-shaped-name scan) |
+| Git remotes unavailable | Yes (implied by no `.git`; also directly attempted) |
+| Unapproved network unavailable | Yes (`curl` to a real external host) |
+| GitHub directly unavailable | Yes (`curl` to `github.com` specifically) |
+| Broker/model capability reachable only via its intended IPC boundary | Yes, against a fake, local, content-neutral stand-in broker (no real inference call) |
+| Parent-agent context not supplied through the workspace | Yes (`.claude` absence + a second canary never passed into the sandbox environment) |
+
+Every row above is mechanically tested by `scripts/
+verify_cleanroom_isolation.py` — none required falling back to "report
+separately" in practice, since all eleven conditions the governing
+prompt named turned out to be directly, actively testable the same way
+the original investigation tested them by hand.
+
+### 27.6 Independent corrective audit
+
+Per §12 of the user's own governing prompt — run as a fresh
+`release-phase-auditor` dispatch after implementation, attempting to
+falsify each of the eight numbered claims, inspecting real code/tests
+and executing checks. Result recorded in
+`planning/retros/_audit-phase-81b-amendment-5.md`.
+
+### 27.7 Retro/learning/changelog hygiene
+
+`planning/retros/phase-81b-clean-room-redocumentation.md` gets a new
+"Amendment 5 (corrective)" section distinguishing what Amendment 4
+proved, what this review discovered, what was corrected, and what was
+deliberately not rerun. Candidate learnings triaged per
+`planning/learnings/`. `CHANGELOG.md` gets a new entry under
+`[Unreleased]` (the existing Phase 81B entry is not rewritten — it
+accurately described Amendment 4's real outcome at the time and stays).
+A new ADR (`decisions/0077`) is warranted: the handoff-identity model
+(content-addressed payload digest, no self-referential commit field) is
+a materially different architectural decision from `decisions/0076`'s
+own scope (the broker-vs-credential decision), not a restatement of it.
