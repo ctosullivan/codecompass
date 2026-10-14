@@ -14,6 +14,18 @@ provisioning gap that originally blocked it (Phase 81B, before Amendment
 and `planning/phase-81b-broker-isolation-investigation.md` — not
 repeated here.
 
+**Amendment 5 (corrective, 2026-10-14)** hardened the reusable
+preparation/isolation machinery itself after a review found real defects
+in it — narrative leakage through a broadly allow-listed directory,
+`documented_revision` not actually enforced against the Git object
+database, a self-referential manifest field, and manifest validation
+that depended on the live parent repository. None of this reopened or
+redid the documentation reconstruction itself (`README.md`/`docs/` on
+this repository and on `codecompass-template` are unchanged, still the
+Amendment 4 output) — see
+`planning/phase-81b-clean-room-redocumentation.md` §27 for the full
+account. The description below reflects the corrected mechanism.
+
 ## Why this exists
 
 An AI writer asked to "document this project" while sitting inside the
@@ -64,10 +76,15 @@ prepare & validate canonical knowledge (if the project has one)
          ↓
 freeze a documented_revision (an ordinary commit on main)
          ↓
-build + validate a manifest-checked clean-room branch (handoff_commit)
+export the allow-listed tree AT THAT EXACT REVISION from the Git
+object database (never the working tree) + build a self-contained,
+content-addressed manifest (payload_tree_sha256)
          ↓
-verify Mode B isolation — mechanically, by active escape attempt,
-not by inspection — INCLUDING a context-contamination canary test
+run scripts/verify_cleanroom_isolation.py — a repeatable, executable
+preflight gate, not a one-off investigation — then verify Mode B
+isolation for the real run itself the same way: mechanically, by
+active escape attempt, not by inspection — INCLUDING a context-
+contamination canary test
          ↓
 run a cold-reader inside verified Mode B: is the evidence sufficient?
          ↓
@@ -132,17 +149,79 @@ conflating them produces a false "verified" claim. The broker
 giving the sandbox a narrow *inference capability* instead of a
 *credential*.
 
+`scripts/verify_cleanroom_isolation.py` (Amendment 5) turns the checks
+above into a repeatable, executable preflight instead of a one-off
+investigation to re-read and manually re-type: it builds a real,
+disposable instance of the same namespace/`pivot_root` sandbox, bind-
+mounts scratch evidence/output and a fake, local, content-neutral
+stand-in broker (never real inference), and actively tests all eleven
+of filesystem/sibling-repository/`.git`-history/environment-secret/
+network/GitHub/broker-IPC-boundary/parent-agent-context conditions,
+honestly reporting (never silently passing) any it cannot mechanically
+evaluate. Run it directly before trusting Mode B for a real run:
+
+```
+python3 scripts/verify_cleanroom_isolation.py
+```
+
+## File-level narrative isolation
+
+An allow-listed *directory* (`src`, `tests`, `scripts`) is swept in by
+`git ls-tree`, not reviewed file by file the way an individually-named
+path is. A doc-shaped file (`.md`/`.rst`/`.txt`) found beneath one of
+these three must appear in `prepare_cleanroom_branch.py`'s own
+`_CLASSIFIED_KEEP_DOC_PATHS` (genuine structural/machine-fixture
+evidence) or `_CLASSIFIED_EXCLUDE_DOC_PATHS` (narrative/historical/
+project-process prose) — an unclassified one fails the build closed
+rather than silently riding along either way. A real corrective review
+(Amendment 5) found six genuine narrative leaks this way: a test-suite
+README and five fixture docs nested under `tests/fixtures/
+ledgerkit_lifecycle_demo/`, none of them the real `README.md`/`docs/`/
+`architecture/`/`ai-docs/` tree, which the allow-list has excluded by
+name since Amendment 2.
+
+## Exact-revision export and handoff identity
+
+`prepare_cleanroom_branch.py build` exports every allow-listed path from
+the Git object database at the exact `--documented-revision` given — via
+`git ls-tree`/`git cat-file`, never by reading the live working tree —
+and, for a path nested inside a Git submodule, resolves the exact gitlink
+commit the superproject recorded at that same revision, never the
+submodule's currently-checked-out `HEAD`. Either resolution failing
+(an unresolvable revision, or a gitlink commit missing from the
+submodule's own object database) fails the build closed.
+
+The manifest (`CLEANROOM-MANIFEST.yaml`) binds every writer-visible
+payload file by content hash, plus one canonical `payload_tree_sha256`
+top-level digest — the manifest file itself is the sole, explicit,
+non-circular exception to that digest's own input (a file cannot name
+its own identity without changing it). `prepare_cleanroom_branch.py
+validate` checks a staged tree purely against its own manifest, with
+**no access to the parent repository required** — it can validate a
+clean-room branch's checkout on its own, anywhere.
+
+The manifest no longer tries to record its own commit SHA (the earlier
+`handoff_commit` field required a second, after-the-fact commit purely
+to update it, and was always one commit stale relative to wherever the
+tree actually, finally lived — this convention is superseded, not
+retroactively rewritten on branches that already used it). The actual
+branch/commit holding a given payload is recorded externally, in this
+project's own plan file and retro, where self-reference isn't circular.
+
 ## The broker, briefly
 
 `scripts/prepare_cleanroom_branch.py` builds and validates the
-clean-room branch; `scripts/cleanroom_broker.py` is the inference
-broker; `scripts/cleanroom_broker_client.py` and
+clean-room branch; `scripts/verify_cleanroom_isolation.py` is the
+repeatable isolation preflight; `scripts/cleanroom_broker.py` is the
+inference broker; `scripts/cleanroom_broker_client.py` and
 `scripts/cleanroom_prompt_assembler.py` are what the sandbox itself
 uses to reach the broker and assemble a request from its own mounted
 evidence. See their own module docstrings and
 `tests/test_cleanroom_broker.py` / `tests/test_cleanroom_prompt_assembler.py`
-for the full, tested contract. These are maintainer-only tooling, not
-part of the installed `codecompass` package.
+/ `tests/test_prepare_cleanroom_branch.py` /
+`tests/test_verify_cleanroom_isolation.py` for the full, tested
+contract. These are maintainer-only tooling, not part of the installed
+`codecompass` package.
 
 ## Known, accepted limits
 
@@ -168,12 +247,16 @@ part of the installed `codecompass` package.
 
 1. Define an explicit allow-list (structural source/tests/config —
    never pre-existing narrative documentation) and an exclusion list,
-   with a fail-closed validator proving the two stay consistent and
-   that every allow-listed file is genuinely git-tracked, not an
-   artifact of a raw filesystem walk.
+   with a fail-closed validator proving the two stay consistent, that
+   every allow-listed file is genuinely git-tracked at the exact
+   declared revision (never the working tree, never a raw filesystem
+   walk), and that any doc-shaped file swept in by a broad directory is
+   explicitly classified rather than assumed safe.
 2. Build and verify the Mode B sandbox for that project specifically —
-   don't assume a prior verification transfers; the active-escape
-   tests are cheap and the alternative is a false sense of security.
+   don't assume a prior verification transfers; run `scripts/
+   verify_cleanroom_isolation.py` as a cheap, repeatable first gate, and
+   the project-specific active-escape tests beyond it; the alternative
+   is a false sense of security.
 3. Run the cold-reader gate and iterate on real, checked gaps — expect
    more than one round on a project with any real complexity.
 4. Preserve the writer's first output before touching legacy docs.

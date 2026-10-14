@@ -45,6 +45,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`planning/phase-81b-template-redocumentation.md`); and the proven
   workflow is now documented at
   `docs/development/clean-room-redocumentation.md`.
+- **Phase 81B, Amendment 5 (corrective)**: hardens the reusable
+  clean-room preparation/isolation machinery itself — explicitly without
+  rerunning the cold-reader/writer/legacy-gap/disposition cycle or
+  touching either repository's current, accepted documentation.
+  `scripts/prepare_cleanroom_branch.py` now exports the allow-listed
+  tree from the Git object database at the exact declared
+  `--documented-revision` (including pinned-gitlink submodule export),
+  never the live working tree; applies a fail-closed file-level
+  narrative-vs-structural classification to doc-shaped files swept in by
+  the three broad allow-listed directories (`src`/`tests`/`scripts`) —
+  found and fixed a real leak: a test-suite README and five
+  `ledgerkit_lifecycle_demo` fixture docs were genuinely writer-visible
+  during the Amendment 4 run; and replaces the old, circular
+  `handoff_commit` manifest field with a self-contained,
+  content-addressed `payload_tree_sha256`/`payload_file_hashes` scheme
+  (`decisions/0077`) so a staged clean-room tree can be validated with no
+  access to the parent repository at all. New `scripts/
+  verify_cleanroom_isolation.py`: a repeatable, real-sandbox-building
+  preflight covering all eleven isolation conditions this amendment's
+  own governing instruction named, replacing one-off investigation
+  prose. The historical claim about Amendment 4's own run is corrected
+  accordingly — no longer "zero pre-existing narrative prose of any
+  kind," now naming the six real fixture-scale files found, while
+  confirming the real `README.md`/`docs/`/`architecture/`/`ai-docs/`
+  tree was never allow-listed at any point. Plan: §27.
 - **Phase 81** (persistent bidirectional intermediate knowledge layer):
   new `codecompass knowledge render|select-candidates|apply|status`
   commands (`src/codecompass/knowledge_intermediate.py`) project a

@@ -340,3 +340,117 @@ retro) is complete. Per `CLAUDE.md` §5, `planning/ROADMAP.md` is marked
 every one of these conditions against the exact commit about to be
 marked done — that pass is the next, final step, not yet run as of this
 retro.
+
+## Amendment 5 (corrective, 2026-10-14) — hardening the mechanism,
+   without rerunning the redocumentation
+
+### What Amendment 4 actually proved
+
+A real, end-to-end clean-room redocumentation run: the broker/sandbox
+mechanism worked, a real authoritative writer produced real
+documentation from real evidence, and it was applied to both
+repositories. Amendment 4's own claim of isolation was real for every
+route it actively tested — filesystem, `.git` history, network,
+credentials on disk/in environment, MCP, parent-agent context via the
+canary test. None of that is retracted here.
+
+### What this corrective review discovered
+
+Six real, confirmed defects in the *mechanism* itself, found by direct
+code/branch inspection rather than assumed from the original
+investigation's prose:
+
+1. **Narrative leakage through the broad `tests/**` allow-list entry** —
+   `tests/README.md` and four `ledgerkit_lifecycle_demo` fixture docs
+   (a demonstration transcript and its own narrative `dev-docs/`) were
+   genuinely writer-visible during the Amendment 4 run. This is the one
+   finding that changes what can honestly be claimed about *that
+   specific run* — see the corrected historical framing below.
+2. **`documented_revision` was a trusted claim, not an enforced one** —
+   the build copied from the live working tree regardless of the
+   declared revision string.
+3. **`handoff_commit` was circular** — a commit cannot name its own SHA;
+   the real two-commit workaround left the manifest permanently one
+   commit stale.
+4. **Manifest validation depended on the parent repository** and never
+   hashed the actual source/test/config payload at all.
+5. **The Mode B isolation preflight existed only as investigation
+   prose**, not executable, repeatable tooling.
+6. **A test-module docstring claimed hash-mismatch coverage that didn't
+   exist.**
+
+None of these six defects were about the *documentation content*
+produced — they are entirely about the mechanism's own provenance,
+isolation, and validation guarantees.
+
+### What was corrected
+
+- `scripts/prepare_cleanroom_branch.py`: exact-revision export from the
+  Git object database (including pinned-gitlink submodule export), a
+  fail-closed file-level narrative classification gate for the three
+  broad allow-listed directories, a self-contained content-addressed
+  manifest (`payload_tree_sha256`/`payload_file_hashes`), and retirement
+  of the self-referential `handoff_commit` field (`decisions/0077`).
+- `scripts/verify_cleanroom_isolation.py` (new): a repeatable, real
+  sandbox-building preflight covering all eleven conditions the
+  governing prompt named, including an adversarially-confirmed
+  regression test for the exact credential-leak class the original
+  investigation found by hand (removing the sandbox launch's own
+  `env -i` boundary was confirmed, by direct manual test this session,
+  to make the preflight genuinely fail — not a tautological check).
+- 30 tests in `tests/test_prepare_cleanroom_branch.py` (up from 11) and
+  9 new tests in `tests/test_verify_cleanroom_isolation.py`.
+- The historical claim corrected (§27.4 of the plan): Amendment 4's
+  writer run is no longer described as proving "zero pre-existing
+  narrative prose of any kind" — it is now described accurately, naming
+  the six fixture-scale files found, while still confirming the real
+  `README.md`/`docs/`/`architecture/`/`ai-docs/` tree was never
+  allow-listed at any point.
+- `docs/development/clean-room-redocumentation.md` updated to describe
+  the corrected mechanism (process description only).
+- `decisions/0077` records the manifest-identity architectural decision.
+
+### What was deliberately NOT rerun
+
+No cold-reader, writer, or legacy-gap-review pass against either
+repository. No regeneration or comparison of `README.md`/`docs/`/
+`ai-docs/` on `codecompass`, and no change at all to
+`codecompass-template`. Amendment 4's documentation output is the
+accepted current documentation throughout — this amendment fixed the
+machine that produced it, not the product.
+
+### Lessons learnt
+
+- A broad, directory-named allow-list entry (`"tests"`, not an
+  individually-reviewed path) is a structural blind spot even inside an
+  otherwise carefully-reviewed allow-list discipline — every *other*
+  entry outside `src`/`tests`/`scripts` was already named file-by-file or
+  narrowly scoped, and the inconsistency is exactly where the real leak
+  was found. A fail-closed classification gate, not a one-time manual
+  review, is what actually closes this for future additions.
+- "The mechanism is VERIFIED" and "the mechanism's own source code has
+  no bugs" are different claims — Amendment 4's real, active escape
+  tests proved the former; this amendment's direct code reading (not
+  re-running old tests, which would have kept passing against their own,
+  too-narrow assertions) found gaps in the latter.
+- Converting investigation prose into executable tooling
+  (`verify_cleanroom_isolation.py`) is worth doing even after the
+  investigation it's based on already succeeded once — a report can't
+  regress-test itself the next time the mechanism changes; a script can.
+
+### Process-improvement feedback
+
+- Confirming a security/isolation fix with an adversarial demonstration
+  (deliberately weakening the mechanism and watching the test suite
+  catch it) is worth the extra step even under time pressure — it is the
+  difference between "this test exists" and "this test actually tests
+  something."
+
+### Final status (Amendment 5)
+
+All six defects corrected and regression-tested; full suite and lint
+pass; `check_knowledge_base.py --strict`/`check_user_docs.py --strict`
+show no new findings. Per `CLAUDE.md` §5, `planning/ROADMAP.md` returns
+to `done` only after a fresh independent `release-phase-auditor` pass
+confirms every corrected-completion-criterion in plan §27.3 against the
+exact commit about to be marked done.

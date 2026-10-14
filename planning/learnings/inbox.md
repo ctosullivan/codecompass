@@ -8,6 +8,59 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-100 — a broad, directory-named allow-list entry is a structural blind spot even inside a carefully-reviewed allow-list
+
+- **origin:** Phase 81B Amendment 5 (corrective), direct user request
+- **date:** 2026-10-14
+- **project_revision:** confirmed against `a6c42da` and earlier
+  (`b939d23` and other `cleanroom/redoc-*` branches)
+- **observation:** `scripts/prepare_cleanroom_branch.py`'s `ALLOW_PATHS`
+  named every path outside `src`/`tests`/`scripts` individually (a
+  specific file, or a narrowly-scoped submodule subdirectory) — reviewed
+  one at a time. The three broad entries (`"src"`, `"tests"`,
+  `"scripts"`) were instead swept in wholesale via `git ls-tree`, with no
+  per-file review at all. This is exactly where a real narrative leak
+  was found: `tests/README.md` and five `ledgerkit_lifecycle_demo`
+  fixture docs reached the writer across at least the entire Amendment
+  4 run.
+- **evidence:** direct read of every file beneath `tests/` matching
+  `.md`/`.rst`/`.txt`; confirmed real project-process prose in
+  `tests/README.md` and in `tests/fixtures/ledgerkit_lifecycle_demo/
+  {DEMO.md,dev-docs/architecture.md,dev-docs/planning/README.md,
+  dev-docs/retros/README.md}`. Fixed via a fail-closed keep/exclude
+  classification (`_CLASSIFIED_KEEP_DOC_PATHS`/
+  `_CLASSIFIED_EXCLUDE_DOC_PATHS`) that raises
+  `UnclassifiedNarrativeShapedFileError` for any future unreviewed
+  doc-shaped file in one of these three directories, regression-tested
+  in `tests/test_prepare_cleanroom_branch.py`.
+- **classification:** invariant (the fix + regression tests already
+  landed with this amendment; curator triage below confirms promotion)
+- **status:** candidate
+- **recurrence:** first occurrence
+
+---
+
+### L-099 — a manifest field cannot name its own eventual commit SHA; treating the resulting staleness as acceptable lets it compound silently
+
+- **origin:** Phase 81B Amendment 5 (corrective), direct user request
+- **date:** 2026-10-14
+- **project_revision:** confirmed against `cleanroom/redoc-b939d23`
+- **observation:** `CLEANROOM-MANIFEST.yaml`'s `handoff_commit` field
+  tried to record the SHA of the commit that would contain the manifest
+  itself. Since a commit's tree hash depends on every file inside it,
+  this is circular — the real workaround (commit, read back the SHA,
+  hand-edit the manifest, commit again) left the field permanently one
+  commit stale relative to the branch's real tip.
+- **evidence:** `cleanroom/redoc-b939d23`'s own manifest records
+  `handoff_commit: 5c96278...`; the branch's real HEAD is `8325272...`,
+  one commit later (the commit that exists solely to make that edit).
+- **classification:** invariant (architectural — see `decisions/0077`;
+  curator triage below confirms promotion)
+- **status:** candidate
+- **recurrence:** first occurrence
+
+---
+
 ### L-098 — a real gap disclosed explicitly in a commit message still needs to be actually filed somewhere findable, or it is effectively dropped
 
 - **origin:** Phase 81B Amendment 4's documentation disposition
