@@ -20,7 +20,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   one at a time. The three broad entries (`"src"`, `"tests"`,
   `"scripts"`) were instead swept in wholesale via `git ls-tree`, with no
   per-file review at all. This is exactly where a real narrative leak
-  was found: `tests/README.md` and five `ledgerkit_lifecycle_demo`
+  was found: `tests/README.md` and four `ledgerkit_lifecycle_demo`
   fixture docs reached the writer across at least the entire Amendment
   4 run.
 - **evidence:** direct read of every file beneath `tests/` matching

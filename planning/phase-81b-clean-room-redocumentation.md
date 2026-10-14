@@ -2428,7 +2428,7 @@ against the exact commit about to be marked done (CLAUDE.md §5):
    (`src`, `tests`, `scripts`) are excluded at file level via an
    explicit keep/exclude classification; a new, unclassified
    narrative-shaped file fails the build closed rather than silently
-   riding along either way; the six confirmed real leaks from §27.1
+   riding along either way; the five confirmed real leaks from §27.1
    item 1 are excluded; genuine structural/machine fixtures remain
    available.
 3. The manifest cryptographically binds every writer-visible payload
@@ -2470,7 +2470,7 @@ kind." That overstates what was actually proven. The corrected framing
 > The writer was mechanically isolated from the source repository, Git
 > history, normal legacy documentation surfaces, credentials, and
 > parent-agent context through the Phase 81B sandbox/broker mechanism.
-> A later corrective review (Amendment 5) found that six narrative
+> A later corrective review (Amendment 5) found that five narrative
 > Markdown files nested beneath the broadly allow-listed `tests/**` tree
 > were nevertheless writer-visible during the Amendment 4 run. The
 > Phase 81B documentation output is retained as the accepted current
@@ -2478,7 +2478,7 @@ kind." That overstates what was actually proven. The corrected framing
 > zero-prior-narrative exposure. This amendment closes that mechanism
 > defect for future runs without rerunning the redocumentation.
 
-Not overstated in the other direction either: the six leaked files are
+Not overstated in the other direction either: the five leaked files are
 fixture-scale (a test-suite README and a demonstration-fixture's own
 docs), never the real `README.md`/`docs/`/`architecture/`/`ai-docs/`
 tree, which the allow-list has excluded by name since Amendment 2 and

@@ -403,7 +403,7 @@ isolation, and validation guarantees.
 - The historical claim corrected (§27.4 of the plan): Amendment 4's
   writer run is no longer described as proving "zero pre-existing
   narrative prose of any kind" — it is now described accurately, naming
-  the six fixture-scale files found, while still confirming the real
+  the five fixture-scale files found, while still confirming the real
   `README.md`/`docs/`/`architecture/`/`ai-docs/` tree was never
   allow-listed at any point.
 - `docs/development/clean-room-redocumentation.md` updated to describe

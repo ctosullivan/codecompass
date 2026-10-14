@@ -55,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   never the live working tree; applies a fail-closed file-level
   narrative-vs-structural classification to doc-shaped files swept in by
   the three broad allow-listed directories (`src`/`tests`/`scripts`) —
-  found and fixed a real leak: a test-suite README and five
+  found and fixed a real leak: a test-suite README and four
   `ledgerkit_lifecycle_demo` fixture docs were genuinely writer-visible
   during the Amendment 4 run; and replaces the old, circular
   `handoff_commit` manifest field with a self-contained,
@@ -67,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   own governing instruction named, replacing one-off investigation
   prose. The historical claim about Amendment 4's own run is corrected
   accordingly — no longer "zero pre-existing narrative prose of any
-  kind," now naming the six real fixture-scale files found, while
+  kind," now naming the five real fixture-scale files found, while
   confirming the real `README.md`/`docs/`/`architecture/`/`ai-docs/`
   tree was never allow-listed at any point. Plan: §27.
 - **Phase 81** (persistent bidirectional intermediate knowledge layer):

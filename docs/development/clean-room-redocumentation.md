@@ -174,8 +174,8 @@ these three must appear in `prepare_cleanroom_branch.py`'s own
 evidence) or `_CLASSIFIED_EXCLUDE_DOC_PATHS` (narrative/historical/
 project-process prose) — an unclassified one fails the build closed
 rather than silently riding along either way. A real corrective review
-(Amendment 5) found six genuine narrative leaks this way: a test-suite
-README and five fixture docs nested under `tests/fixtures/
+(Amendment 5) found five genuine narrative leaks this way: a test-suite
+README and four fixture docs nested under `tests/fixtures/
 ledgerkit_lifecycle_demo/`, none of them the real `README.md`/`docs/`/
 `architecture/`/`ai-docs/` tree, which the allow-list has excluded by
 name since Amendment 2.
