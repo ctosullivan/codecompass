@@ -1,9 +1,14 @@
 # Phase 81B — Clean-room project redocumentation from intermediary knowledge
 
-**Status: in progress — corrective Amendment 5** (2026-10-14, direct
-user request). Amendment 4's own redocumentation output is **not**
-being redone or invalidated by this amendment — see §27. *Prior status
-line, preserved:* **done** (Amendment 4, 2026-10-09/10 — see §26 and
+**Status: done** (Amendment 5, corrective, 2026-10-14 — see §27 and
+`planning/retros/phase-81b-clean-room-redocumentation.md`'s own
+"Amendment 5 (corrective)" section for the full account; independently
+audited twice, `planning/retros/_audit-phase-81b-amendment-5.md` —
+main pass `PASS WITH NON-BLOCKING OBSERVATIONS`, narrow re-audit
+`PASS`). Amendment 4's own redocumentation output was **not** redone or
+invalidated by this amendment, confirmed unchanged by both audits.
+*Prior status line, preserved:* **done** (Amendment 4, 2026-10-09/10 —
+see §26 and
 `planning/retros/phase-81b-clean-room-redocumentation.md`'s own
 "Amendment 4" section for the full account). The original
 implementation (§1-§24) reached `blocked` at this plan's own

@@ -13,9 +13,46 @@ authoritative clean-room redocumentation this phase was always meant to
 produce. A first independent completion-audit pass returned `FAIL`
 (this file's own staleness at the time, plus a missing ADR and an
 unfiled learning); all three were fixed, and a second, narrow re-audit
-pass confirmed `PASS`. `planning/ROADMAP.md`'s Phase 81B row is flipped
-to `done` in the same commit as this overwrite. Plan:
-`planning/phase-81b-clean-room-redocumentation.md` §26.
+pass confirmed `PASS`.
+
+**Amendment 5 (corrective, 2026-10-14, direct user request)** then
+hardened the reusable clean-room preparation/isolation *machinery*
+itself — explicitly without rerunning the cold-reader/writer/legacy-gap/
+disposition cycle, and without touching either repository's current,
+accepted documentation. Six real, confirmed defects were found by direct
+code/branch inspection and fixed: (1) a broad allow-listed directory
+(`tests/**`) swept in doc-shaped files with no per-file review, letting
+five real narrative leaks through (`tests/README.md` plus four
+`ledgerkit_lifecycle_demo` fixture docs) — fixed with a fail-closed
+keep/exclude classification that fails the build closed on any future
+unclassified doc-shaped file; (2) `documented_revision` was a trusted
+claim, not enforced — `scripts/prepare_cleanroom_branch.py` now exports
+every allow-listed path from the Git object database at the exact
+declared revision (including pinned-gitlink submodule resolution, never
+the working tree or the submodule's current checkout); (3) the manifest's
+`handoff_commit` field tried to name its own eventual commit SHA
+(circular by construction, confirmed one-commit-stale against a real
+branch) — replaced with a non-circular, content-addressed
+`payload_tree_sha256`/`payload_file_hashes` scheme (`decisions/0077`);
+(4) manifest validation depended on the live parent repository and never
+hashed the actual payload — now fully self-contained; (5) the Mode B
+isolation preflight existed only as investigation prose — new
+`scripts/verify_cleanroom_isolation.py` builds a real, disposable
+namespace/`pivot_root` sandbox and actively tests all eleven conditions
+named by the amendment's own governing instruction; (6) a test-module
+docstring claimed hash-mismatch coverage that didn't exist — now
+genuinely tested. The historical claim about Amendment 4's own writer
+run is corrected accordingly: no longer "zero pre-existing narrative
+prose of any kind," now naming the five real fixture-scale files found,
+while confirming the real `README.md`/`docs/`/`architecture/`/`ai-docs/`
+tree was never allow-listed at any point. Independently audited twice
+(`planning/retros/_audit-phase-81b-amendment-5.md`): a main pass
+(`PASS WITH NON-BLOCKING OBSERVATIONS` — one count error in the written
+record, fixed) and a narrow re-audit confirming that fix (`PASS`).
+`planning/ROADMAP.md`'s Phase 81B row is flipped to `done` in the same
+commit as this overwrite. Plan:
+`planning/phase-81b-clean-room-redocumentation.md` §26 (Amendment 4) and
+§27 (Amendment 5, corrective).
 
 Amendment 4 removed Phase 81B's original credential-provisioning
 blocker by giving the sandbox an *inference capability* instead of a
@@ -101,27 +138,39 @@ not repeated here (established at Phase 71, `planning/ROADMAP.md` §2).
 
 ## What was just completed
 
-Phase 81B Amendment 4's full implementation through closeout, across
-two sessions (2026-10-09/10): broker build + isolation investigation
-(including a real credential-leak-class defect found and fixed, the
-sandbox inheriting the broker's own launch directory) → 11 cold-reader
-passes to `SUFFICIENT` → the authoritative writer run, preserved →
-legacy-gap review and reconciliation → real documentation disposition
-against both repositories → the durable workflow document → a
-12-class defect sweep → full test/lint validation → an independent
-per-phase drift audit (2 non-blocking observations: a self-disclosed
-`.claude/agents/` staleness list, and widespread stale doc-path
-references inside `src/codecompass/*.py` docstrings/error strings —
-both fixed) → learning triage (lead-performed directly; the dispatched
-`knowledge-curator` subagent failed with a session-level rate limit) →
-a phase retro update → a changelog rewrite → a first independent
-completion audit (**FAIL** — a stale `CONTEXT.md`, a missing ADR, an
-unfiled learning) → all three fixed → a second, narrow independent
-re-audit (**PASS**) → this terminal
+Phase 81B Amendment 5 (corrective), 2026-10-14, direct user request,
+in one session: investigated and confirmed six real mechanism defects
+by direct code/branch inspection → recorded the corrective amendment in
+the plan file (§27) before implementing → fixed `scripts/
+prepare_cleanroom_branch.py` (exact-revision Git-object-database export
+with pinned-gitlink submodule resolution; a fail-closed file-level
+narrative classification gate for the three broad allow-listed
+directories; a self-contained, content-addressed manifest scheme
+replacing the circular `handoff_commit` field, `decisions/0077`) → added
+`scripts/verify_cleanroom_isolation.py` (a repeatable, real-sandbox-
+building preflight for all eleven named isolation conditions,
+adversarially confirmed this session to genuinely catch a regression —
+removing the sandbox launch's own `env -i` boundary was shown, by direct
+manual test, to make the preflight actually fail) → 30 tests in
+`tests/test_prepare_cleanroom_branch.py` (up from 11) and 9 new tests in
+`tests/test_verify_cleanroom_isolation.py`, full suite 917 passed, lint
+clean → retro/changelog/durable-workflow-doc hygiene → a real
+`knowledge-curator` dispatch triaged two new learnings (L-099, L-100,
+both promoted, each independently re-verified against the actual
+source before promoting, not rubber-stamped) → a first independent
+completion audit (`PASS WITH NON-BLOCKING OBSERVATIONS` — one real count
+error in the written record: "six" leaked files claimed where the
+mechanism's own enforced set has five; fixed) → a narrow independent
+re-audit confirming that fix (`PASS`) → this terminal
 `planning/ROADMAP.md`/`planning/CONTEXT.md`/plan-file-Status-line
-reconciliation. Phase 81B's row in `planning/ROADMAP.md` is now `done`.
-All commits pushed to `origin/main` in both `codecompass` and
-`codecompass-template`.
+reconciliation. Phase 81B's row in `planning/ROADMAP.md` is now `done`
+again. Confirmed by both audits: zero changes to either repository's
+current, accepted documentation output (`codecompass`'s `README.md`/
+`docs/`/`ai-docs/`, and `codecompass-template`, still at `dff3f4d`) —
+this amendment fixed the machine, not the product. All commits to be
+pushed to `origin/main` immediately following this reconciliation
+(§6's push-on-DoD-pass convention; `codecompass-template` needs no push,
+since it was never touched).
 
 ## Known standing gaps (current-state facts, not phase history)
 
