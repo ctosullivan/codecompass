@@ -35,8 +35,32 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   in `tests/test_prepare_cleanroom_branch.py`.
 - **classification:** invariant (the fix + regression tests already
   landed with this amendment; curator triage below confirms promotion)
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** first occurrence
+- **curation (knowledge-curator, 2026-10-14):** **promoted.** Verified
+  directly against `83d7e25`: `_filter_narrative_shaped`,
+  `_CLASSIFIED_KEEP_DOC_PATHS`, `_CLASSIFIED_EXCLUDE_DOC_PATHS`, and
+  `UnclassifiedNarrativeShapedFileError` all exist in
+  `scripts/prepare_cleanroom_branch.py` and are wired into `cmd_build`
+  (the broad-directory sweep now runs through the classifier, not past
+  it). Confirmed five matching regression tests in
+  `tests/test_prepare_cleanroom_branch.py`:
+  `test_allow_list_contains_no_narrative_documentation_paths`,
+  `test_known_narrative_fixture_leaks_are_excluded_from_a_real_build`,
+  `test_unclassified_narrative_shaped_file_fails_closed`,
+  `test_filter_narrative_shaped_passes_through_non_doc_shaped_files`,
+  `test_cmd_build_fails_closed_end_to_end_for_an_unclassified_narrative_file`
+  — including the fail-closed case for an unreviewed file, which is the
+  actual load-bearing behaviour this learning names. This is a required
+  behavioural invariant (a broad allow-list sweep must fail closed on an
+  unclassified doc-shaped file) already captured by a landed regression
+  test, so it promotes cleanly per the classification table in
+  `learning-lifecycle.md` §4.
+- **promoted_to:** `scripts/prepare_cleanroom_branch.py`
+  (`_filter_narrative_shaped`/`_CLASSIFIED_KEEP_DOC_PATHS`/
+  `_CLASSIFIED_EXCLUDE_DOC_PATHS`/`UnclassifiedNarrativeShapedFileError`)
+  + `tests/test_prepare_cleanroom_branch.py` (the five tests named above)
+  @ 83d7e25 (logged in `promoted.md`)
 
 ---
 
@@ -56,8 +80,29 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   one commit later (the commit that exists solely to make that edit).
 - **classification:** invariant (architectural — see `decisions/0077`;
   curator triage below confirms promotion)
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** first occurrence
+- **curation (knowledge-curator, 2026-10-14):** **promoted.** Verified
+  directly against `83d7e25`: `handoff_commit` no longer appears
+  anywhere in `scripts/prepare_cleanroom_branch.py` — it was removed,
+  not merely supplemented. In its place, `manifest_schema_version`
+  (`MANIFEST_SCHEMA_VERSION`, bumped to 2), `payload_tree_sha256`, and
+  `payload_file_hashes` are computed via `_canonical_payload_digest`
+  over the staged tree itself and validated self-referentially (the
+  recorded `payload_tree_sha256` is recomputed from `payload_file_hashes`
+  and compared, catching both a tampered hash list and an added/removed
+  file). Confirmed `decisions/0077-cleanroom-manifest-identity-is-
+  content-addressed-not-self-referential.md` exists, is `Accepted`, and
+  its Context section correctly restates both the circularity defect and
+  the one-commit-stale evidence (`5c96278...` vs `8325272...`) this
+  learning cites. This is an architecture decision with a dedicated,
+  already-written ADR, so per `learning-lifecycle.md` §4 it promotes to
+  that ADR directly rather than sitting as a retained candidate.
+- **promoted_to:**
+  `decisions/0077-cleanroom-manifest-identity-is-content-addressed-not-self-referential.md`
+  + `scripts/prepare_cleanroom_branch.py` (`manifest_schema_version`/
+  `payload_tree_sha256`/`payload_file_hashes`/`_canonical_payload_digest`,
+  `handoff_commit` removed) @ 83d7e25 (logged in `promoted.md`)
 
 ---
 
