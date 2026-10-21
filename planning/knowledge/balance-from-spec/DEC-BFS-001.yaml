@@ -1,0 +1,25 @@
+id: DEC-BFS-001
+kind: decision
+decides: >
+  CodeCompass adopts ledgerkit/reports.py::balance_from_spec's
+  already-published aggregation behaviour, exactly as pinned by
+  tests/test_reports.py::TestBalanceFromSpec::test_single_section_rows_and_subtotal
+  and ::test_multi_section_correct_values, as Phase 82's one real
+  behavioural contract and reference oracle scenario
+  (planning/phase-82-contract-and-evidence-foundation.md §2/§6). This is
+  CodeCompass's own decision to track these two scopes as a contract --
+  it does not assert or require that Ledgerkit's own maintainers have
+  reviewed, endorsed, or committed to this framing; Ledgerkit remains
+  CodeCompass's established reference project (Phases 45-78), governed
+  entirely by its own upstream process.
+rationale: >
+  balance_from_spec is an already-studied, real function (Phase 78's
+  Ledgerkit trial), with two genuinely distinct, already-passing test
+  scopes -- proving Phase 82's multi-check oracle schema (decisions/0081
+  §1) against real behaviour rather than an invented fixture, matching
+  this project's own "reuse an already-understood function" discipline
+  (planning/phase-82-contract-and-evidence-foundation.md §2).
+supersedes: null
+decided_by: "project lead"
+timestamp: "2026-10-21T00:00:00Z"
+status: approved

@@ -1,0 +1,23 @@
+id: REQ-BFS-001
+kind: requirement
+statement: >
+  ledgerkit/reports.py::balance_from_spec MUST aggregate postings into
+  the correct per-section subtotal for (a) a single Expenses section
+  (scope: "single-section expense aggregation") and (b) an inverted
+  Income section together with an Expenses section in the same report
+  (scope: "multi-section income/expense aggregation with sign
+  inversion"), against the pinned tests/fixtures/filtered.journal
+  fixture.
+example: |
+  Given the pinned tests/fixtures/filtered.journal fixture
+  When balance_from_spec is run with a single Expenses-only ReportSpec
+  Then the Expenses section's own subtotal is exactly 1359.00.
+
+  Given the same fixture
+  When balance_from_spec is run with an Income (inverted) + Expenses
+  ReportSpec
+  Then the Income section's own (inverted) subtotal is 6000.00 and the
+  Expenses section's own subtotal is 1359.00.
+decision: DEC-BFS-001
+status: implemented
+depends_on: [CL-BFS-001, CL-BFS-002, CL-BFS-003]

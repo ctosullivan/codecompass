@@ -38,6 +38,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
+from codecompass import oracle as _oracle
+
 # ---------------------------------------------------------------------------
 # Flat-record parsing — mirrors scripts/check_knowledge_base.py's own
 # parse_record_text exactly (same record format), duplicated rather than
@@ -954,6 +956,144 @@ def derive_provenance_label(
             return "MIXED"
         return "DECLARED"
     return "DERIVED"
+
+
+def _unquote(value: str) -> str:
+    """A field's raw parsed value keeps surrounding quotes verbatim when
+    present (`parse_record_text`'s own `_strip_inline_comment` only
+    avoids misreading a `#` inside a quoted string — it never strips the
+    quotes themselves, since no prior caller needed the string's own
+    content, only its cross-referenced ids). `test_ref` is the first
+    caller that needs the literal path string underneath."""
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+        return value[1:-1]
+    return value
+
+
+_INTENDED_REQUIREMENT_STATUSES = {"approved", "implemented", "verified"}
+
+
+@dataclass
+class EpistemicProfile:
+    """INTENDED/OBSERVED/VERIFIED/CONTESTED (`decisions/0080`/`0081`) —
+    four independently-computed predicates, never collapsed into one
+    value. `verified_scopes`/`known_gap_scopes` are only ever non-empty
+    when an `oracle_contract` was supplied to `derive_epistemic_profile`
+    (a record with no associated contract has nothing to report for
+    either)."""
+
+    intended: bool
+    observed: bool
+    verified_scopes: list[str]
+    known_gap_scopes: list[str]
+    contested: bool
+
+
+def derive_epistemic_profile(
+    record: KnowledgeRecord,
+    records_by_id: dict[str, KnowledgeRecord],
+    *,
+    oracle_contract: _oracle.OracleContract | None = None,
+    oracle_results_by_test_ref: dict[str, _oracle.OracleResult] | None = None,
+    contract_path: Path | None = None,
+    repo_root: Path | None = None,
+) -> EpistemicProfile:
+    """Computes INTENDED/OBSERVED/VERIFIED/CONTESTED at read time, purely
+    from already-existing fields plus Phase 82's own new oracle-result
+    citations — **never persisted** (`decisions/0080`/`0081`). A sibling
+    to `derive_provenance_label`, reusing its own existing id-resolution
+    rather than duplicating it: OBSERVED is read directly off that
+    function's own label.
+
+    `oracle_results_by_test_ref` is keyed by the exact string an
+    Evidence's own `test_ref` field cites (after unquoting) — e.g.
+    `"planning/contracts/balance-from-spec/results/single-section-
+    expense-subtotal.yaml"` — so a Claim's own evidence chain, not a
+    separately-passed list, determines which result(s) are actually
+    cited by *this* record. `oracle_contract`/`contract_path` are needed
+    together to recompute each cited result's own effective outcome
+    (`_oracle.evaluate_result_precedence`) before trusting it as `PASS`.
+    """
+    # INTENDED -- true iff this record is itself an approved/implemented/
+    # verified Requirement, or an approved/implemented/verified
+    # Requirement elsewhere depends_on this record, or this record's own
+    # depends_on cites an approved Decision directly. Mirrors
+    # derive_provenance_label's own existing DECIDED branch
+    # (REQ.status/DEC.status), generalised to a record of any kind.
+    intended = False
+    if record.kind == "requirement":
+        intended = record.fields.get("status") in _INTENDED_REQUIREMENT_STATUSES
+    if not intended:
+        for other in records_by_id.values():
+            if other.kind != "requirement":
+                continue
+            if other.fields.get("status") not in _INTENDED_REQUIREMENT_STATUSES:
+                continue
+            if record.record_id in _extract_id_strings(other.fields.get("depends_on", "")):
+                intended = True
+                break
+    if not intended:
+        for dec_id in _extract_id_strings(record.fields.get("depends_on", "")):
+            dec = records_by_id.get(dec_id)
+            if dec and dec.kind == "decision" and dec.fields.get("status") == "approved":
+                intended = True
+                break
+
+    # OBSERVED -- read directly off derive_provenance_label's own already-
+    # proven walk, never re-derived (decisions/0080's own explicit
+    # instruction: reuse the existing helper, don't duplicate it).
+    observed = derive_provenance_label(record, records_by_id) in ("OBSERVED", "MIXED")
+
+    # CONTESTED -- all pre-existing fields, unchanged.
+    contested = (
+        record.fields.get("status") == "contradicted"
+        or record.fields.get("evidence_support_state") == "conflicting"
+        or bool(_extract_id_strings(record.fields.get("contradicting_evidence", "")))
+    )
+
+    # VERIFIED -- scope-qualified, only meaningful when this record has an
+    # associated oracle contract at all (decisions/0081's own named
+    # compatibility exemption: no contract means neither verified nor gap).
+    verified_scopes: list[str] = []
+    known_gap_scopes: list[str] = []
+    if oracle_contract is not None and contract_path is not None:
+        results_by_ref = oracle_results_by_test_ref or {}
+        cited_refs: set[str] = set()
+        for ev_id in _extract_id_strings(record.fields.get("supporting_evidence", "")):
+            ev = records_by_id.get(ev_id)
+            if ev is None or ev.kind != "evidence":
+                continue
+            raw_ref = ev.fields.get("test_ref", "")
+            if not raw_ref or raw_ref == "null":
+                continue
+            cited_refs.add(_unquote(raw_ref))
+
+        for check in oracle_contract.checks:
+            matched_pass = False
+            for ref in cited_refs:
+                result = results_by_ref.get(ref)
+                if result is None or result.check_id != check.check_id:
+                    continue
+                outcome, _reason = _oracle.evaluate_result_precedence(
+                    result, oracle_contract, check,
+                    contract_path=contract_path, repo_root=repo_root,
+                )
+                if outcome == "PASS":
+                    matched_pass = True
+                    break
+            if matched_pass:
+                verified_scopes.append(check.scope)
+            elif check.required:
+                known_gap_scopes.append(check.scope)
+
+    return EpistemicProfile(
+        intended=intended,
+        observed=observed,
+        verified_scopes=verified_scopes,
+        known_gap_scopes=known_gap_scopes,
+        contested=contested,
+    )
 
 
 # ---------------------------------------------------------------------------

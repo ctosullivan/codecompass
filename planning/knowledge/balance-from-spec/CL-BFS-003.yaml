@@ -1,0 +1,20 @@
+id: CL-BFS-003
+kind: claim
+statement: >
+  balance_from_spec satisfies every required check in its own oracle
+  contract (REQ-BFS-001, planning/contracts/balance-from-spec/oracle-
+  contract.yaml): both the single-section and the multi-section/sign-
+  inversion scopes have a current, passing, tested-subject-bound oracle
+  result against the unmodified ~/projects/ledgerkit checkout.
+derivation: null
+supporting_evidence: [EV-BFS-002, EV-BFS-003]
+contradicting_evidence: []
+derived_by: "project lead"
+repository_revision: "ledgerkit@7224bb5c113cd3aad7e86e994365703cd0070154"
+timestamp: "2026-10-21T00:00:00Z"
+status: verified
+supersedes: null
+assertion_kind: workflow
+basis: observed_behaviour
+evidence_support_state: supported
+depends_on: [CL-BFS-001, CL-BFS-002]

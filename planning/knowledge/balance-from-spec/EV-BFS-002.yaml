@@ -1,0 +1,16 @@
+id: EV-BFS-002
+kind: evidence
+evidence_kind: test
+what_it_shows: >
+  A real, independently executed oracle run of
+  tests/test_reports.py::TestBalanceFromSpec::test_single_section_rows_and_subtotal
+  against the current, unmodified ~/projects/ledgerkit checkout passes --
+  demonstrating balance_from_spec's own single-section expense
+  aggregation and subtotal computation (scope: "single-section expense
+  aggregation").
+observations: null
+source_ref: null
+doc_ref: null
+test_ref: "planning/contracts/balance-from-spec/results/single-section-expense-subtotal.yaml"
+repository_revision: "ledgerkit@7224bb5c113cd3aad7e86e994365703cd0070154"
+status: current

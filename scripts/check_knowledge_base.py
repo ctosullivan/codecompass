@@ -69,6 +69,17 @@ anchor in a slug's own `intermediate/*.md` projection must resolve to a
 real record of the matching kind (`check_anchor_integrity`). Phase 81
 adds no new record kind and no new persisted field — both checks operate
 entirely on the existing schema.
+
+Check added Phase 82 (planning/phase-82-contract-and-evidence-
+foundation.md §4/§8.7, decisions/0080/0081): a record whose `status` is
+`verified` must have a real, scope-complete, currently-passing oracle
+citation for every `required: true` check in its own
+`planning/contracts/<slug>/oracle-contract.yaml`
+(`check_verified_status_cites_passing_oracle_result`) — applies only to
+a slug that actually has a contract directory; a named, explicit
+compatibility exemption covers every pre-existing `status: verified`
+record that predates this mechanism (see that function's own docstring
+for the full list).
 """
 
 from __future__ import annotations
@@ -574,6 +585,113 @@ def check_anchor_integrity(feature_dir: Path, root: Path = ROOT) -> list[Finding
                         f"but the matching record's own kind is {kind!r}",
                     )
                 )
+    return findings
+
+
+def _load_oracle_module():
+    """Mirrors `_load_knowledge_intermediate`'s own import-or-None
+    pattern (informational finding, not a hard error, for a bare
+    checkout where `src/` isn't importable)."""
+    src_path = ROOT / "src"
+    if str(src_path) not in sys.path:
+        sys.path.insert(0, str(src_path))
+    try:
+        from codecompass import oracle
+
+        return oracle
+    except Exception:
+        return None
+
+
+def check_verified_status_cites_passing_oracle_result(
+    feature_dir: Path, root: Path = ROOT
+) -> list[Finding]:
+    """Phase 82 (§4/§8.7, `decisions/0080`/`0081`): a record whose
+    `status` is `verified` must have a real, scope-complete, currently-
+    passing oracle citation for every `required: true` check in its own
+    contract — never vacuously true. Mirrors
+    `check_requirement_cites_approved_decision`'s own shape exactly: a
+    status value may only be set when a real, cited, correctly-stated
+    linked record actually supports it.
+
+    **Compatibility policy (`decisions/0081` §3), applied here, not
+    silently**: this check applies *only* to a slug (`feature_dir.name`)
+    that has a `planning/contracts/<slug>/oracle-contract.yaml` at all. A
+    slug with no contract directory is untouched — its pre-existing
+    `status: verified` records (twelve, as of Phase 82: `REQ-DOCORIGIN-
+    001/002/003`, `REQ-HSAPI-001` through `-006`, `CL-DEPTH-001`,
+    `CL-FPSS-006/007`) keep exactly the meaning they always had.
+    """
+    findings: list[Finding] = []
+    slug = feature_dir.name
+    contract_path = root / "planning" / "contracts" / slug / "oracle-contract.yaml"
+    if not contract_path.is_file():
+        return findings  # named compatibility exemption -- not this slug's concern
+
+    oracle = _load_oracle_module()
+    ki = _load_knowledge_intermediate()
+    if oracle is None or ki is None:
+        return [
+            Finding(
+                "knowledge-base-oracle-unimportable",
+                f"{feature_dir.relative_to(root)}: could not import "
+                "codecompass's oracle/knowledge_intermediate modules — "
+                "skipped status:verified oracle-citation check",
+                strict=False,
+            )
+        ]
+
+    try:
+        contract = oracle.parse_oracle_contract(contract_path)
+    except oracle.OracleSchemaError as exc:
+        findings.append(
+            Finding(
+                "knowledge-base-oracle-contract-schema-error",
+                f"{contract_path.relative_to(root)}: {exc}",
+            )
+        )
+        return findings
+
+    results_dir = root / "planning" / "contracts" / slug / "results"
+    results_by_ref: dict[str, object] = {}
+    if results_dir.is_dir():
+        for result_path in sorted(results_dir.glob("*.yaml")):
+            try:
+                result = oracle.parse_oracle_result(result_path)
+            except oracle.OracleSchemaError:
+                continue  # reported by scripts/check_contracts.py
+            rel = str(result_path.relative_to(root))
+            results_by_ref[rel] = result
+
+    records = ki.load_slug_records(feature_dir)
+    has_required_check = any(c.required for c in contract.checks)
+    for record in records.values():
+        if record.fields.get("status") != "verified":
+            continue
+        profile = ki.derive_epistemic_profile(
+            record,
+            records,
+            oracle_contract=contract,
+            oracle_results_by_test_ref=results_by_ref,
+            contract_path=contract_path,
+            repo_root=None,
+        )
+        if not has_required_check or profile.known_gap_scopes:
+            if not has_required_check:
+                reason = "this contract has no required: true checks at all"
+            else:
+                reason = (
+                    f"required scope(s) {profile.known_gap_scopes} have no "
+                    "current, matching PASS"
+                )
+            findings.append(
+                Finding(
+                    "knowledge-base-verified-status-without-passing-oracle-result",
+                    f"{record.path.relative_to(root)}: status=verified but "
+                    f"{reason} — verified_scopes found: "
+                    f"{profile.verified_scopes or 'none'}",
+                )
+            )
     return findings
 
 
@@ -1336,6 +1454,7 @@ CHECKS = [
     check_cross_references_resolve,
     check_supersedes_never_crosses_kind,
     check_requirement_cites_approved_decision,
+    check_verified_status_cites_passing_oracle_result,
     check_anchor_integrity,
     check_no_pending_reconciliation,
     check_design_doc_citations_resolve,
@@ -1370,6 +1489,7 @@ def run_all(root: Path) -> list[Finding]:
             elif check in (
                 check_optional_enum_fields,
                 check_list_fields_are_inline,
+                check_verified_status_cites_passing_oracle_result,
                 check_anchor_integrity,
                 check_no_pending_reconciliation,
                 check_snapshot_completeness,

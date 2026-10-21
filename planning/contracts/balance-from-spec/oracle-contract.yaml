@@ -1,0 +1,28 @@
+schema_version: 1
+contract_id: REQ-BFS-001
+tested_paths:
+  - ledgerkit/reports.py
+  - ledgerkit/models.py
+  - ledgerkit/parser.py
+  - ledgerkit/query/ast.py
+  - ledgerkit/query/depth.py
+  - ledgerkit/query/eval.py
+  - ledgerkit/query/regex.py
+  - ledgerkit/query/compat.py
+checks:
+  - check_id: single-section-expense-subtotal
+    scope: "single-section expense aggregation"
+    execution_provider: pytest
+    check_reference: "tests/test_reports.py::TestBalanceFromSpec::test_single_section_rows_and_subtotal"
+    test_input_paths:
+      - tests/test_reports.py
+      - tests/fixtures/filtered.journal
+    required: true
+  - check_id: multi-section-income-expense-subtotal
+    scope: "multi-section income/expense aggregation with sign inversion"
+    execution_provider: pytest
+    check_reference: "tests/test_reports.py::TestBalanceFromSpec::test_multi_section_correct_values"
+    test_input_paths:
+      - tests/test_reports.py
+      - tests/fixtures/filtered.journal
+    required: true

@@ -26,6 +26,10 @@ A flat, file-based model: one record per YAML file, each carrying a `kind` field
 
 No shared schema unifies these — and no evidence suggests unifying them has ever been attempted.
 
+## INTENDED / OBSERVED / VERIFIED / CONTESTED — a derived view, not a seventh field (Phase 82)
+
+`knowledge_intermediate.py::derive_epistemic_profile` computes four independent predicates about a Claim or Requirement, purely by reading already-existing fields (`status`, `basis`, `depends_on`, `evidence_support_state`, `contradicting_evidence`) plus, when supplied, a Phase 82 oracle contract and its results — **never a persisted field on any record**. The four predicates do not imply one another: a Claim can be independently intended (an approved Requirement depends on it), observed (`basis: observed_behaviour`), verified for some scopes and not others (a per-check oracle `PASS`/no-result split), and contested (contradicting evidence exists) all at once. See `decisions/0080`/`0081` for the full rationale and `planning/phase-82-contract-and-evidence-foundation.md` §4 for the design. This function is not yet exposed through any `codecompass` CLI surface — library-only as of Phase 82.
+
 ## The intermediate projection and the reconciliation loop
 
 See `docs/workflows/knowledge-reconciliation-loop.md` for the full mechanics: canonical records are rendered into editable Markdown, edits are mechanically detected via a dual-hash anchor (never comparing a semantic hash against a projection hash directly), a human/agent review stage is required, and `codecompass knowledge apply` is the sole, re-validating write path.

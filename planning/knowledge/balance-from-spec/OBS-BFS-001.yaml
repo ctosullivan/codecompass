@@ -1,0 +1,29 @@
+id: OBS-BFS-001
+kind: observation
+method: source_read
+what_was_done: >
+  Read ledgerkit/reports.py's balance_from_spec function (line 600
+  onward) and tests/test_reports.py's TestBalanceFromSpec test class
+  (line 692 onward), to ground Phase 82's one pinned behavioural-
+  contract vertical slice in real, already-passing Ledgerkit behaviour
+  rather than an invented fixture.
+tool: null
+tool_version: null
+repository_revision: "ledgerkit@7224bb5c113cd3aad7e86e994365703cd0070154"
+location: "ledgerkit/reports.py:600; tests/test_reports.py:692-850"
+raw_result: >
+  balance_from_spec(journal, spec, query=None) iterates spec.sections,
+  applies an optional outer Query filter via the canonical query engine,
+  includes postings whose account matches any of section.accounts,
+  excludes postings matching section.exclude, applies depth truncation,
+  aggregates per-account amounts, and inverts the sign when
+  section.invert is True -- returning one ReportSectionResult per
+  section. TestBalanceFromSpec::test_single_section_rows_and_subtotal
+  asserts a single Expenses section's own subtotal (1359.00) against the
+  pinned tests/fixtures/filtered.journal fixture;
+  test_multi_section_correct_values asserts both an inverted Income
+  section (6000.00) and an Expenses section (1359.00) in the same
+  report. Both tests pass against the current, unmodified checkout.
+timestamp: "2026-10-21T00:00:00Z"
+performed_by: "project lead, direct repository inspection"
+status: recorded

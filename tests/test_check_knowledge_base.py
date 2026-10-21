@@ -1501,3 +1501,174 @@ class TestNoPendingReconciliation:
                 check_knowledge_base.check_no_pending_reconciliation(feature_dir, root=REPO_ROOT)
             )
         assert findings == []
+
+
+# ---------------------------------------------------------------------------
+# Phase 82 -- check_verified_status_cites_passing_oracle_result
+# (decisions/0080/0081). See planning/phase-82-contract-and-evidence-
+# foundation.md §8.7 and §4's compatibility-policy paragraph.
+# ---------------------------------------------------------------------------
+
+
+def _write_contract_yaml(path: Path, *, checks: list[dict]) -> None:
+    import yaml
+
+    _write(
+        path,
+        yaml.safe_dump(
+            {
+                "schema_version": 1,
+                "contract_id": "REQ-VST-001",
+                "tested_paths": ["impl.py"],
+                "checks": checks,
+            },
+            sort_keys=False,
+        ),
+    )
+
+
+def _write_result_yaml(
+    path: Path, contract_path: Path, *, check_id: str, scope: str, outcome: str = "PASS"
+) -> Path:
+    import sys as _sys
+
+    _sys.path.insert(0, str(REPO_ROOT / "src"))
+    from codecompass import oracle
+
+    raw_path = path.parent / f"{check_id}-raw.txt"
+    raw_path.parent.mkdir(parents=True, exist_ok=True)
+    raw_path.write_text("ok", encoding="utf-8")
+    result = oracle.OracleResult(
+        schema_version=1, run_id="r1", contract_id="REQ-VST-001", check_id=check_id,
+        scope=scope, baseline_id=None, tested_subject_digest="d" * 64,
+        oracle_contract_id="REQ-VST-001",
+        oracle_contract_content_hash=oracle.sha256_file(contract_path),
+        test_input_digest="i" * 64, raw_output_ref=str(raw_path),
+        raw_output_sha256=oracle.sha256_file(raw_path), outcome=outcome,
+        executed_at="2026-10-21T00:00:00Z", execution_provider="pytest",
+        environment_descriptor=None, invalid_reason=None,
+    )
+    oracle.write_oracle_result(path, result)
+    return path
+
+
+_ONE_CHECK = [
+    {
+        "check_id": "check-a", "scope": "scope A", "execution_provider": "pytest",
+        "check_reference": "t::a", "test_input_paths": ["f"], "required": True,
+    }
+]
+
+
+class TestVerifiedStatusCitesPassingOracleResult:
+    def _slug(self, tmp_path: Path, slug: str = "demo-slug") -> Path:
+        sdir = tmp_path / "planning" / "knowledge" / slug
+        sdir.mkdir(parents=True)
+        return sdir
+
+    def test_no_contract_directory_is_a_named_exemption(self, tmp_path):
+        """decisions/0081 §3: a slug with no contract directory is
+        untouched -- the real, current compatibility policy for every
+        pre-Phase-82 status: verified record."""
+        sdir = self._slug(tmp_path)
+        _write(
+            sdir / "CL-X-001.yaml",
+            _CLAIM_HEADER.replace("status: supported", "status: verified"),
+        )
+        findings = check_knowledge_base.check_verified_status_cites_passing_oracle_result(
+            sdir, root=tmp_path
+        )
+        assert findings == []
+
+    def test_empty_required_check_set_cannot_establish_verification(self, tmp_path):
+        """decisions/0081 §3: an empty required-check set never
+        vacuously satisfies status: verified. Here the contract is well-
+        formed but every check is optional."""
+        sdir = self._slug(tmp_path)
+        contract_dir = tmp_path / "planning" / "contracts" / "demo-slug"
+        contract_path = contract_dir / "oracle-contract.yaml"
+        _write_contract_yaml(
+            contract_path,
+            checks=[
+                {
+                    "check_id": "check-a", "scope": "scope A", "execution_provider": "pytest",
+                    "check_reference": "t::a", "test_input_paths": ["f"], "required": False,
+                }
+            ],
+        )
+        _write(sdir / "CL-X-002.yaml", _CLAIM_HEADER.replace(
+            "id: CL-TEST-001", "id: CL-X-002").replace("status: supported", "status: verified"))
+        findings = check_knowledge_base.check_verified_status_cites_passing_oracle_result(
+            sdir, root=tmp_path
+        )
+        assert len(findings) == 1
+        assert "no required: true checks at all" in findings[0].message
+
+    def test_dangling_test_ref_cannot_establish_verification(self, tmp_path):
+        """A test_ref citing a non-existent oracle-result is treated
+        identically to no evidence at all, never silently skipped."""
+        sdir = self._slug(tmp_path)
+        contract_dir = tmp_path / "planning" / "contracts" / "demo-slug"
+        contract_path = contract_dir / "oracle-contract.yaml"
+        _write_contract_yaml(contract_path, checks=_ONE_CHECK)
+        _write(
+            sdir / "EV-X-001.yaml",
+            "id: EV-X-001\nkind: evidence\nevidence_kind: test\n"
+            "what_it_shows: x\nobservations: null\nsource_ref: null\ndoc_ref: null\n"
+            'test_ref: "planning/contracts/demo-slug/results/does-not-exist.yaml"\n'
+            'repository_revision: "working tree"\nstatus: current\n',
+        )
+        _write(
+            sdir / "CL-X-003.yaml",
+            "id: CL-X-003\nkind: claim\nstatement: x\nderivation: null\n"
+            "supporting_evidence: [EV-X-001]\ncontradicting_evidence: []\n"
+            'derived_by: test\nrepository_revision: "working tree"\n'
+            'timestamp: "2026-10-21T00:00:00Z"\nstatus: verified\nsupersedes: null\n'
+            "basis: observed_behaviour\n",
+        )
+        findings = check_knowledge_base.check_verified_status_cites_passing_oracle_result(
+            sdir, root=tmp_path
+        )
+        assert len(findings) == 1
+        assert "scope A" in findings[0].message
+
+    def test_full_scope_coverage_with_real_passing_result_is_accepted(self, tmp_path):
+        """The positive case -- exactly what this phase's own real
+        balance-from-spec contract demonstrates against the live
+        repository."""
+        sdir = self._slug(tmp_path)
+        contract_dir = tmp_path / "planning" / "contracts" / "demo-slug"
+        contract_path = contract_dir / "oracle-contract.yaml"
+        _write_contract_yaml(contract_path, checks=_ONE_CHECK)
+        result_path = contract_dir / "results" / "check-a.yaml"
+        _write_result_yaml(result_path, contract_path, check_id="check-a", scope="scope A")
+        test_ref = str(result_path.relative_to(tmp_path))
+        _write(
+            sdir / "EV-X-004.yaml",
+            "id: EV-X-004\nkind: evidence\nevidence_kind: test\n"
+            "what_it_shows: x\nobservations: null\nsource_ref: null\ndoc_ref: null\n"
+            f'test_ref: "{test_ref}"\n'
+            'repository_revision: "working tree"\nstatus: current\n',
+        )
+        _write(
+            sdir / "CL-X-005.yaml",
+            "id: CL-X-005\nkind: claim\nstatement: x\nderivation: null\n"
+            "supporting_evidence: [EV-X-004]\ncontradicting_evidence: []\n"
+            'derived_by: test\nrepository_revision: "working tree"\n'
+            'timestamp: "2026-10-21T00:00:00Z"\nstatus: verified\nsupersedes: null\n'
+            "basis: observed_behaviour\n",
+        )
+        findings = check_knowledge_base.check_verified_status_cites_passing_oracle_result(
+            sdir, root=tmp_path
+        )
+        assert findings == []
+
+    def test_real_repository_balance_from_spec_slug_is_clean(self):
+        """The real, committed balance-from-spec slug and its real,
+        currently-passing oracle results pass this check against the
+        actual repository."""
+        feature_dir = REPO_ROOT / "planning" / "knowledge" / "balance-from-spec"
+        findings = check_knowledge_base.check_verified_status_cites_passing_oracle_result(
+            feature_dir, root=REPO_ROOT
+        )
+        assert findings == []

@@ -1820,3 +1820,350 @@ class TestGroundingMembershipApplyTimeConcurrency:
         )
         result = ki.apply_manifest(tmp_path, manifest_path)
         assert len(result.applied) == 1
+
+
+# ---------------------------------------------------------------------------
+# Phase 82 -- derive_epistemic_profile (decisions/0080/0081). See
+# planning/phase-82-contract-and-evidence-foundation.md §10 for the
+# required scenario list this class implements.
+# ---------------------------------------------------------------------------
+
+from codecompass import oracle as _oracle  # noqa: E402
+
+
+def _write_record(sdir: Path, record_id: str, text: str) -> None:
+    (sdir / f"{record_id}.yaml").write_text(text, encoding="utf-8")
+
+
+def _two_check_contract() -> _oracle.OracleContract:
+    return _oracle.OracleContract(
+        schema_version=1,
+        contract_id="REQ-EPI-001",
+        tested_paths=["impl.py"],
+        checks=[
+            _oracle.OracleCheck(
+                check_id="scope-a", scope="scope A", execution_provider="pytest",
+                check_reference="t::a", test_input_paths=["fixture.txt"], required=True,
+            ),
+            _oracle.OracleCheck(
+                check_id="scope-b", scope="scope B", execution_provider="pytest",
+                check_reference="t::b", test_input_paths=["fixture.txt"], required=True,
+            ),
+        ],
+    )
+
+
+def _passing_result_for(
+    check: _oracle.OracleCheck, contract_path: Path, raw_path: Path
+) -> _oracle.OracleResult:
+    raw_path.write_text("ok", encoding="utf-8")
+    return _oracle.OracleResult(
+        schema_version=1,
+        run_id="r1",
+        contract_id="REQ-EPI-001",
+        check_id=check.check_id,
+        scope=check.scope,
+        baseline_id=None,
+        tested_subject_digest="d" * 64,
+        oracle_contract_id="REQ-EPI-001",
+        oracle_contract_content_hash=_oracle.sha256_file(contract_path),
+        test_input_digest="i" * 64,
+        raw_output_ref=str(raw_path),
+        raw_output_sha256=_oracle.sha256_file(raw_path),
+        outcome="PASS",
+        executed_at="2026-10-21T00:00:00Z",
+        execution_provider="pytest",
+        environment_descriptor=None,
+        invalid_reason=None,
+    )
+
+
+class TestDeriveEpistemicProfile:
+    def test_scenario_1_approved_requirement_zero_linked_claims(self, tmp_path):
+        """§10.1: an approved REQ with zero linked Claims is intended and
+        nothing else."""
+        sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
+        sdir.mkdir(parents=True)
+        _write_record(sdir, "DEC-X-001", _DECISION_APPROVED)
+        _write_record(
+            sdir, "REQ-X-001",
+            "id: REQ-X-001\nkind: requirement\nstatement: a requirement\n"
+            "example: Given/When/Then\ndecision: DEC-X-001\nstatus: approved\n",
+        )
+        records = ki.load_slug_records(sdir)
+        profile = ki.derive_epistemic_profile(records["REQ-X-001"], records)
+        assert profile.intended is True
+        assert profile.observed is False
+        assert profile.verified_scopes == []
+        assert profile.known_gap_scopes == []
+        assert profile.contested is False
+
+    def test_scenario_2_observed_and_verified_with_no_intent(self, tmp_path):
+        """§10.2: a Claim with basis: observed_behaviour, real supporting
+        Evidence, and a cited test_ref resolving to a real PASS
+        oracle-result, with NO REQ/DEC referencing it at all --
+        intended=False, observed=True, verified_scopes non-empty (the
+        exact 'verified but not intended' counter-example named in
+        decisions/0080's own Context section)."""
+        sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
+        sdir.mkdir(parents=True)
+        contract_dir = tmp_path / "planning" / "contracts" / "demo-slug"
+        contract_dir.mkdir(parents=True)
+        contract_path = contract_dir / "oracle-contract.yaml"
+        contract = _two_check_contract()
+        contract_path.write_text("placeholder", encoding="utf-8")  # hash target only
+
+        result = _passing_result_for(contract.checks[0], contract_path, tmp_path / "raw-a.txt")
+        test_ref = "planning/contracts/demo-slug/results/scope-a.yaml"
+
+        _write_record(
+            sdir, "EV-X-001",
+            "id: EV-X-001\nkind: evidence\nevidence_kind: test\n"
+            "what_it_shows: a passing oracle run\nobservations: null\n"
+            "source_ref: null\ndoc_ref: null\n"
+            f'test_ref: "{test_ref}"\n'
+            'repository_revision: "working tree"\nstatus: current\n',
+        )
+        _write_record(
+            sdir, "CL-X-001",
+            "id: CL-X-001\nkind: claim\nstatement: legacy rounding is this way\n"
+            "derivation: null\nsupporting_evidence: [EV-X-001]\n"
+            "contradicting_evidence: []\nderived_by: test\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-21T00:00:00Z"\n'
+            "status: supported\nsupersedes: null\nbasis: observed_behaviour\n",
+        )
+        records = ki.load_slug_records(sdir)
+        profile = ki.derive_epistemic_profile(
+            records["CL-X-001"], records,
+            oracle_contract=contract,
+            oracle_results_by_test_ref={test_ref: result},
+            contract_path=contract_path,
+        )
+        assert profile.intended is False
+        assert profile.observed is True
+        assert profile.verified_scopes == ["scope A"]
+        assert profile.known_gap_scopes == ["scope B"]  # never silently folded into "verified"
+
+    def test_scenario_3_intended_and_contested_simultaneously(self, tmp_path):
+        """§10.3: an approved REQ whose linked Claim is contradicted --
+        intended=True, contested=True at once; neither suppresses the
+        other (the 'intended but contradicted' counter-example)."""
+        sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
+        sdir.mkdir(parents=True)
+        _write_record(sdir, "DEC-X-001", _DECISION_APPROVED)
+        _write_record(
+            sdir, "EV-X-002",
+            "id: EV-X-002\nkind: evidence\nevidence_kind: source\n"
+            "what_it_shows: half-up rounding observed\nobservations: null\n"
+            'source_ref: "impl.py:1"\ndoc_ref: null\ntest_ref: null\n'
+            'repository_revision: "working tree"\nstatus: current\n',
+        )
+        _write_record(
+            sdir, "CL-X-002",
+            "id: CL-X-002\nkind: claim\nstatement: implementation uses half-up rounding\n"
+            "derivation: null\nsupporting_evidence: []\n"
+            "contradicting_evidence: [EV-X-002]\nderived_by: test\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-21T00:00:00Z"\n'
+            "status: contradicted\nsupersedes: null\nbasis: proposed_policy\n",
+        )
+        _write_record(
+            sdir, "REQ-X-002",
+            "id: REQ-X-002\nkind: requirement\nstatement: MUST use half-even rounding\n"
+            "example: Given/When/Then\ndecision: DEC-X-001\nstatus: approved\n"
+            "depends_on: [CL-X-002]\n",
+        )
+        records = ki.load_slug_records(sdir)
+        profile = ki.derive_epistemic_profile(records["CL-X-002"], records)
+        assert profile.intended is True   # an approved REQ depends on it
+        assert profile.contested is True  # contradicting_evidence is non-empty
+        assert profile.observed is False  # basis is proposed_policy, not observed
+
+    def test_scenario_4_partial_verification_across_scopes(self, tmp_path):
+        """§10.4: a contract with two checks, different scopes, one with
+        a real PASS result and one with none -- verified_scopes contains
+        the first, known_gap_scopes contains the second, never collapsed
+        to one answer."""
+        sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
+        sdir.mkdir(parents=True)
+        contract_dir = tmp_path / "planning" / "contracts" / "demo-slug"
+        contract_dir.mkdir(parents=True)
+        contract_path = contract_dir / "oracle-contract.yaml"
+        contract_path.write_text("placeholder", encoding="utf-8")
+        contract = _two_check_contract()
+
+        result_a = _passing_result_for(contract.checks[0], contract_path, tmp_path / "raw-a.txt")
+        test_ref_a = "planning/contracts/demo-slug/results/scope-a.yaml"
+
+        _write_record(
+            sdir, "EV-X-003",
+            "id: EV-X-003\nkind: evidence\nevidence_kind: test\n"
+            "what_it_shows: a passing oracle run for scope A\nobservations: null\n"
+            "source_ref: null\ndoc_ref: null\n"
+            f'test_ref: "{test_ref_a}"\n'
+            'repository_revision: "working tree"\nstatus: current\n',
+        )
+        _write_record(
+            sdir, "CL-X-003",
+            "id: CL-X-003\nkind: claim\nstatement: the contract's own aggregate claim\n"
+            "derivation: null\nsupporting_evidence: [EV-X-003]\n"
+            "contradicting_evidence: []\nderived_by: test\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-21T00:00:00Z"\n'
+            "status: supported\nsupersedes: null\nbasis: observed_behaviour\n",
+        )
+        records = ki.load_slug_records(sdir)
+        profile = ki.derive_epistemic_profile(
+            records["CL-X-003"], records,
+            oracle_contract=contract,
+            oracle_results_by_test_ref={test_ref_a: result_a},
+            contract_path=contract_path,
+        )
+        assert profile.verified_scopes == ["scope A"]
+        assert profile.known_gap_scopes == ["scope B"]
+
+    def test_scenario_5_stale_result_after_relevant_source_change(self, tmp_path):
+        """§10.5: a real PASS oracle-result whose tested_subject_digest no
+        longer matches the current implementation after a relevant
+        source change -- the scope moves out of verified_scopes into
+        known_gap_scopes once a repo_root is supplied for live
+        recomputation, demonstrating staleness is mechanically
+        detectable."""
+        sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
+        sdir.mkdir(parents=True)
+        contract_dir = tmp_path / "planning" / "contracts" / "demo-slug"
+        contract_dir.mkdir(parents=True)
+        contract_path = contract_dir / "oracle-contract.yaml"
+        contract_path.write_text("placeholder", encoding="utf-8")
+        repo_root = tmp_path / "repo"
+        repo_root.mkdir()
+        (repo_root / "impl.py").write_text("original", encoding="utf-8")
+        (repo_root / "fixture.txt").write_text("fixture", encoding="utf-8")
+
+        contract = _two_check_contract()
+        check_a = contract.checks[0]
+        live_digest = _oracle.compute_tree_digest(repo_root, contract.tested_paths)
+        live_input_digest = _oracle.compute_tree_digest(repo_root, check_a.test_input_paths)
+        raw_path = tmp_path / "raw-a.txt"
+        raw_path.write_text("ok", encoding="utf-8")
+        result = _oracle.OracleResult(
+            schema_version=1, run_id="r1", contract_id="REQ-EPI-001", check_id=check_a.check_id,
+            scope=check_a.scope, baseline_id=None, tested_subject_digest=live_digest,
+            oracle_contract_id="REQ-EPI-001",
+            oracle_contract_content_hash=_oracle.sha256_file(contract_path),
+            test_input_digest=live_input_digest, raw_output_ref=str(raw_path),
+            raw_output_sha256=_oracle.sha256_file(raw_path), outcome="PASS",
+            executed_at="2026-10-21T00:00:00Z", execution_provider="pytest",
+            environment_descriptor=None, invalid_reason=None,
+        )
+        test_ref = "planning/contracts/demo-slug/results/scope-a.yaml"
+        _write_record(
+            sdir, "EV-X-004",
+            "id: EV-X-004\nkind: evidence\nevidence_kind: test\n"
+            "what_it_shows: a passing oracle run\nobservations: null\n"
+            "source_ref: null\ndoc_ref: null\n"
+            f'test_ref: "{test_ref}"\n'
+            'repository_revision: "working tree"\nstatus: current\n',
+        )
+        _write_record(
+            sdir, "CL-X-004",
+            "id: CL-X-004\nkind: claim\nstatement: implementation satisfies scope A\n"
+            "derivation: null\nsupporting_evidence: [EV-X-004]\n"
+            "contradicting_evidence: []\nderived_by: test\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-21T00:00:00Z"\n'
+            "status: supported\nsupersedes: null\nbasis: observed_behaviour\n",
+        )
+        records = ki.load_slug_records(sdir)
+
+        before = ki.derive_epistemic_profile(
+            records["CL-X-004"], records, oracle_contract=contract,
+            oracle_results_by_test_ref={test_ref: result},
+            contract_path=contract_path, repo_root=repo_root,
+        )
+        assert before.verified_scopes == ["scope A"]
+
+        # A relevant source change -- the digest this result was bound to
+        # no longer matches.
+        (repo_root / "impl.py").write_text("mutated implementation", encoding="utf-8")
+
+        after = ki.derive_epistemic_profile(
+            records["CL-X-004"], records, oracle_contract=contract,
+            oracle_results_by_test_ref={test_ref: result},
+            contract_path=contract_path, repo_root=repo_root,
+        )
+        assert after.verified_scopes == []
+        assert "scope A" in after.known_gap_scopes
+
+    def test_scenario_6_conflicting_evidence_retained_not_overwritten(self, tmp_path):
+        """§10.6: a new, conflicting Evidence record (a second oracle
+        result disagreeing with a prior one) persists alongside the
+        first, cited via contradicting_evidence -- neither is silently
+        deleted or overwritten, exercising Phase 81's existing conflict-
+        retention behaviour against a new, oracle-sourced Evidence record."""
+        sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
+        sdir.mkdir(parents=True)
+        _write_record(
+            sdir, "EV-X-005",
+            "id: EV-X-005\nkind: evidence\nevidence_kind: test\n"
+            "what_it_shows: a passing oracle run for scope A\nobservations: null\n"
+            "source_ref: null\ndoc_ref: null\n"
+            'test_ref: "planning/contracts/demo-slug/results/scope-a.yaml"\n'
+            'repository_revision: "working tree"\nstatus: current\n',
+        )
+        _write_record(
+            sdir, "EV-X-006",
+            "id: EV-X-006\nkind: evidence\nevidence_kind: test\n"
+            "what_it_shows: a second, later oracle run for scope A disagrees "
+            "(a real FAIL after a regression)\nobservations: null\n"
+            "source_ref: null\ndoc_ref: null\n"
+            'test_ref: "planning/contracts/demo-slug/results/scope-a-rerun.yaml"\n'
+            'repository_revision: "working tree"\nstatus: current\n',
+        )
+        _write_record(
+            sdir, "CL-X-005",
+            "id: CL-X-005\nkind: claim\nstatement: implementation satisfies scope A\n"
+            "derivation: null\nsupporting_evidence: [EV-X-005]\n"
+            "contradicting_evidence: [EV-X-006]\nderived_by: test\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-21T00:00:00Z"\n'
+            "status: contradicted\nsupersedes: null\nbasis: observed_behaviour\n",
+        )
+        records = ki.load_slug_records(sdir)
+        # Both the original supporting Evidence and the new, conflicting
+        # one persist -- neither was deleted or overwritten by the other.
+        assert "EV-X-005" in records
+        assert "EV-X-006" in records
+        profile = ki.derive_epistemic_profile(records["CL-X-005"], records)
+        assert profile.contested is True
+
+    def test_predicates_remain_independent_not_an_ordinal_scale(self, tmp_path):
+        """Governing prompt item 10: INTENDED/OBSERVED/VERIFIED/CONTESTED
+        stay independent, including with contradictory evidence present
+        -- none implies or suppresses another."""
+        sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
+        sdir.mkdir(parents=True)
+        _write_record(sdir, "DEC-X-003", _DECISION_APPROVED)
+        _write_record(
+            sdir, "EV-X-007",
+            "id: EV-X-007\nkind: evidence\nevidence_kind: source\n"
+            "what_it_shows: contradicting behaviour observed\nobservations: null\n"
+            'source_ref: "impl.py:1"\ndoc_ref: null\ntest_ref: null\n'
+            'repository_revision: "working tree"\nstatus: current\n',
+        )
+        _write_record(
+            sdir, "CL-X-006",
+            "id: CL-X-006\nkind: claim\nstatement: an intended, observed, and contested claim\n"
+            "derivation: null\nsupporting_evidence: []\n"
+            "contradicting_evidence: [EV-X-007]\nderived_by: test\n"
+            'repository_revision: "working tree"\ntimestamp: "2026-10-21T00:00:00Z"\n'
+            "status: contradicted\nsupersedes: null\nbasis: observed_behaviour\n",
+        )
+        _write_record(
+            sdir, "REQ-X-003",
+            "id: REQ-X-003\nkind: requirement\nstatement: a requirement\n"
+            "example: Given/When/Then\ndecision: DEC-X-003\nstatus: approved\n"
+            "depends_on: [CL-X-006]\n",
+        )
+        records = ki.load_slug_records(sdir)
+        profile = ki.derive_epistemic_profile(records["CL-X-006"], records)
+        assert profile.intended is True
+        assert profile.observed is True
+        assert profile.contested is True
+        assert profile.verified_scopes == []  # no oracle contract supplied -- correctly empty

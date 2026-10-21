@@ -31,7 +31,8 @@ One paragraph per module under `src/codecompass/`, grounded in that module's own
 | `git_topology.py` | Git repository topology detection (worktrees, submodules) — mechanical facts only, no network/AI involvement; never invoked at query time, only at sync time. |
 | `usage.py` | (see above). |
 | `chat.py` | A secondary, digest-only chat REPL grounded entirely on already-persisted files. |
-| `knowledge_intermediate.py` | The intermediate knowledge layer — rendering, dual-hash change detection, manifest-based review, and the sole canonical-record write path. See `docs/concepts/knowledge-model.md` and `docs/workflows/knowledge-reconciliation-loop.md`. |
+| `knowledge_intermediate.py` | The intermediate knowledge layer — rendering, dual-hash change detection, manifest-based review, and the sole canonical-record write path. Also hosts `derive_epistemic_profile` (Phase 82), a derived, read-time INTENDED/OBSERVED/VERIFIED/CONTESTED view over existing records, never a persisted field. See `docs/concepts/knowledge-model.md` and `docs/workflows/knowledge-reconciliation-loop.md`. |
+| `oracle.py` | Phase 82's behavioural-contract oracle: `oracle-contract.yaml`/`oracle-result.yaml` schema parsing, tested-subject/test-input content digesting (reuses Phase 81B's own canonical-hash-of-hashes construction), a single `pytest` execution provider, and the deterministic PASS/FAIL/GAP/INVALID precedence/aggregation rule. See `decisions/0080`/`0081` and `planning/phase-82-contract-and-evidence-foundation.md`. |
 
 ## The `/discovery` slash command
 

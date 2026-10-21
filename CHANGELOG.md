@@ -9,6 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 82 — Contract and Evidence Foundation, implemented**
+  (`decisions/0081` corrects four remaining structural gaps and
+  explicitly authorises implementation, superseding the plan's own
+  prior maintainer-approval gate): a real, evidence-linked behavioural
+  contract for `ledgerkit/reports.py::balance_from_spec`
+  (`planning/knowledge/balance-from-spec/`: one Requirement, three
+  Claims, three Evidence records, one Decision, one Observation), with
+  a new, versioned oracle-contract/oracle-result schema
+  (`planning/contracts/balance-from-spec/`) carrying an explicit,
+  multi-check `checks:` collection (two real, distinct, already-passing
+  Ledgerkit test scopes) and a deterministic PASS/FAIL/GAP/INVALID
+  precedence/aggregation rule that makes vacuous verification
+  structurally impossible. New shipped module `src/codecompass/
+  oracle.py` (schema parsing, Phase 81B-style content digesting scoped
+  to explicit, reviewable file lists, a single `pytest` execution
+  provider, baseline acceptance that never auto-advances per `CLAUDE.md`
+  §1 L-087). `knowledge_intermediate.py` gains `derive_epistemic_profile`
+  — INTENDED/OBSERVED/VERIFIED/CONTESTED computed at read time, zero new
+  persisted fields, reusing `derive_provenance_label`'s own already-
+  proven pattern. `check_knowledge_base.py` gains
+  `check_verified_status_cites_passing_oracle_result` (applies only to a
+  slug with a contract directory — twelve pre-existing `status: verified`
+  records are an explicit, named compatibility exemption, not silently
+  grandfathered). New maintainer validator `scripts/check_contracts.py`
+  (schema, cross-reference, tamper-evidence, GAP-aggregate, and
+  depth — not just scope — checks against the real Ledgerkit checkout).
+  53 new tests (25 oracle-schema/precedence/real-execution, 7 derived-
+  epistemic-profile scenarios, 5 verified-status-compatibility, 16
+  contract-validator), including a genuine `FAIL` against a deliberately
+  mutated scratch copy of Ledgerkit (never the real checkout) and a real
+  `PASS` against the current, unmodified `~/projects/ledgerkit`.
+
 - **v2 corrective planning amendment** (planning only, direct user
   request, `decisions/0080`): reviewed Phase 82's epistemic model
   against concrete counter-examples (a legacy behaviour verified by

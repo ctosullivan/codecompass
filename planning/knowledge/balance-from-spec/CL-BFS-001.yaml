@@ -1,0 +1,19 @@
+id: CL-BFS-001
+kind: claim
+statement: >
+  balance_from_spec correctly aggregates postings into a single
+  Expenses section's own subtotal (scope: "single-section expense
+  aggregation") -- demonstrated by a real, independently executed,
+  currently-passing oracle run against the pinned
+  tests/fixtures/filtered.journal fixture.
+derivation: null
+supporting_evidence: [EV-BFS-001, EV-BFS-002]
+contradicting_evidence: []
+derived_by: "project lead"
+repository_revision: "ledgerkit@7224bb5c113cd3aad7e86e994365703cd0070154"
+timestamp: "2026-10-21T00:00:00Z"
+status: supported
+supersedes: null
+assertion_kind: state_transformation
+basis: observed_behaviour
+evidence_support_state: supported

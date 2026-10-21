@@ -1,0 +1,15 @@
+id: EV-BFS-001
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  balance_from_spec aggregates postings per report section (inclusion by
+  section.accounts, exclusion by section.exclude, depth truncation, sign
+  inversion when section.invert is True) and returns one
+  ReportSectionResult per section, via the canonical query engine shared
+  with balance()/register()/accounts()/stats().
+observations: [OBS-BFS-001]
+source_ref: "ledgerkit/reports.py:600 def balance_from_spec"
+doc_ref: null
+test_ref: null
+repository_revision: "ledgerkit@7224bb5c113cd3aad7e86e994365703cd0070154"
+status: current
