@@ -348,15 +348,22 @@ stage sequence: `planning/post-v2-cross-project-overlay-backlog.md`.
 - **82 (Contract and Evidence Foundation)**: reviewed — contract
   identity (`REQ-`/`CL-`/`EV-` IDs) and evidence references stay
   project-local and need no change; federation identity is carried
-  externally by a project-identity envelope (`decisions/0079` §2), never
-  injected into Phase 82's own records. One correction *is* required,
-  independent of federation: `epistemic_source`'s four values were not
-  actually mutually exclusive (intended/observed/verified compose, they
-  don't exclude) — corrected to an ordinal scale with `uncertain`
-  removed (already covered by the existing `status` field);
-  `planning/phase-82-contract-and-evidence-foundation.md` §12 records
-  the amendment. Still requires the same maintainer approval its
-  original proposal already needed — not a new, additional gate.
+  externally by a project-identity envelope (`decisions/0079` §2,
+  extended by `decisions/0080` §3 with a `publisher_id`/`authority`
+  distinction), never injected into Phase 82's own records. Two
+  corrections were made, both independent of federation, across two
+  same-day amendments: the originally-proposed `epistemic_source` field
+  was first corrected to an ordinal scale, then found still incorrect
+  (intent/observation/verification are independent predicates, not an
+  orderable scale) and **removed entirely**, replaced by a derived,
+  read-time view reusing Phase 81's existing
+  `derive_provenance_label`-style pattern (`decisions/0080`;
+  `planning/phase-82-contract-and-evidence-foundation.md` §§4, 12-13).
+  Oracle-result identity was separately strengthened to bind to the
+  exact tested subject (a content digest, not a bare commit reference)
+  rather than merely a baseline/contract name. Still requires the same
+  maintainer approval its original proposal already needed — not a new,
+  additional gate.
 - **83 (Semantic Change Assurance)**: reviewed — impact traversal stays
   project-local by design (§ above: "does not introduce a new graph
   table unless real-use evidence shows a gap"). Future extension point

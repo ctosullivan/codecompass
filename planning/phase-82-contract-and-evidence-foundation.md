@@ -3,15 +3,26 @@
 **Status:** planned (2026-10-21, direct user request, part of the v2
 strategic realignment — `decisions/0078`, `planning/v2-roadmap.md`).
 **Planning only. Implementation is not begun and requires explicit
-maintainer approval of §4's schema delta (as corrected by §12), §9's
-open decisions, and §12's own federation-review finding before any code
-is written**, per the governing prompt's own instruction ("Do not begin
-Phase 82 implementation") and `CLAUDE.md` §1. **Amended same day,
-2026-10-21, direct user request** ("CodeCompass v2 Planning Amendment —
-Cross-Project Semantic Overlays," `decisions/0079`): §4's
-`epistemic_source` design is corrected (§12) after review found its
-four values were not actually mutually exclusive; no other section of
-this plan changes.
+maintainer approval of §9's open decisions before any code is written**,
+per the governing prompt's own instruction ("Do not begin Phase 82
+implementation") and `CLAUDE.md` §1.
+
+**Amendment history** (full rationale in each amendment's own ADR — this
+plan's own current content already reflects every correction below; §13
+records the fullest, most recent one):
+
+1. 2026-10-21, "CodeCompass v2 Planning Amendment — Cross-Project
+   Semantic Overlays" (`decisions/0079`): §4's original four-value
+   `epistemic_source` enum (`intended|observed|verified|uncertain`)
+   corrected to an ordinal three-value scale — itself superseded by
+   amendment 2.
+2. 2026-10-21, "CodeCompass v2 — Corrective Planning Amendment"
+   (`decisions/0080`, §13): the ordinal scale found still incorrect
+   (intent/observation/verification are independent, not orderable) —
+   `epistemic_source` **removed entirely**, replaced by a derived,
+   read-time view over already-existing Phase 81 records (§4). Oracle-
+   result identity strengthened to bind to the exact tested subject,
+   not a bare commit reference (§5).
 
 ## 0. Verified current state (read live, not assumed)
 
@@ -54,18 +65,21 @@ this plan changes.
 
 Establish, for exactly **one real Ledgerkit function**, the smallest
 complete vertical slice of: a versioned behavioural contract record →
-links to canonical knowledge and implementation evidence → explicit
-INTENDED/OBSERVED/VERIFIED/UNCERTAIN status → a minimal oracle contract/
-result schema → a pinned reference scenario → a baseline run identity →
-deterministic validation/provenance checks. Every later v2 phase cites
-this slice as its concrete substrate — if it does not work end to end
-here, nothing downstream has anything real to build on.
+links to canonical knowledge and implementation evidence → an
+independently-derivable INTENDED/OBSERVED/VERIFIED/CONTESTED view → a
+minimal oracle contract/result schema → a pinned reference scenario → a
+baseline run identity → deterministic validation/provenance checks.
+Every later v2 phase cites this slice as its concrete substrate — if it
+does not work end to end here, nothing downstream has anything real to
+build on.
 
 **In scope:**
 
 - A behavioural-contract record format (§3).
-- The INTENDED/OBSERVED/VERIFIED/UNCERTAIN dimension, as a genuinely
-  separate axis from the existing `status` field (§4).
+- A derived, read-time INTENDED/OBSERVED/VERIFIED/CONTESTED view,
+  computed from existing Phase 81 records plus Phase 82's own new
+  oracle-result citations — **no new field on any Claim/Requirement
+  record** (§4, `decisions/0080`).
 - A minimal oracle-contract schema (what must be checked) and
   oracle-result schema (what was found: PASS/FAIL/GAP/INVALID) (§5).
 - One pinned Ledgerkit reference scenario, with a real, demonstrably
@@ -133,128 +147,189 @@ contract is:
 
 This reuses the existing flat-record text format
 `check_knowledge_base.py`/`knowledge_intermediate.py` already parse —
-no new file format, no new parser, only new optional fields (§4) and a
-new validation rule (§8).
+no new file format, no new parser, and (per `decisions/0080`'s
+correction) **no new field on any of these three record kinds at all** —
+only a new derived view (§4) and a new validation rule (§8).
 
-## 4. INTENDED / OBSERVED / VERIFIED — the schema delta (corrected 2026-10-21, §12)
+## 4. INTENDED / OBSERVED / VERIFIED / CONTESTED — a derived view, not a persisted field
 
-**Decision required from the maintainer before implementation**
-(`decisions/0078`'s Decision point 1 established *that* this must be a
-separate axis from `status`; this plan proposes the concrete mechanism.
-**This section was corrected same-day, pre-implementation, by the
-federation-review amendment — see §12 for why**: the original four-value
-closed enum treated `intended`/`observed`/`verified` as mutually
-exclusive, which they are not — a Claim can be all three at once.):
+**Corrected 2026-10-21 (`decisions/0080`) — this section replaces, not
+amends, both the original four-value `epistemic_source` proposal and its
+first, still-incorrect ordinal-scale correction.** Direct review against
+concrete counter-examples (a legacy behaviour verified by test but never
+accepted as intended; an accepted requirement contradicted by real
+implementation evidence; a contract verified under some inputs and not
+others) established that intent, observation, and verification are
+**independent predicates over independent records**, not degrees of one
+scale — no single field, ordinal or not, can represent "verified but not
+intended" and "intended but contradicted" and "verified for scope A,
+untested for scope B" all at once without losing information.
 
-Add one new optional field, `epistemic_source`, to Claim and Requirement
-records — **an ordinal scale, not an exclusive pick**, recording the
-*strongest grounding reached so far*: `intended < observed < verified`.
-`verified` subsumes `observed` subsumes `intended` by construction (a
-verified behaviour is necessarily also observed; a Requirement's
-behaviour cannot be verified without the Requirement itself already
-being `intended` by definition of being a Requirement at all) — so a
-single ordinal value correctly represents "at least this much grounding
-exists," never forcing a false choice between states that actually
-compose.
+**No new field is added to any Claim, Requirement, Evidence, or
+Observation record.** Direct inspection of
+`src/codecompass/knowledge_intermediate.py` (not only its planning
+description) found the needed structure already exists, already
+exercised by a real, tested precedent for exactly this problem shape:
+`derive_provenance_label` (`knowledge_intermediate.py:877-956`) already
+computes a classification (`OBSERVED`/`DECLARED`/`DECIDED`/`DERIVED`/
+`HISTORICAL`/`MIXED`/`UNCLASSIFIED`) purely from existing `kind`/`basis`/
+`status` fields, as a read-time function — not a persisted field —
+having itself been corrected twice (`decisions/0073`/`0074`) for
+exactly the mistake of guessing a relationship instead of walking the
+real citation fields. This phase's own correction follows that same,
+already-proven pattern rather than repeating the mistake it fixed.
 
-- `intended` — an accepted maintainer/product requirement, nothing more
-  yet. A `REQ-`-prefixed record with no linked passing oracle result
-  defaults here implicitly if the field is absent (backward-compatible
-  with every existing Requirement record — **zero migration required**,
-  matching Phase 81's own "zero new persisted fields on existing
-  records" discipline as closely as this genuinely new concept allows).
-- `observed` — behaviour the implementation or a runtime trace exhibits,
-  with no accepted check yet confirming it under defined conditions.
-- `verified` — behaviour a named oracle-result record (§5) demonstrates
-  PASS for, under recorded conditions. **This value may only be set by
-  a reconciliation step that reads a real oracle-result record** — never
-  hand-set by an agent, mirroring `decisions/0072`'s existing rule that
-  an `aligned` comparison finding never auto-promotes a Claim's `status`
-  to `verified` on its own. The same non-conflation rule applies here:
-  an AI-generated statement never becomes `epistemic_source: verified`
-  through reconciliation alone, only through a cited, real,
-  independently-executed oracle result.
+**The four predicates, each computed independently:**
 
-**`uncertain` is not a value of this field** (removed by the §12
-amendment). Contested or conflicting evidence already has a home: the
-existing `status` field (`proposed|supported|contradicted|superseded|
-verified`, unchanged) — a Claim can be `epistemic_source: verified`
-(grounded under the specific conditions an oracle checked) while
-`status: contradicted` (some other evidence now disputes it, or disputes
-whether those conditions generalise). Keeping both an `epistemic_source:
-uncertain` value and `status: contradicted` would double-encode the same
-concern in two places, inviting drift between them.
+- **INTENDED** — true iff a `REQ-` record exists with `status` ∈
+  `{approved, implemented, verified}` (an enum this project's schema
+  already has — `check_knowledge_base.py`'s `_STATUS_ENUMS["requirement"]`
+  — unmodified by this phase), or a cited `DEC-` record has
+  `status: approved`. This is the exact existing `DECIDED` branch
+  `derive_provenance_label` already computes (`knowledge_intermediate.py:
+  901-909`) — reused, not reimplemented.
+- **OBSERVED** — true iff a Claim's `basis` is `observed_behaviour`, or
+  `directly_stated` resolving through `supporting_evidence` to a real
+  Evidence record whose `observations:` field resolves to a real
+  Observation record — the exact existing walk
+  `derive_provenance_label` already performs
+  (`knowledge_intermediate.py:925-955`).
+- **VERIFIED** — true **for a specific `scope`** iff at least one
+  Evidence record cited via `supporting_evidence` has a `test_ref`
+  resolving to a real `oracle-result.yaml` (§5) with `outcome: PASS`,
+  matching `scope`, and a `tested_subject_digest` matching the
+  contract's current implementation. **There is no single "is this
+  Claim verified" boolean** — the view reports a set of verified scopes
+  and a set of known-gap scopes separately, so a contract verified under
+  some inputs and untested or contradicted under others is represented
+  exactly as that, never collapsed to one answer.
+- **CONTESTED** — true iff `status: contradicted`,
+  `evidence_support_state: conflicting`, or a non-empty
+  `contradicting_evidence` list — all pre-existing fields, unchanged.
 
-**`epistemic_source` is scoped to project-local grounding only.** It
-says nothing about whether this project's behaviour is compatible with
-another project's — that question belongs entirely to a future
-cross-project mapping record's own `verification_status`
-(`decisions/0079`), never to this field. This scoping statement costs
-Phase 82 nothing to add now and avoids the field being silently
-overloaded later.
+**None of these four implies another.** VERIFIED does not imply
+INTENDED (a legacy behaviour can be oracle-confirmed with no `REQ-`
+record ever having accepted it as intended). INTENDED does not imply
+OBSERVED or VERIFIED (an approved `REQ-` with zero linked Claims is
+intended and nothing else). INTENDED and CONTESTED can both be true at
+once (an accepted requirement a real observation contradicts). This is
+the structural property the prior two designs each failed to have, by
+construction — a derived view over independent sources cannot force an
+implication a single field inevitably does.
 
-`status` keeps its existing meaning (confidence given current evidence)
-entirely unchanged — `epistemic_source` and `status` are orthogonal and
-both required to read a Claim correctly going forward (e.g. a Claim can
-be `status: supported` + `epistemic_source: observed` — well-evidenced,
-but nobody has run an accepted check against it yet).
+**New code, not new schema**: Phase 82 adds one function,
+`derive_epistemic_profile(record, records_by_id, oracle_results) ->
+EpistemicProfile` — a small dataclass (`intended: bool`, `observed:
+bool`, `verified_scopes: list[str]`, `known_gap_scopes: list[str]`,
+`contested: bool`) — placed alongside and reusing
+`derive_provenance_label`'s existing id-resolution helpers in
+`knowledge_intermediate.py`, not duplicating them. It persists nothing;
+it is called wherever a contract's epistemic state needs to be shown
+(the eventual `codecompass knowledge` CLI surface, the rendered
+Markdown projection) and recomputed each time, exactly like its sibling.
 
-**Validator change**: `check_knowledge_base.py` gains one new
-closed-enum check for `epistemic_source` when present (now a 3-value
-enum, `intended|observed|verified`), following the existing pattern at
-its own `assertion_kind` validation
-(`scripts/check_knowledge_base.py:172` area) — additive, not a rewrite
-of existing checks.
+**`evidence_support_state` keeps its existing meaning, entirely
+unchanged** — the derived view reads it, it does not reinterpret or
+replace it.
+
+**A real naming collision this review found, named explicitly rather
+than papered over**: `Claim.status` and `Requirement.status` already
+had a `verified` enum value *before* Phase 82 (`check_knowledge_base.py`
+`_STATUS_ENUMS`), and `check_knowledge_base.py` has never checked what
+that value actually requires — it is open, hand-set text today. Phase 82
+**closes that previously-unenforced gap** rather than inventing a
+second, differently-named concept: going forward, `status: verified` on
+a record Phase 82's own validation reaches is only valid when it is
+*fully* earned — **every `required: true` check in that contract's own
+`oracle-contract.yaml` has a matching, current, `PASS` oracle-result**.
+A Claim verified for some but not all of its own required scopes keeps
+`status: supported` (or whatever `status` its evidence otherwise
+earns), with the derived view's own `verified_scopes`/`known_gap_scopes`
+split (above) surfacing the partial picture precisely — `status:
+verified` is reserved for the case with no remaining required gap.
+
+**Validator change**: `check_knowledge_base.py` gains one new check,
+`check_verified_status_cites_passing_oracle_result`, mirroring the
+existing `check_requirement_cites_approved_decision`
+(`scripts/check_knowledge_base.py:475`) exactly in shape: for any
+record whose `status` is `verified`, every `required: true` check named
+in the contract's `oracle-contract.yaml` must resolve, via some Evidence
+citation's `test_ref`, to a current, matching-scope, `PASS`
+`oracle-result.yaml` — a record claiming `status: verified` with a
+missing, stale, mismatched-scope, or non-`PASS` required check is a
+validation finding, exactly as `check_requirement_cites_approved_decision`
+already treats an unapproved cited Decision.
 
 ## 5. Oracle contract and result schema
 
 Two new, minimal, machine-readable file formats under
-`planning/contracts/<slug>/`:
+`planning/contracts/<slug>/`. **Corrected 2026-10-21 (`decisions/0080`)**:
+`oracle-result.yaml` gains identity fields binding it to the exact
+tested subject, not merely a commit reference — see the rationale table
+below.
 
 - **`oracle-contract.yaml`** — what must be checked for this contract:
   `contract_id` (the `REQ-` id), `execution_provider` (e.g. `pytest`,
   named explicitly rather than assumed — Phase 82 supports exactly one
   provider kind to prove the shape, not a provider-plugin system),
   `check_reference` (how to invoke it — a test node ID for `pytest`),
-  `required` (bool — is this check mandatory for the contract to be
-  considered checked at all, distinguishing a `GAP` from a merely
-  optional nice-to-have check).
-- **`oracle-result.yaml`** — one per run: `contract_id`, `baseline_id`
-  (§7), `outcome` (`PASS|FAIL|GAP|INVALID` — the governing prompt's
-  exact four values), `executed_at`, `execution_provider`,
-  `raw_output_ref` (a path to the captured raw tool output, for
-  independent re-inspection — never only a summary string), and, for
-  `INVALID`, a mandatory `invalid_reason` field (the environment,
-  configuration, or evidence that made the run unreliable — `INVALID`
-  without a reason is itself a validation failure, see §8.4).
+  `scope` (the specific conditions this check actually covers, e.g.
+  "integer inputs" — required precisely because VERIFIED is now
+  scope-qualified, §4), `required` (bool — is this check mandatory for
+  the contract to be considered checked at all, distinguishing a `GAP`
+  from a merely optional nice-to-have check).
+- **`oracle-result.yaml`** — one per run, with the following fields:
+
+  | Field | Purpose |
+  |---|---|
+  | `run_id` | Identifies this specific execution — distinct from `baseline_id` (may be cited by many runs) and `tested_subject_digest` (may recur across runs against unchanged code). |
+  | `contract_id` | The `REQ-` id this result addresses. |
+  | `baseline_id` | §7 — the accepted reference state, nullable (a run against no yet-accepted baseline is still valid, just not "the" reference result). |
+  | `tested_subject_digest` | **The actual content hash of the exact files executed** — reusing Phase 81B's own `payload_tree_sha256`/`_canonical_digest_of_hashes` construction (`decisions/0077`) over the oracle's own relevant source tree. **Not a bare Git commit SHA**: a commit SHA cannot distinguish a clean checkout from a dirty worktree with uncommitted changes; a content digest of what was actually read and executed can, and the run is recorded as `INVALID` if this digest cannot be computed. |
+  | `oracle_contract_id` + `oracle_contract_content_hash` | The accepted contract and checks actually executed, by content, continuing the tamper-detection mechanism below — now an explicit field on the result itself, not only a side validation. |
+  | `test_input_digest` | Content hash of the exact fixture/input data used — a contract can stay unchanged while its own fixture quietly drifts; this makes that drift independently detectable. |
+  | `environment_descriptor` | Optional, recorded only where material (e.g. a language/runtime version that could plausibly change the outcome) — never fabricated when not material. |
+  | `scope` | The specific conditions this result actually covers (mirrors the oracle-contract's own `scope`; must match for the result to count toward that check). |
+  | `outcome` | `PASS\|FAIL\|GAP\|INVALID` — the governing prompt's exact four values. |
+  | `raw_output_ref` + `raw_output_sha256` | A path to the captured raw tool output, for independent re-inspection, plus a content hash of that file — the raw evidence itself must be tamper-evident, not merely referenced. |
+  | `executed_at`, `execution_provider` | Unchanged from the original proposal. |
+  | `invalid_reason` | Mandatory when `outcome: INVALID` — the environment, configuration, or evidence that made the run unreliable; `INVALID` without a reason is itself a validation failure (§8.4). |
 
 **`GAP` vs `FAIL` vs `INVALID`, concretely, so the distinction is
 checkable, not just prose**: `FAIL` requires the check to have actually
 run and produced a negative result; `GAP` requires the check to be
-`required: true` in the oracle contract but to have no corresponding
-`oracle-result.yaml` at all, or one whose `outcome` the validator cannot
-itself confirm matches a real run (§8.4); `INVALID` requires an explicit,
-named reason the *environment* (not the code under test) is untrusted.
-A successful run is never presented as proof of an untested behaviour —
-concretely, the oracle-result schema has no field that could be
-mistaken for "everything is fine" in the absence of a contract-specific
-`PASS`.
+`required: true` in the oracle contract but to have no corresponding,
+scope-matching `oracle-result.yaml` with `outcome: PASS` (§8.4);
+`INVALID` requires an explicit, named reason the *environment* (not the
+code under test) is untrusted — including an unresolvable
+`tested_subject_digest`/`test_input_digest`. A successful run is never
+presented as proof of an untested behaviour — concretely, the
+oracle-result schema has no field that could be mistaken for
+"everything is fine" in the absence of a scope-matching, contract-
+specific `PASS`.
 
-**Protection from the evaluated agent**: `oracle-contract.yaml` files
-are the "accepted checks" the governing prompt requires be protected —
-Phase 82's own deterministic validation (§8) includes a check that an
-`oracle-contract.yaml`'s own content hash (recorded at authoring time by
-a human/maintainer-approved commit, not by the coding agent under
-evaluation) is unchanged at result-recording time; a changed contract
-with no corresponding new maintainer-approved commit fails validation
-closed. (The *mechanism* enforcing this at execution time — e.g. running
-the oracle check outside the coding agent's own working tree, closer to
-Phase 81B's broker/sandbox model — is Phase 83/84's concern once there
-is a real agent-facing execution path; Phase 82 proves the schema can
-represent and detect tampering, not that an agent has been kept away
-from it yet.)
+**Protection from the evaluated agent, and its real limit**:
+`oracle-contract.yaml` files are the "accepted checks" the governing
+prompt requires be protected — Phase 82's own deterministic validation
+(§8) includes a check that an `oracle-contract.yaml`'s own content hash
+(recorded at authoring time by a human/maintainer-approved commit, not
+by the coding agent under evaluation) is unchanged at result-recording
+time; a changed contract with no corresponding new maintainer-approved
+commit fails validation closed. **This, and every digest field above,
+establishes internal consistency and tamper-evidence after the fact —
+it does not, by itself, prove independent execution or trusted
+authorship.** Nothing in Phase 82 stops a sufficiently motivated author
+from hand-computing consistent-looking digests for a fabricated run; the
+schema can only show a result internally inconsistent, never
+affirmatively prove it was produced honestly. **The mechanism that
+actually prevents this** — running the oracle check somewhere the agent
+under evaluation cannot write to, closer to Phase 81B's own broker/
+sandbox model, where the checker is outside the evaluated agent's own
+reach — is Phase 83/84's concern, not yet built. Phase 82 proves the
+schema can represent and mechanically detect tampering after the fact;
+it does not yet prevent a motivated fabrication before the fact.
 
-## 6. Pinned Ledgerkit reference scenario and negative control
+## 6. Pinned Ledgerkit reference scenario and negative controls
 
 - **Positive scenario**: one real, currently-passing Ledgerkit test (or
   a new, equally-real fixture scenario if none currently isolates
@@ -262,13 +337,43 @@ from it yet.)
   implementation time against the real `tests/test_reports.py`) is
   named as `balance-from-spec`'s `check_reference`. Running the oracle
   against it today must produce `PASS`.
-- **Negative control** (the exit gate's own explicit requirement): a
-  deliberately, minimally incorrect version of `balance_from_spec` (or
-  an equivalent fixture mutation) must cause the same oracle contract to
-  report `FAIL` — proving the oracle actually discriminates, not merely
-  echoes a cached green result. This mutation is applied to a disposable
+- **Negative control (original, preserved unchanged)**: a deliberately,
+  minimally incorrect version of `balance_from_spec` (or an equivalent
+  fixture mutation) must cause the same oracle contract to report
+  `FAIL` — proving the oracle actually discriminates, not merely echoes
+  a cached green result. This mutation is applied to a disposable
   scratch copy of the Ledgerkit checkout, never committed to the real
   `~/projects/ledgerkit` repository.
+
+**Five further negative controls, added 2026-10-21 (`decisions/0080`),
+each targeting one way §5's identity fields could otherwise be
+misapplied**:
+
+1. **A passing result cannot verify a modified candidate that was not
+   tested.** After a real `PASS` run, mutate the scratch copy (any
+   change, not necessarily one that breaks the behaviour) and confirm
+   the stale `tested_subject_digest` no longer matches — the old result
+   must not be treated as covering the new state.
+2. **A result obtained under different accepted checks cannot be reused
+   as equivalent evidence.** Change the `oracle-contract.yaml`'s own
+   `check_reference` (a genuinely different check, same `contract_id`)
+   and confirm an old result citing the prior
+   `oracle_contract_content_hash` is not silently treated as satisfying
+   the new contract.
+3. **A result with mismatched or unverifiable test inputs fails
+   closed.** Alter the fixture/input data a `check_reference` reads
+   without updating `test_input_digest`, and confirm the mismatch is
+   detected rather than silently accepted.
+4. **Tampered or missing raw evidence cannot establish verification.**
+   Edit the file `raw_output_ref` points to after the fact (or delete
+   it) and confirm the `raw_output_sha256` mismatch (or missing-file
+   condition) fails validation.
+5. **A passing result for one scenario does not imply verification of
+   untested scenarios.** Produce a real `PASS` for `scope: "integer
+   inputs"` and confirm the derived view (§4) reports that scope
+   verified while a distinct, never-run `scope: "fractional inputs"`
+   stays in `known_gap_scopes` — never silently folded into an
+   overall "verified" answer.
 
 ## 7. Baseline run identity and telemetry
 
@@ -285,6 +390,15 @@ advance a baseline; it only produces an `oracle-result.yaml` that may
 later be cited by a baseline-acceptance action. This is the one place
 in this phase most structurally similar to the class of mechanism L-087
 was written about, so it is named explicitly rather than left implicit.
+
+**Distinct from, not a substitute for, §5's `run_id`/`tested_subject_digest`**
+(added by `decisions/0080`): `baseline_id` identifies *which accepted
+reference state* a result is measured against — one baseline may be
+cited by many runs over time. `run_id` identifies *one specific
+execution*. `tested_subject_digest` identifies *what was actually
+executed*, independent of how many times or when. Three separable
+concerns, three separate fields — collapsing any two would reintroduce
+exactly the kind of identity ambiguity §5 exists to close.
 
 Minimal telemetry recorded per run: `executed_at`, `execution_provider`,
 `baseline_id` (nullable — a run against no yet-accepted baseline is
@@ -328,41 +442,102 @@ shape):
    content hash does not match the hash recorded at its last
    maintainer-approved commit fails closed (§5's protection mechanism,
    checked mechanically here).
+6. **Tested-subject/input/output integrity** (added 2026-10-21,
+   `decisions/0080`, §6's five new negative controls): an
+   `oracle-result.yaml` whose `tested_subject_digest`,
+   `oracle_contract_content_hash`, `test_input_digest`, or
+   `raw_output_sha256` does not match an independently recomputed value
+   fails closed; a `scope` on a result that does not match any `scope`
+   named in its own `oracle-contract.yaml` fails closed rather than
+   being silently accepted as "close enough."
+7. **`status: verified` earns its own claim** (§4): a record whose
+   `status` is `verified` but which does not have a current, matching-
+   scope `PASS` for every `required: true` check in its own
+   `oracle-contract.yaml` is a validation finding
+   (`check_verified_status_cites_passing_oracle_result`).
 
 ## 9. Open decisions requiring explicit maintainer approval
 
-1. **The `epistemic_source` field name and its ordinal three-value
-   enum** (§4, corrected by the §12 federation-review amendment from an
-   originally-proposed, incorrectly-exclusive four-value design) — the
-   single genuinely new schema concept this phase introduces.
-   Alternative names considered: `provenance_kind` (rejected — collides
-   in spirit with the already-established, differently-scoped
-   mechanical-vs-inferred "provenance" vocabulary from `decisions/0051`/
-   `0054`, which is about *how a fact was produced*, not *what kind of
-   claim it is*); `claim_source`. Proceeding with `epistemic_source`
-   unless the maintainer prefers otherwise.
-2. **Whether `balance_from_spec` is the right pinned scenario**, or a
+1. **The derived-view design itself (§4, `decisions/0080`)** — no field
+   name to approve (there is no new field), but the maintainer should
+   confirm the approach: computing INTENDED/OBSERVED/VERIFIED/CONTESTED
+   at read time from existing records, rather than persisting any of
+   them, including the repurposing of the pre-existing, previously-
+   unenforced `status: verified` value to now require a real, scope-
+   complete oracle citation.
+2. **The oracle-result identity fields (§5, `decisions/0080`)** —
+   `run_id`, `tested_subject_digest`, `oracle_contract_content_hash`,
+   `test_input_digest`, `environment_descriptor`, `raw_output_sha256`,
+   `scope`. None is individually contentious, but together they are the
+   bulk of this phase's genuinely new schema surface and warrant a
+   single explicit sign-off rather than being approved implicitly by
+   silence.
+3. **Whether `balance_from_spec` is the right pinned scenario**, or a
    different real Ledgerkit function should anchor Phase 82 instead —
    confirmed against the live fixture set at implementation time (§2).
-3. **The MCP SDK/licence check named in Phase 84's roadmap entry** is
+4. **The MCP SDK/licence check named in Phase 84's roadmap entry** is
    not this phase's decision, but is flagged here so it is not
    forgotten when Phase 82 hands off.
 
 ## 10. Verification (how this phase is confirmed done)
 
-- Deterministic unit tests for: the `epistemic_source` enum validator
-  (valid values accepted, invalid rejected, absent field defaults
-  correctly per record kind); the oracle-contract/oracle-result schema
-  validators, including the minimal-content edge case (§8.2) and the
-  depth check (§8.3); the baseline-identity non-auto-advance rule (§7) —
-  a test that runs the oracle twice without an explicit acceptance step
-  and confirms no `baseline_id` was minted either time.
-- The real Ledgerkit positive scenario (§6) produces `PASS` when run
-  against the current, unmodified `~/projects/ledgerkit` checkout.
-- The real Ledgerkit negative control (§6) produces `FAIL` when run
-  against a deliberately mutated scratch copy — this is the exit gate's
-  own named requirement and must be demonstrated, not merely asserted
-  possible.
+**Epistemic-view tests (§4), demonstrating the six scenarios the
+governing prompt named by example, each against real or realistic
+fixture records — not assumed, constructed and checked:**
+
+1. An approved `REQ-` record with zero linked Claims: `derive_epistemic_
+   profile` reports `intended=True`, `observed=False`,
+   `verified_scopes=[]`.
+2. A Claim with `basis: observed_behaviour`, real supporting Evidence,
+   and a cited `test_ref` resolving to a real `PASS` oracle-result, with
+   **no** `REQ-`/`DEC-` record referencing it at all:
+   `intended=False`, `observed=True`, `verified_scopes` non-empty.
+3. An approved `REQ-` whose linked Claim is `status: contradicted` with
+   real `contradicting_evidence`: `intended=True`, `contested=True`
+   simultaneously — neither suppresses the other.
+4. A contract with two `oracle-contract.yaml` checks, different
+   `scope`s, one with a real `PASS` result and one with none:
+   `verified_scopes` contains the first, `known_gap_scopes` contains the
+   second — `status: verified` on the governing record is rejected by
+   `check_verified_status_cites_passing_oracle_result` (§8.7) while any
+   required scope remains a gap.
+5. A real `PASS` oracle-result whose `tested_subject_digest` no longer
+   matches the current implementation after a relevant source change:
+   demonstrates staleness is mechanically detectable (a raw digest
+   recomputation and comparison) — the actual *trigger* that acts on
+   this automatically is Phase 85's own reconciliation machinery, not
+   built in Phase 82; this test confirms the data Phase 85 will need is
+   present and correctly computed, not that Phase 85's trigger exists
+   yet.
+6. A new, conflicting Evidence record (e.g. a second oracle result
+   disagreeing with a prior one) is added via the existing apply path:
+   confirms both records persist, cited via `contradicting_evidence`,
+   and neither is silently deleted or overwritten — exercising Phase
+   81's already-existing conflict-retention behaviour against a new,
+   oracle-sourced Evidence record for the first time.
+
+**Oracle-identity tests (§5/§6)**: the five negative controls listed in
+§6 (stale `tested_subject_digest`, mismatched `oracle_contract_content_
+hash`, mismatched `test_input_digest`, tampered/missing
+`raw_output_sha256`, scope non-generalisation), each demonstrated to
+fail closed, not merely asserted possible.
+
+**Schema-validator tests (§8)**: the oracle-contract/oracle-result
+schema validators, including the minimal-content edge case (§8.2) and
+the depth check (§8.3); the baseline-identity non-auto-advance rule
+(§7) — a test that runs the oracle twice without an explicit acceptance
+step and confirms no `baseline_id` was minted either time.
+
+**End-to-end Ledgerkit tests (§6)**:
+
+- The real Ledgerkit positive scenario produces `PASS` when run against
+  the current, unmodified `~/projects/ledgerkit` checkout.
+- The real Ledgerkit negative control produces `FAIL` when run against a
+  deliberately mutated scratch copy — this is the exit gate's own named
+  requirement and must be demonstrated, not merely asserted possible.
+
+**Project-wide checks**:
+
 - `check_contracts.py --strict` and `check_knowledge_base.py --strict`
   both report no findings against the one real contract this phase
   produces.
@@ -382,7 +557,8 @@ Evidence citing real source locations → an oracle contract → a real
 demonstrated `FAIL` against a deliberately introduced defect — with
 every artifact passing deterministic validation, and with no claim of
 `verified` status anywhere in the record set that isn't backed by an
-actual, re-inspectable oracle result.
+actual, re-inspectable, scope-matching, tested-subject-bound oracle
+result (`decisions/0080`).
 
 ## 12. Amendment: federation-compatibility review and epistemic-model correction (2026-10-21)
 
@@ -419,3 +595,66 @@ one-contract vertical slice is not invalidated.
 **3. No further maintainer approval gate is added** — the corrected
 `epistemic_source` design falls under the same approval §9 already
 requires for the field's original proposal.
+
+## 13. Second amendment (corrective): epistemic model fully corrected, oracle-result identity strengthened (2026-10-21)
+
+Direct user request ("CodeCompass v2 — Corrective Planning Amendment"),
+same day as §12. Full rationale: `decisions/0080`. Confirmed before
+amending: `HEAD` was exactly `47ab61c` (§12's own commit), zero drift.
+
+**§12's own ordinal-scale correction was itself still wrong.** Reviewing
+it against three concrete counter-examples (Ledgerkit rounding behaviour
+verified by test but never accepted as intended; an accepted requirement
+contradicted by real evidence; a contract verified under some inputs and
+not others) found that `intended < observed < verified` still forces a
+single value where the real relationships are independent predicates,
+not an orderable scale — `verified` does not actually subsume
+`intended`, contrary to §12's own stated reasoning. **`epistemic_source`
+is now removed entirely** (§4) — not corrected a third time, replaced —
+by a derived, read-time view that computes each of INTENDED/OBSERVED/
+VERIFIED/CONTESTED independently from records Phase 81 already has, plus
+Phase 82's own new oracle-result citations.
+
+**This correction, too, is independent of federation** — like §12's own
+first finding, it would have surfaced the moment Phase 82 tried to
+record a Claim that was simultaneously verified and not intended,
+regardless of any cross-project concern.
+
+**Direct inspection of the actual Phase 81 implementation** (not only
+its planning description, per this amendment's own governing
+instruction) found the correction did not need inventing: `knowledge_
+intermediate.py::derive_provenance_label` already solves the identical
+problem shape (classify a record's epistemic standing purely from
+existing fields, as a read-time function) for a different label set, and
+had itself been corrected twice before for guessing instead of walking
+real citation fields — the same mistake this ADR's predecessor
+(`decisions/0079`) made for a new field, one phase layer up. This
+amendment's own §4 reuses that function's existing helpers rather than
+re-deriving them.
+
+**Oracle-result identity was also strengthened** (§5/§6/§8): `run_id`,
+`tested_subject_digest` (a content digest, not a bare commit SHA —
+accounting for uncommitted worktree changes, reusing Phase 81B's own
+`payload_tree_sha256` precedent), `oracle_contract_content_hash`,
+`test_input_digest`, `environment_descriptor`, `raw_output_sha256`, and
+an explicit `scope` field, plus five new negative controls and one new
+validator rule (`check_verified_status_cites_passing_oracle_result`).
+Phase 82's plan now states explicitly what it does and does not protect
+against: internal consistency and tamper-evidence after the fact, never
+independent execution or trusted authorship on their own — that
+protection is named as Phase 83/84's own future mechanically-isolated
+execution boundary, not claimed here.
+
+**Nothing else in this plan changed.** The contract record format (§3),
+the pinned Ledgerkit scenario and its original negative control (§6),
+the baseline-identity non-auto-advance rule (§7, now explicitly
+distinguished from `run_id`/`tested_subject_digest`), and the exit gate
+(§11, reworded for precision, not weakened) are unchanged in substance.
+Phase 82 is not broadened — every addition above is either a derived
+view (no persisted schema) or a field on the already-new, not-yet-
+implemented oracle-result file, never a change to an existing canonical
+record.
+
+**No further maintainer approval gate beyond §9's own two line items**
+(the derived-view approach, and the oracle-result identity field set) —
+both already restated to reflect this amendment, not additional to it.

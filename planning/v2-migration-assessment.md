@@ -27,15 +27,22 @@ question — how v2 lands without breaking what v1 already shipped.
 
 ## Compatibility posture through Phase 82-85
 
-**Additive only.** Every schema delta named in this roadmap so far
-(Phase 82's proposed `epistemic_source` field) is a new, optional field
-on an existing record kind, defaulting safely when absent — no existing
-`planning/knowledge/` record anywhere needs to change to remain valid
-after Phase 82 ships, matching the same zero-migration discipline Phase
-81 itself established ("Phase 81 adds zero new persisted fields to any
-canonical record"). No `context-graph.db` migration is proposed before
-Phase 83 at the earliest, and even then only if real use demonstrates a
-genuine gap (`conditional-generalisation.md`'s standing discipline).
+**Additive only — now even more so after `decisions/0080`'s
+correction.** Phase 82's only genuinely new schema surface is the
+`oracle-contract.yaml`/`oracle-result.yaml` file pair (new files, not new
+fields on any existing record). The epistemic dimension originally
+proposed as a new `epistemic_source` field on Claim/Requirement records
+was first corrected to an ordinal scale (still a new field,
+`decisions/0079`), then found still conceptually wrong and **removed
+entirely** (`decisions/0080`) in favour of a derived, read-time view
+computed from fields Phase 81 already has — meaning **zero existing or
+Phase-82-planned canonical record field changes at all**, an even
+stronger zero-migration posture than the original proposal, matching
+Phase 81's own "zero new persisted fields on any canonical record"
+discipline exactly rather than only approximately. No `context-graph.db`
+migration is proposed before Phase 83 at the earliest, and even then
+only if real use demonstrates a genuine gap
+(`conditional-generalisation.md`'s standing discipline).
 
 **No CLI command is removed or changed in incompatible ways** by
 anything in Phases 82-85. Phase 84's MCP server is a new, separate
@@ -126,9 +133,17 @@ One Phase 82 schema correction *was* made by this same review (the
 `epistemic_source` field's ordinal redesign,
 `planning/phase-82-contract-and-evidence-foundation.md` §12) — found
 independent of federation, surfaced by reviewing the field against this
-amendment's own INTENDED/OBSERVED/VERIFIED separation requirement. It
-remains gated behind the same pre-implementation maintainer approval the
-field's original proposal already required.
+amendment's own INTENDED/OBSERVED/VERIFIED separation requirement. A
+same-day follow-on review (`decisions/0080`) found the ordinal redesign
+itself still conceptually wrong and removed the field entirely in
+favour of a derived view (§4/§13 of the Phase 82 plan) — an even
+stronger additive posture than this paragraph originally described,
+since there is now no new field on any existing record at all, only new
+oracle-result files and new, read-only code. `decisions/0080` §3 also
+extends the project-identity envelope itself with a `publisher_id`/
+`authority` distinction (self-published vs. third-party reconstruction)
+— still external to every project-local record, still deferred to
+Post-v2 Stage 1's own implementation.
 
 **`codecompass-template` implications, unchanged**: nothing in this
 amendment adds template content — a federated overlay has no adopter-

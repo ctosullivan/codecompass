@@ -8,6 +8,19 @@ none blocks Phase 88's v2.0 release, and none may begin without its own
 future `CLAUDE.md` §1 plan file, scoped against evidence current at that
 time, exactly as every prior phase in this project already requires.
 
+**Amendment log**: 2026-10-21, same day, "CodeCompass v2 — Corrective
+Planning Amendment" (`decisions/0080`) made three targeted corrections,
+each at the point it applies below: Stage 2 clarifies hledger knowledge
+construction without an implicit Haskell-adapter dependency; Stage 5 is
+now design-only, with empirical comparison explicitly deferred to a
+separate, not-yet-numbered future stage; Stage 7 separates accounting-
+backend generalisation (Beancount) from the genuinely-unrelated-domain
+validation actually required before any "domain-independent" claim.
+The same amendment extended the project-identity envelope (§"Verified
+vs. unverified prerequisites" references it below) with a `publisher_id`/
+`authority` distinction — a snapshot's own existence never implies the
+described project's maintainers endorsed it.
+
 ## Why PTA, why not an accounting-specific capability
 
 Cross-project semantic overlay is a **generic CodeCompass capability**
@@ -51,11 +64,12 @@ can only ever be satisfied.
 
 **Goal**: build and validate `decisions/0079` §5's export format for
 exactly one project (Ledgerkit) — a static JSON snapshot plus a
-project-identity envelope, consumable with no running `codecompass`
-process.
+project-identity envelope (including `decisions/0080` §3's
+`publisher_id`/`authority` fields, specified, not yet implemented, by
+that ADR), consumable with no running `codecompass` process.
 
 **Depends on**: Phase 82 `done` (needs real Claim/Requirement/contract
-records to export) and the corrected `epistemic_source` schema.
+records, and `decisions/0080`'s derived epistemic view, to export).
 
 **Exit gate (falsifiable)**: a Ledgerkit snapshot, exported once, can be
 independently re-validated (schema-shape, content-hash integrity, no
@@ -69,6 +83,45 @@ has not actually produced a portable artifact.
 **Goal**: produce real Layer B Domain Concepts and Layer C mappings for
 the narrow concept set in §"Accounting concept scope" below, between
 Ledgerkit and hledger specifically (both locally available).
+
+**Corrected, 2026-10-21 (corrective amendment): how a real hledger
+knowledge snapshot is built before any Haskell source-analysis adapter
+exists.** CodeCompass has no Haskell symbol indexer (`decisions/0065`
+scopes first-party source indexing to Python/Rust/JavaScript/TypeScript
+only) — **Stage 2 does not implicitly depend on one.** hledger evidence
+is gathered through exactly the methods already available to this
+project without one, each honestly labelled using the *existing*
+`basis` enum (`check_knowledge_base.py`'s `_OPTIONAL_ENUM_FIELDS`,
+no new value needed):
+
+- **Externally observed behavioural claims** (`basis:
+  observed_behaviour`) — running hledger's real CLI, reading its real
+  output, executing its own published test cases
+  (`~/projects/hledger`'s own `tests/`) — black-box, language-
+  independent, and the **stronger** of the two evidence classes for
+  this purpose, since Stage 2's own exit gate is defined in terms of
+  verified *behaviour*, not verified *source structure*.
+- **Source-derived architectural claims** (`basis: directly_stated`,
+  citing a real `source_ref`) — a human or agent reading a specific,
+  cited hledger source file/line range and recording what it says,
+  exactly as Evidence already supports for any language via direct
+  citation, with no symbol-level parser required. **This is explicitly
+  weaker evidence than a behavioural observation** for the same claim,
+  and the derived epistemic view (`decisions/0080` §1) will show it as
+  such: `basis: directly_stated` without a resolving Observation stays
+  `DECLARED`-strength, never silently promoted to `OBSERVED`.
+- **Published specifications/manuals** — cited the same way as any
+  other doc reference (`doc_ref`), never treated as more authoritative
+  than an actual, executed behavioural check when the two disagree.
+
+Every hledger snapshot produced this way carries `project_id: hledger`,
+`publisher_id:` whoever actually ran the reconstruction (not an hledger
+maintainer), and `authority: third-party-reconstruction`
+(`decisions/0080` §3) — **never `self-published`** — regardless of how
+rigorous the behavioural evidence is, since rigour of evidence and
+maintainer endorsement are different questions (§"Verification and
+reconciliation model" below; `decisions/0080`'s own project-identity
+refinement).
 
 **Depends on**: Stage 1 (needs two real portable snapshots — Ledgerkit's
 and a new, equivalent hledger export).
@@ -117,7 +170,7 @@ which are unsupported somewhere) that Ledgerkit's own maintainers could
 act on — or an honest report that the evidence gathered so far is
 insufficient to recommend an API shape yet.
 
-### Stage 5 — Natural-language query model implications
+### Stage 5 — Natural-language query model implications (design-only; empirical comparison explicitly deferred)
 
 **Goal**: inform (not implement) the architecture named in the governing
 prompt's §9 — natural-language intent → typed accounting operation →
@@ -125,18 +178,43 @@ deterministic semantic validation → backend capability/compatibility
 resolution → adapter → execution — using Stage 4's semantic-core
 findings as the typed-operation vocabulary's evidence base.
 
+**Corrected, 2026-10-21 (corrective amendment): resolves a real
+inconsistency between this stage's own design-only goal and its
+originally-proposed empirical exit gate.** The prior exit gate ("a
+documented comparison... measuring semantic correctness, ambiguity
+handling, and unsupported-operation reporting") is genuinely empirical —
+it requires running something — while the stage's own goal is explicitly
+"inform, not implement." Claiming that comparison as Stage 5's own exit
+gate would have let a design-only deliverable carry an empirical-
+sounding claim it had not actually earned. **Stage 5 is now design-only,
+with its own non-empirical, still-falsifiable exit gate; the empirical
+comparison is explicitly a separate, later, not-yet-numbered future
+stage, named but not scheduled here.**
+
 **Depends on**: Stage 4's recommended semantic core existing in some
 real form.
 
-**Exit gate (falsifiable)**: a documented comparison of schema-
-constrained intent translation against direct model-generated backend
-commands on a bounded test set, measuring semantic correctness,
-ambiguity handling, and unsupported-operation reporting — **CodeCompass
-provides the semantic contracts/evidence this comparison needs; it does
-not execute accounting operations or own Ledgerkit's runtime API**
-(`decisions/0079`'s non-goal list; the governing prompt's explicit
-instruction). A result showing no measurable advantage over direct
-model-generated commands is reported as such.
+**Exit gate (falsifiable, design-only)**: the typed-operation schema
+(natural-language intent → typed accounting operation) can represent
+every operation Stage 4 actually identified as core, reviewed against
+Stage 4's own evidence rather than invented fresh. **Failure condition**:
+the schema cannot represent at least one Stage-4-identified core
+operation without an ad hoc exception — a concrete, checkable failure,
+not merely "the design feels incomplete."
+
+**Explicitly deferred, not this stage's own exit gate**: a bounded
+empirical comparison of schema-constrained intent translation against
+direct model-generated backend commands, measuring semantic correctness,
+ambiguity handling, and unsupported-operation reporting. If ever funded,
+this runs as its own later stage, against Stage 5's own completed schema
+— **CodeCompass would provide the semantic contracts/evidence such a
+comparison needs; it would not execute accounting operations or own
+Ledgerkit's runtime API** (`decisions/0079`'s non-goal list; the
+governing prompt's explicit instruction), and a result showing no
+measurable advantage over direct model-generated commands would be
+reported as such, not reframed. **No claim of empirical validation is
+made anywhere in this document for Stage 5** — only that its schema has
+been designed and checked against Stage 4's own real findings.
 
 ### Stage 6 — Read-only federated Wiki visualisation
 
@@ -161,20 +239,47 @@ named risk, §"Risks" below) — tested by showing a deliberately
 `insufficient_evidence` mapping and confirming a reviewer does not
 mistake it for an accepted one.
 
-### Stage 7 — Beancount or unrelated-domain generalisation trial
+### Stage 7 — Beancount generalisation, and genuine cross-domain validation
 
-**Goal**: test whether Layers A-C generalise beyond accounting at all —
-either a fourth accounting backend (Beancount, after its own
-repository/licence verification) or a genuinely unrelated domain.
+**Goal**: test whether Layers A-C generalise beyond accounting at all.
+
+**Corrected, 2026-10-21 (corrective amendment): Beancount alone does
+not establish domain independence.** A fourth accounting-PTA backend is
+useful evidence that the model generalises *within* accounting, but
+every one of Ledgerkit/hledger/Ledger/Beancount shares the same domain
+vocabulary (accounts, postings, balances, commodities) — succeeding on
+a fourth instance of the same domain says nothing about whether Layers
+A-C's design is actually domain-agnostic, only that it is accounting-
+agnostic-within-accounting. **This stage is split into two explicitly
+separate claims, both required before "domain-independent" is ever
+said of this capability:**
+
+- **Tier 1 — additional accounting-backend generalisation (Beancount,
+  after its own repository/licence verification, per this document's
+  own honest-baseline standard).** Exit gate (falsifiable): the
+  existing Layer A/B/C model and export format accommodate Beancount
+  **without a redesign of the core schema**. **This result alone
+  licenses only an accounting-backend-generalisation claim** — it must
+  not be cited, by itself, as evidence of general domain independence.
+- **Tier 2 — validation against a genuinely unrelated software domain**
+  (not accounting; a domain with its own distinct vocabulary and
+  behavioural concerns entirely). Exit gate (falsifiable): the same
+  Layer A/B/C model and export format accommodate a real project in
+  that unrelated domain, again without a core-schema redesign.
+  **Required — not optional — before any "domain-independent" or
+  "generic capability" claim about this track is made anywhere**
+  (`decisions/0079`'s own founding claim that overlay is "a generic
+  CodeCompass capability" remains a design intent until Tier 2 actually
+  runs, not yet a demonstrated fact).
 
 **Depends on**: Stages 1-4 having produced a reusable-in-practice (not
 just reusable-in-theory) Layer B/C design.
 
-**Exit gate (falsifiable)**: the existing Layer A/B/C model and export
-format accommodate the new project **without a redesign of the core
-schema** — a result requiring a ground-up schema rewrite is reported as
-a falsification of the "generic capability" claim, not quietly absorbed
-as a version 2 of the schema.
+**Failure condition (either tier)**: a result requiring a ground-up
+schema rewrite is reported as a falsification of the "generic
+capability" claim for that tier specifically, not quietly absorbed as a
+version 2 of the schema, and not allowed to retroactively validate the
+other tier.
 
 ## Accounting concept scope (Stages 2-3's starting set)
 
@@ -281,6 +386,14 @@ mapping's own status is touched, and only to flag it for re-review
 - **Visualisation giving unsupported claims apparent authority** —
   Stage 6's own exit gate is specifically a test of this risk, not an
   assumption it's handled.
+- **Snapshot authority confusion** (added 2026-10-21, `decisions/0080`
+  §3) — a third-party-generated snapshot (e.g. CodeCompass's own
+  reconstruction of hledger, Stage 2) mistaken for knowledge the
+  described project's own maintainers produced or endorsed. Mitigated
+  by the project-identity envelope's `authority` field defaulting to
+  `unknown`/`third-party-reconstruction` and never silently defaulting
+  to `self-published`; Stage 6's Wiki is required to display `authority`
+  wherever it displays the mapping/snapshot itself, not only on request.
 
 ## Explicit non-goals (unchanged by any stage above)
 
@@ -295,16 +408,21 @@ not build, one).
 
 ## What must be designed now vs. deferred
 
-**Designed now** (this document plus `decisions/0079`): the three-layer
-model, the project-qualified reference envelope shape, the mapping
+**Designed now** (this document plus `decisions/0079`/`decisions/0080`):
+the three-layer model, the project-qualified reference envelope shape
+including the `publisher_id`/`authority` distinction, the mapping
 record's field list and relationship-type enum, the five-value
-verification-status taxonomy, the invalidation boundary rule, and this
-stage sequence with its gates.
+verification-status taxonomy, the invalidation boundary rule, the
+hledger evidence-sourcing approach (Stage 2), the design/empirical split
+(Stage 5), the accounting-generalisation/domain-independence split
+(Stage 7), and this stage sequence with its gates.
 
 **Deferred** (no design work done, intentionally): the exact JSON
 schema/file format for Stage 1's export (a schema sketch exists in
-`decisions/0079` §5; the binding schema is Stage 1's own deliverable);
-which specific hledger/Ledger functions Stage 2/3 will compare (decided
-against live test coverage at that stage's own planning time); any Wiki
-visual design (Stage 6, explicitly out of scope here); the natural-
-language intent grammar (Stage 5).
+`decisions/0079` §5/`decisions/0080` §3; the binding schema is Stage 1's
+own deliverable); which specific hledger/Ledger functions Stage 2/3 will
+compare (decided against live test coverage at that stage's own planning
+time); any Wiki visual design (Stage 6, explicitly out of scope here);
+the natural-language intent grammar itself (Stage 5's own schema, though
+now scoped as design-only); the empirical NL-comparison stage Stage 5's
+correction named but did not number.

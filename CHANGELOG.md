@@ -9,6 +9,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **v2 corrective planning amendment** (planning only, direct user
+  request, `decisions/0080`): reviewed Phase 82's epistemic model
+  against concrete counter-examples (a legacy behaviour verified by
+  test but never accepted as intended; an accepted requirement
+  contradicted by real evidence; a contract verified under some inputs
+  and not others) and found the prior same-week correction
+  (`decisions/0079`'s ordinal `intended < observed < verified` scale)
+  itself still wrong — intent, observation, and verification are
+  independent predicates, not an orderable scale. **`epistemic_source`
+  is removed entirely**, replaced by a derived, read-time view computed
+  from existing Phase 81 records, directly reusing `knowledge_
+  intermediate.py::derive_provenance_label`'s own already-proven
+  pattern (itself corrected twice before, `decisions/0073`/`0074`, for
+  the identical mistake this fix avoids repeating) — **zero new fields
+  on any Claim, Requirement, Evidence, or Observation record**, an even
+  stronger additive posture than either prior proposal. Separately
+  closes a real, previously-unenforced gap: `status: verified` already
+  existed on Claim/Requirement records before Phase 82 with no
+  mechanical check of what it required — now gated by a new validator
+  rule mirroring the existing `check_requirement_cites_approved_
+  decision` pattern. Oracle-result identity is strengthened to bind to
+  the exact tested subject (a content digest, reusing Phase 81B's own
+  `payload_tree_sha256` precedent, not a bare Git commit SHA that
+  cannot distinguish a clean checkout from a dirty worktree), with five
+  new negative controls demonstrating a passing result cannot verify an
+  untested candidate, a different check, mismatched inputs, tampered
+  raw evidence, or an untested scenario. Phase 82's plan now states
+  explicitly that content hashes establish tamper-evidence, never
+  independent execution or trusted authorship — that protection remains
+  Phase 83/84's future mechanically-isolated execution boundary. The
+  project-identity envelope (`decisions/0079` §2) gains a `publisher_id`/
+  `authority` distinction so a third-party reconstruction (e.g.
+  CodeCompass's own future hledger snapshot) is never implied to carry
+  hledger's own maintainer endorsement. Three Post-v2 overlay stages
+  refined (`planning/post-v2-cross-project-overlay-backlog.md`): Stage 2
+  clarifies hledger evidence-sourcing without an implicit Haskell-
+  adapter dependency; Stage 5 is now design-only, with empirical
+  comparison explicitly deferred to a separate future stage; Stage 7
+  separates accounting-backend generalisation (Beancount) from the
+  genuinely-unrelated-domain validation required for any domain-
+  independence claim. **No Phase 82-88 scope, sequence, or exit gate
+  changed**; `decisions/0078`/`0079` were not edited (append-only — both
+  preserved as the historical record of what was proposed and corrected
+  before this pass). No implementation occurred; Phase 82 implementation
+  still requires explicit maintainer approval before it begins.
+
 - **Cross-Project Semantic Overlays planning amendment** (planning
   only, direct user request, `decisions/0079`, same day as and amending
   the v2 strategic roadmap below): establishes a generic, explicitly
