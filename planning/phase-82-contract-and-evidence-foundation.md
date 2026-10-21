@@ -1,10 +1,15 @@
 # Phase 82: Contract and Evidence Foundation — plan
 
-**Status:** in progress (2026-10-21, direct user request — "CodeCompass
+**Status:** done (2026-10-21, direct user request — "CodeCompass
 Orchestrator — Correct Phase 82 Plan and Proceed with Implementation").
-**Implementation explicitly authorised by that same governing prompt
-(`decisions/0081` §5) — §9's prior approval gate is satisfied, not
-bypassed.**
+Implementation explicitly authorised by that same governing prompt
+(`decisions/0081` §5) — §9's prior approval gate was satisfied, not
+bypassed. Independently audited: `release-phase-auditor` returned PASS
+WITH NON-BLOCKING OBSERVATIONS (`planning/retros/_audit-phase-82.md`);
+`docs-reconstructor`'s per-phase drift audit found and the lead fixed
+three non-blocking doc-sync gaps (`planning/retros/_drift-audit-
+phase-82.md`). Retro: `planning/retros/phase-82-contract-and-evidence-
+foundation.md`.
 
 **Amendment history** (full rationale in each amendment's own ADR — this
 plan's own current content already reflects every correction below; §14

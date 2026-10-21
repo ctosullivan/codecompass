@@ -7,92 +7,111 @@ session-resumption, not a project history.
 
 ## Current phase
 
-**No roadmap phase is `in progress`.** A v2 strategic roadmap exists
-(`decisions/0078`, `planning/v2-roadmap.md`), repositioning CodeCompass
-as an evidence-backed software change assurance layer (behavioural
-contracts, semantic change-impact analysis, an independent oracle, MCP
-exposure, persistent reconciled knowledge, lightweight/optional-
-governance adoption levels) rather than a competing coding agent, plus
-an explicitly gated, not-yet-authorised post-v2 Cross-Project Semantic
-Overlay track (`decisions/0079`, `planning/post-v2-cross-project-
-overlay-backlog.md`). **Planning only — no Phase 82-88 implementation
-has begun, no repository was created, no phase was renumbered or
-expanded.** Full amendment history and rationale lives in each
-amendment's own ADR, not restated here:
+**Phase 82 — Contract and Evidence Foundation — is `done`.** The v2
+dependency root (`planning/v2-roadmap.md`) is now real: one evidence-
+linked behavioural contract for `ledgerkit/reports.py::balance_from_spec`
+exists end to end — Requirement → Claims → Evidence citing real source
+locations → a versioned, multi-check oracle contract → real `PASS`
+results against the current, unmodified `~/projects/ledgerkit` checkout
+→ a real, demonstrated `FAIL` against a deliberately mutated scratch
+copy. `decisions/0078`-`0081` govern this phase's design; none of
+Phases 83-88 has begun.
 
-- `decisions/0078` — the original v2 repositioning (no prior v2 roadmap
-  existed in this repository before it; see that ADR's own Context
-  section for the evidence).
-- `decisions/0079` — the Cross-Project Semantic Overlay track's three-
-  layer model (project-specific knowledge / shared domain concepts /
-  cross-project mappings) and project-qualified reference envelope.
-- `decisions/0080` — corrects Phase 82's epistemic-state design a
-  second time (the field this ADR removes was itself a same-day
-  correction of `decisions/0078`'s original proposal, found still
-  wrong) and strengthens oracle-result identity; also extends
-  `decisions/0079`'s envelope with a publisher/authority distinction and
-  refines three Post-v2 overlay stages (hledger evidence-sourcing,
-  Stage 5's design/empirical split, Stage 7's accounting-generalisation
-  vs. domain-independence split).
+- `decisions/0078` — the original v2 repositioning.
+- `decisions/0079` — the Cross-Project Semantic Overlay track's
+  three-layer model and project-qualified reference envelope (post-v2,
+  still not authorised to implement).
+- `decisions/0080` — corrects Phase 82's epistemic-state design to a
+  derived, read-time view (no new persisted field) and strengthens
+  oracle-result identity to bind to the exact tested subject via a
+  content digest.
+- `decisions/0081` — corrects four remaining structural gaps found by
+  direct review: a singular check replaced by an explicit, versioned
+  `checks:` collection; PASS/FAIL/GAP/INVALID given a deterministic
+  precedence/aggregation rule (`GAP` is strictly an aggregate, never a
+  per-result field); vacuous verification structurally prevented, with
+  a named, explicit compatibility exemption for twelve pre-existing
+  `status: verified` records that predate this mechanism; tested-
+  subject/test-input digests scoped to explicit, reviewable file lists.
+  **Also explicitly authorised Phase 82 implementation in the same
+  session** — the first v2 session where planning correction and
+  implementation happened together rather than across separate,
+  maintainer-gated sessions.
 
-**Current state of Phase 82** (`planned`,
-`planning/phase-82-contract-and-evidence-foundation.md`): INTENDED/
-OBSERVED/VERIFIED/CONTESTED is a **derived, read-time view** computed
-from existing Phase 81 Requirement/Claim/Evidence/Observation records —
-**no new field on any canonical record** — reusing
-`knowledge_intermediate.py::derive_provenance_label`'s own already-
-proven pattern. Oracle-result identity is bound to the exact tested
-subject via a content digest (not a bare commit SHA, so a dirty
-worktree cannot masquerade as a tested commit), with explicit fields
-distinguishing a run's identity, the baseline it's measured against,
-the contract/checks/inputs actually executed, and tamper-evident raw
-output. Implementation requires explicit maintainer approval of the
-plan's own §9 before it begins.
+**What exists now, concretely**:
+
+- `src/codecompass/oracle.py` (new, shipped): `OracleContract`/
+  `OracleCheck`/`OracleResult` schema parsing (real YAML, `pyyaml`), Phase
+  81B-style content digesting (`compute_tree_digest`, reusing
+  `_canonical_digest_of_hashes`'s construction) scoped to each
+  contract's own explicit `tested_paths`/`test_input_paths`, one
+  `pytest` execution provider (pins the target repo's own interpreter
+  and `PYTHONPATH` — confirmed necessary this phase, see `L-101`), the
+  `evaluate_result_precedence`/`aggregate_contract` PASS/FAIL/GAP/
+  INVALID rule, and `accept_baseline` (the one explicit, never-automatic
+  baseline-minting action, `CLAUDE.md` §1 L-087).
+- `knowledge_intermediate.py::derive_epistemic_profile` (new function,
+  zero new persisted fields): INTENDED/OBSERVED/VERIFIED/CONTESTED, each
+  computed independently, reusing `derive_provenance_label`'s own
+  id-resolution helpers.
+- `scripts/check_contracts.py` (new maintainer script) and
+  `check_knowledge_base.py::check_verified_status_cites_passing_oracle_
+  result` (new check): schema, cross-reference, tamper-evidence, GAP-
+  aggregate, and depth-not-scope validators. The new `status: verified`
+  check applies **only** to a slug with a `planning/contracts/<slug>/`
+  directory — a named, explicit compatibility exemption covers every
+  pre-existing `status: verified` record (`REQ-DOCORIGIN-001/002/003`,
+  `REQ-HSAPI-001`-`006`, `CL-DEPTH-001`, `CL-FPSS-006/007`), confirmed
+  untouched by this phase.
+- One real contract: `planning/knowledge/balance-from-spec/` (1 REQ, 3
+  CL, 3 EV, 1 DEC, 1 OBS) + `planning/contracts/balance-from-spec/`
+  (contract + two committed, real `PASS` oracle-result files, re-run and
+  re-verified byte-identical-on-digest by the independent audit).
+- `scripts/run_balance_from_spec_oracle.py` (maintainer script, like
+  `prepare_cleanroom_branch.py`) — re-runs the real oracle against a
+  given Ledgerkit checkout.
+- 53 new tests (`tests/test_oracle.py`, `tests/test_check_contracts.py`,
+  plus additions to `tests/test_knowledge_intermediate.py` and
+  `tests/test_check_knowledge_base.py`), covering every one of the
+  governing prompt's twelve required verification scenarios.
 
 `decisions/0062`'s Priority A-F framework remains superseded as the
-primary strategic framework by `decisions/0078` (content preserved
-unedited, mapped forward there). Phase 81B (clean-room redocumentation,
-`done`) and Phase 81 (the intermediate knowledge layer Phase 82 directly
-extends, `done`) are reused-foundation background, unmodified by any v2
-planning session — full detail in `planning/ROADMAP.md`'s own rows and
-each phase's retro, not repeated here (established at Phase 71).
+primary strategic framework by `decisions/0078`. Phase 81B (clean-room
+redocumentation, `done`) and Phase 81 (the intermediate knowledge layer
+Phase 82 directly extends, `done`) are reused-foundation background,
+unmodified by Phase 82 — full detail in `planning/ROADMAP.md`'s own rows
+and each phase's retro.
 
 ## What was just completed
 
-**Corrective planning amendment**, 2026-10-21, direct user request
-("CodeCompass v2 — Corrective Planning Amendment"), planning only, one
-session: confirmed `HEAD` was exactly `47ab61c` (the prior session's
-final commit) with zero drift before amending anything → read
-`src/codecompass/knowledge_intermediate.py` and `scripts/check_
-knowledge_base.py` directly (not only prior planning prose) and found
-`derive_provenance_label` already solves the identical problem shape
-Phase 82's epistemic field was trying to solve, and that `status:
-verified` already existed, previously unenforced, on both Claim and
-Requirement → wrote `decisions/0080` (epistemic state fully corrected to
-a derived view after the prior ordinal-scale fix was itself found still
-wrong; oracle-result identity bound to an exact tested-subject content
-digest, not a commit reference; project-identity envelope extended with
-`publisher_id`/`authority`) → rewrote
-`planning/phase-82-contract-and-evidence-foundation.md` §4 in place
-(removing `epistemic_source` entirely), strengthened §5's oracle-result
-schema, added five new negative controls and a new validator rule to
-§6/§8/§9/§10, and appended §13 recording this amendment's own rationale
-and supersession chain → corrected three Post-v2 overlay stages in
-`planning/post-v2-cross-project-overlay-backlog.md` (Stage 2: hledger
-evidence without an implicit Haskell-adapter dependency; Stage 5: split
-into a design-only exit gate with empirical comparison explicitly
-deferred; Stage 7: split accounting-backend generalisation from the
-genuinely-unrelated-domain validation required for any domain-
-independence claim) and added a snapshot-authority-confusion risk →
-updated `planning/v2-roadmap.md`'s Phase 82 federation-review entry,
-`planning/v2-migration-assessment.md`, and `planning/ROADMAP.md`'s Phase
-82 row and Post-v2 pointer → this `planning/CONTEXT.md` rewrite (also
-consolidating three layered amendment narratives into one current-state
-description, per §4's own overwrite discipline) → `CHANGELOG.md` entry.
-`decisions/0078`/`0079` were not edited (append-only). No `src/
-codecompass/` file, test, or `context-graph.db` schema was touched; no
-repository was created; no Phase 82-88 phase was renumbered or expanded;
-Phase 82 implementation has still not begun.
+**Phase 82 implementation**, 2026-10-21, direct user request
+("CodeCompass Orchestrator — Correct Phase 82 Plan and Proceed with
+Implementation"), one session, five commits (`d945864` planning
+corrections/`decisions/0081`; `ebca4bf` implementation; `62b2f39` retro +
+candidate learning `L-101`; `63f4d84` knowledge-curator triage,
+promoted; `a450bfe` docs-drift fixes; `a3d4045` independent audit
+records; this `CONTEXT.md`/`ROADMAP.md`/plan-status-line reconciliation
+is the terminal commit). Corrected the plan's four remaining structural
+gaps, then implemented, verified, and closed out the same session — the
+first v2 phase where the governing prompt itself explicitly authorised
+proceeding straight to implementation rather than stopping for a
+separate maintainer-approval round trip.
+
+Independent audits: `docs-reconstructor`'s per-phase drift audit found
+3 non-blocking doc-sync gaps (two maintainer-tooling docs omitting new
+Phase 82 scripts/tests; `docs/decisions.md`'s ADR index stopping at
+`0075`, a pre-existing gap this phase extended rather than left) — all
+three fixed in `a450bfe`. `release-phase-auditor`'s completion audit
+independently re-ran the real oracle (byte-identical digests on
+re-execution), the real negative control, the full test suite (980
+passed, 2 skipped — both pre-existing), `ruff`, and all three strict
+validators; deliberately broke vacuous-verification prevention (removed
+a committed oracle-result, confirmed the new check newly flags it,
+restored); confirmed `CLAUDE.md` untouched and every `decisions/0078`-
+`0081` file append-only. Verdict: **PASS WITH NON-BLOCKING
+OBSERVATIONS** (the one gap — no standalone written drift-audit record
+— backfilled in the same closeout as `planning/retros/_drift-audit-
+phase-82.md`).
 
 ## Known standing gaps (current-state facts, not phase history)
 
@@ -121,6 +140,10 @@ Phase 82 implementation has still not begun.
   guarantee (`CG-011`, filed Phase 76).
 - `vendor/` and a local `.venv/` exist in this checkout (both
   gitignored, freely regeneratable) — live artifacts, not fixtures.
+  **Note from Phase 82**: this project's own `.venv` is where `pytest`
+  actually lives — the bare `python3`/`/usr/bin/python` on this machine
+  has no `pytest` installed; always invoke tests via `.venv/bin/python
+  -m pytest`, not a bare `python`/`pytest` on `$PATH`.
 - Several `.claude/agents/*.md` files still reference the now-deleted
   `docs/domain/` and a bare `architecture/overview.md` (now
   `docs/architecture/overview.md`) as if current — filed as `L-098`
@@ -129,17 +152,15 @@ Phase 82 implementation has still not begun.
 
 ## Next concrete step
 
-**Phase 82 implementation requires explicit maintainer approval before
-it begins** — specifically, §9's two open items: the derived-view
-epistemic design itself (no field to name — confirm the approach,
-including repurposing the pre-existing, previously-unenforced `status:
-verified` value), and the oracle-result identity field set (`run_id`,
-`tested_subject_digest`, `oracle_contract_content_hash`,
-`test_input_digest`, `environment_descriptor`, `raw_output_sha256`,
-`scope`) — plus confirmation that `reports.py::balance_from_spec` is the
-right pinned Ledgerkit scenario. Per the governing prompt's own explicit
-instruction, Phase 82 implementation has **not** begun and should not
-begin without that approval.
+**Phase 83 (Semantic Change Assurance) is next, not yet phase-planned.**
+Per `CLAUDE.md` §1, writing `planning/phase-83-*.md` is the required
+next step before any Phase 83 implementation begins — scoped against
+evidence current at that time (`planning/v2-roadmap.md` records only
+roadmap-depth sequencing for it: detect a deliberately-introduced
+Ledgerkit semantic regression Phase 82's own contract should catch,
+without falsely claiming complete verification elsewhere in the same
+report; needs Phase 82's real contract/oracle-result schema to know what
+a change could violate and how to report a gap).
 
 Other open items requiring a human/lead decision, none currently claimed
 by a drafted plan or phase number:
@@ -147,7 +168,7 @@ by a drafted plan or phase number:
 - Whether to fund any Post-v2 Cross-Project Semantic Overlay stage
   (`planning/post-v2-cross-project-overlay-backlog.md`) — explicitly not
   authorised by any amendment to date; Stage 1 cannot begin before Phase
-  82 is `done` regardless.
+  82 is `done` — it now is, but no further authorisation has been given.
 - Priority A's own narrowly-scoped follow-up trial, sketched (not
   started) in `planning/phase-78-amendment-followup-plan.md` — now
   superseded in strategic priority by Phase 83/85's own, sharper
@@ -156,7 +177,9 @@ by a drafted plan or phase number:
 - The "Strict mechanical isolation for documentation-reconstruction
   stages" backlog item — `resolved` (Phase 81B Amendment 4), no further
   action pending.
-- Phases 83-88 each need their own `CLAUDE.md` §1 planning pass, re-
-  scoped against evidence current at that time, once Phase 82 is `done`
-  — not drafted in detail yet (`planning/v2-roadmap.md` records only
-  roadmap-depth sequencing for them, deliberately).
+- `L-101` (promoted, `planning/learnings/promoted.md`): an oracle
+  execution mechanism must pin the interpreter and `PYTHONPATH` of the
+  exact tree it executes, or a sibling checkout's own editable package
+  install silently shadows a scratch mutation — already landed in
+  `oracle.py`, recorded for any future execution-provider work (Phase
+  83/84).
