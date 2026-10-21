@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **v2 strategic roadmap** (planning only, direct user request,
+  `decisions/0078`): repositions CodeCompass as an evidence-backed
+  software change assurance layer — behavioural contracts, semantic
+  change-impact analysis, an independent oracle, a minimal MCP surface,
+  persistent reconciled knowledge, and lightweight/optional-governance
+  adoption levels — rather than a competing coding agent. Direct
+  repository inspection found no pre-existing v2 roadmap, Wiki/MCP/
+  hybrid-orchestration track, or Pi-local plan committed anywhere in
+  this repository; the new roadmap (`planning/v2-roadmap.md`, Phases
+  82-88, dependency-graphed) is grounded in genuine current state, not a
+  revision of anything previously committed. `decisions/0062`'s Priority
+  A-F framework is superseded as the primary strategic framework (its
+  own content and evidence preserved unedited; each priority mapped
+  forward to its v2 destination). The implementation-ready Phase 82 plan
+  (`planning/phase-82-contract-and-evidence-foundation.md`) extends the
+  existing Phase 81 Requirement/Claim record model with one proposed
+  schema delta (`epistemic_source`, explicitly separate from the
+  existing `status` field so INTENDED/OBSERVED/VERIFIED/UNCERTAIN is
+  never conflated with evidence-support confidence) and a minimal
+  oracle-contract/oracle-result schema, pinned to one real Ledgerkit
+  function. Compatibility/migration assessment
+  (`planning/v2-migration-assessment.md`): additive and non-breaking
+  through Phase 85. Phase 86's comparative-trial methodology fixed
+  before any benchmark runs (`planning/v2-evaluation-methodology.md`).
+  **No Phase 82-88 implementation has begun** — Phase 82 requires
+  explicit maintainer approval of its own open schema-naming/scenario
+  decisions before implementation starts.
+
 - **Phase 81B** (clean-room project redocumentation from intermediary
   knowledge, `done`): operationalises Phases 79-81 into a reproducible
   clean-room documentation-reconstruction workflow, and completed it —
