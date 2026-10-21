@@ -335,6 +335,93 @@ Not yet phase-planned.
     roadmap records the counter-rule explicitly so a future session
     cannot silently drop it.
 
+## Federation-compatibility review (amendment, 2026-10-21, `decisions/0079`)
+
+Direct user request to review Phases 82-88 for future compatibility with
+a generic cross-project semantic overlay capability, without renumbering,
+expanding, or weakening any existing exit gate. **None of the phases
+below changes scope, sequence, or exit gate as a result of this
+review** — each entry records the review finding, and a forward-looking
+note where one is needed. Full overlay design: `decisions/0079`; full
+stage sequence: `planning/post-v2-cross-project-overlay-backlog.md`.
+
+- **82 (Contract and Evidence Foundation)**: reviewed — contract
+  identity (`REQ-`/`CL-`/`EV-` IDs) and evidence references stay
+  project-local and need no change; federation identity is carried
+  externally by a project-identity envelope (`decisions/0079` §2), never
+  injected into Phase 82's own records. One correction *is* required,
+  independent of federation: `epistemic_source`'s four values were not
+  actually mutually exclusive (intended/observed/verified compose, they
+  don't exclude) — corrected to an ordinal scale with `uncertain`
+  removed (already covered by the existing `status` field);
+  `planning/phase-82-contract-and-evidence-foundation.md` §12 records
+  the amendment. Still requires the same maintainer approval its
+  original proposal already needed — not a new, additional gate.
+- **83 (Semantic Change Assurance)**: reviewed — impact traversal stays
+  project-local by design (§ above: "does not introduce a new graph
+  table unless real-use evidence shows a gap"). Future extension point
+  named, not built: a cross-project mapping citing one of Phase 83's own
+  impact-traversal findings is a legitimate future Layer C evidence
+  source, requiring no change to Phase 83 itself.
+- **84 (Agent Integration and MCP)**: reviewed — the MCP tool surface
+  (contract retrieval, impact assessment, oracle execution, context-
+  packet compilation) is not designed around an implicit single-project
+  assumption (each call already takes a project/workspace context
+  implicitly, via whichever repository `codecompass` is pointed at).
+  Forward-looking note: a future federated MCP capability would add a
+  `project_id` parameter to existing calls rather than a parallel tool
+  set — named for Stage 1/2's own future planning, not designed now.
+- **85 (Persistent Knowledge and Incremental Reconciliation)**:
+  reviewed — project-scoped invalidation and provenance boundaries are
+  already Phase 85's own design (source/test change in *this* project
+  invalidates *this* project's own knowledge). The post-v2 track's own
+  invalidation rule (`post-v2-cross-project-overlay-backlog.md`'s
+  "Verification and reconciliation model") extends this boundary
+  explicitly: a change to one project's Layer A records may flag a
+  Layer C mapping for re-review, but never directly rewrites another
+  project's own Layer A records. No change to Phase 85's own scope.
+- **86 (Comparative Development Trials)**: reviewed — **the existing
+  three-arm design (conventional / knowledge-assisted / assurance-
+  assisted) is unchanged.** Cross-project overlay capability does not
+  exist yet when Phase 86 is expected to run and must not be introduced
+  as an unmeasured, uncontrolled advantage in any arm — if a future
+  overlay capability is real and mature by the time Phase 86 actually
+  executes, including it would require a new, explicitly named fourth
+  arm or a documented methodology amendment
+  (`planning/v2-evaluation-methodology.md`), never a silent addition to
+  Arm B or C's existing definition.
+- **87 (External Validation and Adoption)**: reviewed — independent
+  adoption on a genuinely independent repository remains the primary
+  gate, unchanged. Confirmed explicitly: **neither the Haskell adapter
+  nor any cross-project overlay capability is required for Phase 87's
+  exit gate** — an external-project portability observation arising
+  incidentally during Phase 87 may be recorded, but is optional
+  commentary, not a precondition.
+- **88 (v2.0 Hardening and Release)**: reviewed — public interface
+  stabilisation covers only what Phases 82-87 actually deliver. This
+  review adds one explicit constraint: **Phase 88's documentation must
+  not describe federation/overlay capabilities as available** — the
+  post-v2 track is, by design, not implemented by v2.0 release time
+  unless a future, separate decision pulls a specific stage forward
+  with its own plan and exit-gate evidence.
+
+## Post-v2: Cross-Project Semantic Overlay track
+
+**Explicitly gated, not part of the mandatory Phase 82-88 sequence.**
+CodeCompass should eventually support independently constructed project
+knowledge models that can be overlaid and compared through explicit,
+evidence-backed semantic relationships — generic capability, with
+Ledgerkit/hledger/Ledger/Beancount (PTA) as the motivating, not
+architecturally required, use case. Full design: `decisions/0079`. Full
+seven-stage sequence (portable snapshot/identity proof → Ledgerkit/
+hledger comparison → Ledger compatibility/differential verification →
+backend-independent API implications → natural-language query model
+implications → read-only federated Wiki visualisation → Beancount/
+unrelated-domain generalisation trial), dependencies, risks, and each
+stage's own falsifiable exit gate:
+[`planning/post-v2-cross-project-overlay-backlog.md`](post-v2-cross-project-overlay-backlog.md).
+No stage begins without its own future `CLAUDE.md` §1 plan file.
+
 ## Deferred scope (not lost, not silently absorbed)
 
 Per the governing prompt's §5, each item below is recorded as

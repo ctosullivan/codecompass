@@ -9,6 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Cross-Project Semantic Overlays planning amendment** (planning
+  only, direct user request, `decisions/0079`, same day as and amending
+  the v2 strategic roadmap below): establishes a generic, explicitly
+  gated post-v2 capability for comparing independently-built project
+  knowledge models (Ledgerkit/hledger/Ledger/Beancount's shared
+  accounting concepts as the motivating, not architecturally required,
+  use case) via explicit, evidence-backed semantic relationships —
+  never merging project-owned canonical knowledge into one
+  undifferentiated store. Three conceptual layers: project-specific
+  knowledge (unchanged), optional shared Domain Concept records, and
+  Cross-Project Mapping records carrying their own evidence/provenance/
+  verification status, never promoting a statement about one project
+  into verified knowledge about another. Federation identity is an
+  external, per-project project-identity envelope (project id + source
+  revision/version + stable local knowledge id) — zero change to any
+  existing or Phase-82-planned canonical record. A real, federation-
+  independent defect was found and fixed in Phase 82's own not-yet-
+  implemented plan: the proposed `epistemic_source` field's four values
+  were not mutually exclusive (a Claim can be simultaneously intended,
+  observed, and verified) — corrected to an ordinal three-value scale
+  (`intended < observed < verified`), `uncertain` removed (already
+  covered by the existing `status` field) —
+  `planning/phase-82-contract-and-evidence-foundation.md` §12. **No
+  Phase 82-88 scope, sequence, or exit gate changed**; each phase was
+  individually reviewed for forward compatibility
+  (`planning/v2-roadmap.md`'s "Federation-compatibility review"). The
+  new Post-v2 Cross-Project Semantic Overlay track
+  (`planning/post-v2-cross-project-overlay-backlog.md`) records seven
+  candidate stages, each with a falsifiable exit gate, explicitly not
+  authorised for implementation — only `ledgerkit` and `hledger` exist
+  as local checkouts in this environment; `ledger/ledger` and
+  Beancount's repository/licence/version state is explicitly unverified,
+  named as such rather than assumed.
+
 - **v2 strategic roadmap** (planning only, direct user request,
   `decisions/0078`): repositions CodeCompass as an evidence-backed
   software change assurance layer — behavioural contracts, semantic

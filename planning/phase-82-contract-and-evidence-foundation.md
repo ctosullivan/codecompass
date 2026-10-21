@@ -3,9 +3,15 @@
 **Status:** planned (2026-10-21, direct user request, part of the v2
 strategic realignment — `decisions/0078`, `planning/v2-roadmap.md`).
 **Planning only. Implementation is not begun and requires explicit
-maintainer approval of §4's schema delta and §9's open decisions before
-any code is written**, per the governing prompt's own instruction
-("Do not begin Phase 82 implementation") and `CLAUDE.md` §1.
+maintainer approval of §4's schema delta (as corrected by §12), §9's
+open decisions, and §12's own federation-review finding before any code
+is written**, per the governing prompt's own instruction ("Do not begin
+Phase 82 implementation") and `CLAUDE.md` §1. **Amended same day,
+2026-10-21, direct user request** ("CodeCompass v2 Planning Amendment —
+Cross-Project Semantic Overlays," `decisions/0079`): §4's
+`epistemic_source` design is corrected (§12) after review found its
+four values were not actually mutually exclusive; no other section of
+this plan changes.
 
 ## 0. Verified current state (read live, not assumed)
 
@@ -130,19 +136,31 @@ This reuses the existing flat-record text format
 no new file format, no new parser, only new optional fields (§4) and a
 new validation rule (§8).
 
-## 4. INTENDED / OBSERVED / VERIFIED / UNCERTAIN — the schema delta
+## 4. INTENDED / OBSERVED / VERIFIED — the schema delta (corrected 2026-10-21, §12)
 
 **Decision required from the maintainer before implementation**
 (`decisions/0078`'s Decision point 1 established *that* this must be a
-separate axis from `status`; this plan proposes the concrete mechanism):
+separate axis from `status`; this plan proposes the concrete mechanism.
+**This section was corrected same-day, pre-implementation, by the
+federation-review amendment — see §12 for why**: the original four-value
+closed enum treated `intended`/`observed`/`verified` as mutually
+exclusive, which they are not — a Claim can be all three at once.):
 
 Add one new optional field, `epistemic_source`, to Claim and Requirement
-records, closed-enum `intended|observed|verified|uncertain`:
+records — **an ordinal scale, not an exclusive pick**, recording the
+*strongest grounding reached so far*: `intended < observed < verified`.
+`verified` subsumes `observed` subsumes `intended` by construction (a
+verified behaviour is necessarily also observed; a Requirement's
+behaviour cannot be verified without the Requirement itself already
+being `intended` by definition of being a Requirement at all) — so a
+single ordinal value correctly represents "at least this much grounding
+exists," never forcing a false choice between states that actually
+compose.
 
-- `intended` — an accepted maintainer/product requirement. A
-  `REQ-`-prefixed record with no linked passing oracle result defaults
-  here implicitly if the field is absent (backward-compatible with
-  every existing Requirement record — **zero migration required**,
+- `intended` — an accepted maintainer/product requirement, nothing more
+  yet. A `REQ-`-prefixed record with no linked passing oracle result
+  defaults here implicitly if the field is absent (backward-compatible
+  with every existing Requirement record — **zero migration required**,
   matching Phase 81's own "zero new persisted fields on existing
   records" discipline as closely as this genuinely new concept allows).
 - `observed` — behaviour the implementation or a runtime trace exhibits,
@@ -156,12 +174,24 @@ records, closed-enum `intended|observed|verified|uncertain`:
   an AI-generated statement never becomes `epistemic_source: verified`
   through reconciliation alone, only through a cited, real,
   independently-executed oracle result.
-- `uncertain` — the statement is contested, under investigation, or the
-  available evidence conflicts. Distinct from the existing `status:
-  contradicted` (which already exists and is retained unchanged):
-  `uncertain` says "we don't yet know which of several possible
-  behaviours is correct"; `contradicted` says "it was believed true and
-  real evidence now says otherwise."
+
+**`uncertain` is not a value of this field** (removed by the §12
+amendment). Contested or conflicting evidence already has a home: the
+existing `status` field (`proposed|supported|contradicted|superseded|
+verified`, unchanged) — a Claim can be `epistemic_source: verified`
+(grounded under the specific conditions an oracle checked) while
+`status: contradicted` (some other evidence now disputes it, or disputes
+whether those conditions generalise). Keeping both an `epistemic_source:
+uncertain` value and `status: contradicted` would double-encode the same
+concern in two places, inviting drift between them.
+
+**`epistemic_source` is scoped to project-local grounding only.** It
+says nothing about whether this project's behaviour is compatible with
+another project's — that question belongs entirely to a future
+cross-project mapping record's own `verification_status`
+(`decisions/0079`), never to this field. This scoping statement costs
+Phase 82 nothing to add now and avoids the field being silently
+overloaded later.
 
 `status` keeps its existing meaning (confidence given current evidence)
 entirely unchanged — `epistemic_source` and `status` are orthogonal and
@@ -170,8 +200,9 @@ be `status: supported` + `epistemic_source: observed` — well-evidenced,
 but nobody has run an accepted check against it yet).
 
 **Validator change**: `check_knowledge_base.py` gains one new
-closed-enum check for `epistemic_source` when present, following the
-existing pattern at its own `assertion_kind` validation
+closed-enum check for `epistemic_source` when present (now a 3-value
+enum, `intended|observed|verified`), following the existing pattern at
+its own `assertion_kind` validation
 (`scripts/check_knowledge_base.py:172` area) — additive, not a rewrite
 of existing checks.
 
@@ -300,8 +331,10 @@ shape):
 
 ## 9. Open decisions requiring explicit maintainer approval
 
-1. **The `epistemic_source` field name and its four-value enum** (§4) —
-   the single genuinely new schema concept this phase introduces.
+1. **The `epistemic_source` field name and its ordinal three-value
+   enum** (§4, corrected by the §12 federation-review amendment from an
+   originally-proposed, incorrectly-exclusive four-value design) — the
+   single genuinely new schema concept this phase introduces.
    Alternative names considered: `provenance_kind` (rejected — collides
    in spirit with the already-established, differently-scoped
    mechanical-vs-inferred "provenance" vocabulary from `decisions/0051`/
@@ -350,3 +383,39 @@ demonstrated `FAIL` against a deliberately introduced defect — with
 every artifact passing deterministic validation, and with no claim of
 `verified` status anywhere in the record set that isn't backed by an
 actual, re-inspectable oracle result.
+
+## 12. Amendment: federation-compatibility review and epistemic-model correction (2026-10-21)
+
+Direct user request, same day as this plan's original authoring
+("CodeCompass v2 Planning Amendment — Cross-Project Semantic
+Overlays," `decisions/0079`). Two findings, both already folded into
+§4/§9 above — this section records the amendment's own rationale and
+audit trail, per this project's established convention of recording why
+a pre-implementation correction happened, not only what changed.
+
+**1. The `epistemic_source` correction is independent of federation.**
+Reviewing §4 against the requirement that INTENDED/OBSERVED/VERIFIED
+stay genuinely separate found that the original four-value closed enum
+(`intended|observed|verified|uncertain`) treated these as mutually
+exclusive states, when they are not: a Claim can simultaneously be an
+accepted intent, exhibited by the implementation, and confirmed by a
+passing oracle result. This would have surfaced as a real defect the
+first time Phase 82 tried to record exactly that Claim, with or without
+any cross-project concern — federation review simply found it first.
+Corrected to an ordinal scale (§4); `uncertain` removed, its concern
+already covered by the existing `status` field.
+
+**2. Nothing else in this plan needed to change for federation-
+readiness.** `decisions/0079`'s project-qualified reference envelope is
+external to every record this phase creates — `REQ-`/`CL-`/`EV-` IDs,
+the oracle-contract/oracle-result schema (§5), and the baseline-identity
+model (§7) all stay exactly as originally designed. The only addition is
+one scoping sentence in §4 (`epistemic_source` describes project-local
+grounding only, never cross-project compatibility) — not a new field,
+not a new file format, not a change to the exit gate. This confirms the
+governing instruction was met: Phase 82 is not broadened, and its
+one-contract vertical slice is not invalidated.
+
+**3. No further maintainer approval gate is added** — the corrected
+`epistemic_source` design falls under the same approval §9 already
+requires for the field's original proposal.

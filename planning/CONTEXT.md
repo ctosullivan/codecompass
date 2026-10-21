@@ -30,6 +30,32 @@ but not yet individually phase-planned. Phase 82's own plan proposes one
 schema delta (`epistemic_source`, an optional Claim/Requirement field)
 requiring explicit maintainer approval before any implementation begins.
 
+**Amended same day (`decisions/0079`, direct user request — "CodeCompass
+v2 Planning Amendment — Cross-Project Semantic Overlays")**: reviewed
+Phases 82-88 for future compatibility with a generic cross-project
+semantic overlay capability (comparing independently-built project
+knowledge models, e.g. Ledgerkit/hledger/Ledger/Beancount's shared
+accounting concepts — PTA is the motivating use case, not an
+architectural dependency). **No Phase 82-88 scope or exit gate
+changed.** One real, federation-independent defect was found and fixed
+in Phase 82's own not-yet-implemented plan: `epistemic_source`'s
+originally-proposed four values (`intended|observed|verified|uncertain`)
+were not actually mutually exclusive — corrected to an ordinal scale
+(`intended < observed < verified`) with `uncertain` removed (already
+covered by the existing `status` field) —
+`planning/phase-82-contract-and-evidence-foundation.md` §12. Federation
+identity is carried by a new, external, per-project project-identity
+envelope (`decisions/0079` §2) — zero change to any existing or
+Phase-82-planned canonical record. A new, explicitly gated Post-v2
+Cross-Project Semantic Overlay track is recorded
+(`planning/post-v2-cross-project-overlay-backlog.md`, seven candidate
+stages, each with its own falsifiable exit gate) — not part of the
+mandatory Phase 82-88 sequence, not authorised for implementation. Real
+repository state checked, not assumed: only `ledgerkit` and `hledger`
+exist as local checkouts in this environment; `ledger/ledger` and
+Beancount's repository/licence/version state is explicitly unverified
+and named as such, not assumed.
+
 **Phase 81B is `done`** (clean-room project redocumentation from
 intermediary knowledge, completed 2026-10-09/10 via Amendment 4's
 inference-broker mechanism, hardened 2026-10-14 by Amendment 5's
@@ -47,41 +73,40 @@ history and each phase's own retro/closeout record under
 
 ## What was just completed
 
-**v2 strategic roadmap revision and implementation planning**,
-2026-10-21, direct user request, planning only, one session:
-inspected actual current repository state across both `codecompass` and
-`codecompass-template` (found no pre-existing v2 roadmap, Wiki/MCP/
-hybrid/Pi-local plan, contract/oracle code, or MCP dependency anywhere —
-an honest finding, not an assumption) → wrote `decisions/0078` (the
-strategic ADR: new objective, the governing Understand→Specify→Assess
-Impact→Implement→Verify→Reconcile loop, six architectural priorities,
-explicit INTENDED/OBSERVED/VERIFIED/UNCERTAIN separation design
-decision, and a full Priority A-F → v2 mapping so no existing commitment
-from `decisions/0062` is silently lost) → wrote `planning/v2-roadmap.md`
-(dependency graph for Phases 82-88, adoption levels, 10-point structure
-per phase, a deferred-scope table for everything the governing prompt
-named as out of scope for now) → wrote the implementation-ready
-`planning/phase-82-contract-and-evidence-foundation.md` (behavioural
-contract format reusing the existing Requirement/Claim record model;
-the proposed `epistemic_source` schema delta; a minimal oracle-contract/
-oracle-result schema; a pinned Ledgerkit reference scenario — candidate
-`reports.py::balance_from_spec`, confirmed to exist by direct inspection
-of the real sibling checkout — plus its required negative control;
-baseline-run identity design respecting `CLAUDE.md` §1's L-087
-non-auto-advance rule; deterministic validation including the L-070
-minimal-content edge case and the L-075 depth check) → wrote
-`planning/v2-migration-assessment.md` (compatibility/versioning/
-`codecompass-template`/documentation-maintenance implications — additive
-and non-breaking through Phase 85) → wrote
-`planning/v2-evaluation-methodology.md` (Phase 86's three-arm comparative
-trial design, fixed before any benchmark runs) → updated
-`planning/ROADMAP.md` (new "v2 — evidence-backed change assurance"
-section with Phase 82-88 rows; the Priority A-F section annotated,
-not rewritten, with a pointer to `decisions/0078`) → this
-`planning/CONTEXT.md` overwrite → `CHANGELOG.md` entry. No `src/
-codecompass/` file, test, or `context-graph.db` schema was touched; no
-Phase 82-88 implementation has begun, per the governing prompt's own
-explicit instruction to stop after committing planning artefacts.
+**Cross-Project Semantic Overlays planning amendment**, 2026-10-21,
+direct user request, planning only, one session (same day as, and
+amending, the v2 strategic roadmap above): confirmed `HEAD` was still
+exactly `bb10927` (the prior session's final commit) with zero drift
+before amending anything → wrote `decisions/0079` (three-layer model —
+Layer A project-specific knowledge unchanged, Layer B new optional
+Domain Concept records, Layer C new Cross-Project Mapping records; a
+project-qualified reference envelope external to every existing/planned
+canonical record; a six-type relationship enum with explicit
+directionality, dropping two of the prompt's eight illustrative names
+after finding they overlapped with other fields rather than naming a
+distinct relationship shape; the `epistemic_source` correction, found
+independent of federation) → amended
+`planning/phase-82-contract-and-evidence-foundation.md` §4/§9 in place
+and added §12 recording the amendment's own rationale (ordinal
+`intended < observed < verified` scale replacing the original,
+incorrectly-exclusive four-value enum; `uncertain` removed) — confirmed
+no other part of Phase 82's plan, including its exit gate, needed to
+change → wrote `planning/post-v2-cross-project-overlay-backlog.md`
+(seven candidate stages with falsifiable exit gates, honest
+verified-vs-unverified prerequisite check — only `ledgerkit`/`hledger`
+exist locally, `ledger`/Beancount do not — dependencies on the Haskell
+adapter and Wiki tracks named without blocking either, full risk list)
+→ updated `planning/v2-roadmap.md` (a "Federation-compatibility review"
+section covering Phases 82-88 individually, none of which changed scope
+or exit gate, plus a pointer to the new Post-v2 track) → updated
+`planning/v2-migration-assessment.md` (the project-identity envelope is
+additive, zero migration) → updated `planning/ROADMAP.md` (Phase 82's
+row annotated with the correction; a new Post-v2 track pointer, not a
+new numbered phase) → this `planning/CONTEXT.md` overwrite →
+`CHANGELOG.md` entry. No `src/codecompass/` file, test, or
+`context-graph.db` schema was touched; no repository was created; no
+Phase 82-88 phase was renumbered or expanded; Phase 82 implementation
+has still not begun.
 
 ## Known standing gaps (current-state facts, not phase history)
 
@@ -121,14 +146,19 @@ explicit instruction to stop after committing planning artefacts.
 **Phase 82 implementation requires explicit maintainer approval before
 it begins** — specifically, approval of `planning/phase-82-contract-and-
 evidence-foundation.md` §9's open decisions (principally the
-`epistemic_source` field name/enum, and confirmation that
-`reports.py::balance_from_spec` is the right pinned Ledgerkit scenario).
-Per the governing prompt's own explicit instruction, Phase 82
-implementation has **not** begun and should not begin without that
-approval.
+`epistemic_source` field name, now an ordinal three-value scale per
+§12's amendment, and confirmation that `reports.py::balance_from_spec`
+is the right pinned Ledgerkit scenario). Per the governing prompt's own
+explicit instruction, Phase 82 implementation has **not** begun and
+should not begin without that approval.
 
 Other open items requiring a human/lead decision, none currently claimed
 by a drafted plan or phase number:
+
+- Whether to fund any Post-v2 Cross-Project Semantic Overlay stage
+  (`planning/post-v2-cross-project-overlay-backlog.md`) — explicitly not
+  authorised by this amendment; Stage 1 cannot begin before Phase 82 is
+  `done` regardless.
 
 - Priority A's own narrowly-scoped follow-up trial, sketched (not
   started) in `planning/phase-78-amendment-followup-plan.md` — now

@@ -155,7 +155,7 @@ governing prompt's own explicit instruction not to begin implementation.
 
 | Phase | Description | Status | Plan |
 |---|---|---|---|
-| 82 | **Contract and Evidence Foundation** — a versioned behavioural contract (one real Ledgerkit function, candidate `reports.py::balance_from_spec`) traceable to its supporting evidence and independently testable, including a demonstrably failing negative control. Extends the existing Requirement/Claim record model with a new, explicitly separate `epistemic_source` field (`intended\|observed\|verified\|uncertain`) rather than conflating it with the existing `status` enum (`decisions/0078`'s own non-conflation rule); a minimal oracle-contract/oracle-result schema (`PASS\|FAIL\|GAP\|INVALID`); a baseline-run identity that advances only on an explicit acceptance action, never merely because a run happened (`CLAUDE.md` §1 L-087). No `context-graph.db` schema change. Full plan: `planning/phase-82-contract-and-evidence-foundation.md`. | planned | [`planning/phase-82-contract-and-evidence-foundation.md`](phase-82-contract-and-evidence-foundation.md) |
+| 82 | **Contract and Evidence Foundation** — a versioned behavioural contract (one real Ledgerkit function, candidate `reports.py::balance_from_spec`) traceable to its supporting evidence and independently testable, including a demonstrably failing negative control. Extends the existing Requirement/Claim record model with a new, explicitly separate `epistemic_source` field — **amended 2026-10-21 (`decisions/0079`) to an ordinal three-value scale `intended < observed < verified`** (corrected from an originally-proposed, incorrectly mutually-exclusive four-value enum; `uncertain` removed, already covered by the existing `status` field) rather than conflating it with the existing `status` enum (`decisions/0078`'s own non-conflation rule); a minimal oracle-contract/oracle-result schema (`PASS\|FAIL\|GAP\|INVALID`); a baseline-run identity that advances only on an explicit acceptance action, never merely because a run happened (`CLAUDE.md` §1 L-087). No `context-graph.db` schema change. Full plan: `planning/phase-82-contract-and-evidence-foundation.md` (§12 records the amendment). | planned | [`planning/phase-82-contract-and-evidence-foundation.md`](phase-82-contract-and-evidence-foundation.md) |
 | 83 | **Semantic Change Assurance** — detects a deliberately introduced Ledgerkit semantic regression missed by Ledgerkit's own ordinary feature-test baseline, without falsely claiming complete verification elsewhere in the same report. Source-to-contract impact traversal, protected acceptance/regression checks, machine- and human-readable assurance reports. Not yet phase-planned — sequencing and 10-point structure in `planning/v2-roadmap.md`. | not started | — |
 | 84 | **Agent Integration and MCP** — a minimal, read-mostly MCP surface (contract retrieval, impact assessment, oracle execution, context-packet compilation); an existing frontier coding agent completes a genuine Ledgerkit change through it. No new scheduler; `CLAUDE.md` §8's "CodeCompass never spawns or coordinates agents" applies unchanged. Not yet phase-planned. | not started | — |
 | 85 | **Persistent Knowledge and Incremental Reconciliation** — source/test change detection triggers targeted knowledge invalidation via Phase 81's existing reconciliation machinery; a second genuine Ledgerkit task measurably benefits from knowledge reconciled during the first. Not yet phase-planned. | not started | — |
@@ -174,6 +174,21 @@ and advanced commercial analytics. None of these existed as a
 previously-committed backlog item in this repository before this section
 — sourced directly from the governing prompt, not from any prior
 artifact (`decisions/0078`'s own Context section).
+
+**Post-v2 Cross-Project Semantic Overlay track — established
+2026-10-21, direct user request** (`decisions/0079`), **explicitly
+gated, not part of this table's mandatory sequence**: a generic
+capability for comparing independently-constructed project knowledge
+models (Ledgerkit/hledger/Ledger/Beancount's PTA concepts as the
+motivating, not architecturally required, use case) via explicit,
+evidence-backed semantic relationships, never merging project-owned
+canonical knowledge into one undifferentiated store. Seven candidate
+stages, each with its own falsifiable exit gate and no automatic
+authorisation to implement: [`planning/post-v2-cross-project-overlay-
+backlog.md`](post-v2-cross-project-overlay-backlog.md). Phases 82-88
+above were reviewed for forward compatibility and **none changed scope
+or exit gate** — full review: `planning/v2-roadmap.md`'s own
+"Federation-compatibility review" section.
 
 ## Future-improvement backlog (unscheduled)
 

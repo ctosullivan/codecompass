@@ -106,6 +106,34 @@ surface alongside the existing CLI, not a replacement for it.
   `CLAUDE.md` §5's own distinction between per-phase drift audits and
   milestone-level full reconstruction.
 
+## Cross-project overlay compatibility (amendment, 2026-10-21, `decisions/0079`)
+
+Reviewed per direct user request: does anything in Phases 82-85's
+planned schema preclude a future, generic cross-project semantic overlay
+capability? **No existing or Phase-82-planned canonical record changes
+as a result of this review.** Federation identity (`decisions/0079` §2)
+is carried by a new, external, per-project **project-identity envelope**
+— never injected into `REQ-`/`CL-`/`EV-`/`OBS-`/`DE-`/`DEC-` records
+themselves. This is additive in exactly the same sense §"Compatibility
+posture" above already establishes for the rest of v2: a project that
+never exports a knowledge snapshot for federation is entirely unaffected,
+and nothing about Phase 82's own schema needs a migration to become
+federation-capable later — only a new, separate export step (Post-v2
+Stage 1, `planning/post-v2-cross-project-overlay-backlog.md`) needs to be
+built, whenever it actually is.
+
+One Phase 82 schema correction *was* made by this same review (the
+`epistemic_source` field's ordinal redesign,
+`planning/phase-82-contract-and-evidence-foundation.md` §12) — found
+independent of federation, surfaced by reviewing the field against this
+amendment's own INTENDED/OBSERVED/VERIFIED separation requirement. It
+remains gated behind the same pre-implementation maintainer approval the
+field's original proposal already required.
+
+**`codecompass-template` implications, unchanged**: nothing in this
+amendment adds template content — a federated overlay has no adopter-
+facing surface before at least Post-v2 Stage 1 exists.
+
 ## Security/isolation posture carried forward
 
 - MCP responses and any repository content a v2 capability retrieves are
