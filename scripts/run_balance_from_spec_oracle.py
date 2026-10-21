@@ -17,8 +17,9 @@ Overwrites the committed result files in place — each run represents
 "the current accepted result for this check" (one file per check_id, not
 one file per run; `run_id` inside each file is still unique per
 execution). Never mints or advances a baseline (`CLAUDE.md` §1 L-087) —
-that is `scripts/accept_balance_from_spec_baseline.py`'s own, separate,
-explicit action.
+that is `codecompass.oracle.accept_baseline`'s own, separate, explicit
+action (no maintainer script wraps it yet; no baseline has been accepted
+for this contract as of Phase 82).
 """
 
 from __future__ import annotations

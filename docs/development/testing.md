@@ -6,7 +6,7 @@
 pytest
 ```
 
-`pyproject.toml` sets `testpaths = ["tests"]`. One test module roughly per `src/codecompass/` module (e.g. `tests/test_sync.py`, `tests/test_graph.py`, `tests/test_knowledge_intermediate.py`), plus test modules for the maintainer-only `scripts/` tooling (`tests/test_check_knowledge_base.py`, `tests/test_check_user_docs.py`, `tests/test_prepare_cleanroom_branch.py`, `tests/test_cleanroom_broker.py`, `tests/test_cleanroom_prompt_assembler.py`), imported directly by file path since `scripts/` is deliberately not an importable package.
+`pyproject.toml` sets `testpaths = ["tests"]`. One test module roughly per `src/codecompass/` module (e.g. `tests/test_sync.py`, `tests/test_graph.py`, `tests/test_knowledge_intermediate.py`, `tests/test_oracle.py`), plus test modules for the maintainer-only `scripts/` tooling (`tests/test_check_knowledge_base.py`, `tests/test_check_contracts.py`, `tests/test_check_user_docs.py`, `tests/test_prepare_cleanroom_branch.py`, `tests/test_cleanroom_broker.py`, `tests/test_cleanroom_prompt_assembler.py`), imported directly by file path since `scripts/` is deliberately not an importable package.
 
 ## Fixtures
 
