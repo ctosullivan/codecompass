@@ -1,14 +1,13 @@
 # Phase 82: Contract and Evidence Foundation — plan
 
-**Status:** planned (2026-10-21, direct user request, part of the v2
-strategic realignment — `decisions/0078`, `planning/v2-roadmap.md`).
-**Planning only. Implementation is not begun and requires explicit
-maintainer approval of §9's open decisions before any code is written**,
-per the governing prompt's own instruction ("Do not begin Phase 82
-implementation") and `CLAUDE.md` §1.
+**Status:** in progress (2026-10-21, direct user request — "CodeCompass
+Orchestrator — Correct Phase 82 Plan and Proceed with Implementation").
+**Implementation explicitly authorised by that same governing prompt
+(`decisions/0081` §5) — §9's prior approval gate is satisfied, not
+bypassed.**
 
 **Amendment history** (full rationale in each amendment's own ADR — this
-plan's own current content already reflects every correction below; §13
+plan's own current content already reflects every correction below; §14
 records the fullest, most recent one):
 
 1. 2026-10-21, "CodeCompass v2 Planning Amendment — Cross-Project
@@ -23,6 +22,17 @@ records the fullest, most recent one):
    read-time view over already-existing Phase 81 records (§4). Oracle-
    result identity strengthened to bind to the exact tested subject,
    not a bare commit reference (§5).
+3. 2026-10-21, "CodeCompass Orchestrator — Correct Phase 82 Plan and
+   Proceed with Implementation" (`decisions/0081`, §14): the single
+   `check_reference`/`scope`/`required` design replaced by an explicit
+   `checks:` collection (§5); PASS/FAIL/GAP/INVALID given a deterministic
+   precedence/aggregation rule (§5a); vacuous verification (empty
+   required-check set, absent contract, unresolvable evidence) is now
+   structurally rejected, with a named, explicit compatibility policy for
+   twelve pre-existing `status: verified` records this phase does not
+   touch (§4); `tested_subject_digest`/`test_input_digest` scoped to
+   named, reviewable file lists (§5b). Implementation proceeds in this
+   same work session.
 
 ## 0. Verified current state (read live, not assumed)
 
@@ -260,53 +270,101 @@ missing, stale, mismatched-scope, or non-`PASS` required check is a
 validation finding, exactly as `check_requirement_cites_approved_decision`
 already treats an unapproved cited Decision.
 
+**Corrected 2026-10-21 (`decisions/0081` §3) — vacuous verification and
+pre-existing records.** The check above fails closed, not vacuously
+passes, on an empty or absent required-check set and on any `test_ref`
+that fails to resolve to a real, schema-valid `oracle-result.yaml`.
+**This check applies only to a record whose owning slug has a
+`planning/contracts/<slug>/` directory at all.** Twelve pre-existing
+`status: verified` records predate this phase and have no contract
+directory (`REQ-DOCORIGIN-001/002/003`, `REQ-HSAPI-001` through `-006`,
+`CL-DEPTH-001`, `CL-FPSS-006/007`) — a **named, explicit compatibility
+exemption** (`decisions/0081`'s own Context section lists them), not a
+silent grandfather clause: none is touched, downgraded, or reinterpreted
+by this phase. `balance-from-spec` (§2/§6) is the only slug this check
+gates today.
+
 ## 5. Oracle contract and result schema
 
 Two new, minimal, machine-readable file formats under
-`planning/contracts/<slug>/`. **Corrected 2026-10-21 (`decisions/0080`)**:
-`oracle-result.yaml` gains identity fields binding it to the exact
-tested subject, not merely a commit reference — see the rationale table
-below.
+`planning/contracts/<slug>/`, read/written as real YAML (`pyyaml`, an
+existing dependency — not CodeCompass's own hand-rolled flat-record
+parser, which is deliberately scoped to the six canonical knowledge-
+record kinds only, not every new file format this phase introduces).
+**Corrected twice**: `decisions/0080` bound `oracle-result.yaml` to the
+exact tested subject, not merely a commit reference; `decisions/0081`
+replaced the singular `check_reference`/`scope`/`required` design below
+with an explicit `checks:` collection and a deterministic PASS/FAIL/GAP/
+INVALID precedence rule.
 
-- **`oracle-contract.yaml`** — what must be checked for this contract:
-  `contract_id` (the `REQ-` id), `execution_provider` (e.g. `pytest`,
-  named explicitly rather than assumed — Phase 82 supports exactly one
-  provider kind to prove the shape, not a provider-plugin system),
-  `check_reference` (how to invoke it — a test node ID for `pytest`),
-  `scope` (the specific conditions this check actually covers, e.g.
-  "integer inputs" — required precisely because VERIFIED is now
-  scope-qualified, §4), `required` (bool — is this check mandatory for
-  the contract to be considered checked at all, distinguishing a `GAP`
-  from a merely optional nice-to-have check).
-- **`oracle-result.yaml`** — one per run, with the following fields:
+- **`oracle-contract.yaml`** — `schema_version` (integer, `1`),
+  `contract_id` (the `REQ-` id this contract belongs to — the single,
+  unambiguous identity; a result's own `oracle_contract_id` always means
+  "this `contract_id`," never a second, independent name),
+  `tested_paths` (an explicit, committed list of implementation file
+  paths this contract's `tested_subject_digest` covers — named precisely,
+  not a directory glob, so its own scope is reviewable and does not
+  silently grow or shrink), and `checks:` — a list, each entry carrying
+  its own `check_id` (stable, contract-local), `scope` (the specific
+  conditions this one check covers, e.g. "single-section expense
+  aggregation" — required precisely because VERIFIED is scope-qualified,
+  §4), `execution_provider` (a closed, named value; Phase 82 implements
+  exactly `pytest`, not a provider-plugin system — a second provider kind
+  is a future phase's decision, made when a second real need exists),
+  `check_reference` (a pytest node id), `test_input_paths` (an explicit
+  list of fixture/test-code files this one check's own `test_input_digest`
+  covers — per-check, since two checks against the same implementation
+  can legitimately read different fixtures), and `required` (bool —
+  whether this check's absence of a passing result produces a `GAP`, as
+  opposed to an optional, non-gating check).
+- **`oracle-result.yaml`** — one per run, naming exactly one `check_id`
+  (never the whole contract), with the following fields:
 
   | Field | Purpose |
   |---|---|
   | `run_id` | Identifies this specific execution — distinct from `baseline_id` (may be cited by many runs) and `tested_subject_digest` (may recur across runs against unchanged code). |
   | `contract_id` | The `REQ-` id this result addresses. |
+  | `check_id` | The exact check (within the contract's own `checks:` list) this result addresses — not the whole contract. |
   | `baseline_id` | §7 — the accepted reference state, nullable (a run against no yet-accepted baseline is still valid, just not "the" reference result). |
-  | `tested_subject_digest` | **The actual content hash of the exact files executed** — reusing Phase 81B's own `payload_tree_sha256`/`_canonical_digest_of_hashes` construction (`decisions/0077`) over the oracle's own relevant source tree. **Not a bare Git commit SHA**: a commit SHA cannot distinguish a clean checkout from a dirty worktree with uncommitted changes; a content digest of what was actually read and executed can, and the run is recorded as `INVALID` if this digest cannot be computed. |
-  | `oracle_contract_id` + `oracle_contract_content_hash` | The accepted contract and checks actually executed, by content, continuing the tamper-detection mechanism below — now an explicit field on the result itself, not only a side validation. |
-  | `test_input_digest` | Content hash of the exact fixture/input data used — a contract can stay unchanged while its own fixture quietly drifts; this makes that drift independently detectable. |
+  | `tested_subject_digest` | The content hash of the contract's own `tested_paths`, as they exist at run time — reusing Phase 81B's own `payload_tree_sha256`/`_canonical_digest_of_hashes` construction (`decisions/0077`). **Not a bare Git commit SHA.** A named path that cannot be read makes the digest computation itself fail, and the run is recorded `INVALID` with an `invalid_reason` naming the unresolvable path (`decisions/0081` §4) — never computed over a partial file set. |
+  | `oracle_contract_id` + `oracle_contract_content_hash` | The accepted contract's own `contract_id` and a content hash of the live `oracle-contract.yaml`, continuing the tamper-detection mechanism below. |
+  | `test_input_digest` | Content hash of the named check's own `test_input_paths` (fixture data *and* the test file itself, since both define what the check actually exercises) — a contract can stay unchanged while its own fixture or test code quietly drifts; this makes that drift independently detectable. |
   | `environment_descriptor` | Optional, recorded only where material (e.g. a language/runtime version that could plausibly change the outcome) — never fabricated when not material. |
-  | `scope` | The specific conditions this result actually covers (mirrors the oracle-contract's own `scope`; must match for the result to count toward that check). |
-  | `outcome` | `PASS\|FAIL\|GAP\|INVALID` — the governing prompt's exact four values. |
+  | `scope` | Must equal the named check's own `scope` for this result to count toward it at all (precedence rule 2, below) — never "close enough." |
+  | `outcome` | `PASS\|FAIL\|INVALID` — a per-result field; **`GAP` is never written by a run about itself** (§5a). |
   | `raw_output_ref` + `raw_output_sha256` | A path to the captured raw tool output, for independent re-inspection, plus a content hash of that file — the raw evidence itself must be tamper-evident, not merely referenced. |
   | `executed_at`, `execution_provider` | Unchanged from the original proposal. |
   | `invalid_reason` | Mandatory when `outcome: INVALID` — the environment, configuration, or evidence that made the run unreliable; `INVALID` without a reason is itself a validation failure (§8.4). |
 
-**`GAP` vs `FAIL` vs `INVALID`, concretely, so the distinction is
-checkable, not just prose**: `FAIL` requires the check to have actually
-run and produced a negative result; `GAP` requires the check to be
-`required: true` in the oracle contract but to have no corresponding,
-scope-matching `oracle-result.yaml` with `outcome: PASS` (§8.4);
-`INVALID` requires an explicit, named reason the *environment* (not the
-code under test) is untrusted — including an unresolvable
-`tested_subject_digest`/`test_input_digest`. A successful run is never
-presented as proof of an untested behaviour — concretely, the
-oracle-result schema has no field that could be mistaken for
-"everything is fine" in the absence of a scope-matching, contract-
-specific `PASS`.
+### 5a. PASS/FAIL/GAP/INVALID — deterministic precedence and aggregation (`decisions/0081` §2)
+
+**Per-result precedence**, evaluated in this fixed order — the first
+matching rule wins:
+
+1. `tested_subject_digest`, `test_input_digest`,
+   `oracle_contract_content_hash`, or `raw_output_sha256` cannot be
+   independently recomputed to match what is recorded → **INVALID**,
+   regardless of the run's own recorded `outcome`.
+2. `scope` does not match the named check's own `scope` → **INVALID**.
+3. Otherwise, the recorded `outcome` (`PASS`/`FAIL`/`INVALID`, as the
+   execution itself determined) stands.
+
+**`GAP` is an aggregate, never a per-result outcome**: for a given
+`(contract_id, check_id)`, `GAP` holds iff the check is `required: true`
+and no result satisfies precedence rule 3 with `outcome: PASS`. A `FAIL`
+result for that check does not change this to something worse than
+`GAP` — both facts coexist and are both reported (a regression was
+observed, *and* the required check currently has no passing evidence). A
+`FAIL` or `INVALID` result is never silently reclassified as merely
+`GAP`: it remains a distinct, retained fact (Phase 81's own existing
+conflict-retention discipline, reused unchanged for oracle-sourced
+Evidence).
+
+**Aggregate assurance for a contract is the union of its own per-check
+states, never collapsed to one value** — "2/2 required checks PASS,"
+"1/2 PASS + 1/2 GAP," and "1/2 PASS + 1/2 FAIL" are three distinct,
+separately reported outcomes, mirroring §4's own
+`verified_scopes`/`known_gap_scopes` split.
 
 **Protection from the evaluated agent, and its real limit**:
 `oracle-contract.yaml` files are the "accepted checks" the governing
@@ -331,12 +389,25 @@ it does not yet prevent a motivated fabrication before the fact.
 
 ## 6. Pinned Ledgerkit reference scenario and negative controls
 
-- **Positive scenario**: one real, currently-passing Ledgerkit test (or
-  a new, equally-real fixture scenario if none currently isolates
-  `balance_from_spec` cleanly enough — confirmed/chosen at
-  implementation time against the real `tests/test_reports.py`) is
-  named as `balance-from-spec`'s `check_reference`. Running the oracle
-  against it today must produce `PASS`.
+**Corrected 2026-10-21 (`decisions/0081` §1)** — two real, already-
+passing Ledgerkit tests, confirmed against the live
+`~/projects/ledgerkit` checkout this session, pinned as `balance-from-
+spec`'s two `checks:`:
+
+- **`check_id: single-section-expense-subtotal`**, `scope: "single-
+  section expense aggregation"` —
+  `tests/test_reports.py::TestBalanceFromSpec::test_single_section_rows_and_subtotal`
+  (asserts the `expenses` section's own subtotal against the pinned
+  `tests/fixtures/filtered.journal` fixture: `1359.00`).
+- **`check_id: multi-section-income-expense-subtotal`**, `scope: "multi-
+  section income/expense aggregation with sign inversion"` —
+  `tests/test_reports.py::TestBalanceFromSpec::test_multi_section_correct_values`
+  (asserts both the `income` section, inverted, and the `expenses`
+  section's own subtotals in the same report).
+
+Both `required: true`. Running the oracle against the current,
+unmodified checkout must produce `PASS` for both.
+
 - **Negative control (original, preserved unchanged)**: a deliberately,
   minimally incorrect version of `balance_from_spec` (or an equivalent
   fixture mutation) must cause the same oracle contract to report
@@ -433,11 +504,12 @@ shape):
    validation, not pass because the path merely resolves.
 4. **Cross-reference integrity**: every `oracle-result.yaml`'s
    `contract_id` resolves to a real `REQ-` record and a real
-   `oracle-contract.yaml`; every `INVALID` outcome has a non-empty
-   `invalid_reason`; every `GAP` determination is independently
-   re-derivable by the validator itself from "required but no matching
-   result," never trusted from a self-reported `outcome: GAP` value
-   alone (the validator computes GAP, it does not merely echo it).
+   `oracle-contract.yaml`; its `check_id` resolves to a real entry in
+   that contract's own `checks:` list; every `INVALID` outcome has a
+   non-empty `invalid_reason`. `GAP` is never a field the validator reads
+   from a result at all (`decisions/0081` §2) — it is computed solely by
+   the validator itself, per `(contract_id, check_id)`, from "required
+   and no matching `PASS` survives the §5a precedence rule."
 5. **Contract tamper detection**: an `oracle-contract.yaml` whose
    content hash does not match the hash recorded at its last
    maintainer-approved commit fails closed (§5's protection mechanism,
@@ -450,34 +522,40 @@ shape):
    fails closed; a `scope` on a result that does not match any `scope`
    named in its own `oracle-contract.yaml` fails closed rather than
    being silently accepted as "close enough."
-7. **`status: verified` earns its own claim** (§4): a record whose
-   `status` is `verified` but which does not have a current, matching-
-   scope `PASS` for every `required: true` check in its own
-   `oracle-contract.yaml` is a validation finding
-   (`check_verified_status_cites_passing_oracle_result`).
+7. **`status: verified` earns its own claim, and cannot be earned
+   vacuously** (§4, `decisions/0081` §3): a record whose `status` is
+   `verified` but which does not have a current, matching-scope `PASS`
+   for every `required: true` check in its own `oracle-contract.yaml` is
+   a validation finding (`check_verified_status_cites_passing_oracle_
+   result`) — including when the required-check set is empty or the
+   contract is absent entirely (never vacuously satisfied). Applies only
+   to a slug with a `planning/contracts/<slug>/` directory; the twelve
+   pre-existing `status: verified` records with no contract directory
+   are an explicit, named exemption (§4's own compatibility-policy
+   paragraph), not silently reinterpreted.
 
-## 9. Open decisions requiring explicit maintainer approval
+## 9. Open decisions — resolved by explicit authorisation (`decisions/0081` §5)
 
-1. **The derived-view design itself (§4, `decisions/0080`)** — no field
-   name to approve (there is no new field), but the maintainer should
-   confirm the approach: computing INTENDED/OBSERVED/VERIFIED/CONTESTED
-   at read time from existing records, rather than persisting any of
-   them, including the repurposing of the pre-existing, previously-
-   unenforced `status: verified` value to now require a real, scope-
-   complete oracle citation.
-2. **The oracle-result identity fields (§5, `decisions/0080`)** —
-   `run_id`, `tested_subject_digest`, `oracle_contract_content_hash`,
-   `test_input_digest`, `environment_descriptor`, `raw_output_sha256`,
-   `scope`. None is individually contentious, but together they are the
-   bulk of this phase's genuinely new schema surface and warrant a
-   single explicit sign-off rather than being approved implicitly by
-   silence.
-3. **Whether `balance_from_spec` is the right pinned scenario**, or a
-   different real Ledgerkit function should anchor Phase 82 instead —
-   confirmed against the live fixture set at implementation time (§2).
-4. **The MCP SDK/licence check named in Phase 84's roadmap entry** is
-   not this phase's decision, but is flagged here so it is not
-   forgotten when Phase 82 hands off.
+All items below were previously gated on maintainer approval; the
+governing prompt that produced `decisions/0081` explicitly authorised
+proceeding with all of them, so none blocks implementation. Recorded here
+for audit trail, not as an open gate:
+
+1. **The derived-view design (§4, `decisions/0080`)** — confirmed:
+   computing INTENDED/OBSERVED/VERIFIED/CONTESTED at read time from
+   existing records, including repurposing the pre-existing,
+   previously-unenforced `status: verified` value, proceeds as designed.
+2. **The oracle-result identity fields (§5, `decisions/0080`, extended by
+   `decisions/0081`)** — `run_id`, `check_id`, `tested_subject_digest`,
+   `oracle_contract_content_hash`, `test_input_digest`,
+   `environment_descriptor`, `raw_output_sha256`, `scope` — confirmed as
+   specified.
+3. **`balance_from_spec` is the pinned scenario** — confirmed against the
+   live `~/projects/ledgerkit` fixture set this session (§2/§6): both
+   named checks are real, currently-passing tests.
+4. **The MCP SDK/licence check** named in Phase 84's roadmap entry
+   remains Phase 84's own decision, not this phase's — still flagged here
+   so it is not forgotten when Phase 82 hands off.
 
 ## 10. Verification (how this phase is confirmed done)
 
@@ -658,3 +736,59 @@ record.
 **No further maintainer approval gate beyond §9's own two line items**
 (the derived-view approach, and the oracle-result identity field set) —
 both already restated to reflect this amendment, not additional to it.
+
+## 14. Third amendment: oracle checks collection, outcome precedence, vacuous-verification prevention, tested-subject scoping (2026-10-21) — implementation proceeds
+
+Direct user request ("CodeCompass Orchestrator — Correct Phase 82 Plan
+and Proceed with Implementation"). Full rationale: `decisions/0081`.
+Confirmed before amending: `HEAD` was exactly `2750752` (this plan's own
+prior commit), zero drift.
+
+**Four corrections, all already folded into §4-§9 above:**
+
+1. **A. Multiple oracle checks.** §5's singular `check_reference`/
+   `scope`/`required` replaced by an explicit, versioned `checks:`
+   collection on `oracle-contract.yaml`, each with its own stable
+   `check_id`, `scope`, `execution_provider`, `check_reference`,
+   `test_input_paths`, and `required` flag. `contract_id` is the single,
+   unambiguous identity; `oracle_contract_id` on a result always means
+   "this `contract_id`," resolving the earlier duplication. §6 names the
+   two real, already-passing checks this phase pins
+   (`single-section-expense-subtotal`,
+   `multi-section-income-expense-subtotal`). No execution-provider-plugin
+   system is introduced — `pytest` remains the one closed, named value.
+2. **B. Unambiguous verification outcomes.** §5a adds a deterministic
+   per-result precedence rule (digest/scope validity checked before an
+   `outcome` is trusted) and an aggregation rule making `GAP` strictly an
+   aggregate ("required, no surviving `PASS`"), never a per-result field
+   and never a reclassification of a `FAIL`/`INVALID` result — both
+   remain distinct, retained facts.
+3. **C. Vacuous verification is prevented.** §4/§8.7's
+   `check_verified_status_cites_passing_oracle_result` now fails closed
+   on an empty required-check set or an absent contract, rather than
+   vacuously passing. Twelve pre-existing `status: verified` records
+   (`REQ-DOCORIGIN-001/002/003`, `REQ-HSAPI-001` through `-006`,
+   `CL-DEPTH-001`, `CL-FPSS-006/007`) predate this mechanism and have no
+   contract directory — named explicitly as a compatibility exemption,
+   not silently grandfathered and not retroactively rewritten
+   (`decisions/0081` §3).
+4. **D. Tested-implementation precision.** `tested_subject_digest` is
+   now scoped to the contract's own explicit `tested_paths` list (named:
+   `reports.py`, `models.py`, `parser.py`, and the four `query/` modules
+   `balance_from_spec` actually imports — confirmed by direct inspection
+   of `reports.py`'s own import statements, not Ledgerkit's entire
+   package); `test_input_digest` is scoped per-check to its own
+   `test_input_paths` (the fixture journal *and* the test file itself,
+   since both define what the check exercises). An unresolvable named
+   path fails the digest computation itself, recording the run `INVALID`
+   with a named reason — never a partial-file-set digest presented as
+   complete. A dirty worktree needs no special detection: the digest is
+   always computed from whatever bytes exist on disk, so a dirty
+   checkout simply produces a different, equally valid digest than a
+   clean one (`decisions/0080`'s own original reasoning for a content
+   digest over a commit SHA, now stated as this rule's own mechanism).
+
+**Implementation is explicitly authorised and proceeds in this same work
+session** (`decisions/0081` §5) — §9 above is rewritten from an open gate
+into a resolved-decisions record; this is not a fifth planning-only
+amendment.

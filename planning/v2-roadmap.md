@@ -87,11 +87,13 @@ structure:
    model, `source_files`/`source_symbols` (Phase 77), the real Ledgerkit
    sibling checkout, `context-evaluator`'s existing evidence-discipline
    conventions.
-3. **Architectural changes.** New optional Claim/Requirement fields for
-   the INTENDED/OBSERVED/VERIFIED/UNCERTAIN dimension (exact field name
-   and enum proposed in the Phase 82 plan, pending maintainer approval);
-   a new, minimal oracle-contract/oracle-result file schema under
-   `planning/contracts/<slug>/`; no `context-graph.db` schema change.
+3. **Architectural changes.** No new field on any Claim/Requirement
+   record — INTENDED/OBSERVED/VERIFIED/CONTESTED is a derived, read-time
+   view (`decisions/0080`); a new, versioned, multi-check
+   oracle-contract/oracle-result file schema under
+   `planning/contracts/<slug>/`, with a deterministic PASS/FAIL/GAP/
+   INVALID precedence rule (`decisions/0081`); no `context-graph.db`
+   schema change.
 4. **Deliverables.** See Phase 82 plan §3.
 5. **Prerequisites.** None beyond this ADR's approval — Phase 82 is the
    dependency root.
@@ -108,10 +110,11 @@ structure:
 9. **Exit gate.** A real Ledgerkit behavioural contract is traceable to
    its supporting evidence and independently testable, including a
    demonstrably failing negative control.
-10. **Risks.** The INTENDED/OBSERVED/VERIFIED schema delta is the one
-    genuinely novel design decision in this phase — named as requiring
-    explicit maintainer approval before implementation (see this
-    document's own closing section).
+10. **Risks.** The oracle-result identity fields and the PASS/FAIL/GAP/
+    INVALID aggregation rule are this phase's own genuinely novel design
+    surface — specified in `decisions/0080`/`0081` and explicitly
+    authorised for implementation by the same governing prompt that
+    produced `decisions/0081`.
 
 ## Phase 83 — Semantic Change Assurance
 
