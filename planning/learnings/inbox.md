@@ -8,6 +8,44 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-101 — an oracle must pin the interpreter and PYTHONPATH of the exact tree it is executing, or an editable-installed sibling checkout silently shadows a scratch mutation
+
+- **origin:** Phase 82 (Contract and Evidence Foundation), implementation
+- **date:** 2026-10-21
+- **project_revision:** `ebca4bf` (codecompass); `~/projects/ledgerkit`
+  at `7224bb5c113cd3aad7e86e994365703cd0070154`
+- **observation:** `src/codecompass/oracle.py::run_pytest_check`
+  originally invoked `pytest` with `cwd=repo_root` only. The real
+  Ledgerkit checkout has `ledgerkit` `pip install -e .`'d into its own
+  `.venv` (confirmed via `pip list`: `Editable project location:
+  /home/cormac/projects/ledgerkit`). When a test built a disposable
+  scratch copy under `tmp_path` and mutated `reports.py` there to
+  construct a deliberately-broken negative control, running `pytest`
+  with only `cwd` set to the scratch copy still imported the *original*
+  `~/projects/ledgerkit` package via the editable install's own
+  `sys.path` registration — the scratch mutation had zero effect on
+  what was actually executed, silently defeating the entire negative
+  control the test existed to demonstrate.
+- **evidence:** first attempt at
+  `tests/test_oracle.py::test_deliberately_broken_implementation_produces_fail`
+  and `test_passing_result_cannot_verify_subsequently_modified_candidate`
+  both failed with an unrelated-looking `returncode: 4` /
+  `ModuleNotFoundError`-adjacent failure, traced to the scratch copy's
+  own `tests/test_reports.py` importing the real, unmutated
+  `ledgerkit.reports` instead of the scratch one. Fixed by explicitly
+  setting `PYTHONPATH=str(repo_root)` on the subprocess environment in
+  `run_pytest_check` (`src/codecompass/oracle.py`), so the package
+  actually imported is always the one physically present under the
+  exact `repo_root` the digest was computed from — confirmed by both
+  tests passing once this was added.
+- **classification:** invariant (a general property of any oracle
+  mechanism that re-executes a target project's own test suite against
+  an independently-constructed scratch copy — not specific to
+  Ledgerkit or Phase 82)
+- **status:** candidate
+- **recurrence:** first occurrence
+- **promoted_to:**
+
 ### L-100 — a broad, directory-named allow-list entry is a structural blind spot even inside a carefully-reviewed allow-list
 
 - **origin:** Phase 81B Amendment 5 (corrective), direct user request
