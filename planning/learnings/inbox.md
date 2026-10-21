@@ -42,9 +42,53 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   mechanism that re-executes a target project's own test suite against
   an independently-constructed scratch copy — not specific to
   Ledgerkit or Phase 82)
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** first occurrence
-- **promoted_to:**
+- **curation (knowledge-curator, 2026-10-21):** **promoted.** Verified
+  directly against HEAD (`62b2f39`, fix landed at `ebca4bf`):
+  `run_pytest_check` (`src/codecompass/oracle.py` lines 317-350)
+  explicitly sets `PYTHONPATH=str(repo_root)` (prepended ahead of any
+  existing value) on the subprocess environment, with a docstring
+  naming exactly this failure mode; a companion fix,
+  `_interpreter_for` (lines 306-314), pins the interpreter to
+  `repo_root`'s own `.venv` for the same reason, matching the
+  learning's title ("pin the interpreter and PYTHONPATH"). Both named
+  tests exist in `tests/test_oracle.py`
+  (`test_deliberately_broken_implementation_produces_fail` line 292,
+  `test_passing_result_cannot_verify_subsequently_modified_candidate`
+  line 321) and genuinely exercise the behaviour, not just by name:
+  both call `_copy_ledgerkit_scratch` (line 55), which copies the real
+  `~/projects/ledgerkit` `ledgerkit/`+`tests/` trees into a disposable
+  `tmp_path` scratch directory and symlinks only `.venv` (never the
+  source), then mutate the scratch copy and run
+  `oracle.evaluate_check`/`evaluate_result_precedence` with
+  `repo_root=scratch`. Without the `PYTHONPATH` pin, the real checkout's
+  own editable install would silently shadow the scratch mutation via
+  the shared `.venv`'s `sys.path` registration, and both tests'
+  mutation-dependent assertions (`outcome == "FAIL"`,
+  `outcome == "INVALID"`) would fail to catch that — so these are real
+  regression tests for the fix, not incidental passes. Generalizability
+  confirmed: the fix lives in shipped product code
+  (`src/codecompass/oracle.py::run_pytest_check`/`_interpreter_for`,
+  not a test helper), and the property — any subprocess-based test
+  oracle that re-executes a target's own suite against an
+  independently-constructed tree copy must pin that copy's
+  interpreter/`PYTHONPATH` or risk silent shadowing by an ambient
+  sibling install — holds for any such oracle, not only Ledgerkit.
+  Promoted now rather than held for a second occurrence: the fix and
+  both regression tests already landed together in the same phase/
+  commit, the same basis on which L-100 (above) was promoted on first
+  occurrence rather than deferred to recurrence — recurrence is for
+  candidates whose fix hasn't landed yet, not a precondition once the
+  landed regression test already demonstrates the invariant holds.
+  This is a required behavioural invariant already captured by a
+  landed regression test, so it promotes cleanly per the
+  classification table in `learning-lifecycle.md` §4.
+- **promoted_to:** `src/codecompass/oracle.py`
+  (`run_pytest_check`'s `PYTHONPATH` pin + `_interpreter_for`) +
+  `tests/test_oracle.py`
+  (`test_deliberately_broken_implementation_produces_fail`,
+  `test_passing_result_cannot_verify_subsequently_modified_candidate`)
 
 ### L-100 — a broad, directory-named allow-list entry is a structural blind spot even inside a carefully-reviewed allow-list
 
