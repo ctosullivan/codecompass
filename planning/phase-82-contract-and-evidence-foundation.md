@@ -20,7 +20,12 @@ retro; a second pass, after the retro was expanded to full
 `planning/retros/TEMPLATE.md` shape, returned PASS) —
 `planning/retros/_audit-phase-82-corrective-pass.md` and
 `_audit-phase-82-corrective-pass-reaudit.md`. Retro:
-`planning/retros/phase-82-corrective-pass.md`.
+`planning/retros/phase-82-corrective-pass.md`. **A second, final
+corrective pass (2026-10-22, `decisions/0083`, §16 below) subsequently
+fixed three further, narrower assurance weaknesses found by a separate
+independent post-completion review of the already-corrected code — Phase
+82 remains `done` throughout; this pass is its own closeout, not a
+reopening of either the original phase or the first corrective pass.**
 
 **Amendment history** (full rationale in each amendment's own ADR — this
 plan's own current content already reflects every correction below; §14
@@ -876,3 +881,67 @@ specific negative controls named in `decisions/0082`, the full existing
 regression suite, both strict validators, and an independent
 `release-phase-auditor` pass against the exact corrective commit before
 this plan's own status line is touched again.
+
+## 16. Final corrective pass: all-skipped execution, strict-validator fail-closed import handling, outcome-type-before-membership validation (2026-10-22)
+
+Direct user request ("CodeCompass Orchestrator — Phase 82 Final
+Corrective Pass"), dispatched against the already-corrected Phase 82
+(`e3917ad`, the first corrective pass's own terminal commit), after a
+further, separate independent post-completion review of the shipped
+code found three narrower assurance weaknesses surviving the first
+corrective pass. Full rationale, exact mechanism, and consequences:
+`decisions/0083`. Confirmed before amending: `HEAD` was exactly
+`e3917ad`, zero drift.
+
+**Three corrections, each reproduced directly against the real shipped
+code (including real pytest 9.1.1 experimentation) before being fixed:**
+
+1. **A. All-skipped execution is `INVALID`, never `PASS`.**
+   `_classify_pytest_junit` now rejects a junit-xml report where every
+   collected test was skipped (`tests - skipped <= 0`) as `INVALID`,
+   placed after the existing `tests == 0` check and before the
+   `errors`/`failures` checks. A partially-skipped run with at least one
+   genuinely executed test is unaffected (confirmed: skip+pass → `PASS`,
+   skip+fail → `FAIL`, both unchanged).
+2. **B. Both strict validators fail closed on missing verification
+   machinery.** `check_contracts.py::run_all`'s and
+   `check_knowledge_base.py::check_verified_status_cites_passing_oracle_result`'s
+   own `oracle is None` (and `ki is None`) branches now report a
+   `strict=True` (blocking) finding instead of `strict=False` — an
+   environment where `codecompass.oracle`/`knowledge_intermediate` cannot
+   be imported at all now fails `--strict` rather than silently reporting
+   "no findings." Every other informational finding in both validators
+   (an unavailable external Ledgerkit checkout, an expected `GAP`, a
+   projection-staleness skip) is unchanged — the distinction is "the
+   verification code itself could not run" vs. "an external, optional
+   resource was unavailable."
+3. **C. `parse_oracle_result` validates `outcome`'s type before its enum
+   membership, and validates every optional field's type.** The
+   `outcome not in _OUTCOME_VALUES` membership check (against a `set`)
+   previously ran before confirming `outcome` was even a string — an
+   unhashable YAML value (a list or mapping) raised an uncaught
+   `TypeError` instead of a controlled `OracleSchemaError`. `outcome`'s
+   type is now checked first. `baseline_id`, `environment_descriptor`,
+   and `invalid_reason` now each require `str | None`, previously
+   unvalidated. `run_pytest_check`'s `subprocess.run` call is now wrapped
+   in `try`/`except OSError`, classifying a launch failure as `INVALID`
+   with the exception's own text preserved, rather than propagating
+   uncaught.
+
+**Nothing about Phase 82's exit gate, its one pinned Ledgerkit contract,
+or `decisions/0080`/`0081`/`0082`'s own design is reopened** — every
+correction above is to enforcement fidelity, not to the design itself
+(`decisions/0083`'s own Consequences section states this explicitly).
+Verification: real Ledgerkit positive run (fresh `PASS` results against
+the live checkout) and a genuine failing negative control against a
+disposable, git-cloned, deliberately mutated scratch checkout (never the
+real `~/projects/ledgerkit`); the three new defect-specific negative
+controls named in `decisions/0083` plus regression tests exercising all
+three directly; the full existing regression suite (1006 passed, 2
+skipped, 0 failed); `ruff check .` (clean); both strict validators run
+against the real repository (`check_contracts.py --strict`: no findings;
+`check_knowledge_base.py --strict`: 24 pre-existing informational
+snapshot-divergence findings, unrelated to this pass, zero blocking);
+and an independent `release-phase-auditor` pass instructed to attempt
+falsification of all three corrections, against the exact corrective
+commit, before this plan's own status line is touched again.
