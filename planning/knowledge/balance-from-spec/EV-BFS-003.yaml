@@ -11,6 +11,6 @@ what_it_shows: >
 observations: null
 source_ref: null
 doc_ref: null
-test_ref: "planning/contracts/balance-from-spec/results/multi-section-income-expense-subtotal.yaml"
+test_ref: "planning/contracts/balance-from-spec/results/multi-section-income-expense-subtotal--20261021T085159042773Z-584a42f5.yaml"
 repository_revision: "ledgerkit@7224bb5c113cd3aad7e86e994365703cd0070154"
 status: current

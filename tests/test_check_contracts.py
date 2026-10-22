@@ -141,11 +141,10 @@ class TestResultCrossReferences:
         contract_path = slug_dir / "oracle-contract.yaml"
         _write_contract(contract_path)
         contract = oracle.parse_oracle_contract(contract_path)
-        result = _write_result(
-            slug_dir / "results" / "check-x.yaml", contract_path, check_id="check-x"
-        )
+        result_path = slug_dir / "results" / "check-x.yaml"
+        result = _write_result(result_path, contract_path, check_id="check-x")
         findings = check_contracts.check_result_cross_references(
-            slug_dir, contract, [result], root=tmp_path
+            slug_dir, contract, [(result_path, result)], root=tmp_path
         )
         assert any(f.rule == "contract-result-dangling-check-id" for f in findings)
 
@@ -154,9 +153,10 @@ class TestResultCrossReferences:
         contract_path = slug_dir / "oracle-contract.yaml"
         _write_contract(contract_path)
         contract = oracle.parse_oracle_contract(contract_path)
-        result = _write_result(slug_dir / "results" / "check-a.yaml", contract_path)
+        result_path = slug_dir / "results" / "check-a.yaml"
+        result = _write_result(result_path, contract_path)
         findings = check_contracts.check_result_cross_references(
-            slug_dir, contract, [result], root=tmp_path
+            slug_dir, contract, [(result_path, result)], root=tmp_path
         )
         assert findings == []
 
@@ -172,12 +172,19 @@ class TestResultIntegrity:
         Path(result.raw_output_ref).write_text("TAMPERED", encoding="utf-8")
 
         findings = check_contracts.check_result_integrity(
-            slug_dir, contract, [result], oracle,
+            slug_dir, contract, [(result_path, result)], oracle,
             ledgerkit_root=tmp_path / "no-such-dir", root=tmp_path,
         )
         assert any(f.rule == "contract-result-integrity-mismatch" for f in findings)
 
-    def test_valid_result_no_mismatch_finding(self, tmp_path):
+    def test_valid_result_no_mismatch_finding_but_current_verification_unconfirmable(
+        self, tmp_path
+    ):
+        """decisions/0082 §A: a checkout-unavailable environment never
+        reports integrity-mismatch (it cannot compare against anything),
+        but a required check's only PASS being merely historical is now
+        its own, separate blocking finding -- `--strict` must not report
+        clean when it cannot confirm current state at all."""
         slug_dir = tmp_path / "planning" / "contracts" / "demo-slug"
         contract_path = slug_dir / "oracle-contract.yaml"
         _write_contract(contract_path)
@@ -186,12 +193,36 @@ class TestResultIntegrity:
         result = _write_result(result_path, contract_path)
 
         findings = check_contracts.check_result_integrity(
-            slug_dir, contract, [result], oracle,
+            slug_dir, contract, [(result_path, result)], oracle,
             ledgerkit_root=tmp_path / "no-such-dir", root=tmp_path,
         )
         assert not any(f.rule == "contract-result-integrity-mismatch" for f in findings)
         # Informational note that the live checkout wasn't available.
         assert any(f.rule == "contract-ledgerkit-checkout-unavailable" for f in findings)
+        # New blocking finding: required check-a's only PASS is unconfirmed.
+        unconfirmable = [
+            f for f in findings if f.rule == "contract-current-verification-unconfirmable"
+        ]
+        assert len(unconfirmable) == 1
+        assert unconfirmable[0].strict is True
+
+    def test_no_recorded_pass_yet_stays_informational_only(self, tmp_path):
+        """A required check with no results at all has nothing current to
+        misrepresent -- checkout-unavailable stays informational, no new
+        blocking finding fires."""
+        slug_dir = tmp_path / "planning" / "contracts" / "demo-slug"
+        contract_path = slug_dir / "oracle-contract.yaml"
+        _write_contract(contract_path)
+        contract = oracle.parse_oracle_contract(contract_path)
+
+        findings = check_contracts.check_result_integrity(
+            slug_dir, contract, [], oracle,
+            ledgerkit_root=tmp_path / "no-such-dir", root=tmp_path,
+        )
+        assert not any(
+            f.rule == "contract-current-verification-unconfirmable" for f in findings
+        )
+        assert [f.strict for f in findings] == [False]
 
 
 class TestGapAggregate:
@@ -212,17 +243,13 @@ class TestGapAggregate:
         contract_path = slug_dir / "oracle-contract.yaml"
         _write_contract(contract_path)
         contract = oracle.parse_oracle_contract(contract_path)
-        r1 = _write_result(
-            slug_dir / "results" / "check-a.yaml", contract_path,
-            check_id="check-a", scope="scope A",
-        )
-        r2 = _write_result(
-            slug_dir / "results" / "check-b.yaml", contract_path,
-            check_id="check-b", scope="scope B",
-        )
+        path_a = slug_dir / "results" / "check-a.yaml"
+        r1 = _write_result(path_a, contract_path, check_id="check-a", scope="scope A")
+        path_b = slug_dir / "results" / "check-b.yaml"
+        r2 = _write_result(path_b, contract_path, check_id="check-b", scope="scope B")
 
         findings = check_contracts.check_gap_aggregate(
-            slug_dir, contract, [r1, r2], oracle,
+            slug_dir, contract, [(path_a, r1), (path_b, r2)], oracle,
             ledgerkit_root=tmp_path / "no-such-dir", root=tmp_path,
         )
         assert findings == []
@@ -305,6 +332,12 @@ class TestSourceRefSymbolDepth:
 
 
 class TestRealRepository:
+    @requires_ledgerkit
     def test_real_repository_has_no_blocking_findings(self):
+        """decisions/0082 §A: with the real checkout available, the real,
+        committed balance-from-spec contract's two required checks are
+        both live-confirmed PASS -- no blocking finding, including the
+        new contract-current-verification-unconfirmable rule, which only
+        fires when the checkout is unavailable."""
         findings = check_contracts.run_all(REPO_ROOT, check_contracts.DEFAULT_LEDGERKIT_ROOT)
         assert [f for f in findings if f.strict] == []

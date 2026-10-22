@@ -1854,7 +1854,12 @@ def _two_check_contract() -> _oracle.OracleContract:
 
 
 def _passing_result_for(
-    check: _oracle.OracleCheck, contract_path: Path, raw_path: Path
+    check: _oracle.OracleCheck,
+    contract_path: Path,
+    raw_path: Path,
+    *,
+    tested_subject_digest: str = "d" * 64,
+    test_input_digest: str = "i" * 64,
 ) -> _oracle.OracleResult:
     raw_path.write_text("ok", encoding="utf-8")
     return _oracle.OracleResult(
@@ -1864,10 +1869,10 @@ def _passing_result_for(
         check_id=check.check_id,
         scope=check.scope,
         baseline_id=None,
-        tested_subject_digest="d" * 64,
+        tested_subject_digest=tested_subject_digest,
         oracle_contract_id="REQ-EPI-001",
         oracle_contract_content_hash=_oracle.sha256_file(contract_path),
-        test_input_digest="i" * 64,
+        test_input_digest=test_input_digest,
         raw_output_ref=str(raw_path),
         raw_output_sha256=_oracle.sha256_file(raw_path),
         outcome="PASS",
@@ -1904,7 +1909,10 @@ class TestDeriveEpistemicProfile:
         oracle-result, with NO REQ/DEC referencing it at all --
         intended=False, observed=True, verified_scopes non-empty (the
         exact 'verified but not intended' counter-example named in
-        decisions/0080's own Context section)."""
+        decisions/0080's own Context section). decisions/0082 §A: a real,
+        confirmable `repo_root` is supplied so this genuinely demonstrates
+        *current* verification, not merely a historically recorded PASS
+        -- see the companion test immediately below for that distinction."""
         sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
         sdir.mkdir(parents=True)
         contract_dir = tmp_path / "planning" / "contracts" / "demo-slug"
@@ -1913,7 +1921,18 @@ class TestDeriveEpistemicProfile:
         contract = _two_check_contract()
         contract_path.write_text("placeholder", encoding="utf-8")  # hash target only
 
-        result = _passing_result_for(contract.checks[0], contract_path, tmp_path / "raw-a.txt")
+        repo_root = tmp_path / "repo"
+        repo_root.mkdir()
+        (repo_root / "impl.py").write_text("real implementation", encoding="utf-8")
+        (repo_root / "fixture.txt").write_text("real fixture", encoding="utf-8")
+        live_tested_digest = _oracle.compute_tree_digest(repo_root, contract.tested_paths)
+        live_input_digest = _oracle.compute_tree_digest(
+            repo_root, contract.checks[0].test_input_paths
+        )
+        result = _passing_result_for(
+            contract.checks[0], contract_path, tmp_path / "raw-a.txt",
+            tested_subject_digest=live_tested_digest, test_input_digest=live_input_digest,
+        )
         test_ref = "planning/contracts/demo-slug/results/scope-a.yaml"
 
         _write_record(
@@ -1938,11 +1957,30 @@ class TestDeriveEpistemicProfile:
             oracle_contract=contract,
             oracle_results_by_test_ref={test_ref: result},
             contract_path=contract_path,
+            repo_root=repo_root,
         )
         assert profile.intended is False
         assert profile.observed is True
         assert profile.verified_scopes == ["scope A"]
         assert profile.known_gap_scopes == ["scope B"]  # never silently folded into "verified"
+        assert profile.unconfirmed_scopes == []
+
+        # decisions/0082 §A negative control: the identical historically
+        # recorded PASS, but with no live-confirmable repo_root -- it must
+        # land in unconfirmed_scopes, never verified_scopes, regardless of
+        # whether repo_root is omitted entirely or points at a path that
+        # does not exist on disk.
+        for absent_repo_root in (None, tmp_path / "does-not-exist"):
+            unconfirmed_profile = ki.derive_epistemic_profile(
+                records["CL-X-001"], records,
+                oracle_contract=contract,
+                oracle_results_by_test_ref={test_ref: result},
+                contract_path=contract_path,
+                repo_root=absent_repo_root,
+            )
+            assert unconfirmed_profile.verified_scopes == []
+            assert unconfirmed_profile.unconfirmed_scopes == ["scope A"]
+            assert unconfirmed_profile.known_gap_scopes == ["scope B"]
 
     def test_scenario_3_intended_and_contested_simultaneously(self, tmp_path):
         """§10.3: an approved REQ whose linked Claim is contradicted --
@@ -1982,7 +2020,9 @@ class TestDeriveEpistemicProfile:
         """§10.4: a contract with two checks, different scopes, one with
         a real PASS result and one with none -- verified_scopes contains
         the first, known_gap_scopes contains the second, never collapsed
-        to one answer."""
+        to one answer. A real, confirmable repo_root is supplied
+        (decisions/0082 §A) so scope A genuinely lands in verified_scopes,
+        not merely unconfirmed_scopes."""
         sdir = tmp_path / "planning" / "knowledge" / "demo-slug"
         sdir.mkdir(parents=True)
         contract_dir = tmp_path / "planning" / "contracts" / "demo-slug"
@@ -1991,7 +2031,18 @@ class TestDeriveEpistemicProfile:
         contract_path.write_text("placeholder", encoding="utf-8")
         contract = _two_check_contract()
 
-        result_a = _passing_result_for(contract.checks[0], contract_path, tmp_path / "raw-a.txt")
+        repo_root = tmp_path / "repo"
+        repo_root.mkdir()
+        (repo_root / "impl.py").write_text("real implementation", encoding="utf-8")
+        (repo_root / "fixture.txt").write_text("real fixture", encoding="utf-8")
+        live_tested_digest = _oracle.compute_tree_digest(repo_root, contract.tested_paths)
+        live_input_digest = _oracle.compute_tree_digest(
+            repo_root, contract.checks[0].test_input_paths
+        )
+        result_a = _passing_result_for(
+            contract.checks[0], contract_path, tmp_path / "raw-a.txt",
+            tested_subject_digest=live_tested_digest, test_input_digest=live_input_digest,
+        )
         test_ref_a = "planning/contracts/demo-slug/results/scope-a.yaml"
 
         _write_record(
@@ -2016,9 +2067,11 @@ class TestDeriveEpistemicProfile:
             oracle_contract=contract,
             oracle_results_by_test_ref={test_ref_a: result_a},
             contract_path=contract_path,
+            repo_root=repo_root,
         )
         assert profile.verified_scopes == ["scope A"]
         assert profile.known_gap_scopes == ["scope B"]
+        assert profile.unconfirmed_scopes == []
 
     def test_scenario_5_stale_result_after_relevant_source_change(self, tmp_path):
         """§10.5: a real PASS oracle-result whose tested_subject_digest no

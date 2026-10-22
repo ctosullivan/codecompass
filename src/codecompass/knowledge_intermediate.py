@@ -978,15 +978,26 @@ _INTENDED_REQUIREMENT_STATUSES = {"approved", "implemented", "verified"}
 class EpistemicProfile:
     """INTENDED/OBSERVED/VERIFIED/CONTESTED (`decisions/0080`/`0081`) —
     four independently-computed predicates, never collapsed into one
-    value. `verified_scopes`/`known_gap_scopes` are only ever non-empty
-    when an `oracle_contract` was supplied to `derive_epistemic_profile`
-    (a record with no associated contract has nothing to report for
-    either)."""
+    value. `verified_scopes`/`known_gap_scopes`/`unconfirmed_scopes` are
+    only ever non-empty when an `oracle_contract` was supplied to
+    `derive_epistemic_profile` (a record with no associated contract has
+    nothing to report for any of the three).
+
+    `unconfirmed_scopes` (`decisions/0082` §A) is distinct from both:
+    a required scope whose only citation is a *historically recorded*
+    `PASS` that could not be reconfirmed against the current
+    implementation (no `repo_root` supplied, or the supplied path does
+    not exist on disk) lands here, never in `verified_scopes` — current
+    verification requires live confirmation; a result trusted only as
+    recorded is not current verification, even though it is real,
+    preserved historical evidence, not absent evidence either
+    (`known_gap_scopes`'s own, different meaning)."""
 
     intended: bool
     observed: bool
     verified_scopes: list[str]
     known_gap_scopes: list[str]
+    unconfirmed_scopes: list[str]
     contested: bool
 
 
@@ -1055,8 +1066,16 @@ def derive_epistemic_profile(
     # VERIFIED -- scope-qualified, only meaningful when this record has an
     # associated oracle contract at all (decisions/0081's own named
     # compatibility exemption: no contract means neither verified nor gap).
+    # Live confirmation is gated on repo_root actually existing on disk
+    # (decisions/0082 §A), not merely on an argument being passed -- a
+    # caller pointing at a path that does not exist gets the same honest
+    # "cannot currently confirm" treatment as a caller passing None, never
+    # a misleading INVALID that would imply the implementation was
+    # actually checked and found non-matching.
     verified_scopes: list[str] = []
     known_gap_scopes: list[str] = []
+    unconfirmed_scopes: list[str] = []
+    live_repo_root = repo_root if (repo_root is not None and repo_root.is_dir()) else None
     if oracle_contract is not None and contract_path is not None:
         results_by_ref = oracle_results_by_test_ref or {}
         cited_refs: set[str] = set()
@@ -1077,13 +1096,18 @@ def derive_epistemic_profile(
                     continue
                 outcome, _reason = _oracle.evaluate_result_precedence(
                     result, oracle_contract, check,
-                    contract_path=contract_path, repo_root=repo_root,
+                    contract_path=contract_path, repo_root=live_repo_root,
                 )
                 if outcome == "PASS":
                     matched_pass = True
                     break
-            if matched_pass:
+            if matched_pass and live_repo_root is not None:
                 verified_scopes.append(check.scope)
+            elif matched_pass:
+                # A historically recorded PASS exists, but it could not be
+                # reconfirmed against the current implementation -- real,
+                # preserved evidence, just not current verification.
+                unconfirmed_scopes.append(check.scope)
             elif check.required:
                 known_gap_scopes.append(check.scope)
 
@@ -1092,6 +1116,7 @@ def derive_epistemic_profile(
         observed=observed,
         verified_scopes=verified_scopes,
         known_gap_scopes=known_gap_scopes,
+        unconfirmed_scopes=unconfirmed_scopes,
         contested=contested,
     )
 

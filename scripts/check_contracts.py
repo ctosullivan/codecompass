@@ -156,13 +156,18 @@ def _iter_result_files(slug_dir: Path):
 
 
 def check_result_schema(slug_dir: Path, oracle, root: Path = ROOT):
-    """Returns `(findings, results)` — a malformed result file is its own
-    finding and is excluded from `results` (never silently half-parsed)."""
+    """Returns `(findings, results)` where `results` is
+    `list[tuple[Path, OracleResult]]` — a result's own file path is
+    carried alongside it rather than reconstructed from `check_id`, since
+    `decisions/0082` §C's immutable `<check_id>--<run_id>.yaml` naming
+    means multiple files can legitimately share one `check_id`. A
+    malformed result file is its own finding and is excluded from
+    `results` (never silently half-parsed)."""
     findings: list[Finding] = []
-    results = []
+    results: list[tuple[Path, object]] = []
     for result_path in _iter_result_files(slug_dir):
         try:
-            results.append(oracle.parse_oracle_result(result_path))
+            results.append((result_path, oracle.parse_oracle_result(result_path)))
         except oracle.OracleSchemaError as exc:
             findings.append(
                 Finding(
@@ -177,8 +182,7 @@ def check_result_cross_references(
     slug_dir: Path, contract, results, root: Path = ROOT
 ) -> list[Finding]:
     findings: list[Finding] = []
-    for result in results:
-        result_path = slug_dir / "results" / f"{result.check_id}.yaml"
+    for result_path, result in results:
         id_mismatch = (
             result.contract_id != contract.contract_id
             or result.oracle_contract_id != contract.contract_id
@@ -210,9 +214,20 @@ def check_result_integrity(
 ) -> list[Finding]:
     """§8.5/§8.6 — tamper-evidence/integrity, via
     `oracle.evaluate_result_precedence` (the single source of truth for
-    whether a result actually counts, never a self-reported field)."""
+    whether a result actually counts, never a self-reported field).
+
+    `decisions/0082` §A: when the checkout is unavailable *and* a
+    required check's only on-record evidence is a historically recorded
+    `PASS`, this is now a blocking finding
+    (`contract-current-verification-unconfirmable`), not merely the
+    pre-existing informational `contract-ledgerkit-checkout-unavailable`
+    note — `--strict` must not report "no findings" while silently unable
+    to confirm a required check's claimed current state. An unavailable
+    checkout with nothing currently relying on it (no required check has
+    any recorded PASS yet) stays informational only, unchanged."""
     findings: list[Finding] = []
     repo_root = ledgerkit_root if ledgerkit_root.is_dir() else None
+    contract_path = slug_dir / "oracle-contract.yaml"
     if repo_root is None:
         findings.append(
             Finding(
@@ -224,12 +239,32 @@ def check_result_integrity(
                 strict=False,
             )
         )
-    contract_path = slug_dir / "oracle-contract.yaml"
-    for result in results:
+        for check in contract.checks:
+            if not check.required:
+                continue
+            has_recorded_pass = any(
+                result.check_id == check.check_id
+                and oracle.evaluate_result_precedence(
+                    result, contract, check, contract_path=contract_path, repo_root=None
+                )[0]
+                == "PASS"
+                for _result_path, result in results
+            )
+            if has_recorded_pass:
+                findings.append(
+                    Finding(
+                        "contract-current-verification-unconfirmable",
+                        f"{slug_dir.relative_to(root)}: required check_id="
+                        f"{check.check_id!r} (scope={check.scope!r}) has only a "
+                        f"historically recorded PASS -- {ledgerkit_root} is "
+                        "unavailable, so current verification cannot be "
+                        "confirmed against the implementation actually tested",
+                    )
+                )
+    for result_path, result in results:
         check = contract.check_by_id(result.check_id)
         if check is None:
             continue  # already reported by check_result_cross_references
-        result_path = slug_dir / "results" / f"{result.check_id}.yaml"
         effective_outcome, reason = oracle.evaluate_result_precedence(
             result, contract, check, contract_path=contract_path, repo_root=repo_root
         )
@@ -256,8 +291,9 @@ def check_gap_aggregate(
     findings: list[Finding] = []
     repo_root = ledgerkit_root if ledgerkit_root.is_dir() else None
     contract_path = slug_dir / "oracle-contract.yaml"
+    plain_results = [result for _result_path, result in results]
     aggregates = oracle.aggregate_contract(
-        contract, results, contract_path=contract_path, repo_root=repo_root
+        contract, plain_results, contract_path=contract_path, repo_root=repo_root
     )
     for agg in aggregates:
         if agg.state == "GAP":

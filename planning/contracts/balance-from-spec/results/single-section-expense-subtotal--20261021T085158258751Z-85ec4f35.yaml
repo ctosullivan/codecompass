@@ -9,7 +9,7 @@ oracle_contract_id: REQ-BFS-001
 oracle_contract_content_hash: 7415d851de2f551502cf1fe77831810d466704b7b6ff61e1a66f8bd71b92daec
 test_input_digest: 53e1d36c7f5868a380c8a48b9b06b5f13df41af012af6de0fa3c9e1ba016f9aa
 environment_descriptor: null
-raw_output_ref: planning/contracts/balance-from-spec/results/raw/single-section-expense-subtotal.txt
+raw_output_ref: planning/contracts/balance-from-spec/results/raw/single-section-expense-subtotal--20261021T085158258751Z-85ec4f35.txt
 raw_output_sha256: 68833f07531fe995c4bc4b5cc33afbae2cb62535ea558585cfca14da5e9104c0
 outcome: PASS
 executed_at: '2026-10-21T08:51:58.259077+00:00'

@@ -13,13 +13,17 @@ command.
 
     python scripts/run_balance_from_spec_oracle.py [--ledgerkit-root PATH]
 
-Overwrites the committed result files in place — each run represents
-"the current accepted result for this check" (one file per check_id, not
-one file per run; `run_id` inside each file is still unique per
-execution). Never mints or advances a baseline (`CLAUDE.md` §1 L-087) —
-that is `codecompass.oracle.accept_baseline`'s own, separate, explicit
-action (no maintainer script wraps it yet; no baseline has been accepted
-for this contract as of Phase 82).
+Writes one new, permanent, immutable file per execution — named
+`<check_id>--<run_id>.yaml` (and raw output `<check_id>--<run_id>.txt`)
+— never overwriting a prior run's own result or raw output
+(`decisions/0082` §C). Deciding which result a Claim's own `test_ref`
+currently cites remains a separate, explicit editorial action on that
+Evidence record; this script does not touch any `planning/knowledge/`
+record itself, and prints each new file's path for the maintainer to
+decide what to do with. Never mints or advances a baseline (`CLAUDE.md`
+§1 L-087) — that is `codecompass.oracle.accept_baseline`'s own, separate,
+explicit action (no maintainer script wraps it yet; no baseline has been
+accepted for this contract as of Phase 82).
 """
 
 from __future__ import annotations
@@ -63,7 +67,7 @@ def main() -> int:
             raw_output_dir=raw_dir,
             baseline_id=args.baseline_id,
         )
-        out_path = results_dir / f"{check.check_id}.yaml"
+        out_path = results_dir / f"{check.check_id}--{result.run_id}.yaml"
         oracle.write_oracle_result(out_path, result)
         print(f"{check.check_id}: {result.outcome} -> {out_path.relative_to(ROOT)}")
 

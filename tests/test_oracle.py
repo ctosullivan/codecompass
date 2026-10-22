@@ -620,3 +620,166 @@ def test_accept_baseline_is_the_only_explicit_minting_path(tmp_path: Path):
     assert acceptance.baseline_id == oracle.compute_baseline_id("deadbeef", "c" * 64)
     # Deterministic -- the same inputs always mint the same baseline_id.
     assert oracle.compute_baseline_id("deadbeef", "c" * 64) == acceptance.baseline_id
+
+
+# ---------------------------------------------------------------------------
+# decisions/0082 §C -- immutable oracle-result/raw-output evidence
+# ---------------------------------------------------------------------------
+
+
+@requires_ledgerkit
+def test_repeated_runs_including_a_failure_preserve_all_historical_evidence(tmp_path: Path):
+    """decisions/0082 §C negative control: running the same check
+    multiple times, including a deliberately failing execution, must
+    never overwrite a prior run's own result/raw-output file -- every
+    execution remains independently inspectable and correctly associated
+    with its own tested subject."""
+    raw_dir = tmp_path / "raw"
+
+    passing_contract = oracle.parse_oracle_contract(REAL_CONTRACT_PATH)
+    passing_check = passing_contract.check_by_id("single-section-expense-subtotal")
+    result1 = oracle.evaluate_check(
+        passing_contract, passing_check, contract_path=REAL_CONTRACT_PATH,
+        repo_root=LEDGERKIT_ROOT, raw_output_dir=raw_dir,
+    )
+    assert result1.outcome == "PASS"
+
+    scratch = _copy_ledgerkit_scratch(tmp_path / "scratch")
+    reports_path = scratch / "ledgerkit" / "reports.py"
+    text = reports_path.read_text(encoding="utf-8")
+    assert "if section.invert:" in text
+    reports_path.write_text(text.replace("if section.invert:", "if not section.invert:", 1))
+    failing_contract_path = scratch / "oracle-contract.yaml"
+    _write_contract(failing_contract_path)
+    failing_contract = oracle.parse_oracle_contract(failing_contract_path)
+    failing_check = failing_contract.check_by_id("multi-section-income-expense-subtotal")
+    result2 = oracle.evaluate_check(
+        failing_contract, failing_check, contract_path=failing_contract_path,
+        repo_root=scratch, raw_output_dir=raw_dir,
+    )
+    assert result2.outcome == "FAIL"
+
+    result3 = oracle.evaluate_check(
+        passing_contract, passing_check, contract_path=REAL_CONTRACT_PATH,
+        repo_root=LEDGERKIT_ROOT, raw_output_dir=raw_dir,
+    )
+    assert result3.outcome == "PASS"
+
+    # Three distinct runs, three distinct run_ids, three distinct files --
+    # none overwritten by a later one, including the FAIL sandwiched
+    # between two PASSes of a *different* check_id's own raw_output_dir.
+    assert len({result1.run_id, result2.run_id, result3.run_id}) == 3
+    assert len({result1.raw_output_ref, result2.raw_output_ref, result3.raw_output_ref}) == 3
+    assert Path(result1.raw_output_ref).is_file()
+    assert Path(result2.raw_output_ref).is_file()
+    assert Path(result3.raw_output_ref).is_file()
+    assert "FAILED" in Path(result2.raw_output_ref).read_text(encoding="utf-8")
+    assert result1.tested_subject_digest == result3.tested_subject_digest
+    assert result1.tested_subject_digest != result2.tested_subject_digest  # different subject
+
+
+# ---------------------------------------------------------------------------
+# decisions/0082 §D -- strict schema type/value enforcement
+# ---------------------------------------------------------------------------
+
+
+def test_required_string_value_rejected_not_silently_truthy(tmp_path: Path):
+    """The bool("false") is True defect: a YAML string must never be
+    silently accepted where a real boolean is required."""
+    contract_path = tmp_path / "oracle-contract.yaml"
+    check = dict(
+        check_id="c", scope="s", execution_provider="pytest",
+        check_reference="t::a", test_input_paths=["f"], required="false",
+    )
+    _write_contract(contract_path, checks=[check])
+    with pytest.raises(oracle.OracleSchemaError, match="real YAML boolean"):
+        oracle.parse_oracle_contract(contract_path)
+
+
+def test_unsupported_schema_version_rejected(tmp_path: Path):
+    contract_path = tmp_path / "oracle-contract.yaml"
+    import yaml
+
+    contract_path.write_text(
+        yaml.safe_dump(
+            {
+                "schema_version": 2,
+                "contract_id": "REQ-X-001",
+                "tested_paths": ["f"],
+                "checks": [
+                    {
+                        "check_id": "c", "scope": "s", "execution_provider": "pytest",
+                        "check_reference": "t::a", "test_input_paths": ["f"], "required": True,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(oracle.OracleSchemaError, match="schema_version"):
+        oracle.parse_oracle_contract(contract_path)
+
+
+def test_malformed_yaml_rejected_not_an_uncaught_exception(tmp_path: Path):
+    contract_path = tmp_path / "oracle-contract.yaml"
+    contract_path.write_text("checks: [this is not: valid: yaml: at all", encoding="utf-8")
+    with pytest.raises(oracle.OracleSchemaError, match="malformed YAML"):
+        oracle.parse_oracle_contract(contract_path)
+
+
+def test_invalid_execution_provider_rejected_at_parse_time(tmp_path: Path):
+    contract_path = tmp_path / "oracle-contract.yaml"
+    check = dict(
+        check_id="c", scope="s", execution_provider="bespoke-shell-script",
+        check_reference="t::a", test_input_paths=["f"], required=True,
+    )
+    _write_contract(contract_path, checks=[check])
+    with pytest.raises(oracle.OracleSchemaError, match="not supported"):
+        oracle.parse_oracle_contract(contract_path)
+
+
+def test_empty_identifier_rejected(tmp_path: Path):
+    contract_path = tmp_path / "oracle-contract.yaml"
+    check = dict(
+        check_id="   ", scope="s", execution_provider="pytest",
+        check_reference="t::a", test_input_paths=["f"], required=True,
+    )
+    _write_contract(contract_path, checks=[check])
+    with pytest.raises(oracle.OracleSchemaError, match="non-empty string"):
+        oracle.parse_oracle_contract(contract_path)
+
+
+def test_incorrect_collection_type_rejected(tmp_path: Path):
+    contract_path = tmp_path / "oracle-contract.yaml"
+    check = dict(
+        check_id="c", scope="s", execution_provider="pytest",
+        check_reference="t::a", test_input_paths="not-a-list", required=True,
+    )
+    _write_contract(contract_path, checks=[check])
+    with pytest.raises(oracle.OracleSchemaError, match="non-empty list"):
+        oracle.parse_oracle_contract(contract_path)
+
+
+def test_duplicate_check_id_still_rejected_with_new_validation(tmp_path: Path):
+    """Confirms decisions/0082 §D's stricter validation did not regress
+    decisions/0081's own pre-existing duplicate-check_id rejection."""
+    contract_path = tmp_path / "oracle-contract.yaml"
+    check = dict(
+        check_id="dup", scope="s", execution_provider="pytest",
+        check_reference="t::a", test_input_paths=["f"], required=True,
+    )
+    _write_contract(contract_path, checks=[check, dict(check)])
+    with pytest.raises(oracle.OracleSchemaError, match="duplicate check_id"):
+        oracle.parse_oracle_contract(contract_path)
+
+
+def test_result_execution_provider_validated_at_parse_time(tmp_path: Path):
+    import yaml
+
+    result_path = tmp_path / "result.yaml"
+    result_path.write_text(
+        yaml.safe_dump(_minimal_result_dict(execution_provider="carrier-pigeon")),
+        encoding="utf-8",
+    )
+    with pytest.raises(oracle.OracleSchemaError, match="not supported"):
+        oracle.parse_oracle_result(result_path)

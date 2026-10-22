@@ -20,7 +20,12 @@ Not part of the codecompass package: this checks CodeCompass's own
 planning artefacts, not a consuming project's. Not shipped, not a
 `codecompass` subcommand.
 
-    python scripts/check_knowledge_base.py [--strict]
+    python scripts/check_knowledge_base.py [--strict] [--ledgerkit-root PATH]
+
+`--ledgerkit-root` (default `~/projects/ledgerkit`) is used only by
+`check_verified_status_cites_passing_oracle_result` (decisions/0082 §A)
+to reconfirm current oracle-backed `status: verified` claims against the
+live implementation, not merely trust a historically recorded `PASS`.
 
 Report-only by default (always exits 0). `--strict` exits 1 if any
 *blocking* finding is reported, mirroring check_user_docs.py's own
@@ -94,6 +99,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_LEDGERKIT_ROOT = Path.home() / "projects" / "ledgerkit"
 KNOWLEDGE_DIR = ROOT / "planning" / "knowledge"
 
 _ID_PATTERN = re.compile(r"\b(OBS|EV|CL|DE|DEC|REQ)-[A-Z0-9]+-\d+\b")
@@ -604,7 +610,7 @@ def _load_oracle_module():
 
 
 def check_verified_status_cites_passing_oracle_result(
-    feature_dir: Path, root: Path = ROOT
+    feature_dir: Path, root: Path = ROOT, ledgerkit_root: Path = DEFAULT_LEDGERKIT_ROOT
 ) -> list[Finding]:
     """Phase 82 (§4/§8.7, `decisions/0080`/`0081`): a record whose
     `status` is `verified` must have a real, scope-complete, currently-
@@ -621,6 +627,17 @@ def check_verified_status_cites_passing_oracle_result(
     `status: verified` records (twelve, as of Phase 82: `REQ-DOCORIGIN-
     001/002/003`, `REQ-HSAPI-001` through `-006`, `CL-DEPTH-001`,
     `CL-FPSS-006/007`) keep exactly the meaning they always had.
+
+    **Current vs. historical verification (`decisions/0082` §A)**: a real
+    `ledgerkit_root` is threaded into `derive_epistemic_profile` instead
+    of hardcoding `repo_root=None` — a `status: verified` record is
+    rejected not only when a required scope has no passing citation at
+    all (`known_gap_scopes`), but also when a required scope's only
+    citation is a historically recorded `PASS` that could not be
+    reconfirmed against the current implementation because the Ledgerkit
+    checkout is unavailable (`unconfirmed_scopes`) — fail closed, not a
+    silent pass, exactly when current verification is being claimed but
+    cannot be inspected.
     """
     findings: list[Finding] = []
     slug = feature_dir.name
@@ -674,11 +691,19 @@ def check_verified_status_cites_passing_oracle_result(
             oracle_contract=contract,
             oracle_results_by_test_ref=results_by_ref,
             contract_path=contract_path,
-            repo_root=None,
+            repo_root=ledgerkit_root,
         )
-        if not has_required_check or profile.known_gap_scopes:
+        if not has_required_check or profile.known_gap_scopes or profile.unconfirmed_scopes:
             if not has_required_check:
                 reason = "this contract has no required: true checks at all"
+            elif profile.unconfirmed_scopes:
+                reason = (
+                    f"required scope(s) {profile.unconfirmed_scopes} have only a "
+                    f"historically recorded PASS that could not be reconfirmed "
+                    f"against the current implementation ({ledgerkit_root} "
+                    "unavailable or not inspected) -- current verification cannot "
+                    "be asserted from historical evidence alone"
+                )
             else:
                 reason = (
                     f"required scope(s) {profile.known_gap_scopes} have no "
@@ -1464,7 +1489,7 @@ CHECKS = [
 ]
 
 
-def run_all(root: Path) -> list[Finding]:
+def run_all(root: Path, ledgerkit_root: Path = DEFAULT_LEDGERKIT_ROOT) -> list[Finding]:
     findings: list[Finding] = []
     knowledge_dir = root / "planning" / "knowledge"
     if not knowledge_dir.is_dir():
@@ -1486,10 +1511,11 @@ def run_all(root: Path) -> list[Finding]:
                 findings.extend(check(feature_dir, all_known_ids))
             elif check is check_requirement_cites_approved_decision:
                 findings.extend(check(feature_dir, all_decision_status, root))
+            elif check is check_verified_status_cites_passing_oracle_result:
+                findings.extend(check(feature_dir, root, ledgerkit_root))
             elif check in (
                 check_optional_enum_fields,
                 check_list_fields_are_inline,
-                check_verified_status_cites_passing_oracle_result,
                 check_anchor_integrity,
                 check_no_pending_reconciliation,
                 check_snapshot_completeness,
@@ -1509,9 +1535,10 @@ def main() -> int:
         action="store_true",
         help="exit 1 if any finding is reported (default: always exit 0)",
     )
+    parser.add_argument("--ledgerkit-root", type=Path, default=DEFAULT_LEDGERKIT_ROOT)
     args = parser.parse_args()
 
-    findings = run_all(ROOT)
+    findings = run_all(ROOT, args.ledgerkit_root)
     blocking = [f for f in findings if f.strict]
 
     if not findings:

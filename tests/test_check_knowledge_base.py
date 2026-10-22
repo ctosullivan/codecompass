@@ -23,6 +23,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 _SCRIPT_PATH = (
     Path(__file__).resolve().parent.parent / "scripts" / "check_knowledge_base.py"
 )
@@ -32,13 +34,21 @@ sys.modules["check_knowledge_base"] = check_knowledge_base
 _spec.loader.exec_module(check_knowledge_base)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+LEDGERKIT_ROOT = Path.home() / "projects" / "ledgerkit"
+requires_ledgerkit = pytest.mark.skipif(
+    not LEDGERKIT_ROOT.is_dir(), reason="~/projects/ledgerkit not present"
+)
 
 
+@requires_ledgerkit
 def test_no_false_positives_against_real_repo():
     """Blocking findings only — an informational one (e.g. a snapshot
     current-divergence report) is expected and fine; it never fails
-    `--strict` either (Finding.strict=False)."""
-    findings = check_knowledge_base.run_all(REPO_ROOT)
+    `--strict` either (Finding.strict=False). decisions/0082 §A: this now
+    genuinely depends on the real Ledgerkit checkout being present, since
+    `check_verified_status_cites_passing_oracle_result` performs live
+    confirmation rather than trusting a historically recorded PASS."""
+    findings = check_knowledge_base.run_all(REPO_ROOT, LEDGERKIT_ROOT)
     assert [f for f in findings if f.strict] == []
 
 
@@ -1528,7 +1538,14 @@ def _write_contract_yaml(path: Path, *, checks: list[dict]) -> None:
 
 
 def _write_result_yaml(
-    path: Path, contract_path: Path, *, check_id: str, scope: str, outcome: str = "PASS"
+    path: Path,
+    contract_path: Path,
+    *,
+    check_id: str,
+    scope: str,
+    outcome: str = "PASS",
+    tested_subject_digest: str = "d" * 64,
+    test_input_digest: str = "i" * 64,
 ) -> Path:
     import sys as _sys
 
@@ -1540,10 +1557,10 @@ def _write_result_yaml(
     raw_path.write_text("ok", encoding="utf-8")
     result = oracle.OracleResult(
         schema_version=1, run_id="r1", contract_id="REQ-VST-001", check_id=check_id,
-        scope=scope, baseline_id=None, tested_subject_digest="d" * 64,
+        scope=scope, baseline_id=None, tested_subject_digest=tested_subject_digest,
         oracle_contract_id="REQ-VST-001",
         oracle_contract_content_hash=oracle.sha256_file(contract_path),
-        test_input_digest="i" * 64, raw_output_ref=str(raw_path),
+        test_input_digest=test_input_digest, raw_output_ref=str(raw_path),
         raw_output_sha256=oracle.sha256_file(raw_path), outcome=outcome,
         executed_at="2026-10-21T00:00:00Z", execution_provider="pytest",
         environment_descriptor=None, invalid_reason=None,
@@ -1576,7 +1593,7 @@ class TestVerifiedStatusCitesPassingOracleResult:
             _CLAIM_HEADER.replace("status: supported", "status: verified"),
         )
         findings = check_knowledge_base.check_verified_status_cites_passing_oracle_result(
-            sdir, root=tmp_path
+            sdir, root=tmp_path, ledgerkit_root=tmp_path / "no-such-ledgerkit"
         )
         assert findings == []
 
@@ -1599,7 +1616,7 @@ class TestVerifiedStatusCitesPassingOracleResult:
         _write(sdir / "CL-X-002.yaml", _CLAIM_HEADER.replace(
             "id: CL-TEST-001", "id: CL-X-002").replace("status: supported", "status: verified"))
         findings = check_knowledge_base.check_verified_status_cites_passing_oracle_result(
-            sdir, root=tmp_path
+            sdir, root=tmp_path, ledgerkit_root=tmp_path / "no-such-ledgerkit"
         )
         assert len(findings) == 1
         assert "no required: true checks at all" in findings[0].message
@@ -1627,7 +1644,7 @@ class TestVerifiedStatusCitesPassingOracleResult:
             "basis: observed_behaviour\n",
         )
         findings = check_knowledge_base.check_verified_status_cites_passing_oracle_result(
-            sdir, root=tmp_path
+            sdir, root=tmp_path, ledgerkit_root=tmp_path / "no-such-ledgerkit"
         )
         assert len(findings) == 1
         assert "scope A" in findings[0].message
@@ -1635,13 +1652,32 @@ class TestVerifiedStatusCitesPassingOracleResult:
     def test_full_scope_coverage_with_real_passing_result_is_accepted(self, tmp_path):
         """The positive case -- exactly what this phase's own real
         balance-from-spec contract demonstrates against the live
-        repository."""
+        repository: a real, confirmable `ledgerkit_root` is supplied, and
+        the result's own digests are computed live against it
+        (decisions/0082 §A) -- not the placeholder digests the other
+        tests in this class use, since those never reach live
+        confirmation at all."""
+        import sys as _sys
+
+        _sys.path.insert(0, str(REPO_ROOT / "src"))
+        from codecompass import oracle
+
         sdir = self._slug(tmp_path)
+        fake_ledgerkit = tmp_path / "fake-ledgerkit"
+        fake_ledgerkit.mkdir()
+        (fake_ledgerkit / "impl.py").write_text("real implementation", encoding="utf-8")
+        (fake_ledgerkit / "f").write_text("real fixture", encoding="utf-8")
+        live_tested_digest = oracle.compute_tree_digest(fake_ledgerkit, ["impl.py"])
+        live_input_digest = oracle.compute_tree_digest(fake_ledgerkit, ["f"])
+
         contract_dir = tmp_path / "planning" / "contracts" / "demo-slug"
         contract_path = contract_dir / "oracle-contract.yaml"
         _write_contract_yaml(contract_path, checks=_ONE_CHECK)
         result_path = contract_dir / "results" / "check-a.yaml"
-        _write_result_yaml(result_path, contract_path, check_id="check-a", scope="scope A")
+        _write_result_yaml(
+            result_path, contract_path, check_id="check-a", scope="scope A",
+            tested_subject_digest=live_tested_digest, test_input_digest=live_input_digest,
+        )
         test_ref = str(result_path.relative_to(tmp_path))
         _write(
             sdir / "EV-X-004.yaml",
@@ -1659,16 +1695,54 @@ class TestVerifiedStatusCitesPassingOracleResult:
             "basis: observed_behaviour\n",
         )
         findings = check_knowledge_base.check_verified_status_cites_passing_oracle_result(
-            sdir, root=tmp_path
+            sdir, root=tmp_path, ledgerkit_root=fake_ledgerkit
         )
         assert findings == []
 
+    def test_historical_pass_without_live_checkout_fails_closed(self, tmp_path):
+        """decisions/0082 §A negative control: the exact same record as
+        the positive case above, but with no live-confirmable checkout
+        supplied -- a historically recorded PASS alone must never
+        establish current verification. The finding's own message must
+        distinguish this from "no evidence at all" (the dangling-test_ref
+        case above)."""
+        sdir = self._slug(tmp_path)
+        contract_dir = tmp_path / "planning" / "contracts" / "demo-slug"
+        contract_path = contract_dir / "oracle-contract.yaml"
+        _write_contract_yaml(contract_path, checks=_ONE_CHECK)
+        result_path = contract_dir / "results" / "check-a.yaml"
+        _write_result_yaml(result_path, contract_path, check_id="check-a", scope="scope A")
+        test_ref = str(result_path.relative_to(tmp_path))
+        _write(
+            sdir / "EV-X-006.yaml",
+            "id: EV-X-006\nkind: evidence\nevidence_kind: test\n"
+            "what_it_shows: x\nobservations: null\nsource_ref: null\ndoc_ref: null\n"
+            f'test_ref: "{test_ref}"\n'
+            'repository_revision: "working tree"\nstatus: current\n',
+        )
+        _write(
+            sdir / "CL-X-007.yaml",
+            "id: CL-X-007\nkind: claim\nstatement: x\nderivation: null\n"
+            "supporting_evidence: [EV-X-006]\ncontradicting_evidence: []\n"
+            'derived_by: test\nrepository_revision: "working tree"\n'
+            'timestamp: "2026-10-21T00:00:00Z"\nstatus: verified\nsupersedes: null\n'
+            "basis: observed_behaviour\n",
+        )
+        findings = check_knowledge_base.check_verified_status_cites_passing_oracle_result(
+            sdir, root=tmp_path, ledgerkit_root=tmp_path / "no-such-ledgerkit"
+        )
+        assert len(findings) == 1
+        assert "historically recorded PASS" in findings[0].message
+        assert "could not be reconfirmed" in findings[0].message
+
+    @requires_ledgerkit
     def test_real_repository_balance_from_spec_slug_is_clean(self):
         """The real, committed balance-from-spec slug and its real,
         currently-passing oracle results pass this check against the
-        actual repository."""
+        actual repository, with live confirmation genuinely performed
+        against the real ~/projects/ledgerkit checkout."""
         feature_dir = REPO_ROOT / "planning" / "knowledge" / "balance-from-spec"
         findings = check_knowledge_base.check_verified_status_cites_passing_oracle_result(
-            feature_dir, root=REPO_ROOT
+            feature_dir, root=REPO_ROOT, ledgerkit_root=LEDGERKIT_ROOT
         )
         assert findings == []

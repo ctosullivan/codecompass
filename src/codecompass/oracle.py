@@ -27,7 +27,9 @@ import hashlib
 import os
 import subprocess
 import sys
+import tempfile
 import uuid
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -35,6 +37,8 @@ from pathlib import Path
 import yaml
 
 _SCHEMA_VERSION = 1
+_SUPPORTED_SCHEMA_VERSIONS = {1}
+_SUPPORTED_EXECUTION_PROVIDERS = {"pytest"}
 
 
 class OracleSchemaError(ValueError):
@@ -182,13 +186,82 @@ _RESULT_REQUIRED = {
 _OUTCOME_VALUES = {"PASS", "FAIL", "INVALID"}
 
 
+def _safe_load_yaml(path: Path) -> object:
+    """Malformed YAML becomes a reportable `OracleSchemaError`, never an
+    uncaught `yaml.YAMLError` -- the same controlled-finding discipline
+    `check_contracts.py`/`check_knowledge_base.py` already apply to every
+    other failure mode (`decisions/0082` §D)."""
+    try:
+        return yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise OracleSchemaError(f"{path}: malformed YAML: {exc}") from exc
+
+
+def _require_non_empty_str(value: object, field_name: str, path: Path) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise OracleSchemaError(
+            f"{path}: {field_name} must be a non-empty string, got {value!r}"
+        )
+    return value
+
+
+def _require_str_list(value: object, field_name: str, path: Path) -> list[str]:
+    if not isinstance(value, list) or not value:
+        raise OracleSchemaError(f"{path}: {field_name} must be a non-empty list")
+    for i, item in enumerate(value):
+        if not isinstance(item, str) or not item.strip():
+            raise OracleSchemaError(
+                f"{path}: {field_name}[{i}] must be a non-empty string, got {item!r}"
+            )
+    return list(value)
+
+
+def _require_bool(value: object, field_name: str, path: Path) -> bool:
+    if not isinstance(value, bool):
+        raise OracleSchemaError(
+            f"{path}: {field_name} must be a real YAML boolean (true/false), got "
+            f"{value!r} ({type(value).__name__}) -- a string is never interpreted "
+            "as a boolean here (decisions/0082 §D)"
+        )
+    return value
+
+
+def _require_int(value: object, field_name: str, path: Path) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise OracleSchemaError(f"{path}: {field_name} must be an integer, got {value!r}")
+    return value
+
+
+def _require_schema_version(value: object, path: Path) -> int:
+    version = _require_int(value, "schema_version", path)
+    if version not in _SUPPORTED_SCHEMA_VERSIONS:
+        raise OracleSchemaError(
+            f"{path}: schema_version={version!r} is not supported "
+            f"(supported: {sorted(_SUPPORTED_SCHEMA_VERSIONS)})"
+        )
+    return version
+
+
+def _require_execution_provider(value: object, field_name: str, path: Path) -> str:
+    provider = _require_non_empty_str(value, field_name, path)
+    if provider not in _SUPPORTED_EXECUTION_PROVIDERS:
+        raise OracleSchemaError(
+            f"{path}: {field_name}={provider!r} is not supported "
+            f"(supported: {sorted(_SUPPORTED_EXECUTION_PROVIDERS)})"
+        )
+    return provider
+
+
 def parse_oracle_contract(path: Path) -> OracleContract:
-    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    raw = _safe_load_yaml(path)
     if not isinstance(raw, dict):
         raise OracleSchemaError(f"{path}: top level must be a mapping")
     missing = _CONTRACT_REQUIRED_TOP - raw.keys()
     if missing:
         raise OracleSchemaError(f"{path}: missing required field(s) {sorted(missing)}")
+    schema_version = _require_schema_version(raw["schema_version"], path)
+    contract_id = _require_non_empty_str(raw["contract_id"], "contract_id", path)
+    tested_paths = _require_str_list(raw["tested_paths"], "tested_paths", path)
     checks_raw = raw["checks"]
     if not isinstance(checks_raw, list) or not checks_raw:
         raise OracleSchemaError(
@@ -205,38 +278,44 @@ def parse_oracle_contract(path: Path) -> OracleContract:
             raise OracleSchemaError(
                 f"{path}: checks[{i}] missing required field(s) {sorted(missing_check)}"
             )
-        if entry["check_id"] in seen_ids:
+        check_id = _require_non_empty_str(entry["check_id"], f"checks[{i}].check_id", path)
+        if check_id in seen_ids:
             raise OracleSchemaError(
-                f"{path}: duplicate check_id {entry['check_id']!r} — check_id must "
+                f"{path}: duplicate check_id {check_id!r} — check_id must "
                 "be unique within one contract"
             )
-        seen_ids.add(entry["check_id"])
-        if not isinstance(entry["test_input_paths"], list) or not entry["test_input_paths"]:
-            raise OracleSchemaError(
-                f"{path}: checks[{i}].test_input_paths must be a non-empty list"
-            )
+        seen_ids.add(check_id)
+        scope = _require_non_empty_str(entry["scope"], f"checks[{i}].scope", path)
+        execution_provider = _require_execution_provider(
+            entry["execution_provider"], f"checks[{i}].execution_provider", path
+        )
+        check_reference = _require_non_empty_str(
+            entry["check_reference"], f"checks[{i}].check_reference", path
+        )
+        test_input_paths = _require_str_list(
+            entry["test_input_paths"], f"checks[{i}].test_input_paths", path
+        )
+        required = _require_bool(entry["required"], f"checks[{i}].required", path)
         checks.append(
             OracleCheck(
-                check_id=entry["check_id"],
-                scope=entry["scope"],
-                execution_provider=entry["execution_provider"],
-                check_reference=entry["check_reference"],
-                test_input_paths=list(entry["test_input_paths"]),
-                required=bool(entry["required"]),
+                check_id=check_id,
+                scope=scope,
+                execution_provider=execution_provider,
+                check_reference=check_reference,
+                test_input_paths=test_input_paths,
+                required=required,
             )
         )
-    if not isinstance(raw["tested_paths"], list) or not raw["tested_paths"]:
-        raise OracleSchemaError(f"{path}: 'tested_paths' must be a non-empty list")
     return OracleContract(
-        schema_version=int(raw["schema_version"]),
-        contract_id=raw["contract_id"],
-        tested_paths=list(raw["tested_paths"]),
+        schema_version=schema_version,
+        contract_id=contract_id,
+        tested_paths=tested_paths,
         checks=checks,
     )
 
 
 def parse_oracle_result(path: Path) -> OracleResult:
-    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    raw = _safe_load_yaml(path)
     if not isinstance(raw, dict):
         raise OracleSchemaError(f"{path}: top level must be a mapping")
     missing = _RESULT_REQUIRED - raw.keys()
@@ -252,8 +331,27 @@ def parse_oracle_result(path: Path) -> OracleResult:
         raise OracleSchemaError(
             f"{path}: outcome: INVALID requires a non-empty invalid_reason"
         )
+    schema_version = _require_schema_version(raw["schema_version"], path)
+    for field_name in (
+        "run_id", "contract_id", "check_id", "scope", "oracle_contract_id",
+        "oracle_contract_content_hash", "raw_output_ref", "raw_output_sha256", "executed_at",
+    ):
+        _require_non_empty_str(raw[field_name], field_name, path)
+    # tested_subject_digest/test_input_digest may legitimately be the
+    # empty string only when outcome: INVALID -- evaluate_check's own
+    # digest-computation-failed branch records exactly this (a named path
+    # could not be read at all, so no digest could ever be computed); any
+    # other outcome must carry a real, non-empty digest.
+    for digest_field in ("tested_subject_digest", "test_input_digest"):
+        if outcome != "INVALID":
+            _require_non_empty_str(raw[digest_field], digest_field, path)
+        elif not isinstance(raw[digest_field], str):
+            raise OracleSchemaError(f"{path}: {digest_field} must be a string")
+    execution_provider = _require_execution_provider(
+        raw["execution_provider"], "execution_provider", path
+    )
     return OracleResult(
-        schema_version=int(raw["schema_version"]),
+        schema_version=schema_version,
         run_id=raw["run_id"],
         contract_id=raw["contract_id"],
         check_id=raw["check_id"],
@@ -267,7 +365,7 @@ def parse_oracle_result(path: Path) -> OracleResult:
         raw_output_sha256=raw["raw_output_sha256"],
         outcome=outcome,
         executed_at=raw["executed_at"],
-        execution_provider=raw["execution_provider"],
+        execution_provider=execution_provider,
         environment_descriptor=raw.get("environment_descriptor"),
         invalid_reason=raw.get("invalid_reason"),
     )
@@ -314,12 +412,69 @@ def _interpreter_for(repo_root: Path) -> str:
     return str(candidate) if candidate.is_file() else sys.executable
 
 
-def run_pytest_check(repo_root: Path, check_reference: str) -> tuple[bool, str]:
+def _classify_pytest_junit(
+    junit_path: Path, returncode: int
+) -> tuple[str, str | None]:
+    """Classifies a completed pytest invocation from its own structured
+    `--junit-xml` report (a feature already built into pytest -- no new
+    dependency) rather than from its bare exit code, since real pytest
+    (confirmed this session, 9.1.1) reuses exit code 1 for both a genuine
+    assertion failure and other conditions, and separately returns 2 for
+    a collection error, 4 for an invalid/nonexistent node id or file
+    path, and 5 for a syntactically valid file with zero matching tests
+    -- none of which is a behavioural defect in the tested subject
+    (`decisions/0082` §B). Returns `(outcome, invalid_reason)` where
+    `outcome` is always one of `PASS`/`FAIL`/`INVALID`."""
+    if not junit_path.is_file():
+        return "INVALID", (
+            f"pytest produced no junit-xml report (returncode={returncode}) -- "
+            "the execution environment itself failed before any test could run "
+            "(e.g. a missing pytest/dependency installation); see raw output"
+        )
+    try:
+        root = ET.fromstring(junit_path.read_text(encoding="utf-8"))
+    except ET.ParseError as exc:
+        return "INVALID", f"could not parse junit-xml report: {exc}"
+    suite = root.find("testsuite")
+    if suite is None:
+        return "INVALID", "junit-xml report has no <testsuite> element"
+    tests = int(suite.get("tests", "0"))
+    errors = int(suite.get("errors", "0"))
+    failures = int(suite.get("failures", "0"))
+    if tests == 0:
+        return "INVALID", (
+            "check_reference resolved to zero collected tests -- an invalid, "
+            "mistyped, or no-longer-existent pytest node id (or a file with no "
+            "matching test function) can never establish PASS or FAIL"
+        )
+    if errors:
+        messages = []
+        for testcase in suite.findall("testcase"):
+            error_el = testcase.find("error")
+            if error_el is None:
+                continue
+            messages.append(
+                f"{testcase.get('classname')}::{testcase.get('name')}: "
+                f"{error_el.get('message', 'collection error')}"
+            )
+        return "INVALID", (
+            f"{errors} collection/execution error(s), not a behavioural test "
+            f"failure: {'; '.join(messages) or 'see raw output'}"
+        )
+    if failures:
+        return "FAIL", None
+    return "PASS", None
+
+
+def run_pytest_check(repo_root: Path, check_reference: str) -> tuple[str, str | None, str]:
     """Runs `pytest <check_reference>` with `cwd=repo_root`, under
     `repo_root`'s own interpreter when it has a `.venv`. Returns
-    `(passed, raw_output_text)` — `raw_output_text` is the combined
-    stdout+stderr, captured verbatim for independent re-inspection
-    (§5's `raw_output_ref`/`raw_output_sha256`).
+    `(outcome, invalid_reason, raw_output_text)` -- `outcome` is always
+    one of `PASS`/`FAIL`/`INVALID` (`_classify_pytest_junit`, decisions/
+    0082 §B), never derived from the bare exit code alone.
+    `raw_output_text` is the combined stdout+stderr, captured verbatim
+    for independent re-inspection (§5's `raw_output_ref`/
+    `raw_output_sha256`).
 
     `PYTHONPATH` is explicitly set to `repo_root` itself, so the package
     actually imported is the one physically present under `repo_root` —
@@ -334,20 +489,24 @@ def run_pytest_check(repo_root: Path, check_reference: str) -> tuple[bool, str]:
     env = dict(os.environ)
     existing = env.get("PYTHONPATH", "")
     env["PYTHONPATH"] = str(repo_root) + (f":{existing}" if existing else "")
-    result = subprocess.run(
-        [interpreter, "-m", "pytest", "-q", check_reference],
-        cwd=repo_root,
-        capture_output=True,
-        text=True,
-        check=False,
-        env=env,
-    )
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        junit_path = Path(tmp_dir) / "junit.xml"
+        result = subprocess.run(
+            [interpreter, "-m", "pytest", "-q", f"--junit-xml={junit_path}", check_reference],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+            env=env,
+        )
+        outcome, invalid_reason = _classify_pytest_junit(junit_path, result.returncode)
     raw = (
-        f"$ {interpreter} -m pytest -q {check_reference}\n(cwd={repo_root})\n\n"
+        f"$ {interpreter} -m pytest -q --junit-xml=<tmp> {check_reference}\n"
+        f"(cwd={repo_root})\n\n"
         f"--- stdout ---\n{result.stdout}\n--- stderr ---\n{result.stderr}\n"
         f"--- returncode: {result.returncode} ---\n"
     )
-    return result.returncode == 0, raw
+    return outcome, invalid_reason, raw
 
 
 def evaluate_check(
@@ -371,12 +530,16 @@ def evaluate_check(
     oracle_contract_content_hash = sha256_file(contract_path)
     executed_at = datetime.now(UTC).isoformat()
 
+    # Immutable per-run naming (decisions/0082 §C): run_id is already
+    # guaranteed unique, so a later run of the same check never
+    # overwrites an earlier run's own result/raw-output file.
+    raw_output_dir.mkdir(parents=True, exist_ok=True)
+    raw_path = raw_output_dir / f"{check.check_id}--{run_id}.txt"
+
     try:
         tested_subject_digest = compute_tree_digest(repo_root, contract.tested_paths)
         test_input_digest = compute_tree_digest(repo_root, check.test_input_paths)
     except OracleDigestError as exc:
-        raw_output_dir.mkdir(parents=True, exist_ok=True)
-        raw_path = raw_output_dir / f"{check.check_id}.txt"
         raw_text = f"digest computation failed: {exc}\n"
         raw_path.write_text(raw_text, encoding="utf-8")
         return OracleResult(
@@ -404,9 +567,7 @@ def evaluate_check(
             f"unsupported execution_provider {check.execution_provider!r} — "
             "Phase 82 implements exactly 'pytest' (decisions/0081 §1)"
         )
-    passed, raw_text = run_pytest_check(repo_root, check.check_reference)
-    raw_output_dir.mkdir(parents=True, exist_ok=True)
-    raw_path = raw_output_dir / f"{check.check_id}.txt"
+    outcome, invalid_reason, raw_text = run_pytest_check(repo_root, check.check_reference)
     raw_path.write_text(raw_text, encoding="utf-8")
 
     return OracleResult(
@@ -422,11 +583,11 @@ def evaluate_check(
         test_input_digest=test_input_digest,
         raw_output_ref=str(raw_path),
         raw_output_sha256=sha256_file(raw_path),
-        outcome="PASS" if passed else "FAIL",
+        outcome=outcome,
         executed_at=executed_at,
         execution_provider=check.execution_provider,
         environment_descriptor=environment_descriptor,
-        invalid_reason=None,
+        invalid_reason=invalid_reason,
     )
 
 

@@ -11,6 +11,6 @@ what_it_shows: >
 observations: null
 source_ref: null
 doc_ref: null
-test_ref: "planning/contracts/balance-from-spec/results/single-section-expense-subtotal.yaml"
+test_ref: "planning/contracts/balance-from-spec/results/single-section-expense-subtotal--20261021T085158258751Z-85ec4f35.yaml"
 repository_revision: "ledgerkit@7224bb5c113cd3aad7e86e994365703cd0070154"
 status: current

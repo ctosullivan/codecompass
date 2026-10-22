@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Phase 82 corrective pass** (`decisions/0082`, independent post-
+  completion review of the shipped code): four assurance defects found
+  and fixed. (A) `derive_epistemic_profile`/
+  `check_verified_status_cites_passing_oracle_result` could report
+  `status: verified` as fully current using only a result's own recorded
+  digests, never reconfirmed against the live implementation —
+  `EpistemicProfile` gains `unconfirmed_scopes`, distinct from
+  `verified_scopes`/`known_gap_scopes`, and both the derived view and
+  `check_knowledge_base.py --ledgerkit-root` now fail closed when current
+  verification is claimed but the checkout cannot be inspected;
+  `check_contracts.py --strict` gains the matching blocking finding
+  `contract-current-verification-unconfirmable`. (B) `run_pytest_check`
+  converted any nonzero pytest exit code into `FAIL`, misclassifying
+  missing dependencies, collection errors, and invalid node ids as
+  behavioural defects — outcomes are now classified from pytest's own
+  structured `--junit-xml` report (confirmed against real pytest 9.1.1
+  this session), so only a genuine assertion failure is `FAIL` and every
+  infrastructure/configuration failure is `INVALID` with a named reason.
+  (C) `run_balance_from_spec_oracle.py` overwrote the prior run's own
+  result/raw-output file on every execution despite each carrying a
+  unique `run_id` — both are now named `<check_id>--<run_id>` and never
+  overwritten; the two pre-existing committed results were renamed
+  (pure `git mv`, using their own already-recorded `run_id`) and the
+  citing Evidence records' `test_ref` fields updated to match. (D)
+  `parse_oracle_contract`/`parse_oracle_result` accepted
+  `required: "false"` (a string) as truthy via a bare `bool(...)` cast,
+  never validated `schema_version`/`execution_provider` against a
+  supported set at parse time, and let malformed YAML propagate as an
+  uncaught exception — all four are now rejected as controlled
+  `OracleSchemaError` findings. 12 new test functions plus expanded
+  assertions in two existing derived-epistemic-profile scenario tests.
+  No change to Phase 82's exit gate, its one pinned Ledgerkit contract,
+  or `decisions/0080`/`0081`'s own design — every correction is to
+  enforcement fidelity.
+
 ### Added
 
 - **Phase 82 — Contract and Evidence Foundation, implemented**
