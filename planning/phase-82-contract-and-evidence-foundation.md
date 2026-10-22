@@ -26,6 +26,19 @@ fixed three further, narrower assurance weaknesses found by a separate
 independent post-completion review of the already-corrected code — Phase
 82 remains `done` throughout; this pass is its own closeout, not a
 reopening of either the original phase or the first corrective pass.**
+This final pass's own closeout: independently audited once —
+`release-phase-auditor` returned **PASS**, having independently
+reproduced all three fixes with its own constructed adversarial
+scenarios (an independent all-skip pytest variant, a genuinely broken
+import via a scratch directory with no `src/`, a malformed-input matrix
+and a genuinely non-executable interpreter for the subprocess-launch
+path), re-run the full regression suite and both strict validators
+itself, and found no protected-file drift and no DoD gap — one
+non-blocking observation (no standalone `docs-reconstructor` drift-audit
+report file was produced for this pass, though the audit independently
+re-derived that substance and found it clean) —
+`planning/retros/_audit-phase-82-final-corrective-pass.md`. Retro:
+`planning/retros/phase-82-final-corrective-pass.md`.
 
 **Amendment history** (full rationale in each amendment's own ADR — this
 plan's own current content already reflects every correction below; §14
