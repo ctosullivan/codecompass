@@ -8,6 +8,47 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-102 — classify a subprocess oracle's outcome from its own structured report, never from a bare exit code alone
+
+- **origin:** Phase 82 corrective pass, defect B
+- **date:** 2026-10-22
+- **project_revision:** `c2902ec` (observed); fixed in the corrective-pass
+  implementation commit
+- **observation:** `src/codecompass/oracle.py::run_pytest_check`
+  converted any nonzero pytest exit code into `outcome: FAIL` — treating
+  "the process didn't return 0" as equivalent to "a behavioural assertion
+  failed." Direct experimentation against real pytest 9.1.1 this session
+  found this conflates at least five genuinely distinct conditions that
+  all produce a nonzero exit: a real assertion failure (1), a collection
+  error from a broken import (2), an invalid/nonexistent node id (4), a
+  syntactically valid file with zero matching tests (5), and — most
+  dangerously — the target interpreter lacking `pytest` entirely, which
+  exits 1 identically to a genuine failure but never ran a single test.
+  A `FAIL` result is supposed to mean "a valid execution demonstrates
+  non-satisfaction" (`decisions/0081` §2's own PASS/FAIL/GAP/INVALID
+  definitions) — none of the other four conditions is that.
+- **evidence:** five real, separate `pytest` invocations run directly
+  this session (not simulated) against both a real Ledgerkit checkout
+  and disposable scratch fixtures, confirming the exact exit code and
+  `--junit-xml` `<testsuite tests=".." errors=".." failures="..">` shape
+  each condition produces — all five are distinguishable from pytest's
+  own structured `--junit-xml` report (built into pytest, no new
+  dependency; parsed with stdlib `xml.etree.ElementTree`) even though
+  none are reliably distinguishable from the bare exit code alone.
+- **classification:** invariant — generalizes to any future execution-
+  provider beyond `pytest` (a second provider, were one ever added, would
+  need the equivalent of this same rule: prefer the tool's own structured
+  success/failure report over its process exit code whenever one is
+  available, e.g. `--json`/`--json-report`/JUnit-style output).
+- **status:** candidate
+- **recurrence:** first occurrence
+- **moves forward when:** a second execution provider is ever added to
+  `oracle.py` (Phase 83/84 territory) — confirm this same discipline is
+  applied there too, rather than re-deriving (or re-getting-wrong) the
+  exit-code-vs-structured-report distinction independently.
+
+---
+
 ### L-101 — an oracle must pin the interpreter and PYTHONPATH of the exact tree it is executing, or an editable-installed sibling checkout silently shadows a scratch mutation
 
 - **origin:** Phase 82 (Contract and Evidence Foundation), implementation
