@@ -9,7 +9,10 @@ WITH NON-BLOCKING OBSERVATIONS (`planning/retros/_audit-phase-82.md`);
 `docs-reconstructor`'s per-phase drift audit found and the lead fixed
 three non-blocking doc-sync gaps (`planning/retros/_drift-audit-
 phase-82.md`). Retro: `planning/retros/phase-82-contract-and-evidence-
-foundation.md`.
+foundation.md`. **A corrective pass (2026-10-22, `decisions/0082`, §15
+below) subsequently fixed four assurance defects found by independent
+post-completion review of the shipped code — Phase 82 remains `done`
+throughout; the corrective pass is its own closeout, not a reopening.**
 
 **Amendment history** (full rationale in each amendment's own ADR — this
 plan's own current content already reflects every correction below; §14
@@ -797,3 +800,71 @@ prior commit), zero drift.
 session** (`decisions/0081` §5) — §9 above is rewritten from an open gate
 into a resolved-decisions record; this is not a fifth planning-only
 amendment.
+
+## 15. Corrective pass: current vs. historical verification, execution-failure classification, immutable results, strict schema enforcement (2026-10-22)
+
+Direct user request ("CodeCompass Orchestrator — Phase 82 Corrective
+Pass"), dispatched against the already-`done` Phase 82
+(`c2902ec`), after independent post-completion review of the *shipped
+code*, not only its plan, found four real assurance defects. Full
+rationale, exact mechanism, and consequences: `decisions/0082`. Confirmed
+before amending: `HEAD` was exactly `c2902ec` (Phase 82's own terminal
+commit), zero drift.
+
+**Four corrections, each reproduced directly against the real shipped
+code before being fixed, not assumed from the review's own description:**
+
+1. **A. Current vs. historical verification.** `derive_epistemic_profile`
+   gains `unconfirmed_scopes` — a required check whose only citation is a
+   historically recorded `PASS` that cannot currently be reconfirmed
+   (no `repo_root`, or a `repo_root` that does not exist on disk) is
+   reported there, never silently folded into `verified_scopes`.
+   `check_verified_status_cites_passing_oracle_result` now threads a real
+   `ledgerkit_root` through instead of hardcoding `repo_root=None`, and
+   fails closed (a blocking finding) whenever a `status: verified` record
+   has any required scope that is merely `unconfirmed`.
+   `check_contracts.py --strict` gains a new blocking finding,
+   `contract-current-verification-unconfirmable`, firing only when a
+   required check's sole evidence is an unconfirmable historical `PASS`
+   — an unavailable checkout with nothing currently depending on it
+   stays informational, unchanged.
+2. **B. Execution-failure classification.** `run_pytest_check` now
+   classifies outcomes from pytest's own `--junit-xml` structured report
+   (built into pytest, no new dependency; parsed with stdlib
+   `xml.etree.ElementTree`) rather than a bare exit code: a missing
+   junit-xml file (interpreter/dependency failure), `tests="0"` (invalid
+   node id, missing file, or zero matching tests), and `errors > 0`
+   (collection failure) are all now `INVALID` with a named
+   `invalid_reason`; only `failures > 0` is `FAIL`. Confirmed by direct
+   experimentation against real pytest 9.1.1 this session — exit codes
+   1/2/4/5 and the exact junit-xml shape each condition produces were
+   measured, not assumed.
+3. **C. Immutable oracle-result evidence.** Both the oracle-result file
+   and its raw-output file are now named `<check_id>--<run_id>.yaml`/
+   `.txt` (`oracle.py::evaluate_check`, `run_balance_from_spec_oracle.py`)
+   — never overwritten by a later run. No new "current pointer"
+   mechanism is introduced; which evidence a Claim currently cites stays
+   an explicit `test_ref` edit, and staleness detection is unchanged
+   (`decisions/0081` §4/§5a already handles it). The two pre-existing
+   committed result/raw files are renamed (pure `git mv`, using each
+   file's own already-recorded `run_id`) and `EV-BFS-002`/`EV-BFS-003`'s
+   `test_ref` fields updated to match, in the same commit.
+4. **D. Strict schema type/value enforcement.** `parse_oracle_contract`/
+   `parse_oracle_result` now require a genuine YAML boolean for
+   `required` (closing `bool("false") is True`), a supported
+   `schema_version`, a supported `execution_provider` (checked at parse
+   time, not only at execution time), non-empty string identifiers, and
+   correctly-typed list fields — malformed YAML is caught and reported
+   as `OracleSchemaError`, never an uncaught exception.
+
+**Nothing about Phase 82's exit gate, its one pinned Ledgerkit contract,
+or `decisions/0080`/`0081`'s own design is reopened** — every correction
+above is to enforcement fidelity, not to the design itself
+(`decisions/0082`'s own Consequences section states this explicitly).
+Verification of this corrective pass follows the same §10-style
+discipline as the original phase: real Ledgerkit positive/negative
+controls (re-run, still `PASS`/`FAIL` as before), the four new defect-
+specific negative controls named in `decisions/0082`, the full existing
+regression suite, both strict validators, and an independent
+`release-phase-auditor` pass against the exact corrective commit before
+this plan's own status line is touched again.
