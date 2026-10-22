@@ -38,7 +38,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   Worth a quick grep for the same pattern (`not in _.*_VALUES`/`in
   _.*_VALUES`-style checks) the next time any schema-validation code in
   this project is touched.
-- **status:** candidate
+- **status:** retained
 - **recurrence:** first occurrence
 - **moves forward when:** a `knowledge-curator` triage confirms no
   existing project convention/check already covers this (a repo-wide grep
@@ -46,6 +46,67 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   value), then promotes to a documented rule (e.g. a short note in
   `CLAUDE.md` or a contributing-doc checklist item) or discards if the
   pattern is judged too narrow to generalize further.
+- **curation note (2026-10-22, knowledge-curator):** ran the grep the
+  "moves forward when" field asked for, repo-wide across `src/codecompass/`
+  and `scripts/`, for every `value not in SOME_SET` / `value in SOME_SET`
+  shape (`not in [A-Z_]+`, `in [A-Z_]+_VALUES`/`_SET`, `in \{`, `in
+  _[A-Z_]+`). Every hit other than the already-fixed
+  `parse_oracle_result::outcome` check was one of three safe shapes, not a
+  second live instance of the same vulnerability:
+  - `oracle.py::_require_schema_version` (`version not in
+    _SUPPORTED_SCHEMA_VERSIONS`, line 237) and
+    `_require_execution_provider` (`provider not in
+    _SUPPORTED_EXECUTION_PROVIDERS`, line 247) already call
+    `_require_int`/`_require_non_empty_str` first — type-check-before-
+    membership-check is already the established order there, i.e. this
+    exact project already has a correct precedent for the pattern, not
+    just the one bug.
+  - `knowledge_intermediate.py::derive_epistemic_profile` (`record.fields.get("status")
+    in/not in _INTENDED_REQUIREMENT_STATUSES`, lines 1037/1042) and
+    `check_knowledge_base.py::check_required_fields`/`check_status_enums`
+    (`kind`/`status not in ...`, lines 291/327/330) all read from
+    `parse_record_text`'s own `dict[str, str]` (a custom line-based
+    regex parser, not YAML) — every value is structurally a `str` (or
+    absent, via `.get()`), never a list/mapping, so `hash()` can never
+    raise here regardless of input malformedness.
+  - `adapters/external_process.py::ExternalAdapterProcess.initialize`
+    (`c not in CAPABILITIES`, line 99) checks against `CAPABILITIES`, a
+    **tuple**, not a set — Python's `in`/`not in` on a sequence uses
+    `__eq__` in a linear scan, not `hash()`, so an unhashable
+    `c` (e.g. a list an external adapter process returned as one
+    "capability") compares `False` via equality and is correctly
+    collected into `unrecognized`, never raises. This one is worth
+    re-checking only if `CAPABILITIES` is ever changed to a `set`/
+    `frozenset` for a performance reason — flagged here so that future
+    change doesn't silently reintroduce the pattern.
+
+  No second live, exploitable instance exists today. The already-affected
+  instance is already fully fixed and already has its own two regression
+  tests (`tests/test_oracle.py::test_unhashable_outcome_produces_schema_error_not_type_error`,
+  `::test_unhashable_outcome_is_mapping_also_rejected`) — there is nothing
+  further to encode as a test for a bug that doesn't currently exist
+  anywhere else in the codebase, so `invariant` → regression-test is not
+  an available destination for the *generalization* itself (only for the
+  one instance already fixed). I also don't think `project-rule`
+  (`CLAUDE.md`, gate G4) is proportionate for a single-occurrence, narrow
+  Python idiom with no live second violation to justify it project-wide,
+  and the repository no longer has a "Known Footguns" doc section to land
+  a `scoped-rule`/`architecture` note in — that section (formerly in the
+  pre-v1-redefinition `architecture/overview.md`) was retired during the
+  v1-redefinition docs restructure and has no current successor in
+  `docs/architecture/{overview,components,data-and-control-flow}.md`.
+  **Outcome: retain** — real, well-evidenced, correctly generalized, but
+  not yet actionable in the sense of having either a second instance to
+  fix or a current artifact home that fits a single-occurrence idiom
+  without disproportionate process weight. `status` set to `retained`
+  accordingly (not left `candidate`, per `check_learnings_status_matches_retain_outcome`).
+  Forcing point: re-run this same grep the next time any new closed-enum/
+  status/outcome check is added against externally-sourced or YAML-parsed
+  input anywhere in this project (oracle contracts/results, cleanroom
+  manifests, a future second execution provider) — if that new code, or
+  any future refactor of the three safe shapes above (e.g. `CAPABILITIES`
+  becoming a set), reintroduces the vulnerable order, promote immediately
+  rather than waiting for a numbered bulk review.
 
 ### L-102 — classify a subprocess oracle's outcome from its own structured report, never from a bare exit code alone
 
