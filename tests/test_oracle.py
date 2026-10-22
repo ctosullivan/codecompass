@@ -33,6 +33,25 @@ REAL_CONTRACT_PATH = (
     REPO_ROOT / "planning" / "contracts" / "balance-from-spec" / "oracle-contract.yaml"
 )
 
+_SYSTEM_PY3 = Path("/usr/bin/python3")
+
+
+def _system_python_lacks_pytest() -> bool:
+    if not _SYSTEM_PY3.is_file():
+        return False
+    import subprocess
+
+    result = subprocess.run(
+        [str(_SYSTEM_PY3), "-c", "import pytest"], capture_output=True, check=False
+    )
+    return result.returncode != 0
+
+
+requires_system_python_without_pytest = pytest.mark.skipif(
+    not _system_python_lacks_pytest(),
+    reason="/usr/bin/python3 is absent or unexpectedly has pytest installed",
+)
+
 _TESTED_PATHS = [
     "ledgerkit/reports.py",
     "ledgerkit/models.py",
@@ -676,6 +695,62 @@ def test_repeated_runs_including_a_failure_preserve_all_historical_evidence(tmp_
     assert "FAILED" in Path(result2.raw_output_ref).read_text(encoding="utf-8")
     assert result1.tested_subject_digest == result3.tested_subject_digest
     assert result1.tested_subject_digest != result2.tested_subject_digest  # different subject
+
+
+# ---------------------------------------------------------------------------
+# decisions/0082 §B -- run_pytest_check's own INVALID-vs-FAIL classification
+#
+# Filed as candidate learning L-102 (planning/learnings/inbox.md):
+# knowledge-curator triage correctly found that the real negative-control
+# evidence for defect B was gathered via ad hoc interactive invocations
+# during this corrective-pass session, not landed as actual regression
+# tests calling run_pytest_check directly -- a revert to bare
+# exit-code-only classification would have passed every other test in
+# this file unchanged. These three close that gap.
+# ---------------------------------------------------------------------------
+
+
+def test_run_pytest_check_invalid_node_id_is_invalid_not_fail(tmp_path: Path):
+    (tmp_path / "test_dummy.py").write_text(
+        "def test_ok():\n    assert True\n", encoding="utf-8"
+    )
+    outcome, reason, raw = oracle.run_pytest_check(
+        tmp_path, "test_dummy.py::test_does_not_exist_at_all"
+    )
+    assert outcome == "INVALID"
+    assert "zero collected tests" in reason
+    assert "returncode" in raw
+
+
+def test_run_pytest_check_collection_error_is_invalid_not_fail(tmp_path: Path):
+    (tmp_path / "test_broken.py").write_text(
+        "import this_module_does_not_exist_at_all\n\n"
+        "def test_never_reached():\n    assert True\n",
+        encoding="utf-8",
+    )
+    outcome, reason, raw = oracle.run_pytest_check(tmp_path, "test_broken.py")
+    assert outcome == "INVALID"
+    assert "collection" in reason.lower()
+    assert "ModuleNotFoundError" in raw
+
+
+@requires_system_python_without_pytest
+def test_run_pytest_check_missing_pytest_dependency_is_invalid_not_fail(tmp_path: Path):
+    """_interpreter_for prefers `repo_root/.venv/bin/python` when present
+    -- pointed here at the bare system interpreter, which this project's
+    own established precedent (oracle.py's own module docstring, L-101)
+    confirms lacks pytest, so no junit-xml report can ever be produced."""
+    (tmp_path / "test_dummy.py").write_text(
+        "def test_ok():\n    assert True\n", encoding="utf-8"
+    )
+    venv_bin = tmp_path / ".venv" / "bin"
+    venv_bin.mkdir(parents=True)
+    (venv_bin / "python").symlink_to(_SYSTEM_PY3)
+
+    outcome, reason, raw = oracle.run_pytest_check(tmp_path, "test_dummy.py")
+    assert outcome == "INVALID"
+    assert "no junit-xml report" in reason
+    assert "No module named pytest" in raw
 
 
 # ---------------------------------------------------------------------------

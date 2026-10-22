@@ -40,12 +40,91 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   need the equivalent of this same rule: prefer the tool's own structured
   success/failure report over its process exit code whenever one is
   available, e.g. `--json`/`--json-report`/JUnit-style output).
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** first occurrence
 - **moves forward when:** a second execution provider is ever added to
   `oracle.py` (Phase 83/84 territory) — confirm this same discipline is
   applied there too, rather than re-deriving (or re-getting-wrong) the
   exit-code-vs-structured-report distinction independently.
+- **lead note (2026-10-22):** landed the curator's recommended regression
+  tests (adapted slightly: a third test for the missing-pytest-dependency
+  branch, skip-guarded on `/usr/bin/python3` actually lacking `pytest`,
+  was added alongside the curator's own two drafts) —
+  `tests/test_oracle.py::test_run_pytest_check_invalid_node_id_is_invalid_not_fail`,
+  `::test_run_pytest_check_collection_error_is_invalid_not_fail`,
+  `::test_run_pytest_check_missing_pytest_dependency_is_invalid_not_fail`.
+  All three call `oracle.run_pytest_check` directly against a disposable
+  `tmp_path`, confirmed passing. Flipping to `promoted`; logged in
+  `promoted.md`.
+- **curation note (2026-10-22, knowledge-curator):** the *fix* is real
+  and already live — `src/codecompass/oracle.py::_classify_pytest_junit`
+  (lines ~415-466) reads pytest's own `--junit-xml` report in the fixed
+  order `decisions/0082` §B specifies (no junit file → `INVALID`;
+  `tests="0"` → `INVALID`; `errors>0` → `INVALID`; `failures>0` →
+  `FAIL`; else `PASS`), `run_pytest_check`'s docstring cites `decisions/
+  0082` §B directly, and the ADR documents the rationale and all five
+  confirmed exit-code shapes in full. The classification "invariant" is
+  correct and the destination per `learning-lifecycle.md` §4 is a
+  regression test — but checking `tests/test_oracle.py` directly (no
+  Bash available; traced by reading) finds the *only* two tests that
+  exercise `run_pytest_check` are
+  `test_deliberately_broken_implementation_produces_fail` (a genuine
+  assertion failure → `FAIL`) and
+  `test_passing_result_cannot_verify_subsequently_modified_candidate`'s
+  initial `PASS` assertion. Neither exercises any of the four `INVALID`
+  branches that are the actual substance of this fix — a regression that
+  reverted `_classify_pytest_junit` to bare
+  `"FAIL" if returncode else "PASS"` would still pass both of those
+  tests unchanged, since a real assertion failure and a real pass both
+  produce the same outcome either way. There is currently no test in
+  this repository that would catch defect B being reintroduced. This is
+  not a reason to discard or merely retain L-102 — it sharpens the
+  promotion into something concrete and immediately actionable rather
+  than a vague future improvement:
+  **Outcome: promote** (invariant → regression test), recommendation +
+  draft below for the lead/an ad-hoc implementer to land (per this
+  role's write boundary, I cannot write `tests/`); `status` stays
+  `candidate` until that lands, at which point flip to `promoted` and
+  add the `promoted.md` line.
+
+  Draft (self-contained, no `requires_ledgerkit` needed — exercises the
+  real `run_pytest_check` call site directly against a disposable
+  `tmp_path`, per `CLAUDE.md` §1's real-call-site rule):
+
+  ```python
+  def test_run_pytest_check_invalid_node_id_is_invalid_not_fail(tmp_path: Path):
+      """L-102 / decisions/0082 §B: a nonexistent node id exits nonzero
+      exactly like a genuine assertion failure, but zero tests were ever
+      collected -- must be INVALID, never FAIL."""
+      (tmp_path / "test_dummy.py").write_text(
+          "def test_ok():\n    assert True\n", encoding="utf-8"
+      )
+      outcome, reason, _raw = oracle.run_pytest_check(
+          tmp_path, "test_dummy.py::test_does_not_exist"
+      )
+      assert outcome == "INVALID"
+      assert "zero collected tests" in reason
+
+  def test_run_pytest_check_collection_error_is_invalid_not_fail(tmp_path: Path):
+      """L-102 / decisions/0082 §B: a collection error (broken import)
+      exits nonzero like a genuine assertion failure, but no test body
+      ever ran -- must be INVALID, never FAIL."""
+      (tmp_path / "test_broken.py").write_text(
+          "import this_module_does_not_exist\n\n"
+          "def test_ok():\n    assert True\n",
+          encoding="utf-8",
+      )
+      outcome, reason, _raw = oracle.run_pytest_check(tmp_path, "test_broken.py")
+      assert outcome == "INVALID"
+      assert "collection" in reason.lower()
+  ```
+
+  Both would fail (wrongly assert `outcome == "FAIL"` under the old
+  logic) if defect B were ever reintroduced, which is exactly the
+  regression-guard the "invariant" classification requires. The
+  existing "moves forward when" trigger (confirm the same discipline at
+  a second execution provider, Phase 83/84 territory) remains valid and
+  unaffected by this note.
 
 ---
 
