@@ -13,6 +13,14 @@ foundation.md`. **A corrective pass (2026-10-22, `decisions/0082`, §15
 below) subsequently fixed four assurance defects found by independent
 post-completion review of the shipped code — Phase 82 remains `done`
 throughout; the corrective pass is its own closeout, not a reopening.**
+The corrective pass's own closeout: independently re-audited twice
+(a first `release-phase-auditor` pass found all four defect fixes solid
+under adversarial/falsification testing but FAILed on an underspecified
+retro; a second pass, after the retro was expanded to full
+`planning/retros/TEMPLATE.md` shape, returned PASS) —
+`planning/retros/_audit-phase-82-corrective-pass.md` and
+`_audit-phase-82-corrective-pass-reaudit.md`. Retro:
+`planning/retros/phase-82-corrective-pass.md`.
 
 **Amendment history** (full rationale in each amendment's own ADR — this
 plan's own current content already reflects every correction below; §14

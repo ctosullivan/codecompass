@@ -7,15 +7,20 @@ session-resumption, not a project history.
 
 ## Current phase
 
-**Phase 82 — Contract and Evidence Foundation — is `done`.** The v2
+**Phase 82 — Contract and Evidence Foundation — is `done`, including a
+corrective pass that fixed four real assurance defects found by
+independent post-completion review of the shipped code.** The v2
 dependency root (`planning/v2-roadmap.md`) is now real: one evidence-
 linked behavioural contract for `ledgerkit/reports.py::balance_from_spec`
 exists end to end — Requirement → Claims → Evidence citing real source
 locations → a versioned, multi-check oracle contract → real `PASS`
 results against the current, unmodified `~/projects/ledgerkit` checkout
 → a real, demonstrated `FAIL` against a deliberately mutated scratch
-copy. `decisions/0078`-`0081` govern this phase's design; none of
-Phases 83-88 has begun.
+copy — now with current-vs-historical verification genuinely
+distinguished, execution-failure classification backed by pytest's own
+structured report, immutable per-run evidence, and strict oracle-schema
+type/value enforcement. `decisions/0078`-`0082` govern this phase's
+design; none of Phases 83-88 has begun.
 
 - `decisions/0078` — the original v2 repositioning.
 - `decisions/0079` — the Cross-Project Semantic Overlay track's
@@ -37,43 +42,70 @@ Phases 83-88 has begun.
   session** — the first v2 session where planning correction and
   implementation happened together rather than across separate,
   maintainer-gated sessions.
+- `decisions/0082` — a later, separate corrective pass against the
+  already-`done` Phase 82's own *shipped code* (not its plan): fixes
+  current-vs-historical verification conflation, execution-failure
+  misclassification (bare pytest exit code instead of its own structured
+  `--junit-xml` report), destructive oracle-result/raw-output overwrite,
+  and insufficient oracle-schema type/value enforcement. Does not reopen
+  `decisions/0080`/`0081`'s own design.
 
 **What exists now, concretely**:
 
-- `src/codecompass/oracle.py` (new, shipped): `OracleContract`/
-  `OracleCheck`/`OracleResult` schema parsing (real YAML, `pyyaml`), Phase
+- `src/codecompass/oracle.py` (shipped, corrected): `OracleContract`/
+  `OracleCheck`/`OracleResult` schema parsing (real YAML, `pyyaml`, now
+  with strict type/value enforcement — a real boolean required for
+  `required`, a supported `schema_version`/`execution_provider` checked
+  at parse time, malformed YAML caught as a controlled error), Phase
   81B-style content digesting (`compute_tree_digest`, reusing
   `_canonical_digest_of_hashes`'s construction) scoped to each
   contract's own explicit `tested_paths`/`test_input_paths`, one
   `pytest` execution provider (pins the target repo's own interpreter
-  and `PYTHONPATH` — confirmed necessary this phase, see `L-101`), the
+  and `PYTHONPATH` — confirmed necessary this phase, see `L-101`;
+  classifies outcomes from pytest's own structured `--junit-xml` report,
+  not a bare exit code — see `L-102`), immutable per-run
+  `<check_id>--<run_id>` result/raw-output naming, the
   `evaluate_result_precedence`/`aggregate_contract` PASS/FAIL/GAP/
   INVALID rule, and `accept_baseline` (the one explicit, never-automatic
   baseline-minting action, `CLAUDE.md` §1 L-087).
-- `knowledge_intermediate.py::derive_epistemic_profile` (new function,
-  zero new persisted fields): INTENDED/OBSERVED/VERIFIED/CONTESTED, each
-  computed independently, reusing `derive_provenance_label`'s own
-  id-resolution helpers.
-- `scripts/check_contracts.py` (new maintainer script) and
+- `knowledge_intermediate.py::derive_epistemic_profile` (zero new
+  persisted fields): INTENDED/OBSERVED/VERIFIED/CONTESTED, each computed
+  independently, reusing `derive_provenance_label`'s own id-resolution
+  helpers. Now also reports `unconfirmed_scopes` — a required scope
+  whose only citation is a historically recorded `PASS` that could not
+  be reconfirmed against a live, reachable `repo_root` — distinct from
+  both `verified_scopes` (confirmed current) and `known_gap_scopes` (no
+  evidence at all).
+- `scripts/check_contracts.py` (maintainer script) and
   `check_knowledge_base.py::check_verified_status_cites_passing_oracle_
-  result` (new check): schema, cross-reference, tamper-evidence, GAP-
-  aggregate, and depth-not-scope validators. The new `status: verified`
+  result` (check): schema, cross-reference, tamper-evidence, GAP-
+  aggregate, and depth-not-scope validators. The `status: verified`
   check applies **only** to a slug with a `planning/contracts/<slug>/`
   directory — a named, explicit compatibility exemption covers every
   pre-existing `status: verified` record (`REQ-DOCORIGIN-001/002/003`,
   `REQ-HSAPI-001`-`006`, `CL-DEPTH-001`, `CL-FPSS-006/007`), confirmed
-  untouched by this phase.
+  untouched. Both scripts now fail closed (a blocking finding, not
+  informational) when current verification is claimed but the Ledgerkit
+  checkout is unavailable to confirm it — `check_contracts.py --strict`
+  via a new `contract-current-verification-unconfirmable` finding,
+  `check_knowledge_base.py` via a real `--ledgerkit-root` flag threaded
+  into `derive_epistemic_profile` instead of a hardcoded `None`.
 - One real contract: `planning/knowledge/balance-from-spec/` (1 REQ, 3
   CL, 3 EV, 1 DEC, 1 OBS) + `planning/contracts/balance-from-spec/`
-  (contract + two committed, real `PASS` oracle-result files, re-run and
-  re-verified byte-identical-on-digest by the independent audit).
+  (contract + four committed, real `PASS` oracle-result files across two
+  runs — the original two, immutably preserved, plus two from a later
+  re-run during the corrective pass — each independently re-verified
+  byte-identical-on-digest by an independent audit).
 - `scripts/run_balance_from_spec_oracle.py` (maintainer script, like
   `prepare_cleanroom_branch.py`) — re-runs the real oracle against a
-  given Ledgerkit checkout.
-- 53 new tests (`tests/test_oracle.py`, `tests/test_check_contracts.py`,
+  given Ledgerkit checkout, writing one new, permanent result/raw-output
+  file pair per execution, never overwriting a prior run's own evidence.
+- 65 new tests total across both the original implementation and the
+  corrective pass (`tests/test_oracle.py`, `tests/test_check_contracts.py`,
   plus additions to `tests/test_knowledge_intermediate.py` and
   `tests/test_check_knowledge_base.py`), covering every one of the
-  governing prompt's twelve required verification scenarios.
+  governing prompt's original twelve required verification scenarios
+  plus the corrective pass's own four defect-specific negative controls.
 
 `decisions/0062`'s Priority A-F framework remains superseded as the
 primary strategic framework by `decisions/0078`. Phase 81B (clean-room
@@ -84,34 +116,44 @@ and each phase's retro.
 
 ## What was just completed
 
-**Phase 82 implementation**, 2026-10-21, direct user request
-("CodeCompass Orchestrator — Correct Phase 82 Plan and Proceed with
-Implementation"), one session, five commits (`d945864` planning
-corrections/`decisions/0081`; `ebca4bf` implementation; `62b2f39` retro +
-candidate learning `L-101`; `63f4d84` knowledge-curator triage,
-promoted; `a450bfe` docs-drift fixes; `a3d4045` independent audit
-records; this `CONTEXT.md`/`ROADMAP.md`/plan-status-line reconciliation
-is the terminal commit). Corrected the plan's four remaining structural
-gaps, then implemented, verified, and closed out the same session — the
-first v2 phase where the governing prompt itself explicitly authorised
-proceeding straight to implementation rather than stopping for a
-separate maintainer-approval round trip.
+**Phase 82 corrective pass**, 2026-10-22, direct user request
+("CodeCompass Orchestrator — Phase 82 Corrective Pass"), one session,
+eight commits (`078196c` ADR `decisions/0082` + plan §15; `098b312`
+implementation; `8fc066e` retro + candidate learning `L-102`; `ae3731d`
+regression tests landing a gap `knowledge-curator` found in `L-102`'s own
+triage; `5aebe10` a one-line `promoted.md` hash fix; `63c4dd7` retro
+expanded to full `TEMPLATE.md` shape after the first audit's own FAIL;
+`59942e6` the passing re-audit's own record; this `CONTEXT.md`/
+`ROADMAP.md`/plan-status-line reconciliation is the terminal commit).
+Fixed four real assurance defects an independent post-completion review
+found in Phase 82's *shipped code* (not its plan, which the original
+phase had already corrected and implemented together): (A) current
+verification could be asserted from a historically recorded `PASS`
+alone, with no live reconfirmation against the real implementation; (B)
+`run_pytest_check` converted any nonzero pytest exit code into `FAIL`,
+misclassifying missing dependencies/collection errors/invalid node ids
+as behavioural defects; (C) oracle-result/raw-output files were
+overwritten on every re-run despite each carrying a unique `run_id`; (D)
+`required: "false"` (a string) was silently accepted as truthy, and
+`schema_version`/`execution_provider` had no parse-time validation.
 
-Independent audits: `docs-reconstructor`'s per-phase drift audit found
-3 non-blocking doc-sync gaps (two maintainer-tooling docs omitting new
-Phase 82 scripts/tests; `docs/decisions.md`'s ADR index stopping at
-`0075`, a pre-existing gap this phase extended rather than left) — all
-three fixed in `a450bfe`. `release-phase-auditor`'s completion audit
-independently re-ran the real oracle (byte-identical digests on
-re-execution), the real negative control, the full test suite (980
-passed, 2 skipped — both pre-existing), `ruff`, and all three strict
-validators; deliberately broke vacuous-verification prevention (removed
-a committed oracle-result, confirmed the new check newly flags it,
-restored); confirmed `CLAUDE.md` untouched and every `decisions/0078`-
-`0081` file append-only. Verdict: **PASS WITH NON-BLOCKING
-OBSERVATIONS** (the one gap — no standalone written drift-audit record
-— backfilled in the same closeout as `planning/retros/_drift-audit-
-phase-82.md`).
+Independent audits: `docs-reconstructor`'s per-phase drift audit
+returned **CLEAN** (zero findings — all doc edits independently
+verified against the real code). `release-phase-auditor`'s first
+completion-audit pass returned **FAIL** on one gap — the corrective-pass
+retro wasn't populated against every `planning/retros/TEMPLATE.md`
+section — after adversarially re-deriving and falsification-testing
+every one of the four defect fixes and finding all of them solid (plus
+two non-blocking residuals outside this pass's own scope, see below).
+Retro rewritten to full template shape (`63c4dd7`); a fresh
+`release-phase-auditor` re-audit confirmed the gap closed and nothing
+else had drifted. Verdict: **PASS** (`planning/retros/_audit-phase-82-
+corrective-pass-reaudit.md`), with two explicitly-recorded non-blocking
+residuals for future execution-provider work: an existing-but-wrong
+decoy directory reports via `known_gap_scopes` rather than the more
+precise `unconfirmed_scopes` (the fail-closed guarantee still holds
+either way); an all-skipped pytest run still classifies as `PASS`
+(pre-existing behaviour, not a regression this pass introduced).
 
 ## Known standing gaps (current-state facts, not phase history)
 
@@ -149,6 +191,19 @@ phase-82.md`).
   `docs/architecture/overview.md`) as if current — filed as `L-098`
   (`planning/learnings/inbox.md`), not yet acted on (editing
   agent-workflow definitions is its own, separate decision).
+- Two non-blocking residuals found by the Phase 82 corrective-pass
+  independent audit, neither a regression and neither in that pass's own
+  named scope: `derive_epistemic_profile` reports a required check whose
+  cited result's digest mismatches an *existing-but-wrong* decoy
+  directory via `known_gap_scopes` rather than the more precise
+  `unconfirmed_scopes` (the fail-closed `status: verified` rejection
+  still fires correctly either way — a labelling imprecision, not a
+  safety gap); `oracle.py::_classify_pytest_junit` still classifies an
+  all-skipped pytest run as `PASS` (pytest's own junit-xml counts a skip
+  in `tests`, and no assertion ever actually ran) — pre-existing
+  behaviour, not introduced by the corrective pass. Both are candidates
+  for whoever next touches `oracle.py`'s execution-provider logic
+  (Phase 83/84).
 
 ## Next concrete step
 
@@ -183,3 +238,8 @@ by a drafted plan or phase number:
   install silently shadows a scratch mutation — already landed in
   `oracle.py`, recorded for any future execution-provider work (Phase
   83/84).
+- `L-102` (promoted, `planning/learnings/promoted.md`): classify a
+  subprocess oracle's outcome from its own structured report (e.g.
+  pytest's `--junit-xml`), never from a bare exit code alone — already
+  landed in `oracle.py::_classify_pytest_junit`, recorded for any future
+  second execution provider (Phase 83/84).
