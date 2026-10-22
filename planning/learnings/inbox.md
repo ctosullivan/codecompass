@@ -8,6 +8,45 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-103 — validate a value's type before checking its membership against a closed set
+
+- **origin:** Phase 82 final corrective pass, finding C
+- **date:** 2026-10-22
+- **project_revision:** `e3917ad` (observed); fixed in this pass's
+  implementation commit
+- **observation:** `src/codecompass/oracle.py::parse_oracle_result`
+  checked `outcome not in _OUTCOME_VALUES` (a Python `set`) before
+  confirming `outcome` was even a string. `in`/`not in` against a `set`
+  computes `hash(value)` first — an unhashable value (a YAML list or
+  mapping, reachable from genuinely malformed input) raises an uncaught
+  `TypeError` instead of reaching this function's own controlled
+  `OracleSchemaError`, the exact failure mode this module otherwise
+  exists specifically to prevent for every other field.
+- **evidence:** confirmed directly this session —
+  `hash(['not', 'a', 'string'])` raises `TypeError: unhashable type:
+  'list'`; a result file with `outcome: [FAIL, PASS]` raised the same
+  uncaught `TypeError` from `parse_oracle_result` before the fix, and a
+  controlled `OracleSchemaError` after it. Regression tests:
+  `tests/test_oracle.py::test_unhashable_outcome_produces_schema_error_not_type_error`,
+  `::test_unhashable_outcome_is_mapping_also_rejected`.
+- **classification:** invariant — a reusable Python pitfall, not specific
+  to this one field or module: any closed-enum check written as
+  `value not in a_set`/`value in a_set` is only safe once `value`'s type
+  is already confirmed hashable (and, for a semantic enum, the *expected*
+  type — a hashable but wrong-typed value such as an int would pass the
+  membership check's own type requirement while still being nonsense).
+  Worth a quick grep for the same pattern (`not in _.*_VALUES`/`in
+  _.*_VALUES`-style checks) the next time any schema-validation code in
+  this project is touched.
+- **status:** candidate
+- **recurrence:** first occurrence
+- **moves forward when:** a `knowledge-curator` triage confirms no
+  existing project convention/check already covers this (a repo-wide grep
+  for the same `not in <set>` pattern against an unvalidated raw-input
+  value), then promotes to a documented rule (e.g. a short note in
+  `CLAUDE.md` or a contributing-doc checklist item) or discards if the
+  pattern is judged too narrow to generalize further.
+
 ### L-102 — classify a subprocess oracle's outcome from its own structured report, never from a bare exit code alone
 
 - **origin:** Phase 82 corrective pass, defect B
