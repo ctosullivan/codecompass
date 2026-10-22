@@ -1,0 +1,10 @@
+$ /home/cormac/projects/ledgerkit/.venv/bin/python -m pytest -q --junit-xml=<tmp> tests/test_reports.py::TestBalanceFromSpec::test_single_section_rows_and_subtotal
+(cwd=/home/cormac/projects/ledgerkit)
+
+--- stdout ---
+.                                                                        [100%]
+1 passed in 0.16s
+
+--- stderr ---
+
+--- returncode: 0 ---

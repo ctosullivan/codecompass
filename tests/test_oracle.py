@@ -858,3 +858,144 @@ def test_result_execution_provider_validated_at_parse_time(tmp_path: Path):
     )
     with pytest.raises(oracle.OracleSchemaError, match="not supported"):
         oracle.parse_oracle_result(result_path)
+
+
+# ---------------------------------------------------------------------------
+# decisions/0082 final corrective pass §A -- all-skipped execution must
+# never establish PASS
+# ---------------------------------------------------------------------------
+
+
+def test_run_pytest_check_all_skipped_is_invalid_not_pass(tmp_path: Path):
+    """Negative control named by the governing prompt: a valid pytest
+    reference containing only skipped tests must never establish
+    verification. Confirmed against real pytest 9.1.1 this session: an
+    all-skipped run exits 0 and its junit-xml reports tests=2 (every
+    skipped testcase counted), errors=0, failures=0 -- `tests > 0` alone
+    is not evidence that anything actually ran."""
+    (tmp_path / "test_allskip.py").write_text(
+        "import pytest\n\n"
+        "@pytest.mark.skip(reason='probe')\n"
+        "def test_one():\n    assert False\n\n"
+        "@pytest.mark.skip(reason='probe')\n"
+        "def test_two():\n    assert False\n",
+        encoding="utf-8",
+    )
+    outcome, reason, raw = oracle.run_pytest_check(tmp_path, "test_allskip.py")
+    assert outcome == "INVALID"
+    assert "skipped" in reason
+    assert "skipped in" in raw.lower() or "skipped" in raw.lower()
+
+
+def test_run_pytest_check_mixed_skip_and_pass_is_still_pass(tmp_path: Path):
+    """A partially-skipped run with at least one genuinely executed,
+    passing test is unaffected by the all-skipped fix -- only a run
+    where *every* collected test was skipped is INVALID."""
+    (tmp_path / "test_mixed.py").write_text(
+        "import pytest\n\n"
+        "@pytest.mark.skip(reason='probe')\n"
+        "def test_skip():\n    assert False\n\n"
+        "def test_pass():\n    assert True\n",
+        encoding="utf-8",
+    )
+    outcome, reason, raw = oracle.run_pytest_check(tmp_path, "test_mixed.py")
+    assert outcome == "PASS"
+    assert reason is None
+
+
+def test_run_pytest_check_mixed_skip_and_fail_is_fail(tmp_path: Path):
+    """A partially-skipped run with a genuine behavioural failure is
+    still correctly classified FAIL, not swallowed by the skip handling."""
+    (tmp_path / "test_mixed2.py").write_text(
+        "import pytest\n\n"
+        "@pytest.mark.skip(reason='probe')\n"
+        "def test_skip():\n    assert False\n\n"
+        "def test_fail():\n    assert False\n",
+        encoding="utf-8",
+    )
+    outcome, reason, raw = oracle.run_pytest_check(tmp_path, "test_mixed2.py")
+    assert outcome == "FAIL"
+
+
+# ---------------------------------------------------------------------------
+# decisions/0082 final corrective pass §C -- type-before-membership
+# validation, optional-field types, subprocess-launch failures
+# ---------------------------------------------------------------------------
+
+
+def test_unhashable_outcome_produces_schema_error_not_type_error(tmp_path: Path):
+    """The exact bug named by the governing prompt: parse_oracle_result
+    checked `outcome not in _OUTCOME_VALUES` (a set) before confirming
+    `outcome` was even a string -- an unhashable YAML value (a list or
+    mapping) raised an uncaught TypeError instead of the controlled
+    OracleSchemaError every other malformed field produces."""
+    import yaml
+
+    result_path = tmp_path / "result.yaml"
+    result_path.write_text(
+        yaml.safe_dump(_minimal_result_dict(outcome=["not", "a", "string"])),
+        encoding="utf-8",
+    )
+    with pytest.raises(oracle.OracleSchemaError, match="outcome must be a string"):
+        oracle.parse_oracle_result(result_path)
+
+
+def test_unhashable_outcome_is_mapping_also_rejected(tmp_path: Path):
+    import yaml
+
+    result_path = tmp_path / "result.yaml"
+    result_path.write_text(
+        yaml.safe_dump(_minimal_result_dict(outcome={"a": 1})),
+        encoding="utf-8",
+    )
+    with pytest.raises(oracle.OracleSchemaError, match="outcome must be a string"):
+        oracle.parse_oracle_result(result_path)
+
+
+def test_wrongly_typed_invalid_reason_rejected(tmp_path: Path):
+    import yaml
+
+    result_path = tmp_path / "result.yaml"
+    result_path.write_text(
+        yaml.safe_dump(_minimal_result_dict(invalid_reason=["x", "y"])),
+        encoding="utf-8",
+    )
+    with pytest.raises(oracle.OracleSchemaError, match="invalid_reason must be a string"):
+        oracle.parse_oracle_result(result_path)
+
+
+def test_wrongly_typed_baseline_id_rejected(tmp_path: Path):
+    import yaml
+
+    result_path = tmp_path / "result.yaml"
+    result_path.write_text(
+        yaml.safe_dump(_minimal_result_dict(outcome="PASS", baseline_id={"a": 1})),
+        encoding="utf-8",
+    )
+    with pytest.raises(oracle.OracleSchemaError, match="baseline_id must be a string"):
+        oracle.parse_oracle_result(result_path)
+
+
+def test_wrongly_typed_environment_descriptor_rejected(tmp_path: Path):
+    import yaml
+
+    result_path = tmp_path / "result.yaml"
+    result_path.write_text(
+        yaml.safe_dump(_minimal_result_dict(outcome="PASS", environment_descriptor=42)),
+        encoding="utf-8",
+    )
+    with pytest.raises(oracle.OracleSchemaError, match="environment_descriptor must be a string"):
+        oracle.parse_oracle_result(result_path)
+
+
+def test_run_pytest_check_launch_failure_is_invalid_not_uncaught(tmp_path: Path):
+    """A subprocess-launch failure (here: cwd that does not exist, so the
+    OS itself refuses to launch the interpreter) is an execution-
+    environment failure, not a behavioural result -- it must be caught
+    and classified INVALID with diagnostic evidence preserved, never
+    propagate as an uncaught OSError out of run_pytest_check."""
+    nonexistent_repo_root = tmp_path / "no-such-directory"
+    outcome, reason, raw = oracle.run_pytest_check(nonexistent_repo_root, "whatever.py")
+    assert outcome == "INVALID"
+    assert "launch" in reason
+    assert "no-such-directory" in raw or "No such file" in raw

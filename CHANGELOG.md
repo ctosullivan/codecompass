@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Phase 82 final corrective pass** (`decisions/0083`, a further,
+  separate independent post-completion review of the already-corrected
+  code): three narrower assurance weaknesses found and fixed. (A)
+  `_classify_pytest_junit` could classify an execution where *every*
+  collected test was skipped as `PASS` (every skipped testcase still
+  counts toward the junit-xml `tests` total) — confirmed against real
+  pytest 9.1.1 (a two-skip file exits 0, `tests="2" skipped="2"`); now
+  rejected as `INVALID` unless at least one test was genuinely executed,
+  without affecting a partially-skipped run (skip+pass still `PASS`,
+  skip+fail still `FAIL`). (B) `check_contracts.py::run_all` and
+  `check_knowledge_base.py::check_verified_status_cites_passing_oracle_result`
+  both reported an unsuccessful `codecompass.oracle`/
+  `knowledge_intermediate` import as an informational (`strict=False`)
+  finding, letting `--strict` report success while every oracle check
+  was silently skipped entirely — both now fail closed (`strict=True`).
+  (C) `parse_oracle_result` checked `outcome not in _OUTCOME_VALUES` (a
+  `set`) before confirming `outcome` was a string, so an unhashable
+  malformed value (a YAML list/mapping) raised an uncaught `TypeError`
+  instead of a controlled `OracleSchemaError`; `outcome`'s type is now
+  validated first, `baseline_id`/`environment_descriptor`/
+  `invalid_reason` now each require `str | None` (previously
+  unvalidated), and `run_pytest_check`'s subprocess launch is now
+  wrapped to classify an `OSError` as `INVALID` rather than propagating
+  uncaught. 12 new test functions. No change to Phase 82's exit gate,
+  its one pinned Ledgerkit contract, or `decisions/0080`/`0081`/`0082`'s
+  own design — every correction is to enforcement fidelity.
+
 - **Phase 82 corrective pass** (`decisions/0082`, independent post-
   completion review of the shipped code): four assurance defects found
   and fixed. (A) `derive_epistemic_profile`/

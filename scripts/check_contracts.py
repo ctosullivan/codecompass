@@ -373,12 +373,21 @@ def run_all(root: Path = ROOT, ledgerkit_root: Path = DEFAULT_LEDGERKIT_ROOT) ->
     findings: list[Finding] = []
     oracle = _load_oracle_module()
     if oracle is None:
+        # decisions/0082 final corrective pass §B: every oracle-contract/
+        # oracle-result check below is skipped entirely when this import
+        # fails -- `--strict` must not report success while silently
+        # unable to run its own required assurance machinery. Blocking,
+        # not informational (unlike `contract-ledgerkit-checkout-
+        # unavailable`, which skips only the live-digest recomputation
+        # while every other check still runs in full).
         return [
             Finding(
                 "contract-codecompass-unimportable",
-                "could not import codecompass (src/ not importable) — "
-                "skipped all oracle-contract/oracle-result checks",
-                strict=False,
+                "could not import codecompass.oracle (src/ not importable, or "
+                "a required dependency such as pyyaml is missing) — every "
+                "oracle-contract/oracle-result check was skipped; this is a "
+                "failure of the verification machinery itself, not an "
+                "optional check",
             )
         ]
     for slug_dir in _iter_contract_slugs(root):

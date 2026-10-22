@@ -331,6 +331,27 @@ class TestSourceRefSymbolDepth:
         assert findings == []
 
 
+class TestImportFailureFailsClosed:
+    """decisions/0082 final corrective pass §B: an unsuccessful import of
+    `codecompass.oracle` must never be reported as merely informational
+    -- `run_all` skips every oracle-contract/oracle-result check when
+    this happens, so `--strict` reporting "no blocking findings" in that
+    state would be a false assurance, not a genuine PASS."""
+
+    def test_broken_oracle_import_produces_blocking_finding(self, monkeypatch):
+        monkeypatch.setattr(check_contracts, "_load_oracle_module", lambda: None)
+        findings = check_contracts.run_all(REPO_ROOT, check_contracts.DEFAULT_LEDGERKIT_ROOT)
+        assert len(findings) == 1
+        assert findings[0].rule == "contract-codecompass-unimportable"
+        assert findings[0].strict is True
+
+    def test_main_exits_nonzero_under_strict_when_oracle_unimportable(self, monkeypatch, capsys):
+        monkeypatch.setattr(check_contracts, "_load_oracle_module", lambda: None)
+        monkeypatch.setattr(sys, "argv", ["check_contracts.py", "--strict"])
+        exit_code = check_contracts.main()
+        assert exit_code == 1
+
+
 class TestRealRepository:
     @requires_ledgerkit
     def test_real_repository_has_no_blocking_findings(self):

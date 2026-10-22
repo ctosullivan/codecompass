@@ -1597,6 +1597,23 @@ class TestVerifiedStatusCitesPassingOracleResult:
         )
         assert findings == []
 
+    def test_broken_oracle_import_fails_closed_not_informational(self, tmp_path, monkeypatch):
+        """decisions/0082 final corrective pass §B: this slug has a real
+        contract, so a verified claim here is an oracle-backed assertion
+        this check exists to confirm -- an unsuccessful import of the
+        modules that confirm it must be blocking, not an informational
+        finding that lets `--strict` report success anyway."""
+        sdir = self._slug(tmp_path)
+        contract_path = tmp_path / "planning" / "contracts" / "demo-slug" / "oracle-contract.yaml"
+        _write_contract_yaml(contract_path, checks=_ONE_CHECK)
+        monkeypatch.setattr(check_knowledge_base, "_load_oracle_module", lambda: None)
+        findings = check_knowledge_base.check_verified_status_cites_passing_oracle_result(
+            sdir, root=tmp_path, ledgerkit_root=tmp_path / "no-such-ledgerkit"
+        )
+        assert len(findings) == 1
+        assert findings[0].rule == "knowledge-base-oracle-unimportable"
+        assert findings[0].strict is True
+
     def test_empty_required_check_set_cannot_establish_verification(self, tmp_path):
         """decisions/0081 §3: an empty required-check set never
         vacuously satisfies status: verified. Here the contract is well-

@@ -648,13 +648,20 @@ def check_verified_status_cites_passing_oracle_result(
     oracle = _load_oracle_module()
     ki = _load_knowledge_intermediate()
     if oracle is None or ki is None:
+        # decisions/0082 final corrective pass §B: this slug has a real
+        # oracle contract, so a `status: verified` record here is making
+        # an oracle-backed claim this check exists specifically to
+        # confirm -- failing to import the modules that confirm it must
+        # never be treated as "nothing to report." Blocking, not
+        # informational.
         return [
             Finding(
                 "knowledge-base-oracle-unimportable",
                 f"{feature_dir.relative_to(root)}: could not import "
-                "codecompass's oracle/knowledge_intermediate modules — "
-                "skipped status:verified oracle-citation check",
-                strict=False,
+                "codecompass's oracle/knowledge_intermediate modules (src/ "
+                "not importable, or a required dependency is missing) — "
+                "the status:verified oracle-citation check could not run, "
+                "so any verified claim in this slug is unconfirmed",
             )
         ]
 

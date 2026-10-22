@@ -322,15 +322,38 @@ def parse_oracle_result(path: Path) -> OracleResult:
     if missing:
         raise OracleSchemaError(f"{path}: missing required field(s) {sorted(missing)}")
     outcome = raw["outcome"]
+    # Type validated *before* the enum-membership check: `outcome not in
+    # a_set` computes hash(outcome) first, and an unhashable value (a
+    # YAML list/mapping from malformed input) raises an uncaught
+    # `TypeError` rather than reaching this function's own controlled
+    # `OracleSchemaError` -- confirmed this session (decisions/0082 final
+    # corrective pass §C).
+    if not isinstance(outcome, str):
+        raise OracleSchemaError(
+            f"{path}: outcome must be a string, got {outcome!r} ({type(outcome).__name__})"
+        )
     if outcome not in _OUTCOME_VALUES:
         raise OracleSchemaError(
             f"{path}: outcome={outcome!r} is not one of {sorted(_OUTCOME_VALUES)} "
             "-- GAP is never a per-result outcome (decisions/0081 §2)"
         )
-    if outcome == "INVALID" and not raw.get("invalid_reason"):
+    invalid_reason_raw = raw.get("invalid_reason")
+    if invalid_reason_raw is not None and not isinstance(invalid_reason_raw, str):
+        raise OracleSchemaError(
+            f"{path}: invalid_reason must be a string or absent, got "
+            f"{invalid_reason_raw!r} ({type(invalid_reason_raw).__name__})"
+        )
+    if outcome == "INVALID" and not invalid_reason_raw:
         raise OracleSchemaError(
             f"{path}: outcome: INVALID requires a non-empty invalid_reason"
         )
+    for optional_field in ("baseline_id", "environment_descriptor"):
+        optional_value = raw.get(optional_field)
+        if optional_value is not None and not isinstance(optional_value, str):
+            raise OracleSchemaError(
+                f"{path}: {optional_field} must be a string or absent, got "
+                f"{optional_value!r} ({type(optional_value).__name__})"
+            )
     schema_version = _require_schema_version(raw["schema_version"], path)
     for field_name in (
         "run_id", "contract_id", "check_id", "scope", "oracle_contract_id",
@@ -423,8 +446,13 @@ def _classify_pytest_junit(
     a collection error, 4 for an invalid/nonexistent node id or file
     path, and 5 for a syntactically valid file with zero matching tests
     -- none of which is a behavioural defect in the tested subject
-    (`decisions/0082` §B). Returns `(outcome, invalid_reason)` where
-    `outcome` is always one of `PASS`/`FAIL`/`INVALID`."""
+    (`decisions/0082` §B). Also rejects an all-skipped execution as
+    `INVALID` rather than `PASS` (real pytest 9.1.1, confirmed this
+    session: an all-skipped run exits 0 with `tests` counting every
+    skipped testcase, so `tests > 0` alone is not sufficient evidence
+    that anything actually ran -- decisions/0082 final corrective pass
+    §A). Returns `(outcome, invalid_reason)` where `outcome` is always
+    one of `PASS`/`FAIL`/`INVALID`."""
     if not junit_path.is_file():
         return "INVALID", (
             f"pytest produced no junit-xml report (returncode={returncode}) -- "
@@ -441,11 +469,19 @@ def _classify_pytest_junit(
     tests = int(suite.get("tests", "0"))
     errors = int(suite.get("errors", "0"))
     failures = int(suite.get("failures", "0"))
+    skipped = int(suite.get("skipped", "0"))
     if tests == 0:
         return "INVALID", (
             "check_reference resolved to zero collected tests -- an invalid, "
             "mistyped, or no-longer-existent pytest node id (or a file with no "
             "matching test function) can never establish PASS or FAIL"
+        )
+    if tests - skipped <= 0:
+        return "INVALID", (
+            f"all {tests} collected test(s) were skipped, not executed -- a "
+            "skipped test asserts nothing about the tested subject's actual "
+            "behaviour and can never by itself establish PASS (decisions/0082 "
+            "final corrective pass §A); see raw output for the skip reason(s)"
         )
     if errors:
         messages = []
@@ -484,21 +520,42 @@ def run_pytest_check(repo_root: Path, check_reference: str) -> tuple[str, str | 
     without this, running against a disposable scratch copy would
     silently exercise the real checkout's own code instead of the
     scratch mutation under test — defeating the negative control
-    entirely)."""
+    entirely).
+
+    A launch failure (the interpreter cannot be executed at all -- e.g.
+    a broken symlink, a non-executable file, a permissions error) is
+    itself an execution-environment failure, not a behavioural defect in
+    the tested subject: it is caught and classified `INVALID` with the
+    `OSError`'s own text preserved as diagnostic evidence, rather than
+    propagating as an uncaught exception out of this function
+    (decisions/0082 final corrective pass §C)."""
     interpreter = _interpreter_for(repo_root)
     env = dict(os.environ)
     existing = env.get("PYTHONPATH", "")
     env["PYTHONPATH"] = str(repo_root) + (f":{existing}" if existing else "")
+    command = [interpreter, "-m", "pytest", "-q", "--junit-xml=<tmp>", check_reference]
     with tempfile.TemporaryDirectory() as tmp_dir:
         junit_path = Path(tmp_dir) / "junit.xml"
-        result = subprocess.run(
-            [interpreter, "-m", "pytest", "-q", f"--junit-xml={junit_path}", check_reference],
-            cwd=repo_root,
-            capture_output=True,
-            text=True,
-            check=False,
-            env=env,
-        )
+        try:
+            result = subprocess.run(
+                [interpreter, "-m", "pytest", "-q", f"--junit-xml={junit_path}", check_reference],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+                env=env,
+            )
+        except OSError as exc:
+            raw = (
+                f"$ {' '.join(command)}\n(cwd={repo_root})\n\n"
+                f"could not launch the test interpreter: {exc}\n"
+            )
+            return (
+                "INVALID",
+                f"failed to launch pytest via {interpreter!r}: {exc} -- an "
+                "execution-environment failure, not a behavioural result",
+                raw,
+            )
         outcome, invalid_reason = _classify_pytest_junit(junit_path, result.returncode)
     raw = (
         f"$ {interpreter} -m pytest -q --junit-xml=<tmp> {check_reference}\n"
