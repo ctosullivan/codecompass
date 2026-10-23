@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Phase 83 corrective planning amendment** (planning only, no `src/`
+  change, direct user request, `decisions/0086`, "CodeCompass
+  Orchestrator — Phase 83 Corrective Planning Amendment"): corrects five
+  structural defects found in Phase 83's own first planning pass, by
+  direct re-reading of `oracle.py`, `graph.py`,
+  `knowledge_intermediate.py`, `check_contracts.py`, and the real
+  `balance-from-spec` knowledge/contract records. Replaces `test_input_
+  paths`-based coverage inference with a Claim-mediated, three-tier
+  relevance/coverage model (`no_recorded_relationship` /
+  `relevant_no_coverage_link` / `behavioural_risk`) built entirely from
+  existing Evidence-citation chains (`EV-BFS-001` already cites
+  `balance_from_spec`). Replaces an impossible "aggregate FAIL"
+  expectation with a CONFIRMED_REGRESSION / VERIFIED_SCOPE /
+  VERIFICATION_GAP / INVALID_ASSESSMENT precedence that never lets an
+  observed `FAIL` be downgraded by `aggregate_contract`'s own `GAP` state
+  (confirmed: `CheckAggregate.state` has no `FAIL` value). Resolves
+  revision consistency for changed-line coordinates by reusing
+  `source_files.content_hash` (already populated, identical construction
+  to `oracle.sha256_file`) instead of a new git-diff parser. Resolves the
+  new obligation's identity by extending the existing `balance-from-spec`
+  contract/Requirement family in place (`REQ-BFS-002`/`DEC-BFS-002`/
+  `CL-BFS-004`, reusing `EV-BFS-001` unchanged) rather than an
+  unsupported second contract file or an unprecedented in-place edit of
+  `REQ-BFS-001`'s own statement — and names, for the first time, the real
+  cost of that choice: appending a check changes `oracle-contract.yaml`'s
+  own content hash, invalidating Phase 82's six existing `PASS` results
+  on next evaluation, resolved by a required one-time fresh re-run of the
+  two pre-existing checks in the same commit. No change to `src/`;
+  `decisions/0078`-`0085` are not edited.
+
 - **v2 roadmap approval and Phase 83/84 planning** (planning only, no
   `src/` change, direct user request, "CodeCompass Orchestrator — Approve
   v2 Roadmap and Plan Phases 83-84"): approves the corrected roadmap

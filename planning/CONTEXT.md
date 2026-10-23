@@ -96,7 +96,18 @@ produced implementation-ready plans for Phase 83
 (`planning/phase-83-semantic-change-assurance.md`) and Phase 84
 (`planning/phase-84-consolidated-knowledge-api.md`) — see "What was just
 completed" below. Neither is authorised to implement without separate,
-explicit approval.
+explicit approval. **Phase 83's own plan was corrected the same day**
+(`decisions/0086`, "CodeCompass Orchestrator — Phase 83 Corrective
+Planning Amendment") — five structural defects found by direct
+re-reading of `oracle.py`/`graph.py`/`knowledge_intermediate.py`/
+`check_contracts.py` against the first pass: `test_input_paths` misused
+as coverage evidence, an impossible aggregate-`FAIL` expectation, no
+concrete revision-consistency mechanism, and an unresolved Requirement/
+contract-identity question whose only schema-compliant answer (extending
+the existing contract in place) carries a real, now-explicit
+content-hash-invalidation cost against Phase 82's own six existing
+results. See "What was just completed" below. Phase 84 and Phase 82 are
+unaffected.
 
 **What exists now, concretely**:
 
@@ -176,6 +187,74 @@ unmodified by Phase 82 — full detail in `planning/ROADMAP.md`'s own rows
 and each phase's retro.
 
 ## What was just completed
+
+**Phase 83 corrective planning amendment**, 2026-10-24 (same day as the
+approval below), direct user request ("CodeCompass Orchestrator — Phase
+83 Corrective Planning Amendment," planning-only — Phase 83 implementation
+remains unauthorised). Independently re-inspected `src/codecompass/
+oracle.py`, `graph.py`, `knowledge_intermediate.py::derive_epistemic_
+profile`, `scripts/check_contracts.py`, and the real `planning/knowledge/
+balance-from-spec/`/`planning/contracts/balance-from-spec/` record set,
+rather than trusting the first pass's own prose, and found five concrete
+defects (full grounding: `decisions/0086`):
+
+- `test_input_paths` was being used to infer behavioural coverage; it
+  only bounds a check's own test-input content digest. Replaced with a
+  three-tier model read directly off each Claim's own `supporting_
+  evidence` chain: `no_recorded_relationship` (no Evidence cites the
+  touched symbol — explicitly *not* read as "safe"), `relevant_no_
+  coverage_link` (a citing Evidence exists but no Claim bridges it to a
+  check-resolving test-evidence), `behavioural_risk` (a Claim bridges
+  both). `EV-BFS-001` already cites `balance_from_spec` this way — no new
+  mechanism, an existing one simply put to use correctly.
+- The plan expected a check's aggregate state to show `FAIL`;
+  `CheckAggregate.state` (`oracle.py`) only ever takes `PASS`/`GAP`/
+  `NOT_REQUIRED` — a required check with an observed `FAIL` and no
+  `PASS` aggregates to `GAP` (`decisions/0081` §2, confirmed by direct
+  reading). Replaced with an explicit four-way precedence —
+  CONFIRMED_REGRESSION (any observed `FAIL`, highest precedence, never
+  downgraded) / VERIFIED_SCOPE (aggregate `PASS`) / VERIFICATION_GAP
+  (aggregate `GAP`) / INVALID_ASSESSMENT — that always shows a `FAIL`
+  and its co-existing `GAP` aggregate state together, never one
+  presented as if it erased the other.
+- Revision consistency for changed-line coordinates had no concrete
+  mechanism. `source_files.content_hash` (already populated,
+  `sha256`-of-exact-bytes, identical construction to `oracle.
+  sha256_file`) is reused: a touched file's live hash must match the
+  graph's own recorded hash before its `source_symbols.line` data is
+  trusted for symbol resolution; a mismatch reports `stale_index`
+  explicitly rather than guessing.
+- The new OR-union obligation's contract/Requirement placement was left
+  undecided, and the option the first pass implied (a second contract
+  file under the same slug) is not supported by `check_contracts.
+  py::_iter_contract_slugs` (exactly one `oracle-contract.yaml` per
+  slug). Resolved: extend the existing `oracle-contract.yaml`'s `checks:`
+  list in place (same `contract_id: REQ-BFS-001`); a new, separate
+  `REQ-BFS-002`/`DEC-BFS-002`/`CL-BFS-004` in the *same* knowledge slug
+  states the third obligation without editing `REQ-BFS-001`'s own
+  statement (Requirements have no supersession mechanism — confirmed by
+  direct reading, `supersedes` is Claim/Decision-only) — schema-valid
+  because `derive_epistemic_profile` matches via each record's own
+  evidence-citation chain, never by requiring its `id` to equal the
+  contract's `contract_id` (confirmed by direct reading).
+- **Named for the first time**: extending the contract file changes its
+  own content hash, which (via `evaluate_result_precedence` rule 1)
+  invalidates all six of Phase 82's existing `PASS` results for the two
+  pre-existing checks on next evaluation. Resolved as a required,
+  bounded, one-time action in the same commit: re-run both pre-existing
+  checks once against current Ledgerkit HEAD, producing fresh results
+  under the new hash; the original six result files are never deleted or
+  edited (Phase 82's own append-only discipline, unchanged) — a required
+  before/after aggregate-state test is now part of the plan's own
+  acceptance criteria.
+
+Produced `decisions/0086` and rewrote `planning/phase-83-semantic-
+change-assurance.md` in place (§0, §2-§13 materially revised; §1/§8's
+substance preserved). No change to `src/codecompass/oracle.py`, `graph.
+py`, or `knowledge_intermediate.py` — every correction is resolved by how
+Phase 83's own (not-yet-written) tooling is specified to use these
+modules' existing, unmodified behaviour; no defect was found in Phase
+82's own shipped code. `decisions/0078`-`0085` are not edited.
 
 **v2 roadmap approval and Phase 83/84 planning**, 2026-10-24, direct user
 request ("CodeCompass Orchestrator — Approve v2 Roadmap and Plan Phases
@@ -361,9 +440,11 @@ amendments above.
 Knowledge API and Query CLI) are both now phase-planned and
 implementation-ready**, approved 2026-10-24 alongside the corrected
 roadmap itself (see "What was just completed" above) —
-`planning/phase-83-semantic-change-assurance.md` and `planning/phase-84-
-consolidated-knowledge-api.md`. **Neither may begin implementation
-without a separate, explicit approval** — the governing prompt that
+`planning/phase-83-semantic-change-assurance.md` (corrected the same
+day, `decisions/0086` — see above; the file at this path is already the
+corrected version) and `planning/phase-84-consolidated-knowledge-api.md`.
+**Neither may begin implementation without a separate, explicit
+approval** — the governing prompt that
 produced both plans stopped deliberately short of authorising code.
 Phase 83 is sequenced first (not a hard dependency: `planning/v2-
 roadmap.md`'s Phase 84 entry and both new plan files confirm Phase 84
