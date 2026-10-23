@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **v2 roadmap corrective amendment** (planning only, no `src/` change,
+  direct user request, `decisions/0085`, "CodeCompass Orchestrator —
+  Corrective Amendment to v2 Knowledge-Driven Development Roadmap"):
+  corrects six weaknesses found in `decisions/0084`'s own v2 realignment,
+  after re-verifying Phase 82 `done` and Phase 83 next/unchanged. Phase
+  84's consolidated knowledge API gains an explicit nine-point logical
+  knowledge model (stable identity, canonical-vs-derived status,
+  authoritative sources per knowledge kind, provenance/snapshot
+  identity, the four epistemic dimensions, contradiction/gap handling,
+  a strict read-only/mutation separation with no new write path at all,
+  consistent missing-knowledge handling, versioned export) and a
+  narrowed CLI-migration scope (new read-only query operations first;
+  migrating an existing command is incremental and optional, never
+  wholesale). Phase 86 gains a formal Knowledge Placement Policy (eight
+  categories mapped onto this project's real artifacts) and three named
+  enforcement classes (mechanical/behavioural/semantic-editorial, the
+  last always advisory), with an explicit "placement is not a
+  single-location rule" clarification. Phase 87 gains a specified
+  complete minimum documentation suite (README, Getting Started,
+  Concepts, Architecture, Reference, Contributor Guide, mapped onto
+  existing files), a versioned schema, and a corrected quality baseline
+  (the prior "materially less correction than Phase 80" comparison is
+  withdrawn in favour of a reproducible, matched baseline, or a fresh
+  comparison where the historical one can't be reconstructed).
+  `decisions/0084`'s merged Phase 88 (MCP + reconciliation) is split back
+  into an MCP-only Phase 88 and a reconciliation-only Phase 89, confirmed
+  independently deliverable (neither depends on the other); the former
+  Phases 89-91 (Comparative Trials / External Validation / v2.0 Release)
+  are renumbered 90-92. Phase 90's evaluation methodology is strengthened:
+  Arm A is now included in documentation-quality measurement rather than
+  excluded; the concise-repository-instructions comparator is now
+  mandatory for the principal net-efficiency conclusion (still not a
+  release dependency); cumulative benefit is measured across a genuine
+  sequence of successive tasks, not one task. Updates `planning/
+  v2-roadmap.md`, `planning/ROADMAP.md`, `planning/CONTEXT.md`,
+  `planning/v2-evaluation-methodology.md` (a second dated amendment),
+  `planning/v2-migration-assessment.md`, `planning/post-v2-cross-project-
+  overlay-backlog.md`, and `docs/decisions.md`. Phase 82 and Phase 83 are
+  confirmed unchanged; `decisions/0078`-`0084` are not edited; no
+  `planning/phase-83-*.md` or later plan file was written; no `src/`
+  or `context-graph.db` change was made.
+
 ### Fixed
 
 - **Phase 82 final corrective pass** (`decisions/0083`, a further,

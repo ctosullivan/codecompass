@@ -28,7 +28,11 @@ design; none of Phases 83-91 has begun. **The v2 roadmap itself was
 realigned 2026-10-23** (`decisions/0084`, "CodeCompass Orchestrator — v2
 Strategic Roadmap Realignment," around Knowledge-Driven Software
 Development) — see "What was just completed" below; Phase 82's own
-design/implementation/corrective-pass history above is unaffected.
+design/implementation/corrective-pass history above is unaffected. **A
+corrective amendment to that realignment landed the same day**
+(`decisions/0085`, "CodeCompass Orchestrator — Corrective Amendment to
+v2 Knowledge-Driven Development Roadmap") — see "What was just
+completed" below; Phase 82/83 remain unaffected by this correction too.
 
 - `decisions/0078` — the original v2 repositioning.
 - `decisions/0079` — the Cross-Project Semantic Overlay track's
@@ -67,6 +71,21 @@ design/implementation/corrective-pass history above is unaffected.
   `outcome`'s enum membership against a `set` before confirming its type,
   so an unhashable malformed value raised an uncaught `TypeError`. Does
   not reopen `decisions/0080`/`0081`/`0082`'s own design.
+- `decisions/0084` — realigns the v2 roadmap around Knowledge-Driven
+  Software Development: inserts four new phases (Consolidated Knowledge
+  API, Self-Curation, Knowledge-Placement Review, Documentation
+  Compiler) ahead of the former MCP phase, merges MCP with the former
+  reconciliation phase, renumbers the former Phases 86-88 to 89-91.
+- `decisions/0085` — a same-day corrective amendment to `decisions/0084`:
+  formalises Phase 84's logical knowledge model and narrows its CLI
+  scope; formalises Phase 86's enforcement classes and placement policy;
+  specifies Phase 87's minimum documentation suite and corrects its
+  quality baseline; splits the merged Phase 88 back into an MCP-only
+  Phase 88 and a reconciliation-only Phase 89 (independently
+  deliverable); renumbers the former Phases 89-91 to 90-92; strengthens
+  Phase 90's evaluation methodology. Does not reopen Phase 82/83 or
+  `decisions/0084`'s own architecture decision (§1: one logical model,
+  unchanged physical storage, no new database).
 
 **What exists now, concretely**:
 
@@ -147,50 +166,70 @@ and each phase's retro.
 
 ## What was just completed
 
+**v2 roadmap corrective amendment**, 2026-10-23 (same day as the
+realignment below), direct user request ("CodeCompass Orchestrator —
+Corrective Amendment to v2 Knowledge-Driven Development Roadmap," also
+planning-only — explicit stop condition unchanged). Re-verified Phase
+82 `done` and Phase 83 next/unchanged (no defect found in either, so
+neither reopened), and re-confirmed by direct inspection that `query`/
+`knowledge`/`enrich` remain three independent `typer.Typer()` sub-apps
+with no shared interface. Produced `decisions/0085`, which: (1)
+formalises Phase 84's logical knowledge model into nine explicit points
+(identity, canonical-vs-derived status, authoritative sources,
+provenance, epistemic dimensions, contradictions/gaps, read-only/
+mutation separation, missing-knowledge handling, versioned export) and
+narrows its CLI scope to incremental, optional migration with a
+read-only-only API (no mutation path at all); (2) formalises Phase 86
+into a Knowledge Placement Policy table (eight categories → this
+project's real artifacts) and three named enforcement classes
+(mechanical/behavioural/semantic-editorial, the last always advisory);
+(3) specifies Phase 87's complete minimum documentation suite (README,
+Getting Started, Concepts, Architecture, Reference, Contributor Guide,
+mapped onto existing files), a versioned schema, and withdraws the
+"materially less correction than Phase 80" comparison in favour of a
+reproducible, matched baseline (or a fresh comparison if the historical
+one can't be reconstructed); (4) splits the merged Phase 88 back into
+an MCP-only Phase 88 and a reconciliation-only Phase 89, confirming
+neither depends on the other; (5) renumbers the former Phases 89-91 to
+90-92; (6) strengthens Phase 90's evaluation methodology (Arm A now
+included in documentation-quality measurement; the concise-instructions
+comparator now mandatory for the principal net-efficiency conclusion,
+still not a release dependency; cumulative benefit measured across a
+task sequence, not one task). Updated, in the same session: `planning/
+v2-roadmap.md` (Phase 84/86/87 sections rewritten in place; old merged
+Phase 88 replaced with two new sections 88/89; old 89-91 renumbered
+90-92; dependency graph/adoption-levels/federation-review/deferred-scope
+sections updated); `planning/ROADMAP.md`'s v2 table (rows 84-92);
+`planning/v2-evaluation-methodology.md` (a second dated amendment, title
+and cross-references renumbered 89→90); `planning/v2-migration-
+assessment.md` and `planning/post-v2-cross-project-overlay-backlog.md`
+(phase-number cross-references updated for the split/renumbering, no
+substantive posture change); `docs/decisions.md` (new `0085` row);
+`CHANGELOG.md` (new `[Unreleased]` entry). An explicit independent
+review against the governing prompt's own ten-point closeout checklist
+is recorded in `decisions/0085`'s own "Independent review" section,
+including three honestly-recorded unresolved uncertainties left to each
+named phase's own future planning time. No `planning/phase-83-*.md` or
+later plan file was written; no `src/codecompass/` or `context-graph.db`
+change was made; `decisions/0078`-`0084` are not edited.
+
 **v2 roadmap realignment**, 2026-10-23, direct user request
 ("CodeCompass Orchestrator — v2 Strategic Roadmap Realignment," a
-planning-only task — explicit stop condition: "do not proceed to
-implementation without explicit approval"). Reviewed the actual
-repository state (Phase 77/79-81B/82 implementation status,
-`decisions/0078`-`0083`, the existing `query`/`knowledge`/`enrich` CLI
-surface, `src/codecompass/` module list) and confirmed, by direct
-inspection rather than assumption: no MCP server, no consolidated
-knowledge-query API, and no documentation compiler exist anywhere in
-this codebase; no `planning/phase-83-*.md` (or later) plan file exists.
-Produced `decisions/0084`, which: (1) decides the consolidated-
-knowledge-API architecture — one new, typed read/traversal library in
-front of the *existing, unchanged* physical stores (`context-graph.db`,
-`planning/knowledge/`, `planning/contracts/`), explicitly declining a
-new database or external store for v2; (2) inserts four new phases
-(Consolidated Knowledge API, Self-Curation, Knowledge-Placement Review,
-Documentation Compiler) between Phase 83 and the former MCP phase; (3)
-merges the former Phase 84 (MCP) and former Phase 85 (persistent
-knowledge/reconciliation) into one phase, extended to also reconcile
-compiled documentation; (4) renumbers the former Phases 86-88
-(Comparative Trials / External Validation / v2.0 Release) to 89-91,
-content unchanged; (5) confirms Phase 82 and Phase 83 are themselves
-unchanged, and that `decisions/0079`'s post-v2 cross-project overlay
-track is unaffected. Updated, in the same session: `planning/
-v2-roadmap.md` (substantially rewritten — new Phase 84-88 roadmap-depth
-sections, renumbered 89-91, updated dependency graph/adoption-levels/
-federation-review/deferred-scope sections); `planning/ROADMAP.md`'s v2
-table (new rows 84-91); `planning/v2-evaluation-methodology.md` (dated
-amendment: a documentation-quality metric and a concise-repository-
-instructions comparison baseline, per the governing prompt's own §9);
-`planning/v2-migration-assessment.md` (phase-number cross-references
-corrected throughout; substantive additive-only posture unchanged,
-if anything strengthened); `planning/post-v2-cross-project-overlay-
-backlog.md` (two phase-number cross-references updated, no stage/
-risk/exit-gate changed). No `planning/phase-83-*.md` or later plan file
-was written — per `CLAUDE.md` §1, each of Phases 83-91 still requires
-its own plan file, scoped against evidence current when it is actually
-next, before any implementation begins. No `src/codecompass/` or
-`context-graph.db` change was made. This is a single-session planning
-deliverable with no independent audit dispatched (the governing prompt's
-own deliverable list is planning artefacts, not implementation subject
-to `CLAUDE.md` §5's DoD gate) — a human/lead decision on whether to fund
-Phase 83 (or any later phase) next remains open, named in "Next concrete
-step" below.
+planning-only task). Reviewed the actual repository state (Phase
+77/79-81B/82 implementation status, `decisions/0078`-`0083`, the
+existing `query`/`knowledge`/`enrich` CLI surface, `src/codecompass/`
+module list) and confirmed, by direct inspection rather than
+assumption: no MCP server, no consolidated knowledge-query API, and no
+documentation compiler exist anywhere in this codebase; no
+`planning/phase-83-*.md` (or later) plan file exists. Produced
+`decisions/0084`, which decided the consolidated-knowledge-API
+architecture (one new, typed read/traversal library in front of the
+existing, unchanged physical stores, no new database), inserted four new
+phases, merged the former MCP and reconciliation phases, and renumbered
+the former Phases 86-88 to 89-91. Full detail: `decisions/0084` itself.
+**Superseded as "what was just completed" by the corrective amendment
+above** — every phase-number and scope reference this realignment
+introduced is further corrected there.
 
 **Phase 82 final corrective pass** (prior session, 2026-10-22, six
 commits `65840ca`/`04c0ed2`/`97ef607`/`4407b38`/`9e828c1`/`33b1e39`):
@@ -202,7 +241,7 @@ real negative controls, independently audited **PASS**. Full detail
 preserved in `planning/retros/phase-82-final-corrective-pass.md` and
 `decisions/0083` — summarised here only to the extent needed for
 session resumption; superseded as "what was just completed" by the
-realignment above.
+amendments above.
 
 ## Known standing gaps (current-state facts, not phase history)
 
@@ -262,24 +301,27 @@ realignment above.
 ## Next concrete step
 
 **Phase 83 (Semantic Change Assurance) is next, not yet phase-planned —
-unchanged by the 2026-10-23 realignment.** Per `CLAUDE.md` §1, writing
-`planning/phase-83-*.md` is the required next step before any Phase 83
-implementation begins — scoped against evidence current at that time
-(`planning/v2-roadmap.md` records only roadmap-depth sequencing for it:
-detect a deliberately-introduced Ledgerkit semantic regression Phase
-82's own contract should catch, without falsely claiming complete
-verification elsewhere in the same report; needs Phase 82's real
-contract/oracle-result schema to know what a change could violate and
-how to report a gap). After Phase 83, the realigned sequence
-(`decisions/0084`) is: 84 (Consolidated Knowledge API and Query CLI) →
-85 (Self-Curation and Knowledge-Quality Validation) → 86 (Knowledge-
-Placement and Code-Quality Review) → 87 (Documentation Schema and
-Knowledge-Compiled Documentation) → 88 (Agent Integration, MCP, and
-Incremental Reconciliation — merges the former MCP and reconciliation
-phases) → 89 (Comparative Development Trials) → 90 (External Validation
-and Adoption) → 91 (v2.0 Hardening and Release). None of 84-91 is
-phase-planned; each gets its own `CLAUDE.md` §1 plan file when it is
-actually next.
+unchanged by both the 2026-10-23 realignment and its same-day corrective
+amendment.** Per `CLAUDE.md` §1, writing `planning/phase-83-*.md` is the
+required next step before any Phase 83 implementation begins — scoped
+against evidence current at that time (`planning/v2-roadmap.md` records
+only roadmap-depth sequencing for it: detect a deliberately-introduced
+Ledgerkit semantic regression Phase 82's own contract should catch,
+without falsely claiming complete verification elsewhere in the same
+report; needs Phase 82's real contract/oracle-result schema to know what
+a change could violate and how to report a gap). After Phase 83, the
+twice-realigned sequence (`decisions/0084`, corrected `decisions/0085`)
+is: 84 (Consolidated Knowledge API and Query CLI, read-only scope,
+logical model formalised) → 85 (Self-Curation and Knowledge-Quality
+Validation) → 86 (Knowledge-Placement and Code-Quality Review, formal
+policy/enforcement classes) → 87 (Documentation Schema and
+Knowledge-Compiled Documentation, minimum suite specified) → 88 (Agent
+Integration and MCP, split from the old merged phase) → 89 (Incremental
+Knowledge and Documentation Reconciliation, split from the old merged
+phase, independent of MCP) → 90 (Comparative Development Trials,
+methodology strengthened) → 91 (External Validation and Adoption) → 92
+(v2.0 Hardening and Release). None of 84-92 is phase-planned; each gets
+its own `CLAUDE.md` §1 plan file when it is actually next.
 
 Other open items requiring a human/lead decision, none currently claimed
 by a drafted plan or phase number:
@@ -288,7 +330,8 @@ by a drafted plan or phase number:
   (`planning/post-v2-cross-project-overlay-backlog.md`) — explicitly not
   authorised by any amendment to date; Stage 1 cannot begin before Phase
   82 is `done` — it now is, but no further authorisation has been given.
-  Unaffected by the 2026-10-23 realignment (`decisions/0084` §5).
+  Unaffected by either the realignment or its corrective amendment
+  (`decisions/0084` §5, `decisions/0085` §8).
 - Priority A's own narrowly-scoped follow-up trial, sketched (not
   started) in `planning/phase-78-amendment-followup-plan.md` — now
   superseded in strategic priority by Phase 83/85's own, sharper

@@ -1,12 +1,12 @@
-# CodeCompass v2 — strategic roadmap (Phases 82-91)
+# CodeCompass v2 — strategic roadmap (Phases 82-92)
 
 Direct user request, 2026-10-21. Rationale, epistemic-dimension design,
 and Priority A-F reconciliation: `decisions/0078`. This file is the
 dependency-aware phase sequence and per-phase planning content required
-before any Phase 82-91 implementation begins. **No implementation has
+before any Phase 82-92 implementation begins. **No implementation has
 occurred under this file beyond Phase 82** — see `CLAUDE.md` §1: a phase
 begins only once its own `planning/phase-N-*.md` exists, and no such
-file exists yet for 83-91.
+file exists yet for 83-92.
 
 **Realigned 2026-10-23** (`decisions/0084`, "CodeCompass Orchestrator —
 v2 Strategic Roadmap Realignment") around **Knowledge-Driven Software
@@ -15,26 +15,42 @@ Development**: Phase 82 and Phase 83 are unchanged; four new phases
 Documentation Compiler) are inserted ahead of Agent Integration/MCP,
 which merges with the old Persistent-Knowledge-and-Reconciliation phase
 and moves later in the sequence; the former Phases 86-88 are renumbered
-89-91 with their own content unchanged. Full rationale, the old-to-new
-phase mapping table, and the architecture decision to keep physical
-storage unchanged behind one new consolidating API: `decisions/0084`.
-This section replaces, not merely annotates, the prior version of this
-file's Phase 84-88 content — the full historical text remains in git
-history at the commit preceding this realignment.
+89-91 with their own content unchanged.
+
+**Corrected the same day** (`decisions/0085`, "CodeCompass Orchestrator —
+Corrective Amendment to v2 Knowledge-Driven Development Roadmap"), after
+re-verifying Phase 82/83 unchanged: Phase 84 gains an explicit, nine-
+point logical knowledge model and a narrowed, read-only-first CLI scope;
+Phase 86 gains a formal Knowledge Placement Policy table and three named
+enforcement classes; Phase 87 gains a specified minimum documentation
+suite, a versioned schema, and a corrected (no longer historically-
+assumed) quality baseline; the merged Phase 88 is split back into an
+MCP-only Phase 88 and a reconciliation-only Phase 89, since the two are
+independently deliverable; the former Phases 89-91 are renumbered 90-92;
+Phase 90's own evaluation methodology is strengthened (Arm A included in
+documentation-quality measurement, the concise-instructions comparator
+made mandatory for the principal conclusion, cumulative benefit measured
+across a task sequence, not one task). Full rationale and both old-to-
+new mapping tables: `decisions/0084`, `decisions/0085`. This section
+replaces, not merely annotates, the prior versions of this file's Phase
+84-91 content — the full historical text remains in git history at the
+commits preceding each amendment.
 
 **Honest baseline** (established by direct repository inspection before
-writing the original version of this roadmap, re-confirmed at this
-realignment): before Phase 82, no `src/codecompass/` module,
+writing the original version of this roadmap, re-confirmed at both
+amendments): before Phase 82, no `src/codecompass/` module,
 `pyproject.toml` dependency, or committed planning artifact implemented
 or named a behavioural contract, an independent oracle, change-impact
 analysis, or an MCP server. Phase 82 has since shipped a real contract/
-oracle foundation (`decisions/0080`-`0083`). As of this realignment, no
-`src/codecompass/` module implements a consolidated knowledge-query API,
-a documentation compiler, or an MCP server — `decisions/0084`'s own
-Context section confirms this by direct `grep`/directory-listing
-inspection, not assumption. Nothing below claims any of Phases 83-91 as
-already delivering v2 capabilities — each is a planned, not-yet-built
-phase, named explicitly, reusing real existing foundations where named.
+oracle foundation (`decisions/0080`-`0083`). As of this latest amendment,
+no `src/codecompass/` module implements a consolidated knowledge-query
+API, a documentation compiler, or an MCP server — `decisions/0085`'s own
+Context section reconfirms this by direct inspection of the real CLI
+(`query`/`knowledge`/`enrich` remain three independent `typer.Typer()`
+sub-apps with no shared interface), not assumption. Nothing below claims
+any of Phases 83-92 as already delivering v2 capabilities — each is a
+planned, not-yet-built phase, named explicitly, reusing real existing
+foundations where named.
 
 ## Governing loop and objective
 
@@ -49,7 +65,7 @@ project knowledge should compound across development tasks, making
 software progressively easier to understand, modify, verify, and
 maintain, while delivering measurable benefit *after* accounting for its
 own knowledge-management overhead — reported neutrally or negatively if
-Phase 89's evidence says so (§ below).
+Phase 90's evidence says so (§ below).
 
 ## Adoption levels
 
@@ -57,7 +73,7 @@ Phase 89's evidence says so (§ below).
 |---|---|---|
 | 1 — Advisory | Knowledge retrieval, evidence tracing, context compilation, generated documentation | 82, 84, 87, 88 |
 | 2 — Assurance (principal v2 product objective) | Change-impact evaluation, independent checks, assurance reports | 82, 83, 88 |
-| 3 — Governed autonomy (optional, not a prerequisite for ordinary adoption) | Bounded workspaces, execution policies, routing — reuses Phase 81B's isolation mechanism only when actually exercised | 89's optional source-blind arm only |
+| 3 — Governed autonomy (optional, not a prerequisite for ordinary adoption) | Bounded workspaces, execution policies, routing — reuses Phase 81B's isolation mechanism only when actually exercised | 90's optional source-blind arm only |
 
 ## Dependency graph
 
@@ -71,34 +87,43 @@ Phase 83 (Semantic Change Assurance)
     │  sequenced before further infrastructure investment
     ▼
 Phase 84 (Consolidated Knowledge API and Query CLI)
-    │  one typed read/traversal interface in front of context-graph.db +
-    │  planning/knowledge/ + planning/contracts/ — unifies the model,
-    │  not the storage (decisions/0084 §1)
+    │  one typed, read-only traversal interface in front of
+    │  context-graph.db + planning/knowledge/ + planning/contracts/ —
+    │  unifies the model, not the storage (decisions/0084 §1, formalised
+    │  decisions/0085 §1); CLI migration is incremental, not wholesale
+    │  (decisions/0085 §2)
     ▼
 Phase 85 (Self-Curation and Knowledge-Quality Validation)
     │  dogfoods the learning/curation lifecycle against CodeCompass's
     │  own implementation, via 84's API and 83's oracle
     ▼
 Phase 86 (Knowledge-Placement and Code-Quality Review)
-    │  advisory placement/quality review layered on 85's checks
+    │  advisory placement/quality review layered on 85's checks, per a
+    │  formal Knowledge Placement Policy (decisions/0085 §4)
     ▼
 Phase 87 (Documentation Schema and Knowledge-Compiled Documentation)
     │  schema-driven compiler, clean-room composition (reuses 81B's
-    │  broker), independent validation, first demonstrator (own README)
+    │  broker), independent validation, complete minimum documentation
+    │  suite required at closeout (decisions/0085 §5-6)
     ▼
-Phase 88 (Agent Integration, MCP, and Incremental Reconciliation) ──┐
-    │  MCP server consumes 84's API + 83's impact analysis + 87's    │
-    │  documentation surface; reconciliation now covers both          │
-    │  knowledge and compiled documentation                           │
-    ▼                                                                 │
-Phase 89 (Comparative Development Trials)                            │
-    │  needs 83/84/88 (knowledge+assurance+MCP) and 87 (documentation │
-    │  quality metric) all genuinely operable                         │
-    ▼                                                                 │
-Phase 90 (External Validation and Adoption)                          │
-    │  needs 89's evidence to know whether adoption is worth asking   │
-    ▼                                                                 │
-Phase 91 (v2.0 Hardening and Release) ◄───────────────────────────────┘
+Phase 88 (Agent Integration and MCP)        Phase 89 (Incremental
+    │  MCP server consumes 84's API +         Knowledge and Documentation
+    │  83's impact analysis + 87's doc        Reconciliation)
+    │  surface                                 │  change-detection trigger
+    │                                           │  on 84's API + 87's doc
+    │                                           │  surface — independent
+    ▼                                           ▼  of MCP transport (0085 §3)
+    └─────────────────┬──────────────────────────┘
+                       ▼
+Phase 90 (Comparative Development Trials)
+    │  needs 83/84/87/88/89 (knowledge + assurance + MCP + documentation
+    │  + reconciliation) all genuinely operable; methodology strengthened
+    │  (decisions/0085 §7)
+    ▼
+Phase 91 (External Validation and Adoption)
+    │  needs 90's evidence to know whether adoption is worth asking
+    ▼
+Phase 92 (v2.0 Hardening and Release)
 ```
 
 No phase after 82 is scoped in `CLAUDE.md` §1 implementation-ready
@@ -203,74 +228,107 @@ further infrastructure investment (`decisions/0084` §2).
 
 ## Phase 84 — Consolidated Knowledge API and Query CLI
 
-Not yet phase-planned. **New** (`decisions/0084` §1-2).
+Not yet phase-planned. **New** (`decisions/0084` §1-2); logical model
+formalised and CLI scope narrowed (`decisions/0085` §1-2).
 
-1. **Objective / value.** One stable, typed read/traversal interface
-   over the project's existing knowledge — mechanical graph facts
-   (`context-graph.db`), reconciled Observation/Evidence/Claim/
-   Derivation/Decision/Requirement records (`planning/knowledge/`), and
-   behavioural contracts/oracle results (`planning/contracts/`) —
-   so every later consumer (self-curation, placement review, the
-   documentation compiler, and eventually MCP) queries one interface
-   instead of independently reconstructing `context-graph.db` SQL or a
-   `planning/knowledge/` YAML walk. Also replaces the existing `query`/
-   `knowledge`/`enrich` CLI sub-verbs' independent, per-feature logic
-   with calls onto the new API, without removing or breaking any
-   existing command's observable behaviour.
+1. **Objective / value.** One stable, **read-only**, typed read/
+   traversal interface over the project's existing knowledge —
+   mechanical graph facts (`context-graph.db`), reconciled Observation/
+   Evidence/Claim/Derivation/Decision/Requirement records (`planning/
+   knowledge/`), and behavioural contracts/oracle results (`planning/
+   contracts/`) — so every later consumer (self-curation, placement
+   review, the documentation compiler, and eventually MCP) queries one
+   interface instead of independently reconstructing `context-graph.db`
+   SQL or a `planning/knowledge/` YAML walk. New knowledge search/
+   retrieval/traversal/evidence/gap-query CLI operations are this
+   phase's first deliverable; migrating any existing `query`/`knowledge`/
+   `enrich` command onto the API is incremental and optional, decided
+   command by command (`decisions/0085` §2), never a wholesale
+   requirement.
 2. **Reused.** `knowledge_intermediate.py`'s existing record model and
    id-resolution helpers (`derive_provenance_label`,
    `derive_epistemic_profile`); `graph.py`'s existing `context-graph.db`
    access; `oracle.py`'s existing contract/result parsing; every
    existing `query`/`knowledge`/`enrich` command as the acceptance
-   baseline the migrated versions must keep behaviourally compatible
-   with.
-3. **Architectural changes.** A new, logical knowledge model (typed
-   record shapes spanning the three physical stores above) and a new
-   consolidating module (name TBD at Phase 84 planning time) exposing:
-   lookup by id/concept/source-symbol/requirement; relationship
-   traversal with supporting evidence; contradiction/gap/staleness
-   identification (reusing, not duplicating, `derive_epistemic_profile`
-   and the existing `CONFLICT`/`contradicting_evidence` machinery);
-   applicable architecture/contract/constraint retrieval; versioned,
-   machine-readable export; bounded, evidence-backed context-packet
-   compilation (reusing `knowledge-curator`'s existing packet-assembly
-   mode, Phase 54c). **No `context-graph.db` schema change and no new
-   database** — this is a library in front of existing storage, per
-   `decisions/0084` §1's explicit architectural decision.
-4. **Deliverables.** The API module; a stable CLI surface over it with
-   machine-readable output suitable for a coding agent; existing `query`/
-   `knowledge`/`enrich` commands migrated onto it (old command names and
-   output shapes preserved — this phase is additive/refactoring, not
-   breaking); deterministic-first design (LLM inference used only for
-   genuinely semantic operations the API itself cannot resolve
-   mechanically, per the governing prompt's own explicit preference).
+   baseline any migrated command must keep behaviourally compatible
+   with; `decisions/0079` §5's existing schema-versioned portable-export
+   shape, reused directly for this phase's own export format rather than
+   inventing a second one.
+3. **Architectural changes.** A new, logical knowledge model, formalised
+   in full by `decisions/0085` §1: stable, project-qualified record and
+   relationship identities (reusing existing `REQ-`/`CL-`/`EV-`/`OBS-`/
+   `DE-`/`DEC-` ids and `context-graph.db`/oracle-contract ids, no new id
+   scheme); an explicit canonical-vs-derived/presentation-only
+   distinction (canonical: `context-graph.db`, `planning/knowledge/`,
+   `planning/contracts/`, accepted ADRs; derived: rendered Markdown
+   projections, the presentation cache, generated documentation);
+   explicit authoritative sources per knowledge kind, with an ADR
+   establishing intent only, never proving implementation behaviour on
+   its own; exposure of existing source-revision/snapshot-identity/
+   provenance fields (oracle content digests, frozen-snapshot commit
+   SHAs, the presentation cache's dual hashes); `derive_epistemic_profile`
+   reused unchanged for the four epistemic dimensions; exposure of
+   existing contradiction/open-question/staleness fields
+   (`contradicting_evidence`, `open_questions`, `unconfirmed_scopes`/
+   `known_gap_scopes`), newly detectable *across* record kinds in one
+   traversal; a consistently typed three-way response shape
+   (result / empty / gap) for missing or insufficient knowledge;
+   versioned, machine-readable export targeting `decisions/0079` §5's
+   existing portable-snapshot schema. **The API has no mutation path at
+   all** — `knowledge apply`, `enrich apply`, `doc-acknowledge-*`, and
+   `oracle.py::accept_baseline` remain the only ways to write, unchanged
+   and unreachable through this API (`decisions/0085` §1 point 7). **No
+   `context-graph.db` schema change and no new database** — this is a
+   read-only library in front of existing storage, per `decisions/0084`
+   §1's architectural decision, confirmed not reopened by `decisions/
+   0085`.
+4. **Deliverables.** The API module; new CLI operations for knowledge
+   search, retrieval, traversal, evidence-tracing, and gap-querying,
+   with machine-readable output suitable for a coding agent; any
+   existing command migrated onto the API only where doing so
+   demonstrably removes duplicated logic (case by case, not mandated);
+   deterministic-first design (LLM inference used only for genuinely
+   semantic operations the API itself cannot resolve mechanically).
 5. **Prerequisites.** Phase 82 complete. Does not require Phase 83
    (sequenced after it per the governing prompt's own explicit
    ordering, not because of a hard dependency).
 6. **Excluded.** MCP exposure (88, consumes this API rather than
-   rebuilding it); any new persisted storage; Layer B/C federation
-   constructs (`decisions/0079`) — the API's traversal shape should not
-   *preclude* a future federated caller, but building federation support
-   now is out of scope.
-7. **Tests.** Behavioural-compatibility tests proving each migrated CLI
-   command's observable output is unchanged for a representative input
-   set; new tests for the API's own traversal/contradiction/gap
-   detection against real `planning/knowledge/` and `context-graph.db`
-   content (this project's own corpus, not a synthetic fixture only).
-8. **Dogfood scenario.** The API is used, not merely built: at minimum,
-   one real `query`/`knowledge` command is migrated end to end and shown
-   to produce identical output to its pre-migration version against this
-   project's own real data.
+   rebuilding it); any new persisted storage; any knowledge-mutation
+   capability (explicitly structural, `decisions/0085` §1 point 7, not
+   merely a stated intention); wholesale migration of every existing
+   `query`/`knowledge`/`enrich` command; Layer B/C federation constructs
+   (`decisions/0079`) — the API's traversal shape should not *preclude* a
+   future federated caller, but building federation support now is out
+   of scope.
+7. **Tests.** Backward-compatibility tests for any command that *is*
+   migrated (identical observable output against a representative input
+   set); explicit negative-path tests for every new API operation (a
+   malformed query, a non-existent id, a traversal with no results —
+   each must return the defined empty/gap/error shape, never silently
+   collapse into another); new tests for the API's own traversal/
+   contradiction/gap detection against real `planning/knowledge/` and
+   `context-graph.db` content (this project's own corpus, not a
+   synthetic fixture only).
+8. **Dogfood scenario.** The API is used, not merely built, against this
+   project's own real corpus: a consumer retrieves a real architectural
+   decision, `balance-from-spec`'s associated implementation facts, its
+   real Phase 82 contract, its provenance, and any verification
+   limitation, all through the one interface — and the response
+   distinguishes, for this real case, approved intent from verified
+   implementation (`decisions/0085` §1's required acceptance criteria).
 9. **Exit gate.** A fresh caller (a test, a script, or an agent) can
    answer "what does this project know about X, and how confident are
    we" through the one new interface alone, without reading
    `context-graph.db`'s schema or `planning/knowledge/`'s file layout
-   directly — demonstrated, not merely asserted, against a real query.
+   directly — demonstrated, not merely asserted, against a real query —
+   and §8's dogfood scenario succeeds without MCP existing.
 10. **Risks.** Building an API that is a thin, redundant wrapper adding
     no real value over direct access — mitigated by requiring at least
     one genuinely new capability this phase delivers that no existing
     command already provides (contradiction/gap/staleness detection
-    across record kinds, which no current `query` sub-verb does today).
+    across record kinds, which no current `query` sub-verb does today),
+    and by the dogfood scenario's own real-corpus proof requirement
+    (`decisions/0085` §2).
 
 ## Phase 85 — Self-Curation and Knowledge-Quality Validation
 
@@ -331,67 +389,91 @@ Not yet phase-planned. **New** (`decisions/0084` §2-3).
 
 ## Phase 86 — Knowledge-Placement and Code-Quality Review
 
-Not yet phase-planned. **New** (`decisions/0084` §2).
+Not yet phase-planned. **New** (`decisions/0084` §2); enforcement classes
+and placement-policy table formalised (`decisions/0085` §4).
 
 1. **Objective / value.** Help coding agents and reviewers decide where
-   information belongs (source comment vs. docstring vs. canonical
-   knowledge vs. ADR vs. generated documentation), per the governing
-   prompt's own Knowledge Placement Policy table, and flag the concrete
-   defect patterns it names (architectural rationale embedded
+   information belongs, per a formal Knowledge Placement Policy, and
+   flag concrete defect patterns (architectural rationale embedded
    unnecessarily in code comments; undocumented requirements/invariants;
-   contradictions with accepted decisions; duplicated/inconsistent
-   knowledge; missing interface documentation; unnecessary abstractions).
+   contradictions with accepted decisions; missing interface
+   documentation; unnecessary abstractions). **Placement is never
+   interpreted as "appears only once"** — a critical invariant may
+   legitimately live in a comment, a contract, and documentation at once
+   with one consistent meaning; this phase flags inconsistency, not
+   repetition.
 2. **Reused.** The `Finding`-with-`strict`-flag pattern `decisions/0082`/
    `0083` already hardened in `check_contracts.py`/
-   `check_knowledge_base.py` (mechanically testable violations are
-   `strict`/blocking; everything else is informational/advisory);
-   Phase 85's self-curation infrastructure; Phase 84's API for cross-
-   referencing a comment's claim against canonical knowledge.
+   `check_knowledge_base.py`; Phase 85's self-curation infrastructure;
+   Phase 84's read-only API for cross-referencing a comment's claim
+   against canonical knowledge; this project's own existing comment
+   discipline (comment only when the WHY is non-obvious) as the
+   placement rule for the "non-obvious local comments" category below,
+   not a new rule.
 3. **Architectural changes.** A documented Knowledge Placement Policy
-   (the governing prompt's own table, adapted to this project's actual
-   artifact names); a new advisory review check combining deterministic
-   rules (e.g. a comment citing a decision number that doesn't exist or
-   contradicts the cited decision — mechanically checkable) with
-   LLM-assisted semantic review for genuinely subjective judgments
-   (verbosity, unnecessary abstraction) — **the semantic half is never
-   `strict`/blocking** without an explicit, testable criterion backing
-   it, per the governing prompt's own constraint.
+   mapping eight categories onto this project's real artifacts:
+   implementation logic → `src/codecompass/*.py`; interface
+   documentation/docstrings → module/function docstrings; non-obvious
+   local comments → inline comments; architectural rationale/approved
+   decisions → `decisions/*.md`; behavioural requirements/invariants →
+   `planning/knowledge/<slug>/` Requirement records and `planning/
+   contracts/<slug>/` oracle contracts; verification evidence →
+   `planning/contracts/<slug>/*.yaml` results and Evidence records;
+   human-oriented project documentation → `docs/**`/`README.md`/
+   `ai-docs/**`; historical design context → `decisions/*.md`/`planning/
+   retros/`. Three named enforcement classes (`decisions/0085` §4):
+   **mechanical** (deterministic, independently reproducible — e.g. a
+   comment citing a nonexistent or contradicted `decisions/NNNN` —
+   strict/blocking where policy requires); **behavioural** (a violation
+   demonstrated via an accepted executable contract or real oracle
+   result); **semantic/editorial** (LLM-assisted verbosity/abstraction/
+   placement judgment — **always advisory** unless converted into an
+   independently testable requirement). **A prose contradiction with an
+   accepted ADR is never classified mechanically proven merely because
+   an LLM judges it contradictory** — that is semantic/editorial by
+   construction unless a real, citable mechanical check backs it.
 4. **Deliverables.** The placement policy document; a placement/quality
    review runnable against a real diff or a real slice of the codebase;
    at least one real, previously-unflagged placement defect found and
    fixed in CodeCompass's own source as the dogfood proof.
 5. **Prerequisites.** Phase 85.
 6. **Excluded.** Any new mandatory verbosity/length rule; any change
-   making an LLM judgment a merge-blocking gate on its own say.
-7. **Tests.** A deliberately-constructed placement defect (e.g. an ADR-
-   worthy rationale buried in a source comment) correctly flagged;
-   a deliberately-constructed non-defect (ordinary, appropriately-scoped
-   comment) correctly left unflagged — the false-positive control is as
-   load-bearing as the true-positive one, matching this project's
-   consistent discipline for every prior validator (`CLAUDE.md` §1
-   L-070/L-075).
+   making an LLM judgment a merge-blocking gate on its own say; treating
+   placement policy as a single-location-only rule (§1 above).
+7. **Tests.** A deliberately-constructed placement defect (e.g. an
+   ADR-worthy rationale buried in a source comment) correctly flagged;
+   **two** negative controls — an ordinary, appropriately-scoped comment
+   correctly left unflagged, **and** a real or constructed example where
+   extensive implementation comments are legitimately appropriate (e.g.
+   `oracle.py`'s own non-obvious subprocess/digest-handling comments)
+   also correctly left unflagged — both as load-bearing as the
+   true-positive case, matching this project's consistent discipline for
+   every prior validator (`CLAUDE.md` §1 L-070/L-075).
 8. **Dogfood scenario.** The review run against CodeCompass's own
    `src/codecompass/` and `planning/knowledge/`.
 9. **Exit gate.** At least one real placement defect in CodeCompass's
    own codebase is found and corrected as a direct result of this
-   phase's review, with the false-positive control demonstrated clean.
+   phase's review, with both false-positive controls demonstrated clean.
 10. **Risks.** Scope creep into a general code-style linter (explicitly
     not this phase's job — deterministic style/quality tooling already
     exists via `ruff`); subjective LLM judgment being mistaken for an
-    objective gate — the governing prompt's own named risk, mitigated by
-    §3's strict/advisory split.
+    objective gate, or a legitimate multi-location invariant being
+    mistaken for duplication — both mitigated by §3's three-class split
+    and §1's explicit "not single-location" clarification.
 
 ## Phase 87 — Documentation Schema and Knowledge-Compiled Documentation
 
-Not yet phase-planned. **New** (`decisions/0084` §2).
+Not yet phase-planned. **New** (`decisions/0084` §2); minimum suite,
+schema, and baseline methodology specified (`decisions/0085` §5-6).
 
 1. **Objective / value.** Professional project documentation — clear,
    concise, useful for its stated audience, not merely technically
    accurate Markdown — becomes an explicit, repeatable output of the
-   canonical knowledge system, via a user-defined schema (documents,
-   audiences, required sections, style/tone/verbosity, mandatory
-   examples and acceptance criteria), not a one-off clean-room exercise
-   repeated by hand each time.
+   canonical knowledge system, via a user-defined, versioned schema
+   (audience, purpose, required sections, depth/verbosity, tone/style,
+   required examples, evidence requirements, acceptance criteria —
+   Diátaxis as a default reference shape, not a mandatory structure), not
+   a one-off clean-room exercise repeated by hand each time.
 2. **Reused.** Phase 81B's clean-room isolation and broker
    (`prepare_cleanroom_branch.py`/`verify_cleanroom_isolation.py`/
    `cleanroom_broker.py`) for independent composition, unchanged; Phase
@@ -399,153 +481,233 @@ Not yet phase-planned. **New** (`decisions/0084` §2).
    reconstruction → comparison → publication) as the compiler's own
    internal pipeline shape, now schema-driven and reusable rather than
    bespoke; `spec_docs.py`'s existing project-document tracking; Phase
-   84's API for section→knowledge mapping and gap detection;
+   84's read-only API for section→knowledge mapping and gap detection;
    `context-quality-evaluation.md`'s existing advantage-over-default-
-   pathway rubric for the coding-context side of validation.
-3. **Architectural changes.** A documentation-schema format (what to
-   produce, for whom, with what required sections/style/examples); a
-   compiler that maps schema sections to required knowledge, retrieves
-   evidence/requirements/verified facts via Phase 84's API, identifies
-   material knowledge gaps *before* writing, assembles bounded,
-   section-specific context packets, composes each section through the
-   existing clean-room broker, and validates factual grounding,
-   structure, links, and executable examples before publication. **No
-   second documentation knowledge store** — the compiler reads Phase
-   84's API and `planning/knowledge/`; it does not cache or duplicate
-   canonical facts into its own format.
+   pathway rubric for the coding-context side of validation; this
+   project's existing filenames/directory conventions, retained where
+   they already serve the required purpose (`decisions/0085` §5).
+3. **Architectural changes.** A versioned documentation-schema format; a
+   compiler pipeline (`decisions/0085` §5): retrieve accepted knowledge
+   through Phase 84's API only → resolve relevant evidence → map
+   knowledge to required schema sections → identify material gaps
+   *before* writing → generate bounded, section-specific knowledge
+   packets → compose each section through the existing clean-room broker
+   → independently validate technical claims and executable examples →
+   assess usefulness/clarity/audience suitability as a step distinct
+   from factual validation → preserve provenance on demand without
+   cluttering ordinary prose. **No second documentation knowledge
+   store** — the compiler reads Phase 84's API and `planning/knowledge/`
+   only; it does not cache or duplicate canonical facts.
 4. **Deliverables.** The schema format and compiler; two documented
    modes — **clean reconstruction** (no access to existing narrative
    documentation, matching Phase 79/80's own model-blind discipline;
    legacy docs usable only as a gap detector, every candidate gap
    independently verified before acting on it) and **incremental
-   maintenance** (updates affected sections after an accepted knowledge
-   change, preserving approved human editorial improvements, never
-   treating old prose as evidence of current implementation); a
-   provenance mechanism available on demand without cluttering main
-   prose (reusing Phase 81's existing `codecompass-grounded-by`-style
-   marker convention); an editorial-quality assessment step distinct
-   from factual-grounding validation.
+   maintenance** (*manually triggered* updates to affected sections after
+   an accepted knowledge change, preserving approved human editorial
+   improvements, never treating old prose as evidence of current
+   implementation — change-*driven*, automatic maintenance is Phase 89's
+   own distinct capability, not required here); a provenance mechanism
+   available on demand (reusing Phase 81's `codecompass-grounded-by`-
+   style marker convention); an editorial-quality assessment step
+   distinct from factual-grounding validation. **The complete minimum
+   publication suite is required at closeout** (`decisions/0085` §5):
+   README.md (problem, value, capabilities, installation, first steps);
+   Getting Started (`docs/getting-started.md`, a tested tutorial);
+   Concepts (`docs/concepts/*.md`, extended with an explicit page on
+   epistemic distinctions and the reconciliation loop — a named gap, not
+   assumed already covered); Architecture (`docs/architecture/
+   overview.md`/`components.md`/`data-and-control-flow.md`); Reference
+   (`docs/reference/cli.md`/`configuration.md`, generated deterministically
+   where practical — currently hand-maintained, an improvement
+   opportunity, not assumed solved); Contributor Guide
+   (`CONTRIBUTING.md`/`docs/development/contributing.md`). The bounded
+   first demonstrator (§8 below) stays README-plus-selected-support only;
+   the full suite is a closeout requirement, not a demonstrator
+   requirement.
 5. **Prerequisites.** Phase 84 (knowledge API); Phase 86 (placement
    policy informs what belongs in generated documentation vs. elsewhere).
-6. **Excluded.** A complete visual Wiki (already deferred,
-   `v2-roadmap.md`'s own "Deferred scope" table — this phase produces
-   Markdown/text documentation only); any change to canonical semantics
-   from a presentation-only documentation edit (a documentation edit
-   proposing a new *fact* enters the existing knowledge-reconciliation
-   process exactly as Phase 81 already requires; a wording-only
-   improvement does not touch canonical records, reusing Phase 81's
-   existing presentation/semantics split).
+6. **Excluded.** A complete visual Wiki (already deferred); automatic,
+   change-driven documentation maintenance (Phase 89); any change to
+   canonical semantics from a presentation-only documentation edit
+   (reusing Phase 81's existing presentation/semantics split, unchanged).
 7. **Tests.** A fail-closed check that factually-ungrounded generated
-   prose is rejected before publication (the mechanism's own minimal-
-   content edge case per `CLAUDE.md` §1 L-070 — an empty or near-empty
+   prose is rejected before publication (an empty or near-empty
    knowledge base for a schema section must produce an explicit gap
-   report, never fabricated filler); a real incremental-maintenance run
-   that updates exactly the section affected by a real knowledge change
-   and leaves unrelated sections untouched (the false-positive control).
-8. **Dogfood scenario.** The required first demonstrator (§7 below,
-   governing prompt's own requirement): a new README and small
-   supporting documentation set for CodeCompass itself, generated from a
-   user-defined schema and curated canonical knowledge, in clean-
-   reconstruction mode.
-9. **Exit gate.** The demonstrator meets the governing prompt's own
-   acceptance bar, independently assessed: an unfamiliar developer can
-   understand what CodeCompass does and why; install/quick-start
-   instructions demonstrably work; current functionality is
+   report, never fabricated filler, per `CLAUDE.md` §1 L-070); a real
+   manually-triggered incremental-maintenance run that updates exactly
+   the section affected by a real knowledge change and leaves unrelated
+   sections untouched (the false-positive control); an independent
+   reader evaluation; at least one successful clean-environment
+   onboarding exercise (`decisions/0085` §6, both now required, not
+   optional).
+8. **Dogfood scenario.** The required first demonstrator: a new README
+   and small supporting documentation set for CodeCompass itself,
+   generated from a user-defined schema and curated canonical knowledge,
+   in clean-reconstruction mode; the complete minimum suite (§4) is then
+   produced before closeout.
+9. **Exit gate.** The demonstrator and full suite meet the governing
+   prompt's own acceptance bar, independently assessed: an unfamiliar
+   developer can understand what CodeCompass does and why; install/
+   quick-start instructions demonstrably work; current functionality is
    distinguished from future plans; technical claims trace to legitimate
    evidence; unsupported claims/contradictions are identified, not
-   hidden; and the output requires **materially less human correction**
-   than Phase 80's own prior clean-room reconstruction required (a
-   concrete, already-recorded before/after comparison point — Phase 80's
-   retro documents its own real correction count). Reader usefulness is
-   assessed independently of, not instead of, factual correctness.
+   hidden; the README does not resemble an audit report. **Documentation
+   quality is measured against a reproducible baseline defined at this
+   phase's own planning time** (`decisions/0085` §6) — matched
+   requirements, pinned revisions, a fixed reader-task evaluation, an
+   independent editorial rubric, technical-accuracy/grounding checks,
+   tested installation/examples, correction count/severity, and human
+   editing/review time — reusing Phase 80's own historical effort only if
+   it can be reliably reconstructed against this standard, and running a
+   fresh matched comparison instead if it cannot. **No historical effort
+   estimate is invented and no improvement claim is made from
+   incomparable measurements.** Reader usefulness is assessed
+   independently of, not instead of, factual correctness.
 10. **Risks.** Producing an accurate-but-unhelpful "investigation report
-    disguised as documentation" — the governing prompt's own named
-    failure mode; mitigated by the explicit, separate editorial-quality
-    assessment step (§4) and by excluding excessive provenance/
-    implementation-history/internal-planning detail from the generated
-    prose by construction (provenance stays available on demand, never
-    inline in the main narrative).
+    disguised as documentation"; a generated README drifting toward this
+    project's own dense, audit-log-style internal planning prose
+    (`CONTEXT.md`/`ROADMAP.md`'s own style is explicitly not a template
+    for reader-facing documents, `decisions/0085` §5) — both mitigated by
+    the explicit, separate editorial-quality assessment step and by
+    excluding excessive provenance/implementation-history/internal-
+    planning detail from generated prose by construction.
 
-## Phase 88 — Agent Integration, MCP, and Incremental Reconciliation
+## Phase 88 — Agent Integration and MCP
 
-Not yet phase-planned. **Merges the old Phase 84 (Agent Integration and
-MCP) and old Phase 85 (Persistent Knowledge and Incremental
-Reconciliation)**, per the governing prompt's own §10 point 8; extended
-to also cover documentation reconciliation now that Phase 87 exists
-(`decisions/0084` §2).
+Not yet phase-planned. **Split from the old merged Phase 88** (which
+itself merged old Phase 84/Agent-Integration-and-MCP and old Phase 85/
+Persistent-Knowledge-and-Reconciliation, `decisions/0084` §2) **back into
+an MCP-only phase, since MCP and reconciliation are independently
+deliverable** (`decisions/0085` §3). Reconciliation is now Phase 89,
+below.
 
 1. **Objective / value.** An existing frontier coding agent (Claude Code
    first) completes a genuine Ledgerkit change using CodeCompass's
    knowledge, assurance, and generated documentation through a standard
-   interface, not a bespoke workflow; a second genuine Ledgerkit task
-   measurably benefits from knowledge (and now documentation) reconciled
-   during the first.
-2. **Reused.** Everything from 82-87; `knowledge_intermediate.py`'s
-   existing reconciliation flow (the dual-hash anchor, the `CONFLICT`
-   state) extended to trigger from source/test *changes*, not only
-   manual projection edits; no new scheduler, no replacement for Claude
+   interface, not a bespoke workflow.
+2. **Reused.** Everything from 82-87, consumed through Phase 84's API —
+   this phase **must not duplicate** Phase 84's retrieval/traversal logic
+   or Phase 83's impact-analysis logic inside the MCP server itself
+   (`decisions/0085` §3's explicit constraint); no replacement for Claude
    Code's own harness (`CLAUDE.md` §8's "CodeCompass never spawns or
    coordinates agents" applies unchanged).
-3. **Architectural changes.** A minimal, read-mostly MCP server built
-   directly on Phase 84's knowledge API (contract retrieval, evidence/
-   provenance tracing, impact assessment via Phase 83, context-packet
-   compilation, oracle execution/result retrieval, gap reporting,
-   documentation retrieval via Phase 87) — new dependency on an MCP
-   library requires its own licence-compatibility check before adoption
-   (GPL-3.0-or-later project); a change-detection trigger (source/test
-   diff → affected-knowledge *and* affected-documentation-section
-   invalidation) layered on the existing reconciliation flow — no
-   general-purpose event bus or scheduler, matching `CLAUDE.md` §1's
-   L-087 "observing a change differs from acting on it" discipline.
-4. **Deliverables.** MCP tool surface, consuming Phase 84's API rather
-   than reimplementing retrieval/traversal logic; adaptive task-specific
-   context packets (reuses `context-quality-evaluation.md`'s existing
-   rubric); stale-claim/contradiction/stale-documentation-section
-   detection on real code change; targeted doc-impact identification
-   (reuses `spec_docs.py` and Phase 87's own section→knowledge mapping);
-   cross-phase provenance; a genuine Ledgerkit development task run
-   through the MCP surface, followed by a second genuine Ledgerkit task
-   that visibly benefits from knowledge reconciled from the first.
+3. **Architectural changes.** A minimal, bounded, read-mostly MCP server
+   built directly on Phase 84's knowledge API: contract retrieval,
+   evidence/provenance tracing, context compilation, impact assessment
+   via Phase 83, oracle execution/result retrieval (controlled
+   verification execution, not arbitrary execution), gap reporting,
+   documentation retrieval via Phase 87; permission and untrusted-content
+   handling as a first-class design concern, not an afterthought; a new
+   dependency on an MCP library requires its own licence-compatibility
+   check before adoption (GPL-3.0-or-later project). No general-purpose
+   event bus or scheduler.
+4. **Deliverables.** MCP tool surface, consuming Phase 84's API and
+   Phase 83's impact analysis rather than reimplementing them; adaptive
+   task-specific context packets (reuses `context-quality-evaluation.md`'s
+   existing rubric); permission/untrusted-content handling; a genuine
+   Ledgerkit development task completed through the supported interface.
 5. **Prerequisites.** Phase 84 (API), Phase 83 (impact analysis), Phase
-   87 (documentation surface to reconcile).
+   87 (documentation surface to retrieve).
 6. **Excluded.** Any CodeCompass-specific agent orchestration beyond
    exposing existing capabilities as callable tools; local/offline model
-   routing; a general-purpose event bus or scheduler for reconciliation
-   triggers.
+   routing; a general-purpose event bus or scheduler; incremental
+   reconciliation itself (Phase 89 — independently deliverable, not a
+   prerequisite of this phase or vice versa).
 7. **Tests.** Protocol-contract tests against the MCP schema; a
    malicious/untrusted-content handling test (repository content and MCP
    responses treated as potentially untrusted instructions, never
-   auto-executed); a real source change that should invalidate a
-   specific prior Claim and/or documentation section, verified to
-   actually do so; a source change that should *not* invalidate an
-   unrelated Claim/section, verified to leave it alone (the false-
-   positive control is as load-bearing as the true-positive one).
+   auto-executed).
 8. **Dogfood scenario.** Claude Code performs one real Ledgerkit change
    using only the MCP surface for CodeCompass context/assurance/
-   documentation, then a second genuine Ledgerkit task where the
-   agent's context packet visibly reflects knowledge reconciled from the
-   first task's own real findings.
+   documentation.
 9. **Exit gate.** The agent completes a genuine development change using
    CodeCompass's context, independent assurance, and documentation
-   through supported interfaces — not merely "the MCP server starts" —
-   and the second task measurably benefits from the first, evidenced
-   (e.g. a `context-evaluator` comparison against a control packet
-   withholding the reconciled knowledge), not asserted.
-10. **Risks.** Scope creep toward a second scheduler (the named failure
-    mode this phase must actively resist); "measurably benefits" needing
-    a concrete, pre-registered measurement defined before the second
-    task runs, borrowing Phase 89's own methodology document rather than
-    inventing a separate one.
+   through supported interfaces — not merely "the MCP server starts."
+10. **Risks.** Scope creep toward reimplementing Phase 84/83's own logic
+    inside the server instead of consuming it — the single named risk
+    this phase must actively resist (`decisions/0085` §3).
 
-## Phase 89 — Comparative Development Trials
+## Phase 89 — Incremental Knowledge and Documentation Reconciliation
 
-**= old Phase 86, renumbered only; content unchanged.** Not yet
-phase-planned. Full trial design (arms, metrics, controls, baseline
-methodology): `planning/v2-evaluation-methodology.md`, amended
-2026-10-23 (`decisions/0084` §4) to add a documentation-quality metric
-and a concise-repository-instructions comparison baseline — the
-existing three-arm design, held-comparable conditions, and
-pre-registration discipline are unchanged.
+Not yet phase-planned. **Split from the old merged Phase 88** — this is
+the reconciliation half, carrying forward the old Phase 85's full
+original content (`decisions/0084` §2's merge, now un-merged by
+`decisions/0085` §3). **Operates independently of MCP transport** — does
+not require Phase 88.
+
+1. **Objective / value.** A second genuine Ledgerkit development task
+   measurably benefits from knowledge (and compiled documentation)
+   reconciled during an earlier task, via source/test change detection
+   that identifies affected canonical knowledge, reports staleness and
+   conflicts explicitly, maps documentation sections to the knowledge
+   they depend on, and invalidates/regenerates only the affected
+   documentation — while preserving unrelated documents and accepted
+   editorial changes.
+2. **Reused.** `knowledge_intermediate.py`'s existing reconciliation flow
+   (the dual-hash anchor, the `CONFLICT` state), extended to trigger from
+   source/test *changes*, not only manual projection edits; `spec_docs.py`
+   and Phase 87's own section→knowledge mapping for documentation-impact
+   identification; Phase 84's read-only API for affected-knowledge
+   lookup; no new scheduler.
+3. **Architectural changes.** A change-detection trigger (source/test
+   diff → affected-knowledge *and* affected-documentation-section
+   invalidation) layered on the existing reconciliation flow — no
+   general-purpose event bus or scheduler, matching `CLAUDE.md` §1's
+   L-087 "observing a change differs from acting on it" discipline. This
+   is the capability that upgrades Phase 87's own *manually triggered*
+   incremental-maintenance mode into *change-driven* maintenance
+   (`decisions/0085` §3's explicit distinction) — it does not replace or
+   redesign Phase 87's compiler.
+4. **Deliverables.** Stale-claim/contradiction/stale-documentation-
+   section detection on a real code change; targeted doc-impact
+   identification; section-to-knowledge dependency mapping; targeted
+   documentation invalidation and regeneration; preservation of unrelated
+   documents and accepted editorial changes; a demonstrated second
+   genuine Ledgerkit task that visibly benefits from knowledge reconciled
+   from an earlier one.
+5. **Prerequisites.** Phase 84 (API), Phase 87 (documentation surface to
+   reconcile). **Not Phase 88** — confirmed independently deliverable
+   (`decisions/0085` §3/§8).
+6. **Excluded.** The MCP surface itself (Phase 88); any general-purpose
+   event bus or scheduler for reconciliation triggers; any change to
+   Phase 87's own clean-reconstruction/manual-incremental-maintenance
+   modes.
+7. **Tests.** A real source change that should invalidate a specific
+   prior Claim and/or documentation section, verified to actually do so;
+   a source change that should *not* invalidate an unrelated Claim/
+   section, verified to leave it alone (the false-positive control is as
+   load-bearing as the true-positive one).
+8. **Dogfood scenario.** One real Ledgerkit task, followed by a second
+   genuine Ledgerkit task where the agent's context packet and
+   documentation visibly reflect knowledge reconciled from the first
+   task's own real findings — run through the ordinary CLI/API surface,
+   not dependent on Phase 88's MCP server existing.
+9. **Exit gate.** The second task measurably benefits from the first,
+   evidenced (e.g. a `context-evaluator` comparison against a control
+   packet withholding the reconciled knowledge), not asserted — achieved
+   without any dependency on an MCP server.
+10. **Risks.** "Measurably benefits" needing a concrete, pre-registered
+    measurement defined before the second task runs, borrowing Phase
+    90's own methodology document rather than inventing a separate one;
+    conflating this phase's own change-driven trigger with Phase 87's
+    already-shipped manual mode (named explicitly in §3 to prevent this).
+
+## Phase 90 — Comparative Development Trials
+
+**= old Phase 89 (itself old Phase 86, `decisions/0084`'s renumbering),
+renumbered again by `decisions/0085` §8; methodology strengthened, not
+replaced.** Not yet phase-planned. Full trial design (arms, metrics,
+controls, baseline methodology): `planning/v2-evaluation-methodology.md`,
+amended twice — 2026-10-23 (`decisions/0084` §4, a documentation-quality
+metric and a concise-repository-instructions comparison baseline) and
+again the same day (`decisions/0085` §7: Arm A is now included in
+documentation-quality measurement rather than excluded; the
+concise-instructions comparator is now mandatory for the principal
+net-efficiency conclusion, not merely optional; cumulative benefit is
+measured across a genuine sequence of successive tasks, not one task) —
+the existing three-arm design, held-comparable conditions, and
+pre-registration discipline are otherwise unchanged.
 
 1. **Objective / value.** Produce reproducible evidence on whether
    CodeCompass improves verified development outcomes net of total
@@ -554,31 +716,41 @@ pre-registration discipline are unchanged.
 2. **Reused.** `context-quality-evaluation.md`'s "advantage over the
    default pathway" metric; Ledgerkit as the shared task substrate
    across all arms.
-3. **Architectural changes.** None required beyond what 82-88 already
+3. **Architectural changes.** None required beyond what 82-89 already
    deliver — this phase is evaluation, not new capability.
 4. **Deliverables.** Three-arm comparison (conventional / knowledge-
-   assisted / assurance-assisted) on comparable tasks, now also
-   reporting documentation-quality/maintenance overhead and a
-   concise-instructions comparison point; a reproducible report,
-   published whether the result is positive, neutral, or negative.
-5. **Prerequisites.** Phases 83, 84, 87, 88 all genuinely operable.
+   assisted / assurance-assisted) on a successive sequence of comparable
+   tasks, now also reporting documentation-quality/maintenance overhead
+   for every arm including Arm A, and a mandatory concise-instructions
+   comparison point run under equivalent conditions; a reproducible
+   report, published whether the result is positive, neutral, or
+   negative.
+5. **Prerequisites.** Phases 83, 84, 87, 88, and **89** all genuinely
+   operable — Phase 89 is newly required here (`decisions/0085` §8):
+   measuring cumulative/subsequent-task knowledge reuse needs a real
+   reconciliation capability to measure reuse against.
 6. **Excluded.** Production source-blind coding (the optional arm is
    bounded/research-only, not a release dependency); any numeric
-   improvement target set in advance of this phase's own baseline.
+   improvement target set in advance of this phase's own baseline; the
+   concise-instructions comparator counting as a v2 release dependency on
+   its own, even though it is now mandatory for the principal conclusion.
 7. **Tests.** N/A in the usual code-test sense — the "test" is the trial
    protocol's own pre-registration discipline.
-8. **Dogfood scenario.** The trial itself, against real Ledgerkit tasks.
+8. **Dogfood scenario.** The trial itself, against a real sequence of
+   Ledgerkit tasks.
 9. **Exit gate.** Reproducible evidence, reported honestly including a
-   neutral/negative outcome.
+   neutral/negative outcome, with the mandatory concise-instructions
+   comparison and Arm A's own documentation-outcome score both present
+   in the report.
 10. **Risks.** Confounding cost/ability differences between arms (model,
     task, baseline, oracle, tooling permissions, resource ceilings must
     be held comparable) — fixed in advance by
     `planning/v2-evaluation-methodology.md`.
 
-## Phase 90 — External Validation and Adoption
+## Phase 91 — External Validation and Adoption
 
-**= old Phase 87, renumbered only; content unchanged.** Not yet
-phase-planned.
+**= old Phase 90 (itself old Phase 87), renumbered only; content
+unchanged.** Not yet phase-planned.
 
 1. **Objective / value.** An unfamiliar developer adopts CodeCompass on
    an independent repository and completes an evidence-backed,
@@ -590,10 +762,10 @@ phase-planned.
 4. **Deliverables.** A CodeCompass self-development trial; one genuinely
    independent external project validated (selected on value/maturity/
    cost at the time); updated `codecompass-template` onboarding,
-   including the Phase 84-88 adoption levels once Level 2 is real
+   including the Phase 84-89 adoption levels once Level 2 is real
    enough to document honestly; documented supported/unsupported project
    types.
-5. **Prerequisites.** Phase 89's evidence exists (positive, neutral, or
+5. **Prerequisites.** Phase 90's evidence exists (positive, neutral, or
    negative — this phase still runs to validate adoption mechanics).
 6. **Excluded.** Any commitment to the Haskell adapter specifically.
 7. **Tests.** Reproducibility/compatibility checks on the external
@@ -604,10 +776,10 @@ phase-planned.
 10. **Risks.** Picking an external project for symbolic reasons rather
     than genuine adoption value.
 
-## Phase 91 — v2.0 Hardening and Release
+## Phase 92 — v2.0 Hardening and Release
 
-**= old Phase 88, renumbered only; content unchanged.** Not yet
-phase-planned.
+**= old Phase 91 (itself old Phase 88), renumbered only; content
+unchanged.** Not yet phase-planned.
 
 1. **Objective / value.** A reproducible, usable, model-neutral
    open-source change-assurance system, with demonstrated value beyond
@@ -621,8 +793,8 @@ phase-planned.
    isolation review; end-to-end regression; documentation/packaging;
    template compatibility; published benchmark methodology and results;
    explicit known limitations; release-readiness review.
-5. **Prerequisites.** Phase 90 complete.
-6. **Excluded.** Any feature not already delivered by 83-90 — this phase
+5. **Prerequisites.** Phase 91 complete.
+6. **Excluded.** Any feature not already delivered by 83-91 — this phase
    hardens and ships, it does not add scope.
 7. **Tests.** Full end-to-end regression across both repositories.
 8. **Dogfood scenario.** The release process itself.
@@ -630,7 +802,7 @@ phase-planned.
    prior exit gate — never on the nominal phase number alone.
 10. **Risks.** Pressure to ship on schedule rather than evidence.
 
-## Federation-compatibility review (amendment, 2026-10-21, `decisions/0079`; re-confirmed 2026-10-23, `decisions/0084` §5)
+## Federation-compatibility review (amendment, 2026-10-21, `decisions/0079`; re-confirmed 2026-10-23, `decisions/0084` §5 and `decisions/0085` §8)
 
 Direct user request to review this roadmap for future compatibility with
 a generic cross-project semantic overlay capability, without renumbering,
@@ -663,33 +835,35 @@ stage sequence: `planning/post-v2-cross-project-overlay-backlog.md`.
   discipline, not its canonical knowledge, matching the Wiki's own
   "read-only projection, never a fourth canonical store" constraint
   (`decisions/0079` §1).
-- **88 (Agent Integration, MCP, and Incremental Reconciliation)**:
-  reviewed — the MCP tool surface is not designed around an implicit
-  single-project assumption (each call already takes a project/
-  workspace context implicitly). Forward-looking note unchanged from the
-  original review: a future federated MCP capability would add a
-  `project_id` parameter to existing calls rather than a parallel tool
-  set. The reconciliation invalidation rule this phase carries forward
-  from the old Phase 85 is the same rule
-  `post-v2-cross-project-overlay-backlog.md`'s own "Invalidation" section
-  cites by number — updated to Phase 88 by this realignment, with no
-  change to the rule itself.
-- **89 (Comparative Development Trials)**: reviewed — the existing
+- **88 (Agent Integration and MCP)**: reviewed — the MCP tool surface is
+  not designed around an implicit single-project assumption (each call
+  already takes a project/workspace context implicitly). Forward-looking
+  note unchanged from the original review: a future federated MCP
+  capability would add a `project_id` parameter to existing calls rather
+  than a parallel tool set.
+- **89 (Incremental Knowledge and Documentation Reconciliation)**:
+  reviewed — operates entirely within one project's own Layer A
+  knowledge; no federation surface. The reconciliation invalidation rule
+  this phase carries forward from the old Phase 85 (via the old merged
+  Phase 88) is the same rule `post-v2-cross-project-overlay-backlog.md`'s
+  own "Invalidation" section cites by number — updated to Phase 89 by
+  this amendment, with no change to the rule itself.
+- **90 (Comparative Development Trials)**: reviewed — the existing
   three-arm design is unchanged. Cross-project overlay capability does
   not exist yet when this phase is expected to run and must not be
   introduced as an unmeasured, uncontrolled advantage in any arm.
-- **90 (External Validation and Adoption)**: reviewed — independent
+- **91 (External Validation and Adoption)**: reviewed — independent
   adoption on a genuinely independent repository remains the primary
   gate, unchanged. Neither the Haskell adapter nor any cross-project
   overlay capability is required for this phase's exit gate.
-- **91 (v2.0 Hardening and Release)**: reviewed — public interface
-  stabilisation covers only what Phases 83-90 actually deliver. This
+- **92 (v2.0 Hardening and Release)**: reviewed — public interface
+  stabilisation covers only what Phases 83-91 actually deliver. This
   phase's documentation must not describe federation/overlay
   capabilities as available, unchanged from the original review.
 
 ## Post-v2: Cross-Project Semantic Overlay track
 
-**Explicitly gated, not part of the mandatory Phase 82-91 sequence.**
+**Explicitly gated, not part of the mandatory Phase 82-92 sequence.**
 CodeCompass should eventually support independently constructed project
 knowledge models that can be overlaid and compared through explicit,
 evidence-backed semantic relationships — generic capability, with
@@ -706,33 +880,35 @@ No stage begins without its own future `CLAUDE.md` §1 plan file.
 
 ## Deferred scope (not lost, not silently absorbed)
 
-Per the original governing prompt's §5 and re-confirmed by the
-2026-10-23 realignment's own governing prompt, each item below is
-recorded as **deferred**. Revisit trigger is the same for all unless
-noted: "Phase 89 evidence, or a specific post-v2 user request, shows
-this item is now load-bearing for a real task."
+Per the original governing prompt's §5 and re-confirmed by both the
+2026-10-23 realignment and its same-day corrective amendment, each item
+below is recorded as **deferred**. Revisit trigger is the same for all
+unless noted: "Phase 90 evidence, or a specific post-v2 user request,
+shows this item is now load-bearing for a real task."
 
 | Item | Status | Note |
 |---|---|---|
 | Full Pi-local documentation generation | deferred | Local inference remains a legitimate post-v2 opportunity, not discarded. |
-| Complete visual Contract Wiki | deferred | A textual/Markdown projection (Phase 87's compiler, reusing Phase 81's rendering) is in scope for 82-88; a *visual* interface is not. |
+| Complete visual Contract Wiki | deferred | A textual/Markdown projection (Phase 87's compiler, reusing Phase 81's rendering) is in scope for 82-89; a *visual* interface is not. |
 | Pi-local 3B model optimisation | deferred | No local/offline model is available in this environment today. |
 | General-purpose DAG scheduling | deferred | Directly contradicts `CLAUDE.md` §8's "CodeCompass never spawns or coordinates agents" unless and until that fixed point itself is revisited. |
 | Sophisticated hybrid model routing | deferred | No evidence yet that routing (vs. a single frontier model) is the bottleneck. |
 | Predictive model allocation | deferred | Same as above. |
 | Comprehensive autonomous workflow orchestration | deferred | Same `CLAUDE.md` §8 constraint as DAG scheduling. |
-| Production source-blind coding | deferred, optional research arm only | Phase 89 may run a *bounded* research-only instance; never a v2 release dependency. |
-| Full Haskell/hledger integration | deferred | Phase 90 explicitly does not assume the Haskell adapter is the first external proof. |
+| Production source-blind coding | deferred, optional research arm only | Phase 90 may run a *bounded* research-only instance; never a v2 release dependency. |
+| Full Haskell/hledger integration | deferred | Phase 91 explicitly does not assume the Haskell adapter is the first external proof. |
 | Advanced commercial analytics | deferred | Out of scope for an open-source generic mechanism; preserved as a distinct, optional, externally-built layer. |
-| Broad language adapters beyond what already exists | deferred | No new adapter work is in scope for Phases 83-91; a reference-project trial finding a real gap is the revisit trigger. |
+| Broad language adapters beyond what already exists | deferred | No new adapter work is in scope for Phases 83-92; a reference-project trial finding a real gap is the revisit trigger. |
 
 ## What this roadmap does not do
 
-- It does not mark any Phase 83-91 row `done` — none has been
+- It does not mark any Phase 83-92 row `done` — none has been
   implemented.
-- It does not reopen or rewrite Phase 81, 81B, or Phase 82 (`done`).
+- It does not reopen or rewrite Phase 81, 81B, or Phase 82 (`done`), or
+  change Phase 83's own agreed objective or exit criteria.
 - It does not commit to a numerical improvement target anywhere —
   `planning/v2-evaluation-methodology.md` defines measurement before any
   benchmark is run.
 - It does not renumber, reopen, or weaken any Post-v2 Cross-Project
-  Semantic Overlay stage's own exit gate (`decisions/0084` §5).
+  Semantic Overlay stage's own exit gate (`decisions/0084` §5,
+  reconfirmed `decisions/0085` §8).
