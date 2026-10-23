@@ -9,6 +9,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **v2 roadmap approval and Phase 83/84 planning** (planning only, no
+  `src/` change, direct user request, "CodeCompass Orchestrator — Approve
+  v2 Roadmap and Plan Phases 83-84"): approves the corrected roadmap
+  (Phases 82-92, `decisions/0084`/`0085`) as governing, after
+  re-confirming against live repository state — not the prior session's
+  own retelling — that Phase 82 remains `done` and Phase 83 remains next,
+  neither reopened; that the CLI's `query`/`knowledge`/`enrich` sub-apps
+  are unchanged; and that `context-graph.db`'s real `rebuild_deterministic`
+  wholesale-deletes and reinserts several edge/doc/git tables on every
+  sync while upserting `vendors`/`symbols`/`source_files`/`source_symbols`
+  incrementally by natural key. Produces two new implementation-ready
+  plans. `planning/phase-83-semantic-change-assurance.md` grounds its
+  dogfood scenario in a real, confirmed gap found by direct inspection of
+  Ledgerkit's own test suite: `reports.py::balance_from_spec`'s OR-union
+  section-account matching can double-count a posting matching more than
+  one `section.accounts` pattern, and no existing Ledgerkit test asserts
+  the resulting arithmetic for that case; resolves "structural proximity
+  vs. genuine behavioural risk" via symbol-line-range localisation against
+  the *target checkout's own* graph (confirmed to require Ledgerkit's own
+  `context-graph.db`, never CodeCompass's self-referential one, which has
+  no real Ledgerkit data) cross-referenced against existing `EV-*.yaml`
+  `source_ref` citations — no new graph table, no call-graph.
+  `planning/phase-84-consolidated-knowledge-api.md` resolves the governing
+  prompt's three mandatory architectural considerations — stable
+  identities across a confirmed-volatile graph rebuild, snapshot
+  consistency, and primary authority vs. derived indexes — by
+  generalising already-shipped precedent (`decisions/0038`'s natural-key
+  table; the `meta` table's existing revision fields;
+  `derive_epistemic_profile`'s existing epistemic-currency distinction)
+  rather than new infrastructure, and migrates exactly one existing
+  command (`query relations`) onto the new API as proof it is not a
+  redundant wrapper. Updates `planning/ROADMAP.md` and `planning/
+  CONTEXT.md`. Neither phase is authorised to implement; no `src/` change;
+  `decisions/0078`-`0085` are not edited.
+
 - **v2 roadmap corrective amendment** (planning only, no `src/` change,
   direct user request, `decisions/0085`, "CodeCompass Orchestrator —
   Corrective Amendment to v2 Knowledge-Driven Development Roadmap"):

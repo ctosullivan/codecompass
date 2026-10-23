@@ -5,8 +5,14 @@ and Priority A-F reconciliation: `decisions/0078`. This file is the
 dependency-aware phase sequence and per-phase planning content required
 before any Phase 82-92 implementation begins. **No implementation has
 occurred under this file beyond Phase 82** — see `CLAUDE.md` §1: a phase
-begins only once its own `planning/phase-N-*.md` exists, and no such
-file exists yet for 83-92.
+begins only once its own `planning/phase-N-*.md` exists. **Approved as
+the governing roadmap 2026-10-24** ("CodeCompass Orchestrator — Approve
+v2 Roadmap and Plan Phases 83-84"), subject to no intervening material
+change (none found). Implementation-ready plans now exist for Phase 83
+(`planning/phase-83-semantic-change-assurance.md`) and Phase 84
+(`planning/phase-84-consolidated-knowledge-api.md`) — neither is
+authorised to implement without separate, explicit approval; no plan
+file exists yet for 85-92.
 
 **Realigned 2026-10-23** (`decisions/0084`, "CodeCompass Orchestrator —
 v2 Strategic Roadmap Realignment") around **Knowledge-Driven Software
@@ -181,8 +187,12 @@ PASS. Full detail: `planning/ROADMAP.md`'s own Phase 82 row.
 
 ## Phase 83 — Semantic Change Assurance
 
-*First major value demonstration.* Not yet phase-planned; scoped here
-at roadmap depth only. **Unchanged by the 2026-10-23 realignment** —
+*First major value demonstration.* **Implementation-ready, approved
+2026-10-24**: full plan `planning/phase-83-semantic-change-assurance.md`
+(not authorised to implement without separate, explicit approval). The
+roadmap-depth scope below is preserved unchanged by that plan — see the
+plan file for the concrete, evidence-grounded scenario and architecture.
+**Unchanged by the 2026-10-23 realignment** —
 sequenced first because it is the next-available, already-scoped
 demonstration of real assurance value on Phase 82's foundation, before
 further infrastructure investment (`decisions/0084` §2).
@@ -228,8 +238,14 @@ further infrastructure investment (`decisions/0084` §2).
 
 ## Phase 84 — Consolidated Knowledge API and Query CLI
 
-Not yet phase-planned. **New** (`decisions/0084` §1-2); logical model
-formalised and CLI scope narrowed (`decisions/0085` §1-2).
+**Implementation-ready, approved 2026-10-24**: full plan
+`planning/phase-84-consolidated-knowledge-api.md` (not authorised to
+implement without separate, explicit approval), resolving the three
+mandatory architectural considerations (stable identities, snapshot
+consistency, primary authority vs. derived indexes) against the real
+implementation. The roadmap-depth scope below is preserved unchanged.
+**New** (`decisions/0084` §1-2); logical model formalised and CLI scope
+narrowed (`decisions/0085` §1-2).
 
 1. **Objective / value.** One stable, **read-only**, typed read/
    traversal interface over the project's existing knowledge —

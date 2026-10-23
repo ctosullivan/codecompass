@@ -87,6 +87,17 @@ completed" below; Phase 82/83 remain unaffected by this correction too.
   `decisions/0084`'s own architecture decision (§1: one logical model,
   unchanged physical storage, no new database).
 
+**The corrected v2 roadmap (Phases 82-92) was approved 2026-10-24** as
+the governing strategic roadmap, direct user request ("CodeCompass
+Orchestrator — Approve v2 Roadmap and Plan Phases 83-84"), subject to no
+intervening material change (none found: Phase 82 remains `done`,
+unreopened; Phase 83 remains next, unreopened). The same session
+produced implementation-ready plans for Phase 83
+(`planning/phase-83-semantic-change-assurance.md`) and Phase 84
+(`planning/phase-84-consolidated-knowledge-api.md`) — see "What was just
+completed" below. Neither is authorised to implement without separate,
+explicit approval.
+
 **What exists now, concretely**:
 
 - `src/codecompass/oracle.py` (shipped, corrected twice): `OracleContract`/
@@ -165,6 +176,52 @@ unmodified by Phase 82 — full detail in `planning/ROADMAP.md`'s own rows
 and each phase's retro.
 
 ## What was just completed
+
+**v2 roadmap approval and Phase 83/84 planning**, 2026-10-24, direct user
+request ("CodeCompass Orchestrator — Approve v2 Roadmap and Plan Phases
+83-84," planning-only — explicit stop condition unchanged: neither phase
+is authorised to implement). Re-verified, against live repository state
+rather than the prior session's own retelling: Phase 82 still `done`,
+unreopened; Phase 83 still next, unreopened; the CLI's `query`/
+`knowledge`/`enrich` sub-apps unchanged; `context-graph.db`'s real
+`rebuild_deterministic` behaviour (which tables are wholesale deleted and
+reinserted on every sync vs. incrementally upserted by natural key);
+Ledgerkit's HEAD (`7224bb5`) and its own separate `context-graph.db`
+(confirmed CodeCompass's own self-referential graph has no real knowledge
+of Ledgerkit at all — any Phase 83 tooling must point explicitly at
+Ledgerkit's own graph). Approved the corrected roadmap (Phases 82-92,
+`decisions/0084`/`0085`) as governing, subject to this confirmation.
+Produced two new implementation-ready plan files:
+
+- `planning/phase-83-semantic-change-assurance.md` — grounds the Phase 83
+  dogfood scenario in a real, confirmed blind spot found by direct
+  reading of Ledgerkit's own test suite: `reports.py::balance_from_spec`'s
+  OR-union section-account matching can double-count a posting matching
+  more than one of `section.accounts`'s own patterns, and no existing
+  Ledgerkit test (including the one test that does construct multiple
+  patterns) asserts the resulting arithmetic, only membership. Resolves
+  "structural proximity vs. genuine behavioural risk" via symbol-line-
+  range localisation against the target checkout's own graph, cross-
+  referenced against existing `EV-*.yaml` `source_ref` citations — no new
+  graph table, no call-graph.
+- `planning/phase-84-consolidated-knowledge-api.md` — resolves the
+  governing prompt's three mandatory architectural considerations by
+  generalising already-shipped precedent rather than new infrastructure:
+  stable identities reuse `decisions/0038`'s natural-key-table pattern
+  (already solved once, for `doc_relation_enrichment`, for exactly the
+  wholesale-rebuild-volatility problem); snapshot consistency reuses the
+  `meta` table's existing revision fields, `_current_cited_hashes`, and
+  `derive_epistemic_profile`'s existing three-way currency distinction;
+  primary-authority-vs-derived-index is a pure classification tag over
+  existing record kinds. One existing command (`query relations`) is
+  migrated onto the new API as proof it is not a redundant wrapper; no
+  other command is migrated.
+
+Independent review of both plans against the governing prompt's own
+§6 checklist found no material defect requiring correction before
+closeout; see this session's own closing report for the point-by-point
+record. No implementation of either phase was undertaken; no `src/`
+change; `decisions/0078`-`0085` are not edited.
 
 **v2 roadmap corrective amendment**, 2026-10-23 (same day as the
 realignment below), direct user request ("CodeCompass Orchestrator —
@@ -300,28 +357,26 @@ amendments above.
 
 ## Next concrete step
 
-**Phase 83 (Semantic Change Assurance) is next, not yet phase-planned —
-unchanged by both the 2026-10-23 realignment and its same-day corrective
-amendment.** Per `CLAUDE.md` §1, writing `planning/phase-83-*.md` is the
-required next step before any Phase 83 implementation begins — scoped
-against evidence current at that time (`planning/v2-roadmap.md` records
-only roadmap-depth sequencing for it: detect a deliberately-introduced
-Ledgerkit semantic regression Phase 82's own contract should catch,
-without falsely claiming complete verification elsewhere in the same
-report; needs Phase 82's real contract/oracle-result schema to know what
-a change could violate and how to report a gap). After Phase 83, the
-twice-realigned sequence (`decisions/0084`, corrected `decisions/0085`)
-is: 84 (Consolidated Knowledge API and Query CLI, read-only scope,
-logical model formalised) → 85 (Self-Curation and Knowledge-Quality
-Validation) → 86 (Knowledge-Placement and Code-Quality Review, formal
-policy/enforcement classes) → 87 (Documentation Schema and
+**Phase 83 (Semantic Change Assurance) and Phase 84 (Consolidated
+Knowledge API and Query CLI) are both now phase-planned and
+implementation-ready**, approved 2026-10-24 alongside the corrected
+roadmap itself (see "What was just completed" above) —
+`planning/phase-83-semantic-change-assurance.md` and `planning/phase-84-
+consolidated-knowledge-api.md`. **Neither may begin implementation
+without a separate, explicit approval** — the governing prompt that
+produced both plans stopped deliberately short of authorising code.
+Phase 83 is sequenced first (not a hard dependency: `planning/v2-
+roadmap.md`'s Phase 84 entry and both new plan files confirm Phase 84
+does not require Phase 83 either). After both: 85 (Self-Curation and
+Knowledge-Quality Validation) → 86 (Knowledge-Placement and Code-Quality
+Review, formal policy/enforcement classes) → 87 (Documentation Schema and
 Knowledge-Compiled Documentation, minimum suite specified) → 88 (Agent
 Integration and MCP, split from the old merged phase) → 89 (Incremental
 Knowledge and Documentation Reconciliation, split from the old merged
 phase, independent of MCP) → 90 (Comparative Development Trials,
 methodology strengthened) → 91 (External Validation and Adoption) → 92
-(v2.0 Hardening and Release). None of 84-92 is phase-planned; each gets
-its own `CLAUDE.md` §1 plan file when it is actually next.
+(v2.0 Hardening and Release). None of 85-92 is phase-planned yet; each
+gets its own `CLAUDE.md` §1 plan file when it is actually next.
 
 Other open items requiring a human/lead decision, none currently claimed
 by a drafted plan or phase number:
