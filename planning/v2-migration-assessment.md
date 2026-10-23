@@ -8,6 +8,18 @@ considerations, and documentation maintenance requirements, consolidated
 into one document since they are all instances of the same underlying
 question — how v2 lands without breaking what v1 already shipped.
 
+**Updated 2026-10-23** (`decisions/0084`, "CodeCompass Orchestrator — v2
+Strategic Roadmap Realignment"): phase numbers below are updated to
+match the realigned sequence (Agent Integration/MCP and Persistent
+Knowledge/Reconciliation merged and renumbered from 84/85 to 88; External
+Validation renumbered from 87 to 90; v2.0 Hardening and Release
+renumbered from 88 to 91). The substantive compatibility posture —
+additive-only through Phase 88, no `context-graph.db` migration, no
+existing CLI command removed — is unchanged, and if anything
+strengthened: the four newly-inserted phases (84-87) add new library
+code, new files, and new CLI surfaces, never new fields on an existing
+canonical record.
+
 ## Current v1 surface (what must not silently break)
 
 - **CLI**: `codecompass` entry point (`src/codecompass/cli.py`),
@@ -25,73 +37,84 @@ question — how v2 lands without breaking what v1 already shipped.
   Phase 77, lightly re-documented at Phase 81B Amendment 4, currently
   unmodified since (`dff3f4d`, confirmed this session).
 
-## Compatibility posture through Phase 82-85
+## Compatibility posture through Phase 82-88
 
 **Additive only — now even more so after `decisions/0080`'s
-correction.** Phase 82's only genuinely new schema surface is the
-`oracle-contract.yaml`/`oracle-result.yaml` file pair (new files, not new
-fields on any existing record). The epistemic dimension originally
-proposed as a new `epistemic_source` field on Claim/Requirement records
-was first corrected to an ordinal scale (still a new field,
-`decisions/0079`), then found still conceptually wrong and **removed
-entirely** (`decisions/0080`) in favour of a derived, read-time view
-computed from fields Phase 81 already has — meaning **zero existing or
-Phase-82-planned canonical record field changes at all**, an even
-stronger zero-migration posture than the original proposal, matching
-Phase 81's own "zero new persisted fields on any canonical record"
-discipline exactly rather than only approximately. No `context-graph.db`
-migration is proposed before Phase 83 at the earliest, and even then
-only if real use demonstrates a genuine gap
-(`conditional-generalisation.md`'s standing discipline).
+correction, and unaffected by the 2026-10-23 realignment.** Phase 82's
+only genuinely new schema surface is the `oracle-contract.yaml`/
+`oracle-result.yaml` file pair (new files, not new fields on any
+existing record). The epistemic dimension originally proposed as a new
+`epistemic_source` field on Claim/Requirement records was first
+corrected to an ordinal scale, then found still conceptually wrong and
+**removed entirely** (`decisions/0080`) in favour of a derived,
+read-time view computed from fields Phase 81 already has — meaning
+**zero existing canonical record field changes at all** through Phase
+82. Phases 84-87 (Consolidated Knowledge API, Self-Curation,
+Knowledge-Placement Review, Documentation Compiler) add new library
+code, a new CLI surface, and new generated-documentation files — no new
+field on any existing canonical record, and no `context-graph.db`
+schema change. No `context-graph.db` migration is proposed before Phase
+83 at the earliest, and even then only if real use demonstrates a
+genuine gap (`conditional-generalisation.md`'s standing discipline).
 
 **No CLI command is removed or changed in incompatible ways** by
-anything in Phases 82-85. Phase 84's MCP server is a new, separate
-surface alongside the existing CLI, not a replacement for it.
+anything in Phases 82-88. Phase 84's knowledge API migrates existing
+`query`/`knowledge`/`enrich` sub-verbs onto a shared interface without
+changing their observable output (`planning/v2-roadmap.md`'s own Phase
+84 exit gate requires this explicitly). Phase 88's MCP server is a new,
+separate surface alongside the existing CLI, not a replacement for it.
 
 ## Versioning considerations (Phase 84 onward)
 
-- **MCP server**: versioned independently of the `codecompass` PyPI
-  package's own SemVer, following whatever versioning convention the
-  chosen MCP SDK itself establishes as idiomatic — decided at Phase 84
-  planning time, not pre-committed here.
+- **Consolidated knowledge API** (Phase 84): an internal library surface
+  initially — versioned alongside the `codecompass` package's own
+  SemVer until/unless Phase 91 decides it needs independent versioning,
+  a decision deferred to that phase rather than pre-committed here.
+- **MCP server** (Phase 88): versioned independently of the
+  `codecompass` PyPI package's own SemVer, following whatever versioning
+  convention the chosen MCP SDK itself establishes as idiomatic —
+  decided at Phase 88 planning time, not pre-committed here.
 - **Oracle-contract/oracle-result schema** (Phase 82): the
   `manifest_schema_version`-style explicit version field convention
-  Phase 81B's Amendment 5 just established for the clean-room manifest
+  Phase 81B's Amendment 5 established for the clean-room manifest
   (`decisions/0077`) is the direct precedent to reuse — an explicit
   integer schema-version field on both new file formats from the start,
-  even though Phase 82 only ever produces version 1 of each. Adding the
-  field now costs nothing and avoids the exact "the field didn't exist
-  for the first N documents" retrofit problem Phase 81B's Amendment 5
-  had to correct after the fact.
-- **Behavioural contract public interface** (what a downstream MCP
-  client or external tool can rely on): not finalised until Phase 88's
-  own "public contract, MCP and assurance-result interface
-  stabilisation" deliverable — Phases 82-85 are explicitly allowed to
-  change the contract/oracle schema shape as real use informs it,
-  provided every change stays additive per the posture above. Phase 88
-  is where backward-incompatible changes, if any are still needed, get
-  made deliberately and documented, not where they are discovered.
+  even though Phase 82 only ever produces version 1 of each.
+- **Documentation schema** (Phase 87): the same explicit-version-field
+  convention applies to the new documentation-schema format from its
+  first version — adding the field now costs nothing and avoids the
+  exact "the field didn't exist for the first N documents" retrofit
+  problem Phase 81B's Amendment 5 had to correct after the fact.
+- **Behavioural contract / knowledge API / MCP public interface** (what
+  a downstream MCP client or external tool can rely on): not finalised
+  until Phase 91's own "public contract, knowledge-API, MCP and
+  assurance-result interface stabilisation" deliverable — Phases 82-90
+  are explicitly allowed to change the contract/oracle/API/documentation
+  schema shape as real use informs it, provided every change stays
+  additive per the posture above. Phase 91 is where backward-incompatible
+  changes, if any are still needed, get made deliberately and
+  documented, not where they are discovered.
 
 ## `codecompass-template` implications
 
-- **No change required through Phase 85.** Phase 82-85 capabilities are
-  internal to `codecompass`'s own package and this repository's own
+- **No change required through Phase 87.** Phases 82-87's capabilities
+  are internal to `codecompass`'s own package and this repository's own
   `planning/` conventions; nothing yet exists for a template adopter to
   use differently.
-- **Phase 84 (MCP)** is the first point `codecompass-template` might
+- **Phase 88 (MCP)** is the first point `codecompass-template` might
   reasonably gain a documented "how to point an MCP-capable agent at a
-  CodeCompass-indexed project" section — scoped at Phase 84 planning
+  CodeCompass-indexed project" section — scoped at Phase 88 planning
   time, not now.
-  - **Phase 87 (external validation)** is where `codecompass-template`'s
-  own onboarding content gets its first real adoption-level update
-  under v2, informed by whatever friction the external-project trial
-  actually finds — matching Phase 77's own precedent of writing the
-  template from proven workflow shape, not speculative design.
+- **Phase 90 (external validation)** is where `codecompass-template`'s
+  own onboarding content gets its first real adoption-level update under
+  v2, informed by whatever friction the external-project trial actually
+  finds — matching Phase 77's own precedent of writing the template from
+  proven workflow shape, not speculative design.
 - **Adoption levels (Advisory / Assurance / Governed autonomy,
   `v2-roadmap.md`)** should eventually be documented in
   `codecompass-template` as the three concrete ways a downstream project
   can opt in — but only once Level 2 (the v2 product target) is real
-  enough to document honestly, i.e. no earlier than Phase 84/85's
+  enough to document honestly, i.e. no earlier than Phase 88's
   completion.
 
 ## Documentation maintenance requirements
@@ -100,54 +123,58 @@ surface alongside the existing CLI, not a replacement for it.
   documentation (`docs/architecture/overview.md` per the post-Phase-81B
   layout) describe **current state only** (`CLAUDE.md` §2) — none of it
   is touched by this planning pass, since nothing it describes has
-  changed yet. Each of Phases 82-88 updates these in the same commit as
+  changed yet. Each of Phases 82-91 updates these in the same commit as
   its own implementation, per the existing same-commit doc-sync rule,
   exactly as every prior phase already has.
 - `docs/development/clean-room-redocumentation.md` (Phase 81B) is
-  unaffected — v2's own isolation reuse (Phase 86's optional source-
-  blind arm) cites it rather than duplicating its content.
+  unaffected — Phase 87's documentation compiler reuses the same broker
+  and isolation mechanism, citing this document rather than duplicating
+  its content; Phase 89's own optional source-blind arm cites it too.
 - No blank-slate documentation reconstruction is implied or scheduled by
   this roadmap — the clean-room reconstruction already completed
-  (Phase 81B) stays the current, accepted documentation baseline for
-  every Phase 82-88 doc update to build on incrementally, per
-  `CLAUDE.md` §5's own distinction between per-phase drift audits and
+  (Phase 81B) stays the current, accepted documentation baseline Phase
+  87's compiler builds on incrementally (incremental-maintenance mode)
+  or supersedes in full only via an explicit clean-reconstruction run,
+  per `CLAUDE.md` §5's own distinction between per-phase drift audits and
   milestone-level full reconstruction.
 
-## Cross-project overlay compatibility (amendment, 2026-10-21, `decisions/0079`)
+## Cross-project overlay compatibility (amendment, 2026-10-21, `decisions/0079`; phase numbers updated 2026-10-23, `decisions/0084`)
 
-Reviewed per direct user request: does anything in Phases 82-85's
+Reviewed per direct user request: does anything in Phases 82-88's
 planned schema preclude a future, generic cross-project semantic overlay
-capability? **No existing or Phase-82-planned canonical record changes
-as a result of this review.** Federation identity (`decisions/0079` §2)
-is carried by a new, external, per-project **project-identity envelope**
-— never injected into `REQ-`/`CL-`/`EV-`/`OBS-`/`DE-`/`DEC-` records
-themselves. This is additive in exactly the same sense §"Compatibility
-posture" above already establishes for the rest of v2: a project that
-never exports a knowledge snapshot for federation is entirely unaffected,
-and nothing about Phase 82's own schema needs a migration to become
-federation-capable later — only a new, separate export step (Post-v2
-Stage 1, `planning/post-v2-cross-project-overlay-backlog.md`) needs to be
-built, whenever it actually is.
+capability? **No existing or planned canonical record changes as a
+result of this review, through Phase 88 or the newly-inserted Phases
+84-87.** Federation identity (`decisions/0079` §2) is carried by a new,
+external, per-project **project-identity envelope** — never injected
+into `REQ-`/`CL-`/`EV-`/`OBS-`/`DE-`/`DEC-` records themselves. This is
+additive in exactly the same sense §"Compatibility posture" above
+already establishes for the rest of v2: a project that never exports a
+knowledge snapshot for federation is entirely unaffected, and nothing
+about Phase 82's own schema — or Phase 84's consolidated API, which is
+project-local by design (`decisions/0084` §1) — needs a migration to
+become federation-capable later; only a new, separate export step
+(Post-v2 Stage 1, `planning/post-v2-cross-project-overlay-backlog.md`)
+needs to be built, whenever it actually is.
 
-One Phase 82 schema correction *was* made by this same review (the
+One Phase 82 schema correction *was* made by an earlier review (the
 `epistemic_source` field's ordinal redesign,
 `planning/phase-82-contract-and-evidence-foundation.md` §12) — found
-independent of federation, surfaced by reviewing the field against this
-amendment's own INTENDED/OBSERVED/VERIFIED separation requirement. A
-same-day follow-on review (`decisions/0080`) found the ordinal redesign
-itself still conceptually wrong and removed the field entirely in
-favour of a derived view (§4/§13 of the Phase 82 plan) — an even
-stronger additive posture than this paragraph originally described,
-since there is now no new field on any existing record at all, only new
-oracle-result files and new, read-only code. `decisions/0080` §3 also
-extends the project-identity envelope itself with a `publisher_id`/
-`authority` distinction (self-published vs. third-party reconstruction)
-— still external to every project-local record, still deferred to
-Post-v2 Stage 1's own implementation.
+independent of federation, surfaced by reviewing the field against the
+INTENDED/OBSERVED/VERIFIED separation requirement. A same-day follow-on
+review (`decisions/0080`) found the ordinal redesign itself still
+conceptually wrong and removed the field entirely in favour of a derived
+view — an even stronger additive posture than this paragraph originally
+described, since there is now no new field on any existing record at
+all, only new oracle-result files and new, read-only code.
+`decisions/0080` §3 also extends the project-identity envelope itself
+with a `publisher_id`/`authority` distinction, still external to every
+project-local record, still deferred to Post-v2 Stage 1's own
+implementation.
 
 **`codecompass-template` implications, unchanged**: nothing in this
-amendment adds template content — a federated overlay has no adopter-
-facing surface before at least Post-v2 Stage 1 exists.
+amendment, or in the 2026-10-23 realignment, adds template content — a
+federated overlay has no adopter-facing surface before at least Post-v2
+Stage 1 exists.
 
 ## Security/isolation posture carried forward
 
@@ -157,20 +184,21 @@ facing surface before at least Post-v2 Stage 1 exists.
   broker protocol already enforces for the clean-room writer (a fixed
   `{system_prompt, messages} -> {output}` protocol with no syntax for a
   file path, shell command, or tool/MCP config) is the direct model for
-  Phase 84's own MCP tool-result handling.
+  Phase 88's own MCP tool-result handling, and for Phase 87's
+  documentation-compiler composition step, which reuses the same broker.
 - No coding agent gains authority to redefine its own acceptance
-  criteria at any point in Phases 82-88 — enforced structurally in Phase
+  criteria at any point in Phases 82-91 — enforced structurally in Phase
   82 already (§5's oracle-contract tamper-detection check) and carried
-  forward unchanged through Phase 84's MCP exposure.
+  forward unchanged through Phase 88's MCP exposure.
 
 ## Summary
 
-Through Phase 85, v2 is additive and non-breaking to every existing v1
+Through Phase 88, v2 is additive and non-breaking to every existing v1
 surface; no migration is required for an existing `codecompass` user or
 for `codecompass-template`. The first points requiring real
-compatibility decisions are Phase 84 (MCP versioning, a new dependency's
-licence compatibility) and Phase 88 (public interface stabilisation,
+compatibility decisions are Phase 88 (MCP versioning, a new dependency's
+licence compatibility) and Phase 91 (public interface stabilisation,
 where any necessary breaking change is made deliberately). This
-assessment itself requires no maintainer approval beyond what each
-named phase's own plan will separately ask for — it recorded no new
-commitment of its own.
+assessment itself requires no maintainer approval beyond what each named
+phase's own plan will separately ask for — it recorded no new commitment
+of its own.

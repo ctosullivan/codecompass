@@ -517,6 +517,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **v2 roadmap realignment** (planning only, no `src/` change, direct
+  user request, `decisions/0084`, "CodeCompass Orchestrator — v2
+  Strategic Roadmap Realignment"): re-sequences the v2 roadmap
+  (`planning/v2-roadmap.md`) around Knowledge-Driven Software
+  Development. Four new phases are inserted between Semantic Change
+  Assurance (83, unchanged) and Agent Integration/MCP: Consolidated
+  Knowledge API and Query CLI (84 — one typed read/traversal library in
+  front of the existing, unchanged `context-graph.db`/`planning/
+  knowledge/`/`planning/contracts/` storage, explicitly declining a new
+  database for v2); Self-Curation and Knowledge-Quality Validation (85 —
+  dogfoods the existing learning/context-gap promotion lifecycle against
+  CodeCompass's own implementation, never substituting self-assertion
+  for independent evidence); Knowledge-Placement and Code-Quality Review
+  (86 — a documented placement policy plus an advisory, never
+  merge-blocking, review); Documentation Schema and Knowledge-Compiled
+  Documentation (87 — a schema-driven compiler reusing Phase 81B's
+  clean-room broker, first demonstrated on CodeCompass's own README/doc
+  set). The former Phase 84 (MCP) and former Phase 85 (persistent-
+  knowledge reconciliation) merge into one phase (88), extended to also
+  reconcile compiled documentation. The former Phases 86-88
+  (Comparative Trials / External Validation / v2.0 Release) are
+  renumbered 89-91, content unchanged. `planning/v2-evaluation-
+  methodology.md` gains a dated amendment (a documentation-quality
+  metric; a concise-repository-instructions comparison baseline).
+  `planning/v2-migration-assessment.md` and `planning/post-v2-cross-
+  project-overlay-backlog.md` have their phase-number cross-references
+  updated; no stage, risk, or exit gate in either changes. Phase 82 and
+  Phase 83 are unchanged; `decisions/0078`-`0083` are not edited. No
+  `planning/phase-83-*.md` (or later) plan file is written — each of
+  Phases 83-91 still requires its own `CLAUDE.md` §1 plan file before
+  implementation begins.
+
 - **Phase 78 amendment** (corrective, no `src/` change): a post-completion
   review found Phase 78's own `CG-001` `not-recurred` rule logically
   insufficient — it relied on relative cost-parity between treatment and

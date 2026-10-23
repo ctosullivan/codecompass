@@ -3,8 +3,11 @@
 Direct user request, 2026-10-21 ("CodeCompass v2 Planning Amendment —
 Cross-Project Semantic Overlays"). Architectural rationale: `decisions/0079`.
 **These are proposals, not authorised implementation phases** — none is
-numbered into the mandatory Phase 82-88 sequence (`planning/v2-roadmap.md`),
-none blocks Phase 88's v2.0 release, and none may begin without its own
+numbered into the mandatory Phase 82-91 sequence (`planning/v2-roadmap.md`;
+renumbered 2026-10-23 from 82-88 by `decisions/0084`, which also
+reviewed and reconfirmed this track's own scope and exit gates
+unaffected — see that ADR's own §5), none blocks Phase 91's v2.0
+release, and none may begin without its own
 future `CLAUDE.md` §1 plan file, scoped against evidence current at that
 time, exactly as every prior phase in this project already requires.
 
@@ -326,8 +329,10 @@ into a single compatibility score, `decisions/0079` §3):
 
 **Invalidation**: a change to Project A's own source, tests, or
 specification invalidates only mappings that cite the changed Claim/
-Evidence — reusing Phase 85's own planned source-change-triggered
-invalidation (`planning/v2-roadmap.md`'s Phase 85 entry), extended to
+Evidence — reusing Phase 88's own planned source-change-triggered
+invalidation (`planning/v2-roadmap.md`'s Phase 88 entry — this
+reconciliation capability was the former Phase 85, merged into Phase 88
+by `decisions/0084` §2), extended to
 also re-check every Layer C mapping citing the changed reference. **A
 change to one project's own Layer A records never directly rewrites
 another project's own Layer A records** — only the shared Layer C

@@ -24,7 +24,11 @@ evidence, strict oracle-schema type/value enforcement (type validated
 before enum membership, closing an uncaught-`TypeError` path), and both
 strict validators failing closed when their own required verification
 modules cannot be imported. `decisions/0078`-`0083` govern this phase's
-design; none of Phases 83-88 has begun.
+design; none of Phases 83-91 has begun. **The v2 roadmap itself was
+realigned 2026-10-23** (`decisions/0084`, "CodeCompass Orchestrator — v2
+Strategic Roadmap Realignment," around Knowledge-Driven Software
+Development) — see "What was just completed" below; Phase 82's own
+design/implementation/corrective-pass history above is unaffected.
 
 - `decisions/0078` — the original v2 repositioning.
 - `decisions/0079` — the Cross-Project Semantic Overlay track's
@@ -143,55 +147,62 @@ and each phase's retro.
 
 ## What was just completed
 
-**Phase 82 final corrective pass**, 2026-10-22, direct user request
-("CodeCompass Orchestrator — Phase 82 Final Corrective Pass"), one
-session, six commits (`65840ca` ADR `decisions/0083` + plan §16;
-`04c0ed2` implementation + tests + docs + fresh real oracle evidence;
-`97ef607` retro + candidate learning `L-103`; `4407b38` `L-103` triage
-— retained, no second live instance found; `9e828c1` the passing
-audit's own record; this `CONTEXT.md`/`ROADMAP.md`/plan-status-line
-reconciliation is the terminal commit). This pass follows directly from
-the first Phase 82 corrective pass (`decisions/0082`, closed `e3917ad`)
-and fixes three further, narrower assurance weaknesses a *separate*
-independent post-completion review found in the already-corrected
-shipped code — one of which (all-skipped execution) is exactly the
-second non-blocking residual the first corrective pass's own audit had
-already flagged as a candidate for future work: (A) `_classify_pytest_
-junit` could classify an execution where every collected test was
-skipped as `PASS` (confirmed against real pytest 9.1.1: an all-skip run
-exits 0 with every skipped testcase still counted in junit-xml's `tests`
-total); (B) `check_contracts.py --strict`/`check_knowledge_base.py
---strict` both reported an unsuccessful `codecompass.oracle`/
-`knowledge_intermediate` import as merely informational, letting
-`--strict` report success while every oracle check was silently skipped
-entirely; (C) `parse_oracle_result` checked `outcome`'s enum membership
-against a `set` before confirming its type, so an unhashable malformed
-value raised an uncaught `TypeError` instead of a controlled
-`OracleSchemaError` — `baseline_id`/`environment_descriptor`/
-`invalid_reason` were also unvalidated, and a subprocess-launch failure
-could propagate uncaught.
+**v2 roadmap realignment**, 2026-10-23, direct user request
+("CodeCompass Orchestrator — v2 Strategic Roadmap Realignment," a
+planning-only task — explicit stop condition: "do not proceed to
+implementation without explicit approval"). Reviewed the actual
+repository state (Phase 77/79-81B/82 implementation status,
+`decisions/0078`-`0083`, the existing `query`/`knowledge`/`enrich` CLI
+surface, `src/codecompass/` module list) and confirmed, by direct
+inspection rather than assumption: no MCP server, no consolidated
+knowledge-query API, and no documentation compiler exist anywhere in
+this codebase; no `planning/phase-83-*.md` (or later) plan file exists.
+Produced `decisions/0084`, which: (1) decides the consolidated-
+knowledge-API architecture — one new, typed read/traversal library in
+front of the *existing, unchanged* physical stores (`context-graph.db`,
+`planning/knowledge/`, `planning/contracts/`), explicitly declining a
+new database or external store for v2; (2) inserts four new phases
+(Consolidated Knowledge API, Self-Curation, Knowledge-Placement Review,
+Documentation Compiler) between Phase 83 and the former MCP phase; (3)
+merges the former Phase 84 (MCP) and former Phase 85 (persistent
+knowledge/reconciliation) into one phase, extended to also reconcile
+compiled documentation; (4) renumbers the former Phases 86-88
+(Comparative Trials / External Validation / v2.0 Release) to 89-91,
+content unchanged; (5) confirms Phase 82 and Phase 83 are themselves
+unchanged, and that `decisions/0079`'s post-v2 cross-project overlay
+track is unaffected. Updated, in the same session: `planning/
+v2-roadmap.md` (substantially rewritten — new Phase 84-88 roadmap-depth
+sections, renumbered 89-91, updated dependency graph/adoption-levels/
+federation-review/deferred-scope sections); `planning/ROADMAP.md`'s v2
+table (new rows 84-91); `planning/v2-evaluation-methodology.md` (dated
+amendment: a documentation-quality metric and a concise-repository-
+instructions comparison baseline, per the governing prompt's own §9);
+`planning/v2-migration-assessment.md` (phase-number cross-references
+corrected throughout; substantive additive-only posture unchanged,
+if anything strengthened); `planning/post-v2-cross-project-overlay-
+backlog.md` (two phase-number cross-references updated, no stage/
+risk/exit-gate changed). No `planning/phase-83-*.md` or later plan file
+was written — per `CLAUDE.md` §1, each of Phases 83-91 still requires
+its own plan file, scoped against evidence current when it is actually
+next, before any implementation begins. No `src/codecompass/` or
+`context-graph.db` change was made. This is a single-session planning
+deliverable with no independent audit dispatched (the governing prompt's
+own deliverable list is planning artefacts, not implementation subject
+to `CLAUDE.md` §5's DoD gate) — a human/lead decision on whether to fund
+Phase 83 (or any later phase) next remains open, named in "Next concrete
+step" below.
 
-Independent audits: `docs-reconstructor`'s per-phase drift audit
-returned **CLEAN**. `release-phase-auditor`'s completion audit returned
-**PASS** on the first pass (no retro-completeness gap this time — the
-retro was written to the full `planning/retros/TEMPLATE.md` shape from
-the start, applying the first corrective pass's own lesson), having
-independently reproduced all three fixes with its own constructed
-adversarial scenarios (an independent all-skip pytest variant, a
-genuinely broken import via a scratch directory with no `src/`, a
-malformed-input matrix and a genuinely non-executable interpreter for
-the subprocess-launch path) rather than merely re-running the shipped
-tests, and re-run the full regression suite and both strict validators
-itself. One non-blocking observation: no standalone `docs-reconstructor`
-drift-audit report file was produced for this pass (the dispatched
-`docs-reconstructor` agent's CLEAN verdict was delivered via hand-back
-message rather than also written to its own file) — the audit
-independently re-derived that substance directly and found it clean;
-recorded as a process gap worth closing going forward, not blocking.
-Candidate learning `L-103` (a Python `in`/`not in`-against-a-set-before-
-type-check gotcha) was triaged `retained`, not promoted — a repo-wide
-grep found no second live, exploitable instance of the pattern anywhere
-else in the codebase.
+**Phase 82 final corrective pass** (prior session, 2026-10-22, six
+commits `65840ca`/`04c0ed2`/`97ef607`/`4407b38`/`9e828c1`/`33b1e39`):
+fixed three further assurance weaknesses (all-skipped pytest execution
+misclassified `PASS`; both strict validators failing open on a broken
+required import; `parse_oracle_result` checking enum membership before
+type, raising an uncaught `TypeError` on malformed `outcome`), each with
+real negative controls, independently audited **PASS**. Full detail
+preserved in `planning/retros/phase-82-final-corrective-pass.md` and
+`decisions/0083` — summarised here only to the extent needed for
+session resumption; superseded as "what was just completed" by the
+realignment above.
 
 ## Known standing gaps (current-state facts, not phase history)
 
@@ -238,7 +249,7 @@ else in the codebase.
   `unconfirmed_scopes` (the fail-closed `status: verified` rejection
   still fires correctly either way — a labelling imprecision, not a
   safety gap). A candidate for whoever next touches `oracle.py`'s
-  execution-provider logic (Phase 83/84); not named by either corrective
+  execution-provider logic (Phase 83); not named by either corrective
   pass's own governing prompt, so not reopened or touched by either.
 - `L-103` (retained, `planning/learnings/inbox.md`): a Python `in`/
   `not in`-against-a-`set` membership check is only safe once the checked
@@ -250,15 +261,25 @@ else in the codebase.
 
 ## Next concrete step
 
-**Phase 83 (Semantic Change Assurance) is next, not yet phase-planned.**
-Per `CLAUDE.md` §1, writing `planning/phase-83-*.md` is the required
-next step before any Phase 83 implementation begins — scoped against
-evidence current at that time (`planning/v2-roadmap.md` records only
-roadmap-depth sequencing for it: detect a deliberately-introduced
-Ledgerkit semantic regression Phase 82's own contract should catch,
-without falsely claiming complete verification elsewhere in the same
-report; needs Phase 82's real contract/oracle-result schema to know what
-a change could violate and how to report a gap).
+**Phase 83 (Semantic Change Assurance) is next, not yet phase-planned —
+unchanged by the 2026-10-23 realignment.** Per `CLAUDE.md` §1, writing
+`planning/phase-83-*.md` is the required next step before any Phase 83
+implementation begins — scoped against evidence current at that time
+(`planning/v2-roadmap.md` records only roadmap-depth sequencing for it:
+detect a deliberately-introduced Ledgerkit semantic regression Phase
+82's own contract should catch, without falsely claiming complete
+verification elsewhere in the same report; needs Phase 82's real
+contract/oracle-result schema to know what a change could violate and
+how to report a gap). After Phase 83, the realigned sequence
+(`decisions/0084`) is: 84 (Consolidated Knowledge API and Query CLI) →
+85 (Self-Curation and Knowledge-Quality Validation) → 86 (Knowledge-
+Placement and Code-Quality Review) → 87 (Documentation Schema and
+Knowledge-Compiled Documentation) → 88 (Agent Integration, MCP, and
+Incremental Reconciliation — merges the former MCP and reconciliation
+phases) → 89 (Comparative Development Trials) → 90 (External Validation
+and Adoption) → 91 (v2.0 Hardening and Release). None of 84-91 is
+phase-planned; each gets its own `CLAUDE.md` §1 plan file when it is
+actually next.
 
 Other open items requiring a human/lead decision, none currently claimed
 by a drafted plan or phase number:
@@ -267,28 +288,31 @@ by a drafted plan or phase number:
   (`planning/post-v2-cross-project-overlay-backlog.md`) — explicitly not
   authorised by any amendment to date; Stage 1 cannot begin before Phase
   82 is `done` — it now is, but no further authorisation has been given.
+  Unaffected by the 2026-10-23 realignment (`decisions/0084` §5).
 - Priority A's own narrowly-scoped follow-up trial, sketched (not
   started) in `planning/phase-78-amendment-followup-plan.md` — now
   superseded in strategic priority by Phase 83/85's own, sharper
-  change-assurance framing (`decisions/0078`), but not deleted; still
-  available if a human decision prefers it first.
+  change-assurance/self-curation framing (`decisions/0078`,
+  `decisions/0084`), but not deleted; still available if a human
+  decision prefers it first.
 - The "Strict mechanical isolation for documentation-reconstruction
   stages" backlog item — `resolved` (Phase 81B Amendment 4), no further
-  action pending.
+  action pending. Phase 87's documentation compiler reuses this same
+  isolation mechanism rather than reopening it.
 - `L-101` (promoted, `planning/learnings/promoted.md`): an oracle
   execution mechanism must pin the interpreter and `PYTHONPATH` of the
   exact tree it executes, or a sibling checkout's own editable package
   install silently shadows a scratch mutation — already landed in
   `oracle.py`, recorded for any future execution-provider work (Phase
-  83/84).
+  83).
 - `L-102` (promoted, `planning/learnings/promoted.md`): classify a
   subprocess oracle's outcome from its own structured report (e.g.
   pytest's `--junit-xml`), never from a bare exit code alone — already
   landed in `oracle.py::_classify_pytest_junit`, recorded for any future
-  second execution provider (Phase 83/84).
+  second execution provider (Phase 83).
 - `L-103` (retained, `planning/learnings/inbox.md`): validate a value's
   type before checking its membership against a closed `set` — no
   current second instance to fix, but worth re-checking the next time a
   new closed-enum/status check is added against raw/YAML-parsed input
-  (Phase 83/84's own future execution-provider work is the most likely
-  trigger).
+  (Phase 83's own future execution-provider work, or Phase 84's new
+  knowledge-API query parsing, are the most likely triggers).

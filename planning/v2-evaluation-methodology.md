@@ -1,18 +1,21 @@
-# CodeCompass v2 — evaluation strategy and baseline methodology (Phase 86)
+# CodeCompass v2 — evaluation strategy and baseline methodology (Phase 89)
 
 Direct user request, 2026-10-21, part of the v2 strategic realignment
-(`decisions/0078`, `planning/v2-roadmap.md`). Defines Phase 86's
-comparative-trial measurement method **before** any benchmark runs, per
-the governing prompt's own explicit instruction to avoid speculative
+(`decisions/0078`, `planning/v2-roadmap.md`). Defines the comparative-
+trial measurement method **before** any benchmark runs, per the
+governing prompt's own explicit instruction to avoid speculative
 numerical targets without baseline evidence. This document is
-methodology only — Phase 86 itself is not yet phase-planned, and no
-trial has run under this methodology.
+methodology only — the trial phase itself is not yet phase-planned, and
+no trial has run under this methodology. **Renumbered 2026-10-23 from
+Phase 86 to Phase 89** by `decisions/0084` (four new phases inserted
+ahead of it; its own content, arms, and metrics are otherwise unchanged
+except for the dated amendment at the end of this file).
 
 ## Why this exists as its own document
 
 `context-quality-evaluation.md` already established this project's core
 evaluation discipline — "advantage over the default pathway," not graph
-size or edge count — and it remains primary. Phase 86 is a materially
+size or edge count — and it remains primary. Phase 89 is a materially
 larger exercise than any prior reference-project evaluation (three arms,
 not one treatment-vs-baseline pair; the central test of this ADR's own
 governing hypothesis), so its own pre-registration deserves a dedicated
@@ -24,8 +27,8 @@ Phase 78's own trial design got a dedicated amendment log before it ran.
 | Arm | Description |
 |---|---|
 | **A — Conventional** | Existing repository access, standard development tools and tests. No CodeCompass involvement at all. |
-| **B — Knowledge-assisted** | Same model, plus reconciled project knowledge, MCP, and task context packets (Phases 82, 84, 85) — no independent oracle/assurance layer. |
-| **C — Assurance-assisted** | Same model, plus B's knowledge/MCP, plus semantic impact analysis and independently enforced verification (Phase 83's oracle). |
+| **B — Knowledge-assisted** | Same model, plus reconciled project knowledge, the consolidated knowledge API, generated documentation, MCP, and task context packets (Phases 82, 84, 87, 88 — renumbered 2026-10-23 from 82/84/85 by `decisions/0084`; content unchanged, "knowledge-assisted" still means no independent oracle/assurance layer) — no independent oracle/assurance layer. |
+| **C — Assurance-assisted** | Same model, plus B's knowledge/MCP, plus semantic impact analysis and independently enforced verification (Phase 83's oracle — unchanged). |
 
 Arm B isolates the *context* contribution; Arm C isolates the additional
 *assurance* contribution on top of B. This decomposition is deliberate:
@@ -76,8 +79,10 @@ task:
 10. Integration effort (one-time setup cost, amortised honestly across
     however many tasks the trial actually runs, not charged entirely to
     the first task).
-11. Subsequent knowledge reuse (Phase 85's own "second task benefits
-    from the first" evidence, measured here at trial scale).
+11. Subsequent knowledge reuse (Phase 88's own "second task benefits
+    from the first" evidence — this reconciliation capability was the
+    former Phase 85, merged into Phase 88 by `decisions/0084` — measured
+    here at trial scale).
 
 Failures, timeouts, and incomplete work are recorded as data points, not
 excluded from the result set — a trial that only reports completed runs
@@ -122,7 +127,7 @@ substitute for source access on a narrow task. This arm:
 
 ## Reporting standard
 
-Phase 86's exit gate requires a reproducible report establishing whether
+Phase 89's exit gate requires a reproducible report establishing whether
 CodeCompass improves verified development outcomes **after accounting
 for total overhead** (metrics 6-10 above are not footnotes — they are
 netted against metrics 1-5's apparent gains before any conclusion is
@@ -131,13 +136,46 @@ structure as a positive one, with the same prominence, per the governing
 prompt's explicit instruction that such results "must be reported, not
 concealed."
 
+## Amendment (2026-10-23, `decisions/0084`): documentation quality and a concise-instructions baseline
+
+Part of the v2 strategic realignment around Knowledge-Driven Software
+Development. Two items the realignment's own governing prompt names
+explicitly, not present in this document's original metric list, are
+added here — the existing three-arm design, held-comparable conditions,
+and pre-registration discipline above are otherwise unchanged.
+
+**New metric — documentation quality and maintenance overhead.**
+Distinct from the existing "knowledge maintenance overhead" metric
+above (which already covers the time spent keeping reconciled knowledge
+current): this metric covers the generated-documentation surface Phase
+87 (Documentation Schema and Knowledge-Compiled Documentation) adds.
+Reported for Arms B and C, which both have CodeCompass-generated
+documentation to maintain; not reported for Arm A, which has none.
+Measured the same way Phase 87's own exit gate measures it — human
+correction required relative to a baseline, factual-grounding/
+structural validation pass/fail, and editorial-quality assessment —
+never a bare word count or page count.
+
+**New comparison point — concise-repository-instructions baseline.**
+Reported alongside, not folded into, the existing three arms: the same
+task attempted using only a short, hand-written instructions file (no
+CodeCompass knowledge, contracts, API, or MCP surface at all) —
+isolating whether CodeCompass's structured machinery earns its overhead
+over the cheapest plausible alternative, not only over nothing. This is
+a comparison point with the same metric set as the primary arms, not a
+fourth primary arm with independent release implications — it carries
+the same "never a v2 release dependency" framing already established
+above for the optional source-blind research arm, and the same honesty
+standard: a result favouring the concise-instructions baseline is
+reported with the same prominence as one favouring CodeCompass.
+
 ## What this document does not do
 
-It does not fix which Ledgerkit task(s) Phase 86 will use — that is
-Phase 86's own planning-time decision, made against Ledgerkit's then-
+It does not fix which Ledgerkit task(s) Phase 89 will use — that is
+Phase 89's own planning-time decision, made against Ledgerkit's then-
 current state (mirroring every prior reference-project trial's own
 practice of re-verifying task availability live rather than reusing a
 stale task description). It does not set a numeric target for any
 metric above. It does not commit to a specific sample size (number of
-tasks/runs) — Phase 86's own plan fixes that, informed by how much
+tasks/runs) — Phase 89's own plan fixes that, informed by how much
 genuine Ledgerkit task variety exists at the time.
