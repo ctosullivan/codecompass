@@ -41,6 +41,19 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ledgerkit-root", type=Path, default=DEFAULT_LEDGERKIT_ROOT)
     parser.add_argument("--baseline-id", default=None, help="nullable -- see CLAUDE.md L-087")
+    parser.add_argument(
+        "--check-id",
+        action="append",
+        default=None,
+        help=(
+            "run only this check_id (repeatable) -- e.g. to re-run a "
+            "specific check after an oracle-contract.yaml extension "
+            "changes its own content hash (decisions/0086 Decision §4), "
+            "without also running a newly added check that has no real "
+            "test to exercise yet. Omit to run every check, unchanged "
+            "default behaviour."
+        ),
+    )
     args = parser.parse_args()
 
     src_path = ROOT / "src"
@@ -58,7 +71,15 @@ def main() -> int:
     import os
 
     os.chdir(ROOT)
-    for check in contract.checks:
+    checks = contract.checks
+    if args.check_id is not None:
+        wanted = set(args.check_id)
+        checks = [c for c in checks if c.check_id in wanted]
+        missing = wanted - {c.check_id for c in checks}
+        if missing:
+            print(f"error: unknown --check-id value(s): {sorted(missing)}", file=sys.stderr)
+            return 1
+    for check in checks:
         result = oracle.evaluate_check(
             contract,
             check,

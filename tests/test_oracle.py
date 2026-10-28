@@ -286,10 +286,28 @@ def test_write_oracle_result_roundtrip(tmp_path: Path):
 def test_real_contract_passes_both_checks_against_unmodified_checkout(tmp_path: Path):
     """Item 1 (a genuine Ledgerkit contract passes its accepted oracle
     check) and item 3 (multiple required checks across different scopes
-    evaluated correctly), against the real, currently-committed contract."""
+    evaluated correctly), against the real, currently-committed contract.
+
+    Phase 83 (decisions/0086 §4) extended this real contract with a third
+    required check (`overlapping-account-patterns-no-double-count`)
+    whose own `check_reference` names a test that does not yet exist in
+    the real `~/projects/ledgerkit` checkout (landing it there is a
+    separately authorised action, planning/phase-83-semantic-change-
+    assurance.md §10/§13) -- so this test asserts the two *originally*
+    required checks still PASS for real (the content-hash-cost
+    resolution's own required regression coverage), and separately
+    asserts the new third check's own honest, current INVALID state
+    (never silently treated as PASS or hidden from this suite)."""
     contract = oracle.parse_oracle_contract(REAL_CONTRACT_PATH)
-    assert len(contract.checks) == 2
-    assert len({c.scope for c in contract.checks}) == 2  # genuinely distinct scopes
+    assert len(contract.checks) == 3
+    assert len({c.scope for c in contract.checks}) == 3  # genuinely distinct scopes
+
+    original_check_ids = {
+        "single-section-expense-subtotal",
+        "multi-section-income-expense-subtotal",
+    }
+    original_checks = [c for c in contract.checks if c.check_id in original_check_ids]
+    assert len(original_checks) == 2
 
     raw_dir = tmp_path / "raw"
     results = [
@@ -297,14 +315,37 @@ def test_real_contract_passes_both_checks_against_unmodified_checkout(tmp_path: 
             contract, check, contract_path=REAL_CONTRACT_PATH,
             repo_root=LEDGERKIT_ROOT, raw_output_dir=raw_dir,
         )
-        for check in contract.checks
+        for check in original_checks
     ]
     assert all(r.outcome == "PASS" for r in results)
 
     aggregates = oracle.aggregate_contract(
         contract, results, contract_path=REAL_CONTRACT_PATH, repo_root=LEDGERKIT_ROOT
     )
-    assert all(a.state == "PASS" for a in aggregates)
+    original_aggregates = [a for a in aggregates if a.check_id in original_check_ids]
+    assert len(original_aggregates) == 2
+    assert all(a.state == "PASS" for a in original_aggregates)
+
+    new_check = next(
+        c for c in contract.checks
+        if c.check_id == "overlapping-account-patterns-no-double-count"
+    )
+    new_result = oracle.evaluate_check(
+        contract, new_check, contract_path=REAL_CONTRACT_PATH,
+        repo_root=LEDGERKIT_ROOT, raw_output_dir=raw_dir,
+    )
+    # Honest, expected state: the real test this check names does not
+    # exist in the live checkout yet -- INVALID ("zero collected tests"),
+    # never a silently-assumed PASS or a hidden/skipped assertion.
+    assert new_result.outcome == "INVALID"
+    assert "zero collected tests" in (new_result.invalid_reason or "")
+    new_aggregate = next(
+        a for a in oracle.aggregate_contract(
+            contract, [new_result], contract_path=REAL_CONTRACT_PATH, repo_root=LEDGERKIT_ROOT
+        )
+        if a.check_id == new_check.check_id
+    )
+    assert new_aggregate.state == "GAP"
 
 
 @requires_ledgerkit

@@ -1,0 +1,29 @@
+id: DEC-BFS-002
+kind: decision
+decides: >
+  CodeCompass additionally pins ledgerkit/reports.py::balance_from_spec's
+  OR-union account-pattern-matching behaviour as a third behavioural-
+  contract scope ("a posting matching more than one of a section's own
+  OR-combined account patterns is counted exactly once, never once per
+  matching pattern") under the same REQ-BFS-001/DEC-BFS-001 contract
+  family (new REQ-BFS-002, same oracle-contract.yaml, same contract_id).
+  Identified via Phase 83's own evidence-backed change-impact-assessment
+  methodology (planning/phase-83-semantic-change-assurance.md), which
+  found this obligation genuinely undertested by Ledgerkit's own
+  extensive test suite. Extends, does not supersede, DEC-BFS-001 -- the
+  two originally pinned scopes are unchanged.
+rationale: >
+  Direct inspection of ledgerkit/reports.py (line 644-668) and
+  tests/test_reports.py found that the one existing test constructing
+  multiple OR-combined account patterns in a single section
+  (test_section_multiple_accounts_patterns_or_union, line 810) asserts
+  only posting membership, never the resulting subtotal arithmetic -- so
+  no test anywhere in Ledgerkit would catch a posting matching more than
+  one pattern being counted more than once. This is a real, confirmed,
+  previously-unrecorded blind spot (planning/phase-83-semantic-change-
+  assurance.md §2), not a hypothetical one, and is the one real
+  demonstration Phase 83 exists to ground.
+supersedes: null
+decided_by: "project lead"
+timestamp: "2026-10-28T00:00:00Z"
+status: approved

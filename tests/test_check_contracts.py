@@ -206,6 +206,75 @@ class TestResultIntegrity:
         assert len(unconfirmable) == 1
         assert unconfirmable[0].strict is True
 
+    def test_mismatch_with_no_superseding_pass_stays_blocking(self, tmp_path):
+        """decisions/0088: the fix must not weaken the original guarantee
+        -- a mismatching result with nothing fresh to supersede it is
+        still a real problem and stays strict=True."""
+        slug_dir = tmp_path / "planning" / "contracts" / "demo-slug"
+        contract_path = slug_dir / "oracle-contract.yaml"
+        _write_contract(contract_path)
+        contract = oracle.parse_oracle_contract(contract_path)
+        result_path = slug_dir / "results" / "check-a.yaml"
+        result = _write_result(result_path, contract_path)
+        Path(result.raw_output_ref).write_text("TAMPERED", encoding="utf-8")
+
+        findings = check_contracts.check_result_integrity(
+            slug_dir, contract, [(result_path, result)], oracle,
+            ledgerkit_root=tmp_path / "no-such-dir", root=tmp_path,
+        )
+        mismatches = [f for f in findings if f.rule == "contract-result-integrity-mismatch"]
+        assert len(mismatches) == 1
+        assert mismatches[0].strict is True
+        assert "superseded" not in mismatches[0].message
+
+    def test_mismatch_superseded_by_fresh_pass_is_informational(self, tmp_path):
+        """decisions/0088 (Phase 83): extending oracle-contract.yaml
+        changes its own content hash, which makes every pre-existing
+        result's own oracle_contract_content_hash stop matching -- a
+        real, demonstrated scenario (not hypothetical), confirmed this
+        session by actually extending planning/contracts/balance-from-
+        spec/oracle-contract.yaml and re-running its two pre-existing
+        checks. A fresh, valid PASS for the same check_id, recorded
+        against the live contract, must downgrade the older result's own
+        mismatch to informational -- it is superseded historical
+        evidence, not a current problem -- without ever deleting or
+        editing the older file itself."""
+        slug_dir = tmp_path / "planning" / "contracts" / "demo-slug"
+        contract_path = slug_dir / "oracle-contract.yaml"
+        _write_contract(contract_path)
+        old_result_path = slug_dir / "results" / "check-a--old.yaml"
+        old_result = _write_result(old_result_path, contract_path)
+
+        # The contract changes (e.g. a new check is appended) -- the old
+        # result's own recorded oracle_contract_content_hash no longer
+        # matches the live file.
+        _write_contract(
+            contract_path,
+            checks=_TWO_CHECKS + [{
+                "check_id": "check-c", "scope": "scope C", "execution_provider": "pytest",
+                "check_reference": "t::c", "test_input_paths": ["f"], "required": True,
+            }],
+        )
+        contract = oracle.parse_oracle_contract(contract_path)
+
+        # A fresh result for the SAME check_id, recorded against the new,
+        # live contract -- a genuinely current PASS.
+        new_result_path = slug_dir / "results" / "check-a--new.yaml"
+        new_result = _write_result(new_result_path, contract_path)
+
+        findings = check_contracts.check_result_integrity(
+            slug_dir, contract,
+            [(old_result_path, old_result), (new_result_path, new_result)],
+            oracle, ledgerkit_root=tmp_path / "no-such-dir", root=tmp_path,
+        )
+        mismatches = [f for f in findings if f.rule == "contract-result-integrity-mismatch"]
+        assert len(mismatches) == 1
+        assert str(old_result_path.relative_to(tmp_path)) in mismatches[0].message
+        assert mismatches[0].strict is False
+        assert "superseded historical evidence" in mismatches[0].message
+        # The fresh result itself produces no mismatch finding of its own.
+        assert not any(str(new_result_path) in f.message for f in mismatches)
+
     def test_no_recorded_pass_yet_stays_informational_only(self, tmp_path):
         """A required check with no results at all has nothing current to
         misrepresent -- checkout-unavailable stays informational, no new

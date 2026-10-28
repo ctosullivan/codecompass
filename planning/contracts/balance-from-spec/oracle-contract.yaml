@@ -26,3 +26,11 @@ checks:
       - tests/test_reports.py
       - tests/fixtures/filtered.journal
     required: true
+  - check_id: overlapping-account-patterns-no-double-count
+    scope: "a posting matching more than one of a section's own OR-combined account patterns is counted exactly once, never once per matching pattern"
+    execution_provider: pytest
+    check_reference: "tests/test_reports.py::TestBalanceFromSpec::test_section_accounts_overlapping_patterns_no_double_count"
+    test_input_paths:
+      - tests/test_reports.py
+      - tests/fixtures/filtered.journal
+    required: true

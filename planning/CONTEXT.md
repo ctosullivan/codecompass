@@ -7,32 +7,46 @@ session-resumption, not a project history.
 
 ## Current phase
 
-**Phase 82 — Contract and Evidence Foundation — is `done`, including two
-corrective passes that together fixed seven real assurance defects found
-by two separate independent post-completion reviews of the shipped
-code.** The v2 dependency root (`planning/v2-roadmap.md`) is now real:
-one evidence-linked behavioural contract for
-`ledgerkit/reports.py::balance_from_spec` exists end to end — Requirement
-→ Claims → Evidence citing real source locations → a versioned,
-multi-check oracle contract → real `PASS` results against the current,
-unmodified `~/projects/ledgerkit` checkout → a real, demonstrated `FAIL`
-against a deliberately mutated scratch copy — now with current-vs-
-historical verification genuinely distinguished, execution-failure
-classification backed by pytest's own structured report (including
-correctly rejecting an all-skipped execution), immutable per-run
-evidence, strict oracle-schema type/value enforcement (type validated
-before enum membership, closing an uncaught-`TypeError` path), and both
-strict validators failing closed when their own required verification
-modules cannot be imported. `decisions/0078`-`0083` govern this phase's
-design; none of Phases 83-91 has begun. **The v2 roadmap itself was
-realigned 2026-10-23** (`decisions/0084`, "CodeCompass Orchestrator — v2
-Strategic Roadmap Realignment," around Knowledge-Driven Software
-Development) — see "What was just completed" below; Phase 82's own
-design/implementation/corrective-pass history above is unaffected. **A
-corrective amendment to that realignment landed the same day**
-(`decisions/0085`, "CodeCompass Orchestrator — Corrective Amendment to
-v2 Knowledge-Driven Development Roadmap") — see "What was just
-completed" below; Phase 82/83 remain unaffected by this correction too.
+**Phase 83 — Semantic Change Assurance — implemented 2026-10-28, status
+`in progress`** (`planning/ROADMAP.md`'s own row) — an independent
+completion audit must confirm every `CLAUDE.md` §5 condition before this
+phase's row is flipped `done`; that audit has not yet run.
+`scripts/assess_change_impact.py` now exists, built
+entirely on Phase 82's unmodified `oracle.py`/`knowledge_
+intermediate.py`: it resolves a changed source range to its enclosing
+first-party symbol (gated on the target graph's own `source_files.
+content_hash` matching the live file — `stale_index` otherwise),
+classifies it `no_recorded_relationship`/`relevant_no_coverage_link`/
+`behavioural_risk` purely from existing Evidence/Claim citation chains,
+and, with `--run-checks`, freshly re-executes each applicable check and
+reports `CONFIRMED_REGRESSION`/`INVALID_ASSESSMENT`/`VERIFIED_SCOPE`/
+`VERIFICATION_GAP` from that one fresh result alone. Dogfooded for real:
+a deliberately introduced OR-union double-counting mutation passes
+Ledgerkit's full, unmodified 935-test suite 100% while a new, independent
+check fails, and the tool itself reports `CONFIRMED_REGRESSION`. One
+real, independently-demonstrated defect found and fixed along the way in
+`scripts/check_contracts.py` (`decisions/0088`). **One outstanding,
+separately-gated item**: the real Ledgerkit test has not landed in the
+real `~/projects/ledgerkit` checkout — a cross-repository action still
+requiring its own explicit authorisation, named explicitly, never
+silently treated as done. Full detail: `planning/retros/phase-83-
+semantic-change-assurance.md`, `decisions/0086`/`0087`/`0088`.
+
+**Phase 82 — Contract and Evidence Foundation — is `done`**, including
+two corrective passes that together fixed seven real assurance defects
+found by two separate independent post-completion reviews of the shipped
+code. The v2 dependency root (`planning/v2-roadmap.md`) is real: one
+evidence-linked behavioural contract for `ledgerkit/reports.py::balance_
+from_spec` exists end to end — Requirement → Claims → Evidence citing
+real source locations → a versioned, multi-check oracle contract → real
+`PASS` results against the current, unmodified `~/projects/ledgerkit`
+checkout → a real, demonstrated `FAIL` against a deliberately mutated
+scratch copy. `decisions/0078`-`0083` govern this phase's design; none of
+Phases 84-92 has begun. **The v2 roadmap itself was realigned 2026-10-23**
+(`decisions/0084`/`0085`) and **approved as governing, with Phase 83/84
+planned, 2026-10-24** (`decisions/0086`/`0087` then corrected Phase 83's
+own plan the same day and again on 2026-10-28, immediately before
+implementation) — none of this reopened Phase 82's own design.
 
 - `decisions/0078` — the original v2 repositioning.
 - `decisions/0079` — the Cross-Project Semantic Overlay track's
@@ -87,27 +101,29 @@ completed" below; Phase 82/83 remain unaffected by this correction too.
   `decisions/0084`'s own architecture decision (§1: one logical model,
   unchanged physical storage, no new database).
 
-**The corrected v2 roadmap (Phases 82-92) was approved 2026-10-24** as
-the governing strategic roadmap, direct user request ("CodeCompass
-Orchestrator — Approve v2 Roadmap and Plan Phases 83-84"), subject to no
-intervening material change (none found: Phase 82 remains `done`,
-unreopened; Phase 83 remains next, unreopened). The same session
-produced implementation-ready plans for Phase 83
-(`planning/phase-83-semantic-change-assurance.md`) and Phase 84
-(`planning/phase-84-consolidated-knowledge-api.md`) — see "What was just
-completed" below. Neither is authorised to implement without separate,
-explicit approval. **Phase 83's own plan was corrected the same day**
-(`decisions/0086`, "CodeCompass Orchestrator — Phase 83 Corrective
-Planning Amendment") — five structural defects found by direct
-re-reading of `oracle.py`/`graph.py`/`knowledge_intermediate.py`/
-`check_contracts.py` against the first pass: `test_input_paths` misused
-as coverage evidence, an impossible aggregate-`FAIL` expectation, no
-concrete revision-consistency mechanism, and an unresolved Requirement/
-contract-identity question whose only schema-compliant answer (extending
-the existing contract in place) carries a real, now-explicit
-content-hash-invalidation cost against Phase 82's own six existing
-results. See "What was just completed" below. Phase 84 and Phase 82 are
-unaffected.
+- `decisions/0086` — Phase 83's first corrective planning amendment
+  (2026-10-24): replaces `test_input_paths`-based coverage inference with
+  a Claim-mediated three-tier relevance/coverage model; fixes an
+  impossible aggregate-`FAIL` expectation; adopts `source_files.
+  content_hash` for revision consistency; resolves the new obligation's
+  contract/Requirement identity by extending the existing contract in
+  place, naming the resulting content-hash-invalidation cost explicitly.
+- `decisions/0087` — Phase 83's second corrective planning amendment
+  (2026-10-28, same session as implementation): fixes a precedence-
+  reachability defect in `0086`'s own design (checking aggregate `GAP`
+  before `INVALID` made `INVALID_ASSESSMENT` unreachable — classification
+  now reads solely the one fresh result's own effective outcome); fixes
+  the Ledgerkit scratch-copy demonstration's sequencing. Authorises
+  Phase 83 implementation.
+- `decisions/0088` — a real, independently-demonstrated defect found
+  *during* Phase 83 implementation (not planning): `check_contracts.
+  py::check_result_integrity` no longer blocks `--strict` on a historical
+  result superseded by a current, different `PASS` for the same
+  `check_id`. `src/codecompass/oracle.py` unmodified.
+
+Phase 84's own plan (`planning/phase-84-consolidated-knowledge-api.md`)
+is unaffected by any of the above and remains not authorised to
+implement.
 
 **What exists now, concretely**:
 
@@ -157,17 +173,34 @@ unaffected.
   also now fail closed when their own required `codecompass.oracle`/
   `knowledge_intermediate` import fails outright — previously
   informational, letting `--strict` report success while every oracle
-  check was silently skipped entirely.
-- One real contract: `planning/knowledge/balance-from-spec/` (1 REQ, 3
-  CL, 3 EV, 1 DEC, 1 OBS) + `planning/contracts/balance-from-spec/`
-  (contract + four committed, real `PASS` oracle-result files across two
-  runs — the original two, immutably preserved, plus two from a later
-  re-run during the corrective pass — each independently re-verified
-  byte-identical-on-digest by an independent audit).
+  check was silently skipped entirely. **Since `decisions/0088` (Phase
+  83)**: `check_result_integrity`'s own blocking finding is downgraded to
+  informational specifically when a different, current `PASS` already
+  exists for the same `check_id` — a superseded historical result, found
+  by actually extending a real contract for the first time.
+- One real contract family: `planning/knowledge/balance-from-spec/` (2
+  REQ, 5 CL — `CL-BFS-003` superseded by `CL-BFS-005`, Phase 83 — 3 EV, 2
+  DEC, 1 OBS) + `planning/contracts/balance-from-spec/` (3 required
+  checks as of Phase 83; 6 immutably-preserved historical result files
+  across the two originally-required checks, now informationally
+  superseded by 2 fresh ones under the extended contract's own content
+  hash; the new third check has no result on file yet — its real test
+  does not exist in the live Ledgerkit checkout).
 - `scripts/run_balance_from_spec_oracle.py` (maintainer script, like
   `prepare_cleanroom_branch.py`) — re-runs the real oracle against a
   given Ledgerkit checkout, writing one new, permanent result/raw-output
   file pair per execution, never overwriting a prior run's own evidence.
+  `--check-id` (repeatable, Phase 83) runs only the named check(s).
+- `scripts/assess_change_impact.py` (Phase 83, maintainer script) —
+  evidence-backed change-impact assessment: resolves a changed range to
+  its enclosing symbol gated on `source_files.content_hash` matching live
+  content; classifies `no_recorded_relationship`/`relevant_no_coverage_
+  link`/`behavioural_risk` purely from existing Evidence/Claim citation
+  chains; with `--run-checks`, freshly re-executes applicable checks and
+  reports `CONFIRMED_REGRESSION`/`INVALID_ASSESSMENT`/`VERIFIED_SCOPE`/
+  `VERIFICATION_GAP` from the one fresh result's own effective outcome
+  alone, never the aggregate state or a historical result. Not a shipped
+  `codecompass` command. 27 tests (`tests/test_assess_change_impact.py`).
 - 77 new tests total across the original implementation and both
   corrective passes (`tests/test_oracle.py`, `tests/test_check_contracts.py`,
   plus additions to `tests/test_knowledge_intermediate.py` and
@@ -187,6 +220,32 @@ unmodified by Phase 82 — full detail in `planning/ROADMAP.md`'s own rows
 and each phase's retro.
 
 ## What was just completed
+
+**Phase 83 — Semantic Change Assurance — implemented**, 2026-10-28,
+direct user request ("CodeCompass Orchestrator — Amend and Implement
+Phase 83"). Full detail: `planning/retros/phase-83-semantic-change-
+assurance.md` (actual commands/results/evidence); `decisions/0087`
+(second corrective planning pass, fixing a precedence-reachability
+defect in `0086`'s own design and authorising implementation) and
+`decisions/0088` (one real defect found and fixed in `scripts/check_
+contracts.py` during implementation itself). Summary: `scripts/assess_
+change_impact.py` built and dogfooded end to end against real Ledgerkit
+— a deliberately introduced OR-union double-counting mutation passes
+Ledgerkit's full, unmodified 935-test suite 100% while a new,
+independent check fails, and the tool itself reports `CONFIRMED_
+REGRESSION` with the co-existing `GAP` aggregate shown explicitly, on a
+disposable scratch copy (never the real checkout). `oracle-contract.yaml`
+extended with one new required check; the resulting content-hash
+invalidation of Phase 82's six historical results resolved by two fresh
+re-runs. New knowledge records `REQ-BFS-002`/`DEC-BFS-002`/`CL-BFS-004`
+(relevance only, no coverage claim yet); `CL-BFS-003` superseded by
+`CL-BFS-005`. 1035 passed, 2 skipped — the full repository suite, green.
+**One outstanding, separately-gated item, named explicitly, not silently
+treated as done**: the real Ledgerkit test has not landed in the real
+`~/projects/ledgerkit` checkout — a cross-repository action requiring
+its own explicit authorisation. `planning/ROADMAP.md`'s Phase 83 row
+reads `in progress` until an independent completion audit against this
+exact state confirms every `CLAUDE.md` §5 condition.
 
 **Phase 83 corrective planning amendment**, 2026-10-24 (same day as the
 approval below), direct user request ("CodeCompass Orchestrator — Phase
@@ -404,6 +463,15 @@ amendments above.
   reported as such but carries no inline CLI signal that this could be
   the case — only `--help` text documents the sync-time-snapshot
   guarantee (`CG-011`, filed Phase 76).
+- **Phase 83's new oracle check has no real result against the live
+  `~/projects/ledgerkit` checkout** (`overlapping-account-patterns-
+  no-double-count`, `REQ-BFS-002`/`CL-BFS-004`) — its `check_reference`
+  names a test that does not yet exist there; landing it is a separate,
+  explicitly authorised, cross-repository action, not yet given. Running
+  `scripts/run_balance_from_spec_oracle.py --check-id overlapping-
+  account-patterns-no-double-count` against the real checkout today
+  would honestly report `INVALID` ("zero collected tests") — expected,
+  not a defect, and not attempted/recorded in this phase.
 - `vendor/` and a local `.venv/` exist in this checkout (both
   gitignored, freely regeneratable) — live artifacts, not fixtures.
   **Note from Phase 82**: this project's own `.venv` is where `pytest`
@@ -436,19 +504,21 @@ amendments above.
 
 ## Next concrete step
 
-**Phase 83 (Semantic Change Assurance) and Phase 84 (Consolidated
-Knowledge API and Query CLI) are both now phase-planned and
-implementation-ready**, approved 2026-10-24 alongside the corrected
-roadmap itself (see "What was just completed" above) —
-`planning/phase-83-semantic-change-assurance.md` (corrected the same
-day, `decisions/0086` — see above; the file at this path is already the
-corrected version) and `planning/phase-84-consolidated-knowledge-api.md`.
-**Neither may begin implementation without a separate, explicit
-approval** — the governing prompt that
-produced both plans stopped deliberately short of authorising code.
-Phase 83 is sequenced first (not a hard dependency: `planning/v2-
-roadmap.md`'s Phase 84 entry and both new plan files confirm Phase 84
-does not require Phase 83 either). After both: 85 (Self-Curation and
+**Phase 83 is implemented, status `in progress`** (see "Current
+phase"/"What was just completed" above) — its one remaining action
+before `planning/ROADMAP.md` can flip the row to `done` is an
+independent completion audit against the exact commit, confirming every
+`CLAUDE.md` §5 condition; its one remaining *outstanding, separately-
+gated* item (landing the real test in `~/projects/ledgerkit`) is not
+part of that gate — it is named, tracked, and requires its own future
+explicit authorisation, independent of Phase 83's own completion.
+
+**Phase 84 (Consolidated Knowledge API and Query CLI) is phase-planned
+and implementation-ready**, approved 2026-10-24
+(`planning/phase-84-consolidated-knowledge-api.md`). **Not authorised to
+implement without a separate, explicit approval** — confirmed
+independent of Phase 83 in both directions (neither phase's own plan
+depends on the other). After it: 85 (Self-Curation and
 Knowledge-Quality Validation) → 86 (Knowledge-Placement and Code-Quality
 Review, formal policy/enforcement classes) → 87 (Documentation Schema and
 Knowledge-Compiled Documentation, minimum suite specified) → 88 (Agent

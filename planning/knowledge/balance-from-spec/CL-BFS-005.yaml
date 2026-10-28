@@ -1,0 +1,30 @@
+id: CL-BFS-005
+kind: claim
+statement: >
+  balance_from_spec currently satisfies the two originally required
+  checks in its own oracle contract (REQ-BFS-001): single-section and
+  multi-section/sign-inversion both have a current, passing, tested-
+  subject-bound oracle result against the unmodified ~/projects/ledgerkit
+  checkout (re-confirmed by a fresh re-run after the contract was
+  extended with a third required check, Phase 83, planning/phase-83-
+  semantic-change-assurance.md §6/§7). The third, newly added required
+  check (overlapping-account-patterns-no-double-count, REQ-BFS-002) does
+  NOT yet have a passing oracle citation -- its own check_reference names
+  a test that does not yet exist in the real ~/projects/ledgerkit
+  checkout, pending separate, explicit authorisation to land it there.
+  Supersedes CL-BFS-003, whose own "satisfies every required check"
+  statement became false the moment a new required check was added
+  without yet having a passing result -- never silently reinterpreted,
+  corrected here with an honest, narrower statement instead.
+derivation: null
+supporting_evidence: [EV-BFS-002, EV-BFS-003]
+contradicting_evidence: []
+derived_by: "project lead"
+repository_revision: "ledgerkit@7224bb5c113cd3aad7e86e994365703cd0070154"
+timestamp: "2026-10-28T00:00:00Z"
+status: supported
+supersedes: CL-BFS-003
+assertion_kind: workflow
+basis: observed_behaviour
+evidence_support_state: partially_supported
+depends_on: [CL-BFS-001, CL-BFS-002]

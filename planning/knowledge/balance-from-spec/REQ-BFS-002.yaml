@@ -1,0 +1,20 @@
+id: REQ-BFS-002
+kind: requirement
+statement: >
+  ledgerkit/reports.py::balance_from_spec MUST count a posting exactly
+  once when it matches more than one of a single section's own
+  OR-combined section.accounts patterns (scope: "overlapping-account-
+  patterns-no-double-count"), against the pinned tests/fixtures/
+  filtered.journal fixture (accounts=("food", "groceries") against the
+  £150.00 groceries posting, which matches both patterns under real
+  infix-search account-matching semantics).
+example: |
+  Given the pinned tests/fixtures/filtered.journal fixture
+  When balance_from_spec is run with a single Expenses-section ReportSpec
+  whose accounts=("food", "groceries") (both of which match the same
+  £150.00 groceries posting)
+  Then that posting contributes to the section's own subtotal exactly
+  once, not twice.
+decision: DEC-BFS-002
+status: implemented
+depends_on: [CL-BFS-004]

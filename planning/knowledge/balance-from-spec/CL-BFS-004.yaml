@@ -1,0 +1,26 @@
+id: CL-BFS-004
+kind: claim
+statement: >
+  balance_from_spec's current, real implementation (ledgerkit/reports.py
+  line 663: `if not any(_matches_pattern(pat, posting.account) for pat in
+  section.accounts): continue`) counts a posting exactly once regardless
+  of how many of section.accounts's own OR-combined patterns it matches
+  -- the account-pattern check is a single boolean gate on whether to
+  append the posting once, not a per-matching-pattern loop. Confirmed
+  correct by direct source reading (not yet by an independently executed
+  oracle check against the pinned overlapping-pattern scenario: no
+  check_id currently has a real passing result for this scope --
+  relevance is established via EV-BFS-001, behavioural coverage is not
+  yet, pending the new check's own real, authorised test, planning/
+  phase-83-semantic-change-assurance.md §7).
+derivation: null
+supporting_evidence: [EV-BFS-001]
+contradicting_evidence: []
+derived_by: "project lead"
+repository_revision: "ledgerkit@7224bb5c113cd3aad7e86e994365703cd0070154"
+timestamp: "2026-10-28T00:00:00Z"
+status: proposed
+supersedes: null
+assertion_kind: state_transformation
+basis: observed_behaviour
+evidence_support_state: partially_supported

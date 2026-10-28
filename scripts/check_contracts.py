@@ -224,7 +224,30 @@ def check_result_integrity(
     note — `--strict` must not report "no findings" while silently unable
     to confirm a required check's claimed current state. An unavailable
     checkout with nothing currently relying on it (no required check has
-    any recorded PASS yet) stays informational only, unchanged."""
+    any recorded PASS yet) stays informational only, unchanged.
+
+    `decisions/0088` (Phase 83, found by direct execution against a real
+    oracle-contract.yaml extension, not speculation): a result whose own
+    recorded `oracle_contract_content_hash`/`tested_subject_digest`/
+    `test_input_digest` no longer matches current reality, purely because
+    the contract or tested subject legitimately changed since it was
+    recorded, is exactly the "historically valid, not currently
+    applicable" state `decisions/0081` §4 already names as expected and
+    acceptable -- never deleted, never corrected, simply superseded. This
+    was previously always a *blocking* finding regardless of whether a
+    fresher, currently-valid `PASS` already exists for the same
+    `check_id` -- unreachable `--strict`-clean state the very first time
+    a real contract was ever extended (confirmed: extending this phase's
+    own `oracle-contract.yaml` and re-running the two pre-existing checks
+    left their six original results blocking forever, with no action able
+    to clear the finding short of deleting historical evidence, which
+    `decisions/0081`/`0082` both forbid). Downgraded to informational
+    specifically when a *different* result for the same `check_id`
+    currently evaluates `PASS` -- current verification is intact, so the
+    older file's own drift is visibility, not a blocking problem; stays
+    blocking, unchanged, when no current `PASS` exists for that
+    `check_id` at all (the real problem case this finding exists to
+    catch)."""
     findings: list[Finding] = []
     repo_root = ledgerkit_root if ledgerkit_root.is_dir() else None
     contract_path = slug_dir / "oracle-contract.yaml"
@@ -261,6 +284,21 @@ def check_result_integrity(
                         "confirmed against the implementation actually tested",
                     )
                 )
+    # decisions/0088: per check_id, whether *any* result currently
+    # evaluates PASS -- computed once, reused for every mismatch found
+    # against that check_id, rather than re-scanning per result.
+    current_pass_check_ids: set[str] = set()
+    for _result_path, candidate in results:
+        candidate_check = contract.check_by_id(candidate.check_id)
+        if candidate_check is None:
+            continue
+        candidate_outcome, _ = oracle.evaluate_result_precedence(
+            candidate, contract, candidate_check,
+            contract_path=contract_path, repo_root=repo_root,
+        )
+        if candidate_outcome == "PASS":
+            current_pass_check_ids.add(candidate.check_id)
+
     for result_path, result in results:
         check = contract.check_by_id(result.check_id)
         if check is None:
@@ -269,12 +307,22 @@ def check_result_integrity(
             result, contract, check, contract_path=contract_path, repo_root=repo_root
         )
         if effective_outcome == "INVALID" and result.outcome != "INVALID":
+            superseded = result.check_id in current_pass_check_ids
             findings.append(
                 Finding(
                     "contract-result-integrity-mismatch",
                     f"{result_path.relative_to(root)}: recorded outcome="
                     f"{result.outcome!r} but independent recomputation finds "
-                    f"this result INVALID: {reason}",
+                    f"this result INVALID: {reason}"
+                    + (
+                        " -- informational only: a different, current PASS "
+                        f"already exists for check_id={result.check_id!r} "
+                        "(decisions/0088); this file is superseded historical "
+                        "evidence, never deleted or corrected"
+                        if superseded
+                        else ""
+                    ),
+                    strict=not superseded,
                 )
             )
     return findings

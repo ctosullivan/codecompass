@@ -1,0 +1,10 @@
+$ /home/cormac/projects/ledgerkit/.venv/bin/python -m pytest -q --junit-xml=<tmp> tests/test_reports.py::TestBalanceFromSpec::test_multi_section_correct_values
+(cwd=/home/cormac/projects/ledgerkit)
+
+--- stdout ---
+.                                                                        [100%]
+1 passed in 0.13s
+
+--- stderr ---
+
+--- returncode: 0 ---

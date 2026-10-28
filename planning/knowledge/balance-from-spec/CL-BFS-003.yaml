@@ -12,7 +12,7 @@ contradicting_evidence: []
 derived_by: "project lead"
 repository_revision: "ledgerkit@7224bb5c113cd3aad7e86e994365703cd0070154"
 timestamp: "2026-10-21T00:00:00Z"
-status: verified
+status: superseded
 supersedes: null
 assertion_kind: workflow
 basis: observed_behaviour

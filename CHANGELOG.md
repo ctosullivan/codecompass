@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Phase 83 second corrective planning amendment, and implementation**
+  (`decisions/0087`/`0088`, direct user request, "CodeCompass
+  Orchestrator — Amend and Implement Phase 83"): fixes a precedence-
+  reachability defect found in `decisions/0086`'s own design before any
+  code was written against it (checking the aggregate `GAP` state before
+  `INVALID` made `INVALID_ASSESSMENT` unreachable, since any required
+  check with no `PASS` — including one whose only result is `INVALID` —
+  aggregates to `GAP`); fixes the Ledgerkit scratch-copy demonstration's
+  sequencing so the new check's own test file cannot be included in the
+  original-suite baseline run by construction. Also corrects a real,
+  independently demonstrated defect in `scripts/check_contracts.py`
+  (`decisions/0088`, found by actually extending a real oracle contract
+  for the first time): `check_result_integrity` no longer blocks
+  `--strict` on a historical result superseded by a different, current
+  `PASS` for the same `check_id` — visibility is preserved, the finding
+  becomes informational; a mismatching result with nothing current to
+  supersede it stays exactly as blocking as before.
+
 - **Phase 83 corrective planning amendment** (planning only, no `src/`
   change, direct user request, `decisions/0086`, "CodeCompass
   Orchestrator — Phase 83 Corrective Planning Amendment"): corrects five
@@ -181,6 +199,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   enforcement fidelity.
 
 ### Added
+
+- **Phase 83 — Semantic Change Assurance, implemented** (`decisions/0087`
+  authorises implementation after a second corrective planning pass):
+  new maintainer script `scripts/assess_change_impact.py` — evidence-
+  backed change-impact assessment reusing `oracle.py`/`knowledge_
+  intermediate.py` unmodified. Resolves a touched source range to its
+  enclosing first-party symbol via the target checkout's own
+  `source_symbols`, gated on the target graph's own `source_files.
+  content_hash` matching the live file content (`stale_index` otherwise,
+  never a best-effort guess); classifies the symbol `no_recorded_
+  relationship` / `relevant_no_coverage_link` / `behavioural_risk` purely
+  from existing Evidence-source_ref-to-symbol and Claim-supporting_
+  evidence citation chains, never `test_input_paths` or file proximity;
+  with `--run-checks`, freshly re-executes every applicable check and
+  classifies it `CONFIRMED_REGRESSION` / `INVALID_ASSESSMENT` /
+  `VERIFIED_SCOPE` / `VERIFICATION_GAP` from that one fresh result's own
+  effective outcome alone (never the aggregate state, never a historical
+  result). Dogfooded end to end against real Ledgerkit (HEAD `7224bb5c1`):
+  a deliberately introduced OR-union double-counting mutation passes
+  Ledgerkit's full, unmodified, real 935-test suite 100% while a new,
+  independent check fails, and `assess_change_impact.py` itself reports
+  `CONFIRMED_REGRESSION` with the co-existing `GAP` aggregate state shown
+  explicitly — the dogfood scenario this phase exists to demonstrate.
+  `planning/contracts/balance-from-spec/oracle-contract.yaml` gains one
+  new required check (same `contract_id`, same `tested_paths`); two
+  fresh `OracleResult`s re-confirm the two pre-existing checks still PASS
+  under the new contract hash. New knowledge records `REQ-BFS-002`/
+  `DEC-BFS-002`/`CL-BFS-004` (relevance established via the existing
+  `EV-BFS-001`; behavioural coverage deliberately not yet claimed — no
+  `EV-BFS-004` exists, since the new check's real test does not yet
+  exist in the live `~/projects/ledgerkit` checkout, a separately
+  authorised, outstanding action); `CL-BFS-003` (whose own "satisfies
+  every required check" statement became false the moment the new
+  required check was added) is superseded by `CL-BFS-005`, which states
+  the current, honest, narrower reality. 27 new tests
+  (`tests/test_assess_change_impact.py`), independent of Ledgerkit except
+  for one marked group.
 
 - **Phase 82 — Contract and Evidence Foundation, implemented**
   (`decisions/0081` corrects four remaining structural gaps and
