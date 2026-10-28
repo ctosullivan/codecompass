@@ -638,6 +638,24 @@ unresolved gate — never silently treated as satisfied.
   `tests/test_check_contracts.py`) unmodified and green after this
   phase's changes, including after the §6 contract extension.
 
+**Corrective-pass re-validation, confirmed (2026-10-28, `decisions/
+0089`)**: scenarios 10.1/10.2 were re-run end to end on fresh disposable
+scratch copies (pinned Ledgerkit HEAD `7224bb5c1`, identical baseline
+file hashes to the original run) after the §A/§B/§C fixes — same
+mutation, same 935-passed original-suite result, same `300.00 != 150.00`
+new-test failure, same `CONFIRMED_REGRESSION` from
+`assess_change_impact.py` itself (fresh=FAIL, aggregate=GAP) on the
+mutated copy and `VERIFIED_SCOPE` (fresh=PASS, aggregate=PASS) on the
+clean one — using a disposable scratch knowledge-root distinct from
+`planning/knowledge/`/`planning/contracts/` (per the standing cross-
+repository safeguard, §13). Scenario 10.11's multi-symbol resolution was
+additionally confirmed against real Ledgerkit data (`ledgerkit/
+reports.py:490-600` resolves all three of `register`/`stats`/
+`balance_from_spec`; `ledgerkit/reports.py:644-999999` is rejected
+`cannot_map` on `end`). The real, canonical `planning/knowledge/`/
+`planning/contracts/` trees were confirmed untouched (`git status`)
+throughout.
+
 ## 13. Risks, alternatives, and unresolved decisions
 
 **Risks** (first two unchanged from the first pass; third is new):

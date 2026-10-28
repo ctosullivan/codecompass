@@ -9,6 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Phase 83 corrective pass** (`decisions/0089`, direct user request,
+  "CodeCompass Orchestrator — Phase 83 Corrective Pass"): fixes three
+  correctness defects in `scripts/assess_change_impact.py` found by
+  direct post-completion source review, each reproduced with a standalone
+  script against the unfixed code before correcting it. `classify_
+  symbol()` previously matched Evidence by symbol name alone — a
+  same-named symbol in a different file could inherit unrelated
+  Evidence; now also matches the `source_ref`'s own `path` group
+  (normalised) against the symbol actually being assessed. `resolve_
+  changed_range()` previously resolved only the symbol enclosing the
+  range's own start and never validated `end` against the file's own
+  extent; `resolve_enclosing_symbol` is replaced by `resolve_
+  intersecting_symbols`, resolving every indexed symbol whose own span
+  intersects the full requested range, validating `end` exactly as
+  `start` already was, and reporting a `partially_resolved` range (naming
+  the unmapped line(s)) instead of silently discarding the gap; applicable
+  checks are deduplicated per range across the matched symbols while each
+  `AssuranceFinding` records every contributing symbol. `classify_
+  symbol()` previously accepted a referenced historical result via a bare
+  `yaml.safe_load` with only a `check_id`-key check; now routes it through
+  the real `oracle.parse_oracle_result` plus explicit `contract_id`/
+  `check_id`/`scope` validation against the live contract — a malformed,
+  mismatched, or wrongly-scoped result never establishes coverage. No
+  change to `oracle.py`/`graph.py`/`knowledge_intermediate.py`. 18 new
+  tests (`tests/test_assess_change_impact.py`, now 46 total); re-validated
+  end to end against fresh disposable Ledgerkit scratch copies (same
+  pinned HEAD, same mutation, same `935 passed` original-suite result,
+  same `CONFIRMED_REGRESSION`/`VERIFIED_SCOPE` outcomes as the original
+  demonstration) and against real, unmutated Ledgerkit data for the
+  multi-symbol/EOF fixes.
+
 - **Phase 83 second corrective planning amendment, and implementation**
   (`decisions/0087`/`0088`, direct user request, "CodeCompass
   Orchestrator — Amend and Implement Phase 83"): fixes a precedence-

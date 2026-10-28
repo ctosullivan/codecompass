@@ -2,7 +2,7 @@
 Assurance). A maintainer-only tool, not part of the codecompass package --
 imported directly from its file path, same convention as
 tests/test_check_contracts.py. See planning/phase-83-semantic-change-
-assurance.md and decisions/0086/0087 for the full design.
+assurance.md and decisions/0086/0087/0089 for the full design.
 
 Deliberately independent of the real ~/projects/ledgerkit checkout for
 every test below except the small group marked `requires_ledgerkit` --
@@ -71,27 +71,52 @@ class TestParseChangedArg:
 
 
 # ---------------------------------------------------------------------------
-# resolve_enclosing_symbol -- pure function, no DB
+# resolve_intersecting_symbols / compute_symbol_spans -- pure functions, no DB
+# (decisions/0089 §B: replaces the single-result resolve_enclosing_symbol)
 # ---------------------------------------------------------------------------
 
 
-class TestResolveEnclosingSymbol:
-    def test_resolves_to_preceding_symbol(self):
+class TestComputeSymbolSpans:
+    def test_each_span_runs_to_one_less_than_the_next_symbols_line(self):
         symbols = [
             aci.SymbolRow("foo", "function", 1),
             aci.SymbolRow("bar", "function", 10),
             aci.SymbolRow("baz", "function", 20),
         ]
-        assert aci.resolve_enclosing_symbol(symbols, 15).name == "bar"
-        assert aci.resolve_enclosing_symbol(symbols, 10).name == "bar"
-        assert aci.resolve_enclosing_symbol(symbols, 25).name == "baz"
+        spans = aci.compute_symbol_spans(symbols, line_count=25)
+        assert [(s.symbol.name, s.span_start, s.span_end) for s in spans] == [
+            ("foo", 1, 9), ("bar", 10, 19), ("baz", 20, 25),
+        ]
 
-    def test_line_before_first_symbol_is_unresolved(self):
+    def test_empty_symbol_list(self):
+        assert aci.compute_symbol_spans([], line_count=10) == []
+
+
+class TestResolveIntersectingSymbols:
+    def test_single_point_resolves_to_enclosing_symbol_only(self):
+        symbols = [
+            aci.SymbolRow("foo", "function", 1),
+            aci.SymbolRow("bar", "function", 10),
+            aci.SymbolRow("baz", "function", 20),
+        ]
+        matched = aci.resolve_intersecting_symbols(symbols, line_count=25, start=15, end=15)
+        assert [s.symbol.name for s in matched] == ["bar"]
+
+    def test_range_crossing_two_symbols_resolves_both(self):
+        symbols = [
+            aci.SymbolRow("foo", "function", 1),
+            aci.SymbolRow("bar", "function", 10),
+            aci.SymbolRow("baz", "function", 20),
+        ]
+        matched = aci.resolve_intersecting_symbols(symbols, line_count=25, start=8, end=12)
+        assert [s.symbol.name for s in matched] == ["foo", "bar"]
+
+    def test_range_before_first_symbol_resolves_to_nothing(self):
         symbols = [aci.SymbolRow("foo", "function", 5)]
-        assert aci.resolve_enclosing_symbol(symbols, 1) is None
+        assert aci.resolve_intersecting_symbols(symbols, line_count=10, start=1, end=2) == []
 
-    def test_empty_symbol_list_is_unresolved(self):
-        assert aci.resolve_enclosing_symbol([], 1) is None
+    def test_empty_symbol_list_resolves_to_nothing(self):
+        assert aci.resolve_intersecting_symbols([], line_count=10, start=1, end=1) == []
 
 
 # ---------------------------------------------------------------------------
@@ -129,26 +154,42 @@ _IMPL_TEXT = (
     "    return 2\n"
 )
 
+# A third fixture with a top-of-file region (an import) before any
+# top-level symbol -- used to exercise `partially_resolved` (decisions/
+# 0089 §B): a range starting in that region is not fully covered by any
+# indexed symbol's own span.
+_IMPL_WITH_PREAMBLE_TEXT = (
+    "import os\n"           # 1
+    "\n"                     # 2
+    "\n"                     # 3
+    "def helper():\n"        # 4
+    "    return os\n"        # 5
+    "\n"                     # 6
+    "\n"                     # 7
+    "def target_function():\n"  # 8
+    "    return 2\n"         # 9
+)
 
-def _build_fake_target_repo(tmp_path: Path) -> Path:
+
+def _build_fake_target_repo(tmp_path: Path, *, text: str = _IMPL_TEXT) -> Path:
     repo = tmp_path / "target-repo"
     (repo / "tests").mkdir(parents=True)
-    (repo / "impl.py").write_text(_IMPL_TEXT, encoding="utf-8")
+    (repo / "impl.py").write_text(text, encoding="utf-8")
     return repo
 
 
-def _sync_graph_for(repo: Path) -> Path:
+def _sync_graph_for(repo: Path, *, symbols: list[tuple[str, str, int]] | None = None) -> Path:
     graph_db = repo / "context-graph.db"
     content_hash = oracle.sha256_file(repo / "impl.py")
     _write_graph_db(
         graph_db, path="impl.py", content_hash=content_hash,
-        symbols=[("helper", "function", 1), ("target_function", "function", 5)],
+        symbols=symbols or [("helper", "function", 1), ("target_function", "function", 5)],
     )
     return graph_db
 
 
 # ---------------------------------------------------------------------------
-# resolve_changed_range -- §5 revision consistency
+# resolve_changed_range -- §5 revision consistency + §B multi-symbol/EOF
 # ---------------------------------------------------------------------------
 
 
@@ -158,7 +199,7 @@ class TestResolveChangedRange:
         graph_db = _sync_graph_for(repo)
         res = aci.resolve_changed_range(oracle, repo, graph_db, aci.ChangedRange("impl.py", 5, 6))
         assert res.status == "resolved"
-        assert res.symbol.name == "target_function"
+        assert [s.name for s in res.symbols] == ["target_function"]
 
     def test_stale_index_on_hash_mismatch(self, tmp_path):
         repo = _build_fake_target_repo(tmp_path)
@@ -192,11 +233,23 @@ class TestResolveChangedRange:
         assert res.status == "cannot_map"
         assert "not indexed" in res.reason
 
-    def test_cannot_map_line_past_file_extent(self, tmp_path):
+    def test_cannot_map_start_past_file_extent(self, tmp_path):
         repo = _build_fake_target_repo(tmp_path)
         graph_db = _sync_graph_for(repo)
         res = aci.resolve_changed_range(oracle, repo, graph_db, aci.ChangedRange("impl.py", 9999, 9999))
         assert res.status == "cannot_map"
+        assert "own extent" in res.reason
+
+    def test_cannot_map_end_past_file_extent(self, tmp_path):
+        """decisions/0089 §B: previously only `start` was validated against
+        the file's own extent -- a `start` within range but an `end` far
+        past it (6 lines total) must also be rejected, not silently
+        resolved as if `end` had never been consulted."""
+        repo = _build_fake_target_repo(tmp_path)
+        graph_db = _sync_graph_for(repo)
+        res = aci.resolve_changed_range(oracle, repo, graph_db, aci.ChangedRange("impl.py", 5, 99999))
+        assert res.status == "cannot_map"
+        assert "end=99999" in res.reason
         assert "own extent" in res.reason
 
     def test_cannot_map_line_before_any_symbol(self, tmp_path):
@@ -208,6 +261,81 @@ class TestResolveChangedRange:
         res = aci.resolve_changed_range(oracle, repo, graph_db, aci.ChangedRange("impl.py", 1, 1))
         assert res.status == "cannot_map"
         assert "no indexed top-level symbol" in res.reason
+
+    def test_range_crossing_multiple_functions_resolves_all(self, tmp_path):
+        """decisions/0089 §B: a range spanning two top-level declarations
+        must resolve BOTH, not only the one enclosing the range's start."""
+        repo = _build_fake_target_repo(tmp_path)
+        graph_db = _sync_graph_for(repo)
+        res = aci.resolve_changed_range(oracle, repo, graph_db, aci.ChangedRange("impl.py", 1, 6))
+        assert res.status == "resolved"
+        assert sorted(s.name for s in res.symbols) == ["helper", "target_function"]
+
+    def test_file_level_change_resolves_every_symbol(self, tmp_path):
+        repo = _build_fake_target_repo(tmp_path)
+        graph_db = _sync_graph_for(repo)
+        line_count = len(_IMPL_TEXT.splitlines())
+        res = aci.resolve_changed_range(oracle, repo, graph_db, aci.ChangedRange("impl.py", 1, line_count))
+        assert res.status == "resolved"
+        assert sorted(s.name for s in res.symbols) == ["helper", "target_function"]
+
+    def test_partially_resolved_when_range_extends_before_first_symbol(self, tmp_path):
+        """decisions/0089 §B: a range starting in a module's top-of-file
+        region (before any indexed top-level symbol) but extending into a
+        real symbol's span must still assess that symbol, while explicitly
+        naming the unmapped lines rather than silently dropping them."""
+        repo = _build_fake_target_repo(tmp_path, text=_IMPL_WITH_PREAMBLE_TEXT)
+        graph_db = _sync_graph_for(
+            repo, symbols=[("helper", "function", 4), ("target_function", "function", 8)]
+        )
+        res = aci.resolve_changed_range(oracle, repo, graph_db, aci.ChangedRange("impl.py", 1, 5))
+        assert res.status == "partially_resolved"
+        assert [s.name for s in res.symbols] == ["helper"]
+        assert "1-3" in res.reason
+
+    def test_duplicate_applicable_checks_deduplicated_with_provenance(self, tmp_path):
+        """decisions/0089 §B: when two touched symbols both bridge to the
+        SAME check, assess() must run that check exactly once, while still
+        recording every symbol that made it applicable."""
+        repo = _build_fake_target_repo(tmp_path)
+        graph_db = _sync_graph_for(repo)
+
+        slug_dir = tmp_path / "knowledge-root" / "planning" / "knowledge" / "demo"
+        contracts_dir = tmp_path / "knowledge-root" / "planning" / "contracts" / "demo"
+        contract_path = contracts_dir / "oracle-contract.yaml"
+        _write_demo_contract(contract_path, check_id="chk-a")
+        result_path = contracts_dir / "results" / "chk-a--r1.yaml"
+        _write_fake_result(result_path, contract_path, check_id="chk-a")
+        test_ref = f'"{result_path.relative_to(tmp_path / "knowledge-root")}"'
+
+        for i, (sym_name, source_line) in enumerate((("helper", 1), ("target_function", 5)), start=1):
+            ev_src, ev_test, cl = f"EV-SYM-{i}01", f"EV-SYM-{i}02", f"CL-SYM-{i}"
+            _write_flat(slug_dir / f"{ev_src}.yaml", {
+                "id": ev_src, "kind": "evidence", "evidence_kind": "source",
+                "source_ref": f'"impl.py:{source_line} def {sym_name}"',
+            })
+            _write_flat(slug_dir / f"{ev_test}.yaml", {
+                "id": ev_test, "kind": "evidence", "evidence_kind": "test",
+                "test_ref": test_ref,
+            })
+            _write_flat(slug_dir / f"{cl}.yaml", {
+                "id": cl, "kind": "claim",
+                "supporting_evidence": [ev_src, ev_test],
+            })
+
+        report = aci.assess(
+            target_repo_root=repo, target_graph_db=graph_db,
+            knowledge_root=tmp_path / "knowledge-root", slug="demo",
+            changed=[aci.ChangedRange("impl.py", 1, 6)], run_checks=False,
+        )
+        finding = report["findings"][0]
+        assert finding["status"] == "resolved"
+        assert len(finding["symbol_classifications"]) == 2
+        assert all(sc["classification"] == "behavioural_risk" for sc in finding["symbol_classifications"])
+        # Exactly one assurance entry for the shared check -- deduplicated.
+        assert len(finding["assurance"]) == 1
+        assert finding["assurance"][0]["check_id"] == "chk-a"
+        assert sorted(finding["assurance"][0]["contributing_symbols"]) == ["helper", "target_function"]
 
 
 # ---------------------------------------------------------------------------
@@ -252,7 +380,9 @@ class TestClassifySymbol:
         contract = oracle.parse_oracle_contract(
             tmp_path / "planning" / "contracts" / "demo" / "oracle-contract.yaml"
         )
-        classification, findings = aci.classify_symbol(records, contract, "target_function", tmp_path)
+        classification, findings = aci.classify_symbol(
+            records, contract, oracle, "target_function", "impl.py", tmp_path
+        )
         assert classification == "no_recorded_relationship"
         assert findings == []
 
@@ -274,7 +404,9 @@ class TestClassifySymbol:
         ki = _load_ki()
         records = ki.load_slug_records(slug_dir)
 
-        classification, findings = aci.classify_symbol(records, contract, "target_function", tmp_path)
+        classification, findings = aci.classify_symbol(
+            records, contract, oracle, "target_function", "impl.py", tmp_path
+        )
         assert classification == "relevant_no_coverage_link"
         assert len(findings) == 1
         assert findings[0].claim_id == "CL-X-001"
@@ -308,11 +440,261 @@ class TestClassifySymbol:
         contract = oracle.parse_oracle_contract(contract_path)
         ki = _load_ki()
         records = ki.load_slug_records(slug_dir)
-        classification, findings = aci.classify_symbol(records, contract, "target_function", tmp_path)
+        classification, findings = aci.classify_symbol(
+            records, contract, oracle, "target_function", "impl.py", tmp_path
+        )
         assert classification == "behavioural_risk"
         assert len(findings) == 1
         assert findings[0].tier == "behavioural_risk"
         assert findings[0].check_id == "chk-a"
+
+
+# ---------------------------------------------------------------------------
+# classify_symbol -- §A source-path identity (decisions/0089 §A): a citing
+# Evidence must match on BOTH symbol name and source path, never name alone
+# ---------------------------------------------------------------------------
+
+
+class TestClassifySymbolSourceIdentity:
+    def test_same_named_symbol_in_a_different_file_does_not_inherit_evidence(self, tmp_path):
+        """The regression this corrective pass exists to fix: an Evidence
+        citing `other.py`'s own `target_function` must never answer for
+        `impl.py`'s own, identically-named `target_function`."""
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        contract_path = tmp_path / "planning" / "contracts" / "demo" / "oracle-contract.yaml"
+        _write_demo_contract(contract_path)
+        _write_flat(slug_dir / "EV-X-001.yaml", {
+            "id": "EV-X-001", "kind": "evidence", "evidence_kind": "source",
+            "source_ref": '"other.py:5 def target_function"',
+        })
+        _write_flat(slug_dir / "CL-X-001.yaml", {
+            "id": "CL-X-001", "kind": "claim", "supporting_evidence": ["EV-X-001"],
+        })
+        contract = oracle.parse_oracle_contract(contract_path)
+        ki = _load_ki()
+        records = ki.load_slug_records(slug_dir)
+
+        classification, findings = aci.classify_symbol(
+            records, contract, oracle, "target_function", "impl.py", tmp_path
+        )
+        assert classification == "no_recorded_relationship"
+        assert findings == []
+
+    def test_matching_path_and_symbol_still_establishes_relevance(self, tmp_path):
+        """Positive control, alongside a decoy same-named-but-different-file
+        Evidence -- only the matching-path Evidence's Claim surfaces."""
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        contract_path = tmp_path / "planning" / "contracts" / "demo" / "oracle-contract.yaml"
+        _write_demo_contract(contract_path)
+        _write_flat(slug_dir / "EV-DECOY-001.yaml", {
+            "id": "EV-DECOY-001", "kind": "evidence", "evidence_kind": "source",
+            "source_ref": '"other.py:5 def target_function"',
+        })
+        _write_flat(slug_dir / "CL-DECOY-001.yaml", {
+            "id": "CL-DECOY-001", "kind": "claim", "supporting_evidence": ["EV-DECOY-001"],
+        })
+        _write_flat(slug_dir / "EV-REAL-001.yaml", {
+            "id": "EV-REAL-001", "kind": "evidence", "evidence_kind": "source",
+            "source_ref": '"impl.py:5 def target_function"',
+        })
+        _write_flat(slug_dir / "CL-REAL-001.yaml", {
+            "id": "CL-REAL-001", "kind": "claim", "supporting_evidence": ["EV-REAL-001"],
+        })
+        contract = oracle.parse_oracle_contract(contract_path)
+        ki = _load_ki()
+        records = ki.load_slug_records(slug_dir)
+
+        classification, findings = aci.classify_symbol(
+            records, contract, oracle, "target_function", "impl.py", tmp_path
+        )
+        assert classification == "relevant_no_coverage_link"
+        assert [f.claim_id for f in findings] == ["CL-REAL-001"]
+
+    def test_equivalent_path_spellings_still_match(self, tmp_path):
+        """`./impl.py` and `impl.py` must normalise to the same identity
+        (decisions/0089 §A: "normalising paths consistently")."""
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        contract_path = tmp_path / "planning" / "contracts" / "demo" / "oracle-contract.yaml"
+        _write_demo_contract(contract_path)
+        _write_flat(slug_dir / "EV-X-001.yaml", {
+            "id": "EV-X-001", "kind": "evidence", "evidence_kind": "source",
+            "source_ref": '"./impl.py:5 def target_function"',
+        })
+        _write_flat(slug_dir / "CL-X-001.yaml", {
+            "id": "CL-X-001", "kind": "claim", "supporting_evidence": ["EV-X-001"],
+        })
+        contract = oracle.parse_oracle_contract(contract_path)
+        ki = _load_ki()
+        records = ki.load_slug_records(slug_dir)
+
+        classification, _ = aci.classify_symbol(
+            records, contract, oracle, "target_function", "impl.py", tmp_path
+        )
+        assert classification == "relevant_no_coverage_link"
+
+
+# ---------------------------------------------------------------------------
+# classify_symbol -- §C validated test-evidence (decisions/0089 §C): a
+# referenced historical result must parse as a real OracleResult and
+# genuinely belong to the live contract/check/scope, never a bare YAML
+# key check
+# ---------------------------------------------------------------------------
+
+
+def _write_source_and_claim(slug_dir: Path, test_evidence_fields: dict) -> None:
+    _write_flat(slug_dir / "EV-SRC-001.yaml", {
+        "id": "EV-SRC-001", "kind": "evidence", "evidence_kind": "source",
+        "source_ref": '"impl.py:5 def target_function"',
+    })
+    _write_flat(slug_dir / "EV-TEST-001.yaml", {**test_evidence_fields, "id": "EV-TEST-001"})
+    _write_flat(slug_dir / "CL-X-001.yaml", {
+        "id": "CL-X-001", "kind": "claim", "supporting_evidence": ["EV-SRC-001", "EV-TEST-001"],
+    })
+
+
+class TestClassifySymbolEvidenceValidation:
+    def test_valid_historical_result_establishes_behavioural_risk(self, tmp_path):
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        contracts_dir = tmp_path / "planning" / "contracts" / "demo"
+        contract_path = contracts_dir / "oracle-contract.yaml"
+        _write_demo_contract(contract_path, check_id="chk-a", scope="scope A")
+        contract = oracle.parse_oracle_contract(contract_path)
+        result_path = contracts_dir / "results" / "chk-a--r1.yaml"
+        _write_fake_result(result_path, contract_path, check_id="chk-a")
+        _write_source_and_claim(slug_dir, {
+            "id": "EV-TEST", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{result_path.relative_to(tmp_path)}"',
+        })
+        ki = _load_ki()
+        records = ki.load_slug_records(slug_dir)
+        classification, findings = aci.classify_symbol(
+            records, contract, oracle, "target_function", "impl.py", tmp_path
+        )
+        assert classification == "behavioural_risk"
+        assert findings[0].check_id == "chk-a"
+
+    def test_malformed_yaml_result_never_establishes_coverage(self, tmp_path):
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        contracts_dir = tmp_path / "planning" / "contracts" / "demo"
+        contract_path = contracts_dir / "oracle-contract.yaml"
+        _write_demo_contract(contract_path, check_id="chk-a")
+        contract = oracle.parse_oracle_contract(contract_path)
+        bad_path = contracts_dir / "results" / "chk-a--malformed.yaml"
+        bad_path.parent.mkdir(parents=True, exist_ok=True)
+        bad_path.write_text("not: valid: yaml: at: all: [[[", encoding="utf-8")
+        _write_source_and_claim(slug_dir, {
+            "id": "EV-TEST", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{bad_path.relative_to(tmp_path)}"',
+        })
+        ki = _load_ki()
+        records = ki.load_slug_records(slug_dir)
+        classification, _ = aci.classify_symbol(
+            records, contract, oracle, "target_function", "impl.py", tmp_path
+        )
+        assert classification == "relevant_no_coverage_link"
+
+    def test_missing_required_fields_never_establishes_coverage(self, tmp_path):
+        """The exact malformed shape the original defect accepted: a
+        top-level mapping with a matching `check_id` key but almost none
+        of OracleResult's own required fields."""
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        contracts_dir = tmp_path / "planning" / "contracts" / "demo"
+        contract_path = contracts_dir / "oracle-contract.yaml"
+        _write_demo_contract(contract_path, check_id="chk-a")
+        contract = oracle.parse_oracle_contract(contract_path)
+        bad_path = contracts_dir / "results" / "chk-a--incomplete.yaml"
+        bad_path.parent.mkdir(parents=True, exist_ok=True)
+        bad_path.write_text("check_id: chk-a\noutcome: PASS\n", encoding="utf-8")
+        _write_source_and_claim(slug_dir, {
+            "id": "EV-TEST", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{bad_path.relative_to(tmp_path)}"',
+        })
+        ki = _load_ki()
+        records = ki.load_slug_records(slug_dir)
+        classification, _ = aci.classify_symbol(
+            records, contract, oracle, "target_function", "impl.py", tmp_path
+        )
+        assert classification == "relevant_no_coverage_link"
+
+    def test_wrong_contract_identity_never_establishes_coverage(self, tmp_path):
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        contracts_dir = tmp_path / "planning" / "contracts" / "demo"
+        contract_path = contracts_dir / "oracle-contract.yaml"
+        _write_demo_contract(contract_path, check_id="chk-a", scope="scope A")
+        contract = oracle.parse_oracle_contract(contract_path)
+        result_path = contracts_dir / "results" / "chk-a--wrong-contract.yaml"
+        _write_fake_result(
+            result_path, contract_path, check_id="chk-a",
+            contract_id_override="REQ-UNRELATED-999",
+        )
+        _write_source_and_claim(slug_dir, {
+            "id": "EV-TEST", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{result_path.relative_to(tmp_path)}"',
+        })
+        ki = _load_ki()
+        records = ki.load_slug_records(slug_dir)
+        classification, _ = aci.classify_symbol(
+            records, contract, oracle, "target_function", "impl.py", tmp_path
+        )
+        assert classification == "relevant_no_coverage_link"
+
+    def test_wrong_scope_never_establishes_coverage(self, tmp_path):
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        contracts_dir = tmp_path / "planning" / "contracts" / "demo"
+        contract_path = contracts_dir / "oracle-contract.yaml"
+        _write_demo_contract(contract_path, check_id="chk-a", scope="scope A")
+        contract = oracle.parse_oracle_contract(contract_path)
+        result_path = contracts_dir / "results" / "chk-a--wrong-scope.yaml"
+        _write_fake_result(
+            result_path, contract_path, check_id="chk-a", scope_override="an entirely different scope",
+        )
+        _write_source_and_claim(slug_dir, {
+            "id": "EV-TEST", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{result_path.relative_to(tmp_path)}"',
+        })
+        ki = _load_ki()
+        records = ki.load_slug_records(slug_dir)
+        classification, _ = aci.classify_symbol(
+            records, contract, oracle, "target_function", "impl.py", tmp_path
+        )
+        assert classification == "relevant_no_coverage_link"
+
+    def test_unknown_check_id_never_establishes_coverage(self, tmp_path):
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        contracts_dir = tmp_path / "planning" / "contracts" / "demo"
+        contract_path = contracts_dir / "oracle-contract.yaml"
+        _write_demo_contract(contract_path, check_id="chk-a", scope="scope A")
+        contract = oracle.parse_oracle_contract(contract_path)
+        result_path = contracts_dir / "results" / "chk-unknown--r1.yaml"
+        _write_fake_result(
+            result_path, contract_path, check_id="chk-unknown", scope_override="scope A",
+        )
+        _write_source_and_claim(slug_dir, {
+            "id": "EV-TEST", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{result_path.relative_to(tmp_path)}"',
+        })
+        ki = _load_ki()
+        records = ki.load_slug_records(slug_dir)
+        classification, _ = aci.classify_symbol(
+            records, contract, oracle, "target_function", "impl.py", tmp_path
+        )
+        assert classification == "relevant_no_coverage_link"
+
+    def test_missing_referenced_file_never_establishes_coverage(self, tmp_path):
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        contract_path = tmp_path / "planning" / "contracts" / "demo" / "oracle-contract.yaml"
+        _write_demo_contract(contract_path, check_id="chk-a")
+        contract = oracle.parse_oracle_contract(contract_path)
+        _write_source_and_claim(slug_dir, {
+            "id": "EV-TEST", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": '"planning/contracts/demo/results/does-not-exist.yaml"',
+        })
+        ki = _load_ki()
+        records = ki.load_slug_records(slug_dir)
+        classification, _ = aci.classify_symbol(
+            records, contract, oracle, "target_function", "impl.py", tmp_path
+        )
+        assert classification == "relevant_no_coverage_link"
 
 
 def _load_ki():
@@ -322,14 +704,19 @@ def _load_ki():
     return ki
 
 
-def _write_fake_result(path: Path, contract_path: Path, *, check_id: str, outcome: str = "PASS") -> None:
+def _write_fake_result(
+    path: Path, contract_path: Path, *, check_id: str, outcome: str = "PASS",
+    contract_id_override: str | None = None, scope_override: str | None = None,
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     raw_path = path.parent / f"{check_id}-raw.txt"
     raw_path.write_text("ok", encoding="utf-8")
+    contract_id = contract_id_override or "REQ-X-001"
+    scope = scope_override or "scope A"
     result = oracle.OracleResult(
-        schema_version=1, run_id="r1", contract_id="REQ-X-001", check_id=check_id,
-        scope="scope A", baseline_id=None, tested_subject_digest="d" * 64,
-        oracle_contract_id="REQ-X-001", oracle_contract_content_hash=oracle.sha256_file(contract_path),
+        schema_version=1, run_id="r1", contract_id=contract_id, check_id=check_id,
+        scope=scope, baseline_id=None, tested_subject_digest="d" * 64,
+        oracle_contract_id=contract_id, oracle_contract_content_hash=oracle.sha256_file(contract_path),
         test_input_digest="i" * 64, raw_output_ref=str(raw_path),
         raw_output_sha256=oracle.sha256_file(raw_path), outcome=outcome,
         executed_at="2026-10-28T00:00:00Z", execution_provider="pytest",
@@ -539,10 +926,12 @@ class TestAssessEndToEnd:
             changed=[aci.ChangedRange("impl.py", 5, 6)], run_checks=False,
         )
         finding = report["findings"][0]
-        assert finding["classification"] == "behavioural_risk"
+        assert len(finding["symbol_classifications"]) == 1
+        assert finding["symbol_classifications"][0]["classification"] == "behavioural_risk"
         assert len(finding["assurance"]) == 1
         assert finding["assurance"][0]["classification"] == "VERIFICATION_GAP"
         assert finding["assurance"][0]["fresh_effective_outcome"] is None
+        assert finding["assurance"][0]["contributing_symbols"] == ["target_function"]
 
     def test_cannot_map_reported_when_no_changed_given_is_a_cli_error(self):
         # main()'s own guard -- exercised at the CLI boundary, not here;

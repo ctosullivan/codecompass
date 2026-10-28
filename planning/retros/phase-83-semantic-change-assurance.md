@@ -252,3 +252,100 @@ enrichment phase was triggered — `--budget 0` on every scratch-copy
 sync). Nothing ran unexpectedly long except the pre-existing, unrelated
 real-network `test_sync_whole_project` test already in this repo's own
 full suite.
+
+## Corrective pass (2026-10-28, post-completion source review — `decisions/0089`)
+
+Governing prompt: "CodeCompass Orchestrator — Phase 83 Corrective Pass."
+Three suspected defects, named without being told they were already
+confirmed, were verified real by direct reading of the shipped
+`scripts/assess_change_impact.py` (commit `5132529`) before any code
+changed, each reproduced with a standalone script run against the
+unfixed code (not merely inspected):
+
+1. **`classify_symbol()` matched Evidence by symbol name alone** — a
+   `source_ref` citing `other.py`'s `target_function` was accepted as
+   relevant to `impl.py`'s own, identically-named `target_function`
+   (reproduced: `classify_symbol` returned `relevant_no_coverage_link`
+   where `no_recorded_relationship` was correct).
+2. **`resolve_changed_range()` resolved only the symbol enclosing
+   `changed.start`, and never validated `changed.end`** — a range
+   spanning `helper` (line 1) and `target_function` (line 5) returned
+   only `helper`; a range `5-99999` against a 6-line file resolved as if
+   `end` had never been read.
+3. **`classify_symbol()` accepted a referenced result via a bare
+   `yaml.safe_load`, with no schema/contract-identity/scope validation**
+   — a YAML file with only `check_id: chk-a` / `outcome: PASS` (missing
+   every other required `OracleResult` field) established
+   `behavioural_risk`.
+
+Fixed in `scripts/assess_change_impact.py` only (`oracle.py`/`graph.py`/
+`knowledge_intermediate.py` untouched, confirmed by `git status` and by
+this pass's own design — see `decisions/0089`): `classify_symbol` gains
+`source_path` (path-qualified Evidence matching, normalised via
+`PurePosixPath`) and `oracle_mod` (routes the referenced result through
+the real `parse_oracle_result` plus explicit `contract_id`/`check_id`/
+`scope` validation, never a parallel parser); `resolve_enclosing_symbol`
+is replaced by `resolve_intersecting_symbols`/`compute_symbol_spans`,
+resolving every symbol whose span intersects the full requested range,
+validating `end` against the file's own extent exactly as `start`
+already was, and introducing `partially_resolved` for a range only
+partly covered by indexed symbols (naming the unmapped lines explicitly,
+never discarding them). `assess()` now classifies every resolved symbol
+independently and deduplicates applicable checks per range while
+recording `contributing_symbols` per `AssuranceFinding`, so
+deduplication never erases per-symbol provenance.
+
+**Tests.** 18 new tests added directly reproducing/closing each defect
+(`TestClassifySymbolSourceIdentity`, `TestClassifySymbolEvidenceValidation`,
+`TestComputeSymbolSpans`, `TestResolveIntersectingSymbols`, plus new
+cases in `TestResolveChangedRange` for multi-symbol/EOF/partial-coverage/
+dedup) — `tests/test_assess_change_impact.py` now has 46 tests, all
+passing. Full repository suite: `1054 passed, 2 skipped` (up from `1036
+passed, 2 skipped` at Phase 83's original closeout — the 18 new tests).
+`tests/test_oracle.py`/`tests/test_check_contracts.py` (Phase 82)
+unmodified and green. `check_contracts.py --strict` / `check_knowledge_
+base.py --strict` / `check_user_docs.py --strict` all exit `0`, with the
+same findings as before this pass (unchanged counts: 7 informational
+contract findings, 24 informational knowledge-base findings, 0 docs
+findings) — this pass added no new knowledge records or contract
+entries, so no new informational findings were expected or seen.
+
+**Ledgerkit re-demonstration**, entirely on disposable scratch copies
+(never the real checkout): pinned Ledgerkit HEAD `7224bb5c113cd3
+aad7e86e994365703cd0070154`, `sha256(reports.py)`/`sha256(test_reports.py)`
+identical to the original demonstration's own pinned values, confirming
+the baseline had not drifted. The same OR-union double-counting mutation
+(`section.accounts`'s match gate changed from a single boolean `any(...)`
+append to counting matches and appending once per match) was re-applied;
+Ledgerkit's full, original, unmodified suite — the new test file
+genuinely absent from the tree at this point — passed `935 passed, 1
+warning, 14 subtests passed`, identical to the original run. The new
+test, added only afterward as its own file
+(`tests/test_phase83_overlap_regression.py`, never merged into
+`test_reports.py`, never committed to the real checkout), failed
+`Decimal('300.00') != Decimal('150.00')` against the mutation and passed
+against a second, clean scratch copy — both directions, identical to the
+original run. `scripts/assess_change_impact.py --run-checks`, against
+the corrected implementation and a fresh disposable scratch knowledge-
+root (never `planning/knowledge/`/`planning/contracts/`), reported
+`CONFIRMED_REGRESSION` (fresh=FAIL, aggregate=GAP) against the mutated
+copy and `VERIFIED_SCOPE` (fresh=PASS, aggregate=PASS) against the clean
+one. The defect-B fix was additionally confirmed against real,
+unmutated Ledgerkit data (not only the synthetic fixtures in `tests/
+test_assess_change_impact.py`): `--changed ledgerkit/reports.py:490-600`
+resolved all three real top-level symbols it crosses (`register`,
+`stats`, `balance_from_spec`); `--changed ledgerkit/reports.py:644-
+999999` was rejected `cannot_map` on `end`, naming the real file's own
+696-line extent. The real `planning/knowledge/balance-from-spec/` and
+`planning/contracts/balance-from-spec/` trees were confirmed untouched
+(`git status --short`) throughout — the scratch knowledge-root's own
+`EV-BFS-004`/patched contract/placeholder result exist only under a
+scratchpad path, never committed.
+
+**Independent audit.** See `planning/retros/_audit-phase-83.md`'s own
+corrective-pass section for the full, separately-run verdict.
+
+**Outstanding, unaffected by this pass**: the real Ledgerkit test still
+has not landed in the real `~/projects/ledgerkit` checkout — exactly as
+outstanding as before this corrective pass, not expanded or narrowed by
+it.

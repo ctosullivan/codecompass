@@ -3,7 +3,7 @@ assessment, reusing Phase 82's oracle machinery and the existing
 knowledge-record Evidence/Claim citation chains unchanged.
 
 See `planning/phase-83-semantic-change-assurance.md` (the full design)
-and `decisions/0086`/`0087` (the two corrective amendments this
+and `decisions/0086`/`0087`/`0089` (the three corrective amendments this
 implementation follows). This is a maintainer script, like
 `scripts/run_balance_from_spec_oracle.py` -- not a shipped `codecompass`
 subcommand (`planning/v2-roadmap.md`'s own Phase 83 scoping).
@@ -36,7 +36,7 @@ import re
 import sqlite3
 import sys
 from dataclasses import asdict, dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -61,6 +61,15 @@ def _unquote(value: str) -> str:
     if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
         return value[1:-1]
     return value
+
+
+def _normalize_source_path(path: str) -> str:
+    """The `source_ref`/`--changed` path convention is always a relative,
+    forward-slash path from the target repository's own root (`decisions/
+    0089` §A) -- normalised, never filesystem-resolved, so a disposable
+    scratch copy and the real checkout compare identically without either
+    existing on disk at comparison time."""
+    return PurePosixPath(path.strip()).as_posix()
 
 
 def _load_codecompass_modules():
@@ -107,7 +116,8 @@ def parse_changed_arg(raw: str) -> ChangedRange:
 
 
 # ---------------------------------------------------------------------------
-# §5 -- revision consistency via source_files.content_hash (decisions/0086 §3)
+# §5 -- revision consistency via source_files.content_hash (decisions/0086 §3),
+# resolving every symbol whose own span intersects the range (decisions/0089 §B)
 # ---------------------------------------------------------------------------
 
 
@@ -144,26 +154,60 @@ def _load_symbols(graph_db: Path, source_file_id: int) -> list[SymbolRow]:
     return [SymbolRow(name=n, kind=k, line=line_) for n, k, line_ in rows]
 
 
-def resolve_enclosing_symbol(symbols: list[SymbolRow], start_line: int) -> SymbolRow | None:
-    """The last symbol (ordered by line) whose own `line <= start_line` --
-    plan §3/§5's own "a symbol's span runs from its own line to one less
-    than the next symbol's line" convention, read as a query over an
-    already-existing column, no new one."""
-    enclosing: SymbolRow | None = None
-    for sym in symbols:
-        if sym.line <= start_line:
-            enclosing = sym
-        else:
-            break
-    return enclosing
+@dataclass
+class SymbolSpan:
+    symbol: SymbolRow
+    span_start: int
+    span_end: int
+
+
+def compute_symbol_spans(symbols: list[SymbolRow], line_count: int) -> list[SymbolSpan]:
+    """Plan §5's own convention: a symbol's span runs from its own line to
+    one less than the next symbol's line, or to the file's own last line
+    for the last symbol. `symbols` must already be ordered by line."""
+    spans: list[SymbolSpan] = []
+    for i, sym in enumerate(symbols):
+        span_end = symbols[i + 1].line - 1 if i + 1 < len(symbols) else line_count
+        spans.append(SymbolSpan(symbol=sym, span_start=sym.line, span_end=span_end))
+    return spans
+
+
+def resolve_intersecting_symbols(
+    symbols: list[SymbolRow], line_count: int, start: int, end: int
+) -> list[SymbolSpan]:
+    """Every symbol whose own span intersects `[start, end]` -- generalised
+    from a single enclosing-symbol lookup (`decisions/0089` §B) to the full
+    requested range, since a real changed range commonly crosses more than
+    one top-level declaration."""
+    spans = compute_symbol_spans(symbols, line_count)
+    return [s for s in spans if s.span_start <= end and s.span_end >= start]
+
+
+def _describe_uncovered_lines(uncovered: list[int]) -> str:
+    """Groups a sorted list of line numbers into contiguous sub-ranges for
+    a human-readable "these specific lines are unmapped" reason -- never a
+    silent drop of the gap (`decisions/0089` §B)."""
+    parts: list[str] = []
+    start = prev = uncovered[0]
+    for n in uncovered[1:]:
+        if n == prev + 1:
+            prev = n
+            continue
+        parts.append(str(start) if start == prev else f"{start}-{prev}")
+        start = prev = n
+    parts.append(str(start) if start == prev else f"{start}-{prev}")
+    return (
+        f"line(s) {', '.join(parts)} within the requested range are not covered "
+        "by any indexed top-level symbol's own span"
+    )
 
 
 @dataclass
 class RangeResolution:
     changed: ChangedRange
-    status: str  # "resolved" | "stale_index" | "cannot_map"
+    status: str  # "resolved" | "partially_resolved" | "stale_index" | "cannot_map"
     reason: str | None = None
-    symbol: SymbolRow | None = None
+    symbols: list[SymbolRow] = field(default_factory=list)
 
 
 def resolve_changed_range(
@@ -205,18 +249,41 @@ def resolve_changed_range(
             changed, "cannot_map",
             reason=f"start={changed.start} is past {changed.path!r}'s own extent ({line_count} lines)",
         )
-    symbols = _load_symbols(graph_db, source_file_id)
-    enclosing = resolve_enclosing_symbol(symbols, changed.start)
-    if enclosing is None:
+    if changed.end > line_count:
         return RangeResolution(
             changed, "cannot_map",
-            reason=f"no indexed top-level symbol encloses line {changed.start} in {changed.path!r}",
+            reason=f"end={changed.end} is past {changed.path!r}'s own extent ({line_count} lines)",
         )
-    return RangeResolution(changed, "resolved", symbol=enclosing)
+    symbols = _load_symbols(graph_db, source_file_id)
+    matched = resolve_intersecting_symbols(symbols, line_count, changed.start, changed.end)
+    if not matched:
+        return RangeResolution(
+            changed, "cannot_map",
+            reason=(
+                f"no indexed top-level symbol's span intersects lines "
+                f"{changed.start}-{changed.end} in {changed.path!r}"
+            ),
+        )
+    covered: set[int] = set()
+    for span in matched:
+        lo, hi = max(span.span_start, changed.start), min(span.span_end, changed.end)
+        covered.update(range(lo, hi + 1))
+    requested = set(range(changed.start, changed.end + 1))
+    uncovered = sorted(requested - covered)
+    matched_symbols = [s.symbol for s in matched]
+    if uncovered:
+        return RangeResolution(
+            changed, "partially_resolved",
+            reason=_describe_uncovered_lines(uncovered),
+            symbols=matched_symbols,
+        )
+    return RangeResolution(changed, "resolved", symbols=matched_symbols)
 
 
 # ---------------------------------------------------------------------------
-# §3 -- three-tier relevance/coverage classification (decisions/0086 §1)
+# §3 -- three-tier relevance/coverage classification (decisions/0086 §1,
+# corrected for source-path identity and validated test-evidence --
+# decisions/0089 §A/§C)
 # ---------------------------------------------------------------------------
 
 
@@ -239,7 +306,7 @@ def _requirement_ids_depending_on(records, claim_id: str) -> list[str]:
 
 
 def classify_symbol(
-    records, contract, symbol_name: str, knowledge_root: Path
+    records, contract, oracle_mod, symbol_name: str, source_path: str, knowledge_root: Path
 ) -> tuple[str, list[ClaimFinding]]:
     """§3.1/§3.2/§3.3. `records` is `knowledge_intermediate.load_slug_
     records`'s own return value -- read, never written. A `test_ref` is
@@ -248,7 +315,15 @@ def classify_symbol(
     being a distinct, explicit input (plan §7, governing prompt §6) is
     that canonical knowledge need not reside under the target repository,
     and a disposable demonstration may legitimately use its own,
-    separate knowledge-root copy."""
+    separate knowledge-root copy.
+
+    `source_path` is the path of the file `symbol_name` was actually
+    resolved in (the `--changed` range's own path) -- a citing Evidence's
+    `source_ref` must match on **both** `symbol` and `path` (normalised),
+    never on symbol name alone, so two first-party files declaring a
+    same-named symbol never inherit each other's Evidence (`decisions/
+    0089` §A)."""
+    normalized_source_path = _normalize_source_path(source_path)
     citing_evidence_ids: set[str] = set()
     for rec in records.values():
         if rec.kind != "evidence" or rec.fields.get("evidence_kind") != "source":
@@ -257,15 +332,24 @@ def classify_symbol(
         if not raw_ref or raw_ref == "null":
             continue
         match = _SOURCE_REF_WITH_SYMBOL_RE.match(_unquote(raw_ref))
-        if match and match.group("symbol") == symbol_name:
-            citing_evidence_ids.add(rec.record_id)
+        if not match or match.group("symbol") != symbol_name:
+            continue
+        if _normalize_source_path(match.group("path")) != normalized_source_path:
+            continue
+        citing_evidence_ids.add(rec.record_id)
 
     if not citing_evidence_ids:
         return "no_recorded_relationship", []
 
     # test-kind Evidence -> check_id, via its own test_ref resolving to a
-    # real OracleResult (decisions/0086 §1 -- this IS the existing,
-    # curated relationship; test_input_paths is never consulted).
+    # genuinely valid OracleResult for the live contract (decisions/0086
+    # §1 -- this IS the existing, curated relationship; test_input_paths
+    # is never consulted). `decisions/0089` §C: the referenced result must
+    # actually parse as a well-formed OracleResult and must genuinely
+    # belong to this contract/check/scope -- never a bare YAML key check.
+    # This is a historical-relationship question only, deliberately never
+    # calling evaluate_result_precedence (a current-execution-outcome
+    # question, §4's job alone -- see decisions/0089 §C's own rationale).
     test_evidence_check_id: dict[str, str] = {}
     for rec in records.values():
         if rec.kind != "evidence" or rec.fields.get("evidence_kind") != "test":
@@ -277,14 +361,17 @@ def classify_symbol(
         if not result_path.is_file():
             continue
         try:
-            import yaml
-
-            result_raw = yaml.safe_load(result_path.read_text(encoding="utf-8"))
-        except Exception:
+            result = oracle_mod.parse_oracle_result(result_path)
+        except oracle_mod.OracleSchemaError:
             continue
-        check_id = (result_raw or {}).get("check_id")
-        if check_id and contract.check_by_id(check_id) is not None:
-            test_evidence_check_id[rec.record_id] = check_id
+        if result.contract_id != contract.contract_id:
+            continue
+        check = contract.check_by_id(result.check_id)
+        if check is None:
+            continue
+        if result.scope != check.scope:
+            continue
+        test_evidence_check_id[rec.record_id] = result.check_id
 
     findings: list[ClaimFinding] = []
     for rec in records.values():
@@ -322,6 +409,7 @@ class AssuranceFinding:
     fresh_invalid_reason: str | None
     aggregate_state: str | None
     observed_outcomes: list[str]
+    contributing_symbols: list[str] = field(default_factory=list)
 
 
 def run_check_assurance(
@@ -389,9 +477,8 @@ class RangeReport:
     requested_range: list[int]
     status: str
     reason: str | None
-    resolved_symbol: dict | None
-    classification: str | None
-    claims: list[dict]
+    resolved_symbols: list[dict] = field(default_factory=list)
+    symbol_classifications: list[dict] = field(default_factory=list)
     assurance: list[dict] = field(default_factory=list)
 
 
@@ -410,47 +497,59 @@ def assess(
     range_reports: list[RangeReport] = []
     for c in changed:
         res = resolve_changed_range(oracle_mod, target_repo_root, target_graph_db, c)
-        if res.status != "resolved":
+        if res.status in ("cannot_map", "stale_index"):
             range_reports.append(RangeReport(
-                path=c.path, requested_range=[c.start, c.end], status=res.status,
-                reason=res.reason, resolved_symbol=None, classification=None, claims=[],
+                path=c.path, requested_range=[c.start, c.end], status=res.status, reason=res.reason,
             ))
             continue
 
+        # res.status is "resolved" or "partially_resolved" -- at least one
+        # symbol was matched; a partial match is still assessed, never
+        # discarded wholesale (decisions/0089 §B).
         if contract is None:
             range_reports.append(RangeReport(
-                path=c.path, requested_range=[c.start, c.end], status="resolved",
+                path=c.path, requested_range=[c.start, c.end], status=res.status,
                 reason=f"no oracle-contract.yaml for slug {slug!r} under {knowledge_root}",
-                resolved_symbol=asdict(res.symbol), classification=None, claims=[],
+                resolved_symbols=[asdict(s) for s in res.symbols],
             ))
             continue
 
-        classification, claim_findings = classify_symbol(
-            records, contract, res.symbol.name, knowledge_root
-        )
+        symbol_classifications: list[dict] = []
+        check_contributors: dict[str, set[str]] = {}
+        for sym in res.symbols:
+            classification, claim_findings = classify_symbol(
+                records, contract, oracle_mod, sym.name, c.path, knowledge_root
+            )
+            symbol_classifications.append({
+                "symbol": asdict(sym),
+                "classification": classification,
+                "claims": [asdict(cf) for cf in claim_findings],
+            })
+            for cf in claim_findings:
+                if cf.tier == "behavioural_risk" and cf.check_id:
+                    check_contributors.setdefault(cf.check_id, set()).add(sym.name)
+
         assurance: list[AssuranceFinding] = []
-        applicable_check_ids = sorted(
-            {cf.check_id for cf in claim_findings if cf.tier == "behavioural_risk"}
-        )
-        for check_id in applicable_check_ids:
+        for check_id in sorted(check_contributors):
+            contributing = sorted(check_contributors[check_id])
             if run_checks:
-                assurance.append(
-                    run_check_assurance(
-                        oracle_mod, contract_path, contract, check_id,
-                        target_repo_root, raw_output_dir, historical_results,
-                    )
+                finding = run_check_assurance(
+                    oracle_mod, contract_path, contract, check_id,
+                    target_repo_root, raw_output_dir, historical_results,
                 )
             else:
-                assurance.append(AssuranceFinding(
+                finding = AssuranceFinding(
                     check_id=check_id, classification="VERIFICATION_GAP",
                     fresh_effective_outcome=None, fresh_invalid_reason=None,
                     aggregate_state=None, observed_outcomes=[],
-                ))
+                )
+            finding.contributing_symbols = contributing
+            assurance.append(finding)
 
         range_reports.append(RangeReport(
-            path=c.path, requested_range=[c.start, c.end], status="resolved", reason=None,
-            resolved_symbol=asdict(res.symbol), classification=classification,
-            claims=[asdict(cf) for cf in claim_findings],
+            path=c.path, requested_range=[c.start, c.end], status=res.status, reason=res.reason,
+            resolved_symbols=[asdict(s) for s in res.symbols],
+            symbol_classifications=symbol_classifications,
             assurance=[asdict(a) for a in assurance],
         ))
 
@@ -474,24 +573,22 @@ def render_text_report(report: dict) -> str:
         lines.append(f"  status: {f['status']}")
         if f["reason"]:
             lines.append(f"  reason: {f['reason']}")
-        if f["resolved_symbol"]:
-            sym = f["resolved_symbol"]
-            lines.append(f"  enclosing symbol: {sym['kind']} {sym['name']} (line {sym['line']})")
-        if f["classification"]:
-            lines.append(f"  classification: {f['classification']}")
-        for cl in f["claims"]:
-            lines.append(
-                f"    claim {cl['claim_id']} (requirements: {cl['requirement_ids'] or 'none'}) "
-                f"-> {cl['tier']}" + (f" (check: {cl['check_id']})" if cl["check_id"] else "")
-            )
+        for sc in f["symbol_classifications"]:
+            sym = sc["symbol"]
+            lines.append(f"  symbol: {sym['kind']} {sym['name']} (line {sym['line']}) -> {sc['classification']}")
+            for cl in sc["claims"]:
+                lines.append(
+                    f"    claim {cl['claim_id']} (requirements: {cl['requirement_ids'] or 'none'}) "
+                    f"-> {cl['tier']}" + (f" (check: {cl['check_id']})" if cl["check_id"] else "")
+                )
         for a in f["assurance"]:
             lines.append(
-                f"    check {a['check_id']}: {a['classification']}"
+                f"  check {a['check_id']} (symbols: {a['contributing_symbols']}): {a['classification']}"
                 f" (fresh={a['fresh_effective_outcome']}, aggregate={a['aggregate_state']},"
                 f" observed={a['observed_outcomes']})"
             )
             if a["fresh_invalid_reason"]:
-                lines.append(f"      invalid_reason: {a['fresh_invalid_reason']}")
+                lines.append(f"    invalid_reason: {a['fresh_invalid_reason']}")
     return "\n".join(lines)
 
 

@@ -225,6 +225,34 @@ and each phase's retro.
 
 ## What was just completed
 
+**Phase 83 corrective pass**, 2026-10-28 (same day, post-completion
+source review, "CodeCompass Orchestrator — Phase 83 Corrective Pass").
+Full detail: `decisions/0089`; `planning/retros/phase-83-semantic-
+change-assurance.md`'s own "Corrective pass" section (actual commands/
+results/evidence). Three correctness defects in `scripts/assess_change_
+impact.py`, each verified real by direct source reading and reproduced
+with a standalone script against the unfixed code before correcting it:
+`classify_symbol()` matched Evidence by symbol name alone (a same-named
+symbol in a different file could inherit unrelated Evidence — fixed by
+also matching the `source_ref`'s own path, normalised); `resolve_
+changed_range()` resolved only the symbol enclosing a range's own start
+and never validated `end` against the file's own extent (fixed —
+`resolve_intersecting_symbols` resolves every symbol whose own span
+intersects the full range; a range only partly covered is reported
+`partially_resolved`, naming the gap, never silently discarded);
+`classify_symbol()` accepted a referenced historical result via a bare
+YAML key check with no schema/identity/scope validation (fixed — now
+routes through `oracle.parse_oracle_result` plus explicit `contract_id`/
+`check_id`/`scope` checks against the live contract). No change to
+`oracle.py`/`graph.py`/`knowledge_intermediate.py`. 18 new tests
+(`tests/test_assess_change_impact.py`, 46 total); full suite `1054
+passed, 2 skipped`; re-validated end to end against fresh disposable
+Ledgerkit scratch copies (identical pinned HEAD/mutation/935-passed
+result to the original demonstration) and against real, unmutated
+Ledgerkit data for the multi-symbol/EOF fixes. Independent audit of this
+corrective pass is in progress. Phase 83 stays `done`; this was not a
+reopening.
+
 **Phase 83 — Semantic Change Assurance — implemented**, 2026-10-28,
 direct user request ("CodeCompass Orchestrator — Amend and Implement
 Phase 83"). Full detail: `planning/retros/phase-83-semantic-change-
