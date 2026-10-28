@@ -58,7 +58,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   own contract-extension workflow re-checks whether pre-existing
   Evidence needs re-citing once a contract gains a new required check
   and fresh confirming runs are generated for the old ones.
-- **status:** candidate
+- **status:** retained
 - **recurrence:** first occurrence noticed; the *mechanism* (a contract
   content-hash change invalidating every pre-existing result's own
   recorded hash) is inherent to `decisions/0081`'s own content-hash
@@ -74,6 +74,63 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   `EV-BFS-003`'s own `test_ref` fields — that is a canonical-knowledge
   write, requiring the normal `knowledge apply` review path, not a side
   effect of filing this learning.
+- **curation note (2026-10-29, knowledge-curator):** Independently
+  confirmed the observation against the real files: `oracle-
+  contract.yaml` now has three required checks; `EV-BFS-002`/
+  `EV-BFS-003` still cite the two `20261021T...` result files, whose
+  recorded `oracle_contract_content_hash` (`7415d851...`) genuinely
+  differs from the two fresher, uncited `20261028T...` results' own
+  (`f2b3cc6d...`) for the same `check_id`s. `knowledge_api.py::
+  find_gaps` (lines 1215-1241) implements exactly the described rule,
+  and `tests/test_knowledge_api.py::TestFindGaps::
+  test_real_corpus_surfaces_the_known_stale_test_citation` exercises it
+  against this real corpus, not a synthetic fixture. Accurate as filed.
+
+  Checked for duplication: **not** `L-104` (retained) — a different
+  consumer (`check_contracts.py::check_result_integrity`), already
+  fixed, asking whether *other* consumers of `evaluate_result_
+  precedence` share its gap; doesn't touch Evidence `test_ref` citation.
+  **Not** `L-106` (retained) — a different failure shape (hand-rolled
+  partial reuse of an identity/validation convention). No line in
+  `promoted.md` and no ADR in the `decisions/0081`/`0086`/`0089`/`0090`/
+  `0091` lineage commits to a re-citation workflow step — `0086` point D
+  names the hash-invalidation *consequence* in advance but only accepts
+  the cost, never proposing a remedy for the Evidence side.
+
+  **Disposition.** Option (b) — "stay purely `find_gaps`-detectable" —
+  is not merely available, it is already true today: that detection
+  shipped this same phase (`decisions/0091`, commit `0b4f321`), audited
+  and tested against the real corpus. That half needs no further
+  promotion through this entry. What remains open is (a)/(c): whether to
+  *additionally* require a documented re-citation step. Real and
+  structurally guaranteed to recur in principle, but only *one* actual
+  contract-extension event (Phase 83) has happened so far — no second
+  instance yet shows the gap recurring once something exists to catch
+  it. A new numbered ADR today, for an unproven procedural step, would
+  be premature against `CLAUDE.md` §2's reservation of ADRs for
+  non-obvious tradeoffs over routine checklist bumps — the same caution
+  `L-104`'s own curation applied to a structurally similar claim.
+
+  **Outcome: retain.** `status` set to `retained` (not left `candidate`,
+  per `check_learnings_status_matches_retain_outcome`). Sharpened
+  **moves forward when**: (i) any future phase extends an oracle
+  contract (any slug) with a new required check for a *second* time —
+  re-run `knowledge_api.find_gaps` against that slug right after and
+  check whether `stale_test_citation` recurs before any documented step
+  exists; if so, promote to a short ADR in the `decisions/0081` lineage
+  recommending: *"When `oracle-contract.yaml` gains a new required
+  check, after generating fresh confirming results for the pre-existing
+  required checks under the new contract hash, run `knowledge_api.
+  find_gaps(slug)` and resolve every `stale_test_citation` by re-citing
+  the affected Evidence records' `test_ref` fields to the fresh results,
+  via the normal `knowledge apply` review path, before the phase
+  closes."* If a documented step is adopted first and the gap still
+  recurs anyway, promote to a `CLAUDE.md` rule instead (gate G4). Or
+  (ii) Phase 85's self-curation work acts on this specific finding
+  directly (re-citing `EV-BFS-002`/`EV-BFS-003` via `knowledge apply`) —
+  this entry then discharges by reference to that phase's own commit
+  rather than a new ADR. Still out of scope for this entry: actually
+  editing `EV-BFS-002`/`EV-BFS-003`'s own `test_ref` fields.
 
 ---
 
