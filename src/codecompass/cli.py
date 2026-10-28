@@ -1716,6 +1716,13 @@ def _print_api_response(response: knowledge_api.ApiResponse, json_output: bool) 
         console.print("[yellow]nothing found[/yellow]")
 
 
+_REPO_ROOT_OPTION_HELP = (
+    "A live target checkout to reconfirm oracle-result/check currency "
+    "against. Without it, a historically recorded PASS/FAIL is reported "
+    "'unconfirmed', never 'current' (corrective pass, decisions/0092)."
+)
+
+
 @knowledge_app.command("get")
 def knowledge_get(
     record_id: str = typer.Argument(
@@ -1723,12 +1730,13 @@ def knowledge_get(
         "(symbol:<path>:<name>:<kind>:<line>, vendor:<name>, doc:<path>, "
         "contract:<id>, check:<contract_id>:<check_id>, result:<contract_id>:<check_id>:<run_id>)."
     ),
+    repo_root: Path | None = typer.Option(None, "--repo-root", help=_REPO_ROOT_OPTION_HELP),
     json_output: bool = typer.Option(False, "--json", help="Machine-readable output."),
 ) -> None:
     """Retrieve one item by its own stable identity (`knowledge_api.get`,
     Phase 84). Read-only; never creates `context-graph.db` if it doesn't
     already exist."""
-    response = knowledge_api.get(Path.cwd(), record_id)
+    response = knowledge_api.get(Path.cwd(), record_id, repo_root=repo_root)
     _print_api_response(response, json_output)
 
 
@@ -1759,14 +1767,15 @@ def knowledge_trace(
     evidence: bool = typer.Option(
         False, "--evidence", help="Use trace_evidence (supporting + contradicting + gap) instead of a single relation."
     ),
+    repo_root: Path | None = typer.Option(None, "--repo-root", help=_REPO_ROOT_OPTION_HELP),
     json_output: bool = typer.Option(False, "--json", help="Machine-readable output."),
 ) -> None:
     """Follow one recorded relationship from `record_id` (`knowledge_api.
     traverse`/`trace_evidence`, Phase 84)."""
     response = (
-        knowledge_api.trace_evidence(Path.cwd(), record_id)
+        knowledge_api.trace_evidence(Path.cwd(), record_id, repo_root=repo_root)
         if evidence
-        else knowledge_api.traverse(Path.cwd(), record_id, relation, depth=depth)
+        else knowledge_api.traverse(Path.cwd(), record_id, relation, depth=depth, repo_root=repo_root)
     )
     _print_api_response(response, json_output)
 
@@ -1774,12 +1783,13 @@ def knowledge_trace(
 @knowledge_app.command("gaps")
 def knowledge_gaps(
     slug: str | None = typer.Argument(None, help="Limit to one planning/knowledge/<slug>. Omit for every slug."),
+    repo_root: Path | None = typer.Option(None, "--repo-root", help=_REPO_ROOT_OPTION_HELP),
     json_output: bool = typer.Option(False, "--json", help="Machine-readable output."),
 ) -> None:
     """Missing, stale, or conflicting knowledge across record kinds, in
     one call (`knowledge_api.find_gaps`, Phase 84) -- the one genuinely
     new cross-cutting capability no existing command provides."""
-    response = knowledge_api.find_gaps(Path.cwd(), slug)
+    response = knowledge_api.find_gaps(Path.cwd(), slug, repo_root=repo_root)
     _print_api_response(response, json_output)
 
 
@@ -1788,11 +1798,14 @@ def knowledge_context(
     topic: str = typer.Argument(..., help="A knowledge-record id, or free text."),
     max_items: int = typer.Option(20, "--max-items", min=1),
     max_chars: int = typer.Option(6000, "--max-chars", min=1),
+    repo_root: Path | None = typer.Option(None, "--repo-root", help=_REPO_ROOT_OPTION_HELP),
     json_output: bool = typer.Option(False, "--json", help="Machine-readable output."),
 ) -> None:
     """A bounded, coherent, deterministic development-context packet for
     `topic` (`knowledge_api.get_context_packet`, Phase 84)."""
-    response = knowledge_api.get_context_packet(Path.cwd(), topic, max_items=max_items, max_chars=max_chars)
+    response = knowledge_api.get_context_packet(
+        Path.cwd(), topic, max_items=max_items, max_chars=max_chars, repo_root=repo_root
+    )
     _print_api_response(response, json_output)
 
 

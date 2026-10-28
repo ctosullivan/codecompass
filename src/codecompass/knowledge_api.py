@@ -114,7 +114,11 @@ class ConsistencyEnvelope:
     graph_revision: str | None = None
     contract_revision: str | None = None
     evidence_currency: str = "unknown"  # "current" | "unconfirmed" | "absent"
-    status: str = "current"  # "current" | "stale" | "unconfirmed"
+    # Fail-closed by construction (corrective pass, decisions/0092): never
+    # "current" unless a call site positively (re)confirmed it. A caller
+    # that forgets to set this gets the honest "not evaluated" answer, not
+    # an accidental, optimistic "current".
+    status: str = "unconfirmed"  # "current" | "stale" | "unconfirmed"
     reasons: list[str] = field(default_factory=list)
 
 
@@ -130,7 +134,8 @@ class KnowledgeResult:
 
 @dataclass
 class Gap:
-    kind: str  # "unverified_required_scope" | "contradiction" | "stale_test_citation" | "missing_contract"
+    kind: str  # "unverified_required_scope" | "contradiction" | "stale_test_citation" |
+    # "missing_contract" | "missing_evidence" | "dangling_evidence_reference"
     subject_id: str | None
     scope: str | None
     reason: str
@@ -348,11 +353,13 @@ def get(project_root: Path, record_id: str, *, repo_root: Path | None = None) ->
 
     m = _CHECK_ID_RE.match(record_id)
     if m:
-        return _get_check(project_root, m.group("contract_id"), m.group("check_id"))
+        return _get_check(project_root, m.group("contract_id"), m.group("check_id"), repo_root=repo_root)
 
     m = _RESULT_ID_RE.match(record_id)
     if m:
-        return _get_result(project_root, m.group("contract_id"), m.group("check_id"), m.group("run_id"))
+        return _get_result(
+            project_root, m.group("contract_id"), m.group("check_id"), m.group("run_id"), repo_root=repo_root
+        )
 
     return _empty(f"{record_id!r} does not match any known identity shape")
 
@@ -409,12 +416,18 @@ def _knowledge_consistency(
     slug = _owning_slug(project_root, record)
     found = _find_contract_for_slug(project_root, slug)
 
-    profile = None
+    # Fail-closed baseline (corrective pass, decisions/0092): `"current"`
+    # is earned by the one branch below that positively (re)confirms every
+    # applicable scope against a live checkout -- never assumed merely
+    # because no contract applies, or because this record happens to cite
+    # none of its slug's own contract scopes.
     contract_revision = None
     evidence_currency = "unknown"
-    status = "current"
+    status = "unconfirmed"
     reasons: list[str] = []
-    if found is not None:
+    if found is None:
+        reasons.append("no oracle-contract.yaml for this record's own slug -- no verification story to confirm")
+    else:
         slug, contract, contract_path = found
         results_by_ref = _results_by_test_ref(project_root, slug)
         profile = _ki.derive_epistemic_profile(
@@ -425,6 +438,7 @@ def _knowledge_consistency(
         contract_revision = _oracle.sha256_file(contract_path)
         if profile.verified_scopes and not profile.unconfirmed_scopes and not profile.known_gap_scopes:
             evidence_currency = "current"
+            status = "current"
         elif profile.unconfirmed_scopes:
             evidence_currency = "unconfirmed"
             status = "unconfirmed"
@@ -437,7 +451,7 @@ def _knowledge_consistency(
             status = "unconfirmed"
             reasons.append(f"{len(profile.known_gap_scopes)} required scope(s) have no passing evidence at all")
         else:
-            evidence_currency = "current"
+            reasons.append("this record cites no scope of its own slug's oracle contract")
 
     source_revision = None
     for ev_id in _ki._extract_id_strings(record.fields.get("supporting_evidence", "")) + [record.record_id]:
@@ -476,6 +490,44 @@ def _results_by_test_ref(project_root: Path, slug: str) -> dict[str, _oracle.Ora
         rel = str(result_path.relative_to(project_root))
         by_ref[rel] = result
     return by_ref
+
+
+def _oracle_result_consistency(
+    effective: str | None, reason: str | None, repo_root: Path | None, contract_revision: str | None,
+) -> ConsistencyEnvelope:
+    """Corrective-pass fix (decisions/0092): a result is reported
+    `"current"` only when its `effective_outcome` was positively
+    reconfirmed against a live target checkout -- i.e. `repo_root` was
+    supplied to `evaluate_result_precedence`, which then also recomputes
+    `tested_subject_digest`/`test_input_digest` live, not merely compares
+    recorded fields to themselves. Without a reachable `repo_root`, a
+    historically recorded PASS or FAIL is real, preserved evidence --
+    just not currently reconfirmed, so `"unconfirmed"`, never `"current"`.
+    An actively disagreeing result (`effective == "INVALID"`) is always
+    `"stale"`, with or without `repo_root` -- that determination never
+    depends on a live checkout being available (contract-hash, id,
+    raw-output, and scope checks all run unconditionally)."""
+    reasons = [reason] if reason else []
+    if effective == "INVALID":
+        return ConsistencyEnvelope(
+            contract_revision=contract_revision, evidence_currency="absent", status="stale", reasons=reasons,
+        )
+    if effective in ("PASS", "FAIL"):
+        if repo_root is not None:
+            return ConsistencyEnvelope(
+                contract_revision=contract_revision, evidence_currency="current", status="current", reasons=reasons,
+            )
+        reasons = [
+            *reasons,
+            "no repo_root supplied -- tested_subject_digest/test_input_digest trusted as "
+            "recorded, not live-reconfirmed against a target checkout",
+        ]
+        return ConsistencyEnvelope(
+            contract_revision=contract_revision, evidence_currency="unconfirmed", status="unconfirmed", reasons=reasons,
+        )
+    return ConsistencyEnvelope(
+        contract_revision=contract_revision, evidence_currency="unknown", status="unconfirmed", reasons=reasons,
+    )
 
 
 def _find_contract_for_slug(project_root: Path, slug: str) -> tuple[str, _oracle.OracleContract, Path] | None:
@@ -597,7 +649,7 @@ def _get_contract(project_root: Path, contract_id: str) -> ApiResponse:
     return _result([result])
 
 
-def _get_check(project_root: Path, contract_id: str, check_id: str) -> ApiResponse:
+def _get_check(project_root: Path, contract_id: str, check_id: str, *, repo_root: Path | None = None) -> ApiResponse:
     found = _find_contract(project_root, contract_id)
     if found is None:
         return _empty(f"no oracle contract with contract_id {contract_id!r}")
@@ -606,8 +658,28 @@ def _get_check(project_root: Path, contract_id: str, check_id: str) -> ApiRespon
     if check is None:
         return _empty(f"contract {contract_id!r} has no check {check_id!r}")
     results = [r for r in _load_slug_results(project_root, slug) if r.check_id == check_id]
-    aggregates = _oracle.aggregate_contract(contract, results, contract_path=contract_path)
+    aggregates = _oracle.aggregate_contract(contract, results, contract_path=contract_path, repo_root=repo_root)
     aggregate = next((a for a in aggregates if a.check_id == check_id), None)
+    contract_revision = _oracle.sha256_file(contract_path)
+    # Corrective pass (decisions/0092): an aggregate `PASS` is only
+    # reported `"current"` when it was computed with a reachable
+    # `repo_root` -- otherwise it reflects contract/raw-output/scope
+    # checks only, never a live digest reconfirmation.
+    if aggregate is None or aggregate.state == "NOT_REQUIRED":
+        consistency = ConsistencyEnvelope(contract_revision=contract_revision, evidence_currency="unknown", status="unconfirmed")
+    elif aggregate.state == "GAP":
+        consistency = ConsistencyEnvelope(
+            contract_revision=contract_revision, evidence_currency="absent", status="unconfirmed",
+            reasons=["required check has no currently-passing result"],
+        )
+    elif repo_root is not None:
+        consistency = ConsistencyEnvelope(contract_revision=contract_revision, evidence_currency="current", status="current")
+    else:
+        consistency = ConsistencyEnvelope(
+            contract_revision=contract_revision, evidence_currency="unconfirmed", status="unconfirmed",
+            reasons=["no repo_root supplied -- aggregate PASS reflects contract/raw-output/scope checks "
+                     "only, not a live digest reconfirmation"],
+        )
     result = KnowledgeResult(
         id=check_identity(contract_id, check_id), kind="oracle_check",
         authority=AUTHORITY_ACCEPTED_OBLIGATION,
@@ -616,11 +688,14 @@ def _get_check(project_root: Path, contract_id: str, check_id: str) -> ApiRespon
                  "required": check.required, "check_reference": check.check_reference,
                  "aggregate_state": aggregate.state if aggregate else None,
                  "observed_outcomes": aggregate.observed_outcomes if aggregate else []},
+        consistency=consistency,
     )
     return _result([result])
 
 
-def _get_result(project_root: Path, contract_id: str, check_id: str, run_id: str) -> ApiResponse:
+def _get_result(
+    project_root: Path, contract_id: str, check_id: str, run_id: str, *, repo_root: Path | None = None
+) -> ApiResponse:
     found = _find_contract(project_root, contract_id)
     if found is None:
         return _empty(f"no oracle contract with contract_id {contract_id!r}")
@@ -630,18 +705,28 @@ def _get_result(project_root: Path, contract_id: str, check_id: str, run_id: str
             check = contract.check_by_id(check_id)
             effective, reason = (None, None)
             if check is not None:
-                effective, reason = _oracle.evaluate_result_precedence(r, contract, check, contract_path=contract_path)
+                effective, reason = _oracle.evaluate_result_precedence(
+                    r, contract, check, contract_path=contract_path, repo_root=repo_root,
+                )
             result = KnowledgeResult(
                 id=result_identity(contract_id, check_id, run_id), kind="oracle_result",
                 authority=AUTHORITY_SCOPED_VERIFICATION,
                 summary=f"result {run_id} for {check_id}: recorded={r.outcome}, effective={effective}",
-                details={"slug": slug, **{k: v for k, v in asdict(r).items()}},
-                consistency=ConsistencyEnvelope(
-                    contract_revision=r.oracle_contract_content_hash,
-                    evidence_currency="current" if effective == "PASS" else "unconfirmed",
-                    status="stale" if effective == "INVALID" else "current",
-                    reasons=[reason] if reason else [],
-                ),
+                details={
+                    "slug": slug, **{k: v for k, v in asdict(r).items()},
+                    # Corrective pass (decisions/0092): the contract-relative
+                    # effective outcome exposed as its own queryable field,
+                    # never only embedded in `summary`'s free text -- a
+                    # consumer must never have to re-derive it to tell a
+                    # recorded historical outcome from the current one. Named
+                    # distinctly from the result's own recorded
+                    # `invalid_reason` field (already present via `asdict(r)`
+                    # above) -- the two answer different questions and must
+                    # never be conflated (decisions/0089's own historical-
+                    # vs-fresh-verification distinction).
+                    "effective_outcome": effective, "effective_invalid_reason": reason,
+                },
+                consistency=_oracle_result_consistency(effective, reason, repo_root, r.oracle_contract_content_hash),
             )
             return _result([result])
     return _empty(f"no oracle result {run_id!r} for check {check_id!r} under contract {contract_id!r}")
@@ -720,7 +805,7 @@ _FORWARD_FIELD_RELATIONS = {
 
 
 def traverse(
-    project_root: Path, record_id: str, relation: str, depth: int = 1
+    project_root: Path, record_id: str, relation: str, depth: int = 1, *, repo_root: Path | None = None
 ) -> ApiResponse:
     """Follow one recorded relationship outward from `record_id` (plan
     §4.1). `relation` is one of: any canonical cross-reference field name
@@ -746,7 +831,7 @@ def traverse(
     if relation == "checks":
         return _traverse_contract_checks(project_root, record_id)
     if relation == "results":
-        return _traverse_check_results(project_root, record_id)
+        return _traverse_check_results(project_root, record_id, repo_root=repo_root)
     if relation == "cites":
         return _traverse_cites(project_root, record_id)
     if relation == "cited_by":
@@ -822,7 +907,9 @@ def _traverse_contract_checks(project_root: Path, contract_qualified_id_or_bare:
     return _result(results)
 
 
-def _traverse_check_results(project_root: Path, check_qualified_id: str) -> ApiResponse:
+def _traverse_check_results(
+    project_root: Path, check_qualified_id: str, *, repo_root: Path | None = None
+) -> ApiResponse:
     """Every historical result for one check, each showing **both** its
     own recorded `outcome` and its current, independently recomputed
     `effective_outcome` (`evaluate_result_precedence`, unchanged) side by
@@ -831,7 +918,11 @@ def _traverse_check_results(project_root: Path, check_qualified_id: str) -> ApiR
     added, `decisions/0089`'s own documented scenario) shows
     `effective_outcome: "INVALID"` right alongside its own
     `outcome: "PASS"`, never silently presented as current verification
-    on the strength of the recorded field alone."""
+    on the strength of the recorded field alone. `repo_root`, when
+    supplied, is threaded into `evaluate_result_precedence` so a `PASS`
+    is only ever reported `"current"` once its own digests were
+    live-reconfirmed (corrective pass, decisions/0092) -- without it,
+    the same `PASS` is reported `"unconfirmed"`, never `"current"`."""
     m = _CHECK_ID_RE.match(check_qualified_id)
     if not m:
         return _empty(f"{check_qualified_id!r} is not a check identity (expected check:<contract_id>:<check_id>)")
@@ -846,7 +937,7 @@ def _traverse_check_results(project_root: Path, check_qualified_id: str) -> ApiR
         if r.check_id != check_id:
             continue
         effective, reason = (
-            _oracle.evaluate_result_precedence(r, contract, check, contract_path=contract_path)
+            _oracle.evaluate_result_precedence(r, contract, check, contract_path=contract_path, repo_root=repo_root)
             if check is not None else (None, None)
         )
         results.append(KnowledgeResult(
@@ -856,12 +947,7 @@ def _traverse_check_results(project_root: Path, check_qualified_id: str) -> ApiR
             details={"slug": slug, "run_id": r.run_id, "outcome": r.outcome,
                      "effective_outcome": effective, "invalid_reason": reason,
                      "executed_at": r.executed_at},
-            consistency=ConsistencyEnvelope(
-                contract_revision=r.oracle_contract_content_hash,
-                evidence_currency="current" if effective == "PASS" else "unconfirmed",
-                status="stale" if effective == "INVALID" else "current",
-                reasons=[reason] if reason else [],
-            ),
+            consistency=_oracle_result_consistency(effective, reason, repo_root, r.oracle_contract_content_hash),
         ))
     return _result(results)
 
@@ -1037,8 +1123,13 @@ def trace_evidence(project_root: Path, record_id: str, *, repo_root: Path | None
     """Supporting and contradicting evidence for one Claim/Requirement
     (plan §4.1/§3.0 point 6). `"gap"` when the record is itself an
     obligation-bearing kind (`claim`/`requirement`) with zero evidence
-    anywhere citing it -- never conflated with `"empty"` (the record not
-    existing at all)."""
+    anywhere citing it, OR when any individual cited evidence id does not
+    resolve to a real record (corrective pass, decisions/0092) -- a
+    *declared* citation is never conflated with a *resolved* one.
+    Successfully resolved evidence is always returned in `results`
+    alongside any such gaps; one broken citation never discards the
+    others. Never conflated with `"empty"` (the record not existing at
+    all)."""
     records = _all_records(project_root)
     record = records.get(record_id)
     if record is None:
@@ -1048,32 +1139,35 @@ def trace_evidence(project_root: Path, record_id: str, *, repo_root: Path | None
     contradicting_ids = _ki._extract_id_strings(record.fields.get("contradicting_evidence", ""))
 
     results: list[KnowledgeResult] = []
-    for ev_id in supporting_ids:
-        ev = records.get(ev_id)
-        if ev is None:
-            continue
-        results.append(KnowledgeResult(
-            id=ev.record_id, kind="evidence", authority=_record_authority(ev),
-            summary=_summarize_record(ev),
-            details={"role": "supporting", "evidence_kind": ev.fields.get("evidence_kind")},
-        ))
-    for ev_id in contradicting_ids:
-        ev = records.get(ev_id)
-        if ev is None:
-            continue
-        results.append(KnowledgeResult(
-            id=ev.record_id, kind="evidence", authority=_record_authority(ev),
-            summary=_summarize_record(ev),
-            details={"role": "contradicting", "evidence_kind": ev.fields.get("evidence_kind")},
-        ))
+    gaps: list[Gap] = []
+
+    def _resolve(ev_ids: list[str], role: str) -> None:
+        for ev_id in ev_ids:
+            ev = records.get(ev_id)
+            if ev is None:
+                gaps.append(Gap(
+                    kind="dangling_evidence_reference", subject_id=record_id, scope=role,
+                    reason=f"{record_id} cites {ev_id!r} as {role} evidence, but no such record exists",
+                ))
+                continue
+            results.append(KnowledgeResult(
+                id=ev.record_id, kind="evidence", authority=_record_authority(ev),
+                summary=_summarize_record(ev),
+                details={"role": role, "evidence_kind": ev.fields.get("evidence_kind")},
+                consistency=_knowledge_consistency(project_root, ev, records, repo_root=repo_root),
+            ))
+
+    _resolve(supporting_ids, "supporting")
+    _resolve(contradicting_ids, "contradicting")
 
     if record.kind in ("claim", "requirement") and not supporting_ids:
-        gap = Gap(
+        gaps.append(Gap(
             kind="missing_evidence", subject_id=record_id, scope=None,
             reason=f"{record_id} ({record.kind}) has no supporting_evidence citation at all",
-        )
-        return ApiResponse(status="gap", results=results, gaps=[gap])
+        ))
 
+    if gaps:
+        return ApiResponse(status="gap", results=results, gaps=gaps)
     return _result(results)
 
 
@@ -1163,6 +1257,11 @@ def find_gaps(project_root: Path, slug: str | None = None, *, repo_root: Path | 
       exists but no Evidence record was ever updated to cite it.
     - `missing_contract` -- a slug with Claims/Requirements but no
       `oracle-contract.yaml` under `planning/contracts/<slug>/` at all.
+    - `dangling_evidence_reference` -- a record's own `supporting_evidence`
+      or `contradicting_evidence` cites an id that resolves to no real
+      record anywhere (`trace_evidence`'s own per-record detection,
+      corrective pass, decisions/0092 -- same semantics, applied
+      corpus-wide rather than to one subject at a time).
     """
     slugs = [slug] if slug else _ki._list_slugs(project_root)
     records = _all_records(project_root)
@@ -1181,6 +1280,13 @@ def find_gaps(project_root: Path, slug: str | None = None, *, repo_root: Path | 
             if contradicting:
                 gaps.append(Gap(kind="contradiction", subject_id=record.record_id, scope=None,
                                  reason=f"{record.record_id} has contradicting_evidence: {contradicting}"))
+            for field_name, role in (("supporting_evidence", "supporting"), ("contradicting_evidence", "contradicting")):
+                for ev_id in _ki._extract_id_strings(record.fields.get(field_name, "")):
+                    if ev_id not in records:
+                        gaps.append(Gap(
+                            kind="dangling_evidence_reference", subject_id=record.record_id, scope=role,
+                            reason=f"{record.record_id} cites {ev_id!r} as {role} evidence, but no such record exists",
+                        ))
 
         has_obligations = any(r.kind in ("claim", "requirement") for r in slug_records.values())
         found = _find_contract_for_slug(project_root, s)
@@ -1255,6 +1361,36 @@ class ContextBounds:
     truncated: bool = False
 
 
+def _bound_context_items(
+    candidates: list[KnowledgeResult], max_items: int, max_chars: int
+) -> tuple[list[KnowledgeResult], bool]:
+    """The one bounding policy for `get_context_packet`, applied
+    identically regardless of how `candidates` was resolved (corrective
+    pass, decisions/0092 -- previously a free-text topic resolving to a
+    non-knowledge-record item bypassed this entirely). Deterministic:
+    walks `candidates` in its given (fixed-priority) order, stopping at
+    the first item that would exceed `max_items` or whose own summary
+    would exceed the remaining `max_chars` budget -- including the very
+    first item, which can leave `items` empty rather than silently
+    returning an over-budget item."""
+    items: list[KnowledgeResult] = []
+    char_budget = max_chars
+    truncated = False
+    for candidate in candidates:
+        if len(items) >= max_items:
+            truncated = True
+            break
+        cost = len(candidate.summary)
+        if char_budget - cost < 0:
+            truncated = True
+            break
+        char_budget -= cost
+        items.append(candidate)
+    if len(items) < len(candidates):
+        truncated = True
+    return items, truncated
+
+
 def get_context_packet(
     project_root: Path, topic: str, *, max_items: int = 20, max_chars: int = 6000,
     repo_root: Path | None = None,
@@ -1269,60 +1405,57 @@ def get_context_packet(
     reachable for the subject separately, via `get`/`traverse(...,
     "checks"/"results")` -- this packet does not itself expand into
     them, keeping the traversal bounded to knowledge-record relations
-    only. Deduplicated by id. Truncated, deterministically (by this
-    fixed priority order, then by id), at `max_items`/`max_chars` --
-    `details.bounds.truncated` says so explicitly rather than silently
-    dropping items.
+    only. Deduplicated by id. A free-text `topic` resolving to a
+    non-knowledge-record item (an oracle contract/check) is a single-item
+    candidate list with no further relation expansion, but is bounded by
+    the exact same `_bound_context_items` policy as the knowledge-record
+    path (corrective pass, decisions/0092) -- `max_items`/`max_chars`
+    apply unconditionally, never only on one path. Truncated,
+    deterministically (by this fixed priority order, then by id), at
+    `max_items`/`max_chars` -- `details.bounds.truncated` says so
+    explicitly rather than silently dropping or exceeding the declared
+    budget.
     """
     records = _all_records(project_root)
     subject_id = topic if topic in records else None
-    if subject_id is None:
+    gaps: list[Gap] = []
+
+    if subject_id is not None:
+        ordered_ids: list[str] = [subject_id]
+        seen = {subject_id}
+        for relation in ("depends_on", "depends_on_reverse", "supporting_evidence", "contradicting_evidence"):
+            response = traverse(project_root, subject_id, relation)
+            for r in response.results:
+                if r.id not in seen:
+                    seen.add(r.id)
+                    ordered_ids.append(r.id)
+
+        candidates: list[KnowledgeResult] = []
+        for rid in ordered_ids:
+            record = records.get(rid)
+            if record is None:
+                continue
+            candidates.append(KnowledgeResult(
+                id=record.record_id, kind=record.kind, authority=_record_authority(record),
+                summary=_summarize_record(record),
+                details={"slug": _owning_slug(project_root, record)},
+                consistency=_knowledge_consistency(project_root, record, records, repo_root=repo_root),
+            ))
+
+        gap_response = trace_evidence(project_root, subject_id, repo_root=repo_root)
+        gaps = gap_response.gaps
+    else:
         search_response = search(project_root, topic)
         if search_response.status != "result":
             return _empty(f"no knowledge found for topic {topic!r}")
+        # A non-knowledge-record search hit (an oracle contract/check) --
+        # still a valid topic anchor, just not further traversable here;
+        # gaps stay empty (trace_evidence applies only to knowledge
+        # records). Bounded below identically to the knowledge-record path.
         subject_id = search_response.results[0].id
-        if subject_id not in records:
-            # A non-knowledge-record search hit (an oracle contract/check) --
-            # still a valid topic anchor, just not further traversable here.
-            item = search_response.results[0]
-            packet_items = [item]
-            return _result([KnowledgeResult(
-                id=f"context:{topic}", kind="context_packet", authority=AUTHORITY_DERIVED_INDEX,
-                summary=f"context packet for {topic!r}",
-                details={"topic": topic, "items": [asdict(i) for i in packet_items],
-                         "gaps": [], "bounds": asdict(ContextBounds(max_items, max_chars, False))},
-            )])
+        candidates = [search_response.results[0]]
 
-    ordered_ids: list[str] = [subject_id]
-    seen = {subject_id}
-    for relation in ("depends_on", "depends_on_reverse", "supporting_evidence", "contradicting_evidence"):
-        response = traverse(project_root, subject_id, relation)
-        for r in response.results:
-            if r.id not in seen:
-                seen.add(r.id)
-                ordered_ids.append(r.id)
-
-    gap_response = trace_evidence(project_root, subject_id, repo_root=repo_root)
-
-    items: list[KnowledgeResult] = []
-    char_budget = max_chars
-    truncated = False
-    for rid in ordered_ids:
-        if len(items) >= max_items:
-            truncated = True
-            break
-        record = records.get(rid)
-        if record is None:
-            continue
-        summary = _summarize_record(record)
-        if char_budget - len(summary) < 0:
-            truncated = True
-            break
-        char_budget -= len(summary)
-        items.append(KnowledgeResult(
-            id=record.record_id, kind=record.kind, authority=_record_authority(record), summary=summary,
-            details={"slug": _owning_slug(project_root, record)},
-        ))
+    items, truncated = _bound_context_items(candidates, max_items, max_chars)
 
     packet = KnowledgeResult(
         id=f"context:{subject_id}", kind="context_packet", authority=AUTHORITY_DERIVED_INDEX,
@@ -1330,7 +1463,7 @@ def get_context_packet(
         details={
             "topic": topic, "subject_id": subject_id,
             "items": [asdict(i) for i in items],
-            "gaps": [asdict(g) for g in gap_response.gaps],
+            "gaps": [asdict(g) for g in gaps],
             "bounds": asdict(ContextBounds(max_items, max_chars, truncated)),
         },
     )

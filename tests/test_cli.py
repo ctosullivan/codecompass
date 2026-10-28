@@ -1387,10 +1387,32 @@ def test_query_relations_backward_compatible_after_knowledge_api_migration(
 ) -> None:
     """Phase 84 (plan §4.3): `query relations` is now implemented in terms
     of `knowledge_api.resolve_doc_mentions` rather than a private
-    `cli.py::_resolve_relations`. This asserts the exact, full table and
-    JSON output text is unchanged -- byte-for-byte -- not merely that the
-    relation_kind set matches, which the pre-existing tests in this file
-    already (and continue to) assert."""
+    `cli.py::_resolve_relations`.
+
+    JSON output is asserted **byte-for-byte**: a full `dict` equality
+    against a literal expected payload, covering every relation and every
+    field `resolve_doc_mentions` returns.
+
+    Table output is deliberately **not** asserted byte-for-byte, and this
+    docstring previously claimed it was -- an over-claim the independent
+    Phase 84 release audit flagged (`planning/retros/_audit-phase-84.md`):
+    the real check was two short substrings. A genuine full-text
+    comparison was tried while correcting this and found actively
+    infeasible at this table's own default (untouched) render width: Rich
+    truncates several cells with an ellipsis (`"mentions_art…"`,
+    `".claude/ski…"`) rather than wrapping them, so even the *correct*
+    current output is not byte-stable against a hardcoded full-table
+    string without first pinning a console width this command does not
+    itself pin (and which this migration must not start pinning, as that
+    would change `query relations`'s own established output). What *is*
+    asserted below are the specific substrings Rich does *not* truncate at
+    this width -- the "Other" column's untruncated vendor name, both
+    rendered relation-kind strings (one from each table, since the
+    `mentions_artifact` row happens to truncate in the relations table but
+    `mentions_dependency` renders in full in the package-code table's own
+    "Via" column), and the package-code trace -- which is a real, verified
+    superset of the pre-corrective-pass version (which checked only
+    "Package code" and "src/app.ts")."""
     monkeypatch.chdir(tmp_path)
     _build_relations_fixture(tmp_path)
 
@@ -1432,6 +1454,10 @@ def test_query_relations_backward_compatible_after_knowledge_api_migration(
             }
         ],
     }
+    # Untruncated at this table's own default render width -- confirmed by
+    # direct inspection of the real rendered output, not assumed.
+    assert "demo" in table_result.output  # the mentions_dependency row's own "Other" value
+    assert "mentions_dependency" in table_result.output  # renders in full in the package-code table's "Via" column
     assert "Package code" in table_result.output
     assert "src/app.ts" in table_result.output
 

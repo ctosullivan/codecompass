@@ -401,6 +401,116 @@ class TestConsistencyEnvelope:
 
 
 # ---------------------------------------------------------------------------
+# Corrective pass defect A -- verification currency must be accurate
+# across get()/traverse(), never implied "current" by an optimistic
+# default, and only ever positively earned by a live repo_root
+# reconfirmation (decisions/0092).
+# ---------------------------------------------------------------------------
+
+
+class TestResultVerificationCurrency:
+    def test_recorded_pass_current_against_unchanged_target(self, tmp_path):
+        _write_minimal_slug(tmp_path, "demo")
+        response = ka.get(tmp_path, ka.result_identity("REQ-DEMO-001", "chk-a", "r1"), repo_root=tmp_path)
+        assert response.status == "result"
+        result = response.results[0]
+        assert result.details["outcome"] == "PASS"
+        assert result.details["effective_outcome"] == "PASS"
+        assert result.consistency.status == "current"
+        assert result.consistency.evidence_currency == "current"
+
+    def test_recorded_pass_invalidated_by_changed_implementation(self, tmp_path):
+        _write_minimal_slug(tmp_path, "demo")
+        # The real target has since changed -- the recorded
+        # tested_subject_digest can no longer match a live recomputation.
+        (tmp_path / "impl.py").write_text("def target_function():\n    return 999\n", encoding="utf-8")
+        response = ka.get(tmp_path, ka.result_identity("REQ-DEMO-001", "chk-a", "r1"), repo_root=tmp_path)
+        result = response.results[0]
+        assert result.details["outcome"] == "PASS"  # recorded outcome never rewritten
+        assert result.details["effective_outcome"] == "INVALID"
+        assert result.consistency.status == "stale"
+        assert result.consistency.reasons
+
+    def test_recorded_pass_unconfirmed_without_a_reachable_checkout(self, tmp_path):
+        _write_minimal_slug(tmp_path, "demo")
+        # No repo_root at all -- the digest can neither be confirmed nor
+        # actively refuted; a historical PASS must never be reported as
+        # currently verified on that basis alone.
+        response = ka.get(tmp_path, ka.result_identity("REQ-DEMO-001", "chk-a", "r1"))
+        result = response.results[0]
+        assert result.details["outcome"] == "PASS"
+        assert result.details["effective_outcome"] == "PASS"
+        assert result.consistency.status == "unconfirmed"
+        assert result.consistency.status != "current"
+        assert result.consistency.reasons
+
+    def test_outdated_contract_reported_stale_regardless_of_repo_root(self, tmp_path):
+        _write_minimal_slug(tmp_path, "demo")
+        contract_path = tmp_path / "planning" / "contracts" / "demo" / "oracle-contract.yaml"
+        _write_contract(contract_path, contract_id="REQ-DEMO-001", check_id="chk-a", scope="scope A, extended")
+        response = ka.get(tmp_path, ka.result_identity("REQ-DEMO-001", "chk-a", "r1"), repo_root=tmp_path)
+        result = response.results[0]
+        assert result.details["effective_outcome"] == "INVALID"
+        assert result.consistency.status == "stale"
+
+    def test_missing_raw_output_artifact_reported_stale(self, tmp_path):
+        _write_minimal_slug(tmp_path, "demo")
+        raw_path = tmp_path / "planning" / "contracts" / "demo" / "results" / "chk-a-r1-raw.txt"
+        raw_path.unlink()
+        response = ka.get(tmp_path, ka.result_identity("REQ-DEMO-001", "chk-a", "r1"), repo_root=tmp_path)
+        result = response.results[0]
+        assert result.details["effective_outcome"] == "INVALID"
+        assert result.consistency.status == "stale"
+        assert "raw_output_ref" in result.consistency.reasons[0]
+
+    def test_get_and_traverse_results_agree_on_effective_outcome_and_status(self, tmp_path):
+        _write_minimal_slug(tmp_path, "demo")
+        (tmp_path / "impl.py").write_text("def target_function():\n    return 999\n", encoding="utf-8")
+        get_response = ka.get(tmp_path, ka.result_identity("REQ-DEMO-001", "chk-a", "r1"), repo_root=tmp_path)
+        traverse_response = ka.traverse(
+            tmp_path, ka.check_identity("REQ-DEMO-001", "chk-a"), "results", repo_root=tmp_path
+        )
+        get_result = get_response.results[0]
+        traverse_result = next(r for r in traverse_response.results if r.id == get_result.id)
+        assert get_result.details["effective_outcome"] == traverse_result.details["effective_outcome"] == "INVALID"
+        assert get_result.consistency.status == traverse_result.consistency.status == "stale"
+
+    def test_traverse_results_without_repo_root_reports_unconfirmed_not_current(self, tmp_path):
+        _write_minimal_slug(tmp_path, "demo")
+        response = ka.traverse(tmp_path, ka.check_identity("REQ-DEMO-001", "chk-a"), "results")
+        passing = [r for r in response.results if r.details["effective_outcome"] == "PASS"]
+        assert passing
+        assert all(r.consistency.status == "unconfirmed" for r in passing)
+
+    def test_check_aggregate_current_only_with_reachable_repo_root(self, tmp_path):
+        _write_minimal_slug(tmp_path, "demo")
+        without = ka.get(tmp_path, ka.check_identity("REQ-DEMO-001", "chk-a"))
+        with_repo = ka.get(tmp_path, ka.check_identity("REQ-DEMO-001", "chk-a"), repo_root=tmp_path)
+        assert without.results[0].details["aggregate_state"] == "PASS"
+        assert without.results[0].consistency.status == "unconfirmed"
+        assert with_repo.results[0].details["aggregate_state"] == "PASS"
+        assert with_repo.results[0].consistency.status == "current"
+
+    def test_search_results_do_not_default_to_current(self, tmp_path):
+        _write_minimal_slug(tmp_path, "demo")
+        response = ka.search(tmp_path, "demo claim")
+        assert response.status == "result"
+        assert all(r.consistency.status != "current" for r in response.results)
+
+    def test_context_packet_items_reflect_real_currency_not_an_optimistic_default(self, tmp_path):
+        _write_minimal_slug(tmp_path, "demo")
+        response = ka.get_context_packet(tmp_path, "CL-DEMO-001", repo_root=tmp_path)
+        items = response.results[0].details["items"]
+        claim_item = next(i for i in items if i["id"] == "CL-DEMO-001")
+        assert claim_item["consistency"]["status"] == "current"
+        without_repo = ka.get_context_packet(tmp_path, "CL-DEMO-001")
+        claim_item_unconfirmed = next(
+            i for i in without_repo.results[0].details["items"] if i["id"] == "CL-DEMO-001"
+        )
+        assert claim_item_unconfirmed["consistency"]["status"] != "current"
+
+
+# ---------------------------------------------------------------------------
 # §3.C -- authority tagging
 # ---------------------------------------------------------------------------
 
@@ -534,6 +644,55 @@ class TestTraceEvidence:
         response = ka.trace_evidence(tmp_path, "CL-NOPE-001")
         assert response.status == "empty"
 
+    # -- Corrective pass defect B: a declared Evidence citation that does
+    # not resolve to a real record must never be silently treated as
+    # successful coverage (decisions/0092).
+
+    def test_exclusively_dangling_supporting_evidence_is_a_gap(self, tmp_path):
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        _write_flat(slug_dir / "CL-DANGLE-001.yaml", {
+            "id": "CL-DANGLE-001", "kind": "claim", "statement": "dangling only",
+            "supporting_evidence": ["EV-MISSING-001"], "status": "supported",
+        })
+        response = ka.trace_evidence(tmp_path, "CL-DANGLE-001")
+        assert response.status == "gap"
+        assert response.results == []
+        dangling = [g for g in response.gaps if g.kind == "dangling_evidence_reference"]
+        assert len(dangling) == 1
+        assert dangling[0].subject_id == "CL-DANGLE-001"
+        assert dangling[0].scope == "supporting"
+        assert "EV-MISSING-001" in dangling[0].reason
+
+    def test_mixed_valid_and_dangling_supporting_evidence_reports_both(self, tmp_path):
+        _write_minimal_slug(tmp_path, "demo")
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        _write_flat(slug_dir / "CL-MIXED-001.yaml", {
+            "id": "CL-MIXED-001", "kind": "claim", "statement": "mixed",
+            "supporting_evidence": ["EV-DEMO-001", "EV-MISSING-002"], "status": "supported",
+        })
+        response = ka.trace_evidence(tmp_path, "CL-MIXED-001")
+        assert response.status == "gap"
+        # The valid citation is never discarded because a sibling citation
+        # is broken.
+        assert {r.id for r in response.results} == {"EV-DEMO-001"}
+        dangling = [g for g in response.gaps if g.kind == "dangling_evidence_reference"]
+        assert {g.subject_id for g in dangling} == {"CL-MIXED-001"}
+        assert any("EV-MISSING-002" in g.reason for g in dangling)
+
+    def test_dangling_contradicting_evidence_is_a_gap(self, tmp_path):
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        _write_flat(slug_dir / "CL-CONTRA-001.yaml", {
+            "id": "CL-CONTRA-001", "kind": "claim", "statement": "has real support",
+            "supporting_evidence": [], "contradicting_evidence": ["EV-MISSING-003"], "status": "supported",
+        })
+        response = ka.trace_evidence(tmp_path, "CL-CONTRA-001")
+        assert response.status == "gap"
+        kinds = {g.kind for g in response.gaps}
+        assert "dangling_evidence_reference" in kinds
+        dangling = [g for g in response.gaps if g.kind == "dangling_evidence_reference"]
+        assert dangling[0].scope == "contradicting"
+        assert "EV-MISSING-003" in dangling[0].reason
+
 
 class TestEpistemicStatus:
     def test_requirement_aggregates_over_its_dependent_claims(self, tmp_path):
@@ -582,6 +741,21 @@ class TestFindGaps:
         response = ka.find_gaps(tmp_path, "clean")
         assert response.status == "empty"
         assert response.gaps == []
+
+    def test_dangling_evidence_reference_detected_corpus_wide(self, tmp_path):
+        """find_gaps and trace_evidence use consistent semantics
+        (corrective pass, decisions/0092) -- a dangling citation is
+        detected scanning the whole corpus, not only when the citing
+        record is itself the subject of a direct trace_evidence call."""
+        slug_dir = tmp_path / "planning" / "knowledge" / "dangling-demo"
+        _write_flat(slug_dir / "CL-DANGLE-002.yaml", {
+            "id": "CL-DANGLE-002", "kind": "claim", "statement": "x",
+            "supporting_evidence": ["EV-GHOST-001"], "status": "supported",
+        })
+        response = ka.find_gaps(tmp_path, "dangling-demo")
+        assert response.status == "gap"
+        dangling = [g for g in response.gaps if g.kind == "dangling_evidence_reference"]
+        assert any(g.subject_id == "CL-DANGLE-002" and "EV-GHOST-001" in g.reason for g in dangling)
 
     def test_no_obligations_no_contract_is_not_a_gap(self, tmp_path):
         slug_dir = tmp_path / "planning" / "knowledge" / "obs-only"
@@ -639,6 +813,49 @@ class TestContextPacket:
         packet = response.results[0].details
         assert packet["gaps"]
         assert packet["gaps"][0]["kind"] == "missing_evidence"
+
+    # -- Corrective pass defect C: bounds must apply to every retrieval
+    # path, including a free-text topic resolving to a non-knowledge-record
+    # item (decisions/0092).
+
+    def _write_lone_contract(self, tmp_path):
+        """A slug with an oracle contract and no knowledge records at all,
+        whose check_id/scope text appears nowhere else in the corpus --
+        guarantees search()'s first hit for that text is the oracle check
+        itself, not a knowledge record."""
+        contract_path = tmp_path / "planning" / "contracts" / "ctxtest" / "oracle-contract.yaml"
+        _write_contract(
+            contract_path, contract_id="REQ-CTXTEST-001",
+            check_id="unique-check-xyz", scope="unique scope xyz for context bounds",
+        )
+
+    def test_non_knowledge_record_topic_is_bounded_by_max_chars(self, tmp_path):
+        self._write_lone_contract(tmp_path)
+        response = ka.get_context_packet(tmp_path, "unique-check-xyz", max_chars=1)
+        packet = response.results[0].details
+        assert packet["items"] == []
+        assert packet["bounds"]["truncated"] is True
+
+    def test_non_knowledge_record_topic_is_bounded_by_max_items(self, tmp_path):
+        self._write_lone_contract(tmp_path)
+        response = ka.get_context_packet(tmp_path, "unique-check-xyz", max_items=1)
+        packet = response.results[0].details
+        assert len(packet["items"]) == 1
+        assert packet["bounds"]["truncated"] is False
+
+    def test_non_knowledge_record_topic_fits_within_generous_bounds(self, tmp_path):
+        self._write_lone_contract(tmp_path)
+        response = ka.get_context_packet(tmp_path, "unique-check-xyz")
+        packet = response.results[0].details
+        assert len(packet["items"]) == 1
+        assert packet["items"][0]["kind"] == "oracle_check"
+        assert packet["bounds"]["truncated"] is False
+
+    def test_repeated_identical_requests_are_deterministic_for_non_knowledge_record_topic(self, tmp_path):
+        self._write_lone_contract(tmp_path)
+        first = ka.get_context_packet(tmp_path, "unique-check-xyz")
+        second = ka.get_context_packet(tmp_path, "unique-check-xyz")
+        assert first.results[0].details["items"] == second.results[0].details["items"]
 
 
 # ---------------------------------------------------------------------------
