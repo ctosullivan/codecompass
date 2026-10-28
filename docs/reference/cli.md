@@ -176,10 +176,12 @@ stable, typed interface over `context-graph.db`, `planning/knowledge/`,
 and `planning/contracts/`, so a caller (a script, or a coding agent) can
 ask "what does this project know about X, how confident are we, and is
 that still current" without independently reconstructing any of those
-three storage formats. See `architecture/knowledge-api.md` for the full
-design. Namespaced apart from this app's existing mutation verbs
-(`apply`, `select-candidates`, `doc-acknowledge-*`) — none of these six
-commands writes anything, ever.
+three storage formats. See `docs/architecture/overview.md` and
+`docs/architecture/components.md` for the full design. Namespaced apart
+from this app's existing mutation verbs (`apply`, `select-candidates`,
+`doc-acknowledge-*`) — none of these six commands ever writes to
+canonical project knowledge (`export`, the one exception, writes only
+the explicitly requested `OUT_PATH`, detailed below).
 
 - **`get RECORD_ID`** — one item by its own stable identity: a
   `REQ-`/`CL-`/`EV-`/`OBS-`/`DE-`/`DEC-` id, or a natural-key identity
@@ -214,9 +216,10 @@ commands writes anything, ever.
   contracts/` — writes exactly `OUT_PATH`, never touches canonical
   project knowledge.
 
-Every command accepts `--json` (`export` always prints a one-line
-confirmation; its actual output is the file at `OUT_PATH`) for
-machine-readable consumption. `query relations` (above) is now
+`get`/`search`/`trace`/`gaps`/`context` all accept `--json` for
+machine-readable consumption. `export` has no `--json` option — it
+always prints a one-line human-readable confirmation; its actual output
+is the file it writes at `OUT_PATH`. `query relations` (above) is now
 implemented in terms of this same API's own `doc_mentions` relation —
 its own output is unchanged.
 

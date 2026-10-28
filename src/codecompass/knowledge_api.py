@@ -1262,13 +1262,17 @@ def get_context_packet(
     """A bounded, coherent, deterministic development-context packet for
     `topic` (a knowledge-record id, or free text) -- plan §4.1/§4.E.
     Priority order (fixed, never re-ranked by any heuristic or AI call):
-    (1) the subject record itself; (2) directly related stated-intent/
-    accepted-obligation records; (3) supporting/contradicting evidence;
-    (4) scoped verification (oracle checks/results); (5) explicit gaps
-    for this one subject. Deduplicated by id. Truncated, deterministically
-    (by this fixed priority order, then by id), at `max_items`/
-    `max_chars` -- `details.bounds.truncated` says so explicitly rather
-    than silently dropping items.
+    (1) the subject record itself; (2) its direct `depends_on`/
+    `depends_on_reverse`/`supporting_evidence`/`contradicting_evidence`
+    neighbours (one hop each); (3) explicit gaps for this one subject
+    (`trace_evidence`'s own gap detection). Oracle checks/results are
+    reachable for the subject separately, via `get`/`traverse(...,
+    "checks"/"results")` -- this packet does not itself expand into
+    them, keeping the traversal bounded to knowledge-record relations
+    only. Deduplicated by id. Truncated, deterministically (by this
+    fixed priority order, then by id), at `max_items`/`max_chars` --
+    `details.bounds.truncated` says so explicitly rather than silently
+    dropping items.
     """
     records = _all_records(project_root)
     subject_id = topic if topic in records else None

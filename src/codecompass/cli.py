@@ -755,7 +755,8 @@ def query_relations(
     `_resolve_relations` now lives in `knowledge_api.py`, reused by both
     this command and `knowledge_api.traverse(..., relation="doc_mentions")`.
     Output is byte-identical to the pre-migration implementation
-    (`tests/test_cli.py::test_query_relations_backward_compatible`).
+    (`tests/test_cli.py::
+    test_query_relations_backward_compatible_after_knowledge_api_migration`).
     """
     with _graph_session(Path.cwd()) as conn:
         if conn is None:
