@@ -61,7 +61,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   new piece of code that merely consults the same data — only to code
   that actually calls the same validating function/matches the same full
   key, not a hand-written partial equivalent of it.
-- **status:** candidate
+- **status:** retained
 - **recurrence:** first occurrence (three sibling instances within one
   module, found together; no evidence yet of the same shape recurring in
   a different module)
@@ -73,6 +73,58 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   checklist item ("does this new code call the existing parser/match the
   full key, or does it re-derive a narrower equivalent by hand?");
   otherwise retained through the next milestone bulk review.
+- **curation note (2026-10-28, knowledge-curator):** read `decisions/0089`
+  in full and the current, fixed `scripts/assess_change_impact.py`
+  (`classify_symbol` lines 308-395, `resolve_intersecting_symbols`/
+  `resolve_changed_range` lines 175-280) against the pre-fix lines
+  `decisions/0089` quotes verbatim. The observation is accurate for
+  defects A and C: both are genuinely "called a hand-written narrower
+  equivalent of an already-existing, separately-specified routine
+  elsewhere in the codebase" — A reused `_SOURCE_REF_WITH_SYMBOL_RE`'s
+  `symbol` group but dropped its own `path` group, the same regex
+  `check_contracts.py::check_source_ref_symbol_depth` already resolves
+  both groups from; C hand-rolled `yaml.safe_load` plus a bare `check_id`
+  presence check instead of calling the already-exported
+  `oracle.parse_oracle_result`. Defect B is a weaker fit to that specific
+  frame: nothing "elsewhere in the codebase" already validated `end` or
+  resolved multi-symbol ranges — `resolve_enclosing_symbol` was this
+  function's *own* first-cut implementation, not a reuse of a sibling
+  convention; `ChangedRange.start`/`.end` are two fields of the same
+  local dataclass, not a separately-specified external contract. B does
+  still share the single higher-level trait the entry claims (code
+  handling only the simplest/first-observed shape of its own stated
+  input contract, revisited against the full contract only when this
+  pass happened), but calling it "reused only part of a convention" is a
+  stretch for B specifically — this is noted here rather than silently
+  waved through.
+
+  Checked for duplication against existing filed learnings: **not**
+  `L-105` (promoted) — that is a parameter-threading gap (one override
+  parameter not passed to one call site), a different failure shape from
+  partial reuse of a validation/identity routine. Partial overlap with
+  `CLAUDE.md` §1's `L-075` (depth vs. scope: confirming a key is present
+  is not confirming its value is well-formed and genuinely matches) —
+  defect C is close to a live instance of exactly what L-075 guards
+  against, and arguably confirms L-075 was already the right rule rather
+  than exposing a gap in it. But L-075 is a rule about what a *phase
+  plan's own verification/test step* must cover going forward; L-106's
+  candidate checklist item ("does new code call the existing parser/
+  match the full key, or hand-roll a narrower equivalent?") is a
+  *code-review* prompt aimed at the moment new code is written, before
+  any test is drafted — a different point in the workflow, not a pure
+  restatement. Defect A (a two-part identity key matched on only one
+  part) has no existing match in L-021/L-070/L-075 at all. **Outcome:
+  retain** — real, evidenced by three fixed defects plus 18 new
+  regression tests in `365dec1`, but the unifying frame is partially
+  imprecise (holds cleanly for A/C, strained for B) and the only
+  evidence is three sibling instances found together in one module in
+  one pass — not yet the second, independent recurrence the entry's own
+  `classification` (non-standard "process gap", not one of
+  `learning-lifecycle.md` §3's listed values — left as filed rather than
+  overridden, since no listed value fits a cross-cutting shape claim
+  cleanly either) and `moves forward when` field already anticipate as
+  the promotion trigger. `status` set to `retained` (not left
+  `candidate`, per `check_learnings_status_matches_retain_outcome`).
 
 ### L-104 — a "historical facts are never deleted" discipline established for one consumer of a shared evaluation function does not automatically propagate to every other independent consumer of that same function
 
