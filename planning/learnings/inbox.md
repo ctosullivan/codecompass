@@ -8,6 +8,75 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-107 — extending a behavioural contract with a new required check can leave pre-existing Evidence citing now-invalid historical results, with nothing prompting a re-citation
+
+- **origin:** Phase 84 (Consolidated Knowledge API), via `knowledge_
+  api.find_gaps` run against this project's own real corpus; governing
+  prompt "CodeCompass Orchestrator — Close Phase 83 and Implement Phase
+  84"
+- **date:** 2026-10-29
+- **project_revision:** `0b4f321` (Phase 84 implementation) — the
+  underlying knowledge-record state this finding is *about* predates
+  this phase entirely (Phase 83, `decisions/0089`, 2026-10-28) and is
+  unmodified by it.
+- **observation:** `planning/knowledge/balance-from-spec/EV-BFS-002.yaml`
+  and `EV-BFS-003.yaml` (`evidence_kind: test`) each cite a specific
+  historical `OracleResult` file by its own `test_ref` path. When Phase
+  83 extended `oracle-contract.yaml` with a third required check
+  (`decisions/0086`/`0089`), the contract's own content hash changed,
+  which made every *pre-existing* result's own recorded
+  `oracle_contract_content_hash` stale — including the two results
+  `EV-BFS-002`/`EV-BFS-003` cite. Phase 83's own re-validation correctly
+  generated two **fresh**, currently-valid `PASS` results for those same
+  two checks under the new contract hash (visible today as
+  `single-section-expense-subtotal--20261028T075132259723Z-bfd29ce3.yaml`
+  and `multi-section-income-expense-subtotal--20261028T075133080206Z-
+  c9165dee.yaml`) — but nothing in that pass's own scope (correctly:
+  Phase 83's governing prompt explicitly excluded reopening canonical
+  knowledge-record content beyond what its own three defects required)
+  updated `EV-BFS-002`/`EV-BFS-003`'s own `test_ref` to point at those
+  new files. The result: `knowledge_api.epistemic_status`/`find_gaps`,
+  run today, correctly report these two required scopes as
+  `known_gap_scopes` — a structurally honest, non-buggy outcome
+  (`derive_epistemic_profile` only trusts a *cited* result, never any
+  result that merely exists in the same directory) — even though a
+  real, current, passing result sits right there, uncited, the whole
+  time. No existing validator (`check_contracts.py --strict`'s own
+  `contract-check-gap`/`contract-result-integrity-mismatch` findings)
+  flags this *specific* shape (a stale citation with a fresher,
+  currently-valid, uncited sibling) as distinct from "no result at all"
+  or "an informational historical mismatch" — `knowledge_api.find_gaps`'s
+  own new `stale_test_citation` rule is the first mechanism in this
+  project that names it.
+- **evidence:** `tests/test_knowledge_api.py::TestFindGaps::
+  test_real_corpus_surfaces_the_known_stale_test_citation` (real-corpus,
+  not synthetic) confirms both ids are flagged; independently confirmed
+  by hand via `oracle.evaluate_result_precedence` against the live
+  contract for each of the four `single-section-expense-subtotal--*`/
+  `multi-section-income-expense-subtotal--*` result files on disk.
+- **classification:** process gap — no existing step in this project's
+  own contract-extension workflow re-checks whether pre-existing
+  Evidence needs re-citing once a contract gains a new required check
+  and fresh confirming runs are generated for the old ones.
+- **status:** candidate
+- **recurrence:** first occurrence noticed; the *mechanism* (a contract
+  content-hash change invalidating every pre-existing result's own
+  recorded hash) is inherent to `decisions/0081`'s own content-hash
+  design and will recur every time a contract gains a check.
+- **moves forward when:** the `knowledge-curator` decides whether this
+  should (a) become a documented step in the Phase 82/83 oracle-
+  contract-extension workflow ("when adding a required check, also
+  re-cite the pre-existing checks' own fresh confirming results from
+  their Evidence records"), (b) stay purely a `find_gaps`-detectable
+  condition with no process change (since the information is always
+  honestly recoverable, just not automatically re-linked), or (c) both.
+  Out of scope for this entry: actually editing `EV-BFS-002`/
+  `EV-BFS-003`'s own `test_ref` fields — that is a canonical-knowledge
+  write, requiring the normal `knowledge apply` review path, not a side
+  effect of filing this learning.
+
+---
+
 ### L-106 — a newly-written consumer of an existing multi-part identity/validation convention can silently reuse only part of it, and pass review and one prior independent audit before the gap is found
 
 - **origin:** Phase 83 corrective pass retro (`decisions/0089`); governing

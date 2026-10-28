@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 84: Consolidated Knowledge API and Query CLI** (`decisions/0084`/
+  `0085`/`0091`): a new, read-only, typed interface,
+  `src/codecompass/knowledge_api.py`, over `context-graph.db`,
+  `planning/knowledge/`, and `planning/contracts/` combined — logical
+  consolidation only, no new database, no new persisted identity, no
+  mutation path of any kind. `get`/`search`/`traverse`/`trace_evidence`/
+  `epistemic_status`/`find_gaps`/`get_context_packet`/`export_snapshot`
+  each return one uniform `result`/`empty`/`gap` response, every item
+  carrying a `primary_evidence`/`derived_index`/`stated_intent`/
+  `accepted_obligation`/`scoped_verification`/`editable_projection`/
+  `presentation_artifact` authority tag and a response-time consistency
+  envelope (never claiming current verification from historical evidence
+  or an indexed source relationship alone). Natural-key string identities
+  (`symbol:`/`vendor:`/`doc:`/`contract:`/`check:`/`result:`) stand in for
+  any table whose own row id is not stable across a deterministic
+  rebuild. Six new read-only CLI commands under the existing `knowledge`
+  sub-app: `knowledge get|search|trace|gaps|context|export`. `query
+  relations` is migrated onto this same API's own `doc_mentions`
+  relation, confirmed byte-identical before/after. 47 new tests,
+  including a real-corpus dogfood against this project's own
+  `balance-from-spec` knowledge and the real `~/projects/ledgerkit`
+  checkout — which also surfaces a genuine, pre-existing `find_gaps`
+  finding (`stale_test_citation`: two Evidence records cite now-invalid
+  historical oracle results while a different, current `PASS` for the
+  same check exists, uncited, in the same `results/` directory).
+
 ### Changed
 
 - **Phase 83 final corrective amendment** (`decisions/0090`, direct user

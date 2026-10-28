@@ -7,6 +7,41 @@ session-resumption, not a project history.
 
 ## Current phase
 
+**Phase 84 — Consolidated Knowledge API and Query CLI — implementation
+complete, independent audit in progress (2026-10-29, `decisions/0091`)**.
+`src/codecompass/knowledge_api.py` is a new, read-only, typed interface
+over `context-graph.db`, `planning/knowledge/`, and `planning/
+contracts/` combined: `get`/`search`/`traverse`/`trace_evidence`/
+`epistemic_status`/`find_gaps`/`get_context_packet`/`export_snapshot`,
+each returning one uniform `result`/`empty`/`gap` response with a
+per-item authority tag (`primary_evidence`/`derived_index`/
+`stated_intent`/`accepted_obligation`/`scoped_verification`/
+`editable_projection`/`presentation_artifact`) and a response-time
+consistency envelope — never claiming current verification from
+historical evidence alone. Natural-key string identities (`symbol:`/
+`vendor:`/`doc:`/`contract:`/`check:`/`result:`) stand in for any table
+whose own row id is not stable across a rebuild; connects to
+`context-graph.db` read-only, never through `graph.open_graph` (which
+can create/migrate it), so no call has any filesystem side effect. Six
+new read-only CLI commands (`knowledge get/search/trace/gaps/context/
+export`); `query relations` migrated onto this API's own `doc_mentions`
+relation, confirmed byte-identical before/after. 47 new tests
+(`tests/test_knowledge_api.py`), including a required dogfood against
+this project's own real `balance-from-spec` corpus and the real
+`~/projects/ledgerkit` checkout, which also surfaced a genuine,
+pre-existing `find_gaps` finding: `EV-BFS-002`/`EV-BFS-003` cite
+historical oracle results now `INVALID` against the live (Phase-83-
+extended) contract hash, while a different, current `PASS` for the same
+two checks exists, uncited, in the same `results/` directory — a real
+knowledge-currency gap this phase's own new capability was built to
+surface, not staged for the demonstration. Full suite 1103 passed, 2
+skipped; all three strict validators unaffected. `decisions/0084`/
+`0085` (architecture) and `0091` (implementation-time resolutions:
+`ApiResponse` shape, natural-key string encoding, `ContextPacket`
+design) govern this phase. Not yet marked `done`: independent audit of
+this implementation (docs-drift review, a full DoD pass, a retro, and
+learnings triage) is in progress.
+
 **Phase 83 — Semantic Change Assurance — is `done`, corrective line of
 work fully closed (2026-10-29, `decisions/0090`)**. A fourth, final,
 narrowly scoped defect — `classify_symbol()`'s historical test-Evidence
@@ -557,12 +592,13 @@ above) — its one remaining *outstanding, separately-gated* item
 own `CLAUDE.md` §5 completion gate — it is named, tracked, and requires
 its own future, separate explicit authorisation whenever it is taken up.
 
-**Phase 84 (Consolidated Knowledge API and Query CLI) is phase-planned
-and implementation-ready**, approved 2026-10-24
-(`planning/phase-84-consolidated-knowledge-api.md`). **Not authorised to
-implement without a separate, explicit approval** — confirmed
-independent of Phase 83 in both directions (neither phase's own plan
-depends on the other). After it: 85 (Self-Curation and
+**Phase 84 (Consolidated Knowledge API and Query CLI) is implemented**
+(2026-10-29, `decisions/0091`) — see "Current phase" above. Immediate
+next step: independent `release-phase-auditor` pass, `docs-reconstructor`
+drift check, a retro, and `knowledge-curator` triage of any surfaced
+learnings, per `CLAUDE.md` §5, before `planning/ROADMAP.md` marks it
+`done`. Phase 85 is not authorised under the governing prompt that
+produced this implementation. After Phase 84 closes: 85 (Self-Curation and
 Knowledge-Quality Validation) → 86 (Knowledge-Placement and Code-Quality
 Review, formal policy/enforcement classes) → 87 (Documentation Schema and
 Knowledge-Compiled Documentation, minimum suite specified) → 88 (Agent

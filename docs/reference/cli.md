@@ -160,6 +160,66 @@ codecompass knowledge doc-acknowledge-chunks
 
 See `docs/workflows/knowledge-reconciliation-loop.md` for full mechanics.
 
+## `codecompass knowledge get|search|trace|gaps|context|export` (Phase 84)
+
+```
+codecompass knowledge get RECORD_ID [--json]
+codecompass knowledge search TEXT [--kind KIND ...] [--json]
+codecompass knowledge trace RECORD_ID [--relation RELATION] [--depth N] [--evidence] [--json]
+codecompass knowledge gaps [SLUG] [--json]
+codecompass knowledge context TOPIC [--max-items N] [--max-chars N] [--json]
+codecompass knowledge export SLUG OUT_PATH [--project-id ID]
+```
+
+A **read-only** CLI surface over `src/codecompass/knowledge_api.py` — one
+stable, typed interface over `context-graph.db`, `planning/knowledge/`,
+and `planning/contracts/`, so a caller (a script, or a coding agent) can
+ask "what does this project know about X, how confident are we, and is
+that still current" without independently reconstructing any of those
+three storage formats. See `architecture/knowledge-api.md` for the full
+design. Namespaced apart from this app's existing mutation verbs
+(`apply`, `select-candidates`, `doc-acknowledge-*`) — none of these six
+commands writes anything, ever.
+
+- **`get RECORD_ID`** — one item by its own stable identity: a
+  `REQ-`/`CL-`/`EV-`/`OBS-`/`DE-`/`DEC-` id, or a natural-key identity
+  (`symbol:<path>:<name>:<kind>:<line>`, `vendor:<name>`, `doc:<path>`,
+  `contract:<contract_id>`, `check:<contract_id>:<check_id>`,
+  `result:<contract_id>:<check_id>:<run_id>`).
+- **`search TEXT`** — free-text discovery across knowledge-record fields
+  and oracle contract/check ids; `--kind` (repeatable) restricts to one
+  or more record/oracle kinds.
+- **`trace RECORD_ID`** — follows one recorded relationship outward:
+  `--relation` is one of `depends_on`/`supporting_evidence`/
+  `contradicting_evidence`/`observations`/`decision` (any with a
+  `_reverse` counterpart), `cites`/`cited_by`, `checks`/`results`, or
+  `doc_mentions` (the exact mechanical web `query relations` itself now
+  reads); `--evidence` instead runs `trace_evidence` (supporting +
+  contradicting evidence, reporting an explicit **gap** when an
+  obligation-bearing record has no evidence at all).
+- **`gaps [SLUG]`** — missing, stale, or conflicting knowledge across
+  record kinds in one call: an unverified required oracle scope, a
+  contradicted record, a stale test-evidence citation (a cited result no
+  longer valid against the live contract while a different, current
+  `PASS` for the same check exists uncited), or a slug with claims/
+  requirements but no oracle contract at all. Omit `SLUG` to scan every
+  slug.
+- **`context TOPIC`** — a bounded, deterministic development-context
+  packet: the subject record, its direct relations, and its own gaps, in
+  a fixed priority order, truncated at `--max-items`/`--max-chars` with
+  truncation reported explicitly, never silently.
+- **`export SLUG OUT_PATH`** — a portable, versioned export of one
+  slug's canonical knowledge (`decisions/0079` §5's own project-identity
+  envelope). Refuses to write inside `planning/knowledge/`/`planning/
+  contracts/` — writes exactly `OUT_PATH`, never touches canonical
+  project knowledge.
+
+Every command accepts `--json` (`export` always prints a one-line
+confirmation; its actual output is the file at `OUT_PATH`) for
+machine-readable consumption. `query relations` (above) is now
+implemented in terms of this same API's own `doc_mentions` relation —
+its own output is unchanged.
+
 ## A retired command
 
 `codecompass promote` **no longer exists** — removed entirely (referenced as `decisions/0033`). Its three former jobs (cloning, enrichment, Skill generation) are now automatic outcomes of the bootstrap/`sync` flow described above. Running `codecompass promote` produces Typer's standard "no such command" error.

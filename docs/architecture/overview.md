@@ -2,11 +2,12 @@
 
 CodeCompass is a single Python package (`src/codecompass/`) exposed through one Typer CLI entry point (`codecompass`, `src/codecompass/cli.py`). It has no server component and no persistent background process — every invocation is a single run against the current working directory, treated as the target project root.
 
-## The three main subsystems
+## The four main subsystems
 
 1. **Ecosystem adapters** (`src/codecompass/adapters/`) — one class per `Ecosystem`, extracting real facts (installed version, source location, dependency tree, API surface) about one tracked dependency at a time. See `docs/concepts/adapter.md`.
 2. **Deterministic rendering and the context graph** — tree renderers (`deptree.py`, `filetree.py`), mechanical symbol/usage/doc-relationship detectors (`symbols.py`, `source_symbols.py`, `usage.py`, `spec_docs.py`, `doc_mapping.py`, `skill_scan.py`, `git_topology.py`), and a SQLite persistence layer (`graph.py`) that a full-rebuild orchestrator (`sync.py::rebuild_project_graph`) assembles on every whole-project sync. None of this ever makes an AI call.
 3. **AI enrichment** (`enrichment.py`, `relation_enrichment.py`) — a strictly separate, cost-gated, usage-driven layer that reads the deterministic graph's own usage evidence to decide what, if anything, is worth describing with an Anthropic API call, and writes its own result back into a small set of tables the deterministic rebuild never touches.
+4. **The consolidated knowledge API** (`knowledge_api.py`, Phase 84) — one stable, **read-only** typed interface over the context graph, `planning/knowledge/`, and `planning/contracts/` combined, so a caller asks one module "what does this project know, how confident, is that still current" instead of reading three storage formats directly. See `docs/architecture/components.md`'s own entry.
 
 ## Foundational design choices
 
@@ -14,6 +15,7 @@ CodeCompass is a single Python package (`src/codecompass/`) exposed through one 
 - **Two adapter-implementation strategies coexist by design** — in-process (npm/Python/Cargo) and external-process (Haskell). See `docs/concepts/adapter.md`.
 - **The context graph survives a whole-project rebuild selectively.** Most tables are fully wiped and rewritten on every sync (`rebuild_deterministic`); vendors/symbols/source-files/source-symbols are *upserted by natural key* so their integer ids survive unchanged across reruns; the three AI-enrichment tables are never touched by a rebuild at all. See `docs/architecture/data-and-control-flow.md`.
 - **A persistent, bidirectional knowledge layer sits alongside, not inside, the context graph.** `planning/knowledge/<slug>/` canonical records and `context-graph.db` are two structurally separate systems with no shared schema — a project-level decision (referenced as `decisions/0071`) explicitly keeps the knowledge layer's canonical model outside the context graph.
+- **The knowledge API is logical consolidation, never physical.** `knowledge_api.py` (Phase 84) reads the context graph, `planning/knowledge/`, and `planning/contracts/` through their own existing readers/parsers — it introduces no new database, no new persisted identifier, and no mutation path of any kind; a natural-key string (e.g. `source_file.path` + `name` + `kind` + `line`) stands in for identity wherever a table's own integer id is not stable across a rebuild. See `decisions/0084`/`0085`/`0091`.
 - **A consuming AI agent's primary interface is generated artifacts, not a live API.** Per-vendor digests, a tool-level Agent Skill, per-vendor Agent Skills, Cursor `.mdc` rules, and a read-only `/discovery` slash command are all files CodeCompass writes to disk; `codecompass chat <vendor>` (a secondary REPL) grounds itself only on already-persisted digest files, never on a live reconstruction.
 
 ## What CodeCompass explicitly does not do
