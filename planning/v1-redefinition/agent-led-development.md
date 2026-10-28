@@ -44,6 +44,18 @@ Implemented by Phase 40 (roster + workflow) and proven by Phase 43
   the "new ADR every time" convention producing an unwieldy lineage for a
   single phase (e.g. four or more ADRs correcting one another) — not
   observed yet. (Phase 79 sixth amendment — L-078.)
+- **A corrective pass writes and runs each defect's regression test
+  against the pre-fix source first, and confirms it fails, before
+  writing the fix.** This is not only confirmation the bug exists — the
+  more frequently evidenced payoff is that an assertion written against
+  a fix that hasn't landed yet fails loudly (a `KeyError`, a forced
+  mismatch) rather than silently passing, catching secondary gaps the
+  fix itself introduces or overlooks (e.g. a field the test expects that
+  the first-draft fix forgot to populate) before they ship alongside the
+  fix they were meant to verify. Confirmed independently across three
+  corrective passes with no shared codified source each time: Phase 82's
+  first and final corrective passes (`decisions/0082`/`0083`) and Phase
+  84's corrective pass (`decisions/0092`, `L-108`).
 
 ## 2. The roster
 

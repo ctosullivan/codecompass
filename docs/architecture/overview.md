@@ -15,8 +15,29 @@ CodeCompass is a single Python package (`src/codecompass/`) exposed through one 
 - **Two adapter-implementation strategies coexist by design** — in-process (npm/Python/Cargo) and external-process (Haskell). See `docs/concepts/adapter.md`.
 - **The context graph survives a whole-project rebuild selectively.** Most tables are fully wiped and rewritten on every sync (`rebuild_deterministic`); vendors/symbols/source-files/source-symbols are *upserted by natural key* so their integer ids survive unchanged across reruns; the three AI-enrichment tables are never touched by a rebuild at all. See `docs/architecture/data-and-control-flow.md`.
 - **A persistent, bidirectional knowledge layer sits alongside, not inside, the context graph.** `planning/knowledge/<slug>/` canonical records and `context-graph.db` are two structurally separate systems with no shared schema — a project-level decision (referenced as `decisions/0071`) explicitly keeps the knowledge layer's canonical model outside the context graph.
-- **The knowledge API is logical consolidation, never physical.** `knowledge_api.py` (Phase 84) reads the context graph, `planning/knowledge/`, and `planning/contracts/` through their own existing readers/parsers — it introduces no new database, no new persisted identifier, and no mutation path of any kind; a natural-key string (e.g. `source_file.path` + `name` + `kind` + `line`) stands in for identity wherever a table's own integer id is not stable across a rebuild. See `decisions/0084`/`0085`/`0091`.
+- **The knowledge API is logical consolidation, never physical.** `knowledge_api.py` (Phase 84) reads the context graph, `planning/knowledge/`, and `planning/contracts/` through their own existing readers/parsers — it introduces no new database, no new persisted identifier, and no mutation path of any kind; a natural-key string (e.g. `source_file.path` + `name` + `kind` + `line`) stands in for identity wherever a table's own integer id is not stable across a rebuild. See `decisions/0084`/`0085`/`0091`/`0092`.
 - **A consuming AI agent's primary interface is generated artifacts, not a live API.** Per-vendor digests, a tool-level Agent Skill, per-vendor Agent Skills, Cursor `.mdc` rules, and a read-only `/discovery` slash command are all files CodeCompass writes to disk; `codecompass chat <vendor>` (a secondary REPL) grounds itself only on already-persisted digest files, never on a live reconstruction.
+
+## Known footguns
+
+- **Rich `Table` cells truncate with an ellipsis at the console's default
+  render width — don't assert literal/partial cell text in a test
+  without first confirming it survives that width.** `cli.py` renders
+  many command outputs as `rich.table.Table` instances (`query
+  relations`, `query source`, `knowledge get`/`trace`, vendor/doc/skill
+  listings, etc.). A cell's rendered text can be silently truncated well
+  before a column's full content appears, independent of whether the
+  underlying data or the code producing it is correct. A test asserting
+  a specific substring appears verbatim in captured table output can
+  therefore fail — or, worse, pass only by coincidence — depending on
+  the harness's actual default render width (confirmed directly during
+  the Phase 84 corrective pass, `decisions/0092`, when strengthening
+  `test_query_relations_backward_compatible_after_knowledge_api_
+  migration`'s own assertions). Prefer asserting against the underlying
+  structured data (a command's own JSON output path, if one exists) or,
+  if asserting rendered text, run the assertion once to confirm the
+  exact substring you intend to check is not truncated at the harness's
+  own width before relying on it. (`L-109`.)
 
 ## What CodeCompass explicitly does not do
 

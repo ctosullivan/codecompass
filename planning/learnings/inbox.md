@@ -8,6 +8,187 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-109 — Rich `Table` cells truncate with an ellipsis at the console's default render width; a test asserting literal/partial cell text can fail (or pass by coincidence) independent of whether the underlying data is correct
+
+- **origin:** Phase 84 corrective pass (Consolidated Knowledge API,
+  `decisions/0092`), while strengthening
+  `test_query_relations_backward_compatible_after_knowledge_api_migration`
+  per the Phase 84 audit's own non-blocking observation; governing
+  prompt "CodeCompass Orchestrator — Phase 84 Corrective Pass"
+- **date:** 2026-10-29
+- **project_revision:** `45a3ca8` (corrective-pass implementation),
+  `4569e3f` (docs/retro)
+- **observation:** The first attempt to strengthen this test asserted
+  specific relation-kind substrings directly against `query relations`'s
+  captured Rich table output. This failed immediately — not because the
+  output was wrong, but because Rich truncates several cells with an
+  ellipsis at the table's own (deliberately untouched) default render
+  width, so even correct, current output does not contain those
+  substrings contiguously. `src/codecompass/cli.py` constructs at least
+  thirteen separate `rich.table.Table` instances across its command
+  surface (vendor list/detail, doc list, skill list, symbol/used-at
+  listings, `query source`/`source-symbol`, `query relations` and its
+  trace table, `knowledge get`/`trace` tables — confirmed via `grep -n
+  "Table("`), so the same risk recurs anywhere a future test asserts
+  literal/partial table-cell text without first checking it against the
+  harness's actual render width.
+- **evidence:** `decisions/0092-phase-84-corrective-pass-verification-
+  currency.md` "Alternatives considered" (states the finding and the
+  chosen fix directly); `planning/retros/phase-84-consolidated-
+  knowledge-api.md` "Corrective pass... What didn't work / near-misses";
+  `src/codecompass/cli.py` lines 390, 529, 539, 580, 620, 631, 636, 641,
+  669, 715, 774, 794, 1087 (`Table(` construction sites, confirmed by
+  direct grep of the file).
+- **classification:** architecture (a current-behaviour footgun of a
+  third-party rendering library this codebase relies on, not a new rule
+  about what a plan must specify in advance — the specific render-width
+  threshold can't be known until the assertion is actually tried)
+- **status:** promoted
+- **recurrence:** first occurrence; promoted on a single occurrence
+  because the risk surface (thirteen existing Rich tables in `cli.py`)
+  is itself the reason this is worth recording now rather than waiting
+  for a second incident.
+- **curation note (2026-10-29, knowledge-curator):** Independently
+  confirmed the `Table(` construction count and the ADR/retro citations
+  above. **Recommendation: promote** to `architecture/overview.md`
+  "Known footguns" (same home as the existing `L-026`/`L-028`/`L-031`-
+  style CLI/library-behaviour footguns), finalized by `docs-maintainer`.
+  Draft footgun text:
+
+  > **Rich `Table` cells truncate with an ellipsis at the console's
+  > default render width — don't assert literal/partial cell text in a
+  > test without first confirming it survives that width.** `cli.py`
+  > renders many command outputs as `rich.table.Table` instances
+  > (`query relations`, `query source`, `knowledge get`/`trace`,
+  > vendor/doc/skill listings, etc.). A cell's rendered text can be
+  > silently truncated well before a column's full content appears,
+  > independent of whether the underlying data or the code producing it
+  > is correct. A test asserting a specific substring appears verbatim
+  > in captured table output can therefore fail — or, worse, pass only
+  > by coincidence — depending on the harness's actual default render
+  > width (confirmed directly during the Phase 84 corrective pass,
+  > `decisions/0092`, when strengthening
+  > `test_query_relations_backward_compatible_after_knowledge_api_migration`'s
+  > own assertions). Prefer asserting against the underlying structured
+  > data (a command's own JSON output path, if one exists) or, if
+  > asserting rendered text, run the assertion once to confirm the exact
+  > substring you intend to check is not truncated at the harness's own
+  > width before relying on it.
+
+  Not routed to `CLAUDE.md` §1 (unlike `L-021`/`L-070`/`L-075`/`L-087`/
+  `L-088`): those all require a phase's *plan* to specify a category of
+  test in advance of writing it; this is a fact about current
+  third-party rendering behaviour discoverable only by trying the
+  assertion, which is `architecture/overview.md`'s own stated purpose
+  ("Known footguns"), not a planning-content requirement. Status stays
+  `candidate` (not `promoted`) until `docs-maintainer` actually lands the
+  footgun entry and a `promoted.md` pointer line is added — per
+  `check_promoted_learnings_logged`, marking `status: promoted` now,
+  before the artifact exists, would itself be a hygiene violation. Lead:
+  the `architecture/overview.md` edit is a `docs/`-adjacent write outside
+  this role's boundary; route to `docs-maintainer` or apply directly,
+  then flip this entry's `status` to `promoted` and add the
+  `promoted.md` line.
+
+---
+
+### L-108 — a corrective pass that writes and confirms a failing regression test against the pre-fix source, before writing the fix, catches latent bugs a fix-first approach can silently miss
+
+- **origin:** Phase 84 corrective pass (Consolidated Knowledge API,
+  `decisions/0092`); recurrence of a discipline also used in Phase 82's
+  first and final corrective passes (`decisions/0082`/`0083`)
+- **date:** 2026-10-29
+- **project_revision:** `45a3ca8` (Phase 84 corrective-pass
+  implementation); `decisions/0083` / `planning/retros/phase-82-final-
+  corrective-pass.md` for the earlier recurrence
+- **observation:** Fixing defect 1 (oracle-result currency) by changing
+  only `_oracle_result_consistency`'s own logic would have left
+  `_get_result()`'s `details` dict without an `effective_outcome` field
+  at all (previously only embedded in free-text `summary`). Because the
+  regression test for this defect was written and run *before* the fix,
+  asserting the field's presence, the first test run surfaced this as an
+  immediate `KeyError` rather than a silently-passing assertion against
+  a value that happened to already be right for the wrong reason. This
+  is the same discipline — reproduce each defect as a directly-observed
+  failure (a real pytest/JUnit run, a REPL check, a monkeypatched probe)
+  *before* touching the implementation — that Phase 82's first corrective
+  pass established and its own final corrective pass explicitly named as
+  "continuing the discipline the first corrective pass established."
+  Three independent occurrences across two phases, each re-derived from
+  that specific corrective pass's own governing prompt rather than from
+  any standing, citable project rule.
+- **evidence:** `planning/retros/phase-84-consolidated-knowledge-
+  api.md` "Corrective pass... What worked" bullet 1; `decisions/0092`
+  Decision 2 (the `effective_outcome`/`effective_invalid_reason` fields
+  the `KeyError` forced); `planning/retros/phase-82-final-corrective-
+  pass.md` "What worked" bullet 2 (real pytest/junit-xml run, real
+  `TypeError` repro, real monkeypatched fail-open confirmation, all
+  before any fix edit).
+- **classification:** workflow
+- **status:** promoted
+- **recurrence:** 3 occurrences across 2 phases (Phase 82's first and
+  final corrective passes; Phase 84's corrective pass), each
+  independently re-deriving the same practice.
+- **curation note (2026-10-29, knowledge-curator):** This is a narrower,
+  more specific claim than generic "write tests" or even generic TDD
+  advice: the evidenced payoff is specifically that a test written
+  *before* the fix fails *loudly* (a `KeyError`, a forced assertion
+  mismatch) when the first-draft fix is incomplete, rather than silently
+  passing because the assertion only ever ran once, after the fix was
+  already in place. No existing `CLAUDE.md` or agent-brief text requires
+  this ordering for a corrective pass specifically; each of the three
+  occurrences re-derived it from that pass's own one-off governing
+  prompt. **Recommendation: promote**, as a `workflow` item, to two
+  places (matching how `L-078`/`L-086` — the other corrective-pass-
+  specific conventions — were actually routed, not to a packaged
+  `.claude/skills/` file despite the lifecycle table's general
+  `workflow → skill` mapping):
+
+  1. `planning/v1-redefinition/agent-led-development.md` §1 Principles,
+     new bullet directly after the existing `L-078` bullet:
+
+     > **A corrective pass writes and runs each defect's regression test
+     > against the pre-fix source first, and confirms it fails, before
+     > writing the fix.** This is not only confirmation the bug exists —
+     > the more frequently evidenced payoff is that an assertion written
+     > against a fix that hasn't landed yet fails loudly (a `KeyError`, a
+     > forced mismatch) rather than silently passing, catching secondary
+     > gaps the fix itself introduces or overlooks (e.g. a field the test
+     > expects that the first-draft fix forgot to populate) before they
+     > ship alongside the fix they were meant to verify. Confirmed
+     > independently across three corrective passes with no shared
+     > codified source each time: Phase 82's first and final corrective
+     > passes (`decisions/0082`/`0083`) and Phase 84's corrective pass
+     > (`decisions/0092`, `L-108`).
+
+  2. `.claude/agents/release-phase-auditor.md` "What to check", new item
+     11 (after item 10, which already covers corrective-pass newly-
+     written code as full audited scope):
+
+     > 11. **For a corrective pass, confirm each defect's regression
+     >     test was actually run and observed to fail against the
+     >     pre-fix source, not only shown passing against the fix.**
+     >     Acceptable evidence: the retro's own account of the pre-fix
+     >     run/output, a preserved pre-fix test-run log, or re-running
+     >     the test yourself against a `git stash`/pre-fix checkout of
+     >     the touched file(s). A test that only ever ran once, after
+     >     the fix, cannot by itself distinguish "this test exercises
+     >     the defect" from "this test happens to pass regardless."
+     >     (Phase 84 corrective pass — `L-108`.)
+
+  Both edits are outside this role's write boundary (`.claude/agents/**`,
+  `planning/v1-redefinition/**` non-learnings content) — lead to apply
+  or route to `docs-maintainer`, then flip this entry's `status` to
+  `promoted` and add the `promoted.md` line(s). Not routed to `CLAUDE.md`
+  §1: unlike `L-021`/`L-070`/`L-075`/`L-087`/`L-088` (which govern what a
+  phase *plan's own content* must specify, regardless of which agent
+  does the work), this is specifically about corrective-pass *execution
+  order*, scoped to the one recurring situation (fixing an already-`done`
+  phase's defects) `agent-led-development.md` §1 already hosts this kind
+  of convention for (`L-078`).
+
+---
+
 ### L-107 — extending a behavioural contract with a new required check can leave pre-existing Evidence citing now-invalid historical results, with nothing prompting a re-citation
 
 - **origin:** Phase 84 (Consolidated Knowledge API), via `knowledge_
@@ -131,6 +312,21 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   this entry then discharges by reference to that phase's own commit
   rather than a new ADR. Still out of scope for this entry: actually
   editing `EV-BFS-002`/`EV-BFS-003`'s own `test_ref` fields.
+- **curation note (2026-10-29, knowledge-curator, Phase 84 corrective
+  pass / `decisions/0092`):** Re-reviewed against the corrective pass
+  that added `dangling_evidence_reference` as a new, separate `Gap.kind`
+  (an id cited in `supporting_evidence`/`contradicting_evidence` that
+  does not resolve to any record at all). Confirmed this is a
+  **different failure shape** from this entry's own `stale_test_citation`
+  finding (a citation that *does* resolve, to a result that is itself
+  stale relative to a fresher, uncited sibling) — not a duplicate, not a
+  fix for this entry's own gap. `EV-BFS-002`/`EV-BFS-003`'s `test_ref`
+  fields are unchanged by `decisions/0092`; this entry's own "moves
+  forward when" condition (a second oracle-contract-extension event) is
+  therefore unaffected and **still open** — `status` stays `retained`,
+  no re-citation has happened. Filed the corrective pass's own two new
+  findings separately as `L-108`/`L-109` (see below) rather than folding
+  either into this entry.
 
 ---
 

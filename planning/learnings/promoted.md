@@ -98,4 +98,6 @@ L-099 | 2026-10-14 | invariant | decisions/0077-cleanroom-manifest-identity-is-c
 L-101 | 2026-10-21 | invariant | src/codecompass/oracle.py (run_pytest_check's PYTHONPATH pin + _interpreter_for) + tests/test_oracle.py (test_deliberately_broken_implementation_produces_fail, test_passing_result_cannot_verify_subsequently_modified_candidate) @ ebca4bf
 L-102 | 2026-10-22 | invariant | src/codecompass/oracle.py (_classify_pytest_junit, decisions/0082 §B) + tests/test_oracle.py (test_run_pytest_check_invalid_node_id_is_invalid_not_fail, test_run_pytest_check_collection_error_is_invalid_not_fail, test_run_pytest_check_missing_pytest_dependency_is_invalid_not_fail) @ ae3731d
 L-105 | 2026-10-28 | invariant | scripts/assess_change_impact.py::classify_symbol (knowledge_root threading fix) + tests/test_assess_change_impact.py::TestClassifySymbol::test_behavioural_risk_when_claim_bridges_to_a_real_check @ b1a8447
+L-108 | 2026-10-29 | workflow | planning/v1-redefinition/agent-led-development.md §1 (corrective-pass test-first-before-fix discipline) + .claude/agents/release-phase-auditor.md "What to check" item 11 @ (this corrective pass's own closeout commit)
+L-109 | 2026-10-29 | architecture | docs/architecture/overview.md "Known footguns" (Rich Table cell truncation at default render width) @ (this corrective pass's own closeout commit)
 

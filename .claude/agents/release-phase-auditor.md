@@ -88,6 +88,15 @@ without fixing anything — that a phase is actually done.
     corrective pass days later, because nothing in the audit step
     treated "newly-written fix code" as higher-risk than "already-stable
     code being lightly patched."
+11. **For a corrective pass, confirm each defect's regression test was
+    actually run and observed to fail against the pre-fix source, not
+    only shown passing against the fix.** Acceptable evidence: the
+    retro's own account of the pre-fix run/output, a preserved pre-fix
+    test-run log, or re-running the test yourself against a `git stash`/
+    pre-fix checkout of the touched file(s). A test that only ever ran
+    once, after the fix, cannot by itself distinguish "this test
+    exercises the defect" from "this test happens to pass regardless."
+    (Phase 84 corrective pass — `L-108`.)
 
 ## Hard rules
 

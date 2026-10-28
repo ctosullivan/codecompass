@@ -198,14 +198,18 @@ the explicitly requested `OUT_PATH`, detailed below).
   `doc_mentions` (the exact mechanical web `query relations` itself now
   reads); `--evidence` instead runs `trace_evidence` (supporting +
   contradicting evidence, reporting an explicit **gap** when an
-  obligation-bearing record has no evidence at all).
+  obligation-bearing record has no evidence at all, or when a declared
+  citation doesn't resolve to a real record — `dangling_evidence_
+  reference`, `decisions/0092`).
 - **`gaps [SLUG]`** — missing, stale, or conflicting knowledge across
   record kinds in one call: an unverified required oracle scope, a
   contradicted record, a stale test-evidence citation (a cited result no
   longer valid against the live contract while a different, current
-  `PASS` for the same check exists uncited), or a slug with claims/
-  requirements but no oracle contract at all. Omit `SLUG` to scan every
-  slug.
+  `PASS` for the same check exists uncited), a dangling evidence
+  reference (a `supporting_evidence`/`contradicting_evidence` citation
+  that resolves to no real record, `decisions/0092`), or a slug with
+  claims/requirements but no oracle contract at all. Omit `SLUG` to scan
+  every slug.
 - **`context TOPIC`** — a bounded, deterministic development-context
   packet: the subject record, its direct relations, and its own gaps, in
   a fixed priority order, truncated at `--max-items`/`--max-chars` with
