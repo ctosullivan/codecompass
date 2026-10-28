@@ -6,6 +6,14 @@ Orchestrator — Amend and Implement Phase 83"). Independently audited:
 `d076023` (`planning/retros/_audit-phase-83.md`), after an initial FAIL
 pass against `b1a8447` was fully resolved (a missing fixture-driven test
 and a real `knowledge-curator` triage of two retro-surfaced learnings).
+**Corrective pass (2026-10-28, same day, post-completion source review —
+"CodeCompass Orchestrator — Phase 83 Corrective Pass"):** three further
+correctness defects in `scripts/assess_change_impact.py`, found by direct
+inspection after the above audit had already passed, are fixed under
+`decisions/0089` — see that ADR for the full defect/fix record. §3, §5,
+and §7's deliverable description below are updated in place to describe
+the corrected behaviour (this plan is also the as-built record, per its
+own header below); the acceptance criteria in §12 gain three new items.
 **One outstanding, separately-gated item remains, explicitly tracked, not
 part of this phase's own completion**: the real Ledgerkit test has not
 landed in the real `~/projects/ledgerkit` checkout — a cross-repository
@@ -14,16 +22,20 @@ action requiring its own future explicit authorisation.
 Governing prompt: "CodeCompass Orchestrator — Approve v2 Roadmap and Plan
 Phases 83–84" (2026-10-24), **amended** by "CodeCompass Orchestrator —
 Phase 83 Corrective Planning Amendment" (2026-10-24, same day — see
-`decisions/0086` for the five corrected gaps and their grounding), and
+`decisions/0086` for the five corrected gaps and their grounding),
 **amended a second time** by "CodeCompass Orchestrator — Amend and
 Implement Phase 83" (2026-10-28 — see `decisions/0087` for the
 precedence-reachability defect and sequencing clarifications this pass
-corrected). Roadmap-depth scope: `planning/v2-roadmap.md` §"Phase 83"
-(unchanged by `decisions/0084`/`0085`). This file is the `CLAUDE.md` §1
-implementation-ready plan that section only sketched. **Implementation is
-authorised as of the second amendment** (`decisions/0087` §4) — this file
-now also serves as the as-built record of what Phase 83 delivers, updated
-in the same session implementation proceeds.
+corrected), and **corrected a third time**, post-completion, by
+"CodeCompass Orchestrator — Phase 83 Corrective Pass" (2026-10-28 — see
+`decisions/0089` for the source-identity, range-coverage, and evidence-
+validation defects this pass fixed). Roadmap-depth scope: `planning/
+v2-roadmap.md` §"Phase 83" (unchanged by `decisions/0084`/`0085`). This
+file is the `CLAUDE.md` §1 implementation-ready plan that section only
+sketched. **Implementation is authorised as of the second amendment**
+(`decisions/0087` §4) — this file now also serves as the as-built record
+of what Phase 83 delivers, updated in the same session implementation
+proceeds.
 
 ## 0. Verified current state (read live, not assumed, both passes)
 
@@ -138,7 +150,12 @@ knowledge slug cite the touched symbol? A `source`-kind Evidence
 `"<path>:<line>[-<line2>] def|class <symbol>"` convention
 (`check_contracts.py::_SOURCE_REF_WITH_SYMBOL_RE`, reused unchanged, not
 reimplemented) *is* the recorded relevance relationship — nothing new is
-introduced to represent it.
+introduced to represent it. **Corrected (`decisions/0089` §A):** a
+citation only counts when the `source_ref`'s own `path` group, not only
+its `symbol` group, matches the symbol actually being assessed (path
+comparison normalised via `PurePosixPath(...).as_posix()` on both
+sides) — two first-party files that happen to declare a same-named
+symbol no longer inherit each other's Evidence.
 
 **3.2 Coverage** — does any Claim whose own `supporting_evidence` cites
 that relevance-establishing Evidence *also* cite a `test`-kind Evidence
@@ -147,7 +164,16 @@ that relevance-establishing Evidence *also* cite a `test`-kind Evidence
 contract.yaml`? This is read directly off each Claim's existing
 `supporting_evidence` list — the exact mechanism `derive_epistemic_
 profile` (line 1082-1112) already uses internally, reused by reading the
-same records, not by adding a parallel path.
+same records, not by adding a parallel path. **Corrected (`decisions/
+0089` §C):** "resolves to a real `OracleResult`" is now actually
+enforced, via `oracle.parse_oracle_result` (schema validation) plus a
+check that the result's own `contract_id` matches the *live* contract
+and its `scope` matches the named check's own `scope` — not merely that
+a YAML mapping with a matching `check_id` key could be loaded. A result
+failing any of these checks (malformed, wrong contract, wrong scope,
+unknown check_id) establishes no coverage link; it never manufactures a
+fresh verification outcome either way — that remains §4's job alone,
+unaffected by this correction.
 
 **3.3 Three classifications, mutually exclusive:**
 
@@ -252,7 +278,23 @@ reports on per file, not merely documents as an assumption.
 A `--changed` range naming a path with no `source_files` row at all, or
 a line range past the end of the resolved file's own extent, is reported
 as an explicit "cannot map" finding — never silently defaulted to the
-nearest symbol or silently dropped from the report.
+nearest symbol or silently dropped from the report. **Corrected
+(`decisions/0089` §B):** both `start` *and* `end` are validated against
+the resolved file's own extent (previously only `start` was). A changed
+range is resolved against **every** indexed top-level symbol whose own
+span (from its own line to one less than the next symbol's line, or EOF
+for the last symbol) intersects `[start, end]` — not only the symbol
+enclosing `start`. When the matched symbols' combined spans do not cover
+the entire requested range (e.g. the range's own start lies in a
+top-of-file region before any indexed symbol), the range is reported
+`partially_resolved`, naming exactly which line(s) remain unmapped,
+while still classifying and assessing every symbol that *was* matched —
+a partial match is reported as partial, never silently discarded or
+silently presented as complete. Applicable checks are deduplicated
+across the matched symbols within one range (the same check triggered
+by two touched symbols runs once), while each `AssuranceFinding` records
+every symbol that made it applicable, so deduplication never erases
+per-symbol provenance.
 
 ## 6. Requirement/contract identity for the new obligation (corrects the blocking identity gap — `decisions/0086` §4)
 
@@ -567,6 +609,25 @@ unresolved gate — never silently treated as satisfied.
 - Scenario 10.9 demonstrates `VERIFICATION_GAP` is reserved for a genuine
   absence of any verification attempt, distinct from scenario 10.8's
   "attempted but untrustworthy."
+- Scenario 10.10 (`decisions/0089` §A) demonstrates that two first-party
+  files declaring an identically-named symbol do not inherit each
+  other's Evidence — the symbol in the file *not* cited is
+  `no_recorded_relationship`, never `relevant_no_coverage_link` or
+  `behavioural_risk`, even though a same-named symbol elsewhere in the
+  target repository genuinely is cited.
+- Scenario 10.11 (`decisions/0089` §B) demonstrates that a `--changed`
+  range crossing multiple top-level symbols resolves and independently
+  assesses all of them, that a range extending past the file's own
+  extent is rejected (`cannot_map`) on `end` exactly as it already was
+  on `start`, and that a range partially outside every indexed symbol's
+  span is reported `partially_resolved`, naming the unmapped line(s),
+  rather than silently discarding the unmatched portion.
+- Scenario 10.12 (`decisions/0089` §C) demonstrates that a referenced
+  historical result failing schema validation, contract-identity
+  matching, or scope matching never establishes `behavioural_risk` —
+  the citing symbol falls back to `relevant_no_coverage_link` — while a
+  structurally valid, correctly-scoped historical result continues to
+  do so exactly as before.
 - The real Ledgerkit test (deliverable 4) is reviewed and, if accepted,
   lands in the real checkout only after §11's ordering, with its own
   separate go-ahead (§13).
