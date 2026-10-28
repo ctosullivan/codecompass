@@ -5,7 +5,7 @@ import pytest
 from typer.testing import CliRunner
 
 import codecompass.cli as cli_module
-from codecompass import enrichment, graph, relation_enrichment
+from codecompass import enrichment, graph, oracle, relation_enrichment
 from codecompass.cli import app
 from codecompass.config import load_vendor_config
 from codecompass.core import VendorDigest
@@ -2521,3 +2521,128 @@ def test_query_source_symbol_json_preserves_unknown_exposure(
 
     text_result = runner.invoke(app, ["query", "source-symbol", "foo"])
     assert "unknown" in text_result.output
+
+
+# ---------------------------------------------------------------------------
+# `knowledge get/trace/gaps/context --repo-root` (Phase 84 corrective pass,
+# decisions/0092) -- confirms the CLI option genuinely forwards to
+# knowledge_api, not merely that it parses. Asserted against --json output
+# only (never rendered table text) -- L-109's own lesson from this same
+# corrective pass.
+# ---------------------------------------------------------------------------
+
+
+def _write_repo_root_fixture(tmp_path: Path) -> None:
+    import yaml
+
+    contract_path = tmp_path / "planning" / "contracts" / "demo" / "oracle-contract.yaml"
+    contract_path.parent.mkdir(parents=True, exist_ok=True)
+    contract_path.write_text(
+        yaml.safe_dump(
+            {
+                "schema_version": 1,
+                "contract_id": "REQ-CLIDEMO-001",
+                "tested_paths": ["impl.py"],
+                "checks": [
+                    {
+                        "check_id": "chk-a",
+                        "scope": "scope A",
+                        "execution_provider": "pytest",
+                        "check_reference": "tests/test_impl.py::test_ok",
+                        "test_input_paths": ["tests/test_impl.py"],
+                        "required": True,
+                    }
+                ],
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "impl.py").write_text("def target():\n    return 1\n", encoding="utf-8")
+    (tmp_path / "tests").mkdir(exist_ok=True)
+    (tmp_path / "tests" / "test_impl.py").write_text(
+        "def test_ok():\n    assert True\n", encoding="utf-8"
+    )
+    result_path = tmp_path / "planning" / "contracts" / "demo" / "results" / "chk-a--r1.yaml"
+    result_path.parent.mkdir(parents=True, exist_ok=True)
+    raw_path = result_path.parent / "chk-a-r1-raw.txt"
+    raw_path.write_text("ok", encoding="utf-8")
+    result = oracle.OracleResult(
+        schema_version=1,
+        run_id="r1",
+        contract_id="REQ-CLIDEMO-001",
+        check_id="chk-a",
+        scope="scope A",
+        baseline_id=None,
+        tested_subject_digest=oracle.compute_tree_digest(tmp_path, ["impl.py"]),
+        oracle_contract_id="REQ-CLIDEMO-001",
+        oracle_contract_content_hash=oracle.sha256_file(contract_path),
+        test_input_digest=oracle.compute_tree_digest(tmp_path, ["tests/test_impl.py"]),
+        raw_output_ref=str(raw_path),
+        raw_output_sha256=oracle.sha256_file(raw_path),
+        outcome="PASS",
+        executed_at="2026-10-29T00:00:00Z",
+        execution_provider="pytest",
+        environment_descriptor=None,
+        invalid_reason=None,
+    )
+    oracle.write_oracle_result(result_path, result)
+
+
+def test_knowledge_get_repo_root_option_forwards_to_knowledge_api(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _write_repo_root_fixture(tmp_path)
+
+    without = runner.invoke(
+        app, ["knowledge", "get", "result:REQ-CLIDEMO-001:chk-a:r1", "--json"]
+    )
+    with_repo = runner.invoke(
+        app,
+        [
+            "knowledge", "get", "result:REQ-CLIDEMO-001:chk-a:r1",
+            "--repo-root", str(tmp_path), "--json",
+        ],
+    )
+    assert without.exit_code == 0, without.output
+    assert with_repo.exit_code == 0, with_repo.output
+
+    without_payload = json.loads(without.output)
+    with_payload = json.loads(with_repo.output)
+
+    # Without --repo-root, a historically recorded PASS is never reported
+    # "current" (decisions/0092) -- only "unconfirmed".
+    assert without_payload["results"][0]["consistency"]["status"] == "unconfirmed"
+    # With a reachable --repo-root pointing at the same, unchanged target,
+    # the live digest recomputation genuinely runs and the same result is
+    # now reported "current" -- proving the option is actually forwarded
+    # into knowledge_api.get(..., repo_root=...), not merely accepted and
+    # discarded by the CLI layer.
+    assert with_payload["results"][0]["consistency"]["status"] == "current"
+
+
+def test_knowledge_trace_results_repo_root_option_forwards_to_knowledge_api(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _write_repo_root_fixture(tmp_path)
+
+    without = runner.invoke(
+        app,
+        ["knowledge", "trace", "check:REQ-CLIDEMO-001:chk-a", "--relation", "results", "--json"],
+    )
+    with_repo = runner.invoke(
+        app,
+        [
+            "knowledge", "trace", "check:REQ-CLIDEMO-001:chk-a", "--relation", "results",
+            "--repo-root", str(tmp_path), "--json",
+        ],
+    )
+    assert without.exit_code == 0, without.output
+    assert with_repo.exit_code == 0, with_repo.output
+    without_payload = json.loads(without.output)
+    with_payload = json.loads(with_repo.output)
+
+    assert without_payload["results"][0]["consistency"]["status"] == "unconfirmed"
+    assert with_payload["results"][0]["consistency"]["status"] == "current"
