@@ -423,6 +423,44 @@ class TestRunCheckAssurance:
         assert finding.fresh_effective_outcome == "INVALID"
         assert "skipped" in (finding.fresh_invalid_reason or "")
 
+    def test_fresh_tampered_raw_output_is_invalid_assessment(self, tmp_path):
+        """decisions/0087 §2's own named, required case: a fresh
+        corrupted/tampered raw output (raw_output_sha256 mismatch) must
+        classify INVALID_ASSESSMENT -- exercised through run_check_
+        assurance's own real call path (oracle.evaluate_check +
+        evaluate_result_precedence), not merely re-testing oracle.py's
+        pre-existing tamper detection in isolation (tests/test_oracle.py's
+        own test_tampered_raw_output_produces_invalid already covers
+        that). A thin wrapper around the real oracle module tampers the
+        *fresh* result's own raw_output_ref immediately after execution,
+        before run_check_assurance's own precedence recomputation runs."""
+
+        class _TamperingOracle:
+            """Delegates everything to the real `oracle` module except
+            `evaluate_check`, whose own freshly-written raw output it
+            corrupts before returning -- simulating a fresh execution
+            whose evidence is tampered immediately after being produced."""
+
+            def __getattr__(self, name):
+                return getattr(oracle, name)
+
+            def evaluate_check(self, *args, **kwargs):
+                result = oracle.evaluate_check(*args, **kwargs)
+                Path(result.raw_output_ref).write_text("TAMPERED", encoding="utf-8")
+                return result
+
+        repo = _build_assurance_repo(tmp_path, test_body="def test_ok():\n    assert True\n")
+        contract_path, contract = _contract_and_check(repo, check_reference="tests/test_impl.py::test_ok")
+        finding = aci.run_check_assurance(
+            _TamperingOracle(), contract_path, contract, "chk-a", repo, tmp_path / "raw",
+            historical_results=[],
+        )
+        assert finding.classification == "INVALID_ASSESSMENT"
+        assert finding.fresh_effective_outcome == "INVALID"
+        assert "raw_output_ref" in (finding.fresh_invalid_reason or "")
+        assert "tampered or corrupted" in (finding.fresh_invalid_reason or "")
+        assert finding.aggregate_state == "GAP"
+
     def test_fresh_invalid_test_input_digest_mismatch(self, tmp_path):
         """A named test_input_paths entry does not exist -- digest
         computation itself fails closed, INVALID, never silently PASS."""
