@@ -1,5 +1,15 @@
 # Phase 84: Consolidated Knowledge API and Query CLI — plan
 
+**Status: implemented (2026-10-29, "CodeCompass Orchestrator — Close
+Phase 83 and Implement Phase 84").** `src/codecompass/knowledge_api.py`
+plus six new read-only `knowledge *` CLI commands and the `query
+relations` migration are built against this plan. `decisions/0091`
+records the implementation-time resolutions this plan's own §10
+deliberately deferred (the `ContextPacket` shape) plus the concrete
+response/identity encodings the plan described only at a conceptual
+level — see that ADR for the full rationale; nothing in it reopens
+`decisions/0084`/`0085`'s own settled architecture.
+
 Governing prompt: "CodeCompass Orchestrator — Approve v2 Roadmap and Plan
 Phases 83–84" (2026-10-24). Roadmap-depth scope: `planning/v2-roadmap.md`
 §"Phase 84"; architecture: `decisions/0084` §1-2, formalised by
@@ -7,9 +17,7 @@ Phases 83–84" (2026-10-24). Roadmap-depth scope: `planning/v2-roadmap.md`
 plan those sections sketched, resolving the governing prompt's three
 mandatory architectural considerations (A: stable identities, B: snapshot
 consistency, C: primary authority vs. derived indexes) against the real,
-directly-inspected implementation rather than assumption. Planning only —
-no implementation begins from this file without separate, explicit
-approval (governing prompt §7).
+directly-inspected implementation rather than assumption.
 
 ## 0. Verified current state (read live, not assumed)
 
@@ -353,13 +361,13 @@ Phase 84 exit-gate wording).
 **Unresolved decisions (recorded, not invented).**
 - Whether `scripts/assess_change_impact.py` (Phase 83) should be rewritten
   onto `knowledge_api.py` once this phase exists — a natural follow-on,
-  not committed here since Phase 83 is explicitly sequenced not to depend
-  on Phase 84.
-- The exact shape of `ContextPacket` (what "coherent, bounded" means in
-  practice — a token/record-count bound, a relevance-ranking method) is
-  deferred to this phase's own first implementation commit, informed by
-  real queries against this project's own corpus rather than
-  pre-specified here.
+  **still not committed here**; Phase 83 remains independently functional
+  and unmodified by this phase, exactly as sequenced.
+- ~~The exact shape of `ContextPacket`...~~ **Resolved during
+  implementation — `decisions/0091` §6**: a fixed, non-ranked priority
+  order (subject → direct relations → gaps), deduplicated, bounded by
+  `max_items`/`max_chars` with explicit `truncated` reporting, informed
+  by real queries against this project's own `balance-from-spec` corpus.
 
 ## 11. Verification (how this phase is confirmed done)
 

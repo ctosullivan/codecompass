@@ -1382,6 +1382,60 @@ def _build_relations_fixture(project_root: Path) -> None:
     conn.close()
 
 
+def test_query_relations_backward_compatible_after_knowledge_api_migration(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Phase 84 (plan §4.3): `query relations` is now implemented in terms
+    of `knowledge_api.resolve_doc_mentions` rather than a private
+    `cli.py::_resolve_relations`. This asserts the exact, full table and
+    JSON output text is unchanged -- byte-for-byte -- not merely that the
+    relation_kind set matches, which the pre-existing tests in this file
+    already (and continue to) assert."""
+    monkeypatch.chdir(tmp_path)
+    _build_relations_fixture(tmp_path)
+
+    json_result = runner.invoke(app, ["query", "relations", _SPEC_DOC_PATH, "--json"])
+    table_result = runner.invoke(app, ["query", "relations", _SPEC_DOC_PATH])
+
+    assert json_result.exit_code == 0, json_result.output
+    assert table_result.exit_code == 0, table_result.output
+    payload = json.loads(json_result.output)
+    assert payload == {
+        "relations": [
+            {
+                "relation_kind": "mentions_artifact",
+                "target_vendor": None,
+                "target_doc_artifact_path": _SKILL_PATH,
+                "target_doc_artifact_name": "codecompass-demo",
+                "heading": None,
+                "ai_summary": None,
+                "relation_label": None,
+            },
+            {
+                "relation_kind": "mentions_dependency",
+                "target_vendor": "demo",
+                "target_doc_artifact_path": None,
+                "target_doc_artifact_name": None,
+                "heading": None,
+                "ai_summary": None,
+                "relation_label": None,
+            },
+        ],
+        "package_code": [
+            {
+                "via": "mentions_dependency",
+                "vendor": "demo",
+                "symbol": None,
+                "source_file_path": "src/app.ts",
+                "line": 7,
+                "heading": None,
+            }
+        ],
+    }
+    assert "Package code" in table_result.output
+    assert "src/app.ts" in table_result.output
+
+
 def test_query_relations_by_spec_doc_path_shows_outgoing_mentions(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

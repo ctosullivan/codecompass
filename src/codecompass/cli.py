@@ -24,7 +24,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from codecompass import enrichment, graph, knowledge_intermediate, relation_enrichment
+from codecompass import enrichment, graph, knowledge_api, knowledge_intermediate, relation_enrichment
 from codecompass.adapters import AdapterError
 from codecompass.chat import ChatError, run_chat
 from codecompass.commands import write_discovery_command
@@ -727,109 +727,6 @@ def query_skills(
         console.print(table)
 
 
-def _incoming_doc_relations(conn: sqlite3.Connection, column: str, value: int) -> list[dict]:
-    """Reverse lookup for `_resolve_relations`'s vendor-name/doc-artifact-
-    name branches: every spec doc whose `doc_relations_edges` row targets
-    `value` via `column` (always one of this function's own two fixed
-    literal column names below, never external input). Shaped like
-    `graph.doc_relations`'s own per-row dicts (`relation_kind`, plus
-    which "other" thing is on the far end) so `query_relations` can render
-    both directions the same way.
-    """
-    return [
-        {"relation_kind": relation_kind, "source_doc_artifact_path": path, "heading": heading}
-        for path, relation_kind, heading in conn.execute(
-            f"""
-            SELECT da.path, dre.relation_kind, dch.heading_path
-            FROM doc_relations_edges dre
-            JOIN doc_artifacts da ON dre.source_doc_artifact_id = da.id
-            LEFT JOIN doc_chunks dch ON dre.chunk_id = dch.id
-            WHERE dre.{column} = ?
-            ORDER BY da.path
-            """,
-            (value,),
-        )
-    ]
-
-
-def _relation_enrichment_row(
-    conn: sqlite3.Connection,
-    source_doc_path: str,
-    target_vendor_name: str | None,
-    target_doc_path: str | None,
-) -> tuple[str | None, str | None]:
-    """The cached `(ai_summary, relation_label)` for one relationship,
-    keyed by the exact natural-key triple `doc_relation_enrichment` uses
-    (Phase 22; `relation_label` added Phase 31) — `(None, None)` if Phase
-    B enrichment hasn't produced one yet for this relationship (or ever
-    will, if it isn't usage-proven). Ignores `content_hash` entirely:
-    display only cares whether *some* summary is cached — staleness is
-    `relation_enrichment.select_candidates`'s concern, not this read's,
-    mirroring `graph.has_enrichment`'s same two-state posture for vendors.
-    Resolved directly here with ad hoc SQL, the same "CLI-specific shape"
-    precedent `_incoming_doc_relations` above already set, rather than a
-    new `graph.py` function.
-    """
-    row = conn.execute(
-        """
-        SELECT ai_summary, relation_label FROM doc_relation_enrichment
-        WHERE source_doc_path = ?
-          AND target_vendor_name IS ?
-          AND target_doc_path IS ?
-        """,
-        (source_doc_path, target_vendor_name, target_doc_path),
-    ).fetchone()
-    return (row[0], row[1]) if row is not None else (None, None)
-
-
-def _resolve_relations(conn: sqlite3.Connection, name: str) -> list[dict] | None:
-    """Resolves `query relations <name>`'s three accepted shapes, tried in
-    order: a spec-doc path (its own outgoing `doc_relations_edges` rows,
-    via `graph.doc_relations`), a vendor name, or any other doc artifact's
-    `name` field (a Skill's frontmatter name, a dependency doc's
-    `f"{vendor} CLAUDE.md"`-style name) — the latter two are incoming
-    lookups: which spec docs mechanically mention it. `None` if `name`
-    matches nothing in the graph at all. Each returned dict gets
-    `ai_summary` (Phase 22) and `relation_label` (Phase 31) keys attached
-    here — both `None` if this exact relationship hasn't been AI-enriched
-    yet. `heading` (Phase 32) comes from `graph.doc_relations`/
-    `_incoming_doc_relations` directly — `None` unless the edge has a
-    `chunk_id`.
-    """
-    if conn.execute("SELECT 1 FROM doc_artifacts WHERE path = ?", (name,)).fetchone():
-        relations = graph.doc_relations(conn, name)
-        for r in relations:
-            r["ai_summary"], r["relation_label"] = _relation_enrichment_row(
-                conn, name, r["target_vendor"], r["target_doc_artifact_path"]
-            )
-        return relations
-
-    vendor_row = conn.execute("SELECT id FROM vendors WHERE name = ?", (name,)).fetchone()
-    if vendor_row is not None:
-        relations = _incoming_doc_relations(conn, "target_vendor_id", vendor_row[0])
-        for r in relations:
-            r["ai_summary"], r["relation_label"] = _relation_enrichment_row(
-                conn, r["source_doc_artifact_path"], name, None
-            )
-        return relations
-
-    artifact_rows = conn.execute(
-        "SELECT id, path FROM doc_artifacts WHERE name = ?", (name,)
-    ).fetchall()
-    if artifact_rows:
-        results: list[dict] = []
-        for artifact_id, artifact_path in artifact_rows:
-            relations = _incoming_doc_relations(conn, "target_doc_artifact_id", artifact_id)
-            for r in relations:
-                r["ai_summary"], r["relation_label"] = _relation_enrichment_row(
-                    conn, r["source_doc_artifact_path"], None, artifact_path
-                )
-            results.extend(relations)
-        return results
-
-    return None
-
-
 @query_app.command("relations")
 def query_relations(
     name: str = typer.Argument(
@@ -852,11 +749,18 @@ def query_relations(
     `name` is a vendor. `--json` output is `{"relations": [...],
     "package_code": [...]}`, not a bare list — the two are different
     shapes (a relation vs. a usage site) that don't merge into one row.
+
+    Migrated onto `knowledge_api.resolve_doc_mentions` (Phase 84, plan
+    §4.3) — the resolution logic that used to live here as a private
+    `_resolve_relations` now lives in `knowledge_api.py`, reused by both
+    this command and `knowledge_api.traverse(..., relation="doc_mentions")`.
+    Output is byte-identical to the pre-migration implementation
+    (`tests/test_cli.py::test_query_relations_backward_compatible`).
     """
     with _graph_session(Path.cwd()) as conn:
         if conn is None:
             return
-        relations = _resolve_relations(conn, name)
+        relations = knowledge_api.resolve_doc_mentions(conn, name)
         if relations is None:
             _relations_not_found_error(name)
         package_code = graph.doc_code_trace(conn, name)
@@ -1781,6 +1685,136 @@ def knowledge_doc_acknowledge_chunks() -> None:
     project_root = Path.cwd()
     knowledge_intermediate.advance_doc_chunk_baseline(project_root)
     console.print("[green]acknowledged[/green]: ungrounded-chunk baseline advanced")
+
+
+# ---------------------------------------------------------------------------
+# Phase 84 -- Consolidated Knowledge API, read-only CLI surface
+# (`knowledge_api.py`). Namespaced apart from the mutation verbs above
+# (`apply`, `select-candidates`, `doc-acknowledge-*`) -- every command
+# below issues no write of any kind.
+# ---------------------------------------------------------------------------
+
+
+def _print_api_response(response: knowledge_api.ApiResponse, json_output: bool) -> None:
+    if json_output:
+        console.print(json.dumps(response.to_dict(), indent=2), soft_wrap=True)
+        return
+    if response.status == "empty":
+        console.print(f"[yellow]empty[/yellow]: {response.message}")
+        return
+    for r in response.results:
+        console.print(f"[bold]{r.id}[/bold] [{r.kind}] authority={r.authority}")
+        console.print(f"  {r.summary}")
+        console.print(f"  consistency: {r.consistency.status} ({r.consistency.evidence_currency})")
+        if r.consistency.reasons:
+            for reason in r.consistency.reasons:
+                console.print(f"    - {reason}")
+    for g in response.gaps:
+        console.print(f"[red]gap[/red] ({g.kind}) {g.subject_id or ''}: {g.reason}")
+    if not response.results and not response.gaps:
+        console.print("[yellow]nothing found[/yellow]")
+
+
+@knowledge_app.command("get")
+def knowledge_get(
+    record_id: str = typer.Argument(
+        ..., help="A REQ-/CL-/EV-/OBS-/DE-/DEC- id, or a natural-key identity "
+        "(symbol:<path>:<name>:<kind>:<line>, vendor:<name>, doc:<path>, "
+        "contract:<id>, check:<contract_id>:<check_id>, result:<contract_id>:<check_id>:<run_id>)."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Machine-readable output."),
+) -> None:
+    """Retrieve one item by its own stable identity (`knowledge_api.get`,
+    Phase 84). Read-only; never creates `context-graph.db` if it doesn't
+    already exist."""
+    response = knowledge_api.get(Path.cwd(), record_id)
+    _print_api_response(response, json_output)
+
+
+@knowledge_app.command("search")
+def knowledge_search(
+    text: str = typer.Argument(..., help="Free-text query against knowledge-record fields and oracle ids."),
+    kind: list[str] = typer.Option(
+        [], "--kind", help="Restrict to this record/oracle kind. Repeatable."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Machine-readable output."),
+) -> None:
+    """Discover relevant knowledge by free-text match (`knowledge_api.
+    search`, Phase 84). Bounded substring match -- never an embedding
+    search or an AI call."""
+    response = knowledge_api.search(Path.cwd(), text, kinds=kind or None)
+    _print_api_response(response, json_output)
+
+
+@knowledge_app.command("trace")
+def knowledge_trace(
+    record_id: str = typer.Argument(..., help="A knowledge-record id, or a traverse() identity."),
+    relation: str = typer.Option(
+        "supporting_evidence", "--relation",
+        help="depends_on | supporting_evidence | contradicting_evidence | observations | decision | "
+        "cites | cited_by | checks | results | doc_mentions, or any of the above + '_reverse'.",
+    ),
+    depth: int = typer.Option(1, "--depth", min=1, help="Hops to follow."),
+    evidence: bool = typer.Option(
+        False, "--evidence", help="Use trace_evidence (supporting + contradicting + gap) instead of a single relation."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Machine-readable output."),
+) -> None:
+    """Follow one recorded relationship from `record_id` (`knowledge_api.
+    traverse`/`trace_evidence`, Phase 84)."""
+    response = (
+        knowledge_api.trace_evidence(Path.cwd(), record_id)
+        if evidence
+        else knowledge_api.traverse(Path.cwd(), record_id, relation, depth=depth)
+    )
+    _print_api_response(response, json_output)
+
+
+@knowledge_app.command("gaps")
+def knowledge_gaps(
+    slug: str | None = typer.Argument(None, help="Limit to one planning/knowledge/<slug>. Omit for every slug."),
+    json_output: bool = typer.Option(False, "--json", help="Machine-readable output."),
+) -> None:
+    """Missing, stale, or conflicting knowledge across record kinds, in
+    one call (`knowledge_api.find_gaps`, Phase 84) -- the one genuinely
+    new cross-cutting capability no existing command provides."""
+    response = knowledge_api.find_gaps(Path.cwd(), slug)
+    _print_api_response(response, json_output)
+
+
+@knowledge_app.command("context")
+def knowledge_context(
+    topic: str = typer.Argument(..., help="A knowledge-record id, or free text."),
+    max_items: int = typer.Option(20, "--max-items", min=1),
+    max_chars: int = typer.Option(6000, "--max-chars", min=1),
+    json_output: bool = typer.Option(False, "--json", help="Machine-readable output."),
+) -> None:
+    """A bounded, coherent, deterministic development-context packet for
+    `topic` (`knowledge_api.get_context_packet`, Phase 84)."""
+    response = knowledge_api.get_context_packet(Path.cwd(), topic, max_items=max_items, max_chars=max_chars)
+    _print_api_response(response, json_output)
+
+
+@knowledge_app.command("export")
+def knowledge_export(
+    slug: str = typer.Argument(..., help="The planning/knowledge/<slug> to export."),
+    out_path: Path = typer.Argument(..., help="Where to write the portable snapshot (JSON)."),
+    project_id: str = typer.Option("codecompass", "--project-id"),
+) -> None:
+    """A portable, versioned export of one slug's canonical knowledge
+    (`knowledge_api.export_snapshot`, Phase 84, `decisions/0079` §5's own
+    envelope). Writes exactly `out_path` -- refuses to write inside
+    `planning/knowledge/`/`planning/contracts/`; never mutates canonical
+    project knowledge."""
+    try:
+        response = knowledge_api.export_snapshot(Path.cwd(), slug, out_path, project_id=project_id)
+    except ValueError as exc:
+        console.print(f"[red]error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    if response.status == "empty":
+        console.print(f"[yellow]empty[/yellow]: {response.message}")
+        return
+    console.print(f"[green]exported[/green]: {response.results[0].summary}")
 
 
 if __name__ == "__main__":
