@@ -1,5 +1,16 @@
 # Phase 83: Semantic Change Assurance — plan
 
+**Status:** done (2026-10-28, direct user request — "CodeCompass
+Orchestrator — Amend and Implement Phase 83"). Independently audited:
+`release-phase-auditor` returned PASS on re-audit against commit
+`d076023` (`planning/retros/_audit-phase-83.md`), after an initial FAIL
+pass against `b1a8447` was fully resolved (a missing fixture-driven test
+and a real `knowledge-curator` triage of two retro-surfaced learnings).
+**One outstanding, separately-gated item remains, explicitly tracked, not
+part of this phase's own completion**: the real Ledgerkit test has not
+landed in the real `~/projects/ledgerkit` checkout — a cross-repository
+action requiring its own future explicit authorisation.
+
 Governing prompt: "CodeCompass Orchestrator — Approve v2 Roadmap and Plan
 Phases 83–84" (2026-10-24), **amended** by "CodeCompass Orchestrator —
 Phase 83 Corrective Planning Amendment" (2026-10-24, same day — see

@@ -7,10 +7,14 @@ session-resumption, not a project history.
 
 ## Current phase
 
-**Phase 83 — Semantic Change Assurance — implemented 2026-10-28, status
-`in progress`** (`planning/ROADMAP.md`'s own row) — an independent
-completion audit must confirm every `CLAUDE.md` §5 condition before this
-phase's row is flipped `done`; that audit has not yet run.
+**Phase 83 — Semantic Change Assurance — is `done`** (2026-10-28,
+`planning/ROADMAP.md`'s own row). Independently audited:
+`release-phase-auditor` returned PASS on re-audit against commit
+`d076023` (`planning/retros/_audit-phase-83.md`) — an initial FAIL pass
+against the implementation commit `b1a8447` found two real gaps (a
+missing fixture-driven test named by `decisions/0087` §2; no
+`knowledge-curator` triage of two retro-surfaced learnings), both
+genuinely fixed, independently re-verified, before the re-audit's PASS.
 `scripts/assess_change_impact.py` now exists, built
 entirely on Phase 82's unmodified `oracle.py`/`knowledge_
 intermediate.py`: it resolves a changed source range to its enclosing
@@ -239,13 +243,17 @@ extended with one new required check; the resulting content-hash
 invalidation of Phase 82's six historical results resolved by two fresh
 re-runs. New knowledge records `REQ-BFS-002`/`DEC-BFS-002`/`CL-BFS-004`
 (relevance only, no coverage claim yet); `CL-BFS-003` superseded by
-`CL-BFS-005`. 1035 passed, 2 skipped — the full repository suite, green.
+`CL-BFS-005`. 1036 passed, 2 skipped — the full repository suite, green
+(the +1 is the fixture-driven tamper test added to close the audit's
+own named gap). Two retro-surfaced learnings triaged for real by
+`knowledge-curator`: `L-104` (retained — the one real instance is
+already fixed with its own tests, no second live instance found) and
+`L-105` (promoted — a pre-existing regression test already guards it).
 **One outstanding, separately-gated item, named explicitly, not silently
 treated as done**: the real Ledgerkit test has not landed in the real
 `~/projects/ledgerkit` checkout — a cross-repository action requiring
-its own explicit authorisation. `planning/ROADMAP.md`'s Phase 83 row
-reads `in progress` until an independent completion audit against this
-exact state confirms every `CLAUDE.md` §5 condition.
+its own explicit authorisation. `planning/ROADMAP.md`'s Phase 83 row now
+reads `done`.
 
 **Phase 83 corrective planning amendment**, 2026-10-24 (same day as the
 approval below), direct user request ("CodeCompass Orchestrator — Phase
@@ -504,14 +512,11 @@ amendments above.
 
 ## Next concrete step
 
-**Phase 83 is implemented, status `in progress`** (see "Current
-phase"/"What was just completed" above) — its one remaining action
-before `planning/ROADMAP.md` can flip the row to `done` is an
-independent completion audit against the exact commit, confirming every
-`CLAUDE.md` §5 condition; its one remaining *outstanding, separately-
-gated* item (landing the real test in `~/projects/ledgerkit`) is not
-part of that gate — it is named, tracked, and requires its own future
-explicit authorisation, independent of Phase 83's own completion.
+**Phase 83 is `done`** (see "Current phase"/"What was just completed"
+above) — its one remaining *outstanding, separately-gated* item
+(landing the real test in `~/projects/ledgerkit`) was never part of its
+own `CLAUDE.md` §5 completion gate — it is named, tracked, and requires
+its own future, separate explicit authorisation whenever it is taken up.
 
 **Phase 84 (Consolidated Knowledge API and Query CLI) is phase-planned
 and implementation-ready**, approved 2026-10-24
