@@ -7,9 +7,13 @@ session-resumption, not a project history.
 
 ## Current phase
 
-**Phase 84 — Consolidated Knowledge API and Query CLI — implementation
-complete, independent audit in progress (2026-10-29, `decisions/0091`)**.
-`src/codecompass/knowledge_api.py` is a new, read-only, typed interface
+**Phase 84 — Consolidated Knowledge API and Query CLI — is `done`**
+(2026-10-29, `decisions/0091`). Independently audited: `release-phase-
+auditor` returned **PASS WITH NON-BLOCKING OBSERVATIONS**
+(`planning/retros/_audit-phase-84.md`), after an initial `docs-
+reconstructor` drift pass found and the lead fixed 3 blocking + 2
+non-blocking doc/docstring issues (`planning/retros/_drift-audit-
+phase-84.md`). `src/codecompass/knowledge_api.py` is a new, read-only, typed interface
 over `context-graph.db`, `planning/knowledge/`, and `planning/
 contracts/` combined: `get`/`search`/`traverse`/`trace_evidence`/
 `epistemic_status`/`find_gaps`/`get_context_packet`/`export_snapshot`,
@@ -38,9 +42,10 @@ surface, not staged for the demonstration. Full suite 1103 passed, 2
 skipped; all three strict validators unaffected. `decisions/0084`/
 `0085` (architecture) and `0091` (implementation-time resolutions:
 `ApiResponse` shape, natural-key string encoding, `ContextPacket`
-design) govern this phase. Not yet marked `done`: independent audit of
-this implementation (docs-drift review, a full DoD pass, a retro, and
-learnings triage) is in progress.
+design) govern this phase. `L-107` (the real `find_gaps` finding above)
+was triaged by `knowledge-curator`: retained, pending a second real
+oracle-contract-extension occurrence before a process-change ADR is
+warranted.
 
 **Phase 83 — Semantic Change Assurance — is `done`, corrective line of
 work fully closed (2026-10-29, `decisions/0090`)**. A fourth, final,
@@ -592,13 +597,11 @@ above) — its one remaining *outstanding, separately-gated* item
 own `CLAUDE.md` §5 completion gate — it is named, tracked, and requires
 its own future, separate explicit authorisation whenever it is taken up.
 
-**Phase 84 (Consolidated Knowledge API and Query CLI) is implemented**
-(2026-10-29, `decisions/0091`) — see "Current phase" above. Immediate
-next step: independent `release-phase-auditor` pass, `docs-reconstructor`
-drift check, a retro, and `knowledge-curator` triage of any surfaced
-learnings, per `CLAUDE.md` §5, before `planning/ROADMAP.md` marks it
-`done`. Phase 85 is not authorised under the governing prompt that
-produced this implementation. After Phase 84 closes: 85 (Self-Curation and
+**Phase 84 (Consolidated Knowledge API and Query CLI) is `done`**
+(2026-10-29, `decisions/0091`) — see "Current phase" above. Phase 85 is
+**not authorised** under the governing prompt that produced this
+implementation — no further work proceeds without a separate, explicit
+approval. When it is taken up: 85 (Self-Curation and
 Knowledge-Quality Validation) → 86 (Knowledge-Placement and Code-Quality
 Review, formal policy/enforcement classes) → 87 (Documentation Schema and
 Knowledge-Compiled Documentation, minimum suite specified) → 88 (Agent

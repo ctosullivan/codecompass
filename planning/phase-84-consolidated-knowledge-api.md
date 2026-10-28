@@ -1,7 +1,9 @@
 # Phase 84: Consolidated Knowledge API and Query CLI — plan
 
-**Status: implemented (2026-10-29, "CodeCompass Orchestrator — Close
-Phase 83 and Implement Phase 84").** `src/codecompass/knowledge_api.py`
+**Status: done (2026-10-29, "CodeCompass Orchestrator — Close
+Phase 83 and Implement Phase 84"). Independently audited:
+`release-phase-auditor` returned PASS WITH NON-BLOCKING OBSERVATIONS
+(`planning/retros/_audit-phase-84.md`).** `src/codecompass/knowledge_api.py`
 plus six new read-only `knowledge *` CLI commands and the `query
 relations` migration are built against this plan. `decisions/0091`
 records the implementation-time resolutions this plan's own §10
