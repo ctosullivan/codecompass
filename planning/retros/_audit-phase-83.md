@@ -1,5 +1,303 @@
 # Phase 83 — Semantic Change Assurance — independent completion audit
 
+> **This file now contains two passes.** The original pass (below, under
+> "Original audit pass") was run against commit `b1a8447` and returned
+> **FAIL** on two findings. This section records a full, independent
+> re-audit run against the current `main` HEAD, `d076023`, after both
+> findings were claimed fixed. Per `CLAUDE.md` §5, any commit touching
+> audited scope voids a prior pass — so this re-audit re-ran everything,
+> not just the two named findings. The original FAIL section is kept
+> below, unedited, for the record.
+
+---
+
+## RE-AUDIT — commit `d076023` (current `main` HEAD)
+
+**Auditor:** `release-phase-auditor` (independent pass, read-only)
+**Audited commit:** `d076023` (HEAD, `main` branch)
+**Commit range covered since prior pass:** `b1a8447` (prior audited
+commit, verdict FAIL) → `23e90a0` (test fix for finding 2) → `d076023`
+(knowledge-curator triage, fix for finding 1)
+**Plan file:** `planning/phase-83-semantic-change-assurance.md` (§10-14)
+**Governing ADRs:** `decisions/0086`, `0087`, `0088`
+**Retro under review:** `planning/retros/phase-83-semantic-change-assurance.md`
+**Prior audit:** this same file, "Original audit pass" section below
+(audited `b1a8447`, verdict FAIL)
+
+### Verdict
+
+**PASS**
+
+Both findings from the prior FAIL are genuinely fixed, not superficially
+patched, and nothing else in the two new commits (`23e90a0`, `d076023`)
+touches audited scope in a way that reopens any previously-PASSing
+conjunct. I re-ran the full verification battery (not just the two
+findings) against the exact current commit, confirmed no protected-file
+or production-code drift, and independently checked the new test's call
+path and the new learnings' factual claims against the actual code
+rather than trusting the commit messages.
+
+### What changed since the prior (FAIL) pass
+
+```
+git diff b1a8447..d076023 --stat
+ planning/learnings/inbox.md                                |  159 ++
+ planning/learnings/promoted.md                              |    1 +
+ planning/retros/_audit-phase-83.md                          |  318 ++ (the prior FAIL report, committed by 23e90a0)
+ planning/retros/phase-83-semantic-change-assurance.md       |   13 +-
+ tests/test_assess_change_impact.py                          |   38 ++
+```
+
+No changes to `scripts/assess_change_impact.py`, `scripts/check_contracts.py`,
+`src/codecompass/oracle.py`, `graph.py`, `knowledge_intermediate.py`, or
+any other production code. Scope is exactly: one new test, two filed and
+triaged learnings, one retro section update, and the prior audit report's
+own commit (by `23e90a0`, which is how the prior FAIL report ended up
+version-controlled).
+
+### Finding 1 (prior, non-blocking-on-its-own): missing fresh-tampered-raw-output test — independently re-verified FIXED
+
+Read the new test directly, `tests/test_assess_change_impact.py::TestRunCheckAssurance::test_fresh_tampered_raw_output_is_invalid_assessment`
+(commit `23e90a0`):
+
+- It defines a thin `_TamperingOracle` wrapper whose `__getattr__`
+  delegates every attribute to the real `codecompass.oracle` module
+  **except** `evaluate_check`, which it overrides to call the real
+  `oracle.evaluate_check(...)` first and then overwrite the resulting
+  `raw_output_ref` file's contents with `"TAMPERED"` before returning.
+- It then calls `aci.run_check_assurance(_TamperingOracle(), contract_path,
+  contract, "chk-a", repo, tmp_path / "raw", historical_results=[])` —
+  i.e. it drives `run_check_assurance` itself, passing the tampering
+  wrapper as the `oracle_mod` parameter `run_check_assurance` actually
+  takes (confirmed the real signature: `def run_check_assurance(oracle_mod,
+  contract_path, contract, check_id, target_repo_root, raw_output_dir,
+  historical_results)`, `scripts/assess_change_impact.py` line 327).
+- Inside `run_check_assurance`, `oracle_mod.evaluate_check(...)` resolves
+  to the wrapper's own override (producing a tampered fresh result), and
+  `oracle_mod.evaluate_result_precedence(fresh_result, ...)` resolves via
+  `__getattr__` to the real, unmodified `oracle.evaluate_result_precedence`
+  — which is where the actual tamper-detection logic lives (pre-existing,
+  Phase 82 code). This means the test exercises `run_check_assurance`'s
+  own real dispatch (`fresh_effective_outcome == "INVALID" → classification
+  = "INVALID_ASSESSMENT"`) against a result that only became tampered
+  *after* a real execution inside the real call path — not a hand-built
+  `OracleResult` fed in isolation to `oracle.py` alone. This is exactly
+  what the prior finding asked for: coverage through `run_check_assurance`'s
+  own call path, not merely a re-test of `oracle.py`'s pre-existing
+  detection.
+- Ran it directly: `.venv/bin/python -m pytest tests/test_assess_change_impact.py -q -k tamper`
+  → `1 passed, 27 deselected`. Also ran the whole `TestRunCheckAssurance`
+  class and the whole file — all pass (see full-suite run below, which
+  now shows `1036 passed` vs. the prior pass's `1035`, i.e. exactly one
+  net new test, matching this commit).
+- Assertions in the test are substantive, not shallow: it checks
+  `classification == "INVALID_ASSESSMENT"`, `fresh_effective_outcome ==
+  "INVALID"`, that `fresh_invalid_reason` names `raw_output_ref` and
+  `"tampered or corrupted"`, and that `aggregate_state == "GAP"` — the
+  same side-by-side-fact pattern every other test in this class uses.
+
+**Verdict on this finding: genuinely fixed.** This is the one case
+`decisions/0087` §2 named as missing, now present as its own
+fixture-driven case, through the real call path.
+
+### Finding 2 (prior, blocking): no `knowledge-curator` triage had occurred — independently re-verified FIXED
+
+Checked `planning/learnings/inbox.md` for `L-104` and `L-105` (commit
+`d076023`):
+
+- **`L-104`** — "a 'historical facts are never deleted' discipline
+  established for one consumer... does not automatically propagate to
+  every other independent consumer." Read the full entry: it has every
+  field this project's own convention requires (`origin`, `date`,
+  `project_revision`, `observation`, `evidence`, `classification`,
+  `status: retained`, `recurrence`, `moves forward when`) *plus* a
+  `curation note (2026-10-28, knowledge-curator)` that is not boilerplate
+  — it names and checks all four real call sites of
+  `oracle.evaluate_result_precedence` (`oracle.py::aggregate_contract`,
+  `knowledge_intermediate.py::derive_epistemic_profile`,
+  `scripts/assess_change_impact.py::run_check_assurance`,
+  `scripts/check_contracts.py::check_result_integrity`) one at a time,
+  explaining concretely why each of the three that weren't the original
+  bug is not exposed to the same gap, and concludes "no second live,
+  unfixed instance exists today" with an explicit **retain** outcome.
+  I independently read `scripts/check_contracts.py` lines ~287-327 and
+  confirmed the `current_pass_check_ids` / `superseded` logic the note
+  describes is exactly what's actually there (see "Fresh full-battery
+  re-run" below, item 2, and the direct code read in the "Cross-checked
+  factual claims" subsection).
+- **`L-105`** — "a tool's distinct 'knowledge root'-style override
+  parameter must be threaded through every internal path resolution."
+  Same full schema, with a `curation note` that traces
+  `scripts/assess_change_impact.py::classify_symbol`'s actual fix
+  (`result_path = knowledge_root / _unquote(raw_ref)`, not the hardcoded
+  `ROOT`), checks the file's other two `ROOT` references and confirms
+  neither is a second instance of the same bug shape, and names the
+  specific pre-existing regression test
+  (`tests/test_assess_change_impact.py::TestClassifySymbol::test_behavioural_risk_when_claim_bridges_to_a_real_check`)
+  that already exercises `knowledge_root != ROOT` and would catch a
+  reversion. Concludes **promote**, with `promoted_to` naming the test +
+  fix pair at `b1a8447`.
+- **`planning/learnings/promoted.md`**: confirmed the new line —
+  `L-105 | 2026-10-28 | invariant | scripts/assess_change_impact.py::classify_symbol
+  (knowledge_root threading fix) + tests/test_assess_change_impact.py::
+  TestClassifySymbol::test_behavioural_risk_when_claim_bridges_to_a_real_check
+  @ b1a8447` — present, correctly formatted, matching every other row in
+  the file (`L-089`, `L-090`, `L-097`, `L-101`, etc. — same pipe-delimited
+  shape).
+- **`planning/retros/phase-83-semantic-change-assurance.md`**'s
+  "Candidate learnings filed" section: read it directly — it no longer
+  says "None filed." It now reads: "Filed to `planning/learnings/inbox.md`:
+  `L-104` (... assessed by `knowledge-curator` 2026-10-28, outcome
+  **retain** ...) and `L-105` (... assessed by `knowledge-curator`
+  2026-10-28, outcome **promote** ...)." This matches the phrasing
+  convention of every prior phase's retro I compared against (e.g.
+  Phase-81-third-corrective-pass's "assessed by `knowledge-curator`...
+  and found adequately covered").
+
+**Cross-checked factual claims, not just presence of the entries**: I
+independently read the actual production code each curation note cites,
+rather than trusting the note's own description:
+
+- `scripts/check_contracts.py` lines 287-326 (`check_result_integrity`):
+  confirmed `current_pass_check_ids` is computed once per contract by
+  recomputing `evaluate_result_precedence` for every result and collecting
+  `check_id`s that currently evaluate `PASS`; confirmed the `superseded`
+  conditional (`result.check_id in current_pass_check_ids`) only downgrades
+  `strict` to `False` when a *different*, currently-passing result exists
+  for the same `check_id`; otherwise the finding stays `strict=True`
+  (blocking). This matches L-104's description exactly, including the
+  "the one real instance is already fixed with its own two regression
+  tests" claim — ran
+  `tests/test_check_contracts.py -k ResultIntegrity` → `5 passed, 16
+  deselected`.
+- `scripts/assess_change_impact.py` lines ~240-276 (`classify_symbol`):
+  confirmed the docstring's own stated rule ("A `test_ref` is always
+  resolved against `knowledge_root` (never the hardcoded CodeCompass
+  checkout `ROOT`)") matches the actual code
+  (`result_path = knowledge_root / _unquote(raw_ref)`), matching L-105's
+  claim exactly — ran `tests/test_assess_change_impact.py -k
+  ClassifySymbol` → `3 passed, 25 deselected`.
+
+Both learnings' format, depth, and curation-note substance match this
+project's own established convention (compared directly against
+`L-101`, `L-103`, and the Phase-81 triage commits named in the prior
+FAIL report) — this is not a superficial, audit-satisfying stub. Each
+note does real work: it enumerates every call site rather than asserting
+"checked," names concrete line numbers and test names, and reaches a
+specific, justified promote/retain outcome rather than a generic "looks
+fine."
+
+**Verdict on this finding: genuinely fixed**, not merely formally
+present.
+
+### Fresh full-battery re-run (not limited to the two findings)
+
+1. **Full suite**: `.venv/bin/python -m pytest -q` → **1036 passed, 2
+   skipped** (298.72s) — exactly one more than the prior pass's `1035`,
+   matching the one net-new test added in `23e90a0`.
+2. **`scripts/check_contracts.py --strict`** → exit `0`, **7
+   informational findings**, identical in kind and count to the prior
+   pass (6 `contract-result-integrity-mismatch` + 1 `contract-check-gap`,
+   each explicitly labelled superseded/known-gap, none newly blocking).
+3. **`scripts/check_knowledge_base.py --strict`** → exit `0`, **24
+   informational findings**, same pre-existing
+   `knowledge-base-snapshot-current-divergence` entries as the prior
+   pass — the two new `planning/learnings/` files are outside this
+   script's scope (it validates `planning/knowledge/`, not
+   `planning/learnings/`); confirmed no new finding appeared.
+4. **`scripts/check_user_docs.py --strict`** → "no findings", exit `0`
+   (this is also where the project's own learnings-schema/status
+   conventions are mechanically checked — ran clean, confirming
+   `L-104`/`L-105` conform).
+5. **`src/codecompass/oracle.py`, `graph.py`, `knowledge_intermediate.py`
+   unmodified**: `git diff b1a8447..HEAD -- <those three files>` is
+   empty.
+6. **`scripts/assess_change_impact.py`, `scripts/check_contracts.py`
+   unmodified since `b1a8447`**: `git diff b1a8447..HEAD -- <those two
+   files>` is empty — confirming neither new commit touched the
+   production logic the prior pass's dogfood reproduction exercised, so
+   that reproduction (prior pass item 7) remains valid evidence and did
+   not need to be redone from scratch. I did re-read
+   `run_check_assurance` and `classify_symbol` directly (above) as a
+   lighter-touch confirmation that the code the dogfood run exercised is
+   still exactly what's there.
+7. **Protected-file drift**: `git diff b1a8447..HEAD -- CLAUDE.md` is
+   empty. `decisions/0078`-`0087` show no changes in this range
+   (`git diff b1a8447..HEAD --stat` touches only the five files listed
+   above — no `decisions/*` file at all, so none of the historically
+   protected ADRs were touched). `decisions/0088` has exactly one commit
+   in its history (`b1a8447`, its own creation) — unedited since.
+8. **`ROADMAP.md`/`CONTEXT.md`**: still correctly state Phase 83 `in
+   progress` ("implemented; independent completion audit not yet run") —
+   neither was flipped to `done` ahead of this audit, which would itself
+   have been a process violation; this re-audit is what authorizes that
+   transition going forward, not something already assumed.
+9. **Working tree**: `git status` → clean, nothing uncommitted.
+
+### Point-by-point findings (final)
+
+1. Verification commands — PASS (re-run above, same findings as before).
+2. `oracle.py`/`graph.py`/`knowledge_intermediate.py` unmodified — PASS.
+3. Dogfood claim — PASS (not re-reproduced from scratch again, since
+   neither new commit touches the exercised code; re-confirmed via
+   direct code read that the exercised paths are unchanged, consistent
+   with how much verification is warranted given the diff).
+4. Two originally-required checks still PASS for real — PASS (unchanged;
+   `check_contracts.py --strict` re-run confirms the same 2
+   currently-PASSing checks, now also correctly not blocked by their 6
+   superseded historical results per the `decisions/0088` fix).
+5. Knowledge-base reconciliation — PASS (unchanged).
+6. `decisions/0088`'s fix doesn't weaken the original guarantee — PASS
+   (re-confirmed via direct re-read and the two regression tests' own
+   re-run).
+7. Outstanding item (Ledgerkit test not yet landed upstream) honestly
+   reflected in ROADMAP/CONTEXT — PASS (unchanged, still explicit).
+8. No protected-file drift — PASS (re-confirmed against the new HEAD).
+9. Candidate learnings triaged — **PASS** (was the blocking FAIL; now
+   genuinely fixed, see above).
+10. Named missing test case (`decisions/0087` §2's fresh-tampered-raw-output
+    case) — **PASS** (was the second, lower-severity finding; now
+    genuinely fixed, see above).
+
+### Why this is PASS and not PASS WITH NON-BLOCKING OBSERVATIONS
+
+Every finding from the prior pass is closed, with independent evidence
+behind each closure rather than trust in the commit messages, and
+nothing newly introduced by the two fix commits raises a fresh concern:
+the new test genuinely exercises the named call path with substantive
+assertions; the two learnings are filed, triaged with real per-call-site
+analysis, and consistent with the project's own established convention;
+no protected file or production code was touched; the full verification
+battery is clean at exactly the expected counts. I have no residual
+observation worth flagging as non-blocking.
+
+### What remains outside this audit's scope (unchanged, correctly so)
+
+The one cross-repository item named throughout this phase — landing the
+new Ledgerkit regression test
+(`tests/test_reports.py::TestBalanceFromSpec::test_section_accounts_overlapping_patterns_no_double_count`)
+in the real `~/projects/ledgerkit` checkout — remains explicitly
+unresolved and separately gated, exactly as `ROADMAP.md`/`CONTEXT.md`
+state. This was never a DoD conjunct for *this* phase (the phase's own
+plan treats it as a deliberately deferred, separately-authorized
+follow-on, consistent with `decisions/0086`/`0087`), so its absence does
+not affect this verdict.
+
+### Next step
+
+Per `CLAUDE.md` §5, this PASS is what authorizes the terminal
+`roadmap-context-curator` reconciliation commit (flipping
+`planning/ROADMAP.md`'s Phase 83 row to `done`, overwriting
+`planning/CONTEXT.md`'s current-state section, and updating the phase
+plan file's own Status line — nothing else) — that commit itself is
+exempted from re-voiding this audit per §5's own named carve-out, so no
+further audit pass is needed purely for that commit landing. Any other
+commit first touching audited scope would void this pass again.
+
+---
+
+## Original audit pass — commit `b1a8447` (superseded by the re-audit above; kept for the record)
+
 **Auditor:** `release-phase-auditor` (independent pass, read-only)
 **Audited commit:** `b1a8447` (HEAD at audit time, `main` branch)
 **Commit range covered:** `bf60804` (first corrective amendment,
@@ -9,7 +307,7 @@ decisions/0087) → `b1a8447` (implementation, decisions/0088, retro)
 **Governing ADRs:** `decisions/0086`, `0087`, `0088`
 **Retro under review:** `planning/retros/phase-83-semantic-change-assurance.md`
 
-## Verdict
+### Verdict
 
 **FAIL**
 
@@ -26,7 +324,7 @@ the tool's correctness — both are about whether every DoD conjunct is
 actually satisfied yet, which is the one question this audit exists to
 answer honestly rather than soften.
 
-## What I independently re-ran (not trusted from the retro alone)
+### What I independently re-ran (not trusted from the retro alone)
 
 1. **Full suite**: `.venv/bin/python -m pytest -q` — ran it twice
    independently (once directly, once to a log file) — **1035 passed, 2
@@ -147,7 +445,7 @@ answer honestly rather than soften.
     `~/projects/ledgerkit`) as unresolved, cross-repository, and
     separately gated — never silently treated as satisfied.
 
-## Point-by-point findings (against the task's 9 items)
+### Point-by-point findings (against the task's 9 items)
 
 1. **Verification commands** — PASS. All four re-run above; no
    unexpectedly-blocking finding in any of them.
@@ -176,7 +474,7 @@ answer honestly rather than soften.
 9. **Candidate learnings triaged** — **FAIL.** This is the blocking
    finding (detail below).
 
-## The blocking finding: no `knowledge-curator` triage actually occurred
+### The blocking finding: no `knowledge-curator` triage actually occurred
 
 The retro's "Lessons learnt" section states two genuinely generalizable
 observations: (a) a "historical facts are never deleted" discipline
@@ -236,7 +534,7 @@ the "already adequately covered by an existing learning" call explicitly
 — matching every prior phase's own convention — rather than leaving that
 judgment unmade in the retro's own prose.
 
-## A second, narrower, lower-severity finding
+### A second, narrower, lower-severity finding
 
 `decisions/0087` §2 names exactly four fixture-driven cases
 `tests/test_assess_change_impact.py` "must exercise... each as its own
@@ -276,7 +574,7 @@ given the mechanism's demonstrated correctness elsewhere, I would treat
 this as a non-blocking observation; combined with the knowledge-curator
 gap above it reinforces the overall FAIL rather than changing it.
 
-## What must happen before re-audit
+### What must happen before re-audit
 
 1. Dispatch `knowledge-curator` for real against
    `planning/retros/phase-83-semantic-change-assurance.md` and
@@ -293,7 +591,11 @@ gap above it reinforces the overall FAIL rather than changing it.
    voided by any further commit touching audited scope, per `CLAUDE.md`
    §5's own rule).
 
-## Evidence trail
+**Resolution (see re-audit above): both items landed — item 2 in
+`23e90a0`, item 1 in `d076023` — and the re-audit against `d076023`
+verdict is PASS.**
+
+### Evidence trail (original pass)
 
 - Full-suite output (two independent runs): `1035 passed, 2 skipped`.
 - `check_contracts.py --strict`: exit 0, 7 informational findings (6
