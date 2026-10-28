@@ -985,3 +985,172 @@ observation.
   edited.
 - `git diff --name-only 1e5c00c^ 057e59d`: 10 files, all within
   decisions/0089's own stated scope — no scope creep.
+
+---
+
+## FINAL AMENDMENT AUDIT — commit `2436e39` (2026-10-29)
+
+**Auditor:** `release-phase-auditor` (independent pass, read-only)
+**Audited commit:** `2436e39` (on top of `7e8c538`, the prior-audited
+corrective-pass commit)
+**Scope:** one narrowly scoped fourth corrective amendment,
+`decisions/0090` — `classify_symbol()` in `scripts/assess_change_impact.py`
+never compared a historical `OracleResult`'s own `oracle_contract_id`
+against the live contract, only its `contract_id`.
+**Plan file:** `planning/phase-83-semantic-change-assurance.md` (§0, §3.2,
+§10.13, §12 final-amendment addendum)
+**Governing ADR:** `decisions/0090-phase-83-oracle-contract-id-validation.md`
+**Retro section under review:** `planning/retros/phase-83-semantic-change-assurance.md`,
+"Final corrective amendment (2026-10-29, `decisions/0090`)"
+
+### Verdict
+
+**PASS**
+
+This is a correctly scoped, correctly documented, genuinely-verified
+one-line defect fix. I independently reproduced the defect myself (not
+by trusting the new test or the commit message), confirmed the fix
+closes it, re-ran the full required verification battery myself against
+the actual commit, and found the commit's file-level scope, protected-file
+boundaries, and documentation consistency all exactly as claimed.
+
+### What I independently checked
+
+**1. `decisions/0090` read in full.** Accurately documents: the defect
+(`classify_symbol()`'s historical-evidence validation checks
+`result.contract_id == contract.contract_id` but never
+`result.oracle_contract_id`); the schema fact grounding it (`OracleResult`
+carries both fields, both required by `_RESULT_REQUIRED`, confirmed
+directly in `src/codecompass/oracle.py` lines 140-177); the precedent cited
+(`evaluate_result_precedence` at `oracle.py:733-737` already compares
+`result.contract_id != contract.contract_id or result.oracle_contract_id
+!= contract.contract_id` — confirmed by direct read, line numbers match
+exactly); and the "why not route through `evaluate_result_precedence`"
+rationale (it also recomputes a live content-hash comparison, a
+current-execution-outcome question, which would retroactively invalidate
+historical results predating a later unrelated contract extension — this
+is the same rationale `decisions/0089` §C already used for its own,
+narrower structural check, and is consistent with it, not a new or
+contradictory argument).
+
+**2. `git show 2436e39` read in full.** The only functional change in
+`scripts/assess_change_impact.py` is the two-line addition inside
+`classify_symbol()`'s test-Evidence loop:
+```python
+if result.oracle_contract_id != contract.contract_id:
+    continue
+```
+immediately after the pre-existing `contract_id` check, plus a
+documentation-comment update above it (no other logic touched). Confirmed
+`src/codecompass/oracle.py`, `src/codecompass/graph.py`,
+`src/codecompass/knowledge_intermediate.py` are **not present** in this
+commit's diff at all, and `git diff 7e8c538 2436e39 -- src/codecompass/oracle.py
+src/codecompass/graph.py src/codecompass/knowledge_intermediate.py`
+produced empty output — byte-identical to the state audited in the prior
+`7e8c538` pass.
+
+**3. Independently reproduced the defect myself**, not trusting the new
+test. Temporarily reverted *only* the two added lines (via a scripted
+`str.replace` on the exact needle text, restored afterward via `git
+checkout --`), then ran
+`tests/test_assess_change_impact.py::TestClassifySymbolEvidenceValidation::test_wrong_oracle_contract_id_never_establishes_coverage`
+against the reverted code: it failed with
+`AssertionError: assert 'behavioural_risk' == 'relevant_no_coverage_link'`
+— confirming the defect is real (a result with a correct `contract_id`
+but a wrong `oracle_contract_id` wrongly established `behavioural_risk`
+coverage). Restored the fix via `git checkout -- scripts/assess_change_impact.py`
+(confirmed clean via `git diff --stat`), re-ran the same test: 1 passed.
+The regression test genuinely exercises the fixed code path — it is not
+a test that merely passes against already-correct code.
+
+**4. Re-ran, myself, the full required verification battery against
+commit `2436e39`:**
+- `tests/test_assess_change_impact.py` → **47 passed** (exact match).
+- `tests/test_oracle.py` + `tests/test_check_contracts.py` → **67 passed**
+  (Phase 82 regression untouched, exact match).
+- Full suite, `.venv/bin/python -m pytest -q` → **1055 passed, 2 skipped**
+  (exact match — one more pass than the prior `7e8c538` baseline of 1054,
+  matching exactly the one new test added).
+- `scripts/check_contracts.py --strict` → exit 0, **7** informational
+  findings (unchanged from prior baseline).
+- `scripts/check_knowledge_base.py --strict` → exit 0, **24** informational
+  findings (unchanged from prior baseline).
+- `scripts/check_user_docs.py --strict` → exit 0, **no findings**
+  (unchanged from prior baseline).
+
+**5. Doc-sync cross-read.** `planning/phase-83-semantic-change-assurance.md`
+(status line, §3.2's corrected description, new §10.13 scenario, and the
+new "Final corrective amendment, confirmed" verification note),
+`planning/retros/phase-83-semantic-change-assurance.md` (new "Final
+corrective amendment" section — goal, fix, regression test, verification,
+closure statement all present and accurate), `CHANGELOG.md` (new
+`[Unreleased]` entry, correctly distinct from the `decisions/0089` entry
+below it, no batching of two amendments into one entry), `planning/ROADMAP.md`
+(Phase 83 row's final-amendment sentence added, outstanding-item sentence
+preserved unchanged), `planning/CONTEXT.md` (current-state section
+overwritten, not appended-around; 47/1055/2 figures match what I
+independently reproduced), and `docs/development/contributing.md` (the
+`assess_change_impact.py` bullet's classification description now reads
+"a real `OracleResult` whose `contract_id` **and** `oracle_contract_id`
+both identify the live contract" — this is the corrected, current
+behaviour, not the stale single-field description) — all read in full and
+found mutually consistent and accurate against the actual code. No doc
+anywhere in the repo was found describing the old, unfixed
+single-field-check behaviour as current (checked via targeted grep across
+`docs/`, `architecture/`, and the plan file for an unqualified "contract_id
+matches the live contract" claim lacking the `oracle_contract_id`
+companion — none found).
+
+**6. Protected-file and cross-repository boundary checks.**
+`git diff 7e8c538 2436e39 -- CLAUDE.md` → empty (no protected-file drift).
+`git show 2436e39 --name-status -- decisions/` → only `decisions/0090-*.md`
+added (`A`), no existing ADR edited. `git status --short planning/knowledge/
+planning/contracts/` → empty (no canonical-corpus drift); confirmed the
+commit's own file list contains no `planning/knowledge/` or
+`planning/contracts/` path. The real `~/projects/ledgerkit` checkout has
+pre-existing, unrelated uncommitted changes (`dev-docs/clean-room/`
+material, from a separate clean-room reconstruction effort, tip commit
+`7224bb5`) that predate and are untouched by this commit — commit `2436e39`
+itself is entirely contained within the `codecompass` repository and
+touches no file under `ledgerkit` at all.
+
+**7. Scope check.** `git show 2436e39 --stat` lists exactly the 9 files
+named in the task: `CHANGELOG.md`, `decisions/0090-phase-83-oracle-contract-id-validation.md`,
+`docs/development/contributing.md`, `planning/CONTEXT.md`,
+`planning/ROADMAP.md`, `planning/phase-83-semantic-change-assurance.md`,
+`planning/retros/phase-83-semantic-change-assurance.md`,
+`scripts/assess_change_impact.py`, `tests/test_assess_change_impact.py`.
+No other file touched; no scope creep.
+
+### Evidence trail (this pass)
+
+- `decisions/0090-phase-83-oracle-contract-id-validation.md` read in full.
+- `git show 2436e39` (full diff) read in full.
+- `git diff 7e8c538 2436e39 -- src/codecompass/oracle.py src/codecompass/graph.py src/codecompass/knowledge_intermediate.py` → empty.
+- `src/codecompass/oracle.py` lines 140-177, 321-406, 610-638, 733-737 read directly to confirm the `OracleResult` schema and `evaluate_result_precedence`'s own two-field comparison.
+- `scripts/assess_change_impact.py` lines 300-400 (the full `classify_symbol` evidence-validation loop) read directly.
+- `tests/test_assess_change_impact.py` lines 560-730 (the full `TestClassifySymbolEvidenceValidation` class plus `_write_fake_result` helper) read directly.
+- Independent repro: reverted the two added lines via a standalone script, ran the new regression test (failed, `behavioural_risk` wrongly returned), restored via `git checkout --`, re-ran (1 passed).
+- `.venv/bin/python -m pytest -q tests/test_assess_change_impact.py` → 47 passed.
+- `.venv/bin/python -m pytest -q tests/test_oracle.py tests/test_check_contracts.py` → 67 passed.
+- `.venv/bin/python -m pytest -q` (full suite) → 1055 passed, 2 skipped.
+- `scripts/check_contracts.py --strict` → exit 0, 7 informational findings.
+- `scripts/check_knowledge_base.py --strict` → exit 0, 24 informational findings.
+- `scripts/check_user_docs.py --strict` → exit 0, no findings.
+- `git status --short planning/knowledge/ planning/contracts/` → empty.
+- `git -C ~/projects/ledgerkit status --short` / `log -1` → pre-existing, unrelated dirty state, untouched by this commit.
+- `git diff 7e8c538 2436e39 -- CLAUDE.md` → empty.
+- `git show 2436e39 --name-status -- decisions/` → only `0090` added.
+- `git show 2436e39 --stat` / `--name-only` → exactly the 9 named files.
+
+### Conclusion
+
+All seven numbered checks in the task hold. This closes the Phase 83
+corrective line of work: four corrective amendments (`decisions/0086`/
+`0087`/`0088`/`0089`/`0090` — five ADRs across four passes), each
+independently audited, the last (this one) with no residual findings of
+any kind, blocking or non-blocking. The one still-outstanding,
+separately-gated item (the real Ledgerkit overlapping-pattern test
+landing in `~/projects/ledgerkit`) remains exactly as outstanding as
+before — unaffected by this amendment, not a blocker to this verdict or
+to Phase 84.
