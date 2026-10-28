@@ -7,13 +7,9 @@ session-resumption, not a project history.
 
 ## Current phase
 
-**Phase 84 — Consolidated Knowledge API and Query CLI — is `done`**
-(2026-10-29, `decisions/0091`). Independently audited: `release-phase-
-auditor` returned **PASS WITH NON-BLOCKING OBSERVATIONS**
-(`planning/retros/_audit-phase-84.md`), after an initial `docs-
-reconstructor` drift pass found and the lead fixed 3 blocking + 2
-non-blocking doc/docstring issues (`planning/retros/_drift-audit-
-phase-84.md`). `src/codecompass/knowledge_api.py` is a new, read-only, typed interface
+**Phase 84 — Consolidated Knowledge API and Query CLI — is `done`,
+corrective pass closed (2026-10-29, `decisions/0091`/`0092`)**.
+`src/codecompass/knowledge_api.py` is a new, read-only, typed interface
 over `context-graph.db`, `planning/knowledge/`, and `planning/
 contracts/` combined: `get`/`search`/`traverse`/`trace_evidence`/
 `epistemic_status`/`find_gaps`/`get_context_packet`/`export_snapshot`,
@@ -29,23 +25,55 @@ whose own row id is not stable across a rebuild; connects to
 can create/migrate it), so no call has any filesystem side effect. Six
 new read-only CLI commands (`knowledge get/search/trace/gaps/context/
 export`); `query relations` migrated onto this API's own `doc_mentions`
-relation, confirmed byte-identical before/after. 47 new tests
-(`tests/test_knowledge_api.py`), including a required dogfood against
-this project's own real `balance-from-spec` corpus and the real
-`~/projects/ledgerkit` checkout, which also surfaced a genuine,
-pre-existing `find_gaps` finding: `EV-BFS-002`/`EV-BFS-003` cite
-historical oracle results now `INVALID` against the live (Phase-83-
-extended) contract hash, while a different, current `PASS` for the same
-two checks exists, uncited, in the same `results/` directory — a real
-knowledge-currency gap this phase's own new capability was built to
-surface, not staged for the demonstration. Full suite 1103 passed, 2
-skipped; all three strict validators unaffected. `decisions/0084`/
+relation — JSON output byte-identical, table output verified by content
+(Rich truncates several cells at this table's own render width, so a
+full literal comparison isn't meaningful there). `decisions/0084`/
 `0085` (architecture) and `0091` (implementation-time resolutions:
 `ApiResponse` shape, natural-key string encoding, `ContextPacket`
-design) govern this phase. `L-107` (the real `find_gaps` finding above)
-was triaged by `knowledge-curator`: retained, pending a second real
-oracle-contract-extension occurrence before a process-change ADR is
-warranted.
+design) govern the original implementation.
+
+A later, independent post-completion source review found three
+correctness defects in the `done` implementation, fixed as a corrective
+pass (`decisions/0092`): `ConsistencyEnvelope` previously defaulted to
+`status="current"`, and `repo_root` was accepted but never threaded into
+the oracle-result/check retrieval paths, so a historical `PASS` could be
+reported "current" without ever being live-reconfirmed — now fail-closed
+by default, and `--repo-root` (CLI)/`repo_root` (API) genuinely gate
+"current" on a live digest reconfirmation actually running;
+`trace_evidence()`/`find_gaps()` previously silently dropped a
+`supporting_evidence`/`contradicting_evidence` citation that didn't
+resolve to a real record — now report an explicit
+`dangling_evidence_reference` gap per unresolved citation while still
+returning every resolved one; `get_context_packet()` previously bypassed
+its own `max_items`/`max_chars` bounds on its non-knowledge-record path —
+now one shared bounding function covers both paths. 20 new regression
+tests (`tests/test_knowledge_api.py` 47 → 65; two new CLI-level
+`--repo-root` forwarding tests in `tests/test_cli.py`). Re-demonstrated
+against the real `balance-from-spec` corpus and the real
+`~/projects/ledgerkit` checkout: the latest real
+`single-section-expense-subtotal` oracle result reports `unconfirmed`
+without `--repo-root` and `current` only with a reachable Ledgerkit
+checkout, while three contract-superseded historical results report
+`stale` regardless; `find_gaps` still correctly surfaces the pre-existing
+`stale_test_citation` finding (`EV-BFS-002`/`EV-BFS-003`, `L-107`,
+retained, unchanged by this pass) and found zero dangling evidence
+references in the real corpus (confirmed clean, not merely unchecked).
+Full suite 1121 passed (+ the 2 new CLI tests), 2 pre-existing
+environment-gated skips (`cargo`/`npm` not installed); all three strict
+validators unaffected (same pre-existing informational findings).
+Independently re-audited: `release-phase-auditor` returned **PASS WITH
+NON-BLOCKING OBSERVATIONS** (addendum to `planning/retros/
+_audit-phase-84.md`); a second `docs-reconstructor` drift pass returned
+**NO DRIFT** (`planning/retros/_drift-audit-phase-84-corrective-
+pass.md`). Two further candidate learnings promoted:
+`L-108` (a corrective pass must write and confirm a failing regression
+test against the pre-fix source before writing the fix — three
+independent occurrences, `planning/v1-redefinition/agent-led-
+development.md` §1 + `.claude/agents/release-phase-auditor.md` item 11)
+and `L-109` (Rich `Table` cells truncate at default render width —
+`docs/architecture/overview.md` "Known footguns"). `L-107` remains
+retained, pending a second real oracle-contract-extension occurrence
+before a process-change ADR is warranted.
 
 **Phase 83 — Semantic Change Assurance — is `done`, corrective line of
 work fully closed (2026-10-29, `decisions/0090`)**. A fourth, final,
@@ -597,11 +625,12 @@ above) — its one remaining *outstanding, separately-gated* item
 own `CLAUDE.md` §5 completion gate — it is named, tracked, and requires
 its own future, separate explicit authorisation whenever it is taken up.
 
-**Phase 84 (Consolidated Knowledge API and Query CLI) is `done`**
-(2026-10-29, `decisions/0091`) — see "Current phase" above. Phase 85 is
-**not authorised** under the governing prompt that produced this
-implementation — no further work proceeds without a separate, explicit
-approval. When it is taken up: 85 (Self-Curation and
+**Phase 84 (Consolidated Knowledge API and Query CLI) is `done`,
+corrective pass closed** (2026-10-29, `decisions/0091`/`0092`) — see
+"Current phase" above. Phase 85 is **not authorised** under either
+governing prompt (original implementation or corrective pass) — no
+further work proceeds without a separate, explicit approval. When it is
+taken up: 85 (Self-Curation and
 Knowledge-Quality Validation) → 86 (Knowledge-Placement and Code-Quality
 Review, formal policy/enforcement classes) → 87 (Documentation Schema and
 Knowledge-Compiled Documentation, minimum suite specified) → 88 (Agent
