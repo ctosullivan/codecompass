@@ -3,11 +3,16 @@
 Governing prompt: "CodeCompass Orchestrator — Approve v2 Roadmap and Plan
 Phases 83–84" (2026-10-24), **amended** by "CodeCompass Orchestrator —
 Phase 83 Corrective Planning Amendment" (2026-10-24, same day — see
-`decisions/0086` for the five corrected gaps and their grounding).
-Roadmap-depth scope: `planning/v2-roadmap.md` §"Phase 83" (unchanged by
-`decisions/0084`/`0085`). This file is the `CLAUDE.md` §1
-implementation-ready plan that section only sketched. Planning only — no
-implementation begins from this file without separate, explicit approval.
+`decisions/0086` for the five corrected gaps and their grounding), and
+**amended a second time** by "CodeCompass Orchestrator — Amend and
+Implement Phase 83" (2026-10-28 — see `decisions/0087` for the
+precedence-reachability defect and sequencing clarifications this pass
+corrected). Roadmap-depth scope: `planning/v2-roadmap.md` §"Phase 83"
+(unchanged by `decisions/0084`/`0085`). This file is the `CLAUDE.md` §1
+implementation-ready plan that section only sketched. **Implementation is
+authorised as of the second amendment** (`decisions/0087` §4) — this file
+now also serves as the as-built record of what Phase 83 delivers, updated
+in the same session implementation proceeds.
 
 ## 0. Verified current state (read live, not assumed, both passes)
 
@@ -145,34 +150,56 @@ A `behavioural_risk` finding is never presented as comprehensive
 interprocedural analysis — it names exactly the bounded relationship
 found (which symbol, which Claim, which check), per `decisions/0086` §1.
 
-## 4. Independent assurance-report semantics (corrects the blocking GAP/FAIL conflation — `decisions/0086` §2)
+## 4. Independent assurance-report semantics (corrects the blocking GAP/FAIL conflation — `decisions/0086` §2, precedence corrected again — `decisions/0087` §1)
 
 For every check found `behavioural_risk`-applicable in §3, when
 `--run-checks` is passed, the check is **freshly re-executed** (never
 read from a historical result) via the unmodified `oracle.evaluate_
-check`/`evaluate_result_precedence`/`aggregate_contract` pipeline, with
-`repo_root` supplied so live digest recomputation actually runs. The
-report's classification follows this fixed precedence — the first rule
-that applies wins:
+check` — exactly one fresh `OracleResult` is produced per applicable
+check. Its *effective* outcome — via `oracle.evaluate_result_precedence`,
+never its own raw `outcome` field — is always exactly one of `PASS`/
+`FAIL`/`INVALID` (`evaluate_result_precedence` never returns `GAP` for a
+single result). **Classification is determined solely by this fresh
+effective outcome, never by the separately-computed aggregate `state`**
+(`decisions/0081`'s own `aggregate_contract`, over every `OracleResult`
+on file for the check, historical and fresh together) — the aggregate is
+displayed alongside, for context, but is not itself a step in this
+precedence, since `aggregate_contract` returns `GAP` for *any* required
+check with no accepted `PASS`, including one whose only result is
+`INVALID` — treating the aggregate as a precedence step would make
+`INVALID_ASSESSMENT` unreachable (`decisions/0087`'s own corrected
+defect, found in this plan's own prior revision before any code was
+written against it). The corrected precedence — the first rule that
+applies wins:
 
-1. Any observed outcome is `FAIL` → **CONFIRMED_REGRESSION**. Never
-   downgraded by rule 3, regardless of what the aggregate `state`
-   independently computes to.
-2. Else aggregate `state` is `PASS` → **VERIFIED_SCOPE**.
-3. Else aggregate `state` is `GAP` → **VERIFICATION_GAP**.
-4. Else any observed outcome is `INVALID` → **INVALID_ASSESSMENT**.
+1. Fresh effective outcome is `FAIL` → **CONFIRMED_REGRESSION**. Highest
+   precedence; never downgraded by any later rule or by the aggregate
+   `state`.
+2. Else fresh effective outcome is `INVALID` → **INVALID_ASSESSMENT** —
+   reachable unconditionally whenever the one fresh execution itself
+   could not be trusted or validated (corrupted/tampered raw output, a
+   tested-subject/test-input digest mismatch, a scope mismatch, an
+   all-skipped pytest execution per `decisions/0083`'s own existing,
+   unmodified rule) — never routed through rule 4 merely because the
+   aggregate also happens to compute `GAP` for an invalid result (it
+   always does; that is shown alongside, not substituted).
+3. Else fresh effective outcome is `PASS` → **VERIFIED_SCOPE**.
+4. Else — no fresh result exists for this check at all (`--run-checks`
+   was not passed, or §3 found no applicable check in the first place) →
+   **VERIFICATION_GAP**. Reserved for *no verification was attempted*,
+   never reused for an attempt that produced a real, if untrustworthy,
+   outcome (that is rule 2's own, now-reachable, territory).
 
-A `CONFIRMED_REGRESSION` report always shows *both* facts side by side —
-the observed `FAIL` and the (usually `GAP`) aggregate `state` — labelled
-as two independently true, co-existing facts (`decisions/0081` §2's own
+A `CONFIRMED_REGRESSION` or `INVALID_ASSESSMENT` report always shows the
+underlying aggregate `state` alongside the classification — usually
+`GAP` in both cases, for different underlying reasons, labelled as two
+independently true, co-existing facts (`decisions/0081` §2's own
 language), never collapsed into one line that could be misread as "no
-evidence." A `VERIFICATION_GAP` with zero observed outcomes at all (check
-never ran, or no applicable check was found in §3) is reported
-identically in shape but is explicitly distinguished in the report's own
-text from a `VERIFICATION_GAP` that coexists with an *observed* `FAIL` —
-both are `GAP` at the aggregate level, but only one of them is also a
-`CONFIRMED_REGRESSION` under this precedence (rule 1 fires first). Mixed
-results across *different* checks in one report (one `CONFIRMED_
+evidence." A historical `PASS` on file for the same check never promotes
+a fresh `FAIL`/`INVALID` past rules 1/2 — classification reads only the
+one fresh result, never any historical one (`decisions/0087`'s own
+explicit "do not allow historical results to mask a fresh failure").
+Mixed results across *different* checks in one report (one `CONFIRMED_
 REGRESSION`, one `VERIFIED_SCOPE`, one `VERIFICATION_GAP`) remain
 independently visible per check — never collapsed to a single
 project-wide verdict.
@@ -271,6 +298,31 @@ contract; see `decisions/0086`'s own Alternatives section).
   checks.
 
 ## 7. Deliverables
+
+**Implementation ordering** (governing prompt §C, 2026-10-28 amendment —
+fixed, not left implicit): (1) extend `oracle-contract.yaml` with the new
+check (§6); (2) immediately re-run the two *pre-existing* checks fresh
+against the real, unmodified Ledgerkit HEAD, producing two new
+`OracleResult` files under the new contract content hash, and confirm by
+direct inspection that the aggregate `state` for both is `PASS` again
+(§6's content-hash-cost resolution) — this step is **not** deferred past
+the new check's own commit; (3) author `REQ-BFS-002`/`DEC-BFS-002`/
+`CL-BFS-004` (§6) — `CL-BFS-004` cites `EV-BFS-001` only at this point
+(relevance), since no real passing result for the new check exists yet;
+`EV-BFS-004` (coverage) is **not** authored in this phase — authoring it
+would promote a result that does not yet exist for real, and is deferred
+until the separately authorised real Ledgerkit test lands (§10/§13); (4)
+run the §11 scratch-copy mutation demonstration, entirely on disposable
+copies, producing the real CONFIRMED_REGRESSION evidence this phase
+exists to demonstrate — kept structurally apart from the canonical record
+set in (3) (`planning/retros/`, never `planning/knowledge/` or
+`planning/contracts/.../results/`), so an experimental, deliberately
+failing scratch result is never reachable as if it were accepted project
+evidence; (5) reconcile: re-run `scripts/check_contracts.py --strict` and
+`scripts/check_knowledge_base.py --strict` against the real, now-extended
+contract/knowledge state, confirming the only new findings are the
+expected informational `contract-check-gap` for the new, not-yet-passing-
+for-real check (never a blocking finding).
 
 1. `scripts/assess_change_impact.py` (maintainer script, not a shipped
    `codecompass` subcommand — matching `run_balance_from_spec_
@@ -406,22 +458,75 @@ only with separate authorisation.
    `v2-evaluation-methodology.md`'s "never trust the tool's self-report
    alone" discipline) — confirming scenario 1's `FAIL` is a real pytest
    failure, not merely the script's own claim of one.
+8. **`INVALID_ASSESSMENT` reachability, fixture-driven** (`decisions/
+   0087` §2 — the corrected precedence's own required negative coverage,
+   each its own case, never inferred from the positive-path tests alone):
+   (a) a fresh tested-subject-digest mismatch; (b) a fresh corrupted/
+   tampered `raw_output_sha256`; (c) a fresh scope mismatch between a
+   result and its named check; (d) a fresh all-skipped pytest execution
+   (`decisions/0083`'s own existing rule, surfaced here); (e) a fresh
+   oracle-contract-content-hash mismatch. Each asserts **`INVALID_
+   ASSESSMENT`** specifically — not merely "not CONFIRMED_REGRESSION" —
+   confirming rule 2 of §4's precedence is actually reachable and is
+   never pre-empted by the aggregate `state` independently computing
+   `GAP` for the same invalid result (which it always does, and which
+   must be visible in the report's own aggregate-state field alongside
+   `INVALID_ASSESSMENT`, not as a substitute classification).
+9. **`VERIFICATION_GAP`, genuine-absence case.** A changed range that
+   resolves to `behavioural_risk` in §3 but is run *without*
+   `--run-checks` — expect `VERIFICATION_GAP`, explicitly distinguished
+   in the report's own text from scenario 8's `INVALID_ASSESSMENT`
+   (no attempt at all, vs. an attempt that produced an untrustworthy
+   result) — confirming rule 4 is reserved for genuine absence, not a
+   catch-all for every non-`PASS`/non-`FAIL` case.
 
-## 11. Dogfood scenario, and the reproducible regression-baseline ordering (`decisions/0086`, governing prompt §7)
+## 11. Dogfood scenario, and the reproducible regression-baseline ordering (`decisions/0086`/`0087`, governing prompt §7/§B)
 
 Scenario 10.1, run end to end against the real Ledgerkit fixture/test
 conventions, is the dogfood scenario. The comparison it demonstrates must
 be captured **before** deliverable 4's new test is proposed for the real
 checkout — adding the test to the real suite changes what "the ordinary
-baseline" means from that point on, so the original baseline is frozen
-in the demonstration report (§7.5) first: the exact pre-correction
-revision (`7224bb5c113cd3aad7e86e994365703cd0070154`), the original
-`tests/test_reports.py` content hash at that revision, the exact mutation
-patch applied (recorded verbatim in the report, not merely described),
-the new check that detects it, and the side-by-side "full ordinary suite:
-100% pass / new independent check: FAIL" result — all captured on a
-scratch copy, in that order, before any change to the real `~/projects/
-ledgerkit` checkout is proposed.
+baseline" means from that point on. The new test must not merely be
+excluded by a path filter from "the suite used to establish the original
+coverage gap" — it must not exist in the tree that suite is run against
+at all, by construction (`decisions/0087` §3):
+
+1. A pristine scratch copy is made from Ledgerkit's pinned HEAD
+   (`7224bb5c113cd3aad7e86e994365703cd0070154`) — no new test file
+   anywhere in its tree. The original baseline is pinned here: the
+   commit SHA above, and a `sha256` of `tests/test_reports.py` at this
+   exact revision, both recorded verbatim in the demonstration report
+   (§7.5) before anything else happens.
+2. The mutation patch (recorded verbatim, not described) is applied to
+   `ledgerkit/reports.py` only, in this scratch copy.
+3. `pytest tests/` is run in **this exact tree** — the new check's own
+   test file does not exist in it, so it cannot be included by
+   construction. Captured verbatim as the frozen "original, unchanged
+   complete suite" result.
+4. Only now is the new check's own test function added, as a new file
+   (`tests/test_phase83_overlap_regression.py` — never merged into
+   `tests/test_reports.py` in the scratch copy, never committed to the
+   real `~/projects/ledgerkit` checkout). Run directly by its own pytest
+   node id against this mutated tree — expect `FAIL`.
+5. A second, separately pinned scratch copy (clean HEAD, same new test
+   file, no mutation) confirms the new check `PASS`es on correct code —
+   both directions demonstrated, not only the failing one.
+6. `assess_change_impact.py --run-checks` against the mutated scratch
+   copy from step 4 — expect **CONFIRMED_REGRESSION** (§4).
+
+**Named explicitly, not hidden**: the real `oracle-contract.yaml`'s new
+check (§6/§7) has a `check_reference` naming this test's eventual *real*
+intended location (`tests/test_reports.py::TestBalanceFromSpec::
+test_section_accounts_overlapping_patterns_no_double_count`), which does
+not exist in the real, live `~/projects/ledgerkit` checkout as part of
+this phase — landing it there is a separately authorised action (§10/
+§13). Running the new check for real against the live checkout today
+would correctly, honestly classify `INVALID_ASSESSMENT` ("zero collected
+tests" — `_classify_pytest_junit`'s own existing, unmodified behaviour
+for an unresolvable node id); this is a known, trivially uninformative
+outcome, not executed or recorded as a real `OracleResult` in this
+phase, and is named as this phase's one explicit, outstanding,
+unresolved gate — never silently treated as satisfied.
 
 ## 12. Acceptance criteria / exit gate
 
@@ -443,6 +548,14 @@ ledgerkit` checkout is proposed.
 - Scenario 10.6 demonstrates the content-hash-cost before/after state
   exactly as predicted in §6 — this is the one acceptance item that did
   not exist in the first planning pass.
+- Scenario 10.8 demonstrates `INVALID_ASSESSMENT` is actually reachable
+  under all five named fresh-invalid conditions, each shown alongside its
+  own (near-always `GAP`) aggregate `state` without being mistaken for
+  it — the one acceptance item added by the second corrective pass
+  (`decisions/0087`).
+- Scenario 10.9 demonstrates `VERIFICATION_GAP` is reserved for a genuine
+  absence of any verification attempt, distinct from scenario 10.8's
+  "attempted but untrustworthy."
 - The real Ledgerkit test (deliverable 4) is reviewed and, if accepted,
   lands in the real checkout only after §11's ordering, with its own
   separate go-ahead (§13).
