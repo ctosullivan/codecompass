@@ -638,6 +638,32 @@ class TestClassifySymbolEvidenceValidation:
         )
         assert classification == "relevant_no_coverage_link"
 
+    def test_wrong_oracle_contract_id_never_establishes_coverage(self, tmp_path):
+        """decisions/0090: a result whose `contract_id` matches the live
+        contract but whose own `oracle_contract_id` names a different
+        contract must not establish coverage -- both identity fields are
+        required to independently agree, not just the first one."""
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        contracts_dir = tmp_path / "planning" / "contracts" / "demo"
+        contract_path = contracts_dir / "oracle-contract.yaml"
+        _write_demo_contract(contract_path, check_id="chk-a", scope="scope A")
+        contract = oracle.parse_oracle_contract(contract_path)
+        result_path = contracts_dir / "results" / "chk-a--wrong-oracle-contract-id.yaml"
+        _write_fake_result(
+            result_path, contract_path, check_id="chk-a",
+            oracle_contract_id_override="REQ-UNRELATED-999",
+        )
+        _write_source_and_claim(slug_dir, {
+            "id": "EV-TEST", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{result_path.relative_to(tmp_path)}"',
+        })
+        ki = _load_ki()
+        records = ki.load_slug_records(slug_dir)
+        classification, _ = aci.classify_symbol(
+            records, contract, oracle, "target_function", "impl.py", tmp_path
+        )
+        assert classification == "relevant_no_coverage_link"
+
     def test_wrong_scope_never_establishes_coverage(self, tmp_path):
         slug_dir = tmp_path / "planning" / "knowledge" / "demo"
         contracts_dir = tmp_path / "planning" / "contracts" / "demo"
@@ -707,16 +733,18 @@ def _load_ki():
 def _write_fake_result(
     path: Path, contract_path: Path, *, check_id: str, outcome: str = "PASS",
     contract_id_override: str | None = None, scope_override: str | None = None,
+    oracle_contract_id_override: str | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     raw_path = path.parent / f"{check_id}-raw.txt"
     raw_path.write_text("ok", encoding="utf-8")
     contract_id = contract_id_override or "REQ-X-001"
     scope = scope_override or "scope A"
+    oracle_contract_id = oracle_contract_id_override or contract_id
     result = oracle.OracleResult(
         schema_version=1, run_id="r1", contract_id=contract_id, check_id=check_id,
         scope=scope, baseline_id=None, tested_subject_digest="d" * 64,
-        oracle_contract_id=contract_id, oracle_contract_content_hash=oracle.sha256_file(contract_path),
+        oracle_contract_id=oracle_contract_id, oracle_contract_content_hash=oracle.sha256_file(contract_path),
         test_input_digest="i" * 64, raw_output_ref=str(raw_path),
         raw_output_sha256=oracle.sha256_file(raw_path), outcome=outcome,
         executed_at="2026-10-28T00:00:00Z", execution_provider="pytest",

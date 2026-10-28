@@ -7,10 +7,21 @@ session-resumption, not a project history.
 
 ## Current phase
 
-**Phase 83 — Semantic Change Assurance — is `done`** (2026-10-28,
-`planning/ROADMAP.md`'s own row). Independently audited:
-`release-phase-auditor` returned PASS on re-audit against commit
-`d076023` (`planning/retros/_audit-phase-83.md`) — an initial FAIL pass
+**Phase 83 — Semantic Change Assurance — is `done`, corrective line of
+work fully closed (2026-10-29, `decisions/0090`)**. A fourth, final,
+narrowly scoped defect — `classify_symbol()`'s historical test-Evidence
+validation checked a result's `contract_id` against the live contract
+but never its own `oracle_contract_id` — was found, fixed with one added
+field comparison, and covered by one new regression test (47 total in
+`tests/test_assess_change_impact.py`), confirmed to genuinely reproduce
+the defect before the fix was restored. Full suite 1055 passed, 2
+skipped; Phase 82 regression and all three strict validators unaffected
+(unchanged finding counts). Independently audited: see `planning/retros/
+_audit-phase-83.md`'s final-amendment section. No further Phase 83
+corrective passes are open. Earlier in the same corrective line
+(2026-10-28, `planning/ROADMAP.md`'s own row): `release-phase-auditor`
+returned PASS on re-audit against commit `d076023`
+(`planning/retros/_audit-phase-83.md`) — an initial FAIL pass
 against the implementation commit `b1a8447` found two real gaps (a
 missing fixture-driven test named by `decisions/0087` §2; no
 `knowledge-curator` triage of two retro-surfaced learnings), both

@@ -14,6 +14,12 @@ inspection after the above audit had already passed, are fixed under
 and §7's deliverable description below are updated in place to describe
 the corrected behaviour (this plan is also the as-built record, per its
 own header below); the acceptance criteria in §12 gain three new items.
+**Corrected a final time (2026-10-29, "CodeCompass Orchestrator — Close
+Phase 83 and Implement Phase 84"):** one further, narrowly scoped defect
+— `classify_symbol()`'s historical test-Evidence validation checked
+`result.contract_id` but never `result.oracle_contract_id` against the
+live contract — is fixed under `decisions/0090`. This closes the Phase
+83 corrective line of work; no further corrective passes are open.
 **One outstanding, separately-gated item remains, explicitly tracked, not
 part of this phase's own completion**: the real Ledgerkit test has not
 landed in the real `~/projects/ledgerkit` checkout — a cross-repository
@@ -26,10 +32,13 @@ Phase 83 Corrective Planning Amendment" (2026-10-24, same day — see
 **amended a second time** by "CodeCompass Orchestrator — Amend and
 Implement Phase 83" (2026-10-28 — see `decisions/0087` for the
 precedence-reachability defect and sequencing clarifications this pass
-corrected), and **corrected a third time**, post-completion, by
+corrected), **corrected a third time**, post-completion, by
 "CodeCompass Orchestrator — Phase 83 Corrective Pass" (2026-10-28 — see
 `decisions/0089` for the source-identity, range-coverage, and evidence-
-validation defects this pass fixed). Roadmap-depth scope: `planning/
+validation defects this pass fixed), and **corrected a fourth and final
+time** by "CodeCompass Orchestrator — Close Phase 83 and Implement Phase
+84" (2026-10-29 — see `decisions/0090` for the `oracle_contract_id`
+validation gap this pass fixed). Roadmap-depth scope: `planning/
 v2-roadmap.md` §"Phase 83" (unchanged by `decisions/0084`/`0085`). This
 file is the `CLAUDE.md` §1 implementation-ready plan that section only
 sketched. **Implementation is authorised as of the second amendment**
@@ -165,15 +174,18 @@ contract.yaml`? This is read directly off each Claim's existing
 `supporting_evidence` list — the exact mechanism `derive_epistemic_
 profile` (line 1082-1112) already uses internally, reused by reading the
 same records, not by adding a parallel path. **Corrected (`decisions/
-0089` §C):** "resolves to a real `OracleResult`" is now actually
-enforced, via `oracle.parse_oracle_result` (schema validation) plus a
-check that the result's own `contract_id` matches the *live* contract
-and its `scope` matches the named check's own `scope` — not merely that
-a YAML mapping with a matching `check_id` key could be loaded. A result
-failing any of these checks (malformed, wrong contract, wrong scope,
-unknown check_id) establishes no coverage link; it never manufactures a
-fresh verification outcome either way — that remains §4's job alone,
-unaffected by this correction.
+0089` §C, further corrected `decisions/0090`):** "resolves to a real
+`OracleResult`" is now actually enforced, via `oracle.parse_oracle_result`
+(schema validation) plus a check that the result's own `contract_id`
+**and** its own `oracle_contract_id` both match the *live* contract's
+`contract_id`, and its `scope` matches the named check's own `scope` —
+not merely that a YAML mapping with a matching `check_id` key could be
+loaded, and not merely that one of the two contract-identity fields
+happened to match. A result failing any of these checks (malformed,
+wrong contract on either identity field, wrong scope, unknown check_id)
+establishes no coverage link; it never manufactures a fresh verification
+outcome either way — that remains §4's job alone, unaffected by this
+correction.
 
 **3.3 Three classifications, mutually exclusive:**
 
@@ -628,6 +640,11 @@ unresolved gate — never silently treated as satisfied.
   the citing symbol falls back to `relevant_no_coverage_link` — while a
   structurally valid, correctly-scoped historical result continues to
   do so exactly as before.
+- Scenario 10.13 (`decisions/0090`) demonstrates that a referenced
+  historical result whose `contract_id` matches the live contract but
+  whose own `oracle_contract_id` names a different contract never
+  establishes `behavioural_risk` either — both contract-identity fields
+  must independently agree, not just the first one checked.
 - The real Ledgerkit test (deliverable 4) is reviewed and, if accepted,
   lands in the real checkout only after §11's ordering, with its own
   separate go-ahead (§13).
@@ -655,6 +672,22 @@ reports.py:490-600` resolves all three of `register`/`stats`/
 `cannot_map` on `end`). The real, canonical `planning/knowledge/`/
 `planning/contracts/` trees were confirmed untouched (`git status`)
 throughout.
+
+**Final corrective amendment, confirmed (2026-10-29, `decisions/0090`)**:
+the `oracle_contract_id` validation gap was reproduced with a failing
+regression test against the pre-fix code (confirmed failing via a
+temporary `git stash` of the fix alone, then restored), fixed, and
+re-verified: the new test plus the complete `tests/test_assess_change_
+impact.py` module (47 passed), Phase 82's `tests/test_oracle.py`/`tests/
+test_check_contracts.py` (67 passed, unmodified), all three strict
+validators (unchanged finding counts, all exit 0), and the complete
+CodeCompass suite (1055 passed, 2 skipped) all pass. This fix changes
+only which historical results `classify_symbol` accepts as valid
+Evidence — it does not touch range resolution or source-path matching —
+so the full Ledgerkit scratch re-demonstration (§10.1/10.2) was not
+re-run a third time; nothing in this amendment's own scope could affect
+its outcome, and the governing prompt's own verification list for this
+amendment does not call for it.
 
 ## 13. Risks, alternatives, and unresolved decisions
 

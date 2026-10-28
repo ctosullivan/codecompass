@@ -3,7 +3,7 @@ assessment, reusing Phase 82's oracle machinery and the existing
 knowledge-record Evidence/Claim citation chains unchanged.
 
 See `planning/phase-83-semantic-change-assurance.md` (the full design)
-and `decisions/0086`/`0087`/`0089` (the three corrective amendments this
+and `decisions/0086`/`0087`/`0089`/`0090` (the corrective amendments this
 implementation follows). This is a maintainer script, like
 `scripts/run_balance_from_spec_oracle.py` -- not a shipped `codecompass`
 subcommand (`planning/v2-roadmap.md`'s own Phase 83 scoping).
@@ -347,9 +347,16 @@ def classify_symbol(
     # is never consulted). `decisions/0089` §C: the referenced result must
     # actually parse as a well-formed OracleResult and must genuinely
     # belong to this contract/check/scope -- never a bare YAML key check.
-    # This is a historical-relationship question only, deliberately never
-    # calling evaluate_result_precedence (a current-execution-outcome
-    # question, §4's job alone -- see decisions/0089 §C's own rationale).
+    # `decisions/0090`: both of the result's own contract-identity fields
+    # (`contract_id` AND `oracle_contract_id`) must independently identify
+    # this exact contract -- the schema carries both for a reason (one
+    # result-side, one contract-side) and a check that only compares one
+    # of them can still accept a result that cites the right contract_id
+    # by coincidence while its own oracle_contract_id names a different
+    # contract entirely. This is a historical-relationship question only,
+    # deliberately never calling evaluate_result_precedence (a
+    # current-execution-outcome question, §4's job alone -- see
+    # decisions/0089 §C's own rationale).
     test_evidence_check_id: dict[str, str] = {}
     for rec in records.values():
         if rec.kind != "evidence" or rec.fields.get("evidence_kind") != "test":
@@ -365,6 +372,8 @@ def classify_symbol(
         except oracle_mod.OracleSchemaError:
             continue
         if result.contract_id != contract.contract_id:
+            continue
+        if result.oracle_contract_id != contract.contract_id:
             continue
         check = contract.check_by_id(result.check_id)
         if check is None:

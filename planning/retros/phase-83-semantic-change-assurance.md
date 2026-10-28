@@ -358,3 +358,54 @@ corrective-pass section for the full, separately-run verdict.
 has not landed in the real `~/projects/ledgerkit` checkout — exactly as
 outstanding as before this corrective pass, not expanded or narrowed by
 it.
+
+## Final corrective amendment (2026-10-29, `decisions/0090`)
+
+**Governing prompt**: "CodeCompass Orchestrator — Close Phase 83 and
+Implement Phase 84" named one further, narrowly scoped defect in the
+already-corrected `classify_symbol()`: historical test-Evidence
+validation (`decisions/0089` §C) checked `result.contract_id ==
+contract.contract_id` but never `result.oracle_contract_id` — the
+schema's own second, independent contract-identity field, already
+compared by `evaluate_result_precedence` (`oracle.py:733-737`) but
+missed when §C's narrower, deliberately-separate structural check was
+written. A historical result whose `contract_id` matched the live
+contract by coincidence while its own `oracle_contract_id` named a
+different contract would still have established `behavioural_risk`.
+
+**Fix**: one added comparison, `result.oracle_contract_id != contract.
+contract_id`, alongside the existing `contract_id` check — no new
+parsing, no new validation path, following the exact "reuse what the
+schema already carries" discipline `decisions/0089` §C itself
+established. Documented in `decisions/0090`.
+
+**Regression test**: `tests/test_assess_change_impact.py::
+TestClassifySymbolEvidenceValidation::
+test_wrong_oracle_contract_id_never_establishes_coverage` — a result
+with a correct `contract_id` but an incorrect `oracle_contract_id`.
+Confirmed genuinely reproducing the defect: with the fix alone reverted
+(`git stash` of `scripts/assess_change_impact.py` only, test change
+kept), the test failed with `behavioural_risk` wrongly returned instead
+of `relevant_no_coverage_link`; restoring the fix made it pass.
+
+**Verification**: new test passes; complete `tests/test_assess_change_
+impact.py` — 47 passed; Phase 82 regression (`tests/test_oracle.py` +
+`tests/test_check_contracts.py`) — 67 passed, unmodified; all three
+strict validators — exit 0, finding counts unchanged (7 contracts / 24
+knowledge-base / 0 docs, all informational, identical to the prior
+baseline); complete CodeCompass suite — 1055 passed, 2 skipped (one more
+than the prior 1054, matching exactly one new test). No change to
+`oracle.py`/`graph.py`/`knowledge_intermediate.py`. The full Ledgerkit
+scratch re-demonstration was not re-run a third time for this amendment
+— its scope (which historical results are accepted as Evidence) cannot
+affect range resolution or the demonstration's own mutation/clean-copy
+outcomes, and the governing prompt's own verification list for this
+amendment does not call for it.
+
+**Independent audit**: see `planning/retros/_audit-phase-83.md`'s own
+final-amendment section for the separately-run verdict.
+
+**This closes the Phase 83 corrective line of work.** The one
+outstanding, separately-gated item (the real Ledgerkit overlapping-
+pattern test landing in `~/projects/ledgerkit`) remains exactly as
+before — unaffected, not a blocker to Phase 84.

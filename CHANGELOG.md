@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Phase 83 final corrective amendment** (`decisions/0090`, direct user
+  request, "CodeCompass Orchestrator — Close Phase 83 and Implement
+  Phase 84"): fixes one further, narrowly scoped defect in `scripts/
+  assess_change_impact.py::classify_symbol()` — historical test-Evidence
+  validation checked a referenced `OracleResult`'s `contract_id` against
+  the live contract but never its own `oracle_contract_id`, so a result
+  whose `contract_id` matched by coincidence while its `oracle_
+  contract_id` named a different contract could still establish
+  `behavioural_risk`. Both contract-identity fields must now
+  independently agree. One new regression test (`tests/test_assess_
+  change_impact.py`, now 47 total), confirmed genuinely reproducing the
+  defect against the pre-fix code. This closes the Phase 83 corrective
+  line of work.
+
 - **Phase 83 corrective pass** (`decisions/0089`, direct user request,
   "CodeCompass Orchestrator — Phase 83 Corrective Pass"): fixes three
   correctness defects in `scripts/assess_change_impact.py` found by
