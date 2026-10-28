@@ -219,10 +219,15 @@ doing the thing for real).
 
 ## Candidate learnings filed
 
-None filed to `planning/learnings/inbox.md` as new entries — the two
-lessons above are recorded in this retro and in `decisions/0087`/`0088`
-directly; promoting them further is the `knowledge-curator`'s own
-triage call, not pre-empted here.
+Filed to `planning/learnings/inbox.md`: `L-104` (the `check_result_
+integrity` supersession gap — assessed by `knowledge-curator` 2026-10-28,
+outcome **retain**: the one real instance is already fixed with its own
+two regression tests; no second live instance found across the other
+three consumers of `evaluate_result_precedence`) and `L-105` (the
+`classify_symbol` `knowledge_root` threading gap — assessed by
+`knowledge-curator` 2026-10-28, outcome **promote**: a pre-existing
+regression test already exercises and would catch this exact scenario;
+logged in `planning/learnings/promoted.md`).
 
 ## Where we're going
 

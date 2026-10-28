@@ -8,6 +8,165 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-104 — a "historical facts are never deleted" discipline established for one consumer of a shared evaluation function does not automatically propagate to every other independent consumer of that same function
+
+- **origin:** Phase 83 retro ("Lessons learnt" bullet 1); `decisions/0088`
+- **date:** 2026-10-28
+- **project_revision:** `b1a8447` (observed and fixed in the same
+  implementation commit)
+- **observation:** `scripts/check_contracts.py::check_result_integrity`
+  unconditionally reported *any* historical `OracleResult` whose own
+  recomputed effective outcome (via `oracle.evaluate_result_precedence`)
+  diverged from its recorded outcome as a *blocking*
+  `contract-result-integrity-mismatch` finding — including one
+  legitimately superseded by a different, current `PASS` for the exact
+  same `check_id` — even though `decisions/0081` §4 already named exactly
+  this situation ("historically valid... excluded from the current
+  aggregate... not deleted, not corrected") as expected and acceptable
+  for `aggregate_contract`'s own aggregation logic. The gap existed,
+  completely unexercised, from the moment Phase 82 shipped
+  (`decisions/0080`-`0083`) until Phase 83 extended a real oracle
+  contract for the first time and re-ran the two pre-existing checks,
+  which immediately blocked `--strict` on all six historical result
+  files, with no remedy short of deleting historical evidence (forbidden
+  by `decisions/0081`/`0082`).
+- **evidence:** `decisions/0088` (full account, including the two
+  alternatives considered and rejected);
+  `scripts/check_contracts.py::check_result_integrity` lines 287-327 (the
+  `current_pass_check_ids` set, computed once per contract, and the
+  `superseded` conditional at lines 310/322-326);
+  `tests/test_check_contracts.py::TestResultIntegrity::test_mismatch_with_no_superseding_pass_stays_blocking`
+  and `::test_mismatch_superseded_by_fresh_pass_is_informational` (both
+  landed in the same commit range, locking in both directions). The
+  retro's own "What worked" section states explicitly that "no amount of
+  design review would have found" this — it required actually extending
+  a real, already-shipped contract for the first time.
+- **classification:** invariant — but the one real instance is already
+  fixed with its own two regression tests; what remains is the
+  *generalization*: `evaluate_result_precedence` has (at least) four
+  independent production consumers
+  (`oracle.py::aggregate_contract` itself — the originating, correct
+  design; `knowledge_intermediate.py::derive_epistemic_profile`;
+  `scripts/check_contracts.py::check_result_integrity` — the one that had
+  the gap; `scripts/assess_change_impact.py::run_check_assurance`), and
+  nothing currently re-checks whether a *new* consumer, or an *existing*
+  one exercised for the first time against a real multi-generation
+  scenario, independently honours the same discipline.
+- **status:** retained
+- **recurrence:** first occurrence (one design-correct original
+  implementation; one later, independent consumer that had the gap, now
+  fixed within the same phase it was found)
+- **moves forward when:** a fifth consumer of `evaluate_result_precedence`
+  is added, or any further oracle contract is extended for the first time
+  and re-exercises genuinely stale historical results again — re-run the
+  same consumer-by-consumer audit below and promote to a project-rule /
+  `CLAUDE.md` addition if a second *live*, *unfixed* gap is found;
+  otherwise this stays `retained` through the next milestone bulk review.
+- **curation note (2026-10-28, knowledge-curator):** read all four real
+  call sites of `evaluate_result_precedence` directly (grep confirms
+  there are no others in `src/codecompass/` or `scripts/`):
+  - `oracle.py::aggregate_contract` (line ~804) — the originating,
+    correct design `decisions/0081` itself specifies; not in question.
+  - `knowledge_intermediate.py::derive_epistemic_profile` (line 1097) —
+    looks up exactly one cited `OracleResult` per `(claim, check)` pair
+    via the Evidence's own `test_ref`, and uses `evaluate_result_
+    precedence`'s return value directly (`matched_pass`/`unconfirmed_
+    scopes`/`known_gap_scopes`) rather than scanning for a mismatch and
+    reporting it as blocking. A superseded/stale cited result simply
+    doesn't count as `matched_pass`, which is already the correct,
+    non-blocking behaviour — this consumer was never exposed to the bug
+    shape at all, by construction, not by luck.
+  - `scripts/assess_change_impact.py::run_check_assurance` (line 336) —
+    Phase 83's own new code, built under `decisions/0087`'s corrected
+    precedence *after* `decisions/0088`'s fix had already landed earlier
+    in the same session; reads `fresh_effective_outcome` directly and
+    attaches the aggregate only as a non-determining field (confirmed by
+    `release-phase-auditor`'s independent re-read, `_audit-phase-83.md`
+    item 8) — no blocking-on-mismatch logic of its own to have the gap.
+  - `scripts/check_contracts.py::check_result_integrity` — the one
+    instance that had the gap; now fixed exactly as `decisions/0088`
+    describes, with both regression tests present and passing (confirmed
+    by reading `tests/test_check_contracts.py::TestResultIntegrity`
+    directly, no Bash available to re-run them).
+
+  No second live, unfixed instance exists today. **Outcome: retain** —
+  real, well-evidenced, correctly generalized (every independent consumer
+  checked, not just the one that had the bug), but not yet actionable as
+  a new rule or test: the only instance that ever had the gap already has
+  its fix and its own two regression tests, and a project-rule proposing
+  "audit every consumer of a shared function whenever one of them is
+  extended" would be disproportionate process weight for a single,
+  already-fixed occurrence with three other consumers independently
+  confirmed clean by inspection, not fixed. `status` set to `retained`
+  (not left `candidate`, per `check_learnings_status_matches_retain_
+  outcome`). The retro's own "What worked" framing — that this class of
+  gap needs the mechanism actually exercised for real, not more design
+  review — is itself worth remembering the next time any phase is the
+  first real exercise of an already-shipped, multi-consumer mechanism.
+
+### L-105 — a tool's distinct "knowledge root"-style override parameter must be threaded through every internal path resolution, or a single hardcoded fallback silently defeats the whole feature
+
+- **origin:** Phase 83 retro ("Lessons learnt" bullet 2; "What worked"
+  bullet 2)
+- **date:** 2026-10-28
+- **project_revision:** `b1a8447` (observed and fixed in the same
+  implementation commit)
+- **observation:** `scripts/assess_change_impact.py::classify_symbol`
+  resolved a cited Evidence record's own `test_ref` field against the
+  script's own hardcoded `ROOT` constant (the CodeCompass checkout's own
+  root) instead of the `knowledge_root` parameter that was already being
+  threaded through every other call site in the same script — silently
+  defeating the entire purpose of `--knowledge-root` (supporting a
+  disposable/alternate knowledge source distinct from the tool's own
+  install location). Found only because the implementer ran the tool
+  against the real, unmutated Ledgerkit checkout first, using the real
+  canonical knowledge base, before any scratch-copy work — a manual smoke
+  test against non-default input, not a failing automated test (none
+  existed at that point).
+- **evidence:** `scripts/assess_change_impact.py::classify_symbol`, lines
+  241-251/276 (docstring: "A `test_ref` is always resolved against
+  `knowledge_root` (never the hardcoded CodeCompass checkout `ROOT`)";
+  the actual fix: `result_path = knowledge_root / _unquote(raw_ref)`).
+  Checked the rest of the file for a second hardcoded-`ROOT` shortcut: the
+  only other two `ROOT` references are line 67 (`src_path = ROOT /
+  "src"`, used solely to put CodeCompass's own `src/` on `sys.path` for
+  imports — unrelated to knowledge-content resolution) and line 502
+  (`parser.add_argument("--knowledge-root", ..., default=ROOT)`, a
+  legitimate CLI default, not a resolution shortcut) — no other instance
+  of the bug remains. A regression test already exists and would catch a
+  reversion:
+  `tests/test_assess_change_impact.py::TestClassifySymbol::test_behavioural_risk_when_claim_bridges_to_a_real_check`
+  writes its fake `OracleResult` under `tmp_path` (never `ROOT`) and
+  asserts `classification == "behavioural_risk"`; confirmed
+  `planning/contracts/demo/` does not exist anywhere in the real
+  repository, so reverting the fix to `ROOT / _unquote(raw_ref)` would
+  make `result_path.is_file()` false, flip the classification to
+  `"relevant_no_coverage_link"`, and fail that assertion.
+- **classification:** invariant
+- **status:** promoted
+- **recurrence:** first occurrence
+- **promoted_to:**
+  `tests/test_assess_change_impact.py::TestClassifySymbol::test_behavioural_risk_when_claim_bridges_to_a_real_check`
+  (pre-existing test, confirmed to already exercise this exact scenario
+  correctly) + `scripts/assess_change_impact.py::classify_symbol` (the fix
+  itself, same commit) @ `b1a8447`
+- **curation note (2026-10-28, knowledge-curator):** the fix is real,
+  already live, and already documented in its own docstring citing the
+  exact rationale. Read `tests/test_assess_change_impact.py::TestClassifySymbol`
+  directly (no Bash available; traced by hand rather than re-run): all
+  three of its tests pass `tmp_path` — never the real `ROOT` — as
+  `knowledge_root`, and `test_behavioural_risk_when_claim_bridges_to_a_real_check`
+  specifically writes its `OracleResult` fixture under that same
+  `tmp_path`, so it already exercises `knowledge_root != ROOT` through
+  the real `classify_symbol` call site (`CLAUDE.md` §1's `L-021`
+  real-call-site rule), and would fail on a reversion of the fix for the
+  reason given under evidence above. **Outcome: promote** (invariant →
+  regression test; the test already exists, so no draft is needed for the
+  lead to land — this is a retroactive promotion of a fix+test pair that
+  already shipped in the same commit the bug was found in, same shape as
+  `L-089`/`L-090`/`L-097`/`L-101` elsewhere in this log). `promoted.md`
+  line added in the same commit as this filing.
+
 ### L-103 — validate a value's type before checking its membership against a closed set
 
 - **origin:** Phase 82 final corrective pass, finding C
