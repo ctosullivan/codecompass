@@ -338,3 +338,343 @@ No other finding. Per `CLAUDE.md` §5, this audit authorizes the terminal
 `planning/CONTEXT.md`'s current-state section, and the plan file's own
 Status line) — provided no further commit touching audited scope lands
 between this audit and that reconciliation commit.
+
+---
+
+# CORRECTIVE PASS AUDIT — 2026-10-29
+
+**Auditor:** `release-phase-auditor` (independent post-completion audit of a
+corrective pass against an already-`done` phase, `CLAUDE.md` §5).
+**Audited commits:** `45a3ca8` (fix: verification currency, dangling
+evidence, context bounds — `decisions/0092`) and `4569e3f` (docs:
+changelog/cli-reference/plan/retro for the corrective pass). Both on
+`main`, directly on top of this phase's prior `done` state (`8295ee9`,
+the subject of the audit above).
+
+**Verdict: PASS WITH NON-BLOCKING OBSERVATIONS.**
+
+All three defects named in `decisions/0092` are genuinely fixed in the
+current source, independently re-derived from the code (not trusted from
+the ADR's or commit messages' own prose), with regression tests that
+provably discriminate old from new behaviour. No regression, no scope
+creep, no new mutation path. Several non-blocking process/coverage gaps
+are named below, none of which indicate the fix itself is wrong.
+
+## 1. Defect 1 (verification currency) — confirmed fixed
+
+- `ConsistencyEnvelope.status` defaults to `"unconfirmed"`
+  (`src/codecompass/knowledge_api.py:121`), not `"current"`. Confirmed
+  the pre-fix default was `"current"`
+  (`git show 45a3ca8^:src/codecompass/knowledge_api.py` line 117).
+- `repo_root` is genuinely threaded, not merely accepted syntactically:
+  `get()` → `_get_knowledge_record`/`_get_check`/`_get_result` (lines
+  336, 356, 360-362); `traverse(..., repo_root=...)` (new parameter,
+  line 808) → `_traverse_check_results(..., repo_root=repo_root)` (line
+  834). `_get_result` calls
+  `_oracle.evaluate_result_precedence(r, contract, check,
+  contract_path=contract_path, repo_root=repo_root)` (line 708-710);
+  `_traverse_check_results` calls the identical form (line 940).
+  Pre-fix, `_get_result`/`_get_check` took no `repo_root` parameter at
+  all and `traverse()` had none either (confirmed directly in the
+  pre-fix source via `git show 45a3ca8^:...`) — `evaluate_result_
+  precedence` could never have been called with a live checkout through
+  these paths before this pass.
+- `_oracle_result_consistency()` (lines 495-530) is the single shared
+  helper: `effective == "INVALID"` → always `"stale"`; `effective in
+  ("PASS","FAIL")` → `"current"` only when `repo_root is not None`,
+  else `"unconfirmed"` with an explicit reason. Read directly, not
+  inferred from the docstring.
+- `_get_check()` (lines 652-693): `NOT_REQUIRED`/`None` aggregate →
+  `"unconfirmed"`; `GAP` → `"unconfirmed"`; otherwise `"current"` only
+  with `repo_root is not None`, else `"unconfirmed"`. (Minor
+  documentation imprecision, not a defect: `decisions/0092`'s prose
+  says "an aggregate `PASS`" but the code applies the identical rule to
+  a `FAIL` aggregate state too — correct and conservative behaviour,
+  just slightly under-described in the ADR.)
+- CLI forwarding confirmed by reading `git show 45a3ca8 -- src/
+  codecompass/cli.py` directly: all four of `knowledge_get`/
+  `knowledge_trace`/`knowledge_gaps`/`knowledge_context` gained a
+  `--repo-root` option and pass `repo_root=repo_root` straight into the
+  corresponding `knowledge_api` call. `knowledge_search`/
+  `knowledge_export` are correctly untouched (`search`/`export_snapshot`
+  take no `repo_root`).
+- `asdict(r)` collision check: `_get_result`'s `details` dict spreads
+  `asdict(r)` (which includes the result's own recorded `invalid_reason`
+  field) and separately adds `effective_invalid_reason` — a distinctly
+  named key, never overwriting `invalid_reason`. Confirmed by reading
+  the dict-literal construction directly (`knowledge_api.py:715-728`).
+
+**Result: PASS.**
+
+## 2. Defect 2 (dangling evidence) — confirmed fixed
+
+`trace_evidence()`'s inner `_resolve()` (lines 1144-1158) appends a
+`Gap(kind="dangling_evidence_reference", subject_id=record_id,
+scope=role, ...)` for each unresolved citation while still appending
+every successfully-resolved citation to `results` — confirmed a mixed
+case (`test_mixed_valid_and_dangling_supporting_evidence_reports_both`)
+keeps the valid citation in `results` and reports only the broken one as
+a gap. `find_gaps()` (lines 1283-1289) performs the identical
+corpus-wide scan over every record's `supporting_evidence`/
+`contradicting_evidence`, same `Gap.kind`, same semantics. Pre-fix,
+`trace_evidence()` silently `continue`d past an unresolved id with no
+gap recorded at all (confirmed directly: `git show
+45a3ca8^:src/codecompass/knowledge_api.py` lines 1050-1066) — a Claim
+citing one nonexistent evidence id returned `status="result"` with zero
+evidence, never `"gap"`.
+
+**Result: PASS.**
+
+## 3. Defect 3 (context bounds) — confirmed fixed
+
+`get_context_packet()`'s non-knowledge-record branch (lines 1447-1456)
+now builds `candidates = [search_response.results[0]]` and falls
+through to the same `items, truncated = _bound_context_items(candidates,
+max_items, max_chars)` call (line 1458) the knowledge-record path also
+uses — one shared implementation, not two divergent ones. Pre-fix, this
+branch returned early with `packet_items = [item]` wrapped
+unconditionally and `truncated` hardcoded `False`, regardless of
+`max_chars`/`max_items` (confirmed directly:
+`git show 45a3ca8^:src/codecompass/knowledge_api.py` lines 1281-1291).
+`_bound_context_items()` itself (lines 1364-1391) is deterministic:
+walks candidates in order, stops at the first item that would exceed
+either bound, leaving `items` empty with `truncated=True` rather than
+ever returning an over-budget result.
+
+**Result: PASS.**
+
+## 4. No regression / no scope creep — confirmed
+
+`git diff 5081860 4569e3f -- src/codecompass/oracle.py
+src/codecompass/graph.py src/codecompass/knowledge_intermediate.py`
+produces zero lines of output — these three files are genuinely
+untouched by both commits. Full changed-file list across both commits
+(`CHANGELOG.md`, `decisions/0092-...md`, `docs/reference/cli.md`,
+`planning/phase-84-consolidated-knowledge-api.md`,
+`planning/retros/phase-84-consolidated-knowledge-api.md`,
+`src/codecompass/cli.py`, `src/codecompass/knowledge_api.py`,
+`tests/test_cli.py`, `tests/test_knowledge_api.py`) matches exactly what
+`decisions/0092` and the commit messages claim — no undisclosed file
+touched. `tests/test_knowledge_api.py::TestNoMutationPath`'s 6 tests all
+still pass (re-run directly: `test_module_source_references_no_writer_
+function`, `test_every_sqlite_connect_call_is_read_only`,
+`test_get_does_not_create_a_missing_context_graph_db`, and the three
+`export_snapshot` isolation tests). Grepped the diff for
+`INSERT`/`UPDATE`/`DELETE`/write-function references: none found. No new
+database, schema, or persisted identity introduced — the only new
+dataclass (`_oracle_result_consistency`'s `ConsistencyEnvelope` return
+values) is never persisted, consistent with the module's own existing
+docstring guarantee.
+
+**Result: PASS.**
+
+## 5. Test rigor — spot-checked, reasoning-based (not empirical re-run)
+
+Spot-checked 10 of the 18 new tests (`TestResultVerificationCurrency`'s
+`test_recorded_pass_unconfirmed_without_a_reachable_checkout`,
+`test_check_aggregate_current_only_with_reachable_repo_root`,
+`test_search_results_do_not_default_to_current`;
+`TestTraceEvidence`'s `test_exclusively_dangling_supporting_evidence_
+is_a_gap`, `test_mixed_valid_and_dangling_supporting_evidence_reports_
+both`, `test_dangling_contradicting_evidence_is_a_gap`;
+`TestContextPacket`'s `test_non_knowledge_record_topic_is_bounded_by_
+max_chars`, `test_non_knowledge_record_topic_is_bounded_by_max_items`,
+plus two more) against the pre-fix source
+(`git show 45a3ca8^:src/codecompass/knowledge_api.py`, saved locally for
+direct comparison). Each one's assertions would plausibly have failed
+against the pre-fix code, by direct reading of what the old code path
+actually returned (e.g. the old `_get_check` used an unmodified default
+`ConsistencyEnvelope()` — `status="current"` — regardless of
+`repo_root`, which didn't even exist as a parameter to that function;
+the old `get_context_packet` non-knowledge-record branch hardcoded
+`truncated=False` and ignored `max_chars`/`max_items` entirely). **This
+was done by reading the diff and reasoning about the old code's actual
+behaviour, not by checking out the pre-fix commit and actually running
+the new tests against it** — the task's own stated allowance, but noted
+explicitly per instruction.
+
+**Result: PASS** (by diff-reasoning, not by empirical execution against
+the old commit).
+
+## 6. Verification commands re-run directly
+
+```
+.venv/bin/python -m pytest tests/test_knowledge_api.py -q
+=> 65 passed in 3.22s
+
+.venv/bin/python -m pytest tests/test_cli.py -q
+=> 96 passed in 179.29s
+
+.venv/bin/python scripts/check_user_docs.py --strict
+=> check_user_docs: no findings (exit 0)
+
+.venv/bin/python scripts/check_contracts.py --strict
+=> check_contracts: 7 finding(s), all [info]-level, all the known
+   pre-existing balance-from-spec superseded-result/overlapping-pattern
+   findings named in the corrective pass's own plan §12 (exit 0)
+
+.venv/bin/python scripts/check_knowledge_base.py --strict
+=> check_knowledge_base: 24 finding(s), all [info]-level
+   knowledge-base-snapshot-current-divergence notices, pre-existing and
+   unrelated to this pass (exit 0)
+```
+
+All match what `decisions/0092`/the plan's §12/the retro addendum claim:
+65 (not 47) tests in `tests/test_knowledge_api.py`; both strict
+validators exit 0 with only pre-existing informational findings. Did not
+run the complete ~5-minute full suite given the module-level runs above
+already cover the changed surface and the task named this as optional;
+the plan/retro's own claim of "full suite 1121 passed/2 skipped" was not
+independently re-verified by me.
+
+**Result: PASS.**
+
+## 7. Docs/changelog/plan/retro consistency — confirmed accurate (as of
+the two audited commits)
+
+- `CHANGELOG.md`'s `[Unreleased]` → `Fixed` entry (single Phase 84
+  corrective-pass entry, not batched with anything else) accurately
+  summarizes all three fixes and matches the code.
+- `docs/reference/cli.md`'s new `--repo-root PATH` usage-line placement
+  (`get`/`trace`/`gaps`/`context`, not `search`/`export`) and its new
+  prose paragraph describing current/unconfirmed/stale semantics match
+  `_oracle_result_consistency()`/`ConsistencyEnvelope` exactly, confirmed
+  by direct comparison.
+- `planning/phase-84-consolidated-knowledge-api.md` §12 and
+  `planning/retros/phase-84-consolidated-knowledge-api.md`'s corrective
+  pass addendum both accurately describe the three defects, the chosen
+  fixes, and the verification results, consistent with the code and with
+  `decisions/0092`.
+
+**Result: PASS**, for the content actually committed in `45a3ca8`/
+`4569e3f`. See §9 below for a caveat: an independently-run, uncommitted
+`docs-reconstructor` drift audit (dated the same day) found two
+non-blocking incompleteness gaps in `docs/reference/cli.md`'s `trace`/
+`gaps` bullets (not false, just not yet mentioning the new
+`dangling_evidence_reference` gap kind) — real findings, but against
+content outside the two commits this section evaluates, and already
+being addressed (see §9).
+
+## 8. Original Phase 84 audit report and `done` status — confirmed
+untouched
+
+`git log --follow --oneline -- planning/retros/_audit-phase-84.md` shows
+exactly one commit (`2698622`, the original audit) ever touched this
+file before this append — neither `45a3ca8` nor `4569e3f` modified it.
+`planning/ROADMAP.md`'s Phase 84 row and `planning/phase-84-
+consolidated-knowledge-api.md`'s own `Status:` line both still read
+`done`/pre-corrective-pass text as of these two commits (see §9) —
+expected: per `CLAUDE.md` §5's own exemption, updating these to reflect
+the corrective pass is the terminal `roadmap-context-curator`
+reconciliation commit's job, which has not yet landed.
+
+**Result: PASS** (history genuinely intact; no rewrite).
+
+## 9. Non-blocking observations
+
+1. **No automated CLI-level test exists for the new `--repo-root`
+   option** (or indeed for any of `knowledge get/search/trace/gaps/
+   context/export` at all — confirmed by grepping `tests/test_cli.py`
+   for `knowledge_app`/`knowledge_get`/`knowledge_trace`/
+   `knowledge_gaps`/`knowledge_context`: zero matches, before or after
+   this corrective pass). The forwarding correctness in §1 above was
+   confirmed only by direct code reading, not by an automated regression
+   test — a future refactor of `cli.py` could silently break this
+   plumbing with nothing to catch it. This mirrors a pre-existing
+   pattern: Phase 84's own original plan (§11) only required
+   `tests/test_cli.py`-equivalent suites to "re-run green" (no
+   regression), never required new CLI-level tests for the six `knowledge
+   *` commands it introduced, and the original audit didn't flag this
+   either. `CLAUDE.md` §1's own rule ("a phase adds behavior to an
+   existing function that already has a real production call site...
+   must... include at least one test that exercises it directly") does
+   plausibly apply here — `knowledge_get`/`_trace`/`_gaps`/`_context` are
+   real production call sites, and `--repo-root` is new behaviour wired
+   into them — so this is a genuine, if inherited-pattern, gap worth
+   closing in a follow-up, not merely a style nit. **Non-blocking**
+   because the forwarding is simple, low-complexity parameter passthrough
+   (confirmed correct by direct inspection, not complex new logic), and
+   because the project's own established posture for this specific
+   module already accepted this test-coverage boundary at Phase 84's own
+   original, independently-audited completion.
+
+2. **`planning/ROADMAP.md`, `planning/CONTEXT.md`, and the plan file's
+   own `Status:` line are not yet updated** to mention this corrective
+   pass, `decisions/0092`, or the test count change (47→65). This is
+   expected and not a defect in the two audited commits — per `CLAUDE.md`
+   §5's own exemption, this is the terminal `roadmap-context-curator`
+   reconciliation commit's job, still pending as of this audit.
+   Precedent (Phases 76/81/82's own corrective passes, all visible in
+   `planning/ROADMAP.md`'s current text) is for that reconciliation
+   commit's `ROADMAP.md` row to name the corrective pass, its ADR, its
+   retro addendum, and this audit report explicitly — recommended here
+   so it isn't dropped.
+
+3. **Process incident during this audit (fully corrected, disclosed for
+   transparency):** while comparing `ruff check .` output before/after
+   this corrective pass, I ran `git stash -u` to temporarily check out
+   commit `5081860`'s tree. This inadvertently stashed away **pre-existing
+   uncommitted work already present in the working tree when this audit
+   began** — a new candidate learning, `L-109` (Rich `Table` cells
+   truncating at default render width, filed in
+   `planning/learnings/inbox.md` with a `knowledge-curator` curation note
+   recommending promotion), plus matching uncommitted edits to
+   `docs/architecture/overview.md`, `docs/architecture/components.md`,
+   and `docs/reference/cli.md` (apparently `docs-maintainer` work
+   addressing the two non-blocking findings in the also-uncommitted
+   `planning/retros/_drift-audit-phase-84-corrective-pass.md`). I
+   immediately ran `git stash pop` and confirmed via `git status`/`git
+   diff` that the working tree was fully restored to its pre-incident
+   state; nothing was lost, and I committed nothing. Flagging this both
+   as a disclosure of my own tool-use error and because it surfaces a
+   real, separate finding: **the committed retro's claim ("no new
+   candidate learning met the bar") is already superseded** by this
+   in-progress, uncommitted `L-109` filing, which traces to the exact
+   same near-miss the committed retro's own "What didn't work" section
+   describes (the Rich-table-truncation discovery while strengthening
+   the `query relations` test). This will need reconciling — either by
+   updating the retro when `L-109`'s commit lands, or by the terminal
+   reconciliation commit noting it — before this corrective pass's own
+   closeout is airtight. Not blocking this audit's verdict on the two
+   commits it was asked to evaluate, since `L-109` and its related edits
+   are genuinely separate, not-yet-committed work, not part of `45a3ca8`/
+   `4569e3f`.
+
+4. **A `docs-reconstructor` drift audit for this corrective pass already
+   exists** at `planning/retros/_drift-audit-phase-84-corrective-pass.md`
+   with verdict **NO DRIFT** (0 blocking findings; a few non-blocking
+   doc-completeness/staleness notes, already being addressed per
+   observation 3 above) — satisfying `CLAUDE.md` §5's drift-audit
+   condition for this corrective pass. Note it is itself **not yet
+   committed** (confirmed via `git status`) as of this audit; it should
+   be committed alongside the reconciliation above.
+
+## Summary for the lead
+
+**Verdict: PASS WITH NON-BLOCKING OBSERVATIONS.** All three corrective-
+pass defects are genuinely, correctly fixed in `45a3ca8`/`4569e3f`,
+independently re-derived from the current source rather than trusted
+from `decisions/0092`'s or the commit messages' own prose; no
+regression, no scope creep, no new mutation path; `tests/
+test_knowledge_api.py` (65 passed) and `tests/test_cli.py` (96 passed)
+and all three `--strict` validators (exit 0, pre-existing informational
+findings only) all re-run clean; the original Phase 84 audit report and
+`done` status remain genuinely untouched.
+
+Before this corrective pass's own closeout is complete, the lead should:
+1. Add at least one direct CLI-level regression test exercising
+   `--repo-root` on one of `knowledge get`/`trace`/`gaps`/`context`
+   against its real `cli.py` call site (observation 1) — recommended,
+   not required to avoid re-opening this verdict, but closes a real gap
+   `CLAUDE.md` §1 names explicitly.
+2. Land the pending terminal `roadmap-context-curator` reconciliation
+   commit (`planning/ROADMAP.md`, `planning/CONTEXT.md`, the plan file's
+   `Status:` line — observation 2), together with committing the
+   already-written, uncommitted drift audit (observation 4).
+3. Resolve the `L-109` candidate-learning filing now in progress
+   (observation 3) and reconcile it against the corrective-pass retro's
+   current "no new candidate learning met the bar" claim, which that
+   filing already supersedes.
+
+None of the above reopen this verdict on the two audited commits
+themselves — they are follow-up closeout steps, not defects in the fix.
