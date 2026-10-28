@@ -8,6 +8,72 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-106 — a newly-written consumer of an existing multi-part identity/validation convention can silently reuse only part of it, and pass review and one prior independent audit before the gap is found
+
+- **origin:** Phase 83 corrective pass retro (`decisions/0089`); governing
+  prompt "CodeCompass Orchestrator — Phase 83 Corrective Pass"
+- **date:** 2026-10-28
+- **project_revision:** `5132529` (the already-`done`, already-audited
+  commit the three defects were found in; fixed in `365dec1`)
+- **observation:** `scripts/assess_change_impact.py::classify_symbol`
+  (Phase 83) independently re-implemented two existing, already-specified
+  conventions, and in both cases reused only the easier part of each,
+  silently dropping the part that actually did the discriminating work —
+  the resulting code still ran, still passed every test written against
+  it, and still passed one prior independent `release-phase-auditor`
+  PASS, because every test and every audit scenario happened to exercise
+  only the part that *was* reused. (1) The project's own `source_ref`
+  convention (`"<path>:<line> def|class <symbol>"`,
+  `check_contracts.py::_SOURCE_REF_WITH_SYMBOL_RE`) names a symbol by
+  **both** its file path and its bare name — `classify_symbol` matched
+  only the `symbol` capture group, never the `path` one, so a same-named
+  symbol in a different file silently inherited unrelated Evidence. (2)
+  `oracle.py` already exports a single canonical, fully-validating
+  `parse_oracle_result` (required-field/type/enum checks, `OracleSchemaError`
+  on any failure) — `classify_symbol` instead called a bare
+  `yaml.safe_load` on the referenced result and checked only that the
+  resulting mapping had a `check_id` key naming a real check, silently
+  skipping every other field `parse_oracle_result` would have validated,
+  including `contract_id`/`scope` — never cross-checked against the live
+  contract at all. A third, structurally different defect found in the
+  same pass (`resolve_changed_range` resolving only the symbol enclosing
+  a range's own `start`, and never validating `end`) shares the same
+  underlying shape: code written against the simplest observed case
+  (one symbol per range, matched at one point) was never revisited
+  against what the function's own contract actually allowed (a range
+  may cross several symbols; both of its own named endpoints need
+  validating) — no single test exercised the multi-symbol/EOF case
+  either, for the same reason.
+- **evidence:** `decisions/0089` (full defect-by-defect account, root
+  causes, and fixes); the pre-fix code at commit `5132529`
+  (`scripts/assess_change_impact.py` lines 260, 279-287, as quoted
+  verbatim in `decisions/0089`'s own Context section); the standalone
+  reproduction run against that exact commit before any fix was written
+  (three confirmed-real failures, not merely suspected); 18 new tests
+  added in `365dec1` that specifically exercise the previously-untested
+  shape in each case (`TestClassifySymbolSourceIdentity`,
+  `TestClassifySymbolEvidenceValidation`, the multi-symbol/EOF/partial-
+  coverage cases in `TestResolveChangedRange`).
+- **classification:** process gap — not a single fixable code defect
+  (already fixed, three times, in this same pass) but a recurring shape:
+  a convention/parser that is correct and fully specified *elsewhere* in
+  the codebase does not automatically transfer its full guarantee to a
+  new piece of code that merely consults the same data — only to code
+  that actually calls the same validating function/matches the same full
+  key, not a hand-written partial equivalent of it.
+- **status:** candidate
+- **recurrence:** first occurrence (three sibling instances within one
+  module, found together; no evidence yet of the same shape recurring in
+  a different module)
+- **moves forward when:** a future phase introduces a new consumer of
+  an existing multi-field identity convention (a `source_ref`/`test_ref`-
+  style citation, a schema with its own canonical parser) — if that
+  consumer is found, by a later audit or review, to have reused only
+  part of the convention again, promote this to an explicit review
+  checklist item ("does this new code call the existing parser/match the
+  full key, or does it re-derive a narrower equivalent by hand?");
+  otherwise retained through the next milestone bulk review.
+
 ### L-104 — a "historical facts are never deleted" discipline established for one consumer of a shared evaluation function does not automatically propagate to every other independent consumer of that same function
 
 - **origin:** Phase 83 retro ("Lessons learnt" bullet 1); `decisions/0088`

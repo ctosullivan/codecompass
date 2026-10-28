@@ -342,6 +342,15 @@ resolved all three real top-level symbols it crosses (`register`,
 `EV-BFS-004`/patched contract/placeholder result exist only under a
 scratchpad path, never committed.
 
+**Candidate learning filed**: `L-106` (`planning/learnings/inbox.md`,
+status `candidate`, pending `knowledge-curator` triage) — all three
+defects share one underlying shape: code that reused only part of an
+existing, fully-specified identity/validation convention (the
+`source_ref` path group; `oracle.parse_oracle_result`'s own full
+validation; a range's own `end` coordinate) passed every test and one
+prior independent audit, because every test and audit scenario happened
+to exercise only the part that *was* reused.
+
 **Independent audit.** See `planning/retros/_audit-phase-83.md`'s own
 corrective-pass section for the full, separately-run verdict.
 
