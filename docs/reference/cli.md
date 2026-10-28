@@ -163,11 +163,11 @@ See `docs/workflows/knowledge-reconciliation-loop.md` for full mechanics.
 ## `codecompass knowledge get|search|trace|gaps|context|export` (Phase 84)
 
 ```
-codecompass knowledge get RECORD_ID [--json]
+codecompass knowledge get RECORD_ID [--repo-root PATH] [--json]
 codecompass knowledge search TEXT [--kind KIND ...] [--json]
-codecompass knowledge trace RECORD_ID [--relation RELATION] [--depth N] [--evidence] [--json]
-codecompass knowledge gaps [SLUG] [--json]
-codecompass knowledge context TOPIC [--max-items N] [--max-chars N] [--json]
+codecompass knowledge trace RECORD_ID [--relation RELATION] [--depth N] [--evidence] [--repo-root PATH] [--json]
+codecompass knowledge gaps [SLUG] [--repo-root PATH] [--json]
+codecompass knowledge context TOPIC [--max-items N] [--max-chars N] [--repo-root PATH] [--json]
 codecompass knowledge export SLUG OUT_PATH [--project-id ID]
 ```
 
@@ -222,6 +222,17 @@ always prints a one-line human-readable confirmation; its actual output
 is the file it writes at `OUT_PATH`. `query relations` (above) is now
 implemented in terms of this same API's own `doc_mentions` relation —
 its own output is unchanged.
+
+**`--repo-root PATH`** (`get`/`trace`/`gaps`/`context`; not `search`,
+which does no oracle-result verification) — a live target checkout to
+reconfirm oracle-result/check currency against. Every oracle-backed
+result/check is only ever reported `current` when it was positively
+(re)confirmed against this live checkout; without it, a historically
+recorded `PASS` is reported `unconfirmed`, never `current` — real,
+preserved evidence, just not currently reconfirmed (corrective pass,
+`decisions/0092`). An actively disagreeing result (e.g. a contract that
+has since changed, or a changed implementation) is reported `stale`
+regardless of `--repo-root`.
 
 ## A retired command
 

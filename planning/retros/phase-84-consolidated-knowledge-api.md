@@ -180,3 +180,68 @@ pass session in the same conversation). No AI API spend — this phase
 makes no model call anywhere in its own code (consistent with plan §6's
 "no unnecessary AI inference" exclusion); all development/test cost was
 this session's own tool use.
+
+## Corrective pass (2026-10-29, `decisions/0092`)
+
+**Where we are.** A separate, independent post-completion source review
+of this phase's `done` implementation identified three correctness
+defects the original DoD audit's own test-driven verification didn't
+reach: `repo_root` silently dropped on the oracle-result/check retrieval
+paths (so `evaluate_result_precedence`'s live-digest check never ran),
+`ConsistencyEnvelope.status` defaulting to `"current"` on several
+retrieval paths that never explicitly computed it, `trace_evidence()`
+silently dropping dangling evidence citations instead of reporting them
+as gaps, and `get_context_packet()` bypassing its own bounds on one path.
+
+**What was achieved.** All three fixed at their root (see `decisions/
+0092` for the full defect analysis and chosen fix): a fail-closed
+`ConsistencyEnvelope` default, `repo_root` threaded through `get()`/
+`traverse()` into the oracle-result paths via one shared
+`_oracle_result_consistency()` helper, a new `dangling_evidence_reference`
+gap kind detected consistently by both `trace_evidence()` and
+`find_gaps()`, and one shared `_bound_context_items()` bounding
+implementation for `get_context_packet()`'s two paths. The CLI's
+`knowledge get`/`trace`/`gaps`/`context` commands gained a `--repo-root`
+option. 18 new regression tests (47 → 65), each confirmed to fail
+against the pre-fix source before the fix was applied.
+
+**What worked.** Reproducing each defect as a failing test *before*
+touching the implementation (per this corrective pass's own §5
+instruction) caught one additional latent issue immediately: fixing
+defect 1 naively by only changing `_oracle_result_consistency`'s logic
+left `_get_result()`'s own `details` dict without an `effective_outcome`
+field at all (only embedded in free-text `summary`), which the first
+test run surfaced as a `KeyError` rather than a silent pass — a
+reminder that a new assertion against a field that doesn't exist yet
+fails loudly, which is exactly the point of writing the test first. Live
+dogfood re-verification against the real `balance-from-spec` corpus and
+a real Ledgerkit checkout (not only synthetic `tmp_path` fixtures) caught
+that the fix behaves correctly on genuinely messy real data: the latest
+real oracle result for `single-section-expense-subtotal` reports
+`unconfirmed` without `--repo-root` and `current` only with one, while
+three contract-superseded historical results correctly report `stale`
+regardless — exactly the governing principle, demonstrated on real
+evidence, not only a constructed scenario.
+
+**What didn't work / near-misses.** The first attempt at strengthening
+`test_query_relations_backward_compatible_after_knowledge_api_migration`
+(the Phase 84 audit's own non-blocking observation) tried asserting
+specific relation-kind substrings directly in the rendered table output;
+this failed immediately because Rich truncates several cells with an
+ellipsis at the table's own (deliberately untouched) default render
+width, so even the correct, current output doesn't contain those
+substrings contiguously. Caught by actually running the test rather than
+assuming the stronger assertion would hold — the test's docstring was
+corrected to state precisely what it verifies instead, per the governing
+prompt's own named alternative, rather than forcing a fragile assertion
+to make a documentation debt look paid off.
+
+## Candidate learnings filed (corrective pass)
+
+None beyond `L-107` (already filed, status `retained`, see above) — no
+new candidate learning met the bar for a durable, project-wide rule;
+the defects and their fixes are fully captured by `decisions/0092` and
+this retro addendum, and the "write the failing test first" / "verify
+against real corpus data, not only synthetic fixtures" lessons above are
+restatements of guidance this project's `CLAUDE.md` §1 and existing
+phase conventions already establish, not new ones.

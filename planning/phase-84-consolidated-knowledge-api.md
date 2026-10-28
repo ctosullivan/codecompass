@@ -12,6 +12,13 @@ response/identity encodings the plan described only at a conceptual
 level — see that ADR for the full rationale; nothing in it reopens
 `decisions/0084`/`0085`'s own settled architecture.
 
+**Corrective pass (2026-10-29, "CodeCompass Orchestrator — Phase 84
+Corrective Pass"): three correctness defects an independent
+post-completion source review identified were fixed and independently
+re-audited.** See §12 below and `decisions/0092` for the full defect
+analysis and resolutions; Phase 84 remains `done` under this corrected
+implementation.
+
 Governing prompt: "CodeCompass Orchestrator — Approve v2 Roadmap and Plan
 Phases 83–84" (2026-10-24). Roadmap-depth scope: `planning/v2-roadmap.md`
 §"Phase 84"; architecture: `decisions/0084` §1-2, formalised by
@@ -383,3 +390,83 @@ updated; a `planning/retros/phase-84-consolidated-knowledge-api.md`
 retro; `release-phase-auditor` PASS against this exact plan's own
 verification steps before `planning/ROADMAP.md` marks Phase 84 `done`
 (`CLAUDE.md` §5).
+
+## 12. Corrective pass (2026-10-29, `decisions/0092`)
+
+An independent post-completion source review of the `done` Phase 84
+implementation identified three correctness defects not caught by the
+original DoD audit (which verified stated behaviour against its own
+tests, not every retrieval path's actual default under untested
+conditions):
+
+1. **Verification currency not actually earned.** `get()` accepted
+   `repo_root` but never forwarded it to `_get_result()`; `traverse()`
+   had no `repo_root` parameter at all. `evaluate_result_precedence()`
+   was therefore always called without a live checkout, so its one
+   live-digest-recomputation check never ran — a historically recorded
+   `PASS` could be reported `ConsistencyEnvelope(status="current")`
+   without ever being reconfirmed against the real current
+   implementation. Separately, `ConsistencyEnvelope.status` defaulted to
+   `"current"`, so any retrieval path that didn't explicitly override
+   `consistency` (`_get_vendor`, `_get_doc`, `_get_check`, every
+   `search()` hit, every `traverse()` field-relation neighbour) silently
+   claimed "current" by construction.
+2. **Dangling evidence citations silently dropped.** `trace_evidence()`
+   skipped any `supporting_evidence`/`contradicting_evidence` id that
+   didn't resolve to a real record, and its one gap check only fired on
+   a wholly *empty* field — a Claim citing a single nonexistent evidence
+   id returned `status="result"` with zero actual evidence, never a
+   `"gap"`.
+3. **Context bounds bypassed on one path.** `get_context_packet()`'s
+   free-text-resolving-to-a-non-knowledge-record branch returned its one
+   item unconditionally, ignoring `max_items`/`max_chars` entirely.
+
+**Resolution** (full rationale: `decisions/0092`): `ConsistencyEnvelope`
+now defaults fail-closed (`status="unconfirmed"`); `repo_root` is
+threaded through `get()`/`traverse()` into `_get_result()`/`_get_check()`/
+`_traverse_check_results()`, all routed through one shared
+`_oracle_result_consistency()` helper so a result/check is reported
+`"current"` only when a reachable `repo_root` let the live digest
+recomputation actually run; `_knowledge_consistency()`'s own two
+optimistic-default branches (no contract for the slug; no scope cited at
+all) were corrected to the same fail-closed baseline. `trace_evidence()`
+now resolves every citation independently, appending a new
+`Gap(kind="dangling_evidence_reference")` per unresolved id while still
+returning every successfully resolved citation; `find_gaps()` gained the
+identical corpus-wide scan so the two functions never diverge. A new
+`_bound_context_items()` helper is the one bounding implementation both
+`get_context_packet()` paths now share, so a non-knowledge-record topic
+is bounded exactly like a knowledge-record one.
+
+The CLI's `knowledge get`/`trace`/`gaps`/`context` commands gained a
+`--repo-root` option forwarding this through (`search` and `export`
+don't need one). The Phase 84 release audit's own non-blocking
+observation (`test_query_relations_backward_compatible_after_knowledge_
+api_migration`'s docstring over-claiming "byte-for-byte" for a table
+check that was actually two substrings) was also addressed here: a full
+literal comparison was attempted and found genuinely infeasible at this
+command's own untouched default render width (Rich truncates several
+cells with an ellipsis), so the test's docstring was corrected to state
+precisely what it verifies instead, per the governing prompt's own named
+alternative.
+
+**Verification.** 18 new regression tests added to
+`tests/test_knowledge_api.py` (47 → 65, each first confirmed to fail
+against the pre-fix source); the complete module, `tests/test_cli.py`,
+`tests/test_oracle.py`, `tests/test_knowledge_intermediate.py`,
+`tests/test_graph.py`, and the complete CodeCompass suite all green;
+`scripts/check_user_docs.py`/`check_contracts.py`/`check_knowledge_
+base.py --strict` all exit 0 (pre-existing informational findings only
+— the known stale-citation and overlapping-pattern-check gaps, unchanged
+by this pass). Re-demonstrated against the real `balance-from-spec`
+corpus and the real Ledgerkit checkout: the latest real
+`single-section-expense-subtotal` result reports `unconfirmed` without
+`--repo-root` and `current` only with a reachable Ledgerkit checkout,
+while the three contract-superseded historical results report `stale`
+regardless; `find_gaps`/`trace_evidence` against the real corpus found
+zero dangling evidence references (the corpus is well-formed) while
+still correctly surfacing the pre-existing `stale_test_citation` finding
+(`EV-BFS-002`/`EV-BFS-003`, L-107) unchanged.
+
+Independently re-audited: see `planning/retros/_audit-phase-84.md`'s own
+corrective-pass addendum for the full verdict.

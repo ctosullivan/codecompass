@@ -35,6 +35,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   historical oracle results while a different, current `PASS` for the
   same check exists, uncited, in the same `results/` directory).
 
+### Fixed
+
+- **Phase 84 corrective pass** (`decisions/0092`): three correctness
+  defects an independent post-completion source review of
+  `src/codecompass/knowledge_api.py` identified. `ConsistencyEnvelope`
+  now defaults fail-closed (`status="unconfirmed"`, never `"current"`)
+  — several retrieval paths previously claimed "current" by an
+  optimistic dataclass default alone. `repo_root` is now threaded
+  through `get()`/`traverse()` into the oracle-result/check retrieval
+  paths, so a result/check is reported `"current"` only once a live
+  checkout actually let `oracle.evaluate_result_precedence`'s own digest
+  recomputation run — never merely because a historical outcome was
+  `PASS` or a contract hash happened to match. `trace_evidence()`/
+  `find_gaps()` now report an explicit `dangling_evidence_reference` gap
+  for any `supporting_evidence`/`contradicting_evidence` citation that
+  doesn't resolve to a real record, instead of silently discarding it (a
+  Claim citing a nonexistent Evidence id no longer reports
+  `status="result"` with no actual evidence). `get_context_packet()`'s
+  bounds (`max_items`/`max_chars`) now apply identically regardless of
+  whether `topic` resolves to a knowledge record or a free-text/oracle
+  hit — previously the latter path bypassed bounds entirely. New
+  `--repo-root` option on `knowledge get`/`trace`/`gaps`/`context`. 18
+  new regression tests (47 → 65 in `tests/test_knowledge_api.py`), each
+  confirmed to fail against the pre-fix source. No change to `oracle.py`,
+  `graph.py`, or `knowledge_intermediate.py`.
+
 ### Changed
 
 - **Phase 83 final corrective amendment** (`decisions/0090`, direct user
