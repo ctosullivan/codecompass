@@ -618,3 +618,370 @@ verdict is PASS.**
   `decisions/0078`-`0085` unedited this phase.
 - No `planning/learnings/inbox.md` entry, no `knowledge-curator` commit,
   for Phase 83, as of `b1a8447`.
+
+---
+
+## Corrective pass audit (2026-10-28, decisions/0089, against commit 057e59d)
+
+**Auditor:** `release-phase-auditor` (independent pass, read-only)
+**Audited commit:** `057e59d` (HEAD, `main` branch, at audit time)
+**Commit range covered this pass:** `1e5c00c` (corrective planning
+amendment, decisions/0089) → `365dec1` (fix implementation) → `057e59d`
+(L-106 candidate-learning filing)
+**Governing ADR:** `decisions/0089-phase-83-corrective-pass-identity-coverage-evidence.md`
+**Governing prompt:** "CodeCompass Orchestrator — Phase 83 Corrective
+Pass" (post-completion source review; does **not** reopen Phase 82, does
+not expand Phase 83 into Phase 84 functionality)
+**Scope note:** Phase 83 is already `done` and already independently
+audited PASS (see the re-audit section above, against `d076023`). This
+is a corrective pass *on top of* that done phase, not a re-opening of
+its own DoD gate — this section answers "is this corrective pass itself
+sound and fully closed out," not "should Phase 83's `done` status
+change."
+
+### Verdict
+
+**PASS**
+
+All three defects decisions/0089 claims to have fixed are genuinely
+fixed, read directly in the function bodies rather than inferred from
+passing tests. The untouched-module claim is exact (byte-for-byte empty
+diffs, both against the immediate pre-pass commit and against the
+original Phase 83 closeout commit). The new tests exercise each fix at
+its real call path, including the specific regression shapes named by
+the ADR (cross-file same-named-symbol, multi-symbol/EOF/partial-coverage
+ranges, each of the five ways a referenced historical result can fail
+real validation). The full suite, the two pre-existing Phase 82 test
+modules, and all three strict validators are green at exactly the
+expected counts, with the canonical `balance-from-spec` knowledge/
+contract trees confirmed untouched. Documentation (CHANGELOG, ROADMAP,
+CONTEXT, contributing.md) is mutually consistent and accurate against
+the real current code. The one candidate learning this pass filed
+(L-106) has, as of this audit, already been triaged by `knowledge-curator`
+(a `retained` outcome with a substantive curation note, landed between
+my starting this audit and finishing it) — so no outstanding DoD-style
+gap remains even on that count, though see the note below on why that
+triage was not, in any case, strictly load-bearing for this specific
+pass's own closeout.
+
+### 1. The three defects — read directly, not inferred from tests
+
+Read `scripts/assess_change_impact.py` in full as it exists at `057e59d`
+(630 lines) and confirmed each fix is genuinely present as code, not only
+as a passing test:
+
+- **Defect A (source-path-qualified identity).**
+  `classify_symbol()` (line 308) now takes `source_path: str`, computes
+  `normalized_source_path = _normalize_source_path(source_path)` (line
+  326, `PurePosixPath(...).as_posix()`), and the citing-Evidence loop
+  (lines 328-339) requires **both**
+  `match.group("symbol") == symbol_name` **and**
+  `_normalize_source_path(match.group("path")) == normalized_source_path`
+  before adding to `citing_evidence_ids`. The single call site,
+  `assess()` line 521, passes `c.path` (the `--changed` range's own
+  path) as `source_path` — confirming the fix is actually wired into its
+  one real caller, not merely available as an unused parameter
+  (`CLAUDE.md` §1's `L-021` concern).
+- **Defect B (multi-symbol resolution + end validation).**
+  `resolve_enclosing_symbol` no longer exists in the file (confirmed by
+  reading the whole file — only `resolve_intersecting_symbols`, line
+  175, remains, built on `compute_symbol_spans`, line 164, exactly the
+  "a symbol's span runs from its own line to one less than the next
+  symbol's line, or EOF for the last symbol" convention the plan already
+  named). `resolve_changed_range` (line 213) now validates
+  `changed.start > line_count` (line 247) **and** separately
+  `changed.end > line_count` (line 252) — two distinct checks, not one
+  reused for both. `matched = resolve_intersecting_symbols(...)` (line
+  258) can return more than one `SymbolSpan`; `RangeResolution.symbols`
+  (line 210) is plural (`list[SymbolRow]`). A new `partially_resolved`
+  status (line 208, 274-279) fires when `uncovered` (computed by set
+  difference against every matched span's own coverage, lines 267-272)
+  is non-empty, with `_describe_uncovered_lines` (line 186) naming the
+  specific gap. `assess()` (lines 517-531) iterates `res.symbols`,
+  classifies each independently, and deduplicates applicable checks per
+  range via `check_contributors: dict[str, set[str]]` keyed by
+  `check_id` (line 518, 529-530), with `AssuranceFinding.contributing_symbols`
+  (line 412, populated line 546) preserving per-symbol provenance exactly
+  as decisions/0089 §B describes.
+- **Defect C (validated historical-result evidence).**
+  `classify_symbol()` now takes `oracle_mod` (line 309) and, for each
+  `test`-kind Evidence (lines 354-374), calls
+  `oracle_mod.parse_oracle_result(result_path)` inside a
+  `try/except oracle_mod.OracleSchemaError: continue` (lines 363-366) —
+  no bare `yaml.safe_load` anywhere in this function. On successful
+  parse, it additionally checks `result.contract_id != contract.contract_id`
+  (367-368), `contract.check_by_id(result.check_id) is None` (369-371),
+  and `result.scope != check.scope` (372-373) — all three reject-and-skip,
+  matching decisions/0089 §C's three named identity/scope checks exactly.
+  Confirmed `classify_symbol` has no `repo_root` parameter anywhere in
+  its signature and never calls `evaluate_result_precedence` — the ADR's
+  own "this must stay a structurally separate, historical-relationship-
+  only check, never a current-execution-outcome one" design constraint
+  holds in the actual code, not only in the ADR's prose.
+
+All three fixes read exactly as decisions/0089 describes them, with no
+daylight between the ADR's claimed design and the shipped code.
+
+### 2. `oracle.py` / `graph.py` / `knowledge_intermediate.py` — confirmed genuinely untouched
+
+```
+git diff 1e5c00c^ 057e59d -- src/codecompass/oracle.py src/codecompass/graph.py src/codecompass/knowledge_intermediate.py
+```
+→ 0 lines (empty). Additionally confirmed byte-identical to the original
+Phase 83 closeout commit:
+```
+git diff 5132529 057e59d -- src/codecompass/oracle.py   → 0 lines
+git diff 5132529 057e59d -- src/codecompass/graph.py     → 0 lines
+git diff 5132529 057e59d -- src/codecompass/knowledge_intermediate.py → 0 lines
+```
+Both comparisons are empty — the three modules are untouched by this
+corrective pass under either reference point decisions/0089 and the
+task named. Every fix really is achieved by `assess_change_impact.py`
+using these modules' existing public surface more completely
+(`oracle.parse_oracle_result`, `OracleContract.check_by_id`), exactly as
+claimed.
+
+### 3. `tests/test_assess_change_impact.py` — exercises each fix at the real call path
+
+Read the relevant classes directly (not just their names):
+
+- **`TestClassifySymbolSourceIdentity`** (3 tests): the first,
+  `test_same_named_symbol_in_a_different_file_does_not_inherit_evidence`,
+  is the exact regression shape the ADR names — an Evidence citing
+  `other.py:5 def target_function` must not answer for `impl.py`'s own
+  `target_function`; calls `classify_symbol(..., "target_function",
+  "impl.py", tmp_path)` directly (the real function, real signature,
+  real parameter) and asserts `no_recorded_relationship`. The second is
+  a positive control with a same-named decoy present alongside a
+  genuinely matching Evidence, asserting only the matching one's Claim
+  surfaces. The third confirms `./impl.py`/`impl.py` normalise
+  identically. All three call `classify_symbol` directly with real
+  `oracle`, real `contract`, real loaded `records` — not a stub.
+- **`TestClassifySymbolEvidenceValidation`** (7 tests): valid historical
+  result → `behavioural_risk`; malformed YAML (`not: valid: yaml: [[[`
+  ) → `relevant_no_coverage_link`; missing-required-fields ("the exact
+  malformed shape the original defect accepted" — a bare `check_id`/
+  `outcome` mapping, exactly what decisions/0089's Context section
+  quotes as the original vulnerable shape) → rejected; wrong
+  `contract_id` → rejected; wrong `scope` → rejected; unknown `check_id`
+  → rejected; missing referenced file → rejected. All seven call
+  `classify_symbol` directly and go through `_write_fake_result`, which
+  builds a real `oracle.OracleResult` and writes it via
+  `oracle.write_oracle_result` — genuine schema-valid-or-invalid fixture
+  data, not hand-typed mappings bypassing the real writer.
+- **`TestResolveChangedRange`** additions: `test_cannot_map_end_past_file_extent`
+  (explicitly comments "previously only `start` was validated... must
+  also be rejected"); `test_cannot_map_line_before_any_symbol`;
+  `test_range_crossing_multiple_functions_resolves_all` (asserts both
+  `helper` and `target_function` resolve from one range); `test_file_level_change_resolves_every_symbol`;
+  `test_partially_resolved_when_range_extends_before_first_symbol`
+  (asserts `partially_resolved` status, `symbols == ["helper"]`, and
+  `"1-3"` named in the reason — the specific unmapped-lines message);
+  `test_duplicate_applicable_checks_deduplicated_with_provenance` (two
+  symbols bridging to the same check — asserts exactly one assurance
+  entry, with both symbol names in `contributing_symbols`). Each calls
+  `aci.resolve_changed_range` or `aci.assess` directly — the real
+  functions, not reimplementations.
+
+All three classes are genuine, substantive regression coverage against
+the real call paths, not re-tests of something else dressed up as
+coverage of the fix.
+
+### 4. Full verification battery — independently re-run
+
+- **Full suite**: `.venv/bin/python -m pytest -q` → **1054 passed, 2
+  skipped** (295.01s) — exactly the expected count.
+- **`tests/test_oracle.py` + `tests/test_check_contracts.py`**: `.venv/bin/python
+  -m pytest -q tests/test_oracle.py tests/test_check_contracts.py` →
+  **67 passed** — green, unmodified Phase 82 coverage.
+- **`scripts/check_contracts.py --strict`** → exit `0`, **7 informational
+  findings** (6 `contract-result-integrity-mismatch` + 1
+  `contract-check-gap`) — identical in count and kind to both prior
+  passes; no new finding from this corrective pass (it added no
+  knowledge records or contract entries, as decisions/0089 states).
+- **`scripts/check_knowledge_base.py --strict`** → exit `0`, **24
+  informational findings** (counted via `grep -c`) — same pre-existing
+  `knowledge-base-snapshot-current-divergence` shape as both prior
+  passes.
+- **`scripts/check_user_docs.py --strict`** → "no findings", exit `0`.
+- **`git status --short planning/knowledge/balance-from-spec/
+  planning/contracts/balance-from-spec/`** → empty. The real, canonical
+  knowledge/contract trees for this slug are completely untouched by
+  this corrective pass, consistent with the retro's claim that the
+  Ledgerkit re-demonstration used only disposable scratch copies.
+
+All counts match exactly what decisions/0089 and the retro's own
+"Corrective pass" section claim.
+
+### 5. Retro's "Corrective pass" section — internally consistent, cross-checked
+
+Read `planning/retros/phase-83-semantic-change-assurance.md`'s final
+section in full. Its factual claims (test counts, suite counts, strict-
+validator counts, Ledgerkit pinned HEAD/hashes, the `935 passed, 1
+warning, 14 subtests passed` baseline-reproduction number, the
+`CONFIRMED_REGRESSION`/`VERIFIED_SCOPE` outcomes, the real-Ledgerkit
+multi-symbol/`end`-validation spot-check against `reports.py:490-600`
+and `reports.py:644-999999`) are all internally consistent with
+decisions/0089's own account and with the diff I read directly. I did
+not re-run the Ledgerkit scratch demonstration myself (per the task's
+own instruction, since it depends on `~/projects/ledgerkit` and its own
+`.venv`) but confirmed `~/projects/ledgerkit` exists on this machine and
+that nothing in the real, canonical `planning/knowledge/balance-from-spec/`
+or `planning/contracts/balance-from-spec/` trees was touched (item 4
+above) — the retro's claim that the demonstration's artifacts (scratch
+`EV-BFS-004`, patched contract, placeholder result) exist only under a
+scratchpad path, never committed, is consistent with the actual `git
+status` result and with the commit's own file list (`git diff --name-only`,
+below) containing no `planning/knowledge/` or `planning/contracts/`
+entries at all.
+
+### 6. `L-106` triage status
+
+`planning/learnings/inbox.md` lines 11-120: `L-106` carries a full
+schema-conforming entry (`origin`, `date`, `project_revision`,
+`observation`, `evidence`, `classification`, `recurrence`, `moves
+forward when`) **and** a dated `curation note (2026-10-28,
+knowledge-curator)` with `status: retained` — the curator's note is
+substantive, not boilerplate: it independently re-reads decisions/0089
+and the current fixed code, confirms the "reused only part of an
+existing convention" framing holds cleanly for defects A and C but is a
+"stretch" for defect B (nothing elsewhere in the codebase already
+validated `end` or resolved multi-symbol ranges — B is the function's
+own first-cut limitation, not reuse of a sibling convention), and names
+this imprecision explicitly rather than silently waving it through. It
+also checks for duplication against `L-105` and `L-075`/`CLAUDE.md` §1
+and reasons concretely about why `retain` rather than `promote`/`merge`/
+`discard` is the right call. This triage had **not yet landed** when I
+began this audit (the task description flagged it as a possible, named,
+non-blocking-by-default gap, dispatched in parallel) but had landed by
+the time I checked — so there is, as of the audited state, no
+outstanding triage gap at all.
+
+Separately from whether it landed: per `CLAUDE.md` §5, the triage
+conjunct is a condition of a phase's own `done` transition. This
+corrective pass does not re-execute that transition — Phase 83 is
+already `done` and stays `done` throughout (decisions/0089's own
+Consequences section, the retro, and ROADMAP/CONTEXT all say so
+explicitly) — so even had the triage still been outstanding at audit
+time, it would not have blocked *this pass's own* closeout, only
+anything that tried to re-invoke §5's `done`-marking gate against Phase
+83 a second time (which nothing in this pass does). This distinction is
+noted for the record rather than left ambiguous.
+
+### 7. `docs/development/contributing.md` — accurate against the real current code
+
+Read the `scripts/assess_change_impact.py` bullet (line 28) in full and
+checked each clause against the code read in §1 above: "resolves each
+range against **every** indexed first-party symbol whose own span
+intersects it (not only the one enclosing the range's start)" —
+matches `resolve_intersecting_symbols`; "both `start` and `end` lie
+within the file's own extent" — matches the two separate validations;
+"a range only partly covered by indexed symbols is reported
+`partially_resolved`, naming the unmapped line(s) explicitly" — matches
+`_describe_uncovered_lines`/the `partially_resolved` branch; "a
+*path-and-symbol*-matching Evidence" — matches the Defect A fix; "a
+Claim bridges it to a check-resolving test-evidence that itself parses
+as a real, correctly-scoped `OracleResult` for the live contract" —
+matches the Defect C fix; "each `behavioural_risk` check is freshly
+re-executed exactly once per range (deduplicated across symbols that
+share it, with every contributing symbol still named)" — matches the
+`check_contributors`/`contributing_symbols` dedup logic. Every clause is
+accurate against the actual shipped code, not a stale description of an
+earlier version.
+
+### 8. `CHANGELOG.md` / `ROADMAP.md` / `CONTEXT.md` — mutually consistent, accurate against `decisions/0089`
+
+Read all three directly. `CHANGELOG.md`'s "Phase 83 corrective pass"
+`[Unreleased]` entry describes all three fixes, the module-unmodified
+claim, the 18-new-tests/46-total count, and the re-validation against
+Ledgerkit scratch copies and real data — consistent with decisions/0089
+and with the code I read. `planning/ROADMAP.md`'s Phase 83 row appends a
+"**Corrective pass (2026-10-28...)**" clause to the existing `done` row
+(rather than replacing or contradicting the original closeout
+description), names the same three defects/fixes, the same 18/46 test
+counts, and points to `decisions/0089` and the retro for full history —
+the row still reads `done`, unchanged. `planning/CONTEXT.md`'s "Current
+phase"/"What was just completed" sections describe the same three fixes
+in the same terms, explicitly state "Independent audit of this
+corrective pass is in progress. Phase 83 stays `done`; this was not a
+reopening" — an accurate statement of exactly what was true on-disk
+before this audit ran, and consistent with ROADMAP.md and decisions/0089
+throughout. No contradiction found across any of the three documents or
+against the ADR.
+
+### Protected-file drift and scope-creep check
+
+```
+git diff 1e5c00c^ 057e59d -- CLAUDE.md          → 0 lines (empty)
+git diff 1e5c00c^ 057e59d --stat -- decisions/  → only the new 0089 file added (200 insertions, 0 deletions to any existing ADR)
+git diff --name-only 1e5c00c^ 057e59d:
+  CHANGELOG.md
+  decisions/0089-phase-83-corrective-pass-identity-coverage-evidence.md
+  docs/development/contributing.md
+  planning/CONTEXT.md
+  planning/ROADMAP.md
+  planning/learnings/inbox.md
+  planning/phase-83-semantic-change-assurance.md
+  planning/retros/phase-83-semantic-change-assurance.md
+  scripts/assess_change_impact.py
+  tests/test_assess_change_impact.py
+```
+No `CLAUDE.md` edit. No existing ADR's original content touched — only a
+new, sequentially-numbered ADR added. No `src/` file touched. Every
+changed file matches decisions/0089's own stated scope (fix +
+tests + the governing ADR + the required doc-sync set + the phase plan's
+own as-built update + the retro's closing section + the learnings
+inbox). No scope creep.
+
+### Why PASS and not PASS WITH NON-BLOCKING OBSERVATIONS
+
+Every one of the eight items in the dispatch was independently checked
+against the real commit, not trusted from the ADR's or retro's own
+prose, and every one held up: the three defects are genuinely fixed as
+described; the three excluded modules are byte-identical to both
+reference points; the new tests are real, substantive, call-path-level
+regression coverage for each fix; the full suite and both targeted test
+modules are green at the exact expected counts; all three strict
+validators exit 0 with unchanged finding counts; the canonical
+knowledge/contract trees are untouched; the one candidate learning this
+pass raised has already been triaged with a substantive, non-boilerplate
+note; and all four governing/doc-sync artifacts (ADR, CHANGELOG,
+ROADMAP, CONTEXT) are mutually consistent and accurate against the real
+code. I found no gap, however minor, worth flagging as a residual
+observation.
+
+### Evidence trail (this pass)
+
+- `scripts/assess_change_impact.py` read in full (630 lines) at
+  `057e59d`; Defect A/B/C fixes confirmed present at the specific lines
+  cited above, each wired into its one real call site.
+- `git diff 1e5c00c^ 057e59d -- src/codecompass/oracle.py
+  src/codecompass/graph.py src/codecompass/knowledge_intermediate.py`:
+  empty (0 lines each).
+- `git diff 5132529 057e59d` for the same three files: empty (0 lines
+  each) — confirmed against the original Phase 83 closeout commit too.
+- `tests/test_assess_change_impact.py`'s `TestClassifySymbolSourceIdentity`,
+  `TestClassifySymbolEvidenceValidation`, and the new
+  `TestResolveChangedRange` cases read in full and confirmed to call the
+  real functions with the real regression shapes named by decisions/0089.
+- `.venv/bin/python -m pytest -q` → `1054 passed, 2 skipped` (295.01s).
+- `.venv/bin/python -m pytest -q tests/test_oracle.py
+  tests/test_check_contracts.py` → `67 passed`.
+- `scripts/check_contracts.py --strict` → exit 0, 7 informational
+  findings.
+- `scripts/check_knowledge_base.py --strict` → exit 0, 24 informational
+  findings.
+- `scripts/check_user_docs.py --strict` → no findings, exit 0.
+- `git status --short planning/knowledge/balance-from-spec/
+  planning/contracts/balance-from-spec/` → empty.
+- `planning/learnings/inbox.md` `L-106`: schema-complete, status
+  `retained`, curation note present and substantive.
+- `docs/development/contributing.md` line 28 cross-read against the
+  actual code; `CHANGELOG.md`, `planning/ROADMAP.md`, `planning/CONTEXT.md`
+  all read in full for the Phase 83 corrective-pass content and found
+  mutually consistent and accurate against `decisions/0089`.
+- `git diff 1e5c00c^ 057e59d -- CLAUDE.md`: empty; `git diff --stat --
+  decisions/` shows only the new `0089` file added, no existing ADR
+  edited.
+- `git diff --name-only 1e5c00c^ 057e59d`: 10 files, all within
+  decisions/0089's own stated scope — no scope creep.
