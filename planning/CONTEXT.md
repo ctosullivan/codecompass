@@ -665,10 +665,28 @@ its own future, separate explicit authorisation whenever it is taken up.
 **Phase 84 (Consolidated Knowledge API and Query CLI) is `done`,
 corrective pass and final corrective amendment both closed** (2026-11-02,
 `decisions/0091`/`0092`/`0093`) — see "Current phase" above. No further
-Phase 84 corrective work is open. Phase 85 implementation is **not
-authorised** under the current governing prompt, which authorises only
-Phase 85 *planning* — see the Phase 85 plan status below once that work
-lands. When Phase 85 implementation is taken up: 85 (Self-Curation and
+Phase 84 corrective work is open.
+
+**Phase 85 (Self-Curation and Knowledge-Quality Validation) is
+`planned`, not started** (2026-11-02). `planning/phase-85-self-
+curation-knowledge-quality-validation.md` is the full implementation-
+ready plan — it reuses the existing `context-researcher`/`knowledge-
+curator` roles unchanged (no new agent role, record kind, storage, or
+write path), adds one new maintainer script
+(`scripts/check_self_knowledge_quality.py`, composing Phase 84's
+existing API) for on-demand knowledge-quality checks, and selects
+`planning/knowledge/first-party-source-symbols/`'s own already-open
+`CL-FPSS-007` question as the real dogfood target. Independently
+reviewed before being declared implementation-ready: one material gap
+was found (the disposition step originally assigned both independent
+re-verification and the mechanical Claim-status edit to
+`knowledge-curator` alone, which its own Hard Rules forbid — split into
+"`knowledge-curator` recommends / the lead applies," confirmed against
+real precedent) and fixed in place; three secondary gaps also fixed
+(see the plan's own "Corrective note"). **Phase 85 implementation is
+not authorised** under the governing prompt that produced this plan —
+a separate, explicit approval is required before any of it is
+implemented. When Phase 85 implementation is taken up: 85 (Self-Curation and
 Knowledge-Quality Validation) → 86 (Knowledge-Placement and Code-Quality
 Review, formal policy/enforcement classes) → 87 (Documentation Schema and
 Knowledge-Compiled Documentation, minimum suite specified) → 88 (Agent
