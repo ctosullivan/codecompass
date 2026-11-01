@@ -8,7 +8,8 @@ session-resumption, not a project history.
 ## Current phase
 
 **Phase 84 — Consolidated Knowledge API and Query CLI — is `done`,
-corrective pass closed (2026-10-29, `decisions/0091`/`0092`)**.
+corrective pass and final corrective amendment both closed (2026-11-02,
+`decisions/0091`/`0092`/`0093`)**.
 `src/codecompass/knowledge_api.py` is a new, read-only, typed interface
 over `context-graph.db`, `planning/knowledge/`, and `planning/
 contracts/` combined: `get`/`search`/`traverse`/`trace_evidence`/
@@ -74,6 +75,42 @@ and `L-109` (Rich `Table` cells truncate at default render width —
 `docs/architecture/overview.md` "Known footguns"). `L-107` remains
 retained, pending a second real oracle-contract-extension occurrence
 before a process-change ADR is warranted.
+
+A second, independent post-completion source review then found two
+further defects, fixed as a final corrective amendment
+(`decisions/0093`): `trace_evidence()` checked only a Requirement's own
+(always-absent) `supporting_evidence` field, reporting a false
+`missing_evidence` gap for every Requirement unconditionally — now
+resolves one hop through `depends_on` Claims instead, tagging results
+`supporting_indirect`/`contradicting_indirect` with a `via_claim`
+provenance detail; a dangling `depends_on` id is a new
+`dangling_dependency_reference` gap. `find_gaps()`'s `stale_test_
+citation` detection accepted `repo_root` but never forwarded it into
+`aggregate_contract()`/`evaluate_result_precedence()` — now threaded
+through both, with wording distinguishing a live-reconfirmed finding
+from a contract-relative-only one. 15 new regression tests
+(`tests/test_knowledge_api.py` 65 → 80). The first fix attempt
+introduced an undisclosed regression (a Claim with one declared-but-
+dangling citation started reporting two gaps instead of one) — caught
+by the independent audit's own first pass (**FAIL**), fixed same-day
+(restored to a purely declared-list-based signal, symmetric across
+Claims and Requirements), and confirmed by a re-audit of the same
+auditor: **PASS WITH NON-BLOCKING OBSERVATIONS**
+(`planning/retros/_audit-phase-84.md`'s "FINAL CORRECTIVE AMENDMENT"
+sections). Re-demonstrated against the real corpus:
+`trace_evidence(REPO_ROOT, "REQ-BFS-001")` now reports `status="result"`
+with full per-Claim provenance, where it previously reported a false
+gap. Full suite 1138 passed, 2 pre-existing skips; all three strict
+validators unchanged. Two further candidate learnings: `L-111`
+(a function dispatching on record/input kind needs direct test
+coverage of each kind it claims to handle — promoted to
+`.claude/agents/release-phase-auditor.md` "What to check" item 12) and
+`L-110` (a scoping/override parameter dropped on a sibling call within
+one function, now recurring a third time across two phases — extends
+`L-105`; proposed `CLAUDE.md` §1 amendment drafted in
+`planning/v1-redefinition/proposed-governance-changes.md` §K, **held at
+`status: candidate`, not yet applied — requires the user's own explicit
+§0 approval before `CLAUDE.md` is touched**).
 
 **Phase 83 — Semantic Change Assurance — is `done`, corrective line of
 work fully closed (2026-10-29, `decisions/0090`)**. A fourth, final,
@@ -626,11 +663,12 @@ own `CLAUDE.md` §5 completion gate — it is named, tracked, and requires
 its own future, separate explicit authorisation whenever it is taken up.
 
 **Phase 84 (Consolidated Knowledge API and Query CLI) is `done`,
-corrective pass closed** (2026-10-29, `decisions/0091`/`0092`) — see
-"Current phase" above. Phase 85 is **not authorised** under either
-governing prompt (original implementation or corrective pass) — no
-further work proceeds without a separate, explicit approval. When it is
-taken up: 85 (Self-Curation and
+corrective pass and final corrective amendment both closed** (2026-11-02,
+`decisions/0091`/`0092`/`0093`) — see "Current phase" above. No further
+Phase 84 corrective work is open. Phase 85 implementation is **not
+authorised** under the current governing prompt, which authorises only
+Phase 85 *planning* — see the Phase 85 plan status below once that work
+lands. When Phase 85 implementation is taken up: 85 (Self-Curation and
 Knowledge-Quality Validation) → 86 (Knowledge-Placement and Code-Quality
 Review, formal policy/enforcement classes) → 87 (Documentation Schema and
 Knowledge-Compiled Documentation, minimum suite specified) → 88 (Agent
