@@ -663,6 +663,25 @@ class TestTraceEvidence:
         assert dangling[0].scope == "supporting"
         assert "EV-MISSING-001" in dangling[0].reason
 
+    def test_exclusively_dangling_supporting_evidence_produces_exactly_one_gap(self, tmp_path):
+        """Regression guard (Phase 84 final corrective amendment's own
+        re-audit, decisions/0093): a declared-but-dangling citation is
+        never conflated with no citation at all -- exactly one gap
+        (`dangling_evidence_reference`), never also a `missing_evidence`
+        gap. The Requirement indirect-evidence fix must never change this
+        Claim-level invariant; asserted here on the *total* gap set/count,
+        not merely on one gap kind's own presence, so a regression in
+        either direction (a missing dangling gap, or a spuriously added
+        missing_evidence gap) fails this test."""
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        _write_flat(slug_dir / "CL-DANGLE-002.yaml", {
+            "id": "CL-DANGLE-002", "kind": "claim", "statement": "dangling only",
+            "supporting_evidence": ["EV-MISSING-999"], "status": "supported",
+        })
+        response = ka.trace_evidence(tmp_path, "CL-DANGLE-002")
+        assert len(response.gaps) == 1
+        assert response.gaps[0].kind == "dangling_evidence_reference"
+
     def test_mixed_valid_and_dangling_supporting_evidence_reports_both(self, tmp_path):
         _write_minimal_slug(tmp_path, "demo")
         slug_dir = tmp_path / "planning" / "knowledge" / "demo"
@@ -753,11 +772,17 @@ class TestTraceEvidence:
         assert response.results == []
         missing = [g for g in response.gaps if g.kind == "missing_evidence"]
         # The claim's own missing-evidence gap is always reported, keyed to
-        # the claim itself -- and since this is the requirement's *only*
-        # dependent claim, the requirement genuinely has no evidence at
-        # all either (direct or indirect), so both are real, distinct
-        # findings, not a duplicate.
-        assert {g.subject_id for g in missing} == {"CL-IND-001", "REQ-IND-001"}
+        # the claim itself. The Requirement itself does NOT additionally
+        # get its own top-level missing_evidence gap -- it *did* declare a
+        # depends_on citation (CL-IND-001), even though that Claim turns
+        # out to have no evidence of its own; declaring a citation, even
+        # one that leads to a real problem one hop further out, is never
+        # conflated with declaring nothing at all (the same declared-vs-
+        # resolved distinction a Claim's own direct dangling-evidence case
+        # already applies, decisions/0092/0093). A redundant top-level gap
+        # restating the same underlying problem would be noise, not a
+        # distinct finding.
+        assert {g.subject_id for g in missing} == {"CL-IND-001"}
 
     def test_requirement_with_dangling_dependency_reference_is_a_gap(self, tmp_path):
         slug_dir = tmp_path / "planning" / "knowledge" / "demo"
@@ -771,6 +796,11 @@ class TestTraceEvidence:
         assert len(dangling) == 1
         assert dangling[0].subject_id == "REQ-DANGLE-001"
         assert "CL-NOPE-999" in dangling[0].reason
+        # Symmetric with a Claim's own dangling-evidence case: a declared
+        # depends_on citation, even a dangling one, is never conflated
+        # with no citation at all -- exactly one gap total, never also a
+        # redundant top-level missing_evidence gap for the Requirement.
+        assert len(response.gaps) == 1
 
     def test_requirement_with_mixed_supported_and_unsupported_claims_keeps_resolved_evidence(self, tmp_path):
         slug_dir = tmp_path / "planning" / "knowledge" / "demo"

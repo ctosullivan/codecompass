@@ -134,3 +134,61 @@ contract-hash-mismatch INVALID determination is unaffected either way
   governing principle (preserving the distinction between intent,
   evidence, and verification) requires these to stay three separately
   retrievable, non-collapsed answers; a combined score would merge them.
+
+## Correction (2026-11-02, same-day independent re-audit)
+
+The implementation's first commit (`23f6826`) introduced an undisclosed
+regression this ADR's own Decision 1 explicitly claimed did not exist:
+"Claim-level tracing ... is completely unaffected." The shared
+`has_any_support` signal computing whether `missing_evidence` fires was
+accidentally switched from the pre-amendment, purely *declared*-list-
+based check (`not supporting_ids`) to a *resolution*-based one (whether
+`_resolve()` actually resolved at least one id) — a change that applies
+to the Claim path too, since both paths shared the one signal. A Claim
+with a single declared-but-dangling `supporting_evidence` citation
+(e.g. `supporting_evidence: [EV-MISSING-001]`) consequently reported
+**two** gaps (`dangling_evidence_reference` *and* `missing_evidence`)
+instead of the one this ADR's own §Context section's cited principle
+("a declared citation is never conflated with a resolved one") and the
+pre-amendment behavior both require.
+
+Caught by the independent `release-phase-auditor` re-audit of this same
+amendment (`planning/retros/_audit-phase-84.md`'s "FINAL CORRECTIVE
+AMENDMENT AUDIT" section, verdict FAIL), independently reproduced by the
+lead before fixing, and not caught by this amendment's own 14 new
+tests: the one test whose name claims to cover this
+(`test_claim_level_tracing_is_unaffected_by_requirement_indirection`)
+used a Claim with *literally empty* `supporting_evidence: []`, never a
+*declared-but-dangling* one, so it could not see the regression its own
+name claims to guard against.
+
+**Fix:** reverted the shared signal to purely declared-list-based
+(`has_any_declared`, never resolution-based) for *both* paths — a
+Claim's own top-level `missing_evidence` trigger is restored to exactly
+its pre-amendment behavior (`bool(direct_supporting_ids)`), and the
+Requirement's own analogous signal is extended the same way: a non-
+empty `depends_on` list, even one whose target doesn't resolve or whose
+Claim lacks its own evidence, counts as "something was declared,"
+suppressing a redundant top-level Requirement gap in favour of the
+narrower, already-reported gap that names the real problem
+(`dangling_dependency_reference`, or the dependent Claim's own
+`missing_evidence`). This is symmetric with the Claim-level invariant
+by construction, not merely restored for Claims and separately
+re-decided for Requirements — one declared-vs-resolved rule, applied
+uniformly, is what this ADR's own `decisions/0092` lineage already
+established and this correction returns to.
+
+Two test changes: `test_requirement_with_unsupported_dependent_claim_
+is_a_gap_keyed_to_the_claim` updated (the Requirement no longer also
+gets a redundant top-level gap when its only dependent Claim lacks
+evidence — only the Claim-keyed gap fires, matching the symmetric rule
+above); `test_requirement_with_dangling_dependency_reference_is_a_gap`
+gained an explicit total-gap-count assertion. One new regression-guard
+test added, `test_exclusively_dangling_supporting_evidence_produces_
+exactly_one_gap`, asserting the *total* gap set for the exact scenario
+the audit found broken — guarding against this exact regression
+recurring in either direction. Re-verified: full suite, `tests/
+test_knowledge_api.py` (80 passed), all three strict validators, and
+the real corpus (`REQ-BFS-001` still correctly resolves with zero
+gaps) all green after the fix. See `planning/retros/_audit-phase-84.md`
+for the auditor's own re-verification of this correction.

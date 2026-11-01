@@ -1149,15 +1149,22 @@ def trace_evidence(project_root: Path, record_id: str, *, repo_root: Path | None
     proof its own assertion is evidenced, let alone independently
     verified (`epistemic_status`/`find_gaps` own that oracle-verification
     question; this function never re-derives it). The Requirement itself
-    is `missing_evidence` only when it has no evidence at all, direct or
-    indirect across every dependent Claim. A `depends_on` id that does
-    not resolve to a real record is its own `dangling_dependency_
-    reference` gap, distinct from a dangling *evidence* reference. Claim-
-    level tracing (a Claim's own direct evidence only) is unchanged by
-    any of this -- a Claim's own `depends_on` on another Claim (this
-    project's real corpus has at least one case of this) is not itself
-    walked by this function; see decisions/0093 for why one hop is the
-    deliberately chosen, non-recursive bound."""
+    is `missing_evidence` only when it declares no citation at all --
+    neither its own (always-absent) `supporting_evidence` nor any
+    `depends_on` entry -- the same *declared*-vs-*resolved* distinction
+    this function already applies to a Claim's own direct evidence
+    (decisions/0092's own stated principle, applied symmetrically):
+    declaring a `depends_on` citation, even one that turns out dangling
+    or whose own Claim lacks evidence, is never conflated with declaring
+    nothing. Those narrower, real problems are reported as their own,
+    separate gaps (`dangling_dependency_reference`, or the dependent
+    Claim's own `missing_evidence`) rather than stacked onto a redundant
+    top-level Requirement gap. Claim-level tracing (a Claim's own direct
+    evidence only) is unchanged by any of this -- a Claim's own
+    `depends_on` on another Claim (this project's real corpus has at
+    least one case of this) is not itself walked by this function; see
+    decisions/0093 for why one hop is the deliberately chosen,
+    non-recursive bound."""
     records = _all_records(project_root)
     record = records.get(record_id)
     if record is None:
@@ -1192,12 +1199,26 @@ def trace_evidence(project_root: Path, record_id: str, *, repo_root: Path | None
 
     direct_supporting_ids = _ki._extract_id_strings(record.fields.get("supporting_evidence", ""))
     direct_contradicting_ids = _ki._extract_id_strings(record.fields.get("contradicting_evidence", ""))
-    has_direct_support = _resolve(direct_supporting_ids, "supporting", citer_id=record_id)
+    _resolve(direct_supporting_ids, "supporting", citer_id=record_id)
     _resolve(direct_contradicting_ids, "contradicting", citer_id=record_id)
 
-    has_any_support = has_direct_support
+    # Whether *anything at all* was ever cited -- declared-list-based,
+    # deliberately never resolution-based (decisions/0092's own stated
+    # principle: "a declared citation is never conflated with a resolved
+    # one," applied symmetrically here too, per the Phase 84 final
+    # corrective amendment's own re-audit, decisions/0093). A Claim with
+    # one dangling `supporting_evidence` citation still reports
+    # `missing_evidence` as `False` here -- it declared something, even
+    # if broken -- so only `dangling_evidence_reference` fires for it,
+    # exactly as before this amendment. Resolution success/failure is a
+    # separate question `_resolve` already answers per citation, via its
+    # own `dangling_evidence_reference` gaps.
+    has_any_declared = bool(direct_supporting_ids)
     if record.kind == "requirement":
-        for dep_id in _ki._extract_id_strings(record.fields.get("depends_on", "")):
+        dep_ids = _ki._extract_id_strings(record.fields.get("depends_on", ""))
+        if dep_ids:
+            has_any_declared = True
+        for dep_id in dep_ids:
             dep = records.get(dep_id)
             if dep is None:
                 gaps.append(Gap(
@@ -1209,21 +1230,18 @@ def trace_evidence(project_root: Path, record_id: str, *, repo_root: Path | None
                 continue
             claim_supporting_ids = _ki._extract_id_strings(dep.fields.get("supporting_evidence", ""))
             claim_contradicting_ids = _ki._extract_id_strings(dep.fields.get("contradicting_evidence", ""))
-            has_claim_support = _resolve(
-                claim_supporting_ids, "supporting_indirect", citer_id=dep_id, via_claim=dep_id
-            )
+            _resolve(claim_supporting_ids, "supporting_indirect", citer_id=dep_id, via_claim=dep_id)
             _resolve(claim_contradicting_ids, "contradicting_indirect", citer_id=dep_id, via_claim=dep_id)
-            has_any_support = has_any_support or has_claim_support
             if not claim_supporting_ids:
                 gaps.append(Gap(
                     kind="missing_evidence", subject_id=dep_id, scope=None,
                     reason=f"{dep_id} (claim, depended on by {record_id}) has no supporting_evidence citation at all",
                 ))
 
-    if record.kind in ("claim", "requirement") and not has_any_support:
+    if record.kind in ("claim", "requirement") and not has_any_declared:
         reason = f"{record_id} ({record.kind}) has no supporting_evidence citation at all"
         if record.kind == "requirement":
-            reason += ", and none of its dependent Claims (depends_on) do either"
+            reason += " and no depends_on citation either"
         gaps.append(Gap(kind="missing_evidence", subject_id=record_id, scope=None, reason=reason))
 
     if gaps:
