@@ -332,7 +332,49 @@ and promoted above) -- no new candidate learning met the bar this time;
 both defects and fixes are fully, and accurately, captured by
 `decisions/0093` and this addendum.
 
+**Correction (2026-11-02, same-day re-audit):** both paragraphs above
+were wrong, left in place uncorrected in situ per this file's own
+established append-only amendment convention (see the earlier
+"Correction (2026-11-02, final corrective amendment)" note above, for
+the prior, unrelated L-108/L-109 miss). This time, two separate things
+were missed:
+
+1. **A genuine near-miss, not "none."** The fix for defect A
+   (Requirement indirect evidence) accidentally introduced a real
+   regression -- a Claim with one declared-but-dangling citation
+   started reporting two gaps instead of one, contradicting `decisions/
+   0093`'s own explicit "Claim-level tracing is unaffected" claim. The
+   independent `release-phase-auditor` re-audit caught it (verdict
+   **FAIL**, see `planning/retros/_audit-phase-84.md`'s final-amendment
+   addendum), not this retro's own account above, nor the one test
+   whose name claimed to cover exactly this
+   (`test_claim_level_tracing_is_unaffected_by_requirement_indirection`,
+   which used an empty-list fixture rather than a declared-but-dangling
+   one and so could not see the regression). Fixed same-day; see
+   `decisions/0093`'s own "Correction" section for the full account.
+2. **Two new candidate learnings, not "none."** An independent
+   `knowledge-curator` review -- dispatched specifically because the
+   lead asked it to check whether "no new candidate learning met the
+   bar" actually held up, given this retro's own prior miss on exactly
+   that question -- disagreed on two of four points it checked, and
+   filed `L-110` (a scoping/override parameter threaded into *some* but
+   not *all* of a function's own internal call sites, now the same
+   failure shape recurring a third time across two phases -- extends
+   `L-105`, proposed for `CLAUDE.md` §1, pending the user's own §0
+   approval) and `L-111` (a function dispatching on record/input *kind*
+   needs direct test coverage of each kind it claims to handle, not
+   only the most common one -- promoted to `.claude/agents/release-
+   phase-auditor.md` "What to check" item 12). See `planning/learnings/
+   inbox.md`'s `L-110`/`L-111` entries for the full account.
+
 ## Candidate learnings filed (final corrective amendment)
+
+Corrected above: `L-110` and `L-111`, both filed by an independent
+`knowledge-curator` review after this retro's own "none" conclusion
+(immediately below, left in place per this file's append-only
+convention) proved wrong. The paragraph immediately below describes
+this retro's own state *at the moment it was written*, not the
+amendment's final, actual outcome.
 
 None. Both defects and their resolutions are fully captured by
 `decisions/0093`; the test-first discipline and real-corpus-first

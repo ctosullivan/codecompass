@@ -539,3 +539,17 @@ final-amendment addendum for the full verdict. Retro addendum:
 corrective amendment" section (which also reconciles that retro's
 earlier, now-superseded "no new candidate learnings" claim against the
 actual `L-108`/`L-109` promotion history).
+
+**Correction (2026-11-02, same-day re-audit, FAIL then fixed):** the
+independent audit's first pass returned **FAIL** — the Requirement
+fix's shared `missing_evidence` signal was accidentally resolution-
+based rather than declared-list-based, so a Claim with one declared-
+but-dangling citation incorrectly reported *two* gaps instead of one,
+contradicting this very section's own "Claim-level tracing is
+unaffected" claim above. Fixed same-day (the signal is now purely
+declared-list-based for both Claims and Requirements, symmetrically);
+one new regression-guard test added asserting the total gap count for
+the exact scenario the audit found broken. Full details:
+`decisions/0093`'s own "Correction" section;
+`planning/retros/_audit-phase-84.md`'s final-amendment addendum
+(FAIL) plus its own re-audit confirming the fix.
