@@ -668,25 +668,43 @@ corrective pass and final corrective amendment both closed** (2026-11-02,
 Phase 84 corrective work is open.
 
 **Phase 85 (Self-Curation and Knowledge-Quality Validation) is
-`planned`, not started** (2026-11-02). `planning/phase-85-self-
-curation-knowledge-quality-validation.md` is the full implementation-
-ready plan — it reuses the existing `context-researcher`/`knowledge-
-curator` roles unchanged (no new agent role, record kind, storage, or
-write path), adds one new maintainer script
-(`scripts/check_self_knowledge_quality.py`, composing Phase 84's
+`planned`, not started, amended once** (2026-11-02, "CodeCompass
+Orchestrator — Amend Phase 85 Plan and Revalidate"). `planning/
+phase-85-self-curation-knowledge-quality-validation.md` is the full
+implementation-ready plan — it reuses the existing `context-researcher`/
+`knowledge-curator` roles unchanged (no new agent role, record kind, or
+write path beyond one narrow addition, below), adds one new maintainer
+script (`scripts/check_self_knowledge_quality.py`, composing Phase 84's
 existing API) for on-demand knowledge-quality checks, and selects
 `planning/knowledge/first-party-source-symbols/`'s own already-open
-`CL-FPSS-007` question as the real dogfood target. Independently
-reviewed before being declared implementation-ready: one material gap
-was found (the disposition step originally assigned both independent
-re-verification and the mechanical Claim-status edit to
-`knowledge-curator` alone, which its own Hard Rules forbid — split into
-"`knowledge-curator` recommends / the lead applies," confirmed against
-real precedent) and fixed in place; three secondary gaps also fixed
-(see the plan's own "Corrective note"). **Phase 85 implementation is
-not authorised** under the governing prompt that produced this plan —
-a separate, explicit approval is required before any of it is
-implemented. When Phase 85 implementation is taken up: 85 (Self-Curation and
+`CL-FPSS-007` question as the real dogfood target — now requiring
+**both** a genuine promotion and a genuine, independently-investigated
+decline (never either alone, never a synthetic substitute for the
+decline). The amendment added a five-outcome candidate-disposition
+procedure and a new, non-canonical investigation log
+(`planning/retros/phase-85-self-curation-investigation-log.md`, the one
+new write path), so a merely-falsified hypothesis is recorded there
+rather than polluting the knowledge model as a `status: contradicted`
+Claim; fixed an unreachable `missing_contract` rule and an undetected
+missing/malformed `test_ref`-result-file case in the validator's own
+spec; formalised independent Claim adjudication (including a
+tool-boundary correction — `knowledge-curator` has no `Bash`, so
+command/probe reproduction is delegated to the lead at its own explicit
+direction); and corrected two overstated claims (the record schema does
+not structurally prevent an unevidenced Claim; identical-evidence Claims
+are not necessarily duplicates). Independently reviewed **twice** before
+being declared implementation-ready: the first review (before the
+amendment) found one material gap — the disposition step originally
+assigned both independent re-verification and the mechanical
+Claim-status edit to `knowledge-curator` alone, which its own Hard Rules
+forbid, split into "`knowledge-curator` recommends / the lead applies,"
+confirmed against real precedent — plus three secondary gaps, all fixed;
+the second review (of the amendment itself) found one further material
+gap — the `Bash`-boundary issue above — fixed and re-confirmed by a
+third, narrowly-scoped check. **Phase 85 implementation is not
+authorised** under either governing prompt — a separate, explicit
+approval is required before any of it is implemented. When Phase 85
+implementation is taken up: 85 (Self-Curation and
 Knowledge-Quality Validation) → 86 (Knowledge-Placement and Code-Quality
 Review, formal policy/enforcement classes) → 87 (Documentation Schema and
 Knowledge-Compiled Documentation, minimum suite specified) → 88 (Agent
