@@ -786,3 +786,72 @@ during the same triage.
   section gets the same addition in the same commit; `planning/learnings/inbox.md`'s
   `L-088` flips to `status: promoted` with a `promoted.md` pointer line
   once the edit lands.
+
+## K. 2026-11-02 proposed addition (Phase 84 final corrective amendment — `L-110`, extends `L-105`)
+
+**Status:** proposed, not yet presented to the user. Filed by
+`knowledge-curator` during an independent review of the Phase 84 final
+corrective amendment (`decisions/0093`), dispatched specifically to
+check whether that amendment's own "no new candidate learning met the
+bar" retro conclusion holds up.
+
+### K1 — §1 "Plan before implementing": require a per-call-site test for any scoping/override parameter used by more than one internal call site
+
+- **Context:** `L-105` (Phase 83) already names the failure shape "a
+  tool's distinct override parameter must be threaded through every
+  internal path resolution, or a single hardcoded fallback silently
+  defeats the whole feature" and was promoted directly to a regression
+  test (no `CLAUDE.md` change at the time — one occurrence). It has
+  since recurred twice more, both inside `src/codecompass/knowledge_
+  api.py`, across this same phase's own two corrective passes:
+  `decisions/0092` (`repo_root` dropped entirely on the `get()`/
+  `traverse()` oracle-result paths) and `decisions/0093` defect 2
+  (`repo_root` threaded correctly into `find_gaps()`'s own `derive_
+  epistemic_profile()` call for `unverified_required_scope`, but dropped
+  on a *sibling* call — `aggregate_contract()`/`evaluate_result_
+  precedence()` — for the `stale_test_citation` rule, in the very same
+  function). Three occurrences across two phases and two source files,
+  two of them within one module in one week, is the same cross-instance
+  recurrence this project's own `L-070`/`L-087`/`L-088` each treated as
+  sufficient grounds for a project-wide rule rather than a scoped one.
+  Full account: `planning/learnings/inbox.md`'s `L-105`/`L-110`;
+  `decisions/0092`; `decisions/0093` Context point 2 and Decision 2.
+- **Proposed text — append to §1, as a new sentence directly after the
+  existing `L-088` sentence ("...not only its initial creation. (Phase 81
+  second corrective pass — L-088.)"):**
+
+  > If a phase's plan introduces or extends a function that accepts a
+  > distinct scoping/override parameter (e.g. an alternate root,
+  > `repo_root`, `knowledge_root`) used by more than one internal call
+  > site, helper, or detection rule, the plan's verification section must
+  > include a test for each such call site individually, confirming the
+  > parameter actually reaches it and changes the outcome — a parameter
+  > correctly threaded into one internal call is no evidence it reaches a
+  > sibling call for a different rule in the same function. (Phase 84
+  > final corrective amendment — L-110, extends L-105.)
+
+- **Alternatives considered:** (a) treat this as fully covered by
+  `L-105`'s own already-landed regression test — rejected: that test
+  covers only the one call site (`assess_change_impact.py::
+  classify_symbol`'s `test_ref` resolution) it was written against; it
+  does nothing to require a *future* phase introducing a *different*
+  function with a *different* multi-call-site parameter to test every
+  one of those sites, which is exactly the gap that let the same shape
+  recur twice more, undetected until an independent post-completion
+  review each time; (b) route this to `.claude/agents/release-phase-
+  auditor.md` as a scoped checklist item instead, matching `L-111`'s own
+  routing (filed alongside this entry) — considered, but rejected for
+  this specific entry because the recurrence count (3, across 2 phases
+  and 2 files) already clears the bar this project applies to route a
+  finding to `CLAUDE.md` §1 directly, matching `L-070`/`L-087`/`L-088`'s
+  own precedent rather than under-escalating a finding this well
+  evidenced; (c) broaden to "every parameter must be threaded
+  everywhere" — rejected as unenforceable and over-broad; scoped
+  instead to the precise, now-thrice-evidenced shape (a *scoping/
+  override* parameter specifically, used by *more than one* internal
+  call site within the same function).
+- **Consequences if approved:** `CLAUDE.md` §1 gains the sentence above,
+  directly after the `L-088` sentence; `CONTRIBUTING.md`'s mirrored
+  section gets the same addition in the same commit;
+  `planning/learnings/inbox.md`'s `L-110` flips to `status: promoted`
+  with a `promoted.md` pointer line once the edit lands.

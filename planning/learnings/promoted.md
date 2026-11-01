@@ -100,4 +100,5 @@ L-102 | 2026-10-22 | invariant | src/codecompass/oracle.py (_classify_pytest_jun
 L-105 | 2026-10-28 | invariant | scripts/assess_change_impact.py::classify_symbol (knowledge_root threading fix) + tests/test_assess_change_impact.py::TestClassifySymbol::test_behavioural_risk_when_claim_bridges_to_a_real_check @ b1a8447
 L-108 | 2026-10-29 | workflow | planning/v1-redefinition/agent-led-development.md §1 (corrective-pass test-first-before-fix discipline) + .claude/agents/release-phase-auditor.md "What to check" item 11 @ (this corrective pass's own closeout commit)
 L-109 | 2026-10-29 | architecture | docs/architecture/overview.md "Known footguns" (Rich Table cell truncation at default render width) @ (this corrective pass's own closeout commit)
+L-111 | 2026-11-02 | scoped-rule | .claude/agents/release-phase-auditor.md "What to check" item 12 (per-kind test coverage for kind-dispatching functions) @ (this amendment's own closeout commit)
 

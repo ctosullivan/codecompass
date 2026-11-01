@@ -8,6 +8,252 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-111 — a function that branches its own logic by record/data *kind* needs a test exercising each kind directly through that function, not only the most common kind, and not only through a sibling call that happens to touch the other kind for a different purpose
+
+- **origin:** independent `knowledge-curator` review of the Phase 84
+  final corrective amendment (`decisions/0093`), triggered by a lead
+  review task asking whether the amendment's own "no new candidate
+  learning met the bar" conclusion holds up
+- **date:** 2026-11-02
+- **project_revision:** `decisions/0093`'s own implementation commit
+  (Phase 84 final corrective amendment; exact SHA not available to this
+  review — no Bash — see `planning/retros/phase-84-consolidated-
+  knowledge-api.md`'s "Final corrective amendment" section for the
+  landed commit)
+- **observation:** `knowledge_api.trace_evidence()` branches its own
+  evidence-resolution logic by `record.kind` (`"claim"` resolves direct
+  `supporting_evidence`/`contradicting_evidence`; `"requirement"`
+  additionally walks `depends_on` one hop to each dependent Claim). The
+  pre-fix bug (checking only `supporting_evidence`, a field a Requirement
+  never has) existed for as long as the function did, entirely within
+  the `"requirement"` branch, and was missed by **three independent**
+  pre-existing testing layers simultaneously, each for a different
+  reason:
+  1. Every test in `tests/test_knowledge_api.py::TestTraceEvidence`
+     written before this amendment calls `trace_evidence` exclusively
+     with a `CL-`-prefixed (Claim) id — confirmed directly by reading the
+     class from its own first line; the first test passing a `REQ-`
+     id to `trace_evidence` is this amendment's own new
+     `test_requirement_with_indirect_evidence_via_dependent_claim_is_a_
+     result_not_a_gap`. The "requirement" branch of a function the whole
+     class exists to test had zero direct test coverage of its own kind.
+  2. The phase's own real-corpus dogfood
+     (`TestRealCorpusDogfoodDemonstration::
+     test_obligation_to_implementation_evidence_and_real_source`) calls
+     `ka.traverse(REPO_ROOT, "REQ-BFS-001", "depends_on")` directly to
+     get from the Requirement to its Claims, then calls
+     `ka.trace_evidence(REPO_ROOT, "CL-BFS-001")` — a Claim, not the
+     Requirement — for the evidence-tracing half. The "fresh consumer"
+     dogfood this phase's own retro credits with catching two *other*
+     real gaps (plan §3.0 point 6's own thin-wrapper-risk mitigation)
+     never actually routed a Requirement through `trace_evidence` at all,
+     even though it routes one through the structurally adjacent
+     `traverse(..., "depends_on")` one line earlier in the same test.
+  3. `get_context_packet()` calls `trace_evidence()` internally and its
+     own pre-existing tests (`TestContextPacket::
+     test_bounded_and_deterministic`, `::test_max_items_enforced_and_
+     reported`) *do* call it with a Requirement id (`"REQ-DEMO-001"`,
+     from `_write_minimal_slug`) — the one layer that actually reached
+     the buggy branch through the right kind — but assert only on
+     `details["items"]`/`details["bounds"]`, fields the defect never
+     touched; neither test reads `details["gaps"]` or checks
+     `response.status`, the two fields the pre-fix bug would have
+     corrupted (an unconditional `missing_evidence` gap for the
+     Requirement). Reaching the right kind through a real call site is
+     not sufficient if the test's own assertions never look at the field
+     the kind-specific branch actually affects.
+- **evidence:** `tests/test_knowledge_api.py` lines 627-695 (every
+  pre-amendment `TestTraceEvidence` test uses a `CL-` id; confirmed by
+  direct read, no Requirement id appears before line 728, this
+  amendment's own first new test); lines 1210-1218
+  (`test_obligation_to_implementation_evidence_and_real_source`, calling
+  `traverse(..., "depends_on")` then `trace_evidence("CL-BFS-001")`,
+  never `trace_evidence("REQ-BFS-001")`); lines 1081-1092
+  (`test_bounded_and_deterministic`/`test_max_items_enforced_and_
+  reported`, both passing `"REQ-DEMO-001"` to `get_context_packet` but
+  asserting only on `items`/`bounds`, never `gaps`/`status`);
+  `decisions/0093` Context point 1 ("confirmed against the real corpus:
+  `trace_evidence(REPO_ROOT, "REQ-BFS-001")` reported this false gap...
+  for as long as the function existed, without any test ever catching
+  it"). Checked `CLAUDE.md` and `planning/learnings/` for an existing
+  rule covering this: grepped `CLAUDE.md` and
+  `planning/learnings/promoted.md` for "per-kind"/"each kind"/"record
+  kind"/"variant" — no existing rule requires a multi-kind-dispatching
+  function to be tested against each kind it claims to handle, through
+  that function specifically.
+- **classification:** scoped-rule — a test-coverage/audit-time check,
+  not yet evidenced as recurring across phases (first occurrence of this
+  specific shape, though demonstrated as missed three independent ways
+  within this one incident, which is itself the reason this is worth
+  recording now rather than waiting for a second phase to hit it,
+  matching `L-109`'s own single-occurrence promotion reasoning).
+- **status:** promoted
+- **recurrence:** first occurrence (of this exact shape); related to but
+  distinct from `L-076` (narrow scenario coverage *within* one claim/
+  example, not coverage *across* the kinds a function dispatches on) and
+  `L-104`/`L-106` (a discipline or convention not propagating to every
+  *consumer* of a shared function, rather than to every *kind* one
+  function itself branches on) — checked both directly, neither is a
+  duplicate or merge target.
+- **promoted_to:** (pending — see curation note)
+- **curation note (2026-11-02, knowledge-curator):** all required fields
+  present. Independently re-read `src/codecompass/knowledge_api.py`'s
+  `trace_evidence`/`find_gaps`/`get_context_packet` and the three test
+  locations cited above directly — the three-way-missed account is
+  accurate, not merely asserted. **Recommendation: promote**, as a
+  `scoped-rule`, to `.claude/agents/release-phase-auditor.md` "What to
+  check", as a new item directly after item 11 (`L-108`'s own test-first-
+  before-fix item):
+
+  > 12. **For a function (or dogfood demonstration) whose own logic
+  >     branches by which kind/variant of a shared record or input type
+  >     it receives, confirm the phase's own tests exercise the function
+  >     directly against each kind it claims to handle, not only the
+  >     most common one, and not only via a sibling call in the same test
+  >     that happens to touch the other kind for an unrelated purpose.**
+  >     Also confirm that a test which does reach a kind-specific branch
+  >     through a real call site actually asserts on the output field(s)
+  >     that branch's own logic affects (e.g. `status`/`gaps` for a
+  >     branch that can produce a gap) — reaching the right branch proves
+  >     nothing if the assertions only cover fields the branch never
+  >     touches. (Phase 84 final corrective amendment — `L-111`.)
+
+  Not routed to `CLAUDE.md` §1 (unlike `L-021`/`L-070`/`L-075`/`L-087`/
+  `L-088`): this is a first occurrence of this specific shape, not yet
+  evidenced as recurring *across phases* the way those each were before
+  promotion to a project-wide rule (`L-070`/`L-087`/`L-088` each named at
+  least two independent incidents, or an explicit "thrice-evidenced"
+  count, before going to `CLAUDE.md`). An audit-time checklist item for
+  `release-phase-auditor` — the agent already independently reviewing a
+  phase's own test coverage against its claims — is the proportionate
+  destination for a well-evidenced first occurrence, matching how
+  `L-086` (a corrective pass's own newly-written code is full audited
+  scope) was routed there rather than to `CLAUDE.md` on its own single
+  occurrence. If this shape recurs in a future phase, escalate to
+  `CLAUDE.md` §1 at that point, per this project's own established
+  two-occurrence threshold.
+
+  This edit is outside this role's write boundary (`.claude/agents/**`)
+  — lead to apply or route to `docs-maintainer`, then flip this entry's
+  `status` to `promoted` and add the `promoted.md` line once landed.
+
+---
+
+### L-110 — a scoping/override parameter (an alternate root, `repo_root`, `knowledge_root`) threaded into *some* of a function's own internal call sites, but not a sibling call site for a different rule or purpose in the same function, is the same failure shape as dropping it across an entire call — now recurring across phases and files (extends `L-105`)
+
+- **origin:** independent `knowledge-curator` review of the Phase 84
+  final corrective amendment (`decisions/0093`, defect 2), cross-checked
+  against `L-105` (Phase 83) and `decisions/0092` (Phase 84 first
+  corrective pass) per the lead's own explicit instruction to check for
+  recurrence before concluding either way
+- **date:** 2026-11-02
+- **project_revision:** `decisions/0093`'s own implementation commit (see
+  `planning/retros/phase-84-consolidated-knowledge-api.md`'s "Final
+  corrective amendment" section)
+- **observation:** `knowledge_api.find_gaps()` accepts `repo_root` and
+  already threads it correctly into `derive_epistemic_profile()` for its
+  own `unverified_required_scope` detection rule — but its separate
+  `stale_test_citation` block called both `oracle.aggregate_contract()`
+  and `oracle.evaluate_result_precedence()` without it, so a result
+  satisfying only *contract-relative* integrity could be described as
+  "currently passing" and used to flag a different, cited result as
+  stale, without that fresher result ever actually being live-
+  reconfirmed. This is the same underlying failure shape `L-105` already
+  names ("a tool's distinct... override parameter must be threaded
+  through every internal path resolution, or a single hardcoded fallback
+  silently defeats the whole feature") — but at a **finer grain**: not a
+  parameter dropped across an entire function's call, but dropped on one
+  of *two sibling internal calls within the same function*, each serving
+  a different detection rule. Three confirmed occurrences now, in under
+  two weeks: (1) `L-105` itself, Phase 83,
+  `scripts/assess_change_impact.py::classify_symbol` (`knowledge_root`
+  dropped on a `test_ref` resolution); (2) `decisions/0092`, Phase 84
+  first corrective pass, `src/codecompass/knowledge_api.py`'s `get()`/
+  `traverse()` oracle-result paths (`repo_root` dropped entirely, fixed
+  via `_oracle_result_consistency()`) — found independently during this
+  same review to have never been cross-referenced to `L-105` at the time
+  it was fixed, a gap in that triage's own "Candidate learnings filed
+  (corrective pass): None" conclusion (itself already flagged once as
+  wrong, for an unrelated reason, by the retro's own "Correction
+  (2026-11-02...)" paragraph); (3) `decisions/0093`, this same phase's
+  final corrective amendment, `find_gaps()`'s `stale_test_citation` block
+  specifically (`repo_root` dropped on one of two sibling internal
+  calls). Two of the three occurrences are within the same single module,
+  across this phase's own two corrective passes, one week apart.
+- **evidence:** `decisions/0093` Context point 2 (full defect account,
+  including the direct reproduction: "a constructed fresher result with a
+  deliberately wrong `tested_subject_digest` was still reported as the
+  'currently passing' result... identically whether or not a `repo_root`
+  was supplied — proof the parameter had no effect on this code path at
+  all"); `src/codecompass/knowledge_api.py` lines 1383-1385
+  (`derive_epistemic_profile(..., repo_root=repo_root)`, correctly
+  threaded) vs. lines 1400-1402/1422-1424
+  (`aggregate_contract`/`evaluate_result_precedence`, now also threaded
+  by the fix — confirmed by direct read of the current source, both call
+  sites now pass `repo_root=repo_root`);
+  `tests/test_knowledge_api.py::test_stale_citation_changed_implementation_
+  suppresses_false_claim` (constructs the exact pre-fix-failing scenario:
+  a fresher result whose own `tested_subject_digest` does not match the
+  live `impl.py`, which pre-fix would still have been reported as
+  "currently passing" because `aggregate_contract` never received
+  `repo_root` to catch the mismatch); `L-105`'s own entry (this inbox,
+  above) for occurrence (1); `planning/retros/phase-84-consolidated-
+  knowledge-api.md` "Corrective pass... What was achieved" (occurrence
+  (2)'s own account: "`repo_root` silently dropped on the oracle-result/
+  check retrieval paths").
+- **classification:** project-rule — unlike `L-111` above, this shape has
+  now recurred **three times across two phases and two different source
+  files**, including twice within one module in one week, crossing this
+  project's own established threshold for a project-wide `CLAUDE.md`
+  rule rather than a scoped one (`L-070`'s own "recurred twice within one
+  phase across two genuinely different checks... exactly the kind of
+  cross-instance recurrence this project's own learning-lifecycle treats
+  as sufficient for a project-wide rule, not a scoped one"; `L-087`/
+  `L-088`'s "thrice-evidenced" framing is weaker evidence than this
+  entry's own three *confirmed, independently-fixed* occurrences).
+- **status:** candidate
+- **recurrence:** 3 occurrences across 2 phases, 2 source files — see
+  observation above. `L-105` itself remains `status: promoted` (its own
+  regression test already landed and is unaffected); this entry is filed
+  separately rather than reopening `L-105`, matching how `L-075`
+  extended `L-070` as its own citable unit rather than rewriting it.
+- **promoted_to:** (pending — see curation note)
+- **curation note (2026-11-02, knowledge-curator):** all required fields
+  present. Independently re-read `L-105`'s own entry, `decisions/0092`'s
+  "What was achieved" account (via the retro), `decisions/0093`'s Context
+  point 2 and Decision 2, and the current `knowledge_api.py` source
+  (lines 1380-1443) directly — the three-occurrence account holds up
+  without relying on any single source's own self-report. **Recommendation:
+  promote**, as a `project-rule`, to `CLAUDE.md` §1 — draft below, routed
+  through `planning/v1-redefinition/proposed-governance-changes.md` §K
+  (also drafted this triage) per this role's own write-boundary (never
+  `CLAUDE.md` directly; propose only, lead presents the diff, user
+  approves per §0):
+
+  > If a phase's plan introduces or extends a function that accepts a
+  > distinct scoping/override parameter (e.g. an alternate root,
+  > `repo_root`, `knowledge_root`) used by more than one internal call
+  > site, helper, or detection rule, the plan's verification section must
+  > include a test for *each* such call site individually, confirming the
+  > parameter actually reaches it and changes the outcome — a parameter
+  > correctly threaded into one internal call is no evidence it reaches a
+  > sibling call for a different rule in the same function. (Phase 84
+  > final corrective amendment — L-110, extends L-105.)
+
+  Classified `project-rule` rather than `scoped-rule` specifically because
+  of the recurrence count (3, across 2 phases/files) — a stronger bar
+  than `L-111`'s own first-occurrence `scoped-rule` filing above, applying
+  this project's own established escalation threshold consistently rather
+  than promoting both candidates from this same triage to the same
+  destination by default.
+
+  This edit is outside this role's write boundary (`CLAUDE.md` itself) —
+  lead presents the §K diff to the user for explicit §0 approval before
+  it is written or committed, then flips this entry's `status` to
+  `promoted` and adds the `promoted.md` line once landed.
+
+---
+
 ### L-109 — Rich `Table` cells truncate with an ellipsis at the console's default render width; a test asserting literal/partial cell text can fail (or pass by coincidence) independent of whether the underlying data is correct
 
 - **origin:** Phase 84 corrective pass (Consolidated Knowledge API,
@@ -606,6 +852,36 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   already shipped in the same commit the bug was found in, same shape as
   `L-089`/`L-090`/`L-097`/`L-101` elsewhere in this log). `promoted.md`
   line added in the same commit as this filing.
+- **recurrence (2026-11-02, knowledge-curator, Phase 84 final corrective
+  amendment triage):** the identical failure shape — a distinct
+  scoping/override parameter (`repo_root`) correctly threaded into some
+  of a function's own internal call sites but not others — recurred
+  **twice more**, both inside `src/codecompass/knowledge_api.py` itself,
+  across this same phase's own two corrective passes: (1) `decisions/0092`
+  (Phase 84 first corrective pass, `45a3ca8`) found `repo_root` silently
+  dropped on the `get()`/`traverse()` oracle-result/check retrieval
+  paths, fixed via a shared `_oracle_result_consistency()` helper — **not
+  cross-referenced to this entry at the time**, a miss in that triage's
+  own "Candidate learnings filed (corrective pass): None" conclusion,
+  itself already corrected once (see the retro's own "Correction
+  (2026-11-02...)" paragraph for the unrelated `L-108`/`L-109` miss; this
+  is a second, distinct thing that same "None" conclusion got wrong,
+  found independently during this triage, not by that correction); (2)
+  `decisions/0093` (this phase's final corrective amendment, defect 2)
+  found `find_gaps()` itself already threading `repo_root` correctly into
+  `derive_epistemic_profile()` for its own `unverified_required_scope`
+  rule, but not into the sibling `aggregate_contract()`/`evaluate_result_
+  precedence()` calls its own `stale_test_citation` rule uses — a
+  **narrower** instance of the same shape than either prior one: not
+  "dropped across the whole call," but "threaded to one internal call,
+  dropped on a sibling call for a different detection rule, within the
+  very same function." Three occurrences now, across two phases and two
+  different source files (`scripts/assess_change_impact.py`,
+  `src/codecompass/knowledge_api.py`), the latter two within one module
+  in under a week. See `L-110` (filed this same triage) for the
+  escalation this recurrence count now justifies — a new, separately
+  citable project-rule rather than further annotation of this
+  already-promoted, test-shaped entry.
 
 ### L-103 — validate a value's type before checking its membership against a closed set
 

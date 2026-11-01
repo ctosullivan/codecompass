@@ -200,16 +200,25 @@ the explicitly requested `OUT_PATH`, detailed below).
   contradicting evidence, reporting an explicit **gap** when an
   obligation-bearing record has no evidence at all, or when a declared
   citation doesn't resolve to a real record — `dangling_evidence_
-  reference`, `decisions/0092`).
+  reference`, `decisions/0092`). For a Requirement specifically, whose
+  own knowledge-record schema has no `supporting_evidence` field at all,
+  this resolves one hop through its `depends_on` Claims instead —
+  tagged `supporting_indirect`/`contradicting_indirect` with a
+  `via_claim` detail — rather than reporting every Requirement as
+  missing evidence (`decisions/0093`); a `depends_on` id that doesn't
+  resolve is its own `dangling_dependency_reference` gap.
 - **`gaps [SLUG]`** — missing, stale, or conflicting knowledge across
   record kinds in one call: an unverified required oracle scope, a
   contradicted record, a stale test-evidence citation (a cited result no
   longer valid against the live contract while a different, current
-  `PASS` for the same check exists uncited), a dangling evidence
+  `PASS` for the same check exists uncited — qualified as live-
+  reconfirmed or contract-relative-only depending on whether a
+  `--repo-root` was reachable, `decisions/0093`), a dangling evidence
   reference (a `supporting_evidence`/`contradicting_evidence` citation
-  that resolves to no real record, `decisions/0092`), or a slug with
-  claims/requirements but no oracle contract at all. Omit `SLUG` to scan
-  every slug.
+  that resolves to no real record, `decisions/0092`), a dangling
+  dependency reference (a `depends_on` citation that resolves to no real
+  record, `decisions/0093`), or a slug with claims/requirements but no
+  oracle contract at all. Omit `SLUG` to scan every slug.
 - **`context TOPIC`** — a bounded, deterministic development-context
   packet: the subject record, its direct relations, and its own gaps, in
   a fixed priority order, truncated at `--max-items`/`--max-chars` with

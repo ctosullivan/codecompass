@@ -97,6 +97,18 @@ without fixing anything — that a phase is actually done.
     once, after the fix, cannot by itself distinguish "this test
     exercises the defect" from "this test happens to pass regardless."
     (Phase 84 corrective pass — `L-108`.)
+12. **For a function (or dogfood demonstration) whose own logic branches
+    by which kind/variant of a shared record or input type it receives,
+    confirm the phase's own tests exercise the function directly against
+    each kind it claims to handle, not only the most common one, and not
+    only via a sibling call in the same test that happens to touch the
+    other kind for an unrelated purpose.** Also confirm that a test which
+    does reach a kind-specific branch through a real call site actually
+    asserts on the output field(s) that branch's own logic affects (e.g.
+    `status`/`gaps` for a branch that can produce a gap) — reaching the
+    right branch proves nothing if the assertions only cover fields the
+    branch never touches. (Phase 84 final corrective amendment —
+    `L-111`.)
 
 ## Hard rules
 
