@@ -678,3 +678,980 @@ Before this corrective pass's own closeout is complete, the lead should:
 
 None of the above reopen this verdict on the two audited commits
 themselves — they are follow-up closeout steps, not defects in the fix.
+
+---
+
+# FINAL CORRECTIVE AMENDMENT AUDIT — 2026-11-02
+
+**Auditor:** `release-phase-auditor` (independent post-completion audit
+of a *second*, final corrective amendment against an already-`done`
+phase that already went through one prior corrective pass — `CLAUDE.md`
+§5, with full scrutiny of this amendment's own newly-written code per
+the project's governing agent instructions, not a lighter-touch re-check
+merely because it is "fixing something already found wrong").
+
+**Audited commits:** `23f6826` (fix: Requirement indirect evidence,
+`find_gaps()` live-revision validation — `decisions/0093`) and `085a68c`
+(docs: changelog/plan/retro for the final corrective amendment). Both on
+`main`, directly on top of this phase's prior `done`-plus-corrective-pass
+state (`f22c16a`, the subject of the "CORRECTIVE PASS AUDIT — 2026-10-29"
+section above).
+
+**Verdict: FAIL.**
+
+Both of `decisions/0093`'s own named defects (Requirement indirect
+evidence; `find_gaps()`'s dropped `repo_root`) are genuinely, correctly
+fixed, independently re-derived from the current source and re-executed
+against the real corpus — see §§1-2, 6 below, all PASS. **But** the
+same refactor that fixes defect 1 introduces a third, undisclosed
+behavioural change to **Claim**-level `trace_evidence()` tracing that
+the ADR, the function's own docstring, the plan file §13, and the retro
+all explicitly and repeatedly claim does **not** happen ("Claim-level
+tracing ... is completely unaffected" / "is unaffected by any of this").
+This claim is demonstrably false, confirmed by direct execution (§3
+below) — a verified, reproducible defect against this task's own named
+criterion ("No regression / no scope creep"), not a style nit. Per
+`CLAUDE.md` §5 and the governing instruction not to soften a real FAIL,
+this blocks the amendment's own closeout until resolved; it does **not**
+reopen or weaken either of the two audits above, which concern different,
+earlier commits.
+
+## 1. Defect 1 (Requirement indirect evidence) — fix itself confirmed
+correct
+
+Read `trace_evidence()` directly (`src/codecompass/knowledge_api.py`
+lines 1123-1231). Confirmed:
+
+- The `depends_on` walk is gated strictly on `record.kind ==
+  "requirement"` (line 1199) — never entered for a Claim subject.
+  Directly verified against the real corpus: `trace_evidence(REPO_ROOT,
+  "CL-BFS-003")` (a real Claim whose own `depends_on: [CL-BFS-001,
+  CL-BFS-002]` field is non-empty) returns only its own two direct
+  `EV-BFS-002`/`EV-BFS-003` citations with `role="supporting"`,
+  `via_claim=None` — `CL-BFS-001`/`CL-BFS-002` never appear in the
+  result set. `CL-BFS-003`'s own `depends_on` is never walked when it is
+  the subject.
+- **One-hop bound confirmed**: the loop at lines 1200-1221 resolves each
+  `dep_id`'s own direct `supporting_evidence`/`contradicting_evidence`
+  and stops — it never recurses into a dependent Claim's own
+  `depends_on` (no second-level walk exists anywhere in the function;
+  confirmed by reading the full function body, not merely the loop in
+  isolation).
+- **Mixed case (one supported + one unsupported dependent Claim) read
+  directly**, matching `test_requirement_with_mixed_supported_and_
+  unsupported_claims_keeps_resolved_evidence`: `CL-MIXOK-001` (has
+  `EV-MIXOK-001`) resolves into `results` with no gap; `CL-MIXBAD-001`
+  (empty `supporting_evidence`) gets its own `missing_evidence` gap
+  keyed to `CL-MIXBAD-001`, **not** to the Requirement — `has_any_
+  support` is `True` (from the one supported Claim), so the Requirement
+  itself correctly gets no `missing_evidence` gap of its own. Confirmed
+  by direct code trace of lines 1198-1227, not merely trusting the test.
+- `dangling_dependency_reference` is a genuinely new, distinct `Gap.kind`
+  string (confirmed via `grep -n "dangling_dependency_reference"
+  src/codecompass/knowledge_api.py` — appears at the `Gap.kind` comment,
+  `trace_evidence()`'s own dangling-`depends_on` branch (line 1203-1206),
+  `find_gaps()`'s docstring, and `find_gaps()`'s own new corpus-wide scan
+  (lines 1362-1367, confirmed to run over **every** record's own
+  `depends_on` field regardless of kind, matching the same
+  not-kind-restricted pattern the pre-existing `dangling_evidence_
+  reference` corpus-wide scan already uses, and matching `decisions/
+  0093`'s own Consequences-section description "over every record's own
+  `depends_on` field") — never conflated with the pre-existing
+  `dangling_evidence_reference` (a broken *Evidence* reference; distinct
+  `kind` string, used nowhere for a `depends_on` id).
+- A record whose `depends_on` resolves to a real record that is itself
+  **not** a Claim (e.g. another Requirement) is silently skipped (line
+  1208-1209, `if dep.kind != "claim": continue`) — no gap, no evidence
+  resolution for it. Not reachable in the current real corpus (both real
+  Requirements' `depends_on` lists name only Claims — confirmed via
+  `grep -rl "kind: requirement" planning/knowledge/ | xargs grep -l
+  depends_on`) and not flagged as a defect by `decisions/0093`, but it is
+  an **untested** edge case worth naming (see §5, Observation 2 below) —
+  non-blocking on its own.
+
+**Result: PASS** for the fix's own stated bound and keying logic. (The
+separate, undisclosed Claim-level side effect of the *same* commit is
+reported in §3, not here, since it is a different code path — the
+unconditional, pre-`if record.kind == "requirement"` block shared by
+both Claim and Requirement subjects.)
+
+## 2. Defect 2 (`find_gaps()` dropped `repo_root`) — confirmed fixed
+
+`grep -n "aggregate_contract\|evaluate_result_precedence"
+src/codecompass/knowledge_api.py` confirms both calls inside
+`find_gaps()`'s `stale_test_citation` block (lines 1400 and 1422) now
+pass `repo_root=repo_root` — read directly in context, not merely
+grepped: lines 1392-1437 show `aggregates = _oracle.aggregate_contract(
+contract, check_results, contract_path=contract_path, repo_root=
+repo_root)` and `outcome, reason = _oracle.evaluate_result_precedence(
+cited, contract, check, contract_path=contract_path, repo_root=
+repo_root)`. The `verification_note` qualifying phrase (lines 1428-1432)
+is gated explicitly on `if repo_root is not None`, not on any other
+proxy (e.g. not on `LEDGERKIT_ROOT.exists()` or similar) — read directly.
+
+Reasoned through (not materialized as a standalone repo) the exact
+scenario named in the task: a fresher result whose own
+`tested_subject_digest` does not match a live checkout. With `repo_root`
+now reaching `aggregate_contract()`/`evaluate_result_precedence()`,
+`oracle.py` (unmodified) would itself find that fresher result's
+digest-vs-live-checkout comparison fails, making `current_pass_by_check`
+`False` for that check (no result both contract-valid *and*
+digest-matching exists) — so the `if outcome == "INVALID" and
+current_pass_by_check.get(cited.check_id):` condition at line 1424 is
+never satisfied, and `stale_test_citation` correctly does not fire. This
+exact scenario is also directly exercised by the new regression test
+`test_stale_citation_changed_implementation_suppresses_false_claim`
+(§4 below) — re-run and confirmed passing.
+
+**Result: PASS.**
+
+## 3. Claim-level `trace_evidence()` regression — confirmed via direct
+execution (BLOCKING)
+
+The ADR (`decisions/0093`, "Consequences"), the amended function's own
+docstring, `planning/phase-84-consolidated-knowledge-api.md` §13, and
+the retro's "Final corrective amendment" section all state, in near-
+identical words, that Claim-level tracing is **"completely unaffected"**/
+**"unaffected by any of this"** by this amendment — i.e. that calling
+`trace_evidence()` on a Claim produces exactly the same gaps/results it
+did before `23f6826`, modulo nothing.
+
+This is false for one concrete, reproducible case: **a Claim whose
+`supporting_evidence` field is non-empty but every id in it is
+dangling (resolves to no real record).**
+
+Read the diff precisely (`git show 23f6826^:src/codecompass/
+knowledge_api.py` vs. current):
+
+- **Pre-fix**: `if record.kind in ("claim", "requirement") and not
+  supporting_ids:` — `supporting_ids` is the raw **declared** id list
+  (`_extract_id_strings(...)`, before resolution). A Claim with
+  `supporting_evidence: [EV-MISSING-001]` has `supporting_ids =
+  ["EV-MISSING-001"]`, which is non-empty, so `not supporting_ids` is
+  `False` — **no** `missing_evidence` gap, only the separate `dangling_
+  evidence_reference` gap from `_resolve()`.
+- **Post-fix**: `if record.kind in ("claim", "requirement") and not
+  has_any_support:` — `has_any_support` (for a Claim) equals
+  `has_direct_support`, the **return value** of `_resolve(...)`, which is
+  `True` only if **at least one** id actually resolved to a real record.
+  For the same Claim, `has_direct_support` is now `False` (the one
+  declared id never resolves) — so the `missing_evidence` gap **now also
+  fires**, in addition to the pre-existing `dangling_evidence_reference`
+  gap.
+
+**Confirmed empirically**, not just by diff-reading (fixture built in
+`/tmp` scratch space, never materialized in this repo's working tree):
+
+```
+id: CL-DANGLE-001
+kind: claim
+statement: dangling only
+supporting_evidence: [EV-MISSING-001]
+status: supported
+```
+```
+>>> ka.trace_evidence(<scratch_root>, "CL-DANGLE-001")
+status = "gap"
+gaps = [
+  Gap(kind='dangling_evidence_reference', subject_id='CL-DANGLE-001', ...),
+  Gap(kind='missing_evidence', subject_id='CL-DANGLE-001',
+      reason="CL-DANGLE-001 (claim) has no supporting_evidence citation at all"),
+]
+```
+
+Two gaps, where the pre-fix code (and `decisions/0092`'s own explicitly
+stated design principle, "a *declared* citation is never conflated with
+a *resolved* one") produced exactly one. This is a genuine behavioural
+change to the Claim-level code path, triggered purely by this
+amendment's refactor of the shared `_resolve()`/`has_any_support`
+plumbing — **not disclosed anywhere**, and directly contradicted by the
+amendment's own governing documents.
+
+**Why this is not merely a documentation nit:**
+
+- It is user-visible through two real production call sites that were
+  not reasoned about or tested for this effect: `get_context_packet()`
+  (`src/codecompass/knowledge_api.py:1540`, which calls `trace_evidence()`
+  for **any** subject's gaps, Claim or Requirement) and the CLI's
+  `knowledge trace <id>` command (`src/codecompass/cli.py:1776`, which
+  calls `trace_evidence()` directly with no Requirement/Claim
+  distinction). A user running `codecompass knowledge trace
+  <claim-id> --json` against a Claim with an exclusively-dangling
+  citation now sees an extra gap entry that did not exist under this
+  phase's already-`done`, already-once-corrected behaviour.
+- **No test protects against it.** The one directly relevant,
+  pre-existing test, `test_exclusively_dangling_supporting_evidence_
+  is_a_gap` (written during the *first* corrective pass, `decisions/
+  0092`, predating this amendment), only asserts `len(dangling) == 1`
+  for the `dangling_evidence_reference` gaps — it never asserts the
+  *absence* of a `missing_evidence` gap, nor the total gap count, so it
+  silently continues to pass whether or not the new, extra gap is
+  present. None of the 14 *new* tests this amendment adds exercise this
+  specific combination either — `test_claim_level_tracing_is_
+  unaffected_by_requirement_indirection` (the one new test whose name
+  claims to cover exactly this) uses a Claim with **literally empty**
+  `supporting_evidence: []`, not a *declared-but-dangling* one, so
+  `has_direct_support` and the old `not supporting_ids` check agree for
+  that fixture and the regression is invisible to it.
+- `find_gaps()` itself has no separate `missing_evidence` detection block
+  (confirmed via `grep -n "missing_evidence"
+  src/codecompass/knowledge_api.py` — only the two sites inside
+  `trace_evidence()`), so the corpus-wide `find_gaps()` scan is not
+  independently affected — but `trace_evidence()`'s own per-subject
+  behaviour, and everything built on it, is.
+- This is exactly the risk category `CLAUDE.md` §8's governing agent
+  instructions (and this project's own `L-086`/`L-108` precedent) direct
+  an auditor to scrutinize with **full**, not lighter-touch, rigor: a
+  corrective pass's *own newly-written code* (here, the refactor of
+  `_resolve()` to return `any_resolved` and reuse it for the shared
+  `has_any_support` check) introduced a side effect neither the
+  implementing pass nor its own governing ADR anticipated or tested for.
+
+**Result: FAIL.** This is a real, reproducible, user-visible behavioural
+change inconsistent with this amendment's own explicit, repeated claim
+that Claim-level tracing is unaffected, with no regression test
+protecting against it.
+
+## 4. Tests are real — spot-checked against the diff (6 of 14, exceeds
+the 5 asked for)
+
+Read the full test diff (`git diff 23f6826^ 23f6826 -- tests/
+test_knowledge_api.py`) and reasoned each of the following against the
+pre-fix source (`git show 23f6826^:src/codecompass/knowledge_api.py`,
+read-only, never materialized):
+
+1. `test_requirement_with_indirect_evidence_via_dependent_claim_is_a_
+   result_not_a_gap` — pre-fix, a bare Requirement with no `supporting_
+   evidence` field unconditionally hit `not supporting_ids` → `True` →
+   `missing_evidence` gap, `status="gap"`. This test asserts
+   `status="result"`, `gaps == []` — would genuinely have failed pre-fix.
+2. `test_requirement_indirect_contradicting_evidence_is_surfaced` — same
+   reasoning; pre-fix, no `contradicting_indirect`-role result could ever
+   appear since the pre-fix function never read a Requirement's
+   `depends_on` at all. Would have failed (`contradicting` list empty).
+3. `test_requirement_with_unsupported_dependent_claim_is_a_gap_keyed_to_
+   the_claim` — pre-fix, the gap's `subject_id` would be `REQ-IND-001`
+   only (the one, undifferentiated Requirement-level `missing_evidence`
+   gap); this test asserts `{g.subject_id for g in missing} ==
+   {"CL-IND-001", "REQ-IND-001"}` — would have failed (missing the
+   Claim-keyed gap entirely, since pre-fix code never iterates
+   `depends_on`).
+4. `test_requirement_with_dangling_dependency_reference_is_a_gap` —
+   pre-fix, the `dangling_dependency_reference` `Gap.kind` did not exist
+   in the function at all (confirmed: `grep` of the pre-fix blob for
+   `dangling_dependency_reference` returns nothing) — would have failed
+   (`dangling` list empty).
+5. `test_real_requirement_resolves_indirect_evidence_through_dependent_
+   claims` — the real-corpus reproduction; pre-fix this is the exact
+   defect `decisions/0093` names (`REQ-BFS-001` reporting a false gap) —
+   independently re-confirmed by me directly in §6 below, matching the
+   test's own assertions.
+6. `test_stale_citation_changed_implementation_suppresses_false_claim` —
+   pre-fix, `aggregate_contract()`/`evaluate_result_precedence()` were
+   called without `repo_root` (confirmed in the pre-fix blob at the
+   equivalent call sites), so the fresher result's digest mismatch would
+   never be checked against the live `impl.py`, and `stale_test_citation`
+   would incorrectly fire; this test asserts `stale == []` — would have
+   failed pre-fix (this project's own commit message independently
+   confirms the same reasoning: "constructing a result with a
+   deliberately wrong `tested_subject_digest` that produced identical
+   output whether or not `repo_root` was supplied").
+
+All six check out as genuine, discriminating regression tests. (The
+7th-14th tests were not individually re-derived line-by-line but were
+read in full and are consistent with the same diff-based reasoning —
+no inconsistency found across any of the 14.)
+
+**Result: PASS** for test authenticity on the two named defects — this
+does not contradict §3's finding, since none of the 14 tests claim to
+(or do) cover the Claim-level side effect named there.
+
+## 5. No regression / no scope creep in untouched modules — confirmed;
+one in-scope regression found (§3)
+
+`git diff f22c16a 085a68c --stat -- src/codecompass/oracle.py
+src/codecompass/graph.py src/codecompass/knowledge_intermediate.py`
+produces zero output — these three files are genuinely untouched by
+both commits, confirming `decisions/0093`'s own Consequences-section
+claim on this specific point. Full changed-file list across both commits
+(`git diff f22c16a 085a68c --stat`): `CHANGELOG.md`, `decisions/0093-...
+.md`, `planning/phase-84-consolidated-knowledge-api.md`,
+`planning/retros/phase-84-consolidated-knowledge-api.md`,
+`src/codecompass/knowledge_api.py`, `tests/test_knowledge_api.py` — no
+undisclosed file touched, matches the commit messages exactly.
+
+`epistemic_status()` (lines ~1239 onward) is confirmed untouched by
+either commit (the diff's hunks stop before this function and resume
+only inside `find_gaps()`), matching `decisions/0093`'s claim it "already
+resolved this correctly" and needed no change — read directly, not
+inferred.
+
+`TestNoMutationPath` (6 tests) re-run directly: `.venv/bin/python -m
+pytest tests/test_knowledge_api.py -k NoMutation -q` → **6 passed**. No
+new writer-function reference introduced (confirmed: the diff adds no
+`sqlite3`/`write_*`/`accept_baseline` references anywhere).
+
+**Result:** PASS for the three untouched modules and for the no-new-
+mutation-path guarantee; **FAIL** for "no scope creep" as a whole, per
+§3's Claim-level finding, which is squarely inside the one file this
+amendment did touch.
+
+## 6. Real-corpus re-demonstration — confirmed
+
+Ran directly:
+```
+.venv/bin/python -c "
+from pathlib import Path
+from codecompass import knowledge_api as ka
+r = ka.trace_evidence(Path('.').resolve(), 'REQ-BFS-001')
+print(r.status, [(x.id, x.details.get('role'), x.details.get('via_claim')) for x in r.results], r.gaps)
+"
+=> result [('EV-BFS-001','supporting_indirect','CL-BFS-001'),
+           ('EV-BFS-002','supporting_indirect','CL-BFS-001'),
+           ('EV-BFS-001','supporting_indirect','CL-BFS-002'),
+           ('EV-BFS-003','supporting_indirect','CL-BFS-002'),
+           ('EV-BFS-002','supporting_indirect','CL-BFS-003'),
+           ('EV-BFS-003','supporting_indirect','CL-BFS-003')] []
+```
+`status="result"`, zero gaps, all three real dependent Claims
+(`CL-BFS-001`/`002`/`003`) traced with correct `via_claim` provenance —
+confirms the originally-named defect is genuinely fixed against the real
+corpus, not merely against synthetic fixtures. Also directly confirmed
+`trace_evidence(REPO_ROOT, "CL-BFS-003")` (the real Claim that itself
+`depends_on` other Claims) returns only its own two direct citations,
+`via_claim=None` — Claim-subject tracing genuinely does not walk
+`depends_on`, consistent with §1's bound (separately from the unrelated
+§3 finding, which is about the `missing_evidence` *trigger condition*,
+not about walking `depends_on`).
+
+**Result: PASS.**
+
+## 7. Verification commands re-run directly
+
+```
+.venv/bin/python -m pytest tests/test_knowledge_api.py -q
+=> 79 passed in 3.16s
+
+.venv/bin/python -m pytest tests/test_cli.py tests/test_oracle.py tests/test_knowledge_intermediate.py -q
+=> 224 passed (run twice, consistent)
+
+.venv/bin/python -m pytest -q   (full suite)
+=> 1137 passed, 2 skipped in 274.26s
+
+.venv/bin/python scripts/check_user_docs.py --strict
+=> check_user_docs: no findings (exit 0)
+
+.venv/bin/python scripts/check_contracts.py --strict
+=> check_contracts: 7 finding(s), all [info]-level, identical to the
+   corrective-pass audit's own §6 baseline above (exit 0)
+
+.venv/bin/python scripts/check_knowledge_base.py --strict
+=> check_knowledge_base: 24 finding(s), all [info]-level, identical to
+   the corrective-pass audit's own §6 baseline above (exit 0)
+```
+
+All counts match exactly what the commit message, `decisions/0093`, the
+plan §13, and the retro claim (79, not 65, tests; 1137 passed/2 skipped
+full suite; both strict validators unchanged at 7/24 info-level findings).
+
+**Also ran** (not requested, but relevant to §3): `.venv/bin/python -m
+ruff check .` → 160 errors repository-wide (up from a pre-existing
+baseline — see Non-blocking Observation 1 below), confirming via
+`git show 23f6826^:...` comparison that this amendment adds only `E501`
+(line-too-long) violations, no new `F`/`I`/`UP` category.
+
+**Result: PASS** for all explicitly-requested verification commands.
+
+## 8. Docs/changelog/plan/retro consistency — accurate for the two named
+defects; FAILS to disclose the §3 finding (expected, since the §3 finding
+was not itself known to the implementing pass)
+
+`CHANGELOG.md`'s `[Unreleased]` → `Fixed` entry, `planning/phase-84-
+consolidated-knowledge-api.md` §13, and the retro's "Final corrective
+amendment" section all accurately describe what the code now does for
+the two named defects — spot-checked against the source directly, no
+discrepancy found for defect 1 or defect 2's own described behaviour.
+
+The retro's "Correction (2026-11-02, final corrective amendment)"
+paragraph (appended, not rewriting the original in place, per this
+project's own append-only convention) correctly reconciles the earlier
+retro's now-superseded "no new candidate learnings" claim against the
+actual `L-108`/`L-109` promotion history — read in full, confirmed
+accurate and genuinely non-destructive (the original paragraph is left
+verbatim, the correction appended immediately after it).
+
+**However**, per §3 above, every one of these four documents (the ADR,
+the function docstring, the plan §13, the retro) repeats essentially the
+same false claim — "Claim-level tracing ... is completely unaffected" /
+"unaffected by any of this" — which is not a §8-specific drift (these
+documents are *consistent with each other and with what the implementing
+pass believed it had done*), but is a §3 code-behaviour finding that
+necessarily also makes these same four documents inaccurate as a
+description of the actual, current system. This is not scored as an
+additional, independent failure in this section — it is the same single
+underlying defect from §3, reflected in its own documentation, not a
+second one — but it means fixing §3 will require a corresponding doc
+correction pass across all four of these artifacts (code docstring, ADR,
+plan, retro), not merely the code.
+
+**Result:** PASS for descriptive accuracy of the two intentionally-fixed
+defects; the Claim-level overclaim is §3's finding, not re-scored here.
+
+## 9. Original audit and first corrective-pass audit content — confirmed
+genuinely intact
+
+`wc -l`/`md5sum` of `planning/retros/_audit-phase-84.md` immediately
+before I began appending this section: 680 lines. `git log --oneline --
+planning/retros/_audit-phase-84.md` (checked before any edit of my own)
+showed exactly two commits ever touching this file
+(`2698622`, the original audit; `fb057d7`, the first corrective-pass
+addendum) — both sections above (the original "Phase 84 completion
+audit" and "CORRECTIVE PASS AUDIT — 2026-10-29") are reproduced above
+**verbatim**, byte-for-byte, with only this new section appended after
+their existing final line. No existing content rewritten, reworded, or
+removed.
+
+**Result: PASS.**
+
+## 10. Process disclosure — concurrent, uncommitted working-tree activity
+observed during this audit (not mine; not touched)
+
+At the time I began this audit, `git status --short` was clean. Partway
+through (after running the real verification commands), `git status
+--short` showed the following **uncommitted** changes that I did **not**
+make and did **not** touch, inspect-only via `Read`/non-mutating `git
+show`/`git diff` where relevant:
+
+```
+ M .claude/agents/release-phase-auditor.md
+ M docs/reference/cli.md
+ M planning/learnings/inbox.md
+ M planning/learnings/promoted.md
+ M planning/v1-redefinition/proposed-governance-changes.md
+?? planning/retros/_drift-audit-phase-84-final-amendment.md
+```
+
+This is consistent with concurrent, in-progress work by other
+specialist-agent dispatches on this same shared working tree (the exact
+scenario this audit's own dispatch warned about) — most likely a
+`docs-reconstructor` drift audit for this amendment (the untracked file
+matches that naming convention exactly) plus `docs-maintainer`/
+`knowledge-curator` follow-on work addressing it, none of it part of the
+two commits (`23f6826`/`085a68c`) this audit evaluates. I read (but did
+not modify) the untracked drift-audit file for informational purposes
+only, per the task's own item 3 (confirming a `docs-reconstructor`
+per-phase drift audit ran): as of this read, its own verdict is
+**"DRIFT — 2 findings (both non-blocking)"**, not `NO DRIFT` — two
+completeness gaps (`docs/reference/cli.md`'s `gaps` bullet omitting the
+new `dangling_dependency_reference` gap kind; `planning/CONTEXT.md` not
+yet mentioning this amendment, expected per the terminal-commit
+exemption) — consistent with the `docs/reference/cli.md` modification
+observed above being `docs-maintainer`'s in-progress fix for the first
+of those two findings. Per `CLAUDE.md` §5, this condition ("every
+finding it raised was fixed by `docs-maintainer` and re-audited") is
+**not yet satisfied** as of this audit — it is visibly in progress, but
+not yet re-audited to confirm, and not yet committed.
+
+I did **not** run `git stash`, `git reset`, `git checkout <commit> --
+<path>`, or any other tree-mutating command at any point in this audit.
+Confirmed via `git status --short` immediately before finishing (see
+below) that the only change attributable to me is this append to
+`planning/retros/_audit-phase-84.md`; all five pre-existing modified
+files and the one untracked file listed above are unchanged by my own
+work, in whatever state the concurrent process left them.
+
+**Result:** informational disclosure, not a pass/fail item of its own —
+but it does mean the drift-audit DoD condition (item 3 of this audit's
+own brief) cannot be scored a clean PASS as of this exact moment; see
+"What must be fixed" below.
+
+## Non-blocking observations
+
+1. **`ruff check .` error count increase (99 → 120 `E501` violations in
+   the two touched files)** is pre-existing-pattern debt, not a new
+   category of problem: both the pre-fix and post-fix versions of
+   `src/codecompass/knowledge_api.py`/`tests/test_knowledge_api.py`
+   already violated the project's 100-character line-length convention
+   at scale (104 total pre-fix, 125 post-fix, confirmed by running `ruff
+   check` against both the current files and the pre-fix blobs saved to
+   scratch space) — all `E501`, none `F`/`I`/`UP`. Not blocking since
+   this project's own prior audits (see the two sections above) never
+   treated `ruff check .` cleanliness as a gating condition for this
+   module, and this amendment does not introduce a new violation
+   category.
+
+2. **The silent `if dep.kind != "claim": continue` skip** (§1 above) for
+   a Requirement's `depends_on` entry that resolves to a non-Claim record
+   is untested and undocumented as a deliberate choice (vs. an oversight)
+   — not reachable in the current real corpus, so non-blocking, but
+   worth a test and a one-line docstring note if a Requirement ever
+   gains a non-Claim dependency in practice.
+
+## What must be fixed before re-audit
+
+This verdict is **FAIL** on the specific criterion: Defect 1's own fix
+introduces an undisclosed, untested behavioural change to Claim-level
+`trace_evidence()` tracing (§3), contradicting this amendment's own
+explicit, repeated claim that Claim-level tracing is "completely
+unaffected." Required before re-audit:
+
+1. **Resolve the Claim-level behaviour itself**, by one of two routes:
+   (a) restore the pre-amendment Claim-level trigger (missing_evidence
+   fires only when the record's own citation list is **declared**-empty,
+   i.e. revert to checking the *declared* id list for a Claim subject
+   specifically, leaving the new *resolved*-based check active only for
+   the Requirement indirect-evidence path), preserving `decisions/0092`'s
+   own "declared is never conflated with resolved" principle exactly as
+   it stood before this amendment; or (b) explicitly decide, document (a
+   `decisions/0093` amendment or a fresh ADR), and test that both
+   defects — a dangling citation *and* a missing-evidence finding — are
+   now intentionally reported together for a Claim with no citation that
+   actually resolves. Either is acceptable; silently shipping (b) without
+   disclosing it, as currently committed, is not.
+2. **Add a regression test** that pins down whichever behaviour is
+   chosen for exactly the case `test_exclusively_dangling_supporting_
+   evidence_is_a_gap` already exercises (a Claim whose only declared
+   `supporting_evidence` id is dangling) — asserting the *total* gap
+   count/kinds, not just the presence of the `dangling_evidence_
+   reference` one, so a future change cannot silently alter this again
+   unnoticed.
+3. **Correct the "completely unaffected"/"unaffected by any of this"
+   claim** in `decisions/0093`, the `trace_evidence()` docstring,
+   `planning/phase-84-consolidated-knowledge-api.md` §13, and the retro's
+   "Final corrective amendment" section to accurately state whichever
+   resolution is chosen in (1).
+4. Separately (not blocking re-audit of the above, but should be
+   completed before this amendment's own closeout is airtight): land the
+   in-progress `docs-reconstructor`/`docs-maintainer` work observed in
+   §10 (commit the drift-audit report and its fixes, re-audit to confirm
+   `NO DRIFT`, and reconcile `planning/CONTEXT.md`) via the terminal
+   `roadmap-context-curator` reconciliation commit.
+
+None of the above reopen the "Phase 84 completion audit" or "CORRECTIVE
+PASS AUDIT — 2026-10-29" sections above, which concern different, already
+-closed commits and are unaffected by this finding.
+
+---
+
+# FINAL CORRECTIVE AMENDMENT RE-AUDIT — 2026-11-02
+
+**Auditor:** `release-phase-auditor` (same auditor, same amendment,
+continuation of the "FINAL CORRECTIVE AMENDMENT AUDIT" section
+immediately above, re-verifying the fix the lead applied in response to
+that section's FAIL verdict — per `CLAUDE.md` §8's governing instruction,
+this fix's own newly-written code gets full scrutiny, not a lighter-touch
+re-check merely because it is "fixing something already found wrong").
+
+**State audited:** the current, **uncommitted** working tree at
+`/home/cormac/projects/codecompass` as of 2026-11-02. `git log` confirms
+no new commit has landed since `085a68c` (still `HEAD`) — the fix
+described below exists only as unstaged modifications to
+`src/codecompass/knowledge_api.py`, `tests/test_knowledge_api.py`,
+`decisions/0093-...md`, `planning/phase-84-consolidated-knowledge-api.md`,
+and `planning/retros/phase-84-consolidated-knowledge-api.md`, plus the
+separate, concurrent `.claude/agents/release-phase-auditor.md`,
+`planning/learnings/{inbox,promoted}.md`,
+`planning/v1-redefinition/proposed-governance-changes.md`, and
+`docs/reference/cli.md` changes already disclosed as not-mine in §10
+above (still present, still untouched by me). **This verdict applies to
+the working-tree state as read; it must be re-confirmed against the
+actual commit SHA(s) once this fix is committed**, per `CLAUDE.md` §5's
+own rule that any commit touching audited scope after an audit voids
+that audit.
+
+**Verdict: PASS WITH NON-BLOCKING OBSERVATIONS.**
+
+The root-cause fix is structurally sound, symmetric, and independently
+confirmed to eliminate the exact regression §3 above found — by direct
+re-execution of my own original repro, not merely by reading the lead's
+summary of it. All explicitly requested verification commands re-run
+clean with the expected counts. The new regression-guard test genuinely
+would have caught the original bug (reasoned through, not merely
+observed passing now). All four governing documents (`decisions/0093`,
+the plan §13, the retro, and — separately — this agent's own definition
+file for the new `L-111` item) gained honest, append-only correction
+notes describing the FAIL and the fix, none of them silently rewriting
+the original false claim. `L-110`/`L-111` are correctly triaged and
+consistent with their own stated statuses. No regression in the wider
+suite. The remaining non-blocking items are exactly the same closeout
+items named in the prior section's own "What must be fixed" item 4
+(still open, not reopened by this re-audit) plus the fact that none of
+this is committed yet.
+
+## 1. Repro scenario re-run directly against the fixed source — confirmed
+exactly one gap
+
+Re-ran my own exact original repro (the same scratch fixture from the
+FAIL section, never recreated or altered):
+
+```
+>>> ka.trace_evidence(<scratch_root>, "CL-DANGLE-001")
+   # supporting_evidence: [EV-MISSING-001] -- one declared, dangling citation
+len(gaps) = 1
+gaps = [Gap(kind='dangling_evidence_reference', subject_id='CL-DANGLE-001', ...)]
+```
+
+Exactly one gap, `dangling_evidence_reference` only — no `missing_
+evidence` gap. This is the precise before/after contrast §3 established
+(two gaps pre-fix, one post-fix), now confirmed against the *current*
+source, not merely asserted by the lead's summary.
+
+**Result: PASS.**
+
+## 2. `trace_evidence()` source read directly — structurally sound for
+the general declared-vs-resolved distinction, not just my one repro case
+
+Read the current function in full (`src/codecompass/knowledge_api.py`
+lines 1123-1249). The new shared signal:
+
+```python
+has_any_declared = bool(direct_supporting_ids)
+if record.kind == "requirement":
+    dep_ids = _ki._extract_id_strings(record.fields.get("depends_on", ""))
+    if dep_ids:
+        has_any_declared = True
+    for dep_id in dep_ids:
+        ...  # dangling_dependency_reference / per-Claim missing_evidence, unchanged
+if record.kind in ("claim", "requirement") and not has_any_declared:
+    ...  # top-level missing_evidence
+```
+
+Traced through every case by hand, not just the one repro:
+
+- **Claim, no citation declared** (`supporting_evidence: []`):
+  `has_any_declared = False` → top-level `missing_evidence` fires.
+  Matches pre-amendment behaviour exactly (`not supporting_ids` was
+  `True` for an empty list too) — confirmed via
+  `test_claim_with_no_supporting_evidence_is_a_gap`, re-run, passes.
+- **Claim, one citation declared, resolves**: `direct_supporting_ids`
+  non-empty → `has_any_declared = True` → no top-level gap. Unchanged
+  from pre-amendment (`not supporting_ids` was `False`) and from the
+  buggy intermediate state (resolution succeeded, so both old and new
+  signals agreed here) — confirmed via
+  `test_claim_with_evidence_is_a_result_not_a_gap`, re-run, passes.
+- **Claim, one citation declared, dangling** (the regression case):
+  `direct_supporting_ids` non-empty → `has_any_declared = True` → no
+  top-level gap, only `dangling_evidence_reference` from `_resolve()`.
+  This is the one case that differed between pre-amendment and the buggy
+  intermediate state, and the fix restores it to the pre-amendment
+  value — confirmed in §1 above.
+- **Requirement, no `depends_on` at all**: `direct_supporting_ids` is
+  always empty for a Requirement (no such field exists in this
+  project's schema) and `dep_ids` is empty too → `has_any_declared`
+  stays `False` → top-level `missing_evidence` fires, with the now
+  slightly-reworded reason "...and no `depends_on` citation either" —
+  confirmed via
+  `test_requirement_with_no_direct_and_no_indirect_evidence_at_all_is_
+  still_a_gap`, re-run, passes.
+- **Requirement, `depends_on` non-empty, target dangling**: `dep_ids`
+  non-empty → `has_any_declared = True` unconditionally, *before* the
+  loop even checks whether `dep_id` resolves — so a dangling
+  `depends_on` target produces exactly one gap
+  (`dangling_dependency_reference`), never also a redundant top-level
+  `missing_evidence`. This is the Requirement-side mirror of the
+  Claim-level fix, applied by the same mechanism (declaring something,
+  even if it turns out broken, is `True`) — confirmed via
+  `test_requirement_with_dangling_dependency_reference_is_a_gap`'s new
+  `len(response.gaps) == 1` assertion, re-run, passes.
+- **Requirement, `depends_on` non-empty, target resolves but is itself
+  evidence-less**: `dep_ids` non-empty → `has_any_declared = True`
+  regardless of whether the dependent Claim's own `claim_supporting_
+  ids` is empty — so the Requirement's own top-level gap never fires
+  here either, only the Claim-keyed `missing_evidence` gap from inside
+  the loop. This is exactly the case the task asked me to re-verify
+  (previously, before the original 23f6826 fix, keyed to both; the
+  intermediate buggy state also keyed to both via the `has_any_support`
+  resolution check; now keyed to the Claim only) — confirmed via
+  `test_requirement_with_unsupported_dependent_claim_is_a_gap_keyed_to_
+  the_claim`'s updated `{g.subject_id for g in missing} == {"CL-IND-
+  001"}` assertion, re-run, passes.
+- **Requirement, mixed supported + unsupported dependent Claims**:
+  unaffected by this change either way — `dep_ids` non-empty already
+  made `has_any_declared = True` even before this fix (since the buggy
+  intermediate state's `has_any_support` was *also* `True` here, from the
+  one genuinely-resolving Claim) — confirmed via
+  `test_requirement_with_mixed_supported_and_unsupported_claims_keeps_
+  resolved_evidence`, re-run unchanged, passes.
+
+This is a single signal, computed once, before either the Claim or
+Requirement branches read it — not two separately-patched special cases
+that happen to agree on the cases tested so far. The fix is symmetric by
+construction (one declared-vs-resolved rule, one variable), which is a
+materially stronger property than "correct for the cases exercised,"
+and directly addresses the general concern the task asked me to confirm,
+not merely my one specific repro.
+
+**Result: PASS.**
+
+## 3. The two updated tests and the new regression-guard test — confirmed
+correct, confirmed the guard is real
+
+- `test_requirement_with_unsupported_dependent_claim_is_a_gap_keyed_to_
+  the_claim`: updated assertion `{g.subject_id for g in missing} ==
+  {"CL-IND-001"}` (previously `{"CL-IND-001", "REQ-IND-001"}`) is
+  correct under the new symmetric rule — traced by hand in §2 above
+  (REQ-IND-001 declared a `depends_on` citation, even though the Claim it
+  names lacks its own evidence, so no redundant top-level Requirement gap
+  fires). Re-run: passes.
+- `test_requirement_with_dangling_dependency_reference_is_a_gap`: gained
+  `assert len(response.gaps) == 1` — correct per the same reasoning
+  (declaring a `depends_on` citation, even a dangling one, is still
+  "something declared"). Re-run: passes.
+- `test_exclusively_dangling_supporting_evidence_produces_exactly_one_
+  gap` (new): asserts `len(response.gaps) == 1` and
+  `response.gaps[0].kind == "dangling_evidence_reference"` for a Claim
+  with `supporting_evidence: ["EV-MISSING-999"]`. **Reasoned through
+  whether this would have caught the original bug** (not merely checked
+  that it passes now): against the buggy intermediate source (the state
+  I audited in the FAIL section, where the shared signal was
+  resolution-based `has_any_support`), this exact fixture has
+  `direct_supporting_ids = ["EV-MISSING-999"]` (non-empty, declared) but
+  `_resolve()` returns `any_resolved = False` (the id never resolves) —
+  so `has_any_support` would have been `False`, the top-level
+  `missing_evidence` gap would have fired *in addition to* the
+  `dangling_evidence_reference` one, `len(response.gaps)` would have been
+  `2`, and this test's own `assert len(response.gaps) == 1` would have
+  failed. This is a genuine, discriminating regression guard for exactly
+  the shape of bug found, not a test that happens to pass under both the
+  buggy and fixed code.
+
+**Result: PASS.**
+
+## 4. `tests/test_knowledge_api.py` re-run — 80 passed, nothing else
+broken
+
+```
+.venv/bin/python -m pytest tests/test_knowledge_api.py -q
+=> 80 passed in 3.78s
+```
+
+Matches the expected count exactly (79 → 80, the one new regression-guard
+test). No other test's outcome changed — re-read the full diff
+(`git diff 085a68c -- tests/test_knowledge_api.py`) and confirmed it
+contains exactly the three changes named in §3 above (one new test, two
+updated assertions) and nothing else; no test was deleted, skipped, or
+had its fixture silently altered.
+
+Also re-ran the full repository suite as requested:
+
+```
+.venv/bin/python -m pytest -q
+=> 1138 passed, 2 skipped in 270.23s (0:04:30)
+```
+
+Matches the expected count exactly (1137 → 1138, the same one new test;
+2 skips unchanged, same pre-existing environment-dependent skips named in
+earlier sections of this report).
+
+**Result: PASS.**
+
+## 5. Real corpus re-check — `REQ-BFS-001` unaffected by the fix
+
+```
+.venv/bin/python -c "... ka.trace_evidence(Path('.').resolve(), 'REQ-BFS-001') ..."
+=> result [(...6 entries, all via_claim in {CL-BFS-001,CL-BFS-002,CL-BFS-003}, role='supporting_indirect'...)] []
+```
+
+Identical to the result obtained in the FAIL section's own §6 (same
+`status="result"`, same zero gaps, same three `via_claim` provenance
+values) — confirmed byte-for-byte unchanged by re-running the exact same
+command, not merely asserting it should be unaffected. This is expected:
+`REQ-BFS-001`'s own `depends_on` (`CL-BFS-001`/`002`/`003`) are all
+real, resolving Claims each carrying real `supporting_evidence`, so
+`has_any_declared` is `True` via the `dep_ids`-non-empty branch exactly
+as it would have been under either the buggy or the fixed signal — this
+real-corpus case was never actually at risk from either version of the
+bug, which only manifests for a *dangling* or *entirely absent*
+citation, not a correctly-resolving one.
+
+**Result: PASS.**
+
+## 6. `decisions/0093`, plan §13, and retro correction notes — confirmed
+honest, append-only, consistent with each other
+
+- `decisions/0093`'s new "## Correction (2026-11-02, same-day independent
+  re-audit)" section (read in full via `git diff 085a68c -- decisions/
+  0093-...md`): names the regression precisely (shared `has_any_support`
+  signal switched from declared- to resolution-based, affecting the Claim
+  path too), names who caught it (the `release-phase-auditor` re-audit,
+  verdict FAIL, cited by file path), names why the amendment's own 14
+  tests missed it (`test_claim_level_tracing_is_unaffected_by_
+  requirement_indirection`'s empty-list fixture couldn't see a
+  declared-but-dangling case), and describes the fix accurately
+  (symmetric `has_any_declared`, not two separately-patched special
+  cases) — matches my own §2 findings above exactly, independently
+  arrived at.
+- `planning/phase-84-consolidated-knowledge-api.md` §13 gained a
+  matching "**Correction (2026-11-02, same-day re-audit, FAIL then
+  fixed)**" paragraph, appended after the existing §13 content, not
+  rewriting it — confirmed via `git diff 085a68c -- planning/phase-84-
+  consolidated-knowledge-api.md`, pure addition.
+- The retro's "Final corrective amendment" section gained a "**Correction
+  (2026-11-02, same-day re-audit)**" paragraph (confirmed via `git diff
+  085a68c -- planning/retros/phase-84-consolidated-knowledge-api.md`)
+  that explicitly says "both paragraphs above were wrong, left in place
+  uncorrected in situ" (matching this project's own established
+  append-only amendment convention, same pattern already used once in
+  this same retro file for the unrelated `L-108`/`L-109` miss) and
+  additionally discloses the separate `L-110`/`L-111` filing (item 7
+  below) under the same correction, rather than only the code regression
+  — a more complete correction than the task's own phrasing strictly
+  asked for, not a narrower one.
+
+All three are genuinely honest (name the FAIL, name the auditor, name
+the mechanism, name the fix) rather than a silent rewrite of the
+original "completely unaffected" claim, and are mutually consistent with
+each other and with the actual code — cross-checked, not merely each
+read in isolation.
+
+**Result: PASS.**
+
+## 7. `L-110`/`L-111` — confirmed correctly filed and consistent with
+their own stated statuses (new item, outside original audit scope)
+
+- **`.claude/agents/release-phase-auditor.md`**: confirmed item 12 was
+  actually added (`git diff 085a68c -- .claude/agents/release-phase-
+  auditor.md`), reading the live text of my own agent definition
+  directly rather than trusting the diff summary: a new numbered item
+  "For a function (or dogfood demonstration) whose own logic branches by
+  which kind/variant of a shared record or input type it receives,
+  confirm the phase's own tests exercise the function directly against
+  each kind it claims to handle..." — placed correctly as item 12,
+  immediately after item 11 (`L-108`'s own item), matching the inbox
+  entry's own "promoted_to" description exactly, word for word.
+- **`planning/learnings/inbox.md`**: `L-111`'s entry has `status:
+  promoted`, a substantive, non-stub `observation` (the three-independent-
+  ways-missed account: no pre-amendment `TestTraceEvidence` test used a
+  Requirement id; the dogfood test routed a Requirement through
+  `traverse(..., "depends_on")` but the evidence-tracing half through a
+  Claim; `TestContextPacket`'s pre-existing tests did pass a Requirement
+  id but asserted only on `items`/`bounds`, never `gaps`/`status`) and a
+  genuine `knowledge-curator` curation note recommending promotion with
+  the exact text that was in fact added — not a generic placeholder.
+  `L-110`'s entry has `status: candidate` (correctly **not** `promoted`
+  — it proposes a `CLAUDE.md` §1 change, which `CLAUDE.md` §0 requires
+  explicit user approval for before it is written; `knowledge-curator`'s
+  write boundary never includes `CLAUDE.md` directly, matching how
+  `L-087`/`L-088` were routed in prior phases), with a three-occurrence
+  recurrence account (`L-105` Phase 83; `decisions/0092` Phase 84 first
+  corrective pass; `decisions/0093` this same phase's final amendment)
+  that I independently re-checked against each cited source
+  (`src/codecompass/knowledge_api.py` lines ~1380-1443 for the `repo_
+  root`-threading sites named) and found accurate.
+- **`planning/learnings/promoted.md`**: contains exactly one new line
+  for `L-111` (`scoped-rule | .claude/agents/release-phase-auditor.md
+  "What to check" item 12 ...`), correctly omitting `L-110` (not yet
+  promoted, consistent with its `candidate` status in `inbox.md`) —
+  confirmed via direct read, no inconsistency between the two files.
+- **`planning/v1-redefinition/proposed-governance-changes.md`** gained a
+  new "## K. 2026-11-02 proposed addition (Phase 84 final corrective
+  amendment — `L-110`, extends `L-105`)" section with the exact proposed
+  `CLAUDE.md` §1 sentence, explicitly marked "**Status:** proposed, not
+  yet presented to the user" — consistent with `L-110` correctly sitting
+  at `candidate`, not `promoted`, and consistent with `CLAUDE.md` §0's
+  own protected-file rule (no direct edit to `CLAUDE.md` itself observed
+  anywhere in this working tree — confirmed via `git status --short`,
+  `CLAUDE.md` does not appear in the modified-file list).
+
+**Result: PASS.** Both candidate learnings are filed, evidenced, and
+triaged to statuses consistent with this project's own promotion rules;
+nothing jumped ahead of the explicit-approval gate `CLAUDE.md` §0
+requires for a `CLAUDE.md` change.
+
+## 8. Strict validators — unchanged
+
+```
+.venv/bin/python scripts/check_contracts.py --strict
+=> check_contracts: 7 finding(s) (exit 0) -- identical to every prior
+   baseline in this report
+
+.venv/bin/python scripts/check_knowledge_base.py --strict
+=> check_knowledge_base: 24 finding(s) (exit 0) -- identical to every
+   prior baseline in this report
+
+.venv/bin/python scripts/check_user_docs.py --strict
+=> check_user_docs: no findings (exit 0)
+```
+
+**Result: PASS.**
+
+## Non-blocking observations (carried forward / new)
+
+1. **Nothing described in this re-audit is committed yet.** `git log`
+   confirms `HEAD` is still `085a68c`; every file discussed in §§1-7
+   above (the code fix, the three test changes, the three documentation
+   corrections, and — separately — the `L-110`/`L-111`-related files) is
+   an uncommitted working-tree modification. This verdict is necessarily
+   provisional on what actually gets committed and in what shape — per
+   `CLAUDE.md` §5's own rule, any further edit to this audited scope
+   after this re-audit (beyond a clean commit of exactly what was read
+   here) voids this verdict and requires a fresh pass. Recommend: commit
+   this fix as its own `fix(phase-84): ...` commit (plus a paired `docs(
+   phase-84): ...` commit for the correction notes, matching this
+   project's own established two-commit pattern for the original
+   amendment), then have this report's verdict checked against the
+   actual resulting SHA before treating the amendment as closed.
+
+2. **The drift-audit reconciliation named as item 4 in the prior
+   section's "What must be fixed" is still open.** `planning/retros/
+   _drift-audit-phase-84-final-amendment.md` (still untracked) still
+   reads verdict **"DRIFT — 2 findings (both non-blocking)"** — it has
+   not been re-run/updated to `NO DRIFT` even though `docs/reference/
+   cli.md`'s own Finding 1 (the missing `dangling_dependency_reference`
+   mention in the `gaps` bullet) now appears fixed in the working tree
+   (confirmed via `git diff 085a68c -- docs/reference/cli.md`: the
+   `gaps` bullet now names `dangling_dependency_reference` explicitly,
+   and the `trace` bullet gained a new sentence describing the
+   Requirement indirect-evidence resolution). Finding 2 (`planning/
+   CONTEXT.md` not yet mentioning this amendment) remains open, expected
+   per the terminal-commit exemption. **Not blocking this specific
+   re-audit's verdict** (this re-audit's scope, per the lead's own
+   dispatch, is the Claim-level regression and its fix, items 1-7 above,
+   all of which independently PASS) — but still required, as already
+   named, before the amendment's own closeout is airtight.
+
+3. Both non-blocking observations carried over unchanged from the prior
+   "FINAL CORRECTIVE AMENDMENT AUDIT" section (the pre-existing `ruff`
+   `E501` baseline increase; the untested `if dep.kind != "claim":
+   continue` edge case) remain accurate and unaffected by this fix —
+   re-checked, nothing about this specific correction touches either.
+
+## Summary for the lead
+
+**Verdict: PASS WITH NON-BLOCKING OBSERVATIONS.** The Claim-level
+regression found in the prior "FINAL CORRECTIVE AMENDMENT AUDIT" section
+is genuinely, correctly, and symmetrically fixed — independently
+re-derived from the current source (not trusted from the lead's own
+summary), re-executed against my own original repro with the opposite
+result (one gap, not two), traced by hand across every case the general
+declared-vs-resolved distinction touches (not just the one repro), and
+locked in by a new regression-guard test I confirmed would genuinely have
+caught the original bug. `tests/test_knowledge_api.py` (80 passed, up
+from 79) and the full suite (1138 passed/2 skipped, up from 1137) both
+re-run clean; all three strict validators unchanged; the real corpus
+(`REQ-BFS-001`) unaffected. `decisions/0093`, the plan file, and the
+retro each gained an honest, append-only correction — no silent rewrite
+of the original false claim anywhere. The separately-raised `L-110`/
+`L-111` candidate learnings are correctly filed and triaged to statuses
+consistent with this project's own promotion rules (`L-111` promoted to
+this agent's own "What to check" item 12; `L-110` correctly held at
+`candidate`, routed through `proposed-governance-changes.md` §K, pending
+the explicit user approval `CLAUDE.md` §0 requires for any `CLAUDE.md`
+change).
+
+Before this amendment's own closeout is complete, the lead should:
+1. Commit this fix (code + tests + the three documentation corrections)
+   as its own commit(s), then have the resulting SHA(s) checked against
+   this report's own findings — this verdict was reached against the
+   working tree, not yet a commit.
+2. Land the still-open drift-audit reconciliation (observation 2 above;
+   unchanged from the prior section's item 4) via the terminal
+   `roadmap-context-curator` reconciliation commit.
+3. If/when `L-110` is presented to the user for `CLAUDE.md` §0 approval,
+   confirm the §K draft text in `planning/v1-redefinition/proposed-
+   governance-changes.md` is what actually gets presented, unmodified.
+
+None of the above reopen the "Phase 84 completion audit," "CORRECTIVE
+PASS AUDIT — 2026-10-29", or "FINAL CORRECTIVE AMENDMENT AUDIT" sections
+above, which concern different, already-evaluated states and are
+unaffected by this re-audit's own findings.
