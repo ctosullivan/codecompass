@@ -245,3 +245,97 @@ this retro addendum, and the "write the failing test first" / "verify
 against real corpus data, not only synthetic fixtures" lessons above are
 restatements of guidance this project's `CLAUDE.md` §1 and existing
 phase conventions already establish, not new ones.
+
+**Correction (2026-11-02, final corrective amendment):** the paragraph
+above was wrong, and is left in place, uncorrected in situ, only per
+this project's own append-only retro-amendment convention (never
+rewritten or erased — `CLAUDE.md` §2's ADR posture, applied here to a
+retro finding the same way). Independent review during the Phase 84
+final amendment (`decisions/0093`) found this claim was already
+superseded by the time it was written: `knowledge-curator`'s own
+dispatch during this same corrective pass (immediately after the audit
+above) in fact promoted two candidate learnings from this exact retro's
+own "What worked"/"What didn't work" sections, both landed in
+subsequent commits on this same corrective pass: `L-108` (a corrective
+pass must write and confirm a failing regression test against the
+pre-fix source before writing the fix — directly drawn from this
+retro's own "What worked" bullet 1) and `L-109` (Rich `Table` cells
+truncate at the console's default render width, undermining literal-
+output assertions — directly drawn from this retro's own "What didn't
+work" bullet), both promoted to `planning/v1-redefinition/agent-led-
+development.md` §1 / `.claude/agents/release-phase-auditor.md` item 11
+and `docs/architecture/overview.md`'s "Known footguns" section
+respectively. The paragraph above should be read as describing this
+retro's own state *at the moment it was written*, not this corrective
+pass's final, actual outcome — see `planning/ROADMAP.md`'s Phase 84 row
+and `planning/CONTEXT.md` for the current, reconciled state.
+
+## Final corrective amendment (2026-11-02, `decisions/0093`)
+
+**Where we are.** A second, independent post-completion source review
+of this phase's `done` implementation (after the first corrective pass
+above) identified two further defects: `trace_evidence()` did not
+recognise a Requirement's indirect evidence through its dependent
+Claims (reporting a false `missing_evidence` gap for every Requirement
+unconditionally, confirmed against the real `REQ-BFS-001`), and
+`find_gaps()`'s `stale_test_citation` detection accepted `repo_root` but
+never forwarded it into `aggregate_contract()`/`evaluate_result_
+precedence()`, so a result satisfying only contract-relative integrity
+could be described as "currently passing" without ever being
+live-reconfirmed.
+
+**What was achieved.** Both fixed at their root (`decisions/0093`):
+`trace_evidence()` now resolves a Requirement's `depends_on` one hop to
+each dependent Claim's own direct evidence, tagged `supporting_indirect`/
+`contradicting_indirect` with a `via_claim` provenance detail, reusing
+the exact Requirement → Claims selection `epistemic_status()` already
+established rather than duplicating it; a dependent Claim with no
+evidence of its own is its own `missing_evidence` gap, keyed to the
+Claim; a dangling `depends_on` id is a new `dangling_dependency_
+reference` gap, and `find_gaps()` gained the equivalent corpus-wide
+scan for consistency with its own existing `dangling_evidence_
+reference` precedent. `find_gaps()`'s `stale_test_citation` block now
+threads `repo_root` through both oracle calls, with its own `reason`
+text qualified ("live-reconfirmed against the current implementation"
+vs. "contract-relative only -- not live-reconfirmed; no repo_root
+supplied") rather than ever stating an unqualified "currently passing"
+claim. 14 new regression tests (`tests/test_knowledge_api.py` 65 → 79),
+10 of which were independently confirmed (via a temporary `git stash`
+of only `src/codecompass/knowledge_api.py`) to genuinely fail against
+the pre-fix source before the fix was restored — continuing the exact
+discipline `L-108` (filed from this same phase's first corrective pass,
+above) names.
+
+**Verification results.** `tests/test_knowledge_api.py` (79 passed),
+`tests/test_cli.py`/`tests/test_oracle.py`/`tests/test_knowledge_
+intermediate.py` (303 passed combined with the above), the complete
+suite, and all three strict validators (`check_user_docs.py`/
+`check_contracts.py`/`check_knowledge_base.py --strict`, each exit 0,
+identical pre-existing informational findings, no regression) all green
+— see `planning/retros/_audit-phase-84.md`'s own final-amendment
+addendum for the independent audit's own re-verification of these same
+numbers. Re-demonstrated against the real corpus: `trace_evidence(REPO_
+ROOT, "REQ-BFS-001")` now reports `status="result"` with full
+`via_claim` provenance for all three dependent Claims, where it
+previously reported a false `missing_evidence` gap.
+
+**What worked.** Reproducing defect B required constructing a result
+whose own `tested_subject_digest` was deliberately wrong against a live
+checkout -- a direct, repo_root-aware/repo_root-naive before/after
+comparison on the exact same fixture made the dropped-parameter bug
+undeniable (identical output whether or not `repo_root` was supplied,
+proving it had zero effect pre-fix).
+
+**What didn't work / near-misses.** None distinct from this phase's own
+first corrective pass's lessons (`L-108`/`L-109`, both already filed
+and promoted above) -- no new candidate learning met the bar this time;
+both defects and fixes are fully, and accurately, captured by
+`decisions/0093` and this addendum.
+
+## Candidate learnings filed (final corrective amendment)
+
+None. Both defects and their resolutions are fully captured by
+`decisions/0093`; the test-first discipline and real-corpus-first
+verification posture applied here are the same, already-promoted
+`L-108` convention re-applied, not a new occurrence distinct enough to
+warrant its own learning.

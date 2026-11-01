@@ -19,6 +19,13 @@ re-audited.** See §12 below and `decisions/0092` for the full defect
 analysis and resolutions; Phase 84 remains `done` under this corrected
 implementation.
 
+**Final corrective amendment (2026-11-02, "CodeCompass Orchestrator —
+Final Phase 84 Closeout and Phase 85 Planning"): two further
+correctness defects (Requirement indirect-evidence tracing,
+`find_gaps()`'s own live-revision validation) were fixed and
+independently re-audited.** See §13 below and `decisions/0093`. Phase
+84 remains `done`; no further Phase 84 corrective work is open.
+
 Governing prompt: "CodeCompass Orchestrator — Approve v2 Roadmap and Plan
 Phases 83–84" (2026-10-24). Roadmap-depth scope: `planning/v2-roadmap.md`
 §"Phase 84"; architecture: `decisions/0084` §1-2, formalised by
@@ -470,3 +477,65 @@ still correctly surfacing the pre-existing `stale_test_citation` finding
 
 Independently re-audited: see `planning/retros/_audit-phase-84.md`'s own
 corrective-pass addendum for the full verdict.
+
+## 13. Final corrective amendment (2026-11-02, `decisions/0093`)
+
+A second, independent post-completion source review identified two
+further defects, fixed as a final, narrowly scoped amendment:
+
+1. **`trace_evidence()` missed a Requirement's indirect evidence.** This
+   project's established knowledge model gives a Requirement no
+   `supporting_evidence` field of its own — its evidence is always
+   indirect, through the Claims named in its `depends_on`
+   (`epistemic_status()` already selects these same Claims for oracle-
+   verification purposes). `trace_evidence()` instead checked only the
+   Requirement's own, always-absent `supporting_evidence` field,
+   reporting a false `missing_evidence` gap for every Requirement
+   unconditionally — confirmed against the real `REQ-BFS-001`, which
+   depends on three Claims each carrying real, resolvable evidence.
+2. **`find_gaps()`'s `stale_test_citation` dropped `repo_root`.** The
+   function accepts `repo_root` and already forwards it for
+   `unverified_required_scope` detection, but its separate
+   `stale_test_citation` block called `aggregate_contract()`/
+   `evaluate_result_precedence()` without it — a result satisfying only
+   contract-relative integrity could be described as "currently
+   passing" without ever being live-reconfirmed. Confirmed by
+   constructing a result with a deliberately wrong `tested_subject_
+   digest`: identical output with or without `repo_root` supplied, pre-
+   fix, proving the parameter had zero effect.
+
+**Resolution** (full rationale: `decisions/0093`): `trace_evidence()`
+resolves a Requirement's `depends_on` one hop to each dependent Claim's
+own direct evidence (`supporting_indirect`/`contradicting_indirect`,
+with a `via_claim` provenance detail); a dependent Claim with no
+evidence is its own `missing_evidence` gap keyed to the Claim; a
+dangling `depends_on` id is a new `dangling_dependency_reference` gap,
+with an equivalent corpus-wide scan added to `find_gaps()`. `find_gaps()`
+now threads `repo_root` through both oracle calls in its
+`stale_test_citation` block, with qualified wording distinguishing a
+live-reconfirmed finding from a contract-relative-only one. Claim-level
+tracing (calling `trace_evidence()` directly on a Claim) is unaffected;
+`depends_on` is walked only for a Requirement subject, deliberately one
+hop, not recursively (see `decisions/0093`'s own rationale, given this
+project's real corpus has a Claim that itself `depends_on` other
+Claims).
+
+**Verification.** 14 new regression tests (`tests/test_knowledge_api.py`
+65 → 79), 10 of which were independently confirmed (via a temporary
+`git stash` of only the implementation file) to genuinely fail against
+the pre-fix source. Full suite, `tests/test_cli.py`/`test_oracle.py`/
+`test_knowledge_intermediate.py`, and all three strict validators green
+with no regression. Re-demonstrated against the real corpus:
+`trace_evidence(REPO_ROOT, "REQ-BFS-001")` now reports `status="result"`
+with full per-Claim provenance, where it previously reported a false
+gap; `find_gaps` with a reachable Ledgerkit checkout still correctly
+surfaces the pre-existing `stale_test_citation` finding
+(`EV-BFS-002`/`EV-BFS-003`), now qualified as genuinely live-
+reconfirmed rather than merely contract-relative.
+
+Independently re-audited: see `planning/retros/_audit-phase-84.md`'s own
+final-amendment addendum for the full verdict. Retro addendum:
+`planning/retros/phase-84-consolidated-knowledge-api.md`'s own "Final
+corrective amendment" section (which also reconciles that retro's
+earlier, now-superseded "no new candidate learnings" claim against the
+actual `L-108`/`L-109` promotion history).

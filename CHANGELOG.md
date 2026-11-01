@@ -37,6 +37,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Phase 84 final corrective amendment** (`decisions/0093`): two
+  further correctness defects an independent post-completion source
+  review identified. `trace_evidence()` previously checked only a
+  Requirement's own (always-absent) `supporting_evidence` field,
+  reporting a false `missing_evidence` gap for every Requirement
+  unconditionally — it now resolves a Requirement's evidence one hop
+  through its `depends_on` Claims, tagging each as `supporting_indirect`/
+  `contradicting_indirect` with a `via_claim` provenance detail, reusing
+  the same Requirement→Claims selection `epistemic_status()` already
+  established. A dependent Claim with no evidence of its own is its own
+  `missing_evidence` gap keyed to the Claim; a dangling `depends_on` id
+  is a new `dangling_dependency_reference` gap, with an equivalent
+  corpus-wide scan added to `find_gaps()`. Separately, `find_gaps()`'s
+  `stale_test_citation` detection accepted `repo_root` but never
+  forwarded it into `aggregate_contract()`/`evaluate_result_precedence()`
+  — a result satisfying only contract-relative integrity could be
+  described as "currently passing" without ever being live-reconfirmed;
+  both calls now receive `repo_root`, with the finding's own wording
+  qualified ("live-reconfirmed against the current implementation" vs.
+  "contract-relative only -- not live-reconfirmed; no repo_root
+  supplied"). 14 new regression tests (`tests/test_knowledge_api.py`
+  65 → 79), 10 confirmed to genuinely fail against the pre-fix source.
+  No change to `oracle.py`, `graph.py`, or `knowledge_intermediate.py`.
+
 - **Phase 84 corrective pass** (`decisions/0092`): three correctness
   defects an independent post-completion source review of
   `src/codecompass/knowledge_api.py` identified. `ConsistencyEnvelope`
