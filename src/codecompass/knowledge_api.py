@@ -135,7 +135,8 @@ class KnowledgeResult:
 @dataclass
 class Gap:
     kind: str  # "unverified_required_scope" | "contradiction" | "stale_test_citation" |
-    # "missing_contract" | "missing_evidence" | "dangling_evidence_reference"
+    # "missing_contract" | "missing_evidence" | "dangling_evidence_reference" |
+    # "dangling_dependency_reference"
     subject_id: str | None
     scope: str | None
     reason: str
@@ -1123,48 +1124,107 @@ def trace_evidence(project_root: Path, record_id: str, *, repo_root: Path | None
     """Supporting and contradicting evidence for one Claim/Requirement
     (plan §4.1/§3.0 point 6). `"gap"` when the record is itself an
     obligation-bearing kind (`claim`/`requirement`) with zero evidence
-    anywhere citing it, OR when any individual cited evidence id does not
-    resolve to a real record (corrective pass, decisions/0092) -- a
-    *declared* citation is never conflated with a *resolved* one.
-    Successfully resolved evidence is always returned in `results`
-    alongside any such gaps; one broken citation never discards the
-    others. Never conflated with `"empty"` (the record not existing at
-    all)."""
+    anywhere citing it (directly, or -- for a Requirement -- indirectly
+    through a dependent Claim's own evidence), OR when any individual
+    cited evidence/claim id does not resolve to a real record (corrective
+    pass, decisions/0092/0093) -- a *declared* citation is never
+    conflated with a *resolved* one. Successfully resolved evidence is
+    always returned in `results` alongside any such gaps; one broken
+    citation never discards the others. Never conflated with `"empty"`
+    (the record not existing at all).
+
+    A Requirement has no `supporting_evidence` field of its own in this
+    project's established knowledge model -- its own evidence is always
+    indirect, through the Claims named in its `depends_on` (the same
+    Requirement -> Claim selection `epistemic_status()` already uses for
+    oracle-verification purposes, decisions/0093 -- reused here, not
+    duplicated, for the narrower evidence-citation-existence question).
+    Each dependent Claim's own direct `supporting_evidence`/
+    `contradicting_evidence` is resolved one hop out and returned with
+    `role` `"supporting_indirect"`/`"contradicting_indirect"` and a
+    `via_claim` detail naming the Claim, preserving the full relationship
+    path. A dependent Claim with no `supporting_evidence` of its own is
+    reported as its own `missing_evidence` gap (keyed to the Claim, not
+    the Requirement) -- the mere existence of a Claim is never treated as
+    proof its own assertion is evidenced, let alone independently
+    verified (`epistemic_status`/`find_gaps` own that oracle-verification
+    question; this function never re-derives it). The Requirement itself
+    is `missing_evidence` only when it has no evidence at all, direct or
+    indirect across every dependent Claim. A `depends_on` id that does
+    not resolve to a real record is its own `dangling_dependency_
+    reference` gap, distinct from a dangling *evidence* reference. Claim-
+    level tracing (a Claim's own direct evidence only) is unchanged by
+    any of this -- a Claim's own `depends_on` on another Claim (this
+    project's real corpus has at least one case of this) is not itself
+    walked by this function; see decisions/0093 for why one hop is the
+    deliberately chosen, non-recursive bound."""
     records = _all_records(project_root)
     record = records.get(record_id)
     if record is None:
         return _empty(f"no knowledge record {record_id!r}")
 
-    supporting_ids = _ki._extract_id_strings(record.fields.get("supporting_evidence", ""))
-    contradicting_ids = _ki._extract_id_strings(record.fields.get("contradicting_evidence", ""))
-
     results: list[KnowledgeResult] = []
     gaps: list[Gap] = []
 
-    def _resolve(ev_ids: list[str], role: str) -> None:
+    def _resolve(ev_ids: list[str], role: str, *, citer_id: str, via_claim: str | None = None) -> bool:
+        """Resolves `ev_ids` as `role` evidence cited by `citer_id`
+        (reported as the gap's own `subject_id` for any dangling
+        reference). Returns whether at least one id resolved."""
+        any_resolved = False
         for ev_id in ev_ids:
             ev = records.get(ev_id)
             if ev is None:
                 gaps.append(Gap(
-                    kind="dangling_evidence_reference", subject_id=record_id, scope=role,
-                    reason=f"{record_id} cites {ev_id!r} as {role} evidence, but no such record exists",
+                    kind="dangling_evidence_reference", subject_id=citer_id, scope=role,
+                    reason=f"{citer_id} cites {ev_id!r} as {role} evidence, but no such record exists",
                 ))
                 continue
+            any_resolved = True
+            details = {"role": role, "evidence_kind": ev.fields.get("evidence_kind")}
+            if via_claim is not None:
+                details["via_claim"] = via_claim
             results.append(KnowledgeResult(
                 id=ev.record_id, kind="evidence", authority=_record_authority(ev),
-                summary=_summarize_record(ev),
-                details={"role": role, "evidence_kind": ev.fields.get("evidence_kind")},
+                summary=_summarize_record(ev), details=details,
                 consistency=_knowledge_consistency(project_root, ev, records, repo_root=repo_root),
             ))
+        return any_resolved
 
-    _resolve(supporting_ids, "supporting")
-    _resolve(contradicting_ids, "contradicting")
+    direct_supporting_ids = _ki._extract_id_strings(record.fields.get("supporting_evidence", ""))
+    direct_contradicting_ids = _ki._extract_id_strings(record.fields.get("contradicting_evidence", ""))
+    has_direct_support = _resolve(direct_supporting_ids, "supporting", citer_id=record_id)
+    _resolve(direct_contradicting_ids, "contradicting", citer_id=record_id)
 
-    if record.kind in ("claim", "requirement") and not supporting_ids:
-        gaps.append(Gap(
-            kind="missing_evidence", subject_id=record_id, scope=None,
-            reason=f"{record_id} ({record.kind}) has no supporting_evidence citation at all",
-        ))
+    has_any_support = has_direct_support
+    if record.kind == "requirement":
+        for dep_id in _ki._extract_id_strings(record.fields.get("depends_on", "")):
+            dep = records.get(dep_id)
+            if dep is None:
+                gaps.append(Gap(
+                    kind="dangling_dependency_reference", subject_id=record_id, scope=None,
+                    reason=f"{record_id} depends_on {dep_id!r}, but no such record exists",
+                ))
+                continue
+            if dep.kind != "claim":
+                continue
+            claim_supporting_ids = _ki._extract_id_strings(dep.fields.get("supporting_evidence", ""))
+            claim_contradicting_ids = _ki._extract_id_strings(dep.fields.get("contradicting_evidence", ""))
+            has_claim_support = _resolve(
+                claim_supporting_ids, "supporting_indirect", citer_id=dep_id, via_claim=dep_id
+            )
+            _resolve(claim_contradicting_ids, "contradicting_indirect", citer_id=dep_id, via_claim=dep_id)
+            has_any_support = has_any_support or has_claim_support
+            if not claim_supporting_ids:
+                gaps.append(Gap(
+                    kind="missing_evidence", subject_id=dep_id, scope=None,
+                    reason=f"{dep_id} (claim, depended on by {record_id}) has no supporting_evidence citation at all",
+                ))
+
+    if record.kind in ("claim", "requirement") and not has_any_support:
+        reason = f"{record_id} ({record.kind}) has no supporting_evidence citation at all"
+        if record.kind == "requirement":
+            reason += ", and none of its dependent Claims (depends_on) do either"
+        gaps.append(Gap(kind="missing_evidence", subject_id=record_id, scope=None, reason=reason))
 
     if gaps:
         return ApiResponse(status="gap", results=results, gaps=gaps)
@@ -1262,6 +1322,18 @@ def find_gaps(project_root: Path, slug: str | None = None, *, repo_root: Path | 
       record anywhere (`trace_evidence`'s own per-record detection,
       corrective pass, decisions/0092 -- same semantics, applied
       corpus-wide rather than to one subject at a time).
+    - `dangling_dependency_reference` -- a record's own `depends_on` cites
+      an id that resolves to no real record anywhere (`trace_evidence`'s
+      own Requirement-level detection, decisions/0093 -- same semantics,
+      applied corpus-wide).
+
+    `repo_root`, when supplied, is threaded into every oracle-result
+    evaluation below -- `derive_epistemic_profile` (unchanged) for
+    `unverified_required_scope`, and `aggregate_contract`/
+    `evaluate_result_precedence` for `stale_test_citation` (decisions/
+    0093 -- previously dropped for the latter two, so a `stale_test_
+    citation`'s own "a different, currently-passing result exists" claim
+    could describe a result that was never actually live-reconfirmed).
     """
     slugs = [slug] if slug else _ki._list_slugs(project_root)
     records = _all_records(project_root)
@@ -1287,6 +1359,12 @@ def find_gaps(project_root: Path, slug: str | None = None, *, repo_root: Path | 
                             kind="dangling_evidence_reference", subject_id=record.record_id, scope=role,
                             reason=f"{record.record_id} cites {ev_id!r} as {role} evidence, but no such record exists",
                         ))
+            for dep_id in _ki._extract_id_strings(record.fields.get("depends_on", "")):
+                if dep_id not in records:
+                    gaps.append(Gap(
+                        kind="dangling_dependency_reference", subject_id=record.record_id, scope=None,
+                        reason=f"{record.record_id} depends_on {dep_id!r}, but no such record exists",
+                    ))
 
         has_obligations = any(r.kind in ("claim", "requirement") for r in slug_records.values())
         found = _find_contract_for_slug(project_root, s)
@@ -1314,7 +1392,14 @@ def find_gaps(project_root: Path, slug: str | None = None, *, repo_root: Path | 
         current_pass_by_check: dict[str, bool] = {}
         for check in contract.checks:
             check_results = [r for r in all_results if r.check_id == check.check_id]
-            aggregates = _oracle.aggregate_contract(contract, check_results, contract_path=contract_path)
+            # decisions/0093: repo_root threaded here too -- a check_results
+            # entry that merely satisfies contract-relative integrity (hash/
+            # raw-output/scope) is not "currently passing" against a live,
+            # possibly-changed implementation unless this same recomputation
+            # was actually performed.
+            aggregates = _oracle.aggregate_contract(
+                contract, check_results, contract_path=contract_path, repo_root=repo_root
+            )
             agg = next((a for a in aggregates if a.check_id == check.check_id), None)
             current_pass_by_check[check.check_id] = bool(agg and agg.state == "PASS")
 
@@ -1334,15 +1419,25 @@ def find_gaps(project_root: Path, slug: str | None = None, *, repo_root: Path | 
             check = contract.check_by_id(cited.check_id)
             if check is None:
                 continue
-            outcome, reason = _oracle.evaluate_result_precedence(cited, contract, check, contract_path=contract_path)
+            outcome, reason = _oracle.evaluate_result_precedence(
+                cited, contract, check, contract_path=contract_path, repo_root=repo_root
+            )
             if outcome == "INVALID" and current_pass_by_check.get(cited.check_id):
+                # decisions/0093: never describe the fresher, uncited result
+                # as unconditionally "currently passing" -- qualify exactly
+                # how far that determination actually reaches.
+                verification_note = (
+                    "live-reconfirmed against the current implementation"
+                    if repo_root is not None
+                    else "contract-relative only -- not live-reconfirmed; no repo_root supplied"
+                )
                 gaps.append(Gap(
                     kind="stale_test_citation", subject_id=record.record_id, scope=check.scope,
                     reason=(
                         f"{record.record_id}'s test_ref ({raw_ref}) is INVALID against the live contract "
                         f"({reason}), but a different, currently-passing result for check_id "
-                        f"{cited.check_id!r} exists in {s!r}'s own results/ directory -- no Evidence "
-                        "record cites it"
+                        f"{cited.check_id!r} exists in {s!r}'s own results/ directory "
+                        f"({verification_note}) -- no Evidence record cites it"
                     ),
                 ))
 

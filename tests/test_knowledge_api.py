@@ -693,6 +693,171 @@ class TestTraceEvidence:
         assert dangling[0].scope == "contradicting"
         assert "EV-MISSING-003" in dangling[0].reason
 
+    # -- Final corrective amendment defect A (decisions/0093): a
+    # Requirement's own evidence is always indirect, through the Claims
+    # named in its depends_on -- the mere absence of a direct
+    # supporting_evidence field on the Requirement itself must never be
+    # read as "no evidence at all" when a dependent Claim carries real,
+    # resolvable evidence.
+
+    def _write_requirement_with_claim(
+        self, tmp_path, *, claim_supporting=("EV-IND-001",), claim_contradicting=(),
+        requirement_depends_on=("CL-IND-001",),
+    ):
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        _write_flat(slug_dir / "REQ-IND-001.yaml", {
+            "id": "REQ-IND-001", "kind": "requirement", "statement": "x",
+            "depends_on": list(requirement_depends_on), "status": "implemented",
+        })
+        _write_flat(slug_dir / "CL-IND-001.yaml", {
+            "id": "CL-IND-001", "kind": "claim", "statement": "x",
+            "supporting_evidence": list(claim_supporting), "contradicting_evidence": list(claim_contradicting),
+            "status": "supported",
+        })
+        if "EV-IND-001" in claim_supporting:
+            _write_flat(slug_dir / "EV-IND-001.yaml", {
+                "id": "EV-IND-001", "kind": "evidence", "evidence_kind": "source",
+                "what_it_shows": "x", "source_ref": '"impl.py:1 x"', "status": "current",
+            })
+        if "EV-IND-002" in claim_contradicting:
+            _write_flat(slug_dir / "EV-IND-002.yaml", {
+                "id": "EV-IND-002", "kind": "evidence", "evidence_kind": "source",
+                "what_it_shows": "x", "source_ref": '"impl.py:2 x"', "status": "current",
+            })
+
+    def test_requirement_with_indirect_evidence_via_dependent_claim_is_a_result_not_a_gap(self, tmp_path):
+        self._write_requirement_with_claim(tmp_path)
+        response = ka.trace_evidence(tmp_path, "REQ-IND-001")
+        assert response.status == "result"
+        assert response.gaps == []
+        assert {r.id for r in response.results} == {"EV-IND-001"}
+        item = response.results[0]
+        assert item.details["role"] == "supporting_indirect"
+        assert item.details["via_claim"] == "CL-IND-001"
+
+    def test_requirement_indirect_contradicting_evidence_is_surfaced(self, tmp_path):
+        self._write_requirement_with_claim(
+            tmp_path, claim_contradicting=("EV-IND-002",),
+        )
+        response = ka.trace_evidence(tmp_path, "REQ-IND-001")
+        assert response.status == "result"
+        contradicting = [r for r in response.results if r.details["role"] == "contradicting_indirect"]
+        assert len(contradicting) == 1
+        assert contradicting[0].id == "EV-IND-002"
+        assert contradicting[0].details["via_claim"] == "CL-IND-001"
+
+    def test_requirement_with_unsupported_dependent_claim_is_a_gap_keyed_to_the_claim(self, tmp_path):
+        self._write_requirement_with_claim(tmp_path, claim_supporting=())
+        response = ka.trace_evidence(tmp_path, "REQ-IND-001")
+        assert response.status == "gap"
+        assert response.results == []
+        missing = [g for g in response.gaps if g.kind == "missing_evidence"]
+        # The claim's own missing-evidence gap is always reported, keyed to
+        # the claim itself -- and since this is the requirement's *only*
+        # dependent claim, the requirement genuinely has no evidence at
+        # all either (direct or indirect), so both are real, distinct
+        # findings, not a duplicate.
+        assert {g.subject_id for g in missing} == {"CL-IND-001", "REQ-IND-001"}
+
+    def test_requirement_with_dangling_dependency_reference_is_a_gap(self, tmp_path):
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        _write_flat(slug_dir / "REQ-DANGLE-001.yaml", {
+            "id": "REQ-DANGLE-001", "kind": "requirement", "statement": "x",
+            "depends_on": ["CL-NOPE-999"], "status": "implemented",
+        })
+        response = ka.trace_evidence(tmp_path, "REQ-DANGLE-001")
+        assert response.status == "gap"
+        dangling = [g for g in response.gaps if g.kind == "dangling_dependency_reference"]
+        assert len(dangling) == 1
+        assert dangling[0].subject_id == "REQ-DANGLE-001"
+        assert "CL-NOPE-999" in dangling[0].reason
+
+    def test_requirement_with_mixed_supported_and_unsupported_claims_keeps_resolved_evidence(self, tmp_path):
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        _write_flat(slug_dir / "REQ-MIXED-001.yaml", {
+            "id": "REQ-MIXED-001", "kind": "requirement", "statement": "x",
+            "depends_on": ["CL-MIXOK-001", "CL-MIXBAD-001"], "status": "implemented",
+        })
+        _write_flat(slug_dir / "CL-MIXOK-001.yaml", {
+            "id": "CL-MIXOK-001", "kind": "claim", "statement": "x",
+            "supporting_evidence": ["EV-MIXOK-001"], "contradicting_evidence": [], "status": "supported",
+        })
+        _write_flat(slug_dir / "EV-MIXOK-001.yaml", {
+            "id": "EV-MIXOK-001", "kind": "evidence", "evidence_kind": "source",
+            "what_it_shows": "x", "source_ref": '"impl.py:1 x"', "status": "current",
+        })
+        _write_flat(slug_dir / "CL-MIXBAD-001.yaml", {
+            "id": "CL-MIXBAD-001", "kind": "claim", "statement": "x",
+            "supporting_evidence": [], "contradicting_evidence": [], "status": "proposed",
+        })
+        response = ka.trace_evidence(tmp_path, "REQ-MIXED-001")
+        # Overall still a "gap" (CL-MIXBAD-001 has no evidence) -- but the
+        # real, resolved evidence from CL-MIXOK-001 is never discarded.
+        assert response.status == "gap"
+        assert {r.id for r in response.results} == {"EV-MIXOK-001"}
+        missing = [g for g in response.gaps if g.kind == "missing_evidence"]
+        assert any(g.subject_id == "CL-MIXBAD-001" for g in missing)
+        assert not any(g.subject_id == "REQ-MIXED-001" for g in missing)
+
+    def test_requirement_with_no_direct_and_no_indirect_evidence_at_all_is_still_a_gap(self, tmp_path):
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        _write_flat(slug_dir / "REQ-BARE-001.yaml", {
+            "id": "REQ-BARE-001", "kind": "requirement", "statement": "x",
+            "depends_on": [], "status": "proposed",
+        })
+        response = ka.trace_evidence(tmp_path, "REQ-BARE-001")
+        assert response.status == "gap"
+        assert response.gaps[0].kind == "missing_evidence"
+        assert response.gaps[0].subject_id == "REQ-BARE-001"
+
+    def test_claim_level_tracing_is_unaffected_by_requirement_indirection(self, tmp_path):
+        """Preserves existing Claim-level evidence tracing exactly --
+        calling trace_evidence directly on a Claim never walks its own
+        depends_on (this project's real corpus has a Claim that depends_on
+        other Claims, CL-BFS-003); only its own direct supporting_evidence/
+        contradicting_evidence are ever resolved for a Claim subject."""
+        slug_dir = tmp_path / "planning" / "knowledge" / "demo"
+        _write_flat(slug_dir / "CL-INNER-001.yaml", {
+            "id": "CL-INNER-001", "kind": "claim", "statement": "x",
+            "supporting_evidence": ["EV-INNER-001"], "contradicting_evidence": [], "status": "supported",
+        })
+        _write_flat(slug_dir / "EV-INNER-001.yaml", {
+            "id": "EV-INNER-001", "kind": "evidence", "evidence_kind": "source",
+            "what_it_shows": "x", "source_ref": '"impl.py:1 x"', "status": "current",
+        })
+        _write_flat(slug_dir / "CL-OUTER-001.yaml", {
+            "id": "CL-OUTER-001", "kind": "claim", "statement": "x",
+            "supporting_evidence": [], "contradicting_evidence": [],
+            "depends_on": ["CL-INNER-001"], "status": "proposed",
+        })
+        response = ka.trace_evidence(tmp_path, "CL-OUTER-001")
+        assert response.status == "gap"  # own supporting_evidence is empty -- depends_on is not walked
+        assert response.results == []
+        assert response.gaps[0].kind == "missing_evidence"
+        assert response.gaps[0].subject_id == "CL-OUTER-001"
+
+    def test_real_requirement_resolves_indirect_evidence_through_dependent_claims(self):
+        """Real-corpus reproduction of the defect (no Ledgerkit checkout
+        needed -- only this repo's own planning/knowledge/balance-from-
+        spec/). Before the fix, trace_evidence(REPO_ROOT, "REQ-BFS-001")
+        reported status="gap"/"missing_evidence" despite REQ-BFS-001
+        depending on three Claims (CL-BFS-001/002/003) that each carry
+        real, resolvable supporting_evidence."""
+        response = ka.trace_evidence(REPO_ROOT, "REQ-BFS-001")
+        assert response.status == "result"
+        assert response.gaps == []
+        via_claims = {r.details.get("via_claim") for r in response.results}
+        assert via_claims == {"CL-BFS-001", "CL-BFS-002", "CL-BFS-003"}
+        assert all(r.details["role"] == "supporting_indirect" for r in response.results)
+        # Independently re-verify against the real records directly, not
+        # the API's own claim about itself.
+        real_records = ki.load_slug_records(ki.slug_dir(REPO_ROOT, "balance-from-spec"))
+        for claim_id in ("CL-BFS-001", "CL-BFS-002", "CL-BFS-003"):
+            real_supporting = ki._extract_id_strings(real_records[claim_id].fields.get("supporting_evidence", ""))
+            assert real_supporting, f"{claim_id} unexpectedly has no real supporting_evidence"
+            for ev_id in real_supporting:
+                assert ev_id in real_records
+
 
 class TestEpistemicStatus:
     def test_requirement_aggregates_over_its_dependent_claims(self, tmp_path):
@@ -780,6 +945,131 @@ class TestFindGaps:
         assert response.status == "gap"
         stale = [g for g in response.gaps if g.kind == "stale_test_citation"]
         assert {g.subject_id for g in stale} >= {"EV-BFS-002", "EV-BFS-003"}
+
+    @requires_ledgerkit
+    def test_real_corpus_stale_citation_live_reconfirmed_with_repo_root(self):
+        """The same real finding, with a reachable Ledgerkit checkout
+        supplied: the fresher, uncited result genuinely is live-valid
+        against the real checkout, so the finding still fires -- now with
+        wording confirming it was actually live-reconfirmed, not merely
+        contract-relative (decisions/0093)."""
+        response = ka.find_gaps(REPO_ROOT, "balance-from-spec", repo_root=LEDGERKIT_ROOT)
+        assert response.status == "gap"
+        stale = [g for g in response.gaps if g.kind == "stale_test_citation"]
+        assert {g.subject_id for g in stale} >= {"EV-BFS-002", "EV-BFS-003"}
+        assert all("live-reconfirmed against the current implementation" in g.reason for g in stale)
+
+    # -- Final corrective amendment defect B (decisions/0093): repo_root
+    # must be forwarded into aggregate_contract()/evaluate_result_
+    # precedence() for stale_test_citation detection, not only into
+    # derive_epistemic_profile() for unverified_required_scope.
+
+    def _write_stale_citation_fixture(self, tmp_path, *, live_matching: bool):
+        """`live_matching=True` -- the fresher result's own
+        `tested_subject_digest` genuinely matches the live `impl.py`
+        written below (the unchanged-checkout case). `live_matching=False`
+        -- it does not (the changed-implementation case). Computed here,
+        after `impl.py` is actually written, never by the caller."""
+        slug = "demo"
+        contract_path = tmp_path / "planning" / "contracts" / slug / "oracle-contract.yaml"
+        _write_contract(contract_path, contract_id="REQ-DEMO-001")
+        (tmp_path / "impl.py").write_text("def target_function():\n    return 1\n", encoding="utf-8")
+        (tmp_path / "tests").mkdir(exist_ok=True)
+        (tmp_path / "tests" / "test_impl.py").write_text("def test_ok():\n    assert True\n", encoding="utf-8")
+        results_dir = tmp_path / "planning" / "contracts" / slug / "results"
+
+        # Historical result: contract-hash mismatch -- INVALID regardless
+        # of repo_root (simulates a contract that was later extended).
+        old_path = results_dir / "chk-a--old.yaml"
+        _write_result(old_path, contract_path, contract_id="REQ-DEMO-001", run_id="old")
+        old = oracle.parse_oracle_result(old_path)
+        old.oracle_contract_content_hash = "f" * 64
+        oracle.write_oracle_result(old_path, old)
+
+        # Fresher result: correct contract hash, but its own
+        # tested_subject_digest either genuinely matches the live impl.py
+        # or deliberately doesn't.
+        new_tested_subject_digest = (
+            oracle.compute_tree_digest(tmp_path, ["impl.py"]) if live_matching else "c" * 64
+        )
+        new_path = results_dir / "chk-a--new.yaml"
+        _write_result(
+            new_path, contract_path, contract_id="REQ-DEMO-001", run_id="new",
+            tested_subject_digest=new_tested_subject_digest,
+            test_input_digest=oracle.compute_tree_digest(tmp_path, ["tests/test_impl.py"]),
+        )
+
+        slug_dir = tmp_path / "planning" / "knowledge" / slug
+        _write_flat(slug_dir / "EV-STALE-001.yaml", {
+            "id": "EV-STALE-001", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{old_path.relative_to(tmp_path)}"', "status": "current",
+        })
+        _write_flat(slug_dir / "CL-STALE-001.yaml", {
+            "id": "CL-STALE-001", "kind": "claim", "statement": "x",
+            "supporting_evidence": ["EV-STALE-001"], "contradicting_evidence": [], "status": "supported",
+        })
+
+    def test_stale_citation_unchanged_checkout_still_detected_with_repo_root(self, tmp_path):
+        """Live-reconfirmed case: the fresher result's own
+        tested_subject_digest genuinely matches the live impl.py --
+        stale_test_citation still fires, now qualified as live-
+        reconfirmed."""
+        self._write_stale_citation_fixture(tmp_path, live_matching=True)
+        response = ka.find_gaps(tmp_path, "demo", repo_root=tmp_path)
+        stale = [g for g in response.gaps if g.kind == "stale_test_citation"]
+        assert len(stale) == 1
+        assert "live-reconfirmed against the current implementation" in stale[0].reason
+
+    def test_stale_citation_changed_implementation_suppresses_false_claim(self, tmp_path):
+        """The defect's own exact reproduction: the fresher result's
+        tested_subject_digest does NOT match the live impl.py (the
+        implementation changed since that result was recorded) -- without
+        the fix, stale_test_citation incorrectly fires anyway, claiming an
+        uncited "currently passing" result that is not actually currently
+        passing. With the fix, repo_root reaches aggregate_contract and
+        the false claim is suppressed."""
+        self._write_stale_citation_fixture(tmp_path, live_matching=False)
+        response = ka.find_gaps(tmp_path, "demo", repo_root=tmp_path)
+        stale = [g for g in response.gaps if g.kind == "stale_test_citation"]
+        assert stale == []
+        # The underlying problem (no genuinely current PASS at all) is
+        # still surfaced, just correctly, as an unverified_required_scope.
+        assert any(g.kind == "unverified_required_scope" for g in response.gaps)
+
+    def test_stale_citation_missing_checkout_reports_contract_relative_only(self, tmp_path):
+        """No repo_root at all -- the pre-existing behaviour (contract-
+        relative detection) is preserved, but the wording explicitly
+        qualifies that it was not live-reconfirmed (decisions/0093 point
+        6: preserve useful historical findings, but qualify them)."""
+        self._write_stale_citation_fixture(tmp_path, live_matching=False)
+        response = ka.find_gaps(tmp_path, "demo")
+        stale = [g for g in response.gaps if g.kind == "stale_test_citation"]
+        assert len(stale) == 1
+        assert "contract-relative only -- not live-reconfirmed; no repo_root supplied" in stale[0].reason
+
+    def test_stale_citation_historical_contract_mismatch_detected_regardless_of_repo_root(self, tmp_path):
+        """The historical result's own INVALID-ness (a contract-hash
+        mismatch) is detected identically with or without repo_root --
+        only the *fresher* result's currency determination depends on it."""
+        self._write_stale_citation_fixture(tmp_path, live_matching=True)
+        without = ka.find_gaps(tmp_path, "demo")
+        with_repo = ka.find_gaps(tmp_path, "demo", repo_root=tmp_path)
+        without_stale = [g for g in without.gaps if g.kind == "stale_test_citation"]
+        with_stale = [g for g in with_repo.gaps if g.kind == "stale_test_citation"]
+        assert len(without_stale) == len(with_stale) == 1
+        assert "oracle_contract_content_hash does not match" in without_stale[0].reason
+        assert "oracle_contract_content_hash does not match" in with_stale[0].reason
+
+    def test_dangling_dependency_reference_detected_corpus_wide(self, tmp_path):
+        slug_dir = tmp_path / "planning" / "knowledge" / "dep-dangle"
+        _write_flat(slug_dir / "REQ-DEPDANGLE-001.yaml", {
+            "id": "REQ-DEPDANGLE-001", "kind": "requirement", "statement": "x",
+            "depends_on": ["CL-NOPE-888"], "status": "proposed",
+        })
+        response = ka.find_gaps(tmp_path, "dep-dangle")
+        assert response.status == "gap"
+        dangling = [g for g in response.gaps if g.kind == "dangling_dependency_reference"]
+        assert any(g.subject_id == "REQ-DEPDANGLE-001" and "CL-NOPE-888" in g.reason for g in dangling)
 
 
 # ---------------------------------------------------------------------------
