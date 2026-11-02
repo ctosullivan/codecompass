@@ -716,3 +716,192 @@ represents this corrective pass as actually finished and closed out.
 No finding here concerns the production code, the regression tests, or
 the strict-baseline reconciliation itself — all independently
 re-verified correct. Re-audit should be quick once 1-2 above land.
+
+---
+
+## Re-audit (2026-11-03, second pass — both FAIL findings fixed, commit `4242bf4`)
+
+**Scope audited:** commit `4242bf4` on `main` ("docs(phase-85):
+corrective-pass docs-drift fixes, L-114/L-107 triage, retro addendum"),
+on top of `95309f1`. This is a fresh pass, not a rubber-stamp of the
+lead's own characterization of what it fixed — every claim below was
+independently re-derived from the real diff/tree, not taken on trust.
+
+### 1. The two original fixes (commit `95309f1`) — unchanged, still hold
+
+`git diff 95309f1 4242bf4 -- scripts/check_self_knowledge_quality.py
+tests/test_check_self_knowledge_quality.py src/codecompass/knowledge_
+api.py src/codecompass/oracle.py src/codecompass/knowledge_
+intermediate.py` is empty — `4242bf4` touches none of this. Re-ran
+`tests/test_check_self_knowledge_quality.py` fresh against the current
+HEAD: **28 passed**. Re-ran `--strict --ledgerkit-root
+~/projects/ledgerkit` fresh: exit 1, 35 findings, byte-identical to both
+of my original pass's own two captured runs (`diff` against my saved
+`run1.txt` output — empty). Nothing about the substance of the original
+corrective pass changed or needed to change; my first pass's technical
+verification of it stands.
+
+### 2. Finding 2 (uncommitted closeout work) — fixed, and independently re-verified as substantively correct, not merely "present"
+
+`git show 4242bf4 --name-status` confirms exactly the four files I found
+modified-but-uncommitted are now committed, plus my own appended report
+and the new retro addendum. I re-diffed each of the four against what I
+had already read pre-commit (`git show 4242bf4 -- docs/development/
+contributing.md docs/workflows/self-curation-loop.md planning/retros/
+_drift-audit-phase-85.md`) — byte-identical to what I reviewed and found
+accurate before they were committed. Re-confirmed on the merits, not
+just the diff: the `contributing.md`/`self-curation-loop.md` edits
+correctly and only add the "unreadable" `test_ref` case and the
+supersession carve-out (matching the real, re-verified script
+behaviour from my first pass); `_drift-audit-phase-85.md`'s new section
+correctly scopes itself to `95309f1`'s own diff and lists exactly the
+doc files whose prose needed updating for that diff, nothing invented.
+`planning/learnings/inbox.md`'s `L-114` curation note — independently
+re-read in full in the committed state — correctly and accurately
+distinguishes its own two categories (category 1 genuinely new,
+`retained`; category 2 correctly identified as the same underlying
+condition `L-107` already tracks, cross-referenced rather than
+duplicated, with `L-107`'s own curation note correctly stating its
+"moves forward when" condition (ii) did not trigger). This is accurate,
+well-reasoned triage, not a rubber stamp — confirmed by re-reading
+`L-107`'s original entry alongside the new cross-reference and
+confirming the two conditions it names really are independent (a second
+real contract-extension event vs. Phase 85 re-citing the evidence
+directly) and that the note correctly identifies neither has happened.
+
+### 3. The new retro addendum — substantive, not a stub
+
+`planning/retros/phase-85-self-curation-knowledge-quality-validation.md`
+now has a "## Corrective pass (2026-11-03, ...)" section with Where we
+are / What was achieved / What worked / What didn't work / Candidate
+learnings filed — read in full. It is honest and specific, not
+boilerplate: it names the real defects, the real before/after baseline
+numbers, and — notably — **documents my own first-pass FAIL verdict
+accurately** ("the first `release-phase-auditor` re-audit pass itself
+correctly returned FAIL... both are now fixed in the commit that
+includes this section"), which I can confirm is a faithful, not
+self-serving, account of what I actually found. It also candidly
+documents the `L-115` incident (§4 below) rather than omitting it. This
+satisfies my own Finding 1 from the first pass; the plan file's
+"Full detail: this corrective pass's own retro addendum and audit
+addendum... exist" sentence is now **true** (it was false when I first
+read it) — correctly, no edit to the plan file itself was needed once
+the addendum it pointed to actually came to exist.
+
+### 4. The `L-115` incident — independently investigated; characterization confirmed accurate from the evidence available, with one honest caveat about what I can and can't attest to
+
+I was asked to confirm the file at current `HEAD` matches the committed
+fix exactly (no working-tree drift), and to flag if the characterization
+of what happened seems inaccurate.
+
+**Current state, independently confirmed:** `git diff HEAD --
+scripts/check_self_knowledge_quality.py` is empty; `grep -n
+"_resolved_by_credible_supersession\|except OSError"
+scripts/check_self_knowledge_quality.py` finds both — the live file at
+`HEAD` is the post-fix version, with zero working-tree drift right now.
+28/28 tests pass against it.
+
+**On whether I actually left it reverted:** reviewing my own first
+pass's tool-call sequence (preserved in my own transcript, not
+reconstructed from memory): I (1) copied the live post-fix file to a
+scratchpad backup, (2) copied the pre-fix content from `git show
+95309f1~1:...` over the tracked path, (3) ran the 8 new regression
+tests against it (4 failed as expected, 4 passed as expected), (4)
+**copied the scratchpad backup back over the tracked path**, (5)
+immediately ran `git diff --stat scripts/check_self_knowledge_quality.py`
+and got **empty output** — which only happens if the file byte-for-byte
+matched the committed, post-fix `HEAD` state at that moment — (6) then
+ran the full 28-test file and got "28 passed", and did not touch the
+file again for the rest of my session (every subsequent command was a
+`Read`, a different script's `--strict` run, or a `Write` to my own
+scratchpad/report files). On the evidence available to me, I restored
+and verified the file correctly before continuing, inside my own
+dispatch.
+
+I cannot independently verify what the live file's state was at the
+exact moment between my dispatch's `SubagentHandback` call ending and
+the lead's own subsequent check — I have no visibility into that
+window, and the `L-115` entry's own evidence (`git diff` matching
+`95309f1~1` exactly, caught via a "file changed on disk" harness notice)
+is real, specific, and not something I have any basis to dispute on its
+own terms. Two explanations are consistent with everything I can see:
+(a) my own restoration step above has some gap I'm not able to detect
+from my own transcript (e.g., a `Bash` tool call's effects not
+persisting the way I assumed, though the empty `git diff --stat` output
+I captured is hard to explain under that theory), or (b) something
+after my dispatch ended re-reverted the file by other means unrelated
+to my own steps. I flag this honestly rather than asserting either
+explanation with confidence I don't have: **the `L-115` entry's
+description of the observed symptom (file reverted to `95309f1~1`
+content, caught by the lead, fixed via `git checkout --`) matches real,
+specific, checkable evidence and I have no basis to dispute it**; what
+I can add, for the record, is that my own preserved tool-call sequence
+shows an explicit restoration-and-verification step that should have
+prevented it, which is worth the `knowledge-curator`'s own triage of
+`L-115` taking into account alongside the harness-level evidence,
+rather than only the end-state symptom. Separately, `L-115`'s own
+proposed lesson ("restore the working tree before finishing, or use a
+disposable copy instead of the tracked path") is sound guidance
+regardless of exactly where the gap occurred, and I'd independently
+recommend it (or an explicit git-stash/worktree-based approach) for any
+future before/after reproduction step, including my own.
+
+### 5. New observation — a further uncommitted change exists in the working tree right now, on top of `4242bf4`
+
+`git status --short` at this second-pass audit time shows one modified,
+uncommitted file: `planning/retros/phase-85-self-curation-knowledge-
+quality-validation.md`. Reading the diff: a further, dated, honest
+addendum paragraph describing a second instance of the `L-112` pattern
+(the lead dispatching a *fresh* `knowledge-curator` agent to triage
+`L-115` instead of resuming the one that had just finished triaging
+`L-114`), caught on review before being acted on further. This is
+accurate as far as I can check it (it is a self-report of the lead's own
+process, not a technical claim I can independently verify against code)
+and is not a stub. It is, however, **not yet committed** — the same
+shape of gap as my first pass's own Finding 2, on a smaller scale. I
+flag it for completeness and consistency with my own first-pass
+standard, without treating it as a reason to withhold today's PASS: it
+concerns a separate, self-disclosed process note about agent-dispatch
+discipline, not any of the four specific items the lead asked me to
+re-verify this pass, and no canonical claim, test, or closeout artifact
+depends on it being committed before this specific re-audit's own scope
+closes. It should still be committed in due course, per `CLAUDE.md` §6,
+before this file is treated as stable.
+
+### Final verdict: PASS WITH NON-BLOCKING OBSERVATIONS
+
+Both of my first pass's blocking findings are genuinely fixed, and I
+independently re-verified the fixes on their own merits rather than
+trusting the lead's characterization of them: the retro addendum is
+real and substantive, and the four previously-uncommitted files are now
+committed with content unchanged from what I had already found accurate
+pre-commit. The original corrective pass's own code/tests/baseline
+(commit `95309f1`) are untouched and re-confirmed. The file at `HEAD`
+has zero working-tree drift and matches the committed fix exactly.
+
+**Non-blocking observations carried forward:**
+
+1. The `L-115` incident's root cause (exactly where, in time, the
+   working-tree reversion happened) is not fully resolved by anything I
+   can independently check from inside this second dispatch — see §4.
+   Worth the `knowledge-curator`'s own triage weighing both the
+   harness-level symptom evidence and my own preserved tool-call
+   sequence, not only one or the other.
+2. One further file (`planning/retros/phase-85-self-curation-knowledge-
+   quality-validation.md`) has an additional, accurate, but still
+   uncommitted addendum paragraph as of this audit — should be folded
+   into a subsequent commit, not left indefinitely dirty.
+3. (Carried from my first pass, still outstanding) `planning/
+   ROADMAP.md` line 188 (Phase 85's row) still doesn't narrate this
+   corrective pass at all — unchanged by either `95309f1` or `4242bf4`,
+   correctly deferred to a future terminal `roadmap-context-curator`
+   reconciliation commit per `CLAUDE.md` §5's own narrow exemption, not
+   a defect in this commit, but still an outstanding step before the
+   corrective pass is fully reconciled into the roadmap's own
+   at-a-glance view.
+
+This phase's corrective pass is, as of commit `4242bf4`, ready for that
+terminal `roadmap-context-curator` reconciliation step — provided that
+commit touches only the targets `CLAUDE.md` §5's exemption names, and
+provided observation 2 above is committed first or folded into that same
+step.
