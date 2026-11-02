@@ -35,9 +35,104 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   lead via `git checkout -- scripts/check_self_knowledge_quality.py`
   and re-running the test suite (28/28 passed) before proceeding.
 - **classification:** workflow
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** first occurrence
-- **promoted_to:**
+- **promoted_to:** `.claude/agents/release-phase-auditor.md` "Hard rules"
+  (new "Restore any git revision you materialize for comparison" bullet)
+  + `planning/v1-redefinition/agent-led-development.md` §1 (general
+  cross-agent version) @ this corrective pass's own closeout commit
+  (logged in `promoted.md`)
+- **curation note (2026-11-03, knowledge-curator):** Accepted as filed —
+  all required template fields present and specific (origin, date,
+  project_revision, observation, evidence, classification, status),
+  consistent with `TEMPLATE.md`.
+  - **Recurrence check (independent, not taken on the filer's own
+    "first occurrence" framing):** grepped `inbox.md` for `working
+    tree`, `git checkout`, `materializ`, `dirty`, `restore` and read
+    every hit; grepped `promoted.md` for the same terms and for
+    `release-phase-auditor`. No existing candidate or promoted entry
+    addresses an agent leaving the tracked working tree in a
+    different state than it found it after a before/after git-revision
+    comparison. `L-060`/`L-086`/`L-108`/`L-111`/`L-113` are the other
+    `release-phase-auditor`-related entries on file and all concern a
+    different failure mode (self-hand-patching after a verdict,
+    newly-written corrective code as full audited scope, regression
+    tests never run pre-fix, per-kind test coverage, running a new
+    validator against the real corpus) — none overlaps this one.
+    Confirmed **first occurrence**.
+  - **Root-cause check:** `.claude/agents/release-phase-auditor.md`
+    "What to check" item 11 (itself `L-108`'s own destination) is the
+    instruction that creates this exact risk — it tells the agent to
+    reproduce pre-fix behaviour via "re-running the test yourself
+    against a `git stash`/pre-fix checkout of the touched file(s)" and
+    says nothing about restoring the file afterward. The agent's own
+    "Hard rules" section has no restore/cleanup rule either. This is a
+    real, load-bearing gap in a currently-written instruction, not a
+    one-off agent mistake unconnected to any instruction on file.
+  - **Scope check:** `grep '^tools:' .claude/agents/*.md` shows 9 of 13
+    agent briefs hold both `Bash` and `Write`
+    (`release-phase-auditor`, `context-evaluator`, `domain-skeptic`,
+    `docs-maintainer`, `context-researcher`, `roadmap-context-curator`,
+    `reference-project-tester`, `docs-reconstructor`,
+    `context-health-planner`) — the candidate's own title is right to
+    frame this generically rather than scoping it to
+    `release-phase-auditor` alone, even though `release-phase-auditor`
+    is the only brief that currently *instructs* this specific
+    git-revision-materialization maneuver (item 11).
+  - **Disposition: promote now, not merely retain.** This is a single,
+    narrow, clear-cut gap with an obvious, low-blast-radius fix — the
+    same bar this project has already promoted first-occurrence
+    `workflow` candidates at without waiting for a second instance
+    (`L-069`, `L-073`, `L-074`, `L-108`, `L-113`). Waiting for a second
+    dirty-working-tree incident to "confirm recurrence" would mean
+    accepting a second instance of the lead having to catch this by
+    accident (as happened here, via an unrelated harness notice) rather
+    than by the agent's own report. `classification: workflow` stands
+    as filed.
+  - **Promotion targets (drafted here; lead applies — outside this
+    role's write boundary per `.claude/agents/knowledge-curator.md`
+    "Hard rules"):**
+    1. **Primary — `.claude/agents/release-phase-auditor.md` "Hard
+       rules"**, new bullet (placed after the existing "Read-only"
+       bullet):
+       > **Restore any git revision you materialize for comparison.**
+       > If step 11 leads you to write a prior commit's content over a
+       > live, tracked working-tree path (e.g. `git show <rev>:<path>`
+       > redirected onto `<path>`, or an equivalent checkout) to
+       > reproduce pre-fix behaviour, you must restore that path to its
+       > current committed state (`git checkout -- <path>`) and confirm
+       > `git diff --quiet -- <path>` before returning your report —
+       > every time, including when you're confident the restore is
+       > redundant. Prefer writing the prior revision's content to a
+       > disposable scratch path instead of the live tracked file
+       > whenever the comparison doesn't require it to sit at the real
+       > path to run. Confirmed necessary at Phase 85 (`L-115`): a
+       > re-audit dispatch materialized a pre-fix revision into the live
+       > tracked path to reproduce two defects, then returned its report
+       > without restoring it — the lead caught it only via an unrelated
+       > harness notice, never via this agent's own report.
+    2. **Secondary — `planning/v1-redefinition/agent-led-development.md`
+       §1**, a general cross-agent rule (since 9 of 13 briefs share the
+       `Bash`+`Write` combination this risk depends on, not only
+       `release-phase-auditor`):
+       > Any agent dispatched with both `Bash` and `Write` that
+       > materializes a prior git revision into a live, tracked
+       > working-tree path for its own before/after comparison (rather
+       > than a disposable scratch copy) must restore that path to its
+       > committed state and verify a clean diff before returning its
+       > report. The dispatch's own report is not a substitute for the
+       > lead independently confirming the working tree is unchanged — a
+       > careful, correct investigation can still leave the repository
+       > in a different state than it found it. Confirmed necessary at
+       > Phase 85 (`L-115`).
+  - **Status held at `candidate`, not flipped to `promoted`, by this
+    note** — per this project's own convention (`check_user_docs.py`'s
+    `status: promoted`-requires-a-`promoted.md`-line check), `status`
+    only becomes `promoted` once the artifact text above actually lands
+    in a commit. Once the lead applies target 1 (and, if accepted,
+    target 2), add to `promoted.md`:
+    `L-115 | 2026-11-03 | workflow | .claude/agents/release-phase-auditor.md "Hard rules" (+ planning/v1-redefinition/agent-led-development.md §1 if applied) @ <commit>`
+    and flip this entry's `status` to `promoted` in the same pass.
 
 ### L-114 — the self-knowledge-quality validator's real-corpus baseline now carries two distinct, genuine, pre-existing knowledge-debt categories that `--strict` cannot pass until resolved on their own terms
 

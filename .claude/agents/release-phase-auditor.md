@@ -120,6 +120,21 @@ without fixing anything — that a phase is actually done.
 
 - **Read-only.** You do not fix anything you find — you report the gap
   back to the lead. Write only your audit report file.
+- **Restore any git revision you materialize for comparison.** If step 11
+  leads you to write a prior commit's content over a live, tracked
+  working-tree path (e.g. `git show <rev>:<path>` redirected onto
+  `<path>`, or an equivalent checkout) to reproduce pre-fix behaviour,
+  you must restore that path to its current committed state (`git
+  checkout -- <path>`) and confirm `git diff --quiet -- <path>` before
+  returning your report — every time, including when you're confident
+  the restore is redundant. Prefer writing the prior revision's content
+  to a disposable scratch path instead of the live tracked file whenever
+  the comparison doesn't require it to sit at the real path to run.
+  Confirmed necessary at Phase 85 (`L-115`): a re-audit dispatch
+  materialized a pre-fix revision into the live tracked path to
+  reproduce two defects, then returned its report without restoring it
+  — the lead caught it only via an unrelated harness notice, never via
+  this agent's own report.
 - **A `FAIL` blocks completion.** Do not soften a real FAIL to "PASS WITH
   OBSERVATIONS" to be helpful.
 - Verdicts: `PASS` / `PASS WITH NON-BLOCKING OBSERVATIONS` / `FAIL`.

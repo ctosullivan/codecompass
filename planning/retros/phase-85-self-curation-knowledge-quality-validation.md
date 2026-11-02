@@ -287,6 +287,25 @@ independently-accurate closeout work (the docs-drift fixes, the
 committed, so "the exact commit about to be marked done" did not yet
 exist. Both are now fixed in the commit that includes this section.
 
+Separately, and despite `L-112` from the original phase (and this
+retro's own text above, verbatim) stating "resume a dispatched agent
+via `SendMessage`, never a fresh `Agent` call," the lead made the
+identical mistake a second time within this same corrective pass:
+dispatching a *fresh* `knowledge-curator` agent to triage `L-115`
+instead of resuming the already-dispatched `knowledge-curator` agent
+that had just finished triaging `L-114` moments earlier, which still
+held full context. Caught immediately on review of the tool call used
+(`Agent` with a plain `subagent_type`, not `SendMessage` to the prior
+agent's id), but only after the fresh dispatch had already launched —
+not pre-empted. The lead correctly used `SendMessage` to resume the
+`release-phase-auditor` agent for its own second pass later in this
+same corrective pass, so the lesson was not uniformly dropped, only
+missed once. Recorded here honestly rather than silently; worth a
+second, independent `knowledge-curator` look at whether `L-112` itself
+needs a sharper trigger (e.g. promoted into a literal pre-dispatch
+checklist step, not only prose guidance) given it has now recurred
+once already.
+
 ## Candidate learnings filed (corrective pass)
 
 `L-114` (open-work, `retained`: two genuine knowledge-debt categories

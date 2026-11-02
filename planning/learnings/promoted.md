@@ -103,4 +103,5 @@ L-105 | 2026-10-28 | invariant | scripts/assess_change_impact.py::classify_symbo
 L-108 | 2026-10-29 | workflow | planning/v1-redefinition/agent-led-development.md §1 (corrective-pass test-first-before-fix discipline) + .claude/agents/release-phase-auditor.md "What to check" item 11 @ (this corrective pass's own closeout commit)
 L-109 | 2026-10-29 | architecture | docs/architecture/overview.md "Known footguns" (Rich Table cell truncation at default render width) @ (this corrective pass's own closeout commit)
 L-111 | 2026-11-02 | scoped-rule | .claude/agents/release-phase-auditor.md "What to check" item 12 (per-kind test coverage for kind-dispatching functions) @ (this amendment's own closeout commit)
+L-115 | 2026-11-03 | workflow | .claude/agents/release-phase-auditor.md "Hard rules" (restore any git revision materialized over a live tracked path for before/after comparison) + planning/v1-redefinition/agent-led-development.md §1 (general cross-agent version) @ (this corrective pass's own closeout commit)
 

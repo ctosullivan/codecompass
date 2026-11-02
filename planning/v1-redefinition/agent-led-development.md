@@ -69,6 +69,19 @@ Implemented by Phase 40 (roster + workflow) and proven by Phase 43
   citation convention — caught in minutes by running the real script
   against the real corpus before its test suite was finalized, not
   discovered later as a false-positive bug report.
+- **Any agent dispatched with both `Bash` and `Write` that materializes
+  a prior git revision into a live, tracked working-tree path for its
+  own before/after comparison (rather than a disposable scratch copy)
+  must restore that path to its committed state and verify a clean diff
+  before returning its report.** The dispatch's own report is not a
+  substitute for the lead independently confirming the working tree is
+  unchanged — a careful, correct investigation can still leave the
+  repository in a different state than it found it. Confirmed necessary
+  at Phase 85 (`L-115`): a `release-phase-auditor` re-audit dispatch
+  materialized a pre-fix revision into the live tracked path to
+  reproduce two defects, then returned its report without restoring it
+  — the lead caught it only via an unrelated harness notice, never via
+  the agent's own report.
 
 ## 2. The roster
 
