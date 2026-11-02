@@ -257,8 +257,8 @@ non-blocking drift findings: contributing.md's maintainer-tooling
 catalog and testing.md's test-module enumeration both omitted
 check_self_knowledge_quality.py. Fixed[.]" — and I independently
 confirmed both fixes are real, accurate, and present in the current tree
-(§3 above; `docs/development/contributing.md`'s new catalog entry
-correctly and honestly documents the contract-bearing-only scoping
+(§3 above; `docs/development/contributing.md`'s own updated catalog
+entry correctly and honestly documents the contract-bearing-only scoping
 decision; `docs/development/testing.md`'s test-module list now includes
 `tests/test_check_self_knowledge_quality.py` and is explicitly marked
 non-exhaustive). **But there is no standalone, independently-checkable
@@ -308,3 +308,122 @@ reproduced by this audit), the validator's severity design and test
 coverage, the agent-brief scope discipline, the absence of any
 `src/`/`decisions/`/`CLAUDE.md` drift, and the learnings triage — is
 solid and should re-audit cleanly on this one remaining point.
+
+---
+
+# RE-AUDIT — 2026-11-03, against commit `d59a6d7`
+
+**Scope of this round**: `git diff 6e987b0 d59a6d7 --stat` — exactly
+three files: `planning/phase-85-self-curation-knowledge-quality-
+validation.md` (+39, the fourth corrective note), `planning/retros/
+_drift-audit-phase-85.md` (new, 121 lines), and this file itself (the
+lead committing my own prior report into git, no content change). No
+`src/`, `tests/`, `scripts/`, or `planning/knowledge/**` file changed —
+confirmed directly, not assumed. Per the lead's own suggestion and my
+own judgement, the heavy verification already completed last round
+(full suite, all four strict validators, both dogfood probes
+re-executed by hand, agent-brief/scope/protected-file diffs) was **not**
+re-run in full, since nothing in this round's diff could plausibly have
+touched any of it — confirmed by the diff stat above, not merely taken
+on trust. What follows is a direct, fresh check of the two new/changed
+artifacts themselves.
+
+## Fix 1 — `planning/retros/_drift-audit-phase-85.md`
+
+Read in full. Compared directly against:
+
+- **This project's own `_drift-audit-phase-N.md` convention**
+  (cross-checked against `_drift-audit-phase-84.md`): same structure —
+  a `**Scope:**` line, a `**Method:**` paragraph, a `## Verdict:` header
+  naming finding count/severity, numbered findings each with file:line,
+  a quoted claim, the real source contradicting it, and fix status, a
+  "Checked, no drift found" section for the broader sweep, and (new
+  here, appropriately) a "Note on this record's own provenance" section
+  disclosing the reconstruction. Matches the convention's shape and
+  depth — not a stub.
+- **My own prior audit's independent findings**: I had already
+  independently read the real `git diff 3d9eef5 6e987b0 --
+  docs/development/contributing.md docs/development/testing.md` diff
+  last round (quoted in my own handback). The reconstructed report's
+  Finding 1 (`contributing.md`'s maintainer-tooling catalog omitted the
+  new script) and Finding 2 (`testing.md`'s test-module enumeration
+  omitted the new test file, now "e.g."-qualified) **match that diff
+  exactly** — same files, same lines, same fix description, same
+  "already fixed in `55f7008`" status. No invented or embellished
+  finding, nothing contradicted by what I already independently
+  verified.
+- **Scope honesty**: the report explicitly names what it did *not*
+  re-derive (the six new knowledge records' own correctness — correctly
+  out of a narrative-drift audit's remit) and flags a pre-existing,
+  not-this-phase's-fault gap (`tests/test_assess_change_impact.py`
+  missing from the same enumeration, Phase 83) rather than silently
+  absorbing it — consistent with how `_drift-audit-phase-84.md` also
+  separates "this phase's drift" from "other things noticed along the
+  way."
+- **Provenance disclosure**: explicitly states this record was
+  reconstructed same-day from the original dispatch's own full report
+  rather than fabricated after the fact or re-run fresh, and names
+  *why* (the original pass's method/findings were still fully
+  available, not summarized or lossy) — matches exactly what the lead's
+  message to me described, and is the honest, transparent framing this
+  situation calls for, not a pretense that the file always existed.
+
+**This is a faithful, complete, convention-matching reconstruction.**
+It closes the gap my prior pass found: a real, persisted,
+independently-checkable artifact now exists recording the
+`docs-reconstructor` pass's full scope and `NO DRIFT` (post-fix)
+verdict.
+
+## Fix 2 — Fourth corrective note on the Phase 85 plan
+
+Read the new section in full (`git diff 6e987b0 d59a6d7 --
+planning/phase-85-...md`, the +39 lines). Matches the shape of the
+plan's existing three corrective notes (dated header, what was
+discovered, the as-built fix, the rationale, pointers to the real
+evidence). Content cross-checked against what I independently confirmed
+last round: the four cited Evidence ids (`EV-ADPT-006`, `EV-CTXT-011`,
+`EV-SKEP-005`, `EV-DOCORIGIN-008`) match exactly the four ids already
+named in `check_test_ref_files()`'s own module-level docstring comment
+in `scripts/check_self_knowledge_quality.py` (unchanged this round,
+confirmed by its absence from the diff stat above) — no new or
+inconsistent claim introduced. The note correctly and explicitly scopes
+itself to the one genuine deviation ("every other design element in
+§4.C was implemented exactly as specified"), which matches my own prior
+finding precisely. This is a non-blocking item that is now also closed.
+
+## Nothing else re-litigated
+
+No code, test, script, or knowledge-record file is part of this round's
+diff, so §§1-9 and the "Additional observation" section of my prior
+pass stand unchanged and are not re-verified here — they were already
+independently reproduced against the real repository state in the first
+pass, and nothing since could have altered that state.
+
+## Final verdict: PASS WITH NON-BLOCKING OBSERVATIONS
+
+Both of this audit's prior findings are now genuinely, faithfully, and
+transparently closed:
+
+1. The missing drift-audit artifact (previously blocking) now exists,
+   faithfully reconstructed and convention-matching — confirmed by
+   direct comparison against my own already-independently-verified
+   findings, not merely re-read on trust.
+2. The plan-vs-as-built sync gap for §4.C point 4 (previously
+   non-blocking) is now folded back into the plan document, matching
+   its own established practice.
+
+**Non-blocking observation carried forward**: the drift-audit artifact
+is a same-day *reconstruction* of a pass that ran before the artifact
+existed, not a contemporaneous write — transparently disclosed as such
+in the artifact's own text, and not, on the evidence available, a
+reason to doubt its accuracy (every claim in it was independently
+cross-checked against what I had already verified myself from the real
+diff, not merely trusted from the reconstruction's own prose). Noted
+for the record, not a blocker.
+
+This phase is, as of commit `d59a6d7`, ready for the terminal
+`roadmap-context-curator` reconciliation commit (`planning/ROADMAP.md`
+→ `done`, `planning/CONTEXT.md` current-state overwrite, the plan file's
+own Status line) per `CLAUDE.md` §5's narrow exemption — provided that
+commit touches only those three named targets and nothing else, exactly
+as every prior phase in this project's history has required.
