@@ -1,0 +1,54 @@
+id: CL-FPSS-009
+kind: claim
+statement: >
+  Beyond CL-FPSS-007's two documented false-positive-row shapes
+  (multi-line raw string; plain block comment) and CL-FPSS-008's two
+  documented structural limitations (Python top-level-only extraction;
+  JS/TS const-kind-blindness), a bounded Phase 85 self-curation
+  follow-up investigation of CL-FPSS-007's own open question found two
+  further, genuinely distinct, independently reproduced defeat shapes:
+  (e) placing a visibility/export keyword (Rust `pub`, TypeScript
+  `export`) on its own physical line, separate from the following
+  `fn`/`struct`/`function`/`class` keyword, causes both anchored item
+  regexes (`_RUST_ITEM_RE`, `_JS_FAMILY_ITEM_RE`) to match only the
+  second line, with the modifier-capture group (Rust) or `exported`
+  group (JS/TS family) necessarily empty on that line -- so a
+  declaration that is actually public/exported is misclassified with
+  exposure='internal' instead of 'public'. This is a wrong-metadata
+  defect on a real, genuinely-present row (not a false-positive row) --
+  the same general shape as CL-FPSS-008(b)'s const-kind-blindness,
+  applied to the exposure field instead of the kind field, and
+  reproduced identically in both the Rust and the JS/TS family
+  extractor. It is also the first concrete, reproduced instance in this
+  corpus of decisions/0065's own named but previously-untested "unusual
+  formatting style" defeat scenario -- CL-FPSS-007 tested only the
+  "multi-line signature" and "false match inside a string/comment"
+  scenarios the ADR also names, never this third one. (f) a Rust
+  `macro_rules!` definition whose own expansion-template body contains a
+  line that, once stripped, textually matches `_RUST_ITEM_RE` (e.g. a
+  `pub fn generated() -> i32 { ... }`-shaped line inside a `() => { ...
+  }` arm) produces a genuine false-positive SourceSymbol row for a
+  declaration that is not literal top-level code at that source location
+  at all -- it is template text that only becomes real code, at the
+  macro's own invocation site(s), if and when the macro is actually
+  expanded. This extends CL-FPSS-007's false-positive-row family with a
+  third concrete, reproducible shape and a new root cause (macro
+  template text, distinct from string/comment content). Both (e) and (f)
+  are silent: status remains indexed_partial, diagnostic remains None,
+  with nothing in the returned SourceFileExtraction distinguishing
+  either defect from a correctly-classified or genuine declaration.
+derivation: DE-FPSS-009
+assertion_kind: boundary
+basis: observed_behaviour
+supporting_evidence: ["EV-FPSS-024"]
+contradicting_evidence: []
+examples: ["a Rust file containing `pub\\nfn foo() -> i32 { 42 }` produces a real row for `foo` with exposure='internal', not 'public' (real probe)", "a TS file containing `export\\nfunction foo(): number { return 1; }` produces a real row for `foo` with exposure='internal', not 'public' (real probe)", "a Rust file containing `macro_rules! make { () => { pub fn generated() -> i32 { 42 } }; }` produces a real, silent false-positive `generated` row even though `generated` is only template text, never real top-level code at that location (real probe)"]
+counterexamples: ["a visibility/export keyword on the same physical line as its following keyword (the ordinary case) is unaffected -- already established by OBS-FPSS-007/EV-FPSS-009, not re-tested here"]
+depends_on: ["CL-FPSS-007", "CL-FPSS-008"]
+open_questions: ["whether this investigation's shape (e) now exhausts decisions/0065's own 'unusual formatting style' scenario, or merely instantiates one case of it, is still open -- only the fn/struct (Rust) and function/class (TS) keyword forms were tried; whether enum/trait/interface/type/const or other modifier keywords (e.g. async, unsafe, declare) sharing a line-split placement produce the identical defect was not tested in this bounded investigation", "CL-FPSS-007's own open question (whether its two shapes are the only ones decisions/0065's prose intended, or merely some of several unenumerated ones) is not fully resolved by this finding -- this investigation adds a third reproduced false-positive-row shape (f) and a wholly new defect category (e), but whether the ADR's authors intended any of these five total shapes specifically still cannot be determined from the documents alone"]
+evidence_support_state: supported
+derived_by: "context-researcher agent dispatch (Phase 85 self-curation)"
+repository_revision: "20a274c"
+timestamp: "2026-11-03"
+status: supported
+supersedes: null

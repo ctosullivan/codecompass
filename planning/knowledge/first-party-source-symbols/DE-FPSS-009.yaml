@@ -1,0 +1,95 @@
+id: DE-FPSS-009
+kind: derivation
+claim: CL-FPSS-009
+method: >
+  This is a Phase 85 self-curation bounded investigation, run in
+  deferred-write mode (planning/phase-85-self-curation-knowledge-
+  quality-validation.md §4.A step 3/§4.E), extending CL-FPSS-007's own
+  already-recorded open question ("whether these two specific
+  false-positive shapes... are the ones decisions/0065's own prose
+  intended to describe, or merely two of possibly several unenumerated
+  ones, could not be determined from the documents alone"). Per the
+  dispatch's own pre-registered scope, four genuinely different ordinary
+  Rust/TypeScript constructs were tried against the real, unmodified
+  extractors, each as an independent, falsifiable sub-question, without
+  pre-committing to which would defeat the extractor: (1) a Rust
+  `#[cfg(test)]`-gated fn/mod; (2) a Rust or TS declaration whose own
+  visibility/export keyword sits on its own physical line, separate from
+  the following `fn`/`struct`/`function`/`class` keyword; (3) a TS
+  decorator-prefixed declaration; (4) a Rust `macro_rules!` definition
+  whose own template body contains a declaration-shaped line. All four
+  were run for real via direct `python3 -I` invocation importing the
+  real, unmodified `src/codecompass/source_symbols.py`
+  (`_extract_rust_source_symbols`/`_extract_js_family_source_symbols`
+  called directly), the same real-probe convention EV-FPSS-008/
+  OBS-FPSS-008 already established, against disposable fixture files
+  under a scratch directory outside `planning/knowledge/` and `src/`.
+
+  Construct (1) (cfg(test)) and construct (3) (decorator) both came back
+  NOT reproducing any defect: the `#[cfg(test)]` attribute line and the
+  `@Component(...)` decorator line(s) are simply never matched by either
+  item regex (they don't begin with a recognized keyword), so they are
+  silently skipped exactly like any other non-matching line, and the
+  following real declaration line is matched and classified correctly in
+  both cases (internal exposure for the non-pub cfg(test) functions,
+  since neither carries a `pub` modifier; public exposure for the
+  decorated `export class Foo`). These two hypotheses were falsified
+  (§4.E outcome 3) -- per this mode's own deferred-write rule, no
+  OBS-/EV- record was committed to disk for either; their full
+  reproducible content (hypothesis, exact file content, exact command,
+  exact real output) is reported directly to the lead for
+  `knowledge-curator` to write up as investigation-log entries
+  (`planning/retros/phase-85-self-curation-investigation-log.md`), not
+  cited here as Evidence, per §4.E's explicit rule against creating
+  unattached Evidence merely to represent a rejection.
+
+  Construct (2) and construct (4) both DID reproduce genuine, previously
+  unrecorded defects (§4.E outcome 1): (2) because both `_RUST_ITEM_RE`
+  and `_JS_FAMILY_ITEM_RE` only ever inspect a single stripped line's
+  own start, a visibility/export keyword placed on its own line is
+  simply invisible to the regex matching the following declaration line,
+  so the declaration is captured but with its modifier group empty --
+  misclassified as 'internal' exposure despite being genuinely public.
+  I tried this in both Rust (`pub`/`fn`,`struct`) and TypeScript
+  (`export`/`function`,`class`) specifically because the dispatch's own
+  hypothesis named both languages, and because CL-FPSS-007 had already
+  established that both regexes share the identical `^`-anchoring
+  mechanism for a different scenario (single-line string/comment) -- it
+  was a reasonable, confirmed-by-rereading-the-source expectation that a
+  single-line-anchoring weakness would generalize across both
+  extractors, which the real probe output confirmed identically for
+  both. (4) because the extractor has no concept of a macro body versus
+  genuine top-level code -- it iterates every physical line
+  unconditionally -- a macro template line matching the item regex is
+  indexed exactly as if it were real code, even though the name it
+  introduces does not exist as top-level code at that source location at
+  all. Both were committed to disk per this mode's own rule for outcome
+  1: OBS-FPSS-022 (Rust split-modifier), OBS-FPSS-023 (TS split-export),
+  OBS-FPSS-024 (macro template body), bundled into EV-FPSS-024, backing
+  this single new Claim.
+
+  I made one explicit editorial judgement call, named here rather than
+  silently decided: whether to write (e) and (f) as two separate Claims
+  or bundle them into one. I bundled them into CL-FPSS-009, following
+  this corpus's own existing precedent (CL-FPSS-007 bundles two
+  differently-rooted false-positive shapes under one statement;
+  CL-FPSS-008 bundles two unrelated structural limitations under one
+  statement, explicitly framed as "two further... limitations" from one
+  investigation) rather than splitting per-construct -- `knowledge-
+  curator`/the lead may reasonably split this into two Claims at triage
+  time if they judge the two shapes too dissimilar to share one record;
+  I am naming this as my own judgement call, not asserting it is the
+  only correct structuring.
+
+  I did not verify construct (2)'s Rust fixture compiles under a real
+  `rustc` (none was available in this environment, confirmed by `which
+  rustc` returning nothing) -- I am relying on general knowledge that
+  Rust is whitespace-insensitive between a visibility modifier and the
+  item it modifies, which I could not independently confirm by
+  compilation in this environment; this is named as an unverified
+  assumption, not claimed as independently executable-verified.
+inputs: ["EV-FPSS-024"]
+open_questions: ["whether constructs (1) and (3)'s own falsified status would survive a differently-constructed variant (e.g. a cfg(test) item that is itself pub, or a decorator argument containing declaration-like text) was not tried -- only the specific forms in the dispatch's own pre-registered scope were tested", "whether (e)'s defect extends to every JS/TS/Rust modifier keyword (async, unsafe, declare, abstract, enum/trait/interface/type/const as the following keyword) was not exhaustively tried -- only fn/struct and function/class were probed", "whether to record (e) and (f) as one bundled Claim or two separate ones is a judgement call the author flagged explicitly above, not a settled question"]
+performed_by: context-researcher
+repository_revision: "20a274c"
+timestamp: "2026-11-03"

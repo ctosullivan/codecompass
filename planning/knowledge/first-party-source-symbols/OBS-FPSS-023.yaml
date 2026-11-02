@@ -1,0 +1,34 @@
+id: OBS-FPSS-023
+kind: observation
+method: targeted_probe
+performed_by: context-researcher
+what_was_done: >
+  Phase 85 self-curation follow-up, same hypothesis as OBS-FPSS-022
+  applied to the JS/TS family extractor: a TypeScript `export` keyword
+  placed on its own physical line, separated from the following
+  `function`/`class` keyword, against the real, unmodified JS/TS
+  extractor -- to check whether the identical line-anchoring weakness
+  applies to `_JS_FAMILY_ITEM_RE` as well, not only to the Rust
+  extractor.
+location: >
+  File construct2b_split_export.ts written with content:
+  'export\nfunction foo(): number {\n  return 1;\n}\n\nexport\nclass Bar {\n  value = 1;\n}\n'
+  Called _extract_js_family_source_symbols(path) directly.
+raw_result: >
+  status=indexed_partial, diagnostic=None. symbols =
+  [SourceSymbol(name='foo', kind='function', line=2, purpose=None,
+  exposure='internal'), SourceSymbol(name='Bar', kind='class', line=7,
+  purpose=None, exposure='internal')]. Both `foo` and `Bar` are real,
+  genuinely exported (public) declarations, but both rows were recorded
+  with exposure='internal', not 'public', for the identical structural
+  reason as OBS-FPSS-022: `_JS_FAMILY_ITEM_RE`'s `(export\s+)?` group
+  only inspects the single stripped line where `function`/`class`
+  itself appears, and the "export"-only line does not match the regex
+  at all (it does not begin with `function`/`class`/`interface`/`const`/
+  `type`/`enum`), so no `export` text is ever captured for the following
+  declaration. Confirms the defect is shared by both extractors, not
+  specific to Rust.
+tool_version: "python3 3.13.5 (-I isolated mode), real unmodified src/codecompass/source_symbols.py"
+repository_revision: "20a274c"
+timestamp: "2026-11-03"
+status: recorded

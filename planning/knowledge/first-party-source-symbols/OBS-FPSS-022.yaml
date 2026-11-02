@@ -1,0 +1,35 @@
+id: OBS-FPSS-022
+kind: observation
+method: targeted_probe
+performed_by: context-researcher
+what_was_done: >
+  Phase 85 self-curation follow-up on CL-FPSS-007's own open question.
+  Probed a Rust visibility modifier (`pub`) placed on its own physical
+  line, separated from the following `fn`/`struct` keyword, against the
+  real, unmodified Rust extractor -- to check whether splitting the
+  modifier onto a separate line (decisions/0065's own named but
+  previously-untested "unusual formatting style" scenario) causes a
+  misclassification, since `_RUST_ITEM_RE` only matches against a single
+  stripped line's own start.
+location: >
+  File construct2_split_modifier.rs written with content:
+  'pub\nfn foo() -> i32 {\n    42\n}\n\npub\nstruct Bar {\n    x: i32,\n}\n'
+  Called _extract_rust_source_symbols(path) directly.
+raw_result: >
+  status=indexed_partial, diagnostic=None. symbols =
+  [SourceSymbol(name='foo', kind='fn', line=2, purpose=None,
+  exposure='internal'), SourceSymbol(name='Bar', kind='struct', line=7,
+  purpose=None, exposure='internal')]. Both `foo` and `Bar` are real,
+  genuinely public declarations (the `pub` keyword appears on the
+  immediately preceding physical line, which is valid, compiling Rust
+  syntax -- whitespace/newlines are not significant between a visibility
+  modifier and the item it modifies), but both rows were recorded with
+  exposure='internal', not 'public', because `_RUST_ITEM_RE` only
+  inspects the single stripped line where `fn`/`struct` itself appears,
+  and the `pub` line on its own (stripped to literally "pub", with no
+  trailing keyword) does not match the regex at all, so no modifier text
+  is ever captured for the following declaration.
+tool_version: "python3 3.13.5 (-I isolated mode), real unmodified src/codecompass/source_symbols.py"
+repository_revision: "20a274c"
+timestamp: "2026-11-03"
+status: recorded

@@ -1,0 +1,35 @@
+id: OBS-FPSS-024
+kind: observation
+method: targeted_probe
+performed_by: context-researcher
+what_was_done: >
+  Phase 85 self-curation follow-up on CL-FPSS-007's own open question.
+  Probed a Rust `macro_rules!` definition whose own expansion-template
+  body contains a line that looks exactly like a real top-level `pub fn`
+  declaration, against the real, unmodified Rust extractor -- to check
+  whether the extractor's lack of any concept of a macro body (as
+  opposed to genuine top-level code) causes a template-body line to be
+  indexed as if it were a real declaration.
+location: >
+  File construct4_macro.rs written with content:
+  'macro_rules! make {\n    () => {\n        pub fn generated() -> i32 {\n            42\n        }\n    };\n}\n\nmake!();\n'
+  Called _extract_rust_source_symbols(path) directly.
+raw_result: >
+  status=indexed_partial, diagnostic=None. symbols =
+  [SourceSymbol(name='generated', kind='fn', line=3, purpose=None,
+  exposure='public')]. The extractor emitted a genuine false-positive
+  row for `generated` at line 3 -- the line inside the macro's own
+  `() => { ... }` expansion-template arm, once stripped, textually
+  matches `_RUST_ITEM_RE` exactly like a real top-level `pub fn`
+  declaration would. `generated` is not a real top-level item at this
+  source location at all: it is template text that only becomes real
+  code, at the macro's own invocation site(s), if and when `make!()` is
+  expanded -- the extractor has no concept of a macro body versus
+  genuine top-level code, so the template line is scanned and matched
+  identically to real code. status remained indexed_partial, diagnostic
+  remained None, with nothing in the returned SourceFileExtraction
+  distinguishing this false-positive row from a genuine declaration.
+tool_version: "python3 3.13.5 (-I isolated mode), real unmodified src/codecompass/source_symbols.py"
+repository_revision: "20a274c"
+timestamp: "2026-11-03"
+status: recorded

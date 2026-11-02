@@ -1,0 +1,33 @@
+id: EV-FPSS-024
+kind: evidence
+evidence_kind: executable
+what_it_shows: >
+  Real execution against the unmodified Rust and TypeScript/JavaScript
+  extractors demonstrates two further, genuinely distinct ways to defeat
+  the indexed_partial techniques beyond CL-FPSS-007's two documented
+  false-positive-row shapes, both triggered by ordinary (not
+  contrived-adversarial) constructs: (1) a visibility/export keyword
+  (Rust `pub`, TypeScript `export`) placed on its own physical line,
+  separate from the following `fn`/`struct`/`function`/`class` keyword,
+  is never captured by either anchored item regex, so a declaration that
+  is actually public/exported is misclassified with exposure='internal'
+  instead of 'public' -- reproduced identically in both the Rust
+  extractor (`foo`/`Bar`) and the JS/TS family extractor (`foo`/`Bar`),
+  confirming the defect is shared by both, not specific to one language;
+  this is decisions/0065's own named "unusual formatting style" scenario,
+  realized concretely for the first time in this corpus. (2) a Rust
+  `macro_rules!` definition whose own expansion-template body contains a
+  line that textually matches `_RUST_ITEM_RE` once stripped produces a
+  genuine false-positive SourceSymbol row for a declaration that is not
+  real top-level code at that location at all -- a third concrete
+  false-positive-row shape, extending CL-FPSS-007's family (multi-line
+  raw string; plain block comment) with a new root cause (macro template
+  text, not string/comment content). In both cases the returned
+  SourceFileExtraction's status remained indexed_partial and diagnostic
+  remained None, with nothing distinguishing either defect from a
+  correctly-classified/genuine declaration.
+observations: ["OBS-FPSS-022", "OBS-FPSS-023", "OBS-FPSS-024"]
+derived_by: context-researcher
+repository_revision: "20a274c"
+timestamp: "2026-11-03"
+status: current

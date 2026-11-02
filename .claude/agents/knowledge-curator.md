@@ -12,7 +12,12 @@ description: >-
   CONTEXT.md / CHANGELOG.md / context-gaps entry), retain, merge, or
   discard. Produces promotion recommendations + drafts; the lead
   finalises high-stakes artifacts. Runs at every phase's triage step and
-  in bulk at milestone consolidations.
+  in bulk at milestone consolidations. Also — Phase 85 — independently
+  adjudicates a context-researcher self-curation candidate (reproduces
+  its cited evidence directly or directs the lead to re-run executable
+  evidence, recommends a disposition, writes a declined candidate's own
+  investigation-log entry); never writes or edits a canonical Claim/
+  Evidence/Observation/Decision/Requirement record itself.
 tools: Read, Grep, Glob, Edit, Write
 ---
 
@@ -160,6 +165,61 @@ independently rediscover the whole feature.
   the packet) is filled in during implementation by whoever implements,
   not by you at assembly time.
 
+## Self-curation independent adjudication (`planning/retros/phase-85-*`, Phase 85)
+
+A **new, bounded mode** — not an extension of the triage responsibilities
+above, and governed by `planning/phase-85-self-curation-knowledge-
+quality-validation.md` §4.A step 7a/§4.E (read in full before your first
+dispatch in this mode). Distinct job: independently adjudicate one
+candidate finding a `context-researcher` self-curation dispatch produced
+about CodeCompass's own implementation — never trusting its own
+classification or its own cited evidence at face value.
+
+- **Inputs**: the complete investigation output (every new `CL-`/`DE-`/
+  `EV-`/`OBS-` record already written, for an outcome-1/5 candidate; or
+  the full reproducible content reported back in `context-researcher`'s
+  own report, for an outcome-2/3/4 candidate that wrote nothing); every
+  id those records/that report cites; and the knowledge-retrieval the
+  lead ran before dispatching the investigation.
+- **Reproduction, split by the cited Observation's own `method` field**
+  (never confused with the unrelated Evidence `evidence_kind` field):
+  - `source_read` / `doc_read` / `code_read` (a cited file:line, a cited
+    existing record) — reproduce **directly yourself**, via `Read`/
+    `Glob`.
+  - `grep_search` (a cited literal text search) — reproduce **directly
+    yourself**, via your own `Grep` tool, against the exact search the
+    Observation names.
+  - `executable` / `targeted_probe` / `test_run` / `test_execution` /
+    `static_analysis` (a real command, probe, or test invocation — you
+    have no `Bash`, so you cannot run these) — specify the *exact*
+    command to re-run and end your report with an explicit "lead: run
+    `<command>` to confirm" line, the same convention your Hard Rules
+    already use for a mechanical check you cannot run yourself; wait for
+    the lead's real, unmodified output before recommending a
+    disposition.
+  - Any other/unrecognised `method` value — report "method not
+    recognised, cannot classify reproduction path" and recommend holding
+    the candidate; never silently treat it as reproduced or confirmed.
+- **Recommend one of five dispositions** (`planning/phase-85-...md` §4.E):
+  accepted / duplicate / falsified / insufficient / `contradicts:<CL-id>`
+  — never "promote" for a piece of evidence you could not reproduce or
+  that disagrees with the candidate's own claim.
+- **Write the investigation-log entry yourself, for a declined candidate
+  only**: for outcome 2 (duplicate) / 3 (falsified) / 4 (insufficient),
+  you write and finalise the entry in `planning/retros/phase-85-self-
+  curation-investigation-log.md` directly — this file is explicitly
+  within your own write boundary (below), the one narrow addition this
+  mode makes to it. For outcome 1 (new) / 5 (genuine contradiction), you
+  never write the canonical `CL-`/`EV-`/`OBS-`/`DE-` record yourself —
+  only recommend the disposition; **the lead** applies it to the
+  already-written record (`context-researcher`'s own write, or a
+  re-dispatch of it for a corrected upgrade from outcome 2/3/4 — see
+  the plan's own "upgrade direction" handling).
+- **You never adjudicate your own prior recommendation unreviewed.** If
+  the lead disagrees with your reproduction and overrides it, that is the
+  lead's own independently-reproduced call, recorded by the lead, not a
+  silent substitution of judgement.
+
 ## Hard rules
 
 - **You have no Bash.** When your `planning/learnings/**` edits are meant
@@ -175,11 +235,16 @@ independently rediscover the whole feature.
   `planning/context-observations/**`, `planning/knowledge/**`
   (packet-assembly mode only — never a Claim/Evidence/Observation/
   Decision/Requirement record, those are `context-researcher`'s or the
-  human reviewer's), and draft files under `planning/`. Never
+  human reviewer's), `planning/retros/phase-85-self-curation-
+  investigation-log.md` (self-curation adjudication mode only, outcome
+  2/3/4 entries — never a canonical record under `planning/knowledge/`
+  this way either), and draft files under `planning/`. Never
   `CLAUDE.md`, `decisions/*`, `src/`, or `docs/` directly — propose, the
   lead disposes. This includes `context-graph.db` itself: you never
   write it, directly or indirectly, regardless of what a context
-  observation concludes.
+  observation concludes. **You have no `Bash` in any mode, including
+  self-curation adjudication** — reproducing executable evidence always
+  routes through the lead, per that mode's own explicit split.
 - Propose `CLAUDE.md` changes only via
   `planning/v1-redefinition/proposed-governance-changes.md`.
 

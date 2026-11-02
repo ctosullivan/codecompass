@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 85: Self-Curation and Knowledge-Quality Validation**
+  (`decisions/0084` §2-3): a repeatable, documented self-curation loop
+  (`docs/workflows/self-curation-loop.md`) dogfooding the existing
+  `context-researcher`/`knowledge-curator` roles and Phase 84's read-only
+  API against CodeCompass's own implementation — no new agent role,
+  canonical record kind, storage, or write path beyond one narrow
+  addition. A five-outcome candidate-disposition procedure (accepted /
+  duplicate / falsified / insufficient / genuine-contradiction) and a
+  new, non-canonical, append-only investigation log
+  (`planning/retros/phase-85-self-curation-investigation-log.md`) keep a
+  merely-falsified hypothesis from polluting canonical knowledge as a
+  `status: contradicted` Claim. A new on-demand maintainer validator,
+  `scripts/check_self_knowledge_quality.py` (20 tests), composes
+  `find_gaps`/`knowledge_status`/`trace_evidence`/`oracle.
+  parse_oracle_result` for corpus-wide `missing_evidence`/missing-or-
+  malformed-`test_ref`-file/duplicate-overlap detection, with
+  `missing_contract` always informational (no existing decision mandates
+  an oracle contract beyond `balance-from-spec`, `decisions/0081` §3).
+  Real dogfood: a bounded `context-researcher` self-curation investigation
+  of `planning/knowledge/first-party-source-symbols/`'s own open question
+  found two genuinely new false-positive/misclassification shapes in the
+  Rust/TypeScript source-symbol extractors (`CL-FPSS-009`, independently
+  adjudicated and promoted) and two genuinely falsified hypotheses
+  (`SCI-001`/`SCI-002`, recorded in the investigation log) — both
+  required outcomes demonstrated for real, neither manufactured.
+
 - **Phase 84: Consolidated Knowledge API and Query CLI** (`decisions/0084`/
   `0085`/`0091`): a new, read-only, typed interface,
   `src/codecompass/knowledge_api.py`, over `context-graph.db`,
