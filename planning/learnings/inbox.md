@@ -8,6 +8,256 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-113 — a new validator/checker's severity design must be run against the real, pre-existing corpus before its own test suite is finalized — an abstract check against the approved plan is not sufficient on its own
+
+- **origin:** Phase 85 (Self-Curation and Knowledge-Quality Validation),
+  surfaced by the phase's own retro "What worked" bullet 4 and "Lessons
+  learnt" §1
+- **date:** 2026-11-03
+- **project_revision:** working tree — `scripts/check_self_knowledge_
+  quality.py` + `tests/test_check_self_knowledge_quality.py`, both
+  uncommitted at filing time (this phase's own closeout commit has not
+  yet landed)
+- **observation:** `scripts/check_self_knowledge_quality.py`'s severity
+  design (every `find_gaps()` rule stays blocking except
+  `missing_contract`, which is always informational per `decisions/0081`
+  §3) looked correct in the abstract against the approved plan, and
+  survived both of that plan's own independent review rounds, but still
+  misfired the first time it was actually run against the real,
+  pre-existing `planning/knowledge/` corpus: four pre-Phase-82 Evidence
+  records, in non-contract-bearing slugs, cite an older, legitimate
+  `test_ref` citation convention that neither the plan's authors nor its
+  independent reviewers had checked the new `test_ref`-file-integrity
+  check against. The gap was caught immediately — in minutes, per the
+  retro's own account — by running the new script against the real
+  corpus *before* finalising its own test suite, not after; fixed by
+  scoping the check to contract-bearing slugs only.
+- **evidence:** `planning/retros/phase-85-self-curation-knowledge-quality-validation.md`
+  "What worked" bullet 4 ("Running the new validator against the real
+  corpus before writing its own tests... caught a real design gap
+  immediately") and "Lessons learnt" §1 ("A validator's severity design
+  must be checked against the real corpus before, not after, writing its
+  own test suite — a design that looks correct in the abstract... can
+  still misfire on a real, pre-existing population the plan's own authors
+  didn't anticipate"); the same retro's "Scope delivered vs planned" item
+  3 (the `test_ref`-file-integrity check, "scoped to contract-bearing
+  slugs only — a real scoping gap discovered while running it against the
+  live corpus, not anticipated by the plan"). Checked `CLAUDE.md` §1 and
+  `planning/learnings/promoted.md` for an existing rule requiring a new
+  validator to be run against its real target corpus before its own test
+  suite locks in assumptions — grepped `promoted.md` for "real corpus" /
+  "against the real" / "before... test suite" and found a related but
+  distinct precedent only: `L-108` (a corrective pass must write and
+  confirm a failing regression test against the pre-fix source before
+  writing the fix) is the closest structural analog — an ordering
+  discipline that catches a gap earlier rather than later — but concerns
+  *fixing a known defect*, not *discovering an unanticipated one in a new
+  checker's own design*; none of the existing `CLAUDE.md` §1 amendments
+  (`L-021`/`L-070`/`L-075`/`L-087`/`L-088`) require running a new
+  mechanism against real, pre-existing data specifically.
+- **classification:** workflow — an ordering/process discipline, not a
+  code-behavior assertion a regression test could itself encode: no test
+  can force a *future* phase to run its own new validator against the
+  real corpus before finishing its test suite, and the rule is
+  retrospectively unfalsifiable once a phase has already finished
+  (unlike, e.g., `tests/test_oracle.py::test_run_pytest_check_invalid_node_id_is_invalid_not_fail`,
+  which asserts a real, checkable runtime behavior). Considered and
+  rejected `invariant` for that reason. Also considered `project-rule`
+  (`CLAUDE.md` §1), given this finding's close shape to the already-landed
+  `L-070`/`L-075`/`L-087`/`L-088` "new-mechanism-plan-content" paragraph —
+  noted as a live option in the curation note below, not chosen as the
+  primary recommendation, since this is a first occurrence and each of
+  those four had at least one additional corroborating incident (or an
+  explicit multi-occurrence count) before going to `CLAUDE.md`.
+- **status:** promoted
+- **promoted_to:** `planning/v1-redefinition/agent-led-development.md`
+  §1 (new bullet after `L-108`) + `.claude/agents/release-phase-
+  auditor.md` "What to check" item 13 @ this phase's own closeout commit
+- **recurrence:** first occurrence of this specific mechanism (a
+  validator's severity-rule design misfiring against a real pre-existing
+  population its plan's authors/reviewers did not anticipate); related to
+  but distinct from `L-108` (regression-test-before-fix ordering, not
+  plan-vs-real-corpus validation) and from `L-070`/`L-075` (fail-closed
+  minimal-content/depth edge cases on an existing validator's own
+  already-decided shape, not an abstract-design-vs-real-corpus check at
+  write time) — checked both directly, neither is a duplicate or merge
+  target.
+- **promoted_to:** (pending — see curation note)
+- **curation note (2026-11-03, knowledge-curator):** all required fields
+  present. Independently re-read `planning/retros/phase-85-self-curation-
+  knowledge-quality-validation.md` directly, not taken on its own
+  summary, and confirmed the "Lessons learnt" §1 account is accurate:
+  the `test_ref`-file-integrity check as originally scoped would have
+  false-positived on four real, pre-existing Evidence records, caught by
+  running the real script against the real corpus before finalising
+  tests, not by any abstract plan review. **Recommendation: promote**, as
+  a `workflow` lesson, dual destination mirroring `L-108`'s own precedent
+  shape exactly (one orchestration-principle bullet + one audit-checklist
+  item — the closest existing structural analog for an ordering
+  discipline):
+
+  1. `planning/v1-redefinition/agent-led-development.md` §1 — new bullet
+     directly after the existing `L-108` bullet:
+
+     > **A phase whose own deliverable includes a new validator/checker
+     > script meant to run against a real, pre-existing corpus runs it
+     > against that real corpus immediately — before its own test suite's
+     > assumptions are finalized — not only against synthetic or
+     > constructed fixtures.** A severity/behavior design that looks
+     > correct in the abstract, and survives independent plan review, can
+     > still misfire against a real population neither the plan's authors
+     > nor its reviewers happened to check it against. Confirmed at Phase
+     > 85 (`L-113`): a validator's `test_ref`-file-integrity check would
+     > have false-positived on four real, pre-existing Evidence records
+     > using an older, legitimate citation convention — caught in minutes
+     > by running the real script against the real corpus before its test
+     > suite was finalized, not discovered later as a false-positive bug
+     > report.
+
+  2. `.claude/agents/release-phase-auditor.md` "What to check" — new item
+     13, directly after item 12 (`L-111`'s own landing spot):
+
+     > 13. **For a phase whose own deliverable includes a new validator/
+     >     checker script, confirm it was run against the real,
+     >     pre-existing corpus it will operate on (not only synthetic or
+     >     constructed fixtures) before its own test suite was finalized,
+     >     and that any misfire against real pre-existing data was fixed
+     >     rather than suppressed or excluded from the test suite's own
+     >     assumptions.** (Phase 85 — `L-113`.)
+
+  **Noted for the lead's own consideration, not chosen as this role's
+  primary recommendation:** this finding's shape closely resembles the
+  already-landed `CLAUDE.md` §1 "new-mechanism-plan-content" paragraph
+  (`L-070`/`L-075`/`L-087`/`L-088`) — if this exact shape (an
+  abstractly-correct validator design misfiring against unanticipated
+  real data) recurs in a future phase, escalating to a `CLAUDE.md` §1
+  project-rule at that point would match this project's own established
+  two-occurrence threshold (the same threshold `L-111`'s own curation note
+  applied in choosing `release-phase-auditor.md` over `CLAUDE.md` on its
+  own first occurrence).
+
+  Both edits above are outside this role's write boundary
+  (`.claude/agents/**` and `planning/v1-redefinition/agent-led-development.md`
+  are not among `planning/learnings/**`, `planning/context-gaps/**`,
+  `planning/context-observations/**`, `planning/knowledge/**`, or the
+  Phase 85 investigation log) — lead to apply both (or route to
+  `docs-maintainer`), then flip this entry's `status` to `promoted` and
+  add two `promoted.md` lines once landed.
+
+---
+
+### L-112 — resuming a dispatched agent that is waiting on the lead's own command output requires `SendMessage` to the same agent, not a new `Agent` call
+
+- **origin:** Phase 85 (Self-Curation and Knowledge-Quality Validation),
+  surfaced by the phase's own retro "What didn't work / was harder than
+  expected" bullet 1 and "Lessons learnt" §2
+- **date:** 2026-11-03
+- **project_revision:** working tree (this phase's own closeout commit
+  has not yet landed)
+- **observation:** during Phase 85's real dogfood run,
+  `knowledge-curator`'s first independent-adjudication dispatch asked the
+  lead to run an exact command and report the real output back (the
+  tool-boundary split `planning/agent-led-workflow.md` step 12 already
+  names for a curator with no `Bash`, here generalised beyond the
+  curator-check-confirmation case to live, mid-investigation command
+  reproduction). Once the lead had the output, the lead issued a **new**
+  `Agent` call for `knowledge-curator` rather than resuming the original
+  dispatch via `SendMessage`, discarding that dispatch's own accumulated
+  working state. The fresh dispatch re-read the same source files and
+  reconstructed equivalent, arguably stronger, independent corroboration
+  for all four findings — so no incorrect output resulted — but this is
+  exactly the failure mode this project's own tooling guidance warns
+  against ("To continue a previously spawned agent, use `SendMessage`...
+  A new `Agent` call starts a fresh agent with no memory of prior runs").
+- **evidence:** `planning/retros/phase-85-self-curation-knowledge-quality-validation.md`
+  "What didn't work / was harder than expected" bullet 1 ("the lead
+  re-dispatched a *fresh* `knowledge-curator` agent (a new `Agent` call)
+  instead of resuming the same one via `SendMessage` — losing that
+  agent's own working context") and "Lessons learnt" §2 ("a fresh
+  re-dispatch can still reconstruct correct output... but it forfeits the
+  original session's own accumulated independent-verification state and
+  risks subtly different framing on a second pass"). Checked
+  `planning/agent-led-workflow.md` steps 5 and 12, and
+  `planning/v1-redefinition/agent-led-development.md`, directly for an
+  existing rule covering agent-resumption mechanics specifically —
+  grepped all three for "SendMessage" / "resum" and found zero matches;
+  grepped the whole repository for "SendMessage" and found exactly one
+  file, this same retro, confirming the underlying tooling guidance lives
+  only in the dispatch tool's own system-level instructions, never yet
+  written into this project's own governing workflow documents. The
+  closest existing rule (step 12's own "lead: run `<command>` to confirm"
+  handoff, `L-002`) names the output-reporting mechanism but says nothing
+  about which dispatch call resumes it.
+- **classification:** workflow — a lead-orchestration dispatch-mechanics
+  rule, the same shape `planning/agent-led-workflow.md` already uses for
+  `L-063`/`L-064`/`L-038`/`L-046`/`L-080` (none of which needed a
+  `CLAUDE.md` or agent-brief change — each is purely about how the lead
+  operates the dispatch tooling).
+- **status:** promoted
+- **promoted_to:** `planning/agent-led-workflow.md` step 5 (new bullet,
+  resume via `SendMessage` rather than a fresh `Agent` call) @ this
+  phase's own closeout commit
+- **recurrence:** first occurrence of this specific dispatch-mechanics
+  mistake in this project's own recorded history (checked `promoted.md`
+  and this file for "SendMessage" / "fresh agent" — none found); related
+  in kind to `L-063`/`L-064` (both about what a dispatch prompt may/may
+  not assume about a fresh subagent's own visibility) but a different,
+  more specific mechanism (resuming an *already-dispatched* agent, not
+  what a *new* dispatch prompt may claim) — not a duplicate or merge
+  target.
+- **promoted_to:** (pending — see curation note)
+- **curation note (2026-11-03, knowledge-curator):** all required fields
+  present. Independently verified by reading
+  `planning/retros/phase-85-self-curation-knowledge-quality-validation.md`
+  directly, and by the repository-wide greps described above (one file
+  containing "SendMessage"; zero project-doc matches for "continue a
+  previously spawned agent" / "fresh agent with no memory") — confirming
+  this gap is real and not yet covered anywhere in this project's own
+  governing documents, not merely asserted by the retro. **Recommendation:
+  promote**, as a `workflow` lesson, to
+  `planning/agent-led-workflow.md` step 5 ("Delegate bounded specialist
+  work"), as a new bullet (cross-referencing step 12's own handoff
+  pattern):
+
+  > **When a dispatched agent's own final message asks the lead to run a
+  > command and report the output back (the tool-boundary split step 12
+  > already names for a curator with no `Bash`, and any other role in the
+  > same situation), resume that same dispatch via `SendMessage` once the
+  > output is in hand — never issue a fresh `Agent` call for the same
+  > role/task.** A new `Agent` call starts a fresh agent with no memory of
+  > prior runs, discarding the original dispatch's own accumulated working
+  > context (partial findings, independent re-derivations already
+  > performed) even when, as happened at Phase 85, the fresh dispatch
+  > manages to reconstruct equivalent or stronger output by re-reading the
+  > same source files from scratch — the correct outcome does not
+  > retroactively make the re-dispatch the right mechanism, only a lucky
+  > recovery from it. Confirmed at Phase 85 (`L-112`): after
+  > `knowledge-curator`'s first dispatch asked the lead to report back
+  > real command output, the lead re-dispatched a fresh `knowledge-curator`
+  > instead of resuming the original one, losing its already-written
+  > working state though not its correctness. (Cross-reference: step 12's
+  > own tool-boundary split, which this rule generalises beyond that one
+  > checker-confirmation case.)
+
+  Not routed to `CLAUDE.md`: this is a lead-orchestration mechanics rule
+  of exactly the kind `planning/agent-led-workflow.md` already uses for
+  `L-063`/`L-064`/`L-038`/`L-046`/`L-080`, not a rule binding every future
+  *agent's own authored content* the way `CLAUDE.md` §1's growing
+  plan-content paragraph does. Not routed to
+  `.claude/agents/knowledge-curator.md`: the mistake was the lead's own
+  dispatch-tool choice, not anything this role's own brief could have
+  prevented (a dispatched agent has no control over which tool call the
+  lead uses to resume it).
+
+  This edit is outside this role's write boundary
+  (`planning/agent-led-workflow.md` is not among `planning/learnings/**`,
+  `planning/context-gaps/**`, `planning/context-observations/**`,
+  `planning/knowledge/**`, or the Phase 85 investigation log) — lead to
+  apply directly, then flip this entry's `status` to `promoted` and add
+  the `promoted.md` line once landed.
+
+---
+
 ### L-111 — a function that branches its own logic by record/data *kind* needs a test exercising each kind directly through that function, not only the most common kind, and not only through a sibling call that happens to touch the other kind for a different purpose
 
 - **origin:** independent `knowledge-curator` review of the Phase 84

@@ -109,6 +109,12 @@ without fixing anything — that a phase is actually done.
     right branch proves nothing if the assertions only cover fields the
     branch never touches. (Phase 84 final corrective amendment —
     `L-111`.)
+13. **For a phase whose own deliverable includes a new validator/checker
+    script, confirm it was run against the real, pre-existing corpus it
+    will operate on (not only synthetic or constructed fixtures) before
+    its own test suite was finalized, and that any misfire against real
+    pre-existing data was fixed rather than suppressed or excluded from
+    the test suite's own assumptions.** (Phase 85 — `L-113`.)
 
 ## Hard rules
 

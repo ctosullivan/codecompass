@@ -229,6 +229,24 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
    removes the need to recall a prohibition at the moment of temptation;
    step 7's own existing rule still applies as a second line of defense,
    but should not be relied on as the only place this discipline lives.
+
+   **When a dispatched agent's own final message asks the lead to run a
+   command and report the output back** (the tool-boundary split a
+   curator with no `Bash` already needs, or any other role in the same
+   situation), **resume that same dispatch via `SendMessage` once the
+   output is in hand — never issue a fresh `Agent` call for the same
+   role/task.** A new `Agent` call starts a fresh agent with no memory of
+   prior runs, discarding the original dispatch's own accumulated working
+   context (partial findings, independent re-derivations already
+   performed) even when the fresh dispatch manages to reconstruct
+   equivalent or stronger output by re-reading the same source files from
+   scratch — the correct outcome does not retroactively make the
+   re-dispatch the right mechanism, only a lucky recovery from it.
+   Confirmed at Phase 85 (`L-112`): after `knowledge-curator`'s first
+   dispatch asked the lead to report back real command output, the lead
+   re-dispatched a fresh `knowledge-curator` instead of resuming the
+   original one, losing its already-written working state though not its
+   correctness.
 6. **Implement or coordinate implementation.** The lead implements
    directly, or dispatches one `general-purpose` implementer subagent per
    the `v0.2-implementation-execution-plan.md` pattern (foreground, exact

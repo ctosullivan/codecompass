@@ -56,6 +56,19 @@ Implemented by Phase 40 (roster + workflow) and proven by Phase 43
   corrective passes with no shared codified source each time: Phase 82's
   first and final corrective passes (`decisions/0082`/`0083`) and Phase
   84's corrective pass (`decisions/0092`, `L-108`).
+- **A phase whose own deliverable includes a new validator/checker
+  script meant to run against a real, pre-existing corpus runs it
+  against that real corpus immediately — before its own test suite's
+  assumptions are finalized — not only against synthetic or constructed
+  fixtures.** A severity/behavior design that looks correct in the
+  abstract, and survives independent plan review, can still misfire
+  against a real population neither the plan's authors nor its reviewers
+  happened to check it against. Confirmed at Phase 85 (`L-113`): a
+  validator's `test_ref`-file-integrity check would have false-positived
+  on four real, pre-existing Evidence records using an older, legitimate
+  citation convention — caught in minutes by running the real script
+  against the real corpus before its test suite was finalized, not
+  discovered later as a false-positive bug report.
 
 ## 2. The roster
 
