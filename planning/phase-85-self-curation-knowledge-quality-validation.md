@@ -266,10 +266,67 @@ codecompass/knowledge_api.py`/`oracle.py`/`knowledge_intermediate.py`.
    `context-researcher`'s own brief already says "read what exists
    first," now backed by a structured query instead of an ad hoc
    directory read).
-3. **Examine current source/tests/decisions for candidate findings.**
-   **Owner: `context-researcher`**, dispatched exactly as today, target
-   set to CodeCompass's own `src/codecompass/`, `tests/`, `decisions/`
-   instead of an external project's checkout.
+3. **Examine current source/tests/decisions for candidate findings, in
+   the bounded self-curation investigation mode (new, narrow, this
+   plan's own third independent review — see §12).** **Owner:
+   `context-researcher`**, dispatched exactly as today in every other
+   respect, target set to CodeCompass's own `src/codecompass/`,
+   `tests/`, `decisions/` instead of an external project's checkout.
+
+   **The one behavioural difference from ordinary mode, and why it is
+   needed**: `context-researcher`'s own existing brief (steps 3-4 of
+   `.claude/agents/context-researcher.md`) unconditionally writes one
+   `OBS-<feature>-NNN.yaml` per act of looking and converts it to a
+   neutral `EV-<feature>-NNN.yaml` as it goes — a real conflict with this
+   plan's own §4.A step 6/§4.E requirement that outcome 2/3/4 (duplicate/
+   falsified/insufficient) leave **no** record under `planning/
+   knowledge/` at all, since an ordinary dispatch would already have
+   written the `OBS-`/`EV-` pair for a probe before its disposition is
+   even known. **Resolved by one narrow, explicitly-scoped mode, not a
+   new role and not a schema/permission change**: in this mode only,
+   `context-researcher` performs the identical looking/probing/tracing
+   work (steps 1-2, 4-5, 7-8 of its own brief, unchanged) but **defers
+   committing `OBS-`/`EV-` files to disk** until the candidate's own
+   §4.E disposition is known, keeping the full content (exact command/
+   file:line, exact real output, repository revision) in its own working
+   notes in the meantime — not a new, unrestricted scratch database,
+   just the ordinary content of its own eventual report, reordered. Once
+   the disposition is known (step 4, below):
+   - **Outcome 1 (new) or 5 (genuine contradiction)**: writes the full
+     `OBS-`/`EV-`/`CL-`/`DE-` set to `planning/knowledge/<slug>/` at
+     `status: proposed`, exactly as ordinary mode already does — no
+     content or write-boundary change, only the timing.
+   - **Outcome 2/3/4 (duplicate/falsified/insufficient)**: writes
+     **nothing** to `planning/knowledge/`. Instead, returns the complete
+     reproducible content to the lead in its own report, in the exact
+     shape the investigation log's own schema (§4.E) requires
+     (hypothesis, investigation scope + repository revision, evidence,
+     reason) — `knowledge-curator`, not `context-researcher`, is the one
+     who writes the actual investigation-log entry (§4.A step 7a,
+     unchanged), preserving the existing write-boundary split rather
+     than letting `context-researcher` write outside `planning/
+     knowledge/**` for the first time.
+   This changes *when* a write happens and *whether* one happens for a
+   declined candidate — it changes neither *what* `context-researcher`
+   is allowed to write nor *where*, so it introduces no new permission,
+   no new tool, and no new agent role, matching the governing prompt's
+   own explicit constraint.
+
+   **`context-researcher.md`'s own brief needs a small, compatible
+   update** — at implementation time, one further, explicitly-named
+   mode section ("Self-curation investigation, Phase 85, bounded"),
+   describing exactly the deferred-write mechanic above and nothing
+   else. Its ordinary feature-research mode (every other dispatch,
+   including its own existing reflexive use against CodeCompass's own
+   implementation prior to Phase 85, e.g. `first-party-source-symbols`'s
+   own existing 74 records) is **completely unaffected** — this mode
+   triggers only when a dispatch is explicitly framed as a Phase 85
+   self-curation investigation, named as such in the dispatch prompt, not
+   a default behavioural change. Idempotency is preserved exactly as
+   before: a repeated, identical investigation that again lands on
+   outcome 2 (already-known) writes nothing new under either mode, since
+   step 4's classification — now run *before* any write, under this
+   mode — recognises it as such.
 4. **Determine which of five outcomes applies, per §4.E's own
    disposition procedure, before writing anything.** `context-
    researcher`'s own existing step 1-2 discipline (read what's on file;
@@ -294,22 +351,27 @@ codecompass/knowledge_api.py`/`oracle.py`/`knowledge_intermediate.py`.
 5. **Collect independently reproducible evidence.** `context-
    researcher`'s own existing `OBS-`→`EV-` discipline — a real
    executed command, a real file:line read, a real Phase 83 oracle
-   result citation. No new evidentiary category.
+   result citation; content captured in working notes under step 3's
+   deferred-write mode, same substance as ordinary mode, no new
+   evidentiary category.
 6. **Submit through the established lifecycle.** For outcome (1) (new)
    or (5) (genuine contradiction, §4.E), the written `CL-`/`DE-` record
    pair *is* the candidate — there is no separate "submission" step,
-   since `context-researcher`'s own write already places it in
-   `planning/knowledge/<slug>/`, exactly where `knowledge-curator`'s
-   triage (next step) and `knowledge_api`'s own retrieval already look.
-   For outcome (2)/(3)/(4), **nothing is written under `planning/
-   knowledge/` at all** — the investigation's own record is the
-   investigation-log entry (§4.E), itself the "submission" for a
-   declined candidate; step 7's triage still runs against it (confirming
-   the disposition and its evidence, not a Claim). A *process* lesson
-   the same investigation happens to surface (how the work was done, not
-   what CodeCompass does) is filed separately, as a `planning/
-   learnings/inbox.md` candidate, through the unchanged existing
-   lifecycle — the same split this session's own Phase 84 closeout used.
+   since `context-researcher`'s own write (now committed to disk per
+   step 3's deferred-write resolution) already places it in `planning/
+   knowledge/<slug>/`, exactly where `knowledge-curator`'s triage (next
+   step) and `knowledge_api`'s own retrieval already look. For outcome
+   (2)/(3)/(4), **nothing is written under `planning/knowledge/` at
+   all** — `context-researcher` never committed the deferred `OBS-`/
+   `EV-` pair, and `knowledge-curator` writes the investigation-log
+   entry (§4.E) from the reported content instead, itself the
+   "submission" for a declined candidate; step 7's triage still runs
+   against it (confirming the disposition and its evidence, not a
+   Claim). A *process* lesson the same investigation happens to surface
+   (how the work was done, not what CodeCompass does) is filed
+   separately, as a `planning/learnings/inbox.md` candidate, through the
+   unchanged existing lifecycle — the same split this session's own
+   Phase 84 closeout used.
 7. **Independently adjudicate, with recorded reasons — two sub-steps,
    never one, formalised in full (this plan's own second amendment, see
    §12).**
@@ -325,46 +387,55 @@ codecompass/knowledge_api.py`/`oracle.py`/`knowledge_intermediate.py`.
      researcher`'s own say-so.
    - **Evidence the reviewer must reproduce, not merely re-read.**
      **Corrected tool-boundary gap, found by this plan's own third
-     independent review (see §12): `knowledge-curator`'s own real tool
-     list is `Read, Grep, Glob, Edit, Write` — no `Bash` (confirmed by
-     direct reading of `.claude/agents/knowledge-curator.md`'s own
-     frontmatter and its own existing Hard Rule, "You have no Bash...
-     trace the check logic by hand, then end your report with an
-     explicit 'lead: run `<command>` to confirm' line. The lead runs
-     it.") — so it cannot itself execute a command/grep/test-run
-     `OBS-` record, which the original wording of this bullet assumed
-     it could.** The reproduction duty therefore splits by Observation
-     `method`, exactly along the line `knowledge-curator`'s own existing
-     Hard Rule already draws for its other checks:
-     - For a `source_read`/`doc_read` Observation (a cited file:line, a
-       cited existing record, a cited Phase 83 oracle result resolved
-       through `knowledge_api.get()`/`trace_evidence()`), `knowledge-
-       curator` reproduces it **directly itself** — this needs only
-       `Read`/`Grep`/`Glob`, all of which it already has.
-     - For an `executable`/`test_run` Observation (a real command, a
-       real probe, a real test invocation — the exact shape of this
-       plan's own chosen dogfood target's precedent evidence, e.g.
-       `EV-FPSS-008`/`OBS-FPSS-008`'s `method: targeted_probe`),
-       `knowledge-curator` cannot run it. It instead specifies the
-       *exact* command/probe to re-run — reusing its own existing Hard
-       Rule's precedent verbatim, not inventing a new convention — and
-       ends its own report with an explicit "lead: run `<command>` to
-       confirm" line; **the lead** (who has `Bash`) executes it exactly
-       as specified and reports the real, unmodified output back.
-       `knowledge-curator` then incorporates that real output into its
-       own recommendation — it is still the one deciding *what* to
-       check and *how to interpret* the result, which is the
-       independent-judgment content of this step; only the mechanical
-       act of pressing the keys is delegated, under its own explicit
-       direction, never silently absorbed by the lead under
-       `knowledge-curator`'s name. For outcome 2, the reviewer
-       independently re-retrieves the supposedly-duplicate existing
-       Claim itself (a `Read`/`Grep` operation, not execution), not
-       merely `context-researcher`'s own citation of it.
+     independent review: `knowledge-curator`'s own real tool list is
+     `Read, Grep, Glob, Edit, Write` — no `Bash` (confirmed by direct
+     reading of `.claude/agents/knowledge-curator.md`'s own frontmatter
+     and its own existing Hard Rule, "You have no Bash... trace the
+     check logic by hand, then end your report with an explicit 'lead:
+     run `<command>` to confirm' line. The lead runs it.") — so it
+     cannot itself execute a command/grep/test-run `OBS-` record.**
+
+     **Corrected Observation-`method` taxonomy (this plan's own fourth
+     independent review — see §12).** The reproduction duty splits by
+     Observation `method`, not by an incomplete two-bucket guess — the
+     real corpus, re-inspected live for this amendment (`grep -rhoP
+     '^method:\s*\K.*' planning/knowledge/*/*.yaml`), uses **nine**
+     closed, enum-style values below, **plus at least one real record
+     (`OBS-KNOW-001`) whose own `method` field is free prose rather than
+     one of the nine** (confirmed by this plan's own third independent
+     review — a verification-claim accuracy gap, not a design one: the
+     table's own fail-closed "unrecognised value" row already covers
+     exactly this case by construction, so no table row needed to change
+     because of it). Every value this split must cover, recognised or
+     not, is handled deterministically (never silently defaulting an
+     unrecognised value to "verified"). **The Observation's own `method`
+     field is the only signal consulted here — never confused with the
+     separate Evidence `evidence_kind` field** (`source`/`documentation`/
+     `executable`/`test`/`behavioural`, confirmed from `EV-*.yaml`'s own
+     frontmatter — five values, not four; the exact enumeration is not
+     load-bearing to this split, only the conceptual distinction from
+     Observation's `method` is), which classifies the Evidence package's
+     own *citation kind*, a different question this bullet does not
+     re-derive:
+
+     | Observation `method` | Reproduction bucket | Who reproduces, and how |
+     |---|---|---|
+     | `source_read`, `doc_read`, `code_read` | **Inspection** — reading a specific file:line, a cited existing record, or a cited Phase 83 oracle result resolved through `knowledge_api.get()`/`trace_evidence()`. No execution. | `knowledge-curator`, **directly itself** — needs only `Read`/`Glob`, both of which it already has. |
+     | `grep_search` | **Inspection, via a literal text search** (confirmed real: `OBS-FPSS-012`'s own `location: 'grep -n "unknown" src/codecompass/source_symbols.py'`) — a deterministic, non-executing search over already-committed text, not a program run. | `knowledge-curator`, **directly itself**, via its own `Grep` tool against the exact search the Observation names — it already has `Grep`, so this needs no delegation. |
+     | `executable`, `targeted_probe`, `test_run`, `test_execution` | **Execution** — running a real command, a real constructed probe, or a real test invocation (confirmed real: `EV-FPSS-008`/`OBS-FPSS-008`'s own `method: targeted_probe`, this plan's own chosen dogfood target's precedent evidence). | `knowledge-curator` **specifies the exact command/probe to re-run** — reusing its own existing Hard Rule's precedent verbatim, not inventing a new convention — and ends its own report with an explicit "lead: run `<command>` to confirm" line; **the lead** (who has `Bash`) executes it exactly as specified, without altering it to influence the outcome, and reports the real, unmodified output back. `knowledge-curator` incorporates that real output into its own recommendation — it still decides *what* to check and *how to interpret* the result (the independent-judgment content of this step); only the mechanical act of pressing the keys is delegated, under its own explicit direction, never silently absorbed by the lead under `knowledge-curator`'s name. |
+     | `static_analysis` | **Execution, not inspection** — confirmed real: `OBS-FPSS-013`'s own `location` field is a literal, run command (`python3 -c "import ast; ast.parse(...)"`), not a passive read; "static analysis" names *what the command checks*, not *how it was obtained*. Classified into the Execution bucket above, same handling. |
+     | Any other/unrecognised `method` value | **Unknown — never silently treated as reproduced or confirmed.** `knowledge-curator` explicitly reports it as "method not recognised, cannot classify reproduction path" and recommends holding the candidate (never "promote") until a human/the lead classifies it by direct inspection of what the Observation actually did — the fail-closed default this governing prompt's own point 6 requires, never an implicit default to either inspection or execution. |
+
+     For outcome 2, the reviewer independently re-retrieves the
+     supposedly-duplicate existing Claim itself (an inspection
+     operation, `Read`/`Grep`, not execution), not merely `context-
+     researcher`'s own citation of it.
+
      A reviewer that cannot reproduce a piece of cited evidence this way
      — the command, once actually run by the lead at its own direction,
      does not produce the claimed output; the cited file:line does not
-     say what is claimed — treats that evidence as unconfirmed, never
+     say what is claimed; the method is unrecognised — treats that
+     evidence as unconfirmed, never
      confirmed by default.
    - **Recording findings and recommending a disposition**: returned to
      the lead in the same shape `knowledge-curator`'s own existing
@@ -414,6 +485,23 @@ codecompass/knowledge_api.py`/`oracle.py`/`knowledge_intermediate.py`.
      disposing either way — silently siding with either agent's own
      say-so, without a third, independent check, is exactly the
      circularity risk (§4.D) this procedure exists to prevent.
+   - **The upgrade direction** (named by this plan's own third
+     independent review as a previously-unnamed corner case; not a
+     flaw the deferred-write mechanism introduced, merely one it
+     sharpens): if `knowledge-curator` independently concludes a
+     candidate `context-researcher` classified as outcome 2/3/4
+     (nothing committed to disk) should genuinely have been outcome
+     1/5, it cannot itself write the missing `OBS-`/`EV-`/`CL-`/`DE-`
+     set — that remains `context-researcher`'s or the human reviewer's
+     alone. It instead recommends the upgrade to the lead, with the
+     specific reproduced evidence that justifies it; the lead
+     re-dispatches `context-researcher` (handing back the preserved
+     report content from the original investigation, never asking it to
+     redo work already done) to commit the record set under its own
+     ordinary, non-deferred write path; that freshly-written record then
+     goes through step 7a/7b exactly like any other outcome-1/5 finding,
+     never written directly from `knowledge-curator`'s own
+     recommendation.
 
    **7b, owner the lead: apply the recommended disposition.** For
    outcome 1/5, edits the Claim's own `status`
@@ -580,23 +668,66 @@ duplicates:
 1. `knowledge_api.find_gaps(project_root, slug=None)`, called once,
    with **no `slug` filter** — its own existing six rules, unchanged,
    run across **every** slug in the corpus, not only slugs that already
-   have an oracle contract (**corrected during this plan's own second
-   independent review — see §12**: the original wording restricted this
-   call to contract-bearing slugs, which would make `find_gaps()`'s own
-   `missing_contract` rule structurally unreachable from this script,
-   since that rule's whole purpose is to flag a slug that has
-   claim/requirement records but **no** contract). **When a contract is
-   required**, per `find_gaps()`'s own existing, unchanged rule: only
-   when the slug has at least one `claim`/`requirement` record at all
-   (`find_gaps()`'s own `has_obligations` check, confirmed by direct
-   reading of `src/codecompass/knowledge_api.py`) — a slug containing
-   only `observation`/`evidence`/`derivation` records (research in
-   progress, or a slug like a pure domain-corpus investigation with no
-   accepted obligation yet) is never flagged `missing_contract`, and
-   correctly so: there is no behavioural obligation yet for a contract
-   to verify. This is this project's own existing convention, not a new
-   rule this phase invents — the script must simply not accidentally
-   narrow `find_gaps()`'s own call to defeat it.
+   have an oracle contract (corrected during this plan's own second
+   independent review: the original wording restricted this call to
+   contract-bearing slugs, which would make `find_gaps()`'s own
+   `missing_contract` rule structurally unreachable from this script).
+   `find_gaps()`'s own trigger for this rule is unchanged and
+   unmodified: a slug with at least one `claim`/`requirement` record at
+   all and no `oracle-contract.yaml` (`has_obligations`, confirmed by
+   direct reading of `src/codecompass/knowledge_api.py`).
+
+   **`missing_contract` severity, corrected (this plan's own third
+   independent review — see §12):** the real corpus, re-inspected live
+   for this amendment, has **six** knowledge slugs and **one** oracle
+   contract (`balance-from-spec`) — every one of the other five
+   (`codecompass-domain`, `doc-origin-pinned-reference`, `first-party-
+   source-symbols`, `haskell-api-surface-extraction`, `hledger-depth`)
+   has `claim`/`requirement` records and no contract, so the original
+   "blocking" severity would fail `--strict` against the real baseline
+   immediately, including against this plan's own chosen dogfood target.
+   **This script therefore reports every `missing_contract` finding as
+   `(info)`, never blocking, as of today** — not as an invented
+   exemption or a per-slug allowlist, but because no existing canonical
+   record or accepted decision currently establishes that an oracle
+   contract is a mandatory obligation for any subject other than the one
+   this project has actually built one for. Confirmed by direct reading
+   of `decisions/0081` §3 (Phase 82's own oracle-contract ADR): it
+   explicitly defers this question — "a future phase may choose to
+   require contracts project-wide once real use justifies that cost...
+   not pre-committed here" — and ties its own, narrower compatibility
+   exemption (for `check_verified_status_cites_passing_oracle_result`)
+   to the identical mechanically-checkable condition this script reuses:
+   "no contract directory exists for this slug," explicitly preferred
+   there over "an ad hoc allow-list." The owning Requirement's own
+   `status` (even `approved`/`implemented`/`verified`, i.e. an accepted
+   obligation per `decisions/0080`'s own INTENDED predicate) is **not**,
+   by itself, evidence of a contract *mandate* — confirmed directly:
+   `doc-origin-pinned-reference` and `haskell-api-surface-extraction`
+   both carry `status: verified`/`implemented` Requirements with no
+   contract at all, and `decisions/0081` §3 names these as part of its
+   own twelve-record compatibility class, not a defect. **The
+   independently identifiable signal that would flip a specific finding
+   to blocking**: a separately-authorised future decision (an ADR
+   amending `decisions/0081` §3, or a new one) that names a specific
+   subject's contract as mandatory — no such decision exists today for
+   any slug, so no `missing_contract` finding is blocking today. This
+   plan does not pre-build speculative machinery for that future
+   decision (consistent with this plan's own "no future-proofing beyond
+   what's demonstrated necessary" discipline elsewhere) — it documents,
+   honestly, that the answer is currently uniform, and the script's own
+   source comment states why, citing `decisions/0081` §3 directly, so a
+   future reader revisiting this severity rule starts from the same
+   evidence rather than re-deriving it. Still reported, never silenced
+   entirely — `(info)` keeps every real contract-free obligation-bearing
+   slug visible for a human/agent to judge, exactly as `check_
+   knowledge_base.py`'s own 24 pre-existing informational findings
+   already do for a different condition. Positive/negative test cases
+   (a contract-bearing slug producing no finding at all; a
+   non-contract-bearing slug with an accepted Requirement producing an
+   `(info)`, non-blocking finding; a slug with only `observation`/
+   `evidence` records producing no finding, since `find_gaps()`'s own
+   `has_obligations` gate is unmodified): §8.
 2. `knowledge_intermediate.knowledge_status(project_root)` for every
    slug — contradicted/unchecked-proposed records, concurrent-change
    conflicts, doc-grounding coverage.
@@ -710,17 +841,28 @@ short, stable detail fingerprint)` — re-running the script against
 unchanged corpus state reports exactly the same findings, byte-
 identically, never a reshuffled or duplicated set (tested explicitly,
 §8). **`--strict` blocks only clearly established violations of an
-existing obligation**: `missing_contract` and `dangling_evidence_
-reference`/`dangling_dependency_reference` (points 1, already
-`--strict` in `find_gaps()` itself); the new corpus-wide
-`missing_evidence` composition (point 3), gated to decided-status
-records only, as specified there; and the new missing/malformed
-`test_ref` file check (point 4), always blocking. Every duplicate/
-overlap signal (point 5) and every `knowledge_status()`-sourced finding
-(point 2, already informational by that function's own existing
-design) stays `(info)`, never blocking. This mirrors `check_
-contracts.py`/`check_knowledge_base.py`'s own existing severity
-convention exactly — no new severity vocabulary is introduced.
+existing obligation**: `dangling_evidence_reference`/`dangling_
+dependency_reference` (point 1 — a declared citation resolving to
+nothing is always a real defect, regardless of contract status); the
+new corpus-wide `missing_evidence` composition (point 3), gated to
+decided-status records only, as specified there; and the new
+missing/malformed `test_ref` file check (point 4), always blocking.
+**`missing_contract` (also point 1) is the one exception, `(info)`
+always, per this script's own corrected severity rule above** — unlike
+the other five `find_gaps()` rules, it does not represent an
+established violation today (no existing decision mandates a contract
+for any subject but `balance-from-spec`), so this script downgrades it
+from `find_gaps()`'s own undifferentiated gap-reporting into an
+advisory finding rather than inventing a blocking condition the project
+has never actually decided on. Every duplicate/overlap signal (point 5)
+and every `knowledge_status()`-sourced finding (point 2, already
+informational by that function's own existing design) also stays
+`(info)`, never blocking. This mirrors `check_contracts.py`/`check_
+knowledge_base.py`'s own existing severity convention exactly (both
+already distinguish blocking from informational findings within one
+rule's own output, e.g. `check_knowledge_base.py`'s own `knowledge-
+base-snapshot-current-divergence` findings) — no new severity vocabulary
+is introduced.
 
 Discrepancies between an accepted Decision, a recorded implementation
 fact, and current verification (the governing prompt's own §6.C last
@@ -1105,10 +1247,12 @@ over with a synthetic negative control.
 |---|---|
 | Evidence-based promotion | The dogfood's own positive-outcome branch (§7) — real, independently re-verified Evidence, a real `knowledge-curator` disposition, applied by the lead (§4.A step 7b). |
 | Correct, genuine rejection of an unsupported finding | **The dogfood's own negative-outcome branch (§7) — mandatory, not optional.** A real investigation-log entry for a real, genuinely-tried construct that turned out not to defeat the extractor, independently re-run by the lead at `knowledge-curator`'s own explicit direction (§4.A step 7a's tool-boundary split). A synthetic negative control (a deliberately false hypothesis tried only to exercise the test suite) is retained **only** as an automated unit test for the script itself (next rows), never as a substitute for this real-dogfood control (corrected during this plan's own second independent review — see §12). |
-| `missing_contract` reachability | A constructed fixture slug with a `claim`/`requirement` record and no `oracle-contract.yaml` → `find_gaps()` reports `missing_contract` through the unmodified script call (§4.C point 1). **Negative control**: a constructed fixture slug with only `observation`/`evidence` records and no contract → no `missing_contract` finding (confirms the `has_obligations` gate, not merely that the rule fires at all). |
+| `missing_contract` reachability and corrected severity | A constructed fixture slug with a `claim`/`requirement` record and no `oracle-contract.yaml` → `find_gaps()` reports `missing_contract` through the unmodified script call (§4.C point 1), and the script reports it as `(info)`, never blocking under `--strict` (the corrected severity rule). **Real-baseline check**: run against the actual corpus, confirm all five real contract-free slugs (`codecompass-domain`, `doc-origin-pinned-reference`, `first-party-source-symbols`, `haskell-api-surface-extraction`, `hledger-depth`) each produce an `(info)` `missing_contract` finding and `--strict` still exits 0 for this rule specifically. **Negative control (reachability)**: a constructed fixture slug with only `observation`/`evidence` records and no contract → no `missing_contract` finding at all (confirms the `has_obligations` gate, not merely that the rule fires at all). **Negative control (contract-bearing)**: `balance-from-spec` (the one real contract-bearing slug) → no `missing_contract` finding. |
 | Missing/malformed `test_ref`-cited result file | A constructed `test`-kind Evidence record whose `test_ref` points at a nonexistent file → the new check (§4.C point 4) reports it, blocking under `--strict`. A second fixture whose `test_ref` points at a file that exists but fails `oracle.parse_oracle_result()` → reported identically. **Negative control**: a `test_ref` pointing at a real, well-formed result file → no finding, regardless of that result's own `outcome`/`effective_outcome` (which is `find_gaps()`'s own `stale_test_citation` concern, not this check's). |
 | Duplicate/overlap detection, refined (§4.C point 5) | Five fixtures, one per §4.C.5's sub-rule: (a) two Claims, identical normalised `statement`, different evidence → flagged `(info)`; (b) two Claims, non-empty identical `supporting_evidence` sets, different statements → flagged `(info)` as possible-overlap, not asserted as conclusive; (c) two Claims, both `supporting_evidence: []`, different statements → **no** finding from the empty-set rule (the statement-equality rule may still independently fire if the statements genuinely match); (d) two Claims, same non-empty evidence set, genuinely different statements → confirmed to remain two separate, undisturbed records (the possible-overlap signal is advisory only, never merges/auto-resolves them); (e) true semantic overlap with disjoint evidence and different wording → confirmed **not** flagged by this script at all (explicitly out of mechanical scope, left to `knowledge-curator` triage). |
 | Independent Claim adjudication, disagreement handling | A constructed fixture where a cited `OBS-`/`EV-` record's own file no longer says what a draft Claim claims → the independent-reproduction step (§4.A step 7a) reports "could not reproduce," and the recommended disposition is "hold," never "promote" — exercised as a dry run against a deliberately stale fixture, distinct from the real dogfood run. |
+| Observation-method reproduction classification (§4.A step 7a's taxonomy) | A dry-run procedure check, one fixture per real corpus method value: `source_read`/`doc_read`/`code_read` → reproduction path is "knowledge-curator, directly" (no "lead: run" line emitted); `grep_search` → reproduction path is "knowledge-curator, directly, via Grep" (no "lead: run" line emitted); `executable`/`targeted_probe`/`test_run`/`test_execution`/`static_analysis` → reproduction path emits an explicit "lead: run `<command>` to confirm" line, never executed by `knowledge-curator` itself. **Negative control**: a fixture Observation with a deliberately unrecognised `method` value (e.g. `method: inferred_from_memory`) → classified "unknown," recommended disposition is "hold," never silently treated as reproduced or promoted. |
+| Context-researcher deferred-write mode (§4.A step 3) | A dry-run self-curation dispatch that lands on outcome 3 (falsified) → confirm no `OBS-`/`EV-` file appears under the investigated slug's own `planning/knowledge/<slug>/` directory at any point (`git status`/`git diff --stat` both empty for that path), and the full reproducible content (command, output, revision) is present in the agent's own returned report. **Contrast**: the same dispatch mechanics landing on outcome 1 (new) → the `OBS-`/`EV-`/`CL-`/`DE-` set *is* written, confirming the deferred-write mode only suppresses the write for a declined candidate, never for a genuine finding. |
 | Finding identity and determinism | `scripts/check_self_knowledge_quality.py` run twice in immediate succession against unchanged corpus state reports byte-identical output both times — no reordering, no duplication, no spurious new finding from the act of running it. |
 | Contradictory and stale knowledge | `find_gaps()`'s existing `contradiction`/`stale_test_citation` rules, reused unchanged — no new test needed, already covered by `tests/test_knowledge_api.py`. |
 | Cross-record provenance | `get_context_packet()` on the newly-promoted Claim, confirming `via_claim`/`role` detail (Phase 84 final amendment) correctly traces back to its own Evidence. |
@@ -1427,3 +1571,86 @@ is implementation-ready as of this note, subject to the genuinely
 unresolved decisions above (unchanged by this amendment) and to the
 still-outstanding requirement that Phase 85 implementation itself
 remains separately unauthorised.
+
+## Corrective note (2026-11-03, third independent review — "CodeCompass
+Orchestrator — Final Phase 85 Plan Amendment, Verification and
+Implementation")
+
+A third, final amendment — triggered by a separate governing prompt that
+**explicitly authorises implementation once this round's review passes**
+— fixed three further issues before implementation began:
+
+1. **[Material, now fixed]** §4.C point 1's `missing_contract` severity
+   was still "blocking," inherited unexamined from `find_gaps()`'s own
+   undifferentiated gap-reporting. Re-inspecting the real corpus (six
+   knowledge slugs, one oracle contract — `balance-from-spec`) showed
+   this would fail `--strict` against the real baseline for five of six
+   slugs, including this plan's own chosen dogfood target
+   (`first-party-source-symbols`). **Fix**: `missing_contract` is now
+   `(info)`, never blocking, grounded directly in `decisions/0081` §3's
+   own explicit, already-accepted deferral ("a future phase may choose
+   to require contracts project-wide... not pre-committed here") and its
+   own preferred mechanical criterion ("no contract directory exists for
+   this slug," not an allow-list) — reused, not reinvented, for this
+   script's own severity question. Confirmed by direct inspection that
+   neither `doc-origin-pinned-reference` nor `haskell-api-surface-
+   extraction` (both carrying `status: verified`/`implemented`
+   Requirements, no contract) is treated as a defect by this project's
+   own existing conventions, so this script does not treat them as one
+   either. No allow-list of slug names anywhere in the fix.
+2. **[Material, now fixed]** §4.A step 3-6 directed `context-researcher`
+   to leave no record under `planning/knowledge/` for a declined
+   candidate (outcome 2/3/4), but its own existing brief unconditionally
+   writes `OBS-`/`EV-` records as it looks, before any disposition is
+   known — a genuine instruction conflict, not merely an omission.
+   **Fix**: a new, narrowly-scoped "self-curation investigation" mode,
+   triggered only when a dispatch is explicitly framed as such, defers
+   committing `OBS-`/`EV-` files until the §4.E disposition is known —
+   written to disk only for outcome 1/5, never for outcome 2/3/4, whose
+   full reproducible content instead goes into `context-researcher`'s
+   own report, for `knowledge-curator` (not `context-researcher`) to
+   turn into an investigation-log entry. Changes *when*/*whether* a
+   write happens, never *what* or *where* `context-researcher` may
+   write — no new permission, tool, or role; its ordinary feature-
+   research behaviour (and its own prior, reflexive self-knowledge work
+   already on file) is unaffected.
+3. **[Fixed]** §4.A step 7a's Observation-`method` reproduction split
+   named only two example methods (`source_read`/`doc_read` vs.
+   `executable`/`test_run`), but the real corpus (re-inspected live)
+   uses **nine** distinct `method` values. **Fix**: a complete,
+   deterministic taxonomy — `source_read`/`doc_read`/`code_read`
+   (inspection, `knowledge-curator` directly) plus `grep_search`
+   (inspection via its own `Grep` tool, directly) vs. `executable`/
+   `targeted_probe`/`test_run`/`test_execution`/`static_analysis`
+   (execution, delegated to the lead at `knowledge-curator`'s explicit
+   direction — confirmed `static_analysis` is execution-based by direct
+   reading of its one real corpus instance, `OBS-FPSS-013`, a literal run
+   command, not a passive read) — plus an explicit, fail-closed "unknown
+   method" path that never silently treats an unrecognised value as
+   reproduced. The Observation's own `method` field is kept explicitly
+   distinct from the unrelated Evidence `evidence_kind` field throughout.
+
+All three were independently re-verified against live repository state
+before being accepted as fixed (real corpus `method`/`evidence_kind`
+value inventory; real slug/contract counts; `decisions/0081` §3's own
+verbatim text; `doc-origin-pinned-reference`/`haskell-api-surface-
+extraction`'s real Requirement statuses). **Verdict: READY.** The
+independent reviewer found two further, explicitly non-blocking
+inaccuracies, both fixed in place immediately rather than deferred:
+the Observation-`method` census undercounted by one real record
+(`OBS-KNOW-001`, free prose, not one of the nine enum values — already
+covered by the taxonomy's own fail-closed "unrecognised value" row, so
+no design change was needed, only the plan's own stated count); and the
+Evidence `evidence_kind` parenthetical listed four values where the real
+corpus has five (`behavioural` omitted) — not load-bearing anywhere in
+the design, corrected for accuracy only. A third, genuinely open
+question the same review named (how `knowledge-curator`'s own
+disagreement is handled in the *upgrade* direction — believing a
+not-yet-written outcome 2/3/4 candidate should actually be outcome 1/5)
+is now answered explicitly in step 7a's own "Disagreement or
+insufficient evidence" bullet, above. This plan is implementation-ready
+as of this note. The governing prompt that produced this amendment
+explicitly authorises Phase 85 implementation once this round's
+independent review confirms the fixes — see the implementation record
+below this plan's own sections for that review's verdict and the
+resulting build.
