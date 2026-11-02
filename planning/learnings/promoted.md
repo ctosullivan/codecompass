@@ -10,6 +10,8 @@ Example: `L-017 | 2026-10-01 | invariant | tests/test_usage.py::test_vendor_dir_
 ---
 
 L-001 | 2026-09-10 | invariant | tests/test_check_user_docs.py::TestReadmePhaseCount::test_ignores_done_phases_in_redefined_v1_section + scripts/check_user_docs.py::check_readme_phase_count @ c22d8e4
+L-112 | 2026-11-03 | workflow | planning/agent-led-workflow.md step 5 (resume a dispatched agent awaiting command output via SendMessage, never a fresh Agent call) @ 55f7008
+L-113 | 2026-11-03 | workflow | planning/v1-redefinition/agent-led-development.md §1 + .claude/agents/release-phase-auditor.md "What to check" item 13 (run a new validator against the real corpus before finalizing its test suite) @ 55f7008
 L-002 | 2026-09-10 | workflow | planning/agent-led-workflow.md step 12 + .claude/agents/knowledge-curator.md "Hard rules" (lead-runs-the-confirming-check handoff) @ d34a486
 L-005 | 2026-09-10 | project-rule | .claude/agents/docs-maintainer.md "Hard rules" (check whether a file is generated before editing) @ d34a486
 L-004 | 2026-09-11 | future-improvement | scripts/check_user_docs.py::check_no_deleted_names_as_live + tests/test_check_user_docs.py::TestNoDeletedNamesAsLive + architecture/overview.md "Known Footguns" §C corrections (items 33-36) @ 3b7f27a
