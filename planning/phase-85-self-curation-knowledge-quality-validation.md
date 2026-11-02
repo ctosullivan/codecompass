@@ -1654,3 +1654,42 @@ explicitly authorises Phase 85 implementation once this round's
 independent review confirms the fixes — see the implementation record
 below this plan's own sections for that review's verdict and the
 resulting build.
+
+## Corrective note (2026-11-03, as-built: §4.C point 4 scoped to contract-bearing slugs)
+
+Discovered during implementation, not anticipated by any of this plan's
+own three independent review rounds: running `scripts/check_self_
+knowledge_quality.py`'s new `test_ref`-file-integrity check (§4.C point
+4) against the real corpus for the first time, before finalising its own
+test suite, found it would false-positive on four real, pre-existing
+`test`-kind Evidence records (`EV-ADPT-006`, `EV-CTXT-011`, `EV-SKEP-005`
+in `codecompass-domain`; `EV-DOCORIGIN-008` in `doc-origin-pinned-
+reference`) — all in slugs with **no** oracle contract at all, all using
+an older, legitimate, pre-Phase-82 `test_ref` convention (a plain
+pytest file/file:line citation, e.g. `"tests/test_graph.py:1426-1436"`),
+which was never intended to resolve as an oracle-result file path.
+
+**As-built fix**: the check is scoped to **contract-bearing slugs
+only** — `test_ref` only means "a path under `planning/contracts/
+<slug>/results/*.yaml`" for a slug that actually has an oracle contract;
+for a slug with none, `test_ref` legitimately uses the older convention,
+and the check does not apply at all. This mirrors `find_gaps()`'s own
+existing `stale_test_citation` rule, which already silently treats any
+non-resolving `test_ref` as not-applicable for exactly this reason — the
+new check narrows to the one population where "doesn't resolve" can only
+mean "broken," never "a different, equally legitimate citation style."
+Confirmed real and not an invented edge case: all four false positives
+were in the two slugs with zero contracts; `balance-from-spec` (the one
+contract-bearing slug) produces zero `test_ref`-file findings either way.
+
+This is the one deviation from this plan's own literal §4.C point 4 text
+("for every `test`-kind Evidence record across every slug") discovered
+during implementation; every other design element in §4.C was
+implemented exactly as specified. Full detail, tests, and real-baseline
+confirmation: `planning/retros/phase-85-self-curation-knowledge-quality-
+validation.md`'s own "What worked"/"What didn't work" sections;
+`tests/test_check_self_knowledge_quality.py::TestTestRefFileCheck::
+test_non_resolving_test_ref_in_slug_without_contract_is_not_flagged`.
+Independently confirmed by the phase's own `release-phase-auditor` pass
+as a real, well-reasoned, fully-tested, honestly-disclosed deviation —
+requested to be folded back here, not found blocking on its own.
