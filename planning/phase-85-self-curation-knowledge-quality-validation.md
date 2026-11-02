@@ -3,8 +3,15 @@
 **Status: done (2026-11-03, "CodeCompass Orchestrator — Final Phase 85
 Plan Amendment, Verification and Implementation").** Implemented per
 this plan, independently reviewed three times before implementation and
-audited PASS WITH NON-BLOCKING OBSERVATIONS after implementation. Retro:
-`planning/retros/phase-85-self-curation-knowledge-quality-validation.md`.
+audited PASS WITH NON-BLOCKING OBSERVATIONS after implementation.
+**Corrective pass closed (2026-11-03, "CodeCompass Orchestrator — Phase
+85 Final Corrective Closeout")**: two validator defects fixed
+(superseded-Claim contradiction severity; unreadable-OracleResult
+handling), real-corpus `--strict` baseline reconciled (two genuine,
+pre-existing knowledge-debt categories filed as `L-114`, cross-
+referenced into the pre-existing `L-107` where applicable), re-audited
+PASS WITH NON-BLOCKING OBSERVATIONS across three independent passes.
+Retro: `planning/retros/phase-85-self-curation-knowledge-quality-validation.md`.
 
 Governing scope: `planning/v2-roadmap.md` "Phase 85 — Self-Curation and
 Knowledge-Quality Validation" (10-point roadmap-depth sketch);

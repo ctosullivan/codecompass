@@ -46,6 +46,62 @@ quality-validation.md`; retro: `planning/retros/phase-85-self-curation-
 knowledge-quality-validation.md`; audits: `planning/retros/
 _audit-phase-85.md`, `planning/retros/_drift-audit-phase-85.md`.
 
+**Corrective pass closed (2026-11-03, "CodeCompass Orchestrator — Phase
+85 Final Corrective Closeout")**. Two defects in `scripts/check_self_
+knowledge_quality.py` fixed, each with a regression test confirmed to
+fail against the pre-fix source first: (1) a `contradiction` finding
+was blocking even when its subject (`CL-ADPT-008`, `status: superseded`)
+was genuinely, credibly resolved by another record's own `supersedes`
+field (`CL-ADPT-010`) — now informational in exactly that case, reusing
+`knowledge_intermediate.derive_provenance_label`'s own existing
+`"superseded" -> "HISTORICAL"` classification, with an explicit
+fail-closed guard against an orphaned or not-credibly-resolved
+`superseded` record; (2) an `OSError` reading an existing `test_ref`
+file (distinct from `oracle.OracleSchemaError`) previously crashed the
+whole validator run uncaught — now a distinct, always-blocking
+`self-knowledge-quality-unreadable-test-ref-file` finding. 8 new
+regression tests (20 → 28). Real-corpus `--strict` baseline reconciled,
+not merely re-run: 35 findings both before and after, 27 → 26 blocking
+(only `CL-ADPT-008`'s own contradiction moved; every other finding's
+classification unchanged), confirmed deterministic. The 26 remaining
+blocking findings are two genuine, pre-existing knowledge-debt
+categories — neither a validator defect — filed as `L-114`: (a) nine
+`status: verified` Requirements with no evidence citation at all
+(`REQ-DOCORIGIN-001/002/003`, `REQ-HSAPI-001`-`006`), not covered by
+`decisions/0081` §3's own, narrower oracle-contract-citation exemption,
+genuinely new, `retained`; (b) `balance-from-spec`'s own
+`unverified_required_scope`/`stale_test_citation` findings, cross-
+referenced by `knowledge-curator` into the pre-existing `L-107` rather
+than duplicated — `L-107`'s own "moves forward when" condition (ii) is
+now confirmed **not triggered** (Phase 85 shipped the detector `L-107`
+anticipated but never re-cited the Evidence records). `--strict` is
+documented as **not currently suitable** as an unconditional CI gate
+against this corpus. A reproducibility addendum (concrete fixture +
+command + independently re-verified byte-for-byte output) was appended,
+append-only, to the investigation log for `SCI-001`/`SCI-002` — neither
+original entry edited, no new canonical record created. `docs-
+reconstructor` found and the lead fixed 2 non-blocking stale-by-omission
+doc findings (`docs/development/contributing.md`, `docs/workflows/
+self-curation-loop.md` both omitted the new "unreadable" finding and the
+superseded-contradiction carve-out). `release-phase-auditor`'s first
+re-audit pass returned **FAIL** (the retro's own corrective-pass
+addendum didn't yet exist; real closeout work sat uncommitted) — both
+fixed same-day, re-audited **PASS WITH NON-BLOCKING OBSERVATIONS** across
+two further passes (the second specifically covering the `L-115`
+promotion commit). `L-115` promoted: an agent with both `Bash` and
+`Write` that materializes a prior git revision into the live, tracked
+working tree for its own before/after comparison must restore it before
+returning its report (`.claude/agents/release-phase-auditor.md` "Hard
+rules" + `planning/v1-redefinition/agent-led-development.md` §1) —
+discovered when exactly this happened during this corrective pass's own
+first audit dispatch, caught by the lead via an unrelated harness notice
+rather than the dispatch's own report (the auditor's own transcript
+evidence disputes the precise causal attribution; the incident and fix
+stand regardless). No change to `src/codecompass/knowledge_api.py`/
+`oracle.py`/`knowledge_intermediate.py`, the dogfood records
+(`CL-FPSS-009`, `SCI-001`/`SCI-002` originals), or any canonical record
+schema. Commits: `95309f1`, `4242bf4`, `ee58b03`, `e8398a2`.
+
 **Phase 84 — Consolidated Knowledge API and Query CLI — is `done`,
 corrective pass and final corrective amendment both closed (2026-11-02,
 `decisions/0091`/`0092`/`0093`)**.
@@ -113,7 +169,17 @@ development.md` §1 + `.claude/agents/release-phase-auditor.md` item 11)
 and `L-109` (Rich `Table` cells truncate at default render width —
 `docs/architecture/overview.md` "Known footguns"). `L-107` remains
 retained, pending a second real oracle-contract-extension occurrence
-before a process-change ADR is warranted.
+before a process-change ADR is warranted — **updated 2026-11-03**: its
+own "moves forward when" condition (ii), "Phase 85's self-curation work
+acts on this specific finding directly," is now confirmed **not
+triggered** — Phase 85 shipped the corpus-wide detector (`scripts/
+check_self_knowledge_quality.py`) that *finds* this exact condition
+(`EV-BFS-002`/`EV-BFS-003` still citing stale results) but did not
+re-cite the Evidence records, so the gap is unchanged; this same single
+root cause now also surfaces as 17 of the 26 blocking findings that
+validator reports against the real corpus, raising the cost of leaving
+it open without yet meeting condition (i) (a second contract-extension
+event). See `L-114` below.
 
 A second, independent post-completion source review then found two
 further defects, fixed as a final corrective amendment
@@ -692,6 +758,17 @@ amendments above.
   the current codebase (confirmed by a repo-wide `knowledge-curator`
   grep) — worth re-checking the next time a new closed-enum/status check
   is added against externally-sourced or YAML-parsed input.
+- `L-114` (retained, `planning/learnings/inbox.md`): nine pre-existing
+  `status: verified` Requirements (`REQ-DOCORIGIN-001/002/003`,
+  `REQ-HSAPI-001`-`006`) have no evidence citation (`depends_on`) at
+  all, and are not covered by `decisions/0081` §3's own, narrower
+  oracle-contract-citation exemption — `scripts/check_self_knowledge_
+  quality.py --strict` fails on this. Resolve via a `context-researcher`
+  evidence-finding dispatch against `doc-origin-pinned-reference`/
+  `haskell-api-surface-extraction`, or a new, explicitly-named ADR
+  exemption mirroring `decisions/0081` §3's own precedent. (The
+  companion `balance-from-spec` category this entry originally also
+  named is tracked instead at `L-107`, above — not duplicated here.)
 
 ## Next concrete step
 
@@ -706,9 +783,12 @@ corrective pass and final corrective amendment both closed** (2026-11-02,
 `decisions/0091`/`0092`/`0093`) — see "Current phase" above. No further
 Phase 84 corrective work is open.
 
-**Phase 85 (Self-Curation and Knowledge-Quality Validation) is `done`**
-(2026-11-03) — see "Current phase" above for full detail. No further
-Phase 85 corrective work is open.
+**Phase 85 (Self-Curation and Knowledge-Quality Validation) is `done`,
+corrective pass closed** (2026-11-03) — see "Current phase" above for
+full detail. No further Phase 85 corrective work is open; the two
+genuine knowledge-debt categories the reconciled `--strict` baseline
+still carries are tracked as standing gaps (`L-114`, `L-107`, above),
+not phase work.
 
 **Phase 86 (Knowledge-Placement and Code-Quality Review) is not started
 and not phase-planned.** Sequence from here: 86 (Knowledge-Placement and
