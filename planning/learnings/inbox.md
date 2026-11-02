@@ -8,6 +8,84 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-114 — the self-knowledge-quality validator's real-corpus baseline now carries two distinct, genuine, pre-existing knowledge-debt categories that `--strict` cannot pass until resolved on their own terms
+
+- **origin:** Phase 85 corrective pass (CodeCompass Orchestrator — Phase
+  85 Final Corrective Closeout), §4 ("Reconcile existing strict-
+  validation findings")
+- **date:** 2026-11-03
+- **project_revision:** 311b5dd (pre-corrective-pass baseline; corrective
+  pass commits land after this entry is filed)
+- **observation:** Running `scripts/check_self_knowledge_quality.py
+  --strict --ledgerkit-root ~/projects/ledgerkit` against the real
+  corpus, after this corrective pass's own two defect fixes (superseded-
+  contradiction severity; unreadable-OracleResult handling), still exits
+  1 on 26 blocking findings (down from 27 pre-fix — only `CL-ADPT-008`'s
+  own contradiction moved to informational). These remaining blocking
+  findings are two genuinely distinct, pre-existing conditions, neither
+  a defect in this phase's own validator:
+  1. **Missing evidence on nine `status: verified` Requirements**
+     (`REQ-DOCORIGIN-001/002/003`, `REQ-HSAPI-001` through `-006`) — each
+     has only an `id`/`statement`/`example`/`decision`/`status` field;
+     none has ever had a `depends_on` entry. `knowledge_api.
+     trace_evidence()`'s own existing, accepted design (docstring,
+     `src/codecompass/knowledge_api.py` lines 1136-1161) already treats
+     a Requirement with zero citation as `missing_evidence` — this is
+     not a new rule the Phase 85 validator invented, just the first
+     corpus-wide, systematic surfacing of it (no prior script called
+     `trace_evidence()` across every Claim/Requirement). These nine are
+     the *same* "twelve pre-existing `status: verified` records" named
+     in `decisions/0081` §3 — but that ADR's own compatibility exemption
+     is scoped *only* to `check_verified_status_cites_passing_oracle_
+     result` (oracle-contract citation), never to this separate
+     evidence-citation-existence question. No ADR or record anywhere
+     exempts these nine from `missing_evidence` specifically.
+  2. **`balance-from-spec`'s own `unverified_required_scope` (15) and
+     `stale_test_citation` (2) findings** (`CL-BFS-001` through `-005`,
+     `EV-BFS-002`/`EV-BFS-003`) — independently cross-validated during
+     Phase 85's own implementation against `check_contracts.py`'s own,
+     separately-computed `contract-check-gap` finding for the identical
+     `check_id`s, confirming these are real, not an artefact of this
+     script's own detection logic.
+  Neither category is a false positive, a duplicate, or a validator
+  classification defect — both are genuine, outstanding knowledge-debt
+  conditions the real corpus already carried, now visible for the first
+  time because this is the first validator to check them corpus-wide.
+  **`--strict` is therefore not currently suitable as an unconditional
+  CI gate against this corpus** — it will stay red until one of these
+  two categories is substantively resolved (real evidence written, or a
+  new, explicitly-named ADR exemption analogous to `decisions/0081` §3's
+  own, for the specific check each concerns) or formally deferred by the
+  project the same deliberate way.
+- **evidence:** `scripts/check_self_knowledge_quality.py --strict
+  --ledgerkit-root ~/projects/ledgerkit` output (this phase's corrective-
+  pass before/after comparison); `src/codecompass/knowledge_api.py` lines
+  1136-1161 (`trace_evidence` docstring); `decisions/0081` §3 lines
+  187-216 (the twelve-record exemption's own, narrower scope); direct
+  read of `planning/knowledge/doc-origin-pinned-reference/REQ-DOCORIGIN-
+  001.yaml` and `planning/knowledge/haskell-api-surface-extraction/REQ-
+  HSAPI-001.yaml` (no `depends_on` field present in either).
+- **classification:** open-work
+- **status:** candidate
+- **recurrence:** first occurrence
+- **promoted_to:**
+
+  Suggested resolution criterion, for whoever triages/owns this next
+  (not decided by this entry): either (a) a `context-researcher`
+  dispatch against `doc-origin-pinned-reference` and `haskell-api-
+  surface-extraction` that finds and cites real supporting Claims/
+  Evidence for each of the nine Requirements via `depends_on`, resolved
+  when the validator's `missing-evidence` finding for each disappears;
+  or (b) a new, explicitly-named ADR (mirroring `decisions/0081` §3's
+  own precedent) scoping `check_self_knowledge_quality.py`'s
+  `missing_evidence` check to exclude this specific, named, pre-existing
+  class, the same deliberate way, never a silent or blanket exemption.
+  For the `balance-from-spec` findings: resolved when `CL-BFS-001`
+  through `-005` each cite a currently-passing oracle result for all
+  three required scopes and `EV-BFS-002`/`EV-BFS-003` are updated to
+  cite the live-reconfirmed passing results `check_self_knowledge_
+  quality.py`'s own `stale_test_citation` finding already names.
+
 ### L-113 — a new validator/checker's severity design must be run against the real, pre-existing corpus before its own test suite is finalized — an abstract check against the approved plan is not sufficient on its own
 
 - **origin:** Phase 85 (Self-Curation and Knowledge-Quality Validation),

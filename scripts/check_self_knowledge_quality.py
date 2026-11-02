@@ -21,19 +21,34 @@ Checks:
 
 1. `knowledge_api.find_gaps(project_root, slug=None)` — its own existing
    six rules, unchanged, corpus-wide. Every resulting `Gap` is reported
-   as blocking **except** `missing_contract`, which is always
-   informational: no existing canonical record or accepted decision
-   currently establishes that an oracle contract is a mandatory
-   obligation for any subject but `balance-from-spec` — confirmed by
-   direct reading of `decisions/0081` §3, which explicitly defers this
-   ("a future phase may choose to require contracts project-wide once
-   real use justifies that cost... not pre-committed here") and ties its
-   own, narrower compatibility exemption to the identical mechanical
-   condition this script reuses ("no contract directory exists for this
-   slug," preferred there over an allow-list). This is not a per-slug
-   allowlist: the real corpus has six knowledge slugs and one oracle
-   contract, so five of six would otherwise fail `--strict` for a
-   condition nothing has ever decided is a defect.
+   as blocking **except**: `missing_contract`, which is always
+   informational (see below); and `contradiction`, which is
+   informational when the subject's own `status` is `superseded` *and*
+   it is genuinely, credibly named by another same-kind record's
+   `supersedes` field (never trusted from `status: superseded` alone —
+   see `_resolved_by_credible_supersession`). `missing_contract`: no
+   existing canonical record or accepted decision currently establishes
+   that an oracle contract is a mandatory obligation for any subject but
+   `balance-from-spec` — confirmed by direct reading of `decisions/0081`
+   §3, which explicitly defers this ("a future phase may choose to
+   require contracts project-wide once real use justifies that cost...
+   not pre-committed here") and ties its own, narrower compatibility
+   exemption to the identical mechanical condition this script reuses
+   ("no contract directory exists for this slug," preferred there over
+   an allow-list). This is not a per-slug allowlist: the real corpus has
+   six knowledge slugs and one oracle contract, so five of six would
+   otherwise fail `--strict` for a condition nothing has ever decided is
+   a defect. `contradiction`'s own superseded-and-resolved carve-out
+   (corrective pass): `CL-ADPT-008` (`status: superseded`, retaining
+   `contradicting_evidence: [EV-ADPT-008]` as historical provenance) is
+   genuinely resolved by `CL-ADPT-010` (`status: supported`,
+   `supersedes: CL-ADPT-008`) — reusing `knowledge_intermediate.
+   derive_provenance_label`'s own existing, unchanged `status ==
+   "superseded" -> "HISTORICAL"` classification, not a new invented
+   semantic. A Claim/Decision merely marked `status: superseded` with no
+   real successor naming it back, or whose only named successor is
+   itself not credible (e.g. itself `contradicted`), is **not** exempted
+   — it stays blocking.
 2. `knowledge_intermediate.knowledge_status(project_root)` — needs-review
    records and unresolved concurrent-change conflicts, reported
    informational (this function's own existing design; `codecompass
@@ -48,13 +63,17 @@ Checks:
    (`supported`/`verified`/`contradicted` for a Claim;
    `approved`/`implemented`/`verified` for a Requirement) — never for
    `status: proposed`, normal, undecided workflow state.
-4. A missing/malformed `test_ref`-file check: for every `test`-kind
-   Evidence record, resolve its own `test_ref` path under `project_root`
-   and report (always blocking) if the path does not exist, or exists
-   but fails `oracle.parse_oracle_result()`. Distinct from an unresolved
-   Evidence *id* (check 1's own `dangling_evidence_reference`) — this
-   is the Evidence record resolving fine while the *file it cites* does
-   not.
+4. A missing/malformed/unreadable `test_ref`-file check: for every
+   `test`-kind Evidence record, resolve its own `test_ref` path under
+   `project_root` and report (always blocking) if the path does not
+   exist, exists but fails `oracle.parse_oracle_result()`'s own schema
+   validation, or exists but could not be read at all (any `OSError` —
+   e.g. a permission error — raised while reading it; narrowly scoped to
+   `OSError`, never a bare `except Exception`, so a genuine programming
+   error still surfaces as a crash rather than a misleading finding).
+   Distinct from an unresolved Evidence *id* (check 1's own
+   `dangling_evidence_reference`) — this is the Evidence record
+   resolving fine while the *file it cites* does not.
 5. Deterministic duplicate/overlap detection, within one slug: byte-
    identical (whitespace-normalised) `statement` fields between two
    Claims (always informational, regardless of evidence); non-empty,
@@ -130,7 +149,62 @@ def _iter_slug_dirs(root: Path) -> list[Path]:
     return sorted(p for p in knowledge_dir.iterdir() if p.is_dir())
 
 
-def check_find_gaps_composed(project_root: Path, ka, repo_root: Path | None) -> list[Finding]:
+def _load_all_records(project_root: Path, ki) -> dict[str, object]:
+    """Every canonical record across every slug, keyed by `id` — local
+    equivalent of `knowledge_api._all_records` (private to that module),
+    needed here so this script's own severity logic can inspect a
+    subject's and a candidate successor's fields directly rather than
+    re-deriving them from `find_gaps()`'s own prose `reason` string."""
+    all_records: dict[str, object] = {}
+    for slug_dir in _iter_slug_dirs(project_root):
+        all_records.update(ki.load_slug_records(slug_dir))
+    return all_records
+
+
+# A `superseded` Claim/Decision's own successor must itself be in one of
+# these states to count as a *credible* resolution — a successor that is
+# itself merely `proposed`, or (for a Claim) itself `contradicted`, does
+# not genuinely resolve anything, so severity is not downgraded on its
+# account. Decision has no analogous "contradicted"-like state; its own
+# decided set is just `approved` (`decisions/0080`'s own enum).
+_CREDIBLE_SUCCESSOR_STATUSES = {
+    "claim": _DECIDED_CLAIM_STATUSES - {"contradicted"},
+    "decision": {"approved"},
+}
+
+
+def _resolved_by_credible_supersession(subject, all_records: dict[str, object]) -> bool:
+    """True only when `subject` (`status: superseded`) is genuinely named
+    in some other, same-kind record's own `supersedes` field, and that
+    successor is itself credible (see `_CREDIBLE_SUCCESSOR_STATUSES`).
+    Mirrors `knowledge_intermediate.derive_provenance_label`'s own
+    existing, unchanged `status == "superseded" -> "HISTORICAL"`
+    classification — this does not invent a new semantic, it reuses one
+    this project already treats as authoritative to correct this
+    script's own severity, rather than `find_gaps()`'s public behaviour.
+    Never trusts `status: superseded` alone: an orphaned record (nothing
+    names it back) or one whose only named successor is itself broken
+    stays blocking (fail-closed) — confirmed real against `CL-ADPT-008`
+    (`status: superseded`, named by `CL-ADPT-010`'s own `supersedes:
+    CL-ADPT-008`, `CL-ADPT-010` itself `status: supported`)."""
+    if subject.fields.get("status") != "superseded":
+        return False
+    credible_statuses = _CREDIBLE_SUCCESSOR_STATUSES.get(subject.kind)
+    if credible_statuses is None:
+        return False
+    for other in all_records.values():
+        if other.kind != subject.kind:
+            continue
+        if subject.record_id not in _extract_id_strings(other.fields.get("supersedes", "")):
+            continue
+        if other.fields.get("status") in credible_statuses:
+            return True
+    return False
+
+
+def check_find_gaps_composed(
+    project_root: Path, ka, repo_root: Path | None, ki
+) -> list[Finding]:
     """Check 1 (module docstring). `find_gaps()` itself is never edited
     or re-implemented — this only re-classifies its own `Gap.kind` into
     a `Finding.strict` value, since `find_gaps()`'s own typed response
@@ -140,12 +214,28 @@ def check_find_gaps_composed(project_root: Path, ka, repo_root: Path | None) -> 
     `stale_test_citation` can never report a scope as currently
     reconfirmed (decisions/0092), which would otherwise make every
     oracle-backed Claim look permanently unverified regardless of real
-    implementation health."""
+    implementation health.
+
+    Corrective pass: a `contradiction` Gap whose own subject has
+    `status: superseded` and is genuinely, credibly superseded (see
+    `_resolved_by_credible_supersession`) is downgraded to informational
+    — the contradiction is real, historical provenance, already resolved
+    by a later Claim/Decision, not an active defect. A `contradiction`
+    Gap for a record with `status: contradicted` is never downgraded by
+    this rule (status values are mutually exclusive, so the two cases
+    cannot collide on one record)."""
     findings: list[Finding] = []
+    all_records = _load_all_records(project_root, ki)
     response = ka.find_gaps(project_root, slug=None, repo_root=repo_root)
     for gap in sorted(response.gaps, key=lambda g: (g.kind, g.subject_id or "", g.scope or "")):
         rule = f"self-knowledge-quality-{gap.kind.replace('_', '-')}"
-        strict = gap.kind != "missing_contract"
+        if gap.kind == "missing_contract":
+            strict = False
+        elif gap.kind == "contradiction":
+            subject = all_records.get(gap.subject_id) if gap.subject_id else None
+            strict = not (subject is not None and _resolved_by_credible_supersession(subject, all_records))
+        else:
+            strict = True
         findings.append(Finding(rule, gap.reason, strict))
     return findings
 
@@ -167,9 +257,7 @@ def check_knowledge_status_composed(project_root: Path, ki) -> list[Finding]:
 def check_missing_evidence_composed(project_root: Path, ka, ki, repo_root: Path | None) -> list[Finding]:
     """Check 3 (module docstring)."""
     findings: list[Finding] = []
-    all_records: dict[str, object] = {}
-    for slug_dir in _iter_slug_dirs(project_root):
-        all_records.update(ki.load_slug_records(slug_dir))
+    all_records = _load_all_records(project_root, ki)
 
     seen_gap_keys: set[tuple[str, str | None]] = set()
     for record_id in sorted(all_records):
@@ -249,6 +337,26 @@ def check_test_ref_files(project_root: Path, ki, oracle) -> list[Finding]:
                         f"does not parse as a valid oracle result: {exc}",
                     )
                 )
+            except OSError as exc:
+                # Corrective pass: a filesystem failure reading an
+                # otherwise-existing file (permission denied, a path that
+                # turned into a directory/special file between the
+                # `is_file()` check and the read, etc.) is a distinct
+                # failure mode from "missing" and from "malformed YAML" —
+                # `oracle.parse_oracle_result`'s own `_safe_load_yaml`
+                # catches `yaml.YAMLError` but not `OSError`, so this was
+                # previously uncaught and crashed the whole validator run,
+                # silently hiding every other real finding. Narrowly
+                # scoped to `OSError` (never a bare `except Exception`) so
+                # a genuine programming error elsewhere still surfaces as
+                # a crash rather than a misleading "finding".
+                findings.append(
+                    Finding(
+                        "self-knowledge-quality-unreadable-test-ref-file",
+                        f"{record_id} ({slug_dir.name}): test_ref {rel_ref!r} exists but "
+                        f"could not be read ({type(exc).__name__}: {exc})",
+                    )
+                )
     return findings
 
 
@@ -306,7 +414,7 @@ def run_all(project_root: Path = ROOT, repo_root: Path | None = DEFAULT_LEDGERKI
             )
         ]
     findings: list[Finding] = []
-    findings.extend(check_find_gaps_composed(project_root, ka, repo_root))
+    findings.extend(check_find_gaps_composed(project_root, ka, repo_root, ki))
     findings.extend(check_knowledge_status_composed(project_root, ki))
     findings.extend(check_missing_evidence_composed(project_root, ka, ki, repo_root))
     findings.extend(check_test_ref_files(project_root, ki, oracle))

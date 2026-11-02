@@ -267,6 +267,74 @@ invalid_reason: null
         ]
         assert hits == []
 
+    def test_unreadable_result_file_is_blocking(self, tmp_path, monkeypatch):
+        """Corrective pass: a filesystem failure (permission error or any
+        other `OSError`) reading an otherwise-existing `test_ref` file must
+        become a typed, blocking finding -- never an uncaught exception
+        that terminates the whole validator. Reproduced deterministically
+        via an injected `Path.read_text` failure rather than relying on a
+        real `chmod`, which would behave differently as root."""
+        slug = "fixture-slug"
+        self._make_contract(tmp_path, slug)
+        slug_dir = tmp_path / "planning" / "knowledge" / slug
+        ref = f"planning/contracts/{slug}/results/unreadable.yaml"
+        target = (tmp_path / ref).resolve()
+        _write(tmp_path / ref, "schema_version: 1\n")
+        _write(
+            slug_dir / "EV-FIX-001.yaml",
+            _EVIDENCE_TEST.format(id="EV-FIX-001", test_ref=ref),
+        )
+
+        real_read_text = Path.read_text
+
+        def _fake_read_text(self, *args, **kwargs):
+            if self.resolve() == target:
+                raise PermissionError(13, "Permission denied", str(self))
+            return real_read_text(self, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "read_text", _fake_read_text)
+
+        findings = check_self_knowledge_quality.run_all(tmp_path, repo_root=None)
+        hits = [f for f in findings if f.rule == "self-knowledge-quality-unreadable-test-ref-file"]
+        assert len(hits) == 1
+        assert hits[0].strict is True
+        assert "EV-FIX-001" in hits[0].message
+        assert "PermissionError" in hits[0].message
+
+    def test_unreadable_result_file_does_not_crash_the_whole_run(self, tmp_path, monkeypatch):
+        """Pre-fix behaviour: an uncaught `OSError` from `oracle.
+        parse_oracle_result` propagated out of `check_test_ref_files` and
+        crashed `run_all()` entirely, hiding every other real finding
+        (the real corpus's genuine contradiction/scope findings among
+        them). This must no longer happen."""
+        slug = "fixture-slug"
+        self._make_contract(tmp_path, slug)
+        slug_dir = tmp_path / "planning" / "knowledge" / slug
+        ref = f"planning/contracts/{slug}/results/unreadable.yaml"
+        target = (tmp_path / ref).resolve()
+        _write(tmp_path / ref, "schema_version: 1\n")
+        _write(
+            slug_dir / "EV-FIX-001.yaml",
+            _EVIDENCE_TEST.format(id="EV-FIX-001", test_ref=ref),
+        )
+        _write(
+            slug_dir / "CL-FIX-001.yaml",
+            _CLAIM.format(id="CL-FIX-001", statement="a claim", supporting_evidence="[]", status="supported"),
+        )
+
+        real_read_text = Path.read_text
+
+        def _fake_read_text(self, *args, **kwargs):
+            if self.resolve() == target:
+                raise PermissionError(13, "Permission denied", str(self))
+            return real_read_text(self, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "read_text", _fake_read_text)
+
+        findings = check_self_knowledge_quality.run_all(tmp_path, repo_root=None)
+        assert any(f.rule == "self-knowledge-quality-missing-evidence" for f in findings)
+        assert any(f.rule == "self-knowledge-quality-unreadable-test-ref-file" for f in findings)
+
 
 class TestMissingEvidenceSeverity:
     def test_proposed_claim_with_no_evidence_is_informational(self, tmp_path):
@@ -396,6 +464,176 @@ class TestDuplicateOverlapDetection:
         findings = check_self_knowledge_quality.run_all(tmp_path, repo_root=None)
         overlap_hits = [f for f in findings if "overlap" in f.rule or "duplicate" in f.rule]
         assert overlap_hits == []
+
+
+_MIN_EVIDENCE = """\
+id: {id}
+kind: evidence
+evidence_kind: source
+what_it_shows: a minimal evidence record
+repository_revision: "working tree"
+status: current
+"""
+
+_CLAIM_WITH_CONTRADICTION = """\
+id: {id}
+kind: claim
+statement: {statement}
+derivation: DE-TEST-001
+supporting_evidence: [EV-FIX-001]
+contradicting_evidence: [EV-FIX-002]
+derived_by: test
+repository_revision: "working tree"
+timestamp: "2026-10-01T00:00:00Z"
+status: {status}
+supersedes: {supersedes}
+"""
+
+
+class TestContradictionSeverity:
+    """Corrective pass: `find_gaps()`'s own `contradiction` Gap fires
+    whenever a record has non-empty `contradicting_evidence`, regardless
+    of whether the record's own `status` already resolved that
+    contradiction historically (`status: superseded`). The real
+    `CL-ADPT-008` is exactly this case -- `status: superseded`, retaining
+    `contradicting_evidence: [EV-ADPT-008]` as provenance, genuinely
+    resolved by `CL-ADPT-010` (`status: supported`, `supersedes:
+    CL-ADPT-008`). `knowledge_intermediate.derive_provenance_label`
+    already treats `status: superseded` as `HISTORICAL` elsewhere in this
+    project -- this reclassifies severity using a distinction the project
+    already treats as authoritative, without changing `find_gaps()`
+    itself."""
+
+    def _two_evidence(self, slug_dir):
+        _write(slug_dir / "EV-FIX-001.yaml", _MIN_EVIDENCE.format(id="EV-FIX-001"))
+        _write(slug_dir / "EV-FIX-002.yaml", _MIN_EVIDENCE.format(id="EV-FIX-002"))
+
+    def test_active_contradicted_claim_remains_blocking(self, tmp_path):
+        slug_dir = tmp_path / "planning" / "knowledge" / "fixture-slug"
+        self._two_evidence(slug_dir)
+        _write(
+            slug_dir / "CL-FIX-001.yaml",
+            _CLAIM_WITH_CONTRADICTION.format(
+                id="CL-FIX-001", statement="an actively contradicted claim",
+                status="contradicted", supersedes="null",
+            ),
+        )
+        findings = check_self_knowledge_quality.run_all(tmp_path, repo_root=None)
+        hits = [
+            f for f in findings
+            if f.rule == "self-knowledge-quality-contradiction" and "CL-FIX-001" in f.message
+        ]
+        assert hits
+        assert all(f.strict for f in hits)
+
+    def test_superseded_claim_with_genuine_successor_is_informational(self, tmp_path):
+        slug_dir = tmp_path / "planning" / "knowledge" / "fixture-slug"
+        self._two_evidence(slug_dir)
+        _write(
+            slug_dir / "CL-FIX-001.yaml",
+            _CLAIM_WITH_CONTRADICTION.format(
+                id="CL-FIX-001", statement="a historically superseded claim",
+                status="superseded", supersedes="null",
+            ),
+        )
+        _write(
+            slug_dir / "CL-FIX-002.yaml",
+            _CLAIM.format(
+                id="CL-FIX-002", statement="the resolving successor claim",
+                supporting_evidence="[EV-FIX-001]", status="supported",
+            ).replace("supersedes: null", "supersedes: CL-FIX-001"),
+        )
+        findings = check_self_knowledge_quality.run_all(tmp_path, repo_root=None)
+        hits = [
+            f for f in findings
+            if f.rule == "self-knowledge-quality-contradiction" and "CL-FIX-001" in f.message
+        ]
+        assert hits
+        assert all(not f.strict for f in hits)
+
+    def test_orphaned_superseded_status_remains_blocking(self, tmp_path):
+        """A `status: superseded` Claim that nothing actually names in a
+        `supersedes` field is not automatically trusted -- fail-closed,
+        stays blocking."""
+        slug_dir = tmp_path / "planning" / "knowledge" / "fixture-slug"
+        self._two_evidence(slug_dir)
+        _write(
+            slug_dir / "CL-FIX-001.yaml",
+            _CLAIM_WITH_CONTRADICTION.format(
+                id="CL-FIX-001", statement="a claim marked superseded but never actually replaced",
+                status="superseded", supersedes="null",
+            ),
+        )
+        findings = check_self_knowledge_quality.run_all(tmp_path, repo_root=None)
+        hits = [
+            f for f in findings
+            if f.rule == "self-knowledge-quality-contradiction" and "CL-FIX-001" in f.message
+        ]
+        assert hits
+        assert all(f.strict for f in hits)
+
+    def test_superseded_claim_with_unresolved_successor_remains_blocking(self, tmp_path):
+        """The successor itself must be credible -- a `status:
+        contradicted` claimed successor does not genuinely resolve
+        anything, so severity is not downgraded."""
+        slug_dir = tmp_path / "planning" / "knowledge" / "fixture-slug"
+        self._two_evidence(slug_dir)
+        _write(
+            slug_dir / "CL-FIX-001.yaml",
+            _CLAIM_WITH_CONTRADICTION.format(
+                id="CL-FIX-001", statement="a claim superseded by a broken successor",
+                status="superseded", supersedes="null",
+            ),
+        )
+        _write(
+            slug_dir / "CL-FIX-002.yaml",
+            _CLAIM.format(
+                id="CL-FIX-002", statement="a successor that is itself contradicted",
+                supporting_evidence="[EV-FIX-001]", status="contradicted",
+            ).replace("supersedes: null", "supersedes: CL-FIX-001"),
+        )
+        findings = check_self_knowledge_quality.run_all(tmp_path, repo_root=None)
+        hits = [
+            f for f in findings
+            if f.rule == "self-knowledge-quality-contradiction" and "CL-FIX-001" in f.message
+        ]
+        assert hits
+        assert all(f.strict for f in hits)
+
+    def test_non_superseded_status_with_contradicting_evidence_remains_blocking(self, tmp_path):
+        """An unresolved contradiction on a Claim that is not even marked
+        `superseded` (e.g. still `supported`) must remain blocking --
+        this is the ordinary, active case the check exists to catch."""
+        slug_dir = tmp_path / "planning" / "knowledge" / "fixture-slug"
+        self._two_evidence(slug_dir)
+        _write(
+            slug_dir / "CL-FIX-001.yaml",
+            _CLAIM_WITH_CONTRADICTION.format(
+                id="CL-FIX-001", statement="a supported claim with unresolved contradicting evidence",
+                status="supported", supersedes="null",
+            ),
+        )
+        findings = check_self_knowledge_quality.run_all(tmp_path, repo_root=None)
+        hits = [
+            f for f in findings
+            if f.rule == "self-knowledge-quality-contradiction" and "CL-FIX-001" in f.message
+        ]
+        assert hits
+        assert all(f.strict for f in hits)
+
+    def test_real_cl_adpt_008_contradiction_is_now_informational(self):
+        """Direct confirmation against the real corpus: `CL-ADPT-008`
+        (`status: superseded`, genuinely resolved by `CL-ADPT-010`) no
+        longer reports as a blocking contradiction."""
+        if not REPO_ROOT.joinpath("planning/knowledge/codecompass-domain/CL-ADPT-008.yaml").is_file():
+            pytest.skip("CL-ADPT-008 fixture record not present in this checkout")
+        findings = check_self_knowledge_quality.run_all(REPO_ROOT, repo_root=None)
+        hits = [
+            f for f in findings
+            if f.rule == "self-knowledge-quality-contradiction" and "CL-ADPT-008" in f.message
+        ]
+        assert hits
+        assert all(not f.strict for f in hits)
 
 
 class TestFindGapsComposition:

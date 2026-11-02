@@ -63,6 +63,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Phase 85 corrective closeout**: two defects in `scripts/check_self_
+  knowledge_quality.py`. (1) A `find_gaps()` `contradiction` Gap was
+  reported as blocking even when its subject's own `status: superseded`
+  was already genuinely, credibly resolved by another record's
+  `supersedes` field (the real `CL-ADPT-008`/`CL-ADPT-010` pair) — now
+  informational in exactly that case, reusing `knowledge_intermediate.
+  derive_provenance_label`'s own existing `HISTORICAL` classification,
+  never trusting `status: superseded` alone. (2) `check_test_ref_files`
+  caught `oracle.OracleSchemaError` but not `OSError`, so a filesystem
+  read failure (e.g. a permission error) on an existing `test_ref` file
+  crashed the whole validator run uncaught; now a distinct, always-
+  blocking `self-knowledge-quality-unreadable-test-ref-file` finding.
+  8 new regression tests. The real-corpus `--strict` baseline is not
+  currently a clean CI gate — 26 genuine, pre-existing blocking findings
+  remain (missing evidence on nine `status: verified` Requirements;
+  `balance-from-spec`'s own unverified-scope/stale-citation findings),
+  neither a validator defect, filed as `L-114` for follow-up. Also added
+  a reproducibility addendum to `planning/retros/phase-85-self-curation-
+  investigation-log.md` giving a concrete, re-verified fixture and
+  invocation for `SCI-001`/`SCI-002`.
+
 - **Phase 84 final corrective amendment** (`decisions/0093`): two
   further correctness defects an independent post-completion source
   review identified. `trace_evidence()` previously checked only a

@@ -1690,3 +1690,90 @@ test_non_resolving_test_ref_in_slug_without_contract_is_not_flagged`.
 Independently confirmed by the phase's own `release-phase-auditor` pass
 as a real, well-reasoned, fully-tested, honestly-disclosed deviation —
 requested to be folded back here, not found blocking on its own.
+
+## Corrective note (2026-11-03, final corrective closeout — two validator defects fixed, strict baseline reconciled)
+
+A separate, later governing prompt ("CodeCompass Orchestrator — Phase 85
+Final Corrective Closeout") authorised a narrowly-scoped corrective pass
+on this already-`done` phase's own validator, after identifying two real
+defects and an unreconciled strict-baseline classification gap. Phase
+85's own status, architecture, and dogfood evidence are unchanged by
+this note — only `scripts/check_self_knowledge_quality.py`'s own
+severity/error-handling logic and this plan's own as-built record are
+amended.
+
+**Defect 1 — superseded-Claim contradiction severity.** §4.C point 1
+(as amended by this note) previously treated every `find_gaps()`
+`contradiction` Gap as blocking except `missing_contract`. The real
+record `CL-ADPT-008` (`status: superseded`, retaining
+`contradicting_evidence: [EV-ADPT-008]` as historical provenance,
+genuinely resolved by `CL-ADPT-010`'s own `status: supported`,
+`supersedes: CL-ADPT-008`) was therefore reported as an active, blocking
+defect despite being a resolved historical fact. **Fix**: a
+`contradiction` Gap is now informational when its own subject has
+`status: superseded` *and* is genuinely, credibly named by another
+same-kind record's own `supersedes` field (the successor itself not
+`proposed`/`contradicted`) — reusing `knowledge_intermediate.
+derive_provenance_label`'s own existing, unchanged `status ==
+"superseded" -> "HISTORICAL"` classification, not inventing a new
+semantic, and not touching `find_gaps()`'s own public behaviour. A
+`status: contradicted` record, an orphaned `status: superseded` record
+(nothing names it back), or one whose only named successor is itself
+not credible, all remain blocking — confirmed by regression tests
+(`tests/test_check_self_knowledge_quality.py::TestContradictionSeverity`,
+6 cases).
+
+**Defect 2 — unreadable OracleResult files crashed the validator.**
+§4.C point 4's `check_test_ref_files` caught `oracle.OracleSchemaError`
+(malformed YAML/schema) but not `OSError` (e.g. a permission error)
+raised while reading an existing `test_ref` file — `oracle.
+parse_oracle_result`'s own `_safe_load_yaml` only catches `yaml.
+YAMLError`, so any filesystem read failure propagated uncaught, crashing
+the entire validator run and silently hiding every other real finding.
+**Fix**: `check_test_ref_files` now also catches `OSError` specifically
+(never a bare `except Exception`) and reports a new, distinct, always-
+blocking `self-knowledge-quality-unreadable-test-ref-file` finding
+naming the Evidence id, the cited path, and the error category —
+confirmed by regression tests injecting a deterministic `PermissionError`
+via a monkeypatched `Path.read_text` (`TestTestRefFileCheck::
+test_unreadable_result_file_is_blocking`,
+`test_unreadable_result_file_does_not_crash_the_whole_run`).
+
+**Strict-baseline reconciliation.** Before this corrective pass:
+35 findings, 27 blocking, `--strict` exit 1. After: 35 findings, 26
+blocking (only `CL-ADPT-008`'s contradiction moved from blocking to
+informational — every other finding's classification is unchanged),
+`--strict` exit 1, confirmed deterministic across two consecutive runs.
+The remaining 26 blocking findings are two distinct, genuine,
+pre-existing knowledge-debt categories, neither a validator defect: (a)
+nine `status: verified` Requirements (`REQ-DOCORIGIN-001/002/003`,
+`REQ-HSAPI-001`-`006`) with no `depends_on` citation at all —
+`knowledge_api.trace_evidence()`'s own existing, accepted design already
+treats this as `missing_evidence`; `decisions/0081` §3's "twelve
+pre-existing `status: verified` records" exemption covers only
+oracle-contract citation, never this separate evidence-citation
+question, so no exemption currently applies; and (b) `balance-from-
+spec`'s own `unverified_required_scope` (15)/`stale_test_citation` (2)
+findings, independently cross-validated against `check_contracts.py`'s
+own `contract-check-gap` finding for the identical `check_id`s during
+the original implementation. **`--strict` is not currently suitable as
+an unconditional CI gate against this corpus** — it will stay red until
+one of these two categories is substantively resolved or formally,
+explicitly exempted the same deliberate way `decisions/0081` §3 did for
+oracle-contract citation. Filed as `L-114`
+(`planning/learnings/inbox.md`), with a named resolution criterion for
+each category, for the `knowledge-curator`'s own independent triage.
+
+**Investigation-log reproducibility.** `SCI-001`/`SCI-002`
+(`planning/retros/phase-85-self-curation-investigation-log.md`) are
+unedited — a verification addendum was appended (append-only, per the
+log's own convention) giving a concrete, saved fixture, exact invocation
+command, and independently re-verified byte-for-byte expected output for
+each, confirmed against the unmodified `src/codecompass/
+source_symbols.py` (unchanged since Phase 77, well before this phase's
+own dogfood). No new canonical Claim/Evidence record was created for
+either — both remain outcome-3 (`falsified`) investigation-log entries
+only.
+
+Full detail: this corrective pass's own retro addendum and audit
+addendum (same filenames as the original phase, dated sections).

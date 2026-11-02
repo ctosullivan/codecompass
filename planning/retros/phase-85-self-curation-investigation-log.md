@@ -148,3 +148,112 @@ history. Fields per entry:
   itself contains a declaration-shaped substring — left as an explicitly
   open question, not asserted to behave identically.
 - **related_knowledge**: CL-FPSS-009, DE-FPSS-009, OBS-FPSS-023
+
+---
+
+## Corrective-pass reproducibility addendum (2026-11-03)
+
+Append-only addendum, per this log's own convention (see header) —
+SCI-001/SCI-002's own `hypothesis`/`evidence`/`disposition`/`reason`
+fields above are **unedited**. The original probes used disposable
+fixtures (created, run, then discarded, never persisted) — reproducible
+in principle from the prose description above, but not byte-for-byte
+replayable by a future reader without re-deriving fixture content from
+scratch. This addendum gives a concrete, saved fixture plus an exact
+invocation for each, independently re-run against the unmodified
+`src/codecompass/source_symbols.py` (repository revision `311b5dd`;
+unchanged since Phase 77's `03f8519` — confirmed via `git log -1
+--format=%H -- src/codecompass/source_symbols.py`, well before the
+original dogfood commit `20a274c`, and no commit between `20a274c` and
+`311b5dd` touches this file either) during this corrective pass,
+confirming each original disposition still holds.
+This is a verification addendum, not a new investigation — no new
+canonical Claim/Evidence record is created for either, per §4.E/this
+log's own "outcome 2/3/4 commits nothing under `planning/knowledge/`"
+rule (CLAUDE.md §8 / `.claude/agents/context-researcher.md`).
+
+### SCI-001 reproducibility addendum
+
+Fixture (`sci-001-repro.rs`, exact byte content):
+
+```rust
+#[cfg(test)]
+fn helper_test_only() {
+    assert!(true);
+}
+
+mod tests {
+    #[cfg(test)]
+    fn inner_test() {
+        assert!(true);
+    }
+}
+```
+
+Invocation (run from the repository root, any writable temp path for
+the fixture file):
+
+```
+python3 -c "
+import sys; sys.path.insert(0, 'src')
+from pathlib import Path
+from codecompass import source_symbols as ss
+r = ss._extract_rust_source_symbols(Path('<path-to-fixture-above>'))
+print(r.status, r.symbols)
+"
+```
+
+Verified output (re-run this session, byte-for-byte, repository revision
+`311b5dd`):
+
+```
+indexed_partial (SourceSymbol(name='helper_test_only', kind='fn', line=2, purpose=None, exposure='internal'), SourceSymbol(name='inner_test', kind='fn', line=8, purpose=None, exposure='internal'))
+```
+
+Matches the original entry's own reported shape exactly (both items
+present, both `exposure='internal'`, same line numbers as the original
+disposable fixture — `line=2`/`line=8` — confirming this reconstruction
+faithfully matches the original probe's own layout, not merely its
+qualitative conclusion). Confirms **falsified** still holds: no row is
+missing or misclassified; `#[cfg(test)]` is simply unmatched by
+`_RUST_ITEM_RE` and falls through like any other non-item line.
+
+### SCI-002 reproducibility addendum
+
+Fixture (`sci-002-repro.ts`, exact byte content):
+
+```typescript
+// fixture file
+// for SCI-002 reproduction
+
+@Decorator("x")
+export class Foo {
+    bar(): void {}
+}
+```
+
+Invocation:
+
+```
+python3 -c "
+import sys; sys.path.insert(0, 'src')
+from pathlib import Path
+from codecompass import source_symbols as ss
+r = ss._extract_js_family_source_symbols(Path('<path-to-fixture-above>'))
+print(r.status, r.symbols)
+"
+```
+
+Verified output (re-run this session, byte-for-byte, repository revision
+`311b5dd`):
+
+```
+indexed_partial (SourceSymbol(name='Foo', kind='class', line=5, purpose=None, exposure='public'),)
+```
+
+Matches the original entry's own reported shape exactly (`Foo`,
+`kind='class'`, `line=5`, `exposure='public'`). Confirms **falsified**
+still holds: `Foo` is correctly classified `public` from its own real
+`export class` line; the preceding `@Decorator(...)` line is simply
+unmatched by `_JS_FAMILY_ITEM_RE` and falls through like any other
+non-item line, exactly as the original entry's `reason` field states.
