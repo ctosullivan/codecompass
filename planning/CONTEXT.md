@@ -7,6 +7,45 @@ session-resumption, not a project history.
 
 ## Current phase
 
+**Phase 85 — Self-Curation and Knowledge-Quality Validation — is `done`
+(2026-11-03)**. The plan was amended twice and independently reviewed
+three times before implementation began (one material gap fixed each
+round — the disposition-write split, a `Bash`-tool-boundary correction,
+and three final issues: `missing_contract` severity, a `context-
+researcher` write-path conflict, and an incomplete Observation-`method`
+taxonomy). Delivered: `docs/workflows/self-curation-loop.md` (the
+eight-step self-curation loop); `scripts/check_self_knowledge_quality.py`
++ 20 tests (composes `knowledge_api.find_gaps`/`knowledge_intermediate.
+knowledge_status`/`trace_evidence`/`oracle.parse_oracle_result`;
+`missing_contract` always informational per `decisions/0081` §3; a new
+`test_ref`-file-integrity check scoped to contract-bearing slugs only —
+an as-built fix discovered by running it against the real corpus);
+`planning/retros/phase-85-self-curation-investigation-log.md` (new,
+non-canonical, append-only — a five-outcome candidate-disposition
+procedure keeps a merely-falsified hypothesis out of canonical knowledge
+as a `status: contradicted` Claim); narrowly-scoped mode additions to
+`.claude/agents/context-researcher.md` (deferred-write self-curation
+investigation mode) and `.claude/agents/knowledge-curator.md`
+(independent-adjudication mode, including the `Bash`-tool-boundary
+reproduction split and one narrow write-boundary addition) — no new
+agent role, no new tool grant. Real dogfood against `planning/knowledge/
+first-party-source-symbols/`: `context-researcher` tried four genuinely
+different constructs against the real, unmodified source-symbol
+extractors; two defeated them (`CL-FPSS-009`, independently adjudicated
+— including the lead re-running every executable probe verbatim — and
+promoted to `status: supported`); two were genuinely tried and falsified
+(`SCI-001`/`SCI-002`, investigation log only, nothing written to
+`planning/knowledge/` for either). Both required real-dogfood outcomes
+demonstrated independently; neither manufactured. No change to `src/
+codecompass/knowledge_api.py`/`oracle.py`/`knowledge_intermediate.py` or
+any canonical record schema. `release-phase-auditor`: FAIL (one missing
+DoD artifact, a drift-audit report, reconstructed faithfully from the
+underlying pass's own real findings) → re-audited PASS WITH NON-BLOCKING
+OBSERVATIONS. Full detail: `planning/phase-85-self-curation-knowledge-
+quality-validation.md`; retro: `planning/retros/phase-85-self-curation-
+knowledge-quality-validation.md`; audits: `planning/retros/
+_audit-phase-85.md`, `planning/retros/_drift-audit-phase-85.md`.
+
 **Phase 84 — Consolidated Knowledge API and Query CLI — is `done`,
 corrective pass and final corrective amendment both closed (2026-11-02,
 `decisions/0091`/`0092`/`0093`)**.
@@ -667,53 +706,23 @@ corrective pass and final corrective amendment both closed** (2026-11-02,
 `decisions/0091`/`0092`/`0093`) — see "Current phase" above. No further
 Phase 84 corrective work is open.
 
-**Phase 85 (Self-Curation and Knowledge-Quality Validation) is
-`planned`, not started, amended once** (2026-11-02, "CodeCompass
-Orchestrator — Amend Phase 85 Plan and Revalidate"). `planning/
-phase-85-self-curation-knowledge-quality-validation.md` is the full
-implementation-ready plan — it reuses the existing `context-researcher`/
-`knowledge-curator` roles unchanged (no new agent role, record kind, or
-write path beyond one narrow addition, below), adds one new maintainer
-script (`scripts/check_self_knowledge_quality.py`, composing Phase 84's
-existing API) for on-demand knowledge-quality checks, and selects
-`planning/knowledge/first-party-source-symbols/`'s own already-open
-`CL-FPSS-007` question as the real dogfood target — now requiring
-**both** a genuine promotion and a genuine, independently-investigated
-decline (never either alone, never a synthetic substitute for the
-decline). The amendment added a five-outcome candidate-disposition
-procedure and a new, non-canonical investigation log
-(`planning/retros/phase-85-self-curation-investigation-log.md`, the one
-new write path), so a merely-falsified hypothesis is recorded there
-rather than polluting the knowledge model as a `status: contradicted`
-Claim; fixed an unreachable `missing_contract` rule and an undetected
-missing/malformed `test_ref`-result-file case in the validator's own
-spec; formalised independent Claim adjudication (including a
-tool-boundary correction — `knowledge-curator` has no `Bash`, so
-command/probe reproduction is delegated to the lead at its own explicit
-direction); and corrected two overstated claims (the record schema does
-not structurally prevent an unevidenced Claim; identical-evidence Claims
-are not necessarily duplicates). Independently reviewed **twice** before
-being declared implementation-ready: the first review (before the
-amendment) found one material gap — the disposition step originally
-assigned both independent re-verification and the mechanical
-Claim-status edit to `knowledge-curator` alone, which its own Hard Rules
-forbid, split into "`knowledge-curator` recommends / the lead applies,"
-confirmed against real precedent — plus three secondary gaps, all fixed;
-the second review (of the amendment itself) found one further material
-gap — the `Bash`-boundary issue above — fixed and re-confirmed by a
-third, narrowly-scoped check. **Phase 85 implementation is not
-authorised** under either governing prompt — a separate, explicit
-approval is required before any of it is implemented. When Phase 85
-implementation is taken up: 85 (Self-Curation and
-Knowledge-Quality Validation) → 86 (Knowledge-Placement and Code-Quality
-Review, formal policy/enforcement classes) → 87 (Documentation Schema and
-Knowledge-Compiled Documentation, minimum suite specified) → 88 (Agent
-Integration and MCP, split from the old merged phase) → 89 (Incremental
-Knowledge and Documentation Reconciliation, split from the old merged
-phase, independent of MCP) → 90 (Comparative Development Trials,
-methodology strengthened) → 91 (External Validation and Adoption) → 92
-(v2.0 Hardening and Release). None of 85-92 is phase-planned yet; each
-gets its own `CLAUDE.md` §1 plan file when it is actually next.
+**Phase 85 (Self-Curation and Knowledge-Quality Validation) is `done`**
+(2026-11-03) — see "Current phase" above for full detail. No further
+Phase 85 corrective work is open.
+
+**Phase 86 (Knowledge-Placement and Code-Quality Review) is not started
+and not phase-planned.** Sequence from here: 86 (Knowledge-Placement and
+Code-Quality Review, formal policy/enforcement classes) → 87
+(Documentation Schema and Knowledge-Compiled Documentation, minimum
+suite specified) → 88 (Agent Integration and MCP, split from the old
+merged phase) → 89 (Incremental Knowledge and Documentation
+Reconciliation, split from the old merged phase, independent of MCP) →
+90 (Comparative Development Trials, methodology strengthened) → 91
+(External Validation and Adoption) → 92 (v2.0 Hardening and Release).
+None of 86-92 is phase-planned yet; each gets its own `CLAUDE.md` §1
+plan file when it is actually next, and Phase 86 implementation
+requires its own separate, explicit authorisation — not granted by
+Phase 85's own governing prompt.
 
 Other open items requiring a human/lead decision, none currently claimed
 by a drafted plan or phase number:

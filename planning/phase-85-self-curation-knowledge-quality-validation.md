@@ -1,13 +1,10 @@
 # Phase 85: Self-Curation and Knowledge-Quality Validation — plan
 
-**Status: planned, not yet implemented (2026-11-02, "CodeCompass
-Orchestrator — Final Phase 84 Closeout and Phase 85 Planning").** This
-file is the `CLAUDE.md` §1 implementation-ready plan `planning/
-v2-roadmap.md`'s Phase 85 sketch and `decisions/0084` §§2-3 require
-before any implementation begins. **Implementation is explicitly not
-authorised by the governing prompt that produced this plan** — a
-separate, future approval is required before any code in this plan is
-written.
+**Status: done (2026-11-03, "CodeCompass Orchestrator — Final Phase 85
+Plan Amendment, Verification and Implementation").** Implemented per
+this plan, independently reviewed three times before implementation and
+audited PASS WITH NON-BLOCKING OBSERVATIONS after implementation. Retro:
+`planning/retros/phase-85-self-curation-knowledge-quality-validation.md`.
 
 Governing scope: `planning/v2-roadmap.md` "Phase 85 — Self-Curation and
 Knowledge-Quality Validation" (10-point roadmap-depth sketch);
