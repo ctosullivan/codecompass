@@ -107,13 +107,17 @@ maintainer-only, report-only-by-default script, mirroring `check_
 contracts.py`/`check_knowledge_base.py`'s own exact convention. Composes
 `knowledge_api.find_gaps()`, `knowledge_intermediate.knowledge_status()`,
 a corpus-wide `missing_evidence` scan (via `trace_evidence()`), a
-missing/malformed `test_ref`-file check, and deterministic duplicate/
-overlap detection. Never duplicates `knowledge_api.py`'s own logic, never
-calls an LLM, and makes no change to canonical knowledge. See the
-script's own module docstring for the full severity rules — notably,
-`missing_contract` is always informational: no existing decision
-currently mandates an oracle contract for any subject but
-`balance-from-spec` (`decisions/0081` §3).
+missing/malformed/unreadable `test_ref`-file check, and deterministic
+duplicate/overlap detection. Never duplicates `knowledge_api.py`'s own
+logic, never calls an LLM, and makes no change to canonical knowledge.
+See the script's own module docstring for the full severity rules —
+notably, `missing_contract` is always informational (no existing
+decision currently mandates an oracle contract for any subject but
+`balance-from-spec`, `decisions/0081` §3), and a `contradiction` finding
+is informational when its subject is a `status: superseded` record
+genuinely, credibly resolved by another record's own `supersedes` field
+(a later corrective pass; never assumed from `status: superseded`
+alone).
 
 ## What this workflow does not do
 

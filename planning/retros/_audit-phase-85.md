@@ -427,3 +427,292 @@ This phase is, as of commit `d59a6d7`, ready for the terminal
 own Status line) per `CLAUDE.md` §5's narrow exemption — provided that
 commit touches only those three named targets and nothing else, exactly
 as every prior phase in this project's history has required.
+
+---
+
+## Re-audit (2026-11-03, corrective pass — contradiction severity + unreadable-OracleResult handling, commit `95309f1`)
+
+**Scope audited:** commit `95309f1` on `main` ("fix(phase-85):
+superseded-contradiction severity + unreadable-OracleResult handling"),
+diffed against its parent `95309f1~1`. **However, the actual working
+tree at audit time is not clean relative to `95309f1`** — see Finding 2
+below, which is itself part of this verdict, not a side note.
+
+### What I independently verified myself (commands run, output seen)
+
+1. **Diff scope.** `git diff 95309f1~1 95309f1 -- src/codecompass/
+   knowledge_api.py src/codecompass/oracle.py src/codecompass/
+   knowledge_intermediate.py` — empty. `git diff 95309f1~1 95309f1 --
+   planning/knowledge/first-party-source-symbols/` — empty. `git diff
+   95309f1~1 95309f1 -- planning/ROADMAP.md planning/CONTEXT.md` —
+   empty. All three protected-scope claims confirmed exactly as the
+   dispatch prompt described. Full `git show 95309f1` reviewed; touches
+   exactly `CHANGELOG.md`, `planning/learnings/inbox.md`, the plan file,
+   the investigation log, the validator script, and its test file — no
+   scope creep.
+
+2. **Read the full script diff** (`scripts/check_self_knowledge_
+   quality.py`). Confirmed: `_resolved_by_credible_supersession()` only
+   downgrades severity when subject `status == "superseded"` AND is
+   named in another same-kind record's own `supersedes` field AND that
+   successor's own `status` is itself credible
+   (`_CREDIBLE_SUCCESSOR_STATUSES`, excluding `contradicted` for a
+   Claim). An orphaned `superseded` record or one named by a non-credible
+   successor stays blocking. `check_test_ref_files` now catches `OSError`
+   as its own distinct `except` clause (never a bare `except
+   Exception`) alongside the pre-existing `oracle.OracleSchemaError`
+   clause — confirmed by reading both clauses directly, not merely the
+   docstring's claim about them.
+
+3. **Reproduced both defects against the pre-fix source myself**,
+   rather than taking the commit message's word for it. Extracted `git
+   show 95309f1~1:scripts/check_self_knowledge_quality.py`, confirmed by
+   direct `grep` that it has only one `except Exception` (an unrelated
+   top-level guard, line 122) and only `except oracle.OracleSchemaError`
+   (line 244) — no `OSError` handling. Then **swapped the live file for
+   the pre-fix version and ran the 8 new regression tests against it**:
+   all 4 defect-specific tests
+   (`test_unreadable_result_file_is_blocking`,
+   `test_unreadable_result_file_does_not_crash_the_whole_run`,
+   `test_superseded_claim_with_genuine_successor_is_informational`,
+   `test_real_cl_adpt_008_contradiction_is_now_informational`) **failed**
+   against the pre-fix source, while the 4 fail-closed edge-case tests
+   (active-contradicted, orphaned-superseded, unresolved-successor,
+   non-superseded) **passed even pre-fix** (i.e., they test behaviour
+   the old code already got right) — this is exactly the right shape for
+   genuine regression tests (L-108) and confirms neither defect fix is
+   vacuous. Restored the post-fix file afterward (`git diff` on the file
+   came back empty, confirming a clean restore) and re-ran the full
+   28-test file: all pass.
+
+4. **Ran the full project test suite**: `.venv/bin/python -m pytest -q`
+   → `1166 passed, 2 skipped in 326.65s` — matches the dispatch prompt's
+   claim exactly.
+
+5. **Ran the real strict-corpus baseline twice**:
+   `.venv/bin/python scripts/check_self_knowledge_quality.py --strict
+   --ledgerkit-root ~/projects/ledgerkit`, both runs exit 1, byte-
+   identical output (`diff` on the two captured outputs is empty), 35
+   findings total. Counted informational vs. blocking by hand from the
+   real output: 9 informational (1 contradiction + 5 missing-contract +
+   1 missing-evidence(Claim) + 1 needs-review + 1 possible-overlap), 26
+   blocking — matches the claimed 35/26 exactly. Confirmed the 26
+   blocking findings split exactly as claimed: 9 `missing-evidence`
+   (`REQ-DOCORIGIN-001/002/003`, `REQ-HSAPI-001`-`006`) + 2
+   `stale-test-citation` + 15 `unverified-required-scope` = 26.
+
+6. **Independently re-derived the "no existing exemption covers the
+   nine Requirements" claim** by reading `src/codecompass/
+   knowledge_api.py`'s `trace_evidence()` docstring (confirms the
+   zero-citation-Requirement → `missing_evidence` rule is pre-existing,
+   unrelated design) and `decisions/0081` §3 directly — its "twelve
+   pre-existing `status: verified` records" compatibility policy is
+   textually scoped to `check_verified_status_cites_passing_oracle_
+   result` only ("applies **only** to a record whose owning slug... has
+   a `planning/contracts/<slug>/` directory"), never to this script's
+   separate `missing_evidence`/citation-existence question. Confirmed
+   the real `REQ-DOCORIGIN-001.yaml`/`REQ-HSAPI-001.yaml` have no
+   `depends_on` field. Claim holds.
+
+7. **Ran the three sibling scripts**: `check_user_docs.py --strict` (exit
+   0, "no findings"), `check_contracts.py --strict --ledgerkit-root
+   ~/projects/ledgerkit` (exit 0, informational-only findings), 
+   `check_knowledge_base.py --strict` (exit 0, informational-only
+   findings) — all unaffected, as claimed.
+
+8. **Independently reproduced the investigation-log addendum's own two
+   fixtures** (`sci-001-repro.rs`, `sci-002-repro.ts`) byte-for-byte from
+   the addendum's own text, ran them against the live, unmodified
+   `src/codecompass/source_symbols.py` myself, and got output
+   byte-identical to what the addendum records for both SCI-001 and
+   SCI-002. Confirmed via `diff` that the original `SCI-001`/`SCI-002`
+   entries (first 150 lines of the log) are byte-identical before and
+   after this commit (append-only honoured). Confirmed `git log -1
+   --format=%H -- src/codecompass/source_symbols.py` →
+   `03f8519...` (Phase 77), matching the addendum's own claim that the
+   file is unchanged since well before the original dogfood.
+
+9. **Read the `CHANGELOG.md` `[Unreleased]`/`### Fixed` entry** against
+   the real diff — accurate; no overstatement found.
+
+10. **Read the plan file's new "Corrective note (2026-11-03...)"
+    section** against everything verified above — accurate on every
+    technical claim (both defects, the fix mechanism, the 35/26 baseline,
+    the two blocking-finding categories, the honest "`--strict` is not
+    currently suitable as an unconditional CI gate" conclusion) **except
+    one**: see Finding 1.
+
+11. **Confirmed `L-114` exists in `planning/learnings/inbox.md`** as
+    filed by the corrective pass — but see Finding 2: its live `status`
+    is no longer `candidate` as the dispatch prompt describes.
+
+### Finding 1 (blocking) — the plan file's own corrective note overstates what exists: no retro addendum exists for this corrective pass
+
+The plan file's new section ends: *"Full detail: this corrective pass's
+own retro addendum and audit addendum (same filenames as the original
+phase, dated sections)."* This is **false** for the retro addendum. I
+read `planning/retros/phase-85-self-curation-knowledge-quality-
+validation.md` in full (both at `95309f1` and in the current working
+tree — identical, untouched by this commit or by the uncommitted changes
+described in Finding 2): it ends at "## Time / cost note" from the
+*original* phase closeout, with no corrective-pass section at all — no
+"## Corrective pass (2026-11-03...)" heading, no where-we-are/what-
+worked/what-didn't-work addendum of any kind. `git diff 95309f1~1
+95309f1 -- planning/retros/` touches only the investigation log, not
+this file.
+
+This is not a pedantic nitpick: this project has a clear, consistent,
+already-established precedent for exactly this situation.
+`planning/retros/phase-84-consolidated-knowledge-api.md` has a full
+`## Corrective pass (2026-10-29, decisions/0092)` section (where we are /
+what was achieved / what worked / what didn't work / candidate learnings
+filed) and a further `## Final corrective amendment (2026-11-02,
+decisions/0093)` section, each added in the same work that landed the
+corresponding fix. `planning/retros/phase-81-intermediate-knowledge-
+layer.md`'s own ROADMAP-row narrative likewise reflects each of its
+three reopenings. Phase 85's corrective pass has no analogous addendum
+anywhere in the repository, committed or uncommitted, despite its own
+plan file asserting one exists. The audit addendum half of that sentence
+is true only because *this very report* is what completes it — the
+retro addendum has no equivalent author.
+
+**Required fix:** add a `## Corrective pass (2026-11-03...)` section to
+`planning/retros/phase-85-self-curation-knowledge-quality-validation.md`
+(where we are / what was achieved / what worked / what didn't /
+candidate learnings filed, mirroring the Phase 84 precedent), or correct
+the plan file's own sentence to stop claiming one exists. Either is
+acceptable; leaving the false claim in place is not.
+
+### Finding 2 (blocking) — real, dated, substantive closeout work (a docs-reconstructor drift audit and a knowledge-curator triage of `L-114`) exists only as uncommitted working-tree changes, directly contradicting this dispatch's own framing
+
+`git status` at audit time:
+
+```
+On branch main
+Your branch is ahead of 'origin/main' by 1 commit.
+Changes not staged for commit:
+	modified:   docs/development/contributing.md
+	modified:   docs/workflows/self-curation-loop.md
+	modified:   planning/learnings/inbox.md
+	modified:   planning/retros/_drift-audit-phase-85.md
+```
+
+None of this is part of commit `95309f1` — it sits uncommitted on top of
+it. Reading the diffs: `planning/retros/_drift-audit-phase-85.md` gained
+a full, dated "## Re-audit (2026-11-03, corrective pass — commit
+`95309f1`)" section, independently scoped to this commit's own diff,
+verdict **DRIFT — 2 findings, both non-blocking (stale-by-omission,
+fixed same day)** — both findings were that `docs/development/
+contributing.md` and `docs/workflows/self-curation-loop.md`'s own
+descriptions of `check_self_knowledge_quality.py` hadn't yet been
+updated to mention the new "unreadable" `test_ref` failure mode or the
+new `contradiction`/supersession severity carve-out; both doc files'
+uncommitted diffs are exactly those additive, accurate fixes — I read
+both edits against the real code and confirm they are correct and not
+overstated. Separately, `planning/learnings/inbox.md`'s uncommitted diff
+shows a full `knowledge-curator` curation note on `L-114` dated
+2026-11-03: **`L-114`'s own `status` field has already been changed from
+`candidate` to `retained`**, with a reasoned, independently-structured
+disposition splitting its two categories and cross-referencing `L-107`
+(also updated with its own curation note).
+
+This directly contradicts two specific claims in this dispatch's own
+"What changed, and why" section: (a) that "Commit `95309f1` ... contains
+the entire corrective pass" — it does not; real, dated, substantive
+closeout work exists outside it, uncommitted; and (b) that `L-114`
+triage "is a separate dispatch, not yet done — do not treat its absence
+from `promoted.md` as a defect; it is expected to still be a candidate
+at this point in the sequence" — the triage has, in fact, already run,
+and `L-114` is no longer `status: candidate` in the live repository
+state; it is `retained`. I flag this per my own instructions ("flag
+explicitly anything in this prompt's own description that your own
+independent verification contradicts") rather than silently auditing
+against the prompt's stale description instead of the real tree.
+
+On the substance, both pieces of uncommitted work are themselves
+well-reasoned and accurate on independent reading — this is not a
+quality problem with the work itself. The problem is procedural: per
+`CLAUDE.md` §6 ("commit at logical intervals... a completed
+sub-deliverable... is its own commit") and §5's own framing of "the
+exact commit about to be marked done," there currently is no commit that
+actually contains this corrective pass's own drift-audit-fix and
+learning-triage sub-deliverables. Until they are committed, "done" has
+no stable commit to attach to, and a future reader of `git log` alone
+(without inspecting the dirty working tree) would wrongly conclude the
+drift audit found nothing to fix and `L-114` was still an untriaged
+candidate.
+
+**Required fix:** commit the four currently-uncommitted files as their
+own logical commit(s) (e.g. one commit for the docs-reconstructor fix +
+its audit-addendum record, one for the knowledge-curator triage —
+matching this project's own "one logical change per commit" convention)
+before this corrective pass is treated as closed.
+
+### Checked and confirmed correct (no finding)
+
+- `planning/ROADMAP.md` / `planning/CONTEXT.md` genuinely untouched by
+  `95309f1` itself — correct, matches the narrow in-commit scope. Note
+  for the record: Phase 85's `ROADMAP.md` row (line 188) still reads
+  exactly as it did at the original closeout (`311b5dd`) and does not
+  yet narrate this corrective pass at all — unlike Phase 81's and Phase
+  84's own rows, which *do* carry full corrective-pass narration inline.
+  Per `CLAUDE.md` §5's own narrow exemption, that narration is the
+  terminal `roadmap-context-curator` reconciliation commit's own job,
+  not this corrective-fix commit's — so this is **not** a finding on its
+  own, but it is a real, outstanding step still to come (and it should
+  also fold in the `L-114`/`L-107` "Known standing gaps" draft text the
+  knowledge-curator's own uncommitted curation note in `inbox.md`
+  already proposes for `CONTEXT.md`).
+- Branch is 1 commit ahead of `origin/main`, unpushed — correct per
+  `CLAUDE.md` §6 (push is gated on a passing DoD audit, which this
+  report does not yet grant).
+- No protected-file drift: `CLAUDE.md` itself untouched; no edit to any
+  past ADR's original content (`decisions/0081` only read, never
+  written, by this corrective pass).
+- Changed-file list for `95309f1` matches the plan's own described
+  scope exactly — no scope creep.
+
+### Final verdict: FAIL
+
+Everything that is actually commit `95309f1`'s own content — both
+defect fixes, all 8 new regression tests (confirmed to fail pre-fix and
+pass post-fix, independently reproduced, not merely trusted), the
+determinism and exact 35/26 strict-baseline reconciliation, the two
+genuinely pre-existing (not validator-defect) blocking-finding
+categories, the sibling-script non-interference, the protected-file and
+dogfood-evidence non-interference, the investigation-log reproducibility
+addendum (independently re-run byte-for-byte), and the `CHANGELOG.md`
+entry — is correct, accurate, and exactly as described. If the audit
+were scoped to that commit's code and tests alone, it would be a clean
+**PASS**.
+
+The verdict is **FAIL**, not on that work, but on two concrete, narrow,
+fixable closeout-completeness gaps found during independent
+verification: (1) the plan file's own corrective note asserts a retro
+addendum exists that does not; (2) real, dated closeout work (a drift-
+audit fix and a learnings triage) that the dispatch prompt itself
+described as not-yet-done has, in fact, already run, but sits uncommitted
+rather than landed — meaning there is currently no single commit that
+represents this corrective pass as actually finished and closed out.
+
+**What must be fixed before re-audit:**
+
+1. Add a `## Corrective pass (2026-11-03...)` addendum to
+   `planning/retros/phase-85-self-curation-knowledge-quality-
+   validation.md` (mirroring the Phase 84/81 precedent: where we are /
+   what was achieved / what worked / what didn't work / candidate
+   learnings filed) — or correct the plan file's own sentence that
+   currently asserts this addendum already exists.
+2. Commit the four currently-uncommitted files (`docs/development/
+   contributing.md`, `docs/workflows/self-curation-loop.md`,
+   `planning/learnings/inbox.md`, `planning/retros/_drift-audit-
+   phase-85.md`) as their own logical commit(s), per `CLAUDE.md` §6.
+3. Once 1 and 2 land, a fresh `release-phase-auditor` pass is required
+   (this one is voided the moment any further commit touches audited
+   scope, per `CLAUDE.md` §5) before any terminal `roadmap-context-
+   curator` reconciliation commit narrates this corrective pass in
+   `planning/ROADMAP.md`/`planning/CONTEXT.md`.
+
+No finding here concerns the production code, the regression tests, or
+the strict-baseline reconciliation itself — all independently
+re-verified correct. Re-audit should be quick once 1-2 above land.

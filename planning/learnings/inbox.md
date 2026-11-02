@@ -8,6 +8,37 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-115 — an agent with both `Bash` and `Write` that materializes a prior git revision into the live tracked working tree for its own before/after comparison must restore it before finishing, or use a disposable copy instead
+
+- **origin:** Phase 85 corrective pass (CodeCompass Orchestrator —
+  Phase 85 Final Corrective Closeout), `release-phase-auditor`
+  re-audit dispatch, independent verification step
+- **date:** 2026-11-03
+- **project_revision:** 95309f1
+- **observation:** Dispatched to independently reproduce two fixed
+  defects, the `release-phase-auditor` agent (tools: Read, Grep, Glob,
+  **Bash**, **Write**) materialized the pre-fix source into the live,
+  tracked working-tree path (`git show 95309f1~1:scripts/check_self_
+  knowledge_quality.py` written over the real file, or an equivalent
+  checkout) to run the regression tests against it, confirmed the
+  expected pre-fix failures, then returned its report **without
+  restoring the file** to the post-fix, committed state. The lead only
+  discovered this via an unrelated harness notice ("file changed on
+  disk since you last read it") — the auditor's own otherwise careful,
+  independently-reproduced report never flagged that it had left the
+  tracked file in a different state than it found it.
+- **evidence:** `git diff scripts/check_self_knowledge_quality.py`
+  (immediately after the auditor's dispatch returned) was byte-for-byte
+  identical to `git show 95309f1~1:scripts/check_self_knowledge_
+  quality.py` — i.e. the working tree had reverted to the pre-fix
+  commit's exact content with no corresponding commit. Fixed by the
+  lead via `git checkout -- scripts/check_self_knowledge_quality.py`
+  and re-running the test suite (28/28 passed) before proceeding.
+- **classification:** workflow
+- **status:** candidate
+- **recurrence:** first occurrence
+- **promoted_to:**
+
 ### L-114 — the self-knowledge-quality validator's real-corpus baseline now carries two distinct, genuine, pre-existing knowledge-debt categories that `--strict` cannot pass until resolved on their own terms
 
 - **origin:** Phase 85 corrective pass (CodeCompass Orchestrator — Phase
@@ -66,8 +97,10 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   001.yaml` and `planning/knowledge/haskell-api-surface-extraction/REQ-
   HSAPI-001.yaml` (no `depends_on` field present in either).
 - **classification:** open-work
-- **status:** candidate
-- **recurrence:** first occurrence
+- **status:** retained
+- **recurrence:** first occurrence (category 2 — see curation note — is
+  the same underlying condition `L-107` already tracks, now confirmed
+  to additionally block `check_self_knowledge_quality.py --strict`)
 - **promoted_to:**
 
   Suggested resolution criterion, for whoever triages/owns this next
@@ -85,6 +118,84 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   three required scopes and `EV-BFS-002`/`EV-BFS-003` are updated to
   cite the live-reconfirmed passing results `check_self_knowledge_
   quality.py`'s own `stale_test_citation` finding already names.
+- **curation note (2026-11-03, knowledge-curator):** Independently
+  verified, not merely accepted on the filer's own framing:
+  - `src/codecompass/knowledge_api.py` lines 1136-1161
+    (`trace_evidence()`'s own docstring) confirms the "zero-citation
+    Requirement → `missing_evidence`" rule is pre-existing, accepted
+    design from `decisions/0092`/`0093` (Phase 84's final corrective
+    amendment) — nothing this corrective pass invented.
+  - `decisions/0081` §3 ("Compatibility policy for the twelve
+    pre-existing `status: verified` records") confirmed, by direct
+    read, scoped *only* to
+    `check_verified_status_cites_passing_oracle_result` — "applies
+    **only** to a record whose owning slug... has a
+    `planning/contracts/<slug>/` directory" — a statement about the
+    *oracle-contract-citation* check specifically, never about
+    `trace_evidence`'s separate, narrower `missing_evidence` question.
+    The entry's claim that no ADR exempts these nine from
+    `missing_evidence` is accurate as filed.
+  - `planning/knowledge/haskell-api-surface-extraction/REQ-HSAPI-001.yaml`
+    read directly: fields are exactly `id`/`kind`/`statement`/`example`/
+    `decision`/`status` — no `depends_on`, confirming the claim.
+
+  **Disposition, split by category** (the entry's own title already
+  names these as two distinct conditions; curating them together risks
+  conflating a genuinely new finding with one already on file):
+
+  - **Category 1 (missing evidence, nine Requirements)** is genuinely
+    new — no existing `inbox.md` entry or `promoted.md` line covers it
+    (checked by grepping both for `REQ-DOCORIGIN`/`REQ-HSAPI`; the one
+    other hit, `L-024`, is an unrelated context-packet-tracing finding
+    from Phase 54c). `classification: open-work` is correct — the
+    resolution genuinely forks between a context-researcher evidence
+    dispatch and a new ADR, and nothing today decides which. Per
+    `learning-lifecycle.md` §4, "unresolved current work" promotes to
+    `planning/CONTEXT.md`'s "Known standing gaps", finalised by the
+    `roadmap-context-curator` — not written here (outside this agent's
+    write boundary). **Status set to `retained`**, not `promoted`
+    (nothing has landed yet), with the suggested resolution criterion
+    above left intact as the forcing condition for next time.
+  - **Category 2 (`balance-from-spec`'s `unverified_required_scope`
+    (15)/`stale_test_citation` (2))** is **the same underlying
+    condition `L-107` already tracks** (`EV-BFS-002`/`EV-BFS-003` citing
+    the stale `20261021T...` results instead of the fresher, uncited
+    `20261028T...` `PASS` results for the same `check_id`s — the 15
+    `unverified_required_scope` findings are simply that same
+    uncited-fresh-result condition propagating through every Claim/scope
+    `derive_epistemic_profile` walks, not a separate root cause).
+    **Not** folded into this entry's own `status` (this entry's
+    category 1 is not a duplicate of anything and must keep its own
+    id) — instead, cross-referenced into `L-107` directly (see that
+    entry's new curation note below) as new confirming evidence: Phase
+    85 shipped the corpus-wide detector `L-107` itself anticipated but
+    did **not** re-cite `EV-BFS-002`/`EV-BFS-003` (`L-107`'s own "moves
+    forward when" condition (ii) did not trigger), and this same,
+    single, long-standing citation gap now also surfaces as 17 blocking
+    findings under `check_self_knowledge_quality.py --strict` — raising
+    its real-world stakes without yet meeting `L-107`'s own forcing
+    condition (i) (a *second* contract-extension event reproducing the
+    gap), so `L-107` itself stays `retained`, not promoted to an ADR.
+
+  No new `planning/context-gaps/` entry: this is knowledge-base
+  citation-completeness debt (a graph/record whose own citation is
+  absent), not "a relationship the graph should hold but mechanical
+  detection can't produce" — the existing `context-gaps/` convention
+  genuinely doesn't fit, confirmed by re-reading
+  `planning/context-gaps/README.md`'s own definition before deciding
+  not to use it.
+
+  **No `promoted.md` line yet** — nothing has landed in a test/ADR/doc;
+  both categories remain open, real, outstanding project work. When
+  `planning/CONTEXT.md` is next updated (`CLAUDE.md` §4, every session),
+  its "Known standing gaps" section should gain an item for category 1,
+  e.g.: *"`L-114` (retained): nine pre-existing `status: verified`
+  Requirements (`REQ-DOCORIGIN-001/002/003`, `REQ-HSAPI-001`-`006`) have
+  no evidence citation and are not covered by `decisions/0081` §3's own,
+  narrower oracle-contract exemption — `check_self_knowledge_quality.py
+  --strict` now fails on this. Resolve via a `context-researcher`
+  evidence dispatch or a new, explicitly-named ADR exemption."* — a
+  draft only; the `roadmap-context-curator`/lead applies it.
 
 ### L-113 — a new validator/checker's severity design must be run against the real, pre-existing corpus before its own test suite is finalized — an abstract check against the approved plan is not sufficient on its own
 
@@ -901,6 +1012,37 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   no re-citation has happened. Filed the corrective pass's own two new
   findings separately as `L-108`/`L-109` (see below) rather than folding
   either into this entry.
+- **curation note (2026-11-03, knowledge-curator, cross-referenced from
+  `L-114`):** `L-114` (filed during Phase 85's narrow corrective pass,
+  2026-11-03) independently confirms this entry's own gap is still
+  completely unresolved post-Phase-85: `EV-BFS-002`/`EV-BFS-003` still
+  cite the stale `20261021T...` results, not the fresher,
+  already-generated `20261028T...` `PASS` results for the same
+  `check_id`s. This settles this entry's own "moves forward when"
+  condition (ii) ("Phase 85's self-curation work acts on this specific
+  finding directly") as **not triggered** — Phase 85 built and shipped
+  the corpus-wide validator (`scripts/check_self_knowledge_quality.py`)
+  that *detects* this exact condition, but did not re-cite the Evidence
+  records, so this entry's own gap remains open by its own original
+  terms. New, sharper fact worth recording: that same single root cause
+  (two uncited fresh results) now also surfaces as 15 downstream
+  `unverified_required_scope` findings (one per Claim/required-scope
+  pair `derive_epistemic_profile` walks) plus the 2 `stale_test_citation`
+  findings already named here — 17 of the 26 total blocking findings
+  `check_self_knowledge_quality.py --strict` reports against the real
+  corpus today trace to this one entry's own gap. This raises the
+  real-world cost of leaving it open (it now blocks a validator intended
+  as a CI-shaped gate, not merely a detectable-but-silent condition) but
+  does **not** by itself satisfy condition (i) (a *second* real
+  oracle-contract-extension event reproducing the gap) — still only one
+  extension event (Phase 83) has ever happened. **Status stays
+  `retained`** — not yet promoted to an ADR — but the resolution is now
+  plausibly urgent enough to act on directly via the normal `knowledge
+  apply` review path (re-citing `EV-BFS-002`/`EV-BFS-003`'s own
+  `test_ref` fields) the next time anyone is in this corpus, independent
+  of whether condition (i) or (ii) ever formally triggers. See `L-114`
+  for the independent corpus-wide confirmation and the full current
+  blocking-finding count.
 
 ---
 

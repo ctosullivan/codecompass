@@ -200,3 +200,98 @@ tried), two `knowledge-curator` adjudication dispatches (one fresh, by
 the mistake noted above, functionally equivalent in outcome), and one
 real design fix discovered by running the new validator against the
 real corpus before finalising its test suite.
+
+## Corrective pass (2026-11-03, "CodeCompass Orchestrator — Phase 85 Final Corrective Closeout")
+
+**Where we are.** A separate, later governing prompt authorised a
+narrow corrective pass on this already-`done` phase's own validator
+script, `scripts/check_self_knowledge_quality.py`, after naming two
+suspected defects and an unreconciled real-corpus `--strict` baseline.
+This pass does not reopen Phase 85's own scope, architecture, dogfood
+evidence, or `done` status — only the validator's severity/error-
+handling logic and this phase's own as-built records.
+
+**What was achieved.** Both suspected defects confirmed real and fixed
+at their root, each with a failing regression test written and
+confirmed to fail against the pre-fix source before the fix landed
+(`CLAUDE.md` §1 / `L-108`'s own established discipline): (1) a
+`contradiction` Gap on a genuinely, credibly `status: superseded` Claim
+(the real `CL-ADPT-008`/`CL-ADPT-010` pair) was downgraded to
+informational, reusing `knowledge_intermediate.derive_provenance_label`'s
+own existing `"superseded" -> "HISTORICAL"` classification rather than
+inventing a new one, with an explicit fail-closed guard against
+orphaned or not-credibly-resolved `superseded` records; (2) an `OSError`
+reading an existing `test_ref` file (distinct from `oracle.
+OracleSchemaError`) previously propagated uncaught and crashed the
+whole validator run — now a new, distinct, always-blocking `self-
+knowledge-quality-unreadable-test-ref-file` finding. 8 new regression
+tests (20 → 28). The real-corpus `--strict` baseline was reconciled,
+not merely re-run: before, 35 findings/27 blocking; after, 35/26 (only
+`CL-ADPT-008` moved, every other classification unchanged), confirmed
+deterministic across two consecutive runs. The 26 remaining blocking
+findings were independently classified into exactly two genuine,
+pre-existing knowledge-debt categories — neither a validator defect —
+and filed as `L-114` for `knowledge-curator` triage rather than
+suppressed. `--strict` is documented as **not currently suitable** as
+an unconditional CI gate against this corpus until one of those two
+categories is substantively resolved. A reproducibility addendum
+(fixture + command + independently re-verified byte-for-byte output)
+was appended to the investigation log for `SCI-001`/`SCI-002`,
+append-only, without editing the original entries or creating any new
+canonical knowledge record.
+
+**What worked.** Running the corrected validator against the real
+corpus (not only the fixture-based regression tests) before considering
+the work finished caught that the two fixes changed the finding count
+by exactly one, as predicted — confirming the fix was narrowly scoped
+and didn't silently alter any other classification, directly continuing
+`L-113`'s own established discipline from the original phase.
+Independent, direct reading of `decisions/0081` §3's own text (rather
+than trusting a prior summary of it) correctly distinguished "exempted
+from oracle-contract citation" from "exempted from this separate
+evidence-citation question" — the two are easy to conflate and the
+distinction is exactly why `L-114`'s own category 1 is genuinely open
+work, not an already-decided non-issue.
+
+**What didn't work / near-misses.** The `release-phase-auditor` dispatch
+for this corrective pass's own re-audit, while reproducing the pre-fix
+behaviour for its own independent verification (checking out `git show
+95309f1~1:scripts/check_self_knowledge_quality.py` to confirm the
+regression tests genuinely fail against it), left the live working-tree
+file overwritten with that pre-fix content rather than restoring the
+committed version afterward — discovered only because the harness
+surfaced a "file changed on disk since you last read it" notice to the
+lead, not because the auditor's own report flagged it. The lead
+restored the file from `HEAD` (`git checkout -- scripts/check_self_
+knowledge_quality.py`) and re-confirmed all 28 tests pass before
+proceeding. No incorrect result reached any canonical record — the
+auditor's own FAIL verdict was itself issued correctly, against the
+*committed* state, which was never affected — but this is exactly the
+kind of silent, uncommitted working-tree mutation `CLAUDE.md`'s own git
+safety posture exists to catch, and very easily could have gone
+unnoticed had the lead not independently re-run the test suite before
+the terminal commit. Filed as `L-115` for `knowledge-curator` triage:
+an agent with both `Bash` and `Write` that materializes a prior git
+revision's content into the live working tree for its own
+before/after comparison must restore the working tree to its prior
+state before finishing, or use a disposable copy/worktree instead of
+the tracked path in the first place.
+
+The first `release-phase-auditor` re-audit pass itself correctly
+returned **FAIL** — not for any defect in the corrective pass's own
+code or tests, but because (a) this retro's own corrective-pass
+addendum (this section) did not yet exist despite the plan file's own
+new corrective note already asserting one did, and (b) real,
+independently-accurate closeout work (the docs-drift fixes, the
+`L-114`/`L-107` triage) had already been produced but not yet
+committed, so "the exact commit about to be marked done" did not yet
+exist. Both are now fixed in the commit that includes this section.
+
+## Candidate learnings filed (corrective pass)
+
+`L-114` (open-work, `retained`: two genuine knowledge-debt categories
+the reconciled `--strict` baseline still carries, each with its own
+resolution criterion) and `L-115` (process: an agent materializing a
+prior git revision into the live working tree for its own
+before/after comparison must restore it before finishing) — both filed
+in `planning/learnings/inbox.md` for `knowledge-curator` triage.

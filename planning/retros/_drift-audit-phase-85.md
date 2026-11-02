@@ -119,3 +119,67 @@ alternative ("or re-run docs-reconstructor fresh if reconstructing the
 record isn't preferred") — reconstruction was chosen since the original
 pass's full method and findings were still available in full, not
 summarized or lossy.
+
+## Re-audit (2026-11-03, corrective pass — commit `95309f1`)
+
+**Scope:** commit `95309f1` only ("fix(phase-85): superseded-contradiction
+severity + unreadable-OracleResult handling"), diffed against
+`95309f1~1`. Checked `README.md`, `docs/development/contributing.md`,
+`docs/development/testing.md`, `docs/concepts/knowledge-model.md`,
+`docs/workflows/self-curation-loop.md`, `docs/decisions.md`, `ai-docs/
+README.md`; confirmed `architecture/` does not exist as a directory in
+this checkout, so nothing to check there. Did not re-audit any other
+part of Phase 85's original documentation (already passed) and did not
+re-verify Phase 85's original severity-rule documentation beyond what
+this commit's diff touches.
+
+**Method:** independent `docs-reconstructor` dispatch, read-only, per-
+phase mode, reported inline (no file of its own) rather than via a
+separate dispatch-written record — reconstructed here by the lead
+verbatim from that dispatch's own full returned report, same convention
+as this file's own earlier reconstruction above.
+
+### Verdict: DRIFT — 2 findings, both non-blocking (stale-by-omission, fixed same day)
+
+**Finding 1 (non-blocking, fixed)** — `docs/development/contributing.md`,
+"Maintainer-only tooling" entry for `scripts/check_self_knowledge_
+quality.py`. The entry's existing prose ("...a check for an Evidence
+record's own `test_ref` pointing at a missing/malformed oracle-result
+file..."; "`missing_contract` is always informational...") did not
+mention two things this commit added: a third `test_ref` failure mode
+("unreadable", any `OSError`, reported as a new, distinct, always-
+blocking `self-knowledge-quality-unreadable-test-ref-file` finding), and
+a second severity carve-out (a `contradiction` finding is now
+informational for a genuinely, credibly resolved `status: superseded`
+subject). Neither existing sentence was made **false** — "missing/
+malformed" was never claimed exhaustive, and "`missing_contract` is
+always informational" remains true — but the paragraph no longer fully
+described the script's current behaviour. **Fixed** (this session,
+same day): updated the entry to mention both the "unreadable" `test_ref`
+failure mode and the superseded-and-resolved `contradiction` carve-out.
+
+**Finding 2 (non-blocking, fixed)** — `docs/workflows/self-curation-
+loop.md`, "On-demand knowledge-quality validation" section. Same two
+omissions ("a missing/malformed `test_ref`-file check"; a severity-rules
+callout naming only `missing_contract` as "notably" informational, with
+no mention of the new `contradiction` carve-out). The section already
+says "See the script's own module docstring for the full severity
+rules" and uses "notably" rather than "only"/"exclusively", so nothing
+here became false, just incomplete relative to the now-updated module
+docstring it points to. **Fixed** (this session, same day): updated to
+mention the "unreadable" case and the new `contradiction` carve-out.
+
+### Checked, no drift found
+
+- `docs/development/testing.md` — names `tests/test_check_self_
+  knowledge_quality.py` but makes no claim about its test count (20 vs
+  28); confirmed via repo-wide grep. Not stale.
+- `docs/concepts/knowledge-model.md` — no claim about a fixed/complete
+  severity-rule set for `find_gaps()`-composed checks.
+- No doc anywhere states or implies "a `status: superseded` record's
+  contradiction is always reported as blocking" — repo-wide grep for
+  "superseded" found only unrelated ADR-supersession content.
+- No doc anywhere enumerates this script's finding-rule names as a
+  catalog/count, so the new `self-knowledge-quality-unreadable-test-
+  ref-file` rule makes no existing catalog incomplete.
+- `README.md`/`ai-docs/README.md` do not mention this script at all.
