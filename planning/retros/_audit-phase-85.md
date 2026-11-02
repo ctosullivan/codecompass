@@ -905,3 +905,123 @@ terminal `roadmap-context-curator` reconciliation step — provided that
 commit touches only the targets `CLAUDE.md` §5's exemption names, and
 provided observation 2 above is committed first or folded into that same
 step.
+
+---
+
+## Re-audit (2026-11-03, third pass — `L-115` promotion commit `e8398a2`, since it landed after my second pass)
+
+**Scope audited:** commit `e8398a2` ("chore(phase-85): promote L-115 --
+restore a materialized git revision before returning a report"), which
+landed concurrently with/after my second pass and touches audited
+scope (per `CLAUDE.md` §5's voiding rule) — hence this third, focused
+pass rather than treating my prior PASS as still current. No production
+code in this commit; confined to doc/process artifacts.
+
+### 1. `.claude/agents/release-phase-auditor.md` — new "Hard rules" bullet
+
+Read in full (`git show e8398a2 -- .claude/agents/release-phase-
+auditor.md`). The bullet's prescription — restore a materialized git
+revision via `git checkout -- <path>` and confirm `git diff --quiet --
+<path>` before returning a report, prefer a disposable scratch path
+over the live tracked file when possible — is sound, and matches
+exactly what I actually did in my own first-pass transcript (copy
+backup over tracked path → run tests → copy backup back → confirm via
+`git diff --stat` empty). I would independently recommend this rule
+regardless of this incident's own unresolved causal attribution.
+
+On accuracy of the incident description itself: the bullet states "a
+re-audit dispatch materialized a pre-fix revision into the live tracked
+path... then returned its report without restoring it — the lead caught
+it only via an unrelated harness notice, never via this agent's own
+report." This repeats the same framing I already flagged a caveat
+against in my second pass (section 4): my own preserved tool-call
+sequence shows an explicit restore-and-verify step (empty `git diff
+--stat`) before I returned my report, which this sentence's "without
+restoring it" doesn't account for. I am not in a position to resolve
+this discrepancy with certainty — I have no visibility into what, if
+anything, happened to the file in the window between my dispatch ending
+and the lead's own check — and the lead's own harness-level evidence
+(a `git diff` matching `95309f1~1` exactly) is real and specific. I
+flag this the same way as before: not disputing the observed symptom,
+but noting the bullet's causal narrative ("returned its report without
+restoring it") is not fully reconciled with my own first-pass evidence
+of having restored and verified the file. This does **not** make the
+new rule wrong or unnecessary — confirming a clean diff immediately
+before returning a report is good practice regardless of why this
+particular incident's timeline is ambiguous — so I am not treating this
+as a blocking inaccuracy, only as the same open attribution question
+carried forward a second time, now worth the `knowledge-curator`'s own
+explicit note (or a future session's log, if one exists) rather than
+further guessing by either of us.
+
+### 2. `planning/learnings/promoted.md` / `inbox.md` — L-115 status flip
+
+`promoted.md`'s new line: `L-115 | 2026-11-03 | workflow | .claude/
+agents/release-phase-auditor.md "Hard rules" (...) + planning/v1-
+redefinition/agent-led-development.md §1 (general cross-agent version)
+@ (this corrective pass's own closeout commit)`. Cross-checked against
+the real diff: both named targets are in fact edited in this same
+commit (`e8398a2`), with text matching `inbox.md`'s own drafted
+promotion targets byte-for-byte (compared side by side — identical).
+`inbox.md`'s `L-115` entry: `status` flipped `candidate` → `promoted`,
+`promoted_to` filled in, with a full curation note. Independently
+re-checked two of its own sub-claims rather than trusting them: (a)
+"9 of 13 agent briefs hold both `Bash` and `Write`" — I grepped
+`tools:` across all 13 `.claude/agents/*.md` files myself and counted
+exactly 9 (`context-evaluator`, `context-health-planner`, `context-
+researcher`, `docs-maintainer`, `docs-reconstructor`, `domain-skeptic`,
+`reference-project-tester`, `release-phase-auditor`, `roadmap-context-
+curator`) — matches exactly; (b) the "first occurrence" recurrence
+check's own reasoning (that `L-060`/`L-086`/`L-108`/`L-111`/`L-113` are
+the other `release-phase-auditor`-related entries and none overlaps
+this failure mode) — I don't have independent grounds to dispute this
+without re-reading all five in full, but the distinction drawn (a
+different failure mode in each) is consistent with my own knowledge of
+those entries from reading this same inbox file across my prior passes.
+The `status: promoted` claim is accurate: both artifact edits are real,
+committed, and match the entry's own `promoted_to` text.
+
+### 3. Retro's `L-112`-recurrence paragraph
+
+Read in full in the committed state — identical to the uncommitted
+version I had already read and flagged as "accurate as far as I can
+check it" in my second pass (now simply committed, no change in
+content). On the specific factual claim the coordinator asked me to
+confirm — "a fresh `Agent` dispatch for `knowledge-curator`, not a
+`SendMessage` resume, caught immediately" — **I cannot independently
+verify this against anything in the repository itself**: it is a
+first-person report of the lead's own orchestration tool-call choices
+(which `Agent`/`SendMessage` invocation was actually made), which
+leaves no artifact I can inspect from inside a read-only, file-system-
+scoped dispatch. What I can confirm: it is internally consistent with
+`L-112`'s own original lesson (quoted accurately — I compared the
+paragraph's quoted text against `L-112`'s actual entry in `inbox.md`,
+and the quote "resume a dispatched agent via `SendMessage`, never a
+fresh `Agent` call" is a faithful paraphrase of that entry's substance,
+not a distortion), it is self-critical rather than self-serving (an
+agent-led development process disclosing its own repeated mistake is
+not the shape of a fabricated or softened account), and it draws a
+measured, proportionate conclusion (flagging `L-112` for a possible
+sharper trigger, not overclaiming a new rule is already needed). I have
+no basis to dispute it, but I'm explicit that this is "no contradicting
+evidence found," not "independently verified true," since the
+underlying fact is outside what a file-system-scoped audit can observe.
+
+### Verdict: PASS WITH NON-BLOCKING OBSERVATIONS (unchanged from my second pass)
+
+Nothing in `e8398a2` changes my prior verdict. The new Hard Rules bullet
+and `agent-led-development.md` §1 addition are sound, accurately scoped
+(9/13 briefs independently confirmed), and correctly promoted per this
+project's own `promoted.md`-line convention; the retro's `L-112`
+paragraph is honest and internally consistent, with the one caveat above
+(a first-person process claim I cannot verify from inside this role,
+not a finding against it). The one substantive open thread — exactly
+where, in time, the `scripts/check_self_knowledge_quality.py`
+reversion occurred, given my own first-pass evidence of having restored
+and verified it — is carried forward again, unresolved, as a
+non-blocking observation for the `knowledge-curator`'s own record,
+not as a reason to withhold this PASS.
+
+This corrective pass remains ready for the terminal `roadmap-context-
+curator` reconciliation step, on the same terms stated at the end of my
+second pass above.
