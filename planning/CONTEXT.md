@@ -7,6 +7,45 @@ session-resumption, not a project history.
 
 ## Current phase
 
+**Phase 86 — Knowledge-Placement and Code-Quality Review — is
+`planned`, not started (2026-11-03)**. A full, implementation-ready
+plan exists at `planning/phase-86-knowledge-placement-code-quality-
+review.md`, independently reviewed twice before being accepted (one
+material fix — §5's policy table had silently corrected a `.md`→`.yaml`
+typo inherited from `decisions/0085` §4 without disclosing it, now
+disclosed explicitly; one substantive design revision — the semantic/
+editorial reviewer capability was redesigned from a proposed 14th
+standing specialist agent into an ad-hoc `general-purpose` dispatch
+carrying a committed workflow-doc brief, `docs/workflows/knowledge-
+placement-review.md`, avoiding roster growth entirely, with promotion
+to a true roster entry named as a future, evidence-gated escalation
+path rather than a pre-commitment; two minor phase-number
+misattributions and one citation-section misattribution also fixed).
+The plan reproduces `decisions/0085` §4's own eight-category Knowledge
+Placement Policy table, defines a new mechanical+behavioural validator
+script (`scripts/check_knowledge_placement.py`) reusing Phase 84's
+read-only API and Phase 85's own `Finding`/CLI conventions unchanged,
+and designs a real dogfood against a bounded three-file subsystem
+(`src/codecompass/source_resolution.py`, `oracle.py`, `staleness.py`) —
+grounded in a real, independently confirmed, previously-unflagged
+placement defect found during planning itself: `source_resolution.py`'s
+own module docstring cites `decisions/0019` (superseded by `decisions/
+0035` per `decisions/0061`) as if it still justified the module's
+current purpose, when the real current purpose/caller
+(`sync.py`'s `sync_vendor` path) never cites it at all. **Implementation
+is not authorised by this planning task** — this governing prompt was
+explicitly planning-only.
+
+Separately, this same task re-verified Phase 85's own outstanding
+`--strict` baseline (35 findings, 26 blocking, 9 informational —
+unchanged since the Phase 85 corrective pass) and confirmed its
+existing disposition (`L-114` retained; `L-107` retained, cross-
+referenced) already satisfies every retention/traceability requirement
+— **no backlog or learning-record changes were made**, and neither
+category was found to be Phase-86-relevant (both are evidence-
+completeness/oracle-verification-currency concerns, not placement
+concerns).
+
 **Phase 85 — Self-Curation and Knowledge-Quality Validation — is `done`
 (2026-11-03)**. The plan was amended twice and independently reviewed
 three times before implementation began (one material gap fixed each
@@ -790,19 +829,18 @@ genuine knowledge-debt categories the reconciled `--strict` baseline
 still carries are tracked as standing gaps (`L-114`, `L-107`, above),
 not phase work.
 
-**Phase 86 (Knowledge-Placement and Code-Quality Review) is not started
-and not phase-planned.** Sequence from here: 86 (Knowledge-Placement and
-Code-Quality Review, formal policy/enforcement classes) → 87
-(Documentation Schema and Knowledge-Compiled Documentation, minimum
-suite specified) → 88 (Agent Integration and MCP, split from the old
-merged phase) → 89 (Incremental Knowledge and Documentation
-Reconciliation, split from the old merged phase, independent of MCP) →
-90 (Comparative Development Trials, methodology strengthened) → 91
-(External Validation and Adoption) → 92 (v2.0 Hardening and Release).
-None of 86-92 is phase-planned yet; each gets its own `CLAUDE.md` §1
-plan file when it is actually next, and Phase 86 implementation
-requires its own separate, explicit authorisation — not granted by
-Phase 85's own governing prompt.
+**Phase 86 (Knowledge-Placement and Code-Quality Review) is `planned`,
+not started** — see "Current phase" above. Its plan is implementation-
+ready and independently reviewed, but **implementation itself requires
+its own separate, explicit authorisation**, not granted by this
+planning task. Sequence from here: 87 (Documentation Schema and
+Knowledge-Compiled Documentation, minimum suite specified) → 88 (Agent
+Integration and MCP, split from the old merged phase) → 89 (Incremental
+Knowledge and Documentation Reconciliation, split from the old merged
+phase, independent of MCP) → 90 (Comparative Development Trials,
+methodology strengthened) → 91 (External Validation and Adoption) → 92
+(v2.0 Hardening and Release). None of 87-92 is phase-planned yet; each
+gets its own `CLAUDE.md` §1 plan file when it is actually next.
 
 Other open items requiring a human/lead decision, none currently claimed
 by a drafted plan or phase number:
