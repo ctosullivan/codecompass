@@ -66,7 +66,10 @@ citable mechanical check backs it.
 
 - `scripts/check_knowledge_placement.py` — two mechanical checks
   (`decision-citation-exists`, blocking; `decision-citation-superseded`,
-  informational) plus an always-blocking parse-failure diagnostic. See
+  informational) plus two always-blocking diagnostics about this
+  check's own ability to examine its input, never about the source/ADR
+  content itself: one for a source file that cannot be read or parsed,
+  one for a `decisions/*.md` ADR that cannot be read or decoded. See
   the script's own module docstring for the exact extraction method and
   the real-corpus examples its design was verified against.
 - `docs/workflows/knowledge-placement-review.md` — the ad-hoc
