@@ -12,10 +12,74 @@ Knowledge Placement Policy table and the three named enforcement
 classes — the authoritative, later-dated source this plan's own §4
 reproduces verbatim rather than re-deriving).
 
-**Amended a third time (2026-11-03, "CodeCompass Orchestrator — Amend
-and Verify Phase 86 Plan")**, correcting four independently identified
-design issues in the plan committed at `2bd4fcc`, sections edited in
-place rather than appended around:
+**Amended a fourth time (2026-11-03, "CodeCompass Orchestrator — Phase
+86 Final Amendment, Verification and Implementation")**, correcting
+four further independently identified design issues in the plan
+committed at `9afabcc`, sections edited in place:
+
+A. **`decision-citation-status-mismatch` deferred (mandatory)** — the
+   real `decisions/0019`/`0061` relationship itself proves the risk:
+   `0019`'s own `## Status` field has stood `Accepted`, unedited, since
+   it was written (`CLAUDE.md` §2's append-only rule), while `0061`
+   independently records that `0019` is, in effect, dead — the
+   project's own real corpus already contains the exact "recorded
+   status" vs. "effective status" conflict this check could not have
+   told apart, which would have made a source comment candidly noting
+   `decisions/0019 (historical rationale)` look like a literal status
+   assertion contradicting `Accepted`, and blocked on it. Deferred,
+   mirroring the oracle-contradiction check's own prior deferral: no
+   new mandatory annotation convention is invented merely to justify
+   shipping it. See §6.A, §7, §10, §11, §12, §13.
+B. **Supersession-detection coverage widened, and its real limits
+   disclosed** — the previous round's two-location scope (an ADR's own
+   title line, `## Status` section) missed this project's own
+   dominant real pattern: `decisions/0031`, `0032`, `0033`, `0034`,
+   `0070`, `0078`, `0043` all record supersession in `## Consequences`
+   or `## Decision`, not `## Status`. Widened to four sections (title,
+   `## Status`, `## Decision`, `## Consequences`), with two patterns
+   (passive "`decisions/NNNN` is/are superseded [by `decisions/MMMM`]";
+   active "supersedes `decisions/NNNN`"), explicitly excluding
+   `## Context`/`## Alternatives considered` (confirmed, from a real
+   example — `decisions/0058`'s own Context section — to be where
+   exploratory, not-yet-decided discussion legitimately lives) and
+   explicitly excluding "partially superseded" language (a real,
+   genuine qualifier this project uses, `decisions/0033`, that is
+   deliberately **not** matched — a scoped, partial claim is not an
+   unambiguous "treat the whole citation as dead" signal). Verified
+   against the real `decisions/0027` text, "`decisions/0023` is **not**
+   superseded by this ADR," as a critical negative control. Known,
+   disclosed (not silent) gaps: a conjunction ("`decisions/0024` and
+   `decisions/0025` are superseded," the real `decisions/0032` text)
+   only captures the number immediately adjacent to the verb phrase.
+   See §6.A, §11.
+C. **Real-dogfood acceptance criteria generalised explicitly** — §9
+   already (from the prior round) permitted widening to a different
+   real subsystem if the primary candidate disappeared; criterion 2 is
+   now rewritten so it does not hard-code the primary candidate's own
+   expected category/enforcement classification onto a genuinely
+   different replacement defect. See §9.
+D. **Safe source parsing specified** — a per-file `SyntaxError`/
+   `OSError` during `ast.parse`/`tokenize` now produces an explicit,
+   always-blocking diagnostic finding (never silent skip, never
+   crashing the whole run — the same discipline Phase 85's own
+   corrective pass already established for an unreadable `test_ref`
+   file); a citation inside a multiline docstring/comment reports the
+   *exact* line the citation text itself appears on, not merely the
+   construct's own starting line; output is sorted by `(file, line,
+   rule)` for determinism; scope is confirmed bounded to
+   `src/codecompass/**/*.py` (or an explicit, narrower file-set
+   parameter), never the whole repository, `tests/`, or `vendor/`. See
+   §6.A, §11.
+
+Re-verified directly against the live repository before editing
+anything: the `source_resolution.py` dogfood candidate still cites
+`decisions/0019` at current HEAD (`9afabcc`), `sync.py`'s real caller
+still never cites it, and both negative controls (`oracle.py`,
+`staleness.py`) are still accurate.
+
+---
+
+Earlier amendment history, preserved below rather than rewritten:
 
 1. **Behavioural verification semantics (HIGH)** — §6.A's proposed
    `docstring-contradicted-by-oracle-result` mechanical+behavioural
@@ -98,10 +162,23 @@ direct inspection this session:
   excluding `adapters/`. 45 distinct `decisions/NNNN` citation strings
   found across them (`grep -rho 'decisions/[0-9]\{4\}' src/codecompass/
   *.py | sort -u | wc -l`).
-- `decisions/` — 92 ADR files. 10 of them announce, in their own title,
-  that they supersede an earlier-numbered ADR (`grep -lE "superseded by|
-  is superseded" decisions/*.md`), including `decisions/0061` ("`0019`
-  is superseded by `0035`").
+- `decisions/` — 92 ADR files. 10 of them contain the literal substring
+  "superseded by" or "is superseded" somewhere (`grep -lE "superseded
+  by|is superseded" decisions/*.md`), including `decisions/0061`
+  ("`0019` is superseded by `0035`") — this raw-text grep is a loose
+  superset, not the check's own actual match set (it also catches
+  `decisions/0027`'s negated "is **not** superseded" and `decisions/
+  0088`'s unrelated "a historical **result** superseded by a... PASS,"
+  neither an ADR-supersession declaration at all). **Corrected this
+  round** (an earlier draft of this correction miscounted): running
+  §6.A's own final, section-scoped, two-pattern design directly against
+  every real file this session (not estimated, executed) yields exactly
+  **8** files with a genuine match — `decisions/0031`, `0032`, `0033`,
+  `0034`, `0043`, `0061`, `0070`, `0078` — none of `0027`/`0058`/`0064`/
+  `0081`/`0088` (correctly excluded: negation, `## Context`-only,
+  broken adjacency, and two unrelated "superseded" substrings,
+  respectively). §6.A's own design section lists every one of the 8
+  with its exact section/pattern, not merely this aggregate count.
 - `docs/decisions.md` (the existing, already-committed mechanical
   title+status index) **already documents, in its own prose, the exact
   failure mode this phase's mechanical check formalises**: "the Status
@@ -246,8 +323,9 @@ Requirement) still hold."
 ## 4. Scope and explicit non-goals
 
 **In scope**: the Knowledge Placement Policy document (§5); a mechanical
-validator script covering three deterministic checks (§6.A); an
-ad-hoc, narrowly-scoped, read-only advisory placement review —
+validator script covering two deterministic checks plus a parse-failure
+diagnostic (§6.A); an ad-hoc, narrowly-scoped, read-only advisory
+placement review —
 dispatched as a `general-purpose` subagent carrying a committed
 workflow-doc brief, **not a new standing agent** — for the
 semantic/editorial class, with behavioural-class findings reached
@@ -491,9 +569,10 @@ For each category, the per-category detail this task's §4.A requires:
   contradicts is this category's own characteristic conflict — this
   phase's **behavioural** enforcement class (§7) exists specifically
   for this, applied by the ad-hoc §6.B reviewer directly (never a
-  dedicated §6.A script check, deferred this round), reusing Phase 84's
-  `trace_evidence`/
-  `epistemic_status` unchanged, never re-deriving oracle logic.
+  dedicated §6.A script check — `docstring-contradicted-by-oracle-
+  result` was deferred in an earlier round, §6.A/§13 item 3), reusing
+  Phase 84's `trace_evidence`/`epistemic_status` unchanged, never
+  re-deriving oracle logic.
 
 ### 7. Human-oriented project documentation
 - **Purpose/examples**: `docs/getting-started.md`, `README.md`,
@@ -582,16 +661,18 @@ self_knowledge_quality.py`'s own exact `Finding(rule, message, strict)`
 convention, CLI shape (`--strict`, `--ledgerkit-root`), and report-only-
 by-default posture. **Composes** `knowledge_api`/`knowledge_
 intermediate`/`oracle` unchanged; adds no logic already present there.
-Not a `codecompass` subcommand, like its siblings. **Three checks, all
-mechanical** — the fourth, originally-proposed behavioural check is
-deferred (see the note at the end of this subsection and §7/§9/§12/§13).
+Not a `codecompass` subcommand, like its siblings. **Two checks, both
+mechanical** — a third (`decision-citation-status-mismatch`) and a
+fourth (`docstring-contradicted-by-oracle-result`), both originally
+proposed, are deferred (see the note at the end of this subsection and
+§7/§9/§12/§13).
 
-**Extraction method (amended during this round's independent review —
-was an unscoped regex over raw file text, now bounded and syntax-
-aware)**: citations are recognised only inside text the parser can
-independently prove is a real comment or a real docstring, never inside
-an arbitrary string literal, f-string, byte string, or test fixture —
-this is the exact distinction the governing review flagged as missing.
+**Extraction method (amended twice now — originally an unscoped regex
+over raw file text; this round widens supersession-detection coverage
+and specifies failure handling)**: citations are recognised only
+inside text the parser can independently prove is a real comment or a
+real docstring, never inside an arbitrary string literal, f-string,
+byte string, or test fixture.
 
 1. Parse each `src/codecompass/**/*.py` file with `ast.parse` (source
    text, not bytecode). For every `Module`/`ClassDef`/`FunctionDef`/
@@ -607,46 +688,139 @@ this is the exact distinction the governing review flagged as missing.
    contain a `#` character, which `tokenize` already does not misclassify.
 3. Within each docstring's text and each comment token's text only
    (never the rest of the file), apply a single bounded regex,
-   `decisions/([0-9]{4})\b`, to extract citation strings with their
-   owning construct's `file:line` (the docstring's own starting line,
-   or the comment token's own line — both already carried by `ast`/
-   `tokenize`, not re-derived). A bare `"decisions/"` substring with no
-   following four digits is never a match (confirmed by the fail-closed
-   minimal-content test, §11).
-4. Supersession attribution is scoped the same way, applied to
+   `decisions/([0-9]{4})\b`, to extract citation strings. **Line
+   provenance is exact, not approximate (this round's correction)**:
+   for a comment, the token's own line is already exact (a `#` comment
+   is always single-line). For a docstring, which may span many lines,
+   the reported line is the docstring's own starting line **plus the
+   number of newline characters in the docstring's *raw* text before
+   the citation's own match offset** — never uniformly "the docstring's
+   starting line" regardless of where inside it the citation actually
+   sits. **"Raw" is load-bearing, not incidental** (a follow-up
+   independent review caught this as a real, silent bug in an earlier
+   draft of this same correction): `ast.get_docstring(node)` defaults
+   to `clean=True`, which runs `inspect.cleandoc`-style whitespace
+   stripping and silently discards leading blank lines before counting
+   begins — confirmed by direct execution this round against a
+   docstring with a blank line right after the opening `"""` (this
+   project's own common style): the cleaned text undercounts newlines
+   by exactly the number of stripped leading blank lines, so a citation
+   on line 5 of a real docstring was reported as line 3 using the
+   cleaned text, silently wrong. The implementation **must** call
+   `ast.get_docstring(node, clean=False)` (or equivalently read the raw
+   string constant, `node.body[0].value.value`, for the node's first
+   statement) for this offset calculation specifically — the project's
+   own existing, unrelated use of bare `ast.get_docstring(node)` in
+   `source_symbols.py`/`symbols.py` (for descriptive "purpose" text,
+   which never needed exact line provenance) is correctly *not* the
+   precedent to follow here, and this plan does not change those two
+   existing, unrelated call sites. A bare `"decisions/"` substring with
+   no following four digits is never a match (confirmed by the
+   fail-closed minimal-content test, §11).
+4. **Parse-failure handling (added this round, per the governing
+   review's explicit safety requirement)**: if `ast.parse` raises
+   `SyntaxError` on a `src/codecompass/*.py` file (malformed Python —
+   should not occur in this project's own real, lint-checked source,
+   but must never be assumed), or reading the file raises `OSError`,
+   report `knowledge-placement-unparseable-source-file` (**always
+   blocking** — an unreadable or unparseable source file is never
+   silently treated as "zero citations, nothing to report," which
+   would be indistinguishable from a genuinely clean file) and continue
+   to the next file — one bad file never aborts the whole run, exactly
+   the discipline Phase 85's own corrective pass already established
+   for an unreadable `test_ref` file (`self-knowledge-quality-
+   unreadable-test-ref-file`, `except OSError`, never a bare `except
+   Exception`). `tokenize.generate_tokens` can independently raise
+   `tokenize.TokenizeError`/`IndentationError` on malformed source even
+   where `ast.parse` already failed first — both are caught by the same
+   `knowledge-placement-unparseable-source-file` finding for that file,
+   never a second, differently-named finding for the same root cause.
+   **Line convention (made explicit, not left implicit)**: this finding
+   carries `line=1` (the file exists and has a first line even when its
+   syntax does not parse; `1` is never ambiguous with a real citation
+   line, since no citation can be extracted from an unparsed file) —
+   the same `(file, line, rule)` sort key below places it deterministically
+   first among that file's own findings, before any real citation the
+   file might otherwise have produced had it parsed.
+5. **Determinism (made explicit this round)**: every finding is sorted
+   by `(file, line, rule)` before output — the same tuple-sort
+   discipline `check_self_knowledge_quality.py` already uses, not a new
+   convention.
+6. **Bounded scope (confirmed, not assumed, this round)**: the script
+   walks exactly `src/codecompass/**/*.py` by default (never `tests/`,
+   `vendor/`, `.venv/`, or the repository root) and accepts an explicit,
+   narrower file-list parameter for a bounded dogfood/diff run (§9),
+   never a free-text glob or an unscoped "everything under this commit"
+   default.
+7. Supersession attribution is scoped the same way, applied to
    `decisions/*.md` files rather than `src/`: `ast`/`tokenize` do not
-   apply to Markdown, so this step instead regex-matches only two
-   locations per ADR file — its own first line (`# NNNN. <title>`) and
-   its own `## Status` section body — for one explicit, literal
-   pattern: `` decisions/([0-9]{4})`?\s+is\s+superseded(?:\s+by\s+
-   `?decisions/[0-9]{4}`?)?\b ``, capturing **the ADR number
-   immediately preceding** the phrase "is superseded" (optionally
-   followed, not captured, by "by `decisions/MMMM`" naming the
-   superseding ADR). **Corrected this round** — a second independent
-   review ran the plan's own first-drafted-this-round regex
-   (`` superseded by `?decisions/([0-9]{4})`? ``, capturing the number
-   *after* "superseded by") against the real `decisions/0061` title and
-   found it captured `0035` (the live, superseding ADR), not `0019`
-   (the superseded one) — the wrong side of the sentence, which would
-   have silently broken this plan's own central dogfood example (the
-   check would never fire on `source_resolution.py`'s real `decisions/
-   0019` citation, and would instead misreport the *correct*, current
-   `0035` as superseded wherever it is cited). The corrected pattern
-   above was verified empirically, not merely by inspection, against
-   both real cases this project actually has: `decisions/0061`'s own
-   first line, "`` `decisions/0019` is superseded by `decisions/0035`
-   ``" — captures `0019`, confirmed by direct execution; and
-   `decisions/0064`'s own first line, "`` `decisions/0063` point 8 is
-   superseded: ... ``" — produces **no match**, correctly excluded by
-   design, since "point 8" sits between the citation and the phrase (no
-   immediate adjacency) and the sentence's own claim is narrower than
-   whole-ADR supersession (only one point within `0063`, not all of
-   it) — a claim this check does not attempt to parse, by the same
-   "explicit, attributable... rather than incidental" discipline that
-   excludes free-prose mentions elsewhere. A mention of "superseding"
-   or "supersede" anywhere else in an ADR's `## Context`/`## Decision`/
-   `## Alternatives` prose, or with anything but whitespace/a backtick
-   between the citation and the phrase, is **never** matched.
+   apply to Markdown, so this step instead regex-matches **four**
+   locations per ADR file — its own first line (`# NNNN. <title>`),
+   `## Status`, `## Decision`, and `## Consequences` — **widened this
+   round** from the prior two-location scope (title + `## Status`
+   only), which missed this project's own dominant real pattern:
+   `decisions/0031`/`0033`/`0034`/`0043` record supersession in `##
+   Consequences`; `decisions/0070`/`0078` record it in `## Decision`.
+   `## Context` and `## Alternatives considered` (and any other section
+   name) are **never** scanned — confirmed, not assumed, against a real
+   example: `decisions/0058`'s own `## Context` section contains "That
+   deferral is superseded by direct instruction," discussing a past
+   deferral decision, not declaring this ADR's own supersession of
+   another — exploratory/background discussion, exactly what this
+   check must not treat as an accepted declaration. Two patterns, both
+   literal, both matched **case-insensitively on the verb only** (the
+   citation itself, `decisions/NNNN`, is lowercase-literal always) —
+   required precisely because this project's own real text capitalises
+   the verb at sentence-start (`decisions/0070`'s own Status section:
+   "**Supersedes** `decisions/0069`"; `decisions/0043`'s own
+   Consequences: "**Supersedes** `decisions/0041`'s..."); a
+   case-sensitive-only match would silently miss both real instances —
+   confirmed by direct execution this round, not assumed:
+   - **Passive**: `` decisions/([0-9]{4})`?\s+(?:is|are)\s+
+     (?:fully\s+)?superseded(?:\s+by\s+`?decisions/[0-9]{4}`?)?\b ``
+     — captures the ADR number immediately preceding "is"/"are"
+     [fully] superseded". Deliberately excludes "partially" from the
+     qualifier alternation — "`decisions/0017` is **partially**
+     superseded" (the real `decisions/0033` text) does **not** match,
+     a genuine negative control: a scoped, partial claim is not an
+     unambiguous "this whole citation is now dead" signal, and this
+     check does not attempt to judge whether a given source citation
+     relies on the superseded part or the surviving part.
+   - **Active (self-declaration)**: `` \bsupersedes\s+`?decisions/
+     ([0-9]{4})`? `` — captures the ADR number immediately following
+     "supersedes" (the real `decisions/0070` Status-section text,
+     "**Supersedes** `decisions/0069`," and `decisions/0078`'s Decision
+     section, "**This ADR supersedes** `decisions/0062`," both match).
+   Both verified empirically against the real corpus this round, not
+   merely by inspection (§11 lists the exact fixtures): `decisions/
+   0061`'s title (captures `0019`); `decisions/0064`'s title (no match
+   — "point 8" breaks immediate adjacency, a narrower, point-level
+   claim this check correctly does not parse); `decisions/0027`'s own
+   `## Consequences` text, "`decisions/0023` **is not** superseded by
+   this ADR — both remain in force" (no match — "not" is not in the
+   optional qualifier alternation, so the literal phrase "is... not...
+   superseded" never satisfies "is [fully] superseded"); `decisions/
+   0031`'s Consequences, "`decisions/0001` is superseded by this ADR"
+   (matches, captures `0001`, "by this ADR" unconsumed and not
+   required); `decisions/0033`'s Consequences, "`decisions/0018` is
+   fully superseded" (matches, captures `0018`) alongside "`decisions/
+   0017` is partially superseded" (correctly no match, above).
+   **Disclosed, not silent, limitations**: a conjunction — the real
+   `decisions/0032` Consequences text, "`decisions/0024` and
+   `decisions/0025` are superseded by this ADR" — only captures `0025`
+   (immediately adjacent to the verb); `0024` is not captured, a known
+   gap in conjunction handling this check does not attempt to close (a
+   general-purpose natural-language parser would be needed, which this
+   check deliberately is not); a differently-inflected verb ("has
+   superseded," "superseding") is not recognised; an active-voice
+   declaration naming a specific *quoted claim* within a cited ADR as
+   superseded rather than the whole ADR (the real `decisions/0043`
+   Consequences text, "Supersedes `decisions/0041`'s '...' claim
+   specifically") still matches and is still surfaced — acceptable
+   because this check's own output (below) is **informational only**,
+   never blocking, and the §6.B reviewer is the backstop for judging
+   whether a given source citation actually relies on the superseded
+   portion.
 
 **Checks**:
 
@@ -655,36 +829,51 @@ this is the exact distinction the governing review flagged as missing.
    Fully deterministic: bounded extraction (above) + filesystem
    existence check, no judgment involved, no natural-language parsing.
 2. `decision-citation-superseded` — for every citation that does
-   resolve, if some *other*, real ADR file's own title line or `##
-   Status` section matches the attribution pattern above naming the
-   cited ADR's number, report it. **Informational, never blocking** —
-   citing a superseded ADR for legitimate historical context (category
-   8) is explicitly correct, not a defect in itself; this check's own
-   job is only to make every such citation *visible* for the semantic/
-   editorial reviewer (§6.B) to judge in context, exactly mirroring
-   this project's own `missing_contract`-always-informational
-   precedent (Phase 85) for a mechanical fact that is not, by itself,
-   proof of a defect.
-3. `decision-citation-status-mismatch` — for every citation, if the
-   comment/docstring text immediately following the citation (within
-   the same already-isolated docstring/comment span, never the raw
-   file) matches one narrow, literal syntactic pattern — a parenthetical
-   status assertion, `decisions/NNNN \(([a-z- ]+)\)`, e.g.
-   `decisions/0057 (rejected)` — whose captured word does not match the
-   cited ADR's real, current `## Status` field (normalised
-   case/whitespace only, no synonym table, no inference: `accepted` vs.
-   `rejected` vs. `superseded` vs. anything else counts as a literal
-   mismatch only on exact normalised-string inequality), report it.
-   **Blocking** — mechanical only because it is scoped to this one
-   explicit, literal textual syntax, never an inferred natural-language
-   reading of surrounding prose. **Disclosed honestly, not
-   manufactured**: a corpus-wide grep this session found no real
-   source comment using this bracketed-status-assertion convention
-   today — this check is designed and tested (§11) against constructed
-   fixtures, and may report zero real findings against the current
-   corpus. This mirrors Phase 83's own `overlapping-account-patterns-
-   no-double-count` check — a correctly-designed check with a
-   currently-thin real trigger surface is not a design defect.
+   resolve, if some *other*, real ADR file's title line or `##
+   Status`/`## Decision`/`## Consequences` section matches either
+   attribution pattern above naming the cited ADR's number, report it.
+   **Informational, never blocking** — citing a superseded ADR for
+   legitimate historical context (category 8) is explicitly correct,
+   not a defect in itself; this check's own job is only to make every
+   such citation *visible* for the semantic/editorial reviewer (§6.B)
+   to judge in context, exactly mirroring this project's own
+   `missing_contract`-always-informational precedent (Phase 85) for a
+   mechanical fact that is not, by itself, proof of a defect.
+
+**Deferred, not shipped: `decision-citation-status-mismatch`
+(mandatory, this round).** The prior round's design reported a
+blocking finding whenever a comment's own bracketed status assertion
+(`decisions/0057 (rejected)`) literally disagreed with the cited ADR's
+real, current `## Status` field. The governing review correctly
+identified that this conflates a citation's own **recorded** `##
+Status` field with its **effective** status — and the project's own
+real corpus already demonstrates the conflict: `decisions/0019`'s own
+`## Status` field has stood `Accepted`, unedited, since it was written
+(`CLAUDE.md` §2's append-only rule means it is never corrected in
+place), while `decisions/0061` independently records that `0019` is,
+in effect, superseded. A source comment candidly noting `decisions/0019
+(historical rationale)` or `decisions/0019 (superseded)` — an accurate
+description of *effective* status — would have literally disagreed
+with the recorded `Accepted` field and been blocked as if it were
+wrong, when it would in fact be the comment that is right and the
+append-only field that (correctly, by design) never changed. Shipping
+this check would require either (a) resolving recorded-vs-effective
+status first — which is exactly `decision-citation-superseded`'s own
+job, already informational, never blocking — before any status
+assertion could be safely compared, or (b) inventing a new, mandatory
+annotation convention distinguishing the two (e.g. a
+`decisions/NNNN (status: rejected)` vs. `decisions/NNNN (effectively:
+superseded)` split) solely to make this check safe to ship — exactly
+what the governing review instructs against. **Resolution**: this
+check is not implemented. It remains deferrable, not prohibited: a
+future round may ship it once (i) a real use case demonstrates comments
+actually use a bracketed status-assertion convention in practice (none
+does today, confirmed by corpus-wide grep, as the prior round already
+disclosed) and (ii) an unambiguous, independently testable annotation
+distinguishes recorded from effective status — both conditions
+evidence-gated, neither pre-committed here. Removed consistently from
+§7's enforcement description, §10's deliverables, and §11's test
+commitments — not merely unlisted in one place while implied elsewhere.
 
 **Deferred, not shipped: `docstring-contradicted-by-oracle-result`.**
 The original draft proposed a fourth, behavioural check: cross-
@@ -724,7 +913,7 @@ existing, unmodified path (converting the finding into an
 independently testable Requirement, §5 category 5, §7) is how it
 becomes enforceable, not a script addition.
 
-None of these three checks duplicate `check_self_knowledge_quality.py`'s
+Neither of these two checks duplicates `check_self_knowledge_quality.py`'s
 own five checks — confirmed by re-reading that script in full this
 session: it has no `decisions/*.md` parsing of any kind.
 
@@ -900,11 +1089,16 @@ Reproduced and applied precisely per `decisions/0085` §4 (not
 re-interpreted):
 
 - **Mechanical** — objective, deterministic, independently reproducible.
-  `decision-citation-exists` and `decision-citation-status-mismatch`
-  (§6.A) are this phase's two mechanical checks; both **may block**
-  under `--strict`, exactly where the policy explicitly requires (a
-  citation must resolve; an explicit status assertion must be
-  accurate) — never more broadly.
+  `decision-citation-exists` (§6.A) is this phase's one blocking
+  mechanical check — a citation must resolve to a real ADR file, never
+  more broadly. `knowledge-placement-unparseable-source-file` (§6.A
+  point 4) also blocks, for a different, narrower reason: an unreadable
+  or unparseable source file is a diagnostic failure, not a placement
+  judgment. `decision-citation-status-mismatch` is deferred this round
+  (above) — recorded-vs-effective ADR status (the real `decisions/
+  0019`/`0061` relationship) makes a literal status-assertion
+  comparison unsafe without either resolving that distinction first or
+  inventing a new annotation convention, neither acceptable.
 - **Behavioural** — a violation demonstrated through an accepted
   executable contract or independently verifiable evidence. **No new
   mechanical/behavioural script check implements this class** (§6.A's
@@ -946,10 +1140,11 @@ re-interpreted):
   contradictory**, this task's own explicit, unmodified constraint.
 - **No blind merge blocking on subjective judgment**: `--strict`'s own
   exit code, for this script, is a function of exactly
-  `decision-citation-exists` and `decision-citation-status-mismatch`
-  (the two blocking mechanical checks) — `decision-citation-superseded`
-  is always informational, and there is no new behavioural check at
-  all (above) — never of anything the ad-hoc reviewer dispatch
+  `decision-citation-exists` and `knowledge-placement-unparseable-
+  source-file` (the two blocking checks) — `decision-citation-
+  superseded` is always informational, `decision-citation-status-
+  mismatch` is deferred (above), and there is no new behavioural check
+  at all (above) — never of anything the ad-hoc reviewer dispatch
   concludes. Its report is a
   recommendation artifact, read by the lead, exactly like `release-
   phase-auditor`'s own report is read, never a gate the lead's own
@@ -1131,12 +1326,19 @@ round):
    anyone re-running the exact command, independently re-confirmed by
    direct reading, not merely by the script's own say.
 2. The reviewer independently judges that finding as a genuine,
-   actionable placement defect (not merely restating "superseded" —
-   explaining *why* it is misleading in context, citing the real
-   current caller as contradicting evidence), correctly classified
-   **interface documentation (category 2) misplaced as historical
-   design context (category 8)** — not merely flagged, but correctly
-   *categorised*.
+   actionable placement defect (not merely restating the mechanical
+   script's own output — explaining *why* it is misleading in context,
+   citing real contradicting evidence it found itself), correctly
+   classified against its own actual policy category and enforcement
+   class (§5/§7) — not merely flagged, but correctly *categorised*.
+   **Generalised this round**: the primary candidate's own expected
+   classification is interface documentation (category 2) misplaced as
+   historical design context (category 8); this is the expected, not
+   the required, outcome. If the honesty clause (below) substitutes a
+   genuinely different real instance, this criterion is satisfied
+   against *that* defect's own real category/enforcement
+   classification, whatever it actually is — never forced to match
+   the primary candidate's shape.
 3. The reviewer correctly **declines** to flag `oracle.py`'s own
    extensive subprocess/digest-handling comments (negative control 1,
    the named exemplar) as a verbosity/placement problem.
@@ -1172,10 +1374,10 @@ round):
 |---|---|---|
 | `docs/concepts/knowledge-placement-policy.md` | new | §5's full policy, in the established `docs/concepts/` style (alongside `knowledge-model.md`) |
 | `docs/workflows/knowledge-placement-review.md` | new | **the full ad-hoc reviewer brief** (§6.B) — dispatched inline via a `general-purpose` subagent each time this review runs, not a `.claude/agents/*.md` frontmatter body; mirrors `docs/workflows/self-curation-loop.md`'s own precedent in style, not in hosting mechanism |
-| `scripts/check_knowledge_placement.py` | new | §6.A's three checks |
+| `scripts/check_knowledge_placement.py` | new | §6.A's two checks (`decision-citation-exists`, `decision-citation-superseded`) plus the always-blocking `knowledge-placement-unparseable-source-file` diagnostic |
 | `tests/test_check_knowledge_placement.py` | new | §11 |
 | `src/codecompass/source_resolution.py` (or the currently-real equivalent, §9's honesty clause) | amended | the one real dogfood fix |
-| `decisions/00NN-knowledge-placement-policy-and-review.md` | new | the ADR recording this phase's own design choices, per `CLAUDE.md` §2 ("write a new ADR whenever a phase involves a non-obvious tradeoff") — the ad-hoc-dispatch-not-a-new-standing-agent choice (§6.B/§12), the deferral of `docstring-contradicted-by-oracle-result` (§6.A/§7/§12/§13), and the real-dogfood gate's no-synthetic-substitute rule (§9/§12) each independently warrant one |
+| `decisions/00NN-knowledge-placement-policy-and-review.md` | new | the ADR recording this phase's own design choices, per `CLAUDE.md` §2 ("write a new ADR whenever a phase involves a non-obvious tradeoff") — the ad-hoc-dispatch-not-a-new-standing-agent choice (§6.B/§12), the deferral of `docstring-contradicted-by-oracle-result` (§6.A/§7/§12/§13), the deferral of `decision-citation-status-mismatch` over the real recorded-vs-effective-status conflict the `decisions/0019`/`0061` relationship demonstrates (§6.A/§7/§12/§13, added this round — omitted from an earlier draft of this same row), and the real-dogfood gate's no-synthetic-substitute rule (§9/§12) each independently warrant one |
 | `CHANGELOG.md`, `planning/ROADMAP.md`, `planning/CONTEXT.md` | amended, at implementation closeout only | per `CLAUDE.md` §3/§5, not touched by this planning commit beyond adding Phase 86's own `planned` row (this commit) |
 
 ## 11. Tests, negative controls, and acceptance gates
@@ -1183,28 +1385,71 @@ round):
 - `tests/test_check_knowledge_placement.py`, mirroring `tests/test_
   check_self_knowledge_quality.py`'s own structure and determinism
   test:
-  - **Extraction-method boundary tests (added this round, per the
-    independent review's point on bounded, syntax-aware parsing)**:
+  - **Extraction-method boundary tests**:
     - A normal string literal (not a docstring, not a comment,
       e.g. a plain assigned variable or a test-fixture data string)
       containing the exact text `decisions/0019` — must **never** be
       extracted as a citation, confirming `ast`-scoped docstring
       detection and `tokenize`-scoped comment detection correctly
       exclude ordinary string literals.
-    - An ADR file containing "superseded"/"supersede" language only in
-      its `## Context`/`## Alternatives` prose, never in its own first
-      line or `## Status` section (i.e. incidental discussion, not an
-      attributable claim) — must **never** trigger `decision-citation-
-      superseded` for a citation of that ADR's number, confirming
-      attribution is scoped to the two named locations only.
     - A citation to a real, current (non-superseded) ADR — unflagged
       by `decision-citation-superseded`.
-    - A citation to a real ADR that a *different* real ADR's own title
-      line explicitly supersedes (the `decisions/0061`-shaped case:
-      the attributing statement lives in a separate file from the one
-      being cited) — correctly flagged informational, confirming
-      attribution is not required to come from the superseded ADR's
-      own text.
+    - A multiline docstring with a citation on a line other than the
+      docstring's own first line — confirms the reported line number
+      is the citation's own exact line, not the docstring's starting
+      line (this round's line-provenance correction). **The fixture
+      must include a blank line immediately after the opening `"""`**
+      (this project's own common style) before the citation — a
+      fixture whose text starts immediately after `"""` with no blank
+      line would not distinguish a correct `clean=False` (raw)
+      implementation from the buggy `clean=True` (default) one a
+      follow-up independent review caught, since the two give the same
+      count when there is nothing to strip; this fixture shape is what
+      makes the test actually load-bearing rather than coincidentally
+      passing.
+  - **Supersession-detection tests (widened this round — real-corpus
+    fixtures, not only constructed ones, per the governing review's
+    explicit request to use actual repository examples)**:
+    - `decisions/0061`'s real title (`decisions/0019` is superseded by
+      `decisions/0035`) — citing `decisions/0019` from a `src/`
+      fixture is flagged informational; the attributing statement
+      living in a *separate* file (`0061`, not `0019` or `0035`
+      themselves) confirms attribution is not required to come from
+      either endpoint's own text.
+    - `decisions/0064`'s real title ("`decisions/0063` point 8 is
+      superseded") — citing `decisions/0063` is **not** flagged; "point
+      8" breaks immediate adjacency, confirming the narrower, partial
+      claim is correctly excluded.
+    - `decisions/0031`'s real `## Consequences` text (passive, "by
+      this ADR" self-reference) and `decisions/0033`'s real `##
+      Consequences` text (both "fully superseded" matched and
+      "partially superseded" **not** matched, in the same file) —
+      confirms `## Consequences` is scanned and the "partially"
+      exclusion is a genuine negative control, not merely asserted.
+    - `decisions/0070`'s real text — the active "**Supersedes**
+      `decisions/0069`" in `## Status` **and** the passive "`decisions/
+      0069` is superseded." in `## Decision` both independently fire,
+      confirming both patterns and both of the two newly-added
+      sections.
+    - `decisions/0027`'s real `## Consequences` text, "`decisions/0023`
+      is **not** superseded by this ADR" — **critical negative
+      control**: citing `decisions/0023` is never flagged, confirming
+      the literal "is...superseded" match does not fire across an
+      intervening "not."
+    - `decisions/0058`'s real `## Context` text ("That deferral is
+      superseded by direct instruction") — citing whatever it refers
+      to is never flagged on this basis; confirms `## Context` is never
+      scanned, even when it contains the literal phrase.
+    - An ADR file containing "superseded"/"supersede" language only in
+      a non-standard section name (neither title, `## Status`, `##
+      Decision`, nor `## Consequences`) — never flagged, confirming the
+      four-section scope is exhaustive, not merely illustrative.
+    - **Disclosed-limitation regression test**: `decisions/0032`'s real
+      `## Consequences` text, "`decisions/0024` and `decisions/0025`
+      are superseded by this ADR" — citing `0025` is flagged; citing
+      `0024` is honestly **not** flagged — this test asserts the
+      documented gap exists exactly as disclosed (§6.A), rather than
+      silently relying on undocumented behaviour.
   - `decision-citation-exists`: a fixture citing a real, existing
     `decisions/NNNN` (unflagged) and a fixture citing a non-existent
     one (blocking finding).
@@ -1216,27 +1461,27 @@ round):
     `decisions/0000` (a well-formed-looking but non-existent number —
     confirms the *depth* of the existence check, not merely that *some*
     check ran, per L-075's own depth-vs-scope distinction).
-  - `decision-citation-superseded`: a fixture ADR pair (one superseded-
-    by-title, one not) with a `src/`-fixture citation to each —
-    confirms the informational, never-blocking severity.
-  - `decision-citation-status-mismatch`: a constructed fixture with an
-    explicit, literal parenthetical status assertion contradicting the
-    cited ADR's real status (blocking) and one where the assertion
-    matches (unflagged) — since §6.A confirms no real instance exists
-    today, this is fixture-only, disclosed honestly in the test
-    module's own docstring (matching `check_self_knowledge_quality.py`'s
-    own precedent of disclosing when a test deliberately does not
-    assert zero real-corpus findings). **Fixture-only, by design, for
-    this one check's own thin real trigger surface — never used in
-    place of §9's real-dogfood gate**, which this check does not need
-    to satisfy on its own.
-  - Determinism: two consecutive runs, byte-identical output.
+  - **Parse-failure handling (added this round)**: a fixture `.py` file
+    with a deliberate `SyntaxError` — produces exactly one blocking
+    `knowledge-placement-unparseable-source-file` finding for that
+    file, the run completes (does not crash), and every other,
+    well-formed fixture file in the same run is still fully checked
+    (not skipped as collateral damage); a fixture file made unreadable
+    via a monkeypatched `Path.read_text` raising `OSError` — same
+    finding, same no-crash guarantee, mirroring `check_self_knowledge_
+    quality.py`'s own `test_unreadable_result_file_does_not_crash_the_
+    whole_run` precedent exactly.
+  - Determinism: two consecutive runs, byte-identical output, including
+    the `(file, line, rule)` sort order across a fixture set large
+    enough that an unsorted or differently-sorted run would be
+    detectable.
   - **Real-corpus run, not asserting zero findings** (same disclosed
     posture as `check_self_knowledge_quality.py`'s own test suite) —
     pins the specific real finding(s) present at implementation time
     by name, or honestly records their absence (§9's honesty clause).
-- **No `docstring-contradicted-by-oracle-result` tests** — deferred
-  with the check itself (§6.A); nothing to test until it ships.
+- **No `decision-citation-status-mismatch` or `docstring-contradicted-
+  by-oracle-result` tests** — both deferred with the checks themselves
+  (§6.A); nothing to test until either ships.
 - **Independent audit** (this task's §7 requirement, applied at
   implementation time, not during this planning task): `release-phase-
   auditor` re-runs `scripts/check_knowledge_placement.py` and its test
@@ -1261,10 +1506,10 @@ round):
   is unmodified by this phase.
 - **Subjective LLM judgment mistaken for an objective gate** —
   mitigated structurally: `--strict`'s own exit code is a pure function
-  of the script's two blocking mechanical checks only (`decision-
-  citation-exists`, `decision-citation-status-mismatch`) — there is no
-  new behavioural check (§6.A/§7); the reviewer's own output can never
-  affect it.
+  of `decision-citation-exists` and the diagnostic `knowledge-
+  placement-unparseable-source-file` finding only (§6.A/§7) — there is
+  no new behavioural check, and `decision-citation-status-mismatch` is
+  deferred (above); the reviewer's own output can never affect it.
 - **A legitimate multi-location invariant mistaken for duplication** —
   mitigated by §4/§5's explicit "not single-location" clarification,
   stated in both the policy document and the reviewer's own brief, not
@@ -1295,12 +1540,32 @@ round):
   honesty clause (re-verify, never assume; widen the search to another
   bounded real subsystem if needed; report the gate honestly unmet
   rather than ever substituting a constructed fixture).
-- **A status-mismatch check with no real trigger today could look like
-  manufactured machinery** — mitigated by disclosing this honestly in
-  §6.A/§11 rather than omitting the check or inventing a fixture
-  presented as real; this mirrors Phase 83's own existing precedent for
-  a correctly-designed, currently-thin-trigger check (`overlapping-
-  account-patterns-no-double-count`).
+- **Deferring `decision-citation-status-mismatch` could leave a real
+  recorded-vs-effective status assertion unflagged** — mitigated
+  structurally, not merely disclosed: `decision-citation-superseded`
+  already surfaces the underlying recorded-vs-effective conflict
+  informationally for every citation this corpus actually has; the
+  §6.B reviewer remains the backstop for judging a specific comment's
+  own status-assertion wording in context. Shipping this check later,
+  once a real bracketed-status-assertion convention and an
+  unambiguous recorded/effective distinction both exist, is the same
+  evidence-gated escalation pattern this plan already uses elsewhere
+  (`decisions/0081` §3) — not foreclosed, just not pre-committed.
+- **Widened supersession-section scanning (`## Decision`/`##
+  Consequences`) could pick up exploratory discussion mistaken for a
+  real decision** — mitigated by scoping strictly to section *name*,
+  not content-sniffing: `## Context` and `## Alternatives considered`
+  are never scanned regardless of their content (the real `decisions/
+  0058` Context-section counterexample, §6.A/§11, confirms this
+  exclusion is load-bearing, not redundant); the real corpus's own
+  `## Decision`/`## Consequences` sections consistently record adopted
+  conclusions, not weighed-and-rejected alternatives, in every instance
+  checked this round.
+- **A conjunction (`decisions/0024` and `decisions/0025` are
+  superseded...) only partly recognised** — disclosed, not silently
+  incomplete (§6.A/§11): the real `decisions/0032` instance is used as
+  a regression test asserting the gap exists exactly as documented,
+  not papered over.
 - **A constructed fixture could be mistaken for, or quietly substituted
   as, satisfaction of the real-dogfood exit gate** — the original
   draft's §9 point 7 allowed exactly this ambiguity (a fixture-based
@@ -1347,13 +1612,17 @@ round):
    evidence-gated future escalation (§12) rather than a pre-commitment.
    `domain-skeptic` remains considered and rejected as an alternative
    *host*, independent of this question.
-2. **Whether `decision-citation-status-mismatch` is worth shipping now**
-   given zero real trigger instances found this session (§6.A point 3,
-   §11) — kept, disclosed honestly, not pre-decided against; a future
-   reviewer may conclude it should be deferred until a real instance
-   exists, mirroring how Phase 83's own thinly-triggered check
-   (`overlapping-account-patterns-no-double-count`) was still shipped,
-   named, and disclosed rather than withheld.
+2. **Resolved this round (mandatory per the governing review)**: whether
+   `decision-citation-status-mismatch` is worth shipping now. The prior
+   round left this genuinely open, noting zero real trigger instances.
+   This round found the real reason to defer is not merely thin
+   triggering (as with Phase 83's own `overlapping-account-patterns-
+   no-double-count`, correctly still shipped despite thin triggering)
+   but a structural recorded-vs-effective status conflict the real
+   `decisions/0019`/`0061` relationship demonstrates — deferred (§6.A/
+   §7/§12), pending a real bracketed-status-assertion use case and an
+   unambiguous recorded/effective annotation convention, neither
+   pre-committed.
 3. **Resolved during this round's independent review**: whether
    `docstring-contradicted-by-oracle-result` should ship as a fourth
    mechanical/behavioural script check (§6.A). Deferred — it would have
