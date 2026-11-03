@@ -95,10 +95,41 @@ quality.py --strict` re-run clean against their documented baselines
 Phase 85 finding suppressed). `release-phase-auditor`'s independent
 corrective re-audit: **PASS WITH NON-BLOCKING OBSERVATIONS** (one
 cosmetic test-count self-contradiction in the plan's own §14, caught by
-the auditor and fixed). Full detail: the plan's own §14; retro
-addendum; `planning/retros/_drift-audit-phase-86.md`; `planning/
-retros/_audit-phase-86.md`'s own appended "Corrective-pass re-audit"
-section.
+the auditor and fixed).
+
+**Second corrective pass closed (2026-11-04)**: a further independent
+review found `_docstring_citations()` sliced docstring text using
+`ast`'s `col_offset`/`end_col_offset` as character offsets, when
+CPython's `ast` reports them as UTF-8 *byte* offsets — a multibyte
+identifier preceding an inline docstring on the same physical source
+line silently lost the citation entirely (reproduced directly; every
+fixture across four planning-review rounds and two prior audits had
+been pure ASCII). Fixed by slicing each line's own UTF-8-encoded bytes
+before decoding; filed as `L-117`, triaged by `knowledge-curator`:
+**retained**, promotion to `CLAUDE.md` §1 drafted (`planning/
+v1-redefinition/proposed-governance-changes.md` §M), pending the user's
+own explicit `CLAUDE.md` §0 approval — not yet applied. Also fixed:
+`--files`'s `nargs="*"` accepted an explicit, empty selection as an
+apparently-successful zero-file scan; now `nargs="+"` (usage error,
+exit 2). Corrected a stale "+7 tests" reference inside `planning/
+retros/_drift-audit-phase-86.md` to "+8". Closed an audit-sequencing
+gap: the first corrective pass's own re-audit (`64dba3c`) had completed
+its verification *before* two later audited-scope commits (`e682994`,
+`2ac5dd4`) landed, despite being recorded to disk after them — resolved
+with a fresh, comprehensive `release-phase-auditor` dispatch covering
+the true final state through `648be97`, the first audit to genuinely
+reflect it. 4 new regression tests (40 → 44). Full suite 1210
+passed/2 skipped; `ruff` clean; real-corpus `--strict` run: 10
+informational findings, exit 0, byte-identical across two runs and
+byte-identical to the pre-fix output (no real latent defect in this
+project's own source tree). Pre-existing validator baselines re-counted
+directly, all unchanged. `release-phase-auditor`'s fresh re-audit:
+**PASS WITH NON-BLOCKING OBSERVATIONS** (five documentation/triage
+follow-ups it named, all closed in this same session). Full detail:
+the plan's own §14/§15; both retro addenda; `planning/retros/
+_drift-audit-phase-86.md`; `planning/
+retros/_audit-phase-86.md`'s own two appended "Corrective-pass
+re-audit" sections.
 
 Phase 85's own outstanding `--strict` baseline (35 findings, 26
 blocking, 9 informational) was re-verified unchanged throughout Phase
@@ -889,14 +920,15 @@ still carries are tracked as standing gaps (`L-114`, `L-107`, above),
 not phase work.
 
 **Phase 86 (Knowledge-Placement and Code-Quality Review) is `done`,
-corrective pass closed** (2026-11-03) — see "Current phase" above for
-full detail. No further Phase 86 corrective work is open. One item
-awaits a separate, explicit user decision before it can close out
-fully: `L-116`'s recommended promotion to `CLAUDE.md` §1 (draft text:
-`planning/v1-redefinition/proposed-governance-changes.md` §L; the
-learning's own `status` is `retained` pending this) requires the user's
-own `CLAUDE.md` §0 approval — not something this or any future session
-may apply on the user's behalf. Sequence from here: 87 (Documentation
+both corrective passes closed** (2026-11-03, 2026-11-04) — see "Current
+phase" above for full detail. No further Phase 86 corrective work is
+open. Two items await a separate, explicit user decision before they
+can close out fully: `L-116`'s recommended promotion to `CLAUDE.md` §1
+(draft text: `planning/v1-redefinition/proposed-governance-changes.md`
+§L) and `L-117`'s recommended promotion (same file, §M) — both
+learnings' own `status` is `retained` pending this, requiring the
+user's own `CLAUDE.md` §0 approval; not something this or any future
+session may apply on the user's behalf. Sequence from here: 87 (Documentation
 Schema and Knowledge-Compiled Documentation, minimum suite specified)
 → 88 (Agent
 Integration and MCP, split from the old merged phase) → 89 (Incremental

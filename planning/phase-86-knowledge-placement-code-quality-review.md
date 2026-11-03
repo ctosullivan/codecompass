@@ -1,16 +1,19 @@
 # Phase 86: Knowledge-Placement and Code-Quality Review — plan
 
-**Status: done (2026-11-03), corrective pass applied (2026-11-03).**
-Implemented per this plan's own final (fourth-amendment) design, after
-four independent planning-review rounds reached READY. A subsequent
-narrow corrective pass (§14 below) fixed two implementation defects and
+**Status: done (2026-11-03), two corrective passes applied (2026-11-03,
+2026-11-04).** Implemented per this plan's own final (fourth-amendment)
+design, after four independent planning-review rounds reached READY. A
+first narrow corrective pass (§14) fixed two implementation defects and
 one test-fragility issue found by independent review after the initial
-PASS, and closed one missing-artifact gap; none of this reopens the
-plan's own design. Retro: `planning/retros/phase-86-knowledge-
-placement-code-quality-review.md`. Independent DoD audit: `planning/
-retros/_audit-phase-86.md` (PASS WITH NON-BLOCKING OBSERVATIONS,
-corrective-pass addendum appended). Drift audit: `planning/retros/
-_drift-audit-phase-86.md`.
+PASS, and closed one missing-artifact gap. A second narrow corrective
+pass (§15) fixed a UTF-8 byte-vs-character offset bug and an
+empty-`--files` validation gap, corrected a stale cross-reference, and
+closed an audit-sequencing gap in the first pass's own re-audit; none
+of this reopens the plan's own design. Retro: `planning/retros/
+phase-86-knowledge-placement-code-quality-review.md`. Independent DoD
+audit: `planning/retros/_audit-phase-86.md` (PASS WITH NON-BLOCKING
+OBSERVATIONS, both corrective-pass re-audits appended). Drift audit:
+`planning/retros/_drift-audit-phase-86.md`.
 
 Governing scope: `planning/v2-roadmap.md` §"Phase 86 — Knowledge-
 Placement and Code-Quality Review" (10-point roadmap-depth sketch,
