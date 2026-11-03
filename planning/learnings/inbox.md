@@ -11132,8 +11132,106 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   future code (in this project or a plan reviewing it) that slices
   Python source text using `ast` node position attributes against
   multibyte-capable source.
-- **status:** candidate
-- **recurrence:** first occurrence. Not yet checked against
-  `promoted.md`/other `inbox.md` entries for an existing rule covering
-  this — left to `knowledge-curator` triage.
-- **promoted_to:** (not yet triaged)
+- **status:** retained
+- **recurrence:** first occurrence. Grepped `inbox.md` for `col_offset`,
+  `byte offset`, `UTF-8`, `multibyte`, `ast node` — only this entry's own
+  text matches (one unrelated `ast.parse` hit at line 4162, about
+  verifying a fragment *parses*, not about offset semantics). Grepped
+  `promoted.md` for the same terms — zero matches. `L-116`, filed two
+  entries above this one in the same phase, is the closest analogue in
+  spirit (an unverified stdlib detail that escaped plan review) but
+  concerns API *existence* (a typo'd exception-class name), not offset
+  *semantics* — a genuinely distinct failure shape, confirmed by reading
+  both entries side by side. No existing rule covers this; first
+  occurrence, not a duplicate or merge target.
+- **promoted_to:** (pending — see curation note)
+- **curation note (2026-11-04, knowledge-curator):** all required fields
+  present (origin, date, project_revision, observation, evidence,
+  classification, status) — accepted as filed.
+
+  **Independently verified the fix**, by direct code reading (this role
+  has no `Bash`): `scripts/check_knowledge_placement.py`'s current
+  `_docstring_citations()` (lines 242-293) encodes the relevant line(s)
+  to UTF-8 bytes first, slices with `col_offset`/`end_col_offset`
+  against the *byte* string, then decodes back to `str` — for the
+  single-line case (line 279-283) and, separately, for the multi-line
+  case's first/last line (lines 284-288). This matches CPython's
+  documented `ast` behaviour (these offsets are UTF-8 byte offsets into
+  the physical line, not character indices) and is the correct fix: byte
+  offsets only ever misalign with character indices when a multibyte
+  character precedes the sliced region on the same line, and slicing the
+  encoded bytes before decoding keeps the offsets valid regardless. The
+  inline comment at lines 271-278 states the same reasoning the entry
+  gives.
+
+  **Independently re-derived the entry's own reproduction**, character
+  by character, rather than trusting it verbatim: for
+  `'def 非常非常(): """decisions/9999"""\n'`, the four-CJK-character
+  function name occupies 4 *characters* but 12 *bytes* (3 bytes each in
+  UTF-8), so the docstring's opening quote sits at byte offset 20
+  (`4 + 12 + 4` for `"def "` + the name + `"(): "`) — matching the
+  entry's claimed `col_offset=20` exactly. `line[20:40]` (a *character*
+  slice at that byte offset) does land mid-citation and does produce
+  `'ions/9999"""'`, exactly as the entry claims, confirming the citation
+  would silently vanish (the regex no longer matches `decisions/9999`).
+  One inaccuracy found and worth flagging for the record: the entry
+  states the triple-quote starts at "character index 14"; by the same
+  character-by-character count it is actually character index 12
+  (`4 + 4 + 4`). This is a cosmetic slip in the prose, not a defect in
+  the evidence — the load-bearing numbers (`col_offset=20`, the actual
+  `line[20:40]` slice result, the real corpus's byte-identical pre/post
+  `--strict` output) are all independently confirmed correct and the
+  slip doesn't change whether the bug or the fix are real. Corrected
+  here for anyone relying on this entry later.
+
+  **Recommendation: promote**, as a `project-rule`, to `CLAUDE.md` §1 —
+  draft below, routed through
+  `planning/v1-redefinition/proposed-governance-changes.md` §M (also
+  drafted this triage) per this role's own write-boundary (never
+  `CLAUDE.md` directly; propose only, lead presents the diff, user
+  approves per §0):
+
+  > If a phase's implementation slices or indexes source text using
+  > position/offset attributes reported by a parser or tokenizer (e.g.
+  > `ast`'s `col_offset`/`end_col_offset`, a lexer's column field), the
+  > plan's verification section must include a test against an input
+  > containing at least one multibyte (non-ASCII) character on the same
+  > physical line as the sliced region — a byte-offset bug and a
+  > character-offset implementation are indistinguishable on pure-ASCII
+  > fixtures, since the two always coincide there, so ASCII-only test
+  > coverage cannot catch this shape regardless of how many ASCII cases
+  > it exercises. (Phase 86 second corrective pass — L-117.)
+
+  Routed to `CLAUDE.md` §1 rather than retained as scoped/narrow or
+  merged elsewhere, matching the precedent `L-021`/`L-070`/`L-075`/
+  `L-087`/`L-088`/`L-116` already set in this same section: a cheap,
+  mechanically-checkable addition to what a plan's verification step
+  must cover, promoted on a single well-evidenced occurrence rather than
+  held for recurrence — the failure (a latent defect that escaped four
+  planning-review rounds and two prior corrective-pass audits, invisible
+  precisely because every fixture used throughout was pure ASCII) is
+  exactly the kind of blind spot a one-line rule addition closes for
+  free in any future phase that touches parser/tokenizer position
+  attributes, independent of whether this exact bug recurs. Not routed
+  to `.claude/agents/release-phase-auditor.md` (contrast `L-086`/`L-111`'s
+  own routing): those concern auditing already-written code's test
+  coverage after the fact; this concerns what a plan's own verification
+  section must specify *before* implementation, `CLAUDE.md` §1's
+  existing domain.
+
+  This edit is outside this role's write boundary (`CLAUDE.md` is
+  §0-gated) — lead presents the diff in
+  `proposed-governance-changes.md` §M to the user; once approved and
+  landed, flip this entry's `status` to `promoted`, record the real
+  landing commit in `promoted_to`, and add the `promoted.md` line:
+  `L-117 | 2026-11-04 | project-rule | CLAUDE.md §1 (a plan whose
+  implementation slices source text via parser/tokenizer offset
+  attributes must have its verification step test a multibyte-character
+  input, not only ASCII fixtures -- user-approved per §0) @ <landing
+  commit>`.
+
+  `status` set to `retained` (not `candidate`, not `promoted`): curation
+  is complete and the recommendation above is firm, but it is waiting on
+  the user's explicit `CLAUDE.md` §0 approval of the §M diff, which has
+  not been given as of this note — `promoted` would misrepresent an
+  ungranted approval as granted.

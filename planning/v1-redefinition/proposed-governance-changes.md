@@ -932,3 +932,82 @@ landed first.
   `CONTRIBUTING.md`'s mirrored section gets the same addition in the
   same commit; `planning/learnings/inbox.md`'s `L-116` flips to `status:
   promoted` with a `promoted.md` pointer line once the edit lands.
+
+## M. 2026-11-04 proposed addition (Phase 86 second corrective pass — `L-117`)
+
+**Status:** proposed, not yet presented to the user. Filed by
+`knowledge-curator` during the Phase 86 second-corrective-pass triage. If
+§L (`L-116`) is approved and lands first, append this sentence after
+§L's instead — both are drafted against the current, `L-088`/`L-110`-
+terminated text; whichever lands second appends after whichever landed
+first.
+
+### M1 — §1 "Plan before implementing": require a multibyte-character test for any plan whose implementation slices source text via parser/tokenizer position attributes
+
+- **Context:** `_docstring_citations()` in
+  `scripts/check_knowledge_placement.py` sliced a docstring's raw source
+  text using the containing `ast.Constant` node's `col_offset`/
+  `end_col_offset` directly against the decoded `str` line, treating
+  them as character indices. CPython's `ast` module reports these as
+  UTF-8 *byte* offsets, not character offsets — on a line where a
+  multibyte character (e.g. a non-ASCII function/class name) precedes
+  the docstring, the byte offset runs ahead of the true character index,
+  silently truncating or mis-slicing the docstring and losing the
+  citation entirely, with no diagnostic. This escaped four independent
+  planning-review rounds and two prior corrective-pass audits, because
+  every fixture used throughout this phase's test suite and dogfood run
+  was pure ASCII, where byte offset and character index always coincide
+  — ASCII-only coverage structurally cannot distinguish a correct
+  character-offset implementation from this bug. Independently confirmed
+  this triage (no `Bash`): the fix (`305d3e1`) encodes the relevant
+  line(s) to UTF-8 bytes, slices there, then decodes, which is the
+  correct general fix for this offset semantics regardless of content.
+  The real repository's own `src/codecompass/**/*.py` corpus never
+  triggered this — pre-fix and post-fix `--strict` output are
+  byte-identical on it — so this was a latent defect caught only because
+  the corrective pass deliberately constructed a non-ASCII-adjacent-to-
+  docstring fixture. Full account: `planning/learnings/inbox.md`'s
+  `L-117`.
+- **Proposed text — append to §1, as a new sentence directly after the
+  `L-088` sentence ("...not only its initial creation. (Phase 81 second
+  corrective pass — L-088.)"), or after `L-110`'s/`L-116`'s sentences
+  (§K/§L) if either lands first:**
+
+  > If a phase's implementation slices or indexes source text using
+  > position/offset attributes reported by a parser or tokenizer (e.g.
+  > `ast`'s `col_offset`/`end_col_offset`, a lexer's column field), the
+  > plan's verification section must include a test against an input
+  > containing at least one multibyte (non-ASCII) character on the same
+  > physical line as the sliced region — a byte-offset bug and a
+  > character-offset implementation are indistinguishable on pure-ASCII
+  > fixtures, since the two always coincide there, so ASCII-only test
+  > coverage cannot catch this shape regardless of how many ASCII cases
+  > it exercises. (Phase 86 second corrective pass — L-117.)
+
+- **Alternatives considered:** (a) treat this as already covered by
+  `L-070`'s "minimal-content edge case" sentence — rejected: a
+  multibyte-adjacent line is not empty, truncated, or reduced in any way
+  that sentence's own framing names; this is a distinct input-*shape*
+  gap (an under-represented character class in test fixtures), not a
+  content-*minimality* gap, and a future phase following `L-070`'s
+  sentence to the letter would still not be required to write the test
+  that would have caught this; (b) scope this narrowly to `ast` node
+  attributes only, rather than "a parser or tokenizer" generally —
+  rejected: the underlying failure (byte offset vs. character index) is
+  a property of UTF-8 encoding and position-reporting conventions
+  generally, not specific to the `ast` module, and a narrower rule would
+  not cover the next tokenizer-based mechanism this project writes; (c)
+  hold for a second occurrence before promoting, matching a
+  recurrence-based bar — rejected as the wrong precedent: `L-021`,
+  `L-070`, `L-075`, `L-087`, `L-088`, and `L-116` were each promoted to
+  `CLAUDE.md` §1 on a single, well-evidenced occurrence because they are
+  cheap, mechanically-checkable additions to plan-review content, the
+  same shape as this one; (d) a broader "test every mechanism against
+  non-ASCII input" rule — rejected as over-broad for what one incident
+  evidences; scoped instead to the precise shape that actually failed
+  (slicing source text via a parser/tokenizer's own position/offset
+  attributes).
+- **Consequences if approved:** `CLAUDE.md` §1 gains the sentence above;
+  `CONTRIBUTING.md`'s mirrored section gets the same addition in the
+  same commit; `planning/learnings/inbox.md`'s `L-117` flips to `status:
+  promoted` with a `promoted.md` pointer line once the edit lands.
