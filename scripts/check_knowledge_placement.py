@@ -11,7 +11,12 @@ canonical knowledge.
 See `planning/phase-86-knowledge-placement-code-quality-review.md` §6.A
 for the full design this implements.
 
-    python scripts/check_knowledge_placement.py [--strict] [--files PATH ...]
+    python scripts/check_knowledge_placement.py [--strict] [--files PATH [PATH ...]]
+
+`--files`, when supplied, requires at least one path -- an explicit,
+empty selection is a usage error (exit 2), never a silent "zero files
+checked, no findings" pass (corrective-pass finding B). Omit the flag
+entirely for the default whole-`src/codecompass/`-tree scan.
 
 Not part of the `codecompass` package: like its siblings, this checks
 CodeCompass's own first-party source, not a consuming project's, and is
@@ -263,11 +268,24 @@ def _docstring_citations(tree: ast.AST, source_lines: list[str]) -> list[tuple[i
         lines = list(source_lines[start_line - 1 : end_line])
         if not lines:
             continue
+        # ast's col_offset/end_col_offset are UTF-8 *byte* offsets into the
+        # line, not character offsets (CPython ast docs) -- a multibyte
+        # character anywhere earlier on the same physical line shifts every
+        # later character's byte offset ahead of its character index, so
+        # slicing the decoded str directly with these offsets truncates or
+        # mis-slices the docstring whenever that happens (corrective-pass
+        # finding A). Slicing the line's own UTF-8-encoded bytes first,
+        # then decoding, keeps the offsets correct regardless.
         if len(lines) == 1:
-            lines[0] = lines[0][value_node.col_offset : value_node.end_col_offset]
+            line_bytes = lines[0].encode("utf-8")
+            lines[0] = line_bytes[value_node.col_offset : value_node.end_col_offset].decode(
+                "utf-8"
+            )
         else:
-            lines[0] = lines[0][value_node.col_offset :]
-            lines[-1] = lines[-1][: value_node.end_col_offset]
+            first_bytes = lines[0].encode("utf-8")
+            lines[0] = first_bytes[value_node.col_offset :].decode("utf-8")
+            last_bytes = lines[-1].encode("utf-8")
+            lines[-1] = last_bytes[: value_node.end_col_offset].decode("utf-8")
         raw = "\n".join(lines)
         for m in CITATION_RE.finditer(raw):
             line = start_line + raw[: m.start()].count("\n")
@@ -421,9 +439,11 @@ def main() -> int:
     parser.add_argument(
         "--files",
         type=Path,
-        nargs="*",
+        nargs="+",
         default=None,
-        help="an explicit, bounded file set to check instead of the whole src/codecompass/ tree",
+        help="an explicit, bounded file set to check instead of the whole src/codecompass/ tree"
+        " (requires at least one path -- omit the flag entirely for default whole-tree"
+        " scanning; an explicit, empty selection must never look like a clean pass)",
     )
     args = parser.parse_args()
 

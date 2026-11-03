@@ -53,6 +53,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`planning/retros/_drift-audit-phase-86.md`) and fixed the two
   non-blocking doc-catalog omissions it found. 8 new regression tests
   (40 total, from 32).
+  **Second corrective pass (2026-11-04)**: fixed a byte-vs-character
+  offset bug — `ast`'s `col_offset`/`end_col_offset` are UTF-8 *byte*
+  offsets, not character offsets, so a multibyte identifier preceding
+  an inline docstring on the same physical source line silently lost
+  the citation entirely when sliced as if the offsets were character
+  indices; now sliced from the line's own UTF-8-encoded bytes first,
+  then decoded. Changed `--files` from `nargs="*"` to `nargs="+"` so an
+  explicit, empty `--files` selection is a usage error (exit 2), never
+  an apparently-successful validation that inspected zero files.
+  Corrected a stale "+7 tests" reference in the persisted drift-audit
+  artifact to the verified "+8". 4 new regression tests (44 total,
+  from 40).
 - **Phase 85: Self-Curation and Knowledge-Quality Validation**
   (`decisions/0084` §2-3): a repeatable, documented self-curation loop
   (`docs/workflows/self-curation-loop.md`) dogfooding the existing

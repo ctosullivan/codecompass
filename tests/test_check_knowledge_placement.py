@@ -31,6 +31,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 _SCRIPT_PATH = (
     Path(__file__).resolve().parent.parent / "scripts" / "check_knowledge_placement.py"
 )
@@ -129,6 +131,38 @@ class TestExtractionBoundary:
         # the citation is on physical source line 2 -- the docstring's own opening
         # line -- not line 3, which a decoded-value newline count would wrongly give.
         assert findings[0].line == 2
+
+    def test_non_ascii_identifier_preceding_inline_docstring_is_not_lost(self, tmp_path):
+        """`ast`'s own `col_offset`/`end_col_offset` are UTF-8 *byte*
+        offsets into the line, not character offsets. A multibyte
+        function/class name on the same physical source line as an
+        inline docstring shifts every later character's byte offset
+        ahead of its character index; slicing the *decoded* `str`
+        directly with these offsets (treating them as character
+        offsets) truncates the docstring and silently loses the
+        citation entirely rather than just misreporting its line
+        (corrective-pass finding A)."""
+        source = 'def 非常非常(): """decisions/9999"""\n'
+        findings = _run(tmp_path, decisions={}, sources={"mod.py": source})
+        assert len(findings) == 1
+        assert findings[0].rule == "decision-citation-exists"
+        assert "decisions/9999" in findings[0].message
+        assert findings[0].line == 1
+
+    def test_multiple_citations_on_multibyte_prefixed_line_are_all_found(self, tmp_path):
+        """Confirms the byte-offset fix does not merely rescue a single
+        trailing citation -- a non-existent and a real citation on the
+        same multibyte-prefixed line must both be located correctly,
+        with only the non-existent one flagged."""
+        source = 'def 非常非常(): """decisions/0999 and decisions/0019"""\n'
+        findings = _run(
+            tmp_path,
+            decisions={"0019-x.md": "# 0019. Something\n\n## Status\n\nAccepted\n"},
+            sources={"mod.py": source},
+        )
+        assert len(findings) == 1
+        assert findings[0].rule == "decision-citation-exists"
+        assert "decisions/0999" in findings[0].message
 
 
 class TestDecisionCitationExists:
@@ -655,3 +689,25 @@ class TestCliStrictExitCode:
         )
         exit_code = check_knowledge_placement.main()
         assert exit_code == 1
+
+    def test_explicit_empty_files_selection_is_rejected_not_a_silent_clean_pass(
+        self, monkeypatch, capsys
+    ):
+        """`--files` with no paths following it must never be accepted
+        as "check zero files, report no findings" -- that reads as an
+        apparently successful validation despite inspecting nothing
+        (corrective-pass finding B). argparse's own `nargs="+"` makes
+        this a usage error (`SystemExit(2)`), not a silent pass."""
+        monkeypatch.setattr(sys, "argv", ["check_knowledge_placement.py", "--strict", "--files"])
+        with pytest.raises(SystemExit) as exc_info:
+            check_knowledge_placement.main()
+        assert exc_info.value.code == 2
+
+    def test_omitted_files_flag_still_defaults_to_whole_tree_scan(self, monkeypatch, capsys):
+        """Omitting `--files` entirely (as opposed to supplying it with
+        no paths) must still trigger default whole-`src/codecompass/`
+        scanning, unaffected by finding B's fix."""
+        monkeypatch.setattr(sys, "argv", ["check_knowledge_placement.py", "--strict"])
+        monkeypatch.chdir(REPO_ROOT)
+        exit_code = check_knowledge_placement.main()
+        assert exit_code == 0
