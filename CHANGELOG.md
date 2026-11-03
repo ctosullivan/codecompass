@@ -40,6 +40,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   live, current-state justification for a retired, deleted mechanism)
   was independently found, adjudicated, corrected, and re-verified;
   `oracle.py`/`staleness.py` confirmed as clean negative controls.
+  **Corrective pass (2026-11-03)**: fixed an uncaught `UnicodeDecodeError`
+  on invalid-UTF-8 source content; added a new always-blocking
+  `knowledge-placement-unreadable-decision-file` diagnostic so an
+  unreadable/undecodable ADR can no longer be silently skipped and
+  misreported as a clean supersession check; fixed a multiline-docstring
+  citation line-provenance bug (an escaped `\n` inside one physical
+  source line was overcounted as a real line break); de-pinned the
+  real-dogfood regression test from one specific historical finding so
+  a future, unrelated edit to the now-legitimate historical citation
+  can't break it; persisted a previously-missing drift-audit artifact
+  (`planning/retros/_drift-audit-phase-86.md`) and fixed the two
+  non-blocking doc-catalog omissions it found. 8 new regression tests
+  (40 total, from 32).
 - **Phase 85: Self-Curation and Knowledge-Quality Validation**
   (`decisions/0084` §2-3): a repeatable, documented self-curation loop
   (`docs/workflows/self-curation-loop.md`) dogfooding the existing
