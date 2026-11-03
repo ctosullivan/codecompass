@@ -53,7 +53,52 @@ real name is `tokenize.TokenError`, caught on the first test run, never
 committed in its broken form); `knowledge-curator` recommends
 **promote** to `CLAUDE.md` §1, draft text in `planning/v1-redefinition/
 proposed-governance-changes.md` §L, **pending the user's own explicit
-`CLAUDE.md` §0 approval** — not yet applied.
+`CLAUDE.md` §0 approval** — not yet applied; `L-116`'s own `status` is
+`retained` (curation/recommendation complete, blocked only on that
+pending approval, not on further investigation).
+
+**Corrective pass closed (2026-11-03, "CodeCompass Orchestrator —
+Phase 86 Corrective Closeout")**. Five findings from an independent
+closeout review, none reopening the plan's own design (no new ADR —
+matches Phase 85's own identical-shape precedent, `95309f1`): (A) no
+`planning/retros/_drift-audit-phase-86.md` had ever been persisted — a
+fresh, independent `docs-reconstructor` dispatch (not a reconstruction;
+the release audit's own secondhand mention wasn't a reliable enough
+source) found 2 non-blocking stale-by-omission findings in `docs/
+development/contributing.md`/`docs/concepts/knowledge-placement-
+policy.md`, both fixed same-day; (B) `_extract_file_citations` caught
+`OSError` on a source read but not `UnicodeDecodeError` (not an
+`OSError` subclass), crashing on invalid-UTF-8 source content — fixed
+by widening the caught exception set; (C) `_build_superseded_map`
+caught `OSError` on an ADR read and silently `continue`d — a citation
+to an ADR actually superseded *by* the unreadable file would report as
+clean, misrepresenting a partially-examined corpus as complete;
+`UnicodeDecodeError` escaped entirely — both fixed with a new,
+always-blocking `knowledge-placement-unreadable-decision-file`
+diagnostic, every other readable ADR still processed, `decision-
+citation-superseded`'s own informational severity unaffected; (D) the
+real-dogfood regression test pinned the specific historical `decisions/
+0019` citation by name, which would have broken a future, unrelated,
+correct edit removing or relocating now-legitimate historical context —
+refactored to assert the detector's general correctness instead,
+without altering the retro's own original "Real dogfood" record; (E)
+`L-116` corrected from bare `candidate` to `retained` (see above). A
+sixth, optional point found a real line-provenance bug (an escaped `\n`
+inside one physical docstring source line overcounted a later
+citation's physical line) — fixed via a raw-source-text slice. 8 new
+regression tests (32 → 40). Full suite 1206 passed/2 skipped (unchanged
+baseline + the new tests); `ruff` clean; real-corpus `--strict` run: 10
+informational findings, exit 0, byte-identical across two runs;
+`check_contracts.py`/`check_knowledge_base.py`/`check_self_knowledge_
+quality.py --strict` re-run clean against their documented baselines
+(the last: 35 findings, 26 blocking/9 informational, unchanged — no
+Phase 85 finding suppressed). `release-phase-auditor`'s independent
+corrective re-audit: **PASS WITH NON-BLOCKING OBSERVATIONS** (one
+cosmetic test-count self-contradiction in the plan's own §14, caught by
+the auditor and fixed). Full detail: the plan's own §14; retro
+addendum; `planning/retros/_drift-audit-phase-86.md`; `planning/
+retros/_audit-phase-86.md`'s own appended "Corrective-pass re-audit"
+section.
 
 Phase 85's own outstanding `--strict` baseline (35 findings, 26
 blocking, 9 informational) was re-verified unchanged throughout Phase
@@ -843,14 +888,17 @@ genuine knowledge-debt categories the reconciled `--strict` baseline
 still carries are tracked as standing gaps (`L-114`, `L-107`, above),
 not phase work.
 
-**Phase 86 (Knowledge-Placement and Code-Quality Review) is `done`** —
-see "Current phase" above. One item awaits a separate, explicit user
-decision before it can close out fully: `L-116`'s recommended promotion
-to `CLAUDE.md` §1 (draft text: `planning/v1-redefinition/proposed-
-governance-changes.md` §L) requires the user's own `CLAUDE.md` §0
-approval — not something this or any future session may apply on the
-user's behalf. Sequence from here: 87 (Documentation Schema and
-Knowledge-Compiled Documentation, minimum suite specified) → 88 (Agent
+**Phase 86 (Knowledge-Placement and Code-Quality Review) is `done`,
+corrective pass closed** (2026-11-03) — see "Current phase" above for
+full detail. No further Phase 86 corrective work is open. One item
+awaits a separate, explicit user decision before it can close out
+fully: `L-116`'s recommended promotion to `CLAUDE.md` §1 (draft text:
+`planning/v1-redefinition/proposed-governance-changes.md` §L; the
+learning's own `status` is `retained` pending this) requires the user's
+own `CLAUDE.md` §0 approval — not something this or any future session
+may apply on the user's behalf. Sequence from here: 87 (Documentation
+Schema and Knowledge-Compiled Documentation, minimum suite specified)
+→ 88 (Agent
 Integration and MCP, split from the old merged phase) → 89 (Incremental
 Knowledge and Documentation Reconciliation, split from the old merged
 phase, independent of MCP) → 90 (Comparative Development Trials,
