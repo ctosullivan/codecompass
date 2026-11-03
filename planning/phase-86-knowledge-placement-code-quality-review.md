@@ -1720,11 +1720,13 @@ it. Reproduced directly; fixed by slicing the raw source text via the
 string literal's own `lineno`/`col_offset`/`end_lineno`/`end_col_offset`
 rather than the decoded value; one regression test added.
 
-Verification: 7 new regression tests (40 total in `tests/
-test_check_knowledge_placement.py`, from 32), each independently
-confirmed failing against the pre-fix code before any fix landed. Full
-suite 1206 passed / 2 skipped (was 1198/2 — net +8 matches the new
-dedicated tests). `ruff` clean. Real-corpus `--strict` run: 10
+Verification: 8 new regression tests (40 total in `tests/
+test_check_knowledge_placement.py`, from 32 — corrected count,
+independently re-verified by the release-phase-auditor's own corrective
+re-audit below after the original commit message undercounted this as
+7), each independently confirmed failing against the pre-fix code
+before any fix landed. Full suite 1206 passed / 2 skipped (was 1198/2 —
+net +8 matches). `ruff` clean. Real-corpus `--strict` run: 10
 informational findings, exit 0, byte-identical across two consecutive
 runs. `check_contracts.py`, `check_knowledge_base.py`, and
 `check_self_knowledge_quality.py --strict` re-run clean against their
