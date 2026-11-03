@@ -12,10 +12,17 @@ own amendment rounds found and disclosed; parse-failure handling; line
 provenance for multiline docstrings; and determinism.
 
 **Deliberately does not assert zero findings against the real
-repository** for `decision-citation-superseded` — the real `decisions/
-0019` citation in `source_resolution.py` is this phase's own dogfood
-candidate (§9), a genuine, independently-confirmed, pre-existing
-placement defect this test suite pins by name rather than suppresses.
+repository**, and (Phase 86 corrective pass, finding D) deliberately
+no longer pins any one specific real-corpus finding by name — a real
+historical defect's own correction (the `source_resolution.py`/
+`decisions/0019` dogfood, §9) should not become a permanent test
+invariant that a later, unrelated edit could break. The detector's
+correct behaviour is established by `TestRealCorpusSupersessionDetection`'s
+controlled fixtures using real ADR text; `TestRealCorpusBaseline` only
+confirms the real corpus produces well-formed, correctly-severed
+findings, whatever they are at any given time. The original dogfood
+finding and its correction remain recorded as historical evidence in
+`planning/retros/phase-86-knowledge-placement-code-quality-review.md`.
 """
 
 from __future__ import annotations
@@ -103,6 +110,25 @@ class TestExtractionBoundary:
         assert len(findings) == 1
         assert findings[0].file == "src/codecompass/mod.py"
         assert findings[0].line == 4  # the citation's own real line, not line 2 (docstring start)
+
+    def test_escaped_newline_in_docstring_does_not_shift_line_number(self, tmp_path):
+        """A literal `\\n` escape sequence *decodes* to a real newline
+        character in the AST's own string value, but is only two source
+        characters (backslash, n) on one physical source line -- not a
+        real line break. Counting `\\n` characters in the *decoded*
+        value (the pre-fix approach) overcounts physical lines whenever
+        a docstring contains an escaped newline before the citation;
+        counting against the raw source slice must not."""
+        source = (
+            "def f():\n"
+            '    """First part.\\ndecisions/0999 on this same physical source line."""\n'
+            "    pass\n"
+        )
+        findings = _run(tmp_path, decisions={}, sources={"mod.py": source})
+        assert len(findings) == 1
+        # the citation is on physical source line 2 -- the docstring's own opening
+        # line -- not line 3, which a decoded-value newline count would wrongly give.
+        assert findings[0].line == 2
 
 
 class TestDecisionCitationExists:
@@ -197,6 +223,139 @@ class TestParseFailureHandling:
         assert len(findings) == 1
         assert findings[0].rule == "knowledge-placement-unparseable-source-file"
         assert findings[0].strict is True
+
+    def test_invalid_utf8_source_file_produces_blocking_diagnostic_not_a_crash(self, tmp_path):
+        """Finding B (Phase 86 corrective pass): `path.read_text(encoding=
+        "utf-8")` can raise `UnicodeDecodeError`, which is NOT an
+        `OSError` subclass -- the pre-fix handler only caught `OSError`,
+        so invalid-UTF-8 source content escaped as an unhandled crash
+        rather than becoming a diagnostic finding."""
+        (tmp_path / "decisions").mkdir(parents=True, exist_ok=True)
+        bad = tmp_path / "src" / "codecompass" / "bad.py"
+        bad.parent.mkdir(parents=True, exist_ok=True)
+        bad.write_bytes(b"# a comment with invalid utf8: \xff\xfe\n")
+        findings = check_knowledge_placement.run_all(project_root=tmp_path)
+        assert len(findings) == 1
+        assert findings[0].rule == "knowledge-placement-unparseable-source-file"
+        assert findings[0].strict is True
+        assert findings[0].line == 1
+        assert "bad.py" in findings[0].file
+
+    def test_invalid_utf8_source_file_does_not_block_other_files(self, tmp_path):
+        (tmp_path / "decisions").mkdir(parents=True, exist_ok=True)
+        _write(tmp_path / "src" / "codecompass" / "bad.py", "")
+        (tmp_path / "src" / "codecompass" / "bad.py").write_bytes(b"\xff\xfe garbage\n")
+        _write(tmp_path / "src" / "codecompass" / "fine.py", "# decisions/0999\n")
+        findings = check_knowledge_placement.run_all(project_root=tmp_path)
+        rules = sorted(f.rule for f in findings)
+        assert rules == ["decision-citation-exists", "knowledge-placement-unparseable-source-file"]
+
+
+class TestCorpusIntegrityForDecisionFiles:
+    """Finding C (Phase 86 corrective pass): `_build_superseded_map`
+    used to catch a bare `OSError` on an ADR read and silently
+    `continue`, which can make a citation to an ADR actually superseded
+    by the unreadable file report as clean -- a misleadingly complete
+    result when the authoritative corpus was only partially examined.
+    `UnicodeDecodeError` (not an `OSError` subclass) escaped entirely,
+    crashing the run. Both must now produce an explicit, blocking
+    corpus-integrity diagnostic, and reading continues for every other
+    ADR."""
+
+    def test_unreadable_decision_file_produces_blocking_diagnostic_not_silent_pass(
+        self, tmp_path, monkeypatch
+    ):
+        _write(tmp_path / "decisions" / "0005-x.md", "# 0005. Something\n\n## Status\n\nAccepted\n")
+        unreadable = tmp_path / "decisions" / "0006-bad.md"
+        _write(
+            unreadable,
+            "# 0006. Something\n\n## Consequences\n\n`decisions/0005` is superseded by this ADR.\n",
+        )
+        _write(tmp_path / "src" / "codecompass" / "mod.py", "# decisions/0005\n")
+        real_read_text = Path.read_text
+
+        def _boom(self, *args, **kwargs):
+            if self.name == "0006-bad.md":
+                raise PermissionError("denied")
+            return real_read_text(self, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "read_text", _boom)
+        findings = check_knowledge_placement.run_all(project_root=tmp_path)
+        integrity = [
+            f for f in findings if f.rule == "knowledge-placement-unreadable-decision-file"
+        ]
+        assert len(integrity) == 1
+        assert integrity[0].strict is True
+        assert "0006-bad.md" in integrity[0].file
+        # the real supersession attribution in the unreadable file is -- honestly --
+        # unavailable; this must never silently read as "0005 is not superseded".
+        superseded = [f for f in findings if f.rule == "decision-citation-superseded"]
+        assert superseded == []
+
+    def test_undecodable_decision_file_produces_blocking_diagnostic_not_a_crash(self, tmp_path):
+        _write(tmp_path / "decisions" / "0005-x.md", "# 0005. Something\n\n## Status\n\nAccepted\n")
+        bad = tmp_path / "decisions" / "0006-bad.md"
+        bad.write_bytes(
+            b"# 0006. Something\n\n## Consequences\n\n"
+            b"`decisions/0005` is superseded by this ADR. \xff\xfe\n"
+        )
+        _write(tmp_path / "src" / "codecompass" / "mod.py", "# decisions/0005\n")
+        findings = check_knowledge_placement.run_all(project_root=tmp_path)
+        integrity = [
+            f for f in findings if f.rule == "knowledge-placement-unreadable-decision-file"
+        ]
+        assert len(integrity) == 1
+        assert integrity[0].strict is True
+        assert "0006-bad.md" in integrity[0].file
+
+    def test_other_readable_decision_files_are_still_processed(self, tmp_path, monkeypatch):
+        """One unreadable ADR must not prevent a *different*, readable
+        ADR's own real supersession declaration from still being
+        detected and reported at its usual informational severity."""
+        _write(tmp_path / "decisions" / "0001-x.md", "# 0001. Something\n\n## Status\n\nAccepted\n")
+        _write(tmp_path / "decisions" / "0002-x.md", "# 0002. Something\n\n## Status\n\nAccepted\n")
+        _write(
+            tmp_path / "decisions" / "0003-good.md",
+            "# 0003. Something\n\n## Consequences\n\n`decisions/0001` is superseded by this ADR.\n",
+        )
+        unreadable = tmp_path / "decisions" / "0004-bad.md"
+        _write(unreadable, "# 0004. Something\n\n## Status\n\nAccepted\n")
+        _write(
+            tmp_path / "src" / "codecompass" / "mod.py",
+            "# decisions/0001 and decisions/0002\n",
+        )
+        real_read_text = Path.read_text
+
+        def _boom(self, *args, **kwargs):
+            if self.name == "0004-bad.md":
+                raise PermissionError("denied")
+            return real_read_text(self, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "read_text", _boom)
+        findings = check_knowledge_placement.run_all(project_root=tmp_path)
+        superseded = {
+            f.message.split("decisions/")[1][:4]
+            for f in findings
+            if f.rule == "decision-citation-superseded"
+        }
+        assert superseded == {"0001"}
+        assert any(f.rule == "knowledge-placement-unreadable-decision-file" for f in findings)
+
+    def test_informational_severity_of_superseded_findings_is_unaffected(self, tmp_path):
+        """A corpus-integrity gap elsewhere must never change the severity
+        of a genuine, independently-detected `decision-citation-superseded`
+        finding -- it stays informational, never promoted to blocking
+        merely because some other ADR could not be read."""
+        _write(tmp_path / "decisions" / "0001-x.md", "# 0001. Something\n\n## Status\n\nAccepted\n")
+        _write(
+            tmp_path / "decisions" / "0002-good.md",
+            "# 0002. Something\n\n## Consequences\n\n`decisions/0001` is superseded by this ADR.\n",
+        )
+        _write(tmp_path / "src" / "codecompass" / "mod.py", "# decisions/0001\n")
+        findings = check_knowledge_placement.run_all(project_root=tmp_path)
+        superseded = [f for f in findings if f.rule == "decision-citation-superseded"]
+        assert len(superseded) == 1
+        assert superseded[0].strict is False
 
 
 class TestRealCorpusSupersessionDetection:
@@ -411,17 +570,32 @@ class TestDeterminism:
 
 
 class TestRealCorpusBaseline:
-    def test_source_resolution_dogfood_finding_is_present(self):
-        """Pins the specific, independently-confirmed real finding
-        this phase's own dogfood (§9) is grounded in -- never
-        suppressed to make this test pass."""
+    def test_real_corpus_run_produces_only_well_formed_informational_findings(self):
+        """Phase 86 corrective pass, finding D: this no longer pins the
+        specific historical `source_resolution.py`/`decisions/0019`
+        finding by name -- that citation is now legitimate historical
+        context (the real dogfood's own correction left it there on
+        purpose), not an outstanding defect, and a future edit that
+        removes or relocates the historical aside should not break an
+        otherwise-correct implementation. The detector's own correct
+        *behaviour* is established by `TestRealCorpusSupersessionDetection`'s
+        controlled, real-ADR-text fixtures above, independent of what
+        the live corpus happens to contain today. This test only
+        confirms that whatever `decision-citation-superseded` findings
+        the real corpus produces (zero or more) are well-formed and
+        correctly informational -- never blocking.
+
+        The original dogfood finding, its independent adjudication, the
+        lead's correction, and its re-verification remain recorded as
+        historical evidence in `planning/retros/phase-86-knowledge-
+        placement-code-quality-review.md`'s "Real dogfood" section,
+        which is not altered by this refactor."""
         findings = check_knowledge_placement.run_all(project_root=REPO_ROOT)
-        assert any(
-            f.rule == "decision-citation-superseded"
-            and "source_resolution.py" in f.file
-            and "decisions/0019" in f.message
-            for f in findings
-        )
+        superseded = [f for f in findings if f.rule == "decision-citation-superseded"]
+        for f in superseded:
+            assert f.strict is False
+            assert f.file and f.line > 0
+            assert "decisions/" in f.message
 
     def test_no_decision_citation_exists_false_positives_on_real_corpus(self):
         findings = check_knowledge_placement.run_all(project_root=REPO_ROOT)
@@ -431,6 +605,10 @@ class TestRealCorpusBaseline:
     def test_no_unparseable_source_file_findings_on_real_corpus(self):
         findings = check_knowledge_placement.run_all(project_root=REPO_ROOT)
         assert not any(f.rule == "knowledge-placement-unparseable-source-file" for f in findings)
+
+    def test_no_unreadable_decision_file_findings_on_real_corpus(self):
+        findings = check_knowledge_placement.run_all(project_root=REPO_ROOT)
+        assert not any(f.rule == "knowledge-placement-unreadable-decision-file" for f in findings)
 
     def test_does_not_duplicate_check_self_knowledge_quality_rule_names(self):
         self_knowledge_rules = {

@@ -19,19 +19,25 @@ not a `codecompass` subcommand.
 
 Citation extraction (§6.A points 1-6): each `src/codecompass/**/*.py`
 file is parsed with `ast.parse` for real module/class/function
-docstrings (`ast.get_docstring(node, clean=False)` — the **raw** text,
-never the `clean=True` default, which would silently undercount a
-multiline docstring's own line offsets by discarding leading blank
-lines before counting began) and independently tokenized with
-`tokenize.generate_tokens` for real `#` comments. A single bounded
-regex, `decisions/([0-9]{4})\\b`, is applied only within each
-docstring's/comment's own isolated text — never the rest of the file,
-never an ordinary string literal, f-string, or test-fixture string. A
-per-file `SyntaxError`/`OSError`/`tokenize` failure produces one
-always-blocking `knowledge-placement-unparseable-source-file` finding
-(`line=1`) for that file and processing continues with the next file —
-one bad file never aborts the whole run, never silently looks like a
-clean one.
+docstrings and independently tokenized with `tokenize.generate_tokens`
+for real `#` comments. A docstring's own text is sliced directly from
+the file's **raw source lines** (using the string literal's own
+`lineno`/`col_offset`/`end_lineno`/`end_col_offset`), never `ast.
+get_docstring`'s decoded value, even with `clean=False` — a decoded
+value turns an escaped `\\n` *inside* one physical source line into a
+real newline character, which would overcount a later citation's own
+physical line; a raw source slice contains only genuine physical line
+breaks (Phase 86 corrective pass, finding D). A single bounded regex,
+`decisions/([0-9]{4})\\b`, is applied only within each docstring's/
+comment's own isolated text — never the rest of the file, never an
+ordinary string literal, f-string, or test-fixture string. A per-file
+`SyntaxError`/`OSError`/`UnicodeDecodeError`/`tokenize` failure
+produces one always-blocking `knowledge-placement-unparseable-source-
+file` finding (`line=1`) for that file and processing continues with
+the next file — one bad file never aborts the whole run, never
+silently looks like a clean one (corrective-pass finding B widened
+the caught exception set from `OSError` alone, which does not cover
+`UnicodeDecodeError` on invalid-UTF-8 content).
 
 Supersession attribution (§6.A point 7) is scoped to four locations
 per `decisions/*.md` ADR file — its own first line (title), `##
@@ -48,7 +54,13 @@ phase's own plan was written against: exactly 8 files match
 `## Context`-only mention confirmed as negative controls, and a
 `decisions/0032` conjunction ("X and Y are superseded") only capturing
 the number immediately adjacent to the verb — a disclosed, not silent,
-limitation.
+limitation. An ADR that cannot be read or decoded is never silently
+skipped (corrective-pass finding C) — it produces its own always-
+blocking `knowledge-placement-unreadable-decision-file` diagnostic,
+since skipping it would let a citation to an ADR actually superseded
+*by* the unreadable file report as clean, misrepresenting a partially-
+examined corpus as a complete one; every other, readable ADR is still
+processed.
 
 Checks:
 
@@ -61,6 +73,18 @@ Checks:
    is not itself a defect; this check only makes the citation visible
    for the ad-hoc semantic/editorial reviewer (`docs/workflows/
    knowledge-placement-review.md`) to judge in context.
+
+Diagnostics (not findings about the source/ADR corpus itself, but
+about this check's own ability to examine it — both **always
+blocking**, since a validator must never produce an apparently
+complete, trustworthy result when part of its authoritative input
+could not be read or interpreted):
+
+- `knowledge-placement-unparseable-source-file` — a `src/codecompass/
+  **/*.py` file could not be read or parsed.
+- `knowledge-placement-unreadable-decision-file` — a `decisions/*.md`
+  file could not be read or decoded, so this run's own supersession
+  attribution is incomplete with respect to it.
 
 Deferred, not shipped (see the plan's own §6.A/§7/§12/§13 for the full
 rationale): `decision-citation-status-mismatch` (would conflate a
@@ -163,18 +187,43 @@ def _real_adr_numbers(decisions_root: Path) -> set[str]:
     return numbers
 
 
-def _build_superseded_map(decisions_root: Path) -> dict[str, tuple[str, str, str]]:
+def _build_superseded_map(
+    decisions_root: Path, project_root: Path
+) -> tuple[dict[str, tuple[str, str, str]], list[Finding]]:
     """Cited ADR number -> (attributing ADR filename, section, pattern)
     for the *first* real attribution found, sorted by filename for
     determinism -- a number attributed from more than one file/section
     (e.g. `decisions/0061` both title and Decision cite `0019`) reports
     only the first, which is sufficient since this check's own job is
-    visibility, not an exhaustive attribution list."""
+    visibility, not an exhaustive attribution list.
+
+    An ADR that cannot be read or decoded is never silently skipped --
+    skipping it would make this check's own result look like a complete
+    "nothing here is superseded" pass when the authoritative corpus was
+    only *partially* examined. Each such file instead produces its own
+    always-blocking `knowledge-placement-unreadable-decision-file`
+    diagnostic, and every other, readable ADR is still processed."""
     result: dict[str, tuple[str, str, str]] = {}
+    diagnostics: list[Finding] = []
     for path in sorted(decisions_root.glob("*.md")):
         try:
+            rel = str(path.relative_to(project_root))
+        except ValueError:
+            rel = str(path)
+        try:
             text = path.read_text(encoding="utf-8")
-        except OSError:
+        except (OSError, UnicodeDecodeError) as exc:
+            diagnostics.append(
+                Finding(
+                    "knowledge-placement-unreadable-decision-file",
+                    f"{rel}: could not be read ({type(exc).__name__}: {exc}) -- the "
+                    "decisions/ corpus was only partially examined; supersession "
+                    "attribution involving this file is unavailable, not confirmed absent",
+                    True,
+                    rel,
+                    1,
+                )
+            )
             continue
         sections = _parse_adr_sections(text)
         for section_name, content in sections.items():
@@ -182,10 +231,19 @@ def _build_superseded_map(decisions_root: Path) -> dict[str, tuple[str, str, str
                 result.setdefault(m.group(1), (path.name, section_name, "passive"))
             for m in ACTIVE_SUPERSEDES_RE.finditer(content):
                 result.setdefault(m.group(1), (path.name, section_name, "active"))
-    return result
+    return result, diagnostics
 
 
-def _docstring_citations(tree: ast.AST) -> list[tuple[int, str]]:
+def _docstring_citations(tree: ast.AST, source_lines: list[str]) -> list[tuple[int, str]]:
+    """Scans each real docstring's own **raw source text** -- sliced
+    directly from `source_lines` using the string literal's own
+    `lineno`/`col_offset`/`end_lineno`/`end_col_offset` -- rather than
+    `ast.get_docstring`'s decoded string value (even with `clean=
+    False`). A decoded value turns an escaped `\\n` *inside* a single
+    physical source line into a real newline character, which would
+    overcount physical lines for any citation appearing after one; the
+    raw source slice contains only genuine physical line breaks, so
+    counting `\\n` within it always matches the citation's real line."""
     found: list[tuple[int, str]] = []
     for node in ast.walk(tree):
         if not isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -199,8 +257,18 @@ def _docstring_citations(tree: ast.AST) -> list[tuple[int, str]]:
             and isinstance(first.value.value, str)
         ):
             continue
-        raw = first.value.value  # clean=False equivalent -- raw, uncleaned text
-        start_line = first.lineno
+        value_node = first.value
+        start_line = value_node.lineno
+        end_line = value_node.end_lineno
+        lines = list(source_lines[start_line - 1 : end_line])
+        if not lines:
+            continue
+        if len(lines) == 1:
+            lines[0] = lines[0][value_node.col_offset : value_node.end_col_offset]
+        else:
+            lines[0] = lines[0][value_node.col_offset :]
+            lines[-1] = lines[-1][: value_node.end_col_offset]
+        raw = "\n".join(lines)
         for m in CITATION_RE.finditer(raw):
             line = start_line + raw[: m.start()].count("\n")
             found.append((line, m.group(1)))
@@ -224,7 +292,7 @@ def _extract_file_citations(path: Path, rel: str) -> tuple[list[_Citation], Find
     parse failure can never masquerade as "fewer findings"."""
     try:
         text = path.read_text(encoding="utf-8")
-    except OSError as exc:
+    except (OSError, UnicodeDecodeError) as exc:
         return [], Finding(
             "knowledge-placement-unparseable-source-file",
             f"{rel}: could not be read ({type(exc).__name__}: {exc})",
@@ -243,7 +311,7 @@ def _extract_file_citations(path: Path, rel: str) -> tuple[list[_Citation], Find
             rel,
             1,
         )
-    docstring_hits = _docstring_citations(tree)
+    docstring_hits = _docstring_citations(tree, text.splitlines())
     citations = sorted(
         {_Citation(rel, line, number) for line, number in docstring_hits + comment_hits},
         key=lambda c: (c.line, c.number),
@@ -334,7 +402,8 @@ def run_all(
         all_citations.extend(citations)
 
     real_numbers = _real_adr_numbers(decisions_root)
-    superseded_map = _build_superseded_map(decisions_root)
+    superseded_map, corpus_diagnostics = _build_superseded_map(decisions_root, project_root)
+    findings.extend(corpus_diagnostics)
 
     findings.extend(check_decision_citation_exists(all_citations, real_numbers))
     findings.extend(check_decision_citation_superseded(all_citations, superseded_map))
