@@ -10932,3 +10932,35 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   `tests/test_check_user_docs.py::TestReadmePhaseCount::test_ignores_done_phases_in_redefined_v1_section`
   + `scripts/check_user_docs.py::check_readme_phase_count` @ c22d8e4
   (logged in `promoted.md`, Phase 41 triage 2026-09-10)
+
+### L-116 — a stdlib exception name cited in a plan is not confirmed real until the code that catches it actually runs
+
+- **origin:** Phase 86 (Knowledge-Placement and Code-Quality Review),
+  implementation of `scripts/check_knowledge_placement.py`
+- **date:** 2026-11-03
+- **project_revision:** working tree (uncommitted at time of filing)
+- **observation:** the Phase 86 plan's own §6.A (independently reviewed
+  across four amendment rounds, each verifying the design's regex/
+  scoping logic by direct execution) specified catching
+  `tokenize.TokenizeError` for a malformed-source parse failure. That
+  class does not exist in Python's `tokenize` module — the real name is
+  `tokenize.TokenError`. None of the four independent planning-review
+  passes caught this, because every one of them verified the plan's
+  *regex and scoping claims* by executing those specific snippets in
+  isolation; none executed the full `_extract_file_citations` function
+  end-to-end against a real malformed-source fixture, which is the only
+  thing that would have raised `AttributeError: module 'tokenize' has
+  no attribute 'TokenizeError'` and surfaced the typo. It was caught
+  immediately, on the first test run, once implementation + a real
+  `SyntaxError`-fixture test existed.
+- **evidence:** `scripts/check_knowledge_placement.py:237` (pre-fix);
+  `tests/test_check_knowledge_placement.py::TestParseFailureHandling::
+  test_syntax_error_produces_blocking_diagnostic_and_does_not_crash`
+  failed with `AttributeError` on first run, fixed by changing to
+  `tokenize.TokenError`; confirmed real via
+  `python3 -c "import tokenize; tokenize.TokenError"` (succeeds) vs.
+  `tokenize.TokenizeError` (`AttributeError`).
+- **classification:** workflow
+- **status:** candidate
+- **recurrence:**
+- **promoted_to:**

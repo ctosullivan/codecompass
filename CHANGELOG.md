@@ -9,6 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 86: Knowledge-Placement and Code-Quality Review**
+  (`decisions/0084` §2, formalised `decisions/0085` §4, enforcement
+  decided `decisions/0094`): a documented Knowledge Placement Policy
+  (`docs/concepts/knowledge-placement-policy.md`, eight categories
+  mapped onto this project's real artifacts) and an ad-hoc, read-only
+  advisory review (`docs/workflows/knowledge-placement-review.md`,
+  dispatched as a `general-purpose` subagent carrying the brief inline
+  — no new standing agent). A new on-demand maintainer validator,
+  `scripts/check_knowledge_placement.py` (32 tests), extracts
+  `decisions/NNNN` citations only from real `ast`-detected docstrings
+  and `tokenize`-detected comments (never an ordinary string literal),
+  with two mechanical checks (`decision-citation-exists`, blocking;
+  `decision-citation-superseded`, informational, scanning an ADR's
+  title/`## Status`/`## Decision`/`## Consequences` sections) plus an
+  always-blocking `knowledge-placement-unparseable-source-file`
+  diagnostic for a malformed/unreadable source file. Two originally-
+  proposed checks are deferred, not shipped:
+  `decision-citation-status-mismatch` (would conflate a citation's
+  recorded vs. effective ADR status — demonstrated unsafe by the real
+  `decisions/0019`/`0061` relationship) and
+  `docstring-contradicted-by-oracle-result` (would require inferring
+  that a bare `check_id` citation asserts specific behaviour, and
+  treating `INVALID`/stale evidence as a demonstrated `FAIL` — neither
+  licensed by this project's own Oracle semantics); behavioural review
+  remains available through the ad-hoc reviewer's own direct reading
+  of real oracle evidence. Real dogfood: a genuine, previously-
+  unflagged placement defect in `src/codecompass/source_resolution.py`'s
+  own module docstring (presenting the superseded `decisions/0019` as
+  live, current-state justification for a retired, deleted mechanism)
+  was independently found, adjudicated, corrected, and re-verified;
+  `oracle.py`/`staleness.py` confirmed as clean negative controls.
 - **Phase 85: Self-Curation and Knowledge-Quality Validation**
   (`decisions/0084` §2-3): a repeatable, documented self-curation loop
   (`docs/workflows/self-curation-loop.md`) dogfooding the existing

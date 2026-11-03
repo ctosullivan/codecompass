@@ -1,5 +1,13 @@
-"""Upstream repository resolution and shallow clone, for grounded-
-description generation. See decisions/0019 and decisions/0021.
+"""Upstream repository resolution and shallow clone, building the
+`vendor/<name>/src/` snapshot `sync_vendor` clones unconditionally for
+every vendor (decisions/0033), independent of any enrichment decision —
+see decisions/0021 for the fail-loud-on-unresolvable-repository
+semantics this module implements. (Originally introduced to feed
+promote-time, `Depth.FULL`-gated grounded-description generation,
+decisions/0019 — that mechanism, `grounded_description.py`, was retired
+and deleted, decisions/0035; cloning was retained and generalised to
+run for every vendor, decisions/0033, independent of `promote`, which
+decisions/0033 itself also removed.)
 
 Resolution itself reads only locally-available package metadata (each
 adapter's `repository_url()`) — no registry network calls. Cloning does

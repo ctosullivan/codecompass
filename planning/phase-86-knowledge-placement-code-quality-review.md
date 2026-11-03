@@ -731,7 +731,7 @@ byte string, or test fixture.
    for an unreadable `test_ref` file (`self-knowledge-quality-
    unreadable-test-ref-file`, `except OSError`, never a bare `except
    Exception`). `tokenize.generate_tokens` can independently raise
-   `tokenize.TokenizeError`/`IndentationError` on malformed source even
+   `tokenize.TokenError`/`IndentationError` on malformed source even
    where `ast.parse` already failed first — both are caught by the same
    `knowledge-placement-unparseable-source-file` finding for that file,
    never a second, differently-named finding for the same root cause.
