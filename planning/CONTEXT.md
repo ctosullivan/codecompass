@@ -7,6 +7,22 @@ session-resumption, not a project history.
 
 ## Current phase
 
+**Phase 87 — Documentation Schema and Knowledge-Compiled Documentation
+— is `planned`, not started.** Plan:
+`planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
+Written against verified (not assumed) reuse of Phase 79-86's real
+implementations — notably Phase 81B's clean-room broker/isolation
+scripts (`prepare_cleanroom_branch.py`/`verify_cleanroom_isolation.py`/
+`cleanroom_broker.py`, reused unchanged) and Phase 84's
+`knowledge_api.get_context_packet`/`find_gaps` (reused directly for the
+compilation pipeline's own bounded-packet and gap-detection steps).
+Direct inspection found every file in the required minimum publication
+suite already exists; the "epistemic distinctions" gap
+`decisions/0085` §5 named turned out to be editorial accessibility, not
+missing content. Awaiting an independent planning-review verdict
+before implementation may begin — implementation is **not**
+authorised yet.
+
 **Phase 86 — Knowledge-Placement and Code-Quality Review — is `done`
 (2026-11-03)**. Plan amended and independently reviewed across four
 rounds before implementation (full history: `planning/phase-86-
@@ -928,15 +944,18 @@ can close out fully: `L-116`'s recommended promotion to `CLAUDE.md` §1
 §L) and `L-117`'s recommended promotion (same file, §M) — both
 learnings' own `status` is `retained` pending this, requiring the
 user's own `CLAUDE.md` §0 approval; not something this or any future
-session may apply on the user's behalf. Sequence from here: 87 (Documentation
-Schema and Knowledge-Compiled Documentation, minimum suite specified)
-→ 88 (Agent
-Integration and MCP, split from the old merged phase) → 89 (Incremental
-Knowledge and Documentation Reconciliation, split from the old merged
-phase, independent of MCP) → 90 (Comparative Development Trials,
-methodology strengthened) → 91 (External Validation and Adoption) → 92
-(v2.0 Hardening and Release). None of 87-92 is phase-planned yet; each
-gets its own `CLAUDE.md` §1 plan file when it is actually next.
+session may apply on the user's behalf. Sequence from here: **87
+(Documentation Schema and Knowledge-Compiled Documentation) is
+phase-planned, `planned`, not started** —
+`planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`,
+pending an independent planning-review verdict before implementation
+may begin (`CLAUDE.md` §1). → 88 (Agent Integration and MCP, split from
+the old merged phase) → 89 (Incremental Knowledge and Documentation
+Reconciliation, split from the old merged phase, independent of MCP) →
+90 (Comparative Development Trials, methodology strengthened) → 91
+(External Validation and Adoption) → 92 (v2.0 Hardening and Release).
+None of 88-92 is phase-planned yet; each gets its own `CLAUDE.md` §1
+plan file when it is actually next.
 
 Other open items requiring a human/lead decision, none currently claimed
 by a drafted plan or phase number:
