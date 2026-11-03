@@ -1,9 +1,10 @@
 # Phase 86: Knowledge-Placement and Code-Quality Review — plan
 
-**Status: planned, not started.** Written per `CLAUDE.md` §1. Does not
-implement Phase 86 — see `planning/retros/phase-86-knowledge-placement-
-code-quality-review.md` for the (not-yet-existing) implementation retro,
-created only once implementation begins.
+**Status: done (2026-11-03).** Implemented per this plan's own final
+(fourth-amendment) design, after four independent planning-review
+rounds reached READY. Retro: `planning/retros/phase-86-knowledge-
+placement-code-quality-review.md`. Independent DoD audit: `planning/
+retros/_audit-phase-86.md` (PASS WITH NON-BLOCKING OBSERVATIONS).
 
 Governing scope: `planning/v2-roadmap.md` §"Phase 86 — Knowledge-
 Placement and Code-Quality Review" (10-point roadmap-depth sketch,

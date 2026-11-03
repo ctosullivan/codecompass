@@ -7,82 +7,58 @@ session-resumption, not a project history.
 
 ## Current phase
 
-**Phase 86 — Knowledge-Placement and Code-Quality Review — is
-`planned`, not started (2026-11-03)**. A full, implementation-ready
-plan exists at `planning/phase-86-knowledge-placement-code-quality-
-review.md`, independently reviewed four times across three amendment
-rounds before being accepted:
+**Phase 86 — Knowledge-Placement and Code-Quality Review — is `done`
+(2026-11-03)**. Plan amended and independently reviewed across four
+rounds before implementation (full history: `planning/phase-86-
+knowledge-placement-code-quality-review.md`'s own top section and
+§12/§13) — in short: a `.md`→`.yaml` typo disclosure and a 14th-agent
+design revision (rounds 1-2); deferring `docstring-contradicted-by-
+oracle-result` (would have treated `INVALID`/stale oracle evidence as
+a demonstrated `FAIL`) plus a real regex capture-direction bug caught
+and fixed (round 3); deferring `decision-citation-status-mismatch`
+(the real `decisions/0019`/`0061` relationship proves a literal
+recorded-vs-effective status comparison is unsafe), widening
+supersession-section scanning to title/Status/Decision/Consequences
+(verified against the real corpus: exactly 8 files match), generalising
+the real-dogfood acceptance criteria, and a real
+`ast.get_docstring(clean=True)` line-provenance bug caught and fixed
+(round 4, three issues found and fixed across two follow-up review
+passes). Final verdict: **READY**.
 
-- **Round 1-2** (first committed at `2bd4fcc`): one material fix —
-  §5's policy table had silently corrected a `.md`→`.yaml` typo
-  inherited from `decisions/0085` §4 without disclosing it, now
-  disclosed explicitly; one substantive design revision — the
-  semantic/editorial reviewer capability was redesigned from a
-  proposed 14th standing specialist agent into an ad-hoc
-  `general-purpose` dispatch carrying a committed workflow-doc brief,
-  `docs/workflows/knowledge-placement-review.md`, avoiding roster
-  growth entirely, with promotion to a true roster entry named as a
-  future, evidence-gated escalation path rather than a pre-commitment;
-  two minor phase-number misattributions and one citation-section
-  misattribution also fixed.
-- **Round 3** ("CodeCompass Orchestrator — Amend and Verify Phase 86
-  Plan"): four further corrections — (1) the proposed `docstring-
-  contradicted-by-oracle-result` mechanical/behavioural check is
-  **deferred, not shipped**: it would have treated `INVALID`/stale/
-  missing oracle evidence as a demonstrated `FAIL`, and a bare
-  `check_id` citation as if it established the docstring's own claim —
-  neither licensed by this project's real Oracle semantics
-  (`oracle.py`'s `_OUTCOME_VALUES`); behavioural review stays one of
-  the three enforcement classes but now happens only via the ad-hoc
-  reviewer's own direct, correctly-precedenced reading of real Phase
-  82-84 evidence, never a new checker or a new annotation convention;
-  (2) the real-dogfood exit gate (§9) now explicitly forbids a
-  constructed fixture from ever substituting for it — if the
-  pre-identified instance is gone, the search widens to another
-  bounded real subsystem, or the gate is reported honestly unmet;
-  fixtures are confined to the unit/integration test suite only; (3)
-  citation extraction is now `ast`/`tokenize`-based (real docstrings
-  and real comments only, never an ordinary string literal), with
-  supersession attribution scoped to an ADR's own title line or `##
-  Status` section only; (4) one stray "new reviewer agent" wording in
-  §4 corrected to match §6.B's already-settled ad-hoc design. A first
-  independent review of this round found one HIGH bug it introduced:
-  the new supersession-attribution regex captured the wrong side of
-  the sentence (the live, superseding ADR's number, not the superseded
-  one) — against the real `decisions/0061` title, it would have
-  captured `0035` instead of `0019`, silently breaking the plan's own
-  central dogfood example. Fixed by the lead (capture direction
-  reversed) and verified, by the lead and independently by a follow-up
-  review, against the entire real 92-file ADR corpus: the corrected
-  regex fires exactly once, on exactly `decisions/0061`, capturing
-  exactly `0019` — zero false positives, zero false negatives. Second
-  review verdict: **READY**.
+**Implemented**: `scripts/check_knowledge_placement.py` (32 tests) —
+two mechanical checks (`decision-citation-exists`, blocking;
+`decision-citation-superseded`, informational) plus an always-blocking
+`knowledge-placement-unparseable-source-file` diagnostic for a per-file
+parse failure; `docs/concepts/knowledge-placement-policy.md`/`docs/
+workflows/knowledge-placement-review.md` (the policy and the ad-hoc
+reviewer's own brief — no new standing agent, confirmed by the
+unchanged 13-file `.claude/agents/` roster); `decisions/0094` (the
+five non-obvious tradeoffs this phase's plan amendments surfaced).
+**Real dogfood**: `src/codecompass/source_resolution.py`'s own module
+docstring cited `decisions/0019` (superseded by `decisions/0035` per
+`decisions/0061`) as if it still justified the module's current
+purpose, when the real current caller (`sync.py`'s `sync_vendor`,
+`decisions/0021`/`0033`) never cites it at all — independently found
+(ad-hoc reviewer dispatch), adjudicated, corrected by the lead, and
+re-verified independently (a forked dispatch confirmed the rewritten
+docstring now reads as historical, not current, justification).
+`oracle.py`/`staleness.py` confirmed clean negative controls throughout.
+`release-phase-auditor`: PASS WITH NON-BLOCKING OBSERVATIONS (`planning/
+retros/_audit-phase-86.md`) — re-verified the dogfood fix, test
+coverage, and all pre-existing strict-validator baselines directly,
+found no gap. `L-116` filed (a plan citing a specific stdlib API name
+needs that name verified by direct execution during review, not only
+its surrounding logic — `tokenize.TokenizeError` does not exist, the
+real name is `tokenize.TokenError`, caught on the first test run, never
+committed in its broken form); `knowledge-curator` recommends
+**promote** to `CLAUDE.md` §1, draft text in `planning/v1-redefinition/
+proposed-governance-changes.md` §L, **pending the user's own explicit
+`CLAUDE.md` §0 approval** — not yet applied.
 
-The plan reproduces `decisions/0085` §4's own eight-category Knowledge
-Placement Policy table, defines a mechanical-only validator script
-(`scripts/check_knowledge_placement.py`, three checks, reusing Phase
-84's read-only API and Phase 85's own `Finding`/CLI conventions
-unchanged), and designs a real dogfood against a bounded three-file
-subsystem (`src/codecompass/source_resolution.py`, `oracle.py`,
-`staleness.py`) — grounded in a real, independently confirmed (three
-times now, across all three rounds), previously-unflagged placement
-defect found during planning itself: `source_resolution.py`'s own
-module docstring cites `decisions/0019` (superseded by `decisions/0035`
-per `decisions/0061`) as if it still justified the module's current
-purpose, when the real current purpose/caller (`sync.py`'s
-`sync_vendor` path) never cites it at all. **Implementation is not
-authorised by this planning task** — every governing prompt so far has
-been explicitly planning-only.
-
-Separately, this same task re-verified Phase 85's own outstanding
-`--strict` baseline (35 findings, 26 blocking, 9 informational —
-unchanged since the Phase 85 corrective pass) and confirmed its
-existing disposition (`L-114` retained; `L-107` retained, cross-
-referenced) already satisfies every retention/traceability requirement
-— **no backlog or learning-record changes were made**, and neither
-category was found to be Phase-86-relevant (both are evidence-
-completeness/oracle-verification-currency concerns, not placement
-concerns).
+Phase 85's own outstanding `--strict` baseline (35 findings, 26
+blocking, 9 informational) was re-verified unchanged throughout Phase
+86's own work; `L-114`/`L-107` remain retained, untouched, not
+Phase-86-relevant.
 
 **Phase 85 — Self-Curation and Knowledge-Quality Validation — is `done`
 (2026-11-03)**. The plan was amended twice and independently reviewed
@@ -867,11 +843,13 @@ genuine knowledge-debt categories the reconciled `--strict` baseline
 still carries are tracked as standing gaps (`L-114`, `L-107`, above),
 not phase work.
 
-**Phase 86 (Knowledge-Placement and Code-Quality Review) is `planned`,
-not started** — see "Current phase" above. Its plan is implementation-
-ready and independently reviewed, but **implementation itself requires
-its own separate, explicit authorisation**, not granted by this
-planning task. Sequence from here: 87 (Documentation Schema and
+**Phase 86 (Knowledge-Placement and Code-Quality Review) is `done`** —
+see "Current phase" above. One item awaits a separate, explicit user
+decision before it can close out fully: `L-116`'s recommended promotion
+to `CLAUDE.md` §1 (draft text: `planning/v1-redefinition/proposed-
+governance-changes.md` §L) requires the user's own `CLAUDE.md` §0
+approval — not something this or any future session may apply on the
+user's behalf. Sequence from here: 87 (Documentation Schema and
 Knowledge-Compiled Documentation, minimum suite specified) → 88 (Agent
 Integration and MCP, split from the old merged phase) → 89 (Incremental
 Knowledge and Documentation Reconciliation, split from the old merged
