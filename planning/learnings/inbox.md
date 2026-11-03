@@ -10964,7 +10964,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   `workflow` tag during this triage — see curation note: the destination
   this triage recommends is `CLAUDE.md` §1, which `learning-lifecycle.md`
   §4 maps to `project-rule`, not a Claude skill)
-- **status:** candidate
+- **status:** retained
 - **recurrence:** first occurrence. Checked `inbox.md` (grepped every
   `### L-NNN` heading, all 116 titles, and the bodies of the nearest
   analogues — `L-029` "a plan's own claim... should be re-verified
@@ -11068,3 +11068,22 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   specific stdlib/third-party API name must have that name verified by
   direct execution during plan review, not only its surrounding logic
   -- user-approved per §0) @ <landing commit>`.
+
+  **Corrective-closeout note (2026-11-03, knowledge-curator):** status
+  changed from `candidate` to `retained`. Curation and the recommendation
+  above are complete and final — nothing further to investigate or
+  evidence-gather; the only thing this entry is waiting on is the user's
+  explicit `CLAUDE.md` §0 approval of the diff in
+  `proposed-governance-changes.md` §L (which the lead, not this role,
+  presents). That approval has not been given or recorded anywhere in
+  this session or in git history as of this note (`CLAUDE.md` has zero
+  diff since before Phase 86 began) — so `status: promoted` would
+  misrepresent an ungranted approval as granted, and bare `status:
+  candidate` would undersell that curation already reached a firm,
+  evidenced recommendation. `retained` is the accurate interim
+  disposition per `learning-lifecycle.md`'s status vocabulary. Once §0
+  approval is obtained and the `CLAUDE.md` §1 edit actually lands, flip
+  this entry's `status` to `promoted`, record the real landing commit in
+  `promoted_to`, and add the `promoted.md` line already drafted
+  immediately above this note — no re-investigation needed at that
+  point, only the mechanical flip.
