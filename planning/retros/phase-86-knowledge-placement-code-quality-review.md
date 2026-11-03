@@ -175,3 +175,43 @@ never exercised in the first place (here: no existing test ever
 supplied invalid-UTF-8 content or an unreadable ADR file). A `done`
 phase remains open to a later, independently-initiated defect-finding
 pass without that implying the original audit was performed carelessly.
+
+## Second corrective pass (2026-11-04)
+
+A further independent review found two more defects and an
+audit-sequencing gap, all now closed (full detail: the plan's own new
+§15):
+
+- **A genuine, previously-missed defect**: `_docstring_citations()`
+  sliced docstring text using `ast`'s `col_offset`/`end_col_offset` as
+  if they were character offsets; CPython's `ast` reports them as UTF-8
+  *byte* offsets, so a multibyte identifier preceding an inline
+  docstring on the same physical line silently lost the citation
+  entirely. This is the same lesson shape as `L-116`
+  (Phase 86's own first corrective pass) and Phase 85's `95309f1` one
+  level up the stack: an API's documented *contract* was assumed from
+  its name/common usage rather than verified by reading what it
+  actually specifies, and every fixture exercising this code path
+  throughout the phase's four planning-review rounds and both prior
+  audits happened to be pure ASCII, where the byte/character
+  distinction is invisible. Filed as `L-117`.
+- `--files`'s `nargs="*"` accepted an explicit, empty file selection as
+  an apparently-successful zero-file scan; changed to `nargs="+"`.
+- The first corrective pass's own `release-phase-auditor` re-audit
+  (`64dba3c`) is now understood to have completed its verification
+  *before* two later audited-scope commits (`e682994`, `2ac5dd4`) had
+  landed, even though it was recorded to disk after them — a genuine
+  gap in the discipline `CLAUDE.md` §5 requires ("any commit after the
+  auditor's own pass that touches audited scope voids that pass").
+  Lesson: when an auditor dispatch's own report text is written to disk
+  by the lead in a separate, later commit than when the auditor's
+  verification work actually happened, the lead must confirm no
+  audited-scope commit landed *in between* those two moments — commit
+  *order* in `git log`, not just "did an audit get recorded somewhere,
+  eventually," is what the exemption in §5 actually depends on.
+
+Resolved by a fresh, comprehensive `release-phase-auditor` dispatch
+covering the complete final state (everything through `648be97`) —
+the first audit of this phase to genuinely reflect it. Verdict: PASS
+WITH NON-BLOCKING OBSERVATIONS (five documentation/triage follow-ups,
+all closed out in the same session).

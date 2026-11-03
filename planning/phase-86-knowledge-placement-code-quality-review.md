@@ -1733,3 +1733,75 @@ runs. `check_contracts.py`, `check_knowledge_base.py`, and
 already-documented pre-existing baselines (the last: 35 findings, 26
 blocking / 9 informational, unchanged — no Phase 85 finding suppressed
 or altered).
+
+## 15. Second corrective pass (2026-11-04) — narrow, post-completion
+
+A follow-up independent review found two further problems with this
+phase's closeout (neither reopening the plan's own design; no new ADR,
+same `95309f1`/first-corrective-pass precedent):
+
+1. **UTF-8 byte-vs-character offset bug (MEDIUM, fixed).**
+   `_docstring_citations()` sliced a docstring's own raw source text
+   using the containing `ast.Constant` node's `col_offset`/
+   `end_col_offset` directly against the *decoded* `str` line. CPython's
+   `ast` module reports these as UTF-8 *byte* offsets, not character
+   offsets — a multibyte character anywhere earlier on the same
+   physical source line as an inline docstring's opening quote (e.g. a
+   non-ASCII function/class name immediately before it) shifts every
+   later character's byte offset ahead of its character index.
+   Reproduced directly: `def 非常非常(): """decisions/9999"""` lost its
+   citation entirely (empty result, no diagnostic) against the pre-fix
+   code. Fixed by slicing each affected line's own UTF-8-encoded bytes
+   first, then decoding. Filed as `L-117` for `knowledge-curator`
+   triage (see `planning/learnings/inbox.md`). Confirmed via a full
+   pre-fix/post-fix real-corpus diff that this project's own
+   `src/codecompass/**/*.py` corpus was never actually affected — a
+   latent, not active, defect.
+2. **Empty `--files` selection accepted as a silent clean pass (MEDIUM,
+   fixed).** `--files` used `nargs="*"`, so `--files` supplied with no
+   paths produced an apparently-successful "no findings" run having
+   inspected zero files. Changed to `nargs="+"`, making an explicit,
+   empty selection a usage error (exit 2); omitting `--files` entirely
+   still defaults to the whole-`src/codecompass/`-tree scan, unaffected.
+
+Also corrected, as residual documentation cleanup from the first
+corrective pass: a stale "+7 new tests" reference inside the already-
+persisted `planning/retros/_drift-audit-phase-86.md` (inherited from
+the original `e796b08` commit message's own undercount, already fixed
+in the plan body above via `e682994` but never propagated back into
+that artifact) to the verified "+8". Separately, the first corrective
+pass's own release-phase-auditor re-audit (recorded in `64dba3c`) is
+now understood, from its own text, to have completed its verification
+*before* two later audited-scope commits (`e682994`, `2ac5dd4`) had
+landed, even though it was committed to disk after them — an
+audit-sequencing gap, not a correctness gap in the audited code itself.
+Resolved by this second corrective pass's own fresh, comprehensive
+`release-phase-auditor` dispatch, covering the true final state
+(everything through `648be97`) for the first time.
+
+Verification: 4 new regression tests (44 total, from 40), each
+independently confirmed failing against the pre-fix code before the
+fix landed (`test_non_ascii_identifier_preceding_inline_docstring_is_not_lost`,
+`test_multiple_citations_on_multibyte_prefixed_line_are_all_found`,
+`test_explicit_empty_files_selection_is_rejected_not_a_silent_clean_pass`;
+the fourth, `test_omitted_files_flag_still_defaults_to_whole_tree_scan`,
+is a non-regression sanity check that correctly passes both before and
+after). Full suite 1210 passed / 2 skipped (was 1206/2 — net +4
+matches). `ruff` clean. Real-corpus `--strict` run: 10 informational
+findings, exit 0, byte-identical across two consecutive runs and
+byte-identical to the pre-fix output (no real latent defect uncovered).
+`check_contracts.py`, `check_knowledge_base.py`, and
+`check_self_knowledge_quality.py --strict` re-run clean against their
+already-documented pre-existing baselines (the last: 35 findings, 26
+blocking / 9 informational, unchanged). `release-phase-auditor`'s fresh,
+comprehensive re-audit: **PASS WITH NON-BLOCKING OBSERVATIONS**
+(`planning/retros/_audit-phase-86.md`'s "Second corrective-pass
+re-audit" section) — independently reproduced the pre-fix failure,
+confirmed all four new tests' pre/post-fix behaviour, re-counted every
+validator baseline directly rather than trusting a cached claim, and
+confirmed `decisions/0094` and `CLAUDE.md` both remain byte-identical
+across both corrective passes. Five non-blocking documentation/triage
+follow-ups it named (this plan's own §15, the retro addendum, the
+ROADMAP/CONTEXT reconciliation, and `L-117`'s triage) are being closed
+out in the same corrective-closeout session that commissioned this
+audit.
