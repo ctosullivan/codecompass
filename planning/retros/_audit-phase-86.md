@@ -551,3 +551,273 @@ are confirmed not yet touched, correctly deferred to the terminal
 reconciliation commit this audit is meant to authorize.
 
 **PASS WITH NON-BLOCKING OBSERVATIONS.**
+
+---
+
+## Second corrective-pass re-audit (2026-11-04)
+
+**Auditor**: `release-phase-auditor` (independent dispatch)
+**Audited commit**: `648be97` (HEAD at dispatch time, `main`, working
+tree clean before and after this audit)
+**Scope**: the full corrective scope end-to-end — not only the second
+corrective pass's own two commits (`305d3e1`, `648be97`), re-verified
+against the final state produced by all of `e796b08` through `648be97`.
+
+### Why this audit exists
+
+A follow-up review found two problems with the prior closeout recorded
+immediately above (the "Corrective-pass re-audit (2026-11-03)"
+section): (1) a genuine, previously-missed byte-vs-character-offset
+defect in `_docstring_citations()`, plus a silent-empty-`--files`
+usability gap, both fixed in `305d3e1`; and (2) that prior re-audit's
+own point 7 commit list (`e796b08`, `06598bf`, `4e016e8`, `0fe4326`)
+omits `e682994` and `2ac5dd4`, even though both chronologically landed
+*before* the audit itself was recorded in `64dba3c` (`e682994`
+22:57:55, `2ac5dd4` 22:58:24, `64dba3c` 22:59:59) — meaning that audit's
+own verification work was anchored to an earlier tree state than the
+one it was ultimately committed against. Per `CLAUDE.md` §5, any commit
+after an audit pass that touches audited scope voids that pass; the
+recorded verdict was therefore never actually supported with respect to
+the state marked `done`. This audit re-verifies everything, fresh,
+against the true final state.
+
+### 1. Byte-offset bug independently reproduced against pre-fix code, confirmed fixed
+
+Extracted `scripts/check_knowledge_placement.py` as it existed at
+`8b915ac` via `git show 8b915ac:scripts/check_knowledge_placement.py >
+<scratch path>` (never written over the live tracked file for this
+step). Running `_docstring_citations()` directly against
+`'def 非常非常(): """decisions/9999"""\n'` returned **`[]`** — the
+citation is silently lost entirely, not merely misreported, confirming
+the defect exactly as described. Running the same input through the
+current, post-fix function returns `[(1, '9999')]` — correct.
+
+A second, separate reproduction was done directly at the real tracked
+path: temporarily overwrote the live `scripts/check_knowledge_placement.py`
+with `8b915ac`'s content (`git show 8b915ac:... >
+scripts/check_knowledge_placement.py`), ran the test suite, then
+restored and confirmed clean:
+
+```
+git checkout -- scripts/check_knowledge_placement.py
+git diff --quiet && echo "RESTORED - clean"   # => RESTORED - clean
+git status --short                            # => (empty)
+```
+
+Against that pre-fix state, `pytest tests/test_check_knowledge_placement.py
+-k "test_non_ascii_identifier_preceding_inline_docstring_is_not_lost or
+test_multiple_citations_on_multibyte_prefixed_line_are_all_found or
+test_explicit_empty_files_selection_is_rejected_not_a_silent_clean_pass
+or test_omitted_files_flag_still_defaults_to_whole_tree_scan"` gave:
+
+- `test_non_ascii_identifier_preceding_inline_docstring_is_not_lost`: **FAILED** (`assert 0 == 1`)
+- `test_multiple_citations_on_multibyte_prefixed_line_are_all_found`: **FAILED** (`assert 0 == 1`)
+- `test_explicit_empty_files_selection_is_rejected_not_a_silent_clean_pass`: **FAILED** (`DID NOT RAISE SystemExit`)
+- `test_omitted_files_flag_still_defaults_to_whole_tree_scan`: **PASSED**
+
+The fourth test correctly passes pre-fix too — it is a non-regression
+sanity check (confirming the *unaffected* default-scan path still
+works), not one of the three tests meant to distinguish pre/post-fix
+behavior; its pass against pre-fix code is expected, not a sign of a
+weak regression test. All four pass against the current, post-fix code
+(confirmed in the full 44-test run below). Working tree restored and
+verified clean before proceeding.
+
+### 2. CLI `--files` fix confirmed directly
+
+```
+$ python scripts/check_knowledge_placement.py --files
+usage: check_knowledge_placement.py [-h] [--strict] [--files FILES [FILES ...]]
+check_knowledge_placement.py: error: argument --files: expected at least one argument
+exit: 2
+
+$ python scripts/check_knowledge_placement.py   # --files omitted entirely
+exit: 0
+```
+
+### 3. Full suite, targeted suite, lint — all re-run independently
+
+- `pytest tests/test_check_knowledge_placement.py -q`: **44 passed**.
+- `pytest -q` (full suite): **1210 passed, 2 skipped** in 318.63s —
+  exactly the expected figure (+4 over the first corrective pass's
+  1206, matching the net +4 new test functions).
+- `ruff check scripts/check_knowledge_placement.py
+  tests/test_check_knowledge_placement.py`: **All checks passed!**
+
+### 4. Real-corpus `--strict` run — determinism and no latent real defect
+
+Two consecutive runs of `python scripts/check_knowledge_placement.py
+--strict` produced **byte-identical** output (`diff` empty): **10
+finding(s)**, all `decision-citation-superseded` (informational), exit
+0.
+
+To confirm the byte-offset fix found no previously-masked real defect
+in this project's own source tree, the same `--strict` run was
+performed against `8b915ac`'s pre-fix script (again via a temporary
+`git show`-overwrite-then-`git checkout --`-restore cycle, confirmed
+clean with `git diff --quiet` afterward) and diffed against the
+post-fix run's output: **identical**, exit 0 both times. No real file
+under `src/codecompass/` was affected by the byte-offset bug.
+
+### 5. Negative control / dogfood files re-confirmed
+
+```
+$ python scripts/check_knowledge_placement.py --strict --files \
+    src/codecompass/source_resolution.py src/codecompass/oracle.py src/codecompass/staleness.py
+check_knowledge_placement: 1 finding(s)
+  [decision-citation-superseded] (info) src/codecompass/source_resolution.py:7: cites decisions/0019, ...
+```
+
+Exactly 1 informational finding, on `source_resolution.py` only;
+`oracle.py` and `staleness.py` remain clean negative controls.
+
+### 6. Pre-existing strict validators — all baselines re-counted directly
+
+- `python scripts/check_self_knowledge_quality.py --strict
+  --ledgerkit-root ~/projects/ledgerkit`: exit 1, **35 findings — counted
+  directly: 26 blocking, 9 informational** — exactly the documented
+  Phase 85 baseline.
+- `python scripts/check_contracts.py --strict --ledgerkit-root
+  ~/projects/ledgerkit`: exit 0, **7 informational findings** — matches
+  the pre-existing, already-documented baseline (6
+  `contract-result-integrity-mismatch`, 1 `contract-check-gap`, all
+  informational).
+- `python scripts/check_knowledge_base.py --strict`: exit 0, **24
+  findings, all informational** (`knowledge-base-snapshot-current-divergence`)
+  — matches the pre-existing baseline shape.
+- `python scripts/check_user_docs.py --strict`: **no findings**, exit 0.
+
+### 7. Audit-sequencing gap — confirmed real, and now closed
+
+Re-reading the "Corrective-pass re-audit (2026-11-03)" section's own
+point 7 confirms the gap exactly as described: its commit list names
+only `e796b08`, `06598bf`, `4e016e8`, `0fe4326` — omitting `e682994`
+(22:57:55) and `2ac5dd4` (22:58:24), both of which chronologically
+landed *before* that audit was itself recorded in `64dba3c` (22:59:59).
+That audit's own verification work was therefore anchored to the tree
+state as of `0fe4326`, not the state it was ultimately committed
+against — a genuine instance of the gap `CLAUDE.md` §5 is meant to
+prevent.
+
+This audit's own verification work (all of sections 1-6 above) was
+performed with `HEAD` at `648be97` — after `e682994`, `2ac5dd4`,
+`305d3e1`, and `648be97` had all already landed. This is therefore the
+first audit of this phase whose own checks genuinely reflect the true
+final state, closing the gap.
+
+### 8. Protected-file / scope-creep checks
+
+- `git diff 483d24f..HEAD -- CLAUDE.md`: **empty**. No `CLAUDE.md`
+  change anywhere across either corrective pass.
+- No `planning/phase-8[7-9]*.md` or `planning/phase-9[0-2]*.md` files
+  exist yet — nothing for either corrective pass to have touched.
+- `decisions/0094-knowledge-placement-policy-and-review.md`:
+  `git diff 86fb495..HEAD -- decisions/0094-knowledge-placement-policy-and-review.md`
+  is **empty** — byte-identical to its state at its own creation
+  commit (`86fb495`), confirming the append-only ADR rule held through
+  both corrective passes. (Its point 5's now-stale `ast.get_docstring`
+  reference, already correctly logged as an out-of-scope observation
+  in the first re-audit, remains correctly untouched.)
+
+### 9. `L-116` disposition unaffected by the second corrective pass
+
+`git diff 8b915ac..HEAD -- planning/learnings/inbox.md`: **empty**.
+`status: retained` (confirmed directly, not `candidate`, not
+`promoted`) is unchanged by `305d3e1`/`648be97`.
+
+### 10. `_drift-audit-phase-86.md` — only the documented "+8" correction changed
+
+`git diff 8b915ac..HEAD -- planning/retros/_drift-audit-phase-86.md`
+shows exactly one changed line: the stale "+7 tests" reference in the
+`docs/development/testing.md` entry corrected to "+8", with an
+explanatory parenthetical pointing at `e682994` and this audit file's
+own corrective-pass re-audit section. The file (42 lines, five
+sections) remains substantive, not a stub. No other line changed.
+
+### 11. Required follow-ups — not yet done, confirmed needed
+
+The following are **not** covered by `CLAUDE.md` §5's narrow
+terminal-reconciliation exemption (that exemption names only
+`planning/ROADMAP.md`'s phase row, `planning/CONTEXT.md`'s
+current-state section, and the plan file's own Status *line* — nothing
+else) and are currently genuinely silent about the second corrective
+pass:
+
+1. **`planning/ROADMAP.md`'s Phase 86 row** documents only the first
+   corrective pass (32→40 tests) and the first re-audit. It does not
+   yet mention the byte-offset fix, the `--files` usage-error fix, the
+   44-test total, the audit-sequencing-gap finding, or this second
+   re-audit. **Needs updating** — confirmed by `grep` showing no
+   mention of `305d3e1`/`648be97`/"byte-offset"/"44" in the relevant row.
+2. **`planning/CONTEXT.md`** still states (line 893) "No further Phase
+   86 corrective work is open" — now stale; a second corrective pass
+   did in fact occur after that sentence was written. **Needs
+   updating.**
+3. **The phase plan file's own Status line** (line 3) and its §14
+   section document only the first corrective pass. Unlike items 1-2,
+   §14's *body content* is not one of the three narrowly-exempted
+   targets (only the Status *line* itself is) — a §14 addendum
+   describing the second corrective pass's two findings should be
+   added, following the precedent the first corrective pass itself set
+   (`4e016e8`, landed as its own commit before that pass's audit ran).
+   **Needs updating**, and arguably before the terminal reconciliation
+   commit, not as part of it.
+4. **The retro file**
+   (`planning/retros/phase-86-knowledge-placement-code-quality-review.md`)
+   has no addendum for the second corrective pass — its own
+   "Corrective pass (2026-11-03)" section covers only the first.
+   Per the pattern the first pass itself established, a dated addendum
+   (findings, root cause, lessons learnt) is expected for the second
+   pass too. **Needs adding.**
+5. **No candidate learning has been filed for the second corrective
+   pass's own defects.** A plausible candidate: `ast`'s
+   `col_offset`/`end_col_offset` being UTF-8 *byte* offsets rather than
+   character offsets is a genuine, non-obvious Python stdlib gotcha for
+   any code slicing source text using those offsets directly — a
+   different specific shape from `L-116` (an invalid stdlib *exception
+   class name* not verified by direct execution) but the same general
+   family (a stdlib API's real semantics not verified by direct
+   execution against a representative, non-trivial fixture before
+   shipping). `planning/learnings/inbox.md` has no `L-117` (or any)
+   entry for this. **Needs knowledge-curator triage** before this
+   phase's learnings condition (`CLAUDE.md` §5) can be considered met
+   for the second corrective pass.
+
+None of items 1-5 reflect any doubt about the correctness of the
+shipped fix, its tests, or any re-run result above — every mechanical
+check in sections 1-10 passed cleanly and was independently reproduced,
+not taken on trust. They are documentation/triage completion gaps, open
+at the moment this audit was dispatched, that must close before the
+phase can be considered fully reconciled.
+
+### Verdict: **PASS WITH NON-BLOCKING OBSERVATIONS**
+
+The second corrective pass's own newly-written code (`305d3e1`) was
+scrutinized at the same depth as original implementation, per this
+role's own standing instruction that a corrective pass's fix code is
+never granted a presumption of correctness: the byte-offset defect was
+independently reproduced against the real pre-fix source (not merely
+accepted from the commit message), the fix was independently confirmed
+correct by direct function-level testing, all four new regression tests
+were independently confirmed to fail pre-fix / pass post-fix (with the
+one exception correctly identified as a non-regression sanity check),
+and the full suite, lint, and every pre-existing strict validator baseline
+were independently re-run and matched with nothing suppressed. The
+audit-sequencing gap that motivated this dispatch is independently
+confirmed as having genuinely existed, and is independently confirmed
+closed by this very audit, which is the first to verify the state after
+all of `e682994`, `2ac5dd4`, `305d3e1`, and `648be97` had landed. No
+protected-file or scope-creep violation was found.
+
+**Required before this phase can be marked fully reconciled** (listed
+in full in section 11 above, not repeated here): (1) `ROADMAP.md`'s
+Phase 86 row, (2) `CONTEXT.md`'s current-state section, (3) the plan
+file's own Status line *and* a new §14 addendum, (4) a retro addendum
+for the second corrective pass, and (5) knowledge-curator triage of a
+candidate learning about `ast`'s byte-offset semantics. Items (1)-(2)
+and the Status-line part of (3) are the lead's own terminal-
+reconciliation commit per `CLAUDE.md` §5's narrow exemption; the §14
+body addendum, the retro addendum, and the learning triage are not
+covered by that exemption and should land in their own commit(s)
+first, mirroring how the first corrective pass handled the same
+sequence (`4e016e8` before `64dba3c`/`8b915ac`).
