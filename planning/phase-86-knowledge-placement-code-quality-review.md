@@ -12,6 +12,51 @@ Knowledge Placement Policy table and the three named enforcement
 classes — the authoritative, later-dated source this plan's own §4
 reproduces verbatim rather than re-deriving).
 
+**Amended a third time (2026-11-03, "CodeCompass Orchestrator — Amend
+and Verify Phase 86 Plan")**, correcting four independently identified
+design issues in the plan committed at `2bd4fcc`, sections edited in
+place rather than appended around:
+
+1. **Behavioural verification semantics (HIGH)** — §6.A's proposed
+   `docstring-contradicted-by-oracle-result` mechanical+behavioural
+   script check is **deferred, not shipped**. It would have treated the
+   absence of a currently-passing result (including `INVALID`, stale,
+   or missing evidence) as proof a docstring's claim is false, and
+   treated a bare `check_id` citation as if it established that the
+   docstring asserts the check's own behaviour — both are semantic
+   inferences this project's own Oracle semantics (`decisions/0081`-
+   `0083`) never license mechanically. Behavioural review remains one
+   of the three enforcement classes (§7) but is performed through
+   existing Phase 82-84 capabities during the §6.B ad-hoc review, never
+   through a new checker. See §6.A, §7, §9, §11, §12, §13.
+2. **Real-dogfood exit gate (HIGH)** — §9/§11 now state explicitly that
+   a constructed fixture may never satisfy or substitute for the
+   mandatory real-dogfood requirement; it widens the search to another
+   bounded real subsystem, or reports the gate honestly unmet, never
+   both skipped and silently papered over with a fixture demo.
+3. **Mechanical citation parsing (MEDIUM)** — §6.A's three remaining
+   checks now specify a bounded, syntax-aware extraction method (Python
+   `ast` + `tokenize`), not an unscoped regex over raw file text, so a
+   citation is only ever recognised inside an actual docstring or
+   comment, never an ordinary string literal or incidental prose
+   mention. See §6.A, §11.
+4. **Reviewer-role consistency (LOW)** — §4's "one new... advisory
+   reviewer agent" wording is corrected to match §6.B's already-settled
+   ad-hoc `general-purpose`-dispatch design; no other section used the
+   inconsistent phrasing (confirmed by a project-wide grep sweep of this
+   file for "new agent"/"reviewer agent" after editing).
+
+Re-verified directly against the live repository before editing
+anything (not assumed from the prior round): the `source_resolution.py`
+dogfood candidate (§1, §9) still cites `decisions/0019` at its current
+HEAD, `sync.py`'s real caller still never cites it, and both negative
+controls (`oracle.py`, `staleness.py`) are still accurate — nothing
+changed underneath this plan since `2bd4fcc`. §2, §3, §5, §8, and §10
+(besides the files list reflecting the narrower three-check script)
+required no substantive change — none of the four corrections touches
+Phase 85's findings disposition, the eight-category policy table, or
+this phase's reuse-of-existing-components accounting.
+
 ---
 
 ## 1. Verified current state and dependencies
@@ -201,12 +246,17 @@ Requirement) still hold."
 ## 4. Scope and explicit non-goals
 
 **In scope**: the Knowledge Placement Policy document (§5); a mechanical
-+ behavioural validator script (§6.A); one new, narrowly-scoped,
-read-only advisory reviewer agent for the semantic/editorial class
-(§6.B); the three enforcement classes, precisely defined and enforced
-exactly as `decisions/0085` §4 specifies (§7); one real dogfood against
-a bounded, representative subsystem, demonstrating a genuine, previously
-unflagged defect fixed as a direct result (§9).
+validator script covering three deterministic checks (§6.A); an
+ad-hoc, narrowly-scoped, read-only advisory placement review —
+dispatched as a `general-purpose` subagent carrying a committed
+workflow-doc brief, **not a new standing agent** — for the
+semantic/editorial class, with behavioural-class findings reached
+through existing Phase 82-84 capabilities during the same dispatch,
+never a new checker (§6.B); the three enforcement classes, precisely
+defined and enforced exactly as `decisions/0085` §4 specifies (§7); one
+real dogfood against a bounded, representative subsystem, demonstrating
+a genuine, previously unflagged defect fixed as a direct result,
+never satisfied by a constructed fixture (§9).
 
 **Explicit non-goals** (per the governing roadmap's own §6 "Excluded"
 and this task's own §8 instruction):
@@ -309,8 +359,10 @@ For each category, the per-category detail this task's §4.A requires:
   verifies for existence and currency.
 - **Relationship to tests/contracts/decisions**: should remain
   consistent with any ADR it cites and any contract-backed behaviour it
-  describes; this phase's behavioural check (§6.A) is the mechanism
-  that can catch a drift between the two, where evidence exists.
+  describes; the behavioural enforcement class (§7) — the §6.B
+  reviewer's own direct, correctly-precedenced reading of real oracle
+  evidence, not a dedicated script check (§6.A) — is the mechanism
+  that can catch a drift between the two, where real evidence exists.
 - **Relationship to intermediate/generated docs**: a legitimate
   *source* for Phase 87's documentation compiler to draw from, never
   itself compiled output.
@@ -437,8 +489,10 @@ For each category, the per-category detail this task's §4.A requires:
 - **Conflict/duplication/misplacement identification**: a docstring
   (category 2) asserting a behaviour a *real, current* oracle result
   contradicts is this category's own characteristic conflict — this
-  phase's **behavioural** enforcement class (§6.A, §7) exists
-  specifically for this, reusing Phase 84's `trace_evidence`/
+  phase's **behavioural** enforcement class (§7) exists specifically
+  for this, applied by the ad-hoc §6.B reviewer directly (never a
+  dedicated §6.A script check, deferred this round), reusing Phase 84's
+  `trace_evidence`/
   `epistemic_status` unchanged, never re-deriving oracle logic.
 
 ### 7. Human-oriented project documentation
@@ -521,65 +575,156 @@ things should go" that could drift from the real `src/`/`decisions/`/
 
 ## 6. Proposed reviewer workflow, interfaces and ownership
 
-### 6.A Mechanical and behavioural checks — `scripts/check_knowledge_placement.py` (new)
+### 6.A Mechanical checks — `scripts/check_knowledge_placement.py` (new)
 
 A new, maintainer-only, on-demand script, mirroring `scripts/check_
 self_knowledge_quality.py`'s own exact `Finding(rule, message, strict)`
 convention, CLI shape (`--strict`, `--ledgerkit-root`), and report-only-
 by-default posture. **Composes** `knowledge_api`/`knowledge_
 intermediate`/`oracle` unchanged; adds no logic already present there.
-Not a `codecompass` subcommand, like its siblings.
+Not a `codecompass` subcommand, like its siblings. **Three checks, all
+mechanical** — the fourth, originally-proposed behavioural check is
+deferred (see the note at the end of this subsection and §7/§9/§12/§13).
 
-**Checks** (mechanical unless noted):
+**Extraction method (amended during this round's independent review —
+was an unscoped regex over raw file text, now bounded and syntax-
+aware)**: citations are recognised only inside text the parser can
+independently prove is a real comment or a real docstring, never inside
+an arbitrary string literal, f-string, byte string, or test fixture —
+this is the exact distinction the governing review flagged as missing.
 
-1. `decision-citation-exists` — every `decisions/[0-9]{4}` substring
-   found in a `src/codecompass/**/*.py` docstring or comment must
-   resolve to a real file under `decisions/`. **Blocking.** Purely
-   mechanical: deterministic regex extraction + filesystem existence
-   check, no judgment involved.
+1. Parse each `src/codecompass/**/*.py` file with `ast.parse` (source
+   text, not bytecode). For every `Module`/`ClassDef`/`FunctionDef`/
+   `AsyncFunctionDef` node, take its docstring via the same test
+   `ast.get_docstring` already uses internally (the first statement, a
+   bare `Expr(Constant(str))`) — never any other string literal in the
+   body, however similarly shaped. This is precisely what distinguishes
+   a real docstring from an ordinary string constant, an f-string, or a
+   string used as test fixture data elsewhere in the same file.
+2. Independently tokenize the same file with `tokenize.generate_tokens`
+   and collect every `COMMENT` token (a real `#`-prefixed comment, with
+   its own exact line number) — never a string literal that happens to
+   contain a `#` character, which `tokenize` already does not misclassify.
+3. Within each docstring's text and each comment token's text only
+   (never the rest of the file), apply a single bounded regex,
+   `decisions/([0-9]{4})\b`, to extract citation strings with their
+   owning construct's `file:line` (the docstring's own starting line,
+   or the comment token's own line — both already carried by `ast`/
+   `tokenize`, not re-derived). A bare `"decisions/"` substring with no
+   following four digits is never a match (confirmed by the fail-closed
+   minimal-content test, §11).
+4. Supersession attribution is scoped the same way, applied to
+   `decisions/*.md` files rather than `src/`: `ast`/`tokenize` do not
+   apply to Markdown, so this step instead regex-matches only two
+   locations per ADR file — its own first line (`# NNNN. <title>`) and
+   its own `## Status` section body — for one explicit, literal
+   pattern: `` decisions/([0-9]{4})`?\s+is\s+superseded(?:\s+by\s+
+   `?decisions/[0-9]{4}`?)?\b ``, capturing **the ADR number
+   immediately preceding** the phrase "is superseded" (optionally
+   followed, not captured, by "by `decisions/MMMM`" naming the
+   superseding ADR). **Corrected this round** — a second independent
+   review ran the plan's own first-drafted-this-round regex
+   (`` superseded by `?decisions/([0-9]{4})`? ``, capturing the number
+   *after* "superseded by") against the real `decisions/0061` title and
+   found it captured `0035` (the live, superseding ADR), not `0019`
+   (the superseded one) — the wrong side of the sentence, which would
+   have silently broken this plan's own central dogfood example (the
+   check would never fire on `source_resolution.py`'s real `decisions/
+   0019` citation, and would instead misreport the *correct*, current
+   `0035` as superseded wherever it is cited). The corrected pattern
+   above was verified empirically, not merely by inspection, against
+   both real cases this project actually has: `decisions/0061`'s own
+   first line, "`` `decisions/0019` is superseded by `decisions/0035`
+   ``" — captures `0019`, confirmed by direct execution; and
+   `decisions/0064`'s own first line, "`` `decisions/0063` point 8 is
+   superseded: ... ``" — produces **no match**, correctly excluded by
+   design, since "point 8" sits between the citation and the phrase (no
+   immediate adjacency) and the sentence's own claim is narrower than
+   whole-ADR supersession (only one point within `0063`, not all of
+   it) — a claim this check does not attempt to parse, by the same
+   "explicit, attributable... rather than incidental" discipline that
+   excludes free-prose mentions elsewhere. A mention of "superseding"
+   or "supersede" anywhere else in an ADR's `## Context`/`## Decision`/
+   `## Alternatives` prose, or with anything but whitespace/a backtick
+   between the citation and the phrase, is **never** matched.
+
+**Checks**:
+
+1. `decision-citation-exists` — every citation extracted per the method
+   above must resolve to a real file under `decisions/`. **Blocking.**
+   Fully deterministic: bounded extraction (above) + filesystem
+   existence check, no judgment involved, no natural-language parsing.
 2. `decision-citation-superseded` — for every citation that does
-   resolve, if some *other*, real ADR file's own title or body text
-   matches a `superseded by|is superseded` pattern naming the cited
-   ADR's number, report it. **Informational, never blocking** — citing
-   a superseded ADR for legitimate historical context (category 8) is
-   explicitly correct, not a defect in itself; this check's own job is
-   only to make every such citation *visible* for the semantic/
+   resolve, if some *other*, real ADR file's own title line or `##
+   Status` section matches the attribution pattern above naming the
+   cited ADR's number, report it. **Informational, never blocking** —
+   citing a superseded ADR for legitimate historical context (category
+   8) is explicitly correct, not a defect in itself; this check's own
+   job is only to make every such citation *visible* for the semantic/
    editorial reviewer (§6.B) to judge in context, exactly mirroring
    this project's own `missing_contract`-always-informational
    precedent (Phase 85) for a mechanical fact that is not, by itself,
    proof of a defect.
 3. `decision-citation-status-mismatch` — for every citation, if the
-   comment's own text makes an *explicit*, parseable status assertion
-   about the cited ADR (e.g. a parenthetical like `decisions/0057
-   (rejected)`) that contradicts the ADR's real first-line `## Status`
-   field, report it. **Blocking** — this is fully mechanical only
-   because it is scoped to an explicit, literal textual assertion, never
-   an inferred one. **Disclosed honestly, not manufactured**: a
-   corpus-wide grep this session found no real source comment using
-   this bracketed-status-assertion convention today — this check is
-   designed and tested (§11) against constructed fixtures, and may
-   report zero real findings against the current corpus. This mirrors
-   Phase 83's own `overlapping-account-patterns-no-double-count` check
-   and Phase 86's own §6.A point 4 below — a correctly-designed check
-   with a currently-thin real trigger surface is not a design defect.
-4. `docstring-contradicted-by-oracle-result` (**behavioural**) — for
-   any module/function docstring that names a specific `check_id` from
-   a real oracle contract (a citation convention this check recognises,
-   not invents — e.g. `` `check_id: <name>` ``-shaped text), cross-
-   reference via `knowledge_api.trace_evidence`/`epistemic_status`
-   (Phase 84, unchanged) for a currently-passing result. If the only
-   currently-passing result for that `check_id` is `FAIL`/`INVALID`
-   against the live implementation, report it. **Blocking only on real,
-   live-reconfirmed evidence, never on assertion** — identical severity
-   discipline to Phase 84/85's own `stale_test_citation`/`unverified_
-   required_scope`. **Disclosed honestly**: the real corpus has one
-   contract (`balance-from-spec`); no source docstring currently uses
-   this citation convention, so this check, too, is designed/tested
-   against fixtures and may report zero real findings today — it exists
-   so the moment a second contract-backed module exists, this
-   enforcement path is already live, not added retroactively.
+   comment/docstring text immediately following the citation (within
+   the same already-isolated docstring/comment span, never the raw
+   file) matches one narrow, literal syntactic pattern — a parenthetical
+   status assertion, `decisions/NNNN \(([a-z- ]+)\)`, e.g.
+   `decisions/0057 (rejected)` — whose captured word does not match the
+   cited ADR's real, current `## Status` field (normalised
+   case/whitespace only, no synonym table, no inference: `accepted` vs.
+   `rejected` vs. `superseded` vs. anything else counts as a literal
+   mismatch only on exact normalised-string inequality), report it.
+   **Blocking** — mechanical only because it is scoped to this one
+   explicit, literal textual syntax, never an inferred natural-language
+   reading of surrounding prose. **Disclosed honestly, not
+   manufactured**: a corpus-wide grep this session found no real
+   source comment using this bracketed-status-assertion convention
+   today — this check is designed and tested (§11) against constructed
+   fixtures, and may report zero real findings against the current
+   corpus. This mirrors Phase 83's own `overlapping-account-patterns-
+   no-double-count` check — a correctly-designed check with a
+   currently-thin real trigger surface is not a design defect.
 
-None of these four checks duplicate `check_self_knowledge_quality.py`'s
+**Deferred, not shipped: `docstring-contradicted-by-oracle-result`.**
+The original draft proposed a fourth, behavioural check: cross-
+referencing a docstring's cited `check_id` against `knowledge_api.
+trace_evidence`/`epistemic_status` for a currently-passing result, and
+reporting a contradiction whenever the only result found was `FAIL` or
+`INVALID`. The independent review correctly identified two defects in
+this design, both genuine, not stylistic: (a) it treated `INVALID`,
+stale evidence, a missing result, and an unresolved verification path
+as equivalent to a demonstrated `FAIL` — but per `oracle.py`'s own
+documented outcome semantics (`_OUTCOME_VALUES = {"PASS", "FAIL",
+"INVALID"}`, module docstring), `INVALID` means the check itself could
+not establish a verdict (a bad fixture, an unreadable path, a digest
+mismatch) and is evidence of *uncertainty*, never of a false claim — a
+mechanical check that reports it as a contradiction would be reporting
+a gap as if it were a disproof; (b) it treated a docstring's bare
+`check_id` citation as if that alone established that the docstring
+*asserts* the check's own behaviour holds — but a citation is, at most,
+a pointer to related verification, not a parseable assertion of a
+specific claim, and the project has no existing, independently
+verifiable grammar mapping a docstring's natural-language sentence onto
+one specific contract check's own pass/fail scope. Inventing one now
+(a new `` `assert: check_id` `` annotation convention, say) would be
+introducing a new mandatory convention solely to manufacture a trigger
+for this check — exactly what the governing review instructs against.
+**Resolution**: this check is not implemented. Behavioural review is
+preserved as one of the three enforcement classes (§7) and remains
+real and usable — through the ad-hoc §6.B reviewer directly reading
+Phase 82-84's existing evidence (a real oracle-result file, `trace_
+evidence`, `epistemic_status`) with the correct precedence (PASS
+confirms the tested obligation within its verified scope; a valid,
+current FAIL demonstrates that specific check failed, nothing broader;
+INVALID/stale/missing/unresolved are gaps, never contradictions) —
+without a new checker, and without a new annotation convention. If a
+genuine, unambiguous instance is ever found this way, the lead's
+existing, unmodified path (converting the finding into an
+independently testable Requirement, §5 category 5, §7) is how it
+becomes enforceable, not a script addition.
+
+None of these three checks duplicate `check_self_knowledge_quality.py`'s
 own five checks — confirmed by re-reading that script in full this
 session: it has no `decisions/*.md` parsing of any kind.
 
@@ -664,7 +809,27 @@ summarised here per this task's §4.B structure):
   unnecessary abstraction; missing interface documentation. **Never
   re-derives a mechanical fact by eye** — a citation's existence or
   supersession status is always taken from the script's own output,
-  never independently re-judged from raw text.
+  never independently re-judged from raw text. (4) **Behavioural
+  findings (added this round — §6.A's deferred check's replacement
+  path, §7)**: if the target docstring/comment cites a specific
+  oracle `check_id` or otherwise makes a claim a real contract result
+  could confirm or disconfirm, the reviewer reads the real,
+  live-reconfirmed result directly (`knowledge_api.trace_evidence`/
+  `epistemic_status`, or the raw result file) and applies the same
+  precedence an oracle-backed check always applies: a current `PASS`
+  confirms the tested obligation within its own verified scope; a
+  valid, current `FAIL` demonstrates that specific check failed, never
+  automatically that the docstring's own (often broader, natural-
+  language) claim is false; `INVALID`, stale evidence, a missing
+  result, or an unresolved verification path is reported as a gap or
+  open uncertainty, never phrased as a demonstrated contradiction. Such
+  a finding is reported in the **behavioural** class only when the
+  docstring's own claim and the check's own scope are the same
+  obligation by construction (e.g. the docstring states the check's own
+  described behaviour near-verbatim) — any looser mapping, however
+  plausible, is semantic/editorial, exactly per the "would a second,
+  independent reader... without relying on stylistic preference" test
+  below, and is never escalated to blocking on the reviewer's own say.
 - **Finding shape** (every recommendation, per this task's §4.B list):
   artifact + exact location (`file:line`, quoted text); independently
   checkable evidence (the script's own mechanical finding it builds
@@ -741,11 +906,26 @@ re-interpreted):
   citation must resolve; an explicit status assertion must be
   accurate) — never more broadly.
 - **Behavioural** — a violation demonstrated through an accepted
-  executable contract or independently verifiable evidence.
-  `docstring-contradicted-by-oracle-result` (§6.A) is this phase's one
-  behavioural check; blocks only on a real, live-reconfirmed
-  contradiction, never on an assertion alone — identical discipline to
-  every oracle-backed check this project already has.
+  executable contract or independently verifiable evidence. **No new
+  mechanical/behavioural script check implements this class** (§6.A's
+  `docstring-contradicted-by-oracle-result` is deferred, not shipped —
+  it would have required inferring that a bare `check_id` citation
+  asserts specific behaviour, and treating `INVALID`/stale/missing
+  evidence as if it were a demonstrated `FAIL`, neither of which this
+  project's own Oracle semantics license). Behavioural findings instead
+  arise, when real evidence actually supports one, through the ad-hoc
+  §6.B reviewer directly reading a real oracle result/`trace_evidence`/
+  `epistemic_status` response and applying the exact precedence every
+  oracle-backed check in this project already applies: current `PASS`
+  confirms the tested obligation within its verified scope; a valid,
+  current `FAIL` demonstrates that one check failed, never by itself
+  that a docstring's own claim is false; `INVALID`, staleness, or a
+  missing/unresolved result is a gap or uncertainty, never a
+  contradiction. Such a finding blocks nothing on its own — it is
+  reported in the reviewer's advisory output (semantic/editorial by
+  default) and becomes enforceable only via the existing conversion
+  path below (converting it into an independently testable
+  Requirement), never via a new script.
 - **Semantic/editorial** — AI-assisted judgment of verbosity,
   abstraction quality, placement appropriateness, architectural
   consistency. **Always advisory.** The ad-hoc reviewer dispatch's own
@@ -765,9 +945,12 @@ re-interpreted):
   mechanically proven merely because an agent judges it
   contradictory**, this task's own explicit, unmodified constraint.
 - **No blind merge blocking on subjective judgment**: `--strict`'s own
-  exit code, for this script, is a function of exactly the two
-  mechanical checks and the one behavioural check — never of anything
-  the ad-hoc reviewer dispatch concludes. Its report is a
+  exit code, for this script, is a function of exactly
+  `decision-citation-exists` and `decision-citation-status-mismatch`
+  (the two blocking mechanical checks) — `decision-citation-superseded`
+  is always informational, and there is no new behavioural check at
+  all (above) — never of anything the ad-hoc reviewer dispatch
+  concludes. Its report is a
   recommendation artifact, read by the lead, exactly like `release-
   phase-auditor`'s own report is read, never a gate the lead's own
   commit/merge is mechanically blocked on.
@@ -784,12 +967,15 @@ re-interpreted):
   record kinds; categories 5-6 of §5's table map directly onto the
   existing Requirement/Evidence kinds, unchanged. `knowledge_
   intermediate.parse_record`/`load_slug_records` reused unmodified by
-  §6.A's behavioural check's own evidence-resolution path (via Phase
-  84's API, never re-implemented).
+  the §6.B reviewer's own behavioural-class evidence-resolution path
+  (via Phase 84's API, never re-implemented, and never via a dedicated
+  §6.A script check — §7).
 - **Phase 82** (contract and evidence foundation): `oracle.
   parse_oracle_result`/the `Finding(rule, message, strict)` pattern
-  reused unmodified; §6.A's behavioural check never re-implements
-  outcome precedence or digest logic.
+  reused unmodified; the behavioural enforcement class (§7) applies
+  Oracle's own outcome precedence directly, via the ad-hoc reviewer's
+  read-only use of a real result file/`trace_evidence`, never
+  re-implementing precedence or digest logic in a new checker.
 - **Phase 83** (semantic change assurance): the `Finding`-with-`strict`-
   flag convention `decisions/0082`/`0083` hardened in `check_contracts.
   py`/`check_knowledge_base.py` reused identically; `assess_change_
@@ -799,9 +985,10 @@ re-interpreted):
   86's own one stated prerequisite (`decisions/0084` §2) is Phase 85
   only.
 - **Phase 84** (read-only knowledge API): `trace_evidence`/
-  `epistemic_status`/`find_gaps` reused unchanged by §6.A's behavioural
-  check and by the reviewer's own evidence-gathering in §6.B; no new
-  write path, no bypass of the existing read-only contract.
+  `epistemic_status`/`find_gaps` reused unchanged by the reviewer's own
+  evidence-gathering in §6.B, including its behavioural-class findings
+  (§7); no new write path, no bypass of the existing read-only
+  contract.
 - **Phase 85** (self-curation lifecycle and knowledge-quality
   validator): `scripts/check_self_knowledge_quality.py`'s own exact
   `Finding`/CLI/report conventions reused verbatim by §6.A's new
@@ -867,43 +1054,82 @@ session (§1) —
   serving as the second, "ordinary comment" negative control this
   task's own §4.B/`decisions/0085` §4 both require.
 
-**Honesty clause** (this task's own explicit instruction: "do not
-predetermine findings or manufacture a defect... if no genuine defect
-is discovered, require an honest outcome"): the `source_resolution.py`
-finding above is real and independently confirmed *as of this planning
-session* (`b434b9d`). **It is re-verified, not assumed, at
-implementation time** — if some other work has already touched that
-docstring by then, the implementation phase's own first step is to
-re-scan `src/codecompass/` with the new mechanical check (§6.A point 2)
-for a currently-real instance before proceeding with this exact
-example, and to report honestly if none currently exists rather than
-constructing one. The acceptance gate (below) is written against
-"a genuine, currently-real instance," not against this specific file
-by name, for exactly this reason — though this file remains the
-expected, most-likely case.
+**Honesty clause, strengthened this round** (this task's own explicit
+instruction, and the independent review's own point 3: a constructed
+fixture must never satisfy or substitute for the mandatory real-
+dogfood gate): the `source_resolution.py` finding above is real and
+independently confirmed **twice now** — at planning time (`b434b9d`)
+and again, directly, during this round's amendment (re-read this
+session: lines 1-2 still cite `decisions/0019`; `sync.py`'s real
+caller, `sync_vendor`, still never cites it; both negative controls
+still hold). It is **re-verified a third time, not assumed, at
+implementation time itself** — the implementation phase's own first
+step is to re-scan `src/codecompass/` with the mechanical script
+(§6.A point 2) for a currently-real `decision-citation-superseded`
+instance before proceeding with this exact example.
+
+**If the pre-identified instance is gone** (fixed by unrelated work in
+the interim): widen the search to another bounded, representative
+subsystem within `src/codecompass/` — rerun the same mechanical script
+against progressively larger file sets (starting from the next most
+central modules by citation count, §1) until either a genuine,
+previously-unflagged instance of *any* real placement defect (not
+limited to `decision-citation-superseded` specifically — the roadmap's
+own exit gate names "a placement defect," not this one check's output)
+is found, independently confirmed by direct reading (not taken from
+the script's output on faith), and independently adjudicated by the
+§6.B reviewer as genuine; or every bounded, representative subsystem
+reasonably available has been checked. **If no genuine defect is found
+after that honest search, the real-dogfood exit gate is reported
+unmet, and Phase 86 is not marked done** — per the roadmap's own
+mandatory requirement (`planning/v2-roadmap.md` Phase 86 point 9) and
+this round's own explicit instruction that a synthetic finding must
+never satisfy this gate. A constructed fixture pair (§11) remains valid
+for the *unit/integration test suite only* — it never appears in, or
+is cited as satisfying, this acceptance section.
 
 **Trial steps**:
 
-1. Run `scripts/check_knowledge_placement.py` against the three-file
-   bounded set. Expect: `decision-citation-superseded` (informational)
-   on `source_resolution.py`'s `decisions/0019` citation; zero mechanical
+1. Re-verify the candidate directly (above), then run `scripts/
+   check_knowledge_placement.py` against the three-file bounded set.
+   Expect: `decision-citation-superseded` (informational) on
+   `source_resolution.py`'s `decisions/0019` citation; zero mechanical
    findings on `oracle.py`/`staleness.py`.
 2. Dispatch a `general-purpose` subagent, carrying `docs/workflows/
    knowledge-placement-review.md`'s full text as its brief (§6.B),
    against the same bounded set, given the script's own output as
-   input evidence.
-3. Independently audit the dispatch's own report (`release-phase-
-   auditor`, read-only, per this project's own established pattern for
-   judging an agent's output rather than trusting its self-report).
+   input evidence — this is the **independent semantic adjudication**
+   this round's review requires: the script's mechanical fact (a
+   citation is superseded) is never, by itself, treated as proof of a
+   genuine placement *defect*; only the reviewer's independent
+   judgment, backed by the real current-caller evidence it cites, does.
+3. The lead reads the reviewer's report, confirms the finding is real
+   and correctly reasoned (not merely restated), and **applies the
+   correction itself** — an ordinary source edit to the docstring,
+   never auto-applied by any agent (§4 non-goals).
+4. **Post-fix verification** (added this round — the original draft
+   stopped at "fix it" with no confirmation step): re-run `scripts/
+   check_knowledge_placement.py` against the same three-file set after
+   the fix and confirm the `source_resolution.py` finding is gone (or,
+   if the fix retains a legitimate historical citation worded as such,
+   confirm the finding is still correctly informational, never
+   blocking); re-run `tests/test_check_knowledge_placement.py` and the
+   full existing suite to confirm no regression.
+5. Independently audit the whole trial (`release-phase-auditor`,
+   read-only, per this project's own established pattern for judging
+   an agent's output rather than trusting its self-report) — covering
+   steps 1-4, not merely the reviewer's own dispatch.
 
 **Acceptance criteria** (mirroring `decisions/0084`/`0085`'s own named
-Phase 86 test requirements exactly):
+Phase 86 test requirements exactly; renumbered and tightened this
+round):
 
-1. The mechanical script correctly reports the real `decision-
-   citation-superseded` informational finding on whichever file
-   currently carries it (expected: `source_resolution.py`) — a true
-   positive, mechanically reproducible by anyone re-running the exact
-   command.
+1. The mechanical script correctly reports a real `decision-citation-
+   superseded` (or other real placement-defect) informational finding
+   on whichever file currently carries it (expected: `source_
+   resolution.py`) — a true positive, mechanically reproducible by
+   anyone re-running the exact command, independently re-confirmed by
+   direct reading, not merely by the script's own say.
 2. The reviewer independently judges that finding as a genuine,
    actionable placement defect (not merely restating "superseded" —
    explaining *why* it is misleading in context, citing the real
@@ -917,25 +1143,28 @@ Phase 86 test requirements exactly):
 4. The reviewer correctly **declines** to flag `staleness.py`'s
    ordinary `decisions/0005` citations (negative control 2).
 5. Neither the script's own `--strict` exit code nor any other
-   mechanism treats the `source_resolution.py` finding as blocking —
-   it remains advisory/informational throughout, exactly as `decisions/
-   0085` §4 requires, **until and unless it is actually fixed** (the
-   dogfood's own required correction — this task's own §5 point 2 and
-   the roadmap's own exit gate both require *at least one real defect
-   found and corrected*, so the implementation phase does fix the
-   docstring itself, as an ordinary source edit by the lead, not an
-   auto-applied agent action).
-6. No finding from this phase duplicates anything `check_self_
+   mechanism treats the finding as blocking before it is fixed — it
+   remains advisory/informational throughout, exactly as `decisions/
+   0085` §4 requires.
+6. **The finding is actually corrected by the lead, and the correction
+   is independently re-verified** (trial step 4) — a found-but-unfixed
+   defect, or a fix that is never re-checked, does not satisfy this
+   gate. This is the roadmap's own mandatory requirement (`planning/
+   v2-roadmap.md` Phase 86 point 9: "at least one real placement defect
+   ... found **and corrected**"), made explicit and checked, not merely
+   asserted.
+7. No finding from this phase duplicates anything `check_self_
    knowledge_quality.py` already reports — confirmed in §6.A, re-
    confirmed at implementation time by running both scripts and
    diffing their rule names.
-7. If step 1 finds no currently-real instance (the honesty clause
-   above), the dogfood instead demonstrates the full pipeline (steps
-   1-3) against a **deliberately constructed** fixture pair — one real
-   defect shape, one of each negative control — with the real-corpus
-   run still performed and its honest "zero real findings currently"
-   outcome disclosed, never silently substituted for without
-   disclosure.
+8. **If the pre-identified instance is gone, criteria 1-6 are satisfied
+   against a genuinely different real instance found via the honesty
+   clause's widened search above — never against a constructed
+   fixture.** If, after an honest, documented search, no real instance
+   exists anywhere reasonable, this gate is reported **unmet**, and
+   Phase 86 does not reach `done` until it is — this is the one
+   criterion a constructed fixture (§11) can never retroactively
+   satisfy, by design.
 
 ## 10. Exact deliverables and expected files
 
@@ -943,10 +1172,10 @@ Phase 86 test requirements exactly):
 |---|---|---|
 | `docs/concepts/knowledge-placement-policy.md` | new | §5's full policy, in the established `docs/concepts/` style (alongside `knowledge-model.md`) |
 | `docs/workflows/knowledge-placement-review.md` | new | **the full ad-hoc reviewer brief** (§6.B) — dispatched inline via a `general-purpose` subagent each time this review runs, not a `.claude/agents/*.md` frontmatter body; mirrors `docs/workflows/self-curation-loop.md`'s own precedent in style, not in hosting mechanism |
-| `scripts/check_knowledge_placement.py` | new | §6.A's four checks |
+| `scripts/check_knowledge_placement.py` | new | §6.A's three checks |
 | `tests/test_check_knowledge_placement.py` | new | §11 |
 | `src/codecompass/source_resolution.py` (or the currently-real equivalent, §9's honesty clause) | amended | the one real dogfood fix |
-| `decisions/00NN-knowledge-placement-policy-and-review.md` | new | the ADR recording this phase's own design choices, per `CLAUDE.md` §2 ("write a new ADR whenever a phase involves a non-obvious tradeoff") — the ad-hoc-dispatch-not-a-new-standing-agent choice (§6.B/§12) alone warrants one |
+| `decisions/00NN-knowledge-placement-policy-and-review.md` | new | the ADR recording this phase's own design choices, per `CLAUDE.md` §2 ("write a new ADR whenever a phase involves a non-obvious tradeoff") — the ad-hoc-dispatch-not-a-new-standing-agent choice (§6.B/§12), the deferral of `docstring-contradicted-by-oracle-result` (§6.A/§7/§12/§13), and the real-dogfood gate's no-synthetic-substitute rule (§9/§12) each independently warrant one |
 | `CHANGELOG.md`, `planning/ROADMAP.md`, `planning/CONTEXT.md` | amended, at implementation closeout only | per `CLAUDE.md` §3/§5, not touched by this planning commit beyond adding Phase 86's own `planned` row (this commit) |
 
 ## 11. Tests, negative controls, and acceptance gates
@@ -954,6 +1183,28 @@ Phase 86 test requirements exactly):
 - `tests/test_check_knowledge_placement.py`, mirroring `tests/test_
   check_self_knowledge_quality.py`'s own structure and determinism
   test:
+  - **Extraction-method boundary tests (added this round, per the
+    independent review's point on bounded, syntax-aware parsing)**:
+    - A normal string literal (not a docstring, not a comment,
+      e.g. a plain assigned variable or a test-fixture data string)
+      containing the exact text `decisions/0019` — must **never** be
+      extracted as a citation, confirming `ast`-scoped docstring
+      detection and `tokenize`-scoped comment detection correctly
+      exclude ordinary string literals.
+    - An ADR file containing "superseded"/"supersede" language only in
+      its `## Context`/`## Alternatives` prose, never in its own first
+      line or `## Status` section (i.e. incidental discussion, not an
+      attributable claim) — must **never** trigger `decision-citation-
+      superseded` for a citation of that ADR's number, confirming
+      attribution is scoped to the two named locations only.
+    - A citation to a real, current (non-superseded) ADR — unflagged
+      by `decision-citation-superseded`.
+    - A citation to a real ADR that a *different* real ADR's own title
+      line explicitly supersedes (the `decisions/0061`-shaped case:
+      the attributing statement lives in a separate file from the one
+      being cited) — correctly flagged informational, confirming
+      attribution is not required to come from the superseded ADR's
+      own text.
   - `decision-citation-exists`: a fixture citing a real, existing
     `decisions/NNNN` (unflagged) and a fixture citing a non-existent
     one (blocking finding).
@@ -969,31 +1220,36 @@ Phase 86 test requirements exactly):
     by-title, one not) with a `src/`-fixture citation to each —
     confirms the informational, never-blocking severity.
   - `decision-citation-status-mismatch`: a constructed fixture with an
-    explicit, literal status assertion contradicting the cited ADR's
-    real status (blocking) and one where the assertion matches
-    (unflagged) — since §1 confirms no real instance exists today,
-    this is fixture-only, disclosed honestly in the test module's own
-    docstring (matching `check_self_knowledge_quality.py`'s own
-    precedent of disclosing when a test deliberately does not assert
-    zero real-corpus findings).
-  - `docstring-contradicted-by-oracle-result`: a constructed fixture
-    with a real contract + a docstring citing its `check_id` + a
-    result file that `FAIL`s, confirming the blocking behavioural
-    path; a second fixture where the only result `PASS`es, confirming
-    it stays silent; `repo_root` threading confirmed exactly like
-    `check_self_knowledge_quality.py`'s own `--ledgerkit-root` tests.
+    explicit, literal parenthetical status assertion contradicting the
+    cited ADR's real status (blocking) and one where the assertion
+    matches (unflagged) — since §6.A confirms no real instance exists
+    today, this is fixture-only, disclosed honestly in the test
+    module's own docstring (matching `check_self_knowledge_quality.py`'s
+    own precedent of disclosing when a test deliberately does not
+    assert zero real-corpus findings). **Fixture-only, by design, for
+    this one check's own thin real trigger surface — never used in
+    place of §9's real-dogfood gate**, which this check does not need
+    to satisfy on its own.
   - Determinism: two consecutive runs, byte-identical output.
   - **Real-corpus run, not asserting zero findings** (same disclosed
     posture as `check_self_knowledge_quality.py`'s own test suite) —
     pins the specific real finding(s) present at implementation time
     by name, or honestly records their absence (§9's honesty clause).
+- **No `docstring-contradicted-by-oracle-result` tests** — deferred
+  with the check itself (§6.A); nothing to test until it ships.
 - **Independent audit** (this task's §7 requirement, applied at
   implementation time, not during this planning task): `release-phase-
   auditor` re-runs `scripts/check_knowledge_placement.py` and its test
   suite independently; separately reviews the ad-hoc reviewer
-  dispatch's own dogfood report transcript against the five acceptance
-  criteria in §9, the same way Phase 85's own dogfood adjudication
-  evidence was independently reviewed rather than merely trusted.
+  dispatch's own dogfood report transcript **and the lead's own
+  applied fix and post-fix re-verification** against all eight
+  acceptance criteria in §9 (not the reviewer dispatch alone) — the
+  same way Phase 85's own dogfood adjudication evidence was
+  independently reviewed rather than merely trusted. If §9's honesty
+  clause was invoked (the original instance gone, a different real
+  instance used, or the gate reported unmet), the audit explicitly
+  confirms no constructed fixture was substituted for any of the eight
+  criteria.
 - **No circular self-assessment**: `release-phase-auditor` never wrote
   any of the content it audits here; the ad-hoc reviewer dispatch
   never reviews content from the same dispatch that wrote it (§7).
@@ -1005,8 +1261,10 @@ Phase 86 test requirements exactly):
   is unmodified by this phase.
 - **Subjective LLM judgment mistaken for an objective gate** —
   mitigated structurally: `--strict`'s own exit code is a pure function
-  of the two mechanical checks + the one behavioural check; the
-  reviewer's own output can never affect it (§7).
+  of the script's two blocking mechanical checks only (`decision-
+  citation-exists`, `decision-citation-status-mismatch`) — there is no
+  new behavioural check (§6.A/§7); the reviewer's own output can never
+  affect it.
 - **A legitimate multi-location invariant mistaken for duplication** —
   mitigated by §4/§5's explicit "not single-location" clarification,
   stated in both the policy document and the reviewer's own brief, not
@@ -1034,13 +1292,38 @@ Phase 86 test requirements exactly):
   pattern in this project).
 - **The pre-identified dogfood finding could be coincidentally fixed or
   changed before implementation begins** — mitigated by §9's explicit
-  honesty clause (re-verify, never assume).
-- **A behavioural/status-mismatch check with no real trigger today
-  could look like manufactured machinery** — mitigated by disclosing
-  this honestly in §6.A/§11 rather than omitting the checks or
-  inventing a fixture presented as real; this mirrors Phase 83's own
-  existing precedent for a correctly-designed, currently-thin-trigger
-  check (`overlapping-account-patterns-no-double-count`).
+  honesty clause (re-verify, never assume; widen the search to another
+  bounded real subsystem if needed; report the gate honestly unmet
+  rather than ever substituting a constructed fixture).
+- **A status-mismatch check with no real trigger today could look like
+  manufactured machinery** — mitigated by disclosing this honestly in
+  §6.A/§11 rather than omitting the check or inventing a fixture
+  presented as real; this mirrors Phase 83's own existing precedent for
+  a correctly-designed, currently-thin-trigger check (`overlapping-
+  account-patterns-no-double-count`).
+- **A constructed fixture could be mistaken for, or quietly substituted
+  as, satisfaction of the real-dogfood exit gate** — the original
+  draft's §9 point 7 allowed exactly this ambiguity (a fixture-based
+  "full pipeline demonstration" sat alongside the real criteria without
+  clearly being excluded from them). Corrected this round: §9's
+  acceptance criteria now state explicitly that a constructed fixture
+  can satisfy nothing in that section, only the unit/integration test
+  suite (§11); an honest, searched-for absence of any real defect is
+  now itself a valid, disclosed outcome that keeps Phase 86 from being
+  marked done, rather than a gap papered over with synthetic evidence.
+- **Deferring `docstring-contradicted-by-oracle-result` could leave a
+  real docstring/evidence contradiction permanently undetected** —
+  mitigated structurally, not merely disclosed: behavioural review
+  stays available every time the ad-hoc §6.B reviewer runs, through
+  direct, correctly-precedenced reading of real oracle evidence (§7);
+  what is removed is only a dedicated, always-on mechanical scan for
+  this one pattern, not the enforcement class itself. If real usage
+  later shows this gap matters (a genuine instance is found this way
+  more than once), the named escalation path is the same one §5/§7
+  already provide: convert the specific instance into an independently
+  testable Requirement, which is then enforced through the existing,
+  unmodified behavioural path — not a bespoke new checker invented
+  after the fact.
 - **Failure handling**: if a later phase's real usage pattern shows the
   ad-hoc-dispatch design (§6.B) is insufficient (brief drift observed
   in practice, or dispatch frequency high enough that a standing file
@@ -1071,9 +1354,21 @@ Phase 86 test requirements exactly):
    exists, mirroring how Phase 83's own thinly-triggered check
    (`overlapping-account-patterns-no-double-count`) was still shipped,
    named, and disclosed rather than withheld.
-3. **Exact new-ADR number and filename** (§10) — assigned at
+3. **Resolved during this round's independent review**: whether
+   `docstring-contradicted-by-oracle-result` should ship as a fourth
+   mechanical/behavioural script check (§6.A). Deferred — it would have
+   inferred that a bare `check_id` citation asserts specific behaviour,
+   and treated `INVALID`/stale/missing evidence as if it were a
+   demonstrated `FAIL`, neither licensed by this project's own Oracle
+   semantics. Behavioural review remains available through the ad-hoc
+   §6.B reviewer's own direct, correctly-precedenced reading of real
+   evidence (§7); a genuine instance found this way escalates only
+   through the existing Requirement-conversion path, never a new
+   checker.
+4. **Exact new-ADR number and filename** (§10) — assigned at
    implementation time, once the real next-available number is
-   confirmed against the live `decisions/` directory (currently 92
-   files, highest number 0093 per this session's own `_DECIDED_*`
-   constants' own citations) — not pre-assigned here to avoid a stale
+   confirmed against the live `decisions/` directory (92 files,
+   highest number 0093 — one numbering gap, already a confirmed
+   historical artefact per `decisions/0085`'s own Alternatives section,
+   re-confirmed this session) — not pre-assigned here to avoid a stale
    number if other work lands first.
