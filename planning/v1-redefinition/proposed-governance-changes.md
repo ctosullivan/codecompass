@@ -855,3 +855,80 @@ bar" retro conclusion holds up.
   section gets the same addition in the same commit;
   `planning/learnings/inbox.md`'s `L-110` flips to `status: promoted`
   with a `promoted.md` pointer line once the edit lands.
+
+## L. 2026-11-03 proposed addition (Phase 86 — `L-116`)
+
+**Status:** proposed, not yet presented to the user. Filed by
+`knowledge-curator` during the Phase 86 post-audit triage
+(`planning/retros/_audit-phase-86.md`, PASS WITH NON-BLOCKING
+OBSERVATIONS). If §K (`L-110`) is approved and lands first, append this
+sentence after §K's instead — both are drafted against the current,
+`L-088`-terminated text; whichever lands second appends after whichever
+landed first.
+
+### L1 — §1 "Plan before implementing": require direct execution of a cited stdlib/third-party API name during plan review, not only the surrounding logic
+
+- **Context:** the Phase 86 plan's own §6.A specified catching
+  `tokenize.TokenizeError` — a class that does not exist in Python's
+  `tokenize` module (the real name is `tokenize.TokenError`). Four
+  independent planning-review rounds verified the plan's regex/scoping
+  logic by direct execution and all missed the typo, because none of
+  them executed a reference to the specific cited name itself, only the
+  adjacent logic claims. Independently confirmed (this review, no
+  `Bash`): `/usr/lib/python3.13/tokenize.py` defines `TokenError`
+  (line 162, exported in `__all__`) and contains no `TokenizeError`
+  anywhere. Also independently confirmed the buggy name was **never
+  committed to `main`** — `scripts/check_knowledge_placement.py` has
+  exactly one commit in its history (`86fb495`, per
+  `_audit-phase-86.md` §8/§9's own `git show`/`git diff` work), and that
+  commit already contains the fix; the typo was caught during
+  implementation, by the first test run, before any commit — a
+  near-miss the existing "write and run tests immediately" discipline
+  already absorbed at zero cost, not a shipped regression a later fix
+  corrected. Full account: `planning/learnings/inbox.md`'s `L-116`.
+- **Proposed text — append to §1, as a new sentence directly after the
+  `L-088` sentence ("...not only its initial creation. (Phase 81 second
+  corrective pass — L-088.)"), or after `L-110`'s sentence (§K) if that
+  lands first:**
+
+  > If a plan cites a specific standard-library or third-party-
+  > dependency API name (a function, class, exception, or attribute)
+  > that the implementation will call or catch, the plan's own
+  > independent review must execute a direct reference to that exact
+  > name (e.g. `python3 -c "import tokenize; tokenize.TokenError"`) to
+  > confirm it exists — a review round that verifies a plan's
+  > surrounding logic or regex claims exhaustively, by executing
+  > isolated snippets of them, can still miss a simple nonexistent-
+  > API-name typo if none of those snippets happen to touch the
+  > specific name itself. (Phase 86 — L-116.)
+
+- **Alternatives considered:** (a) treat this as already absorbed by
+  the existing "write and run tests immediately" implementation
+  discipline, which caught it at zero cost before any commit — real
+  consideration, but the plan-review rounds themselves still spent four
+  passes verifying a plan that contained a would-crash typo none of
+  them could have caught without this specific check, and a future
+  plan citing a different nonexistent name might not get implemented
+  immediately after review (the gap between "plan approved" and "first
+  test written" is not always zero), so tightening the review step
+  itself is still worth the small, mechanical cost; (b) route to
+  `.claude/agents/release-phase-auditor.md`'s checklist instead,
+  matching `L-086`/`L-111`'s own first-occurrence routing — rejected:
+  those two concern auditing already-written code's test coverage after
+  implementation; this concerns what a *plan's own review* must verify
+  *before* implementation starts, which is `CLAUDE.md` §1's existing
+  domain, not the auditor's; (c) require recurrence across two phases
+  before promoting, matching `L-111`'s own stated threshold for
+  *that* shape — rejected as the wrong precedent to match: `L-021`,
+  `L-070`, `L-075`, `L-087`, and `L-088` were each promoted to `CLAUDE.md`
+  §1 on a single, well-evidenced occurrence precisely because they are
+  cheap, mechanically-checkable additions to plan-review content, the
+  same shape as this one, not because they had already recurred; (d) a
+  broader "verify every factual claim a plan makes" rule — rejected as
+  unenforceable and already partially covered in spirit by `L-029`;
+  scoped instead to the precise, evidenced shape (a cited stdlib/
+  dependency API name, verified by direct execution).
+- **Consequences if approved:** `CLAUDE.md` §1 gains the sentence above;
+  `CONTRIBUTING.md`'s mirrored section gets the same addition in the
+  same commit; `planning/learnings/inbox.md`'s `L-116` flips to `status:
+  promoted` with a `promoted.md` pointer line once the edit lands.

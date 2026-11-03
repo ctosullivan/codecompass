@@ -10960,7 +10960,111 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   `tokenize.TokenError`; confirmed real via
   `python3 -c "import tokenize; tokenize.TokenError"` (succeeds) vs.
   `tokenize.TokenizeError` (`AttributeError`).
-- **classification:** workflow
+- **classification:** project-rule (reclassified from the filer's own
+  `workflow` tag during this triage — see curation note: the destination
+  this triage recommends is `CLAUDE.md` §1, which `learning-lifecycle.md`
+  §4 maps to `project-rule`, not a Claude skill)
 - **status:** candidate
-- **recurrence:**
-- **promoted_to:**
+- **recurrence:** first occurrence. Checked `inbox.md` (grepped every
+  `### L-NNN` heading, all 116 titles, and the bodies of the nearest
+  analogues — `L-029` "a plan's own claim... should be re-verified
+  against each real file... before executing the plan's literal...
+  prescription," `L-017`, `L-024`) and `promoted.md` (grepped "stdlib",
+  "API name", "TokenError", "exception class" — zero matches) for an
+  existing rule covering "verify a cited library/stdlib API name is
+  real before relying on it." None found — this is a new failure shape,
+  not a duplicate or an extension of an existing one. `L-029` is the
+  closest analogue in spirit (verify a plan's factual claim against
+  real files before trusting it) but concerns file-duplication claims,
+  not API-name existence specifically.
+- **promoted_to:** (pending — see curation note)
+- **curation note (2026-11-03, knowledge-curator):** all required fields
+  present (origin, date, project_revision, observation, evidence,
+  classification, status) — accepted as filed, reclassified as above.
+
+  **Independently reproduced the entry's own cited evidence** (this
+  role has no `Bash`, so reproduction used direct file inspection rather
+  than executing the cited `python3 -c` commands):
+  `/usr/lib/python3.13/tokenize.py` read directly — `class TokenError(
+  Exception): pass` (line 162), listed in the module's own `__all__`
+  (line 44), raised internally by the module's own `generate_tokens`
+  (line 588). No `TokenizeError` name appears anywhere in that file.
+  This confirms, independent of the entry's own say-so, that
+  `tokenize.TokenError` is real and `tokenize.TokenizeError` does not
+  exist in the stdlib and would raise `AttributeError` on attribute
+  access — exactly as the entry claims.
+
+  **Checked whether the bug was ever actually committed**, per the
+  task's own request (this role has no `Bash`, so `git log` itself
+  could not be run — reproduced instead from the independent audit's
+  own already-completed `git show`/`git diff` work,
+  `planning/retros/_audit-phase-86.md` §8/§9, which this triage treats
+  as a already-reproduced primary source, not a re-asserted claim): the
+  audit's own `git show 86fb495 --name-only` lists
+  `scripts/check_knowledge_placement.py` as one of exactly 13 files in
+  that **one** commit, and the audit independently confirmed no other
+  commit in this phase's lineage (`b434b9d`..`86fb495`) touches
+  `src/codecompass/`, `scripts/`, or `tests/` at all (§9, the
+  protected-file/scope-discipline check) — meaning
+  `scripts/check_knowledge_placement.py` has exactly one commit in its
+  entire history to date, and that commit already contains the fixed
+  `tokenize.TokenError` (confirmed directly by reading the current file,
+  line 238: `except (SyntaxError, tokenize.TokenError, IndentationError)`).
+  **The buggy `tokenize.TokenizeError` version was never committed to
+  `main`** — it existed only in the implementer's working tree during
+  development, between writing the plan and running the first test, and
+  was fixed before `86fb495` landed. This matters for how the lesson is
+  phrased: the correct framing is "a planning-review pass that verifies
+  a plan's logic/regex claims by execution can still miss a cited
+  library API name none of those execution snippets happen to touch —
+  caught here only because implementation-time test-writing is already
+  a separate, independent safety net, before any commit," not "a bug
+  shipped and a later test caught it." The entry's own title already
+  gets this right ("not confirmed real until the code that catches it
+  actually runs," not "until a later commit fixes it") — no correction
+  needed there, only in how the promoted `CLAUDE.md` sentence below is
+  worded (prospective: strengthen the *plan-review* step itself, not
+  "add a test after shipping," since a test already existed and worked).
+
+  **Recommendation: promote**, as a `project-rule`, to `CLAUDE.md` §1 —
+  draft below, routed through
+  `planning/v1-redefinition/proposed-governance-changes.md` §L (also
+  drafted this triage) per this role's own write-boundary (never
+  `CLAUDE.md` directly; propose only, lead presents the diff, user
+  approves per §0):
+
+  > If a plan cites a specific standard-library or third-party-
+  > dependency API name (a function, class, exception, or attribute)
+  > that the implementation will call or catch, the plan's own
+  > independent review must execute a direct reference to that exact
+  > name (e.g. `python3 -c "import tokenize; tokenize.TokenError"`) to
+  > confirm it exists — a review round that verifies a plan's
+  > surrounding logic or regex claims exhaustively, by executing
+  > isolated snippets of them, can still miss a simple nonexistent-
+  > API-name typo if none of those snippets happen to touch the
+  > specific name itself. (Phase 86 — L-116.)
+
+  Routed to `CLAUDE.md` §1 rather than to an agent-level scoped rule
+  (contrast `L-086`/`L-111`, both kept as `release-phase-auditor.md`
+  checklist items on their own first occurrence): those two concern
+  *auditing already-written code's test coverage* after the fact, the
+  audit agent's own natural territory; this one concerns what a *plan's
+  own review step* must verify *before* implementation starts, which is
+  squarely `CLAUDE.md` §1's existing domain and matches the shape of
+  every other first-occurrence promotion already landed there
+  (`L-021`, `L-070`, `L-075`, `L-087`, `L-088`) — each a cheap,
+  mechanically-checkable addition to what a plan-review pass must do,
+  not a claim that this exact incident will recur verbatim. Classified
+  `project-rule` rather than `scoped-rule` on that same basis, not
+  because of a recurrence count (this is a genuine first occurrence,
+  openly stated above).
+
+  This edit is outside this role's write boundary (`CLAUDE.md` is
+  §0-gated) — lead presents the diff in
+  `proposed-governance-changes.md` §L to the user; once approved and
+  landed, flip this entry's `status` to `promoted`, record the real
+  landing commit in `promoted_to`, and add the `promoted.md` line:
+  `L-116 | 2026-11-03 | project-rule | CLAUDE.md §1 (a plan citing a
+  specific stdlib/third-party API name must have that name verified by
+  direct execution during plan review, not only its surrounding logic
+  -- user-approved per §0) @ <landing commit>`.
