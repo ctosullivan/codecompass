@@ -11087,3 +11087,53 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   `promoted_to`, and add the `promoted.md` line already drafted
   immediately above this note — no re-investigation needed at that
   point, only the mechanical flip.
+
+### L-117 — `ast`'s `col_offset`/`end_col_offset` are UTF-8 byte offsets, not character offsets
+
+- **origin:** Phase 86 (Knowledge-Placement and Code-Quality Review),
+  second corrective pass, `scripts/check_knowledge_placement.py`'s
+  `_docstring_citations()`
+- **date:** 2026-11-04
+- **project_revision:** `305d3e1` (the fix), reported against `8b915ac`
+  (pre-fix)
+- **observation:** `_docstring_citations()` sliced a docstring's own raw
+  source text using the containing `ast.Constant` node's `col_offset`/
+  `end_col_offset` directly against the decoded `str` line, treating
+  them as character indices. CPython's `ast` module documents these as
+  UTF-8 *byte* offsets into the line, not character offsets. A
+  multibyte character anywhere earlier on the same physical source line
+  as the docstring's opening quote (e.g. a non-ASCII function/class
+  name immediately before an inline docstring on one line) shifts every
+  later character's byte offset ahead of its character index. Slicing
+  the decoded string at that (too-large) index silently truncated the
+  docstring and lost the citation entirely — not merely misreporting
+  its line, the citation vanished from the findings with no diagnostic
+  at all. This had already escaped four independent planning-review
+  rounds and two prior corrective-pass audits (the original
+  implementation and its first corrective pass), because every fixture
+  used throughout this phase's own test suite and dogfood run was pure
+  ASCII; the byte/character distinction is invisible on ASCII input,
+  where byte offset and character index always coincide.
+- **evidence:** reproduced directly:
+  `ast.parse('def 非常非常(): """decisions/9999"""\n')`'s docstring node
+  reports `col_offset=20`, but the physical line
+  `'def 非常非常(): """decisions/9999"""'` is only 32 *characters* long
+  with the triple-quote starting at character index 14 — `line[20:40]`
+  (character slice) yields `'ions/9999"""'` (the citation regex no
+  longer matches at all), while slicing `line.encode("utf-8")[20:40]`
+  then decoding yields the correct `'"""decisions/9999"""'`. Confirmed
+  the real repository's own `src/codecompass/**/*.py` corpus contains
+  zero cases where this bug actually fired (pre-fix and post-fix
+  `--strict` output on the real corpus is byte-identical) — this was a
+  latent defect, not an active one, caught only because this corrective
+  pass deliberately looked for non-ASCII-adjacent-to-docstring cases
+  rather than because the real corpus exercised it.
+- **classification:** project-rule — a generalizable caution for any
+  future code (in this project or a plan reviewing it) that slices
+  Python source text using `ast` node position attributes against
+  multibyte-capable source.
+- **status:** candidate
+- **recurrence:** first occurrence. Not yet checked against
+  `promoted.md`/other `inbox.md` entries for an existing rule covering
+  this — left to `knowledge-curator` triage.
+- **promoted_to:** (not yet triaged)
