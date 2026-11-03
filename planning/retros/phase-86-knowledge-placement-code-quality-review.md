@@ -120,3 +120,58 @@ used for, or substituted into, this gate at any point.
   writing the plan — a plan's own independent review can verify logic
   and regex behaviour exhaustively and still miss a simple naming typo
   if it never actually executes the code.
+
+## Corrective pass (2026-11-03)
+
+An independent closeout review (after this phase's own original `done`
+marking) found five additional findings, all addressed without
+reopening this phase's design — see the plan's own §14 for full detail:
+
+- Two genuine implementation defects (`UnicodeDecodeError` escaping the
+  source-read exception handler; a silent `continue` on an unreadable
+  ADR in `_build_superseded_map`, which could make a citation to an
+  ADR actually superseded *by* the unreadable file read as clean) —
+  both fixed with narrow exception-handling widening and, for the
+  second, a new always-blocking `knowledge-placement-unreadable-
+  decision-file` diagnostic. **Lesson repeated**: both are the same
+  general shape as this phase's own earlier `L-116` lesson and as
+  Phase 85's own `95309f1` ("superseded-contradiction severity +
+  unreadable-OracleResult handling") — an exception-handling boundary
+  that was verified for its *named* failure mode but not for every
+  exception type a real stdlib call can actually raise. A planning or
+  implementation review that checks "does this catch handle the
+  scenario the prose describes" without also checking "what is the
+  *complete* set of exceptions the wrapped call can actually raise"
+  will keep missing this specific shape.
+- One real line-provenance bug (an escaped `\n` inside one physical
+  docstring source line overcounting a later citation's physical
+  line) — fixed by switching to a raw-source-text slice instead of
+  the AST's decoded string value.
+- One test-fragility issue: `test_source_resolution_dogfood_finding_
+  is_present` pinned the real dogfood's own specific historical finding
+  by name, which would have broken a future, unrelated, entirely
+  correct edit that removed or relocated the now-legitimate historical
+  citation. Refactored to assert the detector's general correctness
+  instead. **This retro's own "Real dogfood" section above is
+  unaltered and remains the authoritative historical record** of the
+  original finding, its independent adjudication, the lead's
+  correction, and its re-verification — the test no longer needing to
+  pin it does not mean the evidence stopped existing.
+- One missing-artifact gap (no `planning/retros/_drift-audit-phase-86.md`
+  had ever been persisted) — closed with a fresh, independent
+  `docs-reconstructor` dispatch, not a reconstruction from memory (the
+  release audit's own secondhand mention was not a reliable enough
+  source for a verbatim reconstruction, unlike Phase 85's own `d59a6d7`
+  precedent where the full original report genuinely was still
+  available).
+
+**Process-improvement feedback, corrective pass**: an independent
+`release-phase-auditor` PASS verifies that every DoD condition holds
+against the audited commit, but a `PASS WITH NON-BLOCKING OBSERVATIONS`
+verdict is not the same claim as "no further defect exists anywhere in
+this phase's code" — the auditor's own re-run of the plan's *stated*
+verification steps cannot surface a defect the plan's own test suite
+never exercised in the first place (here: no existing test ever
+supplied invalid-UTF-8 content or an unreadable ADR file). A `done`
+phase remains open to a later, independently-initiated defect-finding
+pass without that implying the original audit was performed carelessly.

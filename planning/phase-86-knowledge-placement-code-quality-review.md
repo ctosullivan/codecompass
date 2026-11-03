@@ -1,10 +1,16 @@
 # Phase 86: Knowledge-Placement and Code-Quality Review — plan
 
-**Status: done (2026-11-03).** Implemented per this plan's own final
-(fourth-amendment) design, after four independent planning-review
-rounds reached READY. Retro: `planning/retros/phase-86-knowledge-
+**Status: done (2026-11-03), corrective pass applied (2026-11-03).**
+Implemented per this plan's own final (fourth-amendment) design, after
+four independent planning-review rounds reached READY. A subsequent
+narrow corrective pass (§14 below) fixed two implementation defects and
+one test-fragility issue found by independent review after the initial
+PASS, and closed one missing-artifact gap; none of this reopens the
+plan's own design. Retro: `planning/retros/phase-86-knowledge-
 placement-code-quality-review.md`. Independent DoD audit: `planning/
-retros/_audit-phase-86.md` (PASS WITH NON-BLOCKING OBSERVATIONS).
+retros/_audit-phase-86.md` (PASS WITH NON-BLOCKING OBSERVATIONS,
+corrective-pass addendum appended). Drift audit: `planning/retros/
+_drift-audit-phase-86.md`.
 
 Governing scope: `planning/v2-roadmap.md` §"Phase 86 — Knowledge-
 Placement and Code-Quality Review" (10-point roadmap-depth sketch,
@@ -1642,3 +1648,86 @@ round):
    historical artefact per `decisions/0085`'s own Alternatives section,
    re-confirmed this session) — not pre-assigned here to avoid a stale
    number if other work lands first.
+
+## 14. Corrective pass (2026-11-03) — narrow, post-completion
+
+Five findings from an independent closeout review of the already-`done`
+Phase 86, addressed without reopening the plan's own design (no new ADR
+written — this pass fixes implementation defects and closeout gaps, not
+a design-level tradeoff, matching Phase 85's own identical-shape
+corrective-pass precedent, commit `95309f1`, which likewise fixed an
+uncaught-exception handling gap without a new ADR).
+
+1. **Missing drift-audit artifact (HIGH, fixed).** No `planning/
+   retros/_drift-audit-phase-86.md` had ever been committed (confirmed
+   by full `git log --all --diff-filter=A` search — every other phase
+   has one). The release audit's own §4 only independently re-checked
+   one specific finding secondhand; it never contained the original
+   dispatch's full scope/method/verdict, so nothing reliable existed to
+   reconstruct from (contrast Phase 85's own `d59a6d7`, where the full
+   original report genuinely was still available). A fresh, independent
+   `docs-reconstructor` dispatch was run and persisted as `planning/
+   retros/_drift-audit-phase-86.md`.
+2. **Invalid-UTF-8 source file could crash the validator (MEDIUM,
+   fixed).** `_extract_file_citations` caught `OSError` on a source
+   read but not `UnicodeDecodeError` (not an `OSError` subclass).
+   Reproduced directly; fixed by widening the caught exception set;
+   regression tests added.
+3. **Unreadable/undecodable ADR silently weakened supersession
+   detection (MEDIUM, fixed).** `_build_superseded_map` caught `OSError`
+   on an ADR read and silently `continue`d — a citation to an ADR
+   actually superseded *by* the unreadable file would report as clean,
+   misrepresenting a partially-examined corpus as complete.
+   `UnicodeDecodeError` escaped entirely, crashing the run. Both
+   reproduced directly; fixed with a new, always-blocking
+   `knowledge-placement-unreadable-decision-file` diagnostic; every
+   other readable ADR still processed; `decision-citation-superseded`'s
+   own informational severity unaffected; regression tests added.
+4. **Fragile real-dogfood regression test (MEDIUM, fixed).**
+   `test_source_resolution_dogfood_finding_is_present` required the
+   corrected `source_resolution.py` to retain its specific historical
+   `decisions/0019` citation forever — but that citation is now
+   legitimate retained historical context, not an outstanding defect; a
+   future, unrelated edit removing or relocating it should not break an
+   otherwise-correct implementation. Refactored (renamed
+   `test_real_corpus_run_produces_only_well_formed_informational_
+   findings`) to assert the detector's general correctness against the
+   real corpus without pinning one specific finding; the detector's own
+   correct behaviour remains independently established by
+   `TestRealCorpusSupersessionDetection`'s controlled, real-ADR-text
+   fixtures. The original dogfood finding, its adjudication, correction,
+   and re-verification remain recorded, unaltered, in this phase's own
+   retro (`planning/retros/phase-86-knowledge-placement-code-quality-
+   review.md`, "Real dogfood" section) — historical evidence, not a
+   permanent test invariant.
+5. **L-116 disposition left as bare `candidate` (LOW, fixed).**
+   `knowledge-curator`'s own earlier recommendation (promote to
+   `CLAUDE.md` §1) had not been approved by the user (§0) and was never
+   going to resolve on its own by staying `candidate`. Flipped to
+   `status: retained` — curation and recommendation complete, blocked
+   only on user approval, not on further investigation — per `planning/
+   v1-redefinition/learning-lifecycle.md`'s own valid-status enum. `CLAUDE.md`
+   itself was not touched; the draft diff remains in `planning/
+   v1-redefinition/proposed-governance-changes.md` §L, awaiting the
+   user's own explicit decision.
+
+A sixth, optional point from the same review (bounded, not a design
+change) found a real line-provenance bug in multiline-docstring citation
+extraction: an escaped `\n` sequence *within* one physical source line
+decodes to a real newline character in `ast.get_docstring`'s own string
+value, overcounting the physical line of any citation appearing after
+it. Reproduced directly; fixed by slicing the raw source text via the
+string literal's own `lineno`/`col_offset`/`end_lineno`/`end_col_offset`
+rather than the decoded value; one regression test added.
+
+Verification: 7 new regression tests (40 total in `tests/
+test_check_knowledge_placement.py`, from 32), each independently
+confirmed failing against the pre-fix code before any fix landed. Full
+suite 1206 passed / 2 skipped (was 1198/2 — net +8 matches the new
+dedicated tests). `ruff` clean. Real-corpus `--strict` run: 10
+informational findings, exit 0, byte-identical across two consecutive
+runs. `check_contracts.py`, `check_knowledge_base.py`, and
+`check_self_knowledge_quality.py --strict` re-run clean against their
+already-documented pre-existing baselines (the last: 35 findings, 26
+blocking / 9 informational, unchanged — no Phase 85 finding suppressed
+or altered).
