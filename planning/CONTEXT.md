@@ -19,9 +19,13 @@ compilation pipeline's own bounded-packet and gap-detection steps).
 Direct inspection found every file in the required minimum publication
 suite already exists; the "epistemic distinctions" gap
 `decisions/0085` §5 named turned out to be editorial accessibility, not
-missing content. Awaiting an independent planning-review verdict
-before implementation may begin — implementation is **not**
-authorised yet.
+missing content (one example-gap refinement made after the reviewer
+flagged it). Independent planning review: **READY WITH NON-BLOCKING
+OBSERVATIONS** (plan's own §I) — no blocking inaccuracy, circularity,
+or scope-creep found; one baseline-asymmetry note carried forward as a
+future reporting requirement, not a plan defect. Implementation is
+**not** authorised by this planning pass — per its own governing task's
+explicit instruction, work stops here.
 
 **Phase 86 — Knowledge-Placement and Code-Quality Review — is `done`
 (2026-11-03)**. Plan amended and independently reviewed across four

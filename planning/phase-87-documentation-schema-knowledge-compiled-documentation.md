@@ -1,8 +1,9 @@
 # Phase 87: Documentation Schema and Knowledge-Compiled Documentation — plan
 
-**Status: planned, not started.** Awaiting independent planning review
-before being marked `ready`; implementation not authorised by this
-document alone (`CLAUDE.md` §1).
+**Status: ready, not started.** Independent planning review (§I)
+returned READY WITH NON-BLOCKING OBSERVATIONS (2026-11-04). Planning
+only — this document does not authorise implementation; the governing
+task that produced it explicitly stops after planning approval.
 
 Governing scope: `planning/v2-roadmap.md` §"Phase 87 — Documentation
 Schema and Knowledge-Compiled Documentation" (10-point roadmap-depth
@@ -210,12 +211,15 @@ workflows/knowledge-reconciliation-loop.md`), but written in this
 project's own dense, citation-heavy internal-documentation register
 (`decisions/0082`, `derive_epistemic_profile`, etc.), not in the
 plain, example-led register `decisions/0085` §5's own editorial
-requirements demand for a reader-facing concept page. **The real gap
-is editorial accessibility, not missing content** — Phase 87's own
-editorial-quality assessment step (§C step 8) is what actually closes
-this, not a from-scratch authoring task. This plan corrects
-`decisions/0085` §5's framing accordingly rather than repeating it
-uncritically.
+requirements demand for a reader-facing concept page, and contains
+**zero worked examples** — itself a genuine content gap, not purely a
+register/tone issue, since Phase 87's own editorial bar requires
+example-led writing. **The real gap is editorial accessibility plus
+missing examples, not missing conceptual content** — Phase 87's own
+editorial-quality assessment step (§C step 8) identifies both; closing
+the example gap may require new worked-example prose even where no new
+concept needs explaining. This plan corrects `decisions/0085` §5's
+framing accordingly rather than repeating it uncritically.
 
 ## B. Documentation schema
 
@@ -667,4 +671,51 @@ feasible scope. Material findings are corrected and the review repeated
 until an evidence-backed `READY` verdict is reached — recorded as a new
 section below this line, once performed; this plan does not claim
 `READY` on its own say-so.
+
+## I. Independent planning-review verdict (2026-11-04)
+
+**READY WITH NON-BLOCKING OBSERVATIONS.** An independent reviewer
+(dispatched separately from this plan's own authoring) spot-checked
+every load-bearing citation directly against the real repository
+rather than trusting this document's own prose:
+
+- Confirmed `decisions/0084` §2's Phase 87 row and `decisions/0085`
+  §§5-6 are reproduced faithfully in §B/§C/§F, and that Phase 88/89/90
+  numbering/scope in §G.4/§G.7 correctly follows the final roadmap
+  (`decisions/0085` §3/§7/§8's split/renumbering), not the earlier,
+  superseded `decisions/0084` §2 table.
+- Independently re-read `knowledge_api.py`'s `get_context_packet`
+  (line 1507) and `find_gaps` (line 1318), `prepare_cleanroom_branch.py`'s
+  `UnclassifiedNarrativeShapedFileError` (declared line 54, raised line
+  199), and `cleanroom_broker.py`'s `run_inference` (line 135) — all
+  confirmed to behave exactly as §A.2/§A.5 describe.
+- Independently re-counted every file-existence/line-count claim in
+  §A.9/§E (exact matches) and read `knowledge-model.md` directly,
+  confirming the "editorial accessibility" framing is defensible and
+  not used to undersell a real gap — while flagging that the file's
+  zero worked examples should be named as a content gap, not only a
+  register issue (addressed above, §A.9).
+- Confirmed no second knowledge store in the design, correct exclusion
+  of Phase 88/89/90 scope, and that §G.5's tests 1/5/8/9 are genuinely
+  non-circular (each checks an externally observable fact, never the
+  compiler self-certifying its own success).
+- Confirmed §F's baseline is reproducible as specified and its blind
+  rubric review is feasible (both arms produce ordinary Markdown),
+  while flagging one asymmetry worth naming explicitly in the eventual
+  retro: factual-accuracy scoring is automated (the step-7 validation
+  log) for the compiled arm but manual for the baseline arm — reasonable
+  given the log is an independent-validation byproduct rather than
+  self-grading, but worth stating plainly so it is never read as having
+  put a thumb on the scale.
+- Confirmed overall scope, while large, traces every component to a
+  specific `decisions/0085` §5/§6 requirement — no unrequested
+  infrastructure (no new scheduler, no speculative schema fields, no
+  second query surface) found.
+
+No blocking inaccuracy, circularity, or scope-creep finding. The one
+substantive observation (the examples gap) was corrected in §A.9/§E
+above in the same pass that received this verdict; the asymmetry note
+above is carried forward as a reporting requirement for the eventual
+baseline retro (§F), not a plan defect. No second review round is
+required before implementation may be authorised by the lead.
 
