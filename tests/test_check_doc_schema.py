@@ -1,0 +1,200 @@
+"""Tests for scripts/check_doc_schema.py (Phase 87 documentation-schema
+validator). Mirrors scripts/check_contracts.py's own Finding/--strict
+convention. See
+planning/phase-87-documentation-schema-knowledge-compiled-documentation.md
+§B for the schema format this validates.
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import sys
+from pathlib import Path
+
+import pytest
+import yaml
+
+ROOT = Path(__file__).resolve().parent.parent
+SCRIPT_PATH = ROOT / "scripts" / "check_doc_schema.py"
+
+_spec = importlib.util.spec_from_file_location("check_doc_schema", SCRIPT_PATH)
+check_doc_schema = importlib.util.module_from_spec(_spec)
+sys.modules["check_doc_schema"] = check_doc_schema
+_spec.loader.exec_module(check_doc_schema)
+
+
+def _write_flat_record(
+    path: Path, record_id: str, kind: str = "claim", status: str = "supported"
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        f"id: {record_id}\nkind: {kind}\nstatement: demo statement for {record_id}\n"
+        f"supporting_evidence: []\ncontradicting_evidence: []\nstatus: {status}\n",
+        encoding="utf-8",
+    )
+
+
+def _write_schema(path: Path, **overrides) -> dict:
+    base = {
+        "schema_version": 1,
+        "document": "docs/demo.md",
+        "audience": "a developer new to the project",
+        "purpose": "demonstrate the schema validator",
+        "sections": [{
+            "id": "s1",
+            "title": "Section one",
+            "required_knowledge": ["CL-SCHEMADEMO-001"],
+            "depth": "brief",
+            "tone": "instructional",
+            "requires_example": False,
+            "requires_tested_example": False,
+            "evidence_requirements": {
+                "min_claim_status": "supported", "allow_unconfirmed_scopes": False,
+            },
+        }],
+        "acceptance_criteria": ["An unfamiliar developer understands the purpose."],
+        "verification_method": "manual review",
+        "provenance": "on_demand",
+        "owner": "lead",
+    }
+    base.update(overrides)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(yaml.safe_dump(base, sort_keys=False), encoding="utf-8")
+    return base
+
+
+@pytest.fixture
+def project(tmp_path):
+    _write_flat_record(
+        tmp_path / "planning" / "knowledge" / "schemademo" / "CL-SCHEMADEMO-001.yaml",
+        "CL-SCHEMADEMO-001",
+    )
+    return tmp_path
+
+
+# ---------------------------------------------------------------------------
+# Happy path
+# ---------------------------------------------------------------------------
+
+
+def test_well_formed_schema_produces_no_blocking_findings(project):
+    schema_path = project / "docs" / "demo.schema.yaml"
+    _write_schema(schema_path)
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert not [f for f in findings if f.strict]
+
+
+# ---------------------------------------------------------------------------
+# Required fields / enum validation
+# ---------------------------------------------------------------------------
+
+
+def test_missing_required_top_level_field_is_blocking(project):
+    schema_path = project / "docs" / "demo.schema.yaml"
+    data = _write_schema(schema_path)
+    del data["acceptance_criteria"]
+    schema_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert any(f.strict and f.rule == "doc-schema-missing-field" for f in findings)
+
+
+def test_unknown_schema_version_is_blocking_fail_closed(project):
+    schema_path = project / "docs" / "demo.schema.yaml"
+    _write_schema(schema_path, schema_version=999)
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert any(f.strict and f.rule == "doc-schema-unknown-version" for f in findings)
+
+
+def test_invalid_min_claim_status_is_blocking(project):
+    schema_path = project / "docs" / "demo.schema.yaml"
+    data = _write_schema(schema_path)
+    data["sections"][0]["evidence_requirements"]["min_claim_status"] = "extremely-sure"
+    schema_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert any(f.strict and f.rule == "doc-schema-invalid-min-claim-status" for f in findings)
+
+
+def test_requires_tested_example_without_comparison_mode_is_blocking(project):
+    schema_path = project / "docs" / "demo.schema.yaml"
+    data = _write_schema(schema_path)
+    data["sections"][0]["requires_tested_example"] = True
+    schema_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert any(f.strict and f.rule == "doc-schema-missing-comparison-mode" for f in findings)
+
+
+# ---------------------------------------------------------------------------
+# required_knowledge resolution (amendment finding A)
+# ---------------------------------------------------------------------------
+
+
+def test_concrete_id_that_does_not_resolve_is_blocking(project):
+    schema_path = project / "docs" / "demo.schema.yaml"
+    data = _write_schema(schema_path)
+    data["sections"][0]["required_knowledge"] = ["CL-DOES-NOT-EXIST"]
+    schema_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert any(f.strict and f.rule == "doc-schema-unresolved-record-id" for f in findings)
+
+
+def test_discover_query_resolving_to_exactly_one_record_is_rewritten_in_place(project):
+    schema_path = project / "docs" / "demo.schema.yaml"
+    data = _write_schema(schema_path)
+    data["sections"][0]["required_knowledge"] = ["discover:demo statement"]
+    schema_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert not [f for f in findings if f.strict]
+
+    rewritten = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    assert rewritten["sections"][0]["required_knowledge"] == ["CL-SCHEMADEMO-001"]
+
+
+def test_discover_query_resolving_to_zero_records_is_blocking(project):
+    schema_path = project / "docs" / "demo.schema.yaml"
+    data = _write_schema(schema_path)
+    data["sections"][0]["required_knowledge"] = ["discover:nothing matches this at all"]
+    schema_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert any(f.strict and f.rule == "doc-schema-ambiguous-discover-query" for f in findings)
+
+
+def test_discover_query_resolving_to_multiple_records_is_blocking_never_guesses(project):
+    _write_flat_record(
+        project / "planning" / "knowledge" / "schemademo" / "CL-SCHEMADEMO-002.yaml",
+        "CL-SCHEMADEMO-002",
+    )
+    schema_path = project / "docs" / "demo.schema.yaml"
+    data = _write_schema(schema_path)
+    data["sections"][0]["required_knowledge"] = ["discover:demo statement"]
+    schema_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert any(f.strict and f.rule == "doc-schema-ambiguous-discover-query" for f in findings)
+    # Never silently guesses via the first match -- the file is untouched.
+    unchanged = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    assert unchanged["sections"][0]["required_knowledge"] == ["discover:demo statement"]
+
+
+# ---------------------------------------------------------------------------
+# document path uniqueness across schema files
+# ---------------------------------------------------------------------------
+
+
+def test_duplicate_document_path_across_schemas_is_blocking(project):
+    schema_a = project / "docs" / "a.schema.yaml"
+    schema_b = project / "docs" / "b.schema.yaml"
+    _write_schema(schema_a, document="docs/same.md")
+    _write_schema(schema_b, document="docs/same.md")
+    findings = check_doc_schema.run_all(project, [schema_a, schema_b])
+    assert any(f.strict and f.rule == "doc-schema-duplicate-document-path" for f in findings)
+
+
+# ---------------------------------------------------------------------------
+# CLI --files (mirrors the Phase 86 nargs="+" precedent -- L-... finding B)
+# ---------------------------------------------------------------------------
+
+
+def test_cli_rejects_explicit_empty_files_selection():
+    with pytest.raises(SystemExit) as exc_info:
+        check_doc_schema.main(["--files"])
+    assert exc_info.value.code == 2
