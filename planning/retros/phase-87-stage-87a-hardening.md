@@ -6,7 +6,10 @@
   commits (CHANGELOG, learnings, CONTEXT/ROADMAP reconciliation).
 - **Agents used:** `knowledge-curator` (candidate learning triage),
   `docs-reconstructor` (focused drift audit), `release-phase-auditor`
-  (final independent audit of this hardening pass).
+  (two dispatches against this hardening pass — the first FAIL, a
+  second, independent re-audit after the fix round, PASS WITH
+  NON-BLOCKING OBSERVATIONS), `Plan` (Stage 87B plan review, separate
+  scope, see that plan section's own §P).
 
 ## Where we are
 
@@ -151,8 +154,9 @@ intact.
 
 Two generalizable technical takeaways, both filed to `planning/
 learnings/inbox.md` and triaged by `knowledge-curator`: `L-120`
-(`compose_section`'s own verified-bytes-sourcing defect — see "Where
-we're going" below) and the process point above, which is not filed
+(`compose_section`'s own verified-bytes-sourcing defect — see
+"Candidate learnings filed" below) and the process point above, which
+is not filed
 as a separate learning since it is already covered by `CLAUDE.md`
 §5's own letter rather than being a new rule: **writing a doc update
 in the tense of an outcome that hasn't happened yet is the same
@@ -181,10 +185,14 @@ curation notes.
 
 ## Where we're going
 
-Stage 87B's own implementation-ready plan is drafted next (plan's own
-§O), independently reviewed, and committed separately from this
-hardening pass — implementation itself remains unauthorised. Stage 87C
-and Phases 88-92 remain untouched. Phase 87 overall remains `not done`.
+A second, fresh independent `release-phase-auditor` dispatch against
+this fix round's own commit returned **PASS WITH NON-BLOCKING
+OBSERVATIONS** (three minor wording/cross-reference clarity issues,
+fixed in the same session) — Stage 87A's hardening is closed. Stage
+87B's own implementation-ready plan is drafted next (plan's own §O),
+independently reviewed, and committed separately from this hardening
+pass — implementation itself remains unauthorised. Stage 87C and
+Phases 88-92 remain untouched. Phase 87 overall remains `not done`.
 
 ## Time / cost note
 

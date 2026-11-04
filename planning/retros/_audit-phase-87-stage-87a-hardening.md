@@ -293,3 +293,211 @@ voided-scope rule applies: any commit touching audited scope after
 this report requires a new audit before the hardening pass can be
 considered closed) — not reuse this report's verdict by
 cross-reference.
+
+---
+
+# Re-audit — Phase 87, Stage 87A hardening fix round
+
+- **Audited commit:** `a656e0c` ("fix(phase-87): correct Stage 87A
+  hardening pass's own three process defects -- FAIL fix round"),
+  confirmed via `git log --oneline -1` to be the real current `HEAD`
+  at audit time, not a stale description.
+- **Scope:** the three process-defect fixes this commit claims to make
+  to the prior FAIL (above), re-verified independently against the
+  real current state — not by reusing the first audit's verdict by
+  cross-reference.
+- **Auditor role:** `release-phase-auditor`, read-only. This is a
+  fresh, independent pass (a new dispatch, no shared memory with the
+  first).
+
+## Verdict
+
+**PASS WITH NON-BLOCKING OBSERVATIONS.**
+
+All three FAIL-driving findings from the first audit are genuinely
+fixed, independently re-verified against the real current state
+(including by directly reproducing the pre-fix/post-fix test behaviour
+myself, not merely re-reading the claim). Two small, non-blocking
+wording/clarity issues remain, neither of which asserts an event that
+hasn't happened or misstates a material fact.
+
+## What was re-verified and found correct
+
+1. **`planning/CONTEXT.md` / `planning/ROADMAP.md` no longer claim a
+   completed re-audit.** Read both files as they exist now. `CONTEXT.md`
+   (lines 11-13, 55-96): "Stage 87A implemented and hardened, hardening
+   fix-round complete, fresh independent re-audit of the fix pending"
+   / "**A fresh independent audit of this corrected state is the next
+   step before Stage 87A's hardening is considered closed** — not yet
+   run as of this entry." `ROADMAP.md`'s Phase 87 row: "...a fresh
+   independent re-audit of the corrected state is pending as of
+   2026-11-04". Both correctly describe the fix as done and this
+   re-audit as the pending next step, not an already-settled fact.
+   `git diff 57dab8f a656e0c -- planning/CONTEXT.md planning/ROADMAP.md`
+   read in full — no new instance of the "claims an event before it
+   happens" defect anywhere in either diff. `CHANGELOG.md`'s diff
+   likewise reads correctly in tense ("a fresh independent audit of
+   this exact revision is the next step before Stage 87A's hardening
+   can be considered closed").
+2. **Test count reconciled, independently re-measured, not merely
+   re-read:**
+   - `tests/test_cli.py`: 103 (at `61182a8`) -> 115 (now) def-count
+     delta = +12; direct diff shows 13 new `def test_` lines added, 1
+     removed (`test_docs_publish_refuses_without_both_verdicts_passing`,
+     superseded by the hash-bound-review redesign).
+   - `tests/test_compile_doc_section.py`: 15 -> 18, delta +3.
+   - `tests/test_check_doc_schema.py`: 14 -> 18, delta +4.
+   - Total net new across the three files: **19**, matching
+     `CHANGELOG.md`/`CONTEXT.md`/the retro's own claimed "19 new
+     regression tests" and "15 -> 19" narrative exactly.
+   - Reproduced the "13 confirmed failing pre-fix" claim directly: used
+     a disposable `git worktree` checked out at `61182a8` (pre-hardening
+     source), copied the current `tests/test_cli.py` into it, and ran
+     the 13 newly-written `docs_publish`/`docs_record_review` test
+     functions with `PYTHONPATH` pointed at the worktree's own `src/`+
+     `scripts/` — all 13 fail against the pre-hardening source (11 via
+     `AttributeError`/missing command, 2 via assertion), and all 13
+     pass against the current `a656e0c` tree. Worktree removed after
+     use; `git status --short` and `git diff --quiet` on the main
+     checkout confirmed clean before and after (no live tracked file
+     was ever overwritten — the sandbox itself declined a direct
+     overwrite attempt on a tracked path, so a worktree was used
+     instead, which achieves the same comparison without the
+     restore-afterward risk).
+3. **`tests/test_check_doc_schema.py` now has direct, real tests for
+   `doc-schema-unsafe-document-path`** — read each of the 4 new test
+   bodies directly, not merely grepped for the rule name:
+   `test_traversal_document_path_is_blocking` (`document: "../outside.md"`),
+   `test_absolute_document_path_is_blocking` (`document: "/etc/evil.md"`),
+   `test_document_path_outside_approved_targets_is_blocking`
+   (`document: "CONTRIBUTING.md"`), and
+   `test_legitimate_readme_document_path_produces_no_path_finding`
+   (`document: "README.md"`, positive control). Cross-checked each
+   against `doc_compiler.resolve_publication_target`'s own real logic
+   (`src/codecompass/doc_compiler.py:469-514`): absolute-path check,
+   `..`-in-`parts` check, then an allow-list check against
+   `_ALLOWED_ROOT_FILES = ("README.md",)` / `_ALLOWED_DOC_ROOT_DIRS =
+   ("docs",)` — each of the 4 tests exercises a genuinely distinct
+   branch (traversal, absolute, out-of-allowlist via a real root file
+   that isn't `README.md`, and the one legitimate root file). Ran
+   `pytest tests/test_check_doc_schema.py -v`: 18/18 pass.
+4. **`ruff check` on every touched file, re-run independently:**
+   `src/codecompass/cli.py`, `src/codecompass/doc_compiler.py`,
+   `scripts/check_doc_schema.py`, `scripts/compile_doc_section.py`,
+   `tests/test_cli.py`, `tests/test_compile_doc_section.py`,
+   `tests/test_check_doc_schema.py` -> exactly 6 findings, all `E501`,
+   all in `src/codecompass/cli.py` (the pre-existing `knowledge
+   traverse`/`knowledge gaps` commands) and `tests/test_cli.py` line
+   1460 (an unrelated pre-existing comment). Independently confirmed
+   these same 6 findings exist identically against the `61182a8`
+   pre-hardening baseline (ran `ruff check` against a `git show
+   61182a8:...` snapshot of both files) — none are new, none are in
+   touched functions.
+5. **Full test suite, re-run independently twice:** `1294 passed, 2
+   skipped` both times (326.62s and 323.68s) — matches the claimed
+   count exactly.
+6. **The three actual publication-path fixes, re-confirmed still
+   present and unchanged:** `git diff 57dab8f a656e0c -- src/codecompass/cli.py
+   src/codecompass/doc_compiler.py scripts/compile_doc_section.py
+   scripts/check_doc_schema.py` is empty — byte-identical to what the
+   first audit already independently re-confirmed sound by direct
+   read (`resolve_publication_target`'s absolute/traversal/allow-list/
+   resolved-path logic; `docs record-review`/`docs publish`'s
+   hash-bound review validation; `compose_section`'s verified-bytes
+   sourcing and always-removed staging directory). Re-read
+   `resolve_publication_target` and `_check_document_path` directly
+   myself as part of verifying item 3 above — matches the first
+   audit's description exactly.
+7. **No `CLAUDE.md`/`decisions/*`/`README.md` drift:** `git show
+   a656e0c --stat -- CLAUDE.md decisions/ README.md
+   planning/retros/phase-87-pending-review/` produces no output — none
+   touched by this commit.
+8. **`planning/retros/phase-87-pending-review/readme-md/
+   vendor-digest-concept.json` still untouched:** `git log --oneline
+   -- <path>` shows only the original demonstration commit `a9667b5`;
+   no commit since (including `a656e0c`) has touched it.
+9. **`L-120` filed and triaged in the same commit lineage as the
+   implementation, not a later separate step:** confirmed via `git
+   show 57dab8f -- planning/learnings/inbox.md` (the entry and its
+   curation note land in the same commit as the three publication-path
+   fixes); `a656e0c` does not touch `planning/learnings/inbox.md` or
+   `planning/v1-redefinition/proposed-governance-changes.md` at all
+   (correct — nothing about L-120's own disposition changed in the fix
+   round). `L-120`'s `status:` field reads `retained`, matching
+   `CONTEXT.md`'s claim.
+10. **Changed-file list matches exactly what three process-defect
+    fixes need, no scope creep:** `CHANGELOG.md`, `planning/CONTEXT.md`,
+    `planning/ROADMAP.md`, the new `_audit-phase-87-stage-87a-hardening.md`
+    (first FAIL report, persisted here for the first time — not a
+    retroactive rewrite, this is its original write), the retro, and
+    the three test files. No `src/` or `scripts/` production-code
+    change (correct — none of the three findings were implementation
+    bugs).
+11. **Stray `§2.x` citation labels corrected to `§N.x`:** `grep -n
+    "§2\.[ABC]\b" tests/test_cli.py tests/test_compile_doc_section.py`
+    returns nothing; `§N.A`/`§N.B`/`§N.C` labels present at the
+    expected lines. The non-blocking observation from the first audit
+    was folded in as promised.
+12. **Validators and the Phase 85 self-knowledge-quality baseline,
+    all re-run independently:** `check_doc_schema.py --strict` (no
+    findings); `check_knowledge_placement.py --strict` (10
+    informational, exit 0); `check_knowledge_base.py --strict` (10
+    informational, exit 0); `check_contracts.py --strict` (7
+    informational, exit 0, matching the pre-existing baseline exactly);
+    `check_user_docs.py --strict` (no findings, exit 0);
+    `check_self_knowledge_quality.py --strict` (35 findings — 26
+    blocking, 9 informational, exit 1 as expected — matching the
+    documented, unchanged Phase 85 baseline exactly).
+13. **Working tree:** clean before, during (worktree-isolated, never
+    touching the live tracked path), and after this audit
+    (`git status --short` empty; `git worktree list` shows no leftover
+    worktree from this audit).
+
+## Non-blocking observations (would not by themselves change the verdict)
+
+- **`CHANGELOG.md`'s own new sentence is confusing on first read, though
+  not actually false.** It says "19 new regression tests
+  (`tests/test_cli.py` +12, ...; **13** of the `tests/test_cli.py`
+  additions confirmed failing..." — juxtaposing a net delta ("+12")
+  with a raw-addition count ("13 of") for the same file in the same
+  breath invites a reader to conclude 13 can't be a subset of 12. It
+  is not actually an error: `tests/test_cli.py` has 13 freshly-written
+  `def test_` functions in this diff, one of which replaces (nets
+  against) one deleted pre-hardening test, giving a net delta of +12
+  while all 13 raw new functions are the ones that were confirmed
+  failing pre-fix (independently reproduced above). Worth rewording
+  (e.g. "13 newly-written `test_cli.py` functions" instead of "13 of
+  the `test_cli.py` additions") so the net/gross distinction isn't
+  left for a reader to reconstruct themselves.
+- **The retro's "Lessons learnt" section points to "Where we're going"
+  below for `L-120`'s detail, but "Where we're going" doesn't mention
+  `L-120` at all** — it only discusses Stage 87B's plan being drafted
+  next. A dangling cross-reference, introduced by this same commit's
+  rewrite of that section; harmless since `L-120`'s actual detail lives
+  correctly in `planning/learnings/inbox.md` and is correctly
+  summarized elsewhere in this same retro ("Candidate learnings
+  filed"), but the specific "see ... below" pointer resolves to nothing
+  relevant.
+- **The retro's "Where we're going" section does not itself restate
+  that the fresh independent audit (this one) is the immediate next
+  step** before Stage 87B's plan is drafted — it is accurate (Stage
+  87B is genuinely next after this audit), but `CONTEXT.md`/
+  `ROADMAP.md`/`CHANGELOG.md` all state the immediate next step more
+  precisely than the retro's own "Where we're going" does. Not a
+  factual error, just a less complete trajectory statement in one of
+  the four governing documents relative to the other three.
+
+## What must be fixed before the phase can be marked done
+
+Nothing blocking. The three optional wording clarifications above may
+be folded in at the lead's discretion but do not require a further
+audit cycle on their own. Per the `release-phase-auditor` role's own
+voided-scope rule, any further commit touching this audited scope
+(including a purely cosmetic fix to the above) would require a fresh
+audit before this hardening pass's state can be relied upon again —
+the lead should weigh that cost against the cosmetic benefit before
+deciding whether to make that commit at all.
+
+Phase 87 overall remains `not done` (Stage 87B/87C unauthorised and
+unstarted) — this verdict closes only the hardening-pass re-audit
+`CONTEXT.md`/`ROADMAP.md` name as pending, not Phase 87 as a whole.

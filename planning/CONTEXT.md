@@ -9,8 +9,8 @@ session-resumption, not a project history.
 
 **Phase 87 — Documentation Schema and Knowledge-Compiled
 Documentation — restructured into three stages (87A/87B/87C); Stage
-87A implemented and hardened, hardening fix-round complete, fresh
-independent re-audit of the fix pending; Stage 87B planned (not
+87A implemented, hardened, and independently re-audited (second pass,
+PASS WITH NON-BLOCKING OBSERVATIONS); Stage 87B planned (not
 implemented); Phase 87 overall remains `not done`.** Plan:
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
 A second review (after the first pass's own READY WITH NON-BLOCKING
@@ -87,14 +87,30 @@ time half of the path-confinement fix (`check_doc_schema.py`'s
 in the same session: this file's own prose corrected to accurate tense;
 the test count corrected and 4 new tests added for the previously-
 uncovered schema-validation-time path (`tests/test_check_doc_schema.py`,
-14 → 18); total new regression tests across this hardening pass: 19.
-Full suite, ruff, and all strict validators re-confirmed clean (Phase
-85 baseline unchanged). One candidate learning filed and triaged
-(`L-120`, retained). **A fresh independent audit of this corrected
-state is the next step before Stage 87A's hardening is considered
-closed** — not yet run as of this entry. Full detail: `planning/
+14 → 18); total new regression tests across this hardening pass: 19
+net (`test_cli.py` +12 net from 13 newly-written tests replacing 1
+pre-hardening test that encoded the old CLI contract; `test_compile_
+doc_section.py` +3; `test_check_doc_schema.py` +4). Full suite 1294
+passed, 2 skipped; ruff and all strict validators re-confirmed clean
+(Phase 85 baseline unchanged). One candidate learning filed and
+triaged (`L-120`, retained).
+
+**A second, fresh `release-phase-auditor` dispatch against the fix
+round's own commit independently re-confirmed all three FAIL-driving
+defects genuinely closed** — including by directly reproducing the
+"13 confirmed failing pre-fix" claim itself (a disposable `git
+worktree` at the pre-hardening commit, not merely re-reading the prior
+claim) — and returned **PASS WITH NON-BLOCKING OBSERVATIONS**: three
+minor wording/cross-reference clarity issues (a confusingly-phrased
+test-count sentence in `CHANGELOG.md`; a dangling cross-reference in
+the retro's "Lessons learnt" section; the retro's "Where we're going"
+not naming the re-audit itself as the immediate next step), none
+asserting an event before it happened, all fixed in the same session.
+**Stage 87A's hardening is genuinely closed.** Full detail: `planning/
 retros/phase-87-stage-87a-hardening.md`,
-`planning/retros/_audit-phase-87-stage-87a-hardening.md`.
+`planning/retros/_audit-phase-87-stage-87a-hardening.md` (both the
+original FAIL and the re-audit's PASS WITH NON-BLOCKING OBSERVATIONS
+sections, preserved append-only).
 
 **Stage 87B and 87C are not implemented and not authorised** — Phase
 87 itself remains `not done` until 87C's own exit gate (the complete
