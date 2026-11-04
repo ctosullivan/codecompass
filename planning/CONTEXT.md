@@ -976,7 +976,11 @@ can close out fully: `L-116`'s recommended promotion to `CLAUDE.md` §1
 §L) and `L-117`'s recommended promotion (same file, §M) — both
 learnings' own `status` is `retained` pending this, requiring the
 user's own `CLAUDE.md` §0 approval; not something this or any future
-session may apply on the user's behalf. Sequence from here: **87
+session may apply on the user's behalf. Two further, same-shape items
+from Phase 87 Stage 87A (below) carry the identical pending-approval
+disposition: `L-118`'s recommended promotion (same file, §N) and
+`L-119`'s (same file, §O) — both also `status: retained`, awaiting the
+same `CLAUDE.md` §0 approval. Sequence from here: **87
 (Documentation Schema and Knowledge-Compiled Documentation) — Stage 87A
 is implemented and independently audited, PASS WITH NON-BLOCKING
 OBSERVATIONS; Stages 87B and 87C are planned (§E/§F of the plan) but
