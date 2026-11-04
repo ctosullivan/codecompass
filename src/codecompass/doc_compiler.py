@@ -26,10 +26,12 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import knowledge_api as _api
+from . import knowledge_intermediate as _ki
 
 # decisions/0085 §5's schema field; real record `status` values observed
 # in this project's own corpus include `candidate`-tier ("proposed"),
@@ -304,11 +306,209 @@ def validate_section_citations(text: str, packet: EvidencePacket) -> list[Citati
     return findings
 
 
+_STRAY_SPACE_BEFORE_PUNCTUATION_RE = re.compile(r" +([.,;:!?])")
+_STRAY_DOUBLE_SPACE_RE = re.compile(r" {2,}")
+
+
 def strip_citation_tags(text: str) -> str:
     """Removes every `{{cite:...}}` token, leaving the publishable
     prose -- used when a section's own `citation_display` is not
     `inline` (§C step 9, §G.C). Machine-readable grounding (the
     `codecompass-grounded-by region:<id>` marker) is emitted separately
     by the publisher regardless of this setting -- stripping the inline
-    tags here never removes a section's own grounding."""
-    return _CITATION_TAG_RE.sub("", text)
+    tags here never removes a section's own grounding.
+
+    A real defect found during Stage 87A's own live demonstration run
+    (independent editorial review caught it, not a unit test): the
+    writing contract places a tag immediately before the sentence's
+    own closing punctuation (`fact {{cite:X}}.`), so a bare substitution
+    leaves a stray space (`fact .`) or a double space between two
+    adjacent tags. Both are cleaned up here, never left for a human
+    editor to notice after publication."""
+    stripped = _CITATION_TAG_RE.sub("", text)
+    stripped = _STRAY_SPACE_BEFORE_PUNCTUATION_RE.sub(r"\1", stripped)
+    stripped = _STRAY_DOUBLE_SPACE_RE.sub(" ", stripped)
+    return stripped
+
+
+# ---------------------------------------------------------------------------
+# compile_document -- orchestration (steps 1-7's scope half)
+# ---------------------------------------------------------------------------
+
+# Restructuring-pass correction (§G.A): a section id composes into a
+# `codecompass-grounded-by region:<id>` token, whose own real parser
+# (`knowledge_intermediate._REGION_ID_RE`) accepts `[A-Za-z0-9_-]+` but
+# NOT `.` -- a dotted id silently truncates. This module's own
+# convention is intentionally narrower (lowercase, hyphen-only) to keep
+# every id this compiler ever produces unambiguous and consistent with
+# `check_doc_schema.py`'s own validation.
+_SECTION_ID_RE = re.compile(r"^[a-z0-9-]+$")
+
+
+@dataclass
+class SectionCompileResult:
+    section_id: str
+    status: str
+    # "gap_blocked" | "citation_blocked" | "pending_review" | "composition_failed"
+    gaps: list[SectionGap] = field(default_factory=list)
+    citation_findings: list[CitationFinding] = field(default_factory=list)
+    draft_body: str | None = None
+    packet: EvidencePacket | None = None
+    error: str | None = None
+
+
+def compile_document(
+    project_root: Path,
+    schema: dict,
+    *,
+    repo_root: Path | None = None,
+    compose_and_validate: Callable[[dict, EvidencePacket], tuple[str, list[CitationFinding]]]
+    | None = None,
+) -> list[SectionCompileResult]:
+    """Runs steps 1-5 and the scope half of step 7 for every section in
+    `schema`. `compose_and_validate` performs step 6 (clean-room
+    composition, `scripts/compile_doc_section.py`) plus the returned-
+    text citation-scope check, injected by the caller so this module
+    never imports the sandboxing-adjacent `scripts/` layer directly
+    (`CLAUDE.md` §8 -- this module never spawns or coordinates an
+    agent/broker call itself). A section whose citations are all
+    `supported` reaches `pending_review` -- the AI-assisted semantic
+    depth check (step 7 point 3) and the editorial-quality assessment
+    (step 8) are ad-hoc dispatches the CLI/lead performs next, outside
+    this function, never silently skipped by treating `pending_review`
+    as equivalent to published."""
+    results: list[SectionCompileResult] = []
+    for section in schema.get("sections", []):
+        section_id = section.get("id", "<missing id>")
+        gaps = find_section_gaps(project_root, section, repo_root=repo_root)
+        if gaps:
+            results.append(SectionCompileResult(section_id, "gap_blocked", gaps=gaps))
+            continue
+
+        try:
+            packet = resolve_section_packet(project_root, section, repo_root=repo_root)
+        except DocCompilerError as exc:
+            results.append(SectionCompileResult(section_id, "composition_failed", error=str(exc)))
+            continue
+
+        if compose_and_validate is None:
+            results.append(SectionCompileResult(section_id, "composition_skipped", packet=packet))
+            continue
+
+        try:
+            body, findings = compose_and_validate(section, packet)
+        except Exception as exc:  # noqa: BLE001 -- any composer failure blocks, never a silent fallback
+            results.append(SectionCompileResult(
+                section_id, "composition_failed", error=str(exc), packet=packet,
+            ))
+            continue
+
+        if any(f.classification == "unsupported" for f in findings):
+            results.append(SectionCompileResult(
+                section_id, "citation_blocked", citation_findings=findings, packet=packet,
+            ))
+            continue
+
+        results.append(SectionCompileResult(
+            section_id, "pending_review", draft_body=body,
+            citation_findings=findings, packet=packet,
+        ))
+    return results
+
+
+# ---------------------------------------------------------------------------
+# publish_section -- grounded-marker publication (§C step 9, §G.C: always
+# emits machine-readable grounding regardless of reader-visible display)
+# ---------------------------------------------------------------------------
+
+
+def publish_section(doc_path: Path, *, region_id: str, record_ids: list[str], body: str) -> None:
+    """Writes or replaces exactly one `codecompass-grounded-by`-wrapped
+    region, identified by its own stable `region:<id>` token -- reusing
+    the existing marker convention and identity scheme directly
+    (`knowledge_intermediate.parse_grounding_markers`), never a new
+    identity mechanism. Machine-readable grounding is unconditional:
+    this function has no `citation_display`/`provenance` parameter at
+    all -- the caller decides separately (via `strip_citation_tags`,
+    before calling this) whether the body text itself still carries a
+    reader-visible citation phrase; the marker wrapping it is always
+    present either way."""
+    if not _SECTION_ID_RE.match(region_id):
+        raise DocCompilerError(
+            f"region_id {region_id!r} must match {_SECTION_ID_RE.pattern!r} -- "
+            "a dot or other separator silently truncates at the real region-id parser"
+        )
+
+    header = " ".join([*record_ids, f"region:{region_id}"])
+    marker = (
+        f"<!-- codecompass-grounded-by: {header} -->\n{body}\n"
+        "<!-- /codecompass-grounded-by -->"
+    )
+
+    doc_path.parent.mkdir(parents=True, exist_ok=True)
+    if not doc_path.is_file():
+        doc_path.write_text(marker + "\n", encoding="utf-8")
+        return
+
+    text = doc_path.read_text(encoding="utf-8")
+    open_re = re.compile(r"<!--\s*codecompass-grounded-by:\s*(.+?)\s*-->")
+    close_marker = "<!-- /codecompass-grounded-by -->"
+    pos = 0
+    while True:
+        match = open_re.search(text, pos)
+        if match is None:
+            break
+        close_idx = text.find(close_marker, match.end())
+        if close_idx == -1:
+            pos = match.end()
+            continue
+        existing_region_match = re.search(r"\bregion:([A-Za-z0-9_-]+)\b", match.group(1))
+        existing_region_id = existing_region_match.group(1) if existing_region_match else None
+        span_end = close_idx + len(close_marker)
+        if existing_region_id == region_id:
+            doc_path.write_text(text[: match.start()] + marker + text[span_end:], encoding="utf-8")
+            return
+        pos = span_end
+
+    doc_path.write_text(text.rstrip("\n") + "\n\n" + marker + "\n", encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# maintain_document -- five-state reconciliation (§D.2/§A.3, built on
+# knowledge_intermediate.detect_grounded_region_changes directly)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class MaintainReport:
+    established_new: list[str] = field(default_factory=list)
+    noop: list[str] = field(default_factory=list)
+    doc_candidates: list[str] = field(default_factory=list)
+    claims_changed: list[str] = field(default_factory=list)
+    concurrent_conflicts: list[str] = field(default_factory=list)
+
+
+def maintain_document(project_root: Path, doc_names: tuple[str, ...]) -> MaintainReport:
+    """Branches on the real five `GroundedRegionFinding.case` values,
+    using the three already-implemented resolution functions this
+    project has for exactly this problem -- no new diffing model.
+    `doc_names` must cover every schema-governed document in one call
+    so `DuplicateGroundingRegionIdError` is checked project-wide, not
+    merely within the one document being compiled."""
+    findings = _ki.detect_grounded_region_changes(project_root, doc_names)
+    report = MaintainReport()
+
+    new_findings = [f for f in findings if f.case == "new"]
+    if new_findings:
+        report.established_new = _ki.establish_new_region_baselines(project_root, new_findings)
+
+    doc_candidate_findings = [f for f in findings if f.case == "doc_candidate"]
+    if doc_candidate_findings:
+        _ki.write_doc_candidates_to_manifests(project_root, doc_candidate_findings)
+        report.doc_candidates = [f.state_key for f in doc_candidate_findings]
+
+    report.noop = [f.state_key for f in findings if f.case == "noop"]
+    report.claims_changed = [f.state_key for f in findings if f.case == "claims_changed"]
+    report.concurrent_conflicts = [f.state_key for f in findings if f.case == "concurrent_conflict"]
+
+    return report

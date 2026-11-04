@@ -310,3 +310,186 @@ def test_validate_section_citations_flags_citation_to_nonexistent_record(tmp_pat
     assert any(
         f.classification == "unsupported" and f.record_id == "CL-TOTALLY-MADE-UP" for f in findings
     )
+
+
+# ---------------------------------------------------------------------------
+# compile_document -- orchestration (gap/citation blocking, pending review)
+# ---------------------------------------------------------------------------
+
+
+def _schema(**overrides) -> dict:
+    base = {
+        "schema_version": 1,
+        "document": "docs/demo.md",
+        "sections": [{
+            "id": "s1",
+            "audience": "a new developer",
+            "tone": "instructional",
+            "depth": "brief",
+            "required_knowledge": ["CL-DOCDEMO-001"],
+            "max_evidence_chars": 100_000,
+            "min_claim_status": "supported",
+            "allow_unconfirmed_scopes": False,
+        }],
+    }
+    base.update(overrides)
+    return base
+
+
+def test_compile_document_blocks_section_on_gap_without_calling_composer(tmp_path):
+    _make_fixture_repo(tmp_path, min_record_status="candidate")
+    schema = _schema()
+    schema["sections"][0]["min_claim_status"] = "verified"
+    called = {"composer": False}
+
+    def _composer(section, packet):
+        called["composer"] = True
+        return "never reached", []
+
+    results = dc.compile_document(
+        tmp_path, schema, repo_root=tmp_path, compose_and_validate=_composer,
+    )
+    assert results[0].status == "gap_blocked"
+    assert called["composer"] is False
+
+
+def test_compile_document_blocks_on_unsupported_citation(tmp_path):
+    _make_fixture_repo(tmp_path)
+    schema = _schema()
+
+    def _composer(section, packet):
+        text = "A fact {{cite:CL-DOCDEMO-002}}."
+        return dc.strip_citation_tags(text).strip(), dc.validate_section_citations(text, packet)
+
+    results = dc.compile_document(
+        tmp_path, schema, repo_root=tmp_path, compose_and_validate=_composer,
+    )
+    assert results[0].status == "citation_blocked"
+
+
+def test_compile_document_reaches_pending_review_when_all_citations_supported(tmp_path):
+    _make_fixture_repo(tmp_path)
+    schema = _schema()
+
+    def _composer(section, packet):
+        text = "A fact {{cite:CL-DOCDEMO-001}}."
+        return dc.strip_citation_tags(text).strip(), dc.validate_section_citations(text, packet)
+
+    results = dc.compile_document(
+        tmp_path, schema, repo_root=tmp_path, compose_and_validate=_composer,
+    )
+    assert results[0].status == "pending_review"
+    assert results[0].draft_body == "A fact."
+
+
+# ---------------------------------------------------------------------------
+# publish_section -- grounded-marker publication (amendment finding A/C --
+# hyphenated region ids, always-on machine-readable grounding)
+# ---------------------------------------------------------------------------
+
+
+def test_publish_section_writes_grounded_marker_into_new_document(tmp_path):
+    doc_path = tmp_path / "docs" / "demo.md"
+    dc.publish_section(
+        doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="A fact.",
+    )
+    text = doc_path.read_text(encoding="utf-8")
+    assert "codecompass-grounded-by: CL-DOCDEMO-001 region:demo-s1" in text
+    assert "A fact." in text
+
+
+def test_publish_section_replaces_existing_region_in_place(tmp_path):
+    doc_path = tmp_path / "docs" / "demo.md"
+    dc.publish_section(
+        doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="Old text.",
+    )
+    dc.publish_section(
+        doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="New text.",
+    )
+    text = doc_path.read_text(encoding="utf-8")
+    assert "New text." in text
+    assert "Old text." not in text
+    assert text.count("codecompass-grounded-by") == 2  # one open + one close comment, one region
+
+
+def test_publish_section_rejects_region_id_outside_pattern(tmp_path):
+    doc_path = tmp_path / "docs" / "demo.md"
+    with pytest.raises(dc.DocCompilerError):
+        dc.publish_section(
+            doc_path, region_id="demo.s1", record_ids=["CL-DOCDEMO-001"], body="A fact.",
+        )
+
+
+def test_publish_section_marker_round_trips_through_parse_grounding_markers(tmp_path):
+    from codecompass import knowledge_intermediate as ki
+
+    doc_path = tmp_path / "docs" / "demo.md"
+    dc.publish_section(doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="A fact.")
+    parsed = ki.parse_grounding_markers(doc_path.read_text(encoding="utf-8"))
+    assert len(parsed) == 1
+    ids, body, region_id = parsed[0]
+    assert ids == ["CL-DOCDEMO-001"]
+    assert region_id == "demo-s1"
+    assert "A fact." in body
+
+
+# ---------------------------------------------------------------------------
+# maintain_document -- five-state reconciliation (amendment finding E,
+# restructuring-pass §A.3)
+# ---------------------------------------------------------------------------
+
+
+def test_maintain_document_new_region_establishes_baseline_without_regenerating_others(tmp_path):
+    _make_fixture_repo(tmp_path)
+    doc_path = tmp_path / "docs" / "demo.md"
+    dc.publish_section(doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="A fact.")
+    report = dc.maintain_document(tmp_path, ("docs/demo.md",))
+    assert report.established_new == ["id:demo-s1"]
+
+
+def test_maintain_document_detects_doc_candidate_for_human_edit_with_no_knowledge_change(tmp_path):
+    _make_fixture_repo(tmp_path)
+    doc_path = tmp_path / "docs" / "demo.md"
+    dc.publish_section(doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="A fact.")
+    dc.maintain_document(tmp_path, ("docs/demo.md",))  # establish baseline
+
+    # Human hand-edits the section's own wording; no knowledge changed.
+    dc.publish_section(
+        doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="A hand-edited fact.",
+    )
+    report = dc.maintain_document(tmp_path, ("docs/demo.md",))
+    assert report.doc_candidates == ["id:demo-s1"]
+    # The hand-edit is preserved byte-for-byte -- maintain never
+    # regenerates a doc_candidate section.
+    assert "A hand-edited fact." in doc_path.read_text(encoding="utf-8")
+
+
+def test_maintain_document_unrelated_sections_are_never_visited(tmp_path):
+    _make_fixture_repo(tmp_path)
+    doc_path = tmp_path / "docs" / "demo.md"
+    dc.publish_section(doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="A fact.")
+    dc.maintain_document(tmp_path, ("docs/demo.md",))
+    before = doc_path.read_text(encoding="utf-8")
+
+    report = dc.maintain_document(tmp_path, ("docs/demo.md",))
+    assert report.noop == ["id:demo-s1"]
+    assert doc_path.read_text(encoding="utf-8") == before
+
+
+# ---------------------------------------------------------------------------
+# strip_citation_tags -- no stray whitespace artifacts left behind (real
+# defect found during Stage 87A's own live demonstration run)
+# ---------------------------------------------------------------------------
+
+
+def test_strip_citation_tags_leaves_no_space_before_following_punctuation():
+    text = "A fact {{cite:CL-X}}. Another clause {{cite:CL-Y}}, continues here."
+    stripped = dc.strip_citation_tags(text)
+    assert stripped == "A fact. Another clause, continues here."
+
+
+def test_strip_citation_tags_collapses_double_space_between_adjacent_tags():
+    text = "First point {{cite:CL-X}} Second point {{cite:CL-Y}} here."
+    stripped = dc.strip_citation_tags(text)
+    assert "  " not in stripped
+    assert stripped == "First point Second point here."
