@@ -223,6 +223,22 @@ evidence. See their own module docstrings and
 contract. These are maintainer-only tooling, not part of the installed
 `codecompass` package.
 
+**A second, narrower caller (Phase 87 Stage 87A)**: `scripts/
+compile_doc_section.py` calls `cleanroom_broker.run_inference`
+directly from the host process, not from inside a Mode B namespace/
+`pivot_root` sandbox. This is a deliberate, bounded exception, not a
+weakening of the sandbox's own guarantee: that adapter's evidence is
+never a broad, git-tracked export the sandbox exists to protect
+against narrative-content leakage — it is a small JSON blob built
+field-by-field exclusively from `knowledge_api.get()`'s own resolved
+content for one schema section's explicitly resolved record ids, with
+no file sweep in the first place. The isolation it relies on instead
+is the broker's own existing, already-audited subprocess sanitisation
+(`_sanitize_env`, a neutral `cwd`, `--tools ""`, `--restricted`) — the
+real boundary for a bounded, self-contained text prompt with no
+filesystem/tool access of its own. See that script's own module
+docstring for the full reasoning.
+
 ## Known, accepted limits
 
 - A fixed, content-neutral residual (the authenticating account's
