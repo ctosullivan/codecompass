@@ -7,25 +7,53 @@ session-resumption, not a project history.
 
 ## Current phase
 
-**Phase 87 — Documentation Schema and Knowledge-Compiled Documentation
-— is `planned`, not started.** Plan:
+**Phase 87 — Documentation Schema and Knowledge-Compiled
+Documentation — restructured into three stages (87A/87B/87C); Stage
+87A implemented and independently re-audited; Phase 87 overall remains
+`not done`.** Plan:
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
-Written against verified (not assumed) reuse of Phase 79-86's real
-implementations — notably Phase 81B's clean-room broker/isolation
-scripts (`prepare_cleanroom_branch.py`/`verify_cleanroom_isolation.py`/
-`cleanroom_broker.py`, reused unchanged) and Phase 84's
-`knowledge_api.get_context_packet`/`find_gaps` (reused directly for the
-compilation pipeline's own bounded-packet and gap-detection steps).
-Direct inspection found every file in the required minimum publication
-suite already exists; the "epistemic distinctions" gap
-`decisions/0085` §5 named turned out to be editorial accessibility, not
-missing content (one example-gap refinement made after the reviewer
-flagged it). Independent planning review: **READY WITH NON-BLOCKING
-OBSERVATIONS** (plan's own §I) — no blocking inaccuracy, circularity,
-or scope-creep found; one baseline-asymmetry note carried forward as a
-future reporting requirement, not a plan defect. Implementation is
-**not** authorised by this planning pass — per its own governing task's
-explicit instruction, work stops here.
+A second review (after the first pass's own READY WITH NON-BLOCKING
+OBSERVATIONS verdict) found the single-stage scope too large and four
+real implementation-contract defects (§G: grounded-region identifiers
+must be hyphenated, not dotted — the real parser truncates at `.`;
+`prepare_cleanroom_branch.py` exports from a pinned git revision, never
+working-tree disk, so a runtime evidence packet needs its own
+ephemeral hash-verified handoff, not an allow-list change; reader-
+visible citation display and always-on machine-readable grounding are
+separate concepts; an untagged factual claim needs its own explicit
+completeness question, folded into the existing claim-verification
+dispatch). The plan was restructured (§D/§E/§F split by stage) and all
+four defects corrected, independently re-reviewed to **READY WITH
+NON-BLOCKING OBSERVATIONS** (§M).
+
+**Stage 87A — implemented, independently audited, PASS WITH
+NON-BLOCKING OBSERVATIONS (2026-11-04)** after one FAIL round (missing
+DoD paper trail: this file, `ROADMAP.md`, `CHANGELOG.md`, the phase
+retro, a persisted drift-audit report, learnings triage,
+`docs/reference/cli.md`, and an architecture doc were all still
+reflecting the pre-Phase-87 state despite the implementation itself
+being independently confirmed solid — closed in the same session, see
+`planning/retros/phase-87-stage-87a-knowledge-compilation.md`).
+Delivered: `src/codecompass/doc_compiler.py` (knowledge resolution/
+hydration/gap-detection/citation-scope-check/publish/maintain),
+`scripts/check_doc_schema.py` (schema validator), `scripts/
+compile_doc_section.py` (the clean-room section-compilation adapter,
+using a corrected ephemeral evidence handoff rather than
+`prepare_cleanroom_branch.py`'s git-revision export), a new
+`codecompass docs schema-init|compile|publish|maintain` CLI group. A
+real, complete, end-to-end demonstration ran three times against the
+real repository (no mocking, no synthetic fixture): round 1 and round
+2 both correctly FAILED independent review (an invented elaboration
+not in the cited record; auditor-facing phrasing and a self-referential
+terminology tangent — plus two real implementation bugs the process
+itself caught: a stray-space citation-stripping defect and a
+schema-slug dot-truncation defect, both fixed with regression tests);
+round 3 passed both independent dispatches and was published —
+`README.md`'s "Understanding Digests" section, grounded in
+`CL-CTXT-005`. **Stage 87B and 87C are not implemented and not
+authorised** — Phase 87 itself remains `not done` until 87C's own exit
+gate (the complete minimum publication suite, the matched-baseline
+comparison, final audits) is met.
 
 **Phase 86 — Knowledge-Placement and Code-Quality Review — is `done`
 (2026-11-03)**. Plan amended and independently reviewed across four
@@ -949,11 +977,17 @@ can close out fully: `L-116`'s recommended promotion to `CLAUDE.md` §1
 learnings' own `status` is `retained` pending this, requiring the
 user's own `CLAUDE.md` §0 approval; not something this or any future
 session may apply on the user's behalf. Sequence from here: **87
-(Documentation Schema and Knowledge-Compiled Documentation) is
-phase-planned, `planned`, not started** —
-`planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`,
-pending an independent planning-review verdict before implementation
-may begin (`CLAUDE.md` §1). → 88 (Agent Integration and MCP, split from
+(Documentation Schema and Knowledge-Compiled Documentation) — Stage 87A
+is implemented and independently audited, PASS WITH NON-BLOCKING
+OBSERVATIONS; Stages 87B and 87C are planned (§E/§F of the plan) but
+not authorised or started; Phase 87 overall remains `not done`** —
+`planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
+Next concrete step for this phase: a separate, explicit authorisation
+to plan/implement Stage 87B (schema-governed `README.md`/`docs/
+getting-started.md`, a narrow execution harness, manual maintenance
+across real multi-section documents), then Stage 87C (the complete
+minimum publication suite, the matched-baseline comparison, final
+Phase 87 closeout). → 88 (Agent Integration and MCP, split from
 the old merged phase) → 89 (Incremental Knowledge and Documentation
 Reconciliation, split from the old merged phase, independent of MCP) →
 90 (Comparative Development Trials, methodology strengthened) → 91

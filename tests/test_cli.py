@@ -2711,3 +2711,39 @@ def test_schema_slug_handles_a_document_name_containing_a_dot() -> None:
 
     assert _schema_slug(Path("README.md.schema.yaml")) == "readme-md"
     assert _schema_slug(Path("docs/getting-started.schema.yaml")) == "getting-started"
+
+
+def test_docs_publish_refuses_without_both_verdicts_passing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    import json as _json
+
+    import yaml
+
+    schema_path = tmp_path / "demo.schema.yaml"
+    schema_path.write_text(
+        yaml.safe_dump({"schema_version": 1, "document": "docs/demo.md", "sections": []}),
+        encoding="utf-8",
+    )
+    pending_dir = tmp_path / "planning" / "retros" / "phase-87-pending-review" / "demo"
+    pending_dir.mkdir(parents=True)
+    (pending_dir / "s1.json").write_text(
+        _json.dumps({"record_ids": ["CL-DEMO-001"], "draft_body": "A fact."}), encoding="utf-8"
+    )
+
+    refused = runner.invoke(
+        app,
+        ["docs", "publish", str(schema_path), "s1",
+         "--semantic-verdict", "unsupported", "--editorial-verdict", "pass"],
+    )
+    assert refused.exit_code == 1
+    assert not (tmp_path / "docs" / "demo.md").exists()
+
+    accepted = runner.invoke(
+        app,
+        ["docs", "publish", str(schema_path), "s1",
+         "--semantic-verdict", "supported", "--editorial-verdict", "pass"],
+    )
+    assert accepted.exit_code == 0, accepted.output
+    assert "A fact." in (tmp_path / "docs" / "demo.md").read_text(encoding="utf-8")

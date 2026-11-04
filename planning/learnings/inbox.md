@@ -11235,3 +11235,105 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   the user's explicit `CLAUDE.md` §0 approval of the §M diff, which has
   not been given as of this note — `promoted` would misrepresent an
   ungranted approval as granted.
+
+### L-118 — a derived filesystem/identity slug must be tested against a name containing the same separator the derivation strips
+
+- **origin:** Phase 87 (Documentation Schema and Knowledge-Compiled
+  Documentation), Stage 87A, `src/codecompass/cli.py`'s `docs compile`/
+  `docs publish` commands
+- **date:** 2026-11-04
+- **project_revision:** `e73a6c7` (the fix), reported against `a9667b5`
+  (first real demonstration run, pre-fix)
+- **observation:** `schema_slug = schema_path.stem.removesuffix(".schema")`
+  was written and tested only against schema filenames whose own
+  governed-document name has no dot in it (e.g. `getting-started.schema.yaml`
+  -> stem `getting-started.schema` -> `getting-started`, correct). The
+  real first demonstrator's own schema file, `README.md.schema.yaml`,
+  has a document name (`README.md`) that itself contains a dot — its
+  stem is `README.md.schema`, and `.removesuffix(".schema")` leaves
+  `README.md`, which still has a `.` in it. This slug was then composed
+  directly into a `codecompass-grounded-by region:<schema_slug>-<section_id>`
+  identity, which the real region-id parser silently truncates at the
+  first `.` (see `L-117`, a related but distinct failure shape in the
+  *consuming* parser rather than this *producing* derivation) —
+  `publish_section`'s own fail-closed region-id validation (added for
+  an unrelated reason, §G.A of the Phase 87 plan) caught this before any
+  silent corruption occurred, but only because that defence happened to
+  exist; the slug-derivation bug itself escaped two full rounds of unit
+  testing because every test fixture used a document name without a dot.
+- **evidence:** reproduced directly: `Path("README.md.schema.yaml").stem`
+  is `"README.md.schema"`; `.removesuffix(".schema")` yields
+  `"README.md"`. The real `codecompass docs publish` invocation against
+  this exact file raised `DocCompilerError: region_id 'README.md-vendor-digest-concept'
+  must match '^[a-z0-9-]+$'` before any write occurred. Fixed by
+  stripping the full `.schema.yaml` suffix in one step, then normalising
+  the remainder (`_schema_slug`, `cli.py`), with a regression test
+  (`test_schema_slug_handles_a_document_name_containing_a_dot`,
+  `tests/test_cli.py`) using exactly this real filename.
+- **classification:** project-rule — a generalizable caution for any
+  future plan or implementation that derives an identity/slug from a
+  filename via suffix-stripping: the test fixture set must include a
+  base name containing the same separator character the derivation
+  strips (here, `.`), not only names without it — the common case
+  passing is not evidence the derivation is correct in general.
+- **status:** candidate
+- **recurrence:** first occurrence. Grepped `inbox.md` for "slug",
+  "removesuffix", "stem" — no prior entry about filename-derived
+  identity construction specifically; `L-117`'s own dotted-id-truncation
+  finding is the closest analogue (same downstream symptom, a different
+  upstream cause — a consuming parser's own character class there, a
+  producing derivation's own incomplete suffix-strip here) and is
+  cross-referenced above, not merged, since the two defects are in
+  different functions with different fixes.
+- **promoted_to:** (pending curation)
+
+### L-119 — a vague "avoid tangents" instruction does not reliably stop a generative model from reintroducing the same content problem in different wording; name the exact recurring phrasing instead
+
+- **origin:** Phase 87 (Documentation Schema and Knowledge-Compiled
+  Documentation), Stage 87A, the real end-to-end clean-room composition
+  demonstration (`scripts/compile_doc_section.py`'s `build_system_prompt`)
+- **date:** 2026-11-04
+- **project_revision:** `d2e51f6` (first writing contract) ->
+  (unreleased intermediate revision, round 2) -> `a9667b5` (final,
+  round-3 writing contract that actually passed independent review)
+- **observation:** three real, independently-dispatched review rounds
+  ran against the same evidence record (`CL-CTXT-005`) and the same
+  model. Round 1's generic writing contract produced a draft with two
+  real content defects (auditor-facing "you can confirm this is real"
+  phrasing; an unrequested aside about the cited record's own noted
+  terminology looseness) — both independent dispatches (semantic-depth
+  and editorial) correctly FAILED it. Round 2's contract was broadened
+  with a generic instruction ("do not add an aside about terminology
+  inconsistency... or any other tangent") — the model reintroduced
+  *the same two problems in different wording* (e.g. "distinct senses"
+  instead of "overlapping senses", "not just a design description"
+  instead of "you can confirm this is real"), and both dispatches
+  FAILED again, independently converging on the identical finding.
+  Only round 3's surgical rewrite — naming the exact recurring phrasing
+  to avoid ("never point to a specific file as proof that something is
+  'real' rather than 'just a design'"; "do not add any aside, in any
+  wording, about a term being used in multiple/overlapping/related-but-
+  distinct senses"), and instructing the model to *omit* rather than
+  *rephrase* a tangent the evidence itself mentions — produced a draft
+  both dispatches passed. A generic/abstract instruction about *what
+  kind* of content to avoid was demonstrably insufficient against this
+  model and this evidence; a literal, specific instruction about the
+  exact recurring wording was what actually worked.
+- **evidence:** all three drafts and both independent dispatches' full
+  verdicts are preserved in this session's own transcript and
+  commit messages (`a9667b5`'s own commit message narrates all three
+  rounds); the final passing draft is published in `README.md`'s
+  "Understanding Digests" section, grounded in `CL-CTXT-005`.
+- **classification:** project-rule — a generalizable caution for any
+  future clean-room writing-contract design (Phase 87 Stage 87B/87C,
+  or any later AI-generation pipeline in this project): when an
+  independent review names a specific recurring failure mode, the next
+  prompt revision should name that mode's own literal recurring
+  phrasing, not merely its abstract category — and should be
+  re-verified by an actual independent re-dispatch, never assumed fixed
+  from the revision's own intent.
+- **status:** candidate
+- **recurrence:** first occurrence. Grepped `inbox.md` for "writing
+  contract", "system prompt", "editorial review" — no prior entry about
+  prompt-revision efficacy specifically.
+- **promoted_to:** (pending curation)

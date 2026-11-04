@@ -247,6 +247,55 @@ preserved evidence, just not currently reconfirmed (corrective pass,
 has since changed, or a changed implementation) is reported `stale`
 regardless of `--repo-root`.
 
+## `codecompass docs schema-init|compile|publish|maintain` (Phase 87, Stage 87A)
+
+```
+codecompass docs schema-init DOCUMENT [--section-id ID] [--output PATH]
+codecompass docs compile SCHEMA_PATH [--repo-root PATH]
+codecompass docs publish SCHEMA_PATH SECTION_ID --semantic-verdict V --editorial-verdict V
+codecompass docs maintain SCHEMA_PATH
+```
+
+Compiles one documentation section at a time from canonical knowledge
+through Phase 84's existing `knowledge_api` only — no second knowledge
+store. **This is Stage 87A's own bounded scope**: one schema-governed
+document at a time, no deterministic CLI-reference generation yet, no
+execution harness for tested examples yet (Stage 87B), no matched-
+baseline quality comparison yet (Stage 87C). See
+`planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`
+for the full design and `docs/development/clean-room-redocumentation.md`
+for how `compile`'s clean-room composition step relates to (and
+deliberately differs from) the existing whole-repository clean-room
+broker/isolation scripts.
+
+- **`schema-init DOCUMENT`** — scaffolds a minimal `*.schema.yaml` file
+  next to `DOCUMENT` (or at `--output`), with one placeholder section
+  (`--section-id`, default `section-one`) ready for the lead to fill in
+  with real `required_knowledge` record ids.
+- **`compile SCHEMA_PATH`** — validates the schema (`scripts/
+  check_doc_schema.py`, fail-closed on any blocking finding), then
+  resolves/hydrates/gap-checks each section's required knowledge and
+  composes it through an isolated clean-room broker call. A section
+  that clears the deterministic citation-scope check reaches
+  `pending_review` and is written to `planning/retros/
+  phase-87-pending-review/<schema-slug>/<section-id>.json` — this
+  command never dispatches the two still-required independent reviews
+  itself (`CLAUDE.md` §8: CodeCompass never spawns or coordinates
+  agents); that is the lead's own next step.
+- **`publish SCHEMA_PATH SECTION_ID`** — publishes a `pending_review`
+  section into its governed document only when both
+  `--semantic-verdict supported` and `--editorial-verdict pass` are
+  given explicitly — never auto-resolved, never the compiler's own
+  say-so. Always emits the section's machine-readable
+  `codecompass-grounded-by region:<id>` marker, regardless of the
+  schema's own reader-visible `citation_display` setting.
+- **`maintain SCHEMA_PATH`** — runs the real five-state grounded-region
+  reconciliation (`new`/`noop`/`doc_candidate`/`claims_changed`/
+  `concurrent_conflict`) for the schema's own governed document. Never
+  regenerates a `doc_candidate` (a human edit with no knowledge change)
+  or a `concurrent_conflict` (both changed) automatically — both are
+  reported for the lead's own resolution.
+
 ## A retired command
 
 `codecompass promote` **no longer exists** — removed entirely (referenced as `decisions/0033`). Its three former jobs (cloning, enrichment, Skill generation) are now automatic outcomes of the bootstrap/`sync` flow described above. Running `codecompass promote` produces Typer's standard "no such command" error.

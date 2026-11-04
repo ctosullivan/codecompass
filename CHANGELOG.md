@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 87, Stage 87A: Documentation Schema and Knowledge-Compiled
+  Documentation — knowledge compilation proven** (`decisions/0084`
+  §2, specified `decisions/0085` §5, restructured into three stages
+  after a second review found four real implementation-contract
+  defects — plan's own §G). A minimal, versioned documentation schema
+  (`*.schema.yaml`) and its validator (`scripts/check_doc_schema.py`);
+  `src/codecompass/doc_compiler.py` — deterministic knowledge
+  resolution/full hydration/currency-and-scope gap detection/bounded
+  evidence packets through Phase 84's existing `knowledge_api` only
+  (no second knowledge store), plus `publish_section`/
+  `maintain_document` using the real, existing five-state grounded-
+  region reconciliation (`establish_new_region_baselines`/
+  `acknowledge_stale_grounded_region`/`write_doc_candidates_to_manifests`
+  — no new diffing model); `scripts/compile_doc_section.py` — a
+  clean-room section-compilation adapter using a corrected, ephemeral,
+  hash-verified evidence handoff (never `prepare_cleanroom_branch.py`'s
+  git-revision export, which cannot serve uncommitted runtime data;
+  never a new sandbox or a second broker — the existing
+  `cleanroom_broker.run_inference`'s own sanitised subprocess call is
+  the real isolation boundary for a bounded, self-contained prompt). A
+  new `codecompass docs schema-init|compile|publish|maintain` CLI
+  group. A real, complete, end-to-end demonstration — one README.md
+  section, compiled from the real canonical knowledge record
+  `CL-CTXT-005` through a genuine isolated broker call, independently
+  verified by two separate ad-hoc dispatches (claim scope/depth/
+  completeness; editorial quality) across three real iterations (the
+  first two correctly FAILED review for a real unsupported elaboration
+  and register drift toward internal audit prose, and surfaced two
+  real implementation bugs fixed with regression tests along the way)
+  before passing and publishing. Independently audited: PASS WITH
+  NON-BLOCKING OBSERVATIONS. Stage 87B (schema-governed `README.md`/
+  `docs/getting-started.md`, a narrow execution harness, real manual
+  maintenance) and Stage 87C (the complete minimum publication suite
+  and matched-baseline quality comparison) are planned but not yet
+  authorised or started; Phase 87 overall is not yet `done`.
+
 - **Phase 86: Knowledge-Placement and Code-Quality Review**
   (`decisions/0084` §2, formalised `decisions/0085` §4, enforcement
   decided `decisions/0094`): a documented Knowledge Placement Policy
