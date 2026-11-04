@@ -247,12 +247,14 @@ preserved evidence, just not currently reconfirmed (corrective pass,
 has since changed, or a changed implementation) is reported `stale`
 regardless of `--repo-root`.
 
-## `codecompass docs schema-init|compile|publish|maintain` (Phase 87, Stage 87A)
+## `codecompass docs schema-init|compile|record-review|publish|maintain` (Phase 87, Stage 87A)
 
 ```
 codecompass docs schema-init DOCUMENT [--section-id ID] [--output PATH]
 codecompass docs compile SCHEMA_PATH [--repo-root PATH]
-codecompass docs publish SCHEMA_PATH SECTION_ID --semantic-verdict V --editorial-verdict V
+codecompass docs record-review SCHEMA_PATH SECTION_ID --kind semantic|editorial \
+    --verdict V --reviewer NAME [--finding TEXT ...] [--evidence-ref ID ...]
+codecompass docs publish SCHEMA_PATH SECTION_ID
 codecompass docs maintain SCHEMA_PATH
 ```
 
@@ -271,24 +273,54 @@ broker/isolation scripts.
 - **`schema-init DOCUMENT`** — scaffolds a minimal `*.schema.yaml` file
   next to `DOCUMENT` (or at `--output`), with one placeholder section
   (`--section-id`, default `section-one`) ready for the lead to fill in
-  with real `required_knowledge` record ids.
+  with real `required_knowledge` record ids. `schema-init` itself does
+  not validate `document` — the path-confinement policy is enforced
+  the first time the resulting schema is actually checked, by `compile`
+  (below) or `publish`, never by scaffolding alone.
 - **`compile SCHEMA_PATH`** — validates the schema (`scripts/
-  check_doc_schema.py`, fail-closed on any blocking finding), then
-  resolves/hydrates/gap-checks each section's required knowledge and
-  composes it through an isolated clean-room broker call. A section
-  that clears the deterministic citation-scope check reaches
+  check_doc_schema.py`, fail-closed on any blocking finding, including
+  an unsafe `document` path), then resolves/hydrates/gap-checks each
+  section's required knowledge and composes it through an isolated
+  clean-room broker call, built from the packet's own verified on-disk
+  bytes (hardening pass §N.C — never from the in-memory object alone).
+  A section that clears the deterministic citation-scope check reaches
   `pending_review` and is written to `planning/retros/
-  phase-87-pending-review/<schema-slug>/<section-id>.json` — this
-  command never dispatches the two still-required independent reviews
-  itself (`CLAUDE.md` §8: CodeCompass never spawns or coordinates
-  agents); that is the lead's own next step.
+  phase-87-pending-review/<schema-slug>/<section-id>.json`, now
+  including a `draft_sha256`/`evidence_sha256`/`schema_section_sha256`
+  identity triple and the original citation-tagged draft text
+  (hardening pass §N.A) — this command never dispatches the two
+  still-required independent reviews itself (`CLAUDE.md` §8:
+  CodeCompass never spawns or coordinates agents); that is the lead's
+  own next step.
+- **`record-review SCHEMA_PATH SECTION_ID --kind ... --verdict ... --reviewer ...`**
+  (hardening pass §N.A) — persists one independent review's verdict,
+  findings, and evidence references, bound by hash to the exact
+  pending draft/evidence/schema-section it was run against, to
+  `<section-id>.review-<kind>.json` next to the pending-review record.
+  `--kind semantic` accepts `supported`/`unsupported`; `--kind
+  editorial` accepts `pass`/`fail`. `--reviewer` is self-reported
+  dispatch provenance, not a cryptographic attestation — dispatching
+  the two independent reviews remains the lead's own responsibility
+  (`CLAUDE.md` §8); this command only prevents a forged, stale, or
+  mismatched review record from being accepted later by `publish`.
 - **`publish SCHEMA_PATH SECTION_ID`** — publishes a `pending_review`
-  section into its governed document only when both
-  `--semantic-verdict supported` and `--editorial-verdict pass` are
-  given explicitly — never auto-resolved, never the compiler's own
-  say-so. Always emits the section's machine-readable
+  section into its governed document only when **both** a persisted
+  `semantic` review (`verdict=supported`) and a persisted `editorial`
+  review (`verdict=pass`) exist, are well-formed, and are bound by
+  hash to the section's *current* draft, evidence, and schema
+  definition — a bare `--semantic-verdict`/`--editorial-verdict`
+  string is no longer accepted (hardening pass §N.A: the old flags
+  proved nothing beyond "someone typed a passing word"). Also
+  confirms `SECTION_ID` belongs to the live schema and confines the
+  write target via `doc_compiler.resolve_publication_target`
+  (`README.md`, or a `docs/**/*.md` file, resolved and confirmed to
+  stay inside the project root even through a symlink — hardening
+  pass §N.B). Always emits the section's machine-readable
   `codecompass-grounded-by region:<id>` marker, regardless of the
-  schema's own reader-visible `citation_display` setting.
+  schema's own reader-visible `citation_display` setting. On success,
+  the tagged draft and both review records are preserved permanently
+  at `planning/retros/phase-87-published-evidence/<schema-slug>/
+  <section-id>.json` for later audits.
 - **`maintain SCHEMA_PATH`** — runs the real five-state grounded-region
   reconciliation (`new`/`noop`/`doc_candidate`/`claims_changed`/
   `concurrent_conflict`) for the schema's own governed document. Never

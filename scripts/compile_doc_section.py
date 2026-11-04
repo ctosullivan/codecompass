@@ -56,6 +56,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -88,16 +89,28 @@ class CleanRoomAdapterError(Exception):
 
 
 def write_section_packet(
-    project_root: Path, packet: dc.EvidencePacket, *, schema_slug: str, source_revision: str
+    project_root: Path,
+    packet: dc.EvidencePacket,
+    *,
+    schema_slug: str,
+    source_revision: str,
+    staging_dir: Path | None = None,
 ) -> tuple[Path, Path]:
     """Writes the hydrated packet and its manifest to a fresh,
-    ephemeral staging directory (`tempfile.mkdtemp`) -- never under
-    `project_root`, never a git-tracked path, never committed (§G.B
-    point 1). The manifest records the pinned `source_revision` (the
-    project's own `git rev-parse HEAD`, honestly recorded as dirty or
-    clean by the caller) and a `sha256` content hash, re-checked by
-    `verify_packet_integrity` before every use."""
-    staging_dir = Path(tempfile.mkdtemp(prefix="doc-compiler-section-packet-"))
+    ephemeral staging directory (`tempfile.mkdtemp`, or `staging_dir`
+    if the caller already created one -- so `compose_section` can own
+    that directory's whole lifecycle, including cleanup, hardening
+    pass §N.C point 5) -- never under `project_root`, never a
+    git-tracked path, never committed (§G.B point 1). The manifest
+    records the pinned `source_revision` (the project's own `git
+    rev-parse HEAD`, honestly recorded as dirty or clean by the caller),
+    a `sha256` content hash of the exact written bytes (re-checked by
+    `verify_packet_integrity` before every use, tamper detection), and
+    `evidence_sha256` -- the canonical, reproducible hash of just the
+    hydrated content (`doc_compiler.hash_evidence`), the same function
+    used at publish time to detect whether the underlying knowledge has
+    since changed (hardening pass §N.A/§N.C)."""
+    staging_dir = staging_dir or Path(tempfile.mkdtemp(prefix="doc-compiler-section-packet-"))
 
     packet_path = staging_dir / f"{packet.section_id}.json"
     packet_content = json.dumps(
@@ -117,6 +130,7 @@ def write_section_packet(
         "source_revision": source_revision,
         "record_ids": packet.record_ids,
         "content_sha256": _oracle.sha256_text(packet_content),
+        "evidence_sha256": dc.hash_evidence(packet.hydrated),
     }
     manifest_path.write_text(json.dumps(manifest, sort_keys=True, indent=2), encoding="utf-8")
 
@@ -233,31 +247,63 @@ def compose_section(
     schema_slug: str,
     source_revision: str,
     run_inference: Callable[[str, list[dict]], dict] = cleanroom_broker.run_inference,
-) -> str:
+) -> tuple[str, dict]:
     """Runs the isolation preflight, builds the ephemeral evidence
     handoff, re-verifies its integrity, then invokes the broker's own
     supported interface directly (no sandbox-boundary socket needed --
     see this module's own docstring for why). Raises
     `CleanRoomAdapterError` on any preflight, integrity, or broker
     failure; never a silent fallback to an un-isolated or un-validated
-    attempt."""
+    attempt.
+
+    Hardening pass §N.C correction: the broker's system prompt is now
+    built from the packet **read back from the verified on-disk
+    bytes**, not from the `packet` argument still held in memory --
+    otherwise `verify_packet_integrity`'s own hash check proves nothing
+    about what the broker actually receives, since the two could
+    silently diverge (a mutation between write and use, or a future
+    change that serializes them differently). The staging directory
+    this function creates is always removed before returning, on both
+    the success and every failure path (§N.C point 5) -- it is never
+    left behind for a caller to clean up, and never committed.
+
+    Returns `(output_text, manifest)` -- `manifest` is read back from
+    the verified manifest file and carries the exact `schema_slug`,
+    `section_id`, `source_revision`, `record_ids`, and hashes
+    (`content_sha256`, `evidence_sha256`) of the evidence the broker
+    was actually given, sufficient for a caller to bind a later review
+    record to this exact compilation (§N.A)."""
     run_isolation_preflight()
 
-    packet_path, manifest_path = write_section_packet(
-        project_root, packet, schema_slug=schema_slug, source_revision=source_revision,
-    )
-    assert_staging_dir_contents(packet_path.parent, packet_path, manifest_path)
-    verify_packet_integrity(packet_path, manifest_path)
+    staging_dir = Path(tempfile.mkdtemp(prefix="doc-compiler-section-packet-"))
+    try:
+        packet_path, manifest_path = write_section_packet(
+            project_root, packet, schema_slug=schema_slug, source_revision=source_revision,
+            staging_dir=staging_dir,
+        )
+        assert_staging_dir_contents(staging_dir, packet_path, manifest_path)
+        verify_packet_integrity(packet_path, manifest_path)
 
-    system_prompt = build_system_prompt(schema_section, packet)
-    messages = [{"role": "user", "content": "Compose the section now."}]
-    response = run_inference(system_prompt, messages)
-    if not response.get("ok"):
-        raise CleanRoomAdapterError(f"broker reported failure: {response}")
-    output = response.get("output")
-    if not isinstance(output, str) or not output:
-        raise CleanRoomAdapterError("broker returned no usable output text")
-    return output
+        verified_packet_raw = json.loads(packet_path.read_text(encoding="utf-8"))
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        verified_packet = dc.EvidencePacket(
+            section_id=verified_packet_raw["section_id"],
+            record_ids=verified_packet_raw["record_ids"],
+            hydrated=verified_packet_raw["hydrated"],
+            serialized_chars=len(packet_path.read_text(encoding="utf-8")),
+        )
+
+        system_prompt = build_system_prompt(schema_section, verified_packet)
+        messages = [{"role": "user", "content": "Compose the section now."}]
+        response = run_inference(system_prompt, messages)
+        if not response.get("ok"):
+            raise CleanRoomAdapterError(f"broker reported failure: {response}")
+        output = response.get("output")
+        if not isinstance(output, str) or not output:
+            raise CleanRoomAdapterError("broker returned no usable output text")
+        return output, manifest
+    finally:
+        shutil.rmtree(staging_dir, ignore_errors=True)
 
 
 def parse_and_validate_response(

@@ -60,6 +60,7 @@ def test_write_section_packet_creates_packet_and_manifest_with_content_hash(tmp_
     assert manifest["source_revision"] == "abc123"
     assert manifest["schema_slug"] == "demo-schema"
     assert "content_sha256" in manifest and len(manifest["content_sha256"]) == 64
+    assert manifest["evidence_sha256"] == dc.hash_evidence(packet.hydrated)
 
 
 def test_write_section_packet_is_never_under_a_git_tracked_path(tmp_path):
@@ -189,7 +190,7 @@ def test_compose_section_blocks_publication_on_preflight_failure(monkeypatch, tm
     assert called["run_inference"] is False
 
 
-def test_compose_section_returns_raw_output_on_success(monkeypatch, tmp_path):
+def test_compose_section_returns_raw_output_and_manifest_on_success(monkeypatch, tmp_path):
     packet = _packet()
     section = {"id": "s1", "audience": "a new developer", "tone": "instructional", "depth": "brief"}
 
@@ -199,11 +200,104 @@ def test_compose_section_returns_raw_output_on_success(monkeypatch, tmp_path):
         assert "demo statement" in system_prompt
         return {"ok": True, "output": "Generated prose {{cite:CL-DEMO-001}}.", "usage": {}}
 
-    result = cds.compose_section(
+    output, manifest = cds.compose_section(
         tmp_path, section, packet, schema_slug="demo", source_revision="abc123",
         run_inference=_fake_run_inference,
     )
-    assert "Generated prose" in result
+    assert "Generated prose" in output
+    assert manifest["schema_slug"] == "demo"
+    assert manifest["section_id"] == "s1"
+    assert manifest["source_revision"] == "abc123"
+    assert manifest["evidence_sha256"] == dc.hash_evidence(packet.hydrated)
+
+
+def test_compose_section_removes_staging_directory_on_success(monkeypatch, tmp_path):
+    # §2.C point 5: the ephemeral staging directory is never left behind.
+    packet = _packet()
+    section = {"id": "s1", "audience": "a new developer", "tone": "instructional", "depth": "brief"}
+    monkeypatch.setattr(cds, "run_isolation_preflight", lambda: None)
+
+    captured_dir = {}
+    real_write = cds.write_section_packet
+
+    def _capturing_write(*args, **kwargs):
+        packet_path, manifest_path = real_write(*args, **kwargs)
+        captured_dir["path"] = packet_path.parent
+        return packet_path, manifest_path
+
+    monkeypatch.setattr(cds, "write_section_packet", _capturing_write)
+
+    def _fake_run_inference(system_prompt, messages):
+        return {"ok": True, "output": "Generated prose {{cite:CL-DEMO-001}}.", "usage": {}}
+
+    cds.compose_section(
+        tmp_path, section, packet, schema_slug="demo", source_revision="abc123",
+        run_inference=_fake_run_inference,
+    )
+    assert not captured_dir["path"].exists()
+
+
+def test_compose_section_removes_staging_directory_on_broker_failure(monkeypatch, tmp_path):
+    # §2.C point 5: cleanup happens on the failure path too, not only on success.
+    packet = _packet()
+    section = {"id": "s1", "audience": "a new developer", "tone": "instructional", "depth": "brief"}
+    monkeypatch.setattr(cds, "run_isolation_preflight", lambda: None)
+
+    captured_dir = {}
+    real_write = cds.write_section_packet
+
+    def _capturing_write(*args, **kwargs):
+        packet_path, manifest_path = real_write(*args, **kwargs)
+        captured_dir["path"] = packet_path.parent
+        return packet_path, manifest_path
+
+    monkeypatch.setattr(cds, "write_section_packet", _capturing_write)
+
+    def _fake_run_inference(system_prompt, messages):
+        return {"ok": False, "output": "", "usage": {}}
+
+    with pytest.raises(cds.CleanRoomAdapterError):
+        cds.compose_section(
+            tmp_path, section, packet, schema_slug="demo", source_revision="abc123",
+            run_inference=_fake_run_inference,
+        )
+    assert not captured_dir["path"].exists()
+
+
+def test_compose_section_builds_broker_prompt_from_verified_bytes_not_memory(monkeypatch, tmp_path):
+    # §2.C's core correction: if the in-memory packet were mutated after
+    # write_section_packet ran (simulating any future divergence between
+    # what was hashed and what is sent), the broker prompt must still
+    # reflect the VERIFIED ON-DISK content, never the mutated in-memory
+    # object -- proving the prompt is sourced from the verified bytes,
+    # not merely that the bytes were verified.
+    packet = _packet()
+    section = {"id": "s1", "audience": "a new developer", "tone": "instructional", "depth": "brief"}
+    monkeypatch.setattr(cds, "run_isolation_preflight", lambda: None)
+
+    real_write = cds.write_section_packet
+
+    def _mutating_write(project_root, pkt, **kwargs):
+        result = real_write(project_root, pkt, **kwargs)
+        # Mutate the in-memory packet AFTER its verified bytes are on
+        # disk -- a correct implementation must not see this mutation.
+        pkt.hydrated["CL-DEMO-001"]["statement"] = "MUTATED, SHOULD NEVER REACH THE BROKER"
+        return result
+
+    monkeypatch.setattr(cds, "write_section_packet", _mutating_write)
+
+    seen_prompts = []
+
+    def _fake_run_inference(system_prompt, messages):
+        seen_prompts.append(system_prompt)
+        return {"ok": True, "output": "Generated prose {{cite:CL-DEMO-001}}.", "usage": {}}
+
+    cds.compose_section(
+        tmp_path, section, packet, schema_slug="demo", source_revision="abc123",
+        run_inference=_fake_run_inference,
+    )
+    assert "MUTATED" not in seen_prompts[0]
+    assert "demo statement" in seen_prompts[0]
 
 
 def test_compose_section_rejects_tampered_packet_before_invoking_broker(monkeypatch, tmp_path):

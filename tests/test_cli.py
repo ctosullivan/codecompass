@@ -2713,37 +2713,365 @@ def test_schema_slug_handles_a_document_name_containing_a_dot() -> None:
     assert _schema_slug(Path("docs/getting-started.schema.yaml")) == "getting-started"
 
 
-def test_docs_publish_refuses_without_both_verdicts_passing(
+# ---------------------------------------------------------------------------
+# docs publish hardening (Stage 87A hardening pass §2.A/§2.B): publication
+# is bound to persisted, hash-verified independent review records, never
+# a manually supplied verdict string; and the write target is confined to
+# an approved documentation path.
+# ---------------------------------------------------------------------------
+
+
+def _write_knowledge_claim(project_root: Path, slug: str, record_id: str, statement: str) -> None:
+    record_path = project_root / "planning" / "knowledge" / slug / f"{record_id}.yaml"
+    record_path.parent.mkdir(parents=True, exist_ok=True)
+    record_path.write_text(
+        "\n".join([
+            f"id: {record_id}", "kind: claim", f"statement: {statement}",
+            "supporting_evidence: []", "contradicting_evidence: []",
+            "basis: observed_behaviour", "status: verified",
+        ]) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _setup_demo_schema_and_pending(
+    tmp_path: Path,
+    *,
+    record_ids: list[str] | None = None,
+    tagged_draft: str = "A fact {{cite:CL-DEMO-001}}.",
+) -> tuple[Path, Path, dict]:
+    import yaml
+
+    record_ids = record_ids if record_ids is not None else ["CL-DEMO-001"]
+    _write_knowledge_claim(tmp_path, "demo", "CL-DEMO-001", "a demo fact")
+
+    schema_path = tmp_path / "demo.schema.yaml"
+    section = {
+        "id": "s1", "required_knowledge": record_ids, "max_evidence_chars": 4000,
+    }
+    schema_path.write_text(
+        yaml.safe_dump({
+            "schema_version": 1, "document": "docs/demo.md",
+            "audience": "a developer", "sections": [section],
+            "acceptance_criteria": ["ok"], "owner": "lead",
+        }),
+        encoding="utf-8",
+    )
+
+    pending_dir = tmp_path / "planning" / "retros" / "phase-87-pending-review" / "demo"
+    pending_dir.mkdir(parents=True)
+    draft_body = cli_module.doc_compiler.strip_citation_tags(tagged_draft).strip()
+    hydrated = cli_module.doc_compiler.hydrate_records(tmp_path, record_ids)
+    pending = {
+        "schema_slug": "demo",
+        "section_id": "s1",
+        "source_revision": "unknown",
+        "record_ids": record_ids,
+        "tagged_draft": tagged_draft,
+        "draft_body": draft_body,
+        "draft_sha256": oracle.sha256_text(tagged_draft),
+        "evidence_sha256": cli_module.doc_compiler.hash_evidence(hydrated),
+        "schema_section_sha256": oracle.sha256_text(json.dumps(section, sort_keys=True)),
+        "citation_findings": [],
+    }
+    pending_path = pending_dir / "s1.json"
+    pending_path.write_text(json.dumps(pending, indent=2, sort_keys=True), encoding="utf-8")
+    return schema_path, pending_path, pending
+
+
+def _record_review(schema_path: Path, section_id: str, kind: str, verdict: str) -> None:
+    result = runner.invoke(
+        app,
+        ["docs", "record-review", str(schema_path), section_id,
+         "--kind", kind, "--verdict", verdict, "--reviewer", f"test-{kind}-reviewer"],
+    )
+    assert result.exit_code == 0, result.output
+
+
+def test_docs_publish_full_cycle_with_persisted_reviews_succeeds(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    import json as _json
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
 
-    import yaml
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 0, result.output
+    assert "A fact." in (tmp_path / "docs" / "demo.md").read_text(encoding="utf-8")
 
-    schema_path = tmp_path / "demo.schema.yaml"
-    schema_path.write_text(
-        yaml.safe_dump({"schema_version": 1, "document": "docs/demo.md", "sections": []}),
-        encoding="utf-8",
+    # Requirement §2.A.8: the tagged draft and both review records
+    # survive publication for later audits.
+    audit_path = (
+        tmp_path / "planning" / "retros" / "phase-87-published-evidence" / "demo" / "s1.json"
     )
-    pending_dir = tmp_path / "planning" / "retros" / "phase-87-pending-review" / "demo"
-    pending_dir.mkdir(parents=True)
-    (pending_dir / "s1.json").write_text(
-        _json.dumps({"record_ids": ["CL-DEMO-001"], "draft_body": "A fact."}), encoding="utf-8"
-    )
+    assert audit_path.is_file()
+    audit = json.loads(audit_path.read_text(encoding="utf-8"))
+    assert audit["pending_manifest"]["tagged_draft"] == "A fact {{cite:CL-DEMO-001}}."
+    assert audit["semantic_review"]["verdict"] == "supported"
+    assert audit["editorial_review"]["verdict"] == "pass"
 
-    refused = runner.invoke(
-        app,
-        ["docs", "publish", str(schema_path), "s1",
-         "--semantic-verdict", "unsupported", "--editorial-verdict", "pass"],
-    )
-    assert refused.exit_code == 1
+
+def test_docs_publish_rejects_absent_review_records(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
     assert not (tmp_path / "docs" / "demo.md").exists()
 
-    accepted = runner.invoke(
-        app,
-        ["docs", "publish", str(schema_path), "s1",
-         "--semantic-verdict", "supported", "--editorial-verdict", "pass"],
+
+def test_docs_publish_rejects_when_only_one_review_record_present(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "semantic", "supported")
+    # No editorial review recorded.
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert not (tmp_path / "docs" / "demo.md").exists()
+
+
+def test_docs_publish_rejects_a_failing_verdict(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "semantic", "unsupported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert not (tmp_path / "docs" / "demo.md").exists()
+
+
+def test_docs_publish_rejects_a_forged_review_with_wrong_draft_hash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A "passing-verdict forgery": a review record claiming
+    # verdict=supported/pass but never actually produced by
+    # `docs record-review` against this pending draft (its draft_sha256
+    # doesn't match) must still be rejected -- a passing label alone is
+    # never sufficient.
+    monkeypatch.chdir(tmp_path)
+    schema_path, pending_path, pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    forged_review = {
+        "kind": "semantic", "schema_slug": "demo", "section_id": "s1",
+        "draft_sha256": "0" * 64,  # wrong -- never matches this pending draft
+        "evidence_sha256": pending["evidence_sha256"],
+        "schema_section_sha256": pending["schema_section_sha256"],
+        "reviewer": "forged", "verdict": "supported",
+        "findings": [], "evidence_references": [], "recorded_at": "2026-01-01T00:00:00Z",
+    }
+    (pending_path.parent / "s1.review-semantic.json").write_text(
+        json.dumps(forged_review), encoding="utf-8"
     )
-    assert accepted.exit_code == 0, accepted.output
-    assert "A fact." in (tmp_path / "docs" / "demo.md").read_text(encoding="utf-8")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert not (tmp_path / "docs" / "demo.md").exists()
+
+
+def test_docs_publish_rejects_a_review_bound_to_a_different_draft(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The draft changed (a recompile) after the review was recorded;
+    # the old review record no longer matches the new pending draft's
+    # own hash and must be rejected, never silently reused.
+    monkeypatch.chdir(tmp_path)
+    schema_path, pending_path, pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    new_pending = dict(pending)
+    new_pending["tagged_draft"] = "A different fact {{cite:CL-DEMO-001}}."
+    new_pending["draft_body"] = "A different fact."
+    new_pending["draft_sha256"] = oracle.sha256_text(new_pending["tagged_draft"])
+    pending_path.write_text(json.dumps(new_pending, indent=2, sort_keys=True), encoding="utf-8")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert not (tmp_path / "docs" / "demo.md").exists()
+
+
+def test_docs_publish_rejects_when_knowledge_revision_changed_since_review(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    # The cited record's own content changes after the review was
+    # recorded -- the record this section depends on no longer matches
+    # what was actually reviewed.
+    _write_knowledge_claim(tmp_path, "demo", "CL-DEMO-001", "a CHANGED demo fact")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert not (tmp_path / "docs" / "demo.md").exists()
+
+
+def test_docs_publish_rejects_an_unresolved_section_id(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "not-a-real-section"])
+    assert result.exit_code == 1
+
+
+def test_docs_record_review_rejects_an_invalid_verdict_for_its_kind(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+
+    result = runner.invoke(
+        app,
+        ["docs", "record-review", str(schema_path), "s1",
+         "--kind", "semantic", "--verdict", "pass",  # "pass" is an editorial verdict, not semantic
+         "--reviewer", "x"],
+    )
+    assert result.exit_code == 1
+
+
+# ---------------------------------------------------------------------------
+# docs publish path confinement (Stage 87A hardening pass §2.B)
+# ---------------------------------------------------------------------------
+
+
+def test_docs_publish_rejects_a_traversal_document_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    import yaml
+
+    schema_path = tmp_path / "evil.schema.yaml"
+    schema_path.write_text(
+        yaml.safe_dump({
+            "schema_version": 1, "document": "../outside.md",
+            "audience": "x",
+            "sections": [{"id": "s1", "required_knowledge": [], "max_evidence_chars": 100}],
+            "acceptance_criteria": ["x"], "owner": "lead",
+        }),
+        encoding="utf-8",
+    )
+    pending_dir = tmp_path / "planning" / "retros" / "phase-87-pending-review" / "evil"
+    pending_dir.mkdir(parents=True)
+    (pending_dir / "s1.json").write_text(json.dumps({
+        "record_ids": [], "draft_body": "x", "draft_sha256": "a", "evidence_sha256": "b",
+        "schema_section_sha256": "c",
+    }), encoding="utf-8")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert not (tmp_path.parent / "outside.md").exists()
+
+
+def test_docs_publish_rejects_an_absolute_document_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    import yaml
+
+    schema_path = tmp_path / "evil.schema.yaml"
+    schema_path.write_text(
+        yaml.safe_dump({
+            "schema_version": 1, "document": "/etc/evil.md",
+            "audience": "x",
+            "sections": [{"id": "s1", "required_knowledge": [], "max_evidence_chars": 100}],
+            "acceptance_criteria": ["x"], "owner": "lead",
+        }),
+        encoding="utf-8",
+    )
+    pending_dir = tmp_path / "planning" / "retros" / "phase-87-pending-review" / "evil"
+    pending_dir.mkdir(parents=True)
+    (pending_dir / "s1.json").write_text(json.dumps({
+        "record_ids": [], "draft_body": "x", "draft_sha256": "a", "evidence_sha256": "b",
+        "schema_section_sha256": "c",
+    }), encoding="utf-8")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+
+
+def test_docs_publish_rejects_a_symlink_escape(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    import yaml
+
+    outside = tmp_path.parent / "outside-docs-target"
+    outside.mkdir(exist_ok=True)
+    (tmp_path / "docs").symlink_to(outside, target_is_directory=True)
+
+    schema_path = tmp_path / "evil.schema.yaml"
+    schema_path.write_text(
+        yaml.safe_dump({
+            "schema_version": 1, "document": "docs/escape.md",
+            "audience": "x",
+            "sections": [{"id": "s1", "required_knowledge": [], "max_evidence_chars": 100}],
+            "acceptance_criteria": ["x"], "owner": "lead",
+        }),
+        encoding="utf-8",
+    )
+    pending_dir = tmp_path / "planning" / "retros" / "phase-87-pending-review" / "evil"
+    pending_dir.mkdir(parents=True)
+    (pending_dir / "s1.json").write_text(json.dumps({
+        "record_ids": [], "draft_body": "x", "draft_sha256": "a", "evidence_sha256": "b",
+        "schema_section_sha256": "c",
+    }), encoding="utf-8")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert not (outside / "escape.md").exists()
+
+
+def test_docs_publish_accepts_a_legitimate_readme_publication(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    import yaml
+
+    _write_knowledge_claim(tmp_path, "demo", "CL-DEMO-001", "a demo fact")
+    schema_path = tmp_path / "README.md.schema.yaml"
+    section = {"id": "s1", "required_knowledge": ["CL-DEMO-001"], "max_evidence_chars": 4000}
+    schema_path.write_text(
+        yaml.safe_dump({
+            "schema_version": 1, "document": "README.md", "audience": "x",
+            "sections": [section], "acceptance_criteria": ["x"], "owner": "lead",
+        }),
+        encoding="utf-8",
+    )
+    pending_dir = tmp_path / "planning" / "retros" / "phase-87-pending-review" / "readme-md"
+    pending_dir.mkdir(parents=True)
+    tagged_draft = "A fact {{cite:CL-DEMO-001}}."
+    hydrated = cli_module.doc_compiler.hydrate_records(tmp_path, ["CL-DEMO-001"])
+    pending = {
+        "schema_slug": "readme-md", "section_id": "s1", "source_revision": "unknown",
+        "record_ids": ["CL-DEMO-001"], "tagged_draft": tagged_draft,
+        "draft_body": "A fact.", "draft_sha256": oracle.sha256_text(tagged_draft),
+        "evidence_sha256": cli_module.doc_compiler.hash_evidence(hydrated),
+        "schema_section_sha256": oracle.sha256_text(json.dumps(section, sort_keys=True)),
+        "citation_findings": [],
+    }
+    (pending_dir / "s1.json").write_text(
+        json.dumps(pending, indent=2, sort_keys=True), encoding="utf-8"
+    )
+
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 0, result.output
+    assert "A fact." in (tmp_path / "README.md").read_text(encoding="utf-8")

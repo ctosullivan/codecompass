@@ -20,6 +20,7 @@ import sqlite3
 import subprocess
 import sys
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import NoReturn
 
@@ -33,6 +34,7 @@ from codecompass import (
     graph,
     knowledge_api,
     knowledge_intermediate,
+    oracle,
     relation_enrichment,
 )
 from codecompass.adapters import AdapterError
@@ -1974,10 +1976,21 @@ def docs_compile(
     source_revision = _git_head_revision(project_root)
     compile_doc_section = _load_script_module("compile_doc_section")
 
+    # Hardening pass §N.A: the raw, citation-tagged draft and the exact
+    # manifest the broker actually received must both survive past
+    # `compose_and_validate`'s own narrower return contract (body text +
+    # citation findings only) so the pending-review record below can
+    # bind a later review to precisely this draft and this evidence --
+    # never recomputed independently and risking silent drift.
+    _raw_drafts: dict[str, str] = {}
+    _manifests: dict[str, dict] = {}
+
     def _compose_and_validate(section: dict, packet: doc_compiler.EvidencePacket):
-        raw = compile_doc_section.compose_section(
+        raw, manifest = compile_doc_section.compose_section(
             project_root, section, packet, schema_slug=schema_slug, source_revision=source_revision,
         )
+        _raw_drafts[section["id"]] = raw
+        _manifests[section["id"]] = manifest
         return compile_doc_section.parse_and_validate_response(raw, packet)
 
     results = doc_compiler.compile_document(
@@ -1990,9 +2003,21 @@ def docs_compile(
         if result.status == "pending_review":
             pending_dir.mkdir(parents=True, exist_ok=True)
             pending_path = pending_dir / f"{result.section_id}.json"
+            tagged_draft = _raw_drafts[result.section_id]
+            manifest = _manifests[result.section_id]
+            schema_section = doc_compiler.find_schema_section(schema, result.section_id) or {}
             pending_path.write_text(json.dumps({
+                "schema_slug": schema_slug,
+                "section_id": result.section_id,
+                "source_revision": manifest.get("source_revision", source_revision),
                 "record_ids": result.packet.record_ids if result.packet else [],
+                "tagged_draft": tagged_draft,
                 "draft_body": result.draft_body,
+                "draft_sha256": oracle.sha256_text(tagged_draft),
+                "evidence_sha256": manifest["evidence_sha256"],
+                "schema_section_sha256": oracle.sha256_text(
+                    json.dumps(schema_section, sort_keys=True)
+                ),
                 "citation_findings": [
                     {
                         "record_id": f.record_id,
@@ -2001,14 +2026,108 @@ def docs_compile(
                     }
                     for f in result.citation_findings
                 ],
-            }, indent=2), encoding="utf-8")
+            }, indent=2, sort_keys=True), encoding="utf-8")
             console.print(
                 f"  pending: semantic-support and editorial-quality review required "
-                f"before publication -- see {pending_path}"
+                f"before publication -- record each with `docs record-review`, see "
+                f"{pending_path}"
             )
         elif result.status in ("gap_blocked", "citation_blocked", "composition_failed"):
             detail = result.error or result.gaps or result.citation_findings
             console.print(f"  [red]blocked[/red]: {detail}")
+
+
+_REVIEW_VERDICTS = {"semantic": {"supported", "unsupported"}, "editorial": {"pass", "fail"}}
+_EXPECTED_PASSING_VERDICT = {"semantic": "supported", "editorial": "pass"}
+_REQUIRED_REVIEW_KEYS = {
+    "kind", "schema_slug", "section_id",
+    "draft_sha256", "evidence_sha256", "schema_section_sha256",
+    "reviewer", "verdict",
+}
+
+
+@docs_app.command("record-review")
+def docs_record_review(
+    schema_path: Path = typer.Argument(..., help="Path to a *.schema.yaml file."),
+    section_id: str = typer.Argument(..., help="The section id this review was run against."),
+    kind: str = typer.Option(..., "--kind", help="semantic | editorial"),
+    verdict: str = typer.Option(
+        ..., "--verdict",
+        help="semantic: supported | unsupported.  editorial: pass | fail.",
+    ),
+    reviewer: str = typer.Option(
+        ..., "--reviewer",
+        help="Reviewer identity or dispatch provenance (self-reported; not a "
+             "cryptographic attestation of independence -- see docstring).",
+    ),
+    finding: list[str] = typer.Option(
+        [], "--finding", help="One reported finding; repeatable."
+    ),
+    evidence_ref: list[str] = typer.Option(
+        [], "--evidence-ref", help="A record id the reviewer actually examined; repeatable."
+    ),
+) -> None:
+    """Persists one independent review's verdict, bound by hash to the
+    exact pending draft, evidence, and schema section it was run
+    against (hardening pass §N.A) -- `docs publish` then validates this
+    persisted record instead of accepting a bare verdict string typed
+    directly at publish time, which proved no more than that *someone*
+    typed "supported".
+
+    This command does not itself verify that the review was genuinely
+    independent, or that `--reviewer` names a real dispatch that
+    actually ran -- dispatching the two independent reviews remains the
+    orchestrator's own responsibility (`CLAUDE.md` §8: CodeCompass
+    never spawns or coordinates agents). What this command adds is
+    narrower and mechanical: a forged, stale, or mismatched verdict
+    (one bound to a different draft, different evidence, or a changed
+    schema section) is rejected at publish time, never silently
+    accepted because the label string happened to say "supported"."""
+    if kind not in _REVIEW_VERDICTS:
+        console.print(
+            f"[red]error:[/red] --kind must be one of {sorted(_REVIEW_VERDICTS)}, got {kind!r}"
+        )
+        raise typer.Exit(code=1)
+    if verdict not in _REVIEW_VERDICTS[kind]:
+        console.print(
+            f"[red]error:[/red] --verdict for kind={kind!r} must be one of "
+            f"{sorted(_REVIEW_VERDICTS[kind])}, got {verdict!r}"
+        )
+        raise typer.Exit(code=1)
+
+    project_root = Path.cwd()
+    schema_slug = _schema_slug(schema_path)
+    pending_path = (
+        project_root / "planning" / "retros" / "phase-87-pending-review"
+        / schema_slug / f"{section_id}.json"
+    )
+    if not pending_path.is_file():
+        console.print(
+            f"[red]error:[/red] no pending review found at {pending_path} -- run "
+            "`docs compile` first"
+        )
+        raise typer.Exit(code=1)
+    pending = json.loads(pending_path.read_text(encoding="utf-8"))
+
+    review = {
+        "kind": kind,
+        "schema_slug": schema_slug,
+        "section_id": section_id,
+        "draft_sha256": pending["draft_sha256"],
+        "evidence_sha256": pending["evidence_sha256"],
+        "schema_section_sha256": pending["schema_section_sha256"],
+        "reviewer": reviewer,
+        "verdict": verdict,
+        "findings": list(finding),
+        "evidence_references": list(evidence_ref),
+        "recorded_at": datetime.now(UTC).isoformat(),
+    }
+    review_path = pending_path.parent / f"{section_id}.review-{kind}.json"
+    review_path.write_text(json.dumps(review, indent=2, sort_keys=True), encoding="utf-8")
+    console.print(
+        f"[green]recorded[/green] {kind} review ({verdict}) for "
+        f"{schema_slug}/{section_id} -> {review_path}"
+    )
 
 
 @docs_app.command("publish")
@@ -2017,16 +2136,16 @@ def docs_publish(
     section_id: str = typer.Argument(
         ..., help="The section id to publish (must be pending_review)."
     ),
-    semantic_verdict: str = typer.Option(
-        ..., "--semantic-verdict", help="supported | unsupported -- from the independent dispatch."
-    ),
-    editorial_verdict: str = typer.Option(
-        ..., "--editorial-verdict", help="pass | fail -- from the independent editorial dispatch."
-    ),
 ) -> None:
-    """Publishes a `pending_review` section only if both independent
-    verdicts clear -- never the compiler's own say-so. Always emits
-    machine-readable grounding (§G.C); never auto-resolves a failing
+    """Publishes a `pending_review` section only if two persisted,
+    independent review records (`docs record-review --kind semantic`
+    and `--kind editorial`) exist, are well-formed, verdict-passing,
+    and bound by hash to the draft/evidence/schema-section currently
+    pending -- never a manually supplied verdict string (hardening
+    pass §N.A). Also confines the write target to an approved
+    documentation path and confirms `section_id` belongs to the live
+    schema (hardening pass §N.B). Always emits machine-readable
+    grounding (§G.C); never auto-resolves a failing or missing
     verdict."""
     import yaml
 
@@ -2034,28 +2153,114 @@ def docs_publish(
     schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
     schema_slug = _schema_slug(schema_path)
 
-    pending_path = (
-        project_root / "planning" / "retros" / "phase-87-pending-review"
-        / schema_slug / f"{section_id}.json"
-    )
+    section = doc_compiler.find_schema_section(schema, section_id)
+    if section is None:
+        console.print(f"[red]error:[/red] section {section_id!r} is not declared in {schema_path}")
+        raise typer.Exit(code=1)
+
+    try:
+        document_path = doc_compiler.resolve_publication_target(project_root, schema["document"])
+    except doc_compiler.DocCompilerError as exc:
+        console.print(f"[red]error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    pending_dir = project_root / "planning" / "retros" / "phase-87-pending-review" / schema_slug
+    pending_path = pending_dir / f"{section_id}.json"
     if not pending_path.is_file():
         console.print(f"[red]error:[/red] no pending review found at {pending_path}")
         raise typer.Exit(code=1)
     pending = json.loads(pending_path.read_text(encoding="utf-8"))
 
-    if semantic_verdict != "supported" or editorial_verdict != "pass":
+    # Reject if the schema section or the required knowledge changed
+    # since compile, independent of the review records below
+    # (requirement §N.A.7) -- re-derived live, never trusted from the
+    # pending manifest's own say-so.
+    live_schema_section_sha256 = oracle.sha256_text(json.dumps(section, sort_keys=True))
+    if live_schema_section_sha256 != pending.get("schema_section_sha256"):
         console.print(
-            f"[yellow]blocked[/yellow]: semantic_verdict={semantic_verdict!r}, "
-            f"editorial_verdict={editorial_verdict!r} -- never auto-resolved"
+            "[red]error:[/red] this section's schema definition has changed since it "
+            "was compiled -- recompile and re-review before publishing"
         )
         raise typer.Exit(code=1)
 
-    document_path = project_root / schema["document"]
+    live_hydrated = doc_compiler.hydrate_records(project_root, pending.get("record_ids", []))
+    live_evidence_sha256 = doc_compiler.hash_evidence(live_hydrated)
+    if live_evidence_sha256 != pending.get("evidence_sha256"):
+        console.print(
+            "[red]error:[/red] required knowledge has changed since this section was "
+            "compiled -- recompile and re-review before publishing"
+        )
+        raise typer.Exit(code=1)
+
+    reviews: dict[str, dict] = {}
+    for kind in ("semantic", "editorial"):
+        review_path = pending_dir / f"{section_id}.review-{kind}.json"
+        if not review_path.is_file():
+            console.print(
+                f"[red]error:[/red] no persisted {kind} review record found at "
+                f"{review_path} -- run `docs record-review --kind {kind}` first"
+            )
+            raise typer.Exit(code=1)
+        try:
+            review = json.loads(review_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            console.print(
+                f"[red]error:[/red] {kind} review record at {review_path} is malformed: {exc}"
+            )
+            raise typer.Exit(code=1) from exc
+
+        if not _REQUIRED_REVIEW_KEYS.issubset(review):
+            missing = _REQUIRED_REVIEW_KEYS - set(review)
+            console.print(
+                f"[red]error:[/red] {kind} review record at {review_path} is missing "
+                f"required field(s) {sorted(missing)}"
+            )
+            raise typer.Exit(code=1)
+
+        if (
+            review["kind"] != kind
+            or review["schema_slug"] != schema_slug
+            or review["section_id"] != section_id
+            or review["draft_sha256"] != pending.get("draft_sha256")
+            or review["evidence_sha256"] != pending.get("evidence_sha256")
+            or review["schema_section_sha256"] != pending.get("schema_section_sha256")
+        ):
+            console.print(
+                f"[red]error:[/red] {kind} review record does not match this section's "
+                "current draft/evidence/schema identity -- stale or mismatched; "
+                "recompile, re-review, and re-record before publishing"
+            )
+            raise typer.Exit(code=1)
+
+        if review["verdict"] != _EXPECTED_PASSING_VERDICT[kind]:
+            console.print(
+                f"[yellow]blocked[/yellow]: {kind} review verdict is "
+                f"{review['verdict']!r}, not {_EXPECTED_PASSING_VERDICT[kind]!r} -- "
+                "never auto-resolved"
+            )
+            raise typer.Exit(code=1)
+        reviews[kind] = review
+
     region_id = f"{schema_slug}-{section_id}"
     doc_compiler.publish_section(
         document_path, region_id=region_id,
         record_ids=pending["record_ids"], body=pending["draft_body"],
     )
+
+    # Preserve the original citation-tagged text and both independent
+    # review records for later audits (requirement §N.A.8) -- a
+    # permanent, committed record, distinct from the ephemeral
+    # clean-room staging directory (§N.C), which is never kept.
+    audit_dir = project_root / "planning" / "retros" / "phase-87-published-evidence" / schema_slug
+    audit_dir.mkdir(parents=True, exist_ok=True)
+    (audit_dir / f"{section_id}.json").write_text(json.dumps({
+        "region_id": region_id,
+        "pending_manifest": pending,
+        "semantic_review": reviews["semantic"],
+        "editorial_review": reviews["editorial"],
+        "published_at": datetime.now(UTC).isoformat(),
+    }, indent=2, sort_keys=True), encoding="utf-8")
+
     console.print(f"[green]published[/green] {region_id} into {document_path}")
 
 

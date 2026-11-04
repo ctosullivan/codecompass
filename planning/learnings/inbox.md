@@ -11494,3 +11494,130 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   the defect's own literal recurring phrasing and be re-verified by an
   actual independent re-dispatch -- user-approved per §0) @ <landing
   commit>`.
+
+### L-120 — a content-hash integrity check on a written file proves nothing about what a downstream step actually consumes unless that step is sourced from the same verified read
+
+- **origin:** Phase 87 (Documentation Schema and Knowledge-Compiled
+  Documentation), Stage 87A hardening pass, `scripts/
+  compile_doc_section.py`'s `compose_section`
+- **date:** 2026-11-04
+- **project_revision:** the hardening pass's own implementation commit
+  (this session, following `ad46d16`).
+- **observation:** `compose_section` wrote the evidence packet to an
+  ephemeral staging file and re-verified its on-disk content hash
+  against its own manifest immediately before use (`verify_packet_
+  integrity`) — a real, working tamper check. But the function then
+  built the clean-room broker's system prompt from the `packet`
+  argument it still held in memory, not from the file whose hash it
+  had just verified. The two values happened to be identical in every
+  real run so far (nothing mutated either one between the write and
+  the prompt-building step), so the gap produced no observed failure —
+  but the hash check itself established nothing about what the broker
+  actually received; it only established that the *file* matched its
+  own manifest. A future change (a different serialization path, a
+  mutation introduced between write and use, or simply a refactor that
+  stops passing the same object through) could silently reintroduce a
+  real divergence between "what was verified" and "what was sent,"
+  with the existing test suite giving no signal, since every existing
+  test constructed the in-memory packet and the on-disk packet from
+  the same source in the same call.
+- **evidence:** reproduced directly with a new regression test
+  (`test_compose_section_builds_broker_prompt_from_verified_bytes_not_memory`,
+  `tests/test_compile_doc_section.py`): a monkeypatched
+  `write_section_packet` mutates the in-memory `packet.hydrated` dict
+  immediately after writing its verified bytes to disk; against the
+  pre-fix code this mutation would reach the broker's system prompt
+  (confirmed by inspection of the pre-fix call path, which passed
+  `packet` directly to `build_system_prompt`); against the fixed code,
+  the test asserts the mutated text never appears in the prompt seen
+  by the broker. Fixed by reading the packet and manifest back from
+  their own verified files and building the prompt from that re-read
+  content (`compose_section`, `scripts/compile_doc_section.py`).
+- **classification:** project-rule — a generalizable caution for any
+  future mechanism (in this project or elsewhere) that writes data to
+  a file, verifies that file's integrity, and then acts on the data:
+  the integrity check is only meaningful if the *consuming* step reads
+  from the same verified file, never from a separate in-memory copy
+  held across the verification boundary — otherwise the check verifies
+  the wrong artifact relative to what is actually used.
+- **status:** retained
+- **recurrence:** first occurrence. Grepped `inbox.md` for "integrity",
+  "verified bytes", "hash check" — no prior entry about a verified
+  file's content diverging from what a downstream step actually
+  consumes.
+- **promoted_to:** (pending — see curation note)
+- **curation note (2026-11-04, knowledge-curator):** all required fields
+  present (origin, date, project_revision, observation, evidence,
+  classification, status) — accepted as filed.
+
+  **Independently reproduced both pieces of cited evidence** (no `Bash`
+  in this role — used direct file reading, not execution).
+
+  1. `scripts/compile_doc_section.py:242-306`, `compose_section`, read
+     directly. Confirmed the fix matches the entry's claim exactly: the
+     function writes the packet via `write_section_packet`, then —
+     rather than passing the still-in-memory `packet` argument straight
+     to `build_system_prompt` — reads the packet and manifest back from
+     their own verified on-disk files (`verified_packet_raw =
+     json.loads(packet_path.read_text(...))`, `manifest =
+     json.loads(manifest_path.read_text(...))`, lines 287-288),
+     reconstructs a `verified_packet` `EvidencePacket` from that re-read
+     content, and it is `verified_packet` — not `packet` — that is
+     passed to `build_system_prompt` at line 296. The function's own
+     docstring (lines 259-268) states the identical reasoning the entry
+     gives: "the broker's system prompt is now built from the packet
+     read back from the verified on-disk bytes... otherwise
+     `verify_packet_integrity`'s own hash check proves nothing about
+     what the broker actually receives, since the two could silently
+     diverge." This matches the entry's "evidence" claim about the fix
+     precisely.
+  2. `tests/test_compile_doc_section.py:267-300`,
+     `test_compose_section_builds_broker_prompt_from_verified_bytes_not_memory`,
+     read directly. Confirmed it is a real, module-level, non-skipped
+     test function (no `@pytest.mark.skip`/`xfail`, no nesting under a
+     conditional). It does exactly what the entry claims: monkeypatches
+     `cds.write_section_packet` with `_mutating_write`, which calls the
+     real `write_section_packet` first (so the verified on-disk bytes
+     are written and hashed correctly), then mutates
+     `pkt.hydrated["CL-DEMO-001"]["statement"]` to
+     `"MUTATED, SHOULD NEVER REACH THE BROKER"` — i.e. mutates the
+     in-memory packet *after* its verified bytes are already on disk,
+     the exact divergence shape the entry describes. The test then
+     calls `compose_section` with a fake `run_inference` that records
+     the system prompt it receives, and asserts both
+     `"MUTATED" not in seen_prompts[0]` (the mutation never reaches the
+     broker) and `"demo statement" in seen_prompts[0]` (the original,
+     verified content does reach it) — a positive and negative
+     assertion together, not merely an absence check that could pass
+     vacuously on an empty prompt. Both cited pieces of evidence
+     reproduce exactly as the entry claims; no discrepancy found.
+
+  **Recommendation: promote**, as a `project-rule`, to `CLAUDE.md` §1 —
+  draft in `planning/v1-redefinition/proposed-governance-changes.md` §P
+  (drafted this triage) per this role's own write-boundary (never
+  `CLAUDE.md` directly; propose only, lead presents the diff, user
+  approves per §0). Not merged with `L-087`'s "observing a change
+  differs from acting on it" sentence: `L-087` is about *when* a
+  persisted last-known-state baseline is allowed to advance (only on an
+  explicit apply/acknowledgement action), a timing-of-state-advancement
+  shape; `L-120` is about *which read* a consuming step sources from
+  after a value has already been verified once — confirmed as a
+  different mechanism with a different fix shape by reading both the
+  `L-087`-originating code and `compose_section` directly, not merely
+  asserted by analogy. Not held for a second occurrence, matching the
+  same single-occurrence precedent `L-021`/`L-070`/`L-075`/`L-087`/
+  `L-088`/`L-116`/`L-117`/`L-118`/`L-119` already set in this section:
+  a real, reproduced defect plus a real, correctly-shaped regression
+  test, not merely an asserted risk.
+
+  `status` set to `retained` (not `candidate`, not `promoted`):
+  curation is complete and the recommendation is firm, but it is
+  waiting on the user's explicit `CLAUDE.md` §0 approval of the §P
+  diff, which has not been given as of this note. Once approved and
+  landed, flip `status` to `promoted`, record the real landing commit
+  in `promoted_to`, and add this `promoted.md` line: `L-120 | 2026-11-04
+  | project-rule | CLAUDE.md §1 (a mechanism that writes data, verifies
+  its integrity, then acts on it must have the consuming step read the
+  data back from the same verified file, not a separate in-memory copy,
+  with a mutation-after-write regression test -- user-approved per §0)
+  @ <landing commit>`.

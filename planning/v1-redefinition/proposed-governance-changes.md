@@ -1192,3 +1192,92 @@ Append after §N (or after whichever of §L/§M/§N lands last).
   `CONTRIBUTING.md`'s mirrored section gets the same addition in the
   same commit; `planning/learnings/inbox.md`'s `L-119` flips to `status:
   promoted` with a `promoted.md` pointer line once the edit lands.
+
+## P. 2026-11-04 proposed addition (Phase 87 Stage 87A hardening pass — `L-120`)
+
+**Status:** proposed, not yet presented to the user. Filed by
+`knowledge-curator` during the Phase 87 Stage 87A hardening-pass
+triage. Append after §O (or after whichever of §L/§M/§N/§O lands last).
+
+### P1 — §1 "Plan before implementing": require a verified-file re-read, not an in-memory copy, for any mechanism that writes data, verifies its integrity, then acts on it
+
+- **Context:** `scripts/compile_doc_section.py`'s `compose_section`
+  wrote the clean-room evidence packet to an ephemeral staging file and
+  re-verified its on-disk content hash against its own manifest
+  (`verify_packet_integrity`) immediately before use — a real, working
+  tamper check. But the function then built the clean-room broker's
+  system prompt from the `packet` argument it still held in memory, not
+  from the file whose hash it had just verified. The two values
+  happened to be identical in every real run so far, so the gap
+  produced no observed failure — but the hash check itself established
+  nothing about what the broker actually received; it only established
+  that the *file* matched its own manifest. Independently confirmed
+  this triage, by direct code reading (no `Bash` in this role, so the
+  fix was read rather than executed): the current, fixed
+  `compose_section` (`scripts/compile_doc_section.py:242-306`) reads the
+  packet and manifest back from their own verified on-disk files
+  (`verified_packet_raw`, `manifest`, lines 287-288) and builds
+  `verified_packet` — the object actually passed to
+  `build_system_prompt` — from that re-read content, not from the
+  `packet` parameter; the function's own docstring states this exact
+  correction ("the broker's system prompt is now built from the packet
+  read back from the verified on-disk bytes... otherwise
+  `verify_packet_integrity`'s own hash check proves nothing about what
+  the broker actually receives"). The cited regression test,
+  `test_compose_section_builds_broker_prompt_from_verified_bytes_not_memory`
+  (`tests/test_compile_doc_section.py:267`), exists as a real,
+  non-skipped, module-level test: it monkeypatches `write_section_packet`
+  to mutate `packet.hydrated["CL-DEMO-001"]["statement"]` to a marked
+  string immediately after writing the verified bytes to disk, then
+  asserts both that the mutated marker never appears in the prompt the
+  fake broker received (`assert "MUTATED" not in seen_prompts[0]`) and
+  that the original, pre-mutation content does appear
+  (`assert "demo statement" in seen_prompts[0]`) — exercising exactly
+  the shape the entry claims, not merely a renamed trivial case. Full
+  account: `planning/learnings/inbox.md`'s `L-120`.
+- **Proposed text — append to §1, as a new sentence directly after §O's
+  (or whichever of §L/§M/§N/§O lands last):**
+
+  > If a phase's implementation writes data to a file, verifies that
+  > file's own integrity (e.g. a content hash checked against a
+  > manifest), and then acts on that data, the consuming step must read
+  > the data back from the same verified file rather than from a
+  > separate in-memory copy held across the verification boundary, and
+  > the plan's verification section must include a test that mutates
+  > the in-memory copy after the verified write and asserts the
+  > mutation never reaches the consuming step — an integrity check
+  > proves nothing about what is actually consumed unless the consuming
+  > step is sourced from the same verified read. (Phase 87 Stage 87A
+  > hardening pass — L-120.)
+
+- **Alternatives considered:** (a) treat this as already covered by
+  `L-087`'s "observing a change differs from acting on it" sentence —
+  rejected: `L-087` concerns *when* a persisted last-known-state
+  baseline is allowed to advance (only on an explicit apply/
+  acknowledgement action, never merely because a detection/scan step
+  ran), a timing-of-state-advancement shape; `L-120` concerns *which
+  read* a consuming step is sourced from after a value has already been
+  verified once — a different mechanism, a different fix shape, no
+  shared call site or defect, confirmed distinct by reading both
+  functions directly; (b) leave this covered by `compose_section`'s own
+  docstring alone, without a `CLAUDE.md` §1 addition — a real
+  consideration, since the docstring already protects *this* one
+  function, but it does not reach a *future, not-yet-written* mechanism
+  elsewhere in the project that writes, verifies, then consumes data
+  the same way, which is exactly where a planning-review requirement
+  adds coverage the docstring cannot; (c) hold for a second occurrence
+  before promoting — rejected as the wrong precedent, matching
+  `L-021`/`L-070`/`L-075`/`L-087`/`L-088`/`L-116`/`L-117`/`L-118`/
+  `L-119`'s own single-occurrence promotions, each justified on
+  evidence quality (a real, reproduced defect plus a real regression
+  test), not recurrence count; (d) scope this as a `.claude/`
+  agent-brief or skill rather than a project-wide `CLAUDE.md` §1
+  sentence — rejected: the underlying failure (verifying one artifact
+  then consuming a different, unverified copy of the same logical data)
+  is a general implementation-correctness shape, not specific to any
+  one agent's own workflow, matching the same reasoning `L-116`/`L-117`/
+  `L-118` already applied to similarly general code-pattern cautions.
+- **Consequences if approved:** `CLAUDE.md` §1 gains the sentence above;
+  `CONTRIBUTING.md`'s mirrored section gets the same addition in the
+  same commit; `planning/learnings/inbox.md`'s `L-120` flips to `status:
+  promoted` with a `promoted.md` pointer line once the edit lands.

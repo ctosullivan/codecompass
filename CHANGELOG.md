@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 87, Stage 87A hardening pass — publication path secured**
+  (plan's own §N). A follow-up review found three integration defects
+  in the publication mechanism itself, none affecting the real
+  demonstration's own generated content: (1) `docs publish` accepted
+  a manually typed `--semantic-verdict`/`--editorial-verdict` string
+  as sufficient evidence that an independent review had occurred — a
+  new `docs record-review --kind semantic|editorial` command now
+  persists each review bound by a `draft_sha256`/`evidence_sha256`/
+  `schema_section_sha256` identity triple to the pending draft, and
+  `docs publish` validates that persisted, hash-bound record rather
+  than a bare label, rejecting an absent, malformed, failing,
+  mismatched, or stale review; the tagged draft and both records are
+  preserved permanently for audit. (2) `docs publish` resolved its
+  write target with no path validation at all — a new, reusable
+  `doc_compiler.resolve_publication_target` confines every write to
+  `README.md` or a `docs/**/*.md` file, resolving symlinks before
+  comparing against the project root (never a string-prefix check),
+  enforced at both schema-validation and publish time. (3)
+  `compile_doc_section.compose_section` built its broker prompt from
+  the in-memory evidence packet rather than the packet actually
+  re-read from its own verified, hash-checked file — the prompt is now
+  sourced from those verified bytes directly, and the ephemeral
+  staging directory is always removed, on both the success and
+  failure path. 21 new regression tests (13 confirmed failing against
+  the pre-hardening code, then passing after the fix); full suite,
+  ruff, and the schema/knowledge-placement/knowledge-base/contracts/
+  user-docs validators all clean; the self-knowledge-quality baseline
+  (Phase 85) unchanged. Stage 87A remains hardened and closed; Phase
+  87 overall remains not `done`.
+
 - **Phase 87, Stage 87A: Documentation Schema and Knowledge-Compiled
   Documentation — knowledge compilation proven** (`decisions/0084`
   §2, specified `decisions/0085` §5, restructured into three stages

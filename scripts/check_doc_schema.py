@@ -34,6 +34,7 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
+from codecompass import doc_compiler as dc  # noqa: E402
 from codecompass import knowledge_api as ka  # noqa: E402
 
 _VALID_MIN_CLAIM_STATUS = {"candidate", "supported", "verified"}
@@ -213,6 +214,22 @@ def _resolve_required_knowledge(
     return findings
 
 
+def _check_document_path(project_root: Path, data: dict, schema_path: Path) -> list[Finding]:
+    """Hardening pass §N.B: the same `resolve_publication_target`
+    policy `docs publish` enforces at write time is also enforced here,
+    at schema-validation time -- so an unsafe `document` field is
+    caught as soon as the schema is authored, never only when a
+    publish is attempted."""
+    document = data.get("document")
+    if document is None:
+        return []
+    try:
+        dc.resolve_publication_target(project_root, document)
+    except dc.DocCompilerError as exc:
+        return [Finding("doc-schema-unsafe-document-path", f"{schema_path}: {exc}")]
+    return []
+
+
 def _check_document_uniqueness(all_data: list[tuple[Path, dict]]) -> list[Finding]:
     findings = []
     seen: dict[str, Path] = {}
@@ -255,6 +272,7 @@ def run_all(project_root: Path, schema_paths: list[Path]) -> list[Finding]:
     for schema_path, data in all_data:
         findings.extend(_check_top_level_fields(data, schema_path))
         findings.extend(_check_schema_version(data, schema_path))
+        findings.extend(_check_document_path(project_root, data, schema_path))
         for section in data.get("sections", []) or []:
             findings.extend(_check_section_fields(section, schema_path))
         findings.extend(_resolve_required_knowledge(project_root, data, schema_path))

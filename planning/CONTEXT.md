@@ -9,8 +9,8 @@ session-resumption, not a project history.
 
 **Phase 87 — Documentation Schema and Knowledge-Compiled
 Documentation — restructured into three stages (87A/87B/87C); Stage
-87A implemented and independently re-audited; Phase 87 overall remains
-`not done`.** Plan:
+87A implemented, hardened, and independently re-audited; Stage 87B
+planned (not implemented); Phase 87 overall remains `not done`.** Plan:
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
 A second review (after the first pass's own READY WITH NON-BLOCKING
 OBSERVATIONS verdict) found the single-stage scope too large and four
@@ -50,10 +50,35 @@ itself caught: a stray-space citation-stripping defect and a
 schema-slug dot-truncation defect, both fixed with regression tests);
 round 3 passed both independent dispatches and was published —
 `README.md`'s "Understanding Digests" section, grounded in
-`CL-CTXT-005`. **Stage 87B and 87C are not implemented and not
-authorised** — Phase 87 itself remains `not done` until 87C's own exit
-gate (the complete minimum publication suite, the matched-baseline
-comparison, final audits) is met.
+`CL-CTXT-005`.
+
+**Stage 87A hardening pass — closed, independently re-audited
+(2026-11-04)**, plan's own §N. A follow-up review found three
+integration defects in the publication path itself (not the compiled
+content or the real demonstration, both independently reconfirmed
+sound first): `docs publish` accepted a manually typed verdict string
+as sufficient evidence of independent review — fixed by a new
+`docs record-review` command that persists each review bound by hash
+to the exact draft/evidence/schema-section identity, validated by
+`docs publish` instead of trusted at face value; the publication write
+target was unconfined — fixed by a single, reusable
+`doc_compiler.resolve_publication_target` (confines to `README.md`/
+`docs/**/*.md`, symlink-aware, resolved-path comparison, never a
+string-prefix check), enforced at both schema-validation and publish
+time; the clean-room broker's prompt was built from the in-memory
+evidence packet rather than its own verified on-disk bytes — fixed by
+sourcing the prompt from a fresh read of the verified file, with the
+ephemeral staging directory always removed on both the success and
+failure path. 21 new regression tests (13 confirmed failing against
+the pre-hardening code before the fix, via a `git stash`-isolated
+re-run). Full suite, ruff, and all strict validators clean (Phase 85
+baseline unchanged). One candidate learning filed (`L-120`). Full
+detail: `planning/retros/phase-87-stage-87a-hardening.md`.
+
+**Stage 87B and 87C are not implemented and not authorised** — Phase
+87 itself remains `not done` until 87C's own exit gate (the complete
+minimum publication suite, the matched-baseline comparison, final
+audits) is met.
 
 **Phase 86 — Knowledge-Placement and Code-Quality Review — is `done`
 (2026-11-03)**. Plan amended and independently reviewed across four
@@ -623,6 +648,20 @@ and each phase's retro.
 
 ## What was just completed
 
+**Phase 87 Stage 87A hardening pass**, 2026-11-04, direct user request
+("CodeCompass Orchestrator — Stage 87A Hardening, Final Closeout and
+Stage 87B Planning"). See "Current phase" above and
+`planning/retros/phase-87-stage-87a-hardening.md` for full detail. In
+short: three publication-path defects found and corrected (manually
+typed review verdicts replaced by a hash-bound persisted review
+record; an unconfined publication write target replaced by a single,
+reusable, symlink-aware path-confinement policy; the clean-room
+broker's prompt rebuilt to source from the evidence packet's own
+verified on-disk bytes rather than an in-memory copy), each reproduced
+as a failing test against the pre-hardening code first. The next
+concrete step is drafting Stage 87B's own implementation-ready plan
+(not yet started as of this entry) — see "Next concrete step" below.
+
 **Phase 83 corrective pass**, 2026-10-28 (same day, post-completion
 source review, "CodeCompass Orchestrator — Phase 83 Corrective Pass").
 Full detail: `decisions/0089`; `planning/retros/phase-83-semantic-
@@ -980,18 +1019,25 @@ session may apply on the user's behalf. Two further, same-shape items
 from Phase 87 Stage 87A (below) carry the identical pending-approval
 disposition: `L-118`'s recommended promotion (same file, §N) and
 `L-119`'s (same file, §O) — both also `status: retained`, awaiting the
-same `CLAUDE.md` §0 approval. Sequence from here: **87
-(Documentation Schema and Knowledge-Compiled Documentation) — Stage 87A
-is implemented and independently audited, PASS WITH NON-BLOCKING
-OBSERVATIONS; Stages 87B and 87C are planned (§E/§F of the plan) but
-not authorised or started; Phase 87 overall remains `not done`** —
+same `CLAUDE.md` §0 approval. A fifth, same-shape item from Stage 87A's
+own hardening pass: `L-120`'s disposition and (if promoted) draft
+location — see `planning/learnings/inbox.md`'s own `L-120` entry and
+`knowledge-curator`'s curation note for the current state; if promotion
+is recommended it carries the identical pending-`CLAUDE.md`-§0-approval
+disposition as the four above. Sequence from here: **87 (Documentation
+Schema and Knowledge-Compiled Documentation) — Stage 87A is
+implemented, hardened, and independently audited, PASS WITH
+NON-BLOCKING OBSERVATIONS; Stages 87B and 87C are planned (§E/§F of
+the plan) but not authorised or started; Phase 87 overall remains
+`not done`** —
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
 Next concrete step for this phase: a separate, explicit authorisation
 to plan/implement Stage 87B (schema-governed `README.md`/`docs/
 getting-started.md`, a narrow execution harness, manual maintenance
 across real multi-section documents), then Stage 87C (the complete
 minimum publication suite, the matched-baseline comparison, final
-Phase 87 closeout). → 88 (Agent Integration and MCP, split from
+Phase 87
+closeout). → 88 (Agent Integration and MCP, split from
 the old merged phase) → 89 (Incremental Knowledge and Documentation
 Reconciliation, split from the old merged phase, independent of MCP) →
 90 (Comparative Development Trials, methodology strengthened) → 91

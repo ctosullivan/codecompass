@@ -32,6 +32,7 @@ from pathlib import Path
 
 from . import knowledge_api as _api
 from . import knowledge_intermediate as _ki
+from . import oracle as _oracle
 
 # decisions/0085 §5's schema field; real record `status` values observed
 # in this project's own corpus include `candidate`-tier ("proposed"),
@@ -214,26 +215,48 @@ def find_section_gaps(
 # ---------------------------------------------------------------------------
 
 
-def resolve_section_packet(
-    project_root: Path, schema_section: dict, *, repo_root: Path | None = None
-) -> EvidencePacket:
+def hydrate_records(
+    project_root: Path, record_ids: list[str], *, repo_root: Path | None = None
+) -> dict[str, dict]:
     """Full hydration via `knowledge_api.get()`'s `details["fields"]` --
     never `search()`/`get_context_packet()`'s own 280-character
-    `summary` field. Budgeted against the *real serialized* hydrated
-    content; a required record's content is never silently truncated
-    to fit the budget -- exceeding it is a `DocCompilerError`, not a
-    silent drop."""
-    section_id = schema_section.get("id", "<unknown>")
-    max_chars = schema_section.get("max_evidence_chars", 6000)
-    ids = resolve_section_ids(schema_section)
-
+    `summary` field. Shared by `resolve_section_packet` (compile-time,
+    budget-checked) and the hardening pass's own publish-time
+    revalidation (`hash_evidence` over this function's own output) --
+    one hydration path, never two independent computations that could
+    silently drift apart (§N.A/§N.C hardening)."""
     hydrated: dict[str, dict] = {}
-    for record_id in ids:
+    for record_id in record_ids:
         if record_id in hydrated:
             continue
         response = _api.get(project_root, record_id, repo_root=repo_root)
         if response.status == "result" and response.results:
             hydrated[record_id] = dict(response.results[0].details.get("fields", {}))
+    return hydrated
+
+
+def hash_evidence(hydrated: dict[str, dict]) -> str:
+    """Canonical content hash over a section's own hydrated evidence
+    map -- the single definition of "evidence identity" shared by
+    compile-time packet writing, review-record binding, and publish-
+    time revalidation (hardening pass §N.A/§N.C). Never recomputed ad
+    hoc at each call site with a different serialization, which would
+    make two honestly-identical evidence sets hash differently."""
+    return _oracle.sha256_text(json.dumps(hydrated, sort_keys=True))
+
+
+def resolve_section_packet(
+    project_root: Path, schema_section: dict, *, repo_root: Path | None = None
+) -> EvidencePacket:
+    """Full hydration via `hydrate_records`, budgeted against the *real
+    serialized* hydrated content; a required record's content is never
+    silently truncated to fit the budget -- exceeding it is a
+    `DocCompilerError`, not a silent drop."""
+    section_id = schema_section.get("id", "<unknown>")
+    max_chars = schema_section.get("max_evidence_chars", 6000)
+    ids = resolve_section_ids(schema_section)
+
+    hydrated = hydrate_records(project_root, ids, repo_root=repo_root)
 
     total_chars = sum(len(json.dumps(v, sort_keys=True)) for v in hydrated.values())
     if total_chars > max_chars:
@@ -414,6 +437,81 @@ def compile_document(
             citation_findings=findings, packet=packet,
         ))
     return results
+
+
+# ---------------------------------------------------------------------------
+# Publication-path and section-identity validation (hardening pass §N.B)
+# ---------------------------------------------------------------------------
+
+
+def find_schema_section(schema: dict, section_id: str) -> dict | None:
+    """The requested `section_id` must belong to the *current, live*
+    schema, not merely to whatever schema produced an old pending-review
+    manifest -- `None` if no section in `schema["sections"]` declares
+    this id."""
+    for section in schema.get("sections", []):
+        if section.get("id") == section_id:
+            return section
+    return None
+
+
+# Hardening pass §N.B: the only documentation targets a compiler-owned
+# write may ever land in. README.md at the repo root, or any Markdown
+# file under docs/ -- the two targets this project's own real schemas
+# (Stage 87A's README.md.schema.yaml, Stage 87B's planned getting-
+# started schema) actually need. Any further target requires its own
+# explicit justification added here, never silently widened by a schema
+# author's own `document` field.
+_ALLOWED_DOC_ROOT_DIRS = ("docs",)
+_ALLOWED_ROOT_FILES = ("README.md",)
+
+
+def resolve_publication_target(project_root: Path, document: str) -> Path:
+    """Single, reusable publication-path validation policy, used at
+    both schema-validation time (`check_doc_schema.py`) and publication
+    time (`docs publish`) -- never two independently-maintained checks
+    that could drift apart. Raises `DocCompilerError` for: an absolute
+    path, a `..` traversal component, any target outside the approved
+    `README.md`/`docs/**/*.md` set, or a resolved real path (following
+    symlinks) that escapes `project_root` -- resolution-then-comparison
+    is used throughout rather than a string-prefix check, since a
+    string prefix can be defeated by a symlinked intermediate directory
+    or a crafted relative component that still *looks* contained before
+    the filesystem actually resolves it."""
+    if not document:
+        raise DocCompilerError("a schema's document field must not be empty")
+
+    candidate = Path(document)
+    if candidate.is_absolute():
+        raise DocCompilerError(
+            f"document {document!r} is an absolute path -- only a path relative to "
+            "the project root is permitted"
+        )
+    if ".." in candidate.parts:
+        raise DocCompilerError(
+            f"document {document!r} contains a '..' traversal component -- rejected"
+        )
+
+    is_allowed_root_file = document in _ALLOWED_ROOT_FILES
+    is_allowed_docs_subtree = (
+        candidate.parts[:1] == ("docs",) and candidate.suffix == ".md"
+    )
+    if not (is_allowed_root_file or is_allowed_docs_subtree):
+        raise DocCompilerError(
+            f"document {document!r} is not an approved documentation target -- "
+            f"only {_ALLOWED_ROOT_FILES!r} or a {'/'.join(_ALLOWED_DOC_ROOT_DIRS)}/"
+            "**/*.md Markdown file is permitted"
+        )
+
+    root_real = project_root.resolve()
+    target_real = (project_root / candidate).resolve()
+    if not target_real.is_relative_to(root_real):
+        raise DocCompilerError(
+            f"document {document!r} resolves to {target_real}, which escapes the "
+            f"project root {root_real} -- rejected (symlink-aware confinement check)"
+        )
+
+    return target_real
 
 
 # ---------------------------------------------------------------------------

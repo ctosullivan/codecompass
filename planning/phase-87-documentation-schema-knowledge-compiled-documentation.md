@@ -829,3 +829,144 @@ is unaffected by it, per §G.C).
 **Both review rounds are now closed with no remaining blocking
 finding. This restructured plan is implementation-ready for Stage
 87A.**
+
+## N. Stage 87A hardening pass (2026-11-04) — four corrections to the
+publication path
+
+Stage 87A was implemented, demonstrated three times against the real
+repository, and independently audited to PASS WITH NON-BLOCKING
+OBSERVATIONS (§M above; `planning/retros/_audit-phase-87-stage-87a.md`).
+A follow-up governing task then found four further integration defects
+in the **publication path specifically** — not in the compiled
+content, the knowledge resolution, or the real demonstration's own
+output, all of which were independently reconfirmed sound before this
+pass began.
+
+### N.A Publication bound to manually-typed verdict strings
+
+**Defect**: `docs publish` accepted `--semantic-verdict supported
+--editorial-verdict pass` as plain CLI arguments. This proved only
+that the invoking process supplied those two words — not that an
+independent review had actually run, nor that its findings related to
+the exact draft, evidence, or schema section being published. A typo,
+a copy-paste from an unrelated review, or a deliberately forged
+verdict would all have been accepted identically.
+
+**Correction**: a new command, `docs record-review --kind
+semantic|editorial --verdict V --reviewer NAME [--finding ...]
+[--evidence-ref ...]`, persists each review to
+`<section-id>.review-<kind>.json`, bound by a `draft_sha256`/
+`evidence_sha256`/`schema_section_sha256` identity triple copied
+directly from the pending-review manifest at record time.
+`docs publish` now: (1) recomputes the schema section's and the
+required knowledge's *live* hashes and rejects if either has changed
+since compile; (2) requires both persisted review-record files to
+exist, parse, carry every required field, and match the pending
+manifest's current identity triple exactly; (3) requires the expected
+passing verdict per kind; (4) on success, writes the tagged draft and
+both review records permanently to `planning/retros/
+phase-87-published-evidence/<schema-slug>/<section-id>.json`. No new
+agent, database, or approval framework was introduced — the two
+independent reviews are still dispatched by the lead exactly as
+before (`CLAUDE.md` §8); this correction only makes the *persisted
+record* of that dispatch load-bearing, where previously a bare label
+string was. `--reviewer` is explicitly documented as self-reported
+provenance, not a cryptographic attestation of independence — this
+pass does not claim a capability it does not have.
+
+**Tests**: full success cycle; absent review (both missing, one
+missing); failing verdict; a forged review record with a
+non-matching `draft_sha256`; a review bound to a draft that was since
+recompiled (hash no longer matches); a review whose cited knowledge
+changed after recording (re-hydration at publish time produces a
+different `evidence_sha256`); an unresolved `section_id` not declared
+in the live schema; an invalid verdict for a review's own kind.
+
+### N.B Unconfined publication write target
+
+**Defect**: `docs_publish` resolved `project_root / schema["document"]`
+with no validation. An absolute path, a `..` traversal, or a `document`
+value routed through a symlinked intermediate directory would all have
+been followed exactly as given.
+
+**Correction**: `doc_compiler.resolve_publication_target(project_root,
+document)` — one reusable policy, called from both `check_doc_schema.py`
+(schema-validation time) and `docs publish` (publication time). Rejects
+an absolute path or a `..` component outright; restricts `document` to
+`README.md` or a `docs/**/*.md` Markdown file; resolves both the
+project root and the candidate target with `Path.resolve()` (following
+any symlink) and confirms the resolved target is still contained within
+the resolved root — never a string-prefix check on the unresolved path,
+which a symlinked directory can defeat. `docs publish` also now
+confirms `section_id` names a section actually declared in the live
+schema before doing anything else.
+
+**Tests**: `..` traversal; an absolute path; a symlinked `docs/`
+directory pointing outside the repository; an unresolved section id;
+a legitimate `README.md` publication (positive control).
+
+### N.C Broker input not provably the verified bytes
+
+**Defect**: `compose_section` wrote the evidence packet to an ephemeral
+staging directory and re-verified its on-disk content hash — but then
+built the broker's system prompt from the `packet` argument still held
+in memory, not from what was actually re-read and verified on disk.
+The hash check and the broker's actual input were two independent
+values that happened to agree only because nothing between the write
+and the prompt-building step mutated either one; the check proved
+nothing about what the broker was actually given.
+
+**Correction**: `compose_section` now reads the packet and manifest
+back from the verified files themselves and builds the system prompt
+from that re-read content — the hash verification and the broker's
+input are now the same bytes by construction, not by two values
+coincidentally agreeing. The staging directory is created and owned
+by `compose_section` itself and removed in a `finally` block, so it is
+never left behind on either the success or the failure path. No new
+sandbox or broker was introduced; the existing isolation posture (§G.B)
+is unchanged.
+
+**Tests**: a regression test that mutates the in-memory packet after
+its verified bytes are written and confirms the mutation never reaches
+the broker prompt; staging-directory absence after both a successful
+and a failed `compose_section` call.
+
+### N.D Audit-sequencing gap closed procedurally
+
+**Defect observed**: the Stage 87A re-audit (§M; `planning/retros/
+_audit-phase-87-stage-87a.md`) inspected commit `61182a8`; `df4a806`
+(a `planning/CONTEXT.md` fix for one of that re-audit's own
+non-blocking observations) landed afterward and touches audited scope
+without matching `CLAUDE.md` §5's narrow terminal-reconciliation
+exemption (that exemption covers one specific commit flipping
+`ROADMAP.md`'s phase row to `done` plus `CONTEXT.md`'s current-state
+section plus the plan's own Status line, together, and only when
+marking a phase/stage fully done — Stage 87A's own closeout commit did
+none of that, since Phase 87 overall was correctly never marked done).
+Strictly, this voided that re-audit pass under §5's letter, even though
+the fix was trivial and the finding it addressed was itself
+non-blocking.
+
+**Correction**: no retroactive fix to the already-closed Stage 87A
+audit record — it is preserved as historical evidence, not rewritten
+(`CLAUDE.md` §5's own append-only spirit for a completed pass). Instead,
+this hardening pass's own final `release-phase-auditor` dispatch (see
+this pass's own retro/audit record once written) is required to audit
+the actual final commit of *this* pass, covering the hardened
+implementation, the corrected controls, `df4a806` itself, and every
+applicable documentation/learning disposition — closing the gap going
+forward by auditing real final state rather than a stale snapshot. The
+learning-triage step for this pass is performed *before* that final
+audit runs (not after), specifically to avoid repeating the same
+sequencing mistake a second time.
+
+### N.E Stage boundary and scope, unchanged
+
+This pass corrects defects in Stage 87A's own publication mechanism.
+It does not advance Stage 87A's own stage gate (§D.4), does not begin
+Stage 87B or 87C, and does not mark Phase 87 `done`. Stage 87B's own
+implementation-ready plan is drafted separately below (§O), reviewed
+independently, and committed separately from this hardening pass, per
+the governing task's own sequencing — Stage 87B implementation itself
+is explicitly not authorised by either pass.
+
