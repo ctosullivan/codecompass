@@ -970,3 +970,465 @@ independently, and committed separately from this hardening pass, per
 the governing task's own sequencing — Stage 87B implementation itself
 is explicitly not authorised by either pass.
 
+## O. Stage 87B plan — prove usability and maintenance
+
+**Authorisation**: planning only. This section is implementation-ready
+but Stage 87B implementation itself is **not authorised** by the
+governing task that produced it ("CodeCompass Orchestrator — Stage 87A
+Hardening, Final Closeout and Stage 87B Planning"). Nothing below is
+built until a separate, explicit authorisation is given.
+
+### O.0 Objective
+
+Demonstrate that CodeCompass can maintain two genuinely useful
+documents — `README.md` and `docs/getting-started.md` — through a real
+knowledge change, while preserving legitimate human editorial
+improvements and keeping evidence-backed technical accuracy. The
+primary outcome is **maintainability and usefulness**, not another
+infrastructure milestone — Stage 87B adds no new persisted state, no
+new agent, and no new knowledge store; everything below is either
+direct reuse of Stage 87A's own mechanisms or a small, explicitly
+justified extension of one of them.
+
+### O.A What Stage 87A actually delivered, and exactly what extends
+
+Verified directly against the real, hardened implementation (not
+assumed from the plan's own prose):
+
+| Stage 87A component | Reused as-is | Extended for 87B, and how |
+|---|---|---|
+| `doc_compiler.resolve_section_ids`/`check_record_currency`/`find_section_gaps`/`resolve_section_packet`/`hydrate_records`/`hash_evidence` | Yes, unchanged | No extension needed — these already operate per-section, independent of how many documents/sections exist. |
+| `check_doc_schema.py` | Yes | No extension needed — it already validates N schema files passed to it in one run (`_check_document_uniqueness` already scans `all_data` across every schema file given); 87B simply means two real schema files exist instead of one. |
+| `compile_doc_section.py` (clean-room composition adapter) | Yes | No extension needed — one call per section, regardless of which document it belongs to. |
+| `doc_compiler.publish_section` | Yes | No extension needed — one call per section. |
+| `docs record-review`/`docs publish`'s hash-bound review validation (hardening pass §N.A) | Yes | No extension needed — identity is already per-`(schema_slug, section_id)`, not per-document. |
+| `doc_compiler.resolve_publication_target` (hardening pass §N.B) | Yes | No extension needed — `docs/getting-started.md` already matches the existing `docs/**/*.md` allow pattern; no schema change needed to publish into it. |
+| `doc_compiler.maintain_document`/`knowledge_intermediate.detect_grounded_region_changes` (five states: `new`/`noop`/`doc_candidate`/`claims_changed`/`concurrent_conflict`) and its three resolution functions (`establish_new_region_baselines`/`acknowledge_stale_grounded_region`/`write_doc_candidates_to_manifests`) | Core mechanism reused unchanged | **Two real defects the Stage 87A audit already named must be fixed** (§O.D below) — the CLI layer around `maintain_document`, not the function itself, which already accepts a `doc_names: tuple[str, ...]` and already treats duplicate-id detection as spanning every name given to it. |
+| `verify_cleanroom_isolation.py`'s `unshare --user --map-root-user --mount --net --pid --fork` + `pivot_root` sandboxing **technique** | Technique reused, not the script itself | A new, narrow module applies the same technique to a different payload (a generated shell command, not a fake broker probe) — see §O.C. |
+
+No parallel persistence, diffing, provenance, or approval mechanism is
+introduced anywhere in this plan.
+
+### O.B Two-document publication
+
+**`README.md.schema.yaml`** (already exists from the Stage 87A real
+demonstration — extended, not replaced): add further sections for
+install and first-steps content, each with its own `required_knowledge`
+pointing at real, already-accepted records (resolved via `discover:`
+at schema-validation time exactly as the existing `vendor-digest-concept`
+section was). The existing `## Understanding Digests` section and its
+`codecompass-grounded-by region:readme-md-vendor-digest-concept` marker
+are **validated in place, never regenerated** — Stage 87A's own real
+content stays exactly as published; 87B adds new sections alongside it,
+it does not touch what already exists. Any section of `README.md` that
+is pure human-authored narrative with no evidence-bearing claim (e.g.
+badges, a license line) is explicitly out of schema scope — the schema
+governs only the sections it names, never the whole file.
+
+**`docs/getting-started.md.schema.yaml`** (new — the file itself
+already exists as hand-written prose, per `decisions/0085` §5's own
+mapping table; the schema governs select sections of it, not a
+wholesale rewrite). **Corrected against the real file** (an earlier
+draft of this section listed `## Public API surface`/`## Known
+gotchas`/`## Quick links`/`## Metadata`/`## Grounding` as if they were
+top-level sections of this document — an independent review found they
+are not: they are literal text *inside* `## A real captured example`'s
+own fenced fourth code block, illustrating a generated per-vendor
+`vendor/click/CLAUDE.md` file, not independent sections of this
+document at all; confirmed directly by reading the file, which has
+exactly six real `## `-level sections and has been unchanged since the
+single commit that created it). The file's real structure is: `##
+Install`, `## First run`, `## A real captured example`, `## Proceeding
+past the budget cap`, `## After the first run`, `## Where to go next`.
+
+- **Compiled from knowledge (schema-governed, regenerable)**: no
+  section of this document currently has a real, citable knowledge
+  record behind it — stated honestly here rather than naming a
+  plausible-sounding candidate that doesn't actually exist. If Stage
+  87B's own planning-to-implementation handoff finds one (e.g. a future
+  Claim describing CodeCompass's own CLI surface), it is added to this
+  category at that point, re-derived from the real record, never
+  invented to make this category non-empty.
+- **Validated in place, never regenerated**: `## Install`/`## First
+  run`/`## A real captured example` — these describe an executable
+  sequence a human already wrote and tested; Stage 87B's job for these
+  is the *execution harness* (§O.C) confirming they still work, not
+  rewriting their prose. A validated-in-place section may still be
+  *schema-governed* for acceptance-criteria purposes (e.g. "every
+  command block must be independently re-executed and must match
+  documented output") without being a compiler-generation target.
+- **Manual, outside schema governance**: `## Proceeding past the
+  budget cap`, `## After the first run`, `## Where to go next` — pure
+  navigation/editorial content with no factual claim to ground or
+  verify.
+
+**Explicitly not done**: regenerating either document wholesale. The
+Stage 87A plan's own §G.3-successor discipline (status quo is the safe
+default; regenerate only where it is demonstrably beneficial, validate
+in place otherwise) governs every section-inclusion decision above.
+
+### O.C Safe executable-example verification
+
+**Existing mechanisms assessed first, per the governing task's own
+instruction, before specifying anything new**:
+
+- `scripts/check_contracts.py`/`oracle.py`'s pytest execution provider
+  (Phase 82) executes a *named, pre-written* test file against a
+  pinned revision — not a free-form, AI-generated shell command. Not
+  reusable as-is: `docs/getting-started.md`'s own install/first-run
+  sequence is shell commands (`pip install codecompass-context`, bare
+  `codecompass`), not a pytest invocation.
+- `scripts/verify_cleanroom_isolation.py` (Phase 81B Amendment 5)
+  already builds a disposable Linux-namespace sandbox (`unshare
+  --user --map-root-user --mount --net --pid --fork` + `pivot_root`)
+  and runs a probe inside it — but that probe is a fixed, fake,
+  content-neutral stand-in; it was never designed to run an arbitrary
+  command and report its real stdout/exit code back.
+- `scripts/prepare_cleanroom_branch.py`'s clean-room export mechanism
+  and `scripts/cleanroom_broker.py`'s sanitised-subprocess model both
+  isolate *what the model can read*, not what a *generated command*
+  can do once produced — a different problem (untrusted generated
+  output, not untrusted generation input).
+
+**Conclusion**: no existing mechanism safely executes an untrusted,
+possibly-AI-touched shell command end to end. A narrow, new harness is
+justified — reusing the proven `unshare`/`pivot_root` *technique*
+directly (not a new sandboxing approach), applied to a different,
+narrower payload.
+
+**Specification** (`scripts/execute_doc_example.py`, new, Stage 87B
+only):
+
+- Input: one command from a small, explicit, hand-maintained allow-list
+  derived directly from `docs/getting-started.md`'s own real, current
+  command blocks — **corrected against the real file** (an earlier
+  draft of this section named `pip install codecompass`, `codecompass
+  init --scan ...`, and `codecompass sync`; none of those three is the
+  real command. The real distribution name is `codecompass-context`,
+  not `codecompass` — `pip install codecompass` would install the
+  wrong package or fail (`README.md`'s own Quick Start explicitly notes
+  the import/CLI name and the PyPI name differ on purpose); `init
+  --scan`/`sync` are real CLI commands but are never shown as executed
+  command blocks in this document at all). The real set: `pip install
+  codecompass-context`; bare `codecompass` (or `codecompass --budget
+  0`, to reproduce "## A real captured example" deterministically
+  without an API call); `codecompass query vendors`; `codecompass
+  --yes`/`codecompass --budget 1.00` (from "## Proceeding past the
+  budget cap"). No other command, until this document is extended to
+  demonstrate one. Widening the allow-list is a deliberate, reviewed,
+  future edit to this script, never a runtime decision the harness
+  makes for itself.
+- Isolation: the same `unshare --user --map-root-user --mount --net
+  --pid --fork` + `pivot_root` construction `verify_cleanroom_
+  isolation.py` already uses and already has a working, tested
+  preflight for — reused directly, not reinvented.
+- Restrictions, all enforced, all tested: no credentials or host
+  environment passed through (`cleanroom_broker._sanitize_env()`'s own
+  convention, reused); a bounded filesystem (a fresh, disposable
+  scratch tree, never the real project checkout or `$HOME`); a
+  wall-clock timeout per command; no auto-retry on failure (a failing
+  command is reported exactly once, never silently re-attempted hoping
+  for a different result — the Stage 87A plan's own "no silent
+  re-prompting to force a pass" principle, extended here from AI
+  generation to command execution).
+- **Network, resolved per command rather than blanket-disabled** (a
+  gap an independent review of this plan found left unresolved by
+  silence, not a decision this plan is entitled to paper over): `pip
+  install codecompass-context` runs against a pre-populated local
+  wheel cache mounted read-only into the sandbox, never a live PyPI
+  fetch. Bare `codecompass`/`codecompass --budget 0` is a genuinely
+  different case — per `docs/getting-started.md`'s own "## First run"
+  step 3 and `README.md`'s own Quick Start narration, this command
+  clones each newly-discovered dependency's real upstream source over
+  the network, which is not incidental to what the document claims to
+  demonstrate. This harness runs that command against a pre-populated,
+  read-only local mirror of the two fixture vendors' upstream source
+  (`click`, `requests` — the same two `examples/toy-project/` already
+  depends on), prepared once, out of band, and never fetched live
+  during a harness run — the same "no live network fetch, pre-staged
+  content instead" discipline already applied to `pip install`, not a
+  second, differently-shaped exception. If a future command needs a
+  real, live network action (e.g. demonstrating a *new* vendor that
+  isn't one of the two fixtures), it does not go through this harness
+  without a further, explicit decision, named at that time.
+- Output: exit code, stdout/stderr (bounded size), and a pass/fail
+  classification against the documentation's own claimed outcome
+  (exact, normalized-whitespace, or regex match — reusing
+  `check_doc_schema.py`'s own already-defined, currently-unused
+  `_VALID_COMPARISON_MODE` enum, which was deliberately added in Stage
+  87A and left optional specifically for this). Never executed
+  unrestricted on the host; never given a model-generated command that
+  didn't come from the fixed allow-list.
+
+### O.D Genuine manual-maintenance reconciliation
+
+Both items below were named directly by the Stage 87A `release-phase-
+auditor`'s own non-blocking observations (`planning/retros/
+_audit-phase-87-stage-87a.md` §10) — not new findings, carried forward
+and now in scope to fix because 87B is the first stage where they
+would otherwise actually bite:
+
+1. **Project-wide document discovery.** `docs maintain` currently takes
+   one `SCHEMA_PATH` argument and passes `(schema["document"],)` — a
+   single-element tuple — into `doc_compiler.maintain_document`, even
+   though `detect_grounded_region_changes`'s own duplicate-region-id
+   check is only genuinely project-wide when every schema-governed
+   document is passed in the same call. Harmless today (exactly one
+   schema-governed document exists); with two (87B), a real duplicate
+   `region:<id>` between `README.md` and `docs/getting-started.md`
+   would go undetected by two separate single-document `docs maintain`
+   invocations. **Fix**: `docs maintain` takes zero or more
+   `SCHEMA_PATH` arguments; given zero, it discovers every
+   `*.schema.yaml` under the project root itself (mirroring
+   `check_doc_schema.py`'s own existing `_discover_schema_files`
+   convention exactly, not a new discovery mechanism), reads each
+   one's own `document` field, and calls `maintain_document` once with
+   every discovered document name in one `doc_names` tuple. No change
+   to `doc_compiler.maintain_document`'s own signature or to
+   `knowledge_intermediate.detect_grounded_region_changes` — both
+   already support this; only the CLI's own call-site behaviour
+   changes.
+2. **Idempotent reconciliation-candidate handling.**
+   `write_doc_candidates_to_manifests` writes a fresh, timestamped
+   manifest file on every call for every `doc_candidate` finding, with
+   no check against an already-pending, unresolved manifest item
+   covering the exact same region in the exact same state — confirmed
+   empirically in the Stage 87A audit (a second `docs maintain` run on
+   an untouched `doc_candidate` region produced a near-duplicate
+   manifest). **Fix, specified for 87B's own implementation, not built
+   now**: before writing a new `doc_region_edit` item for a given
+   `(doc_name, region_id-or-index)`, scan that slug's own
+   `reconciliation/*.toml` manifests for an existing item with
+   `"state": "pending"` whose own `region_id`/`region_index`,
+   `base_region_hash`, and `cited_hashes_at_detection` already match
+   the newly detected finding's values exactly; skip writing a new item
+   when such a match exists, write a new one only when no pending match
+   exists or the matched item's own recorded values differ (meaning the
+   underlying facts changed again since the last unresolved manifest).
+   This reuses the manifest's own existing `state`/fields — no new
+   schema field, no new store, no change to how an item is actually
+   resolved (`_apply_doc_region_edit` and friends, unchanged).
+
+**Five real cases planned** (the mandatory acceptance criteria, §O
+below, name the concrete fixtures/commits each will use):
+
+- **`new`** — a freshly schema-governed, freshly compiled
+  `docs/getting-started.md` section, published for the first time.
+- **`noop`** — running `docs maintain` a second time with nothing
+  changed reports `noop` for every already-baselined region, including
+  the pre-existing `README.md` regions from Stage 87A (`CL-KNOW-001`'s
+  `intermediate-knowledge-layer` region and `CL-CTXT-005`'s
+  `vendor-digest-concept` region) — both already real, pre-existing
+  fixtures, reused rather than fabricated.
+- **`doc_candidate`** — a deliberate, real human edit to a compiled
+  section's own prose (no knowledge change) is detected, reported, and
+  **never auto-regenerated** — confirmed by running `docs compile`
+  again afterward and confirming it does not overwrite the human edit
+  (compilation and maintenance are separate commands; maintenance alone
+  never calls compilation).
+- **`claims_changed`** — a real, accepted knowledge update to a record
+  a compiled section cites (e.g. a deliberate, genuine edit to
+  `CL-CTXT-005`'s own statement) is detected and reported, resolved
+  only through the existing explicit `doc-acknowledge-stale`-equivalent
+  path (`acknowledge_stale_grounded_region`), never silently absorbed.
+- **`concurrent_conflict`** — both the region's own prose and its cited
+  knowledge change between two `docs maintain` runs; reported, with no
+  automatic resolution function at all (none exists today, and 87B
+  does not add one) — an explicit, lead-controlled decision every time.
+
+Unrelated sections of both documents must remain byte-identical across
+every one of the above operations — not asserted, tested directly (a
+file-content diff against a pinned copy, scoped to every byte outside
+the one touched region's own marker span).
+
+No automatic source-change trigger of any kind — that is Phase 89's
+own, explicitly separate scope, unchanged by this plan.
+
+### O.E Bounded value-and-cost assessment
+
+Captured for every real compilation/maintenance run in this stage
+(a structured log, not a new persisted knowledge record — a scratch
+artifact under `planning/retros/`, matching Stage 87A's own real-
+demonstration record-keeping convention):
+
+- Model and review-dispatch call counts (one entry per real clean-room
+  composition call and per independent review dispatch, mirroring
+  Stage 87A's own retro, which already recorded "three real generation
+  attempts and six independent review dispatches" but not a cost
+  figure — named explicitly as a gap by this governing task).
+- Actual token/API cost where available from the dispatch's own
+  reported usage.
+- Wall-clock time per compilation/review/maintenance cycle.
+- Human correction effort — a plain count of edits the lead made to a
+  draft before it passed review, and why.
+- Rejected drafts and their causes (Stage 87A's own three-round
+  pattern, continued here if it recurs).
+- Factual errors found before publication (by the independent semantic-
+  support dispatch), counted and classified.
+- Resulting documentation's own usefulness — the onboarding exercise's
+  own pass/fail plus any friction noted during it (§O's acceptance
+  criterion 2).
+- Effort required to maintain documentation after one real knowledge
+  change end to end (the `claims_changed` case above, timed).
+
+**Lightweight conventional-agent comparator**: a separate, ad-hoc
+`general-purpose` dispatch (no new agent) given the identical task —
+"update `docs/getting-started.md`'s `## Known gotchas` section given
+this same real knowledge change, with the same evidence access, no
+compiler" — on the same pinned revision, same requirements. Its own
+output is independently reviewed by the same two-question (factual,
+editorial) process Stage 87A already uses, so both arms are judged by
+the same bar. **This is not the matched-baseline experiment** — no
+blinding, no fixed rubric pre-registered before results, no statistical
+claim; Stage 87C carries that full discipline (plan's own §F,
+`decisions/0085` §6). 87B's comparator exists only to give the cost/
+value report a point of reference, and the report states plainly
+whether the compiler's extra verification/maintenance machinery
+justified its cost on this one real case, without presuming an
+advantage either way.
+
+### O.F Acceptance criteria (concrete tests, per the governing task's own ten points)
+
+1. `tests/test_check_doc_schema.py` (extended): two real schema files
+   (`README.md.schema.yaml`, `docs/getting-started.md.schema.yaml`)
+   together pass `check_doc_schema.py --strict` with zero blocking
+   findings, and `_check_document_uniqueness` is exercised with a real
+   two-schema-file case (not merely the existing single-file tests).
+2. A real, clean-environment onboarding exercise: a fresh checkout,
+   following only `docs/getting-started.md`'s own instructions (the
+   validated-in-place sections plus the harness's own confirmation),
+   completes successfully — recorded as real transcript evidence, not
+   asserted.
+3. `tests/test_execute_doc_example.py` (new): a command outside the
+   allow-list is rejected before execution; a command matching the
+   allow-list but producing output that does not match its documented
+   expected outcome is reported as a failure, never silently passed.
+4. A real, accepted knowledge change (e.g. an edit to `CL-CTXT-005` or
+   a new, equally real record) correctly produces a `claims_changed`
+   finding for exactly the section that cites it, and no finding at
+   all for any section that doesn't.
+5. A real human editorial edit to a compiled section's own prose
+   produces a `doc_candidate` finding, is never auto-regenerated by a
+   subsequent `docs compile`, and is confirmed byte-identical
+   afterward.
+6. A deliberately constructed concurrent case (both the region's prose
+   and its cited record change between two `docs maintain` runs)
+   reports `concurrent_conflict` and is never auto-merged or silently
+   resolved either way.
+7. A byte-for-byte diff of both documents, scoped to every region *not*
+   involved in a given test case, is identical before and after that
+   test case runs.
+8. Running `docs maintain` twice in a row with nothing changed between
+   the runs produces zero new reconciliation-candidate manifest files
+   on the second run (the idempotency fix, §O.D point 2, directly
+   tested against the real regression case the Stage 87A audit
+   observed).
+9. Both the semantic-support/completeness dispatch and the editorial-
+   quality dispatch run against every newly compiled section in this
+   stage, with their verdicts persisted via the hardened `docs
+   record-review`/`docs publish` mechanism (hardening pass §N.A) exactly
+   as Stage 87A's own real section was — no exception for 87B's new
+   sections.
+10. The cost/value log (§O.E) exists as a real, filled-in artifact for
+    every compilation/maintenance cycle this stage actually runs, not
+    a template left blank.
+
+### O.G Stage gate
+
+**Mandatory stage gate**: two useful, schema-governed documents; a
+successful, real clean-environment onboarding exercise; a demonstrated
+manual-maintenance cycle that correctly exercises all five
+`GroundedRegionFinding` states at least once each against real content,
+with a human edit genuinely preserved and a concurrent case genuinely
+reported, never silently resolved either way. As with Stage 87A's own
+gate (§D.4), this is an explicit go/no-go judgment on demonstrated
+value, not an automatic pass-through from tests alone.
+
+### O.H Stage 87B's own, separate DoD
+
+Per `CLAUDE.md` §5, unchanged by this plan: Stage 87B implementation
+(whenever separately authorised) requires its own retro, its own
+`docs-reconstructor` drift audit, and its own independent
+`release-phase-auditor` pass against the exact commit before it is
+considered closed — exactly the same discipline this plan's own §D.4/
+§N already applied to Stage 87A, not a lighter bar because 87B reuses
+more existing machinery.
+
+## P. Independent planning review of the Stage 87B plan (§O)
+
+**First round: NOT READY.** An independent reviewer, re-deriving §O's
+own empirical claims directly against the real files on disk rather
+than trusting its prose, found every structural/scope claim sound
+(§O.A's reuse table, §O.D's two fixes against `planning/retros/
+_audit-phase-87-stage-87a.md` §10's own two named observations, §O.E's
+retro citation, the 87B/87C scope boundary against `decisions/0085`
+§5/§6) but two blocking factual errors in §O.B/§O.C specifically,
+plus one related unresolved design gap and one minor naming slip:
+
+1. §O.B's original draft listed `## Public API surface`/`## Known
+   gotchas`/`## Quick links`/`## Metadata`/`## Grounding` as if they
+   were real top-level sections of `docs/getting-started.md`. They are
+   not — they are literal text inside `## A real captured example`'s
+   own fenced code block, illustrating a generated per-vendor
+   `vendor/click/CLAUDE.md` file. The document's real structure is six
+   sections, not nine.
+2. §O.C's original draft named `pip install codecompass`, `codecompass
+   init --scan ...`, and `codecompass sync` as the allow-list's source
+   command blocks. None of the three is real: the actual PyPI
+   distribution name is `codecompass-context` (not `codecompass`,
+   which is the import/CLI name only — confirmed to differ
+   deliberately per `README.md`'s own Quick Start); `init --scan` and
+   `sync` are real CLI commands but neither appears as an executed
+   command block anywhere in this document.
+3. (Related, not independently blocking) the "no network" restriction
+   as originally drafted had no stated mitigation for bare
+   `codecompass`/`codecompass --budget 0`, which genuinely clones
+   vendor source over the network per the document's own "## First
+   run" step 3 — only `pip install`'s network need had a mitigation
+   (a pre-populated wheel cache).
+4. (Minor) §O.F named `scripts/test_check_doc_schema.py`/
+   `scripts/test_execute_doc_example.py`; this project's own
+   consistent convention is `tests/`, not `scripts/`, for every test
+   file (confirmed: `tests/test_check_doc_schema.py` already exists
+   there).
+
+**Resolution, same pass**: §O.B rewritten to list the real six
+sections and to say honestly that no section currently has a real
+citable knowledge record behind it (the "compiled from knowledge"
+category is empty today, not backfilled with an invented example to
+avoid saying so); §O.C's allow-list corrected to the real command set
+(`pip install codecompass-context`; bare `codecompass`/`codecompass
+--budget 0`; `codecompass query vendors`; `codecompass --yes`/
+`codecompass --budget 1.00`) and given an explicit network-isolation
+resolution for the vendor-cloning command (a pre-populated, read-only
+local mirror of the two real fixture vendors' upstream source,
+`click`/`requests`, prepared once out of band — the same "pre-staged
+content instead of a live fetch" discipline already used for `pip
+install`, not a second, differently-shaped exception); §O.F's two test
+paths corrected to `tests/`.
+
+**Second round, independent re-check of the correction only** (narrow
+scope, matching this project's own established practice for a single,
+mechanically-verifiable fix — see §M's own identical pattern): **READY.**
+A fresh dispatch, with no memory of the first round, independently
+re-verified all four corrections against the real files on disk rather
+than trusting §P's own account above: confirmed `docs/getting-started.md`
+has exactly six real `## `-level sections, matching §O.B's corrected
+list exactly; confirmed the real command blocks (`pip install
+codecompass-context` at line 6; bare `codecompass`/`codecompass
+--budget 0` at lines 16/34; `codecompass query vendors` at line 79;
+`codecompass --yes`/`codecompass --budget 1.00` at lines 96/98), and
+cross-checked the real PyPI distribution name directly against
+`pyproject.toml`'s own `name = "codecompass-context"`; confirmed §O.C's
+network-isolation paragraph gives a concrete, named mitigation for both
+`pip install` and the vendor-cloning command, not blanket silence;
+confirmed §O.F now reads `tests/test_check_doc_schema.py`/`tests/
+test_execute_doc_example.py`, with the only remaining `scripts/test_*`
+occurrences being §P's own historical record of what the first round's
+draft said, not a live error.
+
+**Both review rounds are now closed with no remaining blocking
+finding. This Stage 87B plan is implementation-ready**, subject to the
+same unchanged constraint as every other stage: Stage 87B
+implementation itself requires a further, separate, explicit
+authorisation before any of §O's own specification is built.
