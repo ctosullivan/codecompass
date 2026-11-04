@@ -1,0 +1,16 @@
+manifest_id = "codecompass-domain@20261104T081241Z-doc"
+created = "2026-11-04T08:12:41.774350+00:00"
+slug = "codecompass-domain"
+
+[[items]]
+kind = "doc_region_edit"
+doc_name = "README.md"
+region_id = "intermediate-knowledge-layer"
+region_index = 0
+cited_ids = ["CL-KNOW-001"]
+cited_hashes_at_detection = ["d7ce3fe1957f6d44c1e5700c6057e1f321678d0b37e9a95e064f9fa16ba12e32"]
+region_text = "\nCodeCompass also supports a persistent, human/tool-editable Markdown\nlayer over a project's own structured knowledge (concepts, invariants,\nbehaviours, open questions) — editable by you, ChatGPT, Copilot, Claude\nCode, or an ordinary Git PR, mechanically detected and reconciled back\nagainst evidence before anything becomes canonical; `codecompass\nknowledge apply` is the sole, mechanically-revalidating write path,\nnever bypassable by an external tool's or an agent's own say-so. See\n[`docs/workflows/knowledge-reconciliation-loop.md`](docs/workflows/knowledge-reconciliation-loop.md)\n— that guide is itself grounded in and reconciled against the same\nunderlying knowledge, so this README never becomes a second, divergent\ndescription of what's canonical.\n"
+base_region_hash = "6b67f1aa440b8c499c60284f6aac5356fac15d4b68721b8480de01d0ec641a95"
+state = "pending"
+decision = "undecided"
+semantic_change = false

@@ -99,3 +99,9 @@ description of what's canonical.
 ## License
 
 GPL-3.0-or-later (`pyproject.toml`; `decisions/0053` records the relicensing; `decisions/0055` records that contributor licensing terms were chosen to preserve future re/dual-licensing options). The external adapter *protocol* repository (`protocol/codecompass-adaptor-protocol/`) is licensed **MIT**, independently of CodeCompass's own license — checked directly against that submodule's own `LICENSE` file, not assumed to match.
+
+<!-- codecompass-grounded-by: CL-CTXT-005 region:readme-md-vendor-digest-concept -->
+## Understanding Digests
+
+A Digest is a per-vendor aggregate built by the `VendorDigest` object in `src/codecompass/core.py`. It combines deterministic, always-free output — the file tree, dependency tree, and API surface — with a read-only lookup of that vendor's existing AI enrichment, namely its technical description, conversational overview, and action pointer. The `sync_vendor` function renders this aggregate into several files under `vendor/<name>/`: `DEPTREE.md` and `deptree.json`, `FILETREE.md` and `filetree.json`, `OVERVIEW.md` when applicable, and `CLAUDE.md`. This rendering happens unconditionally on every whole-project sync for every tracked vendor.
+<!-- /codecompass-grounded-by -->

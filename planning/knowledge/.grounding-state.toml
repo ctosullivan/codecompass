@@ -2,3 +2,8 @@
 "cited_hashes" = ["d7ce3fe1957f6d44c1e5700c6057e1f321678d0b37e9a95e064f9fa16ba12e32"]
 "cited_ids" = ["CL-KNOW-001"]
 "region_hash" = "74732c01f46a3cbd22d070feb32e9130f2c6a9fc1f9c492aad1a97d287e24d6e"
+
+["id:readme-md-vendor-digest-concept"]
+"cited_hashes" = ["e09d9fe6ed46148b4d01ac5342c377f043bfc5b842f03802b3975dd47c3280b3"]
+"cited_ids" = ["CL-CTXT-005"]
+"region_hash" = "5da1ef77ae6d7cc7c961c5e45f2d1c42da83ebc1d1e129ee2a0c8fd56d112bc7"

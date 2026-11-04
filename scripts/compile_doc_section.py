@@ -176,15 +176,23 @@ def build_system_prompt(schema_section: dict, packet: dc.EvidencePacket) -> str:
     allowed output, the schema's own audience/tone/depth, and the
     mandatory per-sentence `{{cite:RECORD-ID}}` citation convention.
 
-    The register/scope constraints below (write for the reader, not an
-    auditor; stay on the stated topic; one clear point per sentence)
-    were added after a real Stage 87A demonstration run's own
-    independent editorial review found two genuine content problems:
-    verification-style phrasing aimed at a reviewer ("you can confirm
-    this is real...") rather than a newcomer, and an unrequested
+    The register/scope constraints below were tightened twice across
+    three real Stage 87A demonstration runs against this same record
+    (CL-CTXT-005) -- not a hypothetical, each round's independent
+    semantic-support and editorial dispatch actually ran and actually
+    found the problem named: round 1 found verification-style phrasing
+    aimed at a reviewer ("you can confirm this is real...") and a
     self-referential aside about the project's own internal
-    terminology drift -- exactly the "resembles an audit report"
-    failure mode this phase's own editorial bar exists to catch."""
+    terminology drift (exactly the "resembles an audit report" failure
+    mode the editorial bar exists to catch); round 2's broader
+    "no tangent" instruction wasn't specific enough and the model
+    reintroduced the same two problems in different wording (FAIL
+    again, both reviewers); round 3's surgical fix -- naming the exact
+    recurring phrasing to avoid and instructing the model to omit
+    rather than rephrase a tangent the evidence itself mentions --
+    produced a draft both independent reviewers passed. Kept this
+    specific and literal rather than vaguer, since vaguer wording
+    demonstrably did not work against this model and this evidence."""
     allowed_ids = ", ".join(packet.record_ids) if packet.record_ids else "(none)"
     return (
         "You are composing exactly one documentation section for an "
@@ -200,13 +208,18 @@ def build_system_prompt(schema_section: dict, packet: dc.EvidencePacket) -> str:
         "markers, no meta-commentary about this instruction.\n\n"
         "Write directly for the stated reader, not for someone auditing "
         "your output: state what is true as plain fact, never as "
-        "something the reader should 'verify' or 'confirm' themselves. "
-        "Stay strictly on the section's own stated topic -- do not add "
-        "an aside about terminology inconsistency, project history, or "
-        "any other tangent not directly needed to meet the acceptance "
-        "criteria below, even if the evidence happens to mention it. "
-        "Prefer one focused paragraph over several unless the depth "
-        "setting above calls for more.\n\n"
+        "something the reader should 'verify' or 'confirm' themselves, "
+        "and never point to a specific file as proof that something is "
+        "'real' rather than 'just a design' -- state the fact plainly "
+        "instead and move on. Stay strictly on the section's own stated "
+        "topic -- do not add any aside, in any wording, about a term "
+        "being used in multiple/overlapping/related-but-distinct senses, "
+        "about project terminology, or about project history, even if "
+        "the evidence happens to mention it; if the evidence contains "
+        "such an aside, simply omit it from your own output rather than "
+        "rephrasing it. Stop writing as soon as the acceptance criteria "
+        "are met -- a short, complete answer is correct; a longer one "
+        "that adds anything beyond what was asked is not.\n\n"
         f"Permitted record ids for this section: {allowed_ids}.\n\n"
         f"Evidence (JSON): {json.dumps(packet.hydrated, sort_keys=True)}"
     )

@@ -1,0 +1,28 @@
+{
+  "record_ids": [
+    "CL-CTXT-005"
+  ],
+  "draft_body": "## Understanding Digests\n\nA Digest is a per-vendor aggregate built by the `VendorDigest` object in `src/codecompass/core.py`. It combines deterministic, always-free output \u2014 the file tree, dependency tree, and API surface \u2014 with a read-only lookup of that vendor's existing AI enrichment, namely its technical description, conversational overview, and action pointer. The `sync_vendor` function renders this aggregate into several files under `vendor/<name>/`: `DEPTREE.md` and `deptree.json`, `FILETREE.md` and `filetree.json`, `OVERVIEW.md` when applicable, and `CLAUDE.md`. This rendering happens unconditionally on every whole-project sync for every tracked vendor.",
+  "citation_findings": [
+    {
+      "record_id": "CL-CTXT-005",
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)"
+    },
+    {
+      "record_id": "CL-CTXT-005",
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)"
+    },
+    {
+      "record_id": "CL-CTXT-005",
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)"
+    },
+    {
+      "record_id": "CL-CTXT-005",
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)"
+    }
+  ]
+}
