@@ -24,6 +24,7 @@ artefacts, like `check_contracts.py`/`check_knowledge_base.py`.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -39,17 +40,29 @@ _VALID_MIN_CLAIM_STATUS = {"candidate", "supported", "verified"}
 _VALID_DEPTH = {"brief", "standard", "detailed"}
 _VALID_TONE = {"instructional", "reference", "narrative"}
 _VALID_COMPARISON_MODE = {"exact", "normalized_whitespace", "regex"}
-_VALID_PROVENANCE = {"on_demand", "inline", "none"}
+_VALID_CITATION_DISPLAY = {"inline", "none"}
 _SUPPORTED_SCHEMA_VERSIONS = {1}
 
+# Stage 87A's own minimal schema (plan §B) -- requires_tested_example/
+# example_comparison_mode (needs the 87B execution harness) and
+# verification_method/full acceptance_criteria richness (87C) are
+# deliberately NOT required here; `_check_section_fields` below still
+# validates them *if present*, so this script stays forward-compatible
+# with 87B/87C without needing to change again when those stages land.
 _REQUIRED_TOP_FIELDS = (
-    "schema_version", "document", "audience", "purpose", "sections",
-    "acceptance_criteria", "verification_method", "provenance", "owner",
+    "schema_version", "document", "audience", "sections",
+    "acceptance_criteria", "owner",
 )
 _REQUIRED_SECTION_FIELDS = (
-    "id", "title", "required_knowledge", "depth", "tone",
-    "requires_example", "requires_tested_example", "evidence_requirements",
+    "id", "required_knowledge", "max_evidence_chars",
 )
+# Amendment finding A (restructuring pass, §G.A): a section id composes
+# into a `codecompass-grounded-by region:<id>` token, whose own real
+# parser (`knowledge_intermediate._REGION_ID_RE`) accepts only
+# `[A-Za-z0-9_-]+` -- lowercase-hyphenated here specifically, matching
+# the schema's own id convention, never a dot (which silently truncates
+# at the parser, confirmed by direct execution).
+_SECTION_ID_RE = re.compile(r"^[a-z0-9-]+$")
 
 
 @dataclass
@@ -91,6 +104,13 @@ def _check_section_fields(section: dict, schema_path: Path) -> list[Finding]:
                 "doc-schema-missing-field",
                 f"{schema_path}: section {section_id!r} missing required field {field_name!r}",
             ))
+    if section_id != "<missing id>" and not _SECTION_ID_RE.match(section_id):
+        findings.append(Finding(
+            "doc-schema-invalid-section-id",
+            f"{schema_path}: section id {section_id!r} must match "
+            f"{_SECTION_ID_RE.pattern!r} (lowercase, hyphen-separated) -- a dot or "
+            "any other separator silently truncates at the real region-id parser",
+        ))
     depth = section.get("depth")
     if depth is not None and depth not in _VALID_DEPTH:
         findings.append(Finding(
@@ -103,12 +123,21 @@ def _check_section_fields(section: dict, schema_path: Path) -> list[Finding]:
             "doc-schema-invalid-tone",
             f"{schema_path}: section {section_id!r} has invalid tone {tone!r}",
         ))
-    min_status = section.get("evidence_requirements", {}).get("min_claim_status")
+    # Flat per-section field (restructuring-pass correction) -- never
+    # nested under an `evidence_requirements` dict.
+    min_status = section.get("min_claim_status")
     if min_status is not None and min_status not in _VALID_MIN_CLAIM_STATUS:
         findings.append(Finding(
             "doc-schema-invalid-min-claim-status",
             f"{schema_path}: section {section_id!r} has invalid "
-            f"evidence_requirements.min_claim_status {min_status!r}",
+            f"min_claim_status {min_status!r}",
+        ))
+    citation_display = section.get("citation_display")
+    if citation_display is not None and citation_display not in _VALID_CITATION_DISPLAY:
+        findings.append(Finding(
+            "doc-schema-invalid-citation-display",
+            f"{schema_path}: section {section_id!r} has invalid "
+            f"citation_display {citation_display!r}",
         ))
     if section.get("requires_tested_example"):
         mode = section.get("example_comparison_mode")

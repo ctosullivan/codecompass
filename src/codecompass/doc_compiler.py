@@ -144,16 +144,19 @@ def check_record_currency(
 def find_section_gaps(
     project_root: Path, schema_section: dict, *, repo_root: Path | None = None
 ) -> list[SectionGap]:
-    """A section whose `evidence_requirements.min_claim_status` isn't met
-    by *every one* of its own resolved ids -- not merely "some id
-    somewhere in the project" -- is a generation-blocking gap (L-075's
-    depth distinction, applied to documentation). Never silently
-    generated around."""
+    """A section whose own `min_claim_status` isn't met by *every one* of
+    its own resolved ids -- not merely "some id somewhere in the
+    project" -- is a generation-blocking gap (L-075's depth distinction,
+    applied to documentation). Never silently generated around.
+
+    `min_claim_status`/`allow_unconfirmed_scopes` are flat per-section
+    fields (plan §B's minimal schema, corrected during the Stage 87A
+    restructuring review) -- not nested under an `evidence_requirements`
+    dict, which was the pre-restructuring plan's own shape."""
     gaps: list[SectionGap] = []
-    evidence_requirements = schema_section.get("evidence_requirements", {}) or {}
-    min_status = evidence_requirements.get("min_claim_status", "candidate")
+    min_status = schema_section.get("min_claim_status", "candidate")
     min_rank = _MIN_STATUS_RANK.get(min_status, 0)
-    allow_unconfirmed = evidence_requirements.get("allow_unconfirmed_scopes", False)
+    allow_unconfirmed = schema_section.get("allow_unconfirmed_scopes", False)
 
     section_ids = resolve_section_ids(schema_section)
     for record_id in section_ids:
@@ -303,5 +306,9 @@ def validate_section_citations(text: str, packet: EvidencePacket) -> list[Citati
 
 def strip_citation_tags(text: str) -> str:
     """Removes every `{{cite:...}}` token, leaving the publishable
-    prose -- used when `schema.provenance` is not `inline` (§C step 9)."""
+    prose -- used when a section's own `citation_display` is not
+    `inline` (§C step 9, §G.C). Machine-readable grounding (the
+    `codecompass-grounded-by region:<id>` marker) is emitted separately
+    by the publisher regardless of this setting -- stripping the inline
+    tags here never removes a section's own grounding."""
     return _CITATION_TAG_RE.sub("", text)

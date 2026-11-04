@@ -194,9 +194,8 @@ def test_find_section_gaps_empty_when_all_requirements_met(tmp_path):
     section = {
         "id": "s1",
         "required_knowledge": ["CL-DOCDEMO-001"],
-        "evidence_requirements": {
-            "min_claim_status": "supported", "allow_unconfirmed_scopes": False,
-        },
+        "min_claim_status": "supported",
+        "allow_unconfirmed_scopes": False,
     }
     gaps = dc.find_section_gaps(tmp_path, section, repo_root=tmp_path)
     assert gaps == []
@@ -207,9 +206,8 @@ def test_find_section_gaps_flags_record_below_min_claim_status(tmp_path):
     section = {
         "id": "s1",
         "required_knowledge": ["CL-DOCDEMO-001"],
-        "evidence_requirements": {
-            "min_claim_status": "verified", "allow_unconfirmed_scopes": False,
-        },
+        "min_claim_status": "verified",
+        "allow_unconfirmed_scopes": False,
     }
     gaps = dc.find_section_gaps(tmp_path, section, repo_root=tmp_path)
     assert any(g.kind == "below_min_claim_status" and g.record_id == "CL-DOCDEMO-001" for g in gaps)
@@ -220,7 +218,7 @@ def test_find_section_gaps_flags_missing_required_knowledge(tmp_path):
     # whose only required record simply does not exist must be reported
     # as a gap, never silently generated around.
     _make_fixture_repo(tmp_path)
-    section = {"id": "s1", "required_knowledge": ["CL-DOES-NOT-EXIST"], "evidence_requirements": {}}
+    section = {"id": "s1", "required_knowledge": ["CL-DOES-NOT-EXIST"]}
     gaps = dc.find_section_gaps(tmp_path, section, repo_root=tmp_path)
     assert any(
         g.kind == "unresolved_required_knowledge" and g.record_id == "CL-DOES-NOT-EXIST"
@@ -230,7 +228,7 @@ def test_find_section_gaps_flags_missing_required_knowledge(tmp_path):
 
 def test_find_section_gaps_flags_contradiction(tmp_path):
     _make_fixture_repo(tmp_path)
-    section = {"id": "s1", "required_knowledge": ["CL-DOCDEMO-002"], "evidence_requirements": {}}
+    section = {"id": "s1", "required_knowledge": ["CL-DOCDEMO-002"]}
     gaps = dc.find_section_gaps(tmp_path, section, repo_root=tmp_path)
     assert any(g.kind == "contradiction" and g.record_id == "CL-DOCDEMO-002" for g in gaps)
 

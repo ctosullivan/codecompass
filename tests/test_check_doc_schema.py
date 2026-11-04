@@ -35,26 +35,25 @@ def _write_flat_record(
 
 
 def _write_schema(path: Path, **overrides) -> dict:
+    # Stage 87A's own minimal schema shape (plan §B, restructuring-pass
+    # correction) -- flat per-section fields, no `evidence_requirements`
+    # nesting, `citation_display` not `provenance`, no 87B/87C-only
+    # fields (`verification_method`, `requires_tested_example`) required.
     base = {
         "schema_version": 1,
         "document": "docs/demo.md",
         "audience": "a developer new to the project",
-        "purpose": "demonstrate the schema validator",
         "sections": [{
             "id": "s1",
-            "title": "Section one",
             "required_knowledge": ["CL-SCHEMADEMO-001"],
+            "max_evidence_chars": 4000,
             "depth": "brief",
             "tone": "instructional",
-            "requires_example": False,
-            "requires_tested_example": False,
-            "evidence_requirements": {
-                "min_claim_status": "supported", "allow_unconfirmed_scopes": False,
-            },
+            "min_claim_status": "supported",
+            "allow_unconfirmed_scopes": False,
+            "citation_display": "none",
         }],
         "acceptance_criteria": ["An unfamiliar developer understands the purpose."],
-        "verification_method": "manual review",
-        "provenance": "on_demand",
         "owner": "lead",
     }
     base.update(overrides)
@@ -108,7 +107,7 @@ def test_unknown_schema_version_is_blocking_fail_closed(project):
 def test_invalid_min_claim_status_is_blocking(project):
     schema_path = project / "docs" / "demo.schema.yaml"
     data = _write_schema(schema_path)
-    data["sections"][0]["evidence_requirements"]["min_claim_status"] = "extremely-sure"
+    data["sections"][0]["min_claim_status"] = "extremely-sure"
     schema_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
     findings = check_doc_schema.run_all(project, [schema_path])
     assert any(f.strict and f.rule == "doc-schema-invalid-min-claim-status" for f in findings)
@@ -198,3 +197,33 @@ def test_cli_rejects_explicit_empty_files_selection():
     with pytest.raises(SystemExit) as exc_info:
         check_doc_schema.main(["--files"])
     assert exc_info.value.code == 2
+
+
+def test_dotted_section_id_is_blocking_amendment_finding_a(project):
+    # Amendment finding A (restructuring pass, §G.A): a dotted id would
+    # silently truncate at the real region-id parser -- confirmed by
+    # direct execution against knowledge_intermediate._REGION_ID_RE.
+    schema_path = project / "docs" / "demo.schema.yaml"
+    data = _write_schema(schema_path)
+    data["sections"][0]["id"] = "readme.install"
+    schema_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert any(f.strict and f.rule == "doc-schema-invalid-section-id" for f in findings)
+
+
+def test_invalid_citation_display_is_blocking(project):
+    schema_path = project / "docs" / "demo.schema.yaml"
+    data = _write_schema(schema_path)
+    data["sections"][0]["citation_display"] = "on_demand"  # dropped value, §G.C
+    schema_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert any(f.strict and f.rule == "doc-schema-invalid-citation-display" for f in findings)
+
+
+def test_minimal_87a_schema_without_87b_87c_only_fields_is_not_blocking(project):
+    # The exact regression the restructuring-pass review caught: §B's
+    # own minimal schema example must actually pass this validator.
+    schema_path = project / "docs" / "demo.schema.yaml"
+    _write_schema(schema_path)  # no verification_method, no requires_tested_example
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert not [f for f in findings if f.strict]
