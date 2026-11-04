@@ -493,3 +493,44 @@ def test_strip_citation_tags_collapses_double_space_between_adjacent_tags():
     stripped = dc.strip_citation_tags(text)
     assert "  " not in stripped
     assert stripped == "First point Second point here."
+
+
+# ---------------------------------------------------------------------------
+# Grounded-region identity: reordering and duplicate-id rejection
+# (amendment finding A, governing task §7's "incorrect grounding ids")
+# ---------------------------------------------------------------------------
+
+
+def test_region_identity_survives_reordering_within_a_document(tmp_path):
+    from codecompass import knowledge_intermediate as ki
+
+    doc_path = tmp_path / "docs" / "demo.md"
+    dc.publish_section(doc_path, region_id="demo-a", record_ids=["CL-DOCDEMO-001"], body="First.")
+    dc.publish_section(doc_path, region_id="demo-b", record_ids=["CL-DOCDEMO-001"], body="Second.")
+
+    # Physically reorder the two regions in the document.
+    text = doc_path.read_text(encoding="utf-8")
+    parts = text.strip().split("\n\n")
+    assert len(parts) == 2
+    doc_path.write_text("\n\n".join(reversed(parts)) + "\n", encoding="utf-8")
+
+    parsed = ki.parse_grounding_markers(doc_path.read_text(encoding="utf-8"))
+    region_ids = {region_id for _ids, _body, region_id in parsed}
+    assert region_ids == {"demo-a", "demo-b"}
+    # Each region's own body is still correctly associated with its own id,
+    # not swapped by the reorder.
+    by_id = {region_id: body for _ids, body, region_id in parsed}
+    assert "Second." in by_id["demo-b"]
+    assert "First." in by_id["demo-a"]
+
+
+def test_duplicate_region_id_across_two_documents_is_rejected(tmp_path):
+    from codecompass import knowledge_intermediate as ki
+
+    doc_a = tmp_path / "docs" / "a.md"
+    doc_b = tmp_path / "docs" / "b.md"
+    dc.publish_section(doc_a, region_id="shared-id", record_ids=["CL-DOCDEMO-001"], body="A.")
+    dc.publish_section(doc_b, region_id="shared-id", record_ids=["CL-DOCDEMO-001"], body="B.")
+
+    with pytest.raises(ki.DuplicateGroundingRegionIdError):
+        dc.maintain_document(tmp_path, ("docs/a.md", "docs/b.md"))
