@@ -11242,8 +11242,19 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   Documentation), Stage 87A, `src/codecompass/cli.py`'s `docs compile`/
   `docs publish` commands
 - **date:** 2026-11-04
-- **project_revision:** `e73a6c7` (the fix), reported against `a9667b5`
-  (first real demonstration run, pre-fix)
+- **project_revision:** `e73a6c7` (the fix, 2026-11-04 16:19:15 +0800).
+  **Correction (independently caught by `knowledge-curator`'s own
+  triage, then verified directly against `git log`/`git show`)**: the
+  original filing wrongly cited `a9667b5` (16:20:24 +0800, i.e.
+  committed *after* `e73a6c7`) as "the first real demonstration run,
+  pre-fix." There is no commit capturing the pre-fix state at all — the
+  bug was hit and fixed live, in the uncommitted working tree, during
+  the real demonstration run itself, before anything was committed;
+  `e73a6c7` is the first commit to exist and already contains the fix
+  (confirmed: `git show e73a6c7 -- src/codecompass/cli.py` shows
+  `_schema_slug` already present with its own fix-describing
+  docstring). `a9667b5` records the *subsequent*, successful,
+  post-fix demonstration evidence, not a pre-fix state.
 - **observation:** `schema_slug = schema_path.stem.removesuffix(".schema")`
   was written and tested only against schema filenames whose own
   governed-document name has no dot in it (e.g. `getting-started.schema.yaml`
@@ -11327,6 +11338,15 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   lead to run `git show e73a6c7 -- src/codecompass/cli.py` (or
   equivalent) to determine which commit the fix actually landed in and
   correct this field if it is mislabelled.
+
+  **Resolved (2026-11-04, lead):** ran `git show e73a6c7 --
+  src/codecompass/cli.py` and `git show -s --format="%H %ci"` on both
+  commits directly. Confirmed `e73a6c7` (16:19:15) is strictly earlier
+  than `a9667b5` (16:20:24) and already contains the fixed
+  `_schema_slug`. There is no commit capturing a pre-fix state — the
+  bug was hit and fixed live, in the uncommitted working tree, during
+  the real demonstration run itself, before either commit existed.
+  `project_revision` corrected above accordingly.
 
   **Recommendation: promote**, as a `project-rule`, to `CLAUDE.md` §1 —
   draft in `planning/v1-redefinition/proposed-governance-changes.md` §N

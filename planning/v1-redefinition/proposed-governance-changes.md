@@ -1060,6 +1060,15 @@ last appends after whichever landed before it.
   (or equivalent) to confirm which commit actually introduced the fixed
   implementation, and correct `L-118`'s `project_revision` field if it
   mislabels the fix's landing commit.**
+
+  **Resolved (2026-11-04, lead):** `e73a6c7` (16:19:15 +0800) is
+  strictly earlier than `a9667b5` (16:20:24 +0800) and already contains
+  the fixed `_schema_slug` — confirmed directly via `git show e73a6c7
+  -- src/codecompass/cli.py`. There is no commit capturing a pre-fix
+  state at all; the bug was hit and fixed live, in the uncommitted
+  working tree, during the real demonstration run, before either
+  commit existed. `L-118`'s `project_revision` field corrected in
+  `inbox.md` accordingly.
 - **Proposed text — append to §1, as a new sentence directly after the
   last-landed of the `L-088`/`L-110`/`L-116`/`L-117` sentences:**
 
