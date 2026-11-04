@@ -821,3 +821,195 @@ body addendum, the retro addendum, and the learning triage are not
 covered by that exemption and should land in their own commit(s)
 first, mirroring how the first corrective pass handled the same
 sequence (`4e016e8` before `64dba3c`/`8b915ac`).
+
+## Supplemental audit — post-triage sequencing gap (2026-11-04)
+
+**Auditor**: `release-phase-auditor` (independent dispatch)
+**Audited range**: `4523251` (prior DoD audit's own audited commit) through `80eb242` (current `HEAD`)
+**Scope**: narrow and specific — covers only commit `5424c00` (candidate-learning
+triage of `L-117`, landed *after* the "Second corrective-pass re-audit
+(2026-11-04)" section above was already written against `648be97`) and
+confirms the terminal reconciliation commit `e98c207` remains validly
+exempt. **Does not reopen Phase 86's design, implementation, or either
+prior corrective pass** — both have already been audited twice each and
+are not in question here.
+
+### Why this audit exists
+
+`CLAUDE.md` §5 lists `planning/learnings/**` as audited scope: any commit
+touching it after an auditor's pass voids that pass. The "Second
+corrective-pass re-audit (2026-11-04)" section immediately above this one
+was recorded against commit `4523251`, auditing state through `648be97`.
+Commit `5424c00` (triage of `L-117`, modifying
+`planning/learnings/inbox.md` and `planning/v1-redefinition/
+proposed-governance-changes.md`) landed *after* `4523251`, and therefore
+was never covered by that audit — even though it landed *before* the
+terminal reconciliation commit `e98c207`. This is a genuine sequencing
+gap requiring its own narrow, independent check before Phase 86's
+`done` status (already recorded) can be considered genuinely audit-backed
+end-to-end.
+
+### 1. Accuracy of commit `5424c00`'s triage content
+
+Read `planning/learnings/inbox.md`'s full `L-117` entry (lines
+11091-11237) and `planning/v1-redefinition/proposed-governance-changes.md`
+§M (lines 936-1014) directly, and cross-checked both against the real
+fix (`git show 305d3e1 -- scripts/check_knowledge_placement.py`):
+
+- The entry's technical claim — `_docstring_citations()` sliced a
+  docstring's raw source text using `ast.Constant.col_offset`/
+  `end_col_offset` as if they were character indices, when CPython's
+  `ast` reports them as UTF-8 *byte* offsets, silently losing a citation
+  entirely when a multibyte character precedes an inline docstring on the
+  same physical line — is confirmed **exactly accurate** against the real
+  diff: the fix encodes each relevant line to UTF-8 bytes first, slices
+  there, then decodes, precisely matching the entry's own description and
+  the commit message's own account.
+- The entry's own reproduction (`ast.parse('def 非常非常(): ...')`,
+  `col_offset=20`, `line[20:40]` landing mid-citation) was independently
+  re-derived character-by-character and confirmed correct in all
+  load-bearing respects. (One pre-existing cosmetic inaccuracy — "character
+  index 14" should read "character index 12" — was already caught and
+  flagged by the `knowledge-curator`'s own curation note at the time of
+  filing, lines 11177-11185; this is not a new finding, and the note
+  itself correctly identifies it as non-load-bearing prose, not a defect
+  in the evidence.)
+- The entry's severity framing is neither overstated nor understated: it
+  correctly notes the bug was latent (zero occurrences in the real
+  `src/codecompass/` corpus, confirmed by byte-identical pre/post-fix
+  `--strict` output) while still correctly treating it as a genuine defect
+  worth a `project-rule` promotion, since ASCII-only fixtures structurally
+  cannot distinguish a correct implementation from this bug.
+- `status: retained` is the correct disposition: curation is complete and
+  firm (a specific `CLAUDE.md` §1 sentence is drafted, with alternatives
+  considered and rejected in §M), but it correctly stops short of
+  `promoted` because the user's own explicit `CLAUDE.md` §0 approval has
+  not been given. This matches the identical, already-audited disposition
+  shape used for `L-116`.
+- §M's proposed sentence is a verbatim match of the sentence quoted inside
+  `inbox.md`'s own `L-117` entry (lines 11194-11203 vs. 976-985) — no
+  drift between the two copies.
+
+**No inaccuracy, overstatement, or understatement found in `5424c00`'s
+content.**
+
+### 2. Terminal reconciliation commit `e98c207` — exempt-scope confirmation
+
+Ran directly:
+
+```
+$ git show --stat e98c207
+ planning/CONTEXT.md                                                  | 56 +++++++++++++++++-----
+ planning/ROADMAP.md                                                  |  2 +-
+ planning/phase-86-knowledge-placement-code-quality-review.md         | 23 +++++----
+ 3 files changed, 58 insertions(+), 23 deletions(-)
+```
+
+Exactly the three files `CLAUDE.md` §5's exemption names:
+`planning/ROADMAP.md`, `planning/CONTEXT.md`, and the phase-86 plan
+file. Read the full diff for each:
+
+- `planning/ROADMAP.md`: only the Phase 86 table row's prose changed (adds
+  the second-corrective-pass summary); no other row touched.
+- `planning/CONTEXT.md`: only the "Current phase" narrative block and the
+  Phase 86 summary paragraph at the bottom changed; both are current-state
+  narrative, not new decisions or scope.
+- The phase-86 plan file: only its top-of-file **Status:** paragraph
+  changed (a multi-line prose block, not a single physical line) — this
+  is the same shape of edit the first corrective pass's own terminal
+  reconciliation (`8b915ac`) made to the same paragraph, an established
+  precedent for how this exemption has been applied throughout this
+  phase, not a new or wider interpretation introduced here. No other part
+  of the plan file (§14/§15 bodies, Files section, Verification section)
+  was touched by this commit — those landed earlier, in `efffc4a`/
+  `4e016e8`/other non-exempt commits, correctly outside the exemption.
+
+**Confirmed: `e98c207` is genuinely exempt-scope-only, independently
+verified via its own diff, not trusted from any prior report.**
+
+### 3. No protected-file (`CLAUDE.md`) drift
+
+```
+$ git diff 8b915ac..80eb242 -- CLAUDE.md
+(empty, exit 0)
+```
+
+`CLAUDE.md` is byte-identical across the entire sequence from before this
+session's work began through current `HEAD`. No silent edit, no
+unauthorized promotion applied under cover of any commit in this range.
+(`CONTRIBUTING.md` and `planning/learnings/promoted.md` were also checked
+via `git diff 4523251..80eb242` and are likewise untouched — consistent
+with no `CLAUDE.md` §1 promotion having actually landed.)
+
+### 4. `L-116`/`L-117` status fields
+
+Read both entries directly in `planning/learnings/inbox.md`:
+
+- `L-116` (line 10967): **`status: retained`**.
+- `L-117` (line 11135, reconfirmed at its closing curation note, lines
+  11233-11237): **`status: retained`**.
+
+Neither shows `promoted` or any other status. No unauthorized
+`CLAUDE.md` promotion was silently applied under cover of the `5424c00`
+triage commit — both entries explicitly and correctly state they remain
+blocked on the user's own `CLAUDE.md` §0 approval, not yet given.
+
+### 5. Prior test-suite result currency
+
+```
+$ git diff 4523251..80eb242 -- scripts/check_knowledge_placement.py tests/test_check_knowledge_placement.py
+(empty, exit 0)
+```
+
+Empty — no change to either file since `4523251`'s own audit (which
+independently re-ran and confirmed `44 passed` on the targeted suite and
+`1210 passed, 2 skipped` on the full suite, against commit `648be97`,
+per the "Second corrective-pass re-audit" section's own §3 above). Since
+the audited code and tests are byte-identical to what that audit already
+verified, those results still hold; re-running was correctly unnecessary
+and was not performed, per this task's own instruction.
+
+### 6. No uncovered audited-scope commit after `5424c00`
+
+```
+$ git log --oneline 5424c00..80eb242
+80eb242 docs(phase-87): record independent planning-review verdict -- READY WITH NON-BLOCKING OBSERVATIONS
+cf7f9a4 plan(phase-87): documentation schema and knowledge-compiled documentation
+e98c207 chore(phase-86): terminal reconciliation for second corrective pass -- done, PASS WITH NON-BLOCKING OBSERVATIONS
+```
+
+Three commits, each independently checked:
+
+- `e98c207` — confirmed exempt-scope-only in §2 above.
+- `cf7f9a4` and `80eb242` — both are Phase 87's own planning commits
+  (`git show --stat` confirmed each touches only `planning/CONTEXT.md`,
+  `planning/ROADMAP.md`, and Phase 87's own plan file — never
+  `planning/learnings/**`, `src/`, `tests/`, `docs/`, `architecture/`,
+  `decisions/*`, or `CHANGELOG.md`). These are a different phase's
+  planning-stage activity, not Phase 86 audited scope, and do not require
+  this audit's authorization.
+
+`e98c207` is confirmed as the last commit touching Phase 86's own audited
+scope (within its named exemption), and no commit after `5424c00` falls
+outside what this supplemental audit or the exemption already covers.
+
+### Verdict
+
+**PASS.**
+
+All six checks in this supplemental audit's scope hold cleanly: `5424c00`'s
+triage content is accurate, faithful, and correctly disposed; `e98c207` is
+genuinely exempt-scope-only; `CLAUDE.md` shows zero drift across the
+entire sequence; `L-116`/`L-117` both correctly remain `retained`, not
+`promoted`; the prior audit's test-suite results remain current (no
+diff since `4523251` in the audited code/tests); and no commit after
+`5424c00` escaped either this audit's own coverage or the terminal
+reconciliation's narrow exemption. The audit-sequencing gap this dispatch
+was created to close is confirmed closed: the full state through current
+`HEAD` (`80eb242`) is now genuinely covered by an independent audit pass,
+end to end, with no gap remaining between the "Second corrective-pass
+re-audit" above and the triage commit that preceded the terminal
+reconciliation.
+
+No corrective action required. Phase 86's `done` status (recorded in
+`e98c207`) is confirmed sound.
