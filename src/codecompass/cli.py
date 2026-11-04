@@ -13,9 +13,12 @@ bootstrap/`sync`.
 from __future__ import annotations
 
 import contextlib
+import importlib.util
 import json
 import re
 import sqlite3
+import subprocess
+import sys
 from collections.abc import Iterator
 from pathlib import Path
 from typing import NoReturn
@@ -24,7 +27,14 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from codecompass import enrichment, graph, knowledge_api, knowledge_intermediate, relation_enrichment
+from codecompass import (
+    doc_compiler,
+    enrichment,
+    graph,
+    knowledge_api,
+    knowledge_intermediate,
+    relation_enrichment,
+)
 from codecompass.adapters import AdapterError
 from codecompass.chat import ChatError, run_chat
 from codecompass.commands import write_discovery_command
@@ -64,6 +74,13 @@ knowledge_app = typer.Typer(
     )
 )
 app.add_typer(knowledge_app, name="knowledge")
+docs_app = typer.Typer(
+    help=(
+        "Compile documentation sections from canonical knowledge via a "
+        "user-defined schema (Phase 87, Stage 87A)."
+    )
+)
+app.add_typer(docs_app, name="docs")
 console = Console()
 
 _STRICT_FAIL_SEVERITIES = {Severity.MAJOR, Severity.UNKNOWN}
@@ -1829,6 +1846,238 @@ def knowledge_export(
         console.print(f"[yellow]empty[/yellow]: {response.message}")
         return
     console.print(f"[green]exported[/green]: {response.results[0].summary}")
+
+
+# ---------------------------------------------------------------------------
+# docs app (Phase 87, Stage 87A)
+# ---------------------------------------------------------------------------
+
+_MINIMAL_SCHEMA_TEMPLATE = """\
+schema_version: 1
+document: {document}
+audience: "a developer new to the project, has not read any other doc"
+sections:
+  - id: {section_id}
+    required_knowledge: []  # fill in with real record ids or discover:<query>
+    max_evidence_chars: 4000
+    tone: instructional
+    depth: brief
+    min_claim_status: supported
+    citation_display: none
+acceptance_criteria:
+  - "An unfamiliar developer understands the purpose of this document."
+owner: lead
+"""
+
+
+@docs_app.command("schema-init")
+def docs_schema_init(
+    document: str = typer.Argument(
+        ..., help="The document path this schema will govern, e.g. README.md"
+    ),
+    section_id: str = typer.Option(
+        "section-one", "--section-id", help="The first section's id ([a-z0-9-]+)."
+    ),
+    output: Path | None = typer.Option(
+        None, "--output", help="Where to write the schema file; defaults to <document>.schema.yaml"
+    ),
+) -> None:
+    """Scaffold a minimal Stage 87A schema file (plan §B)."""
+    schema_path = output or (Path.cwd() / f"{document}.schema.yaml")
+    schema_path.parent.mkdir(parents=True, exist_ok=True)
+    schema_path.write_text(
+        _MINIMAL_SCHEMA_TEMPLATE.format(document=document, section_id=section_id), encoding="utf-8"
+    )
+    console.print(f"[green]wrote[/green] {schema_path}")
+
+
+_SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent / "scripts"
+
+
+def _load_script_module(name: str):
+    """`scripts/*.py` lives outside the `codecompass` package (this
+    project's own established convention for security-sensitive
+    clean-room infrastructure, §A.2) -- loaded by file path, mirroring
+    the same pattern its own test files already use. Cached in
+    `sys.modules` so a test can monkeypatch the loaded module's own
+    attributes (e.g. `run_isolation_preflight`) before a CLI command
+    invocation reuses the same object, and so repeated CLI calls in one
+    process don't re-execute the module from scratch each time."""
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, _SCRIPTS_DIR / f"{name}.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _schema_slug(schema_path: Path) -> str:
+    """A `[a-z0-9-]+` slug for `schema_path`, safe to compose into a
+    `region:<schema_slug>-<section_id>` identity (§G.A). A naive
+    `.stem.removesuffix(".schema")` breaks on a document whose own name
+    already contains a dot (`README.md.schema.yaml` -> stem
+    `README.md.schema` -> `README.md` after removesuffix, which still
+    has a `.` in it) -- caught directly by `publish_section`'s own
+    fail-closed region-id check during this phase's real Stage 87A
+    demonstration run. Strips the full `.schema.yaml` suffix in one
+    step, then normalises anything left."""
+    name = schema_path.name
+    if name.endswith(".schema.yaml"):
+        name = name[: -len(".schema.yaml")]
+    return re.sub(r"[^a-z0-9-]+", "-", name.lower()).strip("-")
+
+
+def _git_head_revision(project_root: Path) -> str:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=project_root,
+            capture_output=True, text=True, timeout=10,
+        )
+        sha = result.stdout.strip() if result.returncode == 0 else "unknown"
+        dirty = subprocess.run(
+            ["git", "status", "--porcelain"], cwd=project_root,
+            capture_output=True, text=True, timeout=10,
+        )
+        suffix = " (dirty)" if dirty.stdout.strip() else " (clean)"
+        return sha + suffix
+    except (OSError, subprocess.TimeoutExpired):
+        return "unknown"
+
+
+@docs_app.command("compile")
+def docs_compile(
+    schema_path: Path = typer.Argument(..., help="Path to a *.schema.yaml file."),
+    repo_root: Path | None = typer.Option(None, "--repo-root", help=_REPO_ROOT_OPTION_HELP),
+) -> None:
+    """Runs Stage 87A's pipeline (steps 1-6 and step 7's deterministic
+    scope check) for every section in `schema_path`. A section reaching
+    `pending_review` still needs an independent semantic-support check
+    and editorial-quality dispatch (step 7 point 3, step 8) -- this
+    command never performs those itself (`CLAUDE.md` §8: CodeCompass
+    never spawns or coordinates agents) -- and is NOT yet published;
+    use `docs publish` after recording both verdicts."""
+    import yaml
+
+    project_root = Path.cwd()
+    check_doc_schema = _load_script_module("check_doc_schema")
+
+    findings = check_doc_schema.run_all(project_root, [schema_path])
+    blocking = [f for f in findings if f.strict]
+    if blocking:
+        for f in blocking:
+            console.print(f"[red]blocking[/red] [{f.rule}] {f.message}")
+        raise typer.Exit(code=1)
+
+    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    schema_slug = _schema_slug(schema_path)
+    source_revision = _git_head_revision(project_root)
+    compile_doc_section = _load_script_module("compile_doc_section")
+
+    def _compose_and_validate(section: dict, packet: doc_compiler.EvidencePacket):
+        raw = compile_doc_section.compose_section(
+            project_root, section, packet, schema_slug=schema_slug, source_revision=source_revision,
+        )
+        return compile_doc_section.parse_and_validate_response(raw, packet)
+
+    results = doc_compiler.compile_document(
+        project_root, schema, repo_root=repo_root, compose_and_validate=_compose_and_validate,
+    )
+
+    pending_dir = project_root / "planning" / "retros" / "phase-87-pending-review" / schema_slug
+    for result in results:
+        console.print(f"[bold]{result.section_id}[/bold]: {result.status}")
+        if result.status == "pending_review":
+            pending_dir.mkdir(parents=True, exist_ok=True)
+            pending_path = pending_dir / f"{result.section_id}.json"
+            pending_path.write_text(json.dumps({
+                "record_ids": result.packet.record_ids if result.packet else [],
+                "draft_body": result.draft_body,
+                "citation_findings": [
+                    {
+                        "record_id": f.record_id,
+                        "classification": f.classification,
+                        "reason": f.reason,
+                    }
+                    for f in result.citation_findings
+                ],
+            }, indent=2), encoding="utf-8")
+            console.print(
+                f"  pending: semantic-support and editorial-quality review required "
+                f"before publication -- see {pending_path}"
+            )
+        elif result.status in ("gap_blocked", "citation_blocked", "composition_failed"):
+            detail = result.error or result.gaps or result.citation_findings
+            console.print(f"  [red]blocked[/red]: {detail}")
+
+
+@docs_app.command("publish")
+def docs_publish(
+    schema_path: Path = typer.Argument(..., help="Path to a *.schema.yaml file."),
+    section_id: str = typer.Argument(
+        ..., help="The section id to publish (must be pending_review)."
+    ),
+    semantic_verdict: str = typer.Option(
+        ..., "--semantic-verdict", help="supported | unsupported -- from the independent dispatch."
+    ),
+    editorial_verdict: str = typer.Option(
+        ..., "--editorial-verdict", help="pass | fail -- from the independent editorial dispatch."
+    ),
+) -> None:
+    """Publishes a `pending_review` section only if both independent
+    verdicts clear -- never the compiler's own say-so. Always emits
+    machine-readable grounding (§G.C); never auto-resolves a failing
+    verdict."""
+    import yaml
+
+    project_root = Path.cwd()
+    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    schema_slug = _schema_slug(schema_path)
+
+    pending_path = (
+        project_root / "planning" / "retros" / "phase-87-pending-review"
+        / schema_slug / f"{section_id}.json"
+    )
+    if not pending_path.is_file():
+        console.print(f"[red]error:[/red] no pending review found at {pending_path}")
+        raise typer.Exit(code=1)
+    pending = json.loads(pending_path.read_text(encoding="utf-8"))
+
+    if semantic_verdict != "supported" or editorial_verdict != "pass":
+        console.print(
+            f"[yellow]blocked[/yellow]: semantic_verdict={semantic_verdict!r}, "
+            f"editorial_verdict={editorial_verdict!r} -- never auto-resolved"
+        )
+        raise typer.Exit(code=1)
+
+    document_path = project_root / schema["document"]
+    region_id = f"{schema_slug}-{section_id}"
+    doc_compiler.publish_section(
+        document_path, region_id=region_id,
+        record_ids=pending["record_ids"], body=pending["draft_body"],
+    )
+    console.print(f"[green]published[/green] {region_id} into {document_path}")
+
+
+@docs_app.command("maintain")
+def docs_maintain(
+    schema_path: Path = typer.Argument(..., help="Path to a *.schema.yaml file."),
+) -> None:
+    """Runs the real five-state grounded-region reconciliation
+    (`doc_compiler.maintain_document`) for `schema_path`'s own
+    document. Never regenerates a `doc_candidate` or `concurrent_
+    conflict` section automatically."""
+    import yaml
+
+    project_root = Path.cwd()
+    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    report = doc_compiler.maintain_document(project_root, (schema["document"],))
+
+    console.print(f"established_new: {report.established_new}")
+    console.print(f"noop: {report.noop}")
+    console.print(f"doc_candidates (never auto-regenerated): {report.doc_candidates}")
+    console.print(f"claims_changed (reported, not auto-regenerated): {report.claims_changed}")
+    console.print(f"concurrent_conflicts (lead-resolved only): {report.concurrent_conflicts}")
 
 
 if __name__ == "__main__":

@@ -2646,3 +2646,68 @@ def test_knowledge_trace_results_repo_root_option_forwards_to_knowledge_api(
 
     assert without_payload["results"][0]["consistency"]["status"] == "unconfirmed"
     assert with_payload["results"][0]["consistency"]["status"] == "current"
+
+
+# ---------------------------------------------------------------------------
+# docs app (Phase 87, Stage 87A)
+# ---------------------------------------------------------------------------
+
+
+def test_docs_schema_init_writes_minimal_schema(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(app, ["docs", "schema-init", "README.md", "--section-id", "install"])
+    assert result.exit_code == 0, result.output
+    schema_path = tmp_path / "README.md.schema.yaml"
+    assert schema_path.is_file()
+    import yaml
+
+    data = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    assert data["document"] == "README.md"
+    assert data["sections"][0]["id"] == "install"
+
+
+def test_docs_compile_rejects_a_blocking_schema_without_invoking_the_broker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    schema_path = tmp_path / "README.md.schema.yaml"
+    schema_path.write_text(
+        "schema_version: 999\ndocument: README.md\n",  # unknown version -- blocking
+        encoding="utf-8",
+    )
+    result = runner.invoke(app, ["docs", "compile", str(schema_path)])
+    assert result.exit_code == 1
+    assert "unknown" in result.output or "version" in result.output
+
+
+def test_docs_maintain_reports_new_region_for_a_freshly_published_section(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    import yaml
+
+    schema_path = tmp_path / "demo.schema.yaml"
+    schema_path.write_text(
+        yaml.safe_dump({"schema_version": 1, "document": "docs/demo.md", "sections": []}),
+        encoding="utf-8",
+    )
+    doc_path = tmp_path / "docs" / "demo.md"
+    cli_module.doc_compiler.publish_section(
+        doc_path, region_id="demo-s1", record_ids=["CL-DEMO-001"], body="A fact.",
+    )
+    result = runner.invoke(app, ["docs", "maintain", str(schema_path)])
+    assert result.exit_code == 0, result.output
+    assert "id:demo-s1" in result.output
+
+
+def test_schema_slug_handles_a_document_name_containing_a_dot() -> None:
+    # Real defect caught during Stage 87A's own live demonstration run:
+    # README.md.schema.yaml's stem retains a "." that a naive
+    # .removesuffix(".schema") never strips, producing an invalid
+    # region id downstream.
+    from codecompass.cli import _schema_slug
+
+    assert _schema_slug(Path("README.md.schema.yaml")) == "readme-md"
+    assert _schema_slug(Path("docs/getting-started.schema.yaml")) == "getting-started"
