@@ -10,8 +10,10 @@ session-resumption, not a project history.
 **Phase 87 — Documentation Schema and Knowledge-Compiled
 Documentation — restructured into three stages (87A/87B/87C); Stage
 87A implemented, hardened, and independently re-audited (second pass,
-PASS WITH NON-BLOCKING OBSERVATIONS); Stage 87B planned (not
-implemented); Phase 87 overall remains `not done`.** Plan:
+PASS WITH NON-BLOCKING OBSERVATIONS); Stage 87B has an
+implementation-ready plan, independently reviewed to READY (plan's
+own §O/§P), but implementation is **not authorised**; Stage 87C
+remains unplanned; Phase 87 overall remains `not done`.** Plan:
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
 A second review (after the first pass's own READY WITH NON-BLOCKING
 OBSERVATIONS verdict) found the single-stage scope too large and four
@@ -112,10 +114,14 @@ retros/phase-87-stage-87a-hardening.md`,
 original FAIL and the re-audit's PASS WITH NON-BLOCKING OBSERVATIONS
 sections, preserved append-only).
 
-**Stage 87B and 87C are not implemented and not authorised** — Phase
-87 itself remains `not done` until 87C's own exit gate (the complete
-minimum publication suite, the matched-baseline comparison, final
-audits) is met.
+**Stage 87B now has an implementation-ready plan (plan's own §O),
+independently reviewed to READY across two rounds (§P: the first round
+found and this pass fixed two blocking factual errors against the
+real `docs/getting-started.md` content and command set; the second,
+narrow re-check confirmed the fix) — but implementation itself remains
+not authorised.** Stage 87C remains unplanned. Phase 87 itself remains
+`not done` until 87C's own exit gate (the complete minimum publication
+suite, the matched-baseline comparison, final audits) is met.
 
 **Phase 86 — Knowledge-Placement and Code-Quality Review — is `done`
 (2026-11-03)**. Plan amended and independently reviewed across four
@@ -685,19 +691,27 @@ and each phase's retro.
 
 ## What was just completed
 
-**Phase 87 Stage 87A hardening pass**, 2026-11-04, direct user request
-("CodeCompass Orchestrator — Stage 87A Hardening, Final Closeout and
-Stage 87B Planning"). See "Current phase" above and
-`planning/retros/phase-87-stage-87a-hardening.md` for full detail. In
+**Phase 87 Stage 87A hardening pass, then Stage 87B planning**,
+2026-11-04, direct user request ("CodeCompass Orchestrator — Stage 87A
+Hardening, Final Closeout and Stage 87B Planning"). See "Current
+phase" above; full detail: `planning/retros/
+phase-87-stage-87a-hardening.md`, and the plan's own §N/§O/§P. In
 short: three publication-path defects found and corrected (manually
 typed review verdicts replaced by a hash-bound persisted review
 record; an unconfined publication write target replaced by a single,
 reusable, symlink-aware path-confinement policy; the clean-room
 broker's prompt rebuilt to source from the evidence packet's own
 verified on-disk bytes rather than an in-memory copy), each reproduced
-as a failing test against the pre-hardening code first. The next
-concrete step is drafting Stage 87B's own implementation-ready plan
-(not yet started as of this entry) — see "Next concrete step" below.
+as a failing test against the pre-hardening code first; the first
+independent audit of this fix returned FAIL on three process defects
+in the fix's own closeout prose (caught and corrected in the same
+session, see "Current phase" above), the second returned PASS WITH
+NON-BLOCKING OBSERVATIONS. Stage 87B's own implementation-ready plan
+was then drafted and independently reviewed to READY (two rounds, one
+NOT READY on real factual errors against `docs/getting-started.md`'s
+actual content, found and fixed) — committed separately, as required.
+Stage 87B implementation itself was not started and remains
+unauthorised; see "Next concrete step" below.
 
 **Phase 83 corrective pass**, 2026-10-28 (same day, post-completion
 source review, "CodeCompass Orchestrator — Phase 83 Corrective Pass").
@@ -1057,22 +1071,22 @@ from Phase 87 Stage 87A (below) carry the identical pending-approval
 disposition: `L-118`'s recommended promotion (same file, §N) and
 `L-119`'s (same file, §O) — both also `status: retained`, awaiting the
 same `CLAUDE.md` §0 approval. A fifth, same-shape item from Stage 87A's
-own hardening pass: `L-120`'s disposition and (if promoted) draft
-location — see `planning/learnings/inbox.md`'s own `L-120` entry and
-`knowledge-curator`'s curation note for the current state; if promotion
-is recommended it carries the identical pending-`CLAUDE.md`-§0-approval
-disposition as the four above. Sequence from here: **87 (Documentation
-Schema and Knowledge-Compiled Documentation) — Stage 87A is
-implemented, hardened, and independently audited, PASS WITH
-NON-BLOCKING OBSERVATIONS; Stages 87B and 87C are planned (§E/§F of
-the plan) but not authorised or started; Phase 87 overall remains
-`not done`** —
+own hardening pass: `L-120`'s recommended promotion (same file, §P) —
+also `status: retained`, awaiting the same `CLAUDE.md` §0 approval.
+Sequence from here: **87 (Documentation Schema and Knowledge-Compiled
+Documentation) — Stage 87A is implemented, hardened, and independently
+re-audited (second pass), PASS WITH NON-BLOCKING OBSERVATIONS; Stage
+87B has an implementation-ready plan, independently reviewed to READY
+(plan's own §O/§P), but implementation is **not authorised**; Stage
+87C remains unplanned; Phase 87 overall remains `not done`** —
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
 Next concrete step for this phase: a separate, explicit authorisation
-to plan/implement Stage 87B (schema-governed `README.md`/`docs/
+to *implement* Stage 87B (schema-governed `README.md`/`docs/
 getting-started.md`, a narrow execution harness, manual maintenance
-across real multi-section documents), then Stage 87C (the complete
-minimum publication suite, the matched-baseline comparison, final
+across real multi-section documents — plan already written and
+independently reviewed to READY), then Stage 87C (which still needs
+its own plan first; the complete minimum publication suite, the
+matched-baseline comparison, final
 Phase 87
 closeout). → 88 (Agent Integration and MCP, split from
 the old merged phase) → 89 (Incremental Knowledge and Documentation
