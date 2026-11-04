@@ -1011,3 +1011,175 @@ first.
   `CONTRIBUTING.md`'s mirrored section gets the same addition in the
   same commit; `planning/learnings/inbox.md`'s `L-117` flips to `status:
   promoted` with a `promoted.md` pointer line once the edit lands.
+
+## N. 2026-11-04 proposed addition (Phase 87 Stage 87A — `L-118`)
+
+**Status:** proposed, not yet presented to the user. Filed by
+`knowledge-curator` during the Phase 87 Stage 87A post-audit triage. If
+§L/§M (`L-116`/`L-117`) are approved and land first, append this
+sentence after whichever of theirs lands last — all three are drafted
+against the current, `L-088`/`L-110`-terminated text; whichever lands
+last appends after whichever landed before it.
+
+### N1 — §1 "Plan before implementing": require a same-separator test for any plan that derives an identity/filesystem slug by suffix-stripping
+
+- **Context:** `cli.py`'s `schema_slug = schema_path.stem.removesuffix(
+  ".schema")` was written and tested only against schema filenames whose
+  own governed-document name has no dot in it. The real first
+  demonstrator's own schema file, `README.md.schema.yaml`, has a document
+  name (`README.md`) that itself contains a dot — its `.stem` is
+  `README.md.schema`, and `.removesuffix(".schema")` leaves `README.md`,
+  which still has a `.` in it; composed into a `region:<slug>-<section_id>`
+  identity, this tripped the real region-id parser's `^[a-z0-9-]+$`
+  validation (`doc_compiler.py:438`). Independently confirmed this
+  triage: `Path("README.md.schema.yaml").stem` is `"README.md.schema"`
+  and `.removesuffix(".schema")` yields `"README.md"`, exactly as
+  claimed; the current, fixed `_schema_slug` (`cli.py:1915-1928`) strips
+  the full `.schema.yaml` suffix in one step before normalising, and its
+  own docstring states the same reasoning; a regression test,
+  `test_schema_slug_handles_a_document_name_containing_a_dot`
+  (`tests/test_cli.py:2705`), exists and exercises exactly this filename.
+  Two full rounds of unit testing missed the defect because every
+  fixture used a document name without a dot — the fail-closed
+  `region_id` check caught it before any silent corruption, but only
+  because that defence happened to exist for an unrelated reason, not
+  because the slug derivation itself was tested against this shape. Full
+  account: `planning/learnings/inbox.md`'s `L-118`. **One open item this
+  triage could not resolve without `Bash`** (no access in this role):
+  the entry's own `project_revision` field names `e73a6c7` as "(the fix)"
+  and `a9667b5` as "(first real demonstration run, pre-fix)", but
+  `.git/logs/HEAD` shows `e73a6c7` committed *before* `a9667b5`
+  (1793780355s vs 1793780424s) — the opposite order the entry's phrasing
+  implies for a "found pre-fix during the demo, fixed after" sequence.
+  The underlying technical claim (the bug is real, the fix is correct,
+  the test is real) is independently confirmed above by direct code
+  reading regardless of which exact commit the fix landed in; only the
+  entry's own commit-attribution metadata is in question. **Lead: run
+  `git show e73a6c7 -- src/codecompass/cli.py | grep -A3 'def _schema_slug'`
+  and `git log -p -- src/codecompass/cli.py | grep -B2 -A15 'def _schema_slug'`
+  (or equivalent) to confirm which commit actually introduced the fixed
+  implementation, and correct `L-118`'s `project_revision` field if it
+  mislabels the fix's landing commit.**
+- **Proposed text — append to §1, as a new sentence directly after the
+  last-landed of the `L-088`/`L-110`/`L-116`/`L-117` sentences:**
+
+  > If a phase's implementation derives an identity or filesystem slug
+  > from an existing name via suffix-stripping (e.g.
+  > `Path.stem.removesuffix(...)`), the plan's verification section must
+  > include a test using a base name that itself already contains an
+  > instance of the same separator character the derivation strips (e.g.
+  > a dotted document name when stripping a `.schema` suffix) — a
+  > derivation verified only against separator-free names is not
+  > evidence it is correct when that separator also appears earlier in
+  > the name itself. (Phase 87 Stage 87A — L-118.)
+
+- **Alternatives considered:** (a) treat this as already covered by
+  `L-070`'s "minimal-content edge case" sentence — rejected: a dotted
+  document name is not empty, truncated, or reduced; this is a distinct
+  input-*shape* gap (an under-represented separator-bearing name), not a
+  content-minimality gap; (b) treat this as already covered by `L-117`'s
+  multibyte-offset sentence — rejected: both share the downstream
+  symptom (a truncated/invalid region id) but the upstream cause differs
+  (a *consuming* parser's character class there, a *producing*
+  derivation's incomplete suffix-strip here), confirmed as distinct by
+  reading both functions directly, matching the cross-reference `L-118`
+  itself already draws rather than merging; (c) scope the rule narrowly
+  to `.removesuffix()` specifically rather than "suffix-stripping"
+  generally — rejected: the underlying failure (a derivation that
+  assumes the separator it strips cannot recur earlier in the name) is
+  not specific to that one method, and a narrower rule would not cover
+  the next slug-derivation this project writes (e.g. a regex-based
+  strip or a manual `.rsplit()`); (d) hold for a second occurrence before
+  promoting — rejected as the wrong precedent, matching `L-021`/`L-070`/
+  `L-075`/`L-087`/`L-088`/`L-116`/`L-117`'s own single-occurrence
+  promotions for the same reason: a cheap, mechanically-checkable
+  addition to plan-review content.
+- **Consequences if approved:** `CLAUDE.md` §1 gains the sentence above;
+  `CONTRIBUTING.md`'s mirrored section gets the same addition in the
+  same commit; `planning/learnings/inbox.md`'s `L-118` flips to `status:
+  promoted` with a `promoted.md` pointer line once the edit lands.
+
+## O. 2026-11-04 proposed addition (Phase 87 Stage 87A — `L-119`)
+
+**Status:** proposed, not yet presented to the user. Filed by
+`knowledge-curator` during the Phase 87 Stage 87A post-audit triage.
+Append after §N (or after whichever of §L/§M/§N lands last).
+
+### O1 — §1 "Plan before implementing": require literal recurring-phrasing naming (not an abstract category) for any generative-model instruction meant to stop a previously-identified content defect from recurring, re-verified by an actual independent re-dispatch
+
+- **Context:** three real, independently-dispatched review rounds ran
+  against the same evidence record (`CL-CTXT-005`) and the same model,
+  building `scripts/compile_doc_section.py`'s `build_system_prompt`.
+  Round 1's generic writing contract produced two real content defects
+  (auditor-facing "you can confirm this is real" phrasing; an
+  unrequested terminology-looseness aside); both independent dispatches
+  (semantic-support, editorial) correctly FAILED it. Round 2's contract
+  was broadened with a generic instruction ("do not add ... any other
+  tangent") — the model reintroduced *the same two problems in different
+  wording*, and both dispatches FAILED again. Only round 3's surgical
+  rewrite — naming the exact recurring phrasing to avoid, and
+  instructing the model to *omit* rather than *rephrase* a tangent the
+  evidence itself mentions — produced a draft both dispatches passed.
+  Independently confirmed this triage: `build_system_prompt`'s own
+  current docstring (`scripts/compile_doc_section.py:174-195`) narrates
+  this same three-round sequence (round 1's two defects, round 2's
+  "wasn't specific enough" reintroduction in different wording, round
+  3's surgical fix), corroborating the entry's own account; the
+  independent Stage 87A completion audit
+  (`planning/retros/_audit-phase-87-stage-87a.md` §4, §G.D) separately
+  states it read commit `a9667b5`'s own message and confirms it
+  "describes two real, independent dispatch rounds that actually failed
+  and were fixed before a third passed." **This role has no `Bash`, so
+  the commit message itself was not re-run directly — the docstring
+  cross-check and the independent audit's own already-completed read of
+  the same commit message are treated as corroboration, not a
+  substitute. Lead: run `git log --format=%B -n 1 a9667b5` to directly
+  confirm the commit message narrates all three rounds as described,
+  if a fully independent re-check is wanted.** The finished draft is
+  published in `README.md`'s "Understanding Digests" section, confirmed
+  present by direct read.
+- **Proposed text — append to §1, as a new sentence directly after §N's
+  (or whichever of §L/§M/§N lands last):**
+
+  > If a phase's plan or implementation specifies a system-prompt or
+  > writing-contract instruction meant to stop a generative model from
+  > reproducing a specific, previously-identified content defect, the
+  > instruction must name that defect's own literal recurring phrasing,
+  > not merely its abstract category, and the revision must be confirmed
+  > by an actual independent re-dispatch before being treated as fixed —
+  > a generic instruction naming only the category of problem to avoid
+  > is not reliable evidence the model will not reintroduce the same
+  > problem in different wording. (Phase 87 Stage 87A — L-119.)
+
+- **Alternatives considered:** (a) route this to a Claude skill or
+  scoped agent-brief instead of `CLAUDE.md` §1, on the theory that
+  prompt-contract design for a generative-model pipeline is a narrower
+  domain than the code-correctness shape `L-116`/`L-117`/etc. occupy —
+  considered, but rejected for now: there is no existing agent or skill
+  that owns "writing-contract design for AI-generated documentation
+  content" (the closest, `compile_doc_section.py`, is implementation
+  code, not an agent definition), and the underlying rule is phrased, and
+  checkable, the same way every other §1 amendment already is ("if a
+  phase's plan/implementation does X, it must do Y") — if Stage 87B/87C
+  or a later AI-generation pipeline reveals this is better owned by a
+  specific agent's own checklist, a future entry can re-route it then;
+  (b) treat this as already sufficiently captured by
+  `build_system_prompt`'s own docstring, which states the same lesson in
+  the one file that would reuse it — a real consideration, since the
+  docstring already protects *this* pipeline, but it does not reach a
+  *future, not-yet-written* pipeline or plan that designs a different
+  generative-model instruction from scratch, which is exactly where a
+  `CLAUDE.md` §1 planning-review requirement adds coverage the docstring
+  cannot; (c) hold for a second occurrence (e.g. until Stage 87B/87C
+  actually exists) before promoting — rejected as the wrong precedent,
+  matching `L-021`/`L-070`/`L-075`/`L-087`/`L-088`/`L-116`/`L-117`'s own
+  single-occurrence promotions, each justified on evidence quality, not
+  recurrence count; (d) a broader "verify every prompt-engineering
+  revision empirically" rule — rejected as over-broad for what one
+  incident evidences; scoped instead to the precise, evidenced shape (an
+  instruction meant to stop a *named, previously-identified* defect from
+  recurring).
+- **Consequences if approved:** `CLAUDE.md` §1 gains the sentence above;
+  `CONTRIBUTING.md`'s mirrored section gets the same addition in the
+  same commit; `planning/learnings/inbox.md`'s `L-119` flips to `status:
+  promoted` with a `promoted.md` pointer line once the edit lands.

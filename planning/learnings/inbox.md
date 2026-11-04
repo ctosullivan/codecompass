@@ -11276,7 +11276,7 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   base name containing the same separator character the derivation
   strips (here, `.`), not only names without it — the common case
   passing is not evidence the derivation is correct in general.
-- **status:** candidate
+- **status:** retained
 - **recurrence:** first occurrence. Grepped `inbox.md` for "slug",
   "removesuffix", "stem" — no prior entry about filename-derived
   identity construction specifically; `L-117`'s own dotted-id-truncation
@@ -11285,7 +11285,75 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   producing derivation's own incomplete suffix-strip here) and is
   cross-referenced above, not merged, since the two defects are in
   different functions with different fixes.
-- **promoted_to:** (pending curation)
+- **promoted_to:** (pending — see curation note)
+- **curation note (2026-11-04, knowledge-curator):** all required fields
+  present (origin, date, project_revision, observation, evidence,
+  classification, status) — accepted as filed.
+
+  **Independently reproduced the entry's own cited evidence** (no
+  `Bash` in this role — used direct file reading instead of running the
+  cited `python3 -c` snippets): `src/codecompass/cli.py:1915-1928`
+  read directly. The current `_schema_slug` strips the full
+  `.schema.yaml` suffix from `schema_path.name` in one step, then
+  normalises with `re.sub(r"[^a-z0-9-]+", "-", name.lower()).strip("-")`
+  — its own docstring states exactly the failure mode the entry
+  describes ("a naive `.stem.removesuffix(".schema")` breaks on a
+  document whose own name already contains a dot... caught directly by
+  `publish_section`'s own fail-closed region-id check"). Confirmed
+  `tests/test_cli.py:2705`'s
+  `test_schema_slug_handles_a_document_name_containing_a_dot` exists, is
+  a module-level test function (not nested, skipped, or otherwise
+  excluded from collection), and asserts exactly the claimed input/output
+  pair (`_schema_slug(Path("README.md.schema.yaml")) == "readme-md"`)
+  plus a dot-free control case. Separately confirmed the fail-closed
+  defence the entry credits: `src/codecompass/doc_compiler.py:438` does
+  raise `DocCompilerError` with a `"region_id {region_id!r} must match
+  {_SECTION_ID_RE.pattern!r}"` message, matching the entry's cited error
+  text. All of the entry's own cited evidence reproduces exactly as
+  claimed.
+
+  **One discrepancy found and flagged, not resolved** (requires `Bash`,
+  which this role does not have): the entry's `project_revision` field
+  names `e73a6c7` as "(the fix)" and `a9667b5` as "(first real
+  demonstration run, pre-fix)," implying `e73a6c7` landed chronologically
+  *after* the pre-fix demonstration captured in `a9667b5`. Reading
+  `.git/logs/HEAD` directly shows the opposite commit order:
+  `e73a6c7` (timestamp 1793780355) was committed *before* `a9667b5`
+  (timestamp 1793780424) — i.e. `e73a6c7` is older, not the later fix.
+  This does not undermine the technical finding itself (independently
+  re-confirmed above by direct code reading, not by trusting either
+  commit label), only the entry's own commit-attribution metadata — see
+  the full note in `proposed-governance-changes.md` §N, which asks the
+  lead to run `git show e73a6c7 -- src/codecompass/cli.py` (or
+  equivalent) to determine which commit the fix actually landed in and
+  correct this field if it is mislabelled.
+
+  **Recommendation: promote**, as a `project-rule`, to `CLAUDE.md` §1 —
+  draft in `planning/v1-redefinition/proposed-governance-changes.md` §N
+  (drafted this triage) per this role's own write-boundary (never
+  `CLAUDE.md` directly; propose only, lead presents the diff, user
+  approves per §0). Routed to `CLAUDE.md` §1 rather than retained as
+  scoped/narrow, matching the precedent `L-021`/`L-070`/`L-075`/`L-087`/
+  `L-088`/`L-116`/`L-117` already set in this same section: a cheap,
+  mechanically-checkable addition to what a plan's verification step
+  must cover, promoted on a single well-evidenced occurrence rather than
+  held for recurrence. Not merged with `L-117` despite the shared
+  downstream symptom (a truncated/invalid region id): the upstream
+  causes are in different functions with different fixes (a *consuming*
+  parser's character class in `L-117`, a *producing* derivation's
+  incomplete suffix-strip here), confirmed distinct by reading both
+  functions directly.
+
+  `status` set to `retained` (not `candidate`, not `promoted`): curation
+  is complete and the recommendation is firm, but it is waiting on the
+  user's explicit `CLAUDE.md` §0 approval of the §N diff, which has not
+  been given as of this note. Once approved and landed, flip `status` to
+  `promoted`, record the real landing commit in `promoted_to`, and add
+  this `promoted.md` line: `L-118 | 2026-11-04 | project-rule |
+  CLAUDE.md §1 (a plan that derives an identity/filesystem slug from a
+  name via suffix-stripping must have its verification step test a
+  base name containing the same separator the derivation strips --
+  user-approved per §0) @ <landing commit>`.
 
 ### L-119 — a vague "avoid tangents" instruction does not reliably stop a generative model from reintroducing the same content problem in different wording; name the exact recurring phrasing instead
 
@@ -11332,8 +11400,77 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   phrasing, not merely its abstract category — and should be
   re-verified by an actual independent re-dispatch, never assumed fixed
   from the revision's own intent.
-- **status:** candidate
+- **status:** retained
 - **recurrence:** first occurrence. Grepped `inbox.md` for "writing
   contract", "system prompt", "editorial review" — no prior entry about
   prompt-revision efficacy specifically.
-- **promoted_to:** (pending curation)
+- **promoted_to:** (pending — see curation note)
+- **curation note (2026-11-04, knowledge-curator):** all required fields
+  present (origin, date, project_revision, observation, evidence,
+  classification, status) — accepted as filed.
+
+  **Independently checked the entry's own cited corroboration** (this
+  role has no `Bash`, so the task's suggested `git log --format=%B -n 1
+  a9667b5` could not be run directly). Two indirect checks instead:
+
+  1. `scripts/compile_doc_section.py:174-195`, `build_system_prompt`'s
+     own docstring, read directly. It narrates the identical three-round
+     sequence the entry claims: round 1 found "verification-style
+     phrasing aimed at a reviewer... and a self-referential aside about
+     the project's own internal terminology drift"; round 2's broader
+     "no tangent" instruction "wasn't specific enough and the model
+     reintroduced the same two problems in different wording (FAIL
+     again, both reviewers)"; round 3's "surgical fix -- naming the
+     exact recurring phrasing to avoid and instructing the model to omit
+     rather than rephrase... produced a draft both independent reviewers
+     passed." This matches the entry's own account point for point,
+     including the "different wording" framing central to the entry's
+     own title.
+  2. `planning/retros/_audit-phase-87-stage-87a.md` §4 (§G.D), an
+     independently-run completion audit with real `Bash` access, states
+     it read `a9667b5`'s own commit message directly and that the
+     message "describes two real, independent dispatch rounds that
+     actually failed and were fixed before a third passed — this is
+     real exercised behaviour, not just asserted." This is a second,
+     independent agent's own direct read of the exact artifact the task
+     asked this role to check, reaching the same conclusion.
+
+  Both checks corroborate the entry without this role needing to
+  re-execute `git log` itself. **Lead: run `git log --format=%B -n 1
+  a9667b5` directly if a fully independent (non-docstring, non-audit)
+  confirmation of the commit message's own wording is wanted** — neither
+  check above is a substitute for actually reading that exact text.
+
+  **Recommendation: promote**, as a `project-rule`, to `CLAUDE.md` §1 —
+  draft in `planning/v1-redefinition/proposed-governance-changes.md` §O
+  (drafted this triage) per this role's own write-boundary (never
+  `CLAUDE.md` directly; propose only, lead presents the diff, user
+  approves per §0). This is the one judgment call in this triage worth
+  recording explicitly: the entry's own classification ("project-rule")
+  is plausible but less clear-cut than `L-116`/`L-117`'s, since this
+  concerns designing a generative-model instruction rather than code
+  correctness, and no existing agent or skill currently owns
+  "writing-contract design for AI-generated documentation content" (the
+  alternative destinations considered and rejected — a scoped
+  `.claude/` agent-brief, or treating `build_system_prompt`'s own
+  docstring as sufficient on its own — are both recorded in §O's
+  "Alternatives considered"). Promoted to `CLAUDE.md` §1 anyway because
+  the rule is phrased and checkable the same way every other §1
+  amendment already is ("if a phase's plan/implementation does X, it
+  must do Y"), and the docstring alone protects only this one pipeline,
+  not a future, not-yet-written one. Not held for a second occurrence
+  (e.g. until Stage 87B/87C exists), matching the same single-occurrence
+  precedent `L-021`/`L-070`/`L-075`/`L-087`/`L-088`/`L-116`/`L-117`
+  already set.
+
+  `status` set to `retained` (not `candidate`, not `promoted`): curation
+  is complete and the recommendation is firm, but it is waiting on the
+  user's explicit `CLAUDE.md` §0 approval of the §O diff, which has not
+  been given as of this note. Once approved and landed, flip `status` to
+  `promoted`, record the real landing commit in `promoted_to`, and add
+  this `promoted.md` line: `L-119 | 2026-11-04 | project-rule |
+  CLAUDE.md §1 (a system-prompt/writing-contract instruction meant to
+  stop a generative model reproducing a named content defect must name
+  the defect's own literal recurring phrasing and be re-verified by an
+  actual independent re-dispatch -- user-approved per §0) @ <landing
+  commit>`.
