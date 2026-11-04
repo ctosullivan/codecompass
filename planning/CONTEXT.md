@@ -11,9 +11,12 @@ session-resumption, not a project history.
 Documentation — restructured into three stages (87A/87B/87C); Stage
 87A implemented, hardened, and independently re-audited (second pass,
 PASS WITH NON-BLOCKING OBSERVATIONS); Stage 87B has an
-implementation-ready plan, independently reviewed to READY (plan's
-own §O/§P), but implementation is **not authorised**; Stage 87C
-remains unplanned; Phase 87 overall remains `not done`.** Plan:
+implementation-ready plan, independently reviewed to READY across
+three rounds (plan's own §O/§P/§Q — a code-level review found and this
+session fixed seven further findings in the already-READY plan, then
+re-reviewed READY WITH NON-BLOCKING OBSERVATIONS), but implementation
+is **not authorised**; Stage 87C remains unplanned; Phase 87 overall
+remains `not done`.** Plan:
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
 A second review (after the first pass's own READY WITH NON-BLOCKING
 OBSERVATIONS verdict) found the single-stage scope too large and four
@@ -115,13 +118,32 @@ original FAIL and the re-audit's PASS WITH NON-BLOCKING OBSERVATIONS
 sections, preserved append-only).
 
 **Stage 87B now has an implementation-ready plan (plan's own §O),
-independently reviewed to READY across two rounds (§P: the first round
-found and this pass fixed two blocking factual errors against the
-real `docs/getting-started.md` content and command set; the second,
-narrow re-check confirmed the fix) — but implementation itself remains
-not authorised.** Stage 87C remains unplanned. Phase 87 itself remains
-`not done` until 87C's own exit gate (the complete minimum publication
-suite, the matched-baseline comparison, final audits) is met.
+independently reviewed to READY across three rounds total: §P (the
+first round found and the original pass fixed two blocking factual
+errors against the real `docs/getting-started.md` content and command
+set; the second, narrow re-check confirmed the fix), then §Q
+(2026-11-05 — a separate, code-level review of the already-READY plan
+found seven further findings: §O.E's comparator targeted a
+non-existent `## Known gotchas` section; `docs publish` had no
+publication-time concurrency check against a live human edit;
+§O.C's execution-harness design had no real vendor-source redirection
+mechanism and included two paid-API-triggering commands a
+credential-less sandbox can never complete; §O.B's section
+classification conflated compiled/schema-governed/factually-verified
+into one axis, missing that `## After the first run` makes real
+implementation claims; §O.D cited `acknowledge_stale_grounded_region`
+as if it demonstrated a document update, which it structurally cannot;
+no accepted canonical knowledge record actually supports the proposed
+README install/first-step additions; and both pre-existing README
+regions were wrongly assumed `noop` when one is a real, pre-existing,
+unresolved `doc_candidate`. All seven corrected in place (§O.I),
+independently re-verified against the real repository by a fresh
+dispatch, and re-reviewed **READY WITH NON-BLOCKING OBSERVATIONS**
+(two further narrow specification gaps found and fixed in the same
+pass)) — but implementation itself remains **not authorised**.** Stage
+87C remains unplanned. Phase 87 itself remains `not done` until 87C's
+own exit gate (the complete minimum publication suite, the
+matched-baseline comparison, final audits) is met.
 
 **Phase 86 — Knowledge-Placement and Code-Quality Review — is `done`
 (2026-11-03)**. Plan amended and independently reviewed across four
@@ -691,6 +713,49 @@ and each phase's retro.
 
 ## What was just completed
 
+**Phase 87 Stage 87B corrective planning amendment**, 2026-11-05,
+direct user request ("CodeCompass Orchestrator — Stage 87B Corrective
+Planning Amendment," planning-only — Stage 87B implementation remains
+unauthorised). A code-level review of the already-READY Stage 87B plan
+(§O/§P) found seven further findings, each verified against the real
+repository before amending: (A) §O.E's conventional-agent comparator
+targeted `## Known gotchas`, text inside a fenced illustration, not a
+real section — corrected to target the real `vendor-digest-concept`
+region. (B) `docs publish` had no concurrency check against a live
+human edit before overwriting a region — confirmed by reading
+`publish_section` directly; fixed by a new guard reusing `knowledge_
+intermediate._apply_doc_region_edit`'s own existing re-verification
+pattern, plus a baseline-advance step after a successful publish. (C)
+the execution-harness design had no real vendor-source redirection
+mechanism (`source_resolution._git_clone` has no redirection knob of
+its own) and included two paid-API-triggering commands a
+credential-less sandbox can never complete — fixed with a `git
+insteadOf`-based redirect and a narrowed allow-list (the two paid
+commands verified by a mocked test instead). (D) section classification
+conflated compiled/schema-governed/factually-verified into one axis,
+missing that `## After the first run` makes real, checkable
+implementation claims — fixed with three independent questions and a
+per-section table. (E) `acknowledge_stale_grounded_region` was cited as
+if it demonstrated a document update, which it structurally cannot
+(confirmed by reading it — it never touches document text) — fixed
+with a real, worktree-isolated, evidence-backed knowledge-change
+demonstration. (F) no accepted canonical knowledge record supports the
+originally-proposed README install/first-step additions (confirmed by
+searching the real corpus) — fixed by adding no new compiled sections
+and anchoring the mandatory demonstration on the one real section that
+already exists. (G) both pre-existing README regions were wrongly
+assumed `noop` — confirmed by directly running `detect_
+grounded_region_changes`: `intermediate-knowledge-layer` is a real,
+pre-existing, unresolved `doc_candidate`, preserved and never
+artificially resolved. All seven corrected in place (§O.I, a concise
+dated summary, not a new extensive retrospective); independently
+re-reviewed by a fresh dispatch with no reliance on prior verdicts:
+**READY WITH NON-BLOCKING OBSERVATIONS** (§Q — two further narrow
+specification gaps found and fixed in the same pass). No source code,
+tests, documentation content, or canonical knowledge changed — planning
+only. Stage 87B implementation has not begun and remains unauthorised;
+see "Next concrete step" below.
+
 **Phase 87 Stage 87A hardening pass, then Stage 87B planning**,
 2026-11-04, direct user request ("CodeCompass Orchestrator — Stage 87A
 Hardening, Final Closeout and Stage 87B Planning"). See "Current
@@ -1077,16 +1142,19 @@ Sequence from here: **87 (Documentation Schema and Knowledge-Compiled
 Documentation) — Stage 87A is implemented, hardened, and independently
 re-audited (second pass), PASS WITH NON-BLOCKING OBSERVATIONS; Stage
 87B has an implementation-ready plan, independently reviewed to READY
-(plan's own §O/§P), but implementation is **not authorised**; Stage
-87C remains unplanned; Phase 87 overall remains `not done`** —
+across three rounds (plan's own §O/§P/§Q — a code-level review found
+and this session fixed seven further findings in the already-READY
+plan; see "What was just completed" above), but implementation is
+**not authorised**; Stage 87C remains unplanned; Phase 87 overall
+remains `not done`** —
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
 Next concrete step for this phase: a separate, explicit authorisation
 to *implement* Stage 87B (schema-governed `README.md`/`docs/
 getting-started.md`, a narrow execution harness, manual maintenance
 across real multi-section documents — plan already written and
-independently reviewed to READY), then Stage 87C (which still needs
-its own plan first; the complete minimum publication suite, the
-matched-baseline comparison, final
+independently reviewed to READY WITH NON-BLOCKING OBSERVATIONS), then
+Stage 87C (which still needs its own plan first; the complete minimum
+publication suite, the matched-baseline comparison, final
 Phase 87
 closeout). → 88 (Agent Integration and MCP, split from
 the old merged phase) → 89 (Incremental Knowledge and Documentation
