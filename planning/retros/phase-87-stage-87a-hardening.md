@@ -64,15 +64,21 @@ Three real implementation defects, each reproduced by a regression
 test that was confirmed to fail against the pre-hardening code (by
 stashing only the source changes and running the new tests against
 the prior commit) before the fix, then confirmed passing after: 13 of
-the 21 new tests were run this way directly; the remainder are purely
-additive coverage (e.g. a legitimate-publication positive control)
-that could not fail against old code in the same sense since the
-command/function they exercise did not previously exist in that form.
-Full suite: 1290 passed, 2 skipped (up from 1275 passed before this
-pass). Ruff clean on every touched file (the same 6 pre-existing,
-unrelated findings remain, confirmed via a before/after diff, not
-assumed). Schema, knowledge-placement, knowledge-base, contracts, and
-user-docs validators all exit clean; the Phase 85 self-knowledge-
+the 19 new tests were run this way directly (`tests/test_cli.py`'s own
+publish/record-review tests); the remainder are purely additive
+coverage (a legitimate-publication positive control; the
+schema-validation-time path-confinement tests added in the fix round
+below) that could not fail against old code in the same sense since
+the command/function they exercise did not previously exist in that
+form, or the file they live in was never touched by the first pass at
+all. 19 new tests total: `tests/test_cli.py` +12, `tests/
+test_compile_doc_section.py` +3, `tests/test_check_doc_schema.py` +4
+(added in the fix round, see below). Full suite: 1294 passed, 2
+skipped (up from 1275 passed before this pass). Ruff clean on every
+touched file (the same 6 pre-existing, unrelated findings remain,
+confirmed via a before/after diff, not assumed). Schema,
+knowledge-placement, knowledge-base, contracts, and user-docs
+validators all exit clean; the Phase 85 self-knowledge-
 quality baseline (35 informational/known findings) is unchanged,
 retained rather than suppressed. The real, previously-published
 `README.md` "Understanding Digests" section and its
@@ -96,34 +102,76 @@ intact.
   that paid off immediately: `check_doc_schema.py` catching an unsafe
   `document` field at authoring time is strictly better than only
   catching it when a publish is actually attempted.
-- **Closing the audit-sequencing gap procedurally rather than by
+- **Closing the prior audit-sequencing gap procedurally rather than by
   rewriting history** — the prior, already-closed audit record stays
   intact as historical evidence; this pass's own final audit is simply
   required to cover the true final commit, which is the discipline
   that should have applied originally.
+- **The independent `release-phase-auditor` dispatch caught this
+  pass's own, new instance of the exact mistake it exists to catch**
+  (see "What didn't work" immediately below) — direct evidence the
+  mechanism works even against the person who designed the correction
+  it's checking.
 
 ## What didn't work
 
-Nothing novel surfaced beyond the three implementation defects named
-in the governing task's own findings — this pass was itself a
-correction, not a discovery exercise, so "what didn't work" is mostly
-the same root cause named in `L-119`'s own process lesson from the
-prior pass (DoD bookkeeping deferred under demonstration pressure) —
-this time avoided by doing the paper trail (CHANGELOG, retro,
-learnings, CONTEXT/ROADMAP) before the final audit runs, not after.
+- **This pass recommitted the exact mistake §N.D set out to fix, in a
+  new form, inside the very commit meant to close it.** While writing
+  `CONTEXT.md`/`ROADMAP.md`, the hardening work was described as
+  "independently re-audited (2026-11-04)" / "re-audited PASS WITH
+  NON-BLOCKING OBSERVATIONS" — written in anticipation of the audit
+  that was about to be dispatched, not after it actually returned a
+  verdict. The first `release-phase-auditor` dispatch against this
+  commit correctly returned **FAIL**, catching this directly: the
+  plan's own §N.D text, written in the same commit, used the honest
+  future tense ("once written") for exactly the same not-yet-existing
+  audit record that `CONTEXT.md`/`ROADMAP.md` asserted as settled fact
+  a few paragraphs away — a real, caught self-contradiction, not a
+  hypothetical one. The same dispatch also found the commit's own "21
+  new regression tests" figure didn't reconcile against a direct count
+  (real delta: 15, matching the suite's own 1275→1290 exactly — later
+  growing to 19/1294 once the third finding below was fixed), and that
+  the schema-validation-time half of the path-confinement fix
+  (`check_doc_schema.py`'s `_check_document_path`) had zero direct
+  test coverage despite this file's own established per-rule-test
+  convention. All three fixed in the same session, before any
+  further audited-scope commit — the lesson from the *first* Stage 87A
+  closeout (deferred DoD bookkeeping) was heeded; a *new* lesson from
+  *this* pass is that writing the paper trail in the anticipated-future
+  tense is just as real a defect as deferring it, and both are caught
+  the same way: by an independent auditor checking the actual recorded
+  state against what actually happened, never trusting either the
+  implementer's prose or its own tense.
+- Nothing else novel surfaced beyond the three implementation defects
+  named in the governing task's own findings and the one process
+  defect above — this pass was itself a correction, not a discovery
+  exercise.
 
 ## Lessons learnt
 
-See candidate learning filed below for the one generalizable technical
-takeaway from this pass (`compose_section`'s own defect).
+Two generalizable technical takeaways, both filed to `planning/
+learnings/inbox.md` and triaged by `knowledge-curator`: `L-120`
+(`compose_section`'s own verified-bytes-sourcing defect — see "Where
+we're going" below) and the process point above, which is not filed
+as a separate learning since it is already covered by `CLAUDE.md`
+§5's own letter rather than being a new rule: **writing a doc update
+in the tense of an outcome that hasn't happened yet is the same
+defect as deferring the doc update entirely** — both leave the
+project's own paper trail describing a state that isn't real, and both
+are only reliably caught by an independent party checking the record
+against events, never by the author re-reading their own prose.
 
 ## Process-improvement feedback
 
-The agent-led workflow continues to work as designed: a follow-up,
-independently-scoped review (not the implementer re-reading its own
-work) is what found all four defects here, exactly as the prior
-session's own `release-phase-auditor` dispatch found the DoD gap. No
-tool or agent-boundary friction.
+The agent-led workflow continues to work as designed, twice over in
+this one pass: a follow-up, independently-scoped review (not the
+implementer re-reading its own work) found the original three
+publication-path defects, and a second independent `release-phase-
+auditor` dispatch found a further process defect in the implementer's
+own closeout work (the premature "already audited" tense, the
+overstated test count, the coverage gap) — exactly as the prior
+session's own first `release-phase-auditor` dispatch found that
+session's DoD gap. No tool or agent-boundary friction.
 
 ## Candidate learnings filed
 

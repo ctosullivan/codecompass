@@ -2714,7 +2714,7 @@ def test_schema_slug_handles_a_document_name_containing_a_dot() -> None:
 
 
 # ---------------------------------------------------------------------------
-# docs publish hardening (Stage 87A hardening pass §2.A/§2.B): publication
+# docs publish hardening (Stage 87A hardening pass §N.A/§N.B): publication
 # is bound to persisted, hash-verified independent review records, never
 # a manually supplied verdict string; and the write target is confined to
 # an approved documentation path.
@@ -2800,7 +2800,7 @@ def test_docs_publish_full_cycle_with_persisted_reviews_succeeds(
     assert result.exit_code == 0, result.output
     assert "A fact." in (tmp_path / "docs" / "demo.md").read_text(encoding="utf-8")
 
-    # Requirement §2.A.8: the tagged draft and both review records
+    # Requirement §N.A.8: the tagged draft and both review records
     # survive publication for later audits.
     audit_path = (
         tmp_path / "planning" / "retros" / "phase-87-published-evidence" / "demo" / "s1.json"
@@ -2946,7 +2946,7 @@ def test_docs_record_review_rejects_an_invalid_verdict_for_its_kind(
 
 
 # ---------------------------------------------------------------------------
-# docs publish path confinement (Stage 87A hardening pass §2.B)
+# docs publish path confinement (Stage 87A hardening pass §N.B)
 # ---------------------------------------------------------------------------
 
 

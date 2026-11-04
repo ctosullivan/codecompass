@@ -32,12 +32,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   re-read from its own verified, hash-checked file — the prompt is now
   sourced from those verified bytes directly, and the ephemeral
   staging directory is always removed, on both the success and
-  failure path. 21 new regression tests (13 confirmed failing against
-  the pre-hardening code, then passing after the fix); full suite,
-  ruff, and the schema/knowledge-placement/knowledge-base/contracts/
-  user-docs validators all clean; the self-knowledge-quality baseline
-  (Phase 85) unchanged. Stage 87A remains hardened and closed; Phase
-  87 overall remains not `done`.
+  failure path. 19 new regression tests (`tests/test_cli.py` +12,
+  `tests/test_compile_doc_section.py` +3, `tests/test_check_doc_schema.py`
+  +4; 13 of the `test_cli.py` additions confirmed failing against the
+  pre-hardening code via a source-only `git stash`, then passing after
+  the fix); full suite 1294 passed, 2 skipped; ruff, and the schema/
+  knowledge-placement/knowledge-base/contracts/user-docs validators all
+  clean; the self-knowledge-quality baseline (Phase 85) unchanged. An
+  independent `release-phase-auditor` pass against the first hardening
+  commit returned FAIL (a false "already independently re-audited"
+  claim written into that same commit's own `CONTEXT.md`/`ROADMAP.md`
+  before any audit had actually run; an overstated test count; no
+  direct regression test for the schema-validation-time half of the
+  path-confinement fix) — all three fixed in this entry's own revision
+  (the test count above and this entry itself reflect the corrected,
+  post-fix state); a fresh independent audit of this exact revision is
+  the next step before Stage 87A's hardening can be considered closed.
+  Phase 87 overall remains not `done`; Stage 87B/87C remain
+  unauthorised and unstarted.
 
 - **Phase 87, Stage 87A: Documentation Schema and Knowledge-Compiled
   Documentation — knowledge compilation proven** (`decisions/0084`

@@ -84,6 +84,41 @@ def test_well_formed_schema_produces_no_blocking_findings(project):
 
 
 # ---------------------------------------------------------------------------
+# Document-path confinement (hardening pass §N.B): schema-validation-time
+# half of `doc_compiler.resolve_publication_target` -- the publish-time
+# half is already covered directly in tests/test_cli.py.
+# ---------------------------------------------------------------------------
+
+
+def test_traversal_document_path_is_blocking(project):
+    schema_path = project / "docs" / "demo.schema.yaml"
+    _write_schema(schema_path, document="../outside.md")
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert any(f.strict and f.rule == "doc-schema-unsafe-document-path" for f in findings)
+
+
+def test_absolute_document_path_is_blocking(project):
+    schema_path = project / "docs" / "demo.schema.yaml"
+    _write_schema(schema_path, document="/etc/evil.md")
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert any(f.strict and f.rule == "doc-schema-unsafe-document-path" for f in findings)
+
+
+def test_document_path_outside_approved_targets_is_blocking(project):
+    schema_path = project / "docs" / "demo.schema.yaml"
+    _write_schema(schema_path, document="CONTRIBUTING.md")
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert any(f.strict and f.rule == "doc-schema-unsafe-document-path" for f in findings)
+
+
+def test_legitimate_readme_document_path_produces_no_path_finding(project):
+    schema_path = project / "README.md.schema.yaml"
+    _write_schema(schema_path, document="README.md")
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert not any(f.rule == "doc-schema-unsafe-document-path" for f in findings)
+
+
+# ---------------------------------------------------------------------------
 # Required fields / enum validation
 # ---------------------------------------------------------------------------
 

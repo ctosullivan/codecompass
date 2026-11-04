@@ -212,7 +212,7 @@ def test_compose_section_returns_raw_output_and_manifest_on_success(monkeypatch,
 
 
 def test_compose_section_removes_staging_directory_on_success(monkeypatch, tmp_path):
-    # §2.C point 5: the ephemeral staging directory is never left behind.
+    # §N.C point 5: the ephemeral staging directory is never left behind.
     packet = _packet()
     section = {"id": "s1", "audience": "a new developer", "tone": "instructional", "depth": "brief"}
     monkeypatch.setattr(cds, "run_isolation_preflight", lambda: None)
@@ -238,7 +238,7 @@ def test_compose_section_removes_staging_directory_on_success(monkeypatch, tmp_p
 
 
 def test_compose_section_removes_staging_directory_on_broker_failure(monkeypatch, tmp_path):
-    # §2.C point 5: cleanup happens on the failure path too, not only on success.
+    # §N.C point 5: cleanup happens on the failure path too, not only on success.
     packet = _packet()
     section = {"id": "s1", "audience": "a new developer", "tone": "instructional", "depth": "brief"}
     monkeypatch.setattr(cds, "run_isolation_preflight", lambda: None)
@@ -265,7 +265,7 @@ def test_compose_section_removes_staging_directory_on_broker_failure(monkeypatch
 
 
 def test_compose_section_builds_broker_prompt_from_verified_bytes_not_memory(monkeypatch, tmp_path):
-    # §2.C's core correction: if the in-memory packet were mutated after
+    # §N.C's core correction: if the in-memory packet were mutated after
     # write_section_packet ran (simulating any future divergence between
     # what was hashed and what is sent), the broker prompt must still
     # reflect the VERIFIED ON-DISK content, never the mutated in-memory

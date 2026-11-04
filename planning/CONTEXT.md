@@ -9,8 +9,9 @@ session-resumption, not a project history.
 
 **Phase 87 — Documentation Schema and Knowledge-Compiled
 Documentation — restructured into three stages (87A/87B/87C); Stage
-87A implemented, hardened, and independently re-audited; Stage 87B
-planned (not implemented); Phase 87 overall remains `not done`.** Plan:
+87A implemented and hardened, hardening fix-round complete, fresh
+independent re-audit of the fix pending; Stage 87B planned (not
+implemented); Phase 87 overall remains `not done`.** Plan:
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
 A second review (after the first pass's own READY WITH NON-BLOCKING
 OBSERVATIONS verdict) found the single-stage scope too large and four
@@ -52,28 +53,48 @@ round 3 passed both independent dispatches and was published —
 `README.md`'s "Understanding Digests" section, grounded in
 `CL-CTXT-005`.
 
-**Stage 87A hardening pass — closed, independently re-audited
-(2026-11-04)**, plan's own §N. A follow-up review found three
-integration defects in the publication path itself (not the compiled
-content or the real demonstration, both independently reconfirmed
-sound first): `docs publish` accepted a manually typed verdict string
-as sufficient evidence of independent review — fixed by a new
-`docs record-review` command that persists each review bound by hash
-to the exact draft/evidence/schema-section identity, validated by
-`docs publish` instead of trusted at face value; the publication write
-target was unconfined — fixed by a single, reusable
-`doc_compiler.resolve_publication_target` (confines to `README.md`/
-`docs/**/*.md`, symlink-aware, resolved-path comparison, never a
-string-prefix check), enforced at both schema-validation and publish
-time; the clean-room broker's prompt was built from the in-memory
-evidence packet rather than its own verified on-disk bytes — fixed by
-sourcing the prompt from a fresh read of the verified file, with the
-ephemeral staging directory always removed on both the success and
-failure path. 21 new regression tests (13 confirmed failing against
-the pre-hardening code before the fix, via a `git stash`-isolated
-re-run). Full suite, ruff, and all strict validators clean (Phase 85
-baseline unchanged). One candidate learning filed (`L-120`). Full
-detail: `planning/retros/phase-87-stage-87a-hardening.md`.
+**Stage 87A hardening pass — implemented, first independent audit
+FAIL, fix round complete, re-audit pending (2026-11-04)**, plan's own
+§N. A follow-up review found three integration defects in the
+publication path itself (not the compiled content or the real
+demonstration, both independently reconfirmed sound first): `docs
+publish` accepted a manually typed verdict string as sufficient
+evidence of independent review — fixed by a new `docs record-review`
+command that persists each review bound by hash to the exact draft/
+evidence/schema-section identity, validated by `docs publish` instead
+of trusted at face value; the publication write target was unconfined
+— fixed by a single, reusable `doc_compiler.resolve_publication_target`
+(confines to `README.md`/`docs/**/*.md`, symlink-aware, resolved-path
+comparison, never a string-prefix check), enforced at both
+schema-validation and publish time; the clean-room broker's prompt was
+built from the in-memory evidence packet rather than its own verified
+on-disk bytes — fixed by sourcing the prompt from a fresh read of the
+verified file, with the ephemeral staging directory always removed on
+both the success and failure path.
+
+**The first `release-phase-auditor` dispatch against this hardening
+work returned FAIL** — not on the three fixes themselves (independently
+re-confirmed sound) but on three process defects in the *same* commit:
+(1) this file and `ROADMAP.md` asserted "independently re-audited" for
+the hardening pass before any such audit had actually run — the exact
+audit-sequencing failure mode this pass's own §N.D exists to prevent,
+recurring in a new, self-contradictory form; (2) the claimed "21 new
+regression tests" overstated the real, reconciled count (the real
+delta across `tests/test_cli.py`/`tests/test_compile_doc_section.py`
+was 15, matching the suite's own 1275→1290); (3) the schema-validation-
+time half of the path-confinement fix (`check_doc_schema.py`'s
+`_check_document_path`) had no direct regression test. All three fixed
+in the same session: this file's own prose corrected to accurate tense;
+the test count corrected and 4 new tests added for the previously-
+uncovered schema-validation-time path (`tests/test_check_doc_schema.py`,
+14 → 18); total new regression tests across this hardening pass: 19.
+Full suite, ruff, and all strict validators re-confirmed clean (Phase
+85 baseline unchanged). One candidate learning filed and triaged
+(`L-120`, retained). **A fresh independent audit of this corrected
+state is the next step before Stage 87A's hardening is considered
+closed** — not yet run as of this entry. Full detail: `planning/
+retros/phase-87-stage-87a-hardening.md`,
+`planning/retros/_audit-phase-87-stage-87a-hardening.md`.
 
 **Stage 87B and 87C are not implemented and not authorised** — Phase
 87 itself remains `not done` until 87C's own exit gate (the complete
