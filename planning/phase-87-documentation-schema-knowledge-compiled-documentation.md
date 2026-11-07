@@ -1,7 +1,12 @@
 # Phase 87: Documentation Schema and Knowledge-Compiled Documentation — plan
 
 **Status: restructured into three stages (87A/87B/87C), amended for
-four integration defects, independently re-reviewed.** This is a
+four integration defects, independently re-reviewed. Stage 87A done.
+Stage 87B implemented and done (2026-11-07), independently audited
+through a real FAIL→fix→PASS cycle (see
+`planning/retros/_audit-phase-87-stage-87b.md`). Stage 87C remains
+separately planned, not authorised, and untouched. Phase 87 overall
+remains not done.** This is a
 **scope-management correction**, not an architectural redesign — the
 strategic objective (§0), the verified architecture map (§A), and the
 shared schema/pipeline contract (§B/§C) are preserved. What changes:
