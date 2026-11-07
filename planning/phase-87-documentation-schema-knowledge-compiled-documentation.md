@@ -998,13 +998,13 @@ assumed from the plan's own prose):
 | Stage 87A component | Reused as-is | Extended for 87B, and how |
 |---|---|---|
 | `doc_compiler.resolve_section_ids`/`check_record_currency`/`find_section_gaps`/`resolve_section_packet`/`hydrate_records`/`hash_evidence` | Yes, unchanged | No extension needed — these already operate per-section, independent of how many documents/sections exist. |
-| `check_doc_schema.py` | Yes | No extension needed — it already validates N schema files passed to it in one run (`_check_document_uniqueness` already scans `all_data` across every schema file given); 87B simply means two real schema files exist instead of one. |
+| `check_doc_schema.py` | Partially — it already validates N schema files in one run, and `_check_document_uniqueness` already scans `all_data` across every schema file given | **Must gain a new check** (§O.D point 4, third corrective amendment, finding A) — `_check_document_uniqueness` checks duplicate *document paths* only, confirmed by direct reading (`scripts/check_doc_schema.py:233-248`); nothing in this script checks duplicate composed `region:<id>` tokens across schema files, which only ever mattered once a second schema-governed document existed. |
 | `compile_doc_section.py` (clean-room composition adapter) | Yes | No extension needed — one call per section, regardless of which document it belongs to. |
 | `doc_compiler.publish_section` | Core write mechanism reused unchanged | **Must gain a caller-side concurrency guard** (§O.D.3 below) — confirmed by direct reading that `publish_section` itself unconditionally replaces whatever existing region matches `region_id` (`src/codecompass/doc_compiler.py:523-571`), with no check of any kind against the live region's own content or baseline. |
 | `docs record-review`/`docs publish`'s hash-bound review validation (hardening pass §N.A) | Yes | No extension needed — identity is already per-`(schema_slug, section_id)`, not per-document. |
 | `doc_compiler.resolve_publication_target` (hardening pass §N.B) | Yes | No extension needed — `docs/getting-started.md` already matches the existing `docs/**/*.md` allow pattern; no schema change needed to publish into it. |
 | `doc_compiler.maintain_document`/`knowledge_intermediate.detect_grounded_region_changes` (five states: `new`/`noop`/`doc_candidate`/`claims_changed`/`concurrent_conflict`) and its three resolution functions (`establish_new_region_baselines`/`acknowledge_stale_grounded_region`/`write_doc_candidates_to_manifests`) | Core mechanism reused unchanged | **Two real defects the Stage 87A audit already named must be fixed** (§O.D.1/.2 below) — the CLI layer around `maintain_document`, not the function itself, which already accepts a `doc_names: tuple[str, ...]` and already treats duplicate-id detection as spanning every name given to it. |
-| `knowledge_intermediate._apply_doc_region_edit`'s own re-verification pattern (region-hash + cited-id-membership + per-id content-hash, re-checked immediately before every reconciliation write, fail-closed on drift, then `_write_region_baseline` on success — `knowledge_intermediate.py:627-698`) | Pattern reused, one new small public wrapper added | **This is the exact existing precedent for finding B's publication-time concurrency guard** (§O.D.3) — `docs publish` needs the identical check-then-advance-baseline shape this function already uses for human-edit reconciliation, applied instead to a compiler-generated replacement. One new, narrow function in `knowledge_intermediate.py` (not a new concurrency system) exposes the existing private `_write_region_baseline` call for this one additional caller. |
+| `knowledge_intermediate._apply_doc_region_edit`'s own re-verification pattern (region-hash + cited-id-membership + per-id content-hash, re-checked immediately before every reconciliation write, fail-closed on drift, then `_write_region_baseline` on success — `knowledge_intermediate.py:627-748`) | Pattern reused, one new small public wrapper added | **This is the exact existing precedent for finding B's publication-time concurrency guard** (§O.D.3) — `docs publish` needs the identical check-then-advance-baseline shape this function already uses for human-edit reconciliation, applied instead to a compiler-generated replacement. One new, narrow function in `knowledge_intermediate.py` (not a new concurrency system) exposes the existing private `_write_region_baseline` call for this one additional caller. |
 | `verify_cleanroom_isolation.py`'s `unshare --user --map-root-user --mount --net --pid --fork` + `pivot_root` sandboxing **technique** | Technique reused, not the script itself | A new, narrow module applies the same technique to a different payload (a generated shell command, not a fake broker probe) — see §O.C. |
 
 No parallel persistence, diffing, provenance, or approval mechanism is
@@ -1063,7 +1063,7 @@ questions above, not one combined axis:
 | Section | Compiled? | Schema-governed? | Factually verified? |
 |---|---|---|---|
 | `## Install` | No — no real, citable knowledge record exists for it (§O.F.1) | Yes — the execution harness (§O.C) asserts `pip install codecompass-context` actually succeeds | Yes — by real execution (§O.C) |
-| `## First run` | No, same reason | Yes — the harness asserts bare `codecompass`/`codecompass --budget 0` produce the documented outcome | Yes — by real execution (§O.C) |
+| `## First run` | No, same reason | Yes — the harness asserts bare `codecompass` (no-candidate fixture) and `codecompass --budget 0` (`toy-project`) each produce their own documented outcome (§O.C) | Yes — by real execution, **and a real prose fix** (third corrective amendment, finding D): this section's own bold claim "It never asks you anything and never makes an AI call on its own" directly contradicts its own very next point 5 ("...asks for confirmation before calling the Anthropic API") — a genuine, pre-existing internal contradiction, confirmed by reading the live file. Corrected at implementation time to state plainly that steps 1-4 are unconditionally deterministic and non-interactive, and step 5 conditionally transitions to an interactive, potentially billable confirmation only when real, eligible candidates exist — never claiming the whole command is unconditionally non-interactive. |
 | `## A real captured example` | No, same reason | Yes — the harness's own pattern-matched expected output *is* this section's content | Yes — by real execution, pattern-matched for the known-nondeterministic version/cost figures (§O.C) |
 | `## Proceeding past the budget cap` | No | Yes — this section's own two commands (`--yes`, `--budget 1.00`) are real CLI contracts; verified by a mocked/unit-level test of the CLI's own confirmation-skip/budget-comparison code path (§O.C — never a live, credentialed, billed execution; `--yes`/`--budget 1.00` are **removed from the real-execution allow-list** for exactly this reason) | Yes — by the mocked test, not live execution |
 | `## After the first run` | No | **Newly added to schema governance** (corrective amendment, finding D) — this section lists concrete implementation facts (`vendor/<name>/CLAUDE.md`; the root `CLAUDE.md` marker-delimited routing table; `.claude/skills/codecompass/SKILL.md`; `.claude/commands/discovery.md`; `context-graph.db`), previously and wrongly classified as "pure navigation/editorial content with no factual claim to ground or verify" | **Yes — newly required.** Each listed file/path/mechanism is checked to actually exist and behave as described against the real repository (a direct filesystem/behavioural check, not a knowledge-compiled claim — no citable record exists for this either, so this is validation-in-place, never generation) |
@@ -1161,8 +1161,21 @@ it)**:
   `_maybe_run_enrichment`, `enrichment.check_budget`), with a stubbed
   broker/enrichment call exactly like `tests/test_cleanroom_broker.py`'s
   own existing mocked-subprocess convention — never a live, credentialed,
-  billed call, inside or outside the sandbox. This also resolves
-  §O.B's reclassification of "## Proceeding past the budget cap" above.
+  billed call, inside or outside the sandbox. **Three distinct scenarios
+  required (finding D), each its own test, never conflated**: (1) bare
+  `codecompass`/no eligible candidates — no confirm, no budget check,
+  no API call reached at all (`_maybe_run_enrichment`'s own early
+  `return` at the "no candidates" branch); (2) `codecompass --budget 0`/
+  real candidates — `check_budget` raises and aborts *before*
+  `typer.confirm` is ever reached (confirmed directly,
+  `_maybe_run_enrichment`'s own docstring: "Budget is checked *before*
+  the confirmation prompt"); (3) `--yes` or a mocked `typer.confirm`
+  returning `True`, sufficient budget, real candidates — the code path
+  genuinely reaches the stubbed enrichment/broker call, confirming
+  `--yes`/an accepted interactive confirmation really do authorise the
+  call they claim to, with the call itself mocked, never live. This
+  also resolves §O.B's reclassification of "## Proceeding past the
+  budget cap" above.
 
 **Existing mechanisms assessed first, per the governing task's own
 instruction, before specifying anything new**:
@@ -1199,17 +1212,48 @@ only):
   real, current command blocks, **narrowed again by this corrective
   amendment** to exclude anything that cannot genuinely complete inside
   a credential-less sandbox: `pip install codecompass-context`; bare
-  `codecompass` or `codecompass --budget 0` (deterministic — the real
-  captured example's own text confirms it "exits non-zero on the
-  budget refusal" *before* any API call, per `enrichment.check_budget`
-  — reproducing "## A real captured example" without ever needing
-  credentials); `codecompass query vendors` (a pure local `sqlite3`
-  read, no network, no API). `codecompass --yes`/`codecompass --budget
-  1.00` are **removed** from this list (see above) — verified by a
-  mocked unit test instead, never by this harness. No other command,
-  until this document is extended to demonstrate one. Widening the
-  allow-list is a deliberate, reviewed, future edit to this script,
-  never a runtime decision the harness makes for itself.
+  `codecompass` **against a fixture with zero eligible enrichment
+  candidates**; `codecompass --budget 0` **against the real
+  `examples/toy-project/` fixture, which genuinely has eligible
+  candidates** (`click`/`requests`, both imported and unenriched); and
+  `codecompass query vendors` (a pure local `sqlite3` read, no network,
+  no API). `codecompass --yes`/`codecompass --budget 1.00` are
+  **removed** from this list (see above) — verified by a mocked unit
+  test instead, never by this harness. No other command, until this
+  document is extended to demonstrate one. Widening the allow-list is a
+  deliberate, reviewed, future edit to this script, never a runtime
+  decision the harness makes for itself.
+
+  **Third corrective amendment, finding D**: the prior draft treated
+  bare `codecompass` and `codecompass --budget 0` as interchangeable,
+  both implicitly run against `examples/toy-project/`. That is unsafe
+  as specified — `toy-project` genuinely has eligible candidates, and
+  the real CLI's own deterministic bootstrap (`cli.py`'s `_bootstrap`)
+  conditionally transitions to an **interactive** confirmation prompt
+  when eligible candidates exist and no `--budget`/`--yes` already
+  resolved the question (confirmed directly: `docs/getting-started.md`
+  own "## First run" text already states this, at odds with its own,
+  immediately-preceding bold claim that the command "never asks you
+  anything" — a real, pre-existing internal contradiction in this
+  document, corrected below). A harness with no interactive stdin and
+  no credentials running bare `codecompass` against `toy-project` would
+  not deterministically complete at all. **Fix**: bare `codecompass`
+  runs against a **new, minimal, dedicated fixture**
+  (`examples/no-candidates-project/` or equivalent — a project with a
+  real manifest file, so the deterministic scan/clone/graph-rebuild
+  steps 1-4 all genuinely run, but whose own source code imports
+  nothing CodeCompass can detect, so step 5 structurally never
+  triggers), confirming the truly-unconditional half of the bootstrap
+  completes deterministically with no prompt and no API call — a
+  different, genuinely-safe scenario from `--budget 0` against
+  `toy-project`, not a stand-in for it. `codecompass --budget 0`
+  against the real `toy-project` fixture is kept exactly as already
+  specified — `check_budget` raises and aborts *before* the
+  interactive-confirmation step is ever reached regardless of how many
+  real candidates exist (confirmed directly,
+  `src/codecompass/enrichment.py:593-619` — the budget check runs
+  strictly before `_maybe_run_enrichment`'s own confirm/`--yes` gate),
+  so this remains genuinely deterministic and safe for the harness.
 - **Package/environment availability**: a Python virtual environment
   is created once, out of band, inside the sandbox-visible scratch
   tree; `pip install --no-index --find-links=<local-wheel-cache-dir>
@@ -1330,62 +1374,177 @@ would otherwise actually bite:
    **This candidate is never artificially acknowledged merely to make
    a test report `noop`** — it stays a real, open `doc_candidate`
    throughout 87B, exactly as §O.D.0 below states.
-3. **Publication-time concurrency guard (new finding, corrective
-   amendment, finding B).** `docs publish` validates draft, evidence,
+3. **Publication-time concurrency guard, strengthened (corrective
+   amendment finding B; fail-closed hardening, third corrective
+   amendment finding C).** `docs publish` validates draft, evidence,
    and schema-section identity (hardening pass §N.A) but never checks
    whether the *live* target region has drifted from what was last
    known before overwriting it — confirmed directly: `publish_section`
    (`doc_compiler.py:523-571`) unconditionally replaces whatever
    existing region matches `region_id`. A human could edit that exact
    region between compile-time and publish-time and have it silently
-   clobbered. **Fix**: immediately before calling `publish_section`,
-   `docs publish` runs `knowledge_intermediate.
-   detect_grounded_region_changes(project_root, (schema["document"],))`
-   and locates the one finding matching this `region_id` (or concludes
-   there isn't one, meaning this is the region's first-ever publish —
-   see "new" below), reusing the exact same re-verification shape
-   `_apply_doc_region_edit` already performs for human-edit
-   reconciliation (region-hash, cited-id-set membership, per-id
-   content-hash — `knowledge_intermediate.py:627-698`), never a new,
-   separately-invented concurrency check:
-   - No finding at all for this `region_id` (no marker exists in the
-     document yet), **or** a finding whose own `.case` is literally
-     `"new"` (the marker already exists, but `docs maintain` has never
-     established a baseline for it) → proceed either way; both are
-     legitimate first-publish states, not two different things to
-     branch on.
-   - `noop` (live region matches its recorded baseline exactly) →
-     proceed; the new, reviewed draft replaces content that hasn't
-     independently drifted.
-   - `claims_changed` (live region's prose still matches baseline;
-     only its cited knowledge moved) → proceed — `docs publish`'s own
-     existing evidence-hash check already proves the draft being
-     published reflects the *current* knowledge state, so this
-     publish **is** the "current, independently verified replacement"
-     a `claims_changed` state requires; it is never read as blanket
-     permission to overwrite on its own (a `claims_changed` state with
-     a *stale* draft — one compiled before the knowledge changed —
-     would already be rejected by the existing evidence-hash check,
-     independent of this new guard).
-   - `doc_candidate` (the live region's own prose has drifted from
-     baseline, no matching knowledge change) → **refuse**, exit
-     non-zero, name the drift explicitly; this is exactly "the region
-     contains unacknowledged human changes."
-   - `concurrent_conflict` (both drifted) → **refuse**, exit non-zero;
-     requires explicit lead-controlled reconciliation, never an
-     automatic merge either direction.
-   On a successful publish, one new, narrow, explicitly-justified
-   public function in `knowledge_intermediate.py` (not a new
-   concurrency system — a thin wrapper around the existing private
-   `_write_region_baseline`, the same call `establish_new_region_
-   baselines`/`acknowledge_stale_grounded_region`/
-   `_apply_doc_region_edit` already each make on their own successful
-   path) advances this region's baseline to the newly-published body's
-   hash and the cited records' current content hashes — without this,
-   the *next* `docs maintain` run would wrongly see the just-published
-   content as having drifted from a now-stale baseline and misreport
-   `concurrent_conflict` or `doc_candidate` for a change that was
-   actually a correct, reviewed republish.
+   clobbered.
+
+   **The second corrective amendment's own first design had two
+   further fail-open gaps, found by a later review and fixed here**:
+   (1) it treated "no marker exists yet" and "a marker exists with
+   `.case == \"new\"`" as the same, unconditionally-safe case — but
+   `"new"` means the marker's own text is **already present** in the
+   live document (parsed from it directly), simply never yet baselined;
+   if that text is genuinely human-authored (e.g. hand-written before
+   `docs maintain` ever ran), treating it as automatically safe to
+   overwrite is exactly the same silent-clobber risk the guard exists
+   to prevent — only for an unbaselined region instead of a baselined
+   one. (2) the check-then-write sequence has a time-of-check-to-
+   time-of-use gap: nothing re-verifies the live region between
+   `detect_grounded_region_changes` returning and `publish_section`
+   actually writing, and nothing prevents two concurrent `docs
+   publish`/`docs maintain` invocations from interleaving their own
+   detect-then-write steps against each other.
+
+   **Fix, addressing both**:
+   - Immediately before calling `publish_section`, `docs publish` runs
+     `knowledge_intermediate.detect_grounded_region_changes(project_root,
+     (schema["document"],))` and locates the one finding matching this
+     `region_id`, reusing the exact same re-verification shape
+     `_apply_doc_region_edit` already performs for human-edit
+     reconciliation (region-hash, cited-id-set membership, per-id
+     content-hash — `knowledge_intermediate.py:627-748`), never a new,
+     separately-invented concurrency check:
+     - **No finding at all for this `region_id`** (no marker exists in
+       the document at all) → proceed. Genuinely nothing to overwrite.
+     - **A finding whose own `.case` is `"new"`** (the marker's text
+       already exists, unbaselined) → **not** automatically safe.
+       Compare the live region's own current text hash
+       (`GroundedRegionFinding.region_hash`, already computed by
+       `detect_grounded_region_changes`) against the hash of the body
+       about to be published. Equal → proceed (this is a legitimate
+       idempotent re-publish/baseline-catch-up of content already
+       there, e.g. a previous run that published successfully but was
+       interrupted before the baseline-advance step below ran).
+       Unequal → **refuse**, exit non-zero, name the drift explicitly
+       — the live content is not provably the compiler's own prior
+       output, so it is never assumed safe to discard.
+     - `noop` (live region matches its recorded baseline exactly) →
+       proceed; the new, reviewed draft replaces content that hasn't
+       independently drifted.
+     - `claims_changed` (live region's prose still matches baseline;
+       only its cited knowledge moved) → proceed — `docs publish`'s own
+       existing evidence-hash check already proves the draft being
+       published reflects the *current* knowledge state, so this
+       publish **is** the "current, independently verified replacement"
+       a `claims_changed` state requires; it is never read as blanket
+       permission to overwrite on its own (a `claims_changed` state
+       with a *stale* draft — one compiled before the knowledge
+       changed — would already be rejected by the existing
+       evidence-hash check, independent of this new guard).
+     - `doc_candidate` (the live region's own prose has drifted from
+       baseline, no matching knowledge change) → **refuse**, exit
+       non-zero, name the drift explicitly; this is exactly "the
+       region contains unacknowledged human changes."
+     - `concurrent_conflict` (both drifted) → **refuse**, exit
+       non-zero; requires explicit lead-controlled reconciliation,
+       never an automatic merge either direction.
+   - **Revalidation at the write boundary, and a cooperating-writer
+     lock** — the entire sequence above (detect → decide → write →
+     advance baseline) runs while holding one simple, process-external
+     lock: an exclusive, `O_CREAT|O_EXCL`-created lock file at a fixed
+     path (e.g. `.codecompass-docs-publish.lock` at the project root),
+     released (removed) in a `finally` block covering success and
+     every failure path, with a bounded wait/timeout before giving up
+     rather than blocking forever. This is a plain mutex around one
+     critical section, not a transaction framework, new persisted
+     state, or a version-control system — the lock file's own content
+     is irrelevant and it is never read for any purpose beyond "does
+     it exist." Immediately after acquiring the lock, the live
+     region's own current text hash is **re-read and re-compared**
+     against the same decision made above — closing the
+     check-then-write gap to the smallest window a single process can
+     achieve, never trusting a decision made before the lock was held.
+     **Documented limit, explicitly, not left implicit**: this lock
+     only serialises *cooperating* callers — other `docs publish`/
+     `docs maintain` invocations against the same project root, which
+     is the only concurrent writer this stage's own design needs to
+     protect against (a human editing the file in a text editor holds
+     no lock and never will; the hash re-check immediately above is
+     what catches *that* case, with or without the lock, which is why
+     both mechanisms exist rather than either alone).
+   - **Baseline advances only after the write itself genuinely
+     succeeds** — if `publish_section` raises for any reason, the
+     baseline is never advanced (unchanged from before: baseline
+     advancement was always sequenced strictly after a successful
+     write, never before or regardless of outcome). Detection
+     (`detect_grounded_region_changes`) itself remains read-only, as
+     it always was — it is the *caller*'s own responsibility, not this
+     function's, to never advance a baseline merely because detection
+     ran. A **rejected** publish (any `refuse` branch above) never
+     reaches the write step at all, so no baseline write is even
+     attempted.
+   - On a successful publish, one new, narrow, explicitly-justified
+     public function in `knowledge_intermediate.py` (not a new
+     concurrency system — a thin wrapper around the existing private
+     `_write_region_baseline`, the same call `establish_new_region_
+     baselines`/`acknowledge_stale_grounded_region`/
+     `_apply_doc_region_edit` already each make on their own successful
+     path) advances this region's baseline to the newly-published
+     body's hash and the cited records' current content hashes —
+     without this, the *next* `docs maintain` run would wrongly see the
+     just-published content as having drifted from a now-stale
+     baseline and misreport `concurrent_conflict` or `doc_candidate`
+     for a change that was actually a correct, reviewed republish.
+
+   **Regression tests required** (third corrective amendment, finding
+   C's own explicit list): an unbaselined region whose live text does
+   **not** match the body about to be published is refused, never
+   silently overwritten (the new, previously-missing case); an
+   intervening edit between the initial detect call and a deliberately
+   delayed write is caught by the write-boundary revalidation (a test
+   that monkeypatches/injects a document mutation between the two
+   steps); a cited-knowledge change between detect and write is caught
+   the same way; a `publish_section` write failure leaves the baseline
+   untouched; a legitimate republish (the `claims_changed`/matching-
+   `"new"` cases) succeeds and the baseline advances correctly
+   afterward; two concurrent `docs publish` invocations against the
+   same project serialise correctly through the lock (one succeeds,
+   the other either waits and then re-evaluates, or times out cleanly
+   — never corrupts the document or double-writes).
+4. **Cross-document grounded-region-ID validation at schema-validation
+   time (new finding, second corrective amendment, finding A).**
+   `check_doc_schema.py::_check_document_uniqueness` (confirmed by
+   direct reading, `scripts/check_doc_schema.py:233-248`) checks that
+   two schemas never govern the *same document path* — it has nothing
+   to do with region ids. The only existing duplicate-`region:<id>`
+   protection, `knowledge_intermediate._check_no_duplicate_region_ids`,
+   reads already-*published* document text at reconciliation time
+   (`detect_grounded_region_changes`/`docs maintain`) — it cannot catch
+   a collision before either section is ever compiled or published.
+   Today, with one schema-governed document, this gap is unreachable;
+   with two (87B), two different schema files could each declare a
+   section `id` that composes into the identical `region:<schema_slug>-
+   <section_id>` token (e.g. both naming a section `id: install`) with
+   nothing catching it until an actual publish happens to collide.
+   **Fix**: a new `check_doc_schema.py` check,
+   `_check_cross_document_region_id_uniqueness`, computes every
+   section's own composed region id (`f"{schema_slug}-{section['id']}"`
+   — the exact same composition `docs publish` already uses) across
+   *every* schema file passed to one `run_all` invocation, flagging any
+   value that repeats, whether across two different schema files or
+   twice within one. This requires the slug computation itself to stop
+   being private to `cli.py`'s own `_schema_slug` — moved to
+   `doc_compiler.compute_schema_slug(schema_path)`, one canonical
+   function, with `cli.py`'s three existing call sites updated to use
+   it directly (removing the private copy, never two independently-
+   maintained slug computations that could drift apart — the same
+   discipline `hash_evidence` already established in the hardening
+   pass). **Tests required, both directions**: two schema files
+   declaring the identical section `id` for *different* documents is
+   blocking; two sections with the same `id` inside *one* schema file
+   is blocking; two schema files with genuinely distinct section ids
+   (the real `README.md.schema.yaml`/`docs/getting-started.md.schema.yaml`
+   pair) produce zero findings — a real positive control, not only a
+   synthetic negative one. **Corrects §O.F criterion 9 below, which
+   previously and wrongly claimed this was "already covered" by
+   `_check_document_uniqueness`.**
 
 **End-to-end negative test, required** (governing task's own explicit
 scenario): compile a section → independently review it (both
@@ -1474,12 +1633,46 @@ knowledge change that makes an existing grounded statement genuinely
 outdated, run end to end:
 
 1. **The change enters canonical knowledge through the established
-   controlled lifecycle** — a real, evidence-backed amendment to (or
-   new record alongside) `CL-CTXT-005`, found and adjudicated the same
-   way any other candidate is (a `context-researcher`-style
-   investigation producing real evidence, `knowledge-curator`
-   adjudication, promotion to `supported`) — never a knowledge record
-   fabricated or hand-edited to force a passing test.
+   controlled lifecycle** — **a genuine, already-identified gap, not a
+   hypothetical placeholder (third corrective amendment, finding E)**:
+   `CL-CTXT-005`'s own current statement describes `sync_vendor`
+   rendering the digest "unconditionally on every whole-project sync
+   for every tracked vendor," but says nothing about what happens when
+   the underlying clone fails. Read directly,
+   `sync_vendor`'s own docstring and body (`src/codecompass/sync.py:
+   107-153`) state a real, already-implemented, already-tested
+   fallback: "If source resolution/cloning fails, `description_error`
+   is set... and `vendor/<name>/src/` falls back to the old
+   local-install-sourced snapshot (`decisions/0004`)... `FILETREE.md`/
+   `filetree.json`/the symbol index fall back to rendering from
+   `source_location()` too" — confirmed independently exercised today,
+   not merely claimed, by `tests/test_sync.py:282-293` (a real test
+   that forces `SourceResolutionError` and asserts
+   `digest.description_error` is set). This is a genuine, currently-
+   true, independently-verifiable fact about the real `VendorDigest`/
+   `sync_vendor` behaviour that `CL-CTXT-005` has simply never
+   captured — not a source-behaviour *change* manufactured for this
+   demonstration, but exactly the kind of "isolated source-behaviour
+   fact, independently established" the governing task's own §E
+   permits as a legitimate correction target. The amendment: extend
+   `CL-CTXT-005`'s own statement (or add a new, directly-related Claim)
+   to state this fallback plainly, with `EV-CTXT-*`-style evidence
+   citing `sync.py:128-133` and `tests/test_sync.py:282-293` directly
+   — found and adjudicated the same way any other candidate is (a
+   `context-researcher`-style investigation producing this exact real
+   evidence, `knowledge-curator` adjudication, promotion to
+   `supported`) — never a knowledge record fabricated, weakened, or
+   arbitrarily rewritten to force a passing test. **If this specific
+   investigation does not actually confirm the amendment is warranted
+   once genuinely attempted at implementation time** (e.g. the
+   fallback turns out to already be adequately captured elsewhere, or
+   the evidence doesn't hold up to the same scrutiny Stage 87A's own
+   real demonstration applied), **this plan requires reporting that
+   limitation honestly and either finding a second legitimate
+   candidate or substituting a synthetic, explicitly-labelled
+   negative-control fixture for this one acceptance criterion alone —
+   never manufacturing a successful demonstration to avoid reporting
+   a gap.**
 2. **The dependency relationship correctly identifies the affected
    section** — `README.md`'s `vendor-digest-concept` region, the only
    real compiled section that cites `CL-CTXT-005` today.
@@ -1622,8 +1815,21 @@ explicitly, per the governing task's own instruction):
 4. A real, accepted knowledge change (§O.E's own worktree-isolated
    `CL-CTXT-005` amendment) materially alters a documented fact and
    correctly produces a `claims_changed` finding for exactly the
-   section that cites it, and no finding at all for `intermediate-
-   knowledge-layer` (§O.D.0), which doesn't. **Real demonstration.**
+   section that cites it (`vendor-digest-concept`) — **corrected,
+   third corrective amendment, finding B**: this criterion previously
+   and wrongly required "no finding at all" for `intermediate-
+   knowledge-layer`, when that region already carries its own real,
+   pre-existing `doc_candidate` finding regardless of this change
+   (§O.D.0) — "no finding at all" was never achievable and was never
+   the actual guarantee being tested. The real guarantee: this
+   unrelated change neither suppresses, alters, nor flips
+   `intermediate-knowledge-layer`'s own pre-existing `doc_candidate`
+   finding to any other state — it stays exactly `doc_candidate`,
+   checked explicitly before and after this scenario runs, and the
+   region-by-region correctness check scopes narrowly to
+   `vendor-digest-concept` alone transitioning through its own real
+   lifecycle (`noop` → `claims_changed` → recompiled/republished →
+   `noop` again). **Real demonstration.**
 5. The correct grounded section (`vendor-digest-concept`) becomes
    stale and is subsequently recompiled/corrected and independently
    re-verified (both review dispatches) before republication — §O.E
@@ -1645,13 +1851,19 @@ explicitly, per the governing task's own instruction):
    layer`'s own untouched `doc_candidate` state throughout), is
    identical before and after every test case and the real
    demonstration above runs.
-9. A duplicate `region:<id>` across `README.md` and `docs/
+9. A duplicate composed `region:<id>` across `README.md` and `docs/
    getting-started.md` is detected and rejected by `check_doc_schema.py`
-   (schema-validation time, already covered by Stage 87A's own
-   `_check_document_uniqueness`/hyphenated-id tests, exercised here
-   with a genuine two-document case for the first time) — `L-118`'s
-   own schema-slug-must-be-tested-against-a-real-separator lesson,
-   applied to this genuinely new two-document configuration.
+   at schema-validation time — **corrected, third corrective amendment,
+   finding A**: this is `_check_cross_document_region_id_uniqueness`
+   (§O.D point 4), a genuinely new check, never "already covered" by
+   `_check_document_uniqueness` (which only ever checked duplicate
+   *document paths*, confirmed by direct reading — a materially
+   different, pre-existing check this criterion previously and wrongly
+   conflated with region-id uniqueness). `L-118`'s own
+   schema-slug-must-be-tested-against-a-real-separator lesson still
+   applies to this new check's own slug computation
+   (`doc_compiler.compute_schema_slug`), exercised here with a genuine
+   two-document case for the first time.
 10. Running `docs maintain` twice in a row with nothing changed between
     the runs produces zero new reconciliation-candidate manifest files
     on the second run — tested against the real, already-existing
@@ -1763,6 +1975,62 @@ the governing task, reflected throughout §O), or deferred-scope list.
 No Stage 87C material pulled in. No new agent, knowledge store, or
 general-purpose execution framework introduced by any of the seven
 corrections above.
+
+### O.J Third corrective amendment summary (2026-11-07)
+
+A further review of the already-READY, twice-amended plan found five
+more findings, all corrected in place above:
+
+- **A (cross-document region-id gap)** — `check_doc_schema.py::
+  _check_document_uniqueness` checks duplicate document *paths* only,
+  confirmed by direct reading; §O.F criterion 9 previously and wrongly
+  claimed this already covered duplicate *region ids*. Superseded by a
+  new `_check_cross_document_region_id_uniqueness` check and a shared
+  `doc_compiler.compute_schema_slug` (§O.D point 4).
+- **B (acceptance-criteria wording error)** — criterion 4 required "no
+  finding at all" for `intermediate-knowledge-layer` after an unrelated
+  knowledge change, impossible given its own real, pre-existing
+  `doc_candidate` state (§O.D.0). Corrected to require the finding
+  stays unchanged, never suppressed or altered by an unrelated change
+  (§O.F criterion 4).
+- **C (concurrency guard still fail-open in two ways)** — the
+  guard's own `"new"`-case branch treated an unbaselined-but-existing
+  region as automatically safe to overwrite, and nothing re-verified
+  the live target between the initial check and the actual write.
+  Superseded by a content-hash comparison for the `"new"` case, a
+  write-boundary revalidation inside a simple cooperating-writer lock
+  (documented limits: it protects concurrent `docs publish`/`docs
+  maintain` invocations, not a human editor, which the hash re-check
+  catches regardless), and explicit baseline-advance-only-on-success
+  rules (§O.D point 3).
+- **D (interactive/billable bootstrap conflated with deterministic
+  bootstrap)** — bare `codecompass` and `codecompass --budget 0` were
+  treated as interchangeable against the same candidate-bearing
+  fixture, which would make bare `codecompass` non-deterministic
+  inside the harness. Superseded by three distinct scenarios against
+  two distinct fixtures (a new no-candidates fixture for bare
+  `codecompass`; `toy-project` for `--budget 0`; a mocked test for the
+  interactive-confirm/authorised-enrichment path), plus a real
+  correction to `docs/getting-started.md`'s own self-contradictory
+  "never asks you anything" claim (§O.B, §O.C).
+- **E (knowledge-change scenario was still a placeholder)** — §O.E
+  named `CL-CTXT-005` as the amendment target without identifying an
+  actual, evidence-backed gap. Superseded by a concrete, independently
+  verified one: `sync_vendor`'s own real clone-failure fallback
+  (`decisions/0004`, already exercised by `tests/test_sync.py:
+  282-293`) is genuinely true, current behaviour `CL-CTXT-005` has
+  never captured — with an explicit instruction to report the
+  limitation honestly, never substitute a fabricated change, if this
+  specific investigation doesn't hold up once genuinely attempted
+  (§O.E point 1).
+
+No change to Stage 87B's own objective or four-deliverable scope. No
+Stage 87C material pulled in. No new agent, knowledge store, or
+general-purpose execution framework. This amendment authorises
+implementation to proceed immediately following a READY verdict on
+this corrected plan (§R below) — unlike the prior two amendments, this
+governing task explicitly authorises Stage 87B implementation itself,
+not planning alone.
 
 ## P. Independent planning review of the Stage 87B plan (§O)
 
@@ -1913,3 +2181,61 @@ human-edit preservation, not mere successful generation or detection.
 **This corrective amendment is implementation-ready.** Stage 87B
 implementation itself still requires a further, separate, explicit
 authorisation — unchanged by this review.
+
+## R. Independent planning review of the third corrective amendment (2026-11-07)
+
+**READY WITH NON-BLOCKING OBSERVATIONS.** A fresh dispatch, with no
+reliance on §P/§Q's prior verdicts, independently re-verified all five
+§O.J findings directly against the real repository — reading the
+actual cited functions in full, running `detect_grounded_region_
+changes` and `tests/test_sync.py`'s own real fallback test directly,
+and checking `examples/toy-project/`'s real dependency set — rather
+than trusting this plan's own prose for any of them. All five held up
+exactly as described:
+
+- **A** — confirmed `_check_document_uniqueness` (`check_doc_schema.py:
+  233-248`) tracks document paths only; confirmed
+  `_check_no_duplicate_region_ids` only fires at reconciliation time
+  against already-published text; confirmed the `compute_schema_slug`
+  precedent (`hash_evidence`, already shared between `doc_compiler.py`
+  and `cli.py`) is real.
+- **B** — reproduced `intermediate-knowledge-layer doc_candidate` /
+  `readme-md-vendor-digest-concept noop` directly; confirmed "no
+  finding at all" was genuinely unachievable and the corrected wording
+  is right.
+- **C** — read `detect_grounded_region_changes` and
+  `_apply_doc_region_edit` in full, confirmed the former is genuinely
+  read-only and the latter's re-verification pattern is real and
+  precisely as cited (after a citation-range fix, `627-748`, applied
+  in this same pass); confirmed `docs publish`'s real current code has
+  no drift check or lock today, so the gap and the fix are both real;
+  confirmed the proposed lock is a plain mutex, not a new concurrency
+  system.
+- **D** — confirmed `docs/getting-started.md`'s real, live
+  self-contradiction (line 19 vs. line 25); confirmed `_maybe_run_
+  enrichment`'s own docstring states budget is checked before the
+  confirmation prompt, matching its real code; confirmed
+  `examples/toy-project/` genuinely has real, imported, unenriched
+  dependencies, making the original one-fixture design genuinely
+  unsafe for a no-stdin harness.
+- **E** — confirmed `CL-CTXT-005`'s real current statement says
+  nothing about the clone-failure fallback; confirmed `sync_vendor`'s
+  real fallback behaviour and ran `tests/test_sync.py`'s own real,
+  passing test for it directly — a genuine, independently-verifiable,
+  currently-true gap, not a manufactured scenario.
+
+One non-blocking, pre-existing citation imprecision was found (not one
+of the five findings) — `_apply_doc_region_edit`'s own cited line
+range was `627-698` in two places, when the function actually runs to
+line 748 — fixed in this same pass (now `627-748` everywhere, matching
+§Q's own already-correct citation).
+
+Structural checks also confirmed: no Stage 87C scope creep; the plan's
+own four-deliverable scope and deferred-scope list are unchanged; no
+new agent, knowledge store, or general-purpose framework; every
+renumbered cross-reference (`§O.D.0`, `§O.D` points 1-4, `§O.F`
+criteria 4/9) points to the content it claims to.
+
+**This third corrective amendment is implementation-ready.** Per the
+governing task's own explicit authorisation, Stage 87B implementation
+now proceeds directly.
