@@ -11794,9 +11794,10 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   workflow mistake; the retro's own proposed fix (print/log the
   broker's existing `usage` field from `compose_section`/`docs compile`)
   needs no new infrastructure, only wiring.
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** first occurrence.
-- **promoted_to:** (pending — see curation note)
+- **promoted_to:** `planning/ROADMAP.md` "Future-improvement backlog"
+  table (`faa87be`)
 - **curation note (2026-11-07, knowledge-curator):** all required
   fields present — accepted as filed. The cited evidence is the retro's
   own prose, read directly; it is an honest disclosure of a named gap,
