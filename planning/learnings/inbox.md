@@ -11621,3 +11621,210 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   data back from the same verified file, not a separate in-memory copy,
   with a mutation-after-write regression test -- user-approved per §0)
   @ <landing commit>`.
+
+### L-121 — building a real `unshare`/`pivot_root` namespace sandbox a second time surfaced four new, reproduced footguns the first build never hit
+
+- **origin:** Phase 87 (Documentation Schema and Knowledge-Compiled
+  Documentation), Stage 87B, `scripts/execute_doc_example.py`'s real
+  execution harness (second real build of this sandbox technique, after
+  `scripts/verify_cleanroom_isolation.py`, Phase 81B)
+- **date:** 2026-11-07
+- **project_revision:** `0f6a268` (Stage 87B implementation commit)
+- **observation:** Building `execute_doc_example.py`'s real `unshare
+  --user --map-root-user --mount --net --pid --fork` + `pivot_root`
+  sandbox (reusing `verify_cleanroom_isolation.py`'s own technique)
+  required finding and fixing four real, reproduced construction
+  problems that the first sandbox (`verify_cleanroom_isolation.py`)
+  never hit, because its own probe never ran `git`/`pip`/an installed
+  console script inside the sandbox:
+  1. A venv's installed console-script shebang hardcodes the venv's own
+     real absolute path — mounting the venv at an alias path instead of
+     its own real absolute path breaks exec resolution.
+  2. `git` (and other real-world tools) open `/dev/null`/`/dev/urandom`/
+     `/dev/random` directly — a sandbox that only builds the
+     directories its own code paths obviously need fails with a
+     non-obviously-sandbox-related error (`fatal: could not open
+     '/dev/null'`, `unable to get random bytes for temporary file`)
+     rather than a permission/mount error.
+  3. A `git insteadOf`-redirected clone needs the mirror's own *data*
+     directory bind-mounted into the sandbox at its real absolute path,
+     not only the git config file that names it via `file://<path>`.
+  4. Chaining setup commands before a final `exec env -i <vars> ...`
+     (the step that actually sets `PATH`) means the setup commands run
+     with no `PATH` at all; a trailing `|| true` on that chain silently
+     swallows a "command not found" failure rather than surfacing it.
+  Each was a real, reproduced error during this session (not
+  hypothetical), each confirmed fixed by a real subsequent successful
+  sandboxed run.
+- **evidence:** `scripts/execute_doc_example.py` lines 157-165
+  (`/dev/null`/`/dev/urandom`/`/dev/random` touched in
+  `_build_sandbox_tree`, with the `fatal: could not open '/dev/null'`
+  failure mode named directly in the comment), lines 314-321 (venv
+  mounted at `HARNESS_VENV_DIR`'s own real absolute path, with the
+  shebang-resolution reasoning stated directly), lines 330-340 (git
+  mirror data directory bind-mounted at its own real absolute path
+  alongside the `insteadOf` config, with the "does not appear to be a
+  git repository" failure mode named directly), lines 359-366 (setup
+  commands run under the same `env -i {env_vars}` as the final command,
+  with the silently-swallowed "command not found" failure mode named
+  directly). `planning/retros/phase-87-stage-87b-knowledge-change-
+  demonstration.md` corroborates this was real, iterative, reproduced
+  debugging, not a hypothetical design discussion.
+- **classification:** architecture — a current-state footgun about a
+  reusable sandboxing technique this codebase already uses twice
+  (`verify_cleanroom_isolation.py`, `execute_doc_example.py`), not a
+  one-off implementation detail fully captured by one script's own
+  tests: a third, future build of the same `unshare`/`pivot_root`
+  technique (e.g. Stage 87C or later) would plausibly hit the same four
+  gaps again, and there is nowhere today that names them for a builder
+  to consult before rediscovering them the same expensive way.
+- **status:** promoted
+- **recurrence:** first occurrence as a filed candidate, but this is
+  itself the project's *second* real build of this exact sandboxing
+  technique (after Phase 81B's `verify_cleanroom_isolation.py`), and
+  the first build's own probe never exercised `git`/`pip`/an installed
+  console script, so it never had the chance to hit these four — the
+  generality claim rests on the technique being reused twice already
+  and each reuse surfacing more of its own footguns, not on this
+  specific list having recurred verbatim.
+- **promoted_to:** `docs/architecture/overview.md` "Known footguns"
+  section (Stage 87B's own closeout commit)
+- **curation note (2026-11-07, knowledge-curator):** all required
+  fields present (origin, date, project_revision, observation, evidence,
+  classification, status) — accepted as filed.
+
+  **Independently reproduced the cited evidence directly** (no `Bash`
+  in this role — read `scripts/execute_doc_example.py` directly). All
+  four claimed fixes are present exactly as described: `_build_sandbox_
+  tree` touches the three device nodes with the `/dev/null` failure
+  mode named in its own comment (lines 157-165); the venv is mounted at
+  `str(HARNESS_VENV_DIR.relative_to(HARNESS_VENV_DIR.anchor))` — i.e.
+  its own real absolute path, not an alias — with the shebang-resolution
+  reasoning stated in the comment immediately above (lines 314-321); the
+  git mirror's own data directory is bind-mounted at
+  `str(GIT_MIRROR_DIR.relative_to(GIT_MIRROR_DIR.anchor))` alongside the
+  `insteadOf` config file, with the "mirror data never mounted, only its
+  config entry" failure mode named directly (lines 330-340); and every
+  `command.setup` entry runs as `env -i {env_vars} ... || true`, matching
+  the comment's own stated reasoning about PATH not yet being set before
+  this point (lines 359-366). No discrepancy found between the entry's
+  claims and the code.
+
+  **Recommendation: promote**, as `architecture`, to `docs/architecture/
+  overview.md`'s existing "Known footguns" section (which already holds
+  one entry, `L-109`, in exactly this format) — a destination the lead
+  or `docs-maintainer` applies, never this role directly. Draft text:
+
+  > - **A Linux namespace sandbox built from `unshare --user
+  >   --map-root-user --mount --net --pid --fork` + `pivot_root` needs
+  >   more than the directories a command's own code paths obviously
+  >   touch — four real, reproduced gaps found while building a second
+  >   such sandbox (`scripts/execute_doc_example.py`), after the first
+  >   (`scripts/verify_cleanroom_isolation.py`) never hit them because
+  >   its own probe never ran `git`/`pip`/an installed console script:**
+  >   1. A venv's installed console-script shebang hardcodes the venv's
+  >      own real absolute path — mount the venv at that same real path
+  >      inside the sandbox, never an alias, or exec resolution breaks.
+  >   2. `git` (and other real-world tools) open `/dev/null`/
+  >      `/dev/urandom`/`/dev/random` directly — bind-mount these three
+  >      device nodes explicitly, or the failure (`fatal: could not
+  >      open '/dev/null'`, `unable to get random bytes for temporary
+  >      file`) looks nothing like a sandboxing problem.
+  >   3. A `git insteadOf`-redirected clone needs the mirror's own
+  >      *data* directory bind-mounted at its real absolute path too,
+  >      not only the config file that names it via `file://<path>`.
+  >   4. A setup command chained before a final `exec env -i <vars> ...`
+  >      (the step that actually sets `PATH`) runs with no `PATH` of its
+  >      own; a trailing `|| true` on that chain silently swallows
+  >      "command not found" rather than surfacing it — give setup steps
+  >      the same `env -i` environment the final command gets, and don't
+  >      blanket-swallow a setup step's own exit code.
+  >
+  >   Confirmed by a real, reproduced error and a real subsequent
+  >   successful sandboxed run for each (Phase 87 Stage 87B,
+  >   `scripts/execute_doc_example.py`). (`L-121`.)
+
+  Not held for a second occurrence: matching the project's own
+  single-occurrence precedent for a real, reproduced, code-level finding
+  (`L-021`/`L-070`/`L-075`/`L-087`/`L-088`/`L-109`/`L-116`-`L-120`), four
+  independently-reproduced construction bugs in one real build is
+  already the evidence bar, not merely an asserted risk. `status` left
+  at `candidate` rather than `retained` (unlike `L-120`) because this
+  destination (`docs/architecture/overview.md`) needs no `CLAUDE.md`
+  §0 user approval — once the lead/`docs-maintainer` lands the footguns
+  entry above, flip `status` to `promoted`, record the landing commit in
+  `promoted_to`, and add this `promoted.md` line: `L-121 | 2026-11-07 |
+  architecture | docs/architecture/overview.md "Known footguns"
+  (unshare/pivot_root namespace-sandbox construction gaps: venv-mount
+  path aliasing, missing /dev nodes, unmounted git-mirror data, PATH-less
+  setup chain) @ <landing commit>`.
+
+### L-122 — `docs compile`'s CLI output never surfaces the real clean-room broker call's own usage/cost figures, even though the data exists in the broker's own response
+
+- **origin:** Phase 87 (Documentation Schema and Knowledge-Compiled
+  Documentation), Stage 87B, real knowledge-change demonstration
+  (bounded cost/value log)
+- **date:** 2026-11-07
+- **project_revision:** `0f6a268` (Stage 87B implementation commit)
+- **observation:** During the real knowledge-change demonstration, two
+  of the seven logged steps' token/tool-use/duration usage data could
+  not be captured and were disclosed as unavailable rather than
+  estimated — one lost to a transient rate-limit interruption, but the
+  other (the compiled-arm draft-compile step itself) simply because
+  `docs compile`'s own CLI invocation never surfaced the real clean-room
+  broker call's own usage/cost figures at all, even though that data
+  exists in the broker's own response (its JSON includes a `usage`
+  field, per `scripts/verify_cleanroom_isolation.py`'s own fake-broker
+  stand-in, which deliberately mirrors the real response shape:
+  `{"ok": True, "output": ..., "usage": {}}`). This is a real,
+  named gap in this stage's own cost-accounting instrumentation,
+  distinct from the rate-limit-related gaps.
+- **evidence:** `planning/retros/phase-87-stage-87b-knowledge-change-
+  demonstration.md` "Bounded cost/value log" table (compiled-arm draft
+  compile row: "not captured (the broker's own response usage was not
+  surfaced by this CLI invocation — disclosed as unavailable, not
+  estimated)") and "What didn't work" ("The real clean-room broker
+  call's own usage/cost figures are not currently surfaced by `docs
+  compile`'s CLI output at all... A future pass could have
+  `compose_section`/`docs compile` print the broker response's own
+  `usage` field if present, closing this gap without needing new
+  infrastructure").
+- **classification:** future-improvement — a real, scoped, already-
+  sketched instrumentation gap, not an invariant violation or a
+  workflow mistake; the retro's own proposed fix (print/log the
+  broker's existing `usage` field from `compose_section`/`docs compile`)
+  needs no new infrastructure, only wiring.
+- **status:** candidate
+- **recurrence:** first occurrence.
+- **promoted_to:** (pending — see curation note)
+- **curation note (2026-11-07, knowledge-curator):** all required
+  fields present — accepted as filed. The cited evidence is the retro's
+  own prose, read directly; it is an honest disclosure of a named gap,
+  not a reproduced code-level defect, so no separate reproduction was
+  attempted (there is nothing executable to re-run — the gap is an
+  absence of instrumentation, confirmed by its absence from
+  `scripts/compile_doc_section.py`'s own CLI-facing output path).
+
+  **Recommendation: retain as a backlog item, not full promotion** —
+  classification is `future-improvement`, whose destination per
+  `learning-lifecycle.md` §4 is `ROADMAP.md`, which this role hands to
+  the `roadmap-context-curator` rather than drafting directly. This is
+  real and worth not losing, but it is minor, already-scoped, bounded
+  tooling polish (print an existing field) with no urgency and no
+  dependency from any other open phase — not worth a dedicated roadmap
+  phase of its own. Suggested handling: a one-line backlog/revisit-
+  trigger note in `planning/ROADMAP.md`'s deferred/not-funded section
+  (e.g. "`docs compile`/`compose_section` should print the clean-room
+  broker response's own `usage` field when present, so compile-step
+  cost isn't silently unlogged — found during Stage 87B's real
+  demonstration, `L-122`; revisit alongside any future cost-accounting
+  or `docs compile` CLI-surface work"), left for the
+  `roadmap-context-curator` to place and word precisely. `status` left
+  at `candidate` (not `retained`) since this is explicitly a hand-off
+  for a different curator to place, not a firm recommendation this role
+  is only waiting on `CLAUDE.md` approval for. No `promoted.md` line
+  yet — add one once the `roadmap-context-curator` actually lands the
+  backlog note, in the usual form: `L-122 | 2026-11-07 |
+  future-improvement | planning/ROADMAP.md (backlog: surface the
+  clean-room broker's own usage/cost figures in docs compile's CLI
+  output) @ <landing commit>`.

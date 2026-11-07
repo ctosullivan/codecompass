@@ -104,4 +104,5 @@ L-108 | 2026-10-29 | workflow | planning/v1-redefinition/agent-led-development.m
 L-109 | 2026-10-29 | architecture | docs/architecture/overview.md "Known footguns" (Rich Table cell truncation at default render width) @ (this corrective pass's own closeout commit)
 L-111 | 2026-11-02 | scoped-rule | .claude/agents/release-phase-auditor.md "What to check" item 12 (per-kind test coverage for kind-dispatching functions) @ (this amendment's own closeout commit)
 L-115 | 2026-11-03 | workflow | .claude/agents/release-phase-auditor.md "Hard rules" (restore any git revision materialized over a live tracked path for before/after comparison) + planning/v1-redefinition/agent-led-development.md §1 (general cross-agent version) @ (this corrective pass's own closeout commit)
+L-121 | 2026-11-07 | architecture | docs/architecture/overview.md "Known footguns" (unshare/pivot_root namespace-sandbox construction gaps: venv-mount path aliasing, missing /dev nodes, unmounted git-mirror data, PATH-less setup chain) @ (Stage 87B's own closeout commit)
 

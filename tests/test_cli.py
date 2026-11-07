@@ -1,4 +1,6 @@
 import json
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -3098,6 +3100,179 @@ def test_docs_publish_never_advances_baseline_when_the_write_itself_fails(
 
     state_path = tmp_path / "planning" / ".grounding-state.toml"
     assert not state_path.exists() or "demo-s1" not in state_path.read_text(encoding="utf-8")
+
+
+def test_docs_publish_catches_an_intervening_document_edit_at_the_write_boundary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Plan's own §O.D point 3 required regression test: a mutation
+    # injected between the initial detect call and the write must be
+    # caught by the write-boundary revalidation, not silently
+    # overwritten. Reproduced directly before this re-check existed:
+    # the human edit below was clobbered without it.
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    doc_path = tmp_path / "docs" / "demo.md"
+    cli_module.doc_compiler.publish_section(
+        doc_path, region_id="demo-s1", record_ids=["CL-DEMO-001"], body="A fact.",
+    )
+    cli_module.knowledge_intermediate.establish_new_region_baselines(
+        tmp_path, cli_module.knowledge_intermediate.detect_grounded_region_changes(
+            tmp_path, ("docs/demo.md",)
+        ),
+    )
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    human_edit = (
+        "<!-- codecompass-grounded-by: CL-DEMO-001 region:demo-s1 -->\n"
+        "A human edit landed between detect and write.\n"
+        "<!-- /codecompass-grounded-by -->\n"
+    )
+    call_count = {"n": 0}
+    real_detect = cli_module.knowledge_intermediate.detect_grounded_region_changes
+
+    def _detect_then_mutate_once(*args, **kwargs):
+        call_count["n"] += 1
+        result = real_detect(*args, **kwargs)
+        if call_count["n"] == 1:
+            doc_path.write_text(human_edit, encoding="utf-8")
+        return result
+
+    monkeypatch.setattr(
+        cli_module.knowledge_intermediate,
+        "detect_grounded_region_changes",
+        _detect_then_mutate_once,
+    )
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert call_count["n"] == 2, "the write-boundary revalidation must re-run detection"
+    assert doc_path.read_text(encoding="utf-8") == human_edit, (
+        "an edit landing between the first check and the write must survive, never be "
+        "silently overwritten by the stale decision made before it"
+    )
+
+
+def test_docs_publish_catches_an_intervening_cited_knowledge_change_at_the_write_boundary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Same requirement, for the knowledge side rather than the document
+    # side: a cited record's own content changing between detect and
+    # write must be caught the same way.
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    doc_path = tmp_path / "docs" / "demo.md"
+    cli_module.doc_compiler.publish_section(
+        doc_path, region_id="demo-s1", record_ids=["CL-DEMO-001"], body="A fact.",
+    )
+    cli_module.knowledge_intermediate.establish_new_region_baselines(
+        tmp_path, cli_module.knowledge_intermediate.detect_grounded_region_changes(
+            tmp_path, ("docs/demo.md",)
+        ),
+    )
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    call_count = {"n": 0}
+    real_detect = cli_module.knowledge_intermediate.detect_grounded_region_changes
+
+    def _detect_then_change_knowledge_once(*args, **kwargs):
+        call_count["n"] += 1
+        result = real_detect(*args, **kwargs)
+        if call_count["n"] == 1:
+            _write_knowledge_claim(tmp_path, "demo", "CL-DEMO-001", "a CHANGED demo fact")
+        return result
+
+    monkeypatch.setattr(
+        cli_module.knowledge_intermediate,
+        "detect_grounded_region_changes",
+        _detect_then_change_knowledge_once,
+    )
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert call_count["n"] == 2, "the write-boundary revalidation must re-run detection"
+    assert "A fact." in doc_path.read_text(encoding="utf-8"), (
+        "a republish must be refused, not silently written, when the cited knowledge "
+        "changed between the first check and the write"
+    )
+
+
+def test_docs_publish_two_concurrent_invocations_serialise_through_the_lock(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Plan's own §O.D point 3 required regression test: two concurrent
+    # `docs publish` invocations against the same project/section must
+    # serialise correctly through the lock -- one succeeds, the other
+    # either waits and then re-evaluates, or times out cleanly -- and
+    # the document is never corrupted or double-written. Calling
+    # `docs_publish` directly (it is a plain function once Typer's
+    # decorator has registered it) avoids `CliRunner`'s own global
+    # stdout-redirection, which is not safe to race across real threads.
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    doc_path = tmp_path / "docs" / "demo.md"
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    section_lock = threading.Lock()
+    active = 0
+    max_concurrent = 0
+    entry_times: list[float] = []
+    real_publish_section = cli_module.doc_compiler.publish_section
+
+    def _slow_publish_section(*args, **kwargs):
+        nonlocal active, max_concurrent
+        with section_lock:
+            active += 1
+            max_concurrent = max(max_concurrent, active)
+            entry_times.append(time.monotonic())
+        time.sleep(0.3)
+        try:
+            return real_publish_section(*args, **kwargs)
+        finally:
+            with section_lock:
+                active -= 1
+
+    monkeypatch.setattr(cli_module.doc_compiler, "publish_section", _slow_publish_section)
+
+    errors: list[BaseException] = []
+
+    def _run() -> None:
+        try:
+            cli_module.docs_publish(schema_path, "s1")
+        except BaseException as exc:  # noqa: BLE001 -- captured and asserted on below
+            errors.append(exc)
+
+    t1 = threading.Thread(target=_run)
+    t2 = threading.Thread(target=_run)
+    t1.start()
+    time.sleep(0.05)  # let t1 acquire the lock first and enter its own sleep
+    t2.start()
+    t1.join(timeout=10)
+    t2.join(timeout=10)
+
+    assert not t1.is_alive() and not t2.is_alive()
+    assert not errors, f"neither concurrent invocation should raise: {errors!r}"
+    assert max_concurrent == 1, (
+        "the two invocations' own detect-decide-write critical sections overlapped -- "
+        "the publication-time lock failed to serialise them"
+    )
+    assert len(entry_times) == 2
+    # Genuinely concurrent, not accidentally sequential with zero real
+    # contention: the second invocation's own entry must be gated on the
+    # first's own in-progress sleep, not merely already-finished before
+    # the second thread was even started.
+    assert entry_times[1] - entry_times[0] >= 0.25
+
+    content = doc_path.read_text(encoding="utf-8")
+    assert content.count("<!-- codecompass-grounded-by: CL-DEMO-001 region:demo-s1 -->") == 1
+    assert content.count("<!-- /codecompass-grounded-by -->") == 1
+    assert "A fact." in content
+
+    lock_path = tmp_path / cli_module._DOC_PUBLISH_LOCK_NAME
+    assert not lock_path.exists()
 
 
 def test_doc_publish_lock_times_out_cleanly_when_already_held(tmp_path: Path) -> None:

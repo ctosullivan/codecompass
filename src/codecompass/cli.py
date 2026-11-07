@@ -2140,11 +2140,20 @@ def _doc_publish_lock(project_root: Path, *, timeout: float = 30.0, poll_interva
     project root, the only concurrent writer this stage's own design
     needs to protect against. It does not and cannot protect against a
     human editing the target document directly in a text editor, which
-    holds no lock and never will; `doc_compiler.decide_publish_safety`'s
-    own content-hash revalidation (run while this lock is held,
-    immediately before the write) is what catches *that* case, with or
-    without the lock -- which is why both mechanisms exist rather than
-    either alone."""
+    holds no lock and never will; `docs_publish` re-runs
+    `doc_compiler.decide_publish_safety`'s own content-hash
+    revalidation a second time, immediately before the write, while
+    this lock is held -- which is what catches *that* case, with or
+    without the lock. This narrows, but cannot fully close, the window
+    between that final check and the write itself (both are plain,
+    synchronous Python with no further revalidation in between) -- an
+    edit landing in that specific, much smaller gap is not caught. A
+    full transactional write (e.g. write-then-atomic-rename with a
+    third, post-write confirmation) would close it completely but is
+    deliberately not built here, matching this stage's own
+    smallest-coherent-change instruction; the residual window is orders
+    of magnitude smaller than the one this re-check closes and is
+    disclosed here rather than silently assumed away."""
     lock_path = project_root / _DOC_PUBLISH_LOCK_NAME
     deadline = time.monotonic() + timeout
     while True:
@@ -2210,22 +2219,30 @@ def docs_publish(
     # Reject if the schema section or the required knowledge changed
     # since compile, independent of the review records below
     # (requirement §N.A.7) -- re-derived live, never trusted from the
-    # pending manifest's own say-so.
-    live_schema_section_sha256 = oracle.sha256_text(json.dumps(section, sort_keys=True))
-    if live_schema_section_sha256 != pending.get("schema_section_sha256"):
-        console.print(
-            "[red]error:[/red] this section's schema definition has changed since it "
-            "was compiled -- recompile and re-review before publishing"
-        )
-        raise typer.Exit(code=1)
+    # pending manifest's own say-so. Checked once now (fail fast,
+    # before acquiring the lock or reading review records) and again,
+    # inside the lock, immediately before the write (below) -- a
+    # knowledge change landing in the gap between this check and the
+    # write must be caught there too, not only here.
+    def _evidence_staleness_error() -> str | None:
+        live_schema_section_sha256 = oracle.sha256_text(json.dumps(section, sort_keys=True))
+        if live_schema_section_sha256 != pending.get("schema_section_sha256"):
+            return (
+                "this section's schema definition has changed since it was compiled -- "
+                "recompile and re-review before publishing"
+            )
+        live_hydrated = doc_compiler.hydrate_records(project_root, pending.get("record_ids", []))
+        live_evidence_sha256 = doc_compiler.hash_evidence(live_hydrated)
+        if live_evidence_sha256 != pending.get("evidence_sha256"):
+            return (
+                "required knowledge has changed since this section was compiled -- "
+                "recompile and re-review before publishing"
+            )
+        return None
 
-    live_hydrated = doc_compiler.hydrate_records(project_root, pending.get("record_ids", []))
-    live_evidence_sha256 = doc_compiler.hash_evidence(live_hydrated)
-    if live_evidence_sha256 != pending.get("evidence_sha256"):
-        console.print(
-            "[red]error:[/red] required knowledge has changed since this section was "
-            "compiled -- recompile and re-review before publishing"
-        )
+    staleness_error = _evidence_staleness_error()
+    if staleness_error is not None:
+        console.print(f"[red]error:[/red] {staleness_error}")
         raise typer.Exit(code=1)
 
     reviews: dict[str, dict] = {}
@@ -2285,15 +2302,52 @@ def docs_publish(
     # baseline, all while holding the cooperating-writer lock, so the
     # live target is revalidated at the write boundary, never trusted
     # from a decision made before the lock was held.
+    def _detect_and_decide() -> str | None:
+        findings = knowledge_intermediate.detect_grounded_region_changes(
+            project_root, (document_name,)
+        )
+        matching = next((f for f in findings if f.region_id == region_id), None)
+        return doc_compiler.decide_publish_safety(matching, pending["draft_body"])
+
     try:
         with _doc_publish_lock(project_root):
-            findings = knowledge_intermediate.detect_grounded_region_changes(
-                project_root, (document_name,)
-            )
-            matching = next((f for f in findings if f.region_id == region_id), None)
-            refusal = doc_compiler.decide_publish_safety(matching, pending["draft_body"])
+            refusal = _detect_and_decide()
             if refusal is not None:
                 console.print(f"[red]error:[/red] {refusal}")
+                raise typer.Exit(code=1)
+
+            # Re-detect immediately before the write itself: this
+            # function and `detect_grounded_region_changes` are both
+            # plain, non-blocking Python -- nothing stops a concurrent,
+            # non-cooperating editor's own disk write from landing in
+            # the gap between the first check above and the write
+            # below. Re-running the same check right at the write
+            # boundary closes that window (reproduced directly: a
+            # document mutation injected between the first check and
+            # the write was silently overwritten before this re-check
+            # was added).
+            refusal = _detect_and_decide()
+            if refusal is not None:
+                console.print(
+                    f"[red]error:[/red] the live document changed between the initial "
+                    f"check and publication -- {refusal}"
+                )
+                raise typer.Exit(code=1)
+
+            # Same reasoning, for the cited knowledge: a change landing
+            # in the same gap must also be caught here, not only by the
+            # earlier, pre-lock check above (reproduced directly: a
+            # knowledge mutation injected between the first check and
+            # the write was silently published over before this
+            # re-check existed, since `claims_changed` is otherwise a
+            # legitimate reason to proceed and cannot by itself tell a
+            # fresh republish apart from a now-stale one).
+            staleness_error = _evidence_staleness_error()
+            if staleness_error is not None:
+                console.print(
+                    f"[red]error:[/red] the cited knowledge changed between the initial "
+                    f"check and publication -- {staleness_error}"
+                )
                 raise typer.Exit(code=1)
 
             doc_compiler.publish_section(

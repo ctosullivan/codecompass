@@ -9,6 +9,118 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 87, Stage 87B — two-document governance, execution harness,
+  publication concurrency guard, real knowledge-change demonstration**
+  (plan's own §O, amended three times after independent review found
+  seven, then five, further findings before implementation was
+  authorised). Delivered: (1) a second schema-governed document
+  (`docs/getting-started.md`, 5 of 6 real sections governed), its
+  self-contradicting "## First run" section corrected (it claimed the
+  first run "never asks you anything and never makes an AI call on
+  its own" immediately above a description of an interactive
+  confirmation step — now states steps 1-4 are unconditionally
+  deterministic and only step 5 conditionally becomes
+  interactive/billable). (2) `docs maintain` now discovers every
+  `**/*.schema.yaml` in the project when called with no arguments,
+  reconciling every schema-governed document in one call, instead of
+  requiring one explicit path per invocation; `write_doc_candidates_
+  to_manifests` is now idempotent against an already-pending,
+  unresolved reconciliation item for the same region, so repeated
+  `maintain` runs never pile up duplicate manifests. (3) A new
+  schema-validation-time check (`check_doc_schema.py`,
+  `doc-schema-duplicate-region-id`, via a new shared
+  `doc_compiler.compute_schema_slug`) rejects a composed grounded-
+  region id that collides across two different schema files, or
+  within one. (4) A publication-time concurrency guard: `docs publish`
+  now runs inside a cooperating-writer file lock and, immediately
+  before writing, re-detects the live region's grounded-region state
+  via a new `doc_compiler.decide_publish_safety` — refusing outright
+  to overwrite a region showing a live human edit (`doc_candidate`)
+  or a live-and-knowledge-both-changed conflict
+  (`concurrent_conflict`), allowing a real `claims_changed`/`noop`
+  region or an idempotent same-content republish of a brand-new
+  region; the persisted baseline (a new
+  `knowledge_intermediate.advance_region_baseline_after_publish`)
+  advances only after the write itself actually succeeds — never on
+  detection, a failed validation, or a rejected publish. (5) A real,
+  working sandboxed execution harness (`scripts/execute_doc_example.py`)
+  that runs a small, explicitly allow-listed set of real documentation
+  examples inside an `unshare --user --map-root-user --mount --net
+  --pid --fork` + `pivot_root` namespace sandbox (reusing
+  `verify_cleanroom_isolation.py`'s own technique), with offline
+  git/pip caches (a `git insteadOf` mirror redirect; a pre-populated
+  wheel cache) so no live network is reachable from inside the
+  sandbox — never a general command runner; a command outside its own
+  hand-maintained allow-list is rejected before the sandbox is even
+  entered. Two paid-API-triggering commands (`--yes`, a real budget
+  spend) were deliberately excluded from the allow-list and verified
+  instead by a mocked CLI test. (6) A real, end-to-end,
+  evidence-backed knowledge-change demonstration, run entirely inside
+  a disposable `git worktree` (discarded afterward; production
+  `planning/knowledge/` never touched): `sync_vendor`'s real,
+  already-implemented, already-tested clone-failure fallback to a
+  vendor's old local-install snapshot (`decisions/0004`) — genuinely
+  absent from `CL-CTXT-005`'s prior statement — was identified,
+  evidenced (`EV-CTXT-021`, citing `sync.py:128-133` and
+  `tests/test_sync.py:275-298`), and the claim amended; `docs maintain`
+  correctly reported `claims_changed` for exactly the affected region
+  and left the pre-existing, unrelated `intermediate-knowledge-layer`
+  `doc_candidate` finding untouched throughout; the recompiled section
+  passed both independent reviews (semantic-support, editorial-
+  quality) on the first attempt and published cleanly, exercising the
+  new concurrency guard's `claims_changed`-proceeds branch for real; a
+  subsequent `maintain` run reconciled to `noop` with every unrelated
+  line of the document byte-identical, confirmed by direct diff. (7) A
+  same-task conventional-agent comparator, run in a second, separately
+  isolated worktree seeded with the identical starting state: its
+  independently-written draft passed semantic-support review but
+  **failed** independent editorial review for a register problem
+  (audit-report-style phrasing) matching, point for point, the
+  failure mode Stage 87A's own writing contract was specifically
+  hardened against after its own earlier real demonstration — real,
+  non-fabricated comparative evidence that the compiler's accumulated
+  editorial guardrail has demonstrated value on a held-out case (one
+  real case, not a statistically powered trial — that remains Stage
+  87C's own separate question). An independent `docs-reconstructor`
+  drift audit against this stage's own diff found six real, blocking
+  documentation-drift findings in `docs/reference/cli.md` and
+  `docs/architecture/` (stale "not yet implemented" disclaimers, a
+  stale single-required-argument `docs maintain` signature, the new
+  concurrency guard undocumented) — all six fixed in the same
+  session. An independent `release-phase-auditor` pass against this
+  stage's own implementation returned **FAIL**: the plan's own §O.D.3
+  required a direct test of two genuinely concurrent `docs publish`
+  invocations serialising through the lock, which did not exist, and,
+  while adding it, directly reproduced a real, previously-undetected
+  gap — the write-boundary revalidation re-ran neither the
+  grounded-region check nor the evidence/schema-section freshness
+  check a second time immediately before the write, so a document
+  edit or a cited-knowledge change landing in the (small, synchronous)
+  gap between the first check and the write was silently overwritten.
+  Fixed by re-running both checks a second time, inside the lock,
+  immediately before the write (a residual, much smaller window
+  remains and is disclosed in `_doc_publish_lock`'s own docstring
+  rather than assumed away — closing it completely would need a full
+  transactional write, deliberately not built here). Three new
+  regression tests confirm this directly: the concurrency test fails
+  (`2 == 1`) with the lock disabled and passes with it; both
+  write-boundary tests reproduce the original clobber before the fix
+  and confirm it is caught after. Re-audited: **PASS**. Full real
+  regression suite: 1337 passed, 2 skipped (40 net new tests from
+  this stage's implementation commit, plus 3 more from this fix — the
+  implementation commit's own self-reported "47 new tests" and "6
+  pre-existing [ruff findings]" are both numerically imprecise, the
+  latter's conclusion correct despite the wrong number (176 real
+  pre-existing, unrelated findings, confirmed unchanged by this
+  stage's own diff); not amended in the original, already-written
+  commit message, corrected here instead). See `planning/retros/
+  phase-87-stage-87b-knowledge-change-demonstration.md` for the full
+  bounded cost/value log and comparator account, and `planning/retros/
+  _audit-phase-87-stage-87b.md` for the full audit trail (FAIL, fix,
+  re-audit). Stage 87B is closed. Phase 87 overall remains not `done`;
+  Stage 87C remains separately
+  planned, unauthorised, and unstarted.
+
 - **Phase 87, Stage 87A hardening pass — publication path secured**
   (plan's own §N). A follow-up review found three integration defects
   in the publication mechanism itself, none affecting the real

@@ -39,6 +39,31 @@ CodeCompass is a single Python package (`src/codecompass/`) exposed through one 
   exact substring you intend to check is not truncated at the harness's
   own width before relying on it. (`L-109`.)
 
+- **A real `unshare --user --map-root-user --mount --net --pid --fork`
+  + `pivot_root` namespace sandbox needs more than the directories a
+  command's own obvious inputs suggest, or it fails with a
+  non-obviously-sandbox-related error.** This codebase has built this
+  technique twice — `scripts/verify_cleanroom_isolation.py` (Phase
+  81B) and `scripts/execute_doc_example.py` (Phase 87B) — and the
+  second build hit four real, reproduced gaps the first never
+  exercised, because the first never ran `git`/`pip`/an installed
+  console script inside the sandbox: (1) a console-script's shebang
+  hardcodes the venv's own real absolute path — mounting the venv at
+  an alias path breaks exec resolution; mount it at its own real
+  absolute path instead. (2) `git` (and other tools) need
+  `/dev/null`/`/dev/urandom`/`/dev/random` to exist — their absence
+  fails with `fatal: could not open '/dev/null'` or `unable to get
+  random bytes for temporary file`, not an obviously
+  sandbox-construction-related message. (3) A `git insteadOf`-
+  redirected clone needs the mirror's own *data* directory
+  bind-mounted into the sandbox, not only the git config file that
+  points at it — mounting only the config produces `fatal: ... does
+  not appear to be a git repository`. (4) Chaining several setup
+  commands before a final `exec env -i {vars} ...` command (the one
+  that actually sets `PATH`) means the earlier setup commands run with
+  no `PATH` at all; any `|| true` in that chain silently swallows a
+  "command not found" failure instead of surfacing it. (`L-121`.)
+
 ## What CodeCompass explicitly does not do
 
 - No MCP (Model Context Protocol) integration exists anywhere in the source.

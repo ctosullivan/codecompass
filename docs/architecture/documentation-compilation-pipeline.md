@@ -1,18 +1,27 @@
 # Documentation-compilation pipeline (Phase 87)
 
-Current state: **Stage 87A only, hardened** — one bounded documentation
-section at a time, demonstrated end-to-end against the real
-repository, then hardened against three integration defects a
-follow-up review found in the publication path itself (binding
-publication to persisted, hash-verified review evidence rather than a
-manually typed verdict string; confining the write target to an
-approved documentation path; sourcing the clean-room broker's prompt
-from the evidence packet's own verified on-disk bytes). Stage 87B
-(schema-governed `README.md`/`docs/getting-started.md`, a narrow
-execution harness for tested examples, real multi-section manual
-maintenance) and Stage 87C (the complete minimum publication suite,
-deterministic CLI-reference generation, the matched-baseline quality
-comparison) are planned but not implemented — see
+Current state: **Stages 87A and 87B, both hardened and independently
+demonstrated end-to-end against the real repository.** Stage 87A
+established the compile/review/publish lifecycle for one
+schema-governed document (`README.md`), then was hardened against
+three integration defects a follow-up review found in the publication
+path itself (binding publication to persisted, hash-verified review
+evidence rather than a manually typed verdict string; confining the
+write target to an approved documentation path; sourcing the
+clean-room broker's prompt from the evidence packet's own verified
+on-disk bytes). Stage 87B extended this to a second schema-governed
+document (`docs/getting-started.md`), project-wide `docs maintain`
+discovery across every schema in the project, a cross-document
+grounded-region-ID uniqueness check, a narrow sandboxed execution
+harness that can actually run a small, explicitly allow-listed set of
+tested documentation examples (`scripts/execute_doc_example.py` —
+never a general command runner), and a publication-time concurrency
+guard that revalidates live region state and a cooperating-writer file
+lock immediately before every write, so a human edit or a concurrent
+publish is never silently overwritten. Stage 87C (the complete minimum
+publication suite, deterministic CLI-reference generation, the
+matched-baseline quality comparison) remains planned but not
+implemented, and not authorised by this stage — see
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`
 for the full design and three-stage boundary. This page describes what
 exists today, not the full eventual design.
@@ -32,8 +41,9 @@ duplicates, or independently asserts a canonical fact.
 |---|---|
 | `*.schema.yaml` | A versioned, user-authored schema (one per governed document) naming each section's required knowledge, audience, tone, depth, and evidence bar. Minimal by design — a project maintainer edits it directly. |
 | `scripts/check_doc_schema.py` | Validates a schema: required fields, a known `schema_version`, every `required_knowledge` entry resolved to a real record (a `discover:<query>` entry resolved to exactly one match, never a guessed first result), section ids restricted to `[a-z0-9-]+` (the real grounded-region parser silently truncates at a `.`). |
-| `src/codecompass/doc_compiler.py` | Deterministic resolution/hydration/gap-detection/citation-scope-checking, plus `publish_section`/`maintain_document`. See `docs/architecture/components.md`'s own entry for this module. |
+| `src/codecompass/doc_compiler.py` | Deterministic resolution/hydration/gap-detection/citation-scope-checking, plus `publish_section`/`maintain_document`/`compute_schema_slug`/`decide_publish_safety` (Stage 87B's publication-safety decision logic — see step 8 below). See `docs/architecture/components.md`'s own entry for this module. |
 | `scripts/compile_doc_section.py` | The clean-room section-compilation adapter — see "Clean-room composition" below. |
+| `scripts/execute_doc_example.py` | Stage 87B's execution harness — runs a small, explicitly allow-listed set of real documentation examples inside a real `unshare`/`pivot_root` namespace sandbox, with offline-mirrored git/pip caches so no live network is reachable from inside the sandbox. Never a general command runner: a command not in its own hand-maintained allow-list is rejected before the sandbox is even entered. |
 | `codecompass docs schema-init\|compile\|record-review\|publish\|maintain` | The CLI surface. See `docs/reference/cli.md`. |
 
 ## Pipeline (per section)
@@ -79,21 +89,61 @@ duplicates, or independently asserts a canonical fact.
    record). The write target is resolved and confined by
    `resolve_publication_target` (`README.md`, or a `docs/**/*.md` file,
    confirmed to stay inside the project root even through a symlink).
-   Writes/replaces exactly one `codecompass-grounded-by region:<id>`
-   region. Machine-readable grounding is unconditional — it is
-   unaffected by the schema's own reader-visible `citation_display`
-   setting. The citation-tagged draft and both review records are then
-   preserved permanently under `planning/retros/
-   phase-87-published-evidence/` for later audits.
-9. **Maintain** (`maintain_document`) — branches on the real five
-   `GroundedRegionFinding` states (`new`/`noop`/`doc_candidate`/
-   `claims_changed`/`concurrent_conflict`) using the three
-   already-implemented resolution functions
+   **Stage 87B publication-time concurrency guard**: the whole command
+   runs inside a cooperating-writer file lock (`_doc_publish_lock`,
+   `cli.py`), and checks both the live region's grounded-region state
+   (`doc_compiler.decide_publish_safety`) and the cited knowledge/
+   schema-section's own freshness **twice** — once before the lock is
+   acquired, and again, inside the lock, immediately before the write
+   itself, since both the first check and the write are plain,
+   synchronous Python with a real (if small) gap between them that a
+   concurrent, non-cooperating editor's own disk write or a knowledge
+   change can land in. The region-state check refuses the write
+   outright if the live region shows a real human edit
+   (`doc_candidate`) or a live-and-knowledge both changed
+   (`concurrent_conflict`) — a `claims_changed`/`noop` region, or a
+   brand-new region whose live content hash already matches the new
+   body (an idempotent republish), may proceed. The persisted baseline
+   advances only *after* the write itself succeeds — never on
+   detection, a failed validation, or a rejected publish. This
+   protects cooperating `docs publish`/`docs maintain` invocations
+   against each other; a human editing the file directly is never
+   locked out by the file lock, but the write-boundary revalidation
+   still catches that case and refuses the write regardless. The
+   residual window between that final, write-boundary check and the
+   write itself is narrower, not zero — closing it completely would
+   need a full transactional write, deliberately not built here;
+   disclosed in `_doc_publish_lock`'s own docstring rather than
+   assumed away. Writes/replaces exactly one
+   `codecompass-grounded-by region:<id>` region. Machine-readable
+   grounding is unconditional — it is unaffected by the schema's own
+   reader-visible `citation_display` setting. The citation-tagged
+   draft and both review records are then preserved permanently under
+   `planning/retros/phase-87-published-evidence/` for later audits.
+9. **Maintain** (`maintain_document`, via `docs maintain`) — branches
+   on the real five `GroundedRegionFinding` states (`new`/`noop`/
+   `doc_candidate`/`claims_changed`/`concurrent_conflict`) using the
+   three already-implemented resolution functions
    `knowledge_intermediate.py` provides for exactly this problem — no
    new diffing model. A human edit with no knowledge change
    (`doc_candidate`) is never auto-regenerated; both changing at once
    (`concurrent_conflict`) is reported for the lead's own resolution,
-   never auto-merged.
+   never auto-merged. **Stage 87B**: called with no schema-path
+   arguments, it discovers every `**/*.schema.yaml` under the project
+   root itself and reconciles every document any of them governs in
+   one call, across as many schema-governed documents as exist (no
+   longer limited to one document per invocation); explicit arguments
+   still scope it to just those schemas. Writing a fresh
+   `doc_region_edit` reconciliation item
+   (`write_doc_candidates_to_manifests`) is idempotent against an
+   already-pending, unresolved item for the same region at the same
+   content hash, so repeated `maintain` runs against an unresolved
+   `doc_candidate` never pile up duplicate manifests. A schema-
+   validation-time check (`scripts/check_doc_schema.py`,
+   `doc-schema-duplicate-region-id`) additionally rejects a composed
+   region id (`<schema-slug>-<section-id>`) that collides across two
+   different schema files, or within one — this is checked before
+   `maintain` or `compile` ever runs against the colliding schemas.
 
 ## Clean-room composition — a corrected, narrower isolation posture
 
