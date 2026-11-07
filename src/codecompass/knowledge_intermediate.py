@@ -463,6 +463,43 @@ def establish_new_region_baselines(
     return established
 
 
+def advance_region_baseline_after_publish(
+    project_root: Path, doc_name: str, region_id: str, cited_ids: list[str], body: str
+) -> None:
+    """One new, narrow, explicitly-justified public function (Stage 87B
+    third corrective amendment, finding C) -- a thin wrapper around the
+    existing private `_write_region_baseline`, the same call
+    `establish_new_region_baselines`/`acknowledge_stale_grounded_region`/
+    `_apply_doc_region_edit` already each make on their own successful
+    path. Never a new concurrency system of its own.
+
+    Called by `docs publish` **only** immediately after `doc_compiler.
+    publish_section` has already written successfully -- never before,
+    never on a failed or refused publish, since detection itself stays
+    read-only and a baseline must never advance merely because
+    detection ran (`decisions/0074`, point 1).
+
+    `region_id` is always explicit for a compiler-published section
+    (`doc_compiler._SECTION_ID_RE`'s own fail-closed contract), so the
+    state key never depends on positional `index` -- `_region_state_key`
+    already ignores it whenever `region_id` is truthy, confirmed by its
+    own `f"id:{region_id}" if region_id else ...` branch; `0` is passed
+    through only to satisfy that helper's signature, never read.
+
+    `body` must be the exact text `publish_section` wrote between the
+    markers -- the region hash computed here (`"\\n{body}\\n"`, matching
+    `parse_grounding_markers`' own slice between the open comment's `-->`
+    and the close marker) must equal what a subsequent `detect_grounded_
+    region_changes` call will compute from the live document, or the
+    very next `docs maintain` run would wrongly report drift against a
+    baseline that doesn't match what was actually published."""
+    region_text = f"\n{body}\n"
+    region_hash = sha256_text(region_text)
+    key = _region_state_key(doc_name, 0, region_id)
+    cited_hashes = _current_cited_hashes(project_root, cited_ids)
+    _write_region_baseline(project_root, key, region_hash, cited_ids, cited_hashes)
+
+
 def acknowledge_stale_grounded_region(
     project_root: Path, doc_name: str, region_locator: str
 ) -> GroundedRegionFinding | None:
@@ -530,6 +567,28 @@ def write_doc_candidates_to_manifests(
 
     written: dict[str, Path] = {}
     for slug, slug_findings in by_slug.items():
+        pending_keys = _existing_pending_doc_region_edit_keys(project_root, slug)
+        new_findings = []
+        for finding in slug_findings:
+            cited_hashes = _current_cited_hashes(project_root, finding.cited_ids)
+            cited_hashes_at_detection = [cited_hashes.get(rid, "") for rid in finding.cited_ids]
+            # Idempotency fix, Stage 87B §O.D point 2: a pending item
+            # already covering this exact (doc_name, region_id-or-index)
+            # in this exact state (same base_region_hash, same
+            # cited_hashes_at_detection) means the facts haven't changed
+            # again since that unresolved item was written -- skip, never
+            # write a near-duplicate. A real difference (the region
+            # drifted further, or a cited record's content moved again)
+            # still writes a fresh item, since the pending one no longer
+            # reflects the current facts.
+            key = (finding.doc_name, finding.region_id or finding.index)
+            if pending_keys.get(key) == (finding.region_hash, tuple(cited_hashes_at_detection)):
+                continue
+            new_findings.append((finding, cited_hashes_at_detection))
+
+        if not new_findings:
+            continue
+
         ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
         manifest_path = reconciliation_dir(project_root, slug) / f"{ts}-doc.toml"
         data: dict = {
@@ -538,8 +597,7 @@ def write_doc_candidates_to_manifests(
             "slug": slug,
             "items": [],
         }
-        for finding in slug_findings:
-            cited_hashes = _current_cited_hashes(project_root, finding.cited_ids)
+        for finding, cited_hashes_at_detection in new_findings:
             data["items"].append(
                 {
                     "kind": "doc_region_edit",
@@ -547,9 +605,7 @@ def write_doc_candidates_to_manifests(
                     "region_index": finding.index,
                     "region_id": finding.region_id or "",
                     "cited_ids": finding.cited_ids,
-                    "cited_hashes_at_detection": [
-                        cited_hashes.get(rid, "") for rid in finding.cited_ids
-                    ],
+                    "cited_hashes_at_detection": cited_hashes_at_detection,
                     "region_text": finding.region_text,
                     "base_region_hash": finding.region_hash,
                     "state": "pending",
@@ -561,6 +617,36 @@ def write_doc_candidates_to_manifests(
         manifest_path.write_text(_serialize_manifest(data), encoding="utf-8")
         written[slug] = manifest_path
     return written
+
+
+def _existing_pending_doc_region_edit_keys(
+    project_root: Path, slug: str
+) -> dict[tuple[str, str | int], tuple[str, tuple[str, ...]]]:
+    """Scans every manifest already written for `slug` and returns, for
+    each still-`pending` `doc_region_edit` item, its own
+    `(doc_name, region_id-or-index) -> (base_region_hash,
+    cited_hashes_at_detection)` snapshot -- the idempotency check's own
+    comparison key (Stage 87B §O.D point 2). Reads with `tomllib`, the
+    project's own established, read-only manifest-reading convention
+    (`apply_manifest`/`self_curation_summary`'s own identical pattern)."""
+    import tomllib
+
+    rdir = reconciliation_dir(project_root, slug)
+    keys: dict[tuple[str, str | int], tuple[str, tuple[str, ...]]] = {}
+    if not rdir.is_dir():
+        return keys
+    for manifest_path in sorted(rdir.glob("*.toml")):
+        data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+        for item in data.get("items", []):
+            if item.get("kind") != "doc_region_edit" or item.get("state") != "pending":
+                continue
+            region_id = item.get("region_id") or ""
+            key = (item.get("doc_name", ""), region_id or item.get("region_index", -1))
+            keys[key] = (
+                item.get("base_region_hash", ""),
+                tuple(item.get("cited_hashes_at_detection", [])),
+            )
+    return keys
 
 
 def _locate_live_region(

@@ -1,0 +1,6 @@
+[project]
+name = "no-candidates-project"
+version = "0.1.0"
+description = "Tiny fixture used by Stage 87B's own execution harness (scripts/execute_doc_example.py): a real manifest file so CodeCompass's deterministic bootstrap genuinely runs steps 1-4, but zero declared dependencies, so step 5 (the interactive, potentially billable enrichment confirmation) structurally never triggers -- distinct from examples/toy-project/, which has real, eligible candidates on purpose."
+requires-python = ">=3.11"
+dependencies = []

@@ -1,0 +1,60 @@
+schema_version: 1
+document: docs/getting-started.md
+audience: "a developer new to the project, has not read any other doc"
+sections:
+  - id: install
+    required_knowledge: []  # validated in place, never compiled -- no supporting knowledge record exists (plan's own §O.F.1)
+    max_evidence_chars: 100
+    depth: brief
+    tone: instructional
+    citation_display: none
+    requires_tested_example: true
+    example_comparison_mode: regex  # verified for real by scripts/execute_doc_example.py's "pip-install" entry
+  - id: first-run
+    required_knowledge: []
+    max_evidence_chars: 100
+    depth: standard
+    tone: instructional
+    citation_display: none
+    requires_tested_example: true
+    example_comparison_mode: regex  # verified for real by the "codecompass-no-candidates"/"codecompass-budget-0" entries
+  - id: a-real-captured-example
+    required_knowledge: []
+    max_evidence_chars: 100
+    depth: standard
+    tone: instructional
+    citation_display: none
+    requires_tested_example: true
+    example_comparison_mode: regex  # verified for real by the "codecompass-budget-0"/"codecompass-query-vendors" entries
+  - id: proceeding-past-the-budget-cap
+    required_knowledge: []
+    max_evidence_chars: 100
+    depth: brief
+    tone: instructional
+    citation_display: none
+    # Not execution-harness-tested: --yes/--budget 1.00 can trigger a
+    # real, paid Anthropic API call a credential-less sandbox can never
+    # complete (plan §O.C). Verified instead by a mocked CLI test
+    # (tests/test_cli.py::test_bare_bootstrap_sufficient_budget_with_interactive_confirm_reaches_enrichment),
+    # never live execution -- requires_tested_example is deliberately
+    # left unset here since that field's own meaning is specifically
+    # "verified by the execute_doc_example.py harness."
+  - id: after-the-first-run
+    required_knowledge: []
+    max_evidence_chars: 100
+    depth: standard
+    tone: instructional
+    citation_display: none
+    # Newly schema-governed (third corrective amendment, finding D):
+    # this section makes real implementation claims (generated vendor
+    # files, the root CLAUDE.md routing table, the Skill, the slash
+    # command, context-graph.db) that must be checked against the real
+    # repository -- verified by
+    # tests/test_cli.py::test_after_the_first_run_claims_match_the_real_repository
+    # (a direct filesystem/content check against this real repository,
+    # never a knowledge-compiled claim, since no citable record exists
+    # for this either).
+acceptance_criteria:
+  - "An unfamiliar developer can install CodeCompass and complete a first run exactly as described."
+  - "Every claim this document makes about generated files, routing tables, Skills, and slash commands is checked against the real repository, not merely asserted."
+owner: lead

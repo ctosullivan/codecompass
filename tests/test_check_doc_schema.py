@@ -262,3 +262,52 @@ def test_minimal_87a_schema_without_87b_87c_only_fields_is_not_blocking(project)
     _write_schema(schema_path)  # no verification_method, no requires_tested_example
     findings = check_doc_schema.run_all(project, [schema_path])
     assert not [f for f in findings if f.strict]
+
+
+# ---------------------------------------------------------------------------
+# Cross-document grounded-region-ID uniqueness (Stage 87B, third
+# corrective amendment, finding A) -- _check_document_uniqueness above
+# only ever checked duplicate document PATHS; this is a genuinely
+# different, previously-missing check.
+# ---------------------------------------------------------------------------
+
+
+def test_duplicate_section_id_across_two_different_documents_is_blocking(project):
+    # Realistic collision: two differently-named schema files that
+    # normalise to the identical slug (hyphen vs. underscore separator)
+    # for two different, genuinely distinct documents, each declaring
+    # the same section id -- exactly the kind of collision a schema
+    # author would not spot by eye.
+    schema_a = project / "docs" / "getting-started.schema.yaml"
+    schema_b = project / "docs" / "getting_started.schema.yaml"
+    data_a = _write_schema(schema_a, document="docs/getting-started.md")
+    data_a["sections"][0]["id"] = "install"
+    schema_a.write_text(yaml.safe_dump(data_a, sort_keys=False), encoding="utf-8")
+    data_b = _write_schema(schema_b, document="docs/getting-started-v2.md")
+    data_b["sections"][0]["id"] = "install"
+    schema_b.write_text(yaml.safe_dump(data_b, sort_keys=False), encoding="utf-8")
+    findings = check_doc_schema.run_all(project, [schema_a, schema_b])
+    assert any(f.strict and f.rule == "doc-schema-duplicate-region-id" for f in findings)
+
+
+def test_duplicate_section_id_within_one_schema_file_is_blocking(project):
+    schema_path = project / "docs" / "demo.schema.yaml"
+    data = _write_schema(schema_path)
+    second_section = dict(data["sections"][0])  # same id "s1" as the first
+    data["sections"].append(second_section)
+    schema_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    findings = check_doc_schema.run_all(project, [schema_path])
+    assert any(f.strict and f.rule == "doc-schema-duplicate-region-id" for f in findings)
+
+
+def test_distinct_section_ids_across_two_documents_produce_no_region_id_finding(project):
+    schema_a = project / "docs" / "a.schema.yaml"
+    schema_b = project / "docs" / "b.schema.yaml"
+    data_a = _write_schema(schema_a, document="docs/a.md")
+    data_a["sections"][0]["id"] = "install"
+    schema_a.write_text(yaml.safe_dump(data_a, sort_keys=False), encoding="utf-8")
+    data_b = _write_schema(schema_b, document="docs/b.md")
+    data_b["sections"][0]["id"] = "first-run"
+    schema_b.write_text(yaml.safe_dump(data_b, sort_keys=False), encoding="utf-8")
+    findings = check_doc_schema.run_all(project, [schema_a, schema_b])
+    assert not any(f.rule == "doc-schema-duplicate-region-id" for f in findings)

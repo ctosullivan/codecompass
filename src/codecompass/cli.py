@@ -15,10 +15,12 @@ from __future__ import annotations
 import contextlib
 import importlib.util
 import json
+import os
 import re
 import sqlite3
 import subprocess
 import sys
+import time
 from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
@@ -1914,22 +1916,6 @@ def _load_script_module(name: str):
     return module
 
 
-def _schema_slug(schema_path: Path) -> str:
-    """A `[a-z0-9-]+` slug for `schema_path`, safe to compose into a
-    `region:<schema_slug>-<section_id>` identity (§G.A). A naive
-    `.stem.removesuffix(".schema")` breaks on a document whose own name
-    already contains a dot (`README.md.schema.yaml` -> stem
-    `README.md.schema` -> `README.md` after removesuffix, which still
-    has a `.` in it) -- caught directly by `publish_section`'s own
-    fail-closed region-id check during this phase's real Stage 87A
-    demonstration run. Strips the full `.schema.yaml` suffix in one
-    step, then normalises anything left."""
-    name = schema_path.name
-    if name.endswith(".schema.yaml"):
-        name = name[: -len(".schema.yaml")]
-    return re.sub(r"[^a-z0-9-]+", "-", name.lower()).strip("-")
-
-
 def _git_head_revision(project_root: Path) -> str:
     try:
         result = subprocess.run(
@@ -1972,7 +1958,7 @@ def docs_compile(
         raise typer.Exit(code=1)
 
     schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
-    schema_slug = _schema_slug(schema_path)
+    schema_slug = doc_compiler.compute_schema_slug(schema_path)
     source_revision = _git_head_revision(project_root)
     compile_doc_section = _load_script_module("compile_doc_section")
 
@@ -2096,7 +2082,7 @@ def docs_record_review(
         raise typer.Exit(code=1)
 
     project_root = Path.cwd()
-    schema_slug = _schema_slug(schema_path)
+    schema_slug = doc_compiler.compute_schema_slug(schema_path)
     pending_path = (
         project_root / "planning" / "retros" / "phase-87-pending-review"
         / schema_slug / f"{section_id}.json"
@@ -2130,6 +2116,56 @@ def docs_record_review(
     )
 
 
+_DOC_PUBLISH_LOCK_NAME = ".codecompass-docs-publish.lock"
+
+
+class _DocPublishLockTimeoutError(Exception):
+    """Raised when the cooperating-writer lock (Stage 87B §O.D point 3)
+    cannot be acquired within its own bounded wait -- never blocks
+    forever."""
+
+
+@contextlib.contextmanager
+def _doc_publish_lock(project_root: Path, *, timeout: float = 30.0, poll_interval: float = 0.1):
+    """A plain, process-external mutex around `docs publish`'s own
+    detect-decide-write-advance-baseline critical section (Stage 87B
+    §O.D point 3, third corrective amendment finding C) -- an
+    `O_CREAT|O_EXCL`-created lock file whose own content is never read,
+    used only for its existence; released unconditionally on exit,
+    success or failure. Not a transaction framework or new persisted
+    state -- a plain mutex around one critical section.
+
+    **Documented limit**: this only serialises *cooperating* callers --
+    other `docs publish`/`docs maintain` invocations against the same
+    project root, the only concurrent writer this stage's own design
+    needs to protect against. It does not and cannot protect against a
+    human editing the target document directly in a text editor, which
+    holds no lock and never will; `doc_compiler.decide_publish_safety`'s
+    own content-hash revalidation (run while this lock is held,
+    immediately before the write) is what catches *that* case, with or
+    without the lock -- which is why both mechanisms exist rather than
+    either alone."""
+    lock_path = project_root / _DOC_PUBLISH_LOCK_NAME
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.close(fd)
+            break
+        except FileExistsError:
+            if time.monotonic() >= deadline:
+                raise _DocPublishLockTimeoutError(
+                    f"could not acquire {lock_path} within {timeout}s -- another "
+                    "`docs publish`/`docs maintain` invocation may be running; "
+                    "remove the lock file manually only if you are certain none is"
+                )
+            time.sleep(poll_interval)
+    try:
+        yield
+    finally:
+        lock_path.unlink(missing_ok=True)
+
+
 @docs_app.command("publish")
 def docs_publish(
     schema_path: Path = typer.Argument(..., help="Path to a *.schema.yaml file."),
@@ -2151,7 +2187,7 @@ def docs_publish(
 
     project_root = Path.cwd()
     schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
-    schema_slug = _schema_slug(schema_path)
+    schema_slug = doc_compiler.compute_schema_slug(schema_path)
 
     section = doc_compiler.find_schema_section(schema, section_id)
     if section is None:
@@ -2242,10 +2278,39 @@ def docs_publish(
         reviews[kind] = review
 
     region_id = f"{schema_slug}-{section_id}"
-    doc_compiler.publish_section(
-        document_path, region_id=region_id,
-        record_ids=pending["record_ids"], body=pending["draft_body"],
-    )
+    document_name = schema["document"]
+
+    # Publication-time concurrency guard (Stage 87B §O.D point 3, third
+    # corrective amendment finding C): detect → decide → write → advance
+    # baseline, all while holding the cooperating-writer lock, so the
+    # live target is revalidated at the write boundary, never trusted
+    # from a decision made before the lock was held.
+    try:
+        with _doc_publish_lock(project_root):
+            findings = knowledge_intermediate.detect_grounded_region_changes(
+                project_root, (document_name,)
+            )
+            matching = next((f for f in findings if f.region_id == region_id), None)
+            refusal = doc_compiler.decide_publish_safety(matching, pending["draft_body"])
+            if refusal is not None:
+                console.print(f"[red]error:[/red] {refusal}")
+                raise typer.Exit(code=1)
+
+            doc_compiler.publish_section(
+                document_path, region_id=region_id,
+                record_ids=pending["record_ids"], body=pending["draft_body"],
+            )
+            # Baseline advances only now, strictly after a genuinely
+            # successful write -- never on detection alone, never on a
+            # refused or failed publish (neither of which reaches this
+            # line).
+            knowledge_intermediate.advance_region_baseline_after_publish(
+                project_root, document_name, region_id,
+                pending["record_ids"], pending["draft_body"],
+            )
+    except _DocPublishLockTimeoutError as exc:
+        console.print(f"[red]error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
 
     # Preserve the original citation-tagged text and both independent
     # review records for later audits (requirement §N.A.8) -- a
@@ -2266,17 +2331,41 @@ def docs_publish(
 
 @docs_app.command("maintain")
 def docs_maintain(
-    schema_path: Path = typer.Argument(..., help="Path to a *.schema.yaml file."),
+    schema_paths: list[Path] | None = typer.Argument(
+        None, help="Path(s) to *.schema.yaml files. Omit to discover every "
+        "*.schema.yaml under the project root."
+    ),
 ) -> None:
     """Runs the real five-state grounded-region reconciliation
-    (`doc_compiler.maintain_document`) for `schema_path`'s own
-    document. Never regenerates a `doc_candidate` or `concurrent_
-    conflict` section automatically."""
+    (`doc_compiler.maintain_document`) across every named schema's own
+    document in one call. Never regenerates a `doc_candidate` or
+    `concurrent_conflict` section automatically.
+
+    Stage 87B §O.D point 1: `detect_grounded_region_changes`'s own
+    duplicate-region-id check is only genuinely project-wide when every
+    schema-governed document is passed in the same call -- omitting
+    `schema_paths` discovers every `*.schema.yaml` under the project
+    root itself, mirroring `check_doc_schema.py`'s own `_discover_
+    schema_files` convention exactly (never a second, independently-
+    maintained discovery mechanism). An explicit, non-empty list of
+    paths is still honoured exactly as given, for the case where only a
+    subset should be reconciled in one call."""
     import yaml
 
     project_root = Path.cwd()
-    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
-    report = doc_compiler.maintain_document(project_root, (schema["document"],))
+    resolved_paths = schema_paths if schema_paths else sorted(project_root.glob("**/*.schema.yaml"))
+    if not resolved_paths:
+        console.print("[yellow]no *.schema.yaml files found[/yellow]")
+        raise typer.Exit(code=0)
+
+    doc_names: list[str] = []
+    for schema_path in resolved_paths:
+        schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+        document = schema.get("document")
+        if document and document not in doc_names:
+            doc_names.append(document)
+
+    report = doc_compiler.maintain_document(project_root, tuple(doc_names))
 
     console.print(f"established_new: {report.established_new}")
     console.print(f"noop: {report.noop}")

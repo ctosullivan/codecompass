@@ -672,6 +672,46 @@ def test_bare_bootstrap_phase_b_budget_too_low_exits_nonzero_but_keeps_phase_a(
     assert "<!-- codecompass:start -->" in (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
 
 
+def test_bare_bootstrap_sufficient_budget_with_interactive_confirm_reaches_enrichment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Stage 87B, third corrective amendment finding D: this is the one
+    # real-CLI scenario the execution harness (scripts/
+    # execute_doc_example.py) can never safely run live -- a sufficient
+    # `--budget` still requires an interactive "Proceed?" confirmation
+    # unless `--yes` is also given (confirmed directly,
+    # `_maybe_run_enrichment`'s own docstring: "Budget is checked
+    # *before* the confirmation prompt" -- a sufficient budget merely
+    # clears that first gate, the second, interactive one still runs).
+    # Verified here with a real, interactively-answered confirmation
+    # (`input="y\n"`, not `--yes`) reaching a stubbed enrichment call --
+    # never a live, credentialed, billed Anthropic API call.
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "requirements.txt").write_text("pytest\n", encoding="utf-8")
+
+    called = {"ran": False}
+
+    def _fake_select_candidates(conn, configs, project_root):  # noqa: ANN001
+        (config,) = [c for c in configs if c.name == "pytest"]
+        return [_fake_enrichment_candidate(config)]
+
+    def _fake_run_enrichment_batches(candidates):  # noqa: ANN001
+        called["ran"] = True
+        return [_fake_enrichment_result("pytest")]
+
+    monkeypatch.setattr("codecompass.enrichment.select_candidates", _fake_select_candidates)
+    monkeypatch.setattr(
+        "codecompass.enrichment.run_enrichment_batches", _fake_run_enrichment_batches
+    )
+
+    result = runner.invoke(app, ["--budget", "1.00"], input="y\n")
+
+    assert result.exit_code == 0, result.output
+    assert called["ran"], "the interactive 'Proceed?' confirmation must reach the enrichment call"
+    assert "enriched" in result.output
+    assert (tmp_path / ".claude" / "skills" / "codecompass-pytest" / "SKILL.md").exists()
+
+
 def test_bare_bootstrap_no_enrichment_candidates_never_prompts(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -2702,15 +2742,94 @@ def test_docs_maintain_reports_new_region_for_a_freshly_published_section(
     assert "id:demo-s1" in result.output
 
 
+def test_docs_maintain_with_no_arguments_discovers_every_schema_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Stage 87B §O.D point 1: omitting SCHEMA_PATH entirely discovers
+    # every *.schema.yaml under the project root, mirroring
+    # check_doc_schema.py's own _discover_schema_files convention.
+    monkeypatch.chdir(tmp_path)
+    import yaml
+
+    schema_a = tmp_path / "a.schema.yaml"
+    schema_a.write_text(
+        yaml.safe_dump({"schema_version": 1, "document": "docs/a.md", "sections": []}),
+        encoding="utf-8",
+    )
+    schema_b = tmp_path / "b.schema.yaml"
+    schema_b.write_text(
+        yaml.safe_dump({"schema_version": 1, "document": "docs/b.md", "sections": []}),
+        encoding="utf-8",
+    )
+    cli_module.doc_compiler.publish_section(
+        tmp_path / "docs" / "a.md", region_id="a-s1", record_ids=["CL-DEMO-001"], body="A fact.",
+    )
+    cli_module.doc_compiler.publish_section(
+        tmp_path / "docs" / "b.md", region_id="b-s1", record_ids=["CL-DEMO-001"], body="B fact.",
+    )
+    result = runner.invoke(app, ["docs", "maintain"])
+    assert result.exit_code == 0, result.output
+    assert "id:a-s1" in result.output
+    assert "id:b-s1" in result.output
+
+
+def test_docs_maintain_with_no_schema_files_exits_cleanly(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(app, ["docs", "maintain"])
+    assert result.exit_code == 0, result.output
+
+
+def test_docs_maintain_detects_a_real_cross_document_duplicate_region_id(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The actual end-to-end regression Stage 87B §O.D point 1 fixes:
+    # two single-document `docs maintain` invocations would each miss a
+    # duplicate region:<id> the other document also uses; one
+    # project-wide invocation (the new default) must catch it.
+    monkeypatch.chdir(tmp_path)
+    import yaml
+
+    schema_a = tmp_path / "a.schema.yaml"
+    schema_a.write_text(
+        yaml.safe_dump({"schema_version": 1, "document": "docs/a.md", "sections": []}),
+        encoding="utf-8",
+    )
+    schema_b = tmp_path / "b.schema.yaml"
+    schema_b.write_text(
+        yaml.safe_dump({"schema_version": 1, "document": "docs/b.md", "sections": []}),
+        encoding="utf-8",
+    )
+    # Both documents happen to use the identical explicit region id.
+    (tmp_path / "docs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "docs" / "a.md").write_text(
+        "<!-- codecompass-grounded-by: CL-DEMO-001 region:shared-id -->\nA.\n"
+        "<!-- /codecompass-grounded-by -->\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "docs" / "b.md").write_text(
+        "<!-- codecompass-grounded-by: CL-DEMO-001 region:shared-id -->\nB.\n"
+        "<!-- /codecompass-grounded-by -->\n",
+        encoding="utf-8",
+    )
+    result = runner.invoke(app, ["docs", "maintain"])
+    assert result.exit_code != 0
+    assert "shared-id" in str(result.exception)
+
+
 def test_schema_slug_handles_a_document_name_containing_a_dot() -> None:
     # Real defect caught during Stage 87A's own live demonstration run:
     # README.md.schema.yaml's stem retains a "." that a naive
     # .removesuffix(".schema") never strips, producing an invalid
-    # region id downstream.
-    from codecompass.cli import _schema_slug
+    # region id downstream. Moved to doc_compiler.compute_schema_slug
+    # (third corrective amendment, finding A) so check_doc_schema.py's
+    # own cross-document region-id check can share the exact same
+    # computation, never a second, independently-maintained copy.
+    from codecompass.doc_compiler import compute_schema_slug
 
-    assert _schema_slug(Path("README.md.schema.yaml")) == "readme-md"
-    assert _schema_slug(Path("docs/getting-started.schema.yaml")) == "getting-started"
+    assert compute_schema_slug(Path("README.md.schema.yaml")) == "readme-md"
+    assert compute_schema_slug(Path("docs/getting-started.schema.yaml")) == "getting-started"
 
 
 # ---------------------------------------------------------------------------
@@ -2810,6 +2929,199 @@ def test_docs_publish_full_cycle_with_persisted_reviews_succeeds(
     assert audit["pending_manifest"]["tagged_draft"] == "A fact {{cite:CL-DEMO-001}}."
     assert audit["semantic_review"]["verdict"] == "supported"
     assert audit["editorial_review"]["verdict"] == "pass"
+
+
+# ---------------------------------------------------------------------------
+# Publication-time concurrency guard (Stage 87B §O.D point 3, third
+# corrective amendment finding C)
+# ---------------------------------------------------------------------------
+
+
+def test_docs_publish_refuses_to_overwrite_a_doc_candidate_human_edit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The governing task's own required end-to-end negative test:
+    # compile -> review -> a human edits the target section's live text
+    # -> publish -> refused; the human's edit is preserved untouched.
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    doc_path = tmp_path / "docs" / "demo.md"
+
+    # Establish a real baseline for this region first (an earlier,
+    # already-reconciled publish), then simulate a human editing the
+    # live document afterward -- no knowledge change, so this is a real
+    # doc_candidate, not a concurrent_conflict.
+    cli_module.doc_compiler.publish_section(
+        doc_path, region_id="demo-s1", record_ids=["CL-DEMO-001"], body="The original fact.",
+    )
+    cli_module.knowledge_intermediate.detect_grounded_region_changes(tmp_path, ("docs/demo.md",))
+    established = cli_module.knowledge_intermediate.establish_new_region_baselines(
+        tmp_path, cli_module.knowledge_intermediate.detect_grounded_region_changes(
+            tmp_path, ("docs/demo.md",)
+        ),
+    )
+    assert established  # a baseline now exists for demo-s1
+
+    human_edit = (
+        "<!-- codecompass-grounded-by: CL-DEMO-001 region:demo-s1 -->\n"
+        "A human rewrote this sentence by hand.\n"
+        "<!-- /codecompass-grounded-by -->\n"
+    )
+    doc_path.write_text(human_edit, encoding="utf-8")
+
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert doc_path.read_text(encoding="utf-8") == human_edit, (
+        "a human edit arriving after compilation but before publication must never be "
+        "silently overwritten by a review-approved draft"
+    )
+
+
+def test_docs_publish_refuses_an_unbaselined_region_with_mismatched_live_content(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The exact second-corrective-amendment gap this pass fixed: a
+    # region with real, existing text but NO baseline yet must not be
+    # treated as automatically safe -- only a byte-identical match with
+    # the draft about to be published is.
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    doc_path = tmp_path / "docs" / "demo.md"
+
+    unrelated_content = (
+        "<!-- codecompass-grounded-by: CL-DEMO-001 region:demo-s1 -->\n"
+        "Some other, never-baselined, possibly human-authored text.\n"
+        "<!-- /codecompass-grounded-by -->\n"
+    )
+    doc_path.parent.mkdir(parents=True, exist_ok=True)
+    doc_path.write_text(unrelated_content, encoding="utf-8")
+
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert doc_path.read_text(encoding="utf-8") == unrelated_content
+
+
+def test_docs_publish_allows_an_idempotent_republish_of_unbaselined_matching_content(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The flip side: an unbaselined region whose live content already
+    # IS the body about to be published (e.g. a prior run that wrote
+    # successfully but never reached the baseline-advance step) is a
+    # legitimate, safe republish.
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    doc_path = tmp_path / "docs" / "demo.md"
+    doc_path.parent.mkdir(parents=True, exist_ok=True)
+    doc_path.write_text(
+        "<!-- codecompass-grounded-by: CL-DEMO-001 region:demo-s1 -->\n"
+        "A fact.\n"
+        "<!-- /codecompass-grounded-by -->\n",
+        encoding="utf-8",
+    )  # unbaselined, but byte-identical to the pending draft_body ("A fact.")
+
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 0, result.output
+
+
+def test_docs_publish_succeeds_on_a_claims_changed_republish_and_advances_the_baseline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    doc_path = tmp_path / "docs" / "demo.md"
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    first = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert first.exit_code == 0, first.output
+
+    # The cited knowledge genuinely changes; recompile a fresh draft
+    # against the new state and publish it again -- this must succeed
+    # (claims_changed is a legitimate republish, not a drifted overwrite)
+    # and the baseline must advance so a subsequent maintain run is noop.
+    _write_knowledge_claim(tmp_path, "demo", "CL-DEMO-001", "a CHANGED demo fact")
+    new_tagged_draft = "A changed fact {{cite:CL-DEMO-001}}."
+    new_body = "A changed fact."
+    hydrated = cli_module.doc_compiler.hydrate_records(tmp_path, ["CL-DEMO-001"])
+    section = {"id": "s1", "required_knowledge": ["CL-DEMO-001"], "max_evidence_chars": 4000}
+    schema = {"sections": [section]}
+    pending_path = (
+        tmp_path / "planning" / "retros" / "phase-87-pending-review" / "demo" / "s1.json"
+    )
+    new_pending = {
+        "schema_slug": "demo", "section_id": "s1", "source_revision": "unknown",
+        "record_ids": ["CL-DEMO-001"], "tagged_draft": new_tagged_draft,
+        "draft_body": new_body, "draft_sha256": oracle.sha256_text(new_tagged_draft),
+        "evidence_sha256": cli_module.doc_compiler.hash_evidence(hydrated),
+        "schema_section_sha256": oracle.sha256_text(
+            json.dumps(schema["sections"][0], sort_keys=True)
+        ),
+        "citation_findings": [],
+    }
+    pending_path.write_text(json.dumps(new_pending, indent=2, sort_keys=True), encoding="utf-8")
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    second = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert second.exit_code == 0, second.output
+    assert "A changed fact." in doc_path.read_text(encoding="utf-8")
+
+    maintain_result = runner.invoke(app, ["docs", "maintain", str(schema_path)])
+    assert maintain_result.exit_code == 0, maintain_result.output
+    assert "id:demo-s1" in maintain_result.output
+    assert "noop" in maintain_result.output.split("doc_candidates")[0]
+
+
+def test_docs_publish_never_advances_baseline_when_the_write_itself_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    def _boom(*args, **kwargs):
+        raise cli_module.doc_compiler.DocCompilerError("simulated write failure")
+
+    monkeypatch.setattr(cli_module.doc_compiler, "publish_section", _boom)
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code != 0
+
+    state_path = tmp_path / "planning" / ".grounding-state.toml"
+    assert not state_path.exists() or "demo-s1" not in state_path.read_text(encoding="utf-8")
+
+
+def test_doc_publish_lock_times_out_cleanly_when_already_held(tmp_path: Path) -> None:
+    lock_path = tmp_path / cli_module._DOC_PUBLISH_LOCK_NAME
+    lock_path.write_text("", encoding="utf-8")  # simulate another holder
+    with pytest.raises(cli_module._DocPublishLockTimeoutError):
+        with cli_module._doc_publish_lock(tmp_path, timeout=0.2, poll_interval=0.05):
+            pass  # pragma: no cover -- must never be reached
+    assert lock_path.is_file()  # never removed -- this process never held it
+
+
+def test_doc_publish_lock_is_released_after_use(tmp_path: Path) -> None:
+    lock_path = tmp_path / cli_module._DOC_PUBLISH_LOCK_NAME
+    with cli_module._doc_publish_lock(tmp_path):
+        assert lock_path.is_file()
+    assert not lock_path.exists()
+
+
+def test_doc_publish_lock_is_released_after_an_exception_inside_it(tmp_path: Path) -> None:
+    lock_path = tmp_path / cli_module._DOC_PUBLISH_LOCK_NAME
+    with pytest.raises(RuntimeError):
+        with cli_module._doc_publish_lock(tmp_path):
+            raise RuntimeError("boom")
+    assert not lock_path.exists()
 
 
 def test_docs_publish_rejects_absent_review_records(
@@ -3075,3 +3387,55 @@ def test_docs_publish_accepts_a_legitimate_readme_publication(
     result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
     assert result.exit_code == 0, result.output
     assert "A fact." in (tmp_path / "README.md").read_text(encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# Real-repository factual verification (Stage 87B, third corrective
+# amendment finding D): docs/getting-started.md's own "## After the
+# first run" section makes concrete implementation claims that must be
+# checked against the real repository, not merely asserted -- this is
+# the check docs/getting-started.md.schema.yaml's own `after-the-
+# first-run` section names.
+# ---------------------------------------------------------------------------
+
+_REPO_ROOT_FOR_DOC_CLAIMS = Path(__file__).resolve().parent.parent
+
+
+def test_after_the_first_run_claims_match_the_real_repository() -> None:
+    root = _REPO_ROOT_FOR_DOC_CLAIMS
+
+    # "vendor/<name>/CLAUDE.md — the main per-vendor reference file"
+    vendor_claude_mds = list(root.glob("vendor/*/CLAUDE.md"))
+    assert vendor_claude_mds, "at least one real vendor/<name>/CLAUDE.md must exist"
+
+    # "CLAUDE.md at your project root gets a generated, marker-delimited
+    # routing table ... listing every tracked vendor, whether it's
+    # enriched, and a link to its dependency tree."
+    root_claude_md = (root / "CLAUDE.md").read_text(encoding="utf-8")
+    assert "<!-- codecompass:start -->" in root_claude_md
+    assert "<!-- codecompass:end -->" in root_claude_md
+    start = root_claude_md.index("<!-- codecompass:start -->")
+    end = root_claude_md.index("<!-- codecompass:end -->")
+    table_block = root_claude_md[start:end]
+    for column in ("Vendor", "Path", "Version", "Enriched", "Deps"):
+        assert column in table_block, f"routing table missing column {column!r}"
+
+    # ".claude/skills/codecompass/SKILL.md -- a tool-level Agent Skill
+    # describing CodeCompass's own commands, generated unconditionally
+    # regardless of vendor count."
+    assert (root / ".claude" / "skills" / "codecompass" / "SKILL.md").is_file()
+
+    # ".claude/commands/discovery.md -- a read-only /discovery slash
+    # command for guided exploration."
+    assert (root / ".claude" / "commands" / "discovery.md").is_file()
+
+    # "context-graph.db -- a plain SQLite file at your project root."
+    graph_db = root / "context-graph.db"
+    assert graph_db.is_file()
+    import sqlite3
+
+    conn = sqlite3.connect(str(graph_db))
+    try:
+        conn.execute("SELECT 1")  # genuinely a readable SQLite file, not merely present
+    finally:
+        conn.close()

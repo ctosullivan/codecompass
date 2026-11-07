@@ -444,6 +444,27 @@ def compile_document(
 # ---------------------------------------------------------------------------
 
 
+def compute_schema_slug(schema_path: Path) -> str:
+    """A `[a-z0-9-]+` slug for `schema_path`, safe to compose into a
+    `region:<schema_slug>-<section_id>` identity (§G.A). A naive
+    `.stem.removesuffix(".schema")` breaks on a document whose own name
+    already contains a dot (`README.md.schema.yaml` -> stem
+    `README.md.schema` -> `README.md` after removesuffix, which still
+    has a `.` in it) -- caught directly by `publish_section`'s own
+    fail-closed region-id check during Stage 87A's real demonstration
+    run. Strips the full `.schema.yaml` suffix in one step, then
+    normalises anything left. Moved here from `cli.py`'s own private
+    `_schema_slug` (third corrective amendment, finding A) so
+    `scripts/check_doc_schema.py`'s new cross-document region-id check
+    can share the exact same computation `docs publish` uses, rather
+    than risk two independently-maintained copies drifting apart --
+    the same discipline `hash_evidence` already established."""
+    name = schema_path.name
+    if name.endswith(".schema.yaml"):
+        name = name[: -len(".schema.yaml")]
+    return re.sub(r"[^a-z0-9-]+", "-", name.lower()).strip("-")
+
+
 def find_schema_section(schema: dict, section_id: str) -> dict | None:
     """The requested `section_id` must belong to the *current, live*
     schema, not merely to whatever schema produced an old pending-review
@@ -512,6 +533,83 @@ def resolve_publication_target(project_root: Path, document: str) -> Path:
         )
 
     return target_real
+
+
+# ---------------------------------------------------------------------------
+# Publication-time concurrency guard (Stage 87B §O.D point 3, third
+# corrective amendment finding C) -- pure decision logic over an
+# already-computed GroundedRegionFinding; the actual
+# detect_grounded_region_changes call, the cooperating-writer lock, and
+# the write/baseline-advance sequencing all live in the CLI, which owns
+# I/O ordering (CLAUDE.md §8). Keeping the branching rule here, as a
+# pure function, lets it be tested without a lock or a real document on
+# disk.
+# ---------------------------------------------------------------------------
+
+
+def decide_publish_safety(
+    finding: _ki.GroundedRegionFinding | None, new_body: str
+) -> str | None:
+    """Returns `None` if `publish_section` may safely proceed, or an
+    explanatory refusal message if not. `finding` is `None` when no
+    marker exists yet for this region at all (`detect_grounded_region_
+    changes` reported nothing for it) -- genuinely safe, nothing to
+    overwrite.
+
+    For every other case, reuses `detect_grounded_region_changes`'s own
+    five-state classification directly, never a new, separately-
+    invented concurrency check:
+
+    - `"new"` (the marker's own text already exists, unbaselined) --
+      **not** automatically safe (the second corrective amendment's own
+      gap, fixed here): compares the live region's own hash against the
+      hash of `new_body`, the exact body about to be published. Equal
+      means this is a legitimate idempotent re-publish of content
+      already there; unequal means the live content is not provably
+      this compiler's own prior output, so it is never assumed safe to
+      discard.
+    - `"noop"` (live region matches its recorded baseline exactly) --
+      safe; the new, reviewed draft replaces content that hasn't
+      independently drifted.
+    - `"claims_changed"` (prose matches baseline; only cited knowledge
+      moved) -- safe; the caller's own evidence-hash check (`docs
+      publish`'s existing schema/evidence identity checks) already
+      proves `new_body` reflects the *current* knowledge state, so this
+      publish *is* the "current, independently verified replacement" a
+      `claims_changed` state requires.
+    - `"doc_candidate"` (prose has drifted, no matching knowledge
+      change) -- refused; this is exactly "the region contains
+      unacknowledged human changes."
+    - `"concurrent_conflict"` (both drifted) -- refused; requires
+      explicit lead-controlled reconciliation, never an automatic merge
+      either direction.
+    """
+    if finding is None:
+        return None
+    if finding.case in ("noop", "claims_changed"):
+        return None
+    if finding.case == "new":
+        candidate_hash = _oracle.sha256_text(f"\n{new_body}\n")
+        if finding.region_hash == candidate_hash:
+            return None
+        return (
+            f"region {finding.region_id!r} already has unbaselined content that does not "
+            "match the draft about to be published -- refusing to overwrite content that "
+            "cannot be proven to be this compiler's own prior output (run docs maintain "
+            "first to see and resolve it)"
+        )
+    if finding.case == "doc_candidate":
+        return (
+            f"region {finding.region_id!r} contains unacknowledged human changes "
+            "(doc_candidate) -- refusing to overwrite; run docs maintain and resolve it first"
+        )
+    if finding.case == "concurrent_conflict":
+        return (
+            f"region {finding.region_id!r} has both drifted prose and changed cited "
+            "knowledge (concurrent_conflict) -- requires explicit lead-controlled "
+            "reconciliation, never an automatic merge"
+        )
+    return f"region {finding.region_id!r} has an unrecognised case {finding.case!r}"
 
 
 # ---------------------------------------------------------------------------

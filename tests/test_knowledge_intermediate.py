@@ -891,6 +891,85 @@ class TestExplicitDocumentGroundingReconciliation:
         new_records = [r for r in ki.load_slug_records(sdir) if r != "CL-X-001"]
         assert len(new_records) == 1
 
+    def test_write_doc_candidates_is_idempotent_against_an_unresolved_pending_item(self, tmp_path):
+        # Stage 87B §O.D point 2: a second docs-maintain-style run over
+        # an UNCHANGED doc_candidate must never produce a near-duplicate
+        # manifest -- confirmed empirically during Stage 87A's own real
+        # demonstration (the exact regression this test reproduces).
+        sdir, readme = self._ground(tmp_path)
+        findings = ki.detect_grounded_region_changes(tmp_path)
+        ki.establish_new_region_baselines(tmp_path, findings)
+
+        readme.write_text(
+            readme.read_text(encoding="utf-8").replace(
+                "Sync is idempotent.", "Sync can run any number of times safely."
+            ),
+            encoding="utf-8",
+        )
+        findings2 = ki.detect_grounded_region_changes(tmp_path)
+        assert findings2[0].case == "doc_candidate"
+
+        first = ki.write_doc_candidates_to_manifests(tmp_path, findings2)
+        assert "demo-slug" in first
+        rdir = ki.reconciliation_dir(tmp_path, "demo-slug")
+        assert len(list(rdir.glob("*.toml"))) == 1
+
+        # Re-run detection and the write step again -- nothing about the
+        # document or the cited record changed in between.
+        findings3 = ki.detect_grounded_region_changes(tmp_path)
+        assert findings3[0].case == "doc_candidate"
+        second = ki.write_doc_candidates_to_manifests(tmp_path, findings3)
+        assert second == {}, "an unchanged, already-pending candidate must not get a new manifest"
+        assert len(list(rdir.glob("*.toml"))) == 1
+
+    def test_write_doc_candidates_writes_a_fresh_item_when_the_region_drifts_further(
+        self, tmp_path
+    ):
+        # The idempotency fix must never swallow a GENUINE further
+        # change -- only a byte-identical re-detection of the same
+        # unresolved state is skipped.
+        sdir, readme = self._ground(tmp_path)
+        findings = ki.detect_grounded_region_changes(tmp_path)
+        ki.establish_new_region_baselines(tmp_path, findings)
+
+        readme.write_text(
+            readme.read_text(encoding="utf-8").replace(
+                "Sync is idempotent.", "Sync can run any number of times safely."
+            ),
+            encoding="utf-8",
+        )
+        findings2 = ki.detect_grounded_region_changes(tmp_path)
+        first = ki.write_doc_candidates_to_manifests(tmp_path, findings2)
+        assert "demo-slug" in first
+        rdir = ki.reconciliation_dir(tmp_path, "demo-slug")
+        assert len(list(rdir.glob("*.toml"))) == 1
+
+        # The region drifts AGAIN, further, before the first candidate
+        # is ever resolved.
+        readme.write_text(
+            readme.read_text(encoding="utf-8").replace(
+                "Sync can run any number of times safely.",
+                "Sync can run any number of times safely, and is also fast.",
+            ),
+            encoding="utf-8",
+        )
+        findings3 = ki.detect_grounded_region_changes(tmp_path)
+        assert findings3[0].case == "doc_candidate"
+        second = ki.write_doc_candidates_to_manifests(tmp_path, findings3)
+        assert "demo-slug" in second, "a genuinely further drift must still get a fresh item"
+        # (Manifest filenames are second-resolution timestamps, so a
+        # same-second second write can share the first write's own
+        # filename -- a pre-existing, out-of-scope property of this
+        # function's naming scheme, not this fix's own concern. What
+        # matters here is that a write genuinely happened -- "demo-slug"
+        # in `second` -- and that its own content reflects the NEW
+        # drift, not the first one.)
+        import tomllib
+
+        latest = sorted(rdir.glob("*.toml"))[-1]
+        data = tomllib.loads(latest.read_text(encoding="utf-8"))
+        assert data["items"][0]["base_region_hash"] == findings3[0].region_hash
+
     def test_grounded_edit_plus_claim_change_is_conflict(self, tmp_path):
         sdir, readme = self._ground(tmp_path)
         findings = ki.detect_grounded_region_changes(tmp_path)
@@ -2220,3 +2299,34 @@ class TestDeriveEpistemicProfile:
         assert profile.observed is True
         assert profile.contested is True
         assert profile.verified_scopes == []  # no oracle contract supplied -- correctly empty
+
+
+# ---------------------------------------------------------------------------
+# Real-repository regression (Stage 87B §O.D point 2): the idempotency fix
+# must hold against the actual, already-existing, still-unresolved
+# `intermediate-knowledge-layer` doc_candidate manifest this project's own
+# real Stage 87A demonstration produced -- never a synthetic stand-in.
+# ---------------------------------------------------------------------------
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+def test_real_repository_doc_candidate_manifest_write_is_idempotent():
+    findings = ki.detect_grounded_region_changes(REPO_ROOT, ("README.md",))
+    by_region = {f.region_id: f for f in findings}
+    assert "intermediate-knowledge-layer" in by_region
+    assert by_region["intermediate-knowledge-layer"].case == "doc_candidate", (
+        "this real, pre-existing candidate must remain unresolved throughout Stage 87B "
+        "-- never artificially acknowledged merely to make this test pass"
+    )
+
+    rdir = ki.reconciliation_dir(REPO_ROOT, "codecompass-domain")
+    before = sorted(p.name for p in rdir.glob("*.toml"))
+    assert "20261104T081241Z-doc.toml" in before, (
+        "the real fixture manifest from Stage 87A's own demonstration must still exist"
+    )
+
+    written = ki.write_doc_candidates_to_manifests(REPO_ROOT, findings)
+    after = sorted(p.name for p in rdir.glob("*.toml"))
+    assert written == {}, "an unchanged, already-pending real candidate must not get a new manifest"
+    assert after == before, "no new manifest file may appear in the real reconciliation directory"

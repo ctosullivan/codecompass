@@ -16,15 +16,16 @@ Run `codecompass` with no arguments at the root of the project whose dependencie
 codecompass
 ```
 
-This is the **zero-question deterministic bootstrap** (`decisions/0017`). It never asks you anything and never makes an AI call on its own:
+This is the **zero-question deterministic bootstrap** (`decisions/0017`). Steps 1-4 below always run, unconditionally, with no prompt and no AI call:
 
 1. Scans the project root (non-recursively) for any of a fixed set of manifest files: `package.json`, `pyproject.toml`, `requirements.txt`, `Cargo.toml`, `package.yaml`.
 2. Writes a fresh `vendor.toml` (or appends newly-discovered entries to an existing one — already-tracked vendors are left untouched on a refresh run).
 3. Clones each newly-discovered vendor's upstream source and renders its digest files under `vendor/<name>/`.
 4. Rebuilds `context-graph.db` from every tracked vendor's current state plus a fresh scan of your own project source.
-5. If, and only if, that scan proves your own code genuinely imports a tracked vendor, and that vendor hasn't already been AI-enriched at its current symbol set, it discloses an estimated cost and asks for confirmation before calling the Anthropic API (`ANTHROPIC_API_KEY` must be set in your environment for this step to succeed).
 
-If your project imports nothing CodeCompass can detect yet, step 5 never triggers and the whole run makes zero network/API calls beyond cloning each vendor's own public source repository.
+Only step 5 is conditional, and it is the one place this command can become interactive or billable: if, and only if, that scan proves your own code genuinely imports a tracked vendor, and that vendor hasn't already been AI-enriched at its current symbol set, it discloses an estimated cost and **asks for confirmation** before calling the Anthropic API (`ANTHROPIC_API_KEY` must be set in your environment for this step to succeed) — unless `--budget` or `--yes` already resolved the question (see "## Proceeding past the budget cap" below).
+
+If your project imports nothing CodeCompass can detect yet, step 5 never triggers and the whole run is exactly as deterministic and non-interactive as steps 1-4, making zero network/API calls beyond cloning each vendor's own public source repository.
 
 ## A real captured example
 

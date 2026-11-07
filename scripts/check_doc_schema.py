@@ -248,6 +248,44 @@ def _check_document_uniqueness(all_data: list[tuple[Path, dict]]) -> list[Findin
     return findings
 
 
+def _check_cross_document_region_id_uniqueness(all_data: list[tuple[Path, dict]]) -> list[Finding]:
+    """Third corrective amendment, finding A: `_check_document_
+    uniqueness` above only ever checked duplicate *document paths* --
+    nothing checked a duplicate composed `region:<id>` token across
+    schema files, which only ever mattered once a second schema-
+    governed document existed (87B). The only other existing
+    duplicate-region-id protection, `knowledge_intermediate._check_
+    no_duplicate_region_ids`, reads already-*published* document text
+    at reconciliation time -- it cannot catch a collision before either
+    section is ever compiled or published. This check computes every
+    section's own composed region id (`doc_compiler.compute_schema_slug`
+    + `-` + the section's own `id` -- the exact composition `docs
+    publish` already uses) across every schema file passed to one
+    `run_all` call, and flags any value that repeats, whether across
+    two different schema files or twice within one."""
+    findings = []
+    seen: dict[str, tuple[Path, str]] = {}
+    for schema_path, data in all_data:
+        slug = dc.compute_schema_slug(schema_path)
+        for section in data.get("sections", []) or []:
+            section_id = section.get("id")
+            if not section_id:
+                continue
+            region_id = f"{slug}-{section_id}"
+            if region_id in seen:
+                other_path, other_section_id = seen[region_id]
+                findings.append(Finding(
+                    "doc-schema-duplicate-region-id",
+                    f"{schema_path} section {section_id!r} and {other_path} section "
+                    f"{other_section_id!r} both compose to region id {region_id!r} -- "
+                    "two sections may never share the same grounded-region identity, "
+                    "even across different documents",
+                ))
+            else:
+                seen[region_id] = (schema_path, section_id)
+    return findings
+
+
 def run_all(project_root: Path, schema_paths: list[Path]) -> list[Finding]:
     findings: list[Finding] = []
     all_data: list[tuple[Path, dict]] = []
@@ -278,6 +316,7 @@ def run_all(project_root: Path, schema_paths: list[Path]) -> list[Finding]:
         findings.extend(_resolve_required_knowledge(project_root, data, schema_path))
 
     findings.extend(_check_document_uniqueness(all_data))
+    findings.extend(_check_cross_document_region_id_uniqueness(all_data))
     return findings
 
 

@@ -383,6 +383,67 @@ def test_compile_document_reaches_pending_review_when_all_citations_supported(tm
 
 
 # ---------------------------------------------------------------------------
+# decide_publish_safety -- publication-time concurrency guard (Stage 87B
+# §O.D point 3, third corrective amendment finding C)
+# ---------------------------------------------------------------------------
+
+
+def _finding(case: str, *, region_hash: str = "irrelevant", region_id: str = "demo-s1"):
+    from codecompass import knowledge_intermediate as ki
+
+    return ki.GroundedRegionFinding(
+        doc_name="docs/demo.md", index=0, region_id=region_id,
+        cited_ids=["CL-DEMO-001"], region_text="\nSome text\n",
+        region_hash=region_hash, case=case,
+    )
+
+
+def test_decide_publish_safety_allows_when_no_finding_exists():
+    assert dc.decide_publish_safety(None, "A fresh body.") is None
+
+
+def test_decide_publish_safety_allows_noop():
+    assert dc.decide_publish_safety(_finding("noop"), "A fresh body.") is None
+
+
+def test_decide_publish_safety_allows_claims_changed():
+    assert dc.decide_publish_safety(_finding("claims_changed"), "A fresh body.") is None
+
+
+def test_decide_publish_safety_refuses_doc_candidate():
+    reason = dc.decide_publish_safety(_finding("doc_candidate"), "A fresh body.")
+    assert reason is not None
+    assert "doc_candidate" in reason
+
+
+def test_decide_publish_safety_refuses_concurrent_conflict():
+    reason = dc.decide_publish_safety(_finding("concurrent_conflict"), "A fresh body.")
+    assert reason is not None
+    assert "concurrent_conflict" in reason
+
+
+def test_decide_publish_safety_allows_new_when_live_content_matches_the_new_body():
+    # The exact gap the third corrective amendment fixed: an unbaselined
+    # ("new") region whose live content already IS the body about to be
+    # published is a legitimate idempotent re-publish/baseline-catch-up.
+    body = "A fresh body."
+    matching_hash = oracle.sha256_text(f"\n{body}\n")
+    finding = _finding("new", region_hash=matching_hash)
+    assert dc.decide_publish_safety(finding, body) is None
+
+
+def test_decide_publish_safety_refuses_new_when_live_content_does_not_match():
+    # The exact gap the third corrective amendment fixed: an unbaselined
+    # region whose live content is something ELSE entirely (e.g.
+    # genuinely human-authored, never baselined) must never be assumed
+    # safe to overwrite just because no baseline happens to exist yet.
+    finding = _finding("new", region_hash=oracle.sha256_text("\nSome human-written text\n"))
+    reason = dc.decide_publish_safety(finding, "A completely different fresh body.")
+    assert reason is not None
+    assert "does not match" in reason
+
+
+# ---------------------------------------------------------------------------
 # publish_section -- grounded-marker publication (amendment finding A/C --
 # hyphenated region ids, always-on machine-readable grounding)
 # ---------------------------------------------------------------------------
