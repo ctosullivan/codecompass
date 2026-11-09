@@ -11,10 +11,19 @@ schema freshness, a narrower write-boundary race), survived a first
 re-audit FAIL on a self-certification defect, and closed on a fresh
 re-audit **PASS** (see `planning/retros/_audit-phase-87-stage-87b-
 hardening.md`, `planning/retros/_audit-phase-87-stage-87b-hardening-
-reaudit.md`). Stage 87C now has an implementation-ready plan (§S),
-independently reviewed **READY WITH NON-BLOCKING OBSERVATIONS**
-(2026-11-09) — implementation itself remains separately, explicitly
-not authorised. Phase 87 overall remains not done.** This is a
+reaudit.md`); a fourth integration defect (`schema_section_sha256`
+never bound to the schema's own top-level `document`/`audience`/
+`acceptance_criteria` fields) was then found and fixed the same day,
+independently audited **PASS** (see `planning/retros/
+_audit-phase-87-stage-87b-second-hardening-pass.md`) — Stage 87B is
+now hardened against four found-and-fixed defects total. Stage 87C's
+plan (§S) was independently reviewed **READY WITH NON-BLOCKING
+OBSERVATIONS** (2026-11-09), then amended the same day for several
+real factual/scope corrections (counts, migration gap, dependency
+proof, comparator rigour) and independently re-reviewed a second time:
+**READY WITH NON-BLOCKING OBSERVATIONS** — implementation itself
+remains separately, explicitly not authorised. Phase 87 overall
+remains not done.** This is a
 **scope-management correction**, not an architectural redesign — the
 strategic objective (§0), the verified architecture map (§A), and the
 shared schema/pipeline contract (§B/§C) are preserved. What changes:

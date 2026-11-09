@@ -16,12 +16,33 @@ project-wide `docs maintain` discovery, a cross-document region-id
 uniqueness check, a publication-time concurrency guard, a real
 sandboxed execution harness, and a genuine, worktree-isolated
 knowledge-change demonstration with comparator, all independently
-audited through a real FAIL→fix→PASS cycle (see "What was just
-completed" below for the full account); Stage 87C now has a complete,
-independently-reviewed (**READY WITH NON-BLOCKING OBSERVATIONS**,
-2026-11-09) implementation-ready plan (plan's own §S), but implementation
-remains separately, explicitly **not authorised** — the plan authorises
-nothing beyond itself; Phase 87 overall remains `not done`.** Plan:
+audited through a real FAIL→fix→PASS cycle, then **hardened a fourth
+time (2026-11-09, same day)** against a further publication-integrity
+defect (`schema_section_sha256` covered only a schema section's own
+dict, never the schema's top-level `document`/`audience`/
+`acceptance_criteria` fields, letting an already-reviewed draft be
+silently retargeted to a different, never-reviewed-against document
+after both reviews had passed), fixed with a new shared
+`doc_compiler.compute_schema_section_identity_sha256` and 11 new
+regression tests, independently audited **PASS** (see "What was just
+completed" below for the full account); Stage 87B is now hardened
+against four found-and-fixed publication-integrity defects total
+across its history. Stage 87C's plan (§S) was then **amended** the
+same day to correct several factual/scope inconsistencies a fresh
+governing task found after §S's own first review round (Getting
+Started's section/verification counts, the Concepts compilation scope
+resolved to 4 pages, schema/document/region arithmetic corrected to 6
+total schemas, the incremental-change proof's second affected region
+swapped to a verified, already-shared `CL-ADPT-005` dependency, a
+comparator setup-vs-marginal cost split and predeclared threshold, a
+new §S.4a safe existing-document migration procedure, and a new §S.9a
+exit-gate cross-check), independently re-reviewed a second time:
+**READY WITH NON-BLOCKING OBSERVATIONS**, after finding and the lead
+correcting two citation-accuracy defects (a misattributed quote; a
+mischaracterised `decisions/0085` §6 citation). Implementation
+remains separately, explicitly **not authorised** — the plan
+authorises nothing beyond itself; Phase 87 overall remains `not
+done`.** Plan:
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
 A second review (after the first pass's own READY WITH NON-BLOCKING
 OBSERVATIONS verdict) found the single-stage scope too large and four
@@ -292,6 +313,80 @@ authorised**, and untouched by any of this work. Phase 87 itself
 remains `not done` until Stage 87C's own exit gate (the complete
 minimum publication suite, the matched-baseline comparison, final
 audits) is met.
+
+**Stage 87B hardened a fourth time — closed (2026-11-09, same day).**
+A fresh code-inspection review of the already-twice-hardened `docs
+publish` path, independent of the prior pass's three findings, found
+`schema_section_sha256` (the hash every persisted review record and
+pending manifest is bound to) was computed from only the schema
+section's own dict, even after the prior fix bound the section's own
+identity to the live schema on every re-check — the schema's
+**top-level** `document` (the actual publication target), `audience`,
+and `acceptance_criteria` fields were never part of that hash, at
+compile time or at any publish-time re-check. Reproduced directly
+before any fix was written: a standalone script compiled a section
+against a schema targeting one document, recorded both passing
+reviews, then rewrote only the schema's own top-level `document`
+field to a different target, leaving the section dict byte-identical
+— `docs publish` exited 0 and published the already-reviewed draft to
+the new, never-reviewed-against target. Fixed with one new, shared
+`doc_compiler.compute_schema_section_identity_sha256`, binding the
+section together with the schema's `document`/`audience`/
+`acceptance_criteria` fields; `docs compile` now computes the
+persisted hash through it, `docs publish`'s freshness check recomputes
+the identical structure from the live schema on every call
+(pre-lock and at the write boundary), and the actual write target is
+now also re-resolved from the live schema at the write boundary rather
+than trusted from the one-time resolution at the top of the function.
+11 new regression tests, each confirmed to fail against a disposable
+pre-fix worktree first (full suite 1352 → 1363 passed, 2 skipped). An
+independent `release-phase-auditor` dispatch independently reproduced
+the exploit against that same disposable pre-fix worktree, confirmed
+the fix closes it, sampled 5 of the 11 new tests directly, re-ran the
+full suite and every strict validator itself, and specifically
+re-checked for a recurrence of this session's earlier self-
+certification defect — none found: **PASS**. **Stage 87B is now
+hardened against four found-and-fixed publication-integrity defects
+total across its history.** Full detail: `planning/retros/
+phase-87-stage-87b-knowledge-change-demonstration.md`'s "Addendum 3";
+`planning/retros/_audit-phase-87-stage-87b-second-hardening-pass.md`.
+
+**Stage 87C's plan amended and re-reviewed a second time (2026-11-09,
+same day).** A fresh governing task found and required correction of
+several real factual/scope inconsistencies in the Stage 87C plan
+(§S) after its own first review round: Getting Started's section/
+verification counts were stated inaccurately (claimed 5-of-6
+execution-verified; real: 3-of-5, the other 2 verified by two
+specifically-named other tests); the Concepts compilation list named
+five pages while the implementation sequence and knowledge-readiness
+assessment had already, inconsistently, settled on four — resolved in
+favour of four, moving `protocol-and-capability.md` to the human-
+authored list; schema/document/region arithmetic referenced "five
+schemas" against a real total of six (2 existing + 4 new); the
+incremental-change proof's second affected region was a page never
+scheduled for compilation, failing to guarantee a genuine two-
+compiled-region demonstration — replaced with a verified, already-real
+dependency (both `adapter.md` and `vendor-and-ecosystem.md` cite
+`CL-ADPT-005`, confirmed by reading both pages' actual prose); the
+comparator measured generation cost with no predeclared material-
+improvement threshold or setup-vs-marginal cost split; and no existing-
+document migration procedure was specified despite `publish_section`'s
+own append-not-replace behaviour for an unmarked page — a real risk of
+duplicating existing Concepts prose rather than governing it, closed by
+a new §S.4a specifying a safe, zero-new-code migration sequence using
+existing baseline/noop machinery. A new §S.9a cross-checks every
+original Phase 87 exit-gate requirement against the amended plan's own
+disposition. Independently re-reviewed, with the reviewer instructed
+to inspect real repository files rather than assess internal coherence
+alone: **READY WITH NON-BLOCKING OBSERVATIONS**. Two citation-accuracy
+defects found and corrected in place: a misattributed quote, and a
+mischaracterised `decisions/0085` §6 citation (§6 actually withdraws a
+threshold-based criterion; the predeclared threshold is this
+amendment's own voluntary strengthening, not a restored requirement).
+The first review round's own verdict is preserved unchanged as
+historical record. **This plan authorises nothing beyond itself —
+Stage 87C implementation remains separately, explicitly unauthorised.**
+Full detail: the plan's own §S.12 "Second review round".
 
 **Phase 86 — Knowledge-Placement and Code-Quality Review — is `done`
 (2026-11-03)**. Plan amended and independently reviewed across four
@@ -861,6 +956,64 @@ and each phase's retro.
 
 ## What was just completed
 
+**Phase 87 Stage 87C plan amended and independently re-reviewed**,
+2026-11-09, direct user request (commit `779ce21`). A fresh governing
+task found and required correction of several real factual/scope
+inconsistencies in the Stage 87C plan (§S) after its own first
+independent review round: Getting Started's section/verification
+counts (corrected from a claimed 5-of-6 execution-verified to the real
+3-of-5, the other 2 verified by two specifically-named other tests);
+the Concepts compilation scope (resolved to 4 pages, not the
+inconsistently-stated 5, moving `protocol-and-capability.md` to the
+human-authored list); schema/document/region arithmetic (6 total
+schemas — 2 existing + 4 new — not "five"); the incremental-change
+proof's second affected region (swapped from a page never scheduled
+for compilation to a verified, already-shared `CL-ADPT-005` dependency
+genuinely cited by both `adapter.md` and `vendor-and-ecosystem.md`,
+two pages this plan actually compiles); the comparator (§S.7) gaining
+a setup-vs-marginal cost split and a predeclared material-improvement
+threshold; a new §S.4a specifying a safe existing-document migration
+procedure (no target Concepts page has a grounded-region marker yet,
+and `publish_section` appends rather than replaces when none exists —
+§S.4a uses only existing machinery, zero new code); and a new §S.9a
+cross-checking every original Phase 87 exit-gate requirement
+(`decisions/0085` §5-§6, §F) against the amended plan's own
+disposition. Independently re-reviewed a second time (§S.12's own
+"Second review round," same commit): **READY WITH NON-BLOCKING
+OBSERVATIONS**, after finding and the lead correcting two citation-
+accuracy defects (a misattributed quote; a mischaracterised
+`decisions/0085` §6 citation). The first review round's own verdict is
+preserved unchanged as historical record. **This plan authorises
+nothing beyond itself: Stage 87C implementation itself remains
+separately, explicitly not authorised.** Phase 87 overall remains `not
+done`; see "Next concrete step" below.
+
+**Phase 87 Stage 87B hardened a fourth time, independently audited
+PASS**, 2026-11-09, direct user request (commits `cd81892`,
+`fc197cf`). A fresh code-inspection review of the already-twice-
+hardened `docs publish` path found `schema_section_sha256` covered
+only a schema section's own dict, never the schema's top-level
+`document` (the actual publication target), `audience`, or
+`acceptance_criteria` fields — reproduced directly, before any fix was
+written, by retargeting a schema's `document` field alone after both
+independent reviews had already passed, silently redirecting an
+already-reviewed draft to a different, never-reviewed-against
+document. Fixed with one new, shared `doc_compiler.compute_schema_
+section_identity_sha256` binding the section to those top-level
+fields, with the write target also re-resolved from the live schema at
+the write boundary; 11 new regression tests (full suite 1352 → 1363
+passed, 2 skipped). An independent `release-phase-auditor` dispatch
+independently reproduced the exploit against a disposable pre-fix
+worktree, confirmed the fix, sampled 5 of the 11 new tests directly,
+re-ran the full suite and every strict validator itself, and
+specifically re-checked for a recurrence of this session's earlier
+self-certification defect — none found: **PASS** (`planning/retros/
+_audit-phase-87-stage-87b-second-hardening-pass.md`). Stage 87B is now
+hardened against four found-and-fixed publication-integrity defects
+total across its history. Stage 87C remains separately planned, not
+authorised, and untouched; Phase 87 overall remains `not done`; see
+"Next concrete step" below.
+
 **Phase 87 Stage 87C implementation-ready plan, independently
 reviewed**, 2026-11-09, direct user request (commit `8b97ed8`). Full
 detail: the plan's own new §S, `planning/
@@ -1377,11 +1530,19 @@ re-audited (second pass), PASS WITH NON-BLOCKING OBSERVATIONS; Stage
 FAIL→fix→PASS cycle, `done` (2026-11-07), and its own post-closeout
 hardening pass is now also closed (2026-11-09; three further
 publication-path defects fixed, a first re-audit FAIL on a
-self-certification defect fixed, fresh re-audit **PASS**); Stage 87C
-now has a complete, independently-reviewed (READY WITH NON-BLOCKING
-OBSERVATIONS, 2026-11-09) implementation-ready plan (§S), but
-implementation remains separately, explicitly **not authorised**; Phase
-87 overall remains `not done`** —
+self-certification defect fixed, fresh re-audit **PASS**), then
+hardened a fourth time the same day against one further
+publication-integrity defect (`schema_section_sha256` never bound to
+the schema's own top-level `document`/`audience`/`acceptance_criteria`
+fields, letting an already-reviewed draft be silently retargeted),
+fixed and independently audited **PASS**
+(`planning/retros/_audit-phase-87-stage-87b-second-hardening-pass.md`)
+— Stage 87B is now hardened against four found-and-fixed defects
+total; Stage 87C's plan (§S) was then amended the same day (corrected
+counts, migration gap, dependency proof, comparator rigour) and
+independently re-reviewed a second time: **READY WITH NON-BLOCKING
+OBSERVATIONS**, but implementation remains separately, explicitly
+**not authorised**; Phase 87 overall remains `not done`** —
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
 **Next concrete step for this phase: explicit authorisation from the
 user/lead to begin Stage 87C implementation.** This is not something
