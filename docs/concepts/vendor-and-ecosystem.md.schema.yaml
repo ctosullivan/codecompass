@@ -1,0 +1,23 @@
+schema_version: 1
+document: docs/concepts/vendor-and-ecosystem.md
+audience: "a developer new to CodeCompass, has not read any other doc"
+sections:
+  - id: ecosystem-vendor-adapter
+    required_knowledge: ["CL-ADPT-004", "CL-ADPT-005"]
+    max_evidence_chars: 4000
+    tone: instructional
+    depth: standard
+    min_claim_status: supported
+    allow_unconfirmed_scopes: true  # Both cited Claims are self-knowledge Claims from the
+                                     # Phase 79/80 snapshot, not oracle-contract-backed
+                                     # implementation facts -- codecompass-domain has no
+                                     # oracle-contract.yaml, so knowledge_api's currency
+                                     # check honestly reports "unconfirmed" (no contract
+                                     # applies) rather than "stale" or "wrong". Allowed here
+                                     # deliberately, not a silent gap-suppression -- same
+                                     # precedent as README.md.schema.yaml's own CL-CTXT-005,
+                                     # independently reviewed (Stage 87C plan Section S.3).
+    citation_display: none
+acceptance_criteria:
+  - "An unfamiliar developer can distinguish ecosystem, vendor, and adapter, and knows 'connector' is not a real concept in this project."
+owner: lead

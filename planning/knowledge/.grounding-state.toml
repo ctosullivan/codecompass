@@ -17,3 +17,8 @@
 "cited_hashes" = ["e09d9fe6ed46148b4d01ac5342c377f043bfc5b842f03802b3975dd47c3280b3"]
 "cited_ids" = ["CL-CTXT-005"]
 "region_hash" = "5da1ef77ae6d7cc7c961c5e45f2d1c42da83ebc1d1e129ee2a0c8fd56d112bc7"
+
+["id:vendor-and-ecosystem-md-ecosystem-vendor-adapter"]
+"cited_hashes" = []
+"cited_ids" = []
+"region_hash" = "ab7a4f3f3c7e9b8ed521a6932cf57aef5fbfb9937c2b9bb49bd07b759886776e"

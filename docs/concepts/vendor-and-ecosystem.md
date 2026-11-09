@@ -2,6 +2,7 @@
 
 These three concepts are related but distinct, and worth keeping apart:
 
+<!-- codecompass-grounded-by: region:vendor-and-ecosystem-md-ecosystem-vendor-adapter -->
 ## Ecosystem
 
 A fixed, closed four-member enum (`src/codecompass/core.py::Ecosystem`): `npm`, `python`, `cargo`, `haskell`. A *category*, not something you configure per project — it names which package ecosystem a given vendor belongs to, and therefore which adapter class handles it.
@@ -19,3 +20,4 @@ See `docs/concepts/adapter.md`. Many vendors can share one `Ecosystem` (and ther
 ## `vendor.toml` — the file format
 
 A project's own tracked-dependency manifest. See `docs/reference/configuration.md` for the full field reference.
+<!-- /codecompass-grounded-by -->
