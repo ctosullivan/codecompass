@@ -23,7 +23,9 @@ Neither strategy supersedes the other — this is a stated, deliberate design, n
 ## An edge case: "one vendor, one adapter instance" is not a filesystem guarantee
 
 `HaskellAdapter`'s own monorepo resolution (`_resolve_package_dir`) shows that a single `project_root` can host multiple vendors' worth of source at once — e.g. `hledger-lib`, `hledger`, and `hledger-ui` all living inside one `hledger` checkout. The adapter *instance* is responsible for narrowing `project_root` down to the one subdirectory matching its own vendor's declared name before any other method call on it is meaningful. See `docs/edge-cases-and-compatibility.md`.
+<!-- /codecompass-grounded-by -->
 
+<!-- codecompass-grounded-by: region:adapter-md-adapter-term-ambiguity -->
 ## A genuinely fuzzy term: "adapter" has two senses in this project
 
 CodeCompass's own architecture documentation (not visible to this reconstruction, but independently confirmed to exist and to name this ambiguity, via source-and-evidence citations) uses "adapter" for two distinct things:

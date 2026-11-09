@@ -1,12 +1,12 @@
 ["id:adapter-md-adapter-concept"]
 "cited_hashes" = []
 "cited_ids" = []
-"region_hash" = "a11e7af196a003ba54f3cacb9a1257c852a1e3d1c51e0f3364321067b926dd44"
+"region_hash" = "70211bb23fb55d7cda3f8cdce8fbac17ab67d3978e91b148196474662ec674e1"
 
-["id:context-md-five-senses-of-context"]
+["id:adapter-md-adapter-term-ambiguity"]
 "cited_hashes" = []
 "cited_ids" = []
-"region_hash" = "387949ef03c8725a93519f57ffae8f35de1672bb287876630d5ebd45d7ca204d"
+"region_hash" = "6c07a53ae764ce03a89dd241770f067f8ef336fb781b965b09ee59d1262f91c5"
 
 ["id:intermediate-knowledge-layer"]
 "cited_hashes" = ["d7ce3fe1957f6d44c1e5700c6057e1f321678d0b37e9a95e064f9fa16ba12e32"]
@@ -21,4 +21,4 @@
 ["id:vendor-and-ecosystem-md-ecosystem-vendor-adapter"]
 "cited_hashes" = []
 "cited_ids" = []
-"region_hash" = "ab7a4f3f3c7e9b8ed521a6932cf57aef5fbfb9937c2b9bb49bd07b759886776e"
+"region_hash" = "8cfbb95d260d7df3c64560c58d68f4faccb8a4748c237f892e9d1cd9ff5b16b7"
