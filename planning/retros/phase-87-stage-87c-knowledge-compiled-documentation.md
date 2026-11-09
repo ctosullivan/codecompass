@@ -64,21 +64,70 @@ declined**:
 | Page | Outcome | Regions |
 |---|---|---|
 | `docs/concepts/context.md` | **Declined.** Two full compile+review rounds both failed (UNSUPPORTED/FAIL — untagged sentences worsened 1→3 on `depth: detailed`; persistent factual/structural regression). Reverted to original content; schema deleted. | — |
-| `docs/concepts/adapter.md` | Migrated, two regions | `adapter-concept` (CL-ADPT-001/002/005), `adapter-term-ambiguity` (CL-ADPT-007) |
-| `docs/concepts/vendor-and-ecosystem.md` | Migrated, one region, deliberately narrowed (excludes the depth-toggle fact and the `vendor.toml` file-format section — neither has a backing Claim) | `ecosystem-vendor-adapter` (CL-ADPT-004/005) |
+| `docs/concepts/adapter.md` | Migrated, two regions | `adapter-concept` (CL-ADPT-001/002/012 — see the corrective addendum below for why `CL-ADPT-012`, not `CL-ADPT-005`), `adapter-term-ambiguity` (CL-ADPT-007) |
+| `docs/concepts/vendor-and-ecosystem.md` | Migrated, one region, deliberately narrowed (excludes the depth-toggle fact and the `vendor.toml` file-format section — neither has a backing Claim) | `ecosystem-vendor-adapter` (CL-ADPT-004/012) |
 | `docs/concepts/knowledge-model.md` | Migrated, two regions, deliberately narrowed from the plan's original ambition (record-kind table stays human-authored) | `provenance-cross-cutting` (CL-EVID-013), `invariant-not-a-record-kind` (CL-EVID-007) |
 
-Final scope: **five schema-governed, genuinely compiled documents**
-(README.md and CONTRIBUTING.md from Stage 87A/87B, plus
-adapter.md, vendor-and-ecosystem.md, and knowledge-model.md from this
-stage) — one fewer than the plan's own "six overall" target, because
-context.md's migration was honestly declined rather than forced.
-`context.md`'s decline is itself real evidence, not a null result: it
-is the first case in this project where the compiler's own editorial
-reviewer recommended *not* iterating further, because the underlying
-knowledge record itself lacks the missing facts — a correctly
-triggered "preserve original content when generation is inferior"
-outcome, exactly as the plan's own instruction required.
+**Documentation-coverage accounting, corrected by this stage's own
+corrective-closeout pass (§ below) — the original figures below were
+wrong about `CONTRIBUTING.md` and conflated two distinct counts; these
+are independently re-verified against the live repository, not
+assumed**:
+
+- **Schema-governed documents: 5** — `README.md`,
+  `docs/getting-started.md`, `docs/concepts/adapter.md`,
+  `docs/concepts/vendor-and-ecosystem.md`,
+  `docs/concepts/knowledge-model.md`. `CONTRIBUTING.md` has **no**
+  schema file and never has (confirmed: no `CONTRIBUTING.md.schema.yaml`
+  exists, and no `codecompass-grounded-by` marker of any kind appears
+  anywhere in `CONTRIBUTING.md` or `docs/development/contributing.md`)
+  — the original retro draft's claim that it was one of Stage 87A/87B's
+  compiled documents was simply wrong.
+- **Documents with actual compiler-published (knowledge-grounded)
+  regions: 4** — `README.md`, `adapter.md`, `vendor-and-ecosystem.md`,
+  `knowledge-model.md`. **Not** `docs/getting-started.md`: it is
+  schema-governed (5 sections) but every section has
+  `required_knowledge: []` — it exists for Stage 87B's own tested-
+  example-execution harness (`requires_tested_example`/
+  `example_comparison_mode`), not knowledge compilation; it has zero
+  `codecompass-grounded-by` regions of any kind.
+- **Compiler-published regions: 6** — README.md's 1
+  (`vendor-digest-concept`, Stage 87A) + adapter.md's 2 + vendor-and-
+  ecosystem.md's 1 + knowledge-model.md's 2, all from this stage.
+- **Other grounded regions from the earlier (Phase 81) intermediate-
+  knowledge mechanism, pre-existing and untouched by Stage 87C: 1** —
+  `README.md:75`'s own `intermediate-knowledge-layer` region, citing
+  `CL-KNOW-001`, with **no** corresponding schema section at all (not
+  listed in `README.md.schema.yaml`) — a plain Phase-81-era
+  `codecompass-grounded-by` marker, structurally distinct from the five
+  Phase-87 doc-compiler regions even though both use the identical
+  marker syntax and are detected by the same
+  `detect_grounded_region_changes` function. This is the region that
+  has shown as the persistent, pre-existing `intermediate-knowledge-
+  layer` `doc_candidate` throughout every `docs maintain` run in this
+  stage, never auto-reconciled, never belonging to Stage 87C's own
+  scope.
+- **Wholly human-authored, never attempted for compilation**:
+  `CONTRIBUTING.md` / `docs/development/contributing.md` (no schema, no
+  marker, never part of any Phase 87 stage's own scope at all — not
+  even a declined attempt, unlike `context.md`), plus every Concepts
+  page's own deliberately-retained human-authored portions outside a
+  compiled region's marker (adapter.md's dispatch table and "connector"
+  section; vendor-and-ecosystem.md's depth-toggle paragraph and
+  `vendor.toml` file-format section; knowledge-model.md's six-record-
+  kind table and reconciliation-loop section; `context.md` in full).
+
+Final scope: **5 schema-governed documents, 4 with actual compiler-
+published content, 6 compiler-published regions overall** — one fewer
+schema-governed Concepts page than the plan's own "six overall"
+Concepts-page target, because `context.md`'s migration was honestly
+declined rather than forced. `context.md`'s decline is itself real
+evidence, not a null result: it is the first case in this project
+where the compiler's own editorial reviewer recommended *not*
+iterating further, because the underlying knowledge record itself
+lacks the missing facts — a correctly triggered "preserve original
+content when generation is inferior" outcome, exactly as the plan's
+own instruction required.
 
 Real defects found and fixed during migration (each independently
 re-reviewed after the fix, never assumed correct): a required-Claim
@@ -271,6 +320,72 @@ machinery (multiple independent dispatches, multiple CLI round-trips)
 carries fixed overhead that does not shrink with the size of the
 change. Whether this changes for larger or more structurally-entangled
 changes is a question for a future stage, not this one.
+
+**Explicit limitations assessment, added by this stage's own
+corrective-closeout pass** — six specific ways this comparator's own
+scope is narrower than "CodeCompass vs. a conventional agent" in
+general, each affecting how far the two verdicts above may be read:
+
+1. **Arm A's interaction with the existing `codecompass-grounded-by`
+   marker was a single, favorable data point, not a demonstrated
+   general property.** Arm A was never briefed on what the marker
+   means; it correctly inferred, from reading the file alone, that the
+   bracketed region was machine-managed and chose to place its edit
+   outside it. A less careful conventional agent, or the same agent on
+   a different day, might not show the same restraint — this comparator
+   provides one encouraging data point about arm A's own judgment, not
+   evidence that conventional agents reliably respect this project's
+   own documentation-management conventions.
+2. **Arm A's lack of access to the compilation workflow was a
+   deliberate design choice of this comparator, not an inherent
+   property of "a conventional agent."** `docs compile`/`docs record-
+   review`/`docs publish` are ordinary CLI commands in this same
+   repository; arm A was explicitly instructed not to use them, to
+   isolate "what happens without the pipeline" as the comparison's own
+   independent variable. A conventional agent *with* CLI access to
+   these same commands is a different, unmeasured condition.
+3. **Arm A's sandbox lacked an installed `pytest`, so its own
+   verification fell back to static source/test reading instead of a
+   live test run — an environment artifact of this comparator's own
+   isolated worktree setup, not a general limitation of conventional
+   agents.** Arm B's own evidence was independently confirmed by
+   actually running the cited test. Had arm A's sandbox had `pytest`
+   available, this specific verification-rigor gap between the two
+   arms would likely not have appeared at all — it reflects this one
+   setup, not a structural CodeCompass-vs-conventional-agent
+   difference.
+4. **Historical knowledge-preparation cost is missing for both arms,
+   not merely "not estimated" — it is not reconstructable from any
+   record this project kept**, for the same reason already disclosed
+   in the cost table above. This is a structural gap in what this
+   comparator (or any comparator run now) can ever measure about Stage
+   87C's own true total cost, not a gap specific to this one
+   experiment.
+5. **CodeCompass-side orchestration time (lead-side CLI invocations,
+   evidence/Claim authoring, commits) was never separately
+   instrumented, and this cuts in only one direction**: the reported
+   time figures for arm B are an undercount of its true total cost, so
+   the "advantage demonstrated: NOT DEMONSTRATED" verdict is, if
+   anything, **conservative in CodeCompass's own favor** — the real gap
+   between the two arms' total cost is at least as large as measured,
+   very plausibly larger, never smaller.
+6. **One real case per arm, one single-fact change.** This remains,
+   as already stated above, not a statistically powered trial. Combined
+   with points 1-3, the comparator demonstrates one specific, real
+   thing well (that CodeCompass's citation graph correctly scoped a
+   change a capable conventional agent scoped too narrowly, on this one
+   task) and should not be read as settling the broader question of
+   economic efficiency at any other scale.
+
+**The demonstrated-capability/demonstrated-efficiency distinction,
+stated explicitly**: this comparator demonstrates **change-impact
+coverage** (CodeCompass found both genuinely affected documents from a
+shared citation; the conventional agent found only one) as a real,
+measured technical capability. It does **not** demonstrate **economic
+efficiency** (lower cost, faster turnaround) — the measured time/cost
+comparison is neutral-to-negative for CodeCompass on this one small
+change, honestly reported, and must never be silently read or restated
+as if the capability finding also proved the efficiency question.
 
 ### §5/§S.8 — Independent documentation usability exercise
 
@@ -488,3 +603,133 @@ baseline worktree). Lead-side orchestration time (evidence/Claim
 authoring, CLI invocations, commits, this retro) was not separately
 instrumented, matching this stage's own disclosed-unavailable
 discipline rather than being estimated.
+
+## Addendum: Stage 87C corrective-closeout pass (2026-11-10)
+
+A separately authorised corrective-review governing task, issued after
+Stage 87C's own independent PASS audit (`planning/retros/
+_audit-phase-87-stage-87c.md`, preserved unmodified — its PASS verdict
+is not revisited or reopened by anything below), identified five real
+issues in the completed Stage 87C work. All five were investigated
+against the live repository before any change was made, and all five
+were genuine (none were false alarms). Fixed in this order:
+
+**A. The seeded experimental annotation in `knowledge-model.md` is
+resolved, through the real reconciliation workflow, not a manual
+baseline edit.** The original demonstration's own before/after state
+and reconciliation evidence (§3D above, unchanged) stand as the real
+record of what the five-state mechanism correctly did at the time. Two
+further, real `knowledge apply` cycles then ran, each independently
+reviewed before acceptance: (1) the originally-seeded `doc_candidate`
+(bracket included) was accepted as-is, exactly as first captured,
+advancing its baseline for the first time via `codecompass knowledge
+apply` against the real pending manifest — never a hand-edited
+`.grounding-state.toml`; (2) the bracketed annotation was then removed
+as a separate, authorised, independently-reviewed edit (a fresh
+dispatch confirmed the removal was clean and the surviving sentence's
+own factual claim — "nothing currently cross-links" the two named
+artifacts — is independently true), producing a second real
+`doc_candidate`, resolved the same way. Both unrelated regions and the
+separate, pre-existing README `intermediate-knowledge-layer` candidate
+were re-confirmed unchanged after each cycle via a real `docs maintain`
+run. The published `knowledge-model.md` now reads the useful factual
+sentence with no experimental annotation.
+
+**B. A real canonical-mutation governance violation was found and
+corrected.** Stage 87C's own §S.6 implementation amended
+`CL-ADPT-005.yaml`'s own `statement` field directly, in place — this
+is a genuine violation of `planning/phase-54c-evidence-knowledge-
+workflow.md` §2.4 ("a superseded Claim ... is never deleted or edited
+in place — a new record of the same kind is written with `supersedes:
+<old-id>`"), confirmed by direct re-reading of that governing section;
+it was not an authorised exception (the Stage 87C plan's own "the
+lead's own documented reconciliation decision" language authorised
+*who* could decide to accept new evidence, not an exemption from this
+already-standing record-mutation rule) and not merely a documentation
+inconsistency (the rule is explicit, predates Stage 87C, and has a real
+precedent already on file — `CL-ADPT-011` supersedes `CL-ADPT-009` the
+correct way). The underlying fact itself was never in question: the
+evidence (`EV-ADPT-013`) was real, independently checked twice over
+(once during Stage 87C's own implementation, once again by a fresh
+dispatch during this corrective pass), and the new boundary fact is
+genuinely true and genuinely absent from `CL-ADPT-005`'s own original
+text. The violation was in the *record structure*, not the *fact* —
+so the fix repairs the audit trail rather than touching the fact:
+`CL-ADPT-005.yaml` was restored to its exact pre-amendment text (`git
+show 0ea4001^:...`) and its own `status` field changed to `superseded`
+(a one-line field edit, matching this project's own "not a rewrite of
+its content" convention); a new Claim, `CL-ADPT-012.yaml` (with its own
+`DE-ADPT-012.yaml` derivation), was written carrying `CL-ADPT-005`'s
+full original statement forward unchanged plus the new boundary
+sentence, `supersedes: CL-ADPT-005`. The two published regions that had
+come to cite `CL-ADPT-005` for the boundary fact (`adapter.md`'s
+`adapter-concept`, `vendor-and-ecosystem.md`'s `ecosystem-vendor-
+adapter`) had their grounding-marker citations swapped to `CL-ADPT-012`
+— itself a real, detected `doc_candidate` (a citation-membership
+change), independently reviewed (a fresh dispatch confirmed `CL-ADPT-
+012` is a strict superset of what `CL-ADPT-005` supported and that the
+swap is citation-accurate) and resolved via the same real `knowledge
+apply` workflow as finding A, not a direct edit. No fact was reverted,
+no history was rewritten, no second knowledge store was created, and no
+past acceptance action was fabricated — `EV-ADPT-013`'s own real
+evidence trail and both independent checks of it stand unchanged.
+`knowledge select-candidates`/`render` were re-run to keep the
+intermediate Markdown projection consistent with both record changes.
+
+**C. Documentation-coverage accounting is corrected in place** (§3A/
+§3B above, now reads the corrected figures): `CONTRIBUTING.md` was
+never schema-governed and was never part of any Phase 87 stage's own
+scope — the original retro's claim that it was one of Stage 87A/87B's
+compiled documents was simply wrong, confirmed by the absence of any
+`CONTRIBUTING.md.schema.yaml` and the absence of any
+`codecompass-grounded-by` marker anywhere in `CONTRIBUTING.md` or
+`docs/development/contributing.md`. The real, independently re-derived
+figures: **5** schema-governed documents (README.md,
+`docs/getting-started.md`, and the three Concepts pages) — of which
+**4** have actual compiler-published regions (not
+`docs/getting-started.md`, which is schema-governed only for its own
+tested-example-execution harness, with zero knowledge-grounded
+regions); **6** compiler-published regions in total; **1** further
+grounded region from the earlier, structurally distinct Phase-81
+intermediate-knowledge mechanism (`README.md`'s own
+`intermediate-knowledge-layer` region, no schema section at all) —
+this is the region that has shown as the persistent, pre-existing,
+correctly-untouched `doc_candidate` throughout every `docs maintain`
+run in this entire stage.
+
+**D. The matched-baseline comparator's own limitations are now
+explicitly assessed** (§4/§S.7 above, now includes a six-point
+limitations list and an explicit capability-vs-efficiency distinction):
+arm A's correct handling of the existing grounding marker, its
+deliberately withheld compiler access, its sandbox's missing `pytest`,
+both arms' missing historical knowledge-preparation cost, CodeCompass's
+own uninstrumented orchestration time (which makes the measured
+non-advantage result conservative *in CodeCompass's own favour*, not
+against it), and the one-case sample size are all named individually.
+The original two verdicts (experiment completed rigorously: PASS;
+CodeCompass advantage demonstrated: NOT DEMONSTRATED) are unchanged —
+this addendum narrows what they may be read to mean, it does not
+rerun the experiment or move either verdict.
+
+**E. `L-125` through `L-129`'s own triage was independently
+re-confirmed already complete and substantive**, not merely present:
+the second `release-phase-auditor` pass (`_audit-phase-87-stage-87c.md`,
+the "RE-AUDIT" section) directly re-read every entry's own curation
+note and disposition and found three re-derived the underlying
+technical claim independently, one disclosed and then closed a real
+evidentiary gap, and two substantively overrode the filer's own
+classification with a reasoned, cited argument — a defensible,
+non-rubber-stamp triage, each with a clear `promote` disposition, a
+named destination artifact, and `status: candidate` pending that
+artifact actually landing (unchanged from `L-122`/`L-124`'s own real
+precedent). Nothing further was required or done for this finding; it
+is recorded here as confirmed, not as a new fix.
+
+Verification after all five fixes: the full regression suite, the
+applicable strict validators, a fresh `codecompass docs maintain` run
+across all five schema-governed documents, a fresh independent
+`docs-reconstructor` pass, and a fresh independent `release-phase-
+auditor` pass against the complete corrective diff are recorded below
+this addendum once each has actually run — see the dated verification
+log for their real results, not asserted here in advance of them
+running.
