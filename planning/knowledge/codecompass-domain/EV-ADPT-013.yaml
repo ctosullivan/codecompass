@@ -1,0 +1,25 @@
+id: EV-ADPT-013
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  `src/codecompass/config.py::_require_enum` (lines 62-71) fails closed
+  at config-*load* time -- before `get_adapter`'s own closed dispatch
+  table is ever reached -- when a `vendor.toml` entry names an
+  ecosystem string outside the closed 4-member `Ecosystem` enum: it
+  raises `ConfigError` naming every valid ecosystem value (via
+  `", ".join(member.value for member in enum_cls)`). This is a real,
+  currently-true fact about the *boundary* of the ecosystem/vendor/
+  adapter relationship that CL-ADPT-005 otherwise describes in detail,
+  but does not itself state: `get_adapter`'s own dispatch table
+  (`_ADAPTER_BY_ECOSYSTEM`) never needs its own error handling for an
+  invalid ecosystem value specifically because `_require_enum` already
+  rejects one upstream, before dispatch is ever attempted. Confirmed by
+  the real, already-passing
+  `tests/test_config.py::test_invalid_ecosystem_raises_config_error`
+  (asserts `ConfigError` matching `"invalid ecosystem 'deno'"`).
+observations: []
+source_ref: "src/codecompass/config.py:62-71 (_require_enum)"
+doc_ref: null
+test_ref: "tests/test_config.py::test_invalid_ecosystem_raises_config_error"
+repository_revision: "f59331911db6f38eb5b33d266883cf227093c26c"
+status: current
