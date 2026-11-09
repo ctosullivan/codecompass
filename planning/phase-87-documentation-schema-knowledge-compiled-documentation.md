@@ -11,8 +11,10 @@ schema freshness, a narrower write-boundary race), survived a first
 re-audit FAIL on a self-certification defect, and closed on a fresh
 re-audit **PASS** (see `planning/retros/_audit-phase-87-stage-87b-
 hardening.md`, `planning/retros/_audit-phase-87-stage-87b-hardening-
-reaudit.md`). Stage 87C remains separately planned, not authorised,
-and untouched. Phase 87 overall remains not done.** This is a
+reaudit.md`). Stage 87C now has an implementation-ready plan (§S),
+independently reviewed **READY WITH NON-BLOCKING OBSERVATIONS**
+(2026-11-09) — implementation itself remains separately, explicitly
+not authorised. Phase 87 overall remains not done.** This is a
 **scope-management correction**, not an architectural redesign — the
 strategic objective (§0), the verified architecture map (§A), and the
 shared schema/pipeline contract (§B/§C) are preserved. What changes:
@@ -2250,3 +2252,374 @@ criteria 4/9) points to the content it claims to.
 **This third corrective amendment is implementation-ready.** Per the
 governing task's own explicit authorisation, Stage 87B implementation
 now proceeds directly.
+
+## S. Stage 87C plan — complete knowledge-compiled documentation proof
+
+**Authorisation boundary, restated**: this section is a plan only.
+Nothing in it is implemented by this authorisation. Stage 87C begins
+implementation only once separately, explicitly authorised, following
+this plan's own independent planning review reaching `READY`.
+
+**Objective** (`decisions/0085` §5/§6, unchanged by this plan):
+demonstrate that CodeCompass can produce and maintain a coherent,
+useful, substantially knowledge-grounded documentation set from
+reconciled canonical knowledge, using deterministic generation and
+constrained model inference where appropriate, while preserving
+human-authored material and independently verifying factual accuracy.
+Not maximising generated prose or schema count.
+
+### S.1 Actual current-state assessment (verified directly this session, not assumed from the roadmap)
+
+The real documentation tree, read in full or substantially this
+session, against `decisions/0085` §5's minimum-suite table:
+
+| Required document | Real file(s) | Current state |
+|---|---|---|
+| README | `README.md` (107 lines) | One section (`vendor-digest-concept`) genuinely knowledge-compiled (Stage 87B's real demonstration), grounded to `CL-CTXT-005`. The rest — problem statement, capability list, installation — is human-authored prose, not schema-governed at all. |
+| Getting Started | `docs/getting-started.md` | Fully schema-governed (`docs/getting-started.md.schema.yaml`, Stage 87B). 5 of 6 real sections are `requires_tested_example: true` (deterministically verified by `scripts/execute_doc_example.py` or a direct repository-fact test) — **not** knowledge-compiled, and correctly so: `decisions/0085` requires "a tested, practical first-use tutorial," which deterministic execution-verification satisfies more directly than a Claim-grounded citation would. No further knowledge-compilation needed here; this document is essentially done. |
+| Concepts | `docs/concepts/{adapter,context,digest,knowledge-model,knowledge-placement-policy,protocol-and-capability,vendor-and-ecosystem}.md` (7 files, 272 lines total) | **Read in full this session.** All seven are accurate, substantive, human-authored prose — not schema-governed, no citation markers, zero `{{cite:...}}` or `codecompass-grounded-by` markers anywhere in `docs/concepts/`. Critically, several closely paraphrase real, existing Claims almost verbatim: `context.md`'s five-sense enumeration mirrors `CL-CTXT-001` near word-for-word; `adapter.md`/`vendor-and-ecosystem.md` mirror `CL-ADPT-001`/`CL-ADPT-005`/`CL-ADPT-007`. `decisions/0085`'s own stated gap — "a new page explicitly covering epistemic distinctions and the reconciliation loop" — is **already substantially closed** by existing prose: `knowledge-model.md`'s own "INTENDED / OBSERVED / VERIFIED / CONTESTED" section (citing `decisions/0080`/`0081`) and its "intermediate projection and the reconciliation loop" section (cross-referencing `docs/workflows/knowledge-reconciliation-loop.md`). This is a real, verified correction to `decisions/0085`'s own framing, not an assumption carried forward from it: the content gap it named no longer exists, confirmed by reading the file directly, not by trusting the roadmap's own age. What remains open is narrower and different: this accurate prose is not knowledge-compiled (no grounding, no automatic maintenance against a future Claim change) and is backed by only **one** formal Claim (`CL-KNOW-001`) for the reconciliation-loop/workflow material specifically — everything else in `knowledge-model.md` beyond the record-kind table is asserted without a citable record at all. |
+| Architecture | `docs/architecture/{overview,components,data-and-control-flow,documentation-compilation-pipeline}.md` | Read substantially this session. Dense, accurate, well-maintained human-authored prose (e.g. `overview.md`'s "Foundational design choices," a "Known footguns" section citing real learnings like `L-109`/`L-121`). No Claims back this content at all — it describes current implementation structure directly, which is exactly what `decisions/0085` calls "major components, responsibilities, data flows" and does not itself require knowledge-compilation for. |
+| Reference | `docs/reference/{cli,configuration,protocols,symbol-extraction}.md` | Hand-maintained prose, not generated from the real Typer command tree (`cli.md`'s own structure manually mirrors `cli.py`'s commands). `decisions/0085` names deterministic generation here as "this phase's own improvement opportunity, not assumed solved" — confirmed still open: no generator exists anywhere in `scripts/` or `src/` that reads `app.registered_commands`/`typer.main.get_command` and emits this file. |
+| Contributor Guide | `CONTRIBUTING.md` (root, 266 lines) + `docs/development/{contributing,testing}.md` | Explicitly, deliberately out of clean-room/knowledge-compilation scope — `docs/development/contributing.md`'s own first line: "the self-governing process document this reconstruction was correctly never shown... so it is left untouched." Process/licensing/CLA content; not a knowledge-compilation candidate by design, confirmed still correct. |
+
+**Honest summary**: Stage 87B delivered exactly what it claimed — one
+compiled README section, a fully schema-governed (deterministically
+verified, not knowledge-compiled) Getting Started. Stage 87C's real,
+verified opportunity is narrower than a naive reading of `decisions/
+0085` §5 would suggest: **Concepts** is the one document category
+with both (a) a genuine, current absence of knowledge-compilation and
+(b) existing Claims that already substantiate most of its content —
+the highest-value, lowest-risk target. Architecture and Reference have
+no compilation gap of the kind Concepts has (no backing Claims exist
+or are needed); their own real gap is either none (Architecture) or a
+deterministic-generation gap unrelated to knowledge-compilation
+(Reference).
+
+### S.2 Document/section ownership and generation matrix
+
+Classifying every section of the minimum suite into the four
+categories the governing task names — not generating anything
+unsupported merely to raise a coverage number:
+
+**1. Knowledge-compiled** (generated from accepted canonical records):
+- README's existing `vendor-digest-concept` section (`CL-CTXT-005`) — unchanged, already done.
+- New: `docs/concepts/context.md` → `CL-CTXT-001` (the five-sense enumeration already mirrors it almost exactly — converting this is the lowest-risk, highest-confidence first real section).
+- New: `docs/concepts/adapter.md` → `CL-ADPT-001`, `CL-ADPT-002`, `CL-ADPT-007` (adapter definition, two-strategy design, fuzzy-boundary honesty).
+- New: `docs/concepts/vendor-and-ecosystem.md` → `CL-ADPT-005` (ecosystem/vendor/adapter distinction), `CL-ADPT-004` ("connector" is not a real concept — a genuinely useful negative claim for a concepts page to state plainly).
+- New: `docs/concepts/knowledge-model.md`'s record-kind table and Provenance section → `CL-EVID-001`, `002`, `004`, `005`, `006`, `007`, `010`, `012`, `013` (the `status: supported` subset of the Observation/Evidence/Claim/Derivation/Decision/Requirement/Invariant/Provenance claim cluster — **excluding** `CL-EVID-003`/`008`/`009`, all `status: superseded`, and `CL-EVID-011`, a different topic — maps almost one-to-one onto this page's existing structure; see §S.3 for the authoritative per-Claim readiness list this section's own compilation must use).
+- New, smaller: `docs/concepts/protocol-and-capability.md` → `CL-ADPT-003`/`006`/`010`/`011` (protocol vs. capability vs. connector-naming-history claims).
+
+**2. Deterministically generated** (derived directly from CLI, code, schemas, tests, or other mechanical evidence):
+- Getting Started's five `requires_tested_example` sections — unchanged, already done.
+- New opportunity, not built by this plan's own minimum scope but named as a real option: a `docs/reference/cli.md` generator reading the live `app` object's `registered_commands`/`registered_groups` (Typer's own introspection) and each command's own docstring/options, emitting a mechanically-verified-current reference page. Named in §S.9 as an explicit non-goal for this stage's own minimum scope (real, valuable, but a second, separable piece of infrastructure — see §S.8) with a path for a future phase to pick up, not abandoned.
+
+**3. Human-authored and validated in place** (retained, not regenerated):
+- All of `docs/architecture/*.md` — accurate, dense, well-maintained; converting to AI-composed knowledge-compiled prose would risk exactly the register/density loss the clean-room writing contract's own "never resembles an audit report" constraint exists to catch, for no corresponding accuracy gain (no competing Claim exists to ground it against).
+- `CONTRIBUTING.md`/`docs/development/{contributing,testing}.md` — explicitly out of scope by design, unchanged.
+- README's problem-statement/capability-list/installation prose — editorial/marketing judgment a Claim cannot substantiate ("this is valuable") stays human-authored; installation itself is already execution-verified via the existing `execute_doc_example.py` harness pattern (reused, not rebuilt).
+- `docs/concepts/digest.md`/`knowledge-placement-policy.md` — read this session; both are accurate and specific to this one repository's own placement rules (`knowledge-placement-policy.md` is explicitly "hard-coded to this repository," per its own text) with no corresponding formal Claim corpus to ground against yet (see §S.3) — retained as-is for this stage; a future enrichment pass (§S.3's own backlog note) could change this later.
+
+**4. Unsupported or knowledge-gap-blocked** (not eligible for compilation until evidence or accepted intent exists):
+- None identified in the minimum suite itself. Every section examined either already has a backing Claim, is correctly deterministic/human-authored by design, or (knowledge-model.md's non-table prose, protocol-and-capability.md's thinner corners) needs a small, named knowledge-enrichment pass before compilation — tracked in §S.3, not silently compiled around.
+
+### S.3 Knowledge and evidence prerequisites
+
+Minimum knowledge-enrichment work necessary to make the compiled-
+Concepts scope above meaningful, assessed claim-by-claim, not assumed
+sufficient:
+
+- `CL-CTXT-001`, `CL-ADPT-001/002/004/005/007`, `CL-EVID-001/002/004/005/006/007/010/012/013` — **sufficient as-is**, `status: supported`, read and confirmed accurate against current `src/` this session. No new research needed for the sections named in §S.2's "knowledge-compiled" list.
+- `knowledge-model.md`'s "Invariant is not a seventh record kind" closing section and `protocol-and-capability.md`'s thinner material — **not yet backed by a citable Claim** at the needed granularity. Two options, decided at Stage 87C implementation time rather than presupposed here: (a) a bounded `context-researcher` dispatch produces one or two new Claims closing this gap before compilation is attempted for that specific subsection, following the existing evidence → candidate → reconciliation workflow unchanged; or (b) that specific subsection is left human-authored-and-validated-in-place for this stage, with the gap named explicitly rather than compiled around. Preference: (b) for Stage 87C's own minimum scope — new Claim research is a real cost or Stage 87B's own schema-restraint did; (a) is the natural next step for a later maintenance pass, not a Stage 87C blocker.
+- `docs/workflows/knowledge-reconciliation-loop.md`'s own mechanics are backed by exactly one Claim (`CL-KNOW-001`) for the entire reconciliation loop — thin, but accurate and sufficient for compiling `knowledge-model.md`'s one paragraph that cross-references it (the paragraph itself makes no claim beyond "see this other file for the mechanics," which `CL-KNOW-001` supports).
+- `EV-CTXT-021` (filed this session, Stage 87B's own post-closeout hardening pass, `L-123`) remains outstanding, uncited by any Claim — its own reconciliation (amend `CL-CTXT-005` or explicitly decline) is a real prerequisite only if Stage 87C recompiles the `vendor-digest-concept` README section; it is not a blocker for any new Concepts section named above, none of which cite `CL-CTXT-005`.
+- No new knowledge-record kind, schema field, or competing knowledge store is proposed or needed — every prerequisite above is satisfied through the existing evidence → candidate → reconciliation workflow (`decisions/0073`), reused unchanged.
+
+### S.4 Proposed architecture — reused components, one real addition
+
+**Reused, unchanged**: the full Stage 87A/87B pipeline —
+`doc_compiler.py` (resolution/hydration/gap-detection/citation-scope-
+checking/publish/maintain, including this session's own hardening),
+`scripts/compile_doc_section.py` (clean-room composition adapter),
+`scripts/check_doc_schema.py` (schema validation, cross-document
+region-id uniqueness), `knowledge_intermediate.py`'s five-state
+grounded-region reconciliation, the `_doc_publish_lock` concurrency
+guard, `scripts/execute_doc_example.py` (the real sandboxed example-
+execution harness, Stage 87B). Stage 87C adds **zero** new modules to
+this list — every mechanism a new Concepts section needs already
+exists and was exercised for real by Stage 87B's own demonstration.
+
+**One real addition, narrowly scoped**: a per-document schema file per
+Concepts page (`docs/concepts/context.md.schema.yaml`, etc.) — the
+same `*.schema.yaml` mechanism README/Getting Started already use,
+not a new schema format or a new validation path. `check_doc_schema.py`
+already discovers every `*.schema.yaml` under the project root
+(`scripts/check_doc_schema.py::_discover_schema_files`) and
+`docs_maintain` already reconciles every schema-governed document in
+one call — adding more schema files is pure configuration, not new
+code.
+
+**Cross-document consistency** (a real, named requirement this plan
+must address, not assume free): a term defined once (e.g. "adapter" in
+`adapter.md`) and used again in another compiled section (e.g.
+`vendor-and-ecosystem.md`'s own cross-reference to it) must not drift
+into a second, inconsistent definition. Reused mechanism, not new:
+each section's own schema already names its `required_knowledge` ids
+explicitly, so two sections citing the same Claim (e.g. both `adapter.
+md` and `vendor-and-ecosystem.md` citing `CL-ADPT-005`) are
+structurally grounded in the identical source of truth — true
+consistency comes from both compiling against one shared Claim, not
+from a new cross-document consistency checker. A genuinely new
+cross-document check is **not** proposed: `check_doc_schema.py`'s
+existing cross-document region-id-uniqueness check (Stage 87B) already
+runs project-wide across every `*.schema.yaml`; extending it to flag
+two different sections asserting incompatible facts about the *same*
+Claim id would require semantic comparison this plan does not propose
+building — flagged honestly as unaddressed rather than silently
+assumed solved (see §S.9).
+
+### S.5 Concrete implementation sequence
+
+1. Reconcile the two outstanding `L-122`/`L-124` backlog items and the
+   `L-123` knowledge-reconciliation hand-off (all filed this session)
+   before or alongside Stage 87C's own work, not folded silently into
+   it — each is independently dispositioned already (§ see this
+   session's commits).
+2. Write `docs/concepts/context.md.schema.yaml` (one section, citing
+   `CL-CTXT-001`) — the lowest-risk first real compile, given the
+   existing prose already near-verbatim matches the Claim.
+3. Run `docs compile` → both independent reviews (semantic-support,
+   editorial-quality) → `docs record-review` → `docs publish`, exactly
+   Stage 87B's own real workflow, reused unchanged. If either review
+   fails, iterate the schema's own `tone`/`depth`/audience fields (not
+   the pipeline code) — Stage 87A's own three-round writing-contract
+   hardening is the precedent for how many iterations is normal.
+4. Repeat for `adapter.md`, `vendor-and-ecosystem.md`,
+   `knowledge-model.md`'s record-kind table, in that order (increasing
+   structural complexity: single-claim → multi-claim → table-shaped
+   content) — each run independently reviewed, never batched into one
+   unreviewed pass.
+5. Run `docs maintain` across the full, now-five-schema project after
+   all four are published, confirming project-wide duplicate-region-id
+   and five-state reconciliation still hold with more schemas in play
+   than Stage 87B ever exercised at once — a real scale check Stage
+   87B's own two-document demonstration could not provide.
+6. Only then: the incremental-change proof (§S.6) and the comparator
+   experiment (§S.7), in either order — independent of each other.
+7. Final `docs-reconstructor` drift audit + `release-phase-auditor`
+   pass against the complete Stage 87C diff, mirroring every prior
+   stage's own closeout discipline exactly.
+
+### S.6 Incremental-change proof (one real, multi-section-crossing change)
+
+**Candidate change, identified now, not invented at implementation
+time**: amend `CL-ADPT-005` (or file a new, evidence-backed Claim) to
+record a real fact this session's own survey surfaced but no existing
+Claim states explicitly: `vendor-and-ecosystem.md` documents that a
+legacy `vendor.toml` entry carrying a retired `depth` key "continues to
+parse without error — the field is simply never read," but no formal
+Claim in `codecompass-domain` currently asserts this specific
+backward-compatibility fact. **Confirmed directly this session, not
+deferred**: `src/codecompass/config.py::_parse_entry`'s own docstring
+(lines 41-45) states plainly that a legacy `depth` key "is silently
+tolerated: this function simply never looks at it," and
+`tests/test_cli.py::test_bare_bootstrap_refresh_leaves_existing_
+full_vendor_untouched`/`test_sync_all_vendors_end_to_end_real_python_
+adapter` both already pass while writing a `vendor.toml` entry
+carrying `depth = "full"`/`depth = "surface"`. The fact is real and
+already evidenced; only the formal Claim amendment itself remains to
+be proposed at Stage 87C implementation time. This single Claim
+amendment would affect **both**
+`docs/concepts/vendor-and-ecosystem.md` (direct) and potentially
+`docs/reference/configuration.md` (if that page is later compiled) —
+a genuine multi-section cross-reference, chosen because it is real and
+small, not manufactured.
+
+**Demonstration sequence** (mirrors Stage 87B's own real demonstration
+exactly, reused procedure): (1) evidence the real fact (source +
+test); (2) propose and reconcile the Claim amendment through the
+ordinary workflow (`decisions/0073`), never silently merged; (3) `docs
+maintain` detects `claims_changed` for exactly the affected region(s),
+nothing else; (4) recompile, re-review, re-publish; (5) a prior
+human edit to an *unrelated* Concepts section (seeded deliberately, as
+Stage 87B's own `doc_candidate` test fixture already proves the
+mechanism preserves) survives untouched; (6) a second `docs maintain`
+run reconciles to `noop` with every unrelated byte unchanged, confirmed
+by direct diff — identical verification standard to Stage 87B's own
+real demonstration, not a weaker one.
+
+### S.7 Comparator methodology and measurement rubric
+
+Reuses Stage 87B's own real comparator design (arm A: conventional
+agent, same starting revision, same task, no compiler infrastructure;
+arm B: the compiled pipeline) — **not** re-invented, extended to a
+larger, more realistic task: maintaining the **full** Concepts
+document set (not one section) across the §S.6 knowledge change, for
+both arms, from the identical pinned starting revision.
+
+**Predeclared rubric** (fixed before either arm runs, per `decisions/
+0085` §6 — never adjusted after seeing results): factual correctness
+and unsupported-claim count (independent reviewer, blind to which arm
+produced which draft where practical); coverage of the five Concepts
+pages' own existing required facts; cross-document terminology
+consistency (same reviewer checks "adapter"/"ecosystem"/"vendor" are
+used identically across whichever pages each arm touches); editorial
+register (the same "resembles an audit report" check Stage 87A's own
+hardening established); human correction effort (count and severity of
+changes a reviewer required before either arm's output would be
+publishable) **and the human reviewer/editing time actually spent
+reaching that publishable state, tracked separately from agent/tool
+elapsed time** (`decisions/0085` §6 names both as distinct required
+baseline components — not one line covering both); token/tool-use
+cost and elapsed time, with any
+unavailable measurement disclosed honestly, not estimated (Stage 87B's
+own bounded cost/value log already set this precedent — two of seven
+steps were disclosed as "not captured," not guessed); response to the
+§S.6 knowledge change specifically (does each arm's own maintenance
+pass correctly scope its edit, or does it touch unrelated content);
+preservation of the seeded human edit from §S.6 step 5.
+
+**What this is not**: a statistically powered trial. One real case per
+arm, same discipline as Stage 87B's own single comparator run — honest
+single-case evidence, with Stage 87B's own precedent (editorial-review
+failure on the conventional arm) as the only prior data point, not
+assumed to repeat.
+
+### S.8 Real-world documentation quality (§D of the governing task)
+
+A genuinely independent read (a fresh dispatch with no prior context
+of this plan or Stage 87A/B's own work) attempts, from the published
+documentation alone: install and complete first run (Getting Started,
+already execution-verified — confirm a human reading it, not only the
+harness, finds it sufficient); explain in their own words what an
+"adapter"/"ecosystem"/"vendor"/"digest" is, compared against the real
+Claims to check for comprehension drift the compiled prose itself
+might introduce; locate the CLI reference for one named command;
+describe the reconciliation loop's own five states; identify one
+planned-but-not-implemented capability versus one real, current one
+(a direct test of the "no unsupported claims" editorial requirement).
+Failures are findings, not something to explain away.
+
+### S.9 Acceptance criteria (go/no-go gates)
+
+1. Every Concepts page named in §S.2 is either genuinely knowledge-
+   compiled (grounded marker present, citing a real `status: supported`
+   or better Claim) or explicitly left human-authored-and-validated-in-
+   place with a stated reason — no page silently stays "mostly prose,
+   partly compiled" without that split being visible in its own schema
+   file or an explicit note.
+2. Every compiled section passes both independent reviews
+   (semantic-support, editorial-quality) — no manually-typed verdict,
+   reusing Stage 87B's own hardened `docs record-review`/`docs publish`
+   integrity checks unchanged (including this session's own
+   reviewed-draft-integrity fix).
+3. The §S.6 incremental-change proof completes all six steps for real,
+   with direct-diff confirmation of both the detected-change scope and
+   the unrelated-content preservation — not asserted from a tool's
+   own summary.
+4. The §S.7 comparator runs to completion for both arms against the
+   identical task, reports every measurement (including any disclosed-
+   unavailable one) against the predeclared rubric, and draws no
+   "statistically superior" claim from one case.
+5. `docs-reconstructor` finds no blocking drift in any touched
+   document; `release-phase-auditor` returns PASS or PASS WITH
+   NON-BLOCKING OBSERVATIONS against the complete implementation diff.
+6. No fabricated or automatically-accepted knowledge: every new Claim
+   amendment this stage's own demonstration proposes goes through the
+   ordinary evidence → candidate → reconciliation workflow, same as
+   `EV-CTXT-021`/`L-123` this session, never silently merged.
+7. No regression of clean-room isolation: `verify_cleanroom_isolation.
+   py`'s existing preflight still passes unchanged; no new sandbox
+   construction, no new broker.
+8. Reproducible from a pinned project/knowledge revision: the §S.7
+   comparator and §S.8 independent read both record the exact git
+   revision and knowledge-record state they ran against.
+9. Explicitly **not** required for this stage's own go/no-go: the
+   `docs/reference/cli.md` deterministic generator named in §S.2 as a
+   real but separable opportunity, and the semantic cross-document
+   consistency checker named in §S.4 as unaddressed. Both are named
+   explicitly as deferred, not silently dropped — see §S.11.
+
+**Honest framing, restated from the governing task's own wording**: a
+neutral or negative result from §S.7's comparator — the compiled arm
+costing more, or not clearly outperforming the conventional arm on
+this particular task — would still mean this stage completed
+successfully, if run rigorously and reported honestly. Completion of
+the experiment and validation of a claimed advantage are different
+things; only the former is required to close Stage 87C.
+
+### S.10 Risks and explicit non-goals
+
+**Risks**: (a) compiled Concepts prose reading worse than the already-
+good existing human-authored prose it replaces — mitigated by keeping
+the existing file as the schema's own implicit quality bar (the
+editorial reviewer is told the audience/tone this page already
+achieves) and by Stage 87A's own three-round hardening precedent for
+what to do if the first attempt underperforms; (b) a Claim amendment
+proposed by §S.6 being declined on reconciliation — an acceptable,
+honestly-reported outcome, not a stage failure, exactly as `EV-CTXT-
+021`'s own framing this session already establishes; (c) the §S.7
+comparator's single-case result not replicating Stage 87B's own
+editorial-review-failure finding — also an acceptable, honestly-
+reported outcome per §S.9 point 9's own framing.
+
+**Explicit non-goals** (per the governing task's own §6, restated
+against this specific plan, not generically): no MCP server; no
+autonomous multi-agent development system; no new canonical knowledge
+database (every prerequisite in §S.3 reuses the existing evidence →
+candidate → reconciliation workflow); no general-purpose documentation
+CMS; no UI; no unrestricted automatic knowledge acceptance (every
+Claim amendment is proposed, never auto-applied); no redesign of the
+clean-room infrastructure (§S.4's "reused, unchanged" list is
+exhaustive); no requirement to generate every paragraph with an LLM
+(§S.2's categories 2-4 are deliberately retained, not converted).
+
+### S.11 Backlog and roadmap implications
+
+Deferred, named explicitly rather than silently dropped, each a
+candidate for its own future phase/backlog row, not Stage 87C's own
+scope:
+- A deterministic `docs/reference/cli.md` generator from the live
+  Typer command tree (§S.2 category 2, §S.9 point 9).
+- A semantic cross-document consistency checker beyond shared-Claim-id
+  grounding (§S.4).
+- Closing `knowledge-model.md`'s thinner-cited corners and `protocol-
+  and-capability.md` with new, purpose-written Claims (§S.3's option
+  (a), deferred in favour of option (b) for this stage).
+- `L-122` (surface the clean-room broker's own usage/cost figures in
+  `docs compile`'s CLI output) and `L-124` (the residual `docs publish`
+  write-boundary race, narrowed twice, not fully closed) — both already
+  filed this session, both real inputs to this stage's own cost
+  accounting and safety-margin assessment respectively, neither
+  blocking it.
+
+### S.12 Independent planning review
+
+**Verdict: READY WITH NON-BLOCKING OBSERVATIONS** (2026-11-09). An
+independent dispatch re-derived every factual claim in this section
+directly against the real repository rather than trusting its prose —
+`decisions/0085` §5/§6's own text; the `context.md`↔`CL-CTXT-001`,
+`vendor-and-ecosystem.md`↔`CL-ADPT-005`, and `knowledge-model.md`↔
+`CL-EVID-*` mappings (including confirming `CL-EVID-003`/`008`/`009`/
+`011`'s correct exclusion); `check_doc_schema.py`'s/`docs_maintain`'s
+real `**/*.schema.yaml` discovery; `resolve_publication_target`'s
+already-generic `docs/**/*.md` allowance; the absence of scope creep
+against the governing task's §6 non-goals; and every cross-referenced
+commit/file from this session's own prior work. Found the plan's
+dependency structure, scope boundaries, and acceptance criteria sound
+and non-circular. Three narrow, non-blocking findings — §S.6's
+backward-compatibility fact was deferred as "confirmed at
+implementation time" when it was already directly confirmable;
+§S.7's rubric folded `decisions/0085` §6's two distinct required
+baseline components (correction count/severity, and separately human
+review/editing time) into one line; §S.2's Claim-id range loosely
+included two already-excluded superseded ids — all three corrected in
+place above (§S.6 now states the confirmed fact directly with its own
+citations; §S.7 now measures human review/editing time as its own
+line; §S.2 now names the exact Claim-id list, cross-referencing §S.3's
+authoritative version). No further review round required unless this
+plan's content changes again before Stage 87C's own separate
+implementation authorisation.
+
+**This plan is implementation-ready.** Stage 87C implementation itself
+remains separately, explicitly unauthorised by this planning pass, per
+the governing task's own instruction.
