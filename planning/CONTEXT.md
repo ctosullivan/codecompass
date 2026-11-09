@@ -17,9 +17,11 @@ uniqueness check, a publication-time concurrency guard, a real
 sandboxed execution harness, and a genuine, worktree-isolated
 knowledge-change demonstration with comparator, all independently
 audited through a real FAIL→fix→PASS cycle (see "What was just
-completed" below for the full account); Stage 87C remains separately
-planned, **not authorised**, and untouched; Phase 87 overall remains
-`not done`.** Plan:
+completed" below for the full account); Stage 87C now has a complete,
+independently-reviewed (**READY WITH NON-BLOCKING OBSERVATIONS**,
+2026-11-09) implementation-ready plan (plan's own §S), but implementation
+remains separately, explicitly **not authorised** — the plan authorises
+nothing beyond itself; Phase 87 overall remains `not done`.** Plan:
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
 A second review (after the first pass's own READY WITH NON-BLOCKING
 OBSERVATIONS verdict) found the single-stage scope too large and four
@@ -859,6 +861,35 @@ and each phase's retro.
 
 ## What was just completed
 
+**Phase 87 Stage 87C implementation-ready plan, independently
+reviewed**, 2026-11-09, direct user request (commit `8b97ed8`). Full
+detail: the plan's own new §S, `planning/
+phase-87-documentation-schema-knowledge-compiled-documentation.md`. In
+short: a new §S plan for Stage 87C (the complete minimum documentation
+suite — README, Getting Started, Concepts, Architecture, Reference,
+Contributor Guide — plus the matched-baseline quality comparison
+required to close Phase 87 overall) covers a real current-state/
+coverage assessment against `decisions/0085` §5's minimum suite (finds
+Concepts, not Architecture/Reference, is the real knowledge-compilation
+gap, and that `decisions/0085`'s own named gap — epistemic distinctions
+and the reconciliation loop — is already substantially closed by
+existing prose), a document/section ownership matrix, knowledge/
+evidence prerequisites, a reused-pipeline architecture (one real
+addition: a schema file per Concepts page, no new modules), a concrete
+implementation sequence, a real incremental-change proof candidate, a
+comparator methodology extending Stage 87B's own design, acceptance
+criteria, risks/explicit non-goals, and backlog implications. §S.12
+records a fresh, independent planning review: **READY WITH
+NON-BLOCKING OBSERVATIONS** (three narrow findings — a deferred fact
+already directly confirmable; a rubric line conflating two of
+`decisions/0085` §6's distinct required baseline measurements; a
+loosely worded Claim-id range nominally including two already-excluded
+superseded ids — all corrected in place in the same commit). **This
+plan authorises nothing beyond itself: Stage 87C implementation itself
+remains separately, explicitly not authorised.** Phase 87 overall
+remains `not done`; see "Next concrete step" below for what actually
+comes next.
+
 **Phase 87 Stage 87B post-closeout hardening pass, fix round, and
 independent audit FAIL→fix→PASS cycle**, 2026-11-09, direct user
 request. Full detail: see "Current phase" above;
@@ -1346,18 +1377,22 @@ re-audited (second pass), PASS WITH NON-BLOCKING OBSERVATIONS; Stage
 FAIL→fix→PASS cycle, `done` (2026-11-07), and its own post-closeout
 hardening pass is now also closed (2026-11-09; three further
 publication-path defects fixed, a first re-audit FAIL on a
-self-certification defect fixed, fresh re-audit **PASS**; see "What
-was just completed" above); Stage 87C remains separately planned,
-**not authorised**, and untouched; Phase 87 overall remains `not
-done`** —
+self-certification defect fixed, fresh re-audit **PASS**); Stage 87C
+now has a complete, independently-reviewed (READY WITH NON-BLOCKING
+OBSERVATIONS, 2026-11-09) implementation-ready plan (§S), but
+implementation remains separately, explicitly **not authorised**; Phase
+87 overall remains `not done`** —
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
-Next concrete step for this phase: a separate, explicit authorisation
-to *plan, then implement* Stage 87C (the complete minimum publication
-suite — README, Getting Started, Concepts, Architecture, Reference,
-Contributor Guide — plus the real matched-baseline quality comparison
-Stage 87B's own comparator explicitly deferred to it), then Phase 87
-closeout. A smaller, independent outstanding item from the hardening
-pass: `EV-CTXT-021` (`planning/knowledge/codecompass-domain/`) is a
+**Next concrete step for this phase: explicit authorisation from the
+user/lead to begin Stage 87C implementation.** This is not something
+this or any future session, agent, or reconciliation pass may
+self-authorise — the plan's own §S header and §S.12's closing line both
+state it authorises nothing beyond itself. Once (and only if) that
+authorisation is given, implementation proceeds against the existing
+§S plan; Phase 87 closeout follows only after Stage 87C's own full
+exit gate (implementation, the real matched-baseline comparison, final
+audits) is met. A smaller, independent outstanding item from the
+hardening pass: `EV-CTXT-021` (`planning/knowledge/codecompass-domain/`) is a
 verified, uncited fact about `sync_vendor`'s clone-failure fallback
 that `CL-CTXT-005` does not yet mention — a future
 `context-researcher`/reconciliation pass over `codecompass-domain/`
