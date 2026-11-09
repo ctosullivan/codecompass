@@ -2353,7 +2353,15 @@ That inconsistency is resolved here in §S.3's favour: `protocol-and-
 capability.md` moves to category 3 below, unchanged for this stage.
 
 **2. Deterministically generated** (derived directly from CLI, code, schemas, tests, or other mechanical evidence):
-- Getting Started's five `requires_tested_example` sections — unchanged, already done.
+- Getting Started's five sections, **corrected from a remaining stale
+  reference in this bullet** (the real schema has five sections total:
+  three — `install`, `first-run`, `a-real-captured-example` —
+  `requires_tested_example: true` and execution-harness-verified by
+  `scripts/execute_doc_example.py`; the other two —
+  `proceeding-past-the-budget-cap`, `after-the-first-run` — have no
+  such field and are verified instead by two specifically-named other
+  tests, per §S.1's own already-corrected table) — unchanged, already
+  done.
 - New opportunity, not built by this plan's own minimum scope but named as a real option: a `docs/reference/cli.md` generator reading the live `app` object's `registered_commands`/`registered_groups` (Typer's own introspection) and each command's own docstring/options, emitting a mechanically-verified-current reference page. Named in §S.9 as an explicit non-goal for this stage's own minimum scope (real, valuable, but a second, separable piece of infrastructure — see §S.8) with a path for a future phase to pick up, not abandoned.
 
 **3. Human-authored and validated in place** (retained, not regenerated):
@@ -2368,9 +2376,66 @@ capability.md` moves to category 3 below, unchanged for this stage.
 
 ### S.3 Knowledge and evidence prerequisites
 
+**Mandatory compilation-readiness preflight, added by this amendment**
+— `status: supported` alone does not establish that a Claim actually
+passes the compiler's own evidence-currency requirements; this plan's
+earlier draft asserted the Claims below are "sufficient as-is" from a
+direct read of their own YAML, without separately running the real
+currency/gap mechanism the compiler itself uses at compile time. Before
+writing any of the four new schema files for real, Stage 87C
+implementation must run this preflight for every one of the four
+planned schemas' own `required_knowledge` lists, reusing existing code
+only, never a new check:
+
+1. **Resolve** each planned section's actual required record ids via
+   `doc_compiler.resolve_section_ids` (or by simply listing them, since
+   they are already fixed ids here, not `discover:` queries).
+2. **Check status and evidence currency** for every one of them through
+   `doc_compiler.find_section_gaps` (which itself calls `knowledge_api.
+   get()` for each id and reads its `ConsistencyEnvelope.status` —
+   `"current"`/`"stale"`/`"unconfirmed"` — directly; no second,
+   independently-computed currency check) against each page's own
+   proposed `min_claim_status`/`allow_unconfirmed_scopes` schema
+   fields.
+3. **Confirm the evidence-packet budget**: `doc_compiler.
+   resolve_section_packet`'s own real serialized-size check against
+   each schema's proposed `max_evidence_chars` — a required record
+   whose hydrated content would exceed the budget is a `DocCompilerError`
+   at compile time, never silently truncated; the preflight surfaces
+   this before, not during, implementation.
+4. **Identify** any `stale_or_unconfirmed_evidence`, `below_min_claim_
+   status`, `contradiction`, or `unresolved_required_knowledge` gap
+   `find_section_gaps` reports for any of the four schemas' own ids —
+   reported honestly, not compiled around, exactly as `doc_compiler.
+   compile_document` itself already refuses to do.
+5. **Record any use of `allow_unconfirmed_scopes: true`** with a
+   concrete, independently reviewed justification — reusing
+   `README.md.schema.yaml`'s own existing precedent and justification
+   comment for `CL-CTXT-005` (no `oracle-contract.yaml` applies to
+   `codecompass-domain`, so `knowledge_api`'s currency check honestly
+   reports `"unconfirmed"` rather than a false `"current"` or a
+   misleading `"stale"`) as the template for what a concrete
+   justification looks like — a bare `true` with no comment is not
+   acceptable for any of the four new schemas either.
+6. **Never weaken evidence requirements merely to obtain a successful
+   compilation** — a genuine gap found by this preflight for any of
+   the nine Claims below is resolved the same way any other knowledge
+   gap is (§S.3's own evidence → candidate → reconciliation workflow,
+   or explicitly deferring that specific page/section), never by
+   lowering `min_claim_status` or adding an unjustified
+   `allow_unconfirmed_scopes: true` to make a failing preflight pass.
+
+This preflight is a **read-only verification step**, not new pipeline
+code — every function it calls already exists and is already exercised
+by `docs compile` itself; running it *before* writing the schema files
+only moves the same check earlier, so a currency problem is a planning-
+time finding, not a surprise discovered mid-implementation.
+
 Minimum knowledge-enrichment work necessary to make the compiled-
 Concepts scope above meaningful, assessed claim-by-claim, not assumed
-sufficient:
+sufficient — **subject to the preflight above actually confirming
+each one before implementation, not merely asserted from a direct
+YAML read as this list originally was**:
 
 - `CL-CTXT-001`, `CL-ADPT-001/002/004/005/007`, `CL-EVID-001/002/004/005/006/007/010/012/013` — **sufficient as-is**, `status: supported`, read and confirmed accurate against current `src/` this session. No new research needed for the sections named in §S.2's "knowledge-compiled" list.
 - `knowledge-model.md`'s "Invariant is not a seventh record kind" closing section and `protocol-and-capability.md`'s thinner material — **not yet backed by a citable Claim** at the needed granularity. Two options, decided at Stage 87C implementation time rather than presupposed here: (a) a bounded `context-researcher` dispatch produces one or two new Claims closing this gap before compilation is attempted for that specific subsection, following the existing evidence → candidate → reconciliation workflow unchanged; or (b) that specific subsection is left human-authored-and-validated-in-place for this stage, with the gap named explicitly rather than compiled around. Preference: (b) for Stage 87C's own minimum scope — new Claim research is a real cost or Stage 87B's own schema-restraint did; (a) is the natural next step for a later maintenance pass, not a Stage 87C blocker.
@@ -2540,7 +2605,12 @@ precondition for this plan's own acceptance criteria.
    before or alongside Stage 87C's own work, not folded silently into
    it — each is independently dispositioned already (§ see this
    session's commits).
-2. Write `docs/concepts/context.md.schema.yaml` (one section, citing
+2. **Run §S.3's mandatory compilation-readiness preflight** against all
+   four planned schemas' own `required_knowledge` ids, before writing
+   any schema file for real — a planning-time check, added by this
+   amendment, that must pass (or have every finding explicitly
+   resolved, never compiled around) before step 3 begins.
+3. Write `docs/concepts/context.md.schema.yaml` (one section, citing
    `CL-CTXT-001`) — the lowest-risk first real compile, given the
    existing prose already near-verbatim matches the Claim. **Run
    §S.4a's migration procedure steps 1-4 first** (identify the
@@ -2548,7 +2618,7 @@ precondition for this plan's own acceptance criteria.
    existing prose as the region's own baseline) — `context.md` has
    real, valuable existing prose this step must govern, not overwrite
    blind.
-3. Run `docs compile` → both independent reviews (semantic-support,
+4. Run `docs compile` → both independent reviews (semantic-support,
    editorial-quality **plus §S.4a step 5's own bounded
    regression-against-original-prose addition**) → `docs
    record-review` → `docs publish`, exactly Stage 87B's own real
@@ -2557,22 +2627,22 @@ precondition for this plan's own acceptance criteria.
    the schema's own `tone`/`depth`/audience fields (not the pipeline
    code) — Stage 87A's own three-round writing-contract hardening is
    the precedent for how many iterations is normal.
-4. Repeat for `adapter.md`, `vendor-and-ecosystem.md`,
+5. Repeat for `adapter.md`, `vendor-and-ecosystem.md`,
    `knowledge-model.md`'s record-kind table, in that order (increasing
    structural complexity: single-claim → multi-claim → table-shaped
    content) — **§S.4a's migration procedure runs first for each page**,
-   same as step 2 above; each compile independently reviewed, never
+   same as step 3 above; each compile independently reviewed, never
    batched into one unreviewed pass.
-5. Run `docs maintain` across the full, now-**six**-schema project
+6. Run `docs maintain` across the full, now-**six**-schema project
    (corrected from an earlier draft's "five" — 2 existing + 4 new, per
    §S.1/§S.4) after all four are published, confirming project-wide
    duplicate-region-id and five-state reconciliation still hold with
    more schemas in play than Stage 87B ever exercised at once — a real
    scale check Stage 87B's own two-document demonstration could not
    provide.
-6. Only then: the incremental-change proof (§S.6) and the comparator
+7. Only then: the incremental-change proof (§S.6) and the comparator
    experiment (§S.7), in either order — independent of each other.
-7. Final `docs-reconstructor` drift audit + `release-phase-auditor`
+8. Final `docs-reconstructor` drift audit + `release-phase-auditor`
    pass against the complete Stage 87C diff, mirroring every prior
    stage's own closeout discipline exactly.
 
@@ -2628,35 +2698,89 @@ regions rather than one compiled region and one untouched page):
    evidence → candidate → reconciliation workflow (`decisions/0073`)
    — never silently merged, same discipline `EV-CTXT-021`/`L-123`
    established this session.
-3. **Controlled acceptance**: a human/lead reconciliation decision
-   actually amends `CL-ADPT-005`'s own statement (or declines it,
-   honestly reported either way — Stage 87C's own acceptance does not
-   require this specific amendment to be accepted, only that the
-   proof runs rigorously).
-4. **`docs maintain`** (run across the full six-schema project) must
-   report `claims_changed` for **both** `adapter.md`'s and
-   `vendor-and-ecosystem.md`'s own regions — and `noop` for every
-   other governed region (`context.md`, `knowledge-model.md`, README's
-   `vendor-digest-concept`) — confirmed by reading `docs maintain`'s
-   own structured output directly, not inferred.
-5. **Recompile, independently re-review, and re-publish both affected
-   regions** — two separate `docs compile`/`docs record-review`/`docs
+3. **Controlled acceptance, with its own explicit branch — corrected by
+   this amendment** (the prior draft let the amendment be "declined,
+   honestly reported either way," then unconditionally required steps
+   4-8's own `claims_changed` demonstration regardless — a direct
+   contradiction, since nothing to detect exists if nothing was
+   accepted): a human/lead reconciliation decision either **(a)
+   accepts** the amendment, in which case steps 4-8 below proceed
+   exactly as written against real production knowledge; or **(b)
+   declines** it — acceptable on its own evidential merits, never
+   forced — in which case Stage 87C's own mandatory multi-region
+   maintenance proof is **not excused**, and proceeds by one of two
+   named paths, decided and recorded explicitly at implementation
+   time, never left ambiguous: (i) a **different**, evidence-backed
+   Claim change, re-verified at that point to genuinely affect two
+   compiled regions the same way `CL-ADPT-005` was verified to here; or
+   (ii) an **explicitly authorised, isolated demonstration**, run in a
+   disposable `git worktree` exactly as Stage 87B's own real knowledge-
+   change demonstration was (production `planning/knowledge/` never
+   touched), with its narrower evidential basis — a demonstration, not
+   a production change — stated plainly in the retro, never silently
+   presented as equivalent to path (a) or (i).
+4. **`docs maintain`** (run across the full six-schema project), once
+   the knowledge change from step 3 has actually landed (production or
+   isolated-worktree, per whichever branch above applies) **and** the
+   step-6 seeded human edit below has already been made, must report:
+   `claims_changed` for **both** `adapter.md`'s and `vendor-and-
+   ecosystem.md`'s own regions; `doc_candidate` for whichever region
+   step 6 deliberately edits (`context.md`, fixed here rather than left
+   as either-or, as the simpler, single-Claim page); `noop` for
+   `knowledge-model.md`'s own untouched region and for README's
+   `vendor-digest-concept`; and the **pre-existing** README `region:
+   intermediate-knowledge-layer` candidate (confirmed, by direct
+   `detect_grounded_region_changes` call this session, to already be
+   `doc_candidate` in real production state right now, from Phase 81's
+   own unrelated history) reported exactly as it already was —
+   untouched, unresolved, unacknowledged by anything in this
+   demonstration. Confirmed by reading `docs maintain`'s own structured
+   output directly, not inferred.
+5. **Recompile, independently re-review, and re-publish only the two
+   genuinely affected regions** (`adapter.md`, `vendor-and-ecosystem.
+   md`) — two separate `docs compile`/`docs record-review`/`docs
    publish` cycles, each independently reviewed (semantic-support,
    editorial-quality), never a single unreviewed batch update across
-   both.
-6. A prior human edit to an **unrelated** governed region (`context.md`
-   or `knowledge-model.md`, seeded deliberately before step 4, as
-   Stage 87B's own `doc_candidate` test fixture already proves the
-   mechanism preserves) survives untouched throughout — confirmed by
-   direct diff, not merely by absence of an error.
-7. A **second** `docs maintain` run, after both regions are republished,
-   reconciles to `noop` for all six schemas' worth of regions,
-   confirming the baseline advanced correctly and no region is left
-   in a falsely-still-`claims_changed` state.
-8. **Reconciliation**: the published-evidence audit records for both
-   regions, and the accepted (or honestly-declined) `CL-ADPT-005`
-   amendment, are the permanent record — mirroring Stage 87B's own
-   real demonstration's own closing step exactly.
+   both, and **never** touching `context.md`'s own `doc_candidate`
+   region — a `doc_candidate` is never auto-regenerated, by this
+   project's own standing rule, reused unchanged here.
+6. A prior human edit to `context.md` (the region named in step 4
+   above), seeded deliberately **before** step 4's own `docs maintain`
+   call, survives untouched throughout steps 4-7 and after — confirmed
+   by direct diff, not merely by absence of an error, and confirmed to
+   remain `doc_candidate` (never silently reconciled, resolved, or
+   discarded) at every `docs maintain` call that follows it, including
+   the final one in step 7.
+7. **A second `docs maintain` run, after both affected regions are
+   republished — corrected by this amendment** (the prior draft
+   required this run to "reconcile to `noop` for all six schemas'
+   worth of regions," directly contradicting step 6's own requirement
+   that the seeded edit survive as `doc_candidate` — this was a real
+   defect in the plan's own acceptance criteria, not a typo, since the
+   two requirements as originally written could never both be true at
+   once): must report `noop` for exactly the two regions that were
+   legitimately republished (`adapter.md`, `vendor-and-ecosystem.md`)
+   and for `knowledge-model.md` (genuinely untouched throughout); must
+   report `doc_candidate`, unchanged, for `context.md` (step 6's own
+   seeded edit, correctly never auto-reconciled); and must report the
+   pre-existing README `intermediate-knowledge-layer` candidate in its
+   own genuine, unrelated state, exactly as before — **not** `noop`.
+   No unrelated candidate is acknowledged, applied, or discarded simply
+   to make this run's own output look uniformly clean; a mixed result
+   (some regions `noop`, one region still genuinely `doc_candidate`, a
+   pre-existing unrelated candidate untouched) is the *correct*,
+   expected outcome of this demonstration, not a loose end to tidy away.
+8. **Reconciliation**: the published-evidence audit records for the
+   two republished regions, and the accepted (or honestly-declined,
+   per step 3's own branch) `CL-ADPT-005` amendment (or its named
+   replacement/isolated substitute), are the permanent record —
+   mirroring Stage 87B's own real demonstration's own closing step
+   exactly. `context.md`'s own seeded `doc_candidate` and README's own
+   pre-existing `intermediate-knowledge-layer` candidate are **not**
+   reconciled as part of this closing step — both remain genuinely
+   open, exactly as the five-state model requires for an unresolved
+   human edit, and are reported as such in the retro, not silently
+   dropped from the account.
 
 If, at Stage 87C implementation time, direct re-inspection finds
 `CL-ADPT-005` no longer legitimately supports a two-region change (for
@@ -2701,6 +2825,28 @@ explicitly into two phases, never collapsed into one figure:
   the figure a reproducible baseline (`decisions/0085` §6) actually
   needs to compare, since it is what recurs on every future knowledge
   change — the initial setup cost, by contrast, is paid once.
+- **Historical knowledge-preparation cost, a third, separate category
+  — added by this amendment** (the prior draft's two-way split
+  risked implying arm B's own total cost starts at "initial setup,"
+  silently treating the Claims this plan compiles against —
+  `CL-CTXT-001`, the `CL-ADPT-*`/`CL-EVID-*` cluster, all originally
+  produced by earlier `context-researcher` dispatches in Phase 79/80,
+  well before Stage 87 existed — as a free, pre-existing resource).
+  These Claims' own original research cost (agent time, review effort,
+  reconciliation) is a real prerequisite for arm B's approach to be
+  possible at all, but **reliably reconstructing it now is not
+  possible** — no bounded cost/value log exists for that much earlier
+  work, unlike Stage 87B's own real demonstration, which logged its
+  own costs as they happened. This is reported as **an explicit,
+  disclosed-unavailable figure**, not treated as zero and not
+  estimated — the same discipline Stage 87B's own bounded cost/value
+  log already established for its own two uncaptured steps, applied
+  here to a category the prior draft omitted entirely rather than to
+  an individual measurement. Arm A's own equivalent (whatever general
+  understanding of the codebase a conventional agent would need to
+  rebuild from scratch, absent any canonical knowledge base at all) is
+  reported the same way, for the same reason, so the comparison is not
+  one-sidedly honest about only one arm's own hidden cost.
 
 **Predeclared rubric** (fixed before either arm runs, per `decisions/
 0085` §6 — never adjusted after seeing results):
@@ -2831,9 +2977,20 @@ Failures are findings, not something to explain away.
    real (corrected from an earlier draft's "six" — the amended
    sequence adds explicit controlled-acceptance and reconciliation
    steps), with direct-diff confirmation of both the detected-change
-   scope (both, and only both, of the two genuinely dependent regions)
-   and the unrelated-content preservation — not asserted from a tool's
-   own summary.
+   scope (both, and only both, of the two genuinely dependent regions
+   reach `noop` after republication) and the unrelated-content
+   preservation — **and** with the seeded, deliberately-unresolved
+   `context.md` edit and the pre-existing README `intermediate-
+   knowledge-layer` candidate both still, correctly, `doc_candidate`
+   after the final `docs maintain` run, never silently reconciled,
+   acknowledged, or discarded to make the output look uniformly clean
+   (corrected by this amendment — the plan's own prior acceptance
+   criterion here required "`noop` with every unrelated byte
+   unchanged," which is internally correct for bytes but had, in an
+   earlier draft of §S.6 itself, conflicted with that same demonstration
+   requiring a region to stay `doc_candidate`; this criterion is now
+   explicit that a mixed final state is the correct, required outcome,
+   not asserted from a tool's own summary).
 4. The §S.7 comparator runs to completion for both arms against the
    identical task, measures initial-setup cost and marginal-
    maintenance cost separately, reports every rubric line (including
@@ -2896,7 +3053,7 @@ not regenerated, but confirmed accurate), or **explicitly deferred**
 | Human-edit preservation | **Implemented already** (mechanism) + **delivered by 87C** (migration-specific proof) | `publish_section`'s own region-splicing preserves unrelated content unchanged, proven by Stage 87B's own existing tests; §S.4a's own migration procedure extends this guarantee to the specific, previously-unaddressed case of adopting a page with pre-existing, unmarked human prose. |
 | Matched-baseline quality evaluation | **Delivered by 87C** | §S.7's own corrected comparator, now measuring total cost (setup + marginal) rather than generation cost alone. |
 | Material-improvement threshold, predeclared | **Delivered by 87C** | §S.7's own predeclared threshold, added by this amendment at the governing task's own explicit request — **not**, corrected from an earlier draft's own mischaracterization, something `decisions/0085` §6 itself mandates: §6 in fact explicitly withdraws a threshold-based success criterion as "methodologically weak," requiring a reproducible baseline methodology instead (already reflected elsewhere in this table/§S.7). This row's threshold is a voluntary strengthening consistent with §6's own spirit, not a restoration of a requirement §6 ever stated. |
-| Independent audits and original applicable tests | **Delivered by 87C** | §S.5 step 7's final `docs-reconstructor`/`release-phase-auditor` pass; the original 18-test matrix's own Stage-87C-assigned items (test 11, documentation-quality comparison) are covered by §S.7/§S.8. |
+| Independent audits and original applicable tests | **Delivered by 87C** | §S.5 step 8's final `docs-reconstructor`/`release-phase-auditor` pass; the original 18-test matrix's own Stage-87C-assigned items (test 11, documentation-quality comparison) are covered by §S.7/§S.8. |
 
 **No silent weakening**: every deferral above (Reference's generator;
 the semantic cross-document checker) was already named as deferred in
@@ -3053,6 +3210,38 @@ voluntary strengthening, requested by the governing task, applied
 consistently with §6's actual spirit rather than attributed to §6 as a
 restored requirement.
 
-**This amended plan is implementation-ready.** Stage 87C implementation
-itself remains separately, explicitly unauthorised, per the governing
-task's own instruction.
+**This amended plan was implementation-ready as of the second review
+round.** Stage 87C implementation itself remained separately,
+explicitly unauthorised through that point, per the governing task's
+own instruction.
+
+**Amendment (2026-11-09, same day): §S.2, §S.3, §S.5, §S.6, §S.7
+further amended; the first two review rounds above preserved
+unchanged as historical record.** A fresh governing task found five
+further real findings in the plan as it stood after the second review
+round: (A) §S.6's own acceptance criteria contradicted the five-state
+reconciliation model — it required a deliberately-seeded human edit to
+survive as `doc_candidate` while also requiring the final `docs
+maintain` run to report `noop` everywhere, which cannot both be true;
+corrected so the final state is explicitly mixed (two regions `noop`,
+one seeded edit and the pre-existing README candidate both still
+`doc_candidate`). (B) §S.6 let the `CL-ADPT-005` amendment be declined
+while still unconditionally requiring the `claims_changed`
+demonstration that depends on it being accepted — corrected with an
+explicit accept/decline branch, naming two concrete fallback paths if
+declined (a different evidence-backed change, re-verified; or an
+explicitly-named isolated worktree demonstration). (C) §S.2 still
+contained one remaining stale "five... sections" reference for Getting
+Started (corrected). (D) No preflight existed to confirm the four
+planned Concepts schemas' own Claims genuinely pass the compiler's
+real evidence-currency/budget checks, as opposed to merely reading
+`status: supported` from their own YAML — new §S.3 preflight added,
+reusing only existing `doc_compiler`/`knowledge_api` functions,
+inserted as implementation step 2 in §S.5. (E) §S.7's comparator split
+cost into "initial setup" and "marginal maintenance" but silently
+treated the Claims' own original historical research cost (Phase
+79/80) as free — a third, explicitly disclosed-as-unavailable cost
+category added for both arms.
+
+**Third review round required and completed — see the verdict
+immediately below, added by this same amendment.**
