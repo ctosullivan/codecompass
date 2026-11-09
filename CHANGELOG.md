@@ -9,6 +9,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 87, Stage 87B post-closeout hardening pass — reviewed-draft
+  integrity, live schema freshness, narrower write-boundary race.** A
+  fresh review of Stage 87B's already-closed, already-PASS-audited
+  work found three further integration defects in `docs publish`'s
+  own safety mechanics (none in the real demonstration's own generated
+  content), each reproduced directly against the pre-fix code before
+  being fixed: (1) **reviewed-draft integrity** — `docs publish`
+  checked a persisted review record's `draft_sha256` against the
+  pending manifest's own `draft_sha256` field, but never that the
+  manifest's `draft_sha256` actually hashed its own `tagged_draft`
+  text, nor that `draft_body` (what actually gets written) was the
+  deterministic, citation-stripped form of that same `tagged_draft` —
+  an independently-rewritten `draft_body` published unreviewed content
+  with both review records still showing "supported"/"pass". Fixed:
+  the draft's own identity is now independently recomputed from
+  `tagged_draft` and cross-checked against both `draft_sha256` and
+  `draft_body`, the recomputed body is what gets published (never the
+  stored field), and this check runs a second time against a *freshly
+  re-read* copy of the manifest file itself, as the last check before
+  the write — also catching a manifest replaced wholesale after the
+  already-matched reviews were validated. (2) **live schema
+  freshness** — the write-boundary re-check added by the prior
+  hardening pass re-ran a function that closed over schema/section
+  objects parsed once, at the top of the request, so a schema file
+  edited mid-publish was invisible to every "re-check" that kept
+  reusing that same stale object. Fixed: the freshness check now
+  rereads the schema file from disk and re-resolves the section fresh
+  on every call. (3) **residual write-boundary race, narrowed
+  further** — a new `doc_compiler.document_identity`/
+  `expected_document_identity`/`DocPublishConflictError` compare-and-
+  swap catches a document mutation landing strictly after the
+  detect-based write-boundary re-check (a gap the detect-based check
+  cannot see at all); `publish_section`'s writes now go through a new
+  atomic write-then-rename helper, so a crash mid-write never
+  truncates the target. The remaining window — between that identity
+  re-check and the write itself, both plain synchronous Python with no
+  cross-process file lock — is not claimed closed; disclosed in both
+  `publish_section`'s and `_doc_publish_lock`'s own docstrings and
+  recorded as an explicit follow-up (`L-124`). 15 new regression tests
+  (`tests/test_cli.py` +5, `tests/test_doc_compiler.py` +10), 13 of
+  which were confirmed to fail against the pre-fix code (isolated via
+  a disposable `git worktree`) and pass after the fix; one test's
+  first draft was found passing in both regimes for the wrong reason
+  (an unrelated crash, not genuine detection) and was rewritten once
+  that was noticed. Full suite: 1352 passed, 2 skipped (up from 1337).
+  `ruff`/`check_doc_schema.py --strict`/`check_user_docs.py
+  --strict`/`check_knowledge_base.py`/`check_knowledge_placement.py`/
+  `check_contracts.py`/`check_self_knowledge_quality.py` all clean or
+  showing only pre-existing, unrelated findings. A real, evidence-
+  backed `CL-CTXT-005` amendment candidate the original demonstration
+  surfaced (`sync_vendor`'s clone-failure fallback) was re-derived
+  independently as `EV-CTXT-021` and filed (`L-123`) for the ordinary
+  knowledge-reconciliation workflow — not applied directly; a
+  successful demonstration is still not maintainer acceptance. An
+  independent `release-phase-auditor` pass against this fix returned
+  **PASS**. See `planning/retros/phase-87-stage-87b-knowledge-change-
+  demonstration.md`'s "Addendum 2" for the full account and
+  `planning/retros/_audit-phase-87-stage-87b.md` for the audit trail.
+  Stage 87B remains closed, now against this hardened code. Phase 87
+  overall remains not `done`; Stage 87C remains separately planned,
+  unauthorised, and unstarted.
+
 - **Phase 87, Stage 87B — two-document governance, execution harness,
   publication concurrency guard, real knowledge-change demonstration**
   (plan's own §O, amended three times after independent review found

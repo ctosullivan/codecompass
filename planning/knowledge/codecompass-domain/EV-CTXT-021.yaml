@@ -1,0 +1,25 @@
+id: EV-CTXT-021
+kind: evidence
+evidence_kind: source
+what_it_shows: >
+  `sync_vendor` (`src/codecompass/sync.py:107-153`) runs
+  `resolve_and_clone` unconditionally for every vendor and, on a real
+  `SourceResolutionError` (clone failure), does not abort or leave the
+  vendor's output half-written: it falls back to
+  `_copy_source_snapshot(source_location, src_dest)`, recording the
+  failure reason on `VendorDigest.description_error` rather than on any
+  description-generation path (there is no description "attempt" to
+  fail in this branch). `DEPTREE.md`/`FILETREE.md`/`deptree.json`/
+  `filetree.json`/`CLAUDE.md` are still produced for that vendor, now
+  rendered from `source_location()` (the local-install-sourced snapshot,
+  decisions/0004) instead of the clone. This is a real, already-tested
+  fallback behaviour never mentioned by CL-CTXT-005, which otherwise
+  describes `sync_vendor`'s rendered output set without naming this
+  degraded-but-still-functional path for vendors whose source cannot be
+  cloned.
+observations: []
+source_ref: "src/codecompass/sync.py:107-153 (sync_vendor, resolve_and_clone fallback)"
+doc_ref: null
+test_ref: "tests/test_sync.py::test_sync_vendor_source_resolution_failure_falls_back_to_local_snapshot"
+repository_revision: "e0de6712bafb8f0a43be2d2ddec703d8b73d23b5"
+status: current

@@ -2144,16 +2144,26 @@ def _doc_publish_lock(project_root: Path, *, timeout: float = 30.0, poll_interva
     `doc_compiler.decide_publish_safety`'s own content-hash
     revalidation a second time, immediately before the write, while
     this lock is held -- which is what catches *that* case, with or
-    without the lock. This narrows, but cannot fully close, the window
-    between that final check and the write itself (both are plain,
-    synchronous Python with no further revalidation in between) -- an
-    edit landing in that specific, much smaller gap is not caught. A
-    full transactional write (e.g. write-then-atomic-rename with a
-    third, post-write confirmation) would close it completely but is
+    without the lock.
+
+    Post-closeout hardening, Finding C narrows this further still:
+    immediately before the write, `docs_publish` also snapshots the
+    document's own exact content (`doc_compiler.document_identity`)
+    and passes it to `publish_section`, which re-checks that snapshot
+    against the live file a second time, right before composing the
+    new text, and refuses to write on a mismatch
+    (`DocPublishConflictError`). This closes the gap between the
+    detect-based re-check above and the write itself for the common
+    case (an edit landing between them). It does **not** close the
+    one gap that remains after that: between `publish_section`'s own
+    identity re-check and its own write a few lines later, both
+    plain, synchronous Python with no OS-level file lock across
+    processes. A full transactional write (e.g. a second, post-write
+    confirmation read) would close that last sliver completely but is
     deliberately not built here, matching this stage's own
-    smallest-coherent-change instruction; the residual window is orders
-    of magnitude smaller than the one this re-check closes and is
-    disclosed here rather than silently assumed away."""
+    smallest-coherent-change instruction; the residual window is now
+    orders of magnitude smaller again than the one this pass closed,
+    and is disclosed here rather than silently assumed away."""
     lock_path = project_root / _DOC_PUBLISH_LOCK_NAME
     deadline = time.monotonic() + timeout
     while True:
@@ -2224,8 +2234,27 @@ def docs_publish(
     # inside the lock, immediately before the write (below) -- a
     # knowledge change landing in the gap between this check and the
     # write must be caught there too, not only here.
+    #
+    # Post-closeout hardening, Finding B: the *schema file itself* is
+    # reread from disk on every single call, never reused from the
+    # `schema`/`section` objects parsed once at the top of this
+    # function. The original hardening pass's own write-boundary
+    # re-check called this same function a second time, but it closed
+    # over those same stale, already-parsed objects -- so calling it
+    # again proved nothing: a schema file edited after the top-level
+    # `yaml.safe_load` above would never be seen by either call.
+    # Reproduced directly: widening a section's `min_claim_status` on
+    # disk mid-publish was not detected before this fix, because
+    # nothing ever read the file a second time.
     def _evidence_staleness_error() -> str | None:
-        live_schema_section_sha256 = oracle.sha256_text(json.dumps(section, sort_keys=True))
+        live_schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+        live_section = doc_compiler.find_schema_section(live_schema, section_id)
+        if live_section is None:
+            return (
+                f"section {section_id!r} is no longer declared in the live schema "
+                f"{schema_path} -- recompile and re-review before publishing"
+            )
+        live_schema_section_sha256 = oracle.sha256_text(json.dumps(live_section, sort_keys=True))
         if live_schema_section_sha256 != pending.get("schema_section_sha256"):
             return (
                 "this section's schema definition has changed since it was compiled -- "
@@ -2243,6 +2272,51 @@ def docs_publish(
     staleness_error = _evidence_staleness_error()
     if staleness_error is not None:
         console.print(f"[red]error:[/red] {staleness_error}")
+        raise typer.Exit(code=1)
+
+    # Post-closeout hardening, Finding A: a persisted `draft_sha256` or
+    # `draft_body` field is never trusted merely because it is present
+    # in the manifest and matches another untrusted field in that same
+    # manifest -- both are independently re-derived here from
+    # `tagged_draft`, the one value every persisted review record is
+    # itself bound to. Reproduced directly: rewriting `draft_body`
+    # alone (leaving `tagged_draft`/`draft_sha256` untouched) published
+    # attacker-controlled content that neither review had ever seen,
+    # before this check existed. Checked once now (fail fast) and
+    # again, inside the lock, against a *freshly re-read* copy of the
+    # manifest, immediately before the write (below).
+    def _reviewed_draft_integrity_error(manifest: dict) -> tuple[str | None, str | None]:
+        """`(error, derived_body)` -- exactly one is non-`None`. The
+        publishable body is always this function's own derived value,
+        never `manifest["draft_body"]` read on its own say-so."""
+        tagged_draft = manifest.get("tagged_draft")
+        if not isinstance(tagged_draft, str) or not tagged_draft:
+            return (
+                "the pending manifest has no usable tagged_draft text -- cannot verify "
+                "what was actually reviewed; recompile and re-review before publishing",
+                None,
+            )
+        recomputed_draft_sha256 = oracle.sha256_text(tagged_draft)
+        if recomputed_draft_sha256 != manifest.get("draft_sha256"):
+            return (
+                "the pending manifest's own draft_sha256 does not match a fresh hash "
+                "of its own tagged_draft text -- the manifest has been altered since "
+                "compilation; recompile and re-review before publishing",
+                None,
+            )
+        derived_body = doc_compiler.strip_citation_tags(tagged_draft).strip()
+        if derived_body != manifest.get("draft_body"):
+            return (
+                "the pending manifest's draft_body does not match the deterministic, "
+                "citation-stripped form of its own reviewed tagged_draft -- altered "
+                "since compilation; recompile and re-review before publishing",
+                None,
+            )
+        return None, derived_body
+
+    integrity_error, original_derived_body = _reviewed_draft_integrity_error(pending)
+    if integrity_error is not None:
+        console.print(f"[red]error:[/red] {integrity_error}")
         raise typer.Exit(code=1)
 
     reviews: dict[str, dict] = {}
@@ -2302,16 +2376,59 @@ def docs_publish(
     # baseline, all while holding the cooperating-writer lock, so the
     # live target is revalidated at the write boundary, never trusted
     # from a decision made before the lock was held.
-    def _detect_and_decide() -> str | None:
+    def _detect_and_decide(candidate_body: str) -> str | None:
         findings = knowledge_intermediate.detect_grounded_region_changes(
             project_root, (document_name,)
         )
         matching = next((f for f in findings if f.region_id == region_id), None)
-        return doc_compiler.decide_publish_safety(matching, pending["draft_body"])
+        return doc_compiler.decide_publish_safety(matching, candidate_body)
+
+    def _reread_pending_at_write_boundary() -> tuple[dict, str] | None:
+        """Post-closeout hardening, Finding A: re-reads the pending
+        manifest fresh from disk, inside the lock, immediately before
+        it is used to decide what gets published -- the snapshot
+        loaded before the lock was acquired (`pending`, above) could
+        have been superseded by a fresh `docs compile` run, or direct
+        tampering, in the gap between that load and this point.
+        Returns `(fresh_manifest, derived_body)` on success; prints an
+        error and returns `None` on any failure: the manifest is
+        gone, malformed, internally inconsistent (same check as the
+        pre-lock gate above), or -- the case unique to this re-read --
+        no longer the exact manifest the already-matched review
+        records above were bound to."""
+        if not pending_path.is_file():
+            console.print(
+                f"[red]error:[/red] the pending review manifest at {pending_path} was "
+                "removed since publication began"
+            )
+            return None
+        try:
+            fresh_pending = json.loads(pending_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            console.print(
+                f"[red]error:[/red] the pending review manifest at {pending_path} is "
+                f"malformed: {exc}"
+            )
+            return None
+
+        fresh_integrity_error, derived_body = _reviewed_draft_integrity_error(fresh_pending)
+        if fresh_integrity_error is not None:
+            console.print(f"[red]error:[/red] {fresh_integrity_error}")
+            return None
+
+        for key in ("draft_sha256", "evidence_sha256", "schema_section_sha256"):
+            if fresh_pending.get(key) != pending.get(key):
+                console.print(
+                    f"[red]error:[/red] the pending manifest changed ({key} differs) "
+                    "since the already-matched review records above were validated "
+                    "against it -- recompile and re-review before publishing"
+                )
+                return None
+        return fresh_pending, derived_body
 
     try:
         with _doc_publish_lock(project_root):
-            refusal = _detect_and_decide()
+            refusal = _detect_and_decide(original_derived_body)
             if refusal is not None:
                 console.print(f"[red]error:[/red] {refusal}")
                 raise typer.Exit(code=1)
@@ -2326,7 +2443,7 @@ def docs_publish(
             # document mutation injected between the first check and
             # the write was silently overwritten before this re-check
             # was added).
-            refusal = _detect_and_decide()
+            refusal = _detect_and_decide(original_derived_body)
             if refusal is not None:
                 console.print(
                     f"[red]error:[/red] the live document changed between the initial "
@@ -2334,14 +2451,17 @@ def docs_publish(
                 )
                 raise typer.Exit(code=1)
 
-            # Same reasoning, for the cited knowledge: a change landing
-            # in the same gap must also be caught here, not only by the
-            # earlier, pre-lock check above (reproduced directly: a
-            # knowledge mutation injected between the first check and
-            # the write was silently published over before this
-            # re-check existed, since `claims_changed` is otherwise a
-            # legitimate reason to proceed and cannot by itself tell a
-            # fresh republish apart from a now-stale one).
+            # Same reasoning, for the cited knowledge and the live
+            # schema (Finding B: this now rereads the schema file from
+            # disk every call, not the stale object parsed once at the
+            # top of this function): a change landing in the same gap
+            # must also be caught here, not only by the earlier,
+            # pre-lock check above (reproduced directly: a knowledge
+            # mutation injected between the first check and the write
+            # was silently published over before this re-check
+            # existed, since `claims_changed` is otherwise a legitimate
+            # reason to proceed and cannot by itself tell a fresh
+            # republish apart from a now-stale one).
             staleness_error = _evidence_staleness_error()
             if staleness_error is not None:
                 console.print(
@@ -2350,17 +2470,44 @@ def docs_publish(
                 )
                 raise typer.Exit(code=1)
 
-            doc_compiler.publish_section(
-                document_path, region_id=region_id,
-                record_ids=pending["record_ids"], body=pending["draft_body"],
-            )
+            # Post-closeout hardening, Finding A's write-boundary case:
+            # re-read the pending manifest itself fresh from disk, as
+            # the LAST check before the write -- closest to the write,
+            # exactly like the two checks above. A manifest replaced
+            # (e.g. by a concurrent `docs compile` rerun) at any point
+            # up to this line, including during either detect call
+            # just above, is caught here; it is never caught by a
+            # single re-read taken earlier, since nothing stops a
+            # further replacement after that point and before this one.
+            reread_result = _reread_pending_at_write_boundary()
+            if reread_result is None:
+                raise typer.Exit(code=1)
+            fresh_pending, derived_body = reread_result
+
+            # Post-closeout hardening, Finding C: a compare-and-swap
+            # snapshot of the document's own exact content, taken as
+            # close to the write as possible -- `publish_section`
+            # re-checks this identity immediately before reading the
+            # document to compose the new text, and refuses to write
+            # if it no longer matches (see its own docstring for the
+            # residual, smaller-still window this does not close).
+            expected_document_identity = doc_compiler.document_identity(document_path)
+            try:
+                doc_compiler.publish_section(
+                    document_path, region_id=region_id,
+                    record_ids=fresh_pending["record_ids"], body=derived_body,
+                    expected_document_identity=expected_document_identity,
+                )
+            except doc_compiler.DocCompilerError as exc:
+                console.print(f"[red]error:[/red] {exc}")
+                raise typer.Exit(code=1) from exc
             # Baseline advances only now, strictly after a genuinely
             # successful write -- never on detection alone, never on a
             # refused or failed publish (neither of which reaches this
             # line).
             knowledge_intermediate.advance_region_baseline_after_publish(
                 project_root, document_name, region_id,
-                pending["record_ids"], pending["draft_body"],
+                fresh_pending["record_ids"], derived_body,
             )
     except _DocPublishLockTimeoutError as exc:
         console.print(f"[red]error:[/red] {exc}")
@@ -2369,12 +2516,15 @@ def docs_publish(
     # Preserve the original citation-tagged text and both independent
     # review records for later audits (requirement §N.A.8) -- a
     # permanent, committed record, distinct from the ephemeral
-    # clean-room staging directory (§N.C), which is never kept.
+    # clean-room staging directory (§N.C), which is never kept. Uses
+    # the freshly re-read manifest actually verified and published
+    # above, not the possibly-superseded snapshot loaded before the
+    # lock.
     audit_dir = project_root / "planning" / "retros" / "phase-87-published-evidence" / schema_slug
     audit_dir.mkdir(parents=True, exist_ok=True)
     (audit_dir / f"{section_id}.json").write_text(json.dumps({
         "region_id": region_id,
-        "pending_manifest": pending,
+        "pending_manifest": fresh_pending,
         "semantic_review": reviews["semantic"],
         "editorial_review": reviews["editorial"],
         "published_at": datetime.now(UTC).isoformat(),

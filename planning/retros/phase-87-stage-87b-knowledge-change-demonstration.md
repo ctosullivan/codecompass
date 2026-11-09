@@ -327,3 +327,154 @@ in a way this fix affects (the demonstration's own publish call
 exercised the `claims_changed`-proceeds branch with no concurrent
 writer and no intervening mutation — the scenario this fix addresses
 never arose there).
+
+## Addendum 2: post-closeout hardening pass — three further integration defects (2026-11-09)
+
+A fresh review of this already-closed, already-PASS-audited work
+found three further integration defects in the publication mechanism
+itself — none in the real demonstration's own generated content, all
+in the publish-time safety mechanics layered around it. Each was
+reproduced directly against the then-current (`e0de671`) code before
+any fix was written, per this project's own standing real-vs-synthetic
+discipline, using standalone, disposable reproduction scripts (not
+pytest tests) kept outside the repository.
+
+**Finding A — reviewed-draft integrity, confirmed real.** `docs
+compile` persists `tagged_draft` (what both independent reviews are
+actually bound to, via `draft_sha256`), `draft_body` (the citation-
+stripped text `docs publish` writes), and `draft_sha256` (`sha256
+(tagged_draft)`) into the pending manifest. `docs publish` validated
+that a persisted review record's own `draft_sha256` field matched the
+*manifest's* own `draft_sha256` field — but never that the manifest's
+own `draft_sha256` field actually matched a fresh hash of its own
+`tagged_draft` text, and never that `draft_body` was actually the
+deterministic, citation-stripped form of that same `tagged_draft`.
+Reproduced directly: a standalone script compiled a section, recorded
+both passing reviews, then rewrote only the pending manifest's
+`draft_body` field (leaving `tagged_draft`/`draft_sha256` untouched) to
+attacker-controlled text never seen by either review — `docs publish`
+exited 0 and published that exact unreviewed text. Fixed: `docs
+publish` now independently recomputes `sha256(tagged_draft)` and
+compares it against the manifest's own `draft_sha256` (catching a
+tampered hash or a rewritten `tagged_draft` wearing a stale hash),
+recomputes `strip_citation_tags(tagged_draft).strip()` and compares it
+against `draft_body` (catching a tampered `draft_body` directly), and
+always publishes the *recomputed* body — `pending["draft_body"]` is no
+longer read for the write at all. This integrity check runs once
+before the lock (fail fast) and again, against a **freshly re-read
+copy of the manifest file itself** (not the in-memory snapshot loaded
+before the lock), as the very last check immediately before the write
+— closing a second, narrower variant of the same defect: a manifest
+*replaced in its entirety* (e.g. by a concurrent `docs compile` rerun)
+after the already-matched review records were validated against the
+original snapshot, but before the write. The re-read cross-checks the
+fresh manifest's own `draft_sha256`/`evidence_sha256`/
+`schema_section_sha256` against the originally-validated snapshot's,
+refusing on any difference.
+
+**Finding B — live schema freshness, confirmed real.** The write-
+boundary re-check added by the first hardening pass (Addendum 1)
+re-ran `_evidence_staleness_error`, but that function closed over
+`section`/`schema` objects parsed *once*, at the top of `docs_publish`,
+from the schema file as it was before any lock was even considered —
+calling the same function again proved nothing, since nothing inside
+it ever read the schema file a second time. Reproduced directly: a
+standalone script compiled and reviewed a section, then — via a
+monkeypatched first call to `detect_grounded_region_changes` — widened
+the live schema's own `min_claim_status` for that section mid-publish;
+`docs publish` exited 0, publishing against a schema requirement that
+had already changed underneath it. Fixed: `_evidence_staleness_error`
+now reads `schema_path` from disk and re-resolves the section fresh on
+every single call, including both the pre-lock fast-path call and the
+two inside-the-lock calls — a schema mutation landing at any point
+before the write is now genuinely visible to whichever re-check runs
+after it, not merely assumed caught by an already-stale object.
+
+**Finding C — residual document-write race, narrowed further.** The
+first hardening pass's own re-check (detect-based) left a smaller,
+honestly-disclosed window between that re-check and the write itself.
+This pass adds a second, independent narrowing: a new
+`doc_compiler.document_identity(doc_path)` (a content hash, or
+`"absent"`) is captured by `docs_publish` immediately before calling
+`publish_section`, which now accepts that snapshot as
+`expected_document_identity` and re-checks it internally, immediately
+before composing the new text — raising a new `DocPublishConflictError`
+on mismatch, never writing. Reproduced directly: a standalone script
+confirmed a mutation landing strictly *after* the detect-based
+write-boundary re-check (a scenario the detect-based check cannot see
+at all, since `detect_grounded_region_changes` is never called a
+third time) still clobbered the document before this identity check
+existed, and is refused after. Separately, `publish_section`'s actual
+writes now go through a new `_atomic_write_text` (write-to-temp-file-
+then-`os.replace`) instead of a direct `Path.write_text` call, so a
+crash or interruption mid-write leaves the original file intact
+rather than truncated — confirmed by a test that makes `os.replace`
+raise mid-call and checks the original content survives with no
+leftover temp file. **Full protection was not achieved, and is not
+claimed**: the window between `publish_section`'s own internal
+identity re-check and its own write — a few lines of plain, synchronous
+Python with no OS-level cross-process file lock — remains open, is
+disclosed in both `publish_section`'s and `_doc_publish_lock`'s own
+docstrings, and is recorded as an explicit follow-up (`L-124`) rather
+than silently assumed closed. A full transactional write (or a
+cross-process lock held by every editor of the target document, which
+this project cannot impose on a plain text editor) would close it
+completely and was deliberately not built, matching this stage's own
+smallest-coherent-change instruction for a second time.
+
+**Verification.** 15 new regression tests (5 in `tests/test_cli.py`,
+10 in `tests/test_doc_compiler.py`), every one of the 13 testing new
+mechanism behavior directly confirmed to fail against the pre-fix code
+(`e0de671`, isolated via a disposable `git worktree` with `PYTHONPATH`
+pointed at its own `src/` — not the editable-installed main-repo
+source, which the venv's `.pth` file points at by default and would
+otherwise silently run the already-fixed code) and pass against the
+fix; the other 2 (a determinism property already true pre-fix, and
+one manifest-swap test whose first draft passed in both regimes for
+the wrong reason — a `mkdir` `FileExistsError` crash, not genuine
+detection — caught by checking *why* it passed, not just *that* it
+passed, and rewritten to construct the swap directly rather than
+re-running the setup helper) are documented here rather than silently
+presented as 15-for-15 real catches. Full suite: 1352 passed, 2 skipped
+(up from 1337, exactly +15). `ruff check .`: 176 findings, identical
+pre-existing set, none in changed files except one `E501` in this
+pass's own new test, fixed. `check_doc_schema.py --strict`,
+`check_user_docs.py --strict`, `check_knowledge_base.py`,
+`check_knowledge_placement.py`, `check_contracts.py`,
+`check_self_knowledge_quality.py`: all clean or showing only
+pre-existing, unrelated findings (confirmed by direct inspection of
+each finding's own file path and content, not assumed).
+
+**Secondary item — canonical knowledge.** The real `CL-CTXT-005` gap
+this stage's own disposable-worktree demonstration found (`sync_
+vendor`'s clone-failure fallback) was re-derived independently, fresh
+against production `src`/`tests` (not copied from the demonstration's
+own discarded worktree record), as `EV-CTXT-021` (`status: current` —
+evidence has no `candidate` tier in this project's closed status
+vocabulary; `candidate`-style staging lives at the claim-amendment
+level). Filed as `L-123`, proposing the textual amendment through the
+ordinary evidence → candidate → reconciliation workflow — `CL-CTXT-005`
+itself is left untouched; a successful demonstration having run through
+this exact fact two days ago is explicitly not treated as maintainer
+acceptance of it.
+
+**Secondary item — documentation coverage, restated honestly.** Stage
+87B still contains exactly one genuinely knowledge-compiled section
+(the README.md section the real demonstration itself compiled,
+reviewed, and published through the pipeline). `docs/getting-
+started.md` remains schema-governed and factually verified, not
+knowledge-compiled — this pass did not change that, and does not
+claim it did.
+
+**Secondary item — cost telemetry (`L-122`).** Already tracked
+accurately in `planning/ROADMAP.md`'s "Future-improvement backlog"
+table; confirmed still present and unresolved. No direct fix attempted
+this pass — retained as an explicit Phase 87C planning input per the
+governing task's own instruction, rather than expanding this narrow
+hardening pass's scope.
+
+**Pre-existing reconciliation state, confirmed preserved.** The
+pre-existing `intermediate-knowledge-layer` `doc_candidate` manifest
+(`planning/knowledge/codecompass-domain/reconciliation/
+20261104T081241Z-doc.toml`) still exists, exactly one file, untouched
+by anything in this pass.

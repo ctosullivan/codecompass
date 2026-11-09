@@ -556,6 +556,140 @@ def test_strip_citation_tags_collapses_double_space_between_adjacent_tags():
     assert stripped == "First point Second point here."
 
 
+def test_strip_citation_tags_is_deterministic_across_repeated_calls():
+    # Stage 87B post-closeout hardening, Finding A requirement 5: the
+    # publishable body is derived from tagged_draft via this function
+    # at publish time, not merely at compile time -- it must produce
+    # byte-identical output every time it is run against the same input.
+    text = "First {{cite:CL-X}}. Second {{cite:CL-Y}}, continues {{cite:CL-Z}}."
+    results = {dc.strip_citation_tags(text) for _ in range(5)}
+    assert len(results) == 1
+
+
+# ---------------------------------------------------------------------------
+# document_identity / publish_section's expected_document_identity --
+# Stage 87B post-closeout hardening, Finding C: a compare-and-swap
+# snapshot of the document's own exact content, checked immediately
+# before the write.
+# ---------------------------------------------------------------------------
+
+
+def test_document_identity_is_absent_for_a_missing_file(tmp_path):
+    assert dc.document_identity(tmp_path / "docs" / "nope.md") == "absent"
+
+
+def test_document_identity_matches_a_fresh_hash_of_the_same_content(tmp_path):
+    doc_path = tmp_path / "docs" / "demo.md"
+    doc_path.parent.mkdir(parents=True)
+    doc_path.write_text("hello\n", encoding="utf-8")
+    assert dc.document_identity(doc_path) == oracle.sha256_text("hello\n")
+
+
+def test_document_identity_changes_when_the_file_content_changes(tmp_path):
+    doc_path = tmp_path / "docs" / "demo.md"
+    doc_path.parent.mkdir(parents=True)
+    doc_path.write_text("hello\n", encoding="utf-8")
+    before = dc.document_identity(doc_path)
+    doc_path.write_text("goodbye\n", encoding="utf-8")
+    after = dc.document_identity(doc_path)
+    assert before != after
+
+
+def test_publish_section_accepts_a_matching_expected_document_identity(tmp_path):
+    doc_path = tmp_path / "docs" / "demo.md"
+    dc.publish_section(doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="Old.")
+    identity = dc.document_identity(doc_path)
+    dc.publish_section(
+        doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="New.",
+        expected_document_identity=identity,
+    )
+    assert "New." in doc_path.read_text(encoding="utf-8")
+
+
+def test_publish_section_refuses_a_stale_expected_document_identity(tmp_path):
+    # A snapshot taken before an intervening write must be refused --
+    # the document's live identity no longer matches it.
+    doc_path = tmp_path / "docs" / "demo.md"
+    dc.publish_section(doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="Old.")
+    stale_identity = dc.document_identity(doc_path)
+    doc_path.write_text(doc_path.read_text(encoding="utf-8") + "\nan intervening edit\n")
+
+    with pytest.raises(dc.DocPublishConflictError):
+        dc.publish_section(
+            doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="New.",
+            expected_document_identity=stale_identity,
+        )
+    assert "an intervening edit" in doc_path.read_text(encoding="utf-8")
+    assert "New." not in doc_path.read_text(encoding="utf-8")
+
+
+def test_publish_section_accepts_expected_absent_for_a_genuinely_new_document(tmp_path):
+    doc_path = tmp_path / "docs" / "demo.md"
+    dc.publish_section(
+        doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="New.",
+        expected_document_identity="absent",
+    )
+    assert "New." in doc_path.read_text(encoding="utf-8")
+
+
+def test_publish_section_refuses_expected_absent_when_the_file_now_exists(tmp_path):
+    # The "new document" path has its own identity ("absent") -- a file
+    # created in the gap between the caller's snapshot (taken when the
+    # file genuinely did not exist) and the write must be refused the
+    # same way a changed existing file is.
+    doc_path = tmp_path / "docs" / "demo.md"
+    doc_path.parent.mkdir(parents=True)
+    doc_path.write_text("a file that appeared concurrently\n", encoding="utf-8")
+    with pytest.raises(dc.DocPublishConflictError):
+        dc.publish_section(
+            doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="New.",
+            expected_document_identity="absent",
+        )
+    assert doc_path.read_text(encoding="utf-8") == "a file that appeared concurrently\n"
+
+
+def test_publish_section_atomic_write_leaves_the_original_intact_on_mid_write_failure(
+    tmp_path, monkeypatch
+):
+    # Partial-write safety: a failure during the write must never leave
+    # the target file truncated or corrupted, and must never leave a
+    # stray temp file behind.
+    doc_path = tmp_path / "docs" / "demo.md"
+    dc.publish_section(doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="Old.")
+    original = doc_path.read_text(encoding="utf-8")
+
+    def _boom(*args, **kwargs):
+        raise OSError("simulated crash during rename")
+
+    monkeypatch.setattr(dc.os, "replace", _boom)
+    with pytest.raises(OSError):
+        dc.publish_section(
+            doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="New.",
+        )
+
+    assert doc_path.read_text(encoding="utf-8") == original
+    leftover_tmp_files = list(doc_path.parent.glob(f".{doc_path.name}.*.tmp"))
+    assert leftover_tmp_files == []
+
+
+def test_publish_section_preserves_unrelated_regions_through_an_atomic_rewrite(tmp_path):
+    doc_path = tmp_path / "docs" / "demo.md"
+    dc.publish_section(doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="First.")
+    dc.publish_section(doc_path, region_id="demo-s2", record_ids=["CL-DOCDEMO-002"], body="Second.")
+    before_s2 = doc_path.read_text(encoding="utf-8")
+    assert "region:demo-s2" in before_s2
+
+    identity = dc.document_identity(doc_path)
+    dc.publish_section(
+        doc_path, region_id="demo-s1", record_ids=["CL-DOCDEMO-001"], body="First, revised.",
+        expected_document_identity=identity,
+    )
+    after = doc_path.read_text(encoding="utf-8")
+    assert "First, revised." in after
+    assert "Second." in after
+    assert "region:demo-s2" in after
+
+
 # ---------------------------------------------------------------------------
 # Grounded-region identity: reordering and duplicate-id rejection
 # (amendment finding A, governing task §7's "incorrect grounding ids")

@@ -41,7 +41,7 @@ duplicates, or independently asserts a canonical fact.
 |---|---|
 | `*.schema.yaml` | A versioned, user-authored schema (one per governed document) naming each section's required knowledge, audience, tone, depth, and evidence bar. Minimal by design — a project maintainer edits it directly. |
 | `scripts/check_doc_schema.py` | Validates a schema: required fields, a known `schema_version`, every `required_knowledge` entry resolved to a real record (a `discover:<query>` entry resolved to exactly one match, never a guessed first result), section ids restricted to `[a-z0-9-]+` (the real grounded-region parser silently truncates at a `.`). |
-| `src/codecompass/doc_compiler.py` | Deterministic resolution/hydration/gap-detection/citation-scope-checking, plus `publish_section`/`maintain_document`/`compute_schema_slug`/`decide_publish_safety` (Stage 87B's publication-safety decision logic — see step 8 below). See `docs/architecture/components.md`'s own entry for this module. |
+| `src/codecompass/doc_compiler.py` | Deterministic resolution/hydration/gap-detection/citation-scope-checking, plus `publish_section`/`maintain_document`/`compute_schema_slug`/`decide_publish_safety`/`document_identity`/`DocPublishConflictError` (Stage 87B's publication-safety decision logic, including the post-closeout hardening pass's compare-and-swap write guard — see step 8 below). See `docs/architecture/components.md`'s own entry for this module. |
 | `scripts/compile_doc_section.py` | The clean-room section-compilation adapter — see "Clean-room composition" below. |
 | `scripts/execute_doc_example.py` | Stage 87B's execution harness — runs a small, explicitly allow-listed set of real documentation examples inside a real `unshare`/`pivot_root` namespace sandbox, with offline-mirrored git/pip caches so no live network is reachable from inside the sandbox. Never a general command runner: a command not in its own hand-maintained allow-list is rejected before the sandbox is even entered. |
 | `codecompass docs schema-init\|compile\|record-review\|publish\|maintain` | The CLI surface. See `docs/reference/cli.md`. |
@@ -109,12 +109,27 @@ duplicates, or independently asserts a canonical fact.
    protects cooperating `docs publish`/`docs maintain` invocations
    against each other; a human editing the file directly is never
    locked out by the file lock, but the write-boundary revalidation
-   still catches that case and refuses the write regardless. The
-   residual window between that final, write-boundary check and the
-   write itself is narrower, not zero — closing it completely would
-   need a full transactional write, deliberately not built here;
-   disclosed in `_doc_publish_lock`'s own docstring rather than
-   assumed away. Writes/replaces exactly one
+   still catches that case and refuses the write regardless. The same
+   write boundary also independently re-verifies the pending review
+   manifest's own integrity against a freshly re-read copy of the
+   manifest file (recomputing the reviewed draft's identity from its
+   actual `tagged_draft` text, never trusting a persisted
+   `draft_sha256`/`draft_body` field on its own say-so; the body
+   actually published is always this freshly recomputed value, never
+   the stored field read directly) — this also catches the manifest
+   having been replaced wholesale (e.g. by a concurrent `docs compile`
+   rerun) after the already-matched review records were validated.
+   Immediately before composing the new text, `publish_section` itself
+   re-checks one further, closer-still snapshot: a compare-and-swap of
+   the document's own exact content (`doc_compiler.document_identity`),
+   refusing to write (`DocPublishConflictError`) on any mismatch; the
+   write itself is atomic (write-then-rename), so a reader or a crash
+   mid-write never observes a partial file. The residual window
+   between that identity re-check and the write itself, a few lines
+   later, is narrower, not zero — closing it completely would need a
+   full transactional write, deliberately not built here; disclosed in
+   both `_doc_publish_lock`'s and `publish_section`'s own docstrings
+   rather than assumed away. Writes/replaces exactly one
    `codecompass-grounded-by region:<id>` region. Machine-readable
    grounding is unconditional — it is unaffected by the schema's own
    reader-visible `citation_display` setting. The citation-tagged

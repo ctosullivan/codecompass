@@ -25,7 +25,9 @@ by design and lives outside this module.
 from __future__ import annotations
 
 import json
+import os
 import re
+import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -618,7 +620,65 @@ def decide_publish_safety(
 # ---------------------------------------------------------------------------
 
 
-def publish_section(doc_path: Path, *, region_id: str, record_ids: list[str], body: str) -> None:
+class DocPublishConflictError(DocCompilerError):
+    """Raised by `publish_section` when `expected_document_identity` is
+    given and no longer matches the document's own live content --
+    Stage 87B post-closeout hardening, Finding C. Means the document
+    changed after the caller's own pre-write snapshot was taken; the
+    write is refused, nothing is written. This narrows, but does not
+    eliminate, the residual time-of-check/time-of-use window: it is a
+    compare-and-swap on the document's exact content, checked as close
+    to the write as this module's synchronous, single-file API allows
+    -- not a transactional framework, and not a guarantee against a
+    write landing in the (much smaller) gap between this function's
+    own identity re-check and its own write below, which remains
+    unprotected without OS-level file locking across processes."""
+
+
+def document_identity(doc_path: Path) -> str:
+    """A single, reusable "version" token for `doc_path`'s current
+    content -- `"absent"` if the file does not exist yet, else the
+    sha256 of its exact text. Shared between a caller's pre-write
+    snapshot (taken immediately before invoking `publish_section`) and
+    `publish_section`'s own re-check immediately before writing, so the
+    two are never computed two different ways that could silently
+    drift apart (the same discipline `hash_evidence` already
+    established for evidence identity)."""
+    if not doc_path.is_file():
+        return "absent"
+    return _oracle.sha256_text(doc_path.read_text(encoding="utf-8"))
+
+
+def _atomic_write_text(path: Path, content: str) -> None:
+    """write-then-`os.replace` -- a reader never observes a partially
+    written file, and a crash or interruption mid-write leaves the
+    original file intact rather than truncated or corrupted (Stage 87B
+    post-closeout hardening, Finding C's partial-write requirement).
+    Not a multi-file transaction -- a single file's own write is made
+    atomic, nothing more. The temp file is cleaned up on any failure
+    before the write completes; `os.replace` itself is a single
+    filesystem rename, atomic on the same device."""
+    fd, tmp_name = tempfile.mkstemp(dir=str(path.parent), prefix=f".{path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(content)
+        os.replace(tmp_name, path)
+    except Exception:
+        try:
+            os.unlink(tmp_name)
+        except OSError:
+            pass
+        raise
+
+
+def publish_section(
+    doc_path: Path,
+    *,
+    region_id: str,
+    record_ids: list[str],
+    body: str,
+    expected_document_identity: str | None = None,
+) -> None:
     """Writes or replaces exactly one `codecompass-grounded-by`-wrapped
     region, identified by its own stable `region:<id>` token -- reusing
     the existing marker convention and identity scheme directly
@@ -628,12 +688,34 @@ def publish_section(doc_path: Path, *, region_id: str, record_ids: list[str], bo
     all -- the caller decides separately (via `strip_citation_tags`,
     before calling this) whether the body text itself still carries a
     reader-visible citation phrase; the marker wrapping it is always
-    present either way."""
+    present either way.
+
+    `expected_document_identity` (Stage 87B post-closeout hardening,
+    Finding C): when given, must equal a fresh `document_identity
+    (doc_path)` computed inside this call, immediately before reading
+    the document to compose the new text -- a mismatch means the live
+    document changed after the caller's own snapshot was taken, and
+    raises `DocPublishConflictError` without writing anything. The
+    write itself goes through `_atomic_write_text` (write-then-rename),
+    so a reader or a crash mid-write never observes a partial file.
+    Omitting this parameter (the default) skips the check entirely --
+    used by tests and other direct callers that have no live document
+    to protect against a concurrent editor."""
     if not _SECTION_ID_RE.match(region_id):
         raise DocCompilerError(
             f"region_id {region_id!r} must match {_SECTION_ID_RE.pattern!r} -- "
             "a dot or other separator silently truncates at the real region-id parser"
         )
+
+    if expected_document_identity is not None:
+        current_identity = document_identity(doc_path)
+        if current_identity != expected_document_identity:
+            raise DocPublishConflictError(
+                f"document {doc_path} changed since the final pre-write snapshot was "
+                f"taken (expected identity {expected_document_identity!r}, found "
+                f"{current_identity!r}) -- aborting without writing; re-run docs publish "
+                "to re-validate against the new content"
+            )
 
     header = " ".join([*record_ids, f"region:{region_id}"])
     marker = (
@@ -643,7 +725,7 @@ def publish_section(doc_path: Path, *, region_id: str, record_ids: list[str], bo
 
     doc_path.parent.mkdir(parents=True, exist_ok=True)
     if not doc_path.is_file():
-        doc_path.write_text(marker + "\n", encoding="utf-8")
+        _atomic_write_text(doc_path, marker + "\n")
         return
 
     text = doc_path.read_text(encoding="utf-8")
@@ -662,11 +744,11 @@ def publish_section(doc_path: Path, *, region_id: str, record_ids: list[str], bo
         existing_region_id = existing_region_match.group(1) if existing_region_match else None
         span_end = close_idx + len(close_marker)
         if existing_region_id == region_id:
-            doc_path.write_text(text[: match.start()] + marker + text[span_end:], encoding="utf-8")
+            _atomic_write_text(doc_path, text[: match.start()] + marker + text[span_end:])
             return
         pos = span_end
 
-    doc_path.write_text(text.rstrip("\n") + "\n\n" + marker + "\n", encoding="utf-8")
+    _atomic_write_text(doc_path, text.rstrip("\n") + "\n\n" + marker + "\n")
 
 
 # ---------------------------------------------------------------------------

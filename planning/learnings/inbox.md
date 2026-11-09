@@ -11829,3 +11829,226 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   future-improvement | planning/ROADMAP.md (backlog: surface the
   clean-room broker's own usage/cost figures in docs compile's CLI
   output) @ <landing commit>`.
+
+### L-123 — a real, undocumented `sync_vendor` fallback found during Stage 87B's demonstration should be proposed for reconciliation, not copied into canonical knowledge
+
+- **origin:** Phase 87 (Documentation Schema and Knowledge-Compiled
+  Documentation), Stage 87B post-closeout hardening pass, secondary
+  outstanding item ("canonical knowledge improvement")
+- **date:** 2026-11-09
+- **project_revision:** `e0de671` (Stage 87B terminal reconciliation,
+  pre-hardening)
+- **observation:** Stage 87B's own real knowledge-change demonstration
+  (`planning/retros/phase-87-stage-87b-knowledge-change-demonstration.md`)
+  identified a genuine, evidence-backed gap: `CL-CTXT-005` describes
+  `sync_vendor`'s rendered output set but never mentions that a real
+  clone failure (`SourceResolutionError`) does not abort the vendor's
+  sync -- `sync_vendor` falls back to `_copy_source_snapshot`, still
+  producing every rendered file, now sourced from the local install
+  snapshot instead of the clone (`src/codecompass/sync.py:107-153`,
+  already covered by `tests/test_sync.py::
+  test_sync_vendor_source_resolution_failure_falls_back_to_local_
+  snapshot`). The demonstration itself ran this fact through a full
+  compile -> review -> publish -> reconcile cycle in a disposable,
+  isolated git worktree and never touched production
+  `planning/knowledge/` -- by design, per the demonstration's own
+  governing instruction not to treat a successful demonstration as
+  maintainer acceptance of the underlying knowledge change.
+- **evidence:** `planning/knowledge/codecompass-domain/EV-CTXT-021.yaml`
+  (new, `status: current` -- evidence's own closed status vocabulary,
+  `check_knowledge_base.py`'s `_STATUS_ENUMS`, is `{current,
+  superseded}` only; there is no evidence-level "candidate" tier, so
+  the record is filed as a real, accurate, un-superseded fact, simply
+  not yet cited by any claim's own `supporting_evidence` list -- the
+  "proposed, not yet accepted" state lives at the claim-amendment
+  level, not the evidence record itself). Re-derived independently of
+  the demonstration's own disposable worktree record, directly from
+  the real source (`src/codecompass/sync.py:107-153`) and the real,
+  already-passing test named above. Not copied from the worktree's own
+  record; written fresh against current production `src`/`tests`.
+- **classification:** open-work -- (reclassified by knowledge-curator
+  triage; filed as `knowledge-gap`, which is not one of
+  `learning-lifecycle.md` §3's closed classification values -- see
+  curation note below) a real, reproducible fact about current
+  behaviour that an existing `supported` claim (`CL-CTXT-005`) does
+  not mention, with a concrete, named next step (a future
+  `context-researcher`/reconciliation pass amends or explicitly
+  declines `CL-CTXT-005`). The proposed resolution is a textual
+  addition to `CL-CTXT-005`'s own statement (a new sentence naming the
+  clone-failure fallback and its still-produced output), not a new
+  competing claim and not a correction of anything currently stated --
+  `CL-CTXT-005`'s existing text is not wrong, only incomplete.
+- **status:** candidate
+- **recurrence:** first occurrence.
+- **promoted_to:** (pending -- see recommendation below; this is a
+  hand-off to the ordinary knowledge-reconciliation workflow, not a
+  roadmap/doc/test artifact this role writes directly)
+- **recommendation:** do not amend `CL-CTXT-005` as part of this
+  filing -- that decision belongs to the ordinary evidence ->
+  candidate -> reconciliation workflow (`decisions/0073` et al.), the
+  same gate any other claim amendment goes through, and nothing about
+  Stage 87B's own documentation-pipeline authorization extends to
+  deciding canonical-knowledge content. Suggested handling: a future
+  `context-researcher`/reconciliation pass picks up `EV-CTXT-021`
+  (uncited by any claim yet) and either amends `CL-CTXT-005`'s
+  statement to include the fallback and adds the record to its
+  `supporting_evidence` list, or explicitly declines it with a
+  documented reason -- same as any other proposed claim amendment.
+  `status` left at `candidate` here (not `retained`) since this is a
+  hand-off for the normal knowledge
+  workflow to adjudicate, not a firm recommendation awaiting only
+  `CLAUDE.md`-level approval.
+- **curation note (2026-11-09, knowledge-curator):** independently
+  verified, not accepted on the filer's own say-so. `src/codecompass/
+  sync.py:107-153` (`sync_vendor`) matches the cited clone-failure
+  fallback exactly: `resolve_and_clone` under `try`, `except
+  SourceResolutionError` sets `description_error` and calls
+  `_copy_source_snapshot(source_location, src_dest)`, falling
+  `repo_root` back to `None` so `tree_root` renders from
+  `source_location()`. `tests/test_sync.py::
+  test_sync_vendor_source_resolution_failure_falls_back_to_local_
+  snapshot` exists (line 275) and passes by inspection of its own
+  assertions, which match the claim precisely: `digest.
+  description_error == "no repository found"`,
+  `digest.technical_description is None`, and
+  `FILETREE.md`/`DEPTREE.md`/`filetree.json`/`deptree.json`/
+  `CLAUDE.md` all still produced per vendor while `OVERVIEW.md` is
+  correctly absent. `EV-CTXT-021.yaml` carries every required
+  `evidence`-kind field (`check_knowledge_base.py`'s
+  `_REQUIRED_FIELDS["evidence"]`: id / kind / evidence_kind /
+  what_it_shows / repository_revision / status), its `status: current`
+  is a valid member of `_STATUS_ENUMS["evidence"]`, its
+  `repository_revision` is a full 40-hex SHA in the same form as its
+  sibling `EV-CTXT-020`, and a grep across `planning/` confirms no
+  Claim's `supporting_evidence` yet cites it -- exactly as filed, and
+  not a schema defect (`check_knowledge_base.py` has no "uncited
+  evidence" check). I have no `Bash` and could not execute the
+  checker itself -- **lead: run `.venv/bin/python
+  scripts/check_knowledge_base.py` to confirm no finding references
+  `EV-CTXT-021` or `codecompass-domain/` generally** (expected: none,
+  by hand-trace above).
+
+  One correction made directly above: `classification: knowledge-gap`
+  is not in `learning-lifecycle.md` §3's closed vocabulary. Reclassified
+  to `open-work` ("unresolved current work") -- the closest fit, since
+  there's a concrete named next step rather than a test/ADR/
+  architecture-doc/rule/skill this role could draft a destination
+  artifact for directly.
+
+  **Disposition: promote, with destination `planning/CONTEXT.md`
+  "next step / outstanding"** (`open-work`'s own §4 destination) --
+  not a `ROADMAP.md` backlog note, since that destination belongs to
+  `future-improvement` and there is no deferred *improvement* here,
+  just an outstanding reconciliation action against already-landed
+  evidence. Leaving this purely as an un-forced `candidate` risks the
+  exact miss `learning-lifecycle.md` §2 already documents for
+  `L-003`/Phase 47: a real, independently-verified finding sitting
+  silently in the queue with no phase or checkpoint actually committed
+  to picking it up. Handed to `roadmap-context-curator` to word and
+  place; suggested content: "`EV-CTXT-021`
+  (`planning/knowledge/codecompass-domain/`) is a verified, uncited
+  fact about `sync_vendor`'s clone-failure fallback that `CL-CTXT-005`
+  does not yet mention -- next `context-researcher` pass over
+  `codecompass-domain/` should amend `CL-CTXT-005` to include it
+  (adding `EV-CTXT-021` to its `supporting_evidence`) or explicitly
+  decline with a documented reason. Found during Stage 87B's hardening
+  pass, `L-123`." `status` left at `candidate` (not `promoted`) until
+  `roadmap-context-curator` actually lands the `CONTEXT.md` note --
+  add the `promoted.md` line only then, in the usual form:
+  `L-123 | 2026-11-09 | open-work | planning/CONTEXT.md (next step:
+  reconcile EV-CTXT-021 into CL-CTXT-005) @ <landing commit>`.
+
+### L-124 — `docs publish`'s residual write-boundary race is narrowed twice now, never fully closed; a full transactional write remains deliberately unbuilt
+
+- **origin:** Phase 87, Stage 87B post-closeout hardening pass,
+  Finding C (residual document-write race)
+- **date:** 2026-11-09
+- **project_revision:** post-closeout hardening commit (this session)
+- **observation:** Stage 87B's own original audit (2026-11-07) found
+  and closed one write-boundary gap (a document/knowledge mutation
+  landing between the first detect call and the write was silently
+  overwritten) by re-running the detect-based checks a second time
+  inside the lock. This hardening pass narrowed the *remaining* gap
+  further still with a compare-and-swap document-identity check
+  (`doc_compiler.document_identity`/`expected_document_identity`/
+  `DocPublishConflictError`) and made the write itself atomic
+  (`_atomic_write_text`, write-then-`os.replace`, for partial-write
+  safety). Both passes deliberately stopped short of a full
+  transactional write (e.g. a second, post-write confirmation read, or
+  an OS-level file lock held by the *document's own editor*, which
+  this project does not and cannot control) -- the smallest-coherent-
+  change principle both times. A residual window remains, now smaller
+  twice over: between `publish_section`'s own internal identity
+  re-check and its own write, a few lines of plain synchronous Python
+  with no further revalidation. This is honestly disclosed in both
+  `_doc_publish_lock`'s and `publish_section`'s own docstrings, not
+  silently assumed away.
+- **evidence:** `src/codecompass/doc_compiler.py` (`document_identity`,
+  `_atomic_write_text`, `publish_section`'s own docstring); `src/
+  codecompass/cli.py` (`_doc_publish_lock`'s own docstring, updated
+  this pass).
+- **classification:** future-improvement -- a real, understood,
+  honestly-bounded limitation, not an invariant violation or a
+  mistake. Each pass so far has made the actual exploitable window
+  smaller by roughly the cost of one extra read; a full close would
+  require either a real cross-process advisory lock held by every
+  writer of the target document (infeasible against a plain text
+  editor, which holds no lock and never will) or redesigning
+  publication as a true transaction (write to a side file, then a
+  single atomic directory-entry swap gated on a live re-check
+  performed inside the same syscall-adjacent window) -- meaningfully
+  more machinery than this stage's own narrow scope justified twice
+  running.
+- **status:** candidate
+- **recurrence:** second occurrence (the same residual-window
+  disclosure pattern, narrowed further each time).
+- **promoted_to:** (pending -- see recommendation)
+- **recommendation:** retain as an explicit Phase 87C (or later)
+  planning input, not a dedicated phase of its own -- the window is
+  now small enough, and the realistic concurrent-editor scenario rare
+  enough, that building a full transactional write preemptively would
+  be solving a problem with no real incident behind it. Worth
+  revisiting if Stage 87C's own incremental-maintenance work
+  introduces a genuinely concurrent multi-writer scenario (e.g.
+  automated maintenance running on a schedule against a document
+  humans also edit live) where this window's exploitability actually
+  increases.
+- **curation note (2026-11-09, knowledge-curator):** independently
+  verified. `src/codecompass/doc_compiler.py` defines
+  `DocPublishConflictError` (raised by `publish_section` when
+  `expected_document_identity` doesn't match a fresh
+  `document_identity` read), `document_identity`, `_atomic_write_text`
+  (write-then-rename), and `publish_section`'s own
+  `expected_document_identity` parameter with the compare-and-swap
+  check exactly as described. `src/codecompass/cli.py`'s
+  `_doc_publish_lock` docstring states the documented limit in the
+  exact terms cited -- "does not and cannot protect against a human
+  editing the target document directly in a text editor, which holds
+  no lock and never will" -- and its call site re-runs the
+  detect/decide check immediately before the write, matching this
+  entry's description of the first hardening pass's own fix.
+  Classification (`future-improvement`) is a valid §3 value, and its
+  §4 destination (a `ROADMAP.md` row, via `roadmap-context-curator`)
+  matches the entry's own recommendation.
+
+  **Disposition: agree with the filed recommendation -- retain as a
+  named Phase 87C+ planning input, not a dedicated phase.** This
+  mirrors `L-122`'s own precedent exactly: minor, already-bounded, no
+  live incident behind it, explicit revisit trigger named. Handed to
+  `roadmap-context-curator` for a one-line backlog/revisit-trigger
+  note in `ROADMAP.md`'s deferred/not-funded section (not a dedicated
+  phase row); suggested wording: "`docs publish`'s write boundary
+  still has a small, twice-narrowed residual race (a few lines between
+  `publish_section`'s own identity re-check and its write, with no
+  further revalidation). A full transactional write was deliberately
+  not built (Stage 87B, twice). Revisit only if Stage 87C or later
+  introduces a genuinely concurrent multi-writer scenario (e.g.
+  scheduled automated maintenance against a document humans also edit
+  live) that makes this window's exploitability non-negligible. Found
+  Stage 87B hardening pass, `L-124`." `status` left at `candidate`
+  (hand-off for `roadmap-context-curator` to place and word precisely,
+  same convention as `L-122`) -- add the `promoted.md` line only once
+  landed: `L-124 | 2026-11-09 | future-improvement | planning/
+  ROADMAP.md (backlog: docs publish residual write-boundary race,
+  revisit if Stage 87C introduces genuine multi-writer concurrency) @
+  <landing commit>`.

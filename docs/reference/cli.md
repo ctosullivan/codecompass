@@ -339,12 +339,28 @@ broker/isolation scripts.
   synchronous Python — nothing stops a concurrent, non-cooperating
   editor's own disk write, or a knowledge change, from landing in that
   gap (confirmed directly: without this second check, exactly such an
-  edit was silently overwritten). This narrows, but does not fully
-  close, the much smaller window between the second check and the
-  write itself — closing that completely would need a full
+  edit was silently overwritten). The same write boundary also
+  independently re-verifies the pending review manifest's own
+  integrity (recomputing the reviewed draft's identity from its actual
+  `tagged_draft` text, against a freshly re-read copy of the manifest
+  file, never the in-memory snapshot) — a persisted `draft_sha256` or
+  `draft_body` field is never trusted merely because it is present and
+  internally consistent-looking; the body actually published is always
+  this freshly recomputed value. Immediately before composing the new
+  text, `publish_section` itself re-checks one further, closer-still
+  snapshot: a compare-and-swap of the document's own exact content
+  (`doc_compiler.document_identity`), refusing to write
+  (`DocPublishConflictError`, surfaced as a normal exit-1 `error:` —
+  re-run `docs publish` to retry against the new content) on any
+  mismatch; the write itself is atomic (write-then-rename), so a
+  reader or a crash mid-write never observes a partial file. This
+  narrows, but does not fully close, the window between that identity
+  re-check and the write itself a few lines later, with no OS-level
+  cross-process file lock — closing that completely would need a full
   transactional write, deliberately not built here; the residual
-  window is disclosed in `_doc_publish_lock`'s own docstring rather
-  than assumed away. The persisted baseline
+  window is disclosed in both `_doc_publish_lock`'s and
+  `publish_section`'s own docstrings rather than assumed away. The
+  persisted baseline
   advances (`knowledge_intermediate.advance_region_baseline_after_publish`)
   **only after** the write itself actually succeeds — never on
   detection, a failed validation, or a rejected publication. Always

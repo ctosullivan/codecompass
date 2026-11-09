@@ -3199,6 +3199,190 @@ def test_docs_publish_catches_an_intervening_cited_knowledge_change_at_the_write
     )
 
 
+def test_docs_publish_rejects_a_tampered_draft_body_never_seen_by_either_review(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Post-closeout hardening, Finding A: draft_body is independently
+    # editable in the pending manifest, while tagged_draft/draft_sha256
+    # -- the values both review records are actually bound to -- are
+    # left untouched. Reproduced directly before this check existed:
+    # the attacker text below was published.
+    monkeypatch.chdir(tmp_path)
+    schema_path, pending_path, pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    tampered = dict(pending)
+    tampered["draft_body"] = "ATTACKER-CONTROLLED CONTENT NEVER REVIEWED BY ANYONE."
+    pending_path.write_text(json.dumps(tampered, indent=2, sort_keys=True), encoding="utf-8")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert not (tmp_path / "docs" / "demo.md").exists()
+
+
+def test_docs_publish_rejects_a_tagged_draft_rewritten_behind_a_stale_hash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The other half of Finding A: tagged_draft itself is rewritten but
+    # draft_sha256 is left as the OLD hash -- a forged draft "wearing"
+    # an already-approved hash. Recomputing the hash from the actual
+    # tagged_draft text must catch this, never trust the stored field.
+    monkeypatch.chdir(tmp_path)
+    schema_path, pending_path, pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    tampered = dict(pending)
+    tampered["tagged_draft"] = "A completely different, never-reviewed fact {{cite:CL-DEMO-001}}."
+    # draft_sha256 deliberately left as the hash of the ORIGINAL tagged_draft.
+    pending_path.write_text(json.dumps(tampered, indent=2, sort_keys=True), encoding="utf-8")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert not (tmp_path / "docs" / "demo.md").exists()
+
+
+def test_docs_publish_rejects_a_pending_manifest_swapped_after_reviews_were_matched(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Finding A's write-boundary case: the already-matched review
+    # records above were validated against the pending snapshot loaded
+    # before the lock. If the pending.json file itself is replaced --
+    # by a concurrent `docs compile` rerun, say -- with a DIFFERENT,
+    # internally self-consistent manifest in the gap before the final
+    # write, that new manifest was never actually matched against
+    # those review records and must still be refused.
+    monkeypatch.chdir(tmp_path)
+    schema_path, pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    call_count = {"n": 0}
+    real_detect = cli_module.knowledge_intermediate.detect_grounded_region_changes
+
+    def _detect_then_swap_manifest_once(*args, **kwargs):
+        call_count["n"] += 1
+        result = real_detect(*args, **kwargs)
+        if call_count["n"] == 1:
+            # Overwrite the existing pending.json in place with a new,
+            # internally self-consistent manifest for a *different*
+            # draft -- never re-running the full setup helper (whose
+            # own `mkdir(parents=True)`, with no `exist_ok`, would
+            # raise on an already-existing directory and make this
+            # test pass for the wrong reason: a crash, not a genuine
+            # detection of the swap).
+            new_tagged_draft = "A totally different, never-reviewed fact {{cite:CL-DEMO-001}}."
+            new_draft_body = cli_module.doc_compiler.strip_citation_tags(new_tagged_draft).strip()
+            swapped = dict(json.loads(pending_path.read_text(encoding="utf-8")))
+            swapped["tagged_draft"] = new_tagged_draft
+            swapped["draft_body"] = new_draft_body
+            swapped["draft_sha256"] = oracle.sha256_text(new_tagged_draft)
+            pending_path.write_text(json.dumps(swapped, indent=2, sort_keys=True), encoding="utf-8")
+        return result
+
+    monkeypatch.setattr(
+        cli_module.knowledge_intermediate,
+        "detect_grounded_region_changes",
+        _detect_then_swap_manifest_once,
+    )
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert not (tmp_path / "docs" / "demo.md").exists()
+
+
+def test_docs_publish_rejects_a_schema_requirement_tightened_at_the_write_boundary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Post-closeout hardening, Finding B: the live schema file must be
+    # reread from disk at every freshness check, not merely the object
+    # parsed once at the top of docs_publish -- otherwise a schema
+    # mutation landing mid-publish is invisible to every "re-check"
+    # that keeps reusing that same stale, already-parsed object.
+    # Reproduced directly before this fix: this exact mutation was not
+    # detected and publish succeeded.
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    call_count = {"n": 0}
+    real_detect = cli_module.knowledge_intermediate.detect_grounded_region_changes
+
+    def _detect_then_mutate_schema_once(*args, **kwargs):
+        call_count["n"] += 1
+        result = real_detect(*args, **kwargs)
+        if call_count["n"] == 1:
+            import yaml
+
+            live = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+            live["sections"][0]["min_claim_status"] = "verified"
+            schema_path.write_text(yaml.safe_dump(live), encoding="utf-8")
+        return result
+
+    monkeypatch.setattr(
+        cli_module.knowledge_intermediate,
+        "detect_grounded_region_changes",
+        _detect_then_mutate_schema_once,
+    )
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert call_count["n"] >= 1
+    assert not (tmp_path / "docs" / "demo.md").exists()
+
+
+def test_docs_publish_rejects_a_document_mutation_landing_after_the_final_detect_recheck(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Post-closeout hardening, Finding C: the compare-and-swap identity
+    # check inside publish_section itself must independently catch a
+    # mutation landing in the gap between docs_publish's own final
+    # detect-based recheck and the write -- a gap the detect-based
+    # recheck (which runs strictly earlier) cannot see at all, since
+    # detect_grounded_region_changes is never called a third time.
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    doc_path = tmp_path / "docs" / "demo.md"
+    cli_module.doc_compiler.publish_section(
+        doc_path, region_id="demo-s1", record_ids=["CL-DEMO-001"], body="A fact.",
+    )
+    cli_module.knowledge_intermediate.establish_new_region_baselines(
+        tmp_path, cli_module.knowledge_intermediate.detect_grounded_region_changes(
+            tmp_path, ("docs/demo.md",)
+        ),
+    )
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    human_edit = (
+        "<!-- codecompass-grounded-by: CL-DEMO-001 region:demo-s1 -->\n"
+        "A human edit landed after the last detect call but before the write.\n"
+        "<!-- /codecompass-grounded-by -->\n"
+    )
+    call_count = {"n": 0}
+    real_identity = cli_module.doc_compiler.document_identity
+
+    def _identity_then_mutate_once(path):
+        call_count["n"] += 1
+        captured = real_identity(path)
+        if call_count["n"] == 1:
+            doc_path.write_text(human_edit, encoding="utf-8")
+        return captured
+
+    monkeypatch.setattr(cli_module.doc_compiler, "document_identity", _identity_then_mutate_once)
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert call_count["n"] >= 1
+    assert doc_path.read_text(encoding="utf-8") == human_edit, (
+        "a mutation landing after the final detect-based recheck but before the write "
+        "must still be caught, by the identity compare-and-swap inside publish_section "
+        "itself, never silently overwritten"
+    )
+
+
 def test_docs_publish_two_concurrent_invocations_serialise_through_the_lock(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
