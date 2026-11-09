@@ -1,3 +1,8 @@
+["id:context-md-five-senses-of-context"]
+"cited_hashes" = []
+"cited_ids" = []
+"region_hash" = "387949ef03c8725a93519f57ffae8f35de1672bb287876630d5ebd45d7ca204d"
+
 ["id:intermediate-knowledge-layer"]
 "cited_hashes" = ["d7ce3fe1957f6d44c1e5700c6057e1f321678d0b37e9a95e064f9fa16ba12e32"]
 "cited_ids" = ["CL-KNOW-001"]

@@ -1,0 +1,22 @@
+schema_version: 1
+document: docs/concepts/context.md
+audience: "a developer new to CodeCompass, has not read any other doc"
+sections:
+  - id: five-senses-of-context
+    required_knowledge: ["CL-CTXT-001"]
+    max_evidence_chars: 4000
+    tone: instructional
+    depth: standard
+    min_claim_status: supported
+    allow_unconfirmed_scopes: true  # CL-CTXT-001 is a self-knowledge Claim from the
+                                     # Phase 79/80 snapshot, not an oracle-contract-backed
+                                     # implementation fact -- codecompass-domain has no
+                                     # oracle-contract.yaml, so knowledge_api's currency
+                                     # check honestly reports "unconfirmed" (no contract
+                                     # applies) rather than "stale" or "wrong". Allowed here
+                                     # deliberately, not a silent gap-suppression -- same
+                                     # precedent as README.md.schema.yaml's own CL-CTXT-005.
+    citation_display: none
+acceptance_criteria:
+  - "An unfamiliar developer understands that 'context' has multiple distinct senses in this project and can tell them apart."
+owner: lead
