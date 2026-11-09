@@ -505,4 +505,18 @@ paragraph above). Full account: `planning/retros/_audit-phase-87-
 stage-87b-hardening.md`. Fixed here (the premature PASS claim and
 stale citation removed from `CHANGELOG.md`, replaced with an honest
 "pending re-audit" statement) in the same session the FAIL was
-returned; a fresh re-audit follows.
+returned, as its own separate commit (`9cdbb6f`).
+
+**Re-audit (commit `9cdbb6f`): PASS.** A fresh, independent
+`release-phase-auditor` dispatch confirmed the narrative correction
+was exactly scoped (only `CHANGELOG.md` and this retro touched, no
+code/test), confirmed no remaining premature-audit claim or stray
+"13" count anywhere in either file's Stage 87B hardening content,
+independently re-read the key mechanisms in `doc_compiler.py`/`cli.py`
+rather than trusting the first audit's own account, and independently
+re-ran the full suite (`1352 passed, 2 skipped`, exactly matching) and
+every strict validator itself. No protected-file drift across the
+full span since Stage 87B's own prior closeout (`e0de671` through
+`9cdbb6f`). Full account: `planning/retros/_audit-phase-87-stage-87b-
+hardening-reaudit.md`. **Stage 87B's post-closeout hardening pass is
+closed.**

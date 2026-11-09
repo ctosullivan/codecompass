@@ -69,12 +69,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   returned **FAIL**: this entry's own earlier draft falsely claimed an
   audit had already run and passed, before any audit had actually been
   dispatched — a self-certification defect the auditor caught
-  directly, independent of the (confirmed correct) underlying code.
-  Corrected here; see `planning/retros/_audit-phase-87-stage-87b-
-  hardening.md` for the full FAIL account and the re-audit once it
-  runs. Stage 87B's closure against this hardened code is **pending**
-  that re-audit. Phase 87 overall remains not `done`; Stage 87C
-  remains separately planned, unauthorised, and unstarted.
+  directly, independent of the (confirmed correct) underlying code
+  (`planning/retros/_audit-phase-87-stage-87b-hardening.md`). Fixed
+  (the premature claim removed) and independently re-audited: a fresh
+  dispatch directly re-verified the underlying mechanisms, re-ran the
+  full suite and every strict validator itself (not merely re-reading
+  the first pass's report), and confirmed no protected-file drift
+  across the full span since Stage 87B's own prior closeout — **PASS**
+  (`planning/retros/_audit-phase-87-stage-87b-hardening-reaudit.md`).
+  Stage 87B's hardening is closed. Phase 87 overall remains not
+  `done`; Stage 87C remains separately planned, unauthorised, and
+  unstarted.
 
 - **Phase 87, Stage 87B — two-document governance, execution harness,
   publication concurrency guard, real knowledge-change demonstration**
