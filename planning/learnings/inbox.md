@@ -11878,11 +11878,10 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   clone-failure fallback and its still-produced output), not a new
   competing claim and not a correction of anything currently stated --
   `CL-CTXT-005`'s existing text is not wrong, only incomplete.
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** first occurrence.
-- **promoted_to:** (pending -- see recommendation below; this is a
-  hand-off to the ordinary knowledge-reconciliation workflow, not a
-  roadmap/doc/test artifact this role writes directly)
+- **promoted_to:** `planning/CONTEXT.md` (next step: reconcile
+  EV-CTXT-021 into CL-CTXT-005) @ `195dcc5`
 - **recommendation:** do not amend `CL-CTXT-005` as part of this
   filing -- that decision belongs to the ordinary evidence ->
   candidate -> reconciliation workflow (`decisions/0073` et al.), the
@@ -11999,10 +11998,11 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   performed inside the same syscall-adjacent window) -- meaningfully
   more machinery than this stage's own narrow scope justified twice
   running.
-- **status:** candidate
+- **status:** promoted
 - **recurrence:** second occurrence (the same residual-window
   disclosure pattern, narrowed further each time).
-- **promoted_to:** (pending -- see recommendation)
+- **promoted_to:** `planning/ROADMAP.md` "Future-improvement backlog"
+  table @ `195dcc5`
 - **recommendation:** retain as an explicit Phase 87C (or later)
   planning input, not a dedicated phase of its own -- the window is
   now small enough, and the realistic concurrent-editor scenario rare
