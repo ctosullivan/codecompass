@@ -1,0 +1,13 @@
+{
+  "draft_sha256": "8c491f1244581af974e8b87c8515109e0d349093d22001ad15d4a9de03edbc0c",
+  "evidence_references": [],
+  "evidence_sha256": "bd795fb167a7f4687ffbb74cd887bad3daf97576597bc3702facc482dbe31804",
+  "findings": [],
+  "kind": "editorial",
+  "recorded_at": "2026-11-09T13:42:42.152347+00:00",
+  "reviewer": "independent dispatch (general-purpose), round 4 final confirmation",
+  "schema_section_sha256": "b569fc0b65f8775f8efedffe83cedaf47ddac887bde47e60766e89205d38646a",
+  "schema_slug": "adapter-md",
+  "section_id": "adapter-concept",
+  "verdict": "pass"
+}

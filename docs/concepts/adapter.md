@@ -9,33 +9,20 @@
 
 This table is deterministically derived from `get_adapter`'s own closed dispatch table (`src/codecompass/adapters/__init__.py`) — kept here as a quick-reference lookup, outside the compiled region below, since it is mechanical fact rather than something knowledge-compilation composition needs to restate in prose.
 
-<!-- codecompass-grounded-by: region:adapter-md-adapter-concept -->
-An **adapter**, in CodeCompass's ecosystem-integration sense, is a concrete subclass of `EcosystemAdapter` (`src/codecompass/adapters/base.py`), constructed once per `(VendorConfig, project_root)` pair, implementing five abstract methods — `installed_version`, `source_location`, `readme_and_api_surface`, `repository_url`, `dependency_tree` — plus one concrete, overridable method, `symbols()` (added later, for structured API-surface extraction into the context graph).
+<!-- codecompass-grounded-by: CL-ADPT-001 CL-ADPT-002 CL-ADPT-005 region:adapter-md-adapter-concept -->
+## Adapters
 
-Exactly one adapter class exists per `Ecosystem` enum member, selected by the dispatch table above — never by naming convention, plugin discovery, or a configuration string.
+An adapter is a concrete subclass of `EcosystemAdapter`, defined in `src/codecompass/adapters/base.py`. Each adapter is constructed per `(VendorConfig, project_root)` pair, and it implements five abstract methods -- `installed_version`, `source_location`, `readme_and_api_surface`, `repository_url`, and `dependency_tree` -- along with one concrete, overridable method, `symbols()`. There is exactly one adapter class per `Ecosystem` enum member, and that class is always selected through `get_adapter`'s closed dispatch table rather than through naming convention, plugin discovery, or a configuration string.
 
-## Two coexisting implementation strategies
+It helps to keep three related concepts separate when working with adapters: ecosystem, vendor, and adapter. `Ecosystem` is a fixed, closed four-member enum (npm, python, cargo, haskell) representing a category rather than something configured per project. A vendor is a single tracked dependency -- a `VendorConfig(name, ecosystem)` entry from `vendor.toml` -- and each vendor belongs to exactly one `Ecosystem`. An adapter is the `EcosystemAdapter` subclass that implements the ecosystem-specific logic for one `Ecosystem` value, constructed fresh for each `(VendorConfig, project_root)` pair via `get_adapter`, and it is not itself tracked as project state the way a vendor is. Because many vendors can share one `Ecosystem`, they also share one adapter class, but each vendor still receives its own adapter instance scoped to that vendor's config and project root. This instance-per-vendor relationship is not guaranteed by filesystem layout alone: `HaskellAdapter`'s own monorepo resolution logic, `_resolve_package_dir`, shows that a single `project_root` can host source for multiple vendors at once -- e.g. `hledger-lib`, `hledger`, and `hledger-ui` all living inside one `hledger` checkout -- so an adapter instance is responsible for narrowing the shared `project_root` down to the subdirectory that matches its own vendor before any other method call is meaningful.
 
-**In-process** (npm, Python, Cargo) — an ordinary importable Python class inside `src/codecompass/`, shelling out to the ecosystem's own native tooling via a shared subprocess seam (`_run_json` in `base.py`), which tests monkeypatch per-module to inject fixture JSON instead of invoking a real toolchain.
-
-**External-process** (Haskell, the reference implementation) — `HaskellAdapter` is deliberately thin: it reads `package.yaml` directly (a small, mechanical, single-field read — not a full YAML parser; see `docs/reference/symbol-extraction.md`) and resolves which subdirectory of a possibly-monorepo project root is the actual target package. Every piece of real Haskell-specific *logic* — dependency-tree construction via `stack`, `.hs`-source API-surface extraction — is delegated to an independent OS subprocess (`codecompass-adaptor-haskell`) speaking a small JSON-Lines wire protocol (`src/codecompass/adapters/external_process.py`; see `docs/reference/protocols.md`).
-
-Neither strategy supersedes the other — this is a stated, deliberate design, not a staged migration (`decisions/0002` governs the first strategy; `decisions/0057` adds the second, explicitly "not superseded"; the in-process strategy remains the default, lower-overhead one). The motivation for the second strategy is ecosystems whose real implementation cannot or should not live inside CodeCompass's own GPL-covered Python process.
-
-## An edge case: "one vendor, one adapter instance" is not a filesystem guarantee
-
-`HaskellAdapter`'s own monorepo resolution (`_resolve_package_dir`) shows that a single `project_root` can host multiple vendors' worth of source at once — e.g. `hledger-lib`, `hledger`, and `hledger-ui` all living inside one `hledger` checkout. The adapter *instance* is responsible for narrowing `project_root` down to the one subdirectory matching its own vendor's declared name before any other method call on it is meaningful. See `docs/edge-cases-and-compatibility.md`.
+Two implementation strategies for adapters coexist by design, and neither supersedes the other (`decisions/0002` governs the first strategy; `decisions/0057` adds the second, explicitly not superseding it). The in-process strategy, used for npm, Python, and Cargo, is an importable Python class inside `src/codecompass/` that shells out to native ecosystem tooling. The external-process strategy, used for Haskell as the reference implementation, keeps only a thin in-process dispatcher for simple manifest reads and delegates all ecosystem-specific logic to an independent OS process communicating over a small JSON-Lines protocol. This second strategy exists for ecosystems whose implementation cannot or should not live in-process as GPL-covered Python code, such as a hypothetical proprietary COBOL adapter. The in-process strategy remains the default, lower-overhead choice, and adopting the external-process strategy for Haskell did not replace or deprecate it.
 <!-- /codecompass-grounded-by -->
 
-<!-- codecompass-grounded-by: region:adapter-md-adapter-term-ambiguity -->
-## A genuinely fuzzy term: "adapter" has two senses in this project
+<!-- codecompass-grounded-by: CL-ADPT-007 region:adapter-md-adapter-term-ambiguity -->
+## Understanding "Adapter" in This Project
 
-CodeCompass's own architecture documentation (not visible to this reconstruction, but independently confirmed to exist and to name this ambiguity, via source-and-evidence citations) uses "adapter" for two distinct things:
-
-1. **Ecosystem adapter** — the real `EcosystemAdapter` ABC described above, with real subclasses.
-2. **"Host-output adapter"** — a purely expository classification label sometimes applied to `src/codecompass/skill.py`, `commands.py`, and `index.py` (modules that adapt CodeCompass's own internal state into a specific *host tool's* expected output shape — an Agent Skill, a slash command, a `CLAUDE.md` routing table). There is **no corresponding class, interface, or shared base** for this second sense anywhere in the source.
-
-If you encounter the bare word "adapter" in this project without a qualifying phrase, it is genuinely ambiguous which sense is meant — this is a real, known ambiguity in the project's own vocabulary, not something this reconstruction introduced.
+When you see the word "adapter" in this codebase, check the surrounding context, because it refers to two distinct things. The first is the ecosystem adapter, implemented as `EcosystemAdapter`, an abstract base class with real subclasses located in `src/codecompass/adapters/`. The second is the "host-output adapter," a label applied to `skill.py`, `commands.py`, and `index.py`; this is a purely expository classification with no corresponding class, interface, or shared base in the source. The bare word "adapter" alone does not tell you which sense is meant.
 <!-- /codecompass-grounded-by -->
 
 ## A related, but non-existent, term: "connector"

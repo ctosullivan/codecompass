@@ -1,0 +1,13 @@
+{
+  "draft_sha256": "f3817a00762583c6a3bef733627d8915cd30bf9c597c6fa074ba42f15c414fb3",
+  "evidence_references": [],
+  "evidence_sha256": "a5d30e218c08c4b1b87e18e3051c546100de25afa272a307972337e5db888382",
+  "findings": [],
+  "kind": "semantic",
+  "recorded_at": "2026-11-09T13:40:31.389640+00:00",
+  "reviewer": "independent dispatch (general-purpose), round 3",
+  "schema_section_sha256": "b2cee977038eb073223ba77bcd4d057a9654e2df6e5dccfef0935eef3921d6d8",
+  "schema_slug": "vendor-and-ecosystem-md",
+  "section_id": "ecosystem-vendor-adapter",
+  "verdict": "supported"
+}

@@ -1,0 +1,55 @@
+{
+  "citation_findings": [
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-CTXT-001"
+    },
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-CTXT-001"
+    },
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-CTXT-001"
+    },
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-CTXT-001"
+    },
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-CTXT-001"
+    },
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-CTXT-001"
+    },
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-CTXT-001"
+    },
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-CTXT-001"
+    }
+  ],
+  "draft_body": "## What \"Context\" Means in This Project\n\nThe word \"context\" does not refer to a single artifact or concept in this project. It names at least five distinct things, each related to the others but not interchangeable with or reducible to any other.\n\nFirst, \"context\" can mean context-graph.db, the deterministic SQLite persistence layer that stores vendors, symbols, and edges. This is a concrete, queryable database, not a figure of speech.\n\nSecond, \"context\" is used informally as an umbrella term for everything CodeCompass supplies to a consuming agent -- digests, graph query output, generated Skills, /discovery results, and chat answers all fall under this general usage, without any one of these being \"the\" context artifact.\n\nThird, a \"context packet\" refers specifically to context-packet.md, a curated, feature-scoped artifact produced during Phase 54c's Implement stage. This is a distinct deliverable from the general umbrella sense described above.\n\nFourth, context-health.md, context-use-log.md, and context-quality-evaluation.md are three separate instruments used to assess or log how well the context being supplied to agents is actually working; none of these instruments is itself \"the context\" -- they evaluate it.\n\nFifth, the word \"context\" also appears inside unrelated agent names, such as roadmap-context-curator, where it refers to the state of planning documents rather than to any runtime context an agent consumes.\n\nThe project's top-level README under ai-docs/ already treats \"context graph\" and \"digest\" as two separate, coordinate outputs rather than folding them into a single \"context\" concept, which aligns with this broader five-way distinction rather than contradicting it. When you encounter the word \"context\" elsewhere in this project's documentation or code, check which of these five senses is meant before assuming it refers to a specific file or system.",
+  "draft_sha256": "956ee1faf1041c5e6242063e0fb8db886dc36f14fd9b24e06614026cb8e58692",
+  "evidence_sha256": "0a1d63a1bb0ceecae36673dae24f9b5efaae9de37b18e7eb692c582099456856",
+  "record_ids": [
+    "CL-CTXT-001"
+  ],
+  "schema_section_sha256": "5560b33cea28de93bd8453806a36ba6aa4e933c06eb4e48d8fe90c8ad546f741",
+  "schema_slug": "context-md",
+  "section_id": "five-senses-of-context",
+  "source_revision": "9b98433bd57bceea15fe9f2ad9320077575a0f30 (dirty)",
+  "tagged_draft": "## What \"Context\" Means in This Project\n\nThe word \"context\" does not refer to a single artifact or concept in this project. It names at least five distinct things, each related to the others but not interchangeable with or reducible to any other {{cite:CL-CTXT-001}}.\n\nFirst, \"context\" can mean context-graph.db, the deterministic SQLite persistence layer that stores vendors, symbols, and edges {{cite:CL-CTXT-001}}. This is a concrete, queryable database, not a figure of speech.\n\nSecond, \"context\" is used informally as an umbrella term for everything CodeCompass supplies to a consuming agent -- digests, graph query output, generated Skills, /discovery results, and chat answers all fall under this general usage, without any one of these being \"the\" context artifact {{cite:CL-CTXT-001}}.\n\nThird, a \"context packet\" refers specifically to context-packet.md, a curated, feature-scoped artifact produced during Phase 54c's Implement stage {{cite:CL-CTXT-001}}. This is a distinct deliverable from the general umbrella sense described above.\n\nFourth, context-health.md, context-use-log.md, and context-quality-evaluation.md are three separate instruments used to assess or log how well the context being supplied to agents is actually working; none of these instruments is itself \"the context\" -- they evaluate it {{cite:CL-CTXT-001}}.\n\nFifth, the word \"context\" also appears inside unrelated agent names, such as roadmap-context-curator, where it refers to the state of planning documents rather than to any runtime context an agent consumes {{cite:CL-CTXT-001}}.\n\nThe project's top-level README under ai-docs/ already treats \"context graph\" and \"digest\" as two separate, coordinate outputs rather than folding them into a single \"context\" concept, which aligns with this broader five-way distinction rather than contradicting it {{cite:CL-CTXT-001}}. When you encounter the word \"context\" elsewhere in this project's documentation or code, check which of these five senses is meant before assuming it refers to a specific file or system {{cite:CL-CTXT-001}}."
+}

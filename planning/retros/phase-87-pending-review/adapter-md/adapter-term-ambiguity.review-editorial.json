@@ -1,0 +1,13 @@
+{
+  "draft_sha256": "ec16044c1652080c5a449fd452b2eabf1dcf9d9285814afa3608fece290b95ca",
+  "evidence_references": [],
+  "evidence_sha256": "15c39721d4cee333bc3221c07011bef33a845cb589e659033eeb39305d52527e",
+  "findings": [],
+  "kind": "editorial",
+  "recorded_at": "2026-11-09T13:40:04.219419+00:00",
+  "reviewer": "independent dispatch (general-purpose), round 3",
+  "schema_section_sha256": "0e81d1c3decf6d4a4d1aa165ebf4a34c14c0c48a168f2215351ce67b171f2287",
+  "schema_slug": "adapter-md",
+  "section_id": "adapter-term-ambiguity",
+  "verdict": "pass"
+}

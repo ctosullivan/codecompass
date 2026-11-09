@@ -1,0 +1,35 @@
+{
+  "citation_findings": [
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-ADPT-007"
+    },
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-ADPT-007"
+    },
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-ADPT-007"
+    },
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-ADPT-007"
+    }
+  ],
+  "draft_body": "## Understanding \"Adapter\" in This Project\n\nWhen you see the word \"adapter\" in this codebase, check the surrounding context, because it refers to two distinct things. The first is the ecosystem adapter, implemented as `EcosystemAdapter`, an abstract base class with real subclasses located in `src/codecompass/adapters/`. The second is the \"host-output adapter,\" a label applied to `skill.py`, `commands.py`, and `index.py`; this is a purely expository classification with no corresponding class, interface, or shared base in the source. The bare word \"adapter\" alone does not tell you which sense is meant.",
+  "draft_sha256": "ec16044c1652080c5a449fd452b2eabf1dcf9d9285814afa3608fece290b95ca",
+  "evidence_sha256": "15c39721d4cee333bc3221c07011bef33a845cb589e659033eeb39305d52527e",
+  "record_ids": [
+    "CL-ADPT-007"
+  ],
+  "schema_section_sha256": "0e81d1c3decf6d4a4d1aa165ebf4a34c14c0c48a168f2215351ce67b171f2287",
+  "schema_slug": "adapter-md",
+  "section_id": "adapter-term-ambiguity",
+  "source_revision": "4a661b8d2021a5e824681fef86baef037e4e9c66 (dirty)",
+  "tagged_draft": "## Understanding \"Adapter\" in This Project\n\nWhen you see the word \"adapter\" in this codebase, check the surrounding context, because it refers to two distinct things {{cite:CL-ADPT-007}}. The first is the ecosystem adapter, implemented as `EcosystemAdapter`, an abstract base class with real subclasses located in `src/codecompass/adapters/` {{cite:CL-ADPT-007}}. The second is the \"host-output adapter,\" a label applied to `skill.py`, `commands.py`, and `index.py`; this is a purely expository classification with no corresponding class, interface, or shared base in the source {{cite:CL-ADPT-007}}. The bare word \"adapter\" alone does not tell you which sense is meant {{cite:CL-ADPT-007}}."
+}

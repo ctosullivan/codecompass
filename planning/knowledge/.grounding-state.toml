@@ -1,12 +1,12 @@
 ["id:adapter-md-adapter-concept"]
-"cited_hashes" = []
-"cited_ids" = []
-"region_hash" = "d33f7bf0038003f8113b6966481367832f2c4afd19d391e205de89b147c32215"
+"cited_hashes" = ["5b103bc9208bec0684c7b171ecc6f3fa1cd73437b558e5ce117ea8a13d825f8c", "c34510ed785e7241e3c8a7ecf034465cccc4cc363b4e04b9cdaf1ca696d19ded", "8c6bc39637d554373e9d62429ad0cdd1e7ee25132100c0c04778074bbaab3418"]
+"cited_ids" = ["CL-ADPT-001", "CL-ADPT-002", "CL-ADPT-005"]
+"region_hash" = "3448ac5bdf53b9bdb490ec48b6b6e85e3ee75cd1484913e47d3192f0cba6d89c"
 
 ["id:adapter-md-adapter-term-ambiguity"]
-"cited_hashes" = []
-"cited_ids" = []
-"region_hash" = "6c07a53ae764ce03a89dd241770f067f8ef336fb781b965b09ee59d1262f91c5"
+"cited_hashes" = ["8068d179a58a5df8ed964e8ebc024b9a48f9be14c8f26ba29b6bcfb87a12c451"]
+"cited_ids" = ["CL-ADPT-007"]
+"region_hash" = "3b4e4037b85431612c96157d0f0c3fb509dabc6f50cfa24c616962a8dac2ba64"
 
 ["id:intermediate-knowledge-layer"]
 "cited_hashes" = ["d7ce3fe1957f6d44c1e5700c6057e1f321678d0b37e9a95e064f9fa16ba12e32"]
@@ -19,6 +19,6 @@
 "region_hash" = "5da1ef77ae6d7cc7c961c5e45f2d1c42da83ebc1d1e129ee2a0c8fd56d112bc7"
 
 ["id:vendor-and-ecosystem-md-ecosystem-vendor-adapter"]
-"cited_hashes" = []
-"cited_ids" = []
-"region_hash" = "8cfbb95d260d7df3c64560c58d68f4faccb8a4748c237f892e9d1cd9ff5b16b7"
+"cited_hashes" = ["2418deed4b885d82c146fd03be6fd3dcd6ed23980a197ca7717d3410cc79778f", "8c6bc39637d554373e9d62429ad0cdd1e7ee25132100c0c04778074bbaab3418"]
+"cited_ids" = ["CL-ADPT-004", "CL-ADPT-005"]
+"region_hash" = "2c113c4ef4d60f8cf0ec2d25519735eea61c4c9fdeb23db05dbdf3a70b610e80"
