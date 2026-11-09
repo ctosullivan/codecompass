@@ -9,6 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 87, Stage 87C — knowledge-compiled Concepts pages, a real
+  multi-region knowledge-change demonstration, and a matched-baseline
+  comparator.** Extended Stage 87A/87B's compile/review/publish
+  pipeline, unchanged, to three further `docs/concepts/` pages:
+  `adapter.md` (two compiled regions), `vendor-and-ecosystem.md` (one),
+  and `knowledge-model.md` (two, deliberately narrowed scope). A fourth
+  page, `context.md`, was attempted and honestly declined after two
+  failed independent-review rounds and reverted to its original
+  content unchanged — demonstrating the pipeline does not force a
+  migration through when generation is inferior to existing prose.
+  Established and documented a repeatable 8-step migration procedure
+  for wrapping pre-existing human-authored prose in a grounded region
+  without loss or duplication. Ran a real, end-to-end multi-region
+  knowledge-change proof: a new evidence record and a `CL-ADPT-005`
+  Claim amendment correctly triggered `claims_changed` in exactly the
+  two regions that cite it, both recompiled and independently
+  re-reviewed before republication, while a deliberately seeded
+  unrelated human edit and a pre-existing unrelated candidate both
+  correctly remained `doc_candidate`, never auto-reconciled. Ran a
+  matched-baseline comparator (an isolated conventional-agent arm vs.
+  this pipeline, from an identical pinned revision, with a blind
+  comparative review): the pipeline's shared-citation dependency graph
+  correctly scoped the change across both affected documents where the
+  conventional agent, working from the same starting fact, scoped too
+  narrowly — but no net time/cost advantage was demonstrated on this
+  one, small change once independent-review dispatch overhead is
+  counted, reported honestly as a predeclared-threshold miss rather
+  than adjusted after the fact. An independent, no-prior-context
+  documentation-usability exercise confirmed the newly-compiled pages
+  read correctly to a fresh developer and surfaced one genuine,
+  out-of-scope `codecompass undo` first-run gap, filed as a learning
+  rather than fixed in this stage. Full account:
+  `planning/retros/phase-87-stage-87c-knowledge-compiled-documentation.md`.
+
 - **Phase 87, Stage 87B — second further integrity correction: top-level
   schema fields bypassed review binding.** A fresh code-inspection
   review found that `schema_section_sha256` (the hash every persisted

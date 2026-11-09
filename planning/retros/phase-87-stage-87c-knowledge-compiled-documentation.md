@@ -21,8 +21,14 @@
   stage: independent-check of EV-ADPT-013, 4 targeted semantic/
   editorial reviews of the CL-ADPT-005 amendment's two new sentences,
   the comparator's arm-A documentation task, the comparator's blind
-  comparative review, plus the earlier migration-round reviews
-  recorded in the pending-review/published-evidence JSON history).
+  comparative review, the §S.8 independent documentation usability
+  exercise, plus the earlier migration-round reviews recorded in the
+  pending-review/published-evidence JSON history), `docs-reconstructor`
+  (×2 — initial drift audit, FAIL with 2 blocking + 1 non-blocking
+  findings; re-audit after the fix commit, PASS),
+  `release-phase-auditor` (×1 so far — FAIL, missing changelog entry/
+  incomplete retro/no learnings filed; fix in progress, re-audit
+  pending).
 
 ## Where we are
 
@@ -321,3 +327,164 @@ stage touched (`undo`'s own CLI reference and behavior, and
 **not** undertaken here, per the governing task's own instruction not
 to expand scope beyond Stage 87C. Recorded as unresolved findings for
 the learning-lifecycle triage below.
+
+## Scope delivered vs planned
+
+Delivered: §3A/§3B (four Concepts pages attempted, three migrated,
+one honestly declined), §3D (real multi-region maintenance proof,
+corrected §S.6 experiment), §4/§S.7 (matched-baseline comparator with
+the full three-category cost split and both predeclared verdicts),
+§5/§S.8 (independent usability exercise). §3C was not separately
+exercised as new work — it is the claim that the existing Stage
+87A/87B pipeline was reused unchanged, which is true by construction
+(no new orchestration code was written this stage) and independently
+confirmed by the `release-phase-auditor`'s own re-run of the full
+regression suite and `docs maintain`.
+
+Deviations from the plan, each disclosed in place above rather than
+silently absorbed: `context.md`'s migration was declined (plan named
+this as a real possible outcome, not a target); final compiled-page
+count is five overall, not six (`context.md` didn't join); the §S.6
+demonstration's "unrelated edited region" moved from `context.md` to
+`knowledge-model.md` (the plan's own named fallback, exercised because
+`context.md` no longer had a live grounded region to edit);
+`vendor-and-ecosystem.md` and `knowledge-model.md`'s compiled scope
+was each deliberately narrowed below the plan's original ambition,
+in both cases because the excluded content had no citable knowledge
+record. No scope was added beyond §3-§7 of the governing task.
+
+## What worked
+
+- **Appending one new, independently-reviewed sentence to an already-
+  published region, instead of a full blind recompile, for a small
+  marginal knowledge change.** A full recompile of `adapter-concept`
+  against the amended `CL-ADPT-005`, tried once, regenerated the whole
+  section from a fresh model call and lost previously hard-won,
+  already-reviewed specific identifiers. Keeping the published prose
+  and appending one new, independently-reviewed sentence preserved
+  everything already correct and only needed review of the new
+  content.
+- **Dispatching a genuinely isolated arm A (a separate git worktree,
+  no mention of the compiled pipeline) for the comparator**, rather
+  than trying to simulate a conventional agent's behavior from inside
+  this same context. It produced a real, independently-reached
+  scoping decision (touch only one of the two affected files) that
+  turned out to be a genuine, defensible-but-incomplete call — exactly
+  the kind of real data point a simulated arm could not have produced
+  honestly.
+- **A genuinely fresh, no-prior-context dispatch for the §S.8 usability
+  exercise** surfaced a real, previously-unknown `codecompass undo`
+  defect that none of this stage's own (necessarily non-blind) work on
+  the Concepts pages would have been positioned to find.
+- **Mechanical JSON patching, always followed by a fresh independent
+  re-review**, continued to be the right tool for narrow, factual
+  citation-tag fixes (recurring untagged topic sentences, dropped
+  identifiers) — carried over from Stage 87A/87B and still correct
+  here.
+
+## What didn't work
+
+- **A full blind recompile as the default response to a marginal
+  knowledge change.** Tried once for `adapter-concept` after the
+  `CL-ADPT-005` amendment; it regenerated the section from scratch and
+  silently dropped the `decisions/0002`/`0057` citations and the
+  `_resolve_package_dir`/hledger example that an earlier patching round
+  had already fixed and had already passed review. Abandoned in favor
+  of the targeted-sentence-append approach described above.
+- **This retro's own first draft was incomplete against `TEMPLATE.md`**
+  — written covering only the technical narrative (goal, what was
+  achieved, the four §3/§4/§5 subsections) and missing eight of the
+  template's eleven sections entirely, including this stage's own
+  candidate-learnings filing. Caught by the independent
+  `release-phase-auditor` dispatch, not self-noticed before that audit
+  ran. The lesson is filed below rather than merely fixed silently.
+- **`context.md`'s two compile rounds** cost real dispatch time
+  (compile + two independent reviews, twice) before being declined —
+  not wasted in the sense of being hidden (both rounds are preserved
+  as real, honest evidence in `planning/retros/phase-87-pending-review/
+  context-md/five-senses-of-context.json`), but a real cost that
+  produced no shipped page.
+
+## Lessons learnt
+
+- A documentation-compilation pipeline's real incremental-maintenance
+  advantage is structural (it knows which documents share a citation
+  dependency without being told), not necessarily a time/cost
+  advantage on a small, single-fact change — the fixed overhead of
+  independent review dispatches does not shrink with the size of the
+  change, so a matched comparator on a small task can show "better
+  scoped, not cheaper." Whether this changes at larger scale is an
+  open question for a future stage, not resolved here.
+- When a required citation is simply missing from a compiled draft
+  (as opposed to present-but-wrong), the existing citation-scope
+  checker provides no signal at all — it only checks citations that
+  exist. This is a real, structural blind spot in the current
+  verification mechanism, not merely an occasional model mistake (see
+  `L-125`).
+- Preserving an already-published, already-reviewed region's own
+  prose and appending a small, independently-reviewed addition is a
+  materially better response to a marginal knowledge change than a
+  full recompile, specifically because a full recompile has no memory
+  of prior, already-fixed defects.
+- A phase retro is itself a DoD artifact with a required shape
+  (`TEMPLATE.md`), not just a narrative write-up — writing it well
+  does not substitute for writing it complete, and completeness is
+  exactly the kind of thing a self-review tends to miss (this retro's
+  own first draft is the evidence).
+
+## Process-improvement feedback
+
+- This stage's own retro was drafted incrementally, alongside the
+  work, rather than against `TEMPLATE.md` from the start — leading
+  directly to the missing-sections finding above. Starting a retro
+  file from a copy of `TEMPLATE.md` (even with most sections stubbed
+  "TBD") at the *start* of a stage, rather than writing free-form
+  prose and only checking it against the template at the end, would
+  have caught this before the auditor had to.
+- No friction found in the agent-boundary model itself this stage —
+  `docs-reconstructor`'s per-phase mode, `release-phase-auditor`'s
+  read-only re-verification (it re-ran `docs maintain` and the full
+  suite itself rather than trusting this retro's numbers), and the
+  general-purpose dispatches for isolated-arm/blind-review work all
+  behaved as their role definitions describe.
+
+## Candidate learnings filed
+
+`L-125` (citation-scope checker validates existence, not completeness,
+of `required_knowledge`), `L-126` (markdown tables flatten under the
+current clean-room composition step), `L-127` (a Claim's forward-
+looking framing can be silently flattened into a fabricated-sounding
+present-tense claim), `L-128` (blind review of a compiled document
+cannot see a citation binding `citation_display: none` hides from the
+rendered file), `L-129` (`codecompass undo`'s first-run
+`doc_artifacts`-ordering gap) — all filed to `planning/learnings/
+inbox.md`, status `candidate`, pending `knowledge-curator` triage.
+
+## Where we're going
+
+Stage 87C is the last stage this governing task authorised; later
+Phase 87 work (the deterministic `docs/reference/cli.md` generator and
+the semantic cross-document consistency checker, both named in §S.11
+as real but deferred opportunities) requires separate authorisation
+and is not started here. Phase 87 overall is **not** marked complete —
+only Stage 87C's own completion is in scope for this closeout, per the
+governing task's explicit instruction.
+
+## Time / cost note
+
+This stage ran across one long session, continued from Stage 87B's
+own session via conversation-summary handoff. Real, instrumented AI
+dispatch time/cost for the pieces this retro measured precisely: the
+§S.6 maintenance demonstration's 4 targeted reviews (119.3s, 193,754
+tokens combined) plus 1 independent-check dispatch (usage not
+captured — rate-limited after delivering its result); the comparator's
+arm A (110.5s, 59,631 tokens, 1 dispatch) and its blind review (140.7s,
+72,423 tokens); the §S.8 usability exercise (333.0s, 106,130 tokens);
+the `docs-reconstructor` pair (198.0s + 105.4s); the
+`release-phase-auditor`'s first, FAIL-returning pass (1035.6s,
+162,294 tokens — long because it independently re-ran the full
+regression suite twice plus `docs maintain` plus a disposable ruff-
+baseline worktree). Lead-side orchestration time (evidence/Claim
+authoring, CLI invocations, commits, this retro) was not separately
+instrumented, matching this stage's own disclosed-unavailable
+discipline rather than being estimated.

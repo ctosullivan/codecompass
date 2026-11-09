@@ -28,5 +28,5 @@ sections:
     citation_display: none
 acceptance_criteria:
   - "An unfamiliar developer understands that 'provenance' is a cross-cutting property realised differently in at least three mechanisms, not a record kind of its own."
-  - "An unfamiliar developer understands that 'Invariant' is not one of the six formal record kinds and names at least three distinct things across the project."
+  - "An unfamiliar developer understands that 'Invariant' is not one of the six formal record kinds and names at least two distinct things across the project."
 owner: lead

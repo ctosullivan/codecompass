@@ -8,6 +8,387 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-125 — the citation-scope checker validates citations that exist, never completeness of a section's own `required_knowledge` list
+
+- **origin:** Phase 87 Stage 87C, `adapter.md`'s `adapter-concept` section migration
+- **date:** 2026-11-10
+- **project_revision:** 1d9d626
+- **observation:** A first compile of `adapter-concept` left `CL-ADPT-007`
+  sitting in the section's own `required_knowledge` list but never
+  cited anywhere in the generated draft. `doc_compiler.validate_
+  section_citations` reported no problem, because it only checks that
+  every `{{cite:X}}` tag actually present in the draft resolves to a
+  record in the section's own resolved packet (a scope check on
+  citations that exist) — it has no corresponding check that every id
+  listed in `required_knowledge` is actually cited at least once
+  anywhere in the draft (a completeness check). A required Claim can
+  therefore be silently dropped from a compiled section with no
+  deterministic signal, discoverable only by a human/reviewer noticing
+  the topic is simply absent from the prose.
+- **evidence:** `planning/retros/phase-87-pending-review/adapter-md/
+  adapter-concept.json`'s first compiled draft (pre-`d908da2`) cited
+  only `CL-ADPT-001`/`CL-ADPT-005`, never `CL-ADPT-007`, while the
+  schema's `required_knowledge` already listed all three; `docs
+  compile`'s own citation-finding output reported zero unsupported/
+  out-of-scope findings for that draft. Fixed by splitting the section
+  into two (`adapter-concept`, `adapter-term-ambiguity`), not by adding
+  a completeness check to the shared pipeline (out of this stage's own
+  smallest-coherent-change scope).
+- **classification:** architecture
+- **status:** candidate
+- **recurrence:** first occurrence
+- **curation note (2026-11-10, knowledge-curator):** independently verified
+  by reading `src/codecompass/doc_compiler.py` directly, not trusting the
+  filed text. `validate_section_citations` (lines 336-368) walks only
+  `parse_citation_tags(text)` — tags actually present in the draft — and
+  checks each against `packet.record_ids` (a scope/membership check); it
+  has no code path that iterates `schema_section["required_knowledge"]`
+  looking for an id with zero citations. `find_section_gaps` (lines
+  149-212) is the only function that iterates `required_knowledge`
+  itself, and it checks resolution via `knowledge_api.get()`,
+  `min_claim_status`, currency, and project-wide contradiction/dangling
+  gaps — never "is this id actually cited in the generated text
+  anywhere." The completeness blind spot this candidate names is real
+  and precisely located; `classification: architecture` is correct.
+
+  **Disposition: promote.** Destination: `docs/architecture/
+  documentation-compilation-pipeline.md` step 6 ("Validate citations") —
+  its current prose already distinguishes the scope check from the
+  AI-assisted depth check and from "any factual claim with no tag at
+  all," but says nothing about this narrower, distinct failure mode: a
+  required id that never receives a tag anywhere in the draft produces
+  no finding at all. Suggested addition (for `docs-maintainer` to place
+  verbatim or adapt): "Note a narrower, undetected failure mode:
+  `validate_section_citations` has no corresponding completeness check
+  over `required_knowledge` itself — a required id that receives zero
+  `{{cite:...}}` tags anywhere in the draft produces no finding, since
+  the function only walks tags that exist in the text, never the
+  section's own required-id list. The only way this has been caught to
+  date is a human or reviewer noticing the topic is simply absent from
+  the prose (Stage 87C, `adapter.md`'s `adapter-concept` migration,
+  `L-125`)." Secondary, scoped recommendation (not drafted here, handed
+  to `roadmap-context-curator` per the `future-improvement` destination
+  table): a one-line `ROADMAP.md` backlog/revisit-trigger entry
+  proposing a deterministic required-knowledge-coverage check as a
+  sibling to `validate_section_citations`, scoped the same way
+  `L-122`/`L-124` were. `status` left at `candidate` pending
+  `docs-maintainer` actually landing the doc edit; add the
+  `promoted.md` line once it does: `L-125 | 2026-11-10 | architecture |
+  docs/architecture/documentation-compilation-pipeline.md
+  (required_knowledge completeness blind spot) @ <landing commit>`.
+
+### L-126 — markdown tables and other multi-item structured content reliably flatten into prose under the current clean-room composition step
+
+- **origin:** Phase 87 Stage 87C, `adapter.md`'s `adapter-concept` section migration
+- **date:** 2026-11-10
+- **project_revision:** 1d9d626
+- **observation:** The original `adapter.md` page's ecosystem-to-adapter
+  dispatch table, included inside a compiled region's evidence packet,
+  was reliably rendered as flattened prose losing its own tabular
+  structure and some identifiers, across repeated compile attempts —
+  never preserved as a table. Not fixed in the shared compiler;
+  resolved per-page by moving the table to permanent, human-authored
+  content outside the compiled region's own marker boundary.
+- **evidence:** `planning/retros/phase-87-pending-review/adapter-md/
+  adapter-concept.json`'s early drafts (pre-`4a661b8`); the table now
+  lives in `docs/concepts/adapter.md` immediately after the H1 title,
+  outside any `codecompass-grounded-by` marker.
+- **classification:** architecture
+- **status:** candidate
+- **recurrence:** first occurrence
+- **curation note (2026-11-10, knowledge-curator):** `docs/concepts/
+  adapter.md`'s dispatch table (Read directly) now lives above the
+  `codecompass-grounded-by` marker, lines 3-10, outside any compiled
+  region, exactly as described. The specific pre-fix flattened-table
+  draft cited ("early drafts (pre-`4a661b8`)") is no longer present on
+  disk: `planning/retros/phase-87-pending-review/adapter-md/
+  adapter-concept.json` has since been overwritten by a later compile
+  (the file on disk now is the post-amendment, 2026-11-09 18:07,
+  append-one-sentence draft, `record_ids` `CL-ADPT-001/002/005`, no
+  table content at all) — expected, since the pending-review JSON is a
+  live working file, not an append-only log, but it means I could not
+  reproduce the flattened-table text byte-for-byte from the current
+  working tree. The retro's own prose ("Real defects found and fixed
+  during migration") and the current file's structural fix (table now
+  permanently outside the region) are consistent with and corroborate
+  the claim, but this is circumstantial, not a direct reproduction.
+
+  **Disposition: promote, reproduction caveat disclosed rather than
+  silently certified.** Destination: `docs/architecture/
+  documentation-compilation-pipeline.md`'s "Clean-room composition"
+  section. Suggested addition: "A structured, multi-item source (e.g. a
+  markdown table) included in a compiled region's evidence packet has,
+  so far, reliably flattened into prose during composition, losing its
+  own tabular structure — observed with `adapter.md`'s
+  ecosystem-dispatch table (Stage 87C, `L-126`). The established
+  per-page mitigation is to keep the table as permanent, human-authored
+  content immediately outside the compiled region's own marker
+  boundary (as `adapter.md` now does), rather than attempting to fix
+  flattening in the shared compiler." `status` left at `candidate`
+  pending the doc edit landing; `promoted.md` line once landed: `L-126
+  | 2026-11-10 | architecture | docs/architecture/
+  documentation-compilation-pipeline.md (structured-content flattening
+  under clean-room composition) @ <landing commit>`.
+
+  lead: run `git log -p -- planning/retros/phase-87-pending-review/
+  adapter-md/adapter-concept.json` to confirm the literal pre-fix
+  flattened-table draft text before treating this as fully reproduced
+  (I have no Bash to do this myself).
+
+  **Lead follow-up (2026-11-10):** `git log --all -- planning/retros/
+  phase-87-pending-review/adapter-md/adapter-concept.json` confirms
+  the file was only ever committed at `27e265f`/`28c3a6c`, both
+  *after* `4a661b8` — the pre-fix flattened-table draft was a
+  transient, in-session compile result never committed to disk, so
+  the curator's byte-for-byte reproduction request is genuinely
+  unsatisfiable from git history, not merely undone. Direct,
+  contemporaneous corroboration found instead: `4a661b8`'s own commit
+  message, written at the time the defect was found (2026-11-09
+  21:34), states it plainly: "Editorial review of the recompiled
+  adapter-concept draft found a real structural regression: the
+  markdown dispatch table mapping Ecosystem to Adapter class to
+  Strategy was flattened to prose, losing all four adapter class names
+  a reader could previously look up directly... The table is
+  deterministic content... a poor fit for AI composition regardless of
+  prompt tuning." This is contemporaneous, first-party evidence (not
+  circumstantial, unlike the retro's own later prose) and is treated
+  as sufficient corroboration; the promotion stands as the curator
+  drafted it.
+
+### L-127 — a Claim's own forward-looking, differently-phase-numbered framing can be silently flattened by compilation into a flat, fabricated-sounding present-tense claim about the current repository
+
+- **origin:** Phase 87 Stage 87C, `knowledge-model.md`'s `invariant-not-a-record-kind` section migration
+- **date:** 2026-11-10
+- **project_revision:** 1d9d626
+- **observation:** A compiled draft stated, as present-tense fact about
+  this repository, that a specific file exists — it does not. Traced
+  to the cited Claim's own forward-looking framing (written against a
+  differently-numbered future phase) being silently converted to a
+  flat, repository-current-state assertion during composition. A first
+  correction attempt (adding a qualifier that the file doesn't exist)
+  was judged insufficient by a second independent reviewer, who traced
+  the Claim's own supporting evidence and found it didn't substantiate
+  the specific mechanism either, plus found a new internal self-
+  contradiction the first fix introduced. Final fix removed the
+  sentence/artifact entirely rather than patching around it.
+- **evidence:** `planning/retros/phase-87-pending-review/knowledge-
+  model-md/invariant-not-a-record-kind.json`'s review history (two
+  distinct FAIL rounds before the section was reduced from three senses
+  to two); `planning/retros/phase-87-stage-87c-knowledge-compiled-
+  documentation.md`'s own account of the finding.
+- **classification:** architecture
+- **status:** candidate
+- **recurrence:** first occurrence
+- **curation note (2026-11-10, knowledge-curator):** independently
+  confirmed. Read `planning/knowledge/codecompass-domain/
+  CL-EVID-007.yaml` directly: its statement's clause (c) names "the
+  project-wide `docs/domain/invariants.md` file this very phase (63D)
+  produces" — a forward-looking frame written against Phase 63D's own
+  context. A `Glob` for `docs/domain/invariants.md` across the current
+  repository found nothing — the file genuinely does not exist, so a
+  present-tense compiled sentence asserting it exists would indeed be
+  fabricated, exactly as the candidate describes. The final, published
+  `knowledge-model.md` region (Read directly) no longer contains any
+  claim about this file — reduced from three senses to two, matching
+  "the final fix removed the sentence/artifact entirely." The
+  intermediate two-FAIL review history itself is not independently
+  re-derivable from the current pending-review JSON (which, like
+  `L-126`'s, now holds only the final accepted draft), so I relied on
+  the retro's own account for the two-round correction narrative
+  specifically, while the root cause (`CL-EVID-007`'s own
+  forward-looking clause (c) plus the file's real nonexistence) is
+  independently confirmed by me directly, not merely trusted.
+
+  **Disposition: promote.** Destination: `docs/architecture/
+  documentation-compilation-pipeline.md`, near step 5 ("Compose") or
+  the hardening-pass-style "what was found" list. Suggested addition:
+  "A cited Claim written in a forward-looking frame against a specific,
+  differently-numbered future phase (e.g. 'the project-wide
+  `docs/domain/invariants.md` file this very phase (63D) produces') can
+  be silently flattened by composition into a flat, present-tense
+  assertion about the current repository — true only if that future
+  work actually landed as described, and fabricated-sounding otherwise.
+  Found during `knowledge-model.md`'s migration (Stage 87C, `L-127`):
+  `CL-EVID-007`'s own clause (c) names a file that does not exist in
+  this repository. A first correction (adding a qualifier) was judged
+  insufficient by a second independent reviewer; the final fix removed
+  the sentence outright rather than patching around it. No mechanical
+  check currently flags a Claim's own forward-looking framing at
+  compile time — this depends on review catching it." `status` left at
+  `candidate` pending the doc edit landing; `promoted.md` line: `L-127
+  | 2026-11-10 | architecture | docs/architecture/
+  documentation-compilation-pipeline.md (forward-looking Claim framing
+  flattened to present-tense fabrication risk) @ <landing commit>`.
+
+### L-128 — blind comparative review of a compiled document cannot see a region's own citation binding when `citation_display: none` strips `{{cite:...}}` tags from the rendered file
+
+- **origin:** Phase 87 Stage 87C, matched-baseline comparator's blind comparative review
+- **date:** 2026-11-10
+- **project_revision:** 1d9d626
+- **observation:** A fresh dispatch asked to blindly compare two
+  documentation drafts (one produced by this project's own compiled
+  pipeline, one by a conventional agent) flagged, as a process
+  concern, that the compiled draft's new sentence appeared to be a
+  hand-inserted, uncited addition inside a machine-managed region. This
+  was incorrect: the sentence does carry its own `{{cite:CL-ADPT-005}}`
+  tag in the real pending-review JSON, matching the published region's
+  own cited-claim set — the reviewer simply couldn't see this, because
+  `citation_display: none` (an existing, intentional schema option)
+  strips citation tags from the rendered markdown file, and the
+  reviewer was only given the rendered diff. Not a defect in the
+  pipeline; a real, disclosed limitation of blinding a review by
+  rendered-diff alone when the schema's own citation-display mode
+  hides the evidence a scope check would need.
+- **evidence:** `planning/retros/phase-87-stage-87c-knowledge-compiled-
+  documentation.md`'s "Blind comparative review" subsection, quoting
+  the reviewer's own flagged concern and its resolution.
+- **classification:** architecture (reclassified by knowledge-curator
+  triage; filed as `workflow` — see curation note below)
+- **status:** candidate
+- **recurrence:** first occurrence
+- **curation note (2026-11-10, knowledge-curator):** confirmed every
+  schema this stage (and Stage 87A/87B) touches sets `citation_display:
+  none` for every section (`README.md.schema.yaml`,
+  `docs/getting-started.md.schema.yaml`,
+  `docs/concepts/adapter.md.schema.yaml`,
+  `docs/concepts/vendor-and-ecosystem.md.schema.yaml`,
+  `docs/concepts/knowledge-model.md.schema.yaml`), and
+  `doc_compiler.strip_citation_tags` (lines 375-393) does exactly what
+  the candidate describes: strips every `{{cite:...}}` token from the
+  rendered file whenever `citation_display` is not `inline`. This is a
+  real, generic property of the current schema configuration, not
+  specific to the one comparator run. The retro's own "Blind
+  comparative review" subsection gives a detailed, specific account of
+  the reviewer's flagged concern and its resolution, consistent with
+  this mechanism.
+
+  I disagree with the filed `classification: workflow` — a repeatable
+  Claude skill is not obviously the right destination here: there is no
+  standing, named "comparator protocol" skill or doc this project has
+  built or shown intent to build, into which this methodological caveat
+  would slot (a repo-wide grep for "matched-baseline comparator" / "blind
+  comparative review" / "comparator protocol" found only this one
+  retro's own account, no dedicated procedure doc). This reads better as
+  `architecture` — a real, structural property of the compiled-document
+  review surface (`citation_display: none`'s interaction with any
+  future blind-review exercise), not a repeatable workflow this project
+  has operationalised yet. Reclassified above. If a second
+  matched-baseline comparator recurs in a later stage, revisit as a
+  `workflow`→skill candidate then (recurrence would be 2, the
+  lifecycle's own signal for taking a first-occurrence finding more
+  seriously).
+
+  **Disposition: promote (reclassified `architecture`, filed
+  `workflow`).** Destination: `docs/architecture/
+  documentation-compilation-pipeline.md`, near step 8's existing
+  "Machine-readable grounding is unconditional — it is unaffected by
+  the schema's own reader-visible `citation_display` setting" sentence,
+  or the "Real demonstration" section describing the comparator.
+  Suggested addition: "This also means a blind review given only the
+  rendered file (not the pending-review JSON) cannot see a section's
+  own citation binding when `citation_display: none` — a real,
+  disclosed limitation of blinding a review by rendered-diff alone, not
+  a pipeline defect (Stage 87C's matched-baseline comparator, `L-128`).
+  A future blind-review exercise against a `citation_display: none`
+  document should supply the pending-review JSON (or an equivalent
+  on-record citation list) alongside the rendered diff if it needs to
+  assess citation binding, not the rendered file alone." `status` left
+  at `candidate` pending the doc edit landing; `promoted.md` line:
+  `L-128 | 2026-11-10 | architecture | docs/architecture/
+  documentation-compilation-pipeline.md (citation_display: none hides
+  citation binding from blind rendered-diff review) @ <landing
+  commit>`.
+
+### L-129 — `codecompass undo` can leave Skill/slash-command files orphaned after a project's very first run, because the whole-project graph rebuild that records their origin runs before they're generated
+
+- **origin:** Phase 87 Stage 87C, independent documentation usability exercise (§S.8)
+- **date:** 2026-11-10
+- **project_revision:** 1d9d626
+- **observation:** On a project's first-ever `codecompass` run, the
+  bare-command pipeline's whole-project graph rebuild (which records
+  `doc_artifacts` rows tagged `origin='codecompass_tool'`, the signal
+  `undo` uses to distinguish a CodeCompass-generated artifact from a
+  third-party one) runs *before* `.claude/skills/codecompass/SKILL.md`
+  and `.claude/commands/discovery.md` are generated. Immediately after
+  that first run, `codecompass undo --dry-run` does not list either
+  file for removal, and a real `undo --yes` leaves both on disk. A
+  second whole-project sync backfills the missing `doc_artifacts` rows
+  and self-heals the gap. `docs/reference/cli.md`'s own unqualified
+  claim that `undo` "correctly distinguishes a CodeCompass-generated
+  artifact from a third-party one by its real, recorded origin" does
+  not disclose this edge case. Out of Stage 87C's own scope (unrelated
+  to documentation compilation); found by the independent usability
+  dispatch, not fixed here.
+- **evidence:** Independently reproduced by the usability-exercise
+  dispatch: `doc_artifacts` row count/origin before vs. after a second
+  `sync`, and the corresponding `undo --dry-run` output difference.
+  Full account in `planning/retros/phase-87-stage-87c-knowledge-
+  compiled-documentation.md`'s "§5/§S.8" section.
+- **classification:** open-work (reclassified by knowledge-curator
+  triage; filed as `user-visible` — see curation note below)
+- **status:** candidate
+- **recurrence:** first occurrence
+- **curation note (2026-11-10, knowledge-curator):** independently
+  confirmed by reading `src/codecompass/cli.py` directly. `_bootstrap`
+  (lines 130-178) calls `rebuild_project_graph` once (line 164,
+  "pre-enrichment"), then unconditionally calls
+  `_refresh_generated_artifacts` (line 178), which itself calls
+  `rebuild_project_graph` a second time (line 262) *before*
+  `write_tool_skill` (line 265) and `write_discovery_command` (line
+  266) — so on a project's first-ever run, every `rebuild_project_graph`
+  call in that invocation executes strictly before either generated
+  file exists on disk. `src/codecompass/skill_scan.py` (grep: lines
+  ~74, 91, 135) is what tags `doc_artifacts` rows
+  `origin="codecompass_tool"`, by scanning for the files' real presence
+  on disk at rebuild time — a file that doesn't exist yet when the scan
+  runs cannot be recorded. Confirmed `docs/reference/cli.md:138`'s
+  exact unqualified sentence ("This correctly distinguishes a
+  CodeCompass-generated artifact from a third-party one by its real,
+  recorded origin") — it discloses a separate, different precision gap
+  for the pattern-based fallback mode (line 139) but says nothing about
+  this first-run ordering gap. All of the above is independently
+  confirmed by direct code reading, not merely trusted from the
+  retro's own account. I did not independently reproduce the live
+  `undo --dry-run`/`sync` row-count behavior myself (no Bash available
+  in this role) — the retro states the usability-exercise dispatch
+  reproduced it directly (before/after `sync`, real row counts);
+  recommend the lead re-run that reproduction if confirmation beyond
+  code-reading alone is wanted.
+
+  I disagree with the filed `classification: user-visible` — per
+  `learning-lifecycle.md` §4, `user-visible` is for "a user-visible
+  change already shipped" (→ a `CHANGELOG.md` entry), but this is an
+  unfixed, reproducible defect, not a shipped change being documented
+  after the fact. `open-work` ("unresolved current work" →
+  `planning/CONTEXT.md` "next step/outstanding") fits better —
+  reclassified above, the same way `L-123` was reclassified by this
+  role previously.
+
+  **Disposition: promote (reclassified `open-work`, filed
+  `user-visible`).** This is out of Stage 87C's own scope (confirmed by
+  the retro and by the fact that this is a pre-existing, unrelated
+  `undo`/bootstrap-ordering defect, not anything this stage touched),
+  so no code fix is drafted here. Hand to `roadmap-context-curator` for:
+  (a) a `planning/CONTEXT.md` "outstanding" note naming the gap and its
+  reproduction; and (b) a `planning/ROADMAP.md` backlog/revisit-trigger
+  entry (a future bug-fix phase) describing the needed fix shape —
+  either reorder `_refresh_generated_artifacts` so its
+  `rebuild_project_graph` call runs *after* `write_tool_skill`/
+  `write_discovery_command` rather than before, or add a small
+  supplementary `doc_artifacts`-recording step for just those two files
+  once written; plus a regression test exercising `_bootstrap`'s real
+  first-run call site directly (per `CLAUDE.md` §1's `L-021` rule, since
+  this is new behavior being added to an existing function with a real
+  production call site), asserting `undo --dry-run`'s reported removal
+  list includes both files immediately after a from-scratch bootstrap,
+  not only after a second sync; plus an interim `docs/reference/cli.md`
+  disclosure of the edge case (a one-line qualifier near line 138) if
+  the code fix doesn't land in the same phase. `status` left at
+  `candidate`, hand-off pending; `promoted.md` line once landed: `L-129
+  | 2026-11-10 | open-work | planning/CONTEXT.md (outstanding:
+  codecompass undo first-run doc_artifacts-ordering gap) +
+  planning/ROADMAP.md backlog @ <landing commit>`.
+
 ### L-115 — an agent with both `Bash` and `Write` that materializes a prior git revision into the live tracked working tree for its own before/after comparison must restore it before finishing, or use a disposable copy instead
 
 - **origin:** Phase 85 corrective pass (CodeCompass Orchestrator —
