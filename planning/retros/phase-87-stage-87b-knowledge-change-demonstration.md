@@ -423,23 +423,29 @@ completely and was deliberately not built, matching this stage's own
 smallest-coherent-change instruction for a second time.
 
 **Verification.** 15 new regression tests (5 in `tests/test_cli.py`,
-10 in `tests/test_doc_compiler.py`), every one of the 13 testing new
-mechanism behavior directly confirmed to fail against the pre-fix code
+10 in `tests/test_doc_compiler.py`). 14 of the 15 testing new mechanism
+behavior were directly confirmed to fail against the pre-fix code
 (`e0de671`, isolated via a disposable `git worktree` with `PYTHONPATH`
 pointed at its own `src/` — not the editable-installed main-repo
 source, which the venv's `.pth` file points at by default and would
 otherwise silently run the already-fixed code) and pass against the
-fix; the other 2 (a determinism property already true pre-fix, and
-one manifest-swap test whose first draft passed in both regimes for
-the wrong reason — a `mkdir` `FileExistsError` crash, not genuine
-detection — caught by checking *why* it passed, not just *that* it
-passed, and rewritten to construct the swap directly rather than
-re-running the setup helper) are documented here rather than silently
-presented as 15-for-15 real catches. Full suite: 1352 passed, 2 skipped
-(up from 1337, exactly +15). `ruff check .`: 176 findings, identical
-pre-existing set, none in changed files except one `E501` in this
-pass's own new test, fixed. `check_doc_schema.py --strict`,
-`check_user_docs.py --strict`, `check_knowledge_base.py`,
+fix; the 15th (a determinism property already true pre-fix) correctly
+passes in both regimes and was never expected to catch anything. One
+process note, not a count correction: the manifest-swap test's own
+*first draft* passed in both regimes for the wrong reason — a `mkdir`
+`FileExistsError` crash from re-running the setup helper on an
+already-existing directory, not genuine detection — caught by checking
+*why* it passed, not just *that* it passed, and rewritten to construct
+the swap directly instead; the version actually committed is one of
+the 14 genuine catches, confirmed directly both in this session and,
+independently, by the fresh audit below. (An earlier draft of this
+section mistakenly still counted it among "the other 2," undercounting
+the real catches as 13 — corrected here to the true figure, 14, after
+the first audit of this pass caught the error.) Full suite: 1352
+passed, 2 skipped (up from 1337, exactly +15). `ruff check .`: 176
+findings, identical pre-existing set, none in changed files except one
+`E501` in this pass's own new test, fixed. `check_doc_schema.py
+--strict`, `check_user_docs.py --strict`, `check_knowledge_base.py`,
 `check_knowledge_placement.py`, `check_contracts.py`,
 `check_self_knowledge_quality.py`: all clean or showing only
 pre-existing, unrelated findings (confirmed by direct inspection of
@@ -478,3 +484,25 @@ pre-existing `intermediate-knowledge-layer` `doc_candidate` manifest
 (`planning/knowledge/codecompass-domain/reconciliation/
 20261104T081241Z-doc.toml`) still exists, exactly one file, untouched
 by anything in this pass.
+
+**Audit, first pass (commit `1e3301f`): FAIL.** A fresh, independent
+`release-phase-auditor` dispatch re-verified the three findings and
+their fixes directly — reproducing 14 of the 15 new tests failing
+against a disposable `git worktree` at the pre-fix commit and passing
+after the fix, re-running the full suite (`1352 passed, 2 skipped`,
+confirmed), re-running every strict validator, and confirming
+`EV-CTXT-021`'s cited source and test are both real — and found the
+underlying code and tests fully correct. It still returned **FAIL**:
+`CHANGELOG.md`'s own hardening-pass entry, as originally committed,
+stated an independent audit had already run and returned PASS, citing
+the original (pre-this-pass) audit file — before any audit of this
+specific fix had actually been dispatched. This is the exact
+self-certification pattern the agent-led-development model exists to
+prevent, caught correctly regardless of the (confirmed sound)
+underlying work. The entry's "13 of 15" test accounting was also
+corrected in the same pass (true figure: 14 — see the Verification
+paragraph above). Full account: `planning/retros/_audit-phase-87-
+stage-87b-hardening.md`. Fixed here (the premature PASS claim and
+stale citation removed from `CHANGELOG.md`, replaced with an honest
+"pending re-audit" statement) in the same session the FAIL was
+returned; a fresh re-audit follows.

@@ -48,13 +48,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cross-process file lock — is not claimed closed; disclosed in both
   `publish_section`'s and `_doc_publish_lock`'s own docstrings and
   recorded as an explicit follow-up (`L-124`). 15 new regression tests
-  (`tests/test_cli.py` +5, `tests/test_doc_compiler.py` +10), 13 of
-  which were confirmed to fail against the pre-fix code (isolated via
-  a disposable `git worktree`) and pass after the fix; one test's
-  first draft was found passing in both regimes for the wrong reason
-  (an unrelated crash, not genuine detection) and was rewritten once
-  that was noticed. Full suite: 1352 passed, 2 skipped (up from 1337).
-  `ruff`/`check_doc_schema.py --strict`/`check_user_docs.py
+  (`tests/test_cli.py` +5, `tests/test_doc_compiler.py` +10); a fresh
+  independent audit directly reproduced 14 of the 15 against a
+  disposable `git worktree` at the pre-fix commit and confirmed each
+  fails pre-fix and passes post-fix (the 15th, a determinism property,
+  is correctly not expected to catch anything). Full suite: 1352
+  passed, 2 skipped (up from 1337). `ruff`/`check_doc_schema.py
+  --strict`/`check_user_docs.py
   --strict`/`check_knowledge_base.py`/`check_knowledge_placement.py`/
   `check_contracts.py`/`check_self_knowledge_quality.py` all clean or
   showing only pre-existing, unrelated findings. A real, evidence-
@@ -62,14 +62,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   surfaced (`sync_vendor`'s clone-failure fallback) was re-derived
   independently as `EV-CTXT-021` and filed (`L-123`) for the ordinary
   knowledge-reconciliation workflow — not applied directly; a
-  successful demonstration is still not maintainer acceptance. An
-  independent `release-phase-auditor` pass against this fix returned
-  **PASS**. See `planning/retros/phase-87-stage-87b-knowledge-change-
-  demonstration.md`'s "Addendum 2" for the full account and
-  `planning/retros/_audit-phase-87-stage-87b.md` for the audit trail.
-  Stage 87B remains closed, now against this hardened code. Phase 87
-  overall remains not `done`; Stage 87C remains separately planned,
-  unauthorised, and unstarted.
+  successful demonstration is still not maintainer acceptance. See
+  `planning/retros/phase-87-stage-87b-knowledge-change-
+  demonstration.md`'s "Addendum 2" for the full account. A first
+  independent `release-phase-auditor` pass against this commit
+  returned **FAIL**: this entry's own earlier draft falsely claimed an
+  audit had already run and passed, before any audit had actually been
+  dispatched — a self-certification defect the auditor caught
+  directly, independent of the (confirmed correct) underlying code.
+  Corrected here; see `planning/retros/_audit-phase-87-stage-87b-
+  hardening.md` for the full FAIL account and the re-audit once it
+  runs. Stage 87B's closure against this hardened code is **pending**
+  that re-audit. Phase 87 overall remains not `done`; Stage 87C
+  remains separately planned, unauthorised, and unstarted.
 
 - **Phase 87, Stage 87B — two-document governance, execution harness,
   publication concurrency guard, real knowledge-change demonstration**
