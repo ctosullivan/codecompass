@@ -605,3 +605,26 @@ requires for the exact, current figures.
 comparator, or hardening-pass findings** — this is a fourth, separate
 defect in the same publication path, found and fixed independently of
 all three.
+
+**Audit: PASS.** A fresh, independent `release-phase-auditor` dispatch
+re-verified the mechanism directly (confirmed `document_path` is
+genuinely reassigned to a freshly live-resolved value at the write
+boundary, not merely hash-checked); independently reproduced the
+original exploit itself, from scratch, against a disposable `git
+worktree` at the pre-fix parent commit (`db33327`) — including
+catching and correcting its own first attempt, which silently loaded
+the already-fixed main-repo package despite a `PYTHONPATH` override
+until the mandated `codecompass.__file__` check caught it — and
+confirmed the exploit genuinely succeeded pre-fix and is genuinely
+refused post-fix; sampled 5 of the 11 new tests directly against both
+regimes; re-ran the full suite (`1363 passed, 2 skipped`, exact match)
+and every strict validator itself; confirmed Findings A/B/C from
+Addenda 1-2 remain intact (`doc_compiler.py`'s diff is purely
+additive); confirmed no protected-file drift; and specifically
+re-checked for a recurrence of this same session's own earlier
+self-certification defect (Addendum 2) — none found, both the
+changelog entry and this addendum correctly stated closure as pending
+the audit, not already achieved. Full account: `planning/retros/
+_audit-phase-87-stage-87b-second-hardening-pass.md`. **This fourth
+defect, and Stage 87B's post-closeout hardening as a whole, is
+closed.**

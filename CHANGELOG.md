@@ -39,9 +39,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   category of pre-fix failure the prior hardening pass's own
   `document_identity`-dependent tests produced, for the same reason).
   See `planning/retros/phase-87-stage-87b-knowledge-change-
-  demonstration.md`'s "Addendum 3" for the full account. Stage 87B's
-  technical closure against this correction is **pending** a fresh
-  independent audit.
+  demonstration.md`'s "Addendum 3" for the full account. An independent
+  `release-phase-auditor` pass — independently reproducing the original
+  exploit against a disposable pre-fix worktree, confirming the fix
+  closes it, sampling 5 of the 11 new tests directly, and re-running
+  the full suite and every strict validator itself — returned **PASS**
+  (`planning/retros/_audit-phase-87-stage-87b-second-hardening-pass.md`).
+  Stage 87B's closure against this correction is confirmed.
 
 - **Phase 87, Stage 87B post-closeout hardening pass — reviewed-draft
   integrity, live schema freshness, narrower write-boundary race.** A
