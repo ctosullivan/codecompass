@@ -13,6 +13,16 @@
 "cited_ids" = ["CL-KNOW-001"]
 "region_hash" = "74732c01f46a3cbd22d070feb32e9130f2c6a9fc1f9c492aad1a97d287e24d6e"
 
+["id:knowledge-model-md-invariant-not-a-record-kind"]
+"cited_hashes" = []
+"cited_ids" = []
+"region_hash" = "f7cde12f866b2fc4759130732922a9e82d3b4078e24970f355b46d4e30bf759a"
+
+["id:knowledge-model-md-provenance-cross-cutting"]
+"cited_hashes" = []
+"cited_ids" = []
+"region_hash" = "dffe5ffb3d2e0e30d97453ce48c0c9fbd336c786fad4d66f1350bd8b0fd0221b"
+
 ["id:readme-md-vendor-digest-concept"]
 "cited_hashes" = ["e09d9fe6ed46148b4d01ac5342c377f043bfc5b842f03802b3975dd47c3280b3"]
 "cited_ids" = ["CL-CTXT-005"]

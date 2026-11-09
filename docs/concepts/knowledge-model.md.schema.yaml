@@ -1,0 +1,32 @@
+schema_version: 1
+document: docs/concepts/knowledge-model.md
+audience: "a developer new to CodeCompass, has not read any other doc"
+sections:
+  - id: provenance-cross-cutting
+    required_knowledge: ["CL-EVID-013"]
+    max_evidence_chars: 4000
+    tone: instructional
+    depth: standard
+    min_claim_status: supported
+    allow_unconfirmed_scopes: true  # Self-knowledge Claim from the Phase 79/80 snapshot,
+                                     # not an oracle-contract-backed implementation fact --
+                                     # codecompass-domain has no oracle-contract.yaml, so
+                                     # knowledge_api's currency check honestly reports
+                                     # "unconfirmed" (no contract applies) rather than
+                                     # "stale" or "wrong". Allowed here deliberately, not a
+                                     # silent gap-suppression -- same precedent as
+                                     # README.md.schema.yaml's own CL-CTXT-005, independently
+                                     # reviewed (Stage 87C plan Section S.3).
+    citation_display: none
+  - id: invariant-not-a-record-kind
+    required_knowledge: ["CL-EVID-007"]
+    max_evidence_chars: 3000
+    tone: instructional
+    depth: brief
+    min_claim_status: supported
+    allow_unconfirmed_scopes: true  # Same precedent as above, for CL-EVID-007.
+    citation_display: none
+acceptance_criteria:
+  - "An unfamiliar developer understands that 'provenance' is a cross-cutting property realised differently in at least three mechanisms, not a record kind of its own."
+  - "An unfamiliar developer understands that 'Invariant' is not one of the six formal record kinds and names at least three distinct things across the project."
+owner: lead

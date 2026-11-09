@@ -17,6 +17,7 @@ A flat, file-based model: one record per YAML file, each carrying a `kind` field
 
 **A structural split, by design, not an omission:** the shipped `codecompass knowledge` CLI only ever creates or mutates `Claim` or `Requirement` records. `Observation`/`Evidence`/`Decision`/`Derivation` records are meant to be hand-authored YAML files following the documented schema — any text editor, no CodeCompass-specific tooling required — never produced through this CLI. If you are evaluating this as something to adopt wholesale on another project: there is no shipped validator for an adopting project's own `planning/knowledge/` tree beyond `knowledge_intermediate.py` itself — the maintainer-only `scripts/check_knowledge_base.py` is hard-coded to this one repository and is not something another project can simply point elsewhere.
 
+<!-- codecompass-grounded-by: region:knowledge-model-md-provenance-cross-cutting -->
 ## Provenance — a cross-cutting property, not a record kind of its own
 
 "Provenance" never names a record kind — it is realized with a structurally different shape in at least three separate mechanisms:
@@ -25,6 +26,7 @@ A flat, file-based model: one record per YAML file, each carrying a `kind` field
 - Other narrative-provenance files elsewhere in the project's own history carry their own ad hoc field sets.
 
 No shared schema unifies these — and no evidence suggests unifying them has ever been attempted.
+<!-- /codecompass-grounded-by -->
 
 ## INTENDED / OBSERVED / VERIFIED / CONTESTED — a derived view, not a seventh field (Phase 82)
 
@@ -36,6 +38,8 @@ No shared schema unifies these — and no evidence suggests unifying them has ev
 
 See `docs/workflows/knowledge-reconciliation-loop.md` for the full mechanics: canonical records are rendered into editable Markdown, edits are mechanically detected via a dual-hash anchor (never comparing a semantic hash against a projection hash directly), a human/agent review stage is required, and `codecompass knowledge apply` is the sole, re-validating write path.
 
+<!-- codecompass-grounded-by: region:knowledge-model-md-invariant-not-a-record-kind -->
 ## "Invariant" is not a seventh record kind
 
 "Invariant" is not one of the six formal kinds above and has no dedicated schema. As used across the project, it names at least three distinct things: a `planning/learnings/`-queue classification value meaning "a required behavioural invariant, promote to a regression test"; a narrative subsection inside a feature's own design document; and a project-wide cross-cutting-rules document this reconstruction cannot see directly. These three senses are not guaranteed to coincide.
+<!-- /codecompass-grounded-by -->
