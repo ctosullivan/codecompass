@@ -1,0 +1,13 @@
+{
+  "draft_sha256": "84c7e3f0a46803ff1cb50903e4177c7383a8be777ffe8056e9af82034d7693b3",
+  "evidence_references": [],
+  "evidence_sha256": "b12f689529e1a3ad6d1eab79082bb5488fe333f642d7634d064f4e31fb07169f",
+  "findings": [],
+  "kind": "semantic",
+  "recorded_at": "2026-11-09T13:50:04.578949+00:00",
+  "reviewer": "independent dispatch (general-purpose), round 3 final confirmation",
+  "schema_section_sha256": "9f630190c208187b03bb51296d91713a98db6df9ab6b406affb620acbb4d33f3",
+  "schema_slug": "knowledge-model-md",
+  "section_id": "invariant-not-a-record-kind",
+  "verdict": "supported"
+}

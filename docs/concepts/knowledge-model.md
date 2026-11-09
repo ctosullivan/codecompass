@@ -17,15 +17,10 @@ A flat, file-based model: one record per YAML file, each carrying a `kind` field
 
 **A structural split, by design, not an omission:** the shipped `codecompass knowledge` CLI only ever creates or mutates `Claim` or `Requirement` records. `Observation`/`Evidence`/`Decision`/`Derivation` records are meant to be hand-authored YAML files following the documented schema — any text editor, no CodeCompass-specific tooling required — never produced through this CLI. If you are evaluating this as something to adopt wholesale on another project: there is no shipped validator for an adopting project's own `planning/knowledge/` tree beyond `knowledge_intermediate.py` itself — the maintainer-only `scripts/check_knowledge_base.py` is hard-coded to this one repository and is not something another project can simply point elsewhere.
 
-<!-- codecompass-grounded-by: region:knowledge-model-md-provenance-cross-cutting -->
-## Provenance — a cross-cutting property, not a record kind of its own
+<!-- codecompass-grounded-by: CL-EVID-013 region:knowledge-model-md-provenance-cross-cutting -->
+Provenance in this codebase is not a record kind of its own. Instead it is a cross-cutting property that each mechanism realizes with its own, structurally distinct concrete shape. Phase 54c's own records carry a named, method-conditional set of provenance fields: repository_revision; source_ref/doc_ref/test_ref; performed_by/derived_by/decided_by; tool/tool_version; and timestamp. The three enrichment tables -- vendor_enrichment, doc_relation_enrichment, and symbol_enrichment -- each carry a single `model` TEXT column instead. Context-gaps and context-observations entries instead carry four narrative fields: origin, date, codecompass_revision, and project. All three approaches capture "who/what produced this, when, from what" in the ordinary sense of provenance, but there is no shared schema, base type, or record kind unifying them, and there is no evidence that unifying them has ever been proposed or attempted in this repository's history.
 
-"Provenance" never names a record kind — it is realized with a structurally different shape in at least three separate mechanisms:
-- Formal knowledge records (above) carry a named, method-conditional set of provenance fields (`repository_revision`, `source_ref`/`doc_ref`/`test_ref`, `performed_by`/`derived_by`/`decided_by`, `tool`/`tool_version`, `timestamp`).
-- The context graph's AI-enrichment tables (`vendor_enrichment`, `symbol_enrichment`, `doc_relation_enrichment`) each carry a single `model` TEXT column recording the producing model (or, for agent-driven enrichment, a literal `agent:<name>` string — see `docs/workflows/sync-and-enrichment-pipeline.md`). `symbol_enrichment.model` is nullable specifically to allow an honest `NULL` ("producer unknown") on rows written before this column existed; every new write always supplies a real value.
-- Other narrative-provenance files elsewhere in the project's own history carry their own ad hoc field sets.
-
-No shared schema unifies these — and no evidence suggests unifying them has ever been attempted.
+Within the enrichment tables, the three `model` columns are no longer asymmetric in whether they carry a producer column at all: `_migrate_symbol_enrichment_model_column` adds a nullable `model TEXT` column to `symbol_enrichment` via `ALTER TABLE`, and `record_symbol_enrichment` now requires a real `model` argument for every new write, with its production call site supplying the real Anthropic model id. A narrower asymmetry does remain, however: `vendor_enrichment.model` and `doc_relation_enrichment.model` have been `TEXT NOT NULL` since their first schema version, while `symbol_enrichment.model` is nullable, so every row written before this migration honestly carries `NULL` rather than a retroactively fabricated value. A pre-migration `symbol_enrichment` row is therefore provenance-unknown in a way no sibling-table row can be, since those tables have been `NOT NULL` since inception. This narrower nullability gap does not change the broader picture: the three mechanisms -- Phase 54c records, enrichment tables, and context-gaps/context-observations -- remain structurally incompatible with each other for capturing provenance.
 <!-- /codecompass-grounded-by -->
 
 ## INTENDED / OBSERVED / VERIFIED / CONTESTED — a derived view, not a seventh field (Phase 82)
@@ -38,8 +33,10 @@ No shared schema unifies these — and no evidence suggests unifying them has ev
 
 See `docs/workflows/knowledge-reconciliation-loop.md` for the full mechanics: canonical records are rendered into editable Markdown, edits are mechanically detected via a dual-hash anchor (never comparing a semantic hash against a projection hash directly), a human/agent review stage is required, and `codecompass knowledge apply` is the sole, re-validating write path.
 
-<!-- codecompass-grounded-by: region:knowledge-model-md-invariant-not-a-record-kind -->
-## "Invariant" is not a seventh record kind
+<!-- codecompass-grounded-by: CL-EVID-007 region:knowledge-model-md-invariant-not-a-record-kind -->
+## Invariant
 
-"Invariant" is not one of the six formal kinds above and has no dedicated schema. As used across the project, it names at least three distinct things: a `planning/learnings/`-queue classification value meaning "a required behavioural invariant, promote to a regression test"; a narrative subsection inside a feature's own design document; and a project-wide cross-cutting-rules document this reconstruction cannot see directly. These three senses are not guaranteed to coincide.
+The term "invariant" is not one of Phase 54c's six formal record kinds, and no dedicated schema exists for it anywhere in this repository. Instead, the term is used across the codebase to name at least two distinct artifacts, neither one automatically implying the other. First, within `planning/learnings/`, `invariant` is a classification value meaning a required behavioural invariant of CodeCompass's own code, which should be promoted into a regression test. Second, a per-feature `design.md` or `context-packet.md` may contain a narrative "things that must stay true" subsection; this is simply a part of that document's own content and is not a separately-citable record on its own.
+
+When working with invariants, keep in mind that a rule captured in one of these two places is not automatically present in, or expected to be present in, the other.
 <!-- /codecompass-grounded-by -->

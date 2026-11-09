@@ -1,0 +1,13 @@
+{
+  "draft_sha256": "7194dd5cf0d6358a4caa4cae5b28dc4b8c93fc0f7e05692fa38b27fb7e95cba0",
+  "evidence_references": [],
+  "evidence_sha256": "e8649f8e8d37fbbad669136b1bae56d5bb05c54184d83faa34843275ecb443f4",
+  "findings": [],
+  "kind": "semantic",
+  "recorded_at": "2026-11-09T13:53:45.311514+00:00",
+  "reviewer": "independent dispatch (general-purpose), round 4 final confirmation",
+  "schema_section_sha256": "107a8a79b23df493f62fc2c5c7b18a033497d9ddb68d1ed2f3101c0079553f14",
+  "schema_slug": "knowledge-model-md",
+  "section_id": "provenance-cross-cutting",
+  "verdict": "supported"
+}

@@ -1,0 +1,95 @@
+{
+  "editorial_review": {
+    "draft_sha256": "7194dd5cf0d6358a4caa4cae5b28dc4b8c93fc0f7e05692fa38b27fb7e95cba0",
+    "evidence_references": [],
+    "evidence_sha256": "e8649f8e8d37fbbad669136b1bae56d5bb05c54184d83faa34843275ecb443f4",
+    "findings": [],
+    "kind": "editorial",
+    "recorded_at": "2026-11-09T13:53:48.679638+00:00",
+    "reviewer": "independent dispatch (general-purpose), round 2 PASS WITH NON-BLOCKING OBSERVATIONS",
+    "schema_section_sha256": "107a8a79b23df493f62fc2c5c7b18a033497d9ddb68d1ed2f3101c0079553f14",
+    "schema_slug": "knowledge-model-md",
+    "section_id": "provenance-cross-cutting",
+    "verdict": "pass"
+  },
+  "pending_manifest": {
+    "citation_findings": [
+      {
+        "classification": "supported",
+        "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+        "record_id": "CL-EVID-013"
+      },
+      {
+        "classification": "supported",
+        "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+        "record_id": "CL-EVID-013"
+      },
+      {
+        "classification": "supported",
+        "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+        "record_id": "CL-EVID-013"
+      },
+      {
+        "classification": "supported",
+        "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+        "record_id": "CL-EVID-013"
+      },
+      {
+        "classification": "supported",
+        "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+        "record_id": "CL-EVID-013"
+      },
+      {
+        "classification": "supported",
+        "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+        "record_id": "CL-EVID-013"
+      },
+      {
+        "classification": "supported",
+        "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+        "record_id": "CL-EVID-013"
+      },
+      {
+        "classification": "supported",
+        "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+        "record_id": "CL-EVID-013"
+      },
+      {
+        "classification": "supported",
+        "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+        "record_id": "CL-EVID-013"
+      },
+      {
+        "classification": "supported",
+        "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+        "record_id": "CL-EVID-013"
+      }
+    ],
+    "draft_body": "Provenance in this codebase is not a record kind of its own. Instead it is a cross-cutting property that each mechanism realizes with its own, structurally distinct concrete shape. Phase 54c's own records carry a named, method-conditional set of provenance fields: repository_revision; source_ref/doc_ref/test_ref; performed_by/derived_by/decided_by; tool/tool_version; and timestamp. The three enrichment tables -- vendor_enrichment, doc_relation_enrichment, and symbol_enrichment -- each carry a single `model` TEXT column instead. Context-gaps and context-observations entries instead carry four narrative fields: origin, date, codecompass_revision, and project. All three approaches capture \"who/what produced this, when, from what\" in the ordinary sense of provenance, but there is no shared schema, base type, or record kind unifying them, and there is no evidence that unifying them has ever been proposed or attempted in this repository's history.\n\nWithin the enrichment tables, the three `model` columns are no longer asymmetric in whether they carry a producer column at all: `_migrate_symbol_enrichment_model_column` adds a nullable `model TEXT` column to `symbol_enrichment` via `ALTER TABLE`, and `record_symbol_enrichment` now requires a real `model` argument for every new write, with its production call site supplying the real Anthropic model id. A narrower asymmetry does remain, however: `vendor_enrichment.model` and `doc_relation_enrichment.model` have been `TEXT NOT NULL` since their first schema version, while `symbol_enrichment.model` is nullable, so every row written before this migration honestly carries `NULL` rather than a retroactively fabricated value. A pre-migration `symbol_enrichment` row is therefore provenance-unknown in a way no sibling-table row can be, since those tables have been `NOT NULL` since inception. This narrower nullability gap does not change the broader picture: the three mechanisms -- Phase 54c records, enrichment tables, and context-gaps/context-observations -- remain structurally incompatible with each other for capturing provenance.",
+    "draft_sha256": "7194dd5cf0d6358a4caa4cae5b28dc4b8c93fc0f7e05692fa38b27fb7e95cba0",
+    "evidence_sha256": "e8649f8e8d37fbbad669136b1bae56d5bb05c54184d83faa34843275ecb443f4",
+    "record_ids": [
+      "CL-EVID-013"
+    ],
+    "schema_section_sha256": "107a8a79b23df493f62fc2c5c7b18a033497d9ddb68d1ed2f3101c0079553f14",
+    "schema_slug": "knowledge-model-md",
+    "section_id": "provenance-cross-cutting",
+    "source_revision": "8f943e2143ddd2ab852b35440f9a1b55db12b5d4 (clean)",
+    "tagged_draft": "Provenance in this codebase is not a record kind of its own {{cite:CL-EVID-013}}. Instead it is a cross-cutting property that each mechanism realizes with its own, structurally distinct concrete shape {{cite:CL-EVID-013}}. Phase 54c's own records carry a named, method-conditional set of provenance fields: repository_revision; source_ref/doc_ref/test_ref; performed_by/derived_by/decided_by; tool/tool_version; and timestamp {{cite:CL-EVID-013}}. The three enrichment tables -- vendor_enrichment, doc_relation_enrichment, and symbol_enrichment -- each carry a single `model` TEXT column instead {{cite:CL-EVID-013}}. Context-gaps and context-observations entries instead carry four narrative fields: origin, date, codecompass_revision, and project {{cite:CL-EVID-013}}. All three approaches capture \"who/what produced this, when, from what\" in the ordinary sense of provenance, but there is no shared schema, base type, or record kind unifying them, and there is no evidence that unifying them has ever been proposed or attempted in this repository's history {{cite:CL-EVID-013}}.\n\nWithin the enrichment tables, the three `model` columns are no longer asymmetric in whether they carry a producer column at all: `_migrate_symbol_enrichment_model_column` adds a nullable `model TEXT` column to `symbol_enrichment` via `ALTER TABLE`, and `record_symbol_enrichment` now requires a real `model` argument for every new write, with its production call site supplying the real Anthropic model id {{cite:CL-EVID-013}}. A narrower asymmetry does remain, however: `vendor_enrichment.model` and `doc_relation_enrichment.model` have been `TEXT NOT NULL` since their first schema version, while `symbol_enrichment.model` is nullable, so every row written before this migration honestly carries `NULL` rather than a retroactively fabricated value {{cite:CL-EVID-013}}. A pre-migration `symbol_enrichment` row is therefore provenance-unknown in a way no sibling-table row can be, since those tables have been `NOT NULL` since inception {{cite:CL-EVID-013}}. This narrower nullability gap does not change the broader picture: the three mechanisms -- Phase 54c records, enrichment tables, and context-gaps/context-observations -- remain structurally incompatible with each other for capturing provenance {{cite:CL-EVID-013}}."
+  },
+  "published_at": "2026-11-09T13:53:52.220405+00:00",
+  "region_id": "knowledge-model-md-provenance-cross-cutting",
+  "semantic_review": {
+    "draft_sha256": "7194dd5cf0d6358a4caa4cae5b28dc4b8c93fc0f7e05692fa38b27fb7e95cba0",
+    "evidence_references": [],
+    "evidence_sha256": "e8649f8e8d37fbbad669136b1bae56d5bb05c54184d83faa34843275ecb443f4",
+    "findings": [],
+    "kind": "semantic",
+    "recorded_at": "2026-11-09T13:53:45.311514+00:00",
+    "reviewer": "independent dispatch (general-purpose), round 4 final confirmation",
+    "schema_section_sha256": "107a8a79b23df493f62fc2c5c7b18a033497d9ddb68d1ed2f3101c0079553f14",
+    "schema_slug": "knowledge-model-md",
+    "section_id": "provenance-cross-cutting",
+    "verdict": "supported"
+  }
+}

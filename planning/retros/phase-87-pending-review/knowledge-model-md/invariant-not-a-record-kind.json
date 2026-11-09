@@ -1,0 +1,40 @@
+{
+  "citation_findings": [
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-EVID-007"
+    },
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-EVID-007"
+    },
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-EVID-007"
+    },
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-EVID-007"
+    },
+    {
+      "classification": "supported",
+      "reason": "citation resolves within this section's own packet (scope check only; semantic support is verified separately, by independent AI-assisted dispatch)",
+      "record_id": "CL-EVID-007"
+    }
+  ],
+  "draft_body": "## Invariant\n\nThe term \"invariant\" is not one of Phase 54c's six formal record kinds, and no dedicated schema exists for it anywhere in this repository. Instead, the term is used across the codebase to name at least two distinct artifacts, neither one automatically implying the other. First, within `planning/learnings/`, `invariant` is a classification value meaning a required behavioural invariant of CodeCompass's own code, which should be promoted into a regression test. Second, a per-feature `design.md` or `context-packet.md` may contain a narrative \"things that must stay true\" subsection; this is simply a part of that document's own content and is not a separately-citable record on its own.\n\nWhen working with invariants, keep in mind that a rule captured in one of these two places is not automatically present in, or expected to be present in, the other.",
+  "draft_sha256": "84c7e3f0a46803ff1cb50903e4177c7383a8be777ffe8056e9af82034d7693b3",
+  "evidence_sha256": "b12f689529e1a3ad6d1eab79082bb5488fe333f642d7634d064f4e31fb07169f",
+  "record_ids": [
+    "CL-EVID-007"
+  ],
+  "schema_section_sha256": "9f630190c208187b03bb51296d91713a98db6df9ab6b406affb620acbb4d33f3",
+  "schema_slug": "knowledge-model-md",
+  "section_id": "invariant-not-a-record-kind",
+  "source_revision": "8f943e2143ddd2ab852b35440f9a1b55db12b5d4 (clean)",
+  "tagged_draft": "## Invariant\n\nThe term \"invariant\" is not one of Phase 54c's six formal record kinds, and no dedicated schema exists for it anywhere in this repository {{cite:CL-EVID-007}}. Instead, the term is used across the codebase to name at least two distinct artifacts, neither one automatically implying the other {{cite:CL-EVID-007}}. First, within `planning/learnings/`, `invariant` is a classification value meaning a required behavioural invariant of CodeCompass's own code, which should be promoted into a regression test {{cite:CL-EVID-007}}. Second, a per-feature `design.md` or `context-packet.md` may contain a narrative \"things that must stay true\" subsection; this is simply a part of that document's own content and is not a separately-citable record on its own {{cite:CL-EVID-007}}.\n\nWhen working with invariants, keep in mind that a rule captured in one of these two places is not automatically present in, or expected to be present in, the other {{cite:CL-EVID-007}}."
+}
