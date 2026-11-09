@@ -1,0 +1,18 @@
+manifest_id = "codecompass-domain@20261109T194643Z-doc"
+created = "2026-11-09T19:46:43.521932+00:00"
+slug = "codecompass-domain"
+
+[[items]]
+kind = "doc_region_edit"
+doc_name = "docs/concepts/knowledge-model.md"
+region_id = "knowledge-model-md-invariant-not-a-record-kind"
+region_index = 1
+cited_ids = ["CL-EVID-007"]
+cited_hashes_at_detection = ["413d1d1ae6424e5b6139f1e8165da624ec34b6bceafc271a2361eec96e75f694"]
+region_text = "\n## Invariant\n\nThe term \"invariant\" is not one of Phase 54c's six formal record kinds, and no dedicated schema exists for it anywhere in this repository. Instead, the term is used across the codebase to name at least two distinct artifacts, neither one automatically implying the other. First, within `planning/learnings/`, `invariant` is a classification value meaning a required behavioural invariant of CodeCompass's own code, which should be promoted into a regression test. Second, a per-feature `design.md` or `context-packet.md` may contain a narrative \"things that must stay true\" subsection; this is simply a part of that document's own content and is not a separately-citable record on its own.\n\nWhen working with invariants, keep in mind that a rule captured in one of these two places is not automatically present in, or expected to be present in, the other — this is a genuinely easy mistake to make when refactoring a feature's own design doc, since nothing currently cross-links the two.\n"
+base_region_hash = "7f84effc651f69f6091b78439c1c34596b91ff4e838609443c3bf27e57d165d9"
+state = "applied"
+decision = "accept"
+semantic_change = false
+applied_record_id = ""
+applied_at = "2026-11-09T19:48:22.011299+00:00"

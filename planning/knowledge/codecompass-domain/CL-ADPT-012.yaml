@@ -1,0 +1,53 @@
+id: CL-ADPT-012
+kind: claim
+statement: >
+  Ecosystem, vendor, and adapter are three related but distinct
+  concepts. Ecosystem is a fixed, closed 4-member enum (npm, python,
+  cargo, haskell) -- a category, not a thing you configure per project.
+  A vendor is one tracked dependency: a VendorConfig(name, ecosystem)
+  entry from vendor.toml, belonging to exactly one Ecosystem (e.g.
+  VendorConfig(name="hledger-lib", ecosystem=Ecosystem.HASKELL)). An
+  adapter is the EcosystemAdapter subclass implementing
+  ecosystem-specific logic for one Ecosystem value (e.g. HaskellAdapter
+  for Ecosystem.HASKELL) -- constructed fresh per (VendorConfig,
+  project_root) via get_adapter, not itself configured or tracked as
+  project state the way a vendor is. Concretely: many vendors can share
+  one Ecosystem (multiple Haskell vendors all use Ecosystem.HASKELL) and
+  therefore share one adapter *class*, but each vendor still gets its
+  own adapter *instance*, scoped to that vendor's own config and
+  project_root. Edge case: the "one vendor, one adapter instance"
+  relationship is not a structural filesystem guarantee -- HaskellAdapter's
+  own monorepo resolution (_resolve_package_dir) shows a single
+  project_root can host multiple vendors' worth of source (e.g.
+  hledger-lib/hledger/hledger-ui all inside one `hledger` checkout), and
+  the adapter instance itself is responsible for narrowing project_root
+  down to the one subdirectory matching its own vendor's name before any
+  other method call is meaningful. Boundary case (added 2026-11-10,
+  Stage 87C's own real incremental-change demonstration): a vendor.toml
+  entry naming an ecosystem string outside the closed 4-member enum is
+  rejected at config-*load* time (config.py::_require_enum), before
+  get_adapter's own dispatch table is ever reached -- the dispatch
+  table's own closedness is therefore never tested against an invalid
+  value at dispatch time, since one can never arrive there.
+
+  This Claim supersedes CL-ADPT-005 for exactly this reason: every part
+  of CL-ADPT-005's own statement about the ecosystem/vendor/adapter
+  relationship remains accurate and is carried forward unchanged above;
+  this record adds one further, independently-checked boundary fact
+  CL-ADPT-005 never stated, per `planning/phase-54c-evidence-knowledge-
+  workflow.md` §2.4 ("a superseded Claim ... is never deleted or edited
+  in place -- a new record of the same kind is written with
+  `supersedes: <old-id>`") -- corrected after Stage 87C's initial
+  implementation amended CL-ADPT-005.yaml's own statement field directly
+  in place, a real governance violation of this already-established rule
+  caught during Stage 87C's own corrective-closeout pass, not an
+  authorised exception.
+derivation: DE-ADPT-012
+supporting_evidence: [EV-ADPT-005, EV-ADPT-002, EV-ADPT-013]
+contradicting_evidence: []
+derived_by: "lead, Stage 87C's own real multi-region maintenance demonstration -- new evidence (EV-ADPT-013) independently checked by a fresh dispatch before acceptance, synthesized into a superseding Claim per planning/phase-54c-evidence-knowledge-workflow.md §2.4 (a Claim is never edited in place), corrected during Stage 87C's corrective-closeout pass after the initial implementation violated that rule"
+repository_revision: "f434883db59f1870419afe208021d66b24bb295d"
+timestamp: "2026-11-10T00:00:00Z"
+status: supported
+supersedes: CL-ADPT-005
+assertion_kind: relationship

@@ -1,0 +1,38 @@
+id: DE-ADPT-012
+kind: derivation
+claim: CL-ADPT-012
+method: >
+  Stage 87C's own real multi-region knowledge-change demonstration
+  (planning/retros/phase-87-stage-87c-knowledge-compiled-documentation.md)
+  found, by direct inspection of `src/codecompass/config.py:62-71`
+  (`_require_enum`), that a `vendor.toml` entry naming an ecosystem
+  string outside the closed 4-member `Ecosystem` enum is rejected at
+  config-load time, before `get_adapter`'s own closed dispatch table is
+  ever reached -- a real, currently-true boundary fact about the
+  ecosystem/vendor/adapter relationship that CL-ADPT-005's own statement
+  did not cover. Confirmed by the real, already-passing
+  `tests/test_config.py::test_invalid_ecosystem_raises_config_error`
+  (run directly: 1 passed), and independently re-checked by a fresh
+  dispatch before acceptance (source, test, test result, prior-claim
+  absence, and revision SHA all re-verified).
+
+  During this corrective-closeout pass, re-read
+  `planning/phase-54c-evidence-knowledge-workflow.md` §2.4 directly and
+  found Stage 87C's initial implementation had amended CL-ADPT-005.yaml's
+  own `statement` field in place rather than writing a new, superseding
+  Claim record -- a real violation of that section's explicit rule
+  ("a superseded Claim ... is never deleted or edited in place"), not an
+  authorised exception the Stage 87C plan ever granted. Corrected by
+  restoring CL-ADPT-005.yaml to its exact pre-amendment text (confirmed
+  via `git show 0ea4001^:planning/knowledge/codecompass-domain/
+  CL-ADPT-005.yaml`), setting its own `status` to `superseded` (a
+  one-line field edit, matching this section's own "not a rewrite of its
+  content" instruction and the real precedent already on file at
+  `CL-ADPT-009`/`CL-ADPT-011`), and writing this record (`CL-ADPT-012`)
+  to carry the new boundary fact forward with `supersedes: CL-ADPT-005`.
+  The underlying evidence (`EV-ADPT-013`) and its independent check were
+  not re-done -- both were already real and already verified; only the
+  record structure that should have carried them was wrong.
+inputs: [EV-ADPT-005, EV-ADPT-002, EV-ADPT-013]
+performed_by: "lead, Stage 87C corrective-closeout pass"
+timestamp: "2026-11-10T00:00:00Z"

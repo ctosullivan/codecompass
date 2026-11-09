@@ -3,7 +3,7 @@ document: docs/concepts/adapter.md
 audience: "a developer new to CodeCompass, has not read any other doc"
 sections:
   - id: adapter-concept
-    required_knowledge: ["CL-ADPT-001", "CL-ADPT-002", "CL-ADPT-005"]
+    required_knowledge: ["CL-ADPT-001", "CL-ADPT-002", "CL-ADPT-012"]
     max_evidence_chars: 6000
     tone: instructional
     depth: standard

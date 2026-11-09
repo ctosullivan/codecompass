@@ -22,19 +22,13 @@ statement: >
   hledger-lib/hledger/hledger-ui all inside one `hledger` checkout), and
   the adapter instance itself is responsible for narrowing project_root
   down to the one subdirectory matching its own vendor's name before any
-  other method call is meaningful. Boundary case (added 2026-11-10,
-  Stage 87C's own real incremental-change demonstration): a vendor.toml
-  entry naming an ecosystem string outside the closed 4-member enum is
-  rejected at config-*load* time (config.py::_require_enum), before
-  get_adapter's own dispatch table is ever reached -- the dispatch
-  table's own closedness is therefore never tested against an invalid
-  value at dispatch time, since one can never arrive there.
+  other method call is meaningful.
 derivation: DE-ADPT-005
-supporting_evidence: [EV-ADPT-005, EV-ADPT-002, EV-ADPT-013]
+supporting_evidence: [EV-ADPT-005, EV-ADPT-002]
 contradicting_evidence: []
 derived_by: "context-researcher agent dispatch"
-repository_revision: "f59331911db6f38eb5b33d266883cf227093c26c"
-timestamp: "2026-11-10T00:00:00Z"
-status: supported
+repository_revision: "fef153bb2f243f563b0a93206f9463028de9aaac"
+timestamp: "2026-09-23T00:00:00Z"
+status: superseded
 supersedes: null
 assertion_kind: relationship

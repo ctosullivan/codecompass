@@ -2,7 +2,7 @@
 
 These three concepts are related but distinct, and worth keeping apart:
 
-<!-- codecompass-grounded-by: CL-ADPT-004 CL-ADPT-005 region:vendor-and-ecosystem-md-ecosystem-vendor-adapter -->
+<!-- codecompass-grounded-by: CL-ADPT-004 CL-ADPT-012 region:vendor-and-ecosystem-md-ecosystem-vendor-adapter -->
 ## Ecosystems, Vendors, and Adapters
 
 CodeCompass organizes its support for external dependencies around three distinct concepts: ecosystem, vendor, and adapter. An ecosystem is a fixed, closed category with exactly four members -- npm, python, cargo, and haskell -- and it is not something configured on a per-project basis. A vendor is a single tracked dependency, represented as a `VendorConfig(name, ecosystem)` entry defined in `vendor.toml`, and every vendor belongs to exactly one ecosystem, for example `VendorConfig(name="hledger-lib", ecosystem=Ecosystem.HASKELL)`. An adapter is an `EcosystemAdapter` subclass that implements the ecosystem-specific logic for one particular `Ecosystem` value, such as `HaskellAdapter` for `Ecosystem.HASKELL`.

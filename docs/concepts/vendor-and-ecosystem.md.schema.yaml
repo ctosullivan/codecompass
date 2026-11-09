@@ -3,7 +3,7 @@ document: docs/concepts/vendor-and-ecosystem.md
 audience: "a developer new to CodeCompass, has not read any other doc"
 sections:
   - id: ecosystem-vendor-adapter
-    required_knowledge: ["CL-ADPT-004", "CL-ADPT-005"]
+    required_knowledge: ["CL-ADPT-004", "CL-ADPT-012"]
     max_evidence_chars: 4000
     tone: instructional
     depth: standard

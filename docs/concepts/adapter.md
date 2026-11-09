@@ -9,7 +9,7 @@
 
 This table is deterministically derived from `get_adapter`'s own closed dispatch table (`src/codecompass/adapters/__init__.py`) — kept here as a quick-reference lookup, outside the compiled region below, since it is mechanical fact rather than something knowledge-compilation composition needs to restate in prose.
 
-<!-- codecompass-grounded-by: CL-ADPT-001 CL-ADPT-002 CL-ADPT-005 region:adapter-md-adapter-concept -->
+<!-- codecompass-grounded-by: CL-ADPT-001 CL-ADPT-002 CL-ADPT-012 region:adapter-md-adapter-concept -->
 ## Adapters
 
 An adapter is a concrete subclass of `EcosystemAdapter`, defined in `src/codecompass/adapters/base.py`. Each adapter is constructed per `(VendorConfig, project_root)` pair, and it implements five abstract methods -- `installed_version`, `source_location`, `readme_and_api_surface`, `repository_url`, and `dependency_tree` -- along with one concrete, overridable method, `symbols()`. There is exactly one adapter class per `Ecosystem` enum member, and that class is always selected through `get_adapter`'s closed dispatch table rather than through naming convention, plugin discovery, or a configuration string.

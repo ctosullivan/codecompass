@@ -4,7 +4,7 @@ A single entry point into this slug's own `intermediate/*.md` files — mechanic
 
 - **Concepts, architecture, domain knowledge** — `overview.md` (23: CL-ADPT-001, CL-ADPT-003, CL-ADPT-004, CL-ADPT-008, CL-ADPT-010, CL-CTXT-001, CL-CTXT-002, CL-CTXT-003, CL-CTXT-004, CL-CTXT-005, CL-EVID-001, CL-EVID-002, CL-EVID-003, CL-EVID-004, CL-EVID-005, CL-EVID-006, CL-EVID-007, CL-EVID-008, CL-EVID-009, CL-EVID-011, CL-EVID-012, CL-EVID-013, CL-KNOW-001)
 - **Invariants and constraints** — `invariants-and-constraints.md` (5: CL-ADPT-006, CL-ADPT-007, CL-ADPT-009, CL-ADPT-011, CL-CTXT-006)
-- **Interfaces and behaviours** — `interfaces-and-behaviours.md` (3: CL-ADPT-002, CL-ADPT-005, CL-EVID-010)
+- **Interfaces and behaviours** — `interfaces-and-behaviours.md` (4: CL-ADPT-002, CL-ADPT-005, CL-ADPT-012, CL-EVID-010)
 - **Open questions and conflicts** — `open-questions-and-conflicts.md` (0: none)
 
 Edge cases and compatibility constraints are recorded as ordinary Claims above (typically under invariants/constraints or open questions) rather than in a separate section here — see each file's own content for the real detail; this brief only indexes it.
