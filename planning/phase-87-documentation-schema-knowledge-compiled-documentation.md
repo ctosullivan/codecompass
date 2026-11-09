@@ -2419,11 +2419,36 @@ only, never a new check:
    acceptable for any of the four new schemas either.
 6. **Never weaken evidence requirements merely to obtain a successful
    compilation** — a genuine gap found by this preflight for any of
-   the nine Claims below is resolved the same way any other knowledge
-   gap is (§S.3's own evidence → candidate → reconciliation workflow,
-   or explicitly deferring that specific page/section), never by
+   the **fifteen** Claims below (`CL-CTXT-001` [1] +
+   `CL-ADPT-001/002/004/005/007` [5] + the nine `CL-EVID-*` ids [9] —
+   corrected from an earlier draft's own "nine," which only counted
+   the `CL-EVID-*` sub-cluster and omitted the other six — the same
+   species of stale-count error this amendment's own Finding C fixed
+   elsewhere) is resolved the same way any other knowledge gap is
+   (§S.3's own evidence → candidate → reconciliation workflow, or
+   explicitly deferring that specific page/section), never by
    lowering `min_claim_status` or adding an unjustified
    `allow_unconfirmed_scopes: true` to make a failing preflight pass.
+
+**Preflight actually run this session, not merely specified** — real
+results, confirming the preflight surfaces genuine, actionable
+findings rather than a hypothetical exercise: all fifteen Claims
+report `consistency.status == "unconfirmed"` (`codecompass-domain` has
+no `oracle-contract.yaml` at all — every one of the four new schemas,
+not only one, needs `allow_unconfirmed_scopes: true` with the concrete
+justification point 5 above requires, not just `context.md`'s); no
+`unresolved_required_knowledge`, `below_min_claim_status`, or
+`contradiction` gap for any of the fifteen; and a genuine, measured
+budget finding: `knowledge-model.md`'s own nine-Claim `CL-EVID-*`
+cluster serializes to **18,552 real characters** — roughly 4.6× the
+only existing `max_evidence_chars` precedent in this repository
+(`README.md.schema.yaml`'s `4000`, for one Claim). **This page's own
+schema must set `max_evidence_chars` to at least ~20,000**, stated
+here explicitly rather than left for an implementer to discover via a
+`DocCompilerError` mid-compile — the preflight's own stated purpose
+(surface this before, not during, implementation) only holds if the
+plan itself states the number the preflight actually found, not merely
+that a preflight exists.
 
 This preflight is a **read-only verification step**, not new pipeline
 code — every function it calls already exists and is already exercised
@@ -2719,10 +2744,17 @@ regions rather than one compiled region and one untouched page):
    touched), with its narrower evidential basis — a demonstration, not
    a production change — stated plainly in the retro, never silently
    presented as equivalent to path (a) or (i).
-4. **`docs maintain`** (run across the full six-schema project), once
-   the knowledge change from step 3 has actually landed (production or
-   isolated-worktree, per whichever branch above applies) **and** the
-   step-6 seeded human edit below has already been made, must report:
+4. **`docs maintain`** (run across the full six-schema project —
+   clarified by this amendment: if path (b)(ii) applies, **every** step
+   from here through step 8 runs inside that same disposable worktree,
+   not only the knowledge change's own landing; "the full six-schema
+   project" means that worktree's own copy in that case, exactly as
+   Stage 87B's own real demonstration ran its entire compile→review→
+   publish→reconcile cycle inside one isolated worktree, never only
+   its first step), once the knowledge change from step 3 has actually
+   landed (production or isolated-worktree, per whichever branch above
+   applies) **and** the step-6 seeded human edit below has already
+   been made, must report:
    `claims_changed` for **both** `adapter.md`'s and `vendor-and-
    ecosystem.md`'s own regions; `doc_candidate` for whichever region
    step 6 deliberately edits (`context.md`, fixed here rather than left
@@ -3243,5 +3275,40 @@ treated the Claims' own original historical research cost (Phase
 79/80) as free — a third, explicitly disclosed-as-unavailable cost
 category added for both arms.
 
-**Third review round required and completed — see the verdict
-immediately below, added by this same amendment.**
+**Third review round (2026-11-09, same day).**
+
+**Verdict: READY WITH NON-BLOCKING OBSERVATIONS.** An independent
+dispatch, instructed to verify the corrected assumptions against
+actual code and records — particularly reconciliation-state logic,
+knowledge currency, migration procedure, and comparative methodology —
+ran real code rather than reading prose for consistency alone:
+executed `detect_grounded_region_changes` directly against the real
+repository and confirmed `region:intermediate-knowledge-layer` is
+genuinely `doc_candidate` right now; read `maintain_document`/`decide_
+publish_safety`/`write_doc_candidates_to_manifests` and confirmed no
+code path exists by which publishing the two affected regions could
+ever advance or "fix" `context.md`'s own seeded-edit baseline,
+directly validating Finding A's own safety argument rather than
+merely its prose; confirmed the declined-amendment branch (Finding B)
+genuinely resolves the prior contradiction, with one minor clarity gap
+(now fixed above: the isolated-worktree path's own scope extended
+explicitly across all of steps 4-8, not only the knowledge change's
+own landing); re-confirmed Getting Started's corrected counts (Finding
+C); independently **ran** the new compilation-readiness preflight
+(Finding D) against all real, current Claims rather than trusting its
+own specification, confirming every function it calls is real and
+behaves as described, and surfacing two further, concrete findings of
+its own — a stale "nine Claims" count (this amendment's own new text
+repeating the exact species of error Finding C had just fixed
+elsewhere, now corrected to the accurate fifteen) and a real, measured
+budget requirement for `knowledge-model.md` (18,552 characters against
+the repository's only existing precedent of 4,000 — now stated
+explicitly, ≥20,000, rather than left for implementation to discover
+mid-compile); and confirmed Finding E's "disclosed as unavailable"
+framing is an honest characterisation of Phase 79/80's own retros
+(searched directly for any numeric cost figure; none exist), not a
+loophole concealing a reconstructable number. Both findings from this
+round are corrected in place above.
+
+**This amended plan is implementation-ready.** Stage 87C implementation
+may now proceed, per this session's own separate authorisation to do so.
