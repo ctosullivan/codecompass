@@ -233,12 +233,63 @@ backlog/revisit-trigger row in `planning/ROADMAP.md`'s
 "Future-improvement backlog" section by this reconciliation (its own
 `promoted.md` line is a separate, follow-up `knowledge-curator` step,
 not taken by this reconciliation, which may not touch
-`planning/learnings/**`). **Stage 87B is genuinely `done`.** Stage 87C
-(the complete minimum publication suite, the real matched-baseline
-experiment) remains separately planned, **not authorised**, and
-untouched by any of this work. Phase 87 itself remains `not done`
-until Stage 87C's own exit gate (the complete minimum publication
-suite, the matched-baseline comparison, final audits) is met.
+`planning/learnings/**`). **Stage 87B is genuinely `done`.**
+
+**Stage 87B post-closeout hardening pass — closed (2026-11-09).** A
+fresh review of Stage 87B's already-closed, already-PASS-audited work
+found three further integration defects in `docs publish`'s own
+safety mechanics (none in the real demonstration's own generated
+content, both independently reconfirmed sound first): (1) **reviewed-
+draft integrity** — `docs publish` never verified that `draft_body`
+(what actually gets written) genuinely derived from the reviewed
+`tagged_draft` text, so an independently-rewritten `draft_body` could
+publish unreviewed content with both review records still showing as
+passing — fixed by recomputing the draft's own identity from
+`tagged_draft` and cross-checking it against `draft_sha256`/
+`draft_body`, re-checked a second time against a freshly re-read copy
+of the manifest immediately before the write. (2) **live schema
+freshness** — the write-boundary re-check added by the original
+hardening pass reused schema/section objects parsed once at the top of
+the request, so a schema file edited mid-publish was invisible to
+every "re-check" — fixed by rereading the schema from disk and
+re-resolving the section fresh on every call. (3) **residual
+write-boundary race, narrowed further** — a new `doc_compiler.
+document_identity`/`DocPublishConflictError` compare-and-swap catches
+a document mutation landing after the detect-based re-check, and
+`publish_section`'s writes now go through a new atomic
+write-then-rename helper; the remaining window (between that identity
+re-check and the write itself, both plain synchronous Python with no
+cross-process lock) is honestly disclosed, not claimed closed, in both
+`publish_section`'s and `_doc_publish_lock`'s own docstrings, and
+recorded as `L-124`. 15 new regression tests (full suite 1337 → 1352
+passed, 2 skipped); a fresh independent audit directly reproduced 14
+of the 15 against a disposable `git worktree` at the pre-fix commit. A
+real, evidence-backed `CL-CTXT-005` amendment candidate the original
+demonstration surfaced was re-derived independently as `EV-CTXT-021`
+and filed as `L-123` for the ordinary knowledge-reconciliation
+workflow — not applied directly; a successful demonstration is still
+not maintainer acceptance (see "Next concrete step" below). A first
+independent `release-phase-auditor` dispatch against this hardening
+commit returned **FAIL**: this work's own `CHANGELOG.md` entry falsely
+claimed an audit had already run and passed before any audit had
+actually been dispatched (a self-certification defect, caught directly
+by the auditor), plus an overstated test-reproduction count ("13 of
+15" claimed, true figure 14 of 15) — both fixed same-day, and a fresh,
+independent re-audit — which directly re-verified the underlying
+mechanisms, re-ran the full suite and every strict validator itself,
+and confirmed no protected-file drift since Stage 87B's own prior
+closeout — returned **PASS**. **Stage 87B's post-closeout hardening
+pass is genuinely closed.** Full detail:
+`planning/retros/phase-87-stage-87b-knowledge-change-
+demonstration.md`'s "Addendum 2"; `planning/retros/
+_audit-phase-87-stage-87b-hardening.md` (the FAIL);
+`planning/retros/_audit-phase-87-stage-87b-hardening-reaudit.md` (the
+PASS). Stage 87C (the complete minimum publication suite, the real
+matched-baseline experiment) remains separately planned, **not
+authorised**, and untouched by any of this work. Phase 87 itself
+remains `not done` until Stage 87C's own exit gate (the complete
+minimum publication suite, the matched-baseline comparison, final
+audits) is met.
 
 **Phase 86 — Knowledge-Placement and Code-Quality Review — is `done`
 (2026-11-03)**. Plan amended and independently reviewed across four
@@ -808,6 +859,29 @@ and each phase's retro.
 
 ## What was just completed
 
+**Phase 87 Stage 87B post-closeout hardening pass, fix round, and
+independent audit FAIL→fix→PASS cycle**, 2026-11-09, direct user
+request. Full detail: see "Current phase" above;
+`planning/retros/phase-87-stage-87b-knowledge-change-
+demonstration.md`'s "Addendum 2"; `planning/retros/
+_audit-phase-87-stage-87b-hardening.md`;
+`planning/retros/_audit-phase-87-stage-87b-hardening-reaudit.md`. In
+short: commit `1e3301f` fixed three further `docs publish` integration
+defects found by a fresh review of the already-closed, already-PASS-
+audited Stage 87B work (reviewed-draft integrity, live schema
+freshness, a narrower write-boundary race), with 15 new regression
+tests (1337 → 1352 passed, 2 skipped), and filed two learnings
+(`L-123`, a real `CL-CTXT-005` amendment candidate handed to the
+ordinary knowledge-reconciliation workflow; `L-124`, the residual
+write-boundary race, now narrowed twice); commit `9cdbb6f` corrected a
+self-certification defect a first independent audit caught (the
+changelog claimed an audit had already passed before one had run,
+plus an overstated test-reproduction count); commit `dacdd1c` closed
+the pass after a fresh, independent re-audit returned **PASS**. Stage
+87B's post-closeout hardening is now genuinely closed; Stage 87C
+remains separately planned, not authorised, and untouched; Phase 87
+overall remains `not done`; see "Next concrete step" below.
+
 **Phase 87 Stage 87B implementation, real knowledge-change
 demonstration, and independent audit FAIL→fix→PASS cycle**,
 2026-11-07, direct user request. Full detail: see "Current phase"
@@ -1269,16 +1343,29 @@ Sequence from here: **87 (Documentation Schema and Knowledge-Compiled
 Documentation) — Stage 87A is implemented, hardened, and independently
 re-audited (second pass), PASS WITH NON-BLOCKING OBSERVATIONS; Stage
 87B is implemented, independently audited through a real
-FAIL→fix→PASS cycle, and now **done** (2026-11-07; see "What was just
-completed" above); Stage 87C remains separately planned, **not
-authorised**, and untouched; Phase 87 overall remains `not done`** —
+FAIL→fix→PASS cycle, `done` (2026-11-07), and its own post-closeout
+hardening pass is now also closed (2026-11-09; three further
+publication-path defects fixed, a first re-audit FAIL on a
+self-certification defect fixed, fresh re-audit **PASS**; see "What
+was just completed" above); Stage 87C remains separately planned,
+**not authorised**, and untouched; Phase 87 overall remains `not
+done`** —
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
 Next concrete step for this phase: a separate, explicit authorisation
 to *plan, then implement* Stage 87C (the complete minimum publication
 suite — README, Getting Started, Concepts, Architecture, Reference,
 Contributor Guide — plus the real matched-baseline quality comparison
 Stage 87B's own comparator explicitly deferred to it), then Phase 87
-closeout. → 88 (Agent Integration and MCP, split from
+closeout. A smaller, independent outstanding item from the hardening
+pass: `EV-CTXT-021` (`planning/knowledge/codecompass-domain/`) is a
+verified, uncited fact about `sync_vendor`'s clone-failure fallback
+that `CL-CTXT-005` does not yet mention — a future
+`context-researcher`/reconciliation pass over `codecompass-domain/`
+should amend `CL-CTXT-005` to include it (adding `EV-CTXT-021` to its
+`supporting_evidence`) or explicitly decline with a documented reason.
+Found during Stage 87B's hardening pass, `L-123`; this is a hand-off
+for the ordinary knowledge-reconciliation workflow, not something this
+reconciliation itself may decide. → 88 (Agent Integration and MCP, split from
 the old merged phase) → 89 (Incremental Knowledge and Documentation
 Reconciliation, split from the old merged phase, independent of MCP) →
 90 (Comparative Development Trials, methodology strengthened) → 91

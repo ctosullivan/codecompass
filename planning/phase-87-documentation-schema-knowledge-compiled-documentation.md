@@ -4,9 +4,15 @@
 four integration defects, independently re-reviewed. Stage 87A done.
 Stage 87B implemented and done (2026-11-07), independently audited
 through a real FAIL→fix→PASS cycle (see
-`planning/retros/_audit-phase-87-stage-87b.md`). Stage 87C remains
-separately planned, not authorised, and untouched. Phase 87 overall
-remains not done.** This is a
+`planning/retros/_audit-phase-87-stage-87b.md`); Stage 87B's own
+post-closeout hardening pass (2026-11-09) then fixed three further
+publication-path integration defects (reviewed-draft integrity, live
+schema freshness, a narrower write-boundary race), survived a first
+re-audit FAIL on a self-certification defect, and closed on a fresh
+re-audit **PASS** (see `planning/retros/_audit-phase-87-stage-87b-
+hardening.md`, `planning/retros/_audit-phase-87-stage-87b-hardening-
+reaudit.md`). Stage 87C remains separately planned, not authorised,
+and untouched. Phase 87 overall remains not done.** This is a
 **scope-management correction**, not an architectural redesign — the
 strategic objective (§0), the verified architecture map (§A), and the
 shared schema/pipeline contract (§B/§C) are preserved. What changes:
