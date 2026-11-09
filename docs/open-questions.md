@@ -18,7 +18,7 @@ Compiled from the project's own currently-known open design questions, plus anyt
 - **"Context"** has at least five distinct, non-interchangeable senses — see `docs/concepts/context.md`.
 - **"Capability" vs. "feature"** — only the external adapter protocol has capabilities in a formal, closed-set sense; "feature" is ordinary unscoped English elsewhere — see `docs/concepts/protocol-and-capability.md`.
 - **"Connector"** names nothing real in CodeCompass's own source, tests, or configuration.
-- **"Invariant"** is not a formal knowledge-record kind and names at least three distinct, not-necessarily-coinciding things across the project — see `docs/concepts/knowledge-model.md`.
+- **"Invariant"** is not a formal knowledge-record kind and names at least two distinct, not-necessarily-coinciding things across the project — see `docs/concepts/knowledge-model.md` (narrowed from an earlier "at least three" when that page's own Phase 87 Stage 87C migration dropped a third sense that had no citable knowledge record backing it).
 
 ## A directly-observed fact with no recorded explanation
 

@@ -247,7 +247,7 @@ preserved evidence, just not currently reconfirmed (corrective pass,
 has since changed, or a changed implementation) is reported `stale`
 regardless of `--repo-root`.
 
-## `codecompass docs schema-init|compile|record-review|publish|maintain` (Phase 87, Stages 87A-87B)
+## `codecompass docs schema-init|compile|record-review|publish|maintain` (Phase 87, Stages 87A-87C)
 
 ```
 codecompass docs schema-init DOCUMENT [--section-id ID] [--output PATH]
@@ -266,9 +266,16 @@ second schema-governed document (`docs/getting-started.md`),
 project-wide `maintain` discovery, a narrow sandboxed execution
 harness for a small, explicitly allow-listed set of tested examples
 (`scripts/execute_doc_example.py` — never a general command runner),
-and a publication-time concurrency guard (below). No matched-baseline
-quality comparison yet — that remains Stage 87C's own separately
-planned and authorised scope. See
+and a publication-time concurrency guard (below). Stage 87C extended
+compilation to three further Concepts pages, established a repeatable
+migration procedure for pre-existing human-authored pages, and ran a
+real multi-region knowledge-change demonstration plus a
+matched-baseline comparator against a conventional agent — the
+comparator found the pipeline scopes a multi-document change more
+completely, but did not demonstrate a net time/cost advantage on that
+one, small change; see
+`planning/retros/phase-87-stage-87c-knowledge-compiled-documentation.md`
+for the full result. See
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`
 for the full design and `docs/development/clean-room-redocumentation.md`
 for how `compile`'s clean-room composition step relates to (and

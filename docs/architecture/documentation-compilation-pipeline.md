@@ -1,8 +1,8 @@
 # Documentation-compilation pipeline (Phase 87)
 
-Current state: **Stages 87A and 87B, both hardened and independently
-demonstrated end-to-end against the real repository.** Stage 87A
-established the compile/review/publish lifecycle for one
+Current state: **Stages 87A, 87B, and 87C, all hardened and
+independently demonstrated end-to-end against the real repository.**
+Stage 87A established the compile/review/publish lifecycle for one
 schema-governed document (`README.md`), then was hardened against
 three integration defects a follow-up review found in the publication
 path itself (binding publication to persisted, hash-verified review
@@ -18,13 +18,36 @@ tested documentation examples (`scripts/execute_doc_example.py` —
 never a general command runner), and a publication-time concurrency
 guard that revalidates live region state and a cooperating-writer file
 lock immediately before every write, so a human edit or a concurrent
-publish is never silently overwritten. Stage 87C (the complete minimum
-publication suite, deterministic CLI-reference generation, the
-matched-baseline quality comparison) remains planned but not
-implemented, and not authorised by this stage — see
+publish is never silently overwritten. Stage 87C extended compilation
+to three more Concepts pages — `docs/concepts/adapter.md` (two
+regions), `docs/concepts/vendor-and-ecosystem.md` (one region), and
+`docs/concepts/knowledge-model.md` (two regions) — established and
+followed a repeatable migration procedure for wrapping pre-existing
+human-authored prose in a grounded region without losing or
+duplicating content, and proved real multi-region incremental
+maintenance (one knowledge amendment correctly triggering
+`claims_changed` recompilation in exactly the two regions that
+actually cite it, while an unrelated human edit elsewhere and a
+pre-existing candidate both correctly stayed `doc_candidate`). A
+fourth Concepts page (`docs/concepts/context.md`) was attempted and
+honestly declined after two failed review rounds — its original
+content was restored unchanged, demonstrating that this pipeline does
+not force a migration through when generation is inferior. A
+matched-baseline comparator (Stage 87C's own real knowledge-change
+task, run by both a conventional agent and this pipeline from an
+identical pinned revision) found the pipeline's structural citation-
+dependency graph correctly scopes a multi-document change that a
+capable conventional agent, working from the same starting fact,
+scoped too narrowly — but did not demonstrate a net time/cost
+advantage on this one, small change once review-dispatch overhead is
+counted; see
+`planning/retros/phase-87-stage-87c-knowledge-compiled-documentation.md`
+for the full, honest result. This page describes what exists today,
+not the full eventual design — a deterministic CLI-reference
+generator and a semantic cross-document consistency checker remain
+named, deferred opportunities (see
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`
-for the full design and three-stage boundary. This page describes what
-exists today, not the full eventual design.
+§S.11).
 
 ## Why this exists
 
@@ -216,6 +239,31 @@ never retroactively rewritten into the new, hash-bound format — it
 remains as the real demonstration's own historical evidence, not a
 record a future `docs publish` call will ever read again (the section
 is already published).
+
+Stage 87C repeated this against five further regions across three
+Concepts pages (`adapter.md` ×2, `vendor-and-ecosystem.md` ×1,
+`knowledge-model.md` ×2), each independently reviewed before
+publication, and against a fourth page (`context.md`) that was
+correctly declined after two failed rounds rather than forced through.
+It then ran a real, multi-region knowledge-change demonstration: a
+knowledge amendment (`CL-ADPT-005`, new boundary fact, cited to new
+evidence `EV-ADPT-013`) correctly triggered `claims_changed` in
+exactly the two regions that cite it (`adapter.md`'s `adapter-concept`,
+`vendor-and-ecosystem.md`'s `ecosystem-vendor-adapter`), both
+recompiled, independently re-reviewed, and republished, while a
+deliberately seeded human edit elsewhere and a pre-existing unrelated
+candidate both correctly remained `doc_candidate` throughout, never
+auto-reconciled. A matched-baseline comparator then ran the identical
+task against both this pipeline and a conventional agent, from the
+same pinned starting revision, with a blind comparative review: the
+pipeline's shared-citation dependency graph correctly scoped the
+change to both affected pages, while the conventional agent, working
+from the same starting fact without that graph, updated only one —
+but the pipeline did not clearly cost less time once its own
+independent-review overhead is counted, so no net time/cost advantage
+was demonstrated on this one, small change. Full account, including
+the honest two-verdict comparator result:
+`planning/retros/phase-87-stage-87c-knowledge-compiled-documentation.md`.
 
 ## Hardening pass (post-demonstration)
 
