@@ -2001,8 +2001,8 @@ def docs_compile(
                 "draft_body": result.draft_body,
                 "draft_sha256": oracle.sha256_text(tagged_draft),
                 "evidence_sha256": manifest["evidence_sha256"],
-                "schema_section_sha256": oracle.sha256_text(
-                    json.dumps(schema_section, sort_keys=True)
+                "schema_section_sha256": doc_compiler.compute_schema_section_identity_sha256(
+                    schema, schema_section
                 ),
                 "citation_findings": [
                     {
@@ -2246,30 +2246,61 @@ def docs_publish(
     # Reproduced directly: widening a section's `min_claim_status` on
     # disk mid-publish was not detected before this fix, because
     # nothing ever read the file a second time.
-    def _evidence_staleness_error() -> str | None:
+    def _evidence_staleness_error() -> tuple[str | None, Path | None]:
+        """`(error, live_document_path)` -- exactly one is non-`None`.
+        `live_document_path` is the publication target re-resolved
+        fresh from the live schema (requirement: revalidate the
+        effective document target against the live schema immediately
+        before publication, not merely trusted from the one-time
+        resolution done at the top of this function) -- callers at the
+        write boundary use this value for the actual write, never the
+        possibly-stale `document_path` captured before any revalidation
+        ran."""
         live_schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
         live_section = doc_compiler.find_schema_section(live_schema, section_id)
         if live_section is None:
             return (
                 f"section {section_id!r} is no longer declared in the live schema "
-                f"{schema_path} -- recompile and re-review before publishing"
+                f"{schema_path} -- recompile and re-review before publishing",
+                None,
             )
-        live_schema_section_sha256 = oracle.sha256_text(json.dumps(live_section, sort_keys=True))
+        # Post-closeout hardening (second pass): binds the section's
+        # own hash together with every schema-level field that governs
+        # where it may be published or how it must have been reviewed
+        # (`document`, `audience`, `acceptance_criteria`) -- a schema
+        # whose top-level `document` field changed, with the section
+        # dict itself left byte-identical, must be caught here exactly
+        # as a changed section would be. Reproduced directly: before
+        # this fix, retargeting `document` alone, after both reviews
+        # passed, silently redirected publication to a different
+        # allowed document with no refusal.
+        live_schema_section_sha256 = doc_compiler.compute_schema_section_identity_sha256(
+            live_schema, live_section
+        )
         if live_schema_section_sha256 != pending.get("schema_section_sha256"):
             return (
-                "this section's schema definition has changed since it was compiled -- "
-                "recompile and re-review before publishing"
+                "this section's schema definition (including its document/audience/"
+                "acceptance_criteria) has changed since it was compiled -- recompile "
+                "and re-review before publishing",
+                None,
             )
         live_hydrated = doc_compiler.hydrate_records(project_root, pending.get("record_ids", []))
         live_evidence_sha256 = doc_compiler.hash_evidence(live_hydrated)
         if live_evidence_sha256 != pending.get("evidence_sha256"):
             return (
                 "required knowledge has changed since this section was compiled -- "
-                "recompile and re-review before publishing"
+                "recompile and re-review before publishing",
+                None,
             )
-        return None
+        try:
+            live_document_path = doc_compiler.resolve_publication_target(
+                project_root, live_schema["document"]
+            )
+        except doc_compiler.DocCompilerError as exc:
+            return (f"the live schema's document target is no longer valid: {exc}", None)
+        return None, live_document_path
 
-    staleness_error = _evidence_staleness_error()
+    staleness_error, _unused_live_document_path = _evidence_staleness_error()
     if staleness_error is not None:
         console.print(f"[red]error:[/red] {staleness_error}")
         raise typer.Exit(code=1)
@@ -2462,13 +2493,19 @@ def docs_publish(
             # existed, since `claims_changed` is otherwise a legitimate
             # reason to proceed and cannot by itself tell a fresh
             # republish apart from a now-stale one).
-            staleness_error = _evidence_staleness_error()
+            staleness_error, live_document_path = _evidence_staleness_error()
             if staleness_error is not None:
                 console.print(
                     f"[red]error:[/red] the cited knowledge changed between the initial "
                     f"check and publication -- {staleness_error}"
                 )
                 raise typer.Exit(code=1)
+            # The actual write always targets the path just re-resolved
+            # from the live schema above, never the one-time resolution
+            # from the top of this function -- requirement: revalidate
+            # the effective document target immediately before
+            # publication.
+            document_path = live_document_path
 
             # Post-closeout hardening, Finding A's write-boundary case:
             # re-read the pending manifest itself fresh from disk, as

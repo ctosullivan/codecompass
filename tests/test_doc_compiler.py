@@ -567,6 +567,80 @@ def test_strip_citation_tags_is_deterministic_across_repeated_calls():
 
 
 # ---------------------------------------------------------------------------
+# compute_schema_section_identity_sha256 -- second post-closeout
+# hardening pass: binds the section dict together with the schema's
+# own top-level `document`/`audience`/`acceptance_criteria` fields, so
+# a change to any of them invalidates an already-recorded review.
+# ---------------------------------------------------------------------------
+
+
+def _schema_doc(**overrides):
+    base = {
+        "schema_version": 1, "document": "docs/demo.md", "audience": "a developer",
+        "sections": [{"id": "s1", "required_knowledge": [], "max_evidence_chars": 100}],
+        "acceptance_criteria": ["ok"], "owner": "lead",
+    }
+    base.update(overrides)
+    return base
+
+
+def test_schema_section_identity_is_deterministic():
+    schema = _schema_doc()
+    section = schema["sections"][0]
+    results = {dc.compute_schema_section_identity_sha256(schema, section) for _ in range(5)}
+    assert len(results) == 1
+
+
+def test_schema_section_identity_changes_when_document_changes():
+    section = {"id": "s1", "required_knowledge": [], "max_evidence_chars": 100}
+    before = dc.compute_schema_section_identity_sha256(_schema_doc(), section)
+    after = dc.compute_schema_section_identity_sha256(
+        _schema_doc(document="docs/other.md"), section
+    )
+    assert before != after
+
+
+def test_schema_section_identity_changes_when_audience_changes():
+    section = {"id": "s1", "required_knowledge": [], "max_evidence_chars": 100}
+    before = dc.compute_schema_section_identity_sha256(_schema_doc(), section)
+    after = dc.compute_schema_section_identity_sha256(
+        _schema_doc(audience="someone else entirely"), section
+    )
+    assert before != after
+
+
+def test_schema_section_identity_changes_when_acceptance_criteria_changes():
+    section = {"id": "s1", "required_knowledge": [], "max_evidence_chars": 100}
+    before = dc.compute_schema_section_identity_sha256(_schema_doc(), section)
+    after = dc.compute_schema_section_identity_sha256(
+        _schema_doc(acceptance_criteria=["something else"]), section
+    )
+    assert before != after
+
+
+def test_schema_section_identity_changes_when_the_section_itself_changes():
+    schema = _schema_doc()
+    before = dc.compute_schema_section_identity_sha256(
+        schema, {"id": "s1", "required_knowledge": [], "max_evidence_chars": 100}
+    )
+    after = dc.compute_schema_section_identity_sha256(
+        schema, {"id": "s1", "required_knowledge": [], "max_evidence_chars": 999}
+    )
+    assert before != after
+
+
+def test_schema_section_identity_unaffected_by_unrelated_top_level_fields():
+    # owner/schema_version are not review-relevant -- changing them
+    # alone must not invalidate an already-recorded review.
+    section = {"id": "s1", "required_knowledge": [], "max_evidence_chars": 100}
+    before = dc.compute_schema_section_identity_sha256(_schema_doc(), section)
+    after = dc.compute_schema_section_identity_sha256(
+        _schema_doc(owner="someone-else", schema_version=2), section
+    )
+    assert before == after
+
+
+# ---------------------------------------------------------------------------
 # document_identity / publish_section's expected_document_identity --
 # Stage 87B post-closeout hardening, Finding C: a compare-and-swap
 # snapshot of the document's own exact content, checked immediately

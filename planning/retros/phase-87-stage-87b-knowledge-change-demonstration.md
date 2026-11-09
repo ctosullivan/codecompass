@@ -520,3 +520,88 @@ full span since Stage 87B's own prior closeout (`e0de671` through
 `9cdbb6f`). Full account: `planning/retros/_audit-phase-87-stage-87b-
 hardening-reaudit.md`. **Stage 87B's post-closeout hardening pass is
 closed.**
+
+## Addendum 3: a second, further publication-integrity defect — top-level schema fields bypassed review binding (2026-11-09, same day)
+
+A fresh code-inspection review of this already-twice-hardened `docs
+publish` path, run independently of Addendum 2's own three findings,
+raised a suspected fourth defect: `schema_section_sha256` (the hash
+every persisted review record and the pending manifest are bound to)
+was computed from **only the section dict**, even after Addendum 2's
+own fix bound the *section's own identity* to the live schema on
+every re-check. The schema's **top-level fields** — `document` (the
+actual publication target), `audience`, `acceptance_criteria` — were
+never part of that hash at all, at compile time or at any publish-time
+re-check.
+
+**Reproduced directly, before any fix was written**: a standalone
+script (kept outside the repository, mirroring this project's own
+real-vs-synthetic discipline) compiled a section against a schema
+targeting `docs/demo-original.md`, recorded both passing reviews,
+then rewrote *only* the schema's own top-level `document` field to
+`docs/demo-RETARGETED.md` — leaving the section dict itself
+byte-identical — and ran `docs publish`. Result: exit code 0, the
+already-reviewed draft published to the new, never-reviewed-against
+target; the original target was never created. The defect was real,
+not merely suspected.
+
+**Fix**: `doc_compiler.compute_schema_section_identity_sha256(schema,
+schema_section)` — one new, shared function binding the section dict
+together with the schema's own `document`/`audience`/
+`acceptance_criteria` fields into a single hash. `docs compile` now
+computes `schema_section_sha256` through this function (previously a
+bare `sha256(json.dumps(section))`); `docs publish`'s own
+`_evidence_staleness_error` recomputes the identical structure from
+the *live* schema on every call (both the pre-lock fast-path call and
+the write-boundary call inside the lock, exactly mirroring Addendum
+2's own double-check discipline) and compares against the persisted
+value. The persisted field name (`schema_section_sha256`) is
+deliberately unchanged — this corrects what that identity covers, not
+a new field or a second schema system, matching the smallest-
+coherent-change instruction.
+
+**A further, related correction**: `document_path` — the actual write
+target — was previously resolved once, from the schema read at the
+very top of `docs_publish`, and never revalidated against the live
+schema at all. `_evidence_staleness_error` now also re-resolves and
+returns the live, freshly-validated document path on success; the
+write-boundary call site rebinds `document_path` to this live value
+immediately before `publish_section` is invoked, so the actual write
+always targets a path just reconfirmed against the exact schema state
+that was independently checked identical to what was reviewed —
+literal compliance with "revalidate the effective document target
+against the live schema immediately before publication," not merely
+inferred from a hash match.
+
+**Verification.** 11 new regression tests: 6 unit tests for
+`compute_schema_section_identity_sha256` itself (determinism; changes
+on `document`/`audience`/`acceptance_criteria`/section changes;
+unaffected by unrelated fields like `owner`/`schema_version`) in
+`tests/test_doc_compiler.py`; 5 in `tests/test_cli.py` — a document
+retarget after both reviews passed, an audience change, an
+acceptance-criteria change, a retarget landing specifically at the
+write boundary (via the same `detect_grounded_region_changes`
+monkeypatch pattern Addendum 2's own write-boundary tests use), and a
+positive control confirming an ordinary, schema-unchanged publication
+still succeeds. All 11 were run against a disposable `git worktree` at
+the pre-this-fix commit (`db33327`) with `PYTHONPATH` explicitly
+overriding the venv's own editable-install `.pth` file (confirmed via
+`codecompass.__file__`, the same discipline Addendum 2 established) —
+all 11 fail (`AttributeError`, since `compute_schema_section_identity_
+sha256` does not exist pre-fix at all — the same category of
+pre-fix failure Addendum 2's own `document_identity`-dependent tests
+produced, accepted there for the identical reason: the shared test
+helper itself needs the new function to construct a schema-identity-
+bound pending manifest, so every test exercising that helper fails
+pre-fix uniformly, not only the ones targeting this specific defect).
+The defect's own real exploitability was independently confirmed by
+the standalone script described above, run against the clean,
+unmodified pre-fix commit before any production code was touched.
+Full suite and strict validators re-run after the fix; see the
+changelog entry and the independent audit this addendum's own fix
+requires for the exact, current figures.
+
+**No change to Addendum 1's or Addendum 2's own real demonstration,
+comparator, or hardening-pass findings** — this is a fourth, separate
+defect in the same publication path, found and fixed independently of
+all three.

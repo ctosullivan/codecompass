@@ -9,6 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 87, Stage 87B — second further integrity correction: top-level
+  schema fields bypassed review binding.** A fresh code-inspection
+  review found that `schema_section_sha256` (the hash every persisted
+  review record and pending manifest is bound to) hashed only the
+  section dict, never the schema's own top-level `document` (the
+  actual publication target), `audience`, or `acceptance_criteria`
+  fields — reproduced directly: retargeting a schema's `document`
+  field alone, after both independent reviews already passed, left
+  every existing hash check unchanged and silently redirected the
+  already-reviewed draft to a different, never-reviewed-against
+  document. Fixed: a new, shared `doc_compiler.compute_schema_section_
+  identity_sha256` binds the section together with `document`/
+  `audience`/`acceptance_criteria`; `docs compile` computes the
+  persisted hash through it and `docs publish`'s own freshness check
+  recomputes the identical structure from the live schema on every
+  call (pre-lock and at the write boundary, mirroring the prior
+  hardening pass's own double-check discipline). The actual write
+  target is now also re-resolved from the live schema at the write
+  boundary, immediately before publication, rather than trusted from
+  the one-time resolution at the top of the function. 11 new
+  regression tests (6 in `tests/test_doc_compiler.py`, 5 in
+  `tests/test_cli.py`); the underlying exploit was independently
+  confirmed via a standalone script run against the clean, unmodified
+  pre-fix commit before any production code changed, and all 11 new
+  tests were confirmed to fail against a disposable `git worktree` at
+  that same pre-fix commit (via `AttributeError`, since the shared
+  test setup helper itself needs the new function — the identical
+  category of pre-fix failure the prior hardening pass's own
+  `document_identity`-dependent tests produced, for the same reason).
+  See `planning/retros/phase-87-stage-87b-knowledge-change-
+  demonstration.md`'s "Addendum 3" for the full account. Stage 87B's
+  technical closure against this correction is **pending** a fresh
+  independent audit.
+
 - **Phase 87, Stage 87B post-closeout hardening pass — reviewed-draft
   integrity, live schema freshness, narrower write-boundary race.** A
   fresh review of Stage 87B's already-closed, already-PASS-audited

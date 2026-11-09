@@ -2870,14 +2870,12 @@ def _setup_demo_schema_and_pending(
     section = {
         "id": "s1", "required_knowledge": record_ids, "max_evidence_chars": 4000,
     }
-    schema_path.write_text(
-        yaml.safe_dump({
-            "schema_version": 1, "document": "docs/demo.md",
-            "audience": "a developer", "sections": [section],
-            "acceptance_criteria": ["ok"], "owner": "lead",
-        }),
-        encoding="utf-8",
-    )
+    schema_doc = {
+        "schema_version": 1, "document": "docs/demo.md",
+        "audience": "a developer", "sections": [section],
+        "acceptance_criteria": ["ok"], "owner": "lead",
+    }
+    schema_path.write_text(yaml.safe_dump(schema_doc), encoding="utf-8")
 
     pending_dir = tmp_path / "planning" / "retros" / "phase-87-pending-review" / "demo"
     pending_dir.mkdir(parents=True)
@@ -2892,7 +2890,9 @@ def _setup_demo_schema_and_pending(
         "draft_body": draft_body,
         "draft_sha256": oracle.sha256_text(tagged_draft),
         "evidence_sha256": cli_module.doc_compiler.hash_evidence(hydrated),
-        "schema_section_sha256": oracle.sha256_text(json.dumps(section, sort_keys=True)),
+        "schema_section_sha256": cli_module.doc_compiler.compute_schema_section_identity_sha256(
+            schema_doc, section
+        ),
         "citation_findings": [],
     }
     pending_path = pending_dir / "s1.json"
@@ -3055,7 +3055,14 @@ def test_docs_publish_succeeds_on_a_claims_changed_republish_and_advances_the_ba
     new_body = "A changed fact."
     hydrated = cli_module.doc_compiler.hydrate_records(tmp_path, ["CL-DEMO-001"])
     section = {"id": "s1", "required_knowledge": ["CL-DEMO-001"], "max_evidence_chars": 4000}
-    schema = {"sections": [section]}
+    # Must match the real, on-disk schema_path's own top-level fields
+    # (document/audience/acceptance_criteria) exactly -- the live
+    # staleness check now binds these into the same hash, and
+    # schema_path itself is never modified by this test.
+    live_schema_doc = {
+        "schema_version": 1, "document": "docs/demo.md", "audience": "a developer",
+        "sections": [section], "acceptance_criteria": ["ok"], "owner": "lead",
+    }
     pending_path = (
         tmp_path / "planning" / "retros" / "phase-87-pending-review" / "demo" / "s1.json"
     )
@@ -3064,8 +3071,8 @@ def test_docs_publish_succeeds_on_a_claims_changed_republish_and_advances_the_ba
         "record_ids": ["CL-DEMO-001"], "tagged_draft": new_tagged_draft,
         "draft_body": new_body, "draft_sha256": oracle.sha256_text(new_tagged_draft),
         "evidence_sha256": cli_module.doc_compiler.hash_evidence(hydrated),
-        "schema_section_sha256": oracle.sha256_text(
-            json.dumps(schema["sections"][0], sort_keys=True)
+        "schema_section_sha256": cli_module.doc_compiler.compute_schema_section_identity_sha256(
+            live_schema_doc, section
         ),
         "citation_findings": [],
     }
@@ -3331,6 +3338,131 @@ def test_docs_publish_rejects_a_schema_requirement_tightened_at_the_write_bounda
     assert result.exit_code == 1
     assert call_count["n"] >= 1
     assert not (tmp_path / "docs" / "demo.md").exists()
+
+
+def test_docs_publish_rejects_a_document_target_retargeted_after_both_reviews_passed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Second post-closeout hardening pass: schema_section_sha256 used
+    # to hash only the section dict, never the schema's own top-level
+    # `document` field -- retargeting `document` alone, after both
+    # reviews already passed, left every hash in the chain unchanged
+    # and silently redirected the already-reviewed draft to a
+    # different allowed document. Reproduced directly before this fix
+    # existed: the retargeted document was written, the original
+    # never was.
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    import yaml
+
+    live = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    live["document"] = "docs/RETARGETED.md"
+    schema_path.write_text(yaml.safe_dump(live), encoding="utf-8")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert not (tmp_path / "docs" / "demo.md").exists()
+    assert not (tmp_path / "docs" / "RETARGETED.md").exists()
+
+
+def test_docs_publish_rejects_an_audience_change_after_both_reviews_passed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Same requirement, for `audience` -- an editorial requirement a
+    # reviewer actually assessed the draft against -- rather than
+    # `document`.
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    import yaml
+
+    live = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    live["audience"] = "a completely different audience, never reviewed against"
+    schema_path.write_text(yaml.safe_dump(live), encoding="utf-8")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert not (tmp_path / "docs" / "demo.md").exists()
+
+
+def test_docs_publish_rejects_an_acceptance_criteria_change_after_both_reviews_passed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    import yaml
+
+    live = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    live["acceptance_criteria"] = ["a completely different, never-reviewed criterion"]
+    schema_path.write_text(yaml.safe_dump(live), encoding="utf-8")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert not (tmp_path / "docs" / "demo.md").exists()
+
+
+def test_docs_publish_rejects_a_document_retargeted_at_the_write_boundary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The write-boundary case: a retarget landing between the initial
+    # check and the write must be caught there too, not only by the
+    # pre-lock fast path -- same discipline as the other write-boundary
+    # regression tests in this file.
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    call_count = {"n": 0}
+    real_detect = cli_module.knowledge_intermediate.detect_grounded_region_changes
+
+    def _detect_then_retarget_once(*args, **kwargs):
+        call_count["n"] += 1
+        result = real_detect(*args, **kwargs)
+        if call_count["n"] == 1:
+            import yaml
+
+            live = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+            live["document"] = "docs/RETARGETED-AT-BOUNDARY.md"
+            schema_path.write_text(yaml.safe_dump(live), encoding="utf-8")
+        return result
+
+    monkeypatch.setattr(
+        cli_module.knowledge_intermediate,
+        "detect_grounded_region_changes",
+        _detect_then_retarget_once,
+    )
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 1
+    assert call_count["n"] >= 1
+    assert not (tmp_path / "docs" / "demo.md").exists()
+    assert not (tmp_path / "docs" / "RETARGETED-AT-BOUNDARY.md").exists()
+
+
+def test_docs_publish_accepts_unchanged_top_level_schema_fields_unaffected(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Positive control: a legitimate publication, with the schema's
+    # top-level fields genuinely untouched, must still succeed -- the
+    # new identity binding must not false-positive on the ordinary,
+    # unchanged case.
+    monkeypatch.chdir(tmp_path)
+    schema_path, _pending_path, _pending = _setup_demo_schema_and_pending(tmp_path)
+    _record_review(schema_path, "s1", "semantic", "supported")
+    _record_review(schema_path, "s1", "editorial", "pass")
+
+    result = runner.invoke(app, ["docs", "publish", str(schema_path), "s1"])
+    assert result.exit_code == 0, result.output
+    assert "A fact." in (tmp_path / "docs" / "demo.md").read_text(encoding="utf-8")
 
 
 def test_docs_publish_rejects_a_document_mutation_landing_after_the_final_detect_recheck(
@@ -3717,13 +3849,11 @@ def test_docs_publish_accepts_a_legitimate_readme_publication(
     _write_knowledge_claim(tmp_path, "demo", "CL-DEMO-001", "a demo fact")
     schema_path = tmp_path / "README.md.schema.yaml"
     section = {"id": "s1", "required_knowledge": ["CL-DEMO-001"], "max_evidence_chars": 4000}
-    schema_path.write_text(
-        yaml.safe_dump({
-            "schema_version": 1, "document": "README.md", "audience": "x",
-            "sections": [section], "acceptance_criteria": ["x"], "owner": "lead",
-        }),
-        encoding="utf-8",
-    )
+    schema_doc = {
+        "schema_version": 1, "document": "README.md", "audience": "x",
+        "sections": [section], "acceptance_criteria": ["x"], "owner": "lead",
+    }
+    schema_path.write_text(yaml.safe_dump(schema_doc), encoding="utf-8")
     pending_dir = tmp_path / "planning" / "retros" / "phase-87-pending-review" / "readme-md"
     pending_dir.mkdir(parents=True)
     tagged_draft = "A fact {{cite:CL-DEMO-001}}."
@@ -3733,7 +3863,9 @@ def test_docs_publish_accepts_a_legitimate_readme_publication(
         "record_ids": ["CL-DEMO-001"], "tagged_draft": tagged_draft,
         "draft_body": "A fact.", "draft_sha256": oracle.sha256_text(tagged_draft),
         "evidence_sha256": cli_module.doc_compiler.hash_evidence(hydrated),
-        "schema_section_sha256": oracle.sha256_text(json.dumps(section, sort_keys=True)),
+        "schema_section_sha256": cli_module.doc_compiler.compute_schema_section_identity_sha256(
+            schema_doc, section
+        ),
         "citation_findings": [],
     }
     (pending_dir / "s1.json").write_text(

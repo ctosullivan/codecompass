@@ -247,6 +247,43 @@ def hash_evidence(hydrated: dict[str, dict]) -> str:
     return _oracle.sha256_text(json.dumps(hydrated, sort_keys=True))
 
 
+def compute_schema_section_identity_sha256(schema: dict, schema_section: dict) -> str:
+    """Canonical hash binding one section's own definition together
+    with every schema-level field that governs where it may be
+    published or how it must have been reviewed -- `document` (the
+    publication target), `audience`, and `acceptance_criteria`
+    (second post-closeout hardening pass, "top-level schema changes
+    may bypass the review boundary" finding).
+
+    Before this function existed, the persisted `schema_section_sha256`
+    hashed only the section dict itself -- a schema's own top-level
+    `document` field could be changed after both independent reviews
+    passed, with the section dict left byte-identical, and `docs
+    publish` would write the already-reviewed draft into a document
+    neither reviewer was ever shown, since nothing in the hash chain
+    depended on it. Reproduced directly: retargeting `document` alone,
+    between recording both passing reviews and publishing, redirected
+    publication to a different allowed document with no refusal.
+
+    Shared by `docs compile` (computed once, persisted into the
+    pending manifest and bound into both review records) and `docs
+    publish`'s own live revalidation (recomputed from the live schema,
+    both before the lock and again at the write boundary) -- one
+    definition of "reviewed-schema identity," never two independently
+    maintained computations that could silently drift apart, the same
+    discipline `hash_evidence`/`compute_schema_slug` already
+    established. The persisted field name (`schema_section_sha256`) is
+    kept unchanged, deliberately -- this is a correction to what that
+    identity covers, not a new field or a second schema system."""
+    identity = {
+        "document": schema.get("document"),
+        "audience": schema.get("audience"),
+        "acceptance_criteria": schema.get("acceptance_criteria"),
+        "section": schema_section,
+    }
+    return _oracle.sha256_text(json.dumps(identity, sort_keys=True))
+
+
 def resolve_section_packet(
     project_root: Path, schema_section: dict, *, repo_root: Path | None = None
 ) -> EvidencePacket:
