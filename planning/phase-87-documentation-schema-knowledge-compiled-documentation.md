@@ -21,9 +21,19 @@ plan (§S) was independently reviewed **READY WITH NON-BLOCKING
 OBSERVATIONS** (2026-11-09), then amended the same day for several
 real factual/scope corrections (counts, migration gap, dependency
 proof, comparator rigour) and independently re-reviewed a second time:
-**READY WITH NON-BLOCKING OBSERVATIONS** — implementation itself
-remains separately, explicitly not authorised. Phase 87 overall
-remains not done.** This is a
+**READY WITH NON-BLOCKING OBSERVATIONS**. Stage 87C was then
+implemented (three further `docs/concepts/` pages migrated into
+knowledge-compiled regions, one migration honestly declined, a real
+`CL-ADPT-005` multi-region maintenance demonstration, a matched-
+baseline comparator with an honest non-advantage result, five
+candidate learnings filed and triaged) and, after a first independent
+audit FAIL on three missing DoD artifacts fixed in the same session,
+independently re-audited **PASS** (2026-11-10, see
+`planning/retros/_audit-phase-87-stage-87c.md`). **Stage 87C is
+done.** A deterministic `docs/reference/cli.md` generator and a
+semantic cross-document consistency checker remain explicitly deferred
+from Stage 87C's own scope (§S.11), requiring their own separate
+authorisation. Phase 87 overall remains not done.** This is a
 **scope-management correction**, not an architectural redesign — the
 strategic objective (§0), the verified architecture map (§A), and the
 shared schema/pipeline contract (§B/§C) are preserved. What changes:

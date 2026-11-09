@@ -384,9 +384,26 @@ mischaracterised `decisions/0085` §6 citation (§6 actually withdraws a
 threshold-based criterion; the predeclared threshold is this
 amendment's own voluntary strengthening, not a restored requirement).
 The first review round's own verdict is preserved unchanged as
-historical record. **This plan authorises nothing beyond itself —
-Stage 87C implementation remains separately, explicitly unauthorised.**
-Full detail: the plan's own §S.12 "Second review round".
+historical record. Full detail: the plan's own §S.12 "Second review
+round".
+
+**Stage 87C — implemented and independently audited PASS
+(2026-11-10)** (full account under "What was just completed" below;
+`planning/retros/_audit-phase-87-stage-87c.md`). Three further
+`docs/concepts/` pages (`adapter.md`, `vendor-and-ecosystem.md`,
+`knowledge-model.md`) were migrated into schema-governed,
+knowledge-compiled regions; `context.md`'s migration was attempted and
+honestly declined, left human-authored. A real `CL-ADPT-005`
+multi-region maintenance demonstration and a matched-baseline
+comparator (honest non-advantage result) both ran for real. A first
+independent audit **FAIL** on three missing DoD artifacts (changelog
+entry, an incomplete retro, no learnings filed/triaged) was fixed in
+the same session; a fresh re-audit returned **PASS**. **Stage 87C is
+done.** **Phase 87 overall remains `not done`**: a deterministic
+`docs/reference/cli.md` generator and a semantic cross-document
+consistency checker were both explicitly deferred from Stage 87C's own
+scope (plan's own §S.11) and require their own separate authorisation
+before Phase 87's own closeout is assessed again.
 
 **Phase 86 — Knowledge-Placement and Code-Quality Review — is `done`
 (2026-11-03)**. Plan amended and independently reviewed across four
@@ -956,6 +973,42 @@ and each phase's retro.
 
 ## What was just completed
 
+**Phase 87 Stage 87C implemented and independently audited PASS**,
+2026-11-10, direct user request (commits `0ea4001`, `1fba77d`,
+`28c3a6c`, `1d9d626`, `3e425c5`). Three further `docs/concepts/` pages
+were migrated into schema-governed, knowledge-compiled regions
+(`adapter.md`: two regions; `vendor-and-ecosystem.md`: one;
+`knowledge-model.md`: two, deliberately narrowed); `context.md`'s
+migration was attempted and honestly declined, reverted
+byte-identical and left human-authored. A real `CL-ADPT-005` Claim
+amendment (new evidence `EV-ADPT-013`) correctly triggered
+`claims_changed` in exactly the two regions citing it, both
+recompiled, independently reviewed, and republished — the plan's own
+mandatory multi-region incremental-maintenance proof. A
+matched-baseline documentation-quality comparator ran honestly: the
+quality bar was met but no net time/cost advantage was demonstrated
+against the predeclared threshold. An independent usability exercise
+surfaced one genuine, out-of-scope `codecompass undo` first-run
+ordering gap, filed as a learning. A first independent
+`release-phase-auditor` pass returned **FAIL** on three missing DoD
+artifacts (no `CHANGELOG.md` entry; the retro only 4 of
+`TEMPLATE.md`'s 11 sections; no candidate learnings filed or
+triaged) — all three closed same-day (changelog entry added; retro
+completed to all 11 sections; five candidate learnings, `L-125`-
+`L-129`, filed and independently triaged by `knowledge-curator`, all
+dispositioned `promote`, `status` left `candidate` pending their
+destination artifacts actually landing). A fresh, independent re-audit
+returned **PASS**, re-verifying every prior finding plus the full
+regression suite (1363 passed, 2 skipped), all strict validators, and
+zero protected-file drift. Full detail: `planning/retros/
+phase-87-stage-87c-knowledge-compiled-documentation.md`;
+`planning/retros/_audit-phase-87-stage-87c.md`. **Stage 87C is done.
+Phase 87 overall remains `not done`** — a deterministic
+`docs/reference/cli.md` generator and a semantic cross-document
+consistency checker remain explicitly deferred (plan's own §S.11),
+requiring their own separate authorisation; see "Next concrete step"
+below.
+
 **Phase 87 Stage 87C plan amended and independently re-reviewed**,
 2026-11-09, direct user request (commit `779ce21`). A fresh governing
 task found and required correction of several real factual/scope
@@ -1524,35 +1577,33 @@ same `CLAUDE.md` §0 approval. A fifth, same-shape item from Stage 87A's
 own hardening pass: `L-120`'s recommended promotion (same file, §P) —
 also `status: retained`, awaiting the same `CLAUDE.md` §0 approval.
 Sequence from here: **87 (Documentation Schema and Knowledge-Compiled
-Documentation) — Stage 87A is implemented, hardened, and independently
-re-audited (second pass), PASS WITH NON-BLOCKING OBSERVATIONS; Stage
-87B is implemented, independently audited through a real
-FAIL→fix→PASS cycle, `done` (2026-11-07), and its own post-closeout
-hardening pass is now also closed (2026-11-09; three further
-publication-path defects fixed, a first re-audit FAIL on a
-self-certification defect fixed, fresh re-audit **PASS**), then
-hardened a fourth time the same day against one further
-publication-integrity defect (`schema_section_sha256` never bound to
-the schema's own top-level `document`/`audience`/`acceptance_criteria`
-fields, letting an already-reviewed draft be silently retargeted),
-fixed and independently audited **PASS**
-(`planning/retros/_audit-phase-87-stage-87b-second-hardening-pass.md`)
-— Stage 87B is now hardened against four found-and-fixed defects
-total; Stage 87C's plan (§S) was then amended the same day (corrected
-counts, migration gap, dependency proof, comparator rigour) and
-independently re-reviewed a second time: **READY WITH NON-BLOCKING
-OBSERVATIONS**, but implementation remains separately, explicitly
-**not authorised**; Phase 87 overall remains `not done`** —
+Documentation) — Stage 87A `done`; Stage 87B `done` (2026-11-07),
+including its own post-closeout hardening (twice, 2026-11-09) against
+four found-and-fixed publication-integrity defects total; Stage 87C
+is now also `done` (2026-11-10), implemented and independently
+audited **PASS** (`planning/retros/_audit-phase-87-stage-87c.md`) —
 `planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
-**Next concrete step for this phase: explicit authorisation from the
-user/lead to begin Stage 87C implementation.** This is not something
-this or any future session, agent, or reconciliation pass may
-self-authorise — the plan's own §S header and §S.12's closing line both
-state it authorises nothing beyond itself. Once (and only if) that
-authorisation is given, implementation proceeds against the existing
-§S plan; Phase 87 closeout follows only after Stage 87C's own full
-exit gate (implementation, the real matched-baseline comparison, final
-audits) is met. A smaller, independent outstanding item from the
+**Phase 87 overall remains `not done`.** Two concrete follow-on items
+were explicitly deferred from Stage 87C's own scope (plan's own
+§S.11) and require their own separate authorisation before either
+starts: a deterministic `docs/reference/cli.md` generator from the
+live Typer command tree, and a semantic cross-document consistency
+checker beyond shared-Claim-id grounding. Neither is something this or
+any future session, agent, or reconciliation pass may self-authorise.
+A smaller, nearer-term item that does *not* need that authorisation:
+Stage 87C's own five candidate learnings (`L-125`-`L-129`,
+`planning/learnings/inbox.md`) are all independently triaged
+`promote`, but each `status` stays `candidate` until its own drafted
+destination artifact actually lands (e.g. `L-125`'s
+`docs/architecture/documentation-compilation-pipeline.md` step 6
+addition) — landing those is ordinary documentation/knowledge
+maintenance, not a new phase decision. **Recommended next concrete
+step**: the lead/user decides whether to pursue either deferred
+follow-on (and if so, which, and under what new or existing phase
+number) before Phase 87 itself is reassessed for closeout; in the
+meantime, landing the `L-125`-`L-129` destination artifacts is
+available to any session without further authorisation. A smaller,
+independent outstanding item from the
 hardening pass: `EV-CTXT-021` (`planning/knowledge/codecompass-domain/`) is a
 verified, uncited fact about `sync_vendor`'s clone-failure fallback
 that `CL-CTXT-005` does not yet mention — a future
