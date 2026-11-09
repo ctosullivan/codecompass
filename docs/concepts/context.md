@@ -1,6 +1,5 @@
 # Concept: "context" — an overloaded word, by design
 
-<!-- codecompass-grounded-by: region:context-md-five-senses-of-context -->
 "Context" has no single canonical meaning in CodeCompass's own vocabulary. Evidence gathered from the project's own domain-knowledge research names at least five genuinely distinct, related-but-not-interchangeable senses. This page documents all five rather than silently picking one, because conflating them is a real, named source of confusion in the project's own history.
 
 1. **`context-graph.db`** — the deterministic SQLite persistence layer of vendors, symbols, and edges. See `docs/architecture/data-and-control-flow.md`.
@@ -10,4 +9,3 @@
 5. **A plain-English usage inside unrelated internal role names** — e.g. a role named something like "roadmap-context-curator" in the project's own internal process vocabulary, where "context" means ordinary planning-document state, not runtime context at all.
 
 If you see "context" used informally in CodeCompass documentation or source comments, check which of these five senses is actually meant before assuming it refers to `context-graph.db` specifically.
-<!-- /codecompass-grounded-by -->
