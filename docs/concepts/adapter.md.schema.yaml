@@ -22,7 +22,7 @@ sections:
     required_knowledge: ["CL-ADPT-007"]
     max_evidence_chars: 3000
     tone: instructional
-    depth: standard
+    depth: brief
     min_claim_status: supported
     allow_unconfirmed_scopes: true  # Same precedent as above, for CL-ADPT-007.
     citation_display: none

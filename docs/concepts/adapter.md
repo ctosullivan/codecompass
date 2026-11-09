@@ -1,16 +1,18 @@
 # Concept: adapter
 
-<!-- codecompass-grounded-by: region:adapter-md-adapter-concept -->
-An **adapter**, in CodeCompass's ecosystem-integration sense, is a concrete subclass of `EcosystemAdapter` (`src/codecompass/adapters/base.py`), constructed once per `(VendorConfig, project_root)` pair, implementing five abstract methods — `installed_version`, `source_location`, `readme_and_api_surface`, `repository_url`, `dependency_tree` — plus one concrete, overridable method, `symbols()` (added later, for structured API-surface extraction into the context graph).
-
-Exactly one adapter class exists per `Ecosystem` enum member, selected by a single closed dispatch table (`get_adapter` in `src/codecompass/adapters/__init__.py`) — never by naming convention, plugin discovery, or a configuration string:
-
 | Ecosystem | Adapter class | Strategy |
 |---|---|---|
 | `npm` | `NpmAdapter` | in-process |
 | `python` | `PythonAdapter` | in-process |
 | `cargo` | `CargoAdapter` | in-process |
 | `haskell` | `HaskellAdapter` | external-process |
+
+This table is deterministically derived from `get_adapter`'s own closed dispatch table (`src/codecompass/adapters/__init__.py`) — kept here as a quick-reference lookup, outside the compiled region below, since it is mechanical fact rather than something knowledge-compilation composition needs to restate in prose.
+
+<!-- codecompass-grounded-by: region:adapter-md-adapter-concept -->
+An **adapter**, in CodeCompass's ecosystem-integration sense, is a concrete subclass of `EcosystemAdapter` (`src/codecompass/adapters/base.py`), constructed once per `(VendorConfig, project_root)` pair, implementing five abstract methods — `installed_version`, `source_location`, `readme_and_api_surface`, `repository_url`, `dependency_tree` — plus one concrete, overridable method, `symbols()` (added later, for structured API-surface extraction into the context graph).
+
+Exactly one adapter class exists per `Ecosystem` enum member, selected by the dispatch table above — never by naming convention, plugin discovery, or a configuration string.
 
 ## Two coexisting implementation strategies
 
