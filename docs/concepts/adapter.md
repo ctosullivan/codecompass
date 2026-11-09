@@ -1,5 +1,6 @@
 # Concept: adapter
 
+<!-- codecompass-grounded-by: region:adapter-md-adapter-concept -->
 An **adapter**, in CodeCompass's ecosystem-integration sense, is a concrete subclass of `EcosystemAdapter` (`src/codecompass/adapters/base.py`), constructed once per `(VendorConfig, project_root)` pair, implementing five abstract methods — `installed_version`, `source_location`, `readme_and_api_surface`, `repository_url`, `dependency_tree` — plus one concrete, overridable method, `symbols()` (added later, for structured API-surface extraction into the context graph).
 
 Exactly one adapter class exists per `Ecosystem` enum member, selected by a single closed dispatch table (`get_adapter` in `src/codecompass/adapters/__init__.py`) — never by naming convention, plugin discovery, or a configuration string:
@@ -31,6 +32,7 @@ CodeCompass's own architecture documentation (not visible to this reconstruction
 2. **"Host-output adapter"** — a purely expository classification label sometimes applied to `src/codecompass/skill.py`, `commands.py`, and `index.py` (modules that adapt CodeCompass's own internal state into a specific *host tool's* expected output shape — an Agent Skill, a slash command, a `CLAUDE.md` routing table). There is **no corresponding class, interface, or shared base** for this second sense anywhere in the source.
 
 If you encounter the bare word "adapter" in this project without a qualifying phrase, it is genuinely ambiguous which sense is meant — this is a real, known ambiguity in the project's own vocabulary, not something this reconstruction introduced.
+<!-- /codecompass-grounded-by -->
 
 ## A related, but non-existent, term: "connector"
 
