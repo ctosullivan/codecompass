@@ -246,10 +246,15 @@ Concepts pages (`adapter.md` ×2, `vendor-and-ecosystem.md` ×1,
 publication, and against a fourth page (`context.md`) that was
 correctly declined after two failed rounds rather than forced through.
 It then ran a real, multi-region knowledge-change demonstration: a
-knowledge amendment (`CL-ADPT-005`, new boundary fact, cited to new
-evidence `EV-ADPT-013`) correctly triggered `claims_changed` in
-exactly the two regions that cite it (`adapter.md`'s `adapter-concept`,
-`vendor-and-ecosystem.md`'s `ecosystem-vendor-adapter`), both
+knowledge amendment (new boundary fact, cited to new evidence
+`EV-ADPT-013`, carried by a new Claim — `CL-ADPT-012`, which supersedes
+`CL-ADPT-005` — after a post-closeout corrective pass found the
+original implementation had amended `CL-ADPT-005` directly in place,
+violating this project's own supersession-only rule for Claim records;
+`CL-ADPT-005` itself is now `status: superseded` and cites nothing new)
+correctly triggered `claims_changed` in exactly the two regions that
+cite it (`adapter.md`'s `adapter-concept`, `vendor-and-ecosystem.md`'s
+`ecosystem-vendor-adapter`, both now citing `CL-ADPT-012`), both
 recompiled, independently re-reviewed, and republished, while a
 deliberately seeded human edit elsewhere and a pre-existing unrelated
 candidate both correctly remained `doc_candidate` throughout, never
