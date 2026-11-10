@@ -3410,7 +3410,7 @@ evidence where they independently verified the same thing.
 | 8 | Getting Started — tested tutorial | **Done** | `docs/getting-started.md`, Stage 87B, real `scripts/execute_doc_example.py` harness |
 | 9 | Concepts, extended with an explicit epistemic-distinctions/reconciliation-loop page | **Done** | `docs/concepts/knowledge-model.md` (Stage 87C) — read directly for this matrix: covers the six record kinds, provenance-as-cross-cutting-property, INTENDED/OBSERVED/VERIFIED/CONTESTED, and the reconciliation loop, with a pointer to `docs/workflows/knowledge-reconciliation-loop.md` for full mechanics |
 | 10 | Architecture (overview/components/data-and-control-flow) | **Done, validated through existing docs+tests** | All three exist; `components.md`/`documentation-compilation-pipeline.md` independently re-confirmed current by this session's own `docs-reconstructor` dispatches |
-| 11 | Reference (`cli.md`/`configuration.md`), "generated deterministically where practical — currently hand-maintained" | **Outstanding, explicitly named** | Confirmed directly: every one of the live CLI's ~10 top-level + ~18 subcommands appears in `cli.md`, and a spot-check (`knowledge trace`) found it accurate but missing one default value — hand-maintained and currently accurate, but with a real, growing drift risk as the CLI evolves, and no mechanical guarantee of either |
+| 11 | Reference (`cli.md`/`configuration.md`), "generated deterministically where practical — currently hand-maintained" | **Outstanding, explicitly named** | Confirmed directly via Click/Typer introspection: 10 top-level commands + 27 subcommands (`query` 8, `enrich` 1, `knowledge` 13, `docs` 5) — every one appears somewhere in `cli.md`, and a spot-check (`knowledge trace`) found it accurate but missing one default value, with a second, same-shape undocumented default found independently by the planning review (`knowledge context`'s `--max-items`/`--max-chars`) — hand-maintained and currently accurate, but with a real, growing drift risk as the CLI evolves, and no mechanical guarantee of either |
 | 12 | Contributor Guide (`CONTRIBUTING.md`/`docs/development/contributing.md`) | **Done, as accurate human-authored content; never named for compilation** | Both exist; neither was ever named in Stage 87's own §S.2 document/section ownership matrix as a compilation target — the original spec's own "deliverable" language for this document does not require knowledge compilation, only existence/accuracy |
 | 13 | Fail-closed check against ungrounded generation | **Done** | Stage 87A's citation-scope/gap-detection mechanism |
 | 14 | Real manually-triggered incremental-maintenance run, correctly scoped (false-positive control) | **Done, twice, now with extra rigor** | Stage 87B + 87C demonstrations; the corrective pass's own citation-swap exercise is a third, independent real exercise of the identical mechanism |
@@ -3425,18 +3425,32 @@ evidence where they independently verified the same thing.
 
 - **Semantic cross-document consistency checking.** Grep of
   `decisions/0085` and `planning/v2-roadmap.md`'s own Phase 87 section
-  found **no mention of cross-document consistency as a named
-  requirement anywhere**. This capability was named only by the Stage
-  87C *plan*'s own §S.4/§S.11, as a real gap *that plan* identified in
-  its own design (the existing shared-Claim grounding discovers which
-  regions are *affected* by a knowledge change — proven, repeatedly,
-  by three real demonstrations now — but never checks whether two
-  regions sharing a Claim are *substantively consistent* with each
-  other). It is a genuinely good idea and a real capability gap, but
-  it is **not an outstanding original Phase 87 requirement** — Stage
-  87D including it is a voluntary strengthening, not a closeout
-  gate-filler, and this plan does not treat it as mandatory for that
-  reason (§U.4 below).
+  found **no mention of an automated cross-document consistency
+  *mechanism* as a named requirement anywhere** — the one genuine,
+  textual counterevidence the independent Stage 87D planning review
+  found and this plan must name rather than omit: `decisions/0085`
+  §5's own Editorial requirements list does name "consistent
+  terminology" (line 389, alongside "minimal internal development
+  history" and "appropriate links... rather than inlining"). This
+  does not elevate §U.3 to mandatory: §5's own text leaves editorial
+  quality, including terminology consistency, to the *review* process
+  it already specifies (semantic-support + editorial-quality dual
+  review, §U.1 row 6 — already done, already exercised on all six
+  published regions), not to a dedicated automated mechanism — nothing
+  in §5 or §6 calls for tooling that checks consistency *across*
+  documents specifically, as opposed to each document's own editorial
+  quality individually. §U.3's own capability (prose-level
+  contradiction detection between two regions sharing a Claim) is
+  named only by the Stage 87C *plan*'s own §S.4/§S.11, as a real gap
+  *that plan* identified in its own design (the existing shared-Claim
+  grounding discovers which regions are *affected* by a knowledge
+  change — proven, repeatedly, by three real demonstrations now — but
+  never checks whether two regions sharing a Claim are *substantively
+  consistent* with each other). It is a genuinely good idea and a real
+  capability gap, but it is **not an outstanding original Phase 87
+  requirement** — Stage 87D including it is a voluntary strengthening,
+  not a closeout gate-filler, and this plan does not treat it as
+  mandatory for that reason (§U.4 below).
 
 **Conclusion, stated plainly rather than assumed**: against the
 original, textually-traceable Phase 87 requirements, **exactly one
@@ -3456,22 +3470,28 @@ time choice, not a default inclusion.
 
 ### U.2 Deterministic CLI and configuration reference
 
-**Current state, verified directly, not assumed**: `docs/reference/
-cli.md` (404 lines) and `docs/reference/configuration.md` (38 lines)
-are both hand-maintained. Every one of the live CLI's command surface
-— 8 top-level commands plus `init`/`check` (10 total: `init`, `sync`,
-`index`, `check`, `chat`, `undo`, `query`, `enrich`, `knowledge`,
-`docs`), `knowledge`'s 12 subcommands, `docs`'s 5 subcommands, `enrich`'s
-1 — appears somewhere in `cli.md` (confirmed by grepping every single
-one directly against the live `--help` output; none missing). A
-targeted spot-check (the independent `general-purpose` dispatch for
-the §S.8 usability exercise, re-confirmed here) found `knowledge
+**Current state, verified directly via Click/Typer introspection, not
+assumed or hand-counted from `--help` output alone** (corrected by the
+independent Stage 87D planning review, which found the original count
+below): `docs/reference/cli.md` (404 lines) and `docs/reference/
+configuration.md` (38 lines) are both hand-maintained. The live CLI
+has 10 top-level commands (`init`, `sync`, `index`, `check`, `chat`,
+`undo`, `query`, `enrich`, `knowledge`, `docs`) and **27 subcommands**
+— `query` 8, `enrich` 1, `knowledge` **13**, `docs` 5. Every one of
+these 37 commands/subcommands appears somewhere in `cli.md`
+(re-confirmed by grep; none missing). A targeted spot-check (the
+independent `general-purpose` dispatch for the §S.8 usability
+exercise, re-confirmed here) found `knowledge
 trace`'s own documented flags accurate against both `--help` and
 `src/codecompass/cli.py:1782-1784`, with exactly one real gap: the
 doc never states `--relation`'s own default value
-(`supporting_evidence`), which `--help` and source both show. This is
-the **real, representative failure mode** this section must guard
-against going forward — not a hypothetical.
+(`supporting_evidence`), which `--help` and source both show. The
+independent Stage 87D planning review found a second, same-shape real
+gap independently: `knowledge context`'s `--max-items`/`--max-chars`
+defaults (`cli.py:1820-1821`) are likewise undocumented in `cli.md:
+222-225`. Both are the **real, representative failure mode** this
+section must guard against going forward — not a hypothetical, and
+not a single isolated instance either.
 
 **Design decision: a deterministic drift-detection validator, not full
 generation or AI rewriting.** Considered and rejected:
@@ -3503,16 +3523,28 @@ generation or AI rewriting.** Considered and rejected:
   on Click; no new dependency) to build a deterministic command
   inventory — every command/subcommand's full dotted path, parameter
   names, types, defaults, required/optional — and cross-checks it
-  against `cli.md`'s own existing, already-real prose convention
-  (confirmed directly this session: every documented command already
-  gets its own `## \`codecompass <path>\`` heading followed by a
-  fenced usage-synopsis block, e.g. `codecompass docs compile
-  SCHEMA_PATH [--repo-root PATH]`).
+  against `cli.md`'s own existing, already-real prose convention.
+  **Corrected by the independent Stage 87D planning review**: the
+  real convention is not strictly one heading per command — a command
+  *group* sharing closely related behaviour gets one shared `##
+  \`codecompass <group> <cmd1>|<cmd2>|...\`` heading with one fenced
+  block holding one usage-synopsis line per command inside it (e.g.
+  `cli.md:163`'s one heading covers `knowledge get|search|trace|
+  gaps|context|export`, six commands, one synopsis line each inside a
+  single fenced block at `cli.md:166-171`; `cli.md:250`'s heading
+  covers all five `docs` subcommands the same way). The checker
+  therefore matches at the **synopsis-line level**, not the heading
+  level: it locates each command's own synopsis line by its own
+  leading `codecompass <dotted-path>` token inside whichever fenced
+  block contains it, regardless of how many commands share that
+  block's heading — this requires no restructuring of `cli.md` itself,
+  only correct parsing of a convention already there.
 
 **What it checks** (three deterministic cross-checks, no model call):
 
 1. **Presence, both directions.** Every live command/subcommand has a
-   matching heading in `cli.md`; every heading in `cli.md` still
+   matching synopsis line somewhere in `cli.md` (inside any fenced
+   block, under any heading); every synopsis line in `cli.md` still
    corresponds to a live command (catches an added-but-undocumented
    command *and* a removed-but-still-documented one).
 2. **Parameter presence.** Every required/optional parameter named in
@@ -3557,10 +3589,13 @@ owned — the check is a tripwire, never a writer.
 - A documented default that no longer matches the live Click default
   → fails.
 - The real, current `cli.md`/`configuration.md` content, as of this
-  plan's own writing, passes **except** for the one already-known
-  `--relation` default gap, which must fail until fixed — the first
-  real, non-synthetic regression-test fixture, confirmed to exist
-  before the checker is built, not invented for the test suite.
+  plan's own writing, passes **except** for the two already-known,
+  same-shape gaps — `knowledge trace`'s `--relation` default and
+  `knowledge context`'s `--max-items`/`--max-chars` defaults (the
+  second found independently by the planning review) — both of which
+  must fail until fixed: two real, non-synthetic regression-test
+  fixtures, confirmed to exist before the checker is built, not
+  invented for the test suite.
 
 **Migration requirement**: none. `cli.md`/`configuration.md`'s own
 existing heading-plus-fenced-synopsis convention is kept exactly as
@@ -3611,18 +3646,27 @@ validation while silently contradicting each other, and nothing today
 would catch it.
 
 **Bounded design, explicitly not a general-purpose reasoning engine**:
-a new, narrow `docs check-consistency [SCHEMA_PATHS]...` command,
-reusing the existing clean-room broker (`scripts/compile_doc_section.
-py`'s own dispatch mechanism — no new broker, no new sandbox,
-`CLAUDE.md` §8's "never spawns or coordinates an agent/broker call
-itself" boundary unchanged) for exactly one new, bounded task type:
+a new, narrow `docs check-consistency [SCHEMA_PATHS]...` CLI command
+(added to `cli.py`'s existing `docs_app`, alongside `compile`/
+`publish`/`maintain` — no new Typer app), backed by one new module,
+`scripts/check_doc_consistency.py` (named explicitly here, per the
+independent planning review's own request, to remove any ambiguity
+against §U.6's "`doc_compiler.py` itself is untouched" claim — this
+new module imports `knowledge_intermediate.parse_grounding_markers` as
+a library call for region/citation discovery, but is itself a new,
+separate file, not an addition to `doc_compiler.py`). Reuses the
+existing clean-room broker (`scripts/compile_doc_section.py`'s own
+dispatch mechanism — no new broker, no new sandbox, `CLAUDE.md` §8's
+"never spawns or coordinates an agent/broker call itself" boundary
+unchanged) for exactly one new, bounded task type:
 
-1. **Deterministic candidate-pair discovery** (no model call): for
-   every Claim id cited by two or more *different* published regions,
-   emit the pair of region texts plus that Claim's own statement —
-   the same bounded-packet discipline `doc_compiler.resolve_section_
-   packet` already uses for compilation, applied to a pair of already-
-   published outputs instead of a not-yet-written draft.
+1. **Deterministic candidate-pair discovery** (no model call, inside
+   the new `check_doc_consistency.py`): for every Claim id cited by
+   two or more *different* published regions, emit the pair of region
+   texts plus that Claim's own statement — the same bounded-packet
+   discipline `doc_compiler.resolve_section_packet` already uses for
+   compilation, applied to a pair of already-published outputs
+   instead of a not-yet-written draft.
 2. **One constrained model check per pair** (reuses the existing
    broker, a new, narrow prompt — not a new agent): given *only* the
    two region texts and the shared Claim's own statement (nothing
@@ -3866,3 +3910,65 @@ type, one negative-control demonstration) but still reuses every
 existing mechanism rather than building new infrastructure. Neither
 approaches the size of Stage 87A/87B/87C's own original compiler-
 pipeline build.
+
+## V. Independent planning review of the Stage 87D plan (§U)
+
+**Verdict: READY WITH NON-BLOCKING OBSERVATIONS** (2026-11-10). An
+independent `Plan` dispatch, with no prior context of this session,
+re-derived every substantive claim in §U directly against the live
+repository rather than trusting this plan's own prose — reading
+`decisions/0085` §5-6 and `planning/v2-roadmap.md`'s Phase 87 section
+itself to check §U.1's requirement mapping; independently introspecting
+the real Click/Typer command tree to check §U.2's current-state
+claims; reading `detect_grounded_region_changes`/`cleanroom_broker.
+run_inference` directly to check §U.3's "genuinely narrow, not a
+disguised reasoning engine" claim; and independently re-verifying the
+"proven three times over" shared-Claim-discovery claim against the
+real git history of all three named demonstrations.
+
+**Confirmed sound**: §U.1's core conclusion (exactly one
+textually-traceable requirement genuinely outstanding); §U.2's chosen
+approach (deterministic drift-checker over full generation or AI
+rewriting) and its technical feasibility; §U.3's boundedness (a
+genuinely narrow reuse of the existing broker, not a disguised general
+reasoning engine, confirmed by direct code reading); §U.6's scope-
+discipline checklist (no second knowledge store, no CMS, no pipeline
+rewrite, no MCP work — all confirmed against the actual design, not
+merely asserted).
+
+**Four corrections required and applied in place, all textual/
+precision fixes, none architectural** (per the review's own finding
+that none required a redesign):
+
+1. §U.1/§U.2's subcommand count was wrong (`knowledge` has 13
+   subcommands, not 12; the real total is 10 top-level + 27
+   subcommands, not "~10 + ~18") — corrected via direct Click/Typer
+   introspection, which also surfaced a second real, independently-
+   found undocumented default (`knowledge context`'s `--max-items`/
+   `--max-chars`) alongside the originally-named `--relation` gap —
+   now a second real regression-test fixture, not a single isolated
+   instance.
+2. §U.2's "what it checks" description assumed every documented
+   command gets its own heading; the real convention is one heading
+   per command *or* per logical command-group with one synopsis line
+   per command inside a shared fenced block — corrected to match at
+   the synopsis-line level, which needs no restructuring of `cli.md`
+   itself, only correct parsing of what's already there.
+3. §U.1's "no mention of cross-document consistency... anywhere"
+   claim was overstated — `decisions/0085` §5 does name "consistent
+   terminology" as an editorial requirement. Corrected to name this
+   counterevidence explicitly and explain why it still doesn't
+   mandate an automated cross-document *mechanism* (§5's own text
+   leaves terminology consistency to the review process it already
+   specifies, not to dedicated tooling) — the conclusion is unchanged,
+   the omission is fixed.
+4. §U.3's new candidate-pair-discovery logic now has a named home
+   (`scripts/check_doc_consistency.py`, a new module, not an addition
+   to `doc_compiler.py`), removing the ambiguity the review flagged
+   against §U.6's own "pipeline untouched" claim.
+
+**This plan is implementation-ready for Stage 87D as scoped**: §U.2
+mandatory; §U.3 an explicit, bounded, separately gateable optional
+addition; §U.5's phase-wide audit as the closing gate. Per this
+governing task's own explicit instruction, implementation does not
+proceed from this review — a separate authorisation is required.
