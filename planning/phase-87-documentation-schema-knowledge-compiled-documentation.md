@@ -3506,9 +3506,12 @@ below to make sure it doesn't over-flag correctly-documented defaults:
    disclosure** — an absent boolean flag's own off-by-default meaning,
    and an absent repeatable option's own no-restriction meaning, are
    both self-evident CLI conventions, not information a reader needs
-   a stated literal value to recover. (13 of the 37 commands' own
-   optional parameters are booleans or repeatable lists; none of them
-   is a real gap, confirmed by this amendment's own exhaustive scan.)
+   a stated literal value to recover. (22 of the 37 commands have at
+   least one boolean- or repeatable-list-typed optional parameter —
+   29 such parameter instances in total, 24 boolean + 5 repeatable
+   list; none of them is a real gap — figures independently re-derived
+   and corrected by the second planning review, §V, after this
+   amendment's own first draft stated an unverified "13.")
 2. **Every other optional parameter with a concrete, non-`None`
    default is "required" by this policy to have that default
    disclosed somewhere within its own command's documented section**
@@ -3733,15 +3736,21 @@ run from an installed wheel.
 real, independently-checkable evidence support this, not a single
 inference: (1) `_load_script_module`'s own docstring explicitly frames
 `scripts/*.py` as "this project's own established convention for
-security-sensitive clean-room infrastructure"; (2) every sibling
-`scripts/check_*.py` tool is already explicitly documented
-(`docs/development/contributing.md`'s "## Maintainer-only tooling
-(`scripts/`)" section) as either implicitly maintainer-only (by being
-listed there at all) or explicitly "Not a shipped `codecompass`
-command"; (3) `compile_doc_section.py` — the module actually doing
-`docs compile`'s real clean-room work — is itself one of this same
-category of maintainer-only clean-room infrastructure, by the same
-established convention; (4) CodeCompass's own stated purpose
+security-sensitive clean-room infrastructure"; (2) the eight other
+`scripts/check_*.py`/maintenance tools are already explicitly
+documented as maintainer-only (`docs/development/contributing.md:
+20-31`'s "## Maintainer-only tooling (`scripts/`)" section); the two
+scripts specific to this finding, `check_doc_schema.py` and
+`compile_doc_section.py`, are instead documented in
+`docs/architecture/documentation-compilation-pipeline.md:66-68`, as
+part of the compilation-pipeline's own architecture — corrected by
+the second planning review (§V), which found the first draft's own
+"every sibling... is documented in that section" overstated which
+specific file covers which script; (3) `compile_doc_section.py` — the
+module actually doing `docs compile`'s real clean-room work — is
+itself documented at that same architecture-doc location as this
+same category of maintainer-only clean-room infrastructure; (4)
+CodeCompass's own stated purpose
 ("Grounded, version-pinned dependency reference docs for AI coding
 agents," `pyproject.toml`) is about documenting an adopting project's
 *dependencies*, never about compiling an arbitrary project's own
@@ -4293,3 +4302,71 @@ mandatory; §U.3 an explicit, bounded, separately gateable optional
 addition; §U.5's phase-wide audit as the closing gate. Per this
 governing task's own explicit instruction, implementation does not
 proceed from this review — a separate authorisation is required.
+
+### Second review round (2026-11-11) — against the amended §U correcting findings A-E
+
+**Verdict: READY WITH NON-BLOCKING OBSERVATIONS.** A fresh independent
+`Plan` dispatch, instructed not to rely on any prior summary's own
+factual conclusions, re-derived every substantive claim in the amended
+§U from scratch against the live repository — including writing its
+own independent `ast`-based script against `cli.py` to re-derive the
+five default-disclosure gaps and two positive controls (confirmed
+exactly five and exactly two, nothing more or fewer); building a real
+wheel and installing it into a second, independently-constructed
+isolated venv to reproduce §U.2a's `docs compile` execution-boundary
+failure end to end (confirmed, exact same `FileNotFoundError`, plus an
+independent corroborating check that `docs schema-init` succeeds from
+the same installed wheel); confirming `check_cli_commands_documented`'s
+real `if base not in ("app", "query_app")` guard and running
+`check_user_docs.py --strict` directly to confirm it currently reports
+nothing for any of the five gaps; confirming `docs record-review`'s
+real backslash-continued synopsis is the *only* such line in the file
+and that the described join-on-`\` parsing approach works against it;
+re-reading `decisions/0085` §5-6 and `v2-roadmap.md`'s Phase 87 section
+directly to confirm §U.1's new rows (11a, 20) are accurate and nothing
+else needed updating; and re-tracing `_bootstrap`/`_refresh_generated_
+artifacts`'s real call order to confirm `L-129`'s own ordering defect
+genuinely still reproduces at current HEAD.
+
+**Two non-blocking precision defects found and corrected in place**,
+both of the same class the first review round already caught once
+(an unverified count) — confirming this project's own standing lesson
+that every numeric claim needs independent verification, not estimation:
+
+1. §U.2's own "13 of the 37 commands' own optional parameters are
+   booleans or repeatable lists" was wrong under every counting
+   convention the reviewer tried (real figures: 22 commands, 29
+   parameter instances) — corrected in place; no effect on the
+   four-point policy, the five real gaps, or the two positive
+   controls, all independently re-confirmed exact.
+2. §U.2a's claim that "every sibling `scripts/check_*.py` tool" is
+   covered by `docs/development/contributing.md`'s own "Maintainer-
+   only tooling" section overstated that section's real coverage —
+   `check_doc_schema.py`/`compile_doc_section.py` are instead
+   documented in `docs/architecture/documentation-compilation-
+   pipeline.md:66-68`. Corrected in place with the accurate citation
+   split; the scope conclusion itself (maintainer-only, disclosure
+   required, no packaging fix) is unaffected, since it rests on the
+   independently-reproduced wheel failure and the single-command
+   confinement, both separately re-confirmed.
+
+**Everything else held up under independent, from-scratch
+verification**: the default-detection design genuinely resolves the
+missing-default contradiction (a presence check, not merely a
+stated-value comparison); multi-line synopsis parsing works against
+the repository's real (and only) backslash-continuation case; the
+duplication fix is real and sufficient (no second parallel validator
+anywhere, the pre-existing 19-subcommand gap in `check_cli_commands_
+documented` is genuine and confirmed by running the real check);
+the packaging-boundary reproduction and its maintainer-only conclusion
+are independently reproduced, not merely re-asserted; §U.3's deferral
+is firm and unambiguous throughout §U.1/§U.3/§U.4/§U.7/§U.8, with its
+seven outstanding specifications genuinely distinct, non-overlapping
+concerns; §U.1's matrix correctly maps every original Phase 87
+requirement with no omission found; and `L-129`'s own disclosure
+requirement is confirmed still live, not stale.
+
+**This amended plan is implementation-ready for Stage 87D exactly as
+scoped by §U.8's two mandatory deliverables.** Per the governing
+task's own explicit instruction, implementation does not proceed from
+this review — a separate authorisation is required.
