@@ -39,9 +39,20 @@ triage confirmation) — Stage 87C's own original `done` status and PASS
 audit are unchanged by this; the corrective pass repairs defects found
 after that verdict, it does not reopen it. A new Stage 87D plan (§U —
 documentation consistency, deterministic reference generation, and
-Phase 87 closeout) has been written and independently reviewed (§V);
-**Stage 87D is planned and reviewed only, not authorised for
-implementation and not implemented.** Phase 87 overall remains not
+Phase 87 closeout) has been written and independently reviewed (§V's
+first round, READY WITH NON-BLOCKING OBSERVATIONS), then amended a
+second time (2026-11-11) to fix five further implementation-readiness
+gaps (a default-checker design contradiction; an independently-
+reproduced installed-wheel `docs compile` execution-boundary defect,
+confined to one command, maintainer-only, disclosure-only fix; a
+redesign to extend `check_user_docs.py` rather than duplicate it; a
+`codecompass undo` disclosure requirement, `L-129`; §U.3 now
+explicitly deferred rather than optional) and re-reviewed a second
+time (§V's second round, READY WITH NON-BLOCKING OBSERVATIONS, two
+precision corrections applied). §U.8 now states Stage 87D's exactly
+two mandatory deliverables. **Stage 87D is planned and independently
+reviewed twice, still not authorised for implementation and not
+implemented.** Phase 87 overall remains not
 done.** This is a
 **scope-management correction**, not an architectural redesign — the
 strategic objective (§0), the verified architecture map (§A), and the

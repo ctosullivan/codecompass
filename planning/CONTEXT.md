@@ -471,6 +471,49 @@ finding. **Implementation is explicitly not authorised by this pass and
 has not begun; a separate governing task must authorise it before any
 Stage 87D code is written.** Phase 87 overall remains `not done`.
 
+**Stage 87D plan amended after a fresh governing task found five
+implementation-readiness gaps in the first §U draft, and
+independently re-reviewed a second time (2026-11-11, plan's own §U.8/§V
+"Second review round," commits `6e05aee`/`7d226d8`) — still planned and
+reviewed only, implementation not authorised, not begun.** (A) §U.2's
+default-value checker had a genuine logical contradiction — it could
+only catch a documented-but-wrong default, never one omitted entirely —
+fixed with an explicit four-point disclosure policy; an exhaustive
+`ast`-based scan of all 37 commands (not a sample) confirmed exactly
+five real undocumented defaults (`knowledge trace --relation`/
+`--depth`, `knowledge context --max-items`/`--max-chars`, `knowledge
+export --project-id`) and two real, already-correct positive controls.
+(B) A suspected installed-package execution-boundary defect was
+independently reproduced for real: a built wheel installed into an
+isolated venv confirms `codecompass docs compile` crashes with an
+uncaught `FileNotFoundError` trying to load a `scripts/`-resident
+module `pyproject.toml` never ships — confined to exactly one command,
+concluded maintainer-only (a documentation-disclosure requirement, not
+a packaging fix, and not a Phase 87 exit-gate blocker); new §U.2a
+documents this in full. (C) §U.2's originally-proposed new validator
+script would have duplicated two checks `scripts/check_user_docs.py`
+already has (`check_cli_commands_documented`, itself carrying a real
+pre-existing 19-subcommand coverage gap, and
+`check_vendor_config_fields_documented`) — redesigned to extend that
+existing file in place instead of building a parallel validator. (D)
+`L-129`'s real `codecompass undo` first-run artifact-tracking gap,
+re-verified still live at current HEAD, now requires an explicit
+documentation-disclosure requirement in the plan (not a fix to `undo`
+itself). (E) §U.3 (cross-document semantic consistency) is now
+explicitly deferred beyond Stage 87D — not a voluntary lead choice —
+with its design preserved and seven outstanding specifications named
+for a future, separately authorised phase. A new §U.8 states Stage
+87D's exactly two mandatory deliverables (deterministic reference
+assurance; final Phase 87 assurance and closeout). A second independent
+planning review — re-deriving everything from scratch, including its
+own independent wheel build/reproduction in a second isolated venv and
+an independent `ast`-based re-derivation of the five gaps — returned
+**READY WITH NON-BLOCKING OBSERVATIONS** again, with two further minor
+precision corrections applied (a wrong parameter-instance count; an
+overstated documentation-citation claim), neither affecting the plan's
+substance. **Stage 87D implementation remains not authorised and has
+not begun; Phase 87 overall remains `not done`.**
+
 **Phase 86 — Knowledge-Placement and Code-Quality Review — is `done`
 (2026-11-03)**. Plan amended and independently reviewed across four
 rounds before implementation (full history: `planning/phase-86-
@@ -1038,6 +1081,46 @@ unmodified by Phase 82 — full detail in `planning/ROADMAP.md`'s own rows
 and each phase's retro.
 
 ## What was just completed
+
+**Phase 87 Stage 87D plan amended to close five implementation-
+readiness gaps, and independently re-reviewed a second time**,
+2026-11-11, direct user request (commits `6e05aee`, `7d226d8`). A fresh
+governing task found five real gaps in the first §U draft (already
+independently reviewed once, READY WITH NON-BLOCKING OBSERVATIONS):
+(A) §U.2's default-value checker had a genuine logical contradiction —
+it could only catch a documented-but-wrong default, never one omitted
+entirely — fixed with an explicit four-point disclosure policy; an
+exhaustive `ast`-based scan of all 37 commands (not a sample) confirmed
+exactly five real undocumented defaults (`knowledge trace --relation`/
+`--depth`, `knowledge context --max-items`/`--max-chars`, `knowledge
+export --project-id`) and two real, already-correct positive controls.
+(B) A suspected installed-package execution-boundary defect was
+independently reproduced for real: a built wheel installed into an
+isolated venv confirms `codecompass docs compile` crashes with an
+uncaught `FileNotFoundError` trying to load a `scripts/`-resident
+module `pyproject.toml` never ships — confined to exactly one command,
+concluded maintainer-only (a documentation-disclosure requirement, not
+a packaging fix, not a Phase 87 exit-gate blocker); new §U.2a documents
+this in full. (C) §U.2's originally-proposed new validator script would
+have duplicated two checks `scripts/check_user_docs.py` already has —
+redesigned to extend that existing file in place instead. (D) `L-129`'s
+real `codecompass undo` first-run gap, re-verified still live, now
+requires an explicit documentation-disclosure requirement in the plan,
+not an `undo` fix. (E) §U.3 (cross-document semantic consistency) is
+now explicitly deferred beyond Stage 87D, not a voluntary lead choice,
+with seven outstanding specifications named for a future, separately
+authorised phase. A new §U.8 states Stage 87D's exactly two mandatory
+deliverables (deterministic reference assurance; final Phase 87
+assurance and closeout). A second independent planning review —
+re-deriving everything from scratch, including its own independent
+wheel build/reproduction and an independent `ast`-based re-derivation
+of the five gaps — returned **READY WITH NON-BLOCKING OBSERVATIONS**
+again, with two minor precision corrections applied (a wrong
+parameter-instance count; an overstated documentation-citation claim),
+neither affecting the plan's substance. **Stage 87D implementation
+remains not authorised and has not begun. Phase 87 overall remains
+`not done`.** Full detail: plan's own §U.2a/§U.8, §V "Second review
+round"; see "Current phase" above and "Next concrete step" below.
 
 **Phase 87 Stage 87C corrective-closeout pass closed, and a new Stage
 87D plan drafted and independently reviewed**, 2026-11-10 (commits
@@ -1693,20 +1776,40 @@ original PASS audit's verdict**
 (plan's own §T). **Phase 87 overall remains `not done`.** A new Stage
 87D plan (documentation consistency, deterministic reference
 generation, and Phase 87 closeout — plan's own §U) was then drafted and
-independently reviewed **READY WITH NON-BLOCKING OBSERVATIONS** (§V,
-four textual corrections applied, none architectural). Against the
-original Phase 87 requirements, only one item is genuinely outstanding
-— a deterministic/drift-checked `docs/reference/cli.md`/
-`configuration.md` generator (§U.2); a semantic cross-document
+independently reviewed **READY WITH NON-BLOCKING OBSERVATIONS** (§V's
+first review round, four textual corrections applied, none
+architectural). A fresh governing task then found five real
+implementation-readiness gaps in that first draft (2026-11-11,
+commits `6e05aee`/`7d226d8`): a default-value checker that could only
+catch a wrong documented default, never an omitted one (fixed with an
+explicit four-point policy; five real undocumented defaults confirmed
+by an exhaustive `ast` scan); an independently-reproduced
+installed-wheel execution-boundary crash in `docs compile`, confined to
+one command, concluded maintainer-only and requiring disclosure, not a
+packaging fix (new §U.2a); a proposed new validator that would have
+duplicated two checks `check_user_docs.py` already has, redesigned to
+extend that file instead; `L-129`'s `undo` first-run gap now requiring
+explicit disclosure in the plan rather than a fix; and §U.3
+(cross-document consistency) now explicitly deferred beyond Stage 87D,
+not a voluntary lead choice. A new §U.8 names Stage 87D's exactly two
+mandatory deliverables. A second independent planning review,
+re-deriving everything from scratch, returned **READY WITH
+NON-BLOCKING OBSERVATIONS** again (two further minor precision
+corrections, neither architectural). Against the original Phase 87
+requirements, only one item is genuinely outstanding — a
+deterministic/drift-checked `docs/reference/cli.md`/`configuration.md`
+generator (§U.2, now §U.8 Deliverable 1); a semantic cross-document
 consistency checker (§U.3) is scoped as a voluntary, separately
 gateable addition, not a closeout requirement. **Stage 87D is planned
-and reviewed only — implementation is explicitly not authorised by
-this pass and has not begun.** This is a recommendation, not a
-pre-decision: **the next concrete step is for the lead/user to decide
-whether to authorise Stage 87D implementation** (all of it, §U.2 only,
-or §U.2 plus the voluntary §U.3) — no session, agent, or reconciliation
-pass may self-authorise it; only once that authorisation is given and
-implementation completes does Phase 87's own closeout get reassessed.
+and reviewed only (twice, now across both review rounds) —
+implementation is explicitly not authorised by either pass and has not
+begun.** This is a recommendation, not a pre-decision: **the next
+concrete step is for the lead/user to decide whether to authorise
+Stage 87D implementation** (all of it, §U.8's Deliverable 1 only, or
+Deliverable 1 plus the voluntary §U.3) — no session, agent, or
+reconciliation pass may self-authorise it; only once that authorisation
+is given and implementation completes does Phase 87's own closeout get
+reassessed.
 A smaller, nearer-term item that does *not* need that authorisation:
 Stage 87C's own five candidate learnings (`L-125`-`L-129`,
 `planning/learnings/inbox.md`) are all independently triaged
