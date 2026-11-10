@@ -3610,7 +3610,17 @@ doesn't already provide)**:
    step 1, applies the four-point policy above — parameter-name
    presence in the matched synopsis line (required and optional
    alike), then the default-disclosure three-way check for non-exempt
-   optional parameters.
+   optional parameters. **Prose-form disclosure is scoped per command,
+   not per shared heading** (corrected by the third independent
+   planning review, which found this rule unstated): within a heading
+   covering several commands, a command's own prose statement is the
+   text from that command's own bolded, backtick-wrapped bullet marker
+   (e.g. `cli.md:285`'s `- **`schema-init DOCUMENT`**...`) up to the
+   next such bullet marker or the next heading, whichever comes first
+   — a default-value string appearing only under a *different*
+   command's own bullet, in the same shared block, does not satisfy
+   this command's own disclosure requirement, exactly mirroring the
+   synopsis-line-level scoping in step 1.
 3. **Extend `check_vendor_config_fields_documented`** with the small
    `Ecosystem`-enum addition named above — same function, same file,
    not a new check.
@@ -3696,7 +3706,17 @@ silently skipping a command, parameter, or doc section):
   wrong place; (e) the shared heading/block structure itself, plus the
   `\`-continuation, both parse correctly for every command inside the
   block, confirmed by a sixth fixture that is otherwise fully correct
-  and must pass.
+  and must pass; **(f), added by the third independent planning
+  review**: the same "correct value under a neighbouring command
+  only" failure mode, in the *prose* disclosure form, not only the
+  synopsis-line form — a default correctly worded in prose, but
+  placed under a different command's own bullet marker in the same
+  shared heading, must fail for the command it doesn't actually
+  belong to, proving the checker cannot be satisfied by a
+  coincidentally-correct prose statement sitting under the wrong
+  bullet either — the exact gap a naive "is this value anywhere in
+  the surrounding prose of this heading" implementation would pass
+  incorrectly.
 - *Full real-repository run*: `check_user_docs.run_all` against this
   actual repository, as of this plan's own writing, reports the five
   real gaps and nothing else spurious — confirmed by the independent
@@ -4532,3 +4552,61 @@ requirement is confirmed still live, not stale.
 scoped by §U.8's two mandatory deliverables.** Per the governing
 task's own explicit instruction, implementation does not proceed from
 this review — a separate authorisation is required.
+
+### Third review round (2026-11-11) — against the amended §U correcting findings A-C of the Phase 87D Final Amendments task
+
+**Verdict: READY WITH NON-BLOCKING OBSERVATIONS.** A fresh independent
+`Plan` dispatch, with no reliance on any prior summary's own factual
+conclusions, re-derived every substantive claim in the third amendment
+from scratch — building its own real wheel and installing it into an
+isolated venv to independently reproduce both the `docs compile`
+installed-wheel failure and all four sibling commands' own end-to-end
+success (via a hand-constructed, correctly-hashed pending-review
+manifest for `record-review`/`publish`, a different but equally valid
+route from the plan's own reproduction), and separately reproducing
+the editable-install-from-an-unrelated-directory success case; running
+all six applicable validators directly to confirm §U.7a's own baseline
+table is exact; reading `decisions/0085`/`planning/v2-roadmap.md`
+directly to re-confirm §U.1's matrix; and re-tracing `L-129`'s own
+ordering defect in `cli.py` to confirm it still reproduces.
+
+**One real, non-blocking precision gap found, not caught by either
+prior review round**: §U.2's default-disclosure policy explicitly
+allows prose-form disclosure (confirmed real: `docs schema-init
+--section-id`'s own positive control is a prose statement inside a
+*five-command* shared heading), but the plan's own command-isolation
+test design only exercised synopsis-line-level misattribution, never
+prose-level misattribution — a naive implementation checking "is this
+default value anywhere in the heading's surrounding prose" rather
+than "is it under this specific command's own bullet" would pass the
+original five/six fixtures while still having the exact attribution
+bug the governing task named, just in the prose form instead of the
+synopsis-line form. **Corrected in place**: §U.2's "Chosen
+implementation" now states an explicit prose-scoping rule (a
+command's own prose is the text from its own bolded, backtick-wrapped
+bullet marker up to the next bullet marker or heading), and a seventh
+command-isolation fixture (f) exercises exactly this failure mode.
+
+**Everything else held up under independent, end-to-end
+re-verification**, in several cases reproduced by a different but
+equally valid method than the plan's own original reproduction (the
+hand-constructed manifest for `record-review`/`publish`) rather than
+merely re-reading the same evidence: the five real default gaps and
+two positive controls (exact); command/subcommand counts and the real
+`docs record-review` backslash-continuation (exact); no duplicate
+validator anywhere (confirmed via a repo-wide grep for the proposed
+new function/module names, zero hits); the installed-wheel-vs-
+editable-install mechanics and all four siblings' own positive
+end-to-end success (independently reproduced, not merely re-read);
+§U.7a's baseline table (every count re-run and matched exactly,
+`planning/ROADMAP.md`'s own Phase 85 row confirmed verbatim); §U.3/
+§U.4's firm deferral (no reappearance as in-scope found anywhere);
+and §U.1's complete requirement-to-exit-gate mapping (every row traced
+to a real passage in `decisions/0085`/`planning/v2-roadmap.md`, no
+omission found).
+
+**This amended plan is implementation-ready for Stage 87D exactly as
+scoped by §U.8's two mandatory deliverables.** Implementation may now
+proceed, per this governing task's own explicit authorisation
+conditional on this review returning READY or READY WITH NON-BLOCKING
+OBSERVATIONS with corrections incorporated — now done.
