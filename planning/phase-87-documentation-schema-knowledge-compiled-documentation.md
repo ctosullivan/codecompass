@@ -3410,8 +3410,10 @@ evidence where they independently verified the same thing.
 | 8 | Getting Started — tested tutorial | **Done** | `docs/getting-started.md`, Stage 87B, real `scripts/execute_doc_example.py` harness |
 | 9 | Concepts, extended with an explicit epistemic-distinctions/reconciliation-loop page | **Done** | `docs/concepts/knowledge-model.md` (Stage 87C) — read directly for this matrix: covers the six record kinds, provenance-as-cross-cutting-property, INTENDED/OBSERVED/VERIFIED/CONTESTED, and the reconciliation loop, with a pointer to `docs/workflows/knowledge-reconciliation-loop.md` for full mechanics |
 | 10 | Architecture (overview/components/data-and-control-flow) | **Done, validated through existing docs+tests** | All three exist; `components.md`/`documentation-compilation-pipeline.md` independently re-confirmed current by this session's own `docs-reconstructor` dispatches |
-| 11 | Reference (`cli.md`/`configuration.md`), "generated deterministically where practical — currently hand-maintained" | **Outstanding, explicitly named** | Confirmed directly via Click/Typer introspection: 10 top-level commands + 27 subcommands (`query` 8, `enrich` 1, `knowledge` 13, `docs` 5) — every one appears somewhere in `cli.md`, and a spot-check (`knowledge trace`) found it accurate but missing one default value, with a second, same-shape undocumented default found independently by the planning review (`knowledge context`'s `--max-items`/`--max-chars`) — hand-maintained and currently accurate, but with a real, growing drift risk as the CLI evolves, and no mechanical guarantee of either |
+| 11 | Reference (`cli.md`/`configuration.md`), "generated deterministically where practical — currently hand-maintained" | **Outstanding, explicitly named** | Confirmed directly via Click/Typer `ast`-based introspection (the same technique `check_user_docs.py` already uses, re-run exhaustively for this amendment — not a spot-check): 10 top-level commands + 27 subcommands (`query` 8, `enrich` 1, `knowledge` 13, `docs` 5) — every one appears somewhere in `cli.md`. A full scan of every command's own default values (not a sample) found exactly **five** genuinely undocumented, non-exempt defaults — `knowledge trace`'s `--relation` (`supporting_evidence`) and `--depth` (`1`); `knowledge context`'s `--max-items` (`20`) and `--max-chars` (`6000`); `knowledge export`'s `--project-id` (`codecompass`) — each independently re-confirmed against `src/codecompass/cli.py` directly. Two genuine, correctly-handled **positive controls** also confirmed, important for the checker's own design (§U.2): `codecompass init`'s `--output` default is disclosed via a literal value embedded directly in the synopsis line itself (`[--output vendor.toml]`, `cli.md:19`), and `docs schema-init`'s `--section-id` default is disclosed in prose (`cli.md:287`, "default `section-one`") — both real, both already correct, neither a gap. |
+| 11a | Reference material does not duplicate the installed-package execution boundary into undisclosed behaviour | **Outstanding, a real confirmed packaging/execution-boundary defect in `codecompass docs compile` specifically** | Reproduced directly (not assumed): built a real wheel, installed it into an isolated venv outside this git checkout, and ran `codecompass docs compile` against a scratch schema — it crashes with an uncaught `FileNotFoundError` trying to load `scripts/check_doc_schema.py` from a nonsensical path computed from the installed package's own location. Root cause: `_load_script_module` (`cli.py:1898`, `_SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent / "scripts"`) assumes a sibling `scripts/` directory that `[tool.setuptools.packages.find] where = ["src"]` (`pyproject.toml`) never packages — confirmed: `scripts/` is absent from the installed wheel entirely. Confined to exactly one command: `docs compile` is the only command calling `_load_script_module` anywhere in `cli.py` (two call sites, both inside it); `schema-init`/`record-review`/`publish`/`maintain` have zero such calls and are confirmed safe from an installed wheel. See §U.2a for the full reproduction, root-cause analysis, and scope conclusion (maintainer-only, not a public capability — disclosure required, no packaging fix needed). |
 | 12 | Contributor Guide (`CONTRIBUTING.md`/`docs/development/contributing.md`) | **Done, as accurate human-authored content; never named for compilation** | Both exist; neither was ever named in Stage 87's own §S.2 document/section ownership matrix as a compilation target — the original spec's own "deliverable" language for this document does not require knowledge compilation, only existence/accuracy |
+| 20 | Reference documentation does not overstate current product behaviour (no unsupported claims, per `decisions/0085` §5's own editorial requirement) | **Outstanding, one confirmed real gap** | `docs/reference/cli.md:136-138`'s unqualified claim that `undo` "correctly distinguishes a CodeCompass-generated artifact from a third-party one by its real, recorded origin" was independently found incomplete by the Stage 87C usability exercise (filed as `L-129`): on a project's very first `codecompass` run, the whole-project graph rebuild that records `doc_artifacts` rows runs *before* the Skill/slash-command files are generated, so `undo --dry-run` immediately afterward omits both from its own removal list; a second `sync` self-heals it. Re-verified at current HEAD (not assumed stale from the prior finding): the ordering defect still reproduces exactly as `L-129` described — `_bootstrap`'s `rebuild_project_graph` call (`cli.py`) still runs before `write_tool_skill`/`write_discovery_command`. This is a real, narrow, **first-run-only** product limitation, not fixed by this amendment (out of Stage 87D's own scope, per the governing task's explicit instruction not to expand into an undo implementation fix) — the plan requires `cli.md` to disclose it accurately (§U.2's deliverable 1), distinct from fixing it. |
 | 13 | Fail-closed check against ungrounded generation | **Done** | Stage 87A's citation-scope/gap-detection mechanism |
 | 14 | Real manually-triggered incremental-maintenance run, correctly scoped (false-positive control) | **Done, twice, now with extra rigor** | Stage 87B + 87C demonstrations; the corrective pass's own citation-swap exercise is a third, independent real exercise of the identical mechanism |
 | 15 | Independent reader evaluation | **Done, twice** | Stage 87B + Stage 87C's own §S.8 exercises |
@@ -3457,171 +3459,330 @@ original, textually-traceable Phase 87 requirements, **exactly one
 item is genuinely outstanding** — deterministic (or mechanically
 drift-checked) reference material (#11). Every other requirement is
 already done, confirmed directly against the repository, not merely
-asserted by a prior stage's own retro. This means Stage 87D's own
-*mandatory minimum* is smaller than its proposed title might suggest:
-one bounded reference-accuracy mechanism (§U.2) plus the final,
-independent, phase-wide audit (§U.5) would, on this matrix alone,
-satisfy Phase 87's own closeout. Cross-document consistency (§U.3) is
-included in this plan as a **voluntary, separately gateable addition**
-precisely because the governing task that requested this plan asked
-for it to be designed and assessed — not because skipping it would
-leave Phase 87 incomplete. §U.4 makes this an explicit implementation-
-time choice, not a default inclusion.
+asserted by a prior stage's own retro. This amendment also confirmed
+two further items needing disclosure rather than net-new capability —
+a real, reproduced execution-boundary defect in `docs compile`
+specifically (§U.1 row 11a/§U.2a), and a real, previously-filed
+documentation-accuracy gap about `codecompass undo`'s own first-run
+behaviour (§U.1 row 20) — neither changes this conclusion. **Stage
+87D's own mandatory scope is exactly two deliverables (§U.8)**: a
+corrected, deduplicated reference-accuracy mechanism (§U.2/§U.2a)
+plus the final, independent, phase-wide audit (§U.5). Cross-document
+consistency (§U.3) is **explicitly deferred beyond Stage 87D**, not a
+voluntary addition the lead may still choose to include — §U.3's own
+closing section and §U.4 both state this firmly, corrected from this
+plan's own prior draft.
 
 ### U.2 Deterministic CLI and configuration reference
 
-**Current state, verified directly via Click/Typer introspection, not
-assumed or hand-counted from `--help` output alone** (corrected by the
-independent Stage 87D planning review, which found the original count
-below): `docs/reference/cli.md` (404 lines) and `docs/reference/
-configuration.md` (38 lines) are both hand-maintained. The live CLI
-has 10 top-level commands (`init`, `sync`, `index`, `check`, `chat`,
-`undo`, `query`, `enrich`, `knowledge`, `docs`) and **27 subcommands**
-— `query` 8, `enrich` 1, `knowledge` **13**, `docs` 5. Every one of
-these 37 commands/subcommands appears somewhere in `cli.md`
-(re-confirmed by grep; none missing). A targeted spot-check (the
-independent `general-purpose` dispatch for the §S.8 usability
-exercise, re-confirmed here) found `knowledge
-trace`'s own documented flags accurate against both `--help` and
-`src/codecompass/cli.py:1782-1784`, with exactly one real gap: the
-doc never states `--relation`'s own default value
-(`supporting_evidence`), which `--help` and source both show. The
-independent Stage 87D planning review found a second, same-shape real
-gap independently: `knowledge context`'s `--max-items`/`--max-chars`
-defaults (`cli.py:1820-1821`) are likewise undocumented in `cli.md:
-222-225`. Both are the **real, representative failure mode** this
-section must guard against going forward — not a hypothetical, and
-not a single isolated instance either.
+**Current state, verified directly via exhaustive `ast`-based
+introspection of every command's own real defaults, not a spot-check
+and not an assumption** (this amendment's own correction — the prior
+draft spot-checked one command and trusted a second found by the
+planning review; this amendment scanned every one of the 37 live
+commands/subcommands): `docs/reference/cli.md` (404 lines) and
+`docs/reference/configuration.md` (38 lines) are both hand-maintained.
+10 top-level commands, 27 subcommands (`query` 8, `enrich` 1,
+`knowledge` 13, `docs` 5) — every one appears somewhere in `cli.md`.
+Exactly **five** genuinely undocumented, non-exempt default values
+exist at current HEAD (§U.1 row 11): `knowledge trace --relation`
+(`supporting_evidence`), `knowledge trace --depth` (`1`), `knowledge
+context --max-items` (`20`), `knowledge context --max-chars` (`6000`),
+`knowledge export --project-id` (`codecompass`) — all five
+independently re-derived against `cli.py` directly as part of this
+amendment, matching the governing task's own named list exactly, not
+assumed exhaustive from a smaller sample.
 
-**Design decision: a deterministic drift-detection validator, not full
-generation or AI rewriting.** Considered and rejected:
+**The default-value contradiction, resolved**: the prior draft's own
+"what it checks" point 3 could only ever compare a default *already
+stated* in `cli.md` against the live value — structurally incapable of
+catching a default omitted entirely, which is exactly the real failure
+mode all five gaps above are. Replaced with an explicit, deterministic
+three-way policy, checked against two confirmed real positive controls
+below to make sure it doesn't over-flag correctly-documented defaults:
 
-- *Full deterministic generation*, replacing `cli.md`'s own hand-
-  written prose with an auto-generated reference: rejected. The
-  existing prose carries real explanatory value (why a flag exists,
-  cross-references to `decisions/*`, usage guidance) that a mechanical
-  dump of Click's own parameter metadata cannot reproduce, and
-  regenerating the whole file on every CLI change risks silently
-  discarding reviewed human judgment the same way Stage 87C's own
-  full-recompile attempt discarded previously-fixed specific
-  identifiers (§3D's own "what didn't work" finding, generalised here
-  deliberately).
-- *AI-assisted rewriting* of the reference material to keep it fresh:
-  rejected for the same reason the governing task names explicitly —
-  mechanically generated facts plus reviewed human-authored
-  explanation is a better balance than AI rewriting command reference
-  material, which risks exactly the kind of subtle, hard-to-catch
-  drift (a dropped flag, a paraphrased default) this section exists to
-  prevent, not reintroduce.
-- **Chosen: a new deterministic validator**, `scripts/
-  check_cli_reference_drift.py`, following this project's own
-  established `Finding`/`--strict` convention (`check_doc_schema.py`,
-  `check_user_docs.py`, `check_knowledge_base.py`,
-  `check_knowledge_placement.py` — four direct precedents, same
-  pattern each time). It introspects the live `codecompass.cli` Typer
-  app via Click's own `Command`/`Group` object model (Typer is built
-  on Click; no new dependency) to build a deterministic command
-  inventory — every command/subcommand's full dotted path, parameter
-  names, types, defaults, required/optional — and cross-checks it
-  against `cli.md`'s own existing, already-real prose convention.
-  **Corrected by the independent Stage 87D planning review**: the
-  real convention is not strictly one heading per command — a command
-  *group* sharing closely related behaviour gets one shared `##
-  \`codecompass <group> <cmd1>|<cmd2>|...\`` heading with one fenced
-  block holding one usage-synopsis line per command inside it (e.g.
-  `cli.md:163`'s one heading covers `knowledge get|search|trace|
-  gaps|context|export`, six commands, one synopsis line each inside a
-  single fenced block at `cli.md:166-171`; `cli.md:250`'s heading
-  covers all five `docs` subcommands the same way). The checker
-  therefore matches at the **synopsis-line level**, not the heading
-  level: it locates each command's own synopsis line by its own
-  leading `codecompass <dotted-path>` token inside whichever fenced
-  block contains it, regardless of how many commands share that
-  block's heading — this requires no restructuring of `cli.md` itself,
-  only correct parsing of a convention already there.
+1. **A parameter whose live Click/Typer type is `bool`, or whose type
+   is a repeatable list (`list[...]`), is exempt from default
+   disclosure** — an absent boolean flag's own off-by-default meaning,
+   and an absent repeatable option's own no-restriction meaning, are
+   both self-evident CLI conventions, not information a reader needs
+   a stated literal value to recover. (13 of the 37 commands' own
+   optional parameters are booleans or repeatable lists; none of them
+   is a real gap, confirmed by this amendment's own exhaustive scan.)
+2. **Every other optional parameter with a concrete, non-`None`
+   default is "required" by this policy to have that default
+   disclosed somewhere within its own command's documented section**
+   — in either of the two real, already-present forms this project's
+   own `cli.md` already uses (both confirmed as genuine, correctly-
+   handled positive controls, not invented): (a) **a literal value
+   embedded directly in the synopsis line itself**, e.g. `codecompass
+   init`'s `[--output vendor.toml]` (`cli.md:19`, not a generic `PATH`
+   placeholder); or (b) **an explicit statement in the surrounding
+   prose**, e.g. `docs schema-init`'s "`--section-id`, default
+   `section-one`" (`cli.md:287`). Absent *both* forms → **fail** — this
+   is what makes the check fail on an *omitted* default, not only a
+   *wrong* one, resolving the contradiction directly.
+3. **A documented default (either form) that disagrees with the live
+   value → fail** (the original check's own correct half, kept
+   unchanged).
+4. **A required argument/option (Click's own "no default," `...` in
+   Typer) needs no default disclosure at all** — only parameter-name
+   presence applies to these (point 1 of the three original checks,
+   unchanged).
 
-**What it checks** (three deterministic cross-checks, no model call):
+This three-way split is the "clear, deterministic documentation
+policy" the governing task requires, and is checked against real,
+already-existing cases on both sides (five real failures, two real
+passes) rather than only synthetic fixtures.
 
-1. **Presence, both directions.** Every live command/subcommand has a
-   matching synopsis line somewhere in `cli.md` (inside any fenced
-   block, under any heading); every synopsis line in `cli.md` still
-   corresponds to a live command (catches an added-but-undocumented
-   command *and* a removed-but-still-documented one).
-2. **Parameter presence.** Every required/optional parameter named in
-   a command's own live Click signature appears in that command's own
-   usage-synopsis line in `cli.md`, with matching required/optional
-   bracket convention (`ARG` vs `[--flag VALUE]`).
-3. **Stated-default accuracy.** Where `cli.md`'s own prose explicitly
-   states a default value (parsed via a narrow, explicit phrase match
-   — "defaults to", "default:" — never a general NLP pass), that
-   stated value is cross-checked against the parameter's own live
-   Click default. The `knowledge trace`/`--relation` gap above is the
-   real fixture this check must catch: a regression test adds this
-   exact case back (a documented option with a true-but-undocumented
-   default) and confirms the check flags it, alongside a second
-   fixture confirming the check passes once the default is stated.
+**Design decision: extend the existing `check_user_docs.py`, do not
+build a second, overlapping validator.** The prior draft proposed a
+new, separate `scripts/check_cli_reference_drift.py` without checking
+what already exists — a real duplication defect this amendment
+corrects. `scripts/check_user_docs.py` (confirmed: a maintainer-only
+tool, "not part of the codecompass package," per that file's own test
+module docstring, `tests/test_check_user_docs.py:1-4`) already ships
+two directly overlapping checks, both already real precedent for this
+exact kind of `ast`-based source-vs-doc cross-check:
 
-**Never auto-rewrites prose.** The check only reports; a human fixes
+- `check_cli_commands_documented` (`check_user_docs.py:51-91`) —
+  walks `cli.py`'s own `ast` tree for `@app.command()`/
+  `@query_app.command()` decorators and confirms each one's name
+  appears somewhere in `cli.md`. **A real, pre-existing gap this
+  amendment also found and must fix**: it only ever checks `app`/
+  `query_app` — `knowledge_app`/`docs_app`/`enrich_app` (19 of the 27
+  real subcommands) are not walked at all today, confirmed directly
+  against the function's own `if base not in ("app", "query_app")`
+  guard.
+- `check_vendor_config_fields_documented` (`:107-128`) — walks
+  `core.py`'s `VendorConfig` `ast` tree and confirms each field name is
+  backtick-mentioned in `configuration.md`. This is **already exactly**
+  the `configuration.md` check the prior draft proposed building a
+  second time — dropped entirely from this plan, not duplicated. The
+  one real, narrow gap this amendment adds to it: it checks
+  `VendorConfig`'s own fields, but never the `Ecosystem` enum's own
+  four members against `configuration.md`'s "one of npm/python/cargo/
+  haskell" sentence — a small, additive extension to the *same*
+  function, not a new one.
+
+**Chosen implementation, all inside `scripts/check_user_docs.py`,
+reusing its existing `ast`-based technique (never Click/Typer runtime
+introspection, which would require importing and instantiating the
+live app — a strictly larger, riskier surface for a maintainer-only
+static check with no payoff this file's own established approach
+doesn't already provide)**:
+
+1. **Extend `check_cli_commands_documented`** to walk every
+   `*_app.command()` decorator (`app`/`query_app`/`knowledge_app`/
+   `docs_app`/`enrich_app` — the real, complete set, confirmed against
+   `cli.py`'s own Typer-app declarations), closing the pre-existing
+   19-subcommand gap above, and extend its own doc-matching to the
+   **synopsis-line level**, not bare substring presence: `cli.md`'s
+   real convention is one heading per command *or* per logical
+   command-group sharing one fenced block with one synopsis line per
+   command inside it (e.g. `cli.md:163`'s one heading covers six
+   `knowledge` commands in one shared fenced block at `cli.md:166-171`;
+   `cli.md:250`'s heading covers all five `docs` subcommands the same
+   way, with `docs record-review`'s own synopsis line wrapping across
+   two physical lines via a trailing `\` continuation,
+   `cli.md:255-256` — the parser joins a line ending in `\` with the
+   next line before treating it as one command's full synopsis, the
+   same convention a POSIX shell uses). Presence is checked both
+   directions: every live command has a matching synopsis line
+   somewhere in `cli.md`; every synopsis line still names a live
+   command.
+2. **New function, `check_cli_parameter_defaults_documented`**, same
+   file, same `ast`-based technique: for every parameter extracted in
+   step 1, applies the four-point policy above — parameter-name
+   presence in the matched synopsis line (required and optional
+   alike), then the default-disclosure three-way check for non-exempt
+   optional parameters.
+3. **Extend `check_vendor_config_fields_documented`** with the small
+   `Ecosystem`-enum addition named above — same function, same file,
+   not a new check.
+
+**Never auto-rewrites prose.** Both checks only report; a human fixes
 either the doc or confirms the CLI change is intentional and updates
-the doc in the same commit (`CLAUDE.md` §2's own same-commit rule,
-applied here for the first time to reference material specifically).
+the doc in the same commit (`CLAUDE.md` §2's own same-commit rule).
 
-**`docs/reference/configuration.md`** gets a smaller, analogous check
-in the same script: `VendorConfig`'s own real fields (`name`,
-`ecosystem`) and the real `Ecosystem` enum's own members, cross-checked
-against the documented field table and the "one of npm/python/cargo/
-haskell" sentence.
+**Preventing duplicated findings, conflicting interpretations, and
+redundant fixtures** (the governing task's own explicit requirement):
+since this amendment extends the *same* two existing functions rather
+than adding parallel ones, there is exactly one authoritative
+implementation of each check — command/parameter presence in
+`check_cli_commands_documented`, default-value policy in the new
+`check_cli_parameter_defaults_documented`, `VendorConfig`/`Ecosystem`
+field presence in `check_vendor_config_fields_documented` — with no
+second function anywhere capable of reaching a different verdict on
+the same fact. Existing tests for the two extended functions
+(`tests/test_check_user_docs.py`'s `TestCliCommandsDocumented`/
+`TestVendorConfigFieldsDocumented` classes) are extended in place with
+new cases, not forked into a second test file; no new fixture
+duplicates a scenario an existing one already covers.
 
-**Update triggers, ownership, ownership boundary**: runs as part of
-the existing strict-validator suite (same cadence as the four sibling
-checks — every CI/test run, `--strict` mode). Owned and maintained by
-the lead, same as every other `scripts/check_*.py` tool; `cli.md`/
-`configuration.md`'s own prose stays fully human-authored and human-
-owned — the check is a tripwire, never a writer.
+**Retained unchanged**: report-only by default, `--strict` exits
+non-zero on a blocking finding, `Finding`/`run_all` conventions
+unchanged, no new third-party dependency, no AI/model call, no new
+agent, no CLI-exposed command (the checks stay maintainer-only, run
+via `python scripts/check_user_docs.py [--strict]`, exactly as today
+— never wired into `codecompass`'s own shipped CLI, which sidesteps
+§U.2a's execution-boundary concern entirely for this new work, since a
+maintainer-only script run from within a git checkout has no
+installed-wheel story to begin with).
 
-**Test cases** (failure criteria named explicitly, not left implicit):
+**Test cases** (failure criteria named explicitly; positive, negative,
+and minimal-content fixtures, so the checker cannot report success by
+silently skipping a command, parameter, or doc section):
 
-- A new CLI command/subcommand added to `cli.py` with no matching
-  `cli.md` heading → fails.
-- A command removed from `cli.py` but still documented → fails.
-- A required parameter present in the live signature but absent from
-  the documented usage synopsis → fails.
-- A documented default that no longer matches the live Click default
-  → fails.
-- The real, current `cli.md`/`configuration.md` content, as of this
-  plan's own writing, passes **except** for the two already-known,
-  same-shape gaps — `knowledge trace`'s `--relation` default and
-  `knowledge context`'s `--max-items`/`--max-chars` defaults (the
-  second found independently by the planning review) — both of which
-  must fail until fixed: two real, non-synthetic regression-test
-  fixtures, confirmed to exist before the checker is built, not
-  invented for the test suite.
+- *Negative (must fail)*: a new subcommand added to `knowledge_app`/
+  `docs_app`/`enrich_app` with no matching synopsis line → fails
+  (proves the 19-subcommand gap is actually closed, not merely
+  widened to a still-incomplete set). A command removed from `cli.py`
+  but still documented → fails. A required parameter present in the
+  live signature but absent from the matched synopsis line → fails. A
+  non-exempt optional parameter's default present in neither the
+  synopsis nor the prose → fails (the five real, non-synthetic
+  fixtures named above — `--relation`/`--depth`/`--max-items`/
+  `--max-chars`/`--project-id` — each its own regression case,
+  confirmed to fail against the real, current `cli.md` before any fix
+  lands, then confirmed to pass once each is fixed). A documented
+  default that no longer matches the live value → fails.
+- *Positive (must pass, not merely "no crash")*: the two confirmed real
+  cases (`init --output`'s synopsis-embedded literal; `schema-init
+  --section-id`'s prose statement) each get their own fixture proving
+  the checker recognises *both* disclosure forms, not only one. Every
+  boolean/repeatable-list parameter across the real command set
+  produces no finding at all (proves the exemption rule doesn't silently
+  swallow a real string/int default by misclassifying its type).
+- *Minimal-content control*: a synthetic `cli.py` fixture with exactly
+  one command, one non-exempt optional parameter, and a `cli.md` whose
+  fenced block contains that command's synopsis line but nothing
+  else (no prose at all) and no stated default anywhere — must fail,
+  proving the checker cannot pass merely because a command's own
+  heading/fence exists; a second fixture adding only the missing
+  default must then pass, isolating exactly what changed.
+- *Full real-repository run*: `check_user_docs.run_all` against this
+  actual repository, as of this plan's own writing, reports the five
+  real gaps and nothing else spurious — confirmed by the independent
+  planning review (§V) before this plan is treated as implementation-
+  ready, not merely asserted here.
 
 **Migration requirement**: none. `cli.md`/`configuration.md`'s own
-existing heading-plus-fenced-synopsis convention is kept exactly as
-it already is — the checker is designed to match what is already
-there, not to impose a new structure.
+existing heading-plus-fenced-synopsis convention, and both existing
+default-disclosure forms, are kept exactly as they already are — the
+checker is designed to match what is already there.
 
-**Dependencies**: Click's own introspection API (already vendored
-transitively through Typer); the existing `Finding`/`--strict`
-pattern. No new third-party dependency, no AI/model call, no new
-agent, no change to the knowledge-compilation pipeline (this is a
-structurally independent kind of accuracy check — mechanical facts,
-not knowledge-grounded facts — and does not touch `doc_compiler.py`
-at all).
+**Dependencies**: Python's own `ast` module (already the file's
+existing technique — no new dependency, no Click/Typer runtime
+introspection added); the existing `Finding`/`run_all`/`--strict`
+pattern. No AI/model call, no new agent, no change to `doc_compiler.py`
+or the knowledge-compilation pipeline at all.
 
-**Estimated relative complexity**: small — comparable to
-`check_doc_schema.py` itself (that script is the direct structural
-precedent). No new module boundary beyond one new script plus its
-regression tests.
+**Estimated relative complexity**: small — two extended functions plus
+one new function, all in one already-existing file, following its own
+already-established technique exactly. Smaller than the prior draft's
+"new script" proposal, not larger, since no new module/CLI-wiring/
+packaging surface is introduced at all.
 
 **Independent audit checkpoint**: a `release-phase-auditor` (or
 equivalent fresh dispatch) reproduces at least one injected drift
 scenario against the real repository (e.g. temporarily rename a live
-option) and confirms the checker catches it, then confirms reverting
-restores a clean pass — this project's own "reproduce before fixing"
-discipline, applied to verifying the checker itself actually works
-rather than trusting its own test suite alone.
+option, or delete a documented default statement) and confirms the
+extended checks catch it, then confirms reverting restores a clean
+pass — this project's own "reproduce before fixing" discipline,
+applied to verifying the checks actually work rather than trusting
+their own test suite alone.
+
+### U.2a Installed-package execution boundary — reproduced, not assumed
+
+**Reproduced directly, per the governing task's own explicit
+instruction not to assume a packaging defect without reproducing it.**
+Built a real wheel (`python -m build --wheel`) from this repository's
+own `pyproject.toml`, installed it into a fresh, isolated venv outside
+this git checkout, and ran `codecompass docs compile` against a
+scratch schema from a directory with no `scripts/` sibling anywhere
+nearby. Result: an uncaught `FileNotFoundError`:
+
+```
+FileNotFoundError: [Errno 2] No such file or directory:
+'<venv>/lib/python3.13/scripts/check_doc_schema.py'
+```
+
+**Root cause**: `_load_script_module` (`cli.py:1898-1916`) computes
+`_SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent /
+"scripts"` — three directory levels above the *installed* `cli.py`'s
+own location, which lands somewhere inside the venv's own
+`lib/python3.X/` tree, not anywhere near a real `scripts/` directory.
+`pyproject.toml`'s own `[tool.setuptools.packages.find] where =
+["src"]` confirms `scripts/` — explicitly outside `src/` — is never
+packaged into the wheel at all; this was verified directly (`find` over
+the installed venv's own `site-packages` found zero `scripts/*.py`
+files).
+
+**Confined to exactly one command**: `docs compile` is the *only*
+command in the entire `cli.py` that calls `_load_script_module`
+anywhere (two call sites, both inside it — `check_doc_schema` for its
+own pre-check, `compile_doc_section` for the actual clean-room
+composition step). `docs schema-init`/`record-review`/`publish`/
+`maintain` each have zero such calls, confirmed by direct source
+inspection — all four are genuinely, independently confirmed safe to
+run from an installed wheel.
+
+**Scope conclusion: maintainer-only, not a public product capability
+— disclosure required, no packaging fix planned.** Multiple lines of
+real, independently-checkable evidence support this, not a single
+inference: (1) `_load_script_module`'s own docstring explicitly frames
+`scripts/*.py` as "this project's own established convention for
+security-sensitive clean-room infrastructure"; (2) every sibling
+`scripts/check_*.py` tool is already explicitly documented
+(`docs/development/contributing.md`'s "## Maintainer-only tooling
+(`scripts/`)" section) as either implicitly maintainer-only (by being
+listed there at all) or explicitly "Not a shipped `codecompass`
+command"; (3) `compile_doc_section.py` — the module actually doing
+`docs compile`'s real clean-room work — is itself one of this same
+category of maintainer-only clean-room infrastructure, by the same
+established convention; (4) CodeCompass's own stated purpose
+("Grounded, version-pinned dependency reference docs for AI coding
+agents," `pyproject.toml`) is about documenting an adopting project's
+*dependencies*, never about compiling an arbitrary project's own
+README/Concepts pages — `docs compile` exists to help CodeCompass
+document *itself*, the same self-referential role `scripts/
+check_knowledge_base.py`/`check_self_knowledge_quality.py` already
+play, not a capability offered to adopters for their own projects.
+
+**Required fix, scoped to disclosure only** (the governing task's own
+point 5, not point 4 — no packaging/module-boundary change is planned,
+since no genuine public-capability gap was found): add an explicit
+disclosure to `docs/reference/cli.md`'s own `docs
+schema-init|compile|record-review|publish|maintain` section, matching
+the established precedent phrasing already used for every sibling
+maintainer-only tool, specifically for `docs compile`: it requires
+running from within a git checkout of a project with its own
+`scripts/check_doc_schema.py`/`compile_doc_section.py` present at the
+expected relative path (true for CodeCompass's own repository; not
+true for an ordinary `pip install`-based deployment, including one
+used against a different target project) — `schema-init`/
+`record-review`/`publish`/`maintain` carry no such requirement and
+need no new disclosure.
+
+**Any newly proposed CLI command is held to the same requirement**:
+§U.3's own `docs check-consistency` design (deferred, §U.4) currently
+proposes backing itself with a new `scripts/check_doc_consistency.py`
+module loaded the same dynamic way `docs compile` already is — this
+would reproduce the identical execution-boundary defect if built as
+specified. Recorded explicitly as an outstanding specification for
+whoever eventually implements §U.3 (added to its own list, §U.4), not
+fixed now since §U.3 itself is not being built in this stage.
+
+**This is not assessed as blocking Phase 87's own exit gate**:
+`decisions/0085` never required `docs compile` to run from an
+installed wheel, or from outside CodeCompass's own repository at all
+— the minimum publication suite's own requirement is that the
+*documents* `docs compile` produces are accurate and complete (§U.1),
+not that the compiler itself is portable tooling. A disclosure fix is
+still required (accurate reference material is itself a §U.1
+requirement), but it is a documentation correction, not a product
+defect requiring a code change before Phase 87 can close.
 
 ### U.3 Cross-document semantic consistency — a bounded, separately gateable design
 
@@ -3701,23 +3862,74 @@ stated explicitly as the governing task requires:
   already works for ordinary compilation.
 
 **Demonstrating value on real documentation, including a negative
-control** (required by the governing task, not optional): run `docs
-check-consistency` against the real, current five schema-governed
-documents first (expected: clean, since all six published regions
-were independently reviewed already) — then run it a second time
-against a **deliberately seeded, temporary contradiction** (e.g. a
-disposable branch where `adapter.md`'s own `adapter-concept` region is
-hand-edited to assert the ecosystem enum has five members instead of
-four, directly contradicting `vendor-and-ecosystem.md`'s own
+control** (the design's own intended validation, preserved below as
+part of the deferred specification — not run in Stage 87D, since §U.3
+is not implemented in this stage, see the explicit deferral below):
+run `docs check-consistency` against the real, current five schema-
+governed documents first (expected: clean, since all six published
+regions were independently reviewed already) — then run it a second
+time against a **deliberately seeded, temporary contradiction** (e.g.
+a disposable branch where `adapter.md`'s own `adapter-concept` region
+is hand-edited to assert the ecosystem enum has five members instead
+of four, directly contradicting `vendor-and-ecosystem.md`'s own
 unmodified region citing the same `CL-ADPT-004`/`012`) and confirm the
 check actually flags it before being trusted. Discarded afterward,
 never merged — the same disposable-worktree discipline every
 demonstration in this project already uses for a negative control.
 
-**This remains a voluntary addition** (§U.1): it strengthens the
-pipeline's own guarantees but closes no outstanding, textually-
-mandated Phase 87 requirement. §U.4 makes its inclusion an explicit,
-reasoned choice rather than a default.
+**§U.3 is formally deferred beyond Stage 87D — this amendment's own
+explicit decision, not a default inclusion left open for the lead to
+choose at implementation time (the prior draft's own framing).** It is
+not an outstanding original Phase 87 requirement (§U.1), its current
+specification is genuinely incomplete (below), and it would reproduce
+§U.2a's own execution-boundary defect if built exactly as designed
+(the proposed `scripts/check_doc_consistency.py`, loaded dynamically
+by a new `docs check-consistency` CLI command the same way `docs
+compile` already is). The design above is **preserved in full**, as a
+real, implementation-ready starting point for a future, separately
+authorised phase — not discarded, not silently dropped. That future
+phase's own plan must additionally specify, none of which this
+amendment resolves now:
+
+1. **False-positive and false-negative controls.** The negative
+   control above proves the check can catch *one* seeded contradiction
+   — it does not establish a false-positive rate against genuinely
+   consistent prose expressed in different words, which a single
+   demonstration cannot bound.
+2. **Contradiction versus legitimate difference in emphasis or
+   scope.** Two regions citing the same Claim may legitimately
+   emphasise different facets of it without contradicting each other
+   — the design names this as a human-reviewed judgment call but does
+   not yet specify how the check itself avoids over-flagging normal
+   editorial variation.
+3. **Uncertain or inconclusive model outcomes.** The design's own
+   "one constrained model check per pair" has no specified behaviour
+   for a response that is genuinely ambiguous rather than a clean
+   yes/no — unlike `doc_compiler`'s own citation-validation findings,
+   which have a closed classification set.
+4. **Model/infrastructure failure classification.** A broker call that
+   errors, times out, or returns malformed output needs its own
+   explicit, fail-closed classification (distinct from "no
+   contradiction found") — not yet specified, unlike `oracle.py`'s own
+   closed PASS/FAIL/GAP/INVALID precedence this project already
+   established for an analogous problem.
+5. **Bounded inference cost.** The number of Claim-sharing region pairs
+   grows combinatorially with the number of compiled regions; no cost
+   bound or batching strategy is specified for a corpus larger than
+   today's six regions.
+6. **Reproducibility and revision binding.** Unlike `docs compile`'s
+   own `draft_sha256`/`schema_section_sha256` hash-binding, the design
+   does not yet specify what a `check-consistency` finding is bound
+   to, or how a finding is invalidated once either region's own
+   content changes again.
+7. **Independent adjudication of reported inconsistencies.** The
+   design states a flagged pair is "always human-reviewed," but does
+   not yet specify *who* reviews it or through what recorded workflow
+   — unlike every other finding in this pipeline, which routes through
+   a named, bound review step.
+
+This is **not an outstanding original Phase 87 requirement** (§U.1) —
+deferring it leaves Phase 87 fully closeable without it.
 
 ### U.4 Preserving quality and incremental maintenance — the scope decision
 
@@ -3758,16 +3970,18 @@ already been exercised successfully twice and nothing in the
 Requirement-to-Evidence Matrix (§U.1) depends on it existing as
 automated tooling.
 
-**Scope decision for this plan, stated plainly**: Stage 87D's own
-mandatory minimum is §U.2 (deterministic reference drift-check) plus
-§U.5 (final phase-wide audit). §U.3 (cross-document consistency) is
-included as a real, designed, implementation-ready capability that
-**may** be built in the same stage if the independent planning
-reviewer and the lead agree it is worth the added scope — but its
-omission would not leave Phase 87 incomplete against any requirement
-this matrix actually traced to `decisions/0085`. The incremental-
-patching capability above is recorded as future work regardless,
-not offered as an in-scope choice for this stage at all.
+**Scope decision for this plan, firm, not left open as a choice** —
+corrected by this amendment from the prior draft's own "§U.3 may be
+built if the lead agrees" framing, per the governing task's own
+explicit instruction to defer it formally: **Stage 87D has exactly two
+mandatory deliverables (§U.8), nothing else.** §U.3 (cross-document
+consistency) is **explicitly deferred beyond Stage 87D** (§U.3's own
+closing section) — preserved as a real, implementation-ready design
+for a future, separately authorised phase, together with the seven
+outstanding specifications that phase's own plan must resolve, not an
+in-scope option for this stage at all. The incremental-patching
+capability above is likewise recorded as future work only, not an
+in-scope choice.
 
 ### U.5 Phase-wide final verification matrix and audit
 
@@ -3783,9 +3997,36 @@ Stage 87D itself must newly verify:
 3. **Architecture and workflows** — already done; a final
    `docs-reconstructor` pass covers this as part of its own standard
    per-phase scope, scoped to whatever Stage 87D itself changes.
-4. **CLI/configuration reference** — **Stage 87D's own primary new
-   work** (§U.2): the drift-checker exists, passes against real
-   current content, and the one known gap is fixed.
+4. **CLI/configuration reference** — **Stage 87D's own Deliverable 1**
+   (§U.2/§U.2a/§U.8): the extended `check_user_docs.py` checks exist,
+   pass against real current content, all five known default-value
+   gaps are fixed, the `docs compile` execution-boundary disclosure is
+   added, and the `undo` first-run limitation (below) is disclosed.
+   The final audit must distinguish four things explicitly, not
+   collapse them into one pass/fail: (a) **actual product behaviour**
+   — `undo`'s first-run ordering gap, re-confirmed real at Stage 87D's
+   own close, same as at this amendment's own writing; `docs
+   compile`'s own execution-boundary failure, likewise re-confirmed
+   real; (b) **documentation accuracy** — does `cli.md` now disclose
+   both accurately, matching what (a) actually confirms; (c) **an
+   acknowledged product limitation** — both (a) items are exactly
+   this: real, narrow, disclosed, explicitly out of this stage's own
+   scope to fix; (d) **a defect that genuinely prevents Phase 87
+   closure** — neither (a) item is this, since `decisions/0085` never
+   required either `undo`'s first-run completeness or `docs compile`'s
+   installed-wheel portability; closure requires accurate disclosure
+   of (a) and (c), not a code fix for either.
+4a. **Reference documentation does not overstate current behaviour**
+   (§U.1 row 20) — the `undo` first-run gap (`L-129`) is disclosed in
+   `cli.md`, qualifying the existing unqualified "correctly
+   distinguishes... by its real, recorded origin" claim; re-verified
+   at the time of this amendment's own writing that the underlying
+   ordering defect still reproduces at current HEAD (not assumed
+   stale) — `_bootstrap`'s graph rebuild still runs before
+   `write_tool_skill`/`write_discovery_command`. Not fixed in Stage
+   87D (explicitly out of scope, per the governing task's own
+   instruction not to expand into an `undo` implementation fix) — only
+   disclosed.
 5. **Contributor/developer guidance** — already done, as accurate
    human-authored content (§U.1); no new work unless the lead
    separately decides to attempt compilation, which this plan does
@@ -3799,9 +4040,11 @@ Stage 87D itself must newly verify:
    now exercised four times (Stage 87B, Stage 87C's original
    demonstration, the corrective pass's citation swap, and whatever
    real change Stage 87D's own implementation work triggers, if any).
-8. **Cross-document consistency** — **only if §U.3 is actually
-   included** (§U.4's own scope decision) — otherwise explicitly
-   named as a voluntary, un-built capability, not silently dropped.
+8. **Cross-document consistency** — **explicitly deferred beyond
+   Stage 87D** (§U.3/§U.4) — not attempted, not built, named here as a
+   real, acknowledged gap with a preserved design and seven named
+   outstanding specifications for a future phase, never silently
+   dropped and never treated as a Stage 87D deliverable.
 9. **Existing human-content preservation** — already done; the README
    `intermediate-knowledge-layer` candidate's own unbroken four-stage
    survival record (§U.4) is the strongest evidence of this property
@@ -3820,9 +4063,11 @@ Stage 87D itself must newly verify:
     instruction not to rerun the comparator for a favourable outcome
     applies with equal force here.
 13. **Applicable tests and strict validators** — Stage 87D adds its
-    own new regression tests (§U.2's five named fixtures, §U.3's
-    negative-control demonstration if included) to the existing suite;
-    the full suite must stay green throughout.
+    own new regression tests to the existing suite (§U.2's negative/
+    positive/minimal-content fixtures, all inside `tests/
+    test_check_user_docs.py`); the full suite must stay green
+    throughout. §U.3's own negative-control demonstration does not
+    run in this stage, since §U.3 itself is deferred.
 14. **Independent documentation usability** — already done, twice
     (Stage 87B, Stage 87C's §S.8); Stage 87D does **not** require a
     third full exercise unless its own new work (the CLI reference
@@ -3849,69 +4094,145 @@ shown.
 ### U.6 Scope and implementation efficiency
 
 Per the governing task's own explicit preference list, checked against
-every element of this plan:
+every element of this amended plan:
 
-- Existing infrastructure/APIs only (§U.2 reuses Click/Typer
-  introspection + the existing `Finding`/`--strict` pattern; §U.3
-  reuses the existing clean-room broker and bounded-packet discipline)
-  — **satisfied**.
-- A limited number of real documentation examples (§U.2's five named
-  fixtures, one of them a real, already-known gap, not five invented
-  scenarios; §U.3's one real-corpus run plus one disposable negative
-  control) — **satisfied**.
-- No new standing agent (§U.3 dispatches the *existing* clean-room
-  broker for one new, narrow task type — it does not define a new
-  `.claude/agents/*.md` role) — **satisfied**.
-- No additional canonical knowledge store — **satisfied**, neither
-  §U.2 nor §U.3 reads or writes anything beyond the existing
-  `planning/knowledge/` API and the existing document/schema files.
-- No general-purpose documentation CMS — **satisfied**; both additions
-  are narrow validators/checks, not an authoring platform.
+- Existing infrastructure/APIs only (§U.2 extends `check_user_docs.py`
+  in place, reusing its own already-established `ast`-based technique
+  — no new introspection mechanism, no new file) — **satisfied**.
+- A limited number of real documentation examples (§U.2's five real,
+  already-known gaps plus two real, already-correct positive controls
+  — not invented scenarios) — **satisfied**.
+- No new standing agent — **satisfied**, trivially, since §U.3 (the
+  only part of this plan that would have touched the clean-room
+  broker) is deferred and not built in this stage.
+- No additional canonical knowledge store — **satisfied**; §U.2 reads
+  only `cli.py`/`core.py`'s own `ast` trees and the two reference
+  documents, nothing under `planning/knowledge/`.
+- No general-purpose documentation CMS — **satisfied**; §U.2 is a
+  validator extension, not an authoring platform.
 - No broad clean-room pipeline rewrite — **satisfied**; `doc_compiler.
-  py` itself is untouched by this plan; §U.3 adds one new bounded task
-  type to the existing broker dispatch, not a redesign.
+  py` is untouched by this amended plan.
 - No premature Phase 88 MCP work — **satisfied**; nothing in this plan
-  touches MCP, agent integration, or automatic (as opposed to manually
-  triggered) reconciliation, which remain Phase 88's own named scope.
+  touches MCP, agent integration, or automatic reconciliation.
+- **New, this amendment**: no duplicated validator for a check that
+  already exists — §U.2's own central correction (extend, don't
+  parallel-build) is itself now a scope-discipline item, checked and
+  satisfied by construction (one authoritative function per check,
+  §U.2's own "preventing duplicated findings" subsection).
+- **New, this amendment**: any newly proposed CLI command is checked
+  against the installed-package execution boundary before being
+  specified as a shipped command (§U.2a's own closing requirement) —
+  satisfied for this plan's own actual Stage 87D work, since nothing
+  in §U.2 is wired into `codecompass`'s own shipped CLI at all (it
+  stays a maintainer-only script, sidestepping the question entirely);
+  recorded as an outstanding requirement for §U.3's own future
+  implementer, who must resolve it before shipping `docs
+  check-consistency` as a real CLI command.
 
 ### U.7 Implementation sequence, dependencies, and checkpoints
 
-1. Build `scripts/check_cli_reference_drift.py` (§U.2) and its five
-   named test fixtures; fix the real `--relation` default gap in
-   `cli.md` in the same commit the first passing fixture requires it.
-   **Depends on**: nothing new — Click/Typer introspection only.
-2. **Checkpoint**: an independent dispatch reproduces at least one
+Restructured around §U.8's own two mandatory deliverables — no
+conditional step for §U.3, which does not appear in this sequence at
+all (deferred, §U.3/§U.4):
+
+1. Extend `check_cli_commands_documented` to walk all five Typer
+   sub-apps and match at the synopsis-line level (with `\`-continuation
+   handling); add `check_cli_parameter_defaults_documented`
+   implementing the four-point default policy (§U.2); extend
+   `check_vendor_config_fields_documented` with the `Ecosystem`-enum
+   check. Add the negative/positive/minimal-content test fixtures
+   (§U.2's own list) to `tests/test_check_user_docs.py`. Fix the five
+   real default-value gaps in `cli.md` in the same commits each
+   fixture requires them fixed. **Depends on**: nothing new — the
+   file's own existing `ast` technique only.
+2. Add the `docs compile` execution-boundary disclosure to `cli.md`
+   (§U.2a) and the `undo` first-run limitation disclosure (§U.1 row
+   20/§U.5 point 4a), each its own small, independent doc edit.
+   **Depends on**: nothing — pure documentation correction, no code
+   change.
+3. **Checkpoint**: an independent dispatch reproduces at least one
    injected drift scenario against the real repository and confirms
-   the checker catches it (§U.2's own audit checkpoint).
-3. *If* §U.3 is included (the lead's own scope decision, §U.4):
-   design and build the `docs check-consistency` command; run it
-   against the real current five schema-governed documents (expect
-   clean); run the deliberate negative-control demonstration on a
-   disposable branch and confirm it is caught; discard the branch.
-   **Depends on**: step 1 complete (shares the strict-validator
-   integration point), the existing clean-room broker (unchanged).
+   the extended checks catch it, then confirms a clean pass after
+   reverting (§U.2's own audit checkpoint); independently re-confirms
+   the `docs compile` execution-boundary failure still reproduces as
+   described and that the new disclosure accurately describes it.
 4. **Checkpoint**: full regression suite + all strict validators green;
    a fresh `docs-reconstructor` pass against whatever Stage 87D itself
    changed.
-5. **Final checkpoint, Stage 87D's own closing deliverable**: the
-   phase-wide `release-phase-auditor` dispatch (§U.5 point 15) against
-   the complete Phase 87 Definition of Done. Only a PASS (or PASS WITH
-   NON-BLOCKING OBSERVATIONS) here, independently re-verifying §U.1's
-   matrix directly, permits `planning/ROADMAP.md` to mark Phase 87
-   overall `done` — matching `CLAUDE.md` §5's own terminal-action
-   discipline, applied here at the phase level rather than the stage
-   level for the first time in this project's own Phase 87 history.
+5. **Final checkpoint, Stage 87D's own closing deliverable
+   (Deliverable 2, §U.8)**: the phase-wide `release-phase-auditor`
+   dispatch (§U.5 point 15) against the complete Phase 87 Definition
+   of Done. Only a PASS (or PASS WITH NON-BLOCKING OBSERVATIONS) here,
+   independently re-verifying §U.1's matrix directly, permits
+   `planning/ROADMAP.md` to mark Phase 87 overall `done` — matching
+   `CLAUDE.md` §5's own terminal-action discipline, applied here at
+   the phase level for the first time in this project's own Phase 87
+   history.
 
-**Estimated relative complexity, overall**: small-to-medium. §U.2
-alone (the mandatory minimum, per §U.1's own conclusion) is a small,
-single-script addition with no model calls. §U.3, if included, is a
-moderate addition (one new CLI command, one new bounded broker task
-type, one negative-control demonstration) but still reuses every
-existing mechanism rather than building new infrastructure. Neither
-approaches the size of Stage 87A/87B/87C's own original compiler-
-pipeline build.
+**Estimated relative complexity, overall**: small. Smaller than the
+prior draft's own estimate, since §U.3 no longer contributes any
+Stage 87D work at all, and §U.2 itself shrank from "one new script"
+to "extend two existing functions plus one new function, all in one
+already-existing file." Not approaching the size of Stage
+87A/87B/87C's own original compiler-pipeline build.
+
+### U.8 Corrected Stage 87D implementation scope — two mandatory deliverables
+
+Per the governing task's own explicit instruction that the amended
+plan have only two mandatory deliverables, stated here as the single
+authoritative summary of Stage 87D's own scope (§U.2-§U.7 are this
+summary's own supporting detail, not a separate, independently-scoped
+plan):
+
+**Deliverable 1 — Deterministic reference assurance.**
+- One coherent CLI/configuration reference validation mechanism
+  (§U.2: extended `check_user_docs.py`, not a second validator).
+- Correct detection of missing and inaccurate documented facts (§U.2's
+  three-way default-disclosure policy, resolving the prior draft's own
+  contradiction; five real, confirmed gaps fixed).
+- Verified execution and packaging boundaries (§U.2a: `docs compile`'s
+  real, reproduced installed-wheel failure, disclosed, not silently
+  packaged-around).
+- Accurate documentation of known limitations (§U.1 row 20: `undo`'s
+  first-run `L-129` gap, disclosed, not fixed).
+- Focused regression tests and independently reproduced negative
+  controls (§U.2's negative/positive/minimal-content fixtures, plus
+  the independent audit checkpoint's own injected-drift reproduction).
+- No unnecessary duplication or rewriting of existing user
+  documentation (§U.2's own "extend, don't parallel-build" correction;
+  `cli.md`/`configuration.md`'s own prose stays human-authored,
+  touched only where a real gap or disclosure requires it).
+
+**Deliverable 2 — Final Phase 87 assurance and closeout.**
+- Reconcile all original Phase 87 requirements to actual implemented
+  evidence (§U.1's matrix, independently re-verified at Stage 87D's
+  own close, not merely carried forward from this plan).
+- Reconfirm completed Stage 87A-87C capabilities (§U.5 points 1-3,
+  5-7, 9-11).
+- Verify clean-room isolation, provenance, publication integrity, and
+  reconciliation safety (§U.5 points 6, 9, 11 — unchanged, re-
+  confirmed, not re-built).
+- Recheck documentation quality and the complete minimum documentation
+  suite (§U.5 points 1, 2, 5, 10, 14).
+- Preserve the Stage 87C comparator's honest result — capability
+  demonstrated, economic advantage not demonstrated (§U.5 point 12,
+  the capability-vs-efficiency distinction) — never rerun for a
+  different outcome.
+- Run applicable tests and validators (§U.5 point 13; the full suite
+  including Deliverable 1's own new fixtures).
+- Obtain fresh independent documentation-drift and phase-wide
+  completion audits (§U.7 steps 3-5).
+- Mark Phase 87 `done` only after the complete Definition of Done has
+  actually passed (§U.7 step 5, §U.5's closing distinction).
+
+**Nothing else is a Stage 87D deliverable.** §U.3 (cross-document
+consistency) and the incremental-patching capability (§U.4) are both
+explicitly future work, not a third deliverable, not an optional
+scope-expansion the lead may choose at implementation time.
 
 ## V. Independent planning review of the Stage 87D plan (§U)
+
+### First review round (2026-11-10) — preserved unchanged as the historical record for §U as it stood before the second amendment below; not reopened or edited
 
 **Verdict: READY WITH NON-BLOCKING OBSERVATIONS** (2026-11-10). An
 independent `Plan` dispatch, with no prior context of this session,
