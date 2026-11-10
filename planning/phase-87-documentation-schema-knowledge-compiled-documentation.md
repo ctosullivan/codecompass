@@ -3422,7 +3422,7 @@ evidence where they independently verified the same thing.
 | 9 | Concepts, extended with an explicit epistemic-distinctions/reconciliation-loop page | **Done** | `docs/concepts/knowledge-model.md` (Stage 87C) — read directly for this matrix: covers the six record kinds, provenance-as-cross-cutting-property, INTENDED/OBSERVED/VERIFIED/CONTESTED, and the reconciliation loop, with a pointer to `docs/workflows/knowledge-reconciliation-loop.md` for full mechanics |
 | 10 | Architecture (overview/components/data-and-control-flow) | **Done, validated through existing docs+tests** | All three exist; `components.md`/`documentation-compilation-pipeline.md` independently re-confirmed current by this session's own `docs-reconstructor` dispatches |
 | 11 | Reference (`cli.md`/`configuration.md`), "generated deterministically where practical — currently hand-maintained" | **Outstanding, explicitly named** | Confirmed directly via Click/Typer `ast`-based introspection (the same technique `check_user_docs.py` already uses, re-run exhaustively for this amendment — not a spot-check): 10 top-level commands + 27 subcommands (`query` 8, `enrich` 1, `knowledge` 13, `docs` 5) — every one appears somewhere in `cli.md`. A full scan of every command's own default values (not a sample) found exactly **five** genuinely undocumented, non-exempt defaults — `knowledge trace`'s `--relation` (`supporting_evidence`) and `--depth` (`1`); `knowledge context`'s `--max-items` (`20`) and `--max-chars` (`6000`); `knowledge export`'s `--project-id` (`codecompass`) — each independently re-confirmed against `src/codecompass/cli.py` directly. Two genuine, correctly-handled **positive controls** also confirmed, important for the checker's own design (§U.2): `codecompass init`'s `--output` default is disclosed via a literal value embedded directly in the synopsis line itself (`[--output vendor.toml]`, `cli.md:19`), and `docs schema-init`'s `--section-id` default is disclosed in prose (`cli.md:287`, "default `section-one`") — both real, both already correct, neither a gap. |
-| 11a | Reference material does not duplicate the installed-package execution boundary into undisclosed behaviour | **Outstanding, a real confirmed packaging/execution-boundary defect in `codecompass docs compile` specifically** | Reproduced directly (not assumed): built a real wheel, installed it into an isolated venv outside this git checkout, and ran `codecompass docs compile` against a scratch schema — it crashes with an uncaught `FileNotFoundError` trying to load `scripts/check_doc_schema.py` from a nonsensical path computed from the installed package's own location. Root cause: `_load_script_module` (`cli.py:1898`, `_SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent / "scripts"`) assumes a sibling `scripts/` directory that `[tool.setuptools.packages.find] where = ["src"]` (`pyproject.toml`) never packages — confirmed: `scripts/` is absent from the installed wheel entirely. Confined to exactly one command: `docs compile` is the only command calling `_load_script_module` anywhere in `cli.py` (two call sites, both inside it); `schema-init`/`record-review`/`publish`/`maintain` have zero such calls and are confirmed safe from an installed wheel. See §U.2a for the full reproduction, root-cause analysis, and scope conclusion (maintainer-only, not a public capability — disclosure required, no packaging fix needed). |
+| 11a | Reference material does not duplicate the installed-package execution boundary into undisclosed behaviour | **Outstanding, a real confirmed packaging/execution-boundary defect in `codecompass docs compile` specifically** | Reproduced directly (not assumed): built a real wheel, installed it into an isolated venv outside this git checkout, and ran `codecompass docs compile` against a scratch schema — it crashes with an uncaught `FileNotFoundError` trying to load `scripts/check_doc_schema.py` from a nonsensical path computed from the installed package's own location. Root cause: `_load_script_module` (`cli.py:1898`, `_SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent / "scripts"`) assumes a sibling `scripts/` directory that `[tool.setuptools.packages.find] where = ["src"]` (`pyproject.toml`) never packages — confirmed: `scripts/` is absent from the installed wheel entirely. Confined to exactly one command: `docs compile` is the only command calling `_load_script_module` anywhere in `cli.py` (two call sites, both inside it); `schema-init`/`record-review`/`publish`/`maintain` have zero such calls, and — this amendment's own addition — all four were positively, end-to-end exercised in the same isolated wheel (exit 0 each, including a planted real pending-review manifest to exercise `record-review`/`publish`'s own full success path), not merely inferred from the absence of one function call. The determining factor is installation mode (editable/source-backed vs. an isolated wheel), never the invoking shell's own working directory — corrected from this plan's own prior, mechanically imprecise "requires running from within a git checkout" wording. See §U.2a for the full reproduction, root-cause analysis, and scope conclusion (maintainer-only, not a public capability — disclosure required, no packaging fix needed; no evidence found that this conflicts with any actual governing requirement). |
 | 12 | Contributor Guide (`CONTRIBUTING.md`/`docs/development/contributing.md`) | **Done, as accurate human-authored content; never named for compilation** | Both exist; neither was ever named in Stage 87's own §S.2 document/section ownership matrix as a compilation target — the original spec's own "deliverable" language for this document does not require knowledge compilation, only existence/accuracy |
 | 20 | Reference documentation does not overstate current product behaviour (no unsupported claims, per `decisions/0085` §5's own editorial requirement) | **Outstanding, one confirmed real gap** | `docs/reference/cli.md:136-138`'s unqualified claim that `undo` "correctly distinguishes a CodeCompass-generated artifact from a third-party one by its real, recorded origin" was independently found incomplete by the Stage 87C usability exercise (filed as `L-129`): on a project's very first `codecompass` run, the whole-project graph rebuild that records `doc_artifacts` rows runs *before* the Skill/slash-command files are generated, so `undo --dry-run` immediately afterward omits both from its own removal list; a second `sync` self-heals it. Re-verified at current HEAD (not assumed stale from the prior finding): the ordering defect still reproduces exactly as `L-129` described — `_bootstrap`'s `rebuild_project_graph` call (`cli.py`) still runs before `write_tool_skill`/`write_discovery_command`. This is a real, narrow, **first-run-only** product limitation, not fixed by this amendment (out of Stage 87D's own scope, per the governing task's explicit instruction not to expand into an undo implementation fix) — the plan requires `cli.md` to disclose it accurately (§U.2's deliverable 1), distinct from fixing it. |
 | 13 | Fail-closed check against ungrounded generation | **Done** | Stage 87A's citation-scope/gap-detection mechanism |
@@ -3675,6 +3675,28 @@ silently skipping a command, parameter, or doc section):
   proving the checker cannot pass merely because a command's own
   heading/fence exists; a second fixture adding only the missing
   default must then pass, isolating exactly what changed.
+- *Command-isolation control (this amendment's own addition)*: where
+  multiple commands share one heading/fenced block (the real,
+  established convention — e.g. `knowledge`'s six-command block,
+  `docs`'s five-command block), a default statement correctly attached
+  to the *wrong* neighbouring command's own synopsis line must not
+  satisfy that *other* command's own disclosure requirement — the
+  check parses and attributes parameters per individual synopsis line,
+  never per shared heading/block. Five fixtures, all sharing one
+  synthetic multi-command fenced block (mirroring the real `knowledge`/
+  `docs` convention, including one command with a `\`-continued,
+  multi-line synopsis matching `docs record-review`'s own real shape):
+  (a) the correct default attached to the correct command and
+  parameter → passes; (b) that same command's required default
+  omitted entirely → fails; (c) that same command's documented default
+  present but wrong → fails; (d) the *correct* value stated, but only
+  under a *neighbouring* command in the same shared block, never under
+  the command it actually belongs to → fails, proving the check
+  cannot be satisfied by a coincidentally-correct value sitting in the
+  wrong place; (e) the shared heading/block structure itself, plus the
+  `\`-continuation, both parse correctly for every command inside the
+  block, confirmed by a sixth fixture that is otherwise fully correct
+  and must pass.
 - *Full real-repository run*: `check_user_docs.run_all` against this
   actual repository, as of this plan's own writing, reports the five
   real gaps and nothing else spurious — confirmed by the independent
@@ -3739,8 +3761,50 @@ anywhere (two call sites, both inside it — `check_doc_schema` for its
 own pre-check, `compile_doc_section` for the actual clean-room
 composition step). `docs schema-init`/`record-review`/`publish`/
 `maintain` each have zero such calls, confirmed by direct source
-inspection — all four are genuinely, independently confirmed safe to
-run from an installed wheel.
+inspection.
+
+**Source-backed/editable installation vs. an isolated wheel —
+corrected by this amendment, since the prior draft's own wording was
+mechanically imprecise.** The prior draft's own disclosure said
+`docs compile` "requires running from within a git checkout," which
+wrongly implies the *shell's own current working directory* is what
+determines success — it is not. `_SCRIPTS_DIR` (`cli.py:1898`) is
+computed as `Path(__file__).resolve().parent.parent.parent /
+"scripts"`, where `__file__` is **the installed `cli.py` module's own
+file location**, never `Path.cwd()`. Reproduced directly, both ways,
+to confirm this precisely: running the editable-installed
+`codecompass` (`pip show -f codecompass-context` confirms `Location:
+.../codecompass/src`, i.e. an editable/development install whose own
+`cli.py` **is** the real checkout's `src/codecompass/cli.py`) from
+`/tmp/cc-sourcebacked-test` — a scratch directory with **no git
+checkout, no `scripts/` directory, anywhere nearby** — still succeeds
+(`docs compile` exits 0, produces a real `pending_review` result),
+because `__file__` resolves to the real checkout regardless of where
+the shell happens to be standing; conversely, the isolated wheel
+(§U.2a's own first reproduction, `cwd` irrelevant there too) fails
+for the identical reason in the other direction — its own `__file__`
+never resolves anywhere near a real `scripts/` directory, no matter
+what directory the shell is in when it's invoked. **The determining
+factor is installation mode (editable/source-backed vs. an isolated
+wheel), never the invoking shell's own current directory.**
+
+**All four siblings now positively, end-to-end verified in the same
+isolated wheel install — not merely confirmed by static source
+inspection, which only establishes they don't call the *same* broken
+function, not that they succeed.** `docs schema-init` (exit 0, writes
+a real schema file); `docs maintain` (exit 0, real five-state output);
+`docs record-review` (exit 0 twice, real semantic+editorial review
+records written) and `docs publish` (exit 0, real published markdown
+with a correct `codecompass-grounded-by` marker) were both positively
+exercised by planting a real pending-review manifest and its cited
+Claim record (both produced by this repository's own real, working
+editable install) into the isolated wheel's own scratch directory —
+since `record-review`/`publish`'s own realistic workflow always
+starts from a `docs compile` result, which the isolated wheel cannot
+itself produce; this is the honest way to exercise their own success
+path without conflating it with `compile`'s own separate failure.
+All four: genuinely safe, positively demonstrated, not merely
+inferred from the absence of one specific function call.
 
 **Scope conclusion: maintainer-only, not a public product capability
 — disclosure required, no packaging fix planned.** Multiple lines of
@@ -3770,20 +3834,25 @@ document *itself*, the same self-referential role `scripts/
 check_knowledge_base.py`/`check_self_knowledge_quality.py` already
 play, not a capability offered to adopters for their own projects.
 
-**Required fix, scoped to disclosure only** (the governing task's own
-point 5, not point 4 — no packaging/module-boundary change is planned,
-since no genuine public-capability gap was found): add an explicit
-disclosure to `docs/reference/cli.md`'s own `docs
-schema-init|compile|record-review|publish|maintain` section, matching
-the established precedent phrasing already used for every sibling
-maintainer-only tool, specifically for `docs compile`: it requires
-running from within a git checkout of a project with its own
-`scripts/check_doc_schema.py`/`compile_doc_section.py` present at the
-expected relative path (true for CodeCompass's own repository; not
-true for an ordinary `pip install`-based deployment, including one
-used against a different target project) — `schema-init`/
-`record-review`/`publish`/`maintain` carry no such requirement and
-need no new disclosure.
+**Required fix, scoped to disclosure only, stated precisely** (the
+governing task's own point 5, not point 4 — no packaging/module-
+boundary change is planned, since no genuine public-capability gap
+was found, and no evidence surfaced that this maintainer-only
+classification conflicts with any actual governing requirement — the
+scope decision stands, not reopened): add an explicit disclosure to
+`docs/reference/cli.md`'s own `docs
+schema-init|compile|record-review|publish|maintain` section, specific
+to `docs compile` alone, stating accurately: it requires an
+editable/source-backed install of this repository (`pip install -e
+.`, or an equivalent development install whose own `cli.py` file is
+the real checkout's `src/codecompass/cli.py`) with that checkout's own
+sibling `scripts/check_doc_schema.py`/`compile_doc_section.py` present
+— true for CodeCompass's own development environment; **not** true
+for an ordinary, non-editable `pip install` of the published package,
+regardless of the invoking shell's own current directory at the time
+`docs compile` is run. `schema-init`/`record-review`/`publish`/
+`maintain` carry no such requirement — positively verified, not merely
+inferred — and need no new disclosure.
 
 **Any newly proposed CLI command is held to the same requirement**:
 §U.3's own `docs check-consistency` design (deferred, §U.4) currently
@@ -4084,10 +4153,16 @@ Stage 87D itself must newly verify:
     applies with equal force here.
 13. **Applicable tests and strict validators** — Stage 87D adds its
     own new regression tests to the existing suite (§U.2's negative/
-    positive/minimal-content fixtures, all inside `tests/
-    test_check_user_docs.py`); the full suite must stay green
-    throughout. §U.3's own negative-control demonstration does not
-    run in this stage, since §U.3 itself is deferred.
+    positive/minimal-content/command-isolation fixtures, all inside
+    `tests/test_check_user_docs.py`); the full pytest suite must stay
+    green throughout. Strict-validator acceptance follows §U.7a's own
+    baseline-aware policy, not an unconditional "all green" — `check_
+    self_knowledge_quality.py --strict`'s own pre-existing 26/35
+    blocking baseline (`L-114`/`L-107`) is expected to continue
+    failing `--strict`, exactly as documented, and this is not treated
+    as a Stage 87D regression. §U.3's own negative-control
+    demonstration does not run in this stage, since §U.3 itself is
+    deferred.
 14. **Independent documentation usability** — already done, twice
     (Stage 87B, Stage 87C's §S.8); Stage 87D does **not** require a
     third full exercise unless its own new work (the CLI reference
@@ -4157,28 +4232,104 @@ all (deferred, §U.3/§U.4):
 
 1. Extend `check_cli_commands_documented` to walk all five Typer
    sub-apps and match at the synopsis-line level (with `\`-continuation
-   handling); add `check_cli_parameter_defaults_documented`
+   handling and correct per-command attribution inside a shared
+   heading/block); add `check_cli_parameter_defaults_documented`
    implementing the four-point default policy (§U.2); extend
    `check_vendor_config_fields_documented` with the `Ecosystem`-enum
-   check. Add the negative/positive/minimal-content test fixtures
-   (§U.2's own list) to `tests/test_check_user_docs.py`. Fix the five
-   real default-value gaps in `cli.md` in the same commits each
-   fixture requires them fixed. **Depends on**: nothing new — the
-   file's own existing `ast` technique only.
+   check. Add the negative/positive/minimal-content/command-isolation
+   test fixtures (§U.2's own list) to `tests/test_check_user_docs.py`.
+   Fix the five real default-value gaps in `cli.md` in the same
+   commits each fixture requires them fixed. **Depends on**: nothing
+   new — the file's own existing `ast` technique only.
 2. Add the `docs compile` execution-boundary disclosure to `cli.md`
-   (§U.2a) and the `undo` first-run limitation disclosure (§U.1 row
-   20/§U.5 point 4a), each its own small, independent doc edit.
-   **Depends on**: nothing — pure documentation correction, no code
-   change.
+   (§U.2a — stated precisely in terms of installation mode, not the
+   invoking shell's own working directory) and the `undo` first-run
+   limitation disclosure (§U.1 row 20/§U.5 point 4a), each its own
+   small, independent doc edit. **Depends on**: nothing — pure
+   documentation correction, no code change.
 3. **Checkpoint**: an independent dispatch reproduces at least one
    injected drift scenario against the real repository and confirms
    the extended checks catch it, then confirms a clean pass after
    reverting (§U.2's own audit checkpoint); independently re-confirms
    the `docs compile` execution-boundary failure still reproduces as
-   described and that the new disclosure accurately describes it.
-4. **Checkpoint**: full regression suite + all strict validators green;
-   a fresh `docs-reconstructor` pass against whatever Stage 87D itself
-   changed.
+   described, that `schema-init`/`record-review`/`publish`/`maintain`
+   remain positively safe, and that the new disclosure accurately
+   describes the installation-mode distinction, not a working-
+   directory one.
+4. **Checkpoint**: full regression suite green, plus the corrected,
+   baseline-aware strict-validator acceptance criteria below (§U.7a) —
+   not an unconditional "all strict validators green," which this
+   amendment found to be factually wrong against this project's own
+   documented state (§U.7a); a fresh `docs-reconstructor` pass against
+   whatever Stage 87D itself changed.
+
+#### U.7a Baseline-aware strict-validator acceptance criteria (this amendment's own correction)
+
+**The prior draft's own "all strict validators green" was wrong,
+verified directly, not assumed**: `planning/ROADMAP.md`'s Phase 85 row
+explicitly documents that `scripts/check_self_knowledge_quality.py
+--strict` has **26 of 35 findings genuinely, pre-existingly blocking**
+(two documented knowledge-debt categories — missing evidence on nine
+`status: verified` Requirements; `balance-from-spec`'s own unverified-
+scope/stale-citation findings — filed as `L-114`, cross-referenced
+into `L-107`), with that row's own closing sentence stating outright
+"`--strict` is documented as not yet suitable as an unconditional CI
+gate against this corpus." Re-run directly as part of this amendment:
+**still exactly 35 findings, 26 blocking, exit 1** — the documented
+baseline is current, not stale.
+
+**Every applicable validator's own real, current baseline** (run
+directly, not assumed, as part of this amendment):
+
+| Validator | Baseline | Exit (`--strict`) |
+|---|---|---|
+| `check_doc_schema.py` | 0 findings | 0 (clean) |
+| `check_user_docs.py` | 0 findings | 0 (clean) — **the exact file Stage 87D extends** |
+| `check_contracts.py` | 7 findings, 0 blocking (info-level only) | 0 |
+| `check_knowledge_base.py` | 24 findings, 0 blocking (info-level `knowledge-base-snapshot-current-divergence` only) | 0 |
+| `check_knowledge_placement.py` | 10 findings, 0 blocking (info-level `decision-citation-superseded` only) | 0 |
+| `check_self_knowledge_quality.py` | 35 findings, **26 blocking** — documented pre-existing debt (`L-114`/`L-107`, `planning/ROADMAP.md` Phase 85) | **1** (documented, not a Stage 87D regression) |
+
+**Corrected acceptance policy, replacing "all strict validators
+green"**:
+
+1. **Clean-baseline validators** (`check_doc_schema.py`,
+   `check_user_docs.py`) **must stay exit 0 with zero blocking
+   findings** — any blocking finding introduced by Stage 87D's own
+   work here is a real regression, never waived.
+2. **Info-only-baseline validators** (`check_contracts.py`,
+   `check_knowledge_base.py`, `check_knowledge_placement.py`) **must
+   stay exit 0**, and — since Stage 87D touches none of their own
+   inputs (`planning/knowledge/`, `planning/contracts/`,
+   `decisions/*.md`, `src/codecompass/*.py` citation comments) at
+   all — their own finding counts are expected to be **byte-identical**
+   to the baseline above, not merely "still zero blocking"; a changed
+   count without a Stage 87D-caused input change would itself be a
+   finding worth investigating, not silently accepted.
+3. **The one documented pre-existing-debt validator**
+   (`check_self_knowledge_quality.py`) **is not required to pass
+   `--strict`, and its continuing FAIL must not be read as either a
+   newly-introduced defect or an unconditional pass** — the acceptance
+   criterion is **no new or worsened finding against the pinned
+   26/35-blocking baseline above**: the final audit (§U.7 step 5)
+   re-runs it, confirms the count and the two named debt categories
+   are unchanged (not merely "still failing"), and explicitly states
+   this distinction in its own verdict rather than treating the
+   historical FAIL as either kind of simpler, wrong binary.
+4. **Any new blocking finding, in any validator, that cannot be
+   traced to the pre-existing, pinned baseline above is treated as a
+   real defect Stage 87D must fix** — never hidden through a broadened
+   exclusion list, a rewritten baseline file, or a blanket `--strict`
+   waiver. No validator's own source is edited by Stage 87D to change
+   what it checks or how it reports, except the two `check_user_docs.
+   py` functions/one new function §U.2 itself already specifies.
+5. **Known knowledge debt stays owned where it already is** —
+   `L-114`/`L-107` remain Phase 85's own backlog items (`planning/
+   ROADMAP.md`'s Phase 85 row, already closed `done` with this debt
+   explicitly disclosed, not reopened); Stage 87D does not investigate,
+   triage, or remediate any of the 26 pre-existing findings — doing so
+   would be exactly the "unrelated Phase 85 remediation" scope creep
+   this amendment must avoid.
 5. **Final checkpoint, Stage 87D's own closing deliverable
    (Deliverable 2, §U.8)**: the phase-wide `release-phase-auditor`
    dispatch (§U.5 point 15) against the complete Phase 87 Definition
