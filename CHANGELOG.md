@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 87, Stage 87C** (post-`done`, corrective-closeout pass,
+  separately authorised, five findings from a fresh review of the
+  already-PASS-audited stage): resolved the deliberately seeded
+  experimental annotation left in `docs/concepts/knowledge-model.md`
+  through the real `codecompass knowledge apply` reconciliation
+  workflow (two genuine apply cycles against real manifests — accept
+  the original seeded edit as-is, then a separate, independently-
+  reviewed removal of the annotation itself — never a hand-edited
+  `.grounding-state.toml`). Found and fixed a real canonical-knowledge
+  governance violation: the original implementation had amended an
+  existing Claim, `CL-ADPT-005.yaml`, directly in place, violating
+  `planning/phase-54c-evidence-knowledge-workflow.md` §2.4's rule that
+  a Claim is only ever superseded, never edited in place (real
+  precedent already on file: `CL-ADPT-011` supersedes `CL-ADPT-009`
+  the correct way) — fixed by restoring `CL-ADPT-005.yaml` to its
+  exact original text (now `status: superseded`) and writing a new
+  superseding Claim, `CL-ADPT-012.yaml` (+ `DE-ADPT-012.yaml`), with
+  the two dependent published regions' citations swapped to it through
+  the same real reconciliation workflow; the underlying fact was never
+  reverted, only the record structure was corrected. Corrected a wrong
+  documentation-coverage claim (`CONTRIBUTING.md` was never schema-
+  governed and was never part of any Phase 87 stage's own scope; the
+  real, independently re-verified figures are 5 schema-governed
+  documents, 4 with actual compiler-published regions, 6 compiler-
+  published regions, 1 further region from the structurally distinct,
+  earlier Phase-81 intermediate-knowledge mechanism). Added an
+  explicit six-point limitations assessment and a demonstrated-
+  capability-vs-demonstrated-efficiency distinction to the matched-
+  baseline comparator's own write-up, without altering either of its
+  two original verdicts. Independently re-confirmed `L-125`-`L-129`'s
+  own prior triage was substantive, not a rubber stamp. Full account:
+  `planning/retros/phase-87-stage-87c-knowledge-compiled-documentation.md`'s
+  own "Addendum" section; independent audit:
+  `planning/retros/_audit-phase-87-stage-87c-corrective-closeout.md`.
+  Stage 87C's own original `done` status and its original completion
+  audit's PASS verdict are unchanged by this pass.
 - **Phase 87, Stage 87C — knowledge-compiled Concepts pages, a real
   multi-region knowledge-change demonstration, and a matched-baseline
   comparator.** Extended Stage 87A/87B's compile/review/publish
