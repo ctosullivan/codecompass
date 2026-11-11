@@ -9,6 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 87, Stage 87D — deterministic reference assurance, Deliverable 1.**
+  Extended `scripts/check_user_docs.py` (a maintainer-only tool, never
+  a shipped `codecompass` command) in place, not a second validator:
+  `check_cli_commands_documented` now walks all five Typer sub-apps
+  (`app`/`query_app`/`enrich_app`/`knowledge_app`/`docs_app`, closing
+  a real, pre-existing 19-of-27-subcommand coverage gap) and matches
+  at the synopsis-line level with backslash-continuation handling; a
+  new `check_cli_parameter_defaults_documented` implements a
+  four-point default-disclosure policy (boolean/repeatable-list and
+  `None`-valued defaults exempt; every other optional parameter's
+  concrete default must be disclosed via a synopsis-embedded literal
+  or a scoped "default `value`" prose statement, with per-command
+  attribution even inside a shared heading/fenced block — a default
+  disclosed for one command can never satisfy a different,
+  neighbouring command's own requirement, in either disclosure form);
+  `check_vendor_config_fields_documented` now also checks the
+  `Ecosystem` enum's own members. Fixed the five real, previously
+  undocumented CLI defaults this surfaced (`knowledge trace
+  --relation`/`--depth`, `knowledge context --max-items`/
+  `--max-chars`, `knowledge export --project-id`). Added two accurate
+  documentation disclosures to `docs/reference/cli.md`: `docs
+  compile` requires an editable/source-backed install (an ordinary
+  installed wheel fails with an uncaught `FileNotFoundError`
+  regardless of the invoking shell's own current directory —
+  independently reproduced in a real isolated venv, both directions);
+  `codecompass undo`'s own real first-run artifact-tracking
+  limitation (`L-129`), disclosed rather than fixed (correctly out of
+  this deliverable's own scope). 17 new regression tests; full suite
+  1380 passed (17 new), 2 skipped. An independent dispatch injected
+  two real drift scenarios (a wrong default, an undocumented new
+  command) against the live repository and confirmed both are caught
+  and a clean revert restores a passing state. Plan: `planning/
+  phase-87-documentation-schema-knowledge-compiled-documentation.md`
+  §U (amended three times after three independent planning-
+  readiness reviews, each READY WITH NON-BLOCKING OBSERVATIONS, before
+  implementation; see §V). `check_self_knowledge_quality.py --strict`'s
+  own pre-existing 26/35-blocking baseline (`L-114`/`L-107`, Phase 85)
+  is confirmed byte-identical, neither worsened nor silently waived.
+
 - **Phase 87, Stage 87C** (post-`done`, corrective-closeout pass,
   separately authorised, five findings from a fresh review of the
   already-PASS-audited stage): resolved the deliberately seeded
