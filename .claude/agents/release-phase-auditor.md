@@ -115,6 +115,17 @@ without fixing anything — that a phase is actually done.
     its own test suite was finalized, and that any misfire against real
     pre-existing data was fixed rather than suppressed or excluded from
     the test suite's own assumptions.** (Phase 85 — `L-113`.)
+14. **For any phase touching source code, confirm `ruff check .` (or the
+    specific touched files, at minimum) was run against the real
+    committed result at some point *before* your own terminal pass —
+    not for the first time by you.** Your own run per item 1 still
+    catches a regression either way, but if nothing earlier in the
+    phase's own process (the implementing pass, a planning review, a
+    drift-audit checkpoint) ever ran it, name that explicitly as a
+    process gap even when your own pass comes back clean — a defect
+    this cheap to catch should not depend on the terminal audit being
+    the first checkpoint that happens to look. (Phase 87 Stage 87D —
+    `L-130`.)
 
 ## Hard rules
 

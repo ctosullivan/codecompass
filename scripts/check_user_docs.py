@@ -161,7 +161,8 @@ def _parse_cli_commands(root: Path) -> dict[str, list[_CliParam]]:
             flag = None
             if call.func.attr == "Option":
                 for a in call.args[1:]:
-                    if isinstance(a, ast.Constant) and isinstance(a.value, str) and a.value.startswith("--"):
+                    is_flag_str = isinstance(a, ast.Constant) and isinstance(a.value, str)
+                    if is_flag_str and a.value.startswith("--"):
                         flag = a.value
                         break
             token = flag if flag else arg.arg.upper()
@@ -196,7 +197,8 @@ def _join_backslash_continuations(lines: list[str]) -> list[str]:
 class _CliMdCommand:
     dotted: str
     synopsis: str  # the full, backslash-joined synopsis line's own text
-    prose: str  # this command's own scoped prose (bullet-to-next-bullet, or the whole section if unshared)
+    prose: str  # this command's own scoped prose (bullet-to-next-bullet,
+    # or the whole section if unshared)
 
 
 def _parse_cli_md_commands(root: Path, live_dotted_paths: set[str]) -> dict[str, _CliMdCommand]:
@@ -285,7 +287,8 @@ def _parse_cli_md_commands(root: Path, live_dotted_paths: set[str]) -> dict[str,
 
         if bullet_hits:
             for pos, (line_idx, dotted) in enumerate(bullet_hits):
-                next_idx = bullet_hits[pos + 1][0] if pos + 1 < len(bullet_hits) else len(section_lines)
+                has_next = pos + 1 < len(bullet_hits)
+                next_idx = bullet_hits[pos + 1][0] if has_next else len(section_lines)
                 prose = "\n".join(section_lines[line_idx:next_idx])
                 results[dotted] = _CliMdCommand(dotted, section_commands[dotted], prose)
         else:
@@ -333,7 +336,7 @@ def check_cli_commands_documented(root: Path) -> list[Finding]:
     return findings
 
 
-def _default_disclosed(param: "_CliParam", doc_cmd: "_CliMdCommand") -> bool:
+def _default_disclosed(param: _CliParam, doc_cmd: _CliMdCommand) -> bool:
     """Whether `param`'s own literal default is genuinely disclosed for
     this one command -- never a bare substring match against the whole
     synopsis line or whole prose, both of which produce real false

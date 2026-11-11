@@ -8,6 +8,247 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-130 — a stage's own new/extended script code reaching "implementation complete" on a green `pytest` run and clean strict validators is not evidence it is `ruff`-clean; nothing before the terminal, phase-wide `release-phase-auditor` gate is tasked with checking that
+
+- **origin:** Phase 87 Stage 87D (deterministic reference assurance),
+  surfaced by an independent, phase-wide `release-phase-auditor`
+  dispatch's finding 1 (`planning/retros/_audit-phase-87.md`), itself
+  dispatched because the stage's own retro's "Candidate learnings
+  filed: None" conclusion was flagged for independent `knowledge-
+  curator` review (mirroring the Phase 84 / `L-110`/`L-111` precedent)
+- **date:** 2026-11-11
+- **project_revision:** `8540aed` (HEAD at filing time) + uncommitted
+  working-tree fixes to `scripts/check_user_docs.py` (the 5 `ruff`
+  findings) and `docs/development/contributing.md` (the stale tooling-
+  inventory entry), both applied but not yet committed
+- **observation:** Stage 87D's implementation commit (`8cdb70c`,
+  extending `scripts/check_user_docs.py` with
+  `check_cli_parameter_defaults_documented` and the sub-app-walking
+  change to `check_cli_commands_documented`) landed, followed by two
+  more commits (`cf30623`, `fd51c00`) and the stage's own retro
+  (`8540aed`) — a full plan-to-retro cycle, with three independent
+  planning reviews, a real audit checkpoint, a full green `pytest`
+  run (1380 passed, 2 skipped), and every applicable strict validator
+  confirmed against its pinned baseline — before anything checked the
+  new/extended code against `ruff`. The first `ruff check` actually run
+  against it was the final, phase-wide `release-phase-auditor` dispatch,
+  which found both touched files were fully `ruff`-clean immediately
+  before Stage 87D (`git show f3651db:<path>` + `ruff check` → "All
+  checks passed!") and carried exactly 5 new findings (3 `E501`, 2
+  `UP037`) immediately after `8cdb70c` — a real regression, not a
+  pre-existing baseline item, confirmed by the auditor's own
+  before/after isolation. `ruff check .` is this project's own standing
+  local-development command (`CONTRIBUTING.md` "Local development":
+  `pytest` then `ruff check .`, run back-to-back, for every change —
+  not something specific to this one phase's plan), and the auditor
+  independently confirmed every prior Phase 87 stage audit (87A/87B/87C)
+  had explicitly checked and reported `ruff check <touched files>: All
+  checks passed!` before returning its own PASS — this is the first
+  Phase 87 stage whose own new code did not meet that bar, and nothing
+  in the stage's retro, `CHANGELOG.md` entry, or plan disclosed it.
+  Independently confirmed myself (no `Bash` available in this role): read
+  the current, already-fixed `scripts/check_user_docs.py` and
+  `tests/test_check_user_docs.py` directly — no line exceeds 100
+  characters in either file now (`^.{101,}$` matches zero lines in
+  both), and `_CliParam`/`_CliMdCommand` type annotations in
+  `_default_disclosed`'s own signature are unquoted (`param: _CliParam,
+  doc_cmd: _CliMdCommand`), consistent with the auditor's described
+  `E501`/`UP037` fixes already having been applied in the working tree.
+  I could not independently run `ruff` myself to confirm the exact
+  before/after counts (176 → 181 → back to 176) — see the "lead: run"
+  note below.
+- **evidence:** `planning/retros/_audit-phase-87.md` finding 1 (full
+  reproduction method: isolate `git show f3651db:<path>`, run `ruff
+  check` against the isolated pre-stage copy vs. the post-`8cdb70c`
+  working tree); `CONTRIBUTING.md:233-237` ("Local development":
+  `pytest` + `ruff check .` as the two standard commands for every
+  change); `.claude/agents/release-phase-auditor.md` "What to check"
+  item 1 (already names `ruff check .` as one of "the exact commands"
+  it re-runs — confirming this is the terminal gate, not an earlier
+  checkpoint); direct `Grep` of `planning/phase-87-documentation-schema-
+  knowledge-compiled-documentation.md` (the governing plan file for all
+  four Phase 87 stages) for the literal string "ruff" → zero matches
+  anywhere in that file, including Stage 87D's own §U.7/§U.7a
+  verification-checkpoint sections — confirming the stage's own plan
+  never named `ruff check .` as one of its explicit verification
+  commands, unlike `pytest` and the strict validators, which §U.7a
+  names and pins by exact count; direct `Grep` of both touched files for
+  lines over 100 characters, post-fix, in the current working tree →
+  zero matches in either file (independently reproduced the claimed fix,
+  not merely trusted it).
+- **classification:** workflow — an ordering/process discipline about
+  when lint-checking happens relative to considering implementation
+  "done," not a code-behavior assertion a regression test could itself
+  encode (the same reasoning `L-113`'s own curation note gives for
+  choosing `workflow` over `invariant` for a structurally identical
+  "checked late, not checked early" gap).
+- **status:** promoted
+- **recurrence:** first occurrence of this specific gap (a stage's own
+  new/extended code introducing a `ruff` regression undetected by any
+  checkpoint earlier than the terminal phase-wide audit) — checked
+  `promoted.md` and the rest of this inbox for an existing "ruff slipped
+  through until a late gate" entry and found none; distinct from
+  `L-113` (a validator's own *severity/behavior design* misfiring
+  against real pre-existing data, not a lint-cleanliness gap in the
+  validator's own new source code) and from `L-108`/`L-115` (corrective-
+  pass-specific test-first and git-revision-restoration disciplines,
+  unrelated to lint checking).
+- **curation note (2026-11-11, knowledge-curator):** all required
+  fields present; filed by this role directly (no prior inbox entry for
+  this finding existed — the stage's own retro, written before the
+  phase-wide audit returned its verdict, concluded "Candidate learnings
+  filed: None"). I independently re-derived the auditor's finding 1
+  rather than trusting its prose: confirmed `CONTRIBUTING.md`'s
+  "Local development" section genuinely lists `ruff check .` as a
+  standing, generic (not phase-specific) local-dev command; confirmed
+  by direct `Grep` that the Stage 87D plan's own verification/checkpoint
+  sections (§U.5 point 13, §U.7 steps 1-4, §U.7a's acceptance table)
+  name `pytest` and every strict validator explicitly, by exact
+  baseline count, but never name `ruff` anywhere in the whole governing
+  plan file; confirmed `release-phase-auditor.md`'s own "What to check"
+  item 1 already lists `ruff check .` as one of the standard commands
+  it re-runs at the *terminal* gate, meaning the only reason this
+  reached a terminal FAIL rather than a clean implementation is that no
+  earlier checkpoint (the implementing pass itself; the three
+  independent `Plan` reviews, which checked design, not code; the
+  `general-purpose` audit-checkpoint dispatch; or the `docs-
+  reconstructor` drift audit) was ever tasked with running `ruff` against
+  the stage's own new/touched files; independently re-read the current,
+  already-fixed source to confirm the auditor's described `E501`/`UP037`
+  fixes are genuinely present in the working tree (zero lines over 100
+  characters in either touched file; unquoted type annotations in
+  `_default_disclosed`'s signature).
+
+  I considered, and reject, treating this as covered by `L-113`
+  (already-promoted): `L-113` is about a validator's own severity/
+  behavior *design* misfiring against unanticipated real data — a
+  correctness question about what the checker decides. This finding is
+  about the checker's own *source code* failing a routine, unrelated
+  lint pass — a hygiene question about whether the code that was
+  written meets this project's own standing style bar before being
+  considered complete. The two are structurally similar ("a real gap
+  surfaced only by running something concrete against something real,
+  later than it should have been") but target different artifacts and
+  would be fixed by different process changes, so I'm filing this
+  separately rather than appending it to `L-113`'s own recurrence field.
+
+  **Disposition: promote.** Draft, mirroring `L-113`'s own dual-
+  destination shape exactly (an orchestration-principle bullet + an
+  audit-checklist item), for the lead (or `docs-maintainer`) to apply —
+  both edits are outside this role's write boundary:
+
+  1. `planning/v1-redefinition/agent-led-development.md` §1 — new
+     bullet directly after the existing `L-113` bullet:
+
+     > **A phase whose own deliverable extends or adds a `scripts/`/
+     > `tests/` Python file runs `ruff check <touched files>` itself,
+     > as part of the implementing pass, before that work is considered
+     > complete and committed — not only `pytest` and the applicable
+     > strict validators, and not deferred to the terminal, phase-wide
+     > `release-phase-auditor` gate as the first point anything checks
+     > it.** `ruff check .` is this project's own standing local-
+     > development command (`CONTRIBUTING.md`), run for every change,
+     > not a phase-specific extra. Confirmed necessary at Phase 87 Stage
+     > 87D (`L-130`): a green `pytest` run, three independent planning
+     > reviews, a real audit checkpoint, and every applicable strict
+     > validator staying clean were all insufficient to catch 5 new
+     > `ruff` findings the stage's own new code introduced — caught only
+     > by the terminal audit, after three further commits had already
+     > landed on top of the lint-dirty implementation, requiring a
+     > fourth fix-up commit that a routine `ruff check` during
+     > implementation would have made unnecessary.
+
+  2. `.claude/agents/release-phase-auditor.md` "What to check" — new
+     item 14, directly after item 13 (`L-113`'s own landing spot):
+
+     > 14. **For a phase whose diff touches `scripts/` or `tests/`
+     >     Python files, confirm `ruff check <touched files>` was
+     >     already run and reported clean by the implementing pass (or
+     >     an earlier checkpoint) — not only by this audit itself for
+     >     the first time.** If no earlier checkpoint ran it, name that
+     >     explicitly as a finding even when your own `ruff check` run
+     >     comes back clean, since a stage whose own implementation
+     >     never checked this is one commit away from landing a real
+     >     regression invisible to every other gate until this one.
+     >     (Phase 87 Stage 87D — `L-130`.)
+
+  **Lead follow-up (2026-11-11):** `ruff check .` re-run against the
+  current working tree, after committing the `scripts/check_user_docs.
+  py`/`docs/development/contributing.md` fixes — confirmed exactly
+  **176 errors**, matching the auditor's own pinned pre-Stage-87D
+  baseline exactly. Both destination edits applied (own wording, same
+  substance as the draft above): `planning/v1-redefinition/agent-led-
+  development.md` §1 (new bullet directly after the extended `L-113`
+  bullet) and `.claude/agents/release-phase-auditor.md` "What to
+  check" item 14. `promoted.md` updated with both this entry's own
+  line and a recurrence note appended to `L-113`'s existing line.
+  Status updated to `promoted` above.
+
+  **Considered and not filed as separate learnings, with reasoning**
+  (both raised by the dispatching task as candidates worth weighing on
+  their own merits):
+
+  - **The two implementation bugs the retro already names** (the
+    substring-matching false negative; the missing `None`-default
+    exemption): independently re-read `scripts/check_user_docs.py`'s
+    `_default_disclosed`/`check_cli_parameter_defaults_documented`
+    directly — the retro's account matches the current code exactly
+    (the narrow synopsis-bracket/prose-window match; the explicit
+    `None`-default skip with its own comment explaining why). I agree
+    with the retro that these do not warrant their own new learning,
+    but for a more specific reason than the retro gives: this is not
+    merely "caught before commit, so no new information" in the
+    abstract — it is a direct, confirming recurrence of the *already-
+    promoted* `L-113` ("run a new validator/checker against the real
+    repository before finalizing its own test suite, not only an
+    abstract plan review"), which Stage 87D's own "What worked" section
+    explicitly credits for catching both bugs ("caught by running the
+    real checker against the real repository immediately after writing
+    it, not assumed correct from the design alone"). Filing a new
+    learning here would duplicate `L-113` rather than add anything;
+    the correct record of this occurrence is a **recurrence note on
+    `L-113` in `promoted.md`** (already-landed rules don't get inbox
+    entries for each later confirmation, per this project's own
+    convention — e.g. `L-066` records a confirming recurrence of
+    `L-064` directly in its own entry, not as a new id). **Discard as a
+    new candidate; recommend the lead add one line to `L-113`'s
+    `promoted.md` entry noting this confirming recurrence, mirroring
+    `L-066`'s own shape**, rather than opening a new id for it.
+  - **The `docs/development/contributing.md` stale-inventory gap**: real
+    (independently confirmed — the pre-fix entry at line 25 genuinely
+    said nothing about the new default-disclosure check or the
+    `Ecosystem`-enum extension, and the working tree now carries an
+    already-applied fix naming both with a `(Phase 87, Stage 87D)`
+    annotation). But I do not find this generalizes into a new rule,
+    for a reason I could not resolve in the dispatching task's favor:
+    `.claude/agents/docs-reconstructor.md`'s own MODE 1 charter already
+    scopes its per-phase drift audit to "`README.md`, `docs/**`,
+    `architecture/**`, `ai-docs/**`" — `docs/development/contributing.md`
+    is literally inside `docs/**`, so the charter already covers it; no
+    narrower-scoped charter text excludes maintainer-tooling docs. I
+    could not find any persisted `docs-reconstructor` drift-audit report
+    for Stage 87D specifically (no `planning/retros/_drift-audit-phase-
+    87-stage-87d.md` or equivalent exists, unlike every other phase/stage
+    this project has audited) to check what that dispatch actually
+    covered or said — so I cannot independently confirm the framing that
+    it explicitly excluded `contributing.md` as "not user-facing-doc
+    territory"; that may be an accurate paraphrase of a conversation-only
+    report I have no access to, or an inference. Treating a single
+    dispatch's apparent miss of a file already inside its own charter's
+    named scope as a new, generalizable rule would risk inventing a
+    distinction the charter doesn't actually draw. **Discard as a new
+    candidate** — recommend the lead instead (a) note, if confirmed from
+    the actual dispatch transcript, that this was an execution miss
+    within already-correct scope rather than a charter gap, and (b)
+    separately consider whether the missing persisted drift-audit report
+    for Stage 87D is itself worth a `L-056`/`L-060` recurrence note (the
+    already-landed "docs-reconstructor must persist its report path"
+    rule) — I flag this possibility but do not file it, since I cannot
+    confirm from the repository alone whether the dispatch prompt did or
+    didn't restate the required path per the already-landed fix.
+
+---
+
 ### L-125 — the citation-scope checker validates citations that exist, never completeness of a section's own `required_knowledge` list
 
 - **origin:** Phase 87 Stage 87C, `adapter.md`'s `adapter-concept` section migration

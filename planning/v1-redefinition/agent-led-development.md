@@ -68,7 +68,27 @@ Implemented by Phase 40 (roster + workflow) and proven by Phase 43
   on four real, pre-existing Evidence records using an older, legitimate
   citation convention — caught in minutes by running the real script
   against the real corpus before its test suite was finalized, not
-  discovered later as a false-positive bug report.
+  discovered later as a false-positive bug report. **Confirmed a second,
+  independent time at Phase 87 Stage 87D (`L-113` recurrence)**: a
+  default-value-disclosure check's first implementation pass used a
+  bare substring match despite the plan's own design text already
+  specifying a narrower, explicit phrase match, and separately omitted
+  the plan's own `None`-value exemption — both caught immediately by
+  running the real checker against this real repository, not by
+  careful re-reading of the design.
+- **A new or extended maintainer script, however small, is checked
+  against `ruff` (the touched files, at minimum) before the work it
+  belongs to is considered complete — never deferred to the terminal
+  phase-wide audit as the first point anything checks this.** The full
+  `pytest` suite passing, and even the extended checker's own `--strict`
+  output being clean, say nothing about the checker's *own* source
+  hygiene. Confirmed at Phase 87 Stage 87D (`L-130`): a real script
+  extension introduced 5 new `ruff` findings (3 `E501`, 2 `UP037`) that
+  survived the implementing pass, three independent planning reviews
+  (which checked the design, not the committed code), a real injected-
+  drift audit checkpoint, and a `docs-reconstructor` dispatch — caught
+  only by the terminal, phase-wide `release-phase-auditor` pass, which
+  is one gate too late for a defect this cheap to have caught earlier.
 - **Any agent dispatched with both `Bash` and `Write` that materializes
   a prior git revision into a live, tracked working-tree path for its
   own before/after comparison (rather than a disposable scratch copy)

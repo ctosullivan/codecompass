@@ -12,8 +12,12 @@
   OBSERVATIONS), `general-purpose` (×1, the Deliverable-1 audit
   checkpoint — real injected-drift reproduction in the live
   repository), `docs-reconstructor` (drift audit of the
-  implementation), `release-phase-auditor` (the final, phase-wide
-  Phase 87 audit).
+  implementation, NO DRIFT), `release-phase-auditor` (×2 — the final,
+  phase-wide Phase 87 audit, first pass **FAIL** on three real gaps
+  found/fixed, re-audit below), `knowledge-curator` (×1, independently
+  re-triaged this retro's own first-draft "no candidate learnings"
+  conclusion after the first audit pass flagged it — found it wrong,
+  filed `L-130`).
 
 ## Where we are
 
@@ -158,12 +162,33 @@ alone) against the complete Phase 87 Definition of Done.
 
 ## Candidate learnings filed
 
-None. The two implementation bugs found during this stage (substring-
-matching false negatives; the missing `None`-exemption) were caught
-and fixed within the same implementation pass, before any commit
-landed — they never reached a state where filing them as a learning
-would add information a future session doesn't already have from
-reading this retro and the commit `8cdb70c` itself.
+**Corrected after this retro's own first draft** (its original "None"
+conclusion was itself wrong — caught by a fresh, independent
+`knowledge-curator` dispatch, specifically requested by the final
+phase-wide audit per this project's own Phase 84/`L-110`/`L-111`
+precedent that a self-reported "none" is not authoritative because
+the implementing pass recorded it, `CLAUDE.md` §8): `L-130`
+(**promoted** — a new/extended maintainer script is checked against
+`ruff` before the work it belongs to is considered complete, never
+deferred to the terminal phase-wide audit as the first checkpoint;
+5 real `ruff` findings this stage's own implementation introduced
+survived the implementing pass, three independent planning reviews,
+a real audit checkpoint, and a `docs-reconstructor` dispatch, caught
+only by the terminal audit). The two implementation bugs this retro's
+own first draft named (substring-matching false negatives; the
+missing `None`-exemption) were independently re-assessed and
+correctly judged **not** to warrant a new learning — not for the
+reason this retro's own first draft gave ("caught before any commit
+landed"), but because they are a direct, confirming recurrence of the
+already-promoted `L-113`, now recorded as such (a recurrence note on
+`L-113`'s own `promoted.md` line, not a new id — `L-066`'s own
+existing shape for recording a confirming recurrence, reused). A
+third candidate (`docs/development/contributing.md`'s own stale
+tooling-inventory entry) was considered and explicitly not filed,
+since `docs-reconstructor`'s own charter already scopes its drift
+audit to include that file and nothing suggests a rule is missing,
+only that this one instance wasn't caught by the dispatch actually
+run for this diff.
 
 ## Where we're going
 
@@ -184,6 +209,56 @@ Three independent planning-review dispatches (roughly 500-700s each,
 (iterative, with two real bugs caught and fixed via direct testing
 against the live repository); one audit-checkpoint dispatch
 (~90s, real wheel/drift reproduction); the full regression suite
-(~400s per full run, run twice during this stage). Lead-side
+(~400s per full run, run four times total across this stage). Lead-side
 orchestration time not separately instrumented, matching this
 project's own established disclosed-unavailable discipline.
+
+## Addendum: first phase-wide audit FAIL, three real gaps fixed, re-audit (2026-11-11, same day)
+
+The first independent, phase-wide `release-phase-auditor` dispatch
+(`planning/retros/_audit-phase-87.md`) returned **FAIL** — re-
+confirming Stages 87A-87C's own properties directly and this stage's
+own Deliverable 1 all held exactly as claimed, but naming three real,
+previously-undisclosed gaps:
+
+1. **5 new `ruff` findings** Stage 87D's own new code introduced (3
+   `E501`, 2 `UP037`), confirmed by isolating the pre-stage version of
+   both touched files and running `ruff` directly — neither this
+   stage's own implementation pass, nor any of the three independent
+   planning reviews (which checked design, not committed code), nor
+   the audit-checkpoint dispatch, nor `docs-reconstructor` had ever
+   run `ruff` against the new code. Fixed: all three `E501` lines
+   wrapped, both `UP037` quoted-annotation findings resolved (two via
+   `ruff --fix`, confirmed safe); whole-repository count re-confirmed
+   back to exactly 176, matching the pinned pre-Stage-87D baseline.
+2. **`docs/development/contributing.md`'s own `check_user_docs.py`
+   tooling-inventory entry was stale** — never updated to mention the
+   new `check_cli_parameter_defaults_documented` policy or the
+   `Ecosystem`-enum extension, unlike every sibling script's own entry
+   in that list when extended. Fixed: entry rewritten to name both
+   real additions.
+3. **This retro's own first draft's "Candidate learnings filed: None"
+   conclusion was never independently checked.** Per this project's
+   own Phase 84/`L-110`/`L-111` precedent (a self-reported "none" is
+   not authoritative because the implementing pass recorded it,
+   `CLAUDE.md` §8), a fresh `knowledge-curator` dispatch independently
+   re-assessed it from scratch — found it wrong, filed a real,
+   generalizable learning (`L-130`, promoted: a new/extended
+   maintainer script is checked against `ruff` before being considered
+   complete, never deferred to the terminal audit as the first
+   checkpoint) and correctly discarded two other candidates with
+   reasoned, non-rubber-stamp arguments (the retro's own two named
+   implementation bugs are a confirming recurrence of the already-
+   promoted `L-113`, recorded as such rather than duplicated; the
+   `contributing.md` gap's own charter-coverage question couldn't be
+   resolved cleanly enough to justify a new rule). This retro's own
+   "Candidate learnings filed" section above is corrected to match.
+
+All three fixes landed in further commits on top of the audited
+`8540aed`; a fresh, independent re-audit against the resulting state
+is recorded in `planning/retros/_audit-phase-87.md` itself (the FAIL
+→ fix → re-audit history preserved in one file, this project's own
+established convention for a phase-wide audit cycle). This addendum
+does not reopen or change Stage 87A/87B/87C's own already-`done`
+status or their own original audit verdicts — none of the three gaps
+above touches anything those stages' own properties depend on.
