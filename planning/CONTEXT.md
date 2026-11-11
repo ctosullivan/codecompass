@@ -7,512 +7,49 @@ session-resumption, not a project history.
 
 ## Current phase
 
-**Phase 87 — Documentation Schema and Knowledge-Compiled
-Documentation — restructured into three stages (87A/87B/87C); Stage
-87A implemented, hardened, and independently re-audited (second pass,
-PASS WITH NON-BLOCKING OBSERVATIONS); Stage 87B implemented and now
-**done** (2026-11-07) — a two-document schema-governance extension,
-project-wide `docs maintain` discovery, a cross-document region-id
-uniqueness check, a publication-time concurrency guard, a real
-sandboxed execution harness, and a genuine, worktree-isolated
-knowledge-change demonstration with comparator, all independently
-audited through a real FAIL→fix→PASS cycle, then **hardened a fourth
-time (2026-11-09, same day)** against a further publication-integrity
-defect (`schema_section_sha256` covered only a schema section's own
-dict, never the schema's top-level `document`/`audience`/
-`acceptance_criteria` fields, letting an already-reviewed draft be
-silently retargeted to a different, never-reviewed-against document
-after both reviews had passed), fixed with a new shared
-`doc_compiler.compute_schema_section_identity_sha256` and 11 new
-regression tests, independently audited **PASS** (see "What was just
-completed" below for the full account); Stage 87B is now hardened
-against four found-and-fixed publication-integrity defects total
-across its history. Stage 87C's plan (§S) was then **amended** the
-same day to correct several factual/scope inconsistencies a fresh
-governing task found after §S's own first review round (Getting
-Started's section/verification counts, the Concepts compilation scope
-resolved to 4 pages, schema/document/region arithmetic corrected to 6
-total schemas, the incremental-change proof's second affected region
-swapped to a verified, already-shared `CL-ADPT-005` dependency, a
-comparator setup-vs-marginal cost split and predeclared threshold, a
-new §S.4a safe existing-document migration procedure, and a new §S.9a
-exit-gate cross-check), independently re-reviewed a second time:
-**READY WITH NON-BLOCKING OBSERVATIONS**, after finding and the lead
-correcting two citation-accuracy defects (a misattributed quote; a
-mischaracterised `decisions/0085` §6 citation). Implementation
-remains separately, explicitly **not authorised** — the plan
-authorises nothing beyond itself; Phase 87 overall remains `not
-done`.** Plan:
-`planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`.
-A second review (after the first pass's own READY WITH NON-BLOCKING
-OBSERVATIONS verdict) found the single-stage scope too large and four
-real implementation-contract defects (§G: grounded-region identifiers
-must be hyphenated, not dotted — the real parser truncates at `.`;
-`prepare_cleanroom_branch.py` exports from a pinned git revision, never
-working-tree disk, so a runtime evidence packet needs its own
-ephemeral hash-verified handoff, not an allow-list change; reader-
-visible citation display and always-on machine-readable grounding are
-separate concepts; an untagged factual claim needs its own explicit
-completeness question, folded into the existing claim-verification
-dispatch). The plan was restructured (§D/§E/§F split by stage) and all
-four defects corrected, independently re-reviewed to **READY WITH
-NON-BLOCKING OBSERVATIONS** (§M).
-
-**Stage 87A — implemented, independently audited, PASS WITH
-NON-BLOCKING OBSERVATIONS (2026-11-04)** after one FAIL round (missing
-DoD paper trail: this file, `ROADMAP.md`, `CHANGELOG.md`, the phase
-retro, a persisted drift-audit report, learnings triage,
-`docs/reference/cli.md`, and an architecture doc were all still
-reflecting the pre-Phase-87 state despite the implementation itself
-being independently confirmed solid — closed in the same session, see
-`planning/retros/phase-87-stage-87a-knowledge-compilation.md`).
-Delivered: `src/codecompass/doc_compiler.py` (knowledge resolution/
-hydration/gap-detection/citation-scope-check/publish/maintain),
-`scripts/check_doc_schema.py` (schema validator), `scripts/
-compile_doc_section.py` (the clean-room section-compilation adapter,
-using a corrected ephemeral evidence handoff rather than
-`prepare_cleanroom_branch.py`'s git-revision export), a new
-`codecompass docs schema-init|compile|publish|maintain` CLI group. A
-real, complete, end-to-end demonstration ran three times against the
-real repository (no mocking, no synthetic fixture): round 1 and round
-2 both correctly FAILED independent review (an invented elaboration
-not in the cited record; auditor-facing phrasing and a self-referential
-terminology tangent — plus two real implementation bugs the process
-itself caught: a stray-space citation-stripping defect and a
-schema-slug dot-truncation defect, both fixed with regression tests);
-round 3 passed both independent dispatches and was published —
-`README.md`'s "Understanding Digests" section, grounded in
-`CL-CTXT-005`.
-
-**Stage 87A hardening pass — implemented, first independent audit
-FAIL, fix round complete, re-audit pending (2026-11-04)**, plan's own
-§N. A follow-up review found three integration defects in the
-publication path itself (not the compiled content or the real
-demonstration, both independently reconfirmed sound first): `docs
-publish` accepted a manually typed verdict string as sufficient
-evidence of independent review — fixed by a new `docs record-review`
-command that persists each review bound by hash to the exact draft/
-evidence/schema-section identity, validated by `docs publish` instead
-of trusted at face value; the publication write target was unconfined
-— fixed by a single, reusable `doc_compiler.resolve_publication_target`
-(confines to `README.md`/`docs/**/*.md`, symlink-aware, resolved-path
-comparison, never a string-prefix check), enforced at both
-schema-validation and publish time; the clean-room broker's prompt was
-built from the in-memory evidence packet rather than its own verified
-on-disk bytes — fixed by sourcing the prompt from a fresh read of the
-verified file, with the ephemeral staging directory always removed on
-both the success and failure path.
-
-**The first `release-phase-auditor` dispatch against this hardening
-work returned FAIL** — not on the three fixes themselves (independently
-re-confirmed sound) but on three process defects in the *same* commit:
-(1) this file and `ROADMAP.md` asserted "independently re-audited" for
-the hardening pass before any such audit had actually run — the exact
-audit-sequencing failure mode this pass's own §N.D exists to prevent,
-recurring in a new, self-contradictory form; (2) the claimed "21 new
-regression tests" overstated the real, reconciled count (the real
-delta across `tests/test_cli.py`/`tests/test_compile_doc_section.py`
-was 15, matching the suite's own 1275→1290); (3) the schema-validation-
-time half of the path-confinement fix (`check_doc_schema.py`'s
-`_check_document_path`) had no direct regression test. All three fixed
-in the same session: this file's own prose corrected to accurate tense;
-the test count corrected and 4 new tests added for the previously-
-uncovered schema-validation-time path (`tests/test_check_doc_schema.py`,
-14 → 18); total new regression tests across this hardening pass: 19
-net (`test_cli.py` +12 net from 13 newly-written tests replacing 1
-pre-hardening test that encoded the old CLI contract; `test_compile_
-doc_section.py` +3; `test_check_doc_schema.py` +4). Full suite 1294
-passed, 2 skipped; ruff and all strict validators re-confirmed clean
-(Phase 85 baseline unchanged). One candidate learning filed and
-triaged (`L-120`, retained).
-
-**A second, fresh `release-phase-auditor` dispatch against the fix
-round's own commit independently re-confirmed all three FAIL-driving
-defects genuinely closed** — including by directly reproducing the
-"13 confirmed failing pre-fix" claim itself (a disposable `git
-worktree` at the pre-hardening commit, not merely re-reading the prior
-claim) — and returned **PASS WITH NON-BLOCKING OBSERVATIONS**: three
-minor wording/cross-reference clarity issues (a confusingly-phrased
-test-count sentence in `CHANGELOG.md`; a dangling cross-reference in
-the retro's "Lessons learnt" section; the retro's "Where we're going"
-not naming the re-audit itself as the immediate next step), none
-asserting an event before it happened, all fixed in the same session.
-**Stage 87A's hardening is genuinely closed.** Full detail: `planning/
-retros/phase-87-stage-87a-hardening.md`,
-`planning/retros/_audit-phase-87-stage-87a-hardening.md` (both the
-original FAIL and the re-audit's PASS WITH NON-BLOCKING OBSERVATIONS
-sections, preserved append-only).
-
-**Stage 87B now has an implementation-ready plan (plan's own §O),
-independently reviewed to READY across three rounds total: §P (the
-first round found and the original pass fixed two blocking factual
-errors against the real `docs/getting-started.md` content and command
-set; the second, narrow re-check confirmed the fix), then §Q
-(2026-11-05 — a separate, code-level review of the already-READY plan
-found seven further findings: §O.E's comparator targeted a
-non-existent `## Known gotchas` section; `docs publish` had no
-publication-time concurrency check against a live human edit;
-§O.C's execution-harness design had no real vendor-source redirection
-mechanism and included two paid-API-triggering commands a
-credential-less sandbox can never complete; §O.B's section
-classification conflated compiled/schema-governed/factually-verified
-into one axis, missing that `## After the first run` makes real
-implementation claims; §O.D cited `acknowledge_stale_grounded_region`
-as if it demonstrated a document update, which it structurally cannot;
-no accepted canonical knowledge record actually supports the proposed
-README install/first-step additions; and both pre-existing README
-regions were wrongly assumed `noop` when one is a real, pre-existing,
-unresolved `doc_candidate`. All seven corrected in place (§O.I),
-independently re-verified against the real repository by a fresh
-dispatch, and re-reviewed **READY WITH NON-BLOCKING OBSERVATIONS**
-(two further narrow specification gaps found and fixed in the same
-pass)) — then amended a further round the same day, finding and fixing
-five more findings (including a materially strengthened
-publication-concurrency design), before the governing task explicitly
-authorised Stage 87B implementation.
-
-**Stage 87B implementation then proceeded and is now genuinely
-`done`.** Commit `0f6a268` delivered the full §O.D scope: the second
-schema-governed document (`docs/getting-started.md`, its
-self-contradicting "## First run" section corrected); project-wide
-`**/*.schema.yaml` discovery so `docs maintain` with no arguments
-reconciles every schema-governed document in one call, plus an
-idempotency fix so repeated `maintain` runs never pile up duplicate
-`doc_candidate` manifests; a new cross-document
-`doc-schema-duplicate-region-id` schema-validation-time check (shared
-`doc_compiler.compute_schema_slug`); and a publication-time
-concurrency guard — `docs publish` now runs inside a cooperating-writer
-file lock and, immediately before writing, re-detects the live
-region's state via a new `doc_compiler.decide_publish_safety`,
-refusing to overwrite a live human edit or a live-and-knowledge-both-
-changed conflict. Commit `88cfa8d` then closed the plan's own
-mandatory real knowledge-change demonstration (§O.E) and comparator:
-a genuine, previously-undescribed gap in `CL-CTXT-005` (the real,
-already-implemented, already-tested `sync_vendor` clone-failure
-fallback, confirmed by direct code/test reading before the
-demonstration began) was amended into evidence inside an isolated,
-discarded `git worktree` — never touching production
-`planning/knowledge/` — correctly detected by
-`detect_grounded_region_changes` (alongside the real, unaffected,
-pre-existing `intermediate-knowledge-layer` `doc_candidate`, left
-untouched throughout), compiled, independently reviewed twice
-(semantic-support and editorial-quality, both passing on the first
-attempt), published through the new concurrency guard's
-`claims_changed`-proceeds branch for the first time against anything
-other than a synthetic fixture, and correctly reconciled by a
-follow-up `docs maintain` (`noop` for the republished region, still
-`doc_candidate` for the untouched finding) — confirmed by a
-byte-for-byte diff that every line outside the one republished region
-is unchanged. A parallel, identically-seeded comparator — a
-`general-purpose` dispatch editing the same fact by hand, with no
-compiler, no schema, and no citations — passed independent
-semantic-support review but **failed** independent editorial review
-for the same register problem Stage 87A's own writing-contract
-hardening (`L-119`) was specifically built to catch; the compiled
-arm's own draft passed that identical editorial bar on its first
-attempt. Full account:
-`planning/retros/phase-87-stage-87b-knowledge-change-demonstration.md`.
-
-An independent `release-phase-auditor` pass against `0f6a268` plus
-this closeout's own uncommitted changes then returned **FAIL**:
-§O.D.3's own six-item required-regression-test list for the
-concurrency guard was only four-sixths covered, and writing the
-missing "two concurrent `docs publish` invocations serialise through
-the lock" test surfaced a real, previously-undetected implementation
-gap, not just a missing test — reproduced directly before fixing
-anything: the write-boundary revalidation the design claimed existed
-in fact ran only once, before the lock was acquired, with nothing
-re-checking the live document or cited-knowledge state a second time
-immediately before the write, so a mutation injected inside that
-window (on either side) was silently clobbered. Fixed by re-running
-both the grounded-region detect-and-decide and the evidence/
-schema-section freshness check a second time, inside the lock,
-immediately before the write — narrowing, but, per
-`_doc_publish_lock`'s own docstring, honestly not fully closing (a
-full transactional write would close it completely and was
-deliberately not built, per this stage's own smallest-coherent-change
-instruction) the remaining window between that second check and the
-write itself. Three new regression tests, each confirmed to fail
-against the pre-fix code first; full suite 1337 passed, 2 skipped (up
-from 1334); ruff and both strict validators re-confirmed clean. Two
-non-blocking numeric self-report errors in the implementation
-commit's own message (claimed "47 new regression tests"/"6
-pre-existing ruff findings," real figures 40/176) were corrected in
-`CHANGELOG.md` rather than rewriting the already-landed commit, per
-this project's own established practice. A fresh, independent
-re-audit dispatch — which directly defeated the lock and shadowed the
-pre-fix module to reproduce both the race and the clobber for real,
-not merely re-reading the fix's own account — returned **PASS**. Full
-audit trail: `planning/retros/_audit-phase-87-stage-87b.md`.
-
-`L-121` (four real `unshare`/`pivot_root` namespace-sandbox
-construction footguns — venv-mount path aliasing, missing `/dev`
-nodes, an unmounted git-mirror data bind-mount, a `PATH`-less setup
-chain) promoted to `docs/architecture/overview.md`'s "Known footguns".
-`L-122` (the clean-room broker's own usage/cost figures are never
-surfaced by `docs compile`'s CLI output, even though the data exists
-in the broker's own response) filed `candidate`, now landed as a
-backlog/revisit-trigger row in `planning/ROADMAP.md`'s
-"Future-improvement backlog" section by this reconciliation (its own
-`promoted.md` line is a separate, follow-up `knowledge-curator` step,
-not taken by this reconciliation, which may not touch
-`planning/learnings/**`). **Stage 87B is genuinely `done`.**
-
-**Stage 87B post-closeout hardening pass — closed (2026-11-09).** A
-fresh review of Stage 87B's already-closed, already-PASS-audited work
-found three further integration defects in `docs publish`'s own
-safety mechanics (none in the real demonstration's own generated
-content, both independently reconfirmed sound first): (1) **reviewed-
-draft integrity** — `docs publish` never verified that `draft_body`
-(what actually gets written) genuinely derived from the reviewed
-`tagged_draft` text, so an independently-rewritten `draft_body` could
-publish unreviewed content with both review records still showing as
-passing — fixed by recomputing the draft's own identity from
-`tagged_draft` and cross-checking it against `draft_sha256`/
-`draft_body`, re-checked a second time against a freshly re-read copy
-of the manifest immediately before the write. (2) **live schema
-freshness** — the write-boundary re-check added by the original
-hardening pass reused schema/section objects parsed once at the top of
-the request, so a schema file edited mid-publish was invisible to
-every "re-check" — fixed by rereading the schema from disk and
-re-resolving the section fresh on every call. (3) **residual
-write-boundary race, narrowed further** — a new `doc_compiler.
-document_identity`/`DocPublishConflictError` compare-and-swap catches
-a document mutation landing after the detect-based re-check, and
-`publish_section`'s writes now go through a new atomic
-write-then-rename helper; the remaining window (between that identity
-re-check and the write itself, both plain synchronous Python with no
-cross-process lock) is honestly disclosed, not claimed closed, in both
-`publish_section`'s and `_doc_publish_lock`'s own docstrings, and
-recorded as `L-124`. 15 new regression tests (full suite 1337 → 1352
-passed, 2 skipped); a fresh independent audit directly reproduced 14
-of the 15 against a disposable `git worktree` at the pre-fix commit. A
-real, evidence-backed `CL-CTXT-005` amendment candidate the original
-demonstration surfaced was re-derived independently as `EV-CTXT-021`
-and filed as `L-123` for the ordinary knowledge-reconciliation
-workflow — not applied directly; a successful demonstration is still
-not maintainer acceptance (see "Next concrete step" below). A first
-independent `release-phase-auditor` dispatch against this hardening
-commit returned **FAIL**: this work's own `CHANGELOG.md` entry falsely
-claimed an audit had already run and passed before any audit had
-actually been dispatched (a self-certification defect, caught directly
-by the auditor), plus an overstated test-reproduction count ("13 of
-15" claimed, true figure 14 of 15) — both fixed same-day, and a fresh,
-independent re-audit — which directly re-verified the underlying
-mechanisms, re-ran the full suite and every strict validator itself,
-and confirmed no protected-file drift since Stage 87B's own prior
-closeout — returned **PASS**. **Stage 87B's post-closeout hardening
-pass is genuinely closed.** Full detail:
-`planning/retros/phase-87-stage-87b-knowledge-change-
-demonstration.md`'s "Addendum 2"; `planning/retros/
-_audit-phase-87-stage-87b-hardening.md` (the FAIL);
-`planning/retros/_audit-phase-87-stage-87b-hardening-reaudit.md` (the
-PASS). Stage 87C (the complete minimum publication suite, the real
-matched-baseline experiment) remains separately planned, **not
-authorised**, and untouched by any of this work. Phase 87 itself
-remains `not done` until Stage 87C's own exit gate (the complete
-minimum publication suite, the matched-baseline comparison, final
-audits) is met.
-
-**Stage 87B hardened a fourth time — closed (2026-11-09, same day).**
-A fresh code-inspection review of the already-twice-hardened `docs
-publish` path, independent of the prior pass's three findings, found
-`schema_section_sha256` (the hash every persisted review record and
-pending manifest is bound to) was computed from only the schema
-section's own dict, even after the prior fix bound the section's own
-identity to the live schema on every re-check — the schema's
-**top-level** `document` (the actual publication target), `audience`,
-and `acceptance_criteria` fields were never part of that hash, at
-compile time or at any publish-time re-check. Reproduced directly
-before any fix was written: a standalone script compiled a section
-against a schema targeting one document, recorded both passing
-reviews, then rewrote only the schema's own top-level `document`
-field to a different target, leaving the section dict byte-identical
-— `docs publish` exited 0 and published the already-reviewed draft to
-the new, never-reviewed-against target. Fixed with one new, shared
-`doc_compiler.compute_schema_section_identity_sha256`, binding the
-section together with the schema's `document`/`audience`/
-`acceptance_criteria` fields; `docs compile` now computes the
-persisted hash through it, `docs publish`'s freshness check recomputes
-the identical structure from the live schema on every call
-(pre-lock and at the write boundary), and the actual write target is
-now also re-resolved from the live schema at the write boundary rather
-than trusted from the one-time resolution at the top of the function.
-11 new regression tests, each confirmed to fail against a disposable
-pre-fix worktree first (full suite 1352 → 1363 passed, 2 skipped). An
-independent `release-phase-auditor` dispatch independently reproduced
-the exploit against that same disposable pre-fix worktree, confirmed
-the fix closes it, sampled 5 of the 11 new tests directly, re-ran the
-full suite and every strict validator itself, and specifically
-re-checked for a recurrence of this session's earlier self-
-certification defect — none found: **PASS**. **Stage 87B is now
-hardened against four found-and-fixed publication-integrity defects
-total across its history.** Full detail: `planning/retros/
-phase-87-stage-87b-knowledge-change-demonstration.md`'s "Addendum 3";
-`planning/retros/_audit-phase-87-stage-87b-second-hardening-pass.md`.
-
-**Stage 87C's plan amended and re-reviewed a second time (2026-11-09,
-same day).** A fresh governing task found and required correction of
-several real factual/scope inconsistencies in the Stage 87C plan
-(§S) after its own first review round: Getting Started's section/
-verification counts were stated inaccurately (claimed 5-of-6
-execution-verified; real: 3-of-5, the other 2 verified by two
-specifically-named other tests); the Concepts compilation list named
-five pages while the implementation sequence and knowledge-readiness
-assessment had already, inconsistently, settled on four — resolved in
-favour of four, moving `protocol-and-capability.md` to the human-
-authored list; schema/document/region arithmetic referenced "five
-schemas" against a real total of six (2 existing + 4 new); the
-incremental-change proof's second affected region was a page never
-scheduled for compilation, failing to guarantee a genuine two-
-compiled-region demonstration — replaced with a verified, already-real
-dependency (both `adapter.md` and `vendor-and-ecosystem.md` cite
-`CL-ADPT-005`, confirmed by reading both pages' actual prose); the
-comparator measured generation cost with no predeclared material-
-improvement threshold or setup-vs-marginal cost split; and no existing-
-document migration procedure was specified despite `publish_section`'s
-own append-not-replace behaviour for an unmarked page — a real risk of
-duplicating existing Concepts prose rather than governing it, closed by
-a new §S.4a specifying a safe, zero-new-code migration sequence using
-existing baseline/noop machinery. A new §S.9a cross-checks every
-original Phase 87 exit-gate requirement against the amended plan's own
-disposition. Independently re-reviewed, with the reviewer instructed
-to inspect real repository files rather than assess internal coherence
-alone: **READY WITH NON-BLOCKING OBSERVATIONS**. Two citation-accuracy
-defects found and corrected in place: a misattributed quote, and a
-mischaracterised `decisions/0085` §6 citation (§6 actually withdraws a
-threshold-based criterion; the predeclared threshold is this
-amendment's own voluntary strengthening, not a restored requirement).
-The first review round's own verdict is preserved unchanged as
-historical record. Full detail: the plan's own §S.12 "Second review
-round".
-
-**Stage 87C — implemented and independently audited PASS
-(2026-11-10)** (full account under "What was just completed" below;
-`planning/retros/_audit-phase-87-stage-87c.md`). Three further
-`docs/concepts/` pages (`adapter.md`, `vendor-and-ecosystem.md`,
-`knowledge-model.md`) were migrated into schema-governed,
-knowledge-compiled regions; `context.md`'s migration was attempted and
-honestly declined, left human-authored. A real `CL-ADPT-005`
-multi-region maintenance demonstration and a matched-baseline
-comparator (honest non-advantage result) both ran for real. A first
-independent audit **FAIL** on three missing DoD artifacts (changelog
-entry, an incomplete retro, no learnings filed/triaged) was fixed in
-the same session; a fresh re-audit returned **PASS**. **Stage 87C is
-done.** **Phase 87 overall remains `not done`**: a deterministic
-`docs/reference/cli.md` generator and a semantic cross-document
-consistency checker were both explicitly deferred from Stage 87C's own
-scope (plan's own §S.11) and require their own separate authorisation
-before Phase 87's own closeout is assessed again.
-
-**Stage 87C corrective-closeout pass — closed (2026-11-10, plan's own
-§T)**. A separately authorised corrective-review governing task, run
-against the already-`done` Stage 87C after its own original PASS audit
-(preserved unmodified), found and fixed five real issues: a seeded
-`knowledge-model.md` doc annotation resolved through the real
-`codecompass knowledge apply` reconciliation workflow (two real apply
-cycles), never a hand-edited `.grounding-state.toml`; a real
-canonical-knowledge governance violation — Stage 87C's own
-implementation had amended `CL-ADPT-005` directly in place, violating
-the supersession-only rule (`planning/phase-54c-evidence-knowledge-
-workflow.md` §2.4) — fixed by restoring `CL-ADPT-005` to its original
-text (`status: superseded`) and writing a new superseding Claim,
-`CL-ADPT-012`, with the two dependent published regions' citations
-swapped through the same real reconciliation workflow (the underlying
-fact was never reverted, only the record structure); a wrong
-documentation-coverage claim about `CONTRIBUTING.md` (never
-schema-governed, wrongly described as one of Stage 87A/87B's compiled
-documents) corrected to the real figures (5 schema-governed documents,
-4 with published regions, 6 published regions, 1 further pre-existing
-Phase-81-era grounded region); an explicit six-item limitations
-assessment added to the matched-baseline comparator (the original two
-verdicts unchanged); and `L-125`-`L-129`'s own triage independently
-re-confirmed already substantive, not a rubber stamp. Verification: full
-regression suite (1363 passed, 2 skipped, unchanged), applicable strict
-validators clean, a fresh `docs maintain` run across all five
-schema-governed documents, a fresh independent `docs-reconstructor`
-pass, and a fresh independent `release-phase-auditor` pass. A first
-`release-phase-auditor` dispatch returned **FAIL** (missing
-`CHANGELOG.md` entry); fixed same-day; a fresh re-audit returned
-**PASS** (`planning/retros/_audit-phase-87-stage-87c-corrective-
-closeout.md`). **This corrective pass does not reopen or change Stage
-87C's own `done` status or its original PASS audit's own verdict** —
-both stand unchanged; it repairs defects found after that verdict was
-reached, the same "reopened for a focused corrective pass" pattern this
-project already uses for Phase 81's post-closeout corrective passes.
-Full account: `planning/retros/phase-87-stage-87c-knowledge-compiled-
-documentation.md`'s own "Addendum: Stage 87C corrective-closeout pass"
-section.
-
-**Stage 87D plan drafted and independently reviewed (2026-11-10, plan's
-own §U/§V) — planned and reviewed only, implementation not
-authorised.** Re-deriving every requirement directly from
-`decisions/0085` §5-§6 and `planning/v2-roadmap.md`'s own Phase 87
-section (not assumed from prior stages' retros), the plan concludes
-exactly one item is genuinely outstanding against the original Phase 87
-requirements: a deterministic, drift-checked `docs/reference/cli.md`/
-`configuration.md` generator (§U.2, 10 top-level commands + 27
-subcommands confirmed via direct Click/Typer introspection). A semantic
-cross-document consistency checker (§U.3) is scoped as a voluntary,
-separately gateable addition — `decisions/0085` §5 names "consistent
-terminology" as an editorial requirement, but leaves it to the existing
-dual-review process, not a dedicated automated mechanism — not a
-closeout requirement (§U.1/§U.4). Independently reviewed: **READY WITH
-NON-BLOCKING OBSERVATIONS** (§V) — four textual/precision corrections
-applied (a wrong CLI subcommand count, corrected via direct
-introspection, which also surfaced a second real undocumented default
-on `knowledge context`'s `--max-items`/`--max-chars`; an incorrect
-"one heading per command" assumption about `cli.md`'s real
-synopsis-line convention; an overstated "no mention of cross-document
-consistency anywhere" claim, corrected to name and address the §5
-counterevidence; a named module home, `scripts/check_doc_consistency.py`,
-for §U.3's new logic) — none architectural, per the review's own
-finding. **Implementation is explicitly not authorised by this pass and
-has not begun; a separate governing task must authorise it before any
-Stage 87D code is written.** Phase 87 overall remains `not done`.
-
-**Stage 87D plan amended after a fresh governing task found five
-implementation-readiness gaps in the first §U draft, and
-independently re-reviewed a second time (2026-11-11, plan's own §U.8/§V
-"Second review round," commits `6e05aee`/`7d226d8`) — still planned and
-reviewed only, implementation not authorised, not begun.** (A) §U.2's
-default-value checker had a genuine logical contradiction — it could
-only catch a documented-but-wrong default, never one omitted entirely —
-fixed with an explicit four-point disclosure policy; an exhaustive
-`ast`-based scan of all 37 commands (not a sample) confirmed exactly
-five real undocumented defaults (`knowledge trace --relation`/
-`--depth`, `knowledge context --max-items`/`--max-chars`, `knowledge
-export --project-id`) and two real, already-correct positive controls.
-(B) A suspected installed-package execution-boundary defect was
-independently reproduced for real: a built wheel installed into an
-isolated venv confirms `codecompass docs compile` crashes with an
-uncaught `FileNotFoundError` trying to load a `scripts/`-resident
-module `pyproject.toml` never ships — confined to exactly one command,
-concluded maintainer-only (a documentation-disclosure requirement, not
-a packaging fix, and not a Phase 87 exit-gate blocker); new §U.2a
-documents this in full. (C) §U.2's originally-proposed new validator
-script would have duplicated two checks `scripts/check_user_docs.py`
-already has (`check_cli_commands_documented`, itself carrying a real
-pre-existing 19-subcommand coverage gap, and
-`check_vendor_config_fields_documented`) — redesigned to extend that
-existing file in place instead of building a parallel validator. (D)
-`L-129`'s real `codecompass undo` first-run artifact-tracking gap,
-re-verified still live at current HEAD, now requires an explicit
-documentation-disclosure requirement in the plan (not a fix to `undo`
-itself). (E) §U.3 (cross-document semantic consistency) is now
-explicitly deferred beyond Stage 87D — not a voluntary lead choice —
-with its design preserved and seven outstanding specifications named
-for a future, separately authorised phase. A new §U.8 states Stage
-87D's exactly two mandatory deliverables (deterministic reference
-assurance; final Phase 87 assurance and closeout). A second independent
-planning review — re-deriving everything from scratch, including its
-own independent wheel build/reproduction in a second isolated venv and
-an independent `ast`-based re-derivation of the five gaps — returned
-**READY WITH NON-BLOCKING OBSERVATIONS** again, with two further minor
-precision corrections applied (a wrong parameter-instance count; an
-overstated documentation-citation claim), neither affecting the plan's
-substance. **Stage 87D implementation remains not authorised and has
-not begun; Phase 87 overall remains `not done`.**
+**Phase 87 — Documentation Schema and Knowledge-Compiled Documentation
+— is `done`.** All four stages are complete: Stage 87A (implemented,
+hardened, independently re-audited **PASS WITH NON-BLOCKING
+OBSERVATIONS**); Stage 87B (implemented and `done`, hardened a
+further three times against four found-and-fixed publication-integrity
+defects total, each hardening pass independently re-audited **PASS**);
+Stage 87C (implemented and `done`, independently audited **PASS**
+after one FAIL→fix cycle, then a separately authorised
+corrective-closeout pass fixed five further post-completion issues,
+independently re-audited **PASS**, without reopening Stage 87C's own
+original `done` status); Stage 87D (implemented — its own exactly two
+mandatory deliverables per the plan's own §U.8: Deliverable 1,
+deterministic reference assurance, commit `8cdb70c`, extending
+`scripts/check_user_docs.py` with a four-point CLI-default-disclosure
+policy and an `Ecosystem`-enum extension, 17 new tests, full suite
+1363 → 1380 passed/2 skipped; Deliverable 2, the final, complete,
+phase-wide Phase 87 Definition-of-Done audit). The first phase-wide
+`release-phase-auditor` dispatch against Deliverable 1 returned
+**FAIL** on three real, independently-confirmed gaps (5 new `ruff`
+findings Stage 87D's own new code introduced; a stale
+`docs/development/contributing.md` `check_user_docs.py` inventory
+entry; an untriaged "no candidate learnings" self-conclusion, exactly
+the failure mode Phase 84's own `L-110`/`L-111` precedent already
+showed is unreliable) — all three fixed the same day (commit
+`598a245`; `L-130` filed and independently promoted by a dispatched
+`knowledge-curator` rather than rubber-stamping the original "None"),
+and a fresh, independent re-audit returned **PASS WITH NON-BLOCKING
+OBSERVATIONS** (`planning/retros/_audit-phase-87.md`, "Re-audit"
+section). **This is the first time Phase 87 overall has been marked
+`done`** — every previous stage closure explicitly stated Phase 87
+overall remained `not done`. Two items remain explicitly, firmly
+deferred — real future-work candidates, not resolved or required by
+this closure, each needing its own separate future authorisation:
+**§U.3** — a semantic cross-document consistency checker beyond
+shared-Claim-id grounding (a bounded, implementation-ready design
+preserved with seven named outstanding specifications for a future
+phase); and **§U.4** — an automated incremental documentation-patching
+capability (e.g. a future `docs compile --patch` mode; the hand-done
+workaround has been exercised successfully twice but was never built
+as standing tooling). Full detail:
+`planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`;
+`planning/retros/phase-87-stage-87d-deterministic-reference-assurance.md`;
+`planning/retros/_audit-phase-87.md`.
 
 **Phase 86 — Knowledge-Placement and Code-Quality Review — is `done`
 (2026-11-03)**. Plan amended and independently reviewed across four
@@ -1082,254 +619,28 @@ and each phase's retro.
 
 ## What was just completed
 
-**Phase 87 Stage 87D plan amended to close five implementation-
-readiness gaps, and independently re-reviewed a second time**,
-2026-11-11, direct user request (commits `6e05aee`, `7d226d8`). A fresh
-governing task found five real gaps in the first §U draft (already
-independently reviewed once, READY WITH NON-BLOCKING OBSERVATIONS):
-(A) §U.2's default-value checker had a genuine logical contradiction —
-it could only catch a documented-but-wrong default, never one omitted
-entirely — fixed with an explicit four-point disclosure policy; an
-exhaustive `ast`-based scan of all 37 commands (not a sample) confirmed
-exactly five real undocumented defaults (`knowledge trace --relation`/
-`--depth`, `knowledge context --max-items`/`--max-chars`, `knowledge
-export --project-id`) and two real, already-correct positive controls.
-(B) A suspected installed-package execution-boundary defect was
-independently reproduced for real: a built wheel installed into an
-isolated venv confirms `codecompass docs compile` crashes with an
-uncaught `FileNotFoundError` trying to load a `scripts/`-resident
-module `pyproject.toml` never ships — confined to exactly one command,
-concluded maintainer-only (a documentation-disclosure requirement, not
-a packaging fix, not a Phase 87 exit-gate blocker); new §U.2a documents
-this in full. (C) §U.2's originally-proposed new validator script would
-have duplicated two checks `scripts/check_user_docs.py` already has —
-redesigned to extend that existing file in place instead. (D) `L-129`'s
-real `codecompass undo` first-run gap, re-verified still live, now
-requires an explicit documentation-disclosure requirement in the plan,
-not an `undo` fix. (E) §U.3 (cross-document semantic consistency) is
-now explicitly deferred beyond Stage 87D, not a voluntary lead choice,
-with seven outstanding specifications named for a future, separately
-authorised phase. A new §U.8 states Stage 87D's exactly two mandatory
-deliverables (deterministic reference assurance; final Phase 87
-assurance and closeout). A second independent planning review —
-re-deriving everything from scratch, including its own independent
-wheel build/reproduction and an independent `ast`-based re-derivation
-of the five gaps — returned **READY WITH NON-BLOCKING OBSERVATIONS**
-again, with two minor precision corrections applied (a wrong
-parameter-instance count; an overstated documentation-citation claim),
-neither affecting the plan's substance. **Stage 87D implementation
-remains not authorised and has not begun. Phase 87 overall remains
-`not done`.** Full detail: plan's own §U.2a/§U.8, §V "Second review
-round"; see "Current phase" above and "Next concrete step" below.
-
-**Phase 87 Stage 87C corrective-closeout pass closed, and a new Stage
-87D plan drafted and independently reviewed**, 2026-11-10 (commits
-`9db863f`, `d52d18e`, `90e844f`, `f434883`, `92e718c`, `9034b98`,
-`35d8ebd`, `a860825`, `0cac8bd`). A separately authorised
-corrective-review governing task found and fixed five real issues
-against the already-`done` Stage 87C: a seeded doc annotation resolved
-through the real `knowledge apply` reconciliation workflow; a real
-canonical-knowledge governance violation (`CL-ADPT-005` had been edited
-in place instead of superseded) fixed by restoring the original record
-and writing superseding Claim `CL-ADPT-012`; a wrong documentation-
-coverage claim about `CONTRIBUTING.md` corrected; an explicit
-limitations assessment added to the matched-baseline comparator; and a
-learnings-triage re-confirmation. A first independent audit returned
-**FAIL** (missing `CHANGELOG.md` entry); fixed; a fresh re-audit
-returned **PASS** (`planning/retros/_audit-phase-87-stage-87c-
-corrective-closeout.md`). **Stage 87C's own original `done` status and
-its original completion audit's PASS verdict are unchanged — this pass
-does not reopen either.** Separately, a new Stage 87D plan
-("documentation consistency, deterministic reference generation, and
-Phase 87 closeout," plan's own §U) was drafted and independently
-reviewed: **READY WITH NON-BLOCKING OBSERVATIONS** (§V, four textual
-corrections applied). Against the original Phase 87 requirements, only
-one item is genuinely outstanding — a deterministic/drift-checked CLI
-and configuration reference (§U.2); everything else is already done,
-and cross-document consistency checking (§U.3) is scoped as a
-voluntary, separately gateable addition, not a closeout requirement.
-**Stage 87D is planned and reviewed only — not authorised for
-implementation, not implemented.** Full detail: plan's own §T (the
-corrective-closeout pass) and §U/§V (the Stage 87D plan and its
-review); see "Current phase" above and "Next concrete step" below.
-
-**Phase 87 Stage 87C implemented and independently audited PASS**,
-2026-11-10, direct user request (commits `0ea4001`, `1fba77d`,
-`28c3a6c`, `1d9d626`, `3e425c5`). Three further `docs/concepts/` pages
-were migrated into schema-governed, knowledge-compiled regions
-(`adapter.md`: two regions; `vendor-and-ecosystem.md`: one;
-`knowledge-model.md`: two, deliberately narrowed); `context.md`'s
-migration was attempted and honestly declined, reverted
-byte-identical and left human-authored. A real `CL-ADPT-005` Claim
-amendment (new evidence `EV-ADPT-013`) correctly triggered
-`claims_changed` in exactly the two regions citing it, both
-recompiled, independently reviewed, and republished — the plan's own
-mandatory multi-region incremental-maintenance proof. A
-matched-baseline documentation-quality comparator ran honestly: the
-quality bar was met but no net time/cost advantage was demonstrated
-against the predeclared threshold. An independent usability exercise
-surfaced one genuine, out-of-scope `codecompass undo` first-run
-ordering gap, filed as a learning. A first independent
-`release-phase-auditor` pass returned **FAIL** on three missing DoD
-artifacts (no `CHANGELOG.md` entry; the retro only 4 of
-`TEMPLATE.md`'s 11 sections; no candidate learnings filed or
-triaged) — all three closed same-day (changelog entry added; retro
-completed to all 11 sections; five candidate learnings, `L-125`-
-`L-129`, filed and independently triaged by `knowledge-curator`, all
-dispositioned `promote`, `status` left `candidate` pending their
-destination artifacts actually landing). A fresh, independent re-audit
-returned **PASS**, re-verifying every prior finding plus the full
-regression suite (1363 passed, 2 skipped), all strict validators, and
-zero protected-file drift. Full detail: `planning/retros/
-phase-87-stage-87c-knowledge-compiled-documentation.md`;
-`planning/retros/_audit-phase-87-stage-87c.md`. **Stage 87C is done.
-Phase 87 overall remains `not done`** — a deterministic
-`docs/reference/cli.md` generator and a semantic cross-document
-consistency checker remain explicitly deferred (plan's own §S.11),
-requiring their own separate authorisation; see "Next concrete step"
-below.
-
-**Phase 87 Stage 87C plan amended and independently re-reviewed**,
-2026-11-09, direct user request (commit `779ce21`). A fresh governing
-task found and required correction of several real factual/scope
-inconsistencies in the Stage 87C plan (§S) after its own first
-independent review round: Getting Started's section/verification
-counts (corrected from a claimed 5-of-6 execution-verified to the real
-3-of-5, the other 2 verified by two specifically-named other tests);
-the Concepts compilation scope (resolved to 4 pages, not the
-inconsistently-stated 5, moving `protocol-and-capability.md` to the
-human-authored list); schema/document/region arithmetic (6 total
-schemas — 2 existing + 4 new — not "five"); the incremental-change
-proof's second affected region (swapped from a page never scheduled
-for compilation to a verified, already-shared `CL-ADPT-005` dependency
-genuinely cited by both `adapter.md` and `vendor-and-ecosystem.md`,
-two pages this plan actually compiles); the comparator (§S.7) gaining
-a setup-vs-marginal cost split and a predeclared material-improvement
-threshold; a new §S.4a specifying a safe existing-document migration
-procedure (no target Concepts page has a grounded-region marker yet,
-and `publish_section` appends rather than replaces when none exists —
-§S.4a uses only existing machinery, zero new code); and a new §S.9a
-cross-checking every original Phase 87 exit-gate requirement
-(`decisions/0085` §5-§6, §F) against the amended plan's own
-disposition. Independently re-reviewed a second time (§S.12's own
-"Second review round," same commit): **READY WITH NON-BLOCKING
-OBSERVATIONS**, after finding and the lead correcting two citation-
-accuracy defects (a misattributed quote; a mischaracterised
-`decisions/0085` §6 citation). The first review round's own verdict is
-preserved unchanged as historical record. **This plan authorises
-nothing beyond itself: Stage 87C implementation itself remains
-separately, explicitly not authorised.** Phase 87 overall remains `not
-done`; see "Next concrete step" below.
-
-**Phase 87 Stage 87B hardened a fourth time, independently audited
-PASS**, 2026-11-09, direct user request (commits `cd81892`,
-`fc197cf`). A fresh code-inspection review of the already-twice-
-hardened `docs publish` path found `schema_section_sha256` covered
-only a schema section's own dict, never the schema's top-level
-`document` (the actual publication target), `audience`, or
-`acceptance_criteria` fields — reproduced directly, before any fix was
-written, by retargeting a schema's `document` field alone after both
-independent reviews had already passed, silently redirecting an
-already-reviewed draft to a different, never-reviewed-against
-document. Fixed with one new, shared `doc_compiler.compute_schema_
-section_identity_sha256` binding the section to those top-level
-fields, with the write target also re-resolved from the live schema at
-the write boundary; 11 new regression tests (full suite 1352 → 1363
-passed, 2 skipped). An independent `release-phase-auditor` dispatch
-independently reproduced the exploit against a disposable pre-fix
-worktree, confirmed the fix, sampled 5 of the 11 new tests directly,
-re-ran the full suite and every strict validator itself, and
-specifically re-checked for a recurrence of this session's earlier
-self-certification defect — none found: **PASS** (`planning/retros/
-_audit-phase-87-stage-87b-second-hardening-pass.md`). Stage 87B is now
-hardened against four found-and-fixed publication-integrity defects
-total across its history. Stage 87C remains separately planned, not
-authorised, and untouched; Phase 87 overall remains `not done`; see
-"Next concrete step" below.
-
-**Phase 87 Stage 87C implementation-ready plan, independently
-reviewed**, 2026-11-09, direct user request (commit `8b97ed8`). Full
-detail: the plan's own new §S, `planning/
-phase-87-documentation-schema-knowledge-compiled-documentation.md`. In
-short: a new §S plan for Stage 87C (the complete minimum documentation
-suite — README, Getting Started, Concepts, Architecture, Reference,
-Contributor Guide — plus the matched-baseline quality comparison
-required to close Phase 87 overall) covers a real current-state/
-coverage assessment against `decisions/0085` §5's minimum suite (finds
-Concepts, not Architecture/Reference, is the real knowledge-compilation
-gap, and that `decisions/0085`'s own named gap — epistemic distinctions
-and the reconciliation loop — is already substantially closed by
-existing prose), a document/section ownership matrix, knowledge/
-evidence prerequisites, a reused-pipeline architecture (one real
-addition: a schema file per Concepts page, no new modules), a concrete
-implementation sequence, a real incremental-change proof candidate, a
-comparator methodology extending Stage 87B's own design, acceptance
-criteria, risks/explicit non-goals, and backlog implications. §S.12
-records a fresh, independent planning review: **READY WITH
-NON-BLOCKING OBSERVATIONS** (three narrow findings — a deferred fact
-already directly confirmable; a rubric line conflating two of
-`decisions/0085` §6's distinct required baseline measurements; a
-loosely worded Claim-id range nominally including two already-excluded
-superseded ids — all corrected in place in the same commit). **This
-plan authorises nothing beyond itself: Stage 87C implementation itself
-remains separately, explicitly not authorised.** Phase 87 overall
-remains `not done`; see "Next concrete step" below for what actually
-comes next.
-
-**Phase 87 Stage 87B post-closeout hardening pass, fix round, and
-independent audit FAIL→fix→PASS cycle**, 2026-11-09, direct user
-request. Full detail: see "Current phase" above;
-`planning/retros/phase-87-stage-87b-knowledge-change-
-demonstration.md`'s "Addendum 2"; `planning/retros/
-_audit-phase-87-stage-87b-hardening.md`;
-`planning/retros/_audit-phase-87-stage-87b-hardening-reaudit.md`. In
-short: commit `1e3301f` fixed three further `docs publish` integration
-defects found by a fresh review of the already-closed, already-PASS-
-audited Stage 87B work (reviewed-draft integrity, live schema
-freshness, a narrower write-boundary race), with 15 new regression
-tests (1337 → 1352 passed, 2 skipped), and filed two learnings
-(`L-123`, a real `CL-CTXT-005` amendment candidate handed to the
-ordinary knowledge-reconciliation workflow; `L-124`, the residual
-write-boundary race, now narrowed twice); commit `9cdbb6f` corrected a
-self-certification defect a first independent audit caught (the
-changelog claimed an audit had already passed before one had run,
-plus an overstated test-reproduction count); commit `dacdd1c` closed
-the pass after a fresh, independent re-audit returned **PASS**. Stage
-87B's post-closeout hardening is now genuinely closed; Stage 87C
-remains separately planned, not authorised, and untouched; Phase 87
-overall remains `not done`; see "Next concrete step" below.
-
-**Phase 87 Stage 87B implementation, real knowledge-change
-demonstration, and independent audit FAIL→fix→PASS cycle**,
-2026-11-07, direct user request. Full detail: see "Current phase"
-above; `planning/retros/phase-87-stage-87b-knowledge-change-
-demonstration.md`; `planning/retros/_audit-phase-87-stage-87b.md`. In
-short: commit `0f6a268` implemented Stage 87B's full scope (a second
-schema-governed document, project-wide `docs maintain` discovery, a
-cross-document region-id check, the publication-time concurrency
-guard, the real sandboxed execution harness); commit `88cfa8d` closed
-the plan's own mandatory real knowledge-change demonstration and
-comparator (a genuine `CL-CTXT-005` gap compiled and published through
-the new concurrency guard's `claims_changed` branch for the first time
-against real production knowledge, inside an isolated, discarded
-worktree; a hand-edited comparator passed semantic-support review but
-failed editorial review for the same register problem Stage 87A's own
-writing-contract hardening targets) together with a full independent
-audit cycle: a first `release-phase-auditor` pass returned **FAIL** on
-a missing required concurrency regression test whose absence concealed
-a real write-boundary revalidation gap (an intervening document edit
-or cited-knowledge change inside the publish lock's own critical
-section was silently clobbered); the gap was fixed (both checks now
-re-run a second time, inside the lock, immediately before the write —
-narrowed, not fully closed, per the docstring's own honest disclosure)
-with three new regression tests (1334 → 1337 passed, 2 skipped); a
-second, independent `release-phase-auditor` dispatch — reproducing the
-race and the clobber directly rather than trusting the fix's own
-account — returned **PASS**. `L-121` promoted; `L-122` filed
-`candidate`, landed by this reconciliation as a `planning/ROADMAP.md`
-backlog row. **Stage 87B is now `done`.** Stage 87C remains separately
-planned, not authorised, and untouched; Phase 87 overall remains `not
-done`; see "Next concrete step" below.
+**Phase 87 Stage 87D implemented, independently audited, and closed —
+Phase 87 overall is now `done`**, 2026-11-11, direct user request
+(commits `8cdb70c`, `fd51c00`, `8540aed`, `598a245`). Deliverable 1
+(deterministic reference assurance) extended `scripts/
+check_user_docs.py` with a four-point CLI-default-disclosure policy
+(`check_cli_parameter_defaults_documented`, catching all five
+previously-identified undocumented defaults) and an `Ecosystem`-enum
+extension to `check_vendor_config_fields_documented`; 17 new tests
+(full suite 1363 → 1380 passed, 2 skipped); `docs/reference/cli.md`
+updated accordingly. The first independent, phase-wide
+`release-phase-auditor` dispatch (Deliverable 2) returned **FAIL** on
+three real gaps (a `ruff` regression; a stale `contributing.md`
+inventory entry; an untriaged "no candidate learnings" self-
+conclusion) — all three fixed the same day, with `L-130` filed and
+independently promoted by a dispatched `knowledge-curator`, and a
+fresh re-audit returned **PASS WITH NON-BLOCKING OBSERVATIONS**
+(`planning/retros/_audit-phase-87.md`). §U.3 (cross-document semantic
+consistency) and §U.4 (an automated incremental documentation-patching
+capability) remain explicitly deferred, named future-work candidates.
+Full detail: see "Current phase" above; `planning/retros/
+phase-87-stage-87d-deterministic-reference-assurance.md`;
+`planning/retros/_audit-phase-87.md`.
 
 **Phase 87 Stage 87B corrective planning amendment**, 2026-11-05,
 direct user request ("CodeCompass Orchestrator — Stage 87B Corrective
@@ -1756,60 +1067,31 @@ disposition: `L-118`'s recommended promotion (same file, §N) and
 same `CLAUDE.md` §0 approval. A fifth, same-shape item from Stage 87A's
 own hardening pass: `L-120`'s recommended promotion (same file, §P) —
 also `status: retained`, awaiting the same `CLAUDE.md` §0 approval.
-Sequence from here: **87 (Documentation Schema and Knowledge-Compiled
-Documentation) — Stage 87A `done`; Stage 87B `done` (2026-11-07),
-including its own post-closeout hardening (twice, 2026-11-09) against
-four found-and-fixed publication-integrity defects total; Stage 87C
-`done` (2026-11-10), implemented and independently audited **PASS**
-(`planning/retros/_audit-phase-87-stage-87c.md`), then a separately
-authorised corrective-closeout pass against that already-`done` stage
-found and fixed five further real issues (a seeded doc annotation; a
-`CL-ADPT-005` canonical-mutation governance violation, fixed by
-restoring the original record and superseding it with `CL-ADPT-012`; a
-wrong `CONTRIBUTING.md` coverage claim; a comparator limitations
-assessment; a learnings-triage re-confirmation), independently audited
-**PASS** on re-audit after one FAIL (missing changelog entry) —
-**this does not reopen or change Stage 87C's own `done` status or its
-original PASS audit's verdict**
-(`planning/retros/_audit-phase-87-stage-87c-corrective-closeout.md`) —
-`planning/phase-87-documentation-schema-knowledge-compiled-documentation.md`
-(plan's own §T). **Phase 87 overall remains `not done`.** A new Stage
-87D plan (documentation consistency, deterministic reference
-generation, and Phase 87 closeout — plan's own §U) was then drafted and
-independently reviewed **READY WITH NON-BLOCKING OBSERVATIONS** (§V's
-first review round, four textual corrections applied, none
-architectural). A fresh governing task then found five real
-implementation-readiness gaps in that first draft (2026-11-11,
-commits `6e05aee`/`7d226d8`): a default-value checker that could only
-catch a wrong documented default, never an omitted one (fixed with an
-explicit four-point policy; five real undocumented defaults confirmed
-by an exhaustive `ast` scan); an independently-reproduced
-installed-wheel execution-boundary crash in `docs compile`, confined to
-one command, concluded maintainer-only and requiring disclosure, not a
-packaging fix (new §U.2a); a proposed new validator that would have
-duplicated two checks `check_user_docs.py` already has, redesigned to
-extend that file instead; `L-129`'s `undo` first-run gap now requiring
-explicit disclosure in the plan rather than a fix; and §U.3
-(cross-document consistency) now explicitly deferred beyond Stage 87D,
-not a voluntary lead choice. A new §U.8 names Stage 87D's exactly two
-mandatory deliverables. A second independent planning review,
-re-deriving everything from scratch, returned **READY WITH
-NON-BLOCKING OBSERVATIONS** again (two further minor precision
-corrections, neither architectural). Against the original Phase 87
-requirements, only one item is genuinely outstanding — a
-deterministic/drift-checked `docs/reference/cli.md`/`configuration.md`
-generator (§U.2, now §U.8 Deliverable 1); a semantic cross-document
-consistency checker (§U.3) is scoped as a voluntary, separately
-gateable addition, not a closeout requirement. **Stage 87D is planned
-and reviewed only (twice, now across both review rounds) —
-implementation is explicitly not authorised by either pass and has not
-begun.** This is a recommendation, not a pre-decision: **the next
-concrete step is for the lead/user to decide whether to authorise
-Stage 87D implementation** (all of it, §U.8's Deliverable 1 only, or
-Deliverable 1 plus the voluntary §U.3) — no session, agent, or
-reconciliation pass may self-authorise it; only once that authorisation
-is given and implementation completes does Phase 87's own closeout get
-reassessed.
+**Phase 87 (Documentation Schema and Knowledge-Compiled Documentation)
+is now `done`** (2026-11-11) — all four stages complete, the final,
+phase-wide Definition-of-Done audit returned **PASS WITH NON-BLOCKING
+OBSERVATIONS** after one FAIL→fix cycle; see "Current phase" above for
+the full account. Two items were explicitly, firmly deferred as named
+future-work candidates, not resolved or required by this closure, each
+needing its own separate future authorisation before anyone may begin
+them: §U.3 (a semantic cross-document consistency checker beyond
+shared-Claim-id grounding) and §U.4 (an automated incremental
+documentation-patching capability).
+
+**Recommended next step (a recommendation for the lead/user to pick up
+separately — this reconciliation does not itself begin it):** the
+roadmap's own next not-yet-phase-planned items are **Phase 88 (Agent
+Integration and MCP)** and **Phase 89 (Incremental Knowledge and
+Documentation Reconciliation)** — per `planning/ROADMAP.md`, Phase 89
+"operates independently of MCP transport" and does not require Phase
+88 first, so either may reasonably go first; neither has a
+`planning/phase-N-*.md` plan file yet, so per `CLAUDE.md` §1 the next
+actual work is writing that plan (scope, deferrals, verification) and
+having it independently reviewed before any implementation begins.
+Phase 90 (Comparative Development Trials), 91 (External Validation and
+Adoption), and 92 (v2.0 Hardening and Release) remain further out in
+the same `not started` sequence.
+
 A smaller, nearer-term item that does *not* need that authorisation:
 Stage 87C's own five candidate learnings (`L-125`-`L-129`,
 `planning/learnings/inbox.md`) are all independently triaged
@@ -1827,13 +1109,7 @@ should amend `CL-CTXT-005` to include it (adding `EV-CTXT-021` to its
 `supporting_evidence`) or explicitly decline with a documented reason.
 Found during Stage 87B's hardening pass, `L-123`; this is a hand-off
 for the ordinary knowledge-reconciliation workflow, not something this
-reconciliation itself may decide. → 88 (Agent Integration and MCP, split from
-the old merged phase) → 89 (Incremental Knowledge and Documentation
-Reconciliation, split from the old merged phase, independent of MCP) →
-90 (Comparative Development Trials, methodology strengthened) → 91
-(External Validation and Adoption) → 92 (v2.0 Hardening and Release).
-None of 88-92 is phase-planned yet; each gets its own `CLAUDE.md` §1
-plan file when it is actually next.
+reconciliation itself may decide.
 
 Other open items requiring a human/lead decision, none currently claimed
 by a drafted plan or phase number:

@@ -50,10 +50,26 @@ redesign to extend `check_user_docs.py` rather than duplicate it; a
 explicitly deferred rather than optional) and re-reviewed a second
 time (§V's second round, READY WITH NON-BLOCKING OBSERVATIONS, two
 precision corrections applied). §U.8 now states Stage 87D's exactly
-two mandatory deliverables. **Stage 87D is planned and independently
-reviewed twice, still not authorised for implementation and not
-implemented.** Phase 87 overall remains not
-done.** This is a
+two mandatory deliverables. **Stage 87D implementation was then
+authorised and completed (2026-11-11).** Deliverable 1 (deterministic
+reference assurance, commit `8cdb70c` — the `check_user_docs.py`
+default-disclosure policy and `Ecosystem`-enum extension, 17 new
+tests) and Deliverable 2 (the final, phase-wide Phase 87 assurance and
+closeout, §U.8) are both done. The first independent, phase-wide
+`release-phase-auditor` dispatch returned **FAIL** on three real gaps
+(5 new `ruff` findings Stage 87D's own new code introduced; a stale
+`docs/development/contributing.md` `check_user_docs.py` inventory
+entry; an untriaged "no candidate learnings" self-conclusion) — all
+three fixed the same day (commit `598a245`; an independently-dispatched
+`knowledge-curator` filed and promoted `L-130`), and a fresh,
+independent re-audit returned **PASS WITH NON-BLOCKING OBSERVATIONS**
+(`planning/retros/_audit-phase-87.md`, "Re-audit" section). **Phase 87
+overall is now `done`.** Two items remain explicitly, firmly deferred,
+not resolved by this closure: §U.3 (a semantic cross-document
+consistency checker beyond shared-Claim-id grounding) and §U.4 (an
+automated incremental documentation-patching capability, e.g. a future
+`docs compile --patch` mode) — both are real future-work candidates
+requiring their own separate authorisation. This is a
 **scope-management correction**, not an architectural redesign — the
 strategic objective (§0), the verified architecture map (§A), and the
 shared schema/pipeline contract (§B/§C) are preserved. What changes:
