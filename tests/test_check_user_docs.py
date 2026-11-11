@@ -56,11 +56,337 @@ class TestCliCommandsDocumented:
         )
         _write(
             tmp_path / "docs" / "reference" / "cli.md",
-            "# CLI reference\n\n`codecompass frobnicate`\n",
+            "## `codecompass frobnicate`\n\n```\ncodecompass frobnicate\n```\n",
         )
 
         findings = check_user_docs.check_cli_commands_documented(tmp_path)
 
+        assert findings == []
+
+    def test_flags_removed_command_still_documented(self, tmp_path):
+        """A command removed from cli.py but still documented -- the
+        other direction of the presence check."""
+        _write(
+            tmp_path / "src" / "codecompass" / "cli.py",
+            "import typer\napp = typer.Typer()\n\n\n"
+            "@app.command()\ndef frobnicate():\n    pass\n",
+        )
+        _write(
+            tmp_path / "docs" / "reference" / "cli.md",
+            "## `codecompass frobnicate|retired`\n\n"
+            "```\ncodecompass frobnicate\ncodecompass retired\n```\n",
+        )
+
+        findings = check_user_docs.check_cli_commands_documented(tmp_path)
+
+        assert len(findings) == 1
+        assert "retired" in findings[0].message
+        assert "no longer a real command" in findings[0].message
+
+    def test_covers_every_sub_app_not_only_app_and_query_app(self, tmp_path):
+        """The real, pre-existing gap this amendment fixes: knowledge_app/
+        docs_app/enrich_app were never walked at all (only `app`/
+        `query_app` were)."""
+        _write(
+            tmp_path / "src" / "codecompass" / "cli.py",
+            "import typer\n"
+            "app = typer.Typer()\n"
+            "knowledge_app = typer.Typer()\n"
+            "docs_app = typer.Typer()\n"
+            "enrich_app = typer.Typer()\n"
+            "app.add_typer(knowledge_app, name='knowledge')\n"
+            "app.add_typer(docs_app, name='docs')\n"
+            "app.add_typer(enrich_app, name='enrich')\n\n\n"
+            "@knowledge_app.command('trace')\ndef knowledge_trace():\n    pass\n\n\n"
+            "@docs_app.command('maintain')\ndef docs_maintain():\n    pass\n\n\n"
+            "@enrich_app.command('apply')\ndef enrich_apply():\n    pass\n",
+        )
+        _write(tmp_path / "docs" / "reference" / "cli.md", "# CLI reference\n\nnothing here\n")
+
+        findings = check_user_docs.check_cli_commands_documented(tmp_path)
+
+        messages = {f.message for f in findings}
+        assert any("knowledge trace" in m for m in messages)
+        assert any("docs maintain" in m for m in messages)
+        assert any("enrich apply" in m for m in messages)
+        assert len(findings) == 3
+
+
+def _knowledge_cli_py(trace_relation_default: str = "supporting_evidence") -> str:
+    """One `knowledge_app` command, `trace`, with a required argument, an
+    optional string flag with a concrete default, a boolean flag, and a
+    repeatable-list flag -- enough surface to exercise every branch of the
+    four-point default policy in one real-shaped command."""
+    return (
+        "import typer\n"
+        "app = typer.Typer()\n"
+        "knowledge_app = typer.Typer()\n"
+        "app.add_typer(knowledge_app, name='knowledge')\n\n\n"
+        "@knowledge_app.command('trace')\n"
+        "def knowledge_trace(\n"
+        "    record_id: str = typer.Argument(...),\n"
+        f"    relation: str = typer.Option({trace_relation_default!r}, '--relation'),\n"
+        "    verbose: bool = typer.Option(False, '--verbose'),\n"
+        "    kind: list[str] = typer.Option([], '--kind'),\n"
+        "):\n"
+        "    pass\n"
+    )
+
+
+class TestCliParameterDefaultsDocumented:
+    def test_flags_omitted_default(self, tmp_path):
+        """A non-exempt optional parameter's default disclosed nowhere at
+        all -- the real failure mode all five known gaps are."""
+        _write(tmp_path / "src" / "codecompass" / "cli.py", _knowledge_cli_py())
+        _write(
+            tmp_path / "docs" / "reference" / "cli.md",
+            "## `codecompass knowledge trace`\n\n"
+            "```\ncodecompass knowledge trace RECORD_ID [--relation RELATION] "
+            "[--verbose] [--kind KIND ...]\n```\n",
+        )
+
+        findings = check_user_docs.check_cli_parameter_defaults_documented(tmp_path)
+
+        assert len(findings) == 1
+        assert "--relation" in findings[0].message
+        assert "supporting_evidence" in findings[0].message
+
+    def test_flags_wrong_documented_default(self, tmp_path):
+        """A documented default that disagrees with the live value."""
+        _write(tmp_path / "src" / "codecompass" / "cli.py", _knowledge_cli_py())
+        _write(
+            tmp_path / "docs" / "reference" / "cli.md",
+            "## `codecompass knowledge trace`\n\n"
+            "```\ncodecompass knowledge trace RECORD_ID [--relation RELATION] "
+            "[--verbose] [--kind KIND ...]\n```\n\n"
+            "- **`trace RECORD_ID`** — `--relation`, default `wrong_value`.\n",
+        )
+
+        findings = check_user_docs.check_cli_parameter_defaults_documented(tmp_path)
+
+        assert len(findings) == 1
+        assert "--relation" in findings[0].message
+
+    def test_passes_synopsis_embedded_literal(self, tmp_path):
+        """The real `init --output vendor.toml` convention: the default
+        embedded directly in the synopsis line's own bracket."""
+        _write(tmp_path / "src" / "codecompass" / "cli.py", _knowledge_cli_py())
+        _write(
+            tmp_path / "docs" / "reference" / "cli.md",
+            "## `codecompass knowledge trace`\n\n"
+            "```\ncodecompass knowledge trace RECORD_ID "
+            "[--relation supporting_evidence] [--verbose] [--kind KIND ...]\n```\n",
+        )
+
+        findings = check_user_docs.check_cli_parameter_defaults_documented(tmp_path)
+
+        assert findings == []
+
+    def test_passes_prose_default_statement(self, tmp_path):
+        """The real `schema-init --section-id` convention: "default
+        `value`" in prose."""
+        _write(tmp_path / "src" / "codecompass" / "cli.py", _knowledge_cli_py())
+        _write(
+            tmp_path / "docs" / "reference" / "cli.md",
+            "## `codecompass knowledge trace`\n\n"
+            "```\ncodecompass knowledge trace RECORD_ID [--relation RELATION] "
+            "[--verbose] [--kind KIND ...]\n```\n\n"
+            "- **`trace RECORD_ID`** — `--relation`, default `supporting_evidence`.\n",
+        )
+
+        findings = check_user_docs.check_cli_parameter_defaults_documented(tmp_path)
+
+        assert findings == []
+
+    def test_substring_collision_is_not_mistaken_for_disclosure(self, tmp_path):
+        """Real false negatives this amendment fixed: a default value that
+        is a substring of unrelated text (an enum-choices list naming the
+        same string as one of several *choices*; the synopsis line's own
+        leading `codecompass <path>` tokens) must not be read as
+        disclosure."""
+        _write(tmp_path / "src" / "codecompass" / "cli.py", _knowledge_cli_py())
+        _write(
+            tmp_path / "docs" / "reference" / "cli.md",
+            "## `codecompass knowledge trace`\n\n"
+            "```\ncodecompass knowledge trace RECORD_ID [--relation RELATION] "
+            "[--verbose] [--kind KIND ...]\n```\n\n"
+            "- **`trace RECORD_ID`** — `--relation` is one of `depends_on`/"
+            "`supporting_evidence`/`contradicting_evidence` (not a default statement).\n",
+        )
+
+        findings = check_user_docs.check_cli_parameter_defaults_documented(tmp_path)
+
+        assert len(findings) == 1
+        assert "--relation" in findings[0].message
+
+    def test_bool_and_list_params_never_require_disclosure(self, tmp_path):
+        _write(tmp_path / "src" / "codecompass" / "cli.py", _knowledge_cli_py())
+        _write(
+            tmp_path / "docs" / "reference" / "cli.md",
+            "## `codecompass knowledge trace`\n\n"
+            "```\ncodecompass knowledge trace RECORD_ID [--relation supporting_evidence] "
+            "[--verbose] [--kind KIND ...]\n```\n",
+        )
+
+        findings = check_user_docs.check_cli_parameter_defaults_documented(tmp_path)
+
+        assert findings == []  # --verbose/--kind flagged nowhere despite no stated default
+
+    def test_minimal_content_cannot_pass_by_heading_and_fence_alone(self, tmp_path):
+        """A command with a real heading and a real fenced synopsis, but
+        no prose and no stated default anywhere -- must still fail; the
+        checker cannot be satisfied merely because the command's own
+        heading/fence exists."""
+        cli_py = (
+            "import typer\n"
+            "app = typer.Typer()\n"
+            "docs_app = typer.Typer()\n"
+            "app.add_typer(docs_app, name='docs')\n\n\n"
+            "@docs_app.command('schema-init')\n"
+            "def docs_schema_init(\n"
+            "    document: str = typer.Argument(...),\n"
+            "    section_id: str = typer.Option('section-one', '--section-id'),\n"
+            "):\n"
+            "    pass\n"
+        )
+        _write(tmp_path / "src" / "codecompass" / "cli.py", cli_py)
+        _write(
+            tmp_path / "docs" / "reference" / "cli.md",
+            "## `codecompass docs schema-init`\n\n"
+            "```\ncodecompass docs schema-init DOCUMENT [--section-id ID]\n```\n",
+        )
+
+        findings = check_user_docs.check_cli_parameter_defaults_documented(tmp_path)
+        assert len(findings) == 1
+        assert "--section-id" in findings[0].message
+
+        _write(
+            tmp_path / "docs" / "reference" / "cli.md",
+            "## `codecompass docs schema-init`\n\n"
+            "```\ncodecompass docs schema-init DOCUMENT [--section-id ID]\n```\n\n"
+            "- **`schema-init DOCUMENT`** — `--section-id`, default `section-one`.\n",
+        )
+        findings = check_user_docs.check_cli_parameter_defaults_documented(tmp_path)
+        assert findings == []  # isolates exactly what changed
+
+
+def _shared_block_cli_py() -> str:
+    """Two commands sharing one heading/fenced block, mirroring the real
+    `knowledge`/`docs` convention -- `first` has a real default; `second`
+    has a backslash-continued, multi-line synopsis matching `docs
+    record-review`'s own real shape."""
+    return (
+        "import typer\n"
+        "app = typer.Typer()\n"
+        "grp_app = typer.Typer()\n"
+        "app.add_typer(grp_app, name='grp')\n\n\n"
+        "@grp_app.command('first')\n"
+        "def grp_first(\n"
+        "    value: str = typer.Option('alpha', '--value'),\n"
+        "):\n"
+        "    pass\n\n\n"
+        "@grp_app.command('second')\n"
+        "def grp_second(\n"
+        "    record_id: str = typer.Argument(...),\n"
+        "    kind: str = typer.Option(..., '--kind'),\n"
+        "    other: str = typer.Option('beta', '--other'),\n"
+        "):\n"
+        "    pass\n"
+    )
+
+
+class TestCommandIsolation:
+    """Where multiple commands share one heading/fenced block, a default
+    documented for one command must not satisfy a different, neighbouring
+    command's own disclosure requirement -- the specific attribution bug
+    this amendment's own test design targets, in both the synopsis-line
+    and the prose form."""
+
+    def test_correct_attribution_passes(self, tmp_path):
+        _write(tmp_path / "src" / "codecompass" / "cli.py", _shared_block_cli_py())
+        _write(
+            tmp_path / "docs" / "reference" / "cli.md",
+            "## `codecompass grp first|second`\n\n"
+            "```\ncodecompass grp first [--value alpha]\n"
+            "codecompass grp second RECORD_ID --kind KIND \\\n"
+            "    [--other beta]\n```\n",
+        )
+        findings = check_user_docs.check_cli_parameter_defaults_documented(tmp_path)
+        assert findings == []
+
+    def test_omitted_default_on_one_command_fails(self, tmp_path):
+        _write(tmp_path / "src" / "codecompass" / "cli.py", _shared_block_cli_py())
+        _write(
+            tmp_path / "docs" / "reference" / "cli.md",
+            "## `codecompass grp first|second`\n\n"
+            "```\ncodecompass grp first [--value VALUE]\n"
+            "codecompass grp second RECORD_ID --kind KIND \\\n"
+            "    [--other beta]\n```\n",
+        )
+        findings = check_user_docs.check_cli_parameter_defaults_documented(tmp_path)
+        assert len(findings) == 1
+        assert "--value" in findings[0].message
+
+    def test_wrong_default_on_one_command_fails(self, tmp_path):
+        _write(tmp_path / "src" / "codecompass" / "cli.py", _shared_block_cli_py())
+        _write(
+            tmp_path / "docs" / "reference" / "cli.md",
+            "## `codecompass grp first|second`\n\n"
+            "```\ncodecompass grp first [--value wrong]\n"
+            "codecompass grp second RECORD_ID --kind KIND \\\n"
+            "    [--other beta]\n```\n",
+        )
+        findings = check_user_docs.check_cli_parameter_defaults_documented(tmp_path)
+        assert len(findings) == 1
+        assert "--value" in findings[0].message
+
+    def test_correct_value_under_neighbouring_synopsis_line_fails(self, tmp_path):
+        """The core attribution bug: `first`'s own correct default
+        ("alpha") sits only in `second`'s own synopsis line, not its
+        own."""
+        _write(tmp_path / "src" / "codecompass" / "cli.py", _shared_block_cli_py())
+        _write(
+            tmp_path / "docs" / "reference" / "cli.md",
+            "## `codecompass grp first|second`\n\n"
+            "```\ncodecompass grp first [--value VALUE]\n"
+            "codecompass grp second RECORD_ID --kind KIND \\\n"
+            "    [--other beta] alpha\n```\n",
+        )
+        findings = check_user_docs.check_cli_parameter_defaults_documented(tmp_path)
+        assert len(findings) == 1
+        assert "--value" in findings[0].message
+
+    def test_correct_value_under_neighbouring_prose_bullet_fails(self, tmp_path):
+        """The same attribution bug in the *prose* disclosure form: a
+        naive 'is this value anywhere in the heading's own prose'
+        implementation would wrongly pass this."""
+        _write(tmp_path / "src" / "codecompass" / "cli.py", _shared_block_cli_py())
+        _write(
+            tmp_path / "docs" / "reference" / "cli.md",
+            "## `codecompass grp first|second`\n\n"
+            "```\ncodecompass grp first [--value VALUE]\n"
+            "codecompass grp second RECORD_ID --kind KIND \\\n"
+            "    [--other beta]\n```\n\n"
+            "- **`first`** — an ordinary command.\n"
+            "- **`second RECORD_ID`** — `--value`, default `alpha` "
+            "(this belongs to `first`, not `second` — misplaced on purpose).\n",
+        )
+        findings = check_user_docs.check_cli_parameter_defaults_documented(tmp_path)
+        assert len(findings) == 1
+        assert "--value" in findings[0].message
+
+    def test_shared_block_and_continuation_parse_correctly_when_fully_correct(self, tmp_path):
+        _write(tmp_path / "src" / "codecompass" / "cli.py", _shared_block_cli_py())
+        _write(
+            tmp_path / "docs" / "reference" / "cli.md",
+            "## `codecompass grp first|second`\n\n"
+            "```\ncodecompass grp first [--value alpha]\n"
+            "codecompass grp second RECORD_ID --kind KIND \\\n"
+            "    [--other beta]\n```\n\n"
+            "- **`first`** — `--value`, default `alpha`.\n"
+            "- **`second RECORD_ID`** — `--other`, default `beta`.\n",
+        )
+        findings = check_user_docs.check_cli_parameter_defaults_documented(tmp_path)
         assert findings == []
 
 
@@ -104,6 +430,35 @@ class TestVendorConfigFieldsDocumented:
         )
         _write(
             tmp_path / "docs" / "reference" / "configuration.md", "Fields: `name`, `ecosystem`\n"
+        )
+
+        findings = check_user_docs.check_vendor_config_fields_documented(tmp_path)
+
+        assert findings == []
+
+    def test_flags_undocumented_ecosystem_member(self, tmp_path):
+        _write(
+            tmp_path / "src" / "codecompass" / "core.py",
+            "from enum import StrEnum\n\n\n"
+            "class Ecosystem(StrEnum):\n"
+            "    NPM = 'npm'\n    PYTHON = 'python'\n",
+        )
+        _write(tmp_path / "docs" / "reference" / "configuration.md", "One of `npm`.\n")
+
+        findings = check_user_docs.check_vendor_config_fields_documented(tmp_path)
+
+        assert len(findings) == 1
+        assert "python" in findings[0].message
+
+    def test_no_finding_when_every_ecosystem_member_documented(self, tmp_path):
+        _write(
+            tmp_path / "src" / "codecompass" / "core.py",
+            "from enum import StrEnum\n\n\n"
+            "class Ecosystem(StrEnum):\n"
+            "    NPM = 'npm'\n    PYTHON = 'python'\n",
+        )
+        _write(
+            tmp_path / "docs" / "reference" / "configuration.md", "One of `npm`, `python`.\n"
         )
 
         findings = check_user_docs.check_vendor_config_fields_documented(tmp_path)

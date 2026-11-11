@@ -135,7 +135,7 @@ Best-effort cleanup of everything CodeCompass generated in the project: every tr
 
 The *how* behind this cleanup depends on whether `context-graph.db` exists yet, via two structurally different enumeration strategies, each with a different precision guarantee:
 
-- **Graph-backed (precise)** — when `context-graph.db` already exists: `undo` queries it directly for every `doc_artifacts` row tagged `origin IN ('codecompass_tool', 'codecompass_vendor')` (`third_party`-origin rows are never selected, by construction, not by a filter applied after the fact), resolves each to a real path, and adds every tracked vendor's own `vendor/<name>/` directory from the `vendors` table. This correctly distinguishes a CodeCompass-generated artifact from a third-party one by its real, recorded origin.
+- **Graph-backed (precise)** — when `context-graph.db` already exists: `undo` queries it directly for every `doc_artifacts` row tagged `origin IN ('codecompass_tool', 'codecompass_vendor')` (`third_party`-origin rows are never selected, by construction, not by a filter applied after the fact), resolves each to a real path, and adds every tracked vendor's own `vendor/<name>/` directory from the `vendors` table. This correctly distinguishes a CodeCompass-generated artifact from a third-party one by its real, recorded origin. **Known first-run limitation** (`L-129`): on a project's very first `codecompass` run, the whole-project graph rebuild that records these `doc_artifacts` rows runs *before* the Skill/slash-command files are generated, so `undo --dry-run`/`undo --yes` run immediately afterward omit `.claude/skills/codecompass/` and `.claude/commands/discovery.md` from this graph-backed enumeration — both are left on disk. A second whole-project `sync` backfills the missing rows and self-heals the gap for any subsequent `undo`.
 - **Pattern-based (fallback)** — when no `context-graph.db` exists yet (e.g. only `init --scan` has run, with no whole-project sync): `undo` instead matches a fixed set of path globs against the exact naming conventions `skill.py`/`commands.py` use (`.claude/skills/codecompass*`, `.cursor/rules/codecompass-*.mdc`, `.claude/commands/discovery.md`, plus each tracked vendor's `vendor/<name>/` directory from `vendor.toml`). This is **less precise**: because it has no recorded origin to check against, it cannot distinguish a hand-renamed third-party artifact that happens to match the same naming pattern from a real CodeCompass-generated one — a real, disclosed precision gap this fallback mode accepts in exchange for working without a prior sync.
 
 ## `codecompass enrich apply <entries_file> --agent <name>`
@@ -192,11 +192,13 @@ the explicitly requested `OUT_PATH`, detailed below).
   and oracle contract/check ids; `--kind` (repeatable) restricts to one
   or more record/oracle kinds.
 - **`trace RECORD_ID`** — follows one recorded relationship outward:
-  `--relation` is one of `depends_on`/`supporting_evidence`/
+  `--relation` (default `supporting_evidence`) is one of `depends_on`/
+  `supporting_evidence`/
   `contradicting_evidence`/`observations`/`decision` (any with a
   `_reverse` counterpart), `cites`/`cited_by`, `checks`/`results`, or
   `doc_mentions` (the exact mechanical web `query relations` itself now
-  reads); `--evidence` instead runs `trace_evidence` (supporting +
+  reads); `--depth` (default `1`) is how many hops to follow;
+  `--evidence` instead runs `trace_evidence` (supporting +
   contradicting evidence, reporting an explicit **gap** when an
   obligation-bearing record has no evidence at all, or when a declared
   citation doesn't resolve to a real record — `dangling_evidence_
@@ -221,11 +223,14 @@ the explicitly requested `OUT_PATH`, detailed below).
   oracle contract at all. Omit `SLUG` to scan every slug.
 - **`context TOPIC`** — a bounded, deterministic development-context
   packet: the subject record, its direct relations, and its own gaps, in
-  a fixed priority order, truncated at `--max-items`/`--max-chars` with
+  a fixed priority order, truncated at `--max-items` (default `20`)/
+  `--max-chars` (default `6000`) with
   truncation reported explicitly, never silently.
 - **`export SLUG OUT_PATH`** — a portable, versioned export of one
   slug's canonical knowledge (`decisions/0079` §5's own project-identity
-  envelope). Refuses to write inside `planning/knowledge/`/`planning/
+  envelope), tagged with `--project-id` (default `codecompass`) as the
+  envelope's own project-identity field. Refuses to write inside
+  `planning/knowledge/`/`planning/
   contracts/` — writes exactly `OUT_PATH`, never touches canonical
   project knowledge.
 
@@ -303,7 +308,24 @@ broker/isolation scripts.
   (hardening pass §N.A) — this command never dispatches the two
   still-required independent reviews itself (`CLAUDE.md` §8:
   CodeCompass never spawns or coordinates agents); that is the lead's
-  own next step.
+  own next step. **Requires an editable/source-backed install of this
+  repository** (`pip install -e .`, or an equivalent development
+  install whose own `cli.py` file *is* the real checkout's
+  `src/codecompass/cli.py`), with that checkout's own sibling
+  `scripts/check_doc_schema.py`/`compile_doc_section.py` present —
+  `compile` loads both dynamically by file path, computed from its
+  own installed module location, never from the invoking shell's
+  current directory. An ordinary, non-editable `pip install` of the
+  published package does not satisfy this (`scripts/` is deliberately
+  outside the packaged `src/` tree, this project's own established
+  convention for security-sensitive clean-room infrastructure,
+  `docs/architecture/documentation-compilation-pipeline.md`) and
+  `compile` fails with an uncaught `FileNotFoundError` in that case —
+  a maintainer-only capability for CodeCompass's own self-
+  documentation, not a public capability offered to an adopting
+  project's own documentation. `schema-init`/`record-review`/
+  `publish`/`maintain` carry no such requirement — positively verified
+  safe to run from an ordinary installed package.
 - **`record-review SCHEMA_PATH SECTION_ID --kind ... --verdict ... --reviewer ...`**
   (hardening pass §N.A) — persists one independent review's verdict,
   findings, and evidence references, bound by hash to the exact

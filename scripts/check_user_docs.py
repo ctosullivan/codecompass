@@ -48,44 +48,367 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def check_cli_commands_documented(root: Path) -> list[Finding]:
-    """Every @app.command()/@query_app.command() name in cli.py has a
-    matching mention in docs/reference/cli.md."""
-    cli_path = root / "src" / "codecompass" / "cli.py"
-    doc_path = root / "docs" / "reference" / "cli.md"
-    tree = ast.parse(_read(cli_path), filename=str(cli_path))
-    doc_text = _read(doc_path)
+@dataclass
+class _CliParam:
+    py_name: str
+    token: str  # literal substring expected in a synopsis line: "--flag" or "ARGNAME"
+    required: bool
+    is_exempt_type: bool  # bool or list[...] annotation -- default needs no disclosure
+    default_text: str | None  # None if required, type-exempt, or unrenderable
 
-    findings: list[Finding] = []
+
+def _is_exempt_cli_annotation(annotation) -> bool:
+    """bool and repeatable-list (`list[...]`) parameters are exempt from
+    default-value disclosure (plan §U.2 point 1) -- an absent boolean's
+    own off-by-default meaning, and an absent repeatable option's own
+    no-restriction meaning, are self-evident CLI conventions."""
+    if annotation is None:
+        return False
+    if isinstance(annotation, ast.Name) and annotation.id == "bool":
+        return True
+    if isinstance(annotation, ast.Subscript) and isinstance(annotation.value, ast.Name):
+        return annotation.value.id == "list"
+    return False
+
+
+def _literal_cli_default_text(node) -> str | None:
+    """A plain-text rendering of a default-value AST node, suitable for a
+    literal substring match against doc prose/synopsis text -- or None if
+    the node has no renderable literal (e.g. `None`, or an expression this
+    deliberately narrow static check doesn't try to evaluate)."""
+    if node is None:
+        return None
+    if isinstance(node, ast.Constant):
+        if node.value is None or node.value is Ellipsis:
+            return None
+        return str(node.value)
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "Path"
+        and node.args
+        and isinstance(node.args[0], ast.Constant)
+    ):
+        return str(node.args[0].value)
+    return None
+
+
+def _parse_cli_commands(root: Path) -> dict[str, list[_CliParam]]:
+    """Every `@<sub_app>.command()`-decorated function in cli.py, keyed by
+    its own full dotted command path (e.g. "knowledge trace", or just
+    "init" for a bare `@app.command()`) -- discovered against cli.py's own
+    real `app.add_typer(<sub_app>, name=<group>)` declarations, never a
+    hardcoded base-identifier-to-group-name table, so a future sixth
+    sub-app is picked up automatically rather than silently skipped."""
+    cli_path = root / "src" / "codecompass" / "cli.py"
+    tree = ast.parse(_read(cli_path), filename=str(cli_path))
+
+    group_by_base: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if not (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "add_typer"
+            and node.args
+            and isinstance(node.args[0], ast.Name)
+        ):
+            continue
+        for kw in node.keywords:
+            if kw.arg == "name" and isinstance(kw.value, ast.Constant):
+                group_by_base[node.args[0].id] = str(kw.value.value)
+
+    commands: dict[str, list[_CliParam]] = {}
     for node in ast.walk(tree):
         if not isinstance(node, ast.FunctionDef):
             continue
+        base = None
+        cmd_name = None
         for dec in node.decorator_list:
-            if not isinstance(dec, ast.Call):
+            if not isinstance(dec, ast.Call) or not isinstance(dec.func, ast.Attribute):
                 continue
-            func = dec.func
-            attr_chain = None
-            if isinstance(func, ast.Attribute):
-                attr_chain = (
-                    func.value.id if isinstance(func.value, ast.Name) else None,
-                    func.attr,
-                )
-            if attr_chain is None or attr_chain[1] != "command":
+            if dec.func.attr != "command":
                 continue
-            base = attr_chain[0]
-            if base not in ("app", "query_app"):
-                continue
+            base = dec.func.value.id if isinstance(dec.func.value, ast.Name) else None
             if dec.args and isinstance(dec.args[0], ast.Constant):
-                name = str(dec.args[0].value)
+                cmd_name = str(dec.args[0].value)
             else:
-                name = node.name.replace("_", "-")
-            needle = f"codecompass {name}" if base == "app" else f"query {name}"
-            if needle not in doc_text:
+                cmd_name = node.name.replace("_", "-")
+        if base is None:
+            continue
+        if base == "app":
+            dotted = cmd_name
+        elif base in group_by_base:
+            dotted = f"{group_by_base[base]} {cmd_name}"
+        else:
+            continue  # an unrecognised command-decorator base -- skip, never crash
+
+        params: list[_CliParam] = []
+        args = node.args
+        defaults = args.defaults
+        n_pos = len(args.args)
+        n_def = len(defaults)
+        pos_with_defaults = args.args[n_pos - n_def :] if n_def else []
+        default_by_arg = dict(zip((a.arg for a in pos_with_defaults), defaults, strict=True))
+        for arg in args.args:
+            call = default_by_arg.get(arg.arg)
+            if not isinstance(call, ast.Call) or not isinstance(call.func, ast.Attribute):
+                continue
+            if call.func.attr not in ("Option", "Argument"):
+                continue
+            first = call.args[0] if call.args else None
+            required = isinstance(first, ast.Constant) and first.value is Ellipsis
+            is_exempt = _is_exempt_cli_annotation(arg.annotation)
+            flag = None
+            if call.func.attr == "Option":
+                for a in call.args[1:]:
+                    if isinstance(a, ast.Constant) and isinstance(a.value, str) and a.value.startswith("--"):
+                        flag = a.value
+                        break
+            token = flag if flag else arg.arg.upper()
+            default_text = None if (required or is_exempt) else _literal_cli_default_text(first)
+            params.append(_CliParam(arg.arg, token, required, is_exempt, default_text))
+        commands[dotted] = params
+    return commands
+
+
+_BULLET_RE = re.compile(r"^-\s+\*\*`([a-z][a-z0-9-]*)\b")
+
+
+def _join_backslash_continuations(lines: list[str]) -> list[str]:
+    """Join a line ending in a trailing `\\` with the line immediately
+    following it -- the same continuation convention a POSIX shell uses,
+    and the real, only convention `docs/reference/cli.md` itself uses
+    (`docs record-review`'s own two-physical-line synopsis)."""
+    joined: list[str] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if line.rstrip().endswith("\\") and i + 1 < len(lines):
+            joined.append(line.rstrip()[:-1].rstrip() + " " + lines[i + 1].strip())
+            i += 2
+        else:
+            joined.append(line)
+            i += 1
+    return joined
+
+
+@dataclass
+class _CliMdCommand:
+    dotted: str
+    synopsis: str  # the full, backslash-joined synopsis line's own text
+    prose: str  # this command's own scoped prose (bullet-to-next-bullet, or the whole section if unshared)
+
+
+def _parse_cli_md_commands(root: Path, live_dotted_paths: set[str]) -> dict[str, _CliMdCommand]:
+    """Parses docs/reference/cli.md into one _CliMdCommand per *documented*
+    command, matched against the live command set (`live_dotted_paths`) so
+    a candidate `codecompass <tokens>` prefix is resolved by membership,
+    never by guessing where positional arguments begin. Each command's own
+    prose is scoped to its own `- **\\`<name> ...\\`**` bullet marker, up to
+    the next bullet marker or the end of its own `## ` section -- never the
+    whole shared section -- so a default disclosed under one command's own
+    bullet can never satisfy a different, neighbouring command sharing the
+    same heading/fenced block."""
+    text = _read(root / "docs" / "reference" / "cli.md")
+    raw_lines = text.splitlines()
+
+    section_bounds: list[tuple[int, int]] = []  # (start_line_idx, end_line_idx_exclusive)
+    heading_idxs = [i for i, line in enumerate(raw_lines) if re.match(r"^##\s+", line)]
+    for pos, idx in enumerate(heading_idxs):
+        end = heading_idxs[pos + 1] if pos + 1 < len(heading_idxs) else len(raw_lines)
+        section_bounds.append((idx, end))
+
+    results: dict[str, _CliMdCommand] = {}
+    for start, end in section_bounds:
+        section_lines = raw_lines[start:end]
+
+        # Synopsis lines: inside a fenced block, backslash-joined.
+        fenced_raw: list[str] = []
+        fence_open = False
+        for line in section_lines:
+            stripped = line.lstrip()
+            if stripped.startswith("```"):
+                fence_open = not fence_open
+                continue
+            if fence_open:
+                fenced_raw.append(line)
+        fenced_joined = _join_backslash_continuations(fenced_raw)
+
+        section_commands: dict[str, str] = {}  # dotted -> synopsis text
+        for line in fenced_joined:
+            m = re.match(r"^codecompass\s+(.*)$", line.strip())
+            if not m:
+                continue
+            tokens = m.group(1).split()
+            lowered: list[str] = []
+            for t in tokens:
+                if not re.match(r"^[a-z][a-z0-9-]*$", t):
+                    break  # stop at the first ARG/[--flag] token -- a
+                    # contiguous leading run only, never a later,
+                    # unrelated lowercase word appearing elsewhere in
+                    # the same line.
+                lowered.append(t)
+            if not lowered:
+                continue
+            # Longest-prefix match against the live set -- never a guess
+            # about where positional ARGS/[--flags] begin.
+            matched = False
+            for n in range(min(len(lowered), 3), 0, -1):
+                candidate = " ".join(lowered[:n])
+                if candidate in live_dotted_paths:
+                    section_commands[candidate] = line.strip()
+                    matched = True
+                    break
+            if not matched:
+                # No live command matches this line at all -- most likely
+                # a documented command that no longer exists. Record the
+                # best-guess candidate (capped at 2 tokens, this
+                # repository's own real maximum dotted-path depth) anyway,
+                # so check_cli_commands_documented can report it as
+                # orphaned rather than silently dropping it.
+                section_commands[" ".join(lowered[:2])] = line.strip()
+
+        if not section_commands:
+            continue
+
+        # Bullet markers, each attributed to the one section command whose
+        # dotted path ends in that bullet's own bare name.
+        bullet_hits: list[tuple[int, str]] = []  # (line_idx within section, dotted)
+        for i, line in enumerate(section_lines):
+            bm = _BULLET_RE.match(line)
+            if not bm:
+                continue
+            bare = bm.group(1)
+            matches = [d for d in section_commands if d.split()[-1] == bare]
+            if len(matches) == 1:
+                bullet_hits.append((i, matches[0]))
+
+        if bullet_hits:
+            for pos, (line_idx, dotted) in enumerate(bullet_hits):
+                next_idx = bullet_hits[pos + 1][0] if pos + 1 < len(bullet_hits) else len(section_lines)
+                prose = "\n".join(section_lines[line_idx:next_idx])
+                results[dotted] = _CliMdCommand(dotted, section_commands[dotted], prose)
+        else:
+            # No bullet list in this section -- it documents exactly one
+            # command (confirmed by construction: section_commands has
+            # exactly one entry whenever there's no bullet list to
+            # disambiguate between several), so the whole section's own
+            # prose belongs to it.
+            whole_prose = "\n".join(section_lines)
+            for dotted, synopsis in section_commands.items():
+                results[dotted] = _CliMdCommand(dotted, synopsis, whole_prose)
+
+    return results
+
+
+def check_cli_commands_documented(root: Path) -> list[Finding]:
+    """Every live command/subcommand across all of `cli.py`'s Typer
+    sub-apps (not merely `app`/`query_app`) has a matching synopsis line
+    somewhere in `docs/reference/cli.md`, and vice versa -- catches an
+    added-but-undocumented command and a removed-but-still-documented
+    one. Matches at the synopsis-line level, not a bare command-name
+    substring, so this also exercises the same parsing `check_cli_
+    parameter_defaults_documented` relies on."""
+    live = _parse_cli_commands(root)
+    documented = _parse_cli_md_commands(root, set(live))
+
+    findings: list[Finding] = []
+    for dotted in sorted(live):
+        if dotted not in documented:
+            findings.append(
+                Finding(
+                    "cli_commands_documented",
+                    f"'codecompass {dotted}' not found in docs/reference/cli.md",
+                )
+            )
+    for dotted in sorted(documented):
+        if dotted not in live:
+            findings.append(
+                Finding(
+                    "cli_commands_documented",
+                    f"docs/reference/cli.md documents 'codecompass {dotted}', "
+                    "which is no longer a real command",
+                )
+            )
+    return findings
+
+
+def _default_disclosed(param: "_CliParam", doc_cmd: "_CliMdCommand") -> bool:
+    """Whether `param`'s own literal default is genuinely disclosed for
+    this one command -- never a bare substring match against the whole
+    synopsis line or whole prose, both of which produce real false
+    positives (`--project-id`'s own default, `"codecompass"`, is a
+    substring of the synopsis line's own leading `codecompass <path>`
+    invocation; `--relation`'s own default, `supporting_evidence`,
+    appears in `knowledge trace`'s own prose as one of several listed
+    *choices*, never stated as the default). Two narrow, precise forms,
+    matching plan §U.2's own "a narrow, explicit phrase match... never a
+    general NLP pass":
+
+    - **Synopsis-embedded literal**: the default value appears inside
+      *this parameter's own* bracket (`[--flag <value>]`), not merely
+      somewhere in the line.
+    - **Prose statement**: the literal word "default" appears within a
+      short window immediately before the value, inside this command's
+      own scoped prose -- the real convention `docs schema-init`'s own
+      "`--section-id`, default `section-one`" already uses.
+    """
+    value = param.default_text
+    bracket = re.search(
+        r"\[" + re.escape(param.token) + r"\s+([^\]]*)\]", doc_cmd.synopsis
+    )
+    if bracket and value in bracket.group(1):
+        return True
+    return bool(re.search(r"default\b.{0,60}?" + re.escape(value), doc_cmd.prose, re.DOTALL))
+
+
+def check_cli_parameter_defaults_documented(root: Path) -> list[Finding]:
+    """For every documented command: every required/optional parameter's
+    own token appears in its matched synopsis line; a non-exempt optional
+    parameter's own default is disclosed, scoped to that command alone
+    (never a neighbouring command sharing the same heading/fenced block),
+    via either a literal value embedded in the synopsis line itself (e.g.
+    `codecompass init`'s `[--output vendor.toml]`) or a prose statement
+    inside that command's own bullet (e.g. `docs schema-init`'s own
+    "default `section-one`"); a documented default that disagrees with the
+    live value is flagged the same way. A parameter whose live type is
+    `bool` or a repeatable `list[...]` needs no default disclosure at all
+    -- an absent boolean/repeatable option's own meaning is a self-evident
+    CLI convention (plan §U.2)."""
+    live = _parse_cli_commands(root)
+    documented = _parse_cli_md_commands(root, set(live))
+
+    findings: list[Finding] = []
+    for dotted, params in sorted(live.items()):
+        doc_cmd = documented.get(dotted)
+        if doc_cmd is None:
+            continue  # already reported by check_cli_commands_documented
+        for param in params:
+            if param.token not in doc_cmd.synopsis:
                 findings.append(
                     Finding(
-                        "cli_commands_documented",
-                        f"'{needle}' (from cli.py's @{base}.command on "
-                        f"{node.name!r}) not found in docs/reference/cli.md",
+                        "cli_parameter_presence_documented",
+                        f"'codecompass {dotted}': parameter {param.token!r} not "
+                        "present in its own documented synopsis line",
+                    )
+                )
+            if param.required or param.is_exempt_type:
+                continue
+            if param.default_text is None:
+                # A `None`-valued default (plan §U.2 point 2's own "non-
+                # `None` default" scoping) or a value this deliberately
+                # narrow static check cannot render at all -- neither is
+                # the concrete, informative literal this policy targets
+                # (e.g. `supporting_evidence`/`1`/`20`/`6000`), so there is
+                # nothing to assert is missing; never a false positive.
+                continue
+            if not _default_disclosed(param, doc_cmd):
+                findings.append(
+                    Finding(
+                        "cli_parameter_default_documented",
+                        f"'codecompass {dotted}': {param.token}'s own default "
+                        f"({param.default_text!r}) is not disclosed anywhere in its "
+                        "own documented synopsis line or prose",
                     )
                 )
     return findings
@@ -105,7 +428,8 @@ def check_api_key_documented(root: Path) -> list[Finding]:
 
 
 def check_vendor_config_fields_documented(root: Path) -> list[Finding]:
-    """Every VendorConfig field is mentioned in docs/reference/configuration.md."""
+    """Every VendorConfig field, and every real Ecosystem enum member, is
+    mentioned in docs/reference/configuration.md."""
     core_path = root / "src" / "codecompass" / "core.py"
     doc_path = root / "docs" / "reference" / "configuration.md"
     tree = ast.parse(_read(core_path), filename=str(core_path))
@@ -122,6 +446,18 @@ def check_vendor_config_fields_documented(root: Path) -> list[Finding]:
                             Finding(
                                 "vendor_config_fields_documented",
                                 f"VendorConfig field '{field_name}' not mentioned "
+                                "in docs/reference/configuration.md",
+                            )
+                        )
+        if isinstance(node, ast.ClassDef) and node.name == "Ecosystem":
+            for stmt in node.body:
+                if isinstance(stmt, ast.Assign) and isinstance(stmt.value, ast.Constant):
+                    member_value = str(stmt.value.value)
+                    if f"`{member_value}`" not in doc_text:
+                        findings.append(
+                            Finding(
+                                "vendor_config_fields_documented",
+                                f"Ecosystem member '{member_value}' not mentioned "
                                 "in docs/reference/configuration.md",
                             )
                         )
@@ -919,6 +1255,7 @@ def check_generated_artifacts_match_source(root: Path) -> list[Finding]:
 
 CHECKS = [
     check_cli_commands_documented,
+    check_cli_parameter_defaults_documented,
     check_api_key_documented,
     check_vendor_config_fields_documented,
     check_ai_docs_present,
