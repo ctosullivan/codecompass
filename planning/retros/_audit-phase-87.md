@@ -262,3 +262,190 @@ not a rubber stamp of the retro's own prose.
 Only after a fresh PASS (or PASS WITH NON-BLOCKING OBSERVATIONS) may
 the terminal `roadmap-context-curator` reconciliation commit flip
 `planning/ROADMAP.md`'s Phase 87 row to `done`.
+
+## Re-audit (2026-11-11, same day, commit `598a245`)
+
+**Verdict: PASS WITH NON-BLOCKING OBSERVATIONS.**
+
+Per `CLAUDE.md` §5, this is a fresh, full phase-wide audit against the
+new state — not a check of only the three named gaps above. All of
+Stage 87A/87B/87C's own previously re-confirmed properties were
+re-checked for anything the fix commit could plausibly have touched;
+none was.
+
+### The three FAIL findings, independently re-confirmed closed
+
+1. **`ruff` regression fixed.** `.venv/bin/ruff check .` → **"Found 176
+   errors"** — exactly the pinned pre-Stage-87D baseline, confirmed by
+   running it myself just now, not by trusting the commit message.
+   `git diff 8540aed..598a245 -- scripts/check_user_docs.py` shows the
+   fix is purely cosmetic (line-wraps for the three `E501`s; unquoting
+   `_CliParam`/`_CliMdCommand` in `_default_disclosed`'s own signature
+   for the two `UP037`s) — no logic changed, so every behavioral claim
+   this audit's first pass already verified about the checker's
+   discovery/matching logic still holds without re-deriving it from
+   scratch.
+2. **`docs/development/contributing.md` fixed, accurately.** Read the
+   entry directly (line 25): it now names
+   `check_cli_commands_documented`'s sub-app walk and synopsis-level
+   backslash-continuation matching, the new
+   `check_cli_parameter_defaults_documented`'s own four-point policy
+   (bool/list and `None`-default exemptions; per-command scoping even
+   inside a shared block; the deliberate avoidance of bare substring
+   matching "after two real false-negative traps found during
+   implementation" — an honest, specific callback to the real
+   implementation bugs, not vague boilerplate), and the `Ecosystem`
+   enum extension to `check_vendor_config_fields_documented` — both
+   real additions this audit's first pass named, both present, both
+   specific rather than generic. No other `docs/`/`architecture/` file
+   mentions `check_user_docs.py`'s own checks, so no second stale
+   location remains.
+3. **A real, independent `knowledge-curator` triage happened, not a
+   rubber stamp.** Read `planning/learnings/inbox.md`'s `L-130` entry
+   in full: it independently re-derives the underlying claim (confirms
+   `CONTRIBUTING.md`'s own "Local development" section names `ruff
+   check .` as a standing, generic command; confirms by direct `Grep`
+   that the governing Stage 87D plan file never names `ruff` anywhere
+   in its own verification/checkpoint sections, unlike `pytest` and
+   every strict validator; confirms the auditor's own described fixes
+   are genuinely present in the now-current source), explicitly
+   considers and rejects folding this into the already-promoted
+   `L-113` with a stated, non-trivial distinction (source-hygiene vs.
+   validator-behavior-design), and separately triages and **discards**
+   two other candidates with real, specific reasoning rather than
+   silent omission — the two implementation bugs (recorded instead as
+   a confirming recurrence appended to `L-113`'s own `promoted.md`
+   line, matching the established `L-066`-recurrence convention
+   exactly) and the `contributing.md` staleness itself (not filed,
+   since `docs-reconstructor`'s own MODE 1 charter already scopes to
+   `docs/**`, and the curator explicitly flags it could not confirm
+   from a transcript whether this was an charter-scope gap or an
+   execution miss, rather than asserting a rule that isn't clearly
+   missing). This is substantive, re-derived work, not an assertion
+   mirroring the retro's original "None." Both recommended destination
+   edits actually landed and say something real and specific, verified
+   by reading them directly: `planning/v1-redefinition/
+   agent-led-development.md` §1 gets a new, fully-worked bullet naming
+   the exact `ruff` findings (3 `E501`, 2 `UP037`) and exactly which
+   earlier checkpoints missed them (three independent planning reviews,
+   a real audit checkpoint, `docs-reconstructor`); `.claude/agents/
+   release-phase-auditor.md`'s "What to check" gets a new item 14,
+   directly naming `ruff check <touched files>` and requiring the
+   auditor to flag a missing earlier checkpoint as a process gap even
+   when the terminal run itself comes back clean. `promoted.md` carries
+   both the new `L-130` line and the `L-113` recurrence note, matching
+   this project's own established ledger format exactly.
+
+### Everything re-confirmed unchanged, independently re-run just now
+
+- **Full regression suite**: `.venv/bin/python -m pytest -q` →
+  **1380 passed, 2 skipped** in 388.12s — identical count to the first
+  pass; the fix commit's own lint-only diff to `scripts/
+  check_user_docs.py` (confirmed above) made this a near-certainty, but
+  I re-ran the full suite rather than assuming it from the diff alone.
+- **Strict validators**, re-run directly: `check_doc_schema.py
+  --strict` → 0 findings, exit 0. `check_user_docs.py --strict` → 0
+  findings, exit 0. `check_contracts.py --strict` → 7 findings, all
+  `(info)`, exit 0. `check_knowledge_base.py --strict` → 24 findings,
+  all `(info)`, exit 0. `check_knowledge_placement.py --strict` → 10
+  findings, all `(info)`, exit 0 — all three byte-identical in content
+  to the first pass's own transcript, counted directly, not inferred.
+  `check_self_knowledge_quality.py --strict` → 36 lines total, 9
+  tagged `(info)`, 27 not (26 findings + 1 "Found N findings" summary
+  line) → **exactly 26 blocking / 9 informational**, exit 1, matching
+  the pinned pre-existing `L-114`/`L-107` Phase 85 debt exactly,
+  correctly still not read as a regression.
+- **`verify_cleanroom_isolation.py`**: re-run, all 11 checks **PASS**,
+  identical output to the first pass.
+- **`codecompass docs maintain`**: re-run — all six compiler-published
+  regions still `noop`; `intermediate-knowledge-layer` still the sole
+  `doc_candidate`. Nothing in the fix commit's diff touches compiled
+  regions or their source claims, so this is expected, and confirmed
+  rather than assumed.
+- **CLI default disclosures / `docs compile` execution-boundary /
+  `undo` first-run disclosure**: `cli.py` and `cli.md` are not in the
+  fix commit's changed-file list (`git diff 8540aed..598a245
+  --name-only` confirmed above has no `cli.py`/`cli.md` entry) — these
+  claims cannot have regressed and were not re-derived from scratch a
+  second time, consistent with this role's own convention of not
+  re-doing work a diff inspection shows couldn't have moved.
+- **Stage 87C comparator's two verdicts**: `planning/retros/
+  phase-87-stage-87c-knowledge-compiled-documentation.md` is untouched
+  by the fix commit; both verdicts ("Experiment completed rigorously:
+  PASS" / "CodeCompass advantage demonstrated: NOT DEMONSTRATED")
+  confirmed still present, unchanged, by direct `Grep`.
+- **§U.1's requirement-to-evidence matrix**: the governing plan file
+  (`planning/phase-87-documentation-schema-knowledge-compiled-
+  documentation.md`) is not in the fix commit's changed-file list —
+  unchanged.
+- **Protected files**: `git diff 8540aed..598a245 -- CLAUDE.md
+  decisions/` → empty, and `git diff HEAD~15..HEAD -- CLAUDE.md
+  decisions/` → empty across the whole recent Phase 87 range. No
+  protected-file drift anywhere.
+- **Changed-file list, `598a245`** (`git diff 8540aed..598a245
+  --name-only`): `.claude/agents/release-phase-auditor.md`,
+  `docs/development/contributing.md`, `planning/learnings/inbox.md`,
+  `planning/learnings/promoted.md`, `planning/retros/
+  _audit-phase-87.md`, `planning/retros/phase-87-stage-87d-
+  deterministic-reference-assurance.md`, `planning/v1-redefinition/
+  agent-led-development.md`, `scripts/check_user_docs.py` — exactly
+  the three named fixes plus their required learning-lifecycle
+  artifacts; no scope creep, no `src/` change, no new CLI command, §U.3
+  and the incremental-patching capability still genuinely not
+  implemented.
+- **Retro addendum**: `planning/retros/phase-87-stage-87d-
+  deterministic-reference-assurance.md`'s "Addendum: first phase-wide
+  audit FAIL, three real gaps fixed, re-audit" section read directly —
+  names all three original findings accurately, records the real fix
+  for each, and the "Candidate learnings filed" section above it is
+  corrected to match `L-130`'s actual promoted content rather than the
+  original draft's "None." Real, substantive, not a stub.
+
+### `CHANGELOG.md` — confirmed correctly not needing a further entry
+
+Checked this project's own precedent directly rather than assuming:
+Phase 87 Stage 87A's and 87C's own prior FAIL-fix rounds (`a656e0c`,
+`9cdbb6f`, `88cfa8d`) all touched `CHANGELOG.md` — but in every one of
+those cases, the audit's own FAIL finding was that the CHANGELOG entry
+itself asserted something now false (a premature "independently
+re-audited" self-certification claim, a wrong test count, a missing
+entry entirely) — the fix corrected the entry's own text. Here, by
+contrast, this audit's first pass never named a CHANGELOG defect, and
+the existing Stage 87D entry makes no claim about `ruff` cleanliness,
+`contributing.md`'s own inventory accuracy, or the candidate-learnings
+conclusion that the fix round would now have falsified — I read the
+full entry again just now and confirmed nothing in it is contradicted
+by the three fixes. The three fixes themselves (a lint cleanup with no
+behavior change; a documentation-inventory correction; a learnings
+triage) are not new user-facing or even new committed-behavior changes
+of the kind `CHANGELOG.md`'s own "notable changes" framing targets.
+**Correctly not a gap** — no further entry needed for this specific
+fix round.
+
+### One non-blocking observation
+
+`_audit-phase-87.md` (this file) was first added to the repository in
+the fix commit (`598a245`) itself, not in a separate commit persisting
+the FAIL verdict before the fix work began (`git log --follow` on this
+path shows only `598a245`) — a minor departure from this project's own
+more common pattern of a dedicated "chore: persist audit report"
+commit preceding the fix (e.g. Stage 87A's `b8d8263`, Stage 87C's
+`f434883`/`0cac8bd`). The FAIL content itself is preserved verbatim and
+accurately referenced in the fix commit's own message, so nothing is
+lost or misrepresented — this is a commit-granularity style note, not
+a substantive gap, and does not affect the verdict.
+
+### Conclusion
+
+All three original FAIL findings are genuinely closed, independently
+re-confirmed rather than trusted from the fix commit's own message.
+Every property this role's first pass already verified about Stage
+87A/87B/87C and Stage 87D's own Deliverable 1 still holds, unchanged,
+re-run where the fix commit's diff could plausibly have touched it and
+otherwise confirmed untouched by direct diff inspection. **The complete
+Phase 87 Definition of Done (`CLAUDE.md` §5) is now genuinely
+satisfied.** The terminal `roadmap-context-curator` reconciliation
+commit (flipping `planning/ROADMAP.md`'s Phase 87 row to `done`,
+overwriting `planning/CONTEXT.md`'s current-state section, and updating
+the Stage 87D plan file's own Status line — nothing else, per
+`CLAUDE.md` §5's own named exemption) may now proceed.
