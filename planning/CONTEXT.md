@@ -1078,19 +1078,44 @@ them: §U.3 (a semantic cross-document consistency checker beyond
 shared-Claim-id grounding) and §U.4 (an automated incremental
 documentation-patching capability).
 
+**Phase 88 (Agent Integration and MCP) is now planned (2026-11-12)**:
+an implementation-ready plan (`planning/phase-88-agent-integration-
+mcp.md`) and a companion architecture ADR (`decisions/0095`) were
+drafted, then independently reviewed by a fresh `Plan`-type reviewer
+against the real source and the real `~/projects/ledgerkit` checkout —
+four real findings (a wrong cited documentation-grounding primitive/
+doc-scope; an unaddressed `slug`-parameter path-traversal gap newly
+exposed by MCP remoting; a lossy `impact_classify_change` output
+schema; this file's own sibling `planning/ROADMAP.md` row briefly
+asserting a review that hadn't yet concluded) were all fixed the same
+session. Final verdict: **READY WITH NON-BLOCKING OBSERVATIONS**
+(plan's own §15). The plan proposes a 12-tool, stdio-transport MCP
+server over the official `mcp` SDK, consuming Phase 84's knowledge API
+and (via a new, behaviour-preserving relocation of `scripts/
+assess_change_impact.py`'s logic into a packaged `src/codecompass/
+change_impact.py`) Phase 83's impact analysis, plus one explicitly
+allowlisted, opt-in, timeout-bounded oracle-check execution tool;
+real Ledgerkit demonstration selected and verified feasible (landing
+the long-missing `overlapping-account-patterns-no-double-count` test
+the `balance-from-spec` contract has required since Phase 83).
+**Implementation is explicitly not authorised by this planning pass**
+— a separate, affirmative decision is required before any of
+`planning/phase-88-agent-integration-mcp.md`'s own code changes begin,
+per this phase's own precedent (every phase from 83 onward split
+planning and implementation authorisation).
+
 **Recommended next step (a recommendation for the lead/user to pick up
-separately — this reconciliation does not itself begin it):** the
-roadmap's own next not-yet-phase-planned items are **Phase 88 (Agent
-Integration and MCP)** and **Phase 89 (Incremental Knowledge and
-Documentation Reconciliation)** — per `planning/ROADMAP.md`, Phase 89
+separately — this reconciliation does not itself begin it):** either
+authorise Phase 88's implementation (Stage 88A first, per the plan's
+own §11), or plan **Phase 89 (Incremental Knowledge and Documentation
+Reconciliation)** next instead — per `planning/ROADMAP.md`, Phase 89
 "operates independently of MCP transport" and does not require Phase
-88 first, so either may reasonably go first; neither has a
-`planning/phase-N-*.md` plan file yet, so per `CLAUDE.md` §1 the next
-actual work is writing that plan (scope, deferrals, verification) and
-having it independently reviewed before any implementation begins.
-Phase 90 (Comparative Development Trials), 91 (External Validation and
-Adoption), and 92 (v2.0 Hardening and Release) remain further out in
-the same `not started` sequence.
+88 first, so either may reasonably go first; Phase 89 has no
+`planning/phase-N-*.md` plan file yet, so per `CLAUDE.md` §1 picking it
+up means writing that plan and having it independently reviewed before
+any implementation begins. Phase 90 (Comparative Development Trials),
+91 (External Validation and Adoption), and 92 (v2.0 Hardening and
+Release) remain further out in the same `not started` sequence.
 
 A smaller, nearer-term item that does *not* need that authorisation:
 Stage 87C's own five candidate learnings (`L-125`-`L-129`,

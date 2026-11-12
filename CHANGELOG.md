@@ -9,6 +9,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 88 planning — Agent Integration and MCP** (planning only, no
+  `src/` change, direct user request, "CodeCompass Orchestrator —
+  Phase 88 Planning"). An implementation-ready plan
+  (`planning/phase-88-agent-integration-mcp.md`) and companion
+  architecture ADR (`decisions/0095`) for a minimal, bounded, stdio
+  MCP server exposing Phase 84's knowledge API, Phase 82's oracle
+  execution, Phase 83's change-impact assessment, and Phase 87's
+  documentation layer to external coding agents (Claude Code first),
+  built on the official `mcp` SDK (MIT-licensed, compatible with this
+  project's `GPL-3.0-or-later`). A 12-tool surface across two stages
+  (88A read-only foundation, 88B assurance integration — the
+  governing task's suggested third "demonstration" stage folded into
+  closeout rather than kept as an architecturally-empty review
+  checkpoint, §11.4). Two real gaps found by direct source
+  verification and corrected rather than assumed away: `scripts/
+  assess_change_impact.py` (Phase 83) carries the same installed-wheel
+  packaging exclusion already found and disclosed for `docs compile`
+  in Phase 87D — resolved by relocating its logic, behaviour-
+  unchanged, into a new packaged `src/codecompass/change_impact.py`
+  rather than accepting a second undisclosed maintainer-only gap for
+  an explicitly essential capability; `oracle.py::run_pytest_check`
+  has no subprocess timeout today, tolerable for a maintainer at a
+  terminal but a real resource-exhaustion exposure once remotely
+  triggerable — fixed with a narrow, `decisions/0095`-recorded
+  addition. Security design: server-side symbolic repo-root pinning
+  (never a caller-supplied filesystem path) plus contract-file-based
+  allowlisting for the one execute-classified tool
+  (`oracle_execute_check`). Real Ledgerkit demonstration selected and
+  verified feasible today: landing the long-missing
+  `overlapping-account-patterns-no-double-count` regression test the
+  `balance-from-spec` oracle contract has required since Phase 83 but
+  never had (`CL-BFS-005`), with an honestly-weaker scratch-copy
+  fallback if the cross-repository write isn't separately authorised.
+  Independently reviewed by a fresh `Plan`-type reviewer against the
+  real source and the real `~/projects/ledgerkit` checkout (not this
+  plan's own citations): four real findings — a wrong cited
+  documentation-grounding primitive/doc-scope (`parse_grounding_
+  markers`, not `find_grounded_doc_regions`); an unaddressed `slug`-
+  parameter path-traversal gap newly exposed by MCP remoting; a lossy
+  `impact_classify_change` output schema omitting the real
+  `cannot_map` status and per-symbol structure; a premature
+  "independently reviewed" status claim this planning task's own
+  `planning/ROADMAP.md` row had asserted before the review concluded
+  — all four fixed the same session (plan's own §15). Final verdict:
+  **READY WITH NON-BLOCKING OBSERVATIONS**. **Implementation is
+  explicitly not authorised by this planning pass.**
+
 - **Phase 87, Stage 87D — deterministic reference assurance, Deliverable 1.**
   Extended `scripts/check_user_docs.py` (a maintainer-only tool, never
   a shipped `codecompass` command) in place, not a second validator:
