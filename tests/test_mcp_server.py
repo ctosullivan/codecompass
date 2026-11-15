@@ -72,7 +72,7 @@ def _call_tools(tool_calls: list[tuple[str, dict]], config: sec.ServerConfig):
 # ---------------------------------------------------------------------------
 
 
-def test_exactly_nine_tools_registered_with_object_schemas() -> None:
+def test_exactly_twelve_tools_registered_with_object_schemas() -> None:
     config = _config()
     server = mcp_server.build_server(config)
 
@@ -101,6 +101,7 @@ def test_exactly_nine_tools_registered_with_object_schemas() -> None:
             "knowledge_trace_evidence", "knowledge_epistemic_status",
             "knowledge_context_packet", "knowledge_find_gaps",
             "docs_get_grounded_region", "server_capabilities",
+            "impact_classify_change", "oracle_list_checks", "oracle_execute_check",
         ]
     )
     for tool in listed.tools:

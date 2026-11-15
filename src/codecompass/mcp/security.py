@@ -17,7 +17,7 @@ no-op, never a degraded result masquerading as a legitimate answer.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from mcp.server.mcpserver.exceptions import ToolError
 
@@ -139,4 +139,45 @@ def require_enabled_execution(config: ServerConfig) -> None:
         raise ToolError(
             "oracle_execute_check is disabled -- this server was started without "
             "--enable-execution (the default, read-only mode)"
+        )
+
+
+def confine_changed_paths(target_repo_root: Path, changed: list[dict]) -> None:
+    """`impact_classify_change`'s own confinement gate (§5.2/§6 tool 10):
+    the real, relocated `change_impact.resolve_changed_range` joins
+    `target_repo_root / changed.path` with zero confinement of its own
+    (preserved exactly, for the trusted local-maintainer-script caller,
+    see `change_impact.py`'s own docstring) -- this function is the
+    boundary that rejects an absolute, `..`-containing, or symlink-
+    escaping path *before* any delegation to `assess()`, reusing
+    `doc_compiler.py`'s own `resolve_publication_target`
+    (`doc_compiler.py:529-574`) and `git_topology.py`'s
+    `_build_submodule_info` (`git_topology.py:452-456`) confinement
+    pattern -- not a new mechanism. Every offending path is named in one
+    raised `ToolError`, not only the first found. A legitimate,
+    already-relative, already-contained path is unaffected."""
+    root_real = target_repo_root.resolve()
+    offending: list[str] = []
+    for c in changed:
+        path = c["path"]
+        candidate = PurePosixPath(path)
+        reason = None
+        if candidate.is_absolute():
+            reason = "absolute path"
+        elif ".." in candidate.parts:
+            reason = "contains a '..' traversal component"
+        else:
+            try:
+                target_real = (target_repo_root / path).resolve()
+            except OSError:
+                reason = "could not be resolved"
+            else:
+                if not target_real.is_relative_to(root_real):
+                    reason = "resolves outside the target repository (symlink escape)"
+        if reason:
+            offending.append(f"{path!r} ({reason})")
+    if offending:
+        raise ToolError(
+            "changed[].path confinement rejected the following path(s), before any "
+            f"delegation to change_impact.assess(): {'; '.join(offending)}"
         )

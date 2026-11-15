@@ -65,10 +65,9 @@ mode is enabled, so a client never has to "try it and see."
 | `knowledge_find_gaps` | Corpus-wide (or slug-scoped) report of missing, stale, conflicting, or unverified knowledge. |
 | `docs_get_grounded_region` | A published documentation region and its current grounding (cited Claim ids plus each one's live status). |
 | `server_capabilities` | Discover configured `repo_root_key` values and whether execution mode is enabled. Call this first. |
-
-A further three tools (`impact_classify_change`, `oracle_list_checks`,
-`oracle_execute_check` — Stage 88B) land in a later implementation
-round; this document will be extended when they ship.
+| `impact_classify_change` | Assess a proposed source change's relationship to existing knowledge/evidence — read-only classification, no check execution. |
+| `oracle_list_checks` | Surface the real, on-disk check allowlist for a slug — what `oracle_execute_check` will actually accept, and each check's latest aggregate status. |
+| `oracle_execute_check` | The one controlled-verification execute operation. Disabled unless the server was started with `--enable-execution`. |
 
 Every tool response except `server_capabilities` (which has no
 repository state to describe) carries `project_revision` (this
@@ -103,6 +102,18 @@ as freshly reconfirmed when it wasn't.
   `unconfirmed`/empty-result outcome rather than leaking content from
   outside the root. See `decisions/0095` for the full security design
   history.
+- `changed[].path` (on `impact_classify_change`) is rejected — before
+  any assessment runs, naming every offending path — if it is absolute,
+  contains a `..` component, or resolves (following symlinks) outside
+  the pinned target repository.
+- `oracle_execute_check` accepts only `(slug, contract_id, check_id)`;
+  the server resolves these against the real, on-disk `oracle-
+  contract.yaml` — a tuple that doesn't match the real contract/check
+  is rejected before any subprocess is considered. `repo_root_key` is
+  resolved the same way every other tool resolves it; the actual
+  subprocess is bounded by a timeout and a total-output cap, with a
+  process-group-wide kill (not only the direct `pytest` child) on
+  either breach.
 
 ## Trust model and limitations
 
@@ -112,15 +123,15 @@ as freshly reconfirmed when it wasn't.
   untrusted *data* — it never re-parses its own responses for embedded
   instructions, and a client should treat returned content the same
   way.
-- Read-only tools have zero side effects. The one exception, once
-  Stage 88B ships, is `oracle_execute_check`: it runs a real `pytest`
-  subprocess and writes one new, append-only result file. Enabling
-  `--enable-execution` grants the connected MCP client the ability to
-  execute real code from a pinned target checkout under this server
-  process's own OS privileges — equivalent to letting that client run
-  `pytest` on this machine directly. **No sandbox, container, or
-  restricted user is implemented.** Allowlisting bounds *which* check
-  runs, never what that check's own code does.
+- Read-only tools have zero side effects. The one exception is
+  `oracle_execute_check`: it runs a real `pytest` subprocess and writes
+  one new, append-only result file. Enabling `--enable-execution`
+  grants the connected MCP client the ability to execute real code
+  from a pinned target checkout under this server process's own OS
+  privileges — equivalent to letting that client run `pytest` on this
+  machine directly. **No sandbox, container, or restricted user is
+  implemented.** Allowlisting bounds *which* check runs, never what
+  that check's own code does.
 - This server implements no authentication and is designed for exactly
   one local operator running it for one connected client over stdio —
   never a shared, multi-tenant, or network-exposed service.

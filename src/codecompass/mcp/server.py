@@ -127,6 +127,36 @@ def build_server(config: _sec.ServerConfig) -> MCPServer:
         call this before relying on either."""
         return _tools.server_capabilities(config)
 
+    @mcp.tool(structured_output=True)
+    def impact_classify_change(
+        repo_root_key: str, slug: str, changed: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """Assesses a proposed source change's relationship to existing
+        knowledge/evidence -- read-only classification, no check
+        execution. changed is a list of {path, start, end} entries;
+        every path is confined to the pinned target repository before
+        any assessment runs."""
+        return _tools.impact_classify_change(config, repo_root_key, slug, changed)
+
+    @mcp.tool(structured_output=True)
+    def oracle_list_checks(slug: str) -> dict[str, Any]:
+        """Surfaces the real, on-disk allowlist for slug -- what
+        oracle_execute_check will actually accept, including each
+        check's latest aggregate PASS/GAP/NOT_REQUIRED status."""
+        return _tools.oracle_list_checks(config, slug)
+
+    @mcp.tool(structured_output=True)
+    def oracle_execute_check(
+        slug: str, contract_id: str, check_id: str, repo_root_key: str
+    ) -> dict[str, Any]:
+        """The one controlled-verification execute operation. Disabled
+        unless this server was started with --enable-execution.
+        Allowlisted strictly against the real, on-disk oracle-
+        contract.yaml; writes exactly one new, append-only result.
+        Runs real target-repository code under this server process's
+        own OS privileges -- no sandbox is implemented."""
+        return _tools.oracle_execute_check(config, slug, contract_id, check_id, repo_root_key)
+
     return mcp
 
 

@@ -9,6 +9,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 88 Stage 88B — assurance integration**: the remaining three
+  MCP tools, `impact_classify_change`, `oracle_list_checks`, and
+  `oracle_execute_check`. `src/codecompass/change_impact.py` (new):
+  Phase 83's change-impact logic relocated, behaviour-preserving, from
+  the unpackaged `scripts/assess_change_impact.py` (the same
+  installed-wheel packaging gap Phase 87D already found and fixed for
+  `docs compile`) — the script is now a thin CLI wrapper, preserving
+  every original signature and its own 47-test suite unchanged.
+  `oracle.py::run_pytest_check` hardened (§5.3): a configurable
+  timeout, output captured in bounded chunks *while the subprocess
+  runs* (never `capture_output=True`'s whole-buffer-then-check), and a
+  process-group-wide `SIGKILL` (not only the direct `pytest` child) on
+  either breach — both new keyword parameters, unchanged defaults, no
+  behavioural change to an ordinary check. `mcp/security.py` gained
+  `confine_changed_paths`, rejecting an absolute, `..`-containing, or
+  symlink-escaping `changed[].path` before any delegation to
+  `change_impact.assess()`, reusing `doc_compiler.py`'s/
+  `git_topology.py`'s existing confinement pattern. `oracle_execute_
+  check`'s response separates a fresh `outcome` (`PASS`/`FAIL`/
+  `INVALID`) from a separately-derived `aggregate_state` (`PASS`/
+  `GAP`/`NOT_REQUIRED`), matching the plan's own §18.3 correction; it
+  is gated on `--enable-execution`, validates `(slug, contract_id,
+  check_id)` against the real on-disk contract before any subprocess,
+  and writes exactly one new, append-only result. A real `_chdir`
+  defect was found and fixed during this stage's own testing:
+  `oracle.evaluate_result_precedence` checks a stored result's own
+  *relative* `raw_output_ref` against disk, which only resolves
+  correctly when the process's cwd is `project_root` — true for every
+  CLI invocation by convention, not guaranteed for a long-running MCP
+  server. Fixed by scoping a `chdir` around every tool's own delegate
+  call (`mcp/tools.py::_chdir`), applied to all twelve tools, not only
+  the two new oracle ones, since the same latent defect reached six of
+  Stage 88A's own already-shipped tools whenever they surface a
+  consistency/aggregate status. 24 new tests
+  (`tests/test_mcp_assurance.py`, `tests/test_oracle_bounded_
+  execution.py`), including a genuine descendant-process-termination
+  test and a real, deliberate (non-automated) `oracle_execute_check`
+  call against the real `~/projects/ledgerkit` checkout, whose two new
+  append-only result files are committed alongside this stage. Full
+  regression suite green (1461+ passed, 2 skipped); zero new Ruff
+  findings against the repository's own pinned baseline (confirmed
+  176 at the prior commit, 167 now — net lower, since the relocated
+  script shed several long lines along the way); `check_user_docs.py
+  --strict` clean. An independent `release-phase-auditor`-style review
+  of this stage returned **PASS WITH NON-BLOCKING OBSERVATIONS**: a
+  bare `KeyError` (rather than a clean `ToolError`) for a malformed
+  `changed[]` entry missing its own `path` key, and a missing
+  persisted Stage 88A audit record — both found and closed the same
+  day (`planning/retros/_audit-phase-88-stage-88a.md` written
+  retroactively from that review's own hand-back report).
+
+- **Phase 88 — real Ledgerkit development demonstration** (plan §12):
+  a genuine, end-to-end exercise of the full MCP chain — discovery
+  (`knowledge_get`/`oracle_list_checks` found the real
+  `overlapping-account-patterns-no-double-count` gap), context
+  retrieval (`DEC-BFS-002` materially shaped the new test's own
+  assertions — see below), the missing regression test, change-impact
+  assessment, and oracle execution — run against **disposable scratch
+  copies**, never the real `~/projects/ledgerkit` checkout, per this
+  task's own cross-repository constraint (the plan's own pre-authorised
+  §12.2 fallback; explicitly the *weaker*, not equivalent, variant). New
+  test (`tests/test_reports.py::TestBalanceFromSpec::
+  test_section_accounts_overlapping_patterns_no_double_count`, written
+  to a scratch copy only) asserts the computed row amount and section
+  subtotal, not merely membership — directly because `DEC-BFS-002`
+  records that the one existing sibling test asserts membership only.
+  Independently reproduced by a fresh reviewer: PASS against a clean
+  scratch copy (full suite 936 passed); FAIL, with exactly
+  `Decimal('300.00') != Decimal('150.00')`, against a second scratch
+  copy with Phase 83's own already-documented double-counting mutation
+  re-applied (full suite 935 passed, 1 failed — the new test the only
+  failure, confirming the real test-coverage blind spot by execution).
+  Context relevance independently assessed against the real Ledgerkit
+  source directly (never running CodeCompass to check CodeCompass):
+  genuine, materially-used, not post-hoc. Real checkout confirmed
+  untouched (`git status`/`git diff` empty) throughout. **The real
+  Ledgerkit gap remains open** — landing this test (or any change) in
+  the real checkout requires a separate, explicit cross-repository
+  authorisation not given to this task. Full record:
+  `planning/retros/phase-88-ledgerkit-demonstration.md`. The terminal,
+  whole-phase Definition-of-Done audit remains not yet done.
+
 - **Phase 88 Stage 88A — MCP foundation (read-only)**: a new
   `src/codecompass/mcp/` package (`security.py`, `tools.py`,
   `server.py`) and `codecompass mcp-serve` CLI command, serving the nine

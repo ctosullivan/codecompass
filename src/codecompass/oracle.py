@@ -25,9 +25,12 @@ from __future__ import annotations
 
 import hashlib
 import os
+import signal
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import uuid
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
@@ -39,6 +42,14 @@ import yaml
 _SCHEMA_VERSION = 1
 _SUPPORTED_SCHEMA_VERSIONS = {1}
 _SUPPORTED_EXECUTION_PROVIDERS = {"pytest"}
+
+# Phase 88 §5.3: `run_pytest_check` has no timeout/output cap at all for
+# a maintainer at a terminal who can interrupt a hang -- unacceptable
+# for a remotely-triggerable MCP tool. Defaults chosen to comfortably
+# exceed this project's own real pytest run durations against
+# Ledgerkit's current suite size while still bounding a genuine hang.
+DEFAULT_CHECK_TIMEOUT_SECONDS = 300.0
+DEFAULT_CHECK_MAX_OUTPUT_BYTES = 10 * 1024 * 1024
 
 
 class OracleSchemaError(ValueError):
@@ -519,7 +530,50 @@ def _classify_pytest_junit(
     return "PASS", None
 
 
-def run_pytest_check(repo_root: Path, check_reference: str) -> tuple[str, str | None, str]:
+def _read_bounded(
+    stream, key: str, captured: dict[str, list[str]], byte_counts: dict[str, int],
+    max_output_bytes: int, cap_breached: threading.Event,
+) -> None:
+    """Reads `stream` incrementally in fixed-size chunks, accumulating
+    into `captured[key]` and tracking `byte_counts[key]`, stopping as
+    soon as the combined total across both streams exceeds
+    `max_output_bytes` -- bounded *during* execution, not a post-hoc
+    truncation of an already-fully-buffered result (§5.3, second-round
+    correction: `subprocess.run(..., capture_output=True)` buffers the
+    entire output in memory before any cap could apply at all, so a
+    flooding process already exhausts memory before that cap would ever
+    run). Runs in its own thread so one stream filling its OS pipe
+    buffer can never block the other from being drained."""
+    try:
+        while True:
+            chunk = stream.read(4096)
+            if not chunk:
+                break
+            captured[key].append(chunk)
+            byte_counts[key] += len(chunk.encode("utf-8", errors="replace"))
+            if sum(byte_counts.values()) > max_output_bytes:
+                cap_breached.set()
+                break
+    except (OSError, ValueError):
+        # The pipe can legitimately raise once the process group is
+        # killed out from under this read (e.g. closed/invalid fd) --
+        # treated as end-of-stream, never an uncaught exception from a
+        # background thread.
+        pass
+    finally:
+        try:
+            stream.close()
+        except OSError:
+            pass
+
+
+def run_pytest_check(
+    repo_root: Path,
+    check_reference: str,
+    *,
+    timeout_seconds: float = DEFAULT_CHECK_TIMEOUT_SECONDS,
+    max_output_bytes: int = DEFAULT_CHECK_MAX_OUTPUT_BYTES,
+) -> tuple[str, str | None, str]:
     """Runs `pytest <check_reference>` with `cwd=repo_root`, under
     `repo_root`'s own interpreter when it has a `.venv`. Returns
     `(outcome, invalid_reason, raw_output_text)` -- `outcome` is always
@@ -545,7 +599,24 @@ def run_pytest_check(repo_root: Path, check_reference: str) -> tuple[str, str | 
     the tested subject: it is caught and classified `INVALID` with the
     `OSError`'s own text preserved as diagnostic evidence, rather than
     propagating as an uncaught exception out of this function
-    (decisions/0082 final corrective pass §C)."""
+    (decisions/0082 final corrective pass §C).
+
+    **Phase 88 §5.3 additions**: `timeout_seconds` bounds the whole
+    execution (a `subprocess.TimeoutExpired`-equivalent classifies
+    `INVALID` with an explicit reason, the same controlled-finding
+    pattern already used for a launch `OSError`); `max_output_bytes`
+    bounds total captured stdout+stderr *while the process runs*, not
+    after. On either breach, the subprocess is launched in its own
+    process group (POSIX `start_new_session=True`) and the **whole
+    group** is killed (`os.killpg`, `SIGKILL`) on breach -- not only the
+    direct pytest child -- so a descendant process the tested code
+    itself spawns (e.g. a hung worker) is also reaped, not left orphaned
+    after this call returns. Named explicitly as a POSIX-only mechanism
+    (this project's own stated platform, no Windows support claimed) and
+    as addressing the common case, not a hermetic guarantee against
+    every process-escape technique (e.g. a double-fork that detaches
+    from its own group) -- a residual limitation disclosed here, not
+    papered over."""
     interpreter = _interpreter_for(repo_root)
     env = dict(os.environ)
     existing = env.get("PYTHONPATH", "")
@@ -553,14 +624,18 @@ def run_pytest_check(repo_root: Path, check_reference: str) -> tuple[str, str | 
     command = [interpreter, "-m", "pytest", "-q", "--junit-xml=<tmp>", check_reference]
     with tempfile.TemporaryDirectory() as tmp_dir:
         junit_path = Path(tmp_dir) / "junit.xml"
+        real_command = [
+            interpreter, "-m", "pytest", "-q", f"--junit-xml={junit_path}", check_reference
+        ]
         try:
-            result = subprocess.run(
-                [interpreter, "-m", "pytest", "-q", f"--junit-xml={junit_path}", check_reference],
+            proc = subprocess.Popen(
+                real_command,
                 cwd=repo_root,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
-                check=False,
                 env=env,
+                start_new_session=True,
             )
         except OSError as exc:
             raw = (
@@ -573,13 +648,72 @@ def run_pytest_check(repo_root: Path, check_reference: str) -> tuple[str, str | 
                 "execution-environment failure, not a behavioural result",
                 raw,
             )
-        outcome, invalid_reason = _classify_pytest_junit(junit_path, result.returncode)
-    raw = (
-        f"$ {interpreter} -m pytest -q --junit-xml=<tmp> {check_reference}\n"
-        f"(cwd={repo_root})\n\n"
-        f"--- stdout ---\n{result.stdout}\n--- stderr ---\n{result.stderr}\n"
-        f"--- returncode: {result.returncode} ---\n"
-    )
+
+        captured: dict[str, list[str]] = {"stdout": [], "stderr": []}
+        byte_counts: dict[str, int] = {"stdout": 0, "stderr": 0}
+        cap_breached = threading.Event()
+        readers = [
+            threading.Thread(
+                target=_read_bounded,
+                args=(proc.stdout, "stdout", captured, byte_counts, max_output_bytes, cap_breached),
+                daemon=True,
+            ),
+            threading.Thread(
+                target=_read_bounded,
+                args=(proc.stderr, "stderr", captured, byte_counts, max_output_bytes, cap_breached),
+                daemon=True,
+            ),
+        ]
+        for reader in readers:
+            reader.start()
+
+        timed_out = False
+        deadline = time.monotonic() + timeout_seconds
+        while True:
+            remaining = deadline - time.monotonic()
+            if cap_breached.wait(timeout=max(0.0, min(remaining, 0.5))):
+                break
+            if remaining <= 0:
+                timed_out = proc.poll() is None
+                break
+            if proc.poll() is not None:
+                break
+
+        if timed_out or cap_breached.is_set():
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                pass
+        proc.wait()
+        for reader in readers:
+            reader.join(timeout=5)
+
+        stdout_text = "".join(captured["stdout"])
+        stderr_text = "".join(captured["stderr"])
+        base_header = (
+            f"$ {interpreter} -m pytest -q --junit-xml=<tmp> {check_reference}\n"
+            f"(cwd={repo_root})\n\n--- stdout ---\n{stdout_text}\n--- stderr ---\n{stderr_text}\n"
+        )
+
+        if timed_out:
+            raw = base_header + f"--- TERMINATED: exceeded {timeout_seconds}s timeout ---\n"
+            return (
+                "INVALID",
+                f"pytest execution exceeded the configured timeout of {timeout_seconds}s "
+                "-- the whole process group was terminated; see raw output",
+                raw,
+            )
+        if cap_breached.is_set():
+            raw = base_header + f"--- TERMINATED: output exceeded {max_output_bytes}-byte cap ---\n"
+            return (
+                "INVALID",
+                f"raw output exceeded the configured cap of {max_output_bytes} bytes; "
+                "execution terminated early",
+                raw,
+            )
+
+        outcome, invalid_reason = _classify_pytest_junit(junit_path, proc.returncode)
+    raw = base_header + f"--- returncode: {proc.returncode} ---\n"
     return outcome, invalid_reason, raw
 
 
@@ -592,6 +726,8 @@ def evaluate_check(
     raw_output_dir: Path,
     baseline_id: str | None = None,
     environment_descriptor: str | None = None,
+    timeout_seconds: float = DEFAULT_CHECK_TIMEOUT_SECONDS,
+    max_output_bytes: int = DEFAULT_CHECK_MAX_OUTPUT_BYTES,
 ) -> OracleResult:
     """Executes `check` against `repo_root` (a real Ledgerkit checkout —
     the sibling project this phase's one pinned contract targets, never
@@ -641,7 +777,10 @@ def evaluate_check(
             f"unsupported execution_provider {check.execution_provider!r} — "
             "Phase 82 implements exactly 'pytest' (decisions/0081 §1)"
         )
-    outcome, invalid_reason, raw_text = run_pytest_check(repo_root, check.check_reference)
+    outcome, invalid_reason, raw_text = run_pytest_check(
+        repo_root, check.check_reference,
+        timeout_seconds=timeout_seconds, max_output_bytes=max_output_bytes,
+    )
     raw_path.write_text(raw_text, encoding="utf-8")
 
     return OracleResult(

@@ -10,24 +10,70 @@ session-resumption, not a project history.
 **Phase 88 — Agent Integration and MCP — is now the active phase.**
 Planning is complete and independently reviewed through five amendment
 rounds (full history below, under "What was just completed"). **Stage
-88A (MCP foundation, read-only) is implemented** — `src/codecompass/
-mcp/` (`security.py`/`tools.py`/`server.py`), `codecompass mcp-serve`,
-all nine read-only tools, the §17/§17.9/§18.1 filesystem-confinement
-fixes applied directly to `knowledge_api.py`/`knowledge_intermediate.
-py`/`oracle.py` (previously specified in the plan, not yet in code),
-40 new tests, and docs (`docs/reference/mcp.md`, corrected `docs/
-architecture/overview.md` claims). An independent `release-phase-
-auditor`-style review of this stage alone returned **PASS WITH
-NON-BLOCKING OBSERVATIONS** (one gap — missing malformed-input test
-coverage for empty required strings and out-of-range `max_items`/
-`max_chars` — found and closed in place). Full regression suite green
-(1424 passed, 2 skipped); zero new Ruff debt against the pinned
-176-finding baseline. **Stage 88B (assurance integration:
-`impact_classify_change`, `oracle_list_checks`, `oracle_execute_check`)
-and the Ledgerkit demonstration are not yet implemented** — this is
-the immediate next step, not yet begun as of this note. Not committed
-yet (staged for the lead/user's own commit per this session's
-established practice around automated-commit-control blocks).
+88A (MCP foundation, read-only) is implemented and committed**
+(`7a96d89`) — `src/codecompass/mcp/` (`security.py`/`tools.py`/
+`server.py`), `codecompass mcp-serve`, all nine read-only tools, the
+§17/§17.9/§18.1 filesystem-confinement fixes applied directly to
+`knowledge_api.py`/`knowledge_intermediate.py`/`oracle.py` (previously
+specified in the plan, not yet in code), 40 new tests, and docs. An
+independent review returned **PASS WITH NON-BLOCKING OBSERVATIONS**
+(one gap — missing malformed-input test coverage — found and closed
+same day; persisted at `planning/retros/_audit-phase-88-stage-88a.md`,
+written retroactively after a later audit flagged no record existed).
+
+**Stage 88B (assurance integration) is now also implemented, not yet
+committed**: `impact_classify_change`, `oracle_list_checks`,
+`oracle_execute_check`; `src/codecompass/change_impact.py` (Phase 83's
+logic relocated from `scripts/assess_change_impact.py`, behaviour-
+preserving, closing the same installed-wheel gap Phase 87D fixed for
+`docs compile`); `oracle.py::run_pytest_check` hardened per §5.3
+(timeout, bounded-while-running output capture, process-group-wide
+kill); `mcp/security.py::confine_changed_paths`. A real, latent `cwd`-
+dependency defect in `oracle.evaluate_result_precedence` (affecting
+six of Stage 88A's own already-shipped tools, not only the two new
+oracle ones) was found and fixed via a scoped `_chdir` wrapper applied
+uniformly across all twelve tools. 24 new tests, including a real,
+deliberate `oracle_execute_check` call against `~/projects/ledgerkit`
+(its two new append-only result files are staged alongside this
+stage). Full regression suite green (1461+ passed, 2 skipped); zero
+new Ruff debt (176 → 167, net lower). An independent review returned
+**PASS WITH NON-BLOCKING OBSERVATIONS** (a bare `KeyError` instead of
+a clean `ToolError` for one malformed-input shape, found and fixed
+same day; persisted at `planning/retros/_audit-phase-88-stage-88b.md`).
+
+**The real Ledgerkit development demonstration (§12) is now also
+done**, against disposable scratch copies only — never the real
+`~/projects/ledgerkit` checkout, per this task's own cross-repository
+constraint (the plan's own pre-authorised §12.2 fallback, explicitly
+the *weaker*, not equivalent, variant). Full chain exercised:
+`knowledge_get`/`oracle_list_checks` found the real `overlapping-
+account-patterns-no-double-count` gap; `DEC-BFS-002` materially shaped
+the new test's own row/subtotal assertions (not just membership);
+`impact_classify_change` classified `balance_from_spec` correctly;
+`oracle_execute_check` returned PASS against a clean scratch copy and
+FAIL (`Decimal('300.00') != Decimal('150.00')`) against a second
+scratch copy with Phase 83's own already-documented mutation
+re-applied. A fresh, independent reviewer reproduced both directions
+directly with `pytest` (not trusting this session's own script),
+independently assessed the cited knowledge context against the real
+Ledgerkit source, and confirmed the real checkout untouched throughout
+— no weakening finding. **The real Ledgerkit gap itself remains open**
+(landing the test there needs separate, explicit cross-repository
+authorisation not given to this task). Full record: `planning/retros/
+phase-88-ledgerkit-demonstration.md`; phase retro: `planning/retros/
+phase-88-agent-integration-mcp.md`.
+
+**Next step: learnings triage, then the terminal, whole-phase
+Definition-of-Done audit.** Learnings-triage dispatch (`knowledge-
+curator`, four candidates named in the phase retro) failed mid-run on
+a session rate limit (resets 6:20pm Australia/Perth) — not yet
+re-attempted as of this note. The terminal audit has not begun.
+Nothing is pushed to `origin/main` yet beyond `7a96d89` — Stage 88B's
+own commit (plus the demonstration/retro records) is staged, pending
+the lead/user's own `git commit`/`git push`, per this session's
+established practice around automated-commit-control blocks (blocked
+three times across this phase's work, each time left staged and
+reported rather than bypassed).
 
 Phase 87 — Documentation Schema and Knowledge-Compiled Documentation —
 remains `done`, kept below for continuity. All four stages were
