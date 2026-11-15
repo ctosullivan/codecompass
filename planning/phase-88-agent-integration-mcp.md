@@ -63,6 +63,19 @@ OBSERVATIONS**. **Implementation remains explicitly unauthorised** —
 see §15's own precedent note; §19 records the implementation-readiness
 decision taken once this review closed.
 
+**Phase 88 is `done`** (2026-11-15). Stage 88A (`7a96d89`), Stage 88B
+plus the real Ledgerkit scratch-copy demonstration (`a554d52`), and
+learnings triage (`4763fcb`, L-131 through L-134 all promoted) are all
+implemented and committed. The terminal, whole-phase Definition-of-Done
+audit FAILed twice before reaching **PASS** on its second re-audit
+(commit `f2a1d72`): the first pass found no `docs-reconstructor`
+drift audit had ever run plus a stale `planning/CONTEXT.md` (both
+fixed in `65ab8d9`); the first re-audit then found the phase retro
+incomplete against `planning/retros/TEMPLATE.md` (fixed in `f2a1d72`).
+Full history: `planning/retros/_audit-phase-88.md`. Next planned phase:
+Phase 89 (Incremental Knowledge and Documentation Reconciliation),
+independently deliverable per `decisions/0085` §3 — not started.
+
 ## 1. Verified current state (re-confirmed this session, not assumed)
 
 - `HEAD` at planning time: see git log; `main` clean, `origin/main` in
