@@ -1078,31 +1078,101 @@ them: §U.3 (a semantic cross-document consistency checker beyond
 shared-Claim-id grounding) and §U.4 (an automated incremental
 documentation-patching capability).
 
-**Phase 88 (Agent Integration and MCP) is now planned (2026-11-12)**:
-an implementation-ready plan (`planning/phase-88-agent-integration-
-mcp.md`) and a companion architecture ADR (`decisions/0095`) were
-drafted, then independently reviewed by a fresh `Plan`-type reviewer
-against the real source and the real `~/projects/ledgerkit` checkout —
-four real findings (a wrong cited documentation-grounding primitive/
+**Phase 88 (Agent Integration and MCP) is now planned, through four
+independently-reviewed amendment rounds (2026-11-12, then three
+further rounds on 2026-11-14/15)**: an implementation-ready plan
+(`planning/phase-88-
+agent-integration-mcp.md`) and a companion architecture ADR
+(`decisions/0095`) were drafted, then independently reviewed by a
+fresh `Plan`-type reviewer against the real source and the real
+`~/projects/ledgerkit` checkout. **Round 1** (2026-11-12) found four
+real findings (a wrong cited documentation-grounding primitive/
 doc-scope; an unaddressed `slug`-parameter path-traversal gap newly
 exposed by MCP remoting; a lossy `impact_classify_change` output
 schema; this file's own sibling `planning/ROADMAP.md` row briefly
-asserting a review that hadn't yet concluded) were all fixed the same
-session. Final verdict: **READY WITH NON-BLOCKING OBSERVATIONS**
-(plan's own §15). The plan proposes a 12-tool, stdio-transport MCP
+asserting a review that hadn't yet concluded) — all fixed, verdict
+READY WITH NON-BLOCKING OBSERVATIONS (plan's own §15). **Round 2**
+(2026-11-14, a separate governing task) independently found six
+further real defects the first round had missed — an unconfined
+`changed[].path` in `impact_classify_change`; an incompletely-stated
+`oracle_execute_check` trust model (allowlisting bounds *which* check
+runs, not what that check's own code does — no sandbox exists or is
+claimed); a still-wrong (not merely still-abbreviated)
+`impact_classify_change` output schema; a Ruff acceptance gate that
+wrongly demanded a clean repository despite a real, re-confirmed
+176-finding pinned baseline; a presumed-but-nonexistent Ledgerkit-
+relevant grounded documentation region; and a stale tool-table
+citation the first round's fix never actually reached — all six fixed,
+plus a bounded-output-capture and process-group-wide-timeout
+correction to the `oracle.py` subprocess design. A **fresh second**
+independent reviewer then found two more items: one real citation
+error (fixed); one claimed `knowledge_get` path-confinement gap that
+was independently re-investigated and explicitly declined, with the
+reasoning recorded in the plan's own §16, because `_get_symbol`'s
+filesystem join is gated behind an exact-match database lookup against
+rows only the project's own trusted sync machinery ever writes — not
+the same unconditional-on-caller-input gap `changed[].path` had.
+Final round-2 verdict: **READY WITH NON-BLOCKING OBSERVATIONS** (plan's
+own §16 has the full history of both rounds, preserved rather than
+smoothed over). **Round 3** (2026-11-14, a third governing task)
+revisited round 2's own declined `_get_symbol` finding and found it
+was right to reject the specific "arbitrary unindexed path" claim, but
+missed a narrower, genuine risk the rejection hadn't considered: an
+already-indexed path can be replaced with a symlink escaping
+`project_root` after sync, and the live re-confirmation read had no
+confinement, disclosing a hash of the external target. A fix was
+proposed and then taken through two further independent review rounds
+of its own: the first found the fix's own scope claim ("the one
+exception") false — the identical defect shape recurs in two more
+functions (`_traverse_cites`, `find_gaps`'s evidence-scanning loop),
+reachable from two more already-essential MCP tools — corrected to
+cover all three, via one shared confinement helper and one new,
+backward-compatible parameter on `oracle.parse_oracle_result`. The
+second found two real wording/test-adequacy gaps in that correction
+(fixed) plus one claim — a separate `slug`-driven exposure inside
+`find_gaps` itself — that was independently re-investigated and found
+already covered by this plan's own separate, earlier-decided `slug`-
+allowlist mitigation (§3.2/§5.2, predating this dispute), not a new
+gap requiring its own fix; this disposition, like round 2's own
+declined finding, is recorded with its reasoning rather than silently
+accepted or dropped. Final round-3 verdict: **READY WITH NON-BLOCKING
+OBSERVATIONS** (plan's own §17 has the full three-round history for
+this specific finding). **Round 4** (2026-11-15, a fourth governing
+task) found round 3's own "already covered by the `slug` allowlist"
+disposition was itself incomplete: the allowlist relies on
+`knowledge_intermediate._list_slugs`, whose own enumeration follows
+symlinks, so a listed slug name could still resolve outside the
+knowledge/contracts root even though the string-shape allowlist check
+genuinely still defends against a traversal string — two distinct
+properties, only one of which was actually fixed before this round.
+Fixed: `_list_slugs` hardened to exclude symlinked entries at the
+source; a new shared, atomic `O_NOFOLLOW`-based confinement helper
+applied at all four of `find_gaps`'s raw-`slug` call sites across both
+the knowledge and contracts trees; a per-file symlink-exclusion guard
+added for a symlinked file inside an otherwise-legitimate slug
+directory. A fresh independent reviewer then found two non-blocking
+wording issues (an initial "three call sites" undercount — the real
+count is four; an imprecise justification for leaving `_find_contract`
+unfixed) — both corrected in place; no further gap found despite an
+active search for a remaining instance. Final round-4 verdict:
+**READY WITH NON-BLOCKING OBSERVATIONS** (plan's own §17.9 has the
+full history). The plan proposes a 12-tool, stdio-transport MCP
 server over the official `mcp` SDK, consuming Phase 84's knowledge API
 and (via a new, behaviour-preserving relocation of `scripts/
 assess_change_impact.py`'s logic into a packaged `src/codecompass/
 change_impact.py`) Phase 83's impact analysis, plus one explicitly
-allowlisted, opt-in, timeout-bounded oracle-check execution tool;
-real Ledgerkit demonstration selected and verified feasible (landing
-the long-missing `overlapping-account-patterns-no-double-count` test
-the `balance-from-spec` contract has required since Phase 83).
-**Implementation is explicitly not authorised by this planning pass**
-— a separate, affirmative decision is required before any of
-`planning/phase-88-agent-integration-mcp.md`'s own code changes begin,
-per this phase's own precedent (every phase from 83 onward split
-planning and implementation authorisation).
+allowlisted, opt-in, timeout-and-output-bounded oracle-check execution
+tool; real Ledgerkit demonstration selected and re-verified feasible
+(landing the long-missing `overlapping-account-patterns-no-double-
+count` test the `balance-from-spec` contract has required since Phase
+83), with an honestly-named documentation-grounding limitation and an
+independent-behavioural-proof requirement reusing Phase 83's own
+already-documented mutation. **Implementation is explicitly not
+authorised by this planning pass** — a separate, affirmative decision
+is required before any of `planning/phase-88-agent-integration-
+mcp.md`'s own code changes begin, per this phase's own precedent
+(every phase from 83 onward split planning and implementation
+authorisation).
 
 **Recommended next step (a recommendation for the lead/user to pick up
 separately — this reconciliation does not itself begin it):** either

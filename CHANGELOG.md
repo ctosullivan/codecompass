@@ -9,6 +9,118 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 88 plan amendment — slug-allowlist filesystem confinement**
+  (planning only, no `src/` change, direct user request, "CodeCompass
+  Phase 88 — Final Slug-Confinement Amendment"). A fourth governing
+  task found that the prior amendment's disposition of a `find_gaps`
+  `slug`-driven exposure (see the entry below — disposed of as
+  "already covered by the slug allowlist") was itself incomplete: the
+  allowlist relies on `knowledge_intermediate._list_slugs`, and that
+  function's own enumeration follows symlinks (`Path.is_dir()`'s
+  default behaviour), so a symlink planted directly under
+  `planning/knowledge/` would still appear as a legitimate, listed
+  slug name — membership in the enumerated list genuinely defends
+  against a caller-supplied traversal *string*, but does not by
+  itself establish that a *listed* name's own on-disk entry is
+  confined to the knowledge or contracts root. Fixed: `_list_slugs` is
+  hardened to exclude a symlinked entry at its source (closing the
+  issue for every consumer that trusts its output, including
+  `_all_records`); a new shared, atomic `O_NOFOLLOW`-based confinement
+  helper (reusing the prior amendment's own design for files, extended
+  to directories) is applied at all four of `find_gaps`'s raw-`slug`
+  call sites across both the `planning/knowledge/` and
+  `planning/contracts/` trees; a per-file symlink-exclusion guard
+  closes the case of a symlinked `*.yaml` file inside an otherwise-
+  legitimate slug directory. `_find_contract`'s own `contract_id`-keyed
+  scan remains a named, out-of-scope residual (an automatic,
+  content-match-gated scan a caller cannot direct to a specific path,
+  unlike the fixed case). `decisions/0095` gained a further append-only
+  item. An independent reviewer found two non-blocking wording issues
+  (an initial "three call sites" undercount — the real count is four;
+  an imprecise justification for leaving `_find_contract` unfixed),
+  both corrected, after actively searching for and finding no further
+  unaddressed instance. Final verdict: **READY WITH NON-BLOCKING
+  OBSERVATIONS** (plan's own §17.9 preserves the full four-round
+  review history for this and the related prior finding).
+  **Implementation remains explicitly not authorised by this planning
+  pass.**
+
+- **Phase 88 plan amendment — symlink/TOCTOU confinement for live
+  knowledge reads** (planning only, no `src/` change, direct user
+  request, "CodeCompass Phase 88 — Final Security Amendment"). A
+  third governing task revisited a previously-declined security
+  finding (`knowledge_api._get_symbol`, see the prior entry below) and
+  established the rejection of its specific "arbitrary unindexed path"
+  claim was correct, but missed a narrower, genuine risk: an
+  already-indexed path can be replaced with a symlink escaping
+  `project_root` after sync, and the live re-confirmation read had no
+  confinement, disclosing a hash of the external target in a `"stale"`
+  response. A fix (resolve-and-confine plus an atomic `O_NOFOLLOW`
+  open, reusing `doc_compiler.py`'s existing confinement pattern) was
+  proposed and taken through two further independent review rounds: the
+  first found the fix's own "one exception" scope claim false — the
+  identical defect recurs in two more functions (`_traverse_cites`,
+  `find_gaps`'s evidence-scanning loop), reachable from two more
+  already-essential MCP tools — corrected to cover all three via one
+  shared confinement helper and one new, backward-compatible `text=`
+  parameter on `oracle.parse_oracle_result`. The second found two real
+  wording/test-adequacy gaps in that correction (fixed), plus one
+  further claim — a separate `slug`-driven exposure inside `find_gaps`
+  itself — independently re-investigated and found already covered by
+  this plan's own separate, earlier-decided `slug`-allowlist mitigation
+  (§3.2/§5.2, predating this dispute), disposed of with recorded
+  reasoning rather than silently accepted or dropped. `decisions/0095`
+  gained a further append-only item recording the extended confinement
+  scope. Final verdict: **READY WITH NON-BLOCKING OBSERVATIONS** (plan's
+  own §17 preserves the full three-round review history for this
+  finding). **Implementation remains explicitly not authorised by this
+  planning pass.**
+
+- **Phase 88 plan amendment — path confinement, oracle-execution trust
+  model, interface fidelity, and a corrected Ruff gate** (planning
+  only, no `src/` change, direct user request, "CodeCompass
+  Orchestrator — Phase 88 Plan Amendment and Independent
+  Verification"). A second governing task independently found six
+  real defects in the plan below's already-READY first-round draft:
+  an unconfined `changed[].path` in `impact_classify_change`
+  (`scripts/assess_change_impact.py:213-216`'s own real gap, fixed by
+  reusing `doc_compiler.py`'s existing symlink-aware confinement
+  pattern); an incompletely-stated `oracle_execute_check` trust model
+  (allowlisting bounds *which* check runs, not what that check's own
+  code does — no sandbox is built or claimed, disclosed explicitly
+  rather than implied); a still-wrong `impact_classify_change` output
+  schema (the first round's own "fix" had invented a nonexistent
+  `evidence_ids` field and dropped the real `resolved_symbols`/
+  `assurance` structure — corrected by reusing the real `assess()`
+  report verbatim under a thin envelope); a Ruff acceptance gate that
+  wrongly demanded a clean repository despite a real, re-confirmed
+  176-finding pinned baseline (`.venv/bin/ruff check .`, matching
+  Phase 87D's own final audit) — corrected to the established
+  baseline-aware policy; a presumed-but-nonexistent Ledgerkit-relevant
+  grounded documentation region (`grep -rn "CL-BFS" docs/ README.md`
+  returns nothing) — corrected to name the limitation honestly and add
+  an explicit independent-behavioural-proof requirement reusing Phase
+  83's own already-documented mutation as the negative control; and a
+  stale `docs_get_grounded_region` delegate citation in §6's own
+  summary table the first round's fix never reached. `oracle.py`'s
+  planned timeout fix was also extended with bounded read-while-
+  running output capture and process-group-wide termination (a plain
+  timeout alone doesn't bound unbuffered output or reach a descendant
+  process). `decisions/0095` gained an append-only amendment recording
+  the trust-model and path-confinement corrections, following
+  `decisions/0067`'s own precedent for a pre-implementation ADR
+  correction. A fresh second independent reviewer then found two more
+  items: one real citation error (fixed — the confinement pattern was
+  misattributed to a nonexistent function name); one claimed
+  `knowledge_get` path-confinement gap, independently re-investigated
+  and explicitly declined with recorded reasoning (`_get_symbol`'s
+  filesystem join is gated behind an exact-match lookup against rows
+  only this project's own trusted sync machinery ever writes, unlike
+  `changed[].path`'s genuinely unconditional-on-caller-input gap).
+  Final verdict: **READY WITH NON-BLOCKING OBSERVATIONS** (plan's own
+  §16 preserves the full two-round review history). **Implementation
+  remains explicitly not authorised by this planning pass.**
+
 - **Phase 88 planning — Agent Integration and MCP** (planning only, no
   `src/` change, direct user request, "CodeCompass Orchestrator —
   Phase 88 Planning"). An implementation-ready plan

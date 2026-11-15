@@ -165,6 +165,141 @@ other respect.
   `knowledge_api.find_gaps` already covers, remains open, undecided
   future work — not authorised or precluded by this ADR.
 
+## Amendment (2026-11-14): path confinement and the oracle-execution
+trust model, corrected and made explicit
+
+**Status note**: this amendment is appended, not an in-place rewrite —
+positions 1-5 and the Context/Decision/Consequences/Alternatives above
+are left exactly as originally accepted, matching the pattern
+`decisions/0067` already established for a pre-implementation
+correction (Phase 88 has not been implemented; nothing has shipped
+under this ADR yet, so this amendment is still pre-implementation in
+the same sense `decisions/0066`'s own first four amendments were).
+
+A second governing task ("CodeCompass Orchestrator — Phase 88 Plan
+Amendment and Independent Verification") found two real, independently
+re-verified defects in how this ADR's own positions 3 and 5 were
+originally stated — not a reversal of either position, a correction to
+their completeness:
+
+1. **Position 3 did not name `impact_classify_change`'s own
+   `changed[].path` confinement gap.** Direct re-verification confirmed
+   `resolve_changed_range` (`scripts/assess_change_impact.py:213-216`)
+   joins `target_repo_root / changed.path` with zero rejection of an
+   absolute path, a `..` component, or a symlink escape — the same
+   class of problem position 3 already solved for `repo_root`/
+   `check_reference`, just not extended to this parameter. **Decided**:
+   the MCP wrapper (`security.py`) rejects any `changed[].path` that is
+   absolute, contains `..`, or resolves (symlink-aware) outside the
+   pinned `target_repo_root`, before any delegation — reusing
+   `doc_compiler.py:566-568`'s and `git_topology.py:455-456`'s own
+   existing confinement pattern, not a new mechanism. This extends
+   position 3's own scope; it does not change its chosen mechanism
+   (server-side pinning + validation-before-delegation).
+2. **Position 3's framing of `oracle_execute_check` implied stronger
+   containment than exists.** "Allowlisting" was stated without also
+   stating that it bounds *which* check runs, not *what that check's
+   own code does* once it runs — a materially incomplete trust-model
+   description for a tool whose whole scenario is executing code a
+   connected coding agent may have just written or modified. **Decided**:
+   this ADR's own position 3 is read, from this amendment forward,
+   together with the plan's own §5.2 trust-model paragraph (added this
+   round): the target checkout is the least-trusted party in this
+   model; `--enable-execution` is equivalent to granting the connected
+   MCP client the ability to run `pytest` on this machine directly;
+   Phase 88 implements no sandbox, container, or restricted user, and
+   does not claim to. This does not change the decided mechanism
+   (opt-in + allowlist + append-only result persistence) — it corrects
+   the accuracy of what that mechanism is understood to guarantee.
+3. **Position 5's timeout fix was necessary but incomplete.** Direct
+   re-verification found `run_pytest_check`'s `subprocess.run(...,
+   capture_output=True)` buffers the entire subprocess output in memory
+   before any cap could apply, and that killing the pytest parent alone
+   does not reach a descendant process it spawns. **Decided**: the same
+   `oracle.py` change adds a bounded, read-while-running output cap
+   (terminate early on breach, classify `INVALID`) and launches the
+   subprocess in its own process group, killing the whole group on
+   timeout or output-cap breach (POSIX `os.killpg`), not only the
+   direct child — disclosed as addressing the common case, not a
+   hermetic guarantee against every process-escape technique. This is
+   an elaboration of position 5's own already-decided mechanism
+   (an explicit, disclosed, `OSError`-pattern-matching timeout), not a
+   different one.
+
+No position's chosen mechanism is reversed by this amendment. The
+plan's own §16 records the full six-finding list (two of which —
+output-schema fidelity and the Ruff gate — are plan-level acceptance-
+criteria corrections with no bearing on this ADR's own architectural
+positions, so they are not duplicated here).
+
+4. **Position 3's path-confinement scope did not reach `knowledge_
+   get`'s own `symbol:` natural-key live-read step.** §16 (above, via
+   the plan) correctly rejected a reviewer's claim that
+   `knowledge_api._get_symbol` permits an arbitrary-unindexed-path
+   probe — its SQL gate genuinely prevents that. A later, narrower
+   re-examination (the plan's own §17) found that rejection correct on
+   its own specific claim but incomplete: the SQL gate establishes only
+   that a caller-supplied path *was once* legitimately indexed, not
+   what currently exists at that location. Since a connected coding
+   agent is already granted write access to the target checkout
+   (position 3's own trust model, elaborated above), it can replace an
+   already-indexed path with a symlink escaping `project_root` after
+   sync, and `_get_symbol`'s live re-confirmation read
+   (`knowledge_api.py:572-574`) had no confinement of any kind,
+   disclosing the external target's freshly computed hash in its own
+   `"stale"` response. **Decided**: `_get_symbol`'s live read is
+   confined (`.resolve()`/`is_relative_to`, reusing position 3's own
+   established pattern) and opened via `O_NOFOLLOW` rather than a
+   plain, symlink-following read, so a final-component symlink
+   substitution is refused atomically; a confinement failure or
+   refused open reports `unconfirmed`, never a leaked hash. **A fresh
+   independent reviewer then found this same defect shape recurs in
+   two more call sites** — `_traverse_cites` and `find_gaps`'s
+   evidence-scanning loop (`knowledge_api.py:969-987`/`1427-1434`),
+   reached from the already-essential `knowledge_traverse`/
+   `knowledge_find_gaps` tools, one of them disclosing actual parsed
+   result fields rather than only a hash — contradicting this
+   amendment's own first-draft claim that `_get_symbol` was the one
+   exception. **Decided, corrected in place**: the same confinement +
+   `O_NOFOLLOW` fix is shared by all three call sites via one new
+   helper, plus one new optional, backward-compatible parameter on
+   `oracle.parse_oracle_result` so the two YAML-parsing sites don't
+   reopen the file a second time and reintroduce the same race. This
+   extends position 3's own scope to three read paths it had not yet
+   covered; it does not change any already-decided mechanism, and it
+   does not touch `sync.py`'s own indexing walk (a separate,
+   maintainer-trusted-action property, not reopened here) or any other
+   existing caller of `oracle.sha256_file`/`oracle.parse_oracle_result`
+   (used elsewhere under a different, already-accepted trust model, and
+   unaffected since the new parameter defaults to the existing
+   behaviour).
+5. **Item 4's own "already covered by the `slug` allowlist" disposition
+   for `find_gaps`'s `slug`-driven contract/results resolution was
+   itself incomplete.** The allowlist (`_list_slugs`-membership) really
+   does close a caller-supplied traversal *string* — unaffected by this
+   item. It did not separately establish that a listed slug *name*'s
+   own on-disk entry is confined to the knowledge/contracts root rather
+   than a symlink, because `_list_slugs` (`knowledge_intermediate.py:
+   2494-2498`) itself enumerates via `p.is_dir()`, which follows
+   symlinks. **Decided**: `_list_slugs` is hardened to exclude a
+   symlinked entry (`and not p.is_symlink()`), closing this at its
+   source for every consumer that trusts its output; one new shared
+   helper in `knowledge_api.py`, reusing position 3's own
+   `.resolve()`/`is_relative_to` plus `O_NOFOLLOW` pattern (already
+   extended for files in item 4), is applied at `find_gaps`'s own four
+   raw-`slug` call sites (one in the knowledge tree, three in the
+   contracts tree);
+   `load_slug_records`/`_load_slug_results`/`_results_by_test_ref` each
+   gain the same per-file symlink exclusion already specified for item
+   4's three functions, so a symlinked file inside an otherwise-real
+   slug directory is excluded, never read. This is a correction to
+   item 4's own disposition, not a reversal of position 3's chosen
+   mechanism (allowlist + confinement together, not either alone) —
+   `_find_contract`'s own `contract_id`-keyed scan remains a named,
+   out-of-scope residual requiring a trusted party's prior action,
+   unchanged by this item, matching the already-accepted sync-time-
+   symlink precedent in item 1's own elaboration above.
+
 ## Alternatives considered
 
 - **Accept `scripts/assess_change_impact.py` as a second, disclosed
