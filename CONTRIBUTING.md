@@ -60,7 +60,16 @@ an existing identity convention elsewhere in the codebase already solves
 this and, if a new one is introduced instead, the plan's verification
 section must include a test exercising insertion/reordering of that
 entity specifically, not only its initial creation. (Phase 81 second
-corrective pass — L-088.)
+corrective pass — L-088.) If a phase wraps a new, differently-invoked
+entry point (e.g. a long-running server) around existing logic that
+carries any relative-path convention (a path resolved against an
+assumed, but unenforced, process working directory), the plan's
+verification section must include a test that exercises that logic
+with the process cwd deliberately different from the convention's
+implicit assumption — a convention enforced only by "how we always
+happen to invoke this" is not actually enforced, and a new,
+differently-invoked caller wrapping the existing logic is exactly when
+such a convention is first silently violated. (Phase 88 — L-131.)
 
 When the agent-led development model is in effect (see below), a phase is
 not started until any human-decision gate recorded against it in

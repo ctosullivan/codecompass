@@ -79,6 +79,19 @@ reference-project evaluation, not just Phase 61's own.
   purpose, against raw source. Do not merge, skip, or sequence-and-
   shortcut one of these two checks on the assumption that passing the
   other makes the other redundant.
+- **A scratch-copy or other disposable-copy demonstration, done
+  rigorously (a fresh, confirmed pin; byte-identical reapplication of
+  an already-documented change; independent reproduction by a
+  reviewer with no access to the originating session), is genuinely
+  strong evidence for a test's own correctness and a context record's
+  own relevance — but it is never evidence that a real, unauthorized
+  target's real gap is closed.** A report combining both must state
+  the two claims separately and never let a `PASS` against the correct
+  scratch copy be read as the real target's own test now passing.
+  Confirmed necessary at Phase 88 (`L-133`): the Ledgerkit
+  demonstration's own retro named this exact conflation as tempting in
+  practice, not just in principle, and kept the two claims visibly
+  separate as the plan's own §12.2 required.
 
 ## 2. Report structure
 

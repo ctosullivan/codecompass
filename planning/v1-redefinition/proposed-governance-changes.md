@@ -1281,3 +1281,90 @@ triage. Append after §O (or after whichever of §L/§M/§N/§O lands last).
   `CONTRIBUTING.md`'s mirrored section gets the same addition in the
   same commit; `planning/learnings/inbox.md`'s `L-120` flips to `status:
   promoted` with a `promoted.md` pointer line once the edit lands.
+
+## Q. 2026-11-15 proposed addition (Phase 88 — `L-131`)
+
+**Status:** approved and landed (2026-11-15) — `CLAUDE.md` §1 amended,
+mirrored in `CONTRIBUTING.md`. Filed by `knowledge-curator` during the
+Phase 88 post-retro triage; presented to the user for §0 approval and
+approved as drafted.
+
+### Q1 — §1 "Plan before implementing": require a cwd-independence test whenever a new entry point wraps existing logic carrying a relative-path convention
+
+- **Context:** `oracle.py::evaluate_result_precedence`'s
+  `Path(result.raw_output_ref).is_file()` check (`oracle.py:914`)
+  resolves a relative path against the process's own working directory,
+  implicitly assuming cwd equals `project_root` — true for every CLI
+  invocation by convention, never actually enforced in code. Stage 88A
+  shipped nine MCP tools that reach this same code path, all
+  independently audited `PASS WITH NON-BLOCKING OBSERVATIONS` with no
+  finding against this defect, because Stage 88A's own tests ran from
+  the repository root, where the convention happens to hold. Stage 88B's
+  own `tmp_path`-based tests — which deliberately construct a
+  `project_root` different from pytest's own cwd — exposed it, and the
+  fix shipped was a wrapper (`mcp/tools.py::_chdir`, threaded through all
+  twelve registered tool-dispatch functions) around the existing call,
+  not a change to `oracle.py`'s own resolution logic. The independent
+  Stage 88B audit reproduced the defect directly: monkey-patching
+  `_chdir` to a no-op reproduced exactly the silent `PASS`→`GAP`
+  misclassification the retrofit exists to prevent, confirming the fix
+  is load-bearing, not cosmetic. **The root cause — an implicit cwd
+  convention inside `oracle.py` itself — was not fixed, only wrapped**;
+  a future caller of `evaluate_result_precedence` (or any sibling
+  function with the same relative-path convention) that does not route
+  through the MCP wrapper would reintroduce the identical defect. Full
+  account: `planning/learnings/inbox.md`'s `L-131`;
+  `planning/retros/phase-88-agent-integration-mcp.md` Lessons learnt #1;
+  `planning/retros/_audit-phase-88-stage-88b.md` item 4.
+- **Proposed text — append to §1, as a new sentence directly after the
+  last-landed of the `L-088`/`L-110`/`L-116`/`L-117`/`L-118`/`L-119`/
+  `L-120` sentences:**
+
+  > If a phase wraps a new, differently-invoked entry point (e.g. a
+  > long-running server) around existing logic that carries any
+  > relative-path convention (a path resolved against an assumed, but
+  > unenforced, process working directory), the plan's verification
+  > section must include a test that exercises that logic with the
+  > process cwd deliberately different from the convention's implicit
+  > assumption — a convention enforced only by "how we always happen to
+  > invoke this" is not actually enforced, and a new, differently-invoked
+  > caller wrapping the existing logic is exactly when such a convention
+  > is first silently violated. (Phase 88 — L-131.)
+
+- **Alternatives considered:** (a) treat this as already covered by
+  `L-070`'s "minimal-content edge case" sentence — rejected: a different
+  cwd is not an empty, truncated, or reduced input in any sense that
+  sentence names; this is a distinct environment-assumption gap, not a
+  content-minimality gap; (b) scope the rule narrowly to "a server
+  wrapping CLI-oriented logic" specifically, rather than "a new,
+  differently-invoked entry point" generally — rejected: the underlying
+  failure (an invocation convention assumed but never enforced) is not
+  specific to CLI-vs-server; any new caller with a different invocation
+  discipline (a library API, a notebook, a different process manager)
+  could violate the same unenforced assumption, and a narrower rule would
+  not cover the next such caller this project adds; (c) require the root
+  cause itself be fixed (make `oracle.py`'s own path resolution take an
+  explicit root parameter instead of relying on cwd) as part of this
+  governance change — considered, but rejected for this amendment
+  specifically: that is a `src/` code change the lead can pursue
+  separately (recommended as a `future-improvement` roadmap item
+  alongside this entry, not a `CLAUDE.md` §1 planning-review
+  requirement), and this amendment only ensures the *test* gets written
+  at plan time for the next such wrapper, which is cheap, mechanical, and
+  immediate; (d) hold for a second occurrence before promoting — rejected
+  as the wrong precedent, matching `L-021`/`L-070`/`L-075`/`L-087`/
+  `L-088`/`L-116`-`L-120`'s own single-occurrence promotions, each
+  justified on evidence quality (a real, reproduced defect, confirmed
+  load-bearing by an independent monkey-patch reproduction, affecting six
+  already-shipped and already-audited tools) rather than recurrence
+  count.
+- **Consequences if approved:** `CLAUDE.md` §1 gains the sentence above;
+  `CONTRIBUTING.md`'s mirrored section gets the same addition in the
+  same commit; `planning/learnings/inbox.md`'s `L-131` flips to `status:
+  promoted` with a `promoted.md` pointer line once the edit lands.
+  Separately recommended (not part of this governance change): a
+  `future-improvement` row on `planning/ROADMAP.md`'s backlog table to
+  fix `oracle.py`'s own relative-path resolution at the root (an explicit
+  root parameter, not an implicit cwd convention), since the MCP-layer
+  `_chdir` wrapper mitigates but does not close the underlying fragility
+  for any future, differently-invoked caller.

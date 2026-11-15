@@ -429,7 +429,16 @@ A typical internal phase uses `roadmap-context-curator`, `docs-maintainer`,
     final pass: re-runs verification, checks all DoD conditions
     (including the drift audit ran + the retro exists), checks for
     protected-file drift and scope creep. Verdict `PASS` / `PASS WITH
-    NON-BLOCKING OBSERVATIONS` / `FAIL`.
+    NON-BLOCKING OBSERVATIONS` / `FAIL`. **For a stage-level dispatch of
+    `release-phase-auditor` (a multi-stage phase's own interim audit,
+    not the terminal, phase-wide pass), state explicitly in the
+    dispatch prompt the exact persisted report path for this stage
+    (`planning/retros/_audit-phase-N-stage-NNx.md`) — do not rely on
+    `release-phase-auditor.md`'s own agent-definition file to guarantee
+    the write happens.** A dispatch of this exact shape at Phase 88
+    Stage 88A reported its verdict accurately but produced no persisted
+    file, caught only by Stage 88B's own later, independent audit, not
+    by any step in this workflow's own sequence (`L-134`).
 14. **Refuse to mark work complete when the gate fails.** A `FAIL` →
     fix the named gaps, or re-scope with a new ADR, then re-audit. **A
     `PASS WITH NON-BLOCKING OBSERVATIONS` verdict's own named

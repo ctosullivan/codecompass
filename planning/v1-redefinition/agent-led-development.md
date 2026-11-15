@@ -102,6 +102,20 @@ Implemented by Phase 40 (roster + workflow) and proven by Phase 43
   reproduce two defects, then returned its report without restoring it
   — the lead caught it only via an unrelated harness notice, never via
   the agent's own report.
+- **An independent review round — planning or implementation-audit —
+  that finds and fixes one real defect is not evidence the design or
+  code is now clean; a correction can itself introduce or reveal a
+  further defect, so review continues until a round finds nothing
+  new, not merely until the first round that finds something gets
+  fixed.** Confirmed as this project's most-recurring meta-pattern to
+  date: every one of Phase 88's five independent planning-amendment
+  rounds found a real defect the previous round's own review had
+  missed or introduced, and each of its two stage-level implementation
+  audits (88A, 88B) independently found one further, previously-
+  unnoticed gap — matching the same shape already seen separately at
+  Phase 79 (fifth/sixth amendments, `L-070`/`L-075`), Phase 86 (two
+  corrective passes, `L-116`/`L-117`), and Phase 87 (per-stage audits,
+  the `L-113` recurrence, `L-130`). (Phase 88 — `L-132`.)
 
 ## 2. The roster
 

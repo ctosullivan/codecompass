@@ -126,6 +126,22 @@ without fixing anything — that a phase is actually done.
     this cheap to catch should not depend on the terminal audit being
     the first checkpoint that happens to look. (Phase 87 Stage 87D —
     `L-130`.)
+15. **For a stage-level audit within a still-open, multi-stage phase,
+    write your persisted report
+    (`planning/retros/_audit-phase-N-stage-NNx.md`) before returning
+    your verdict to the lead, exactly as the terminal, phase-wide case
+    already requires** — never treat a stage's own audit as fully done
+    merely because its verdict was reported back to the lead in
+    conversation. This mirrors `L-060`'s own already-landed fix for the
+    terminal, phase-done case, but `check_done_phases_have_audit_report`
+    only fires once a phase is marked `done` in `ROADMAP.md`, so it
+    cannot catch a missing stage-level report for a phase that is still
+    open. Confirmed as a real regression, not hypothetical, at Phase 88
+    (`L-134`): Stage 88A's own audit verdict was reported accurately but
+    never written to `planning/retros/` until Stage 88B's own audit
+    flagged the absence days later — the same failure `L-060` fixed for
+    the phase-level case, recurring at stage granularity, where the
+    phase-level mechanical check does not reach.
 
 ## Hard rules
 

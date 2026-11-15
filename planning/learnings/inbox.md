@@ -8,6 +8,347 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-131 — a relative-path convention enforced only by "how this is always invoked" (cwd == project_root) is not actually enforced; wrapping a new, differently-invoked entry point around existing logic is exactly when it gets silently violated for the first time
+
+- **origin:** Phase 88 (Agent Integration and MCP), Stage 88B
+  implementation + its own independent audit
+  (`planning/retros/_audit-phase-88-stage-88b.md` item 4), surfaced in
+  the phase retro's Lessons learnt #1
+  (`planning/retros/phase-88-agent-integration-mcp.md`)
+- **date:** 2026-11-15
+- **project_revision:** `a554d52` (HEAD, Phase 88 fully committed and
+  pushed)
+- **observation:** `oracle.py::evaluate_result_precedence`'s
+  `raw_path = Path(result.raw_output_ref)` / `.is_file()` check
+  (`oracle.py:914`) resolves a relative path against the process's own
+  working directory, implicitly assuming cwd equals `project_root` —
+  true for every CLI invocation by convention, never enforced in code.
+  Stage 88A shipped nine MCP tools reaching this same code path
+  (`oracle_list_checks`, `knowledge_epistemic_status`,
+  `knowledge_find_gaps`, and the `knowledge_get`/`knowledge_trace_
+  evidence` paths through `_knowledge_consistency`/`derive_epistemic_
+  profile`), independently audited `PASS WITH NON-BLOCKING
+  OBSERVATIONS` with no finding against this defect — Stage 88A's own
+  real-corpus tests ran from the repository root, where the convention
+  happens to hold, so it was invisible. Stage 88B's own `tmp_path`-based
+  tests (deliberately constructing a `project_root` different from
+  pytest's own cwd) exposed it. The fix shipped (`mcp/tools.py::
+  _chdir`, a context manager threaded through all twelve registered
+  tool-dispatch functions — confirmed at `tools.py` lines 61, 109, 133,
+  148, 171, 190, 226, 388, 459, definition at line 261) is a **wrapper**
+  around the existing call, not a change to `oracle.py`'s own resolution
+  logic — the root cause (an implicit, unenforced cwd convention inside
+  `oracle.py` itself) remains. A future caller of `evaluate_result_
+  precedence` (or any sibling function sharing this convention) that
+  does not route through the MCP wrapper would reintroduce the identical
+  defect.
+- **evidence:** `src/codecompass/oracle.py:914`; `src/codecompass/mcp/
+  tools.py`'s `_chdir` wrapper (line definitions above);
+  `planning/retros/_audit-phase-88-stage-88b.md` item 4 — independent
+  reproduction, not self-reported: built a synthetic fixture, ran
+  `oracle_execute_check`/`oracle_list_checks`/`knowledge_epistemic_
+  status`/`knowledge_find_gaps` with cwd at `project_root` vs. at `/`
+  (identical results, confirming the fix works), then monkey-patched
+  `mcp_tools._chdir` to a true no-op and re-ran: cwd == `project_root`
+  still reported `PASS`, but cwd == `/` silently misclassified as `GAP`
+  — reproducing exactly the defect the retrofit exists to prevent, and
+  confirming the fix is load-bearing, not cosmetic.
+- **classification:** project-rule — a cheap, mechanically-checkable
+  plan-review addition matching the bar `L-021`/`L-070`/`L-075`/`L-087`/
+  `L-088`/`L-116`-`L-120` were each promoted on (a real, reproduced
+  defect, not recurrence count): whenever a phase wraps a new,
+  differently-invoked entry point around existing logic carrying a
+  relative-path (or similar invocation-environment) convention, the
+  plan's verification section must include a test that exercises that
+  logic with the environment deliberately different from the
+  convention's implicit assumption.
+- **status:** promoted — `CLAUDE.md` §1 amended (mirrored in
+  `CONTRIBUTING.md`), user-approved per §0 (2026-11-15).
+- **recurrence:** first occurrence as a distinctly-filed candidate,
+  though it belongs to the same family `L-087` (persisted-state
+  advancement) and `L-118` (separator-free-name-only testing) already
+  separately evidence for other mechanism types — an unenforced
+  invocation/environment convention, this time for process cwd
+  specifically, affecting six already-shipped, already-audited tools at
+  once.
+- **promoted_to:** `CLAUDE.md` §1, new sentence appended directly after
+  the existing `L-088` sentence; mirrored into `CONTRIBUTING.md` @ (this
+  phase's own closeout commit)
+- **curation note (2026-11-15, knowledge-curator):** all required fields
+  present (origin, date, project_revision, observation, evidence,
+  classification, status) — accepted as filed. Independently confirmed
+  by direct reading (no `Bash` in this role): `grep -n "_chdir"
+  src/codecompass/mcp/tools.py` shows the wrapper applied at the nine
+  line numbers cited above, and `grep -n "Path(result.raw_output_ref)"
+  src/codecompass/oracle.py` shows the cited line is the only
+  occurrence — `oracle.py` itself was not edited to take an explicit
+  root parameter; the MCP layer's `_chdir` wrapper is the only fix that
+  landed. Confirmed the gap is genuinely live, not already closed: a
+  hypothetical second caller of `evaluate_result_precedence` outside
+  `mcp/tools.py` (none currently exists) would still hit the bug. Draft
+  `CLAUDE.md` §1 sentence written to `proposed-governance-changes.md`
+  §Q, following the exact precedent/placement convention §K-§P already
+  established (single-occurrence promotion, append after the
+  last-landed sentence in the same paragraph). **Recommend promote.**
+  Also recommend, as a separate, lower-priority `future-improvement`
+  `planning/ROADMAP.md` backlog row (not part of the `CLAUDE.md`
+  proposal): fix `oracle.py`'s own relative-path resolution at the root
+  (an explicit root parameter rather than an implicit cwd convention),
+  since the wrapper mitigates but does not close the underlying
+  fragility for any future, differently-invoked caller — hand to
+  `roadmap-context-curator` if the lead agrees.
+
+### L-132 — an independent planning-review or implementation-audit round that finds and fixes one defect is not evidence the design is now clean; the discipline that mattered across five consecutive amendment rounds and two stage audits was re-reviewing after every correction, not trusting a clean-looking fix
+
+- **origin:** Phase 88 (Agent Integration and MCP) planning (five
+  independently-reviewed amendment rounds, §17-§19 of
+  `planning/phase-88-agent-integration-mcp.md`, `decisions/0095`) and
+  both stage-level implementation audits
+  (`planning/retros/_audit-phase-88-stage-88a.md`,
+  `planning/retros/_audit-phase-88-stage-88b.md`)
+- **date:** 2026-11-15
+- **project_revision:** `a554d52`
+- **observation:** every one of Phase 88's five planning-amendment
+  rounds found a real defect the previous round's own independent review
+  had missed or introduced (§17's "two more call sites," §17.8's
+  declined-then-reopened finding, §17.9's "three vs four" undercount,
+  §18.4's own premature-review-closure finding) — no single round was
+  sufficient on its own. The same pattern repeated at implementation
+  time: Stage 88A's own audit found one real gap (missing malformed-
+  input test coverage against the plan's own named list); Stage 88B's
+  own audit, independently, found one more (a `changed[].path`-missing-
+  key `KeyError` instead of a clean `ToolError`) — both closed the same
+  day rather than deferred.
+- **evidence:** `planning/retros/phase-88-agent-integration-mcp.md`
+  Lessons learnt #2; `planning/retros/_audit-phase-88-stage-88a.md`
+  "Non-blocking observation" section; `planning/retros/_audit-phase-88-
+  stage-88b.md` "Non-blocking observations" item 1.
+- **classification:** workflow — this is itself a recurrence of a
+  meta-pattern this project has hit repeatedly without ever writing it
+  down as an explicit, standing rule: Phase 79's fifth/sixth amendments
+  (`L-070`/`L-075`, each found by a dedicated re-review after a prior
+  correction), Phase 86's two corrective passes (`L-116`/`L-117`), and
+  Phase 87's own per-stage audits (the `L-113` recurrence, `L-130`) each
+  promoted the *specific defect shape* a given round happened to find,
+  but no entry to date has promoted the *general discipline* itself
+  (re-review after every correction until a round finds nothing new,
+  rather than stopping once a fix looks clean) as a standing workflow
+  requirement.
+- **status:** promoted
+- **recurrence:** this is the project's most-recurring meta-pattern by a
+  wide margin (at minimum: Phase 79 x2, Phase 84 x1, Phase 86 x2, Phase
+  87 x2, Phase 88 x2 — nine prior instances across six phases before
+  this filing), but has never itself been promoted as a standing rule,
+  only its individual instances.
+- **promoted_to:** `planning/v1-redefinition/agent-led-development.md`
+  §1, new bullet after the existing Phase-85 `L-115` bullet @ (this
+  phase's own closeout commit)
+- **curation note (2026-11-15, knowledge-curator):** all required fields
+  present — accepted as filed. This role cannot write
+  `planning/v1-redefinition/agent-led-development.md` directly (outside
+  this role's write boundary); drafting the recommended bullet here for
+  the lead to apply, matching that file's own existing bullet format
+  (a principle statement, then "Confirmed ... at Phase N (`L-NNN`):" with
+  the specific evidence):
+
+  > **An independent review round — planning or implementation-audit —
+  > that finds and fixes one real defect is not evidence the design or
+  > code is now clean; a correction can itself introduce or reveal a
+  > further defect, so review continues until a round finds nothing
+  > new, not merely until the first round that finds something gets
+  > fixed.** Confirmed as this project's most-recurring meta-pattern to
+  > date: every one of Phase 88's five independent planning-amendment
+  > rounds found a real defect the previous round's own review had
+  > missed or introduced, and each of its two stage-level implementation
+  > audits (88A, 88B) independently found one further, previously-
+  > unnoticed gap — matching the same shape already seen separately at
+  > Phase 79 (fifth/sixth amendments, `L-070`/`L-075`), Phase 86 (two
+  > corrective passes, `L-116`/`L-117`), and Phase 87 (per-stage audits,
+  > the `L-113` recurrence, `L-130`). (Phase 88 — `L-132`.)
+
+  **Recommend promote.** Given the weight of recurrence (nine prior
+  instances across six phases), this is a stronger case for a standing
+  rule than most single-occurrence `CLAUDE.md` §1 promotions already
+  landed — but it is routed to `agent-led-development.md` §1 rather than
+  `CLAUDE.md` itself because it describes a cross-cutting *process*
+  discipline for how review itself is conducted (the same kind of
+  content already living in that file's §1, e.g. `L-108`/`L-113`/`L-115`/
+  `L-130`'s own bullets), not a requirement on what a *phase plan's own
+  written content* must specify (the narrower, `CLAUDE.md` §1 lane
+  `L-021`/`L-070`/`L-075`/etc. occupy).
+
+### L-133 — a rigorous scratch-copy demonstration is strong evidence for a test's own correctness and a context record's own relevance, but is never evidence that a real, unauthorized target's real gap is closed
+
+- **origin:** Phase 88 Ledgerkit demonstration
+  (`planning/retros/phase-88-ledgerkit-demonstration.md`), independent
+  `context-evaluator` verification
+- **date:** 2026-11-15
+- **project_revision:** `a554d52`
+- **observation:** the Ledgerkit demonstration ran against disposable
+  scratch copies (fresh HEAD pin, byte-identical reapplication of an
+  already-documented mutation), not the real `~/projects/ledgerkit`
+  checkout, per the governing task's own cross-repository constraint. An
+  independent reviewer with no session access reproduced every claim
+  directly (`pytest` re-run on both scratch copies; direct reading of
+  `ledgerkit/reports.py`/`test_reports.py`; `git status`/`git diff`
+  confirmed empty on the real checkout) and found no weakening finding.
+  The demonstration retro and the phase retro both explicitly keep two
+  claims separate: (1) the new test and the full MCP tool chain are
+  correct and ready to apply — strongly evidenced; (2) the real
+  Ledgerkit gap (`overlapping-account-patterns-no-double-count` has no
+  passing result against the real checkout) is closed — explicitly
+  **not** claimed, and `CL-BFS-005`'s own honest gap statement was left
+  unrevised. The phase retro names this separation as a lesson learnt
+  specifically because conflating the two readings ("PASS against the
+  correct scratch copy" read as "the real target's test now passes")
+  would have been a real, tempting overclaim in practice, not merely in
+  principle.
+- **evidence:**
+  `planning/retros/phase-88-ledgerkit-demonstration.md` "Independent
+  verification" and "What remains outstanding" sections;
+  `planning/retros/phase-88-agent-integration-mcp.md` Lessons learnt #3;
+  the governing task's own explicit instruction ("A scratch-copy
+  demonstration may proceed where permitted, but must be identified as
+  weaker evidence") and the plan's own pre-authorised §12.2 fallback.
+- **classification:** workflow — matches the existing pattern of
+  cross-cutting ground rules already living in
+  `planning/v1-redefinition/context-quality-evaluation.md` §1
+  (`L-027`/`L-062`/`L-079`/`L-081`): a rule about what a particular
+  evaluation/demonstration *design* can and cannot support concluding,
+  applicable to any future reference-project task facing the same
+  lack-of-write-authorization constraint, not specific to Ledgerkit or
+  this one task's own instruction.
+- **status:** promoted
+- **recurrence:** first explicit statement of this exact distinction in
+  the learnings queue; the underlying caution was already correctly
+  operationalized once, as a direct instruction from the task itself —
+  promoting it generalizes that instruction into standing guidance so a
+  future reference-project task lacking real-target write-authorization
+  does not have to have the same caution re-stated to it each time.
+- **promoted_to:** `planning/v1-redefinition/context-quality-evaluation.md`
+  §1, new bullet after the existing `L-079` bullet @ (this phase's own
+  closeout commit)
+- **curation note (2026-11-15, knowledge-curator):** all required fields
+  present — accepted as filed. This role cannot write
+  `context-quality-evaluation.md` directly (outside this role's write
+  boundary); drafting the recommended ground-rule bullet here for the
+  lead to apply, matching that file's own existing bullet format:
+
+  > **A scratch-copy or other disposable-copy demonstration, done
+  > rigorously (a fresh, confirmed pin; byte-identical reapplication of
+  > an already-documented change; independent reproduction by a
+  > reviewer with no access to the originating session), is genuinely
+  > strong evidence for a test's own correctness and a context record's
+  > own relevance — but it is never evidence that a real, unauthorized
+  > target's real gap is closed.** A report combining both must state
+  > the two claims separately and never let a `PASS` against the correct
+  > scratch copy be read as the real target's own test now passing.
+  > Confirmed necessary at Phase 88 (`L-133`): the Ledgerkit
+  > demonstration's own retro named this exact conflation as tempting in
+  > practice, not just in principle, and kept the two claims visibly
+  > separate as the plan's own §12.2 required.
+
+  **Recommend promote.**
+
+### L-134 — a stage-level audit's own verdict, reported accurately in the moment, is not durably evidenced until its report is actually written to `planning/retros/`; the existing mechanical check for this only fires once a phase is marked `done`, not for a stage audit inside a still-open, multi-stage phase
+
+- **origin:** Phase 88 (Agent Integration and MCP) Stage 88B's own
+  independent audit
+  (`planning/retros/_audit-phase-88-stage-88b.md` "Non-blocking
+  observations" item 2)
+- **date:** 2026-11-15
+- **project_revision:** `a554d52`
+- **observation:** Stage 88A's own audit verdict (`PASS WITH
+  NON-BLOCKING OBSERVATIONS`) was reported accurately in the moment but
+  not written to `planning/retros/` until Stage 88B's own audit flagged
+  the absence — `planning/retros/_audit-phase-88-stage-88a.md`'s own
+  header states it was "persisted here per a later Stage 88B audit's own
+  non-blocking finding that no such record existed," reconstructed from
+  the reviewing agent's own verbatim hand-back report rather than
+  written live. This recurs the exact failure shape `L-060` (Phases
+  70-74) was created to close — but at *stage* granularity within a
+  still-open, multi-stage phase. `scripts/check_user_docs.py::
+  check_done_phases_have_audit_report` only fires once a phase is marked
+  `done` in `ROADMAP.md`; Phase 88 was not yet `done` when Stage 88A's
+  audit ran, so the existing mechanical check could not have caught the
+  gap regardless. Phase 87's own four stage audits (87A-87D) were each
+  persisted immediately (confirmed by directory listing, per the Stage
+  88B audit's own observation) — this is the first known regression of
+  the pattern since `L-060` landed, not a first occurrence of the
+  underlying failure shape.
+- **evidence:**
+  `planning/retros/_audit-phase-88-stage-88a.md` lines 19-26 (header
+  explaining the reconstruction); `planning/retros/_audit-phase-88-
+  stage-88b.md` "Non-blocking observations" item 2; `planning/learnings/
+  promoted.md`'s own `L-060` line (scope: `check_done_phases_have_
+  audit_report`, which the entry itself confirms is scoped to phases
+  marked `done`, not individual stages).
+- **classification:** scoped-rule — extends the already-landed `L-056`
+  pattern ("a dispatch prompt must explicitly restate the agent's
+  required persisted report path, not rely on the agent-definition
+  file's own default to be remembered") from `docs-reconstructor`
+  dispatches to `release-phase-auditor` stage-level dispatches
+  specifically, and adds an explicit checklist item to
+  `.claude/agents/release-phase-auditor.md` itself covering the
+  stage-audit case the existing mechanical check's phase-only scope
+  cannot reach.
+- **status:** promoted
+- **recurrence:** second occurrence of "an audit verdict reported
+  without a persisted record" (after `L-060`'s own four-phase-deep
+  backlog, Phases 70-74), first occurrence at stage/sub-phase
+  granularity specifically, and the first regression of this exact
+  shape since the phase-level mechanical check was put in place at
+  Phase 74.
+- **promoted_to:** `.claude/agents/release-phase-auditor.md` "What to
+  check" item 15 + `planning/agent-led-workflow.md` step 13 @ (this
+  phase's own closeout commit)
+- **curation note (2026-11-15, knowledge-curator):** all required fields
+  present — accepted as filed. This role has no access to `.claude/`
+  (outside this role's write boundary) and cannot write
+  `planning/agent-led-workflow.md` directly either; drafting both
+  recommended texts here for the lead to apply.
+
+  **For `.claude/agents/release-phase-auditor.md` "What to check," new
+  item 15 (append after item 14):**
+
+  > 15. **For a stage-level audit within a still-open, multi-stage
+  >     phase, write your persisted report
+  >     (`planning/retros/_audit-phase-N-stage-NNx.md`) before returning
+  >     your verdict to the lead, exactly as the terminal, phase-wide
+  >     case already requires** — never treat a stage's own audit as
+  >     fully done merely because its verdict was reported back to the
+  >     lead in conversation. This mirrors `L-060`'s own already-landed
+  >     fix for the terminal, phase-done case, but
+  >     `check_done_phases_have_audit_report` only fires once a phase is
+  >     marked `done` in `ROADMAP.md`, so it cannot catch a missing
+  >     stage-level report for a phase that is still open. Confirmed as
+  >     a real regression, not hypothetical, at Phase 88 (`L-134`):
+  >     Stage 88A's own audit verdict was reported accurately but never
+  >     written to `planning/retros/` until Stage 88B's own audit
+  >     flagged the absence days later — the same failure `L-060` fixed
+  >     for the phase-level case, recurring at stage granularity, where
+  >     the phase-level mechanical check does not reach.
+
+  **For `planning/agent-led-workflow.md` step 13 ("Obtain independent
+  completion audit"), a new sentence, mirroring step 9's own `L-056`
+  sentence:**
+
+  > **For a stage-level dispatch of `release-phase-auditor` (a
+  > multi-stage phase's own interim audit, not the terminal, phase-wide
+  > pass), state explicitly in the dispatch prompt the exact persisted
+  > report path for this stage
+  > (`planning/retros/_audit-phase-N-stage-NNx.md`) — do not rely on
+  > `release-phase-auditor.md`'s own agent-definition file to guarantee
+  > the write happens.** A dispatch of this exact shape at Phase 88
+  > Stage 88A reported its verdict accurately but produced no persisted
+  > file, caught only by Stage 88B's own later, independent audit, not
+  > by any step in this workflow's own sequence (`L-134`).
+
+  **Recommend promote** (both texts, same disposition — they are two
+  halves of one fix, matching how `L-056`'s own fix landed in both
+  `docs-reconstructor.md`'s governing step and the workflow's own
+  dispatch-prompt instruction).
+
 ### L-130 — a stage's own new/extended script code reaching "implementation complete" on a green `pytest` run and clean strict validators is not evidence it is `ruff`-clean; nothing before the terminal, phase-wide `release-phase-auditor` gate is tasked with checking that
 
 - **origin:** Phase 87 Stage 87D (deterministic reference assurance),
