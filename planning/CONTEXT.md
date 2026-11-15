@@ -21,8 +21,8 @@ independent review returned **PASS WITH NON-BLOCKING OBSERVATIONS**
 same day; persisted at `planning/retros/_audit-phase-88-stage-88a.md`,
 written retroactively after a later audit flagged no record existed).
 
-**Stage 88B (assurance integration) is now also implemented, not yet
-committed**: `impact_classify_change`, `oracle_list_checks`,
+**Stage 88B (assurance integration) is implemented and committed**
+(`a554d52`): `impact_classify_change`, `oracle_list_checks`,
 `oracle_execute_check`; `src/codecompass/change_impact.py` (Phase 83's
 logic relocated from `scripts/assess_change_impact.py`, behaviour-
 preserving, closing the same installed-wheel gap Phase 87D fixed for
@@ -32,14 +32,17 @@ kill); `mcp/security.py::confine_changed_paths`. A real, latent `cwd`-
 dependency defect in `oracle.evaluate_result_precedence` (affecting
 six of Stage 88A's own already-shipped tools, not only the two new
 oracle ones) was found and fixed via a scoped `_chdir` wrapper applied
-uniformly across all twelve tools. 24 new tests, including a real,
-deliberate `oracle_execute_check` call against `~/projects/ledgerkit`
-(its two new append-only result files are staged alongside this
-stage). Full regression suite green (1461+ passed, 2 skipped); zero
-new Ruff debt (176 → 167, net lower). An independent review returned
-**PASS WITH NON-BLOCKING OBSERVATIONS** (a bare `KeyError` instead of
-a clean `ToolError` for one malformed-input shape, found and fixed
-same day; persisted at `planning/retros/_audit-phase-88-stage-88b.md`).
+uniformly across all twelve tools — not yet fixed at the root
+(`oracle.py` itself still resolves the path relative to cwd); tracked
+as a `future-improvement` backlog row (`L-131`, `planning/ROADMAP.md`).
+24 new tests, including a real, deliberate `oracle_execute_check` call
+against `~/projects/ledgerkit` (its two new append-only result files
+committed alongside this stage). Full regression suite green (1464
+passed, 2 skipped); zero new Ruff debt (176 → 167, net lower). An
+independent review returned **PASS WITH NON-BLOCKING OBSERVATIONS** (a
+bare `KeyError` instead of a clean `ToolError` for one malformed-input
+shape, found and fixed same day; persisted at
+`planning/retros/_audit-phase-88-stage-88b.md`).
 
 **The real Ledgerkit development demonstration (§12) is now also
 done**, against disposable scratch copies only — never the real
@@ -63,17 +66,34 @@ authorisation not given to this task). Full record: `planning/retros/
 phase-88-ledgerkit-demonstration.md`; phase retro: `planning/retros/
 phase-88-agent-integration-mcp.md`.
 
-**Next step: learnings triage, then the terminal, whole-phase
-Definition-of-Done audit.** Learnings-triage dispatch (`knowledge-
-curator`, four candidates named in the phase retro) failed mid-run on
-a session rate limit (resets 6:20pm Australia/Perth) — not yet
-re-attempted as of this note. The terminal audit has not begun.
-Nothing is pushed to `origin/main` yet beyond `7a96d89` — Stage 88B's
-own commit (plus the demonstration/retro records) is staged, pending
-the lead/user's own `git commit`/`git push`, per this session's
-established practice around automated-commit-control blocks (blocked
-three times across this phase's work, each time left staged and
-reported rather than bypassed).
+**Learnings triage is complete and committed** (`4763fcb`): four
+candidates from the phase retro (`L-131`-`L-134`) triaged by
+`knowledge-curator`, all four promoted. `L-131` (the `cwd`-dependency
+convention gap above) landed in `CLAUDE.md` §1 (mirrored in
+`CONTRIBUTING.md`), user-approved per §0; `L-132` (re-review-until-
+clean discipline), `L-133` (scratch-copy-vs-real-gap distinction), and
+`L-134` (stage-audit persistence requirement) landed in
+`planning/v1-redefinition/agent-led-development.md`,
+`context-quality-evaluation.md`, `.claude/agents/release-phase-
+auditor.md`, and `planning/agent-led-workflow.md` respectively.
+Everything through `4763fcb` is pushed to `origin/main`.
+
+**Terminal, whole-phase Definition-of-Done audit: first pass returned
+FAIL** (`planning/retros/_audit-phase-88.md`) on two genuine gaps: no
+independent `docs-reconstructor` per-phase drift audit had ever run
+for Phase 88 (found live drift in `docs/architecture/overview.md` —
+a Stage-88A-era "once Stage 88B lands" conditional never revisited
+after 88B actually landed — and a stage-scoping ambiguity in
+`docs/reference/cli.md`'s `mcp-serve` heading), and this file's own
+current-state section was stale (described Stage 88B and the
+demonstration as uncommitted after they had in fact landed). Both
+fixed directly (this paragraph; the `overview.md`/`cli.md` corrections
+above the fold). **Next step: dispatch an independent
+`docs-reconstructor` drift audit scoped to everything Phase 88
+changed, then re-run the terminal audit fresh against the resulting
+commit** — per `CLAUDE.md` §5, the FAIL does not carry forward once
+new commits touch audited scope. `planning/ROADMAP.md`'s Phase 88 row
+remains, correctly, not `done`.
 
 Phase 87 — Documentation Schema and Knowledge-Compiled Documentation —
 remains `done`, kept below for continuity. All four stages were

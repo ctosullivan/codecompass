@@ -47,6 +47,12 @@ package naming, supported ecosystems, repository layout) and
 - **A persistent, human/AI-tool-editable knowledge layer**
   (`codecompass knowledge ...`) — see
   [`../docs/workflows/knowledge-reconciliation-loop.md`](../docs/workflows/knowledge-reconciliation-loop.md).
+- **An MCP server** (`codecompass mcp-serve`, Phase 88) — exposes the
+  knowledge API, documentation grounding, change-impact analysis, and
+  controlled verification (opt-in, `--enable-execution`) to a connected
+  coding-agent client over the standard MCP stdio transport. Single
+  operator, locally-run — no sandbox isolation, no network exposure.
+  See [`../docs/reference/mcp.md`](../docs/reference/mcp.md).
 
 ## What it does NOT do
 
@@ -71,6 +77,7 @@ this isn't certain of.
 |---|---|
 | How to install/run it | [`../docs/getting-started.md`](../docs/getting-started.md) |
 | CLI flags/commands | [`../docs/reference/cli.md`](../docs/reference/cli.md) |
+| MCP server tools/security model | [`../docs/reference/mcp.md`](../docs/reference/mcp.md) |
 | `vendor.toml`/config shape | [`../docs/reference/configuration.md`](../docs/reference/configuration.md) |
 | The external adapter wire protocol | [`../docs/reference/protocols.md`](../docs/reference/protocols.md) |
 | System architecture | [`../docs/architecture/`](../docs/architecture/) |

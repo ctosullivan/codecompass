@@ -1,7 +1,7 @@
 """Phase 88 -- MCP server construction and the `codecompass mcp-serve`
 entry point. See `planning/phase-88-agent-integration-mcp.md` §4/§11.1
-for the full design -- this module wires the nine Stage 88A tools (and,
-once Stage 88B lands, the three assurance tools) onto the official `mcp`
+for the full design -- this module wires the nine Stage 88A read-only
+tools and the three Stage 88B assurance tools onto the official `mcp`
 SDK's stdio transport. No tool logic lives here -- every function
 registered below is a closure over one `tools.py` function plus the
 server's own fixed `ServerConfig`.
@@ -27,10 +27,11 @@ def _codecompass_version() -> str:
 
 
 def build_server(config: _sec.ServerConfig) -> MCPServer:
-    """Registers the nine Stage 88A read-only tools against `config`.
-    Each registered function is a thin closure with no logic of its own
-    beyond forwarding to `tools.py` -- the actual implementation,
-    validation, and confinement live there and in the modules it wraps."""
+    """Registers the nine Stage 88A read-only tools and the three
+    Stage 88B assurance tools against `config`. Each registered function
+    is a thin closure with no logic of its own beyond forwarding to
+    `tools.py` -- the actual implementation, validation, and confinement
+    live there and in the modules it wraps."""
     mcp = MCPServer(
         "codecompass",
         version=config.codecompass_version,

@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 88 — learnings triage and terminal-audit corrective pass**:
+  four candidate learnings from the phase retro triaged by
+  `knowledge-curator` and promoted (`L-131`-`L-134`) — `L-131` (a
+  relative-path convention enforced only by invocation habit is not
+  actually enforced; a new, differently-invoked entry point wrapping
+  existing logic is exactly when it is first silently violated) landed
+  in `CLAUDE.md` §1 (mirrored in `CONTRIBUTING.md`), user-approved per
+  §0; `L-132` (re-review until a round finds nothing new, not merely
+  until the first clean-looking fix), `L-133` (a rigorous scratch-copy
+  demonstration is strong evidence for a test's correctness and a
+  context record's relevance, never evidence a real unauthorized
+  target's gap is closed), and `L-134` (a stage-level audit's own
+  persisted report must be written before its verdict is returned,
+  mirroring `L-060`'s phase-level fix at stage granularity) landed in
+  `planning/v1-redefinition/agent-led-development.md`,
+  `context-quality-evaluation.md`, `.claude/agents/release-phase-
+  auditor.md`, and `planning/agent-led-workflow.md`. A first terminal,
+  whole-phase `release-phase-auditor` pass against the resulting state
+  returned **FAIL** on two real gaps: no independent `docs-reconstructor`
+  drift audit had ever run for Phase 88 (live drift found in
+  `docs/architecture/overview.md`'s own "once Stage 88B lands"
+  conditional, never revisited after 88B actually landed, and a
+  stage-scoping ambiguity in `docs/reference/cli.md`'s `mcp-serve`
+  heading), and `planning/CONTEXT.md`'s current-state section was stale
+  (described already-landed work as still staged/pending). Both fixed.
 - **Phase 88 Stage 88B — assurance integration**: the remaining three
   MCP tools, `impact_classify_change`, `oracle_list_checks`, and
   `oracle_execute_check`. `src/codecompass/change_impact.py` (new):
