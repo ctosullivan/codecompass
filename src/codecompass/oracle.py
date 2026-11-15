@@ -186,13 +186,23 @@ _RESULT_REQUIRED = {
 _OUTCOME_VALUES = {"PASS", "FAIL", "INVALID"}
 
 
-def _safe_load_yaml(path: Path) -> object:
+def _safe_load_yaml(path: Path, *, text: str | None = None) -> object:
     """Malformed YAML becomes a reportable `OracleSchemaError`, never an
     uncaught `yaml.YAMLError` -- the same controlled-finding discipline
     `check_contracts.py`/`check_knowledge_base.py` already apply to every
-    other failure mode (`decisions/0082` §D)."""
+    other failure mode (`decisions/0082` §D).
+
+    `text`, when given (plan `planning/phase-88-agent-integration-mcp.md`
+    §17.3/§18.1), is used verbatim instead of re-reading `path` -- the
+    caller has already performed its own atomic, confined read (e.g. an
+    `O_NOFOLLOW` open, possibly `dir_fd`-relative) and this function must
+    not reopen `path` by name a second time, which would reintroduce the
+    exact check-then-use race the confined read was meant to close.
+    `path` is still used for every error message and is never itself
+    read when `text` is supplied."""
     try:
-        return yaml.safe_load(path.read_text(encoding="utf-8"))
+        raw_text = text if text is not None else path.read_text(encoding="utf-8")
+        return yaml.safe_load(raw_text)
     except yaml.YAMLError as exc:
         raise OracleSchemaError(f"{path}: malformed YAML: {exc}") from exc
 
@@ -252,8 +262,11 @@ def _require_execution_provider(value: object, field_name: str, path: Path) -> s
     return provider
 
 
-def parse_oracle_contract(path: Path) -> OracleContract:
-    raw = _safe_load_yaml(path)
+def parse_oracle_contract(path: Path, *, text: str | None = None) -> OracleContract:
+    """`text`, when given, is used in place of reading `path` (see
+    `_safe_load_yaml`'s own docstring) -- added for `find_gaps`'s own
+    `dir_fd`-confined contract read (§18.1)."""
+    raw = _safe_load_yaml(path, text=text)
     if not isinstance(raw, dict):
         raise OracleSchemaError(f"{path}: top level must be a mapping")
     missing = _CONTRACT_REQUIRED_TOP - raw.keys()
@@ -314,8 +327,12 @@ def parse_oracle_contract(path: Path) -> OracleContract:
     )
 
 
-def parse_oracle_result(path: Path) -> OracleResult:
-    raw = _safe_load_yaml(path)
+def parse_oracle_result(path: Path, *, text: str | None = None) -> OracleResult:
+    """`text`, when given, is used in place of reading `path` (see
+    `_safe_load_yaml`'s own docstring) -- added for `knowledge_api.py`'s
+    own confined-read call sites (§17.3/§18.1), so a result already read
+    atomically (possibly `dir_fd`-relative) is never reopened by name."""
+    raw = _safe_load_yaml(path, text=text)
     if not isinstance(raw, dict):
         raise OracleSchemaError(f"{path}: top level must be a mapping")
     missing = _RESULT_REQUIRED - raw.keys()

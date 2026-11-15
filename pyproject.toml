@@ -23,6 +23,7 @@ dependencies = [
     "anthropic>=0.109",
     "pipdeptree>=4.2",
     "pyyaml>=6.0",
+    "mcp>=2.0,<3",
 ]
 # Note: no `tomli` dependency — requires-python >=3.11 means `tomllib` is
 # available in the standard library (see decisions/0009).

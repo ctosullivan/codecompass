@@ -1,13 +1,14 @@
 # Architecture overview
 
-CodeCompass is a single Python package (`src/codecompass/`) exposed through one Typer CLI entry point (`codecompass`, `src/codecompass/cli.py`). It has no server component and no persistent background process — every invocation is a single run against the current working directory, treated as the target project root.
+CodeCompass is a single Python package (`src/codecompass/`) exposed through one Typer CLI entry point (`codecompass`, `src/codecompass/cli.py`). Every subcommand except `mcp-serve` is a single run against the current working directory, treated as the target project root, with no server component and no persistent background process. `mcp-serve` (Phase 88) is the one exception: a long-running process serving the MCP stdio protocol to a connected coding-agent client, started explicitly and exited explicitly — never auto-started by any other command.
 
-## The four main subsystems
+## The five main subsystems
 
 1. **Ecosystem adapters** (`src/codecompass/adapters/`) — one class per `Ecosystem`, extracting real facts (installed version, source location, dependency tree, API surface) about one tracked dependency at a time. See `docs/concepts/adapter.md`.
 2. **Deterministic rendering and the context graph** — tree renderers (`deptree.py`, `filetree.py`), mechanical symbol/usage/doc-relationship detectors (`symbols.py`, `source_symbols.py`, `usage.py`, `spec_docs.py`, `doc_mapping.py`, `skill_scan.py`, `git_topology.py`), and a SQLite persistence layer (`graph.py`) that a full-rebuild orchestrator (`sync.py::rebuild_project_graph`) assembles on every whole-project sync. None of this ever makes an AI call.
 3. **AI enrichment** (`enrichment.py`, `relation_enrichment.py`) — a strictly separate, cost-gated, usage-driven layer that reads the deterministic graph's own usage evidence to decide what, if anything, is worth describing with an Anthropic API call, and writes its own result back into a small set of tables the deterministic rebuild never touches.
 4. **The consolidated knowledge API** (`knowledge_api.py`, Phase 84) — one stable, **read-only** typed interface over the context graph, `planning/knowledge/`, and `planning/contracts/` combined, so a caller asks one module "what does this project know, how confident, is that still current" instead of reading three storage formats directly. See `docs/architecture/components.md`'s own entry.
+5. **The MCP server** (`mcp/`, Phase 88) — a thin, read-mostly layer exposing subsystem 4's own knowledge API (and, once Stage 88B lands, controlled oracle execution) to a real coding agent over the standard MCP stdio transport. Introduces no new knowledge store of its own; every tool is a validating, confining wrapper around an already-shipped function. See `docs/reference/mcp.md`.
 
 ## Foundational design choices
 
@@ -66,6 +67,6 @@ CodeCompass is a single Python package (`src/codecompass/`) exposed through one 
 
 ## What CodeCompass explicitly does not do
 
-- No MCP (Model Context Protocol) integration exists anywhere in the source.
+- `mcp-serve` (Phase 88) is a read-mostly, thin layer over the already-shipped knowledge API — it introduces no new knowledge store, impact engine, or verification framework, implements no sandbox/container/restricted-user isolation for its one opt-in execute tool, and is designed for exactly one local operator's process connected to one client, never a shared or network-exposed service. See `docs/reference/mcp.md`.
 - No network service, no plugin marketplace, no remote execution for the external adapter protocol — stated as a deliberate non-goal of that protocol's own specification.
 - `codecompass` never writes AI-generated content into a spec doc (your own hand-authored documentation) — a non-negotiable boundary for the relationship-enrichment pipeline specifically (see `docs/workflows/sync-and-enrichment-pipeline.md`).

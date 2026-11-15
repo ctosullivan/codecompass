@@ -1221,6 +1221,48 @@ def undo(
         console.print("[green]undo complete[/green]")
 
 
+@app.command("mcp-serve")
+def mcp_serve(
+    repo_root: list[str] = typer.Option(
+        [], "--repo-root",
+        help="A <key>=<path> pinned target-repository mapping; repeatable. "
+             "A coding agent selects *which* pinned key to use via "
+             "repo_root_key, never a filesystem path (plan §5.2).",
+    ),
+    project_root: Path = typer.Option(
+        None, "--project-root",
+        help="This CodeCompass-indexed project's own root (defaults to the "
+             "current working directory).",
+    ),
+    enable_execution: bool = typer.Option(
+        False, "--enable-execution",
+        help="Enable oracle_execute_check (Stage 88B). Grants the connected "
+             "MCP client the ability to execute real code from a pinned "
+             "target checkout under this server process's own OS "
+             "privileges -- equivalent to letting that client run pytest "
+             "on this machine directly. No sandbox, container, or "
+             "restricted user is implemented (plan §5.2). Off by default.",
+    ),
+) -> None:
+    """Serve CodeCompass's knowledge, provenance, context-retrieval,
+    change-impact, and (with --enable-execution) controlled-verification
+    capabilities over the standard MCP stdio transport (Phase 88,
+    `planning/phase-88-agent-integration-mcp.md`). Intended for a single
+    operator's locally-run process connected to one coding agent -- never
+    a shared or network-exposed service. See docs/reference/mcp.md.
+    """
+    from codecompass.mcp import server as _mcp_server
+
+    root = (project_root or Path.cwd()).resolve()
+    try:
+        repo_roots = _mcp_server.parse_repo_root_option(repo_root)
+    except ValueError as exc:
+        console.print(f"[red]error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    _mcp_server.run(root, repo_roots, execution_enabled=enable_execution)
+
+
 def _codecompass_generated_paths(project_root: Path) -> set[Path]:
     """Every path `undo` should remove, before de-duplication. Two mutually
     exclusive enumeration strategies, chosen by whether `context-graph.db`

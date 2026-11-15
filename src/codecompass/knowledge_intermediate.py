@@ -33,6 +33,7 @@ neither is a canonical record.
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -942,9 +943,30 @@ class KnowledgeRecord:
     fields: dict[str, str]
 
 
-def load_slug_records(slug: Path) -> dict[str, KnowledgeRecord]:
+def load_slug_records(
+    slug: Path, *, confined_dir_fd: int | None = None
+) -> dict[str, KnowledgeRecord]:
     """Every record directly under `slug` (not `intermediate/`,
-    `snapshots/`, or `reconciliation/`) keyed by its own `id`."""
+    `snapshots/`, or `reconciliation/`) keyed by its own `id`.
+
+    `confined_dir_fd`, when given (plan §18.1), is an already-open,
+    already-validated directory file descriptor for this exact `slug`
+    path (from `knowledge_api._open_confined_dir_fd`/
+    `_open_confined_subdir_fd`). Every subsequent lookup is then
+    performed relative to that descriptor (`os.scandir(dir_fd)`,
+    `dir_fd=`-relative opens) instead of re-deriving the path from
+    `slug` by name -- closing the window between validating `slug` and
+    reading its children, making the confinement guarantee persistent
+    for the descriptor's lifetime rather than true only at the moment
+    `slug` was last checked. `slug` is still used for the returned
+    `KnowledgeRecord.path` field (display/provenance only, never
+    reopened by name) and is otherwise ignored in this mode. Every
+    existing caller that does not pass `confined_dir_fd` is completely
+    unaffected -- this parameter is additive, not a signature change
+    for the many non-security-relevant call sites across this
+    codebase."""
+    if confined_dir_fd is not None:
+        return _load_records_via_dir_fd(confined_dir_fd, slug)
     records: dict[str, KnowledgeRecord] = {}
     if not slug.is_dir():
         return records
@@ -953,6 +975,50 @@ def load_slug_records(slug: Path) -> dict[str, KnowledgeRecord]:
         record_id = fields.get("id")
         kind = fields.get("kind")
         if record_id and kind:
+            records[record_id] = KnowledgeRecord(record_id, kind, yaml_path, fields)
+    return records
+
+
+def _load_records_via_dir_fd(dir_fd: int, display_dir: Path) -> dict[str, KnowledgeRecord]:
+    """`load_slug_records`'s `confined_dir_fd` mode (plan §18.1): lists
+    `*.yaml` entries via `os.scandir(dir_fd)`, excluding a symlinked
+    match (the "symlinked YAML file inside an otherwise-legitimate slug
+    directory" case, required explicitly), and opens each one
+    `O_NOFOLLOW`, `dir_fd`-relative -- never by a path string re-walked
+    from `display_dir`. A symlinked or unreadable match is silently
+    excluded, exactly as if it were never present -- no change to this
+    function's own return type."""
+    records: dict[str, KnowledgeRecord] = {}
+    try:
+        names = sorted(
+            entry.name
+            for entry in os.scandir(dir_fd)
+            if entry.name.endswith(".yaml") and not entry.is_symlink()
+        )
+    except OSError:
+        return records
+    for name in names:
+        try:
+            fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=dir_fd)
+        except OSError:
+            continue
+        try:
+            chunks: list[bytes] = []
+            while True:
+                chunk = os.read(fd, 65536)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+            text = b"".join(chunks).decode("utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        finally:
+            os.close(fd)
+        fields = parse_record_text(text)
+        record_id = fields.get("id")
+        kind = fields.get("kind")
+        if record_id and kind:
+            yaml_path = display_dir / name
             records[record_id] = KnowledgeRecord(record_id, kind, yaml_path, fields)
     return records
 
@@ -2492,10 +2558,15 @@ class StatusReport:
 
 
 def _list_slugs(project_root: Path) -> list[str]:
+    """Hardened, plan `planning/phase-88-agent-integration-mcp.md`
+    §17.9.3 point 1: excludes a symlinked entry at the enumeration's own
+    source, so every consumer that trusts this list's membership (the
+    MCP wrapper's own slug allowlist, `_all_records`) genuinely gets
+    filesystem confinement, not merely a traversal-string check."""
     kdir = knowledge_dir(project_root)
     if not kdir.is_dir():
         return []
-    return sorted(p.name for p in kdir.iterdir() if p.is_dir())
+    return sorted(p.name for p in kdir.iterdir() if p.is_dir() and not p.is_symlink())
 
 
 def knowledge_status(project_root: Path, slug: str | None = None) -> StatusReport:

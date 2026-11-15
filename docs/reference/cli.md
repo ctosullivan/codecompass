@@ -138,6 +138,16 @@ The *how* behind this cleanup depends on whether `context-graph.db` exists yet, 
 - **Graph-backed (precise)** — when `context-graph.db` already exists: `undo` queries it directly for every `doc_artifacts` row tagged `origin IN ('codecompass_tool', 'codecompass_vendor')` (`third_party`-origin rows are never selected, by construction, not by a filter applied after the fact), resolves each to a real path, and adds every tracked vendor's own `vendor/<name>/` directory from the `vendors` table. This correctly distinguishes a CodeCompass-generated artifact from a third-party one by its real, recorded origin. **Known first-run limitation** (`L-129`): on a project's very first `codecompass` run, the whole-project graph rebuild that records these `doc_artifacts` rows runs *before* the Skill/slash-command files are generated, so `undo --dry-run`/`undo --yes` run immediately afterward omit `.claude/skills/codecompass/` and `.claude/commands/discovery.md` from this graph-backed enumeration — both are left on disk. A second whole-project `sync` backfills the missing rows and self-heals the gap for any subsequent `undo`.
 - **Pattern-based (fallback)** — when no `context-graph.db` exists yet (e.g. only `init --scan` has run, with no whole-project sync): `undo` instead matches a fixed set of path globs against the exact naming conventions `skill.py`/`commands.py` use (`.claude/skills/codecompass*`, `.cursor/rules/codecompass-*.mdc`, `.claude/commands/discovery.md`, plus each tracked vendor's `vendor/<name>/` directory from `vendor.toml`). This is **less precise**: because it has no recorded origin to check against, it cannot distinguish a hand-renamed third-party artifact that happens to match the same naming pattern from a real CodeCompass-generated one — a real, disclosed precision gap this fallback mode accepts in exchange for working without a prior sync.
 
+## `codecompass mcp-serve` (Phase 88, Stage 88A)
+
+```
+codecompass mcp-serve [--repo-root KEY=PATH ...] [--project-root PATH] [--enable-execution]
+```
+
+Serves CodeCompass's knowledge, provenance, context-retrieval, change-impact, and (with `--enable-execution`) controlled-verification capabilities over the standard MCP stdio transport, for a real coding agent (e.g. Claude Code) connected as a single MCP client. Intended for one operator's locally-run process — never a shared or network-exposed service. See `docs/reference/mcp.md` for the full tool surface, configuration, and security model.
+
+`--repo-root KEY=PATH` is repeatable: each pins one symbolic key to a real target-repository path. A connected agent selects *which* pinned key to consult via a tool's own `repo_root_key` parameter — it can never supply a raw filesystem path itself. `--project-root` defaults to the current working directory (the CodeCompass-indexed project whose own knowledge this server exposes). `--enable-execution` turns on the one execute-classified tool (`oracle_execute_check`, Stage 88B) — off by default; see `docs/reference/mcp.md` for what it actually grants before enabling it.
+
 ## `codecompass enrich apply <entries_file> --agent <name>`
 
 ```

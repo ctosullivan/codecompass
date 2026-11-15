@@ -7,8 +7,31 @@ session-resumption, not a project history.
 
 ## Current phase
 
-**Phase 87 — Documentation Schema and Knowledge-Compiled Documentation
-— is `done`.** All four stages are complete: Stage 87A (implemented,
+**Phase 88 — Agent Integration and MCP — is now the active phase.**
+Planning is complete and independently reviewed through five amendment
+rounds (full history below, under "What was just completed"). **Stage
+88A (MCP foundation, read-only) is implemented** — `src/codecompass/
+mcp/` (`security.py`/`tools.py`/`server.py`), `codecompass mcp-serve`,
+all nine read-only tools, the §17/§17.9/§18.1 filesystem-confinement
+fixes applied directly to `knowledge_api.py`/`knowledge_intermediate.
+py`/`oracle.py` (previously specified in the plan, not yet in code),
+40 new tests, and docs (`docs/reference/mcp.md`, corrected `docs/
+architecture/overview.md` claims). An independent `release-phase-
+auditor`-style review of this stage alone returned **PASS WITH
+NON-BLOCKING OBSERVATIONS** (one gap — missing malformed-input test
+coverage for empty required strings and out-of-range `max_items`/
+`max_chars` — found and closed in place). Full regression suite green
+(1424 passed, 2 skipped); zero new Ruff debt against the pinned
+176-finding baseline. **Stage 88B (assurance integration:
+`impact_classify_change`, `oracle_list_checks`, `oracle_execute_check`)
+and the Ledgerkit demonstration are not yet implemented** — this is
+the immediate next step, not yet begun as of this note. Not committed
+yet (staged for the lead/user's own commit per this session's
+established practice around automated-commit-control blocks).
+
+Phase 87 — Documentation Schema and Knowledge-Compiled Documentation —
+remains `done`, kept below for continuity. All four stages were
+complete: Stage 87A (implemented,
 hardened, independently re-audited **PASS WITH NON-BLOCKING
 OBSERVATIONS**); Stage 87B (implemented and `done`, hardened a
 further three times against four found-and-fixed publication-integrity
@@ -1206,18 +1229,22 @@ mcp.md`'s own code changes begin, per this phase's own precedent
 (every phase from 83 onward split planning and implementation
 authorisation).
 
-**Recommended next step (a recommendation for the lead/user to pick up
-separately — this reconciliation does not itself begin it):** either
-authorise Phase 88's implementation (Stage 88A first, per the plan's
-own §11), or plan **Phase 89 (Incremental Knowledge and Documentation
-Reconciliation)** next instead — per `planning/ROADMAP.md`, Phase 89
-"operates independently of MCP transport" and does not require Phase
-88 first, so either may reasonably go first; Phase 89 has no
-`planning/phase-N-*.md` plan file yet, so per `CLAUDE.md` §1 picking it
-up means writing that plan and having it independently reviewed before
-any implementation begins. Phase 90 (Comparative Development Trials),
-91 (External Validation and Adoption), and 92 (v2.0 Hardening and
-Release) remain further out in the same `not started` sequence.
+**Superseded by the "Current phase" section above**: Stage 88A is now
+implemented and independently audited. **Next concrete step: Stage 88B
+implementation** (`impact_classify_change`, `oracle_list_checks`,
+`oracle_execute_check` — relocating `scripts/assess_change_impact.py`'s
+logic into a packaged `src/codecompass/change_impact.py`, the
+`oracle.py` subprocess timeout/bounded-capture/process-group-kill
+additions named in §5.3, and the path-confinement corrections for
+`impact_classify_change`'s own `changed[].path`), followed by the real
+Ledgerkit demonstration (§12) and the terminal phase-wide audit. Phase
+89 (Incremental Knowledge and Documentation Reconciliation) remains a
+separately pickupable alternative — it "operates independently of MCP
+transport" and does not require Phase 88 first — but Phase 88 is the
+one already mid-implementation, so continuing it is the natural
+default absent a reason to switch. Phase 90 (Comparative Development
+Trials), 91 (External Validation and Adoption), and 92 (v2.0 Hardening
+and Release) remain further out in the same `not started` sequence.
 
 A smaller, nearer-term item that does *not* need that authorisation:
 Stage 87C's own five candidate learnings (`L-125`-`L-129`,

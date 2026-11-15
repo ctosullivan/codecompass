@@ -9,6 +9,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 88 Stage 88A — MCP foundation (read-only)**: a new
+  `src/codecompass/mcp/` package (`security.py`, `tools.py`,
+  `server.py`) and `codecompass mcp-serve` CLI command, serving the nine
+  planned read-only tools (`knowledge_get`/`search`/`traverse`/
+  `trace_evidence`/`epistemic_status`/`context_packet`/`find_gaps`,
+  `docs_get_grounded_region`, `server_capabilities`) over the official
+  `mcp` SDK's stdio transport (`mcp>=2.0,<3`, added to `pyproject.toml`;
+  `CLAUDE.md`'s own dependency-digest table deliberately not touched —
+  that edit requires separate explicit approval per `CLAUDE.md` §0 and
+  is presented separately, not applied here). Every tool is a thin,
+  validating wrapper over the already-shipped `knowledge_api.py`; no
+  knowledge logic is duplicated. As part of delivering this stage, the
+  filesystem-confinement fixes specified across the plan's own
+  §17/§17.9/§18.1 amendment rounds — previously specified but not yet
+  implemented in code — were applied directly to `knowledge_api.py`
+  (`_get_symbol`, `_traverse_cites`, `find_gaps`'s evidence loop and its
+  four raw-`slug` call sites), `knowledge_intermediate.py` (`_list_slugs`
+  hardened, `load_slug_records` given an optional, backward-compatible
+  `confined_dir_fd` parameter), and `oracle.py` (`parse_oracle_result`/
+  `parse_oracle_contract`/`_safe_load_yaml` given an optional `text=`
+  parameter so a confined read is never reopened by path). 40 new tests
+  (`tests/test_mcp_server.py`, `tests/test_mcp_security_confinement.py`),
+  including an adversarial directory-substitution-after-open test
+  proving the descriptor-based confinement guarantee holds across a
+  live substitution, not merely at validation time. New docs
+  (`docs/reference/mcp.md`) and corrected now-stale claims
+  (`docs/architecture/overview.md` previously said "no server
+  component"/"no MCP integration exists" — both now false). Full
+  regression suite green (1424 passed, 2 skipped, unchanged skip
+  count); zero new Ruff findings against the pinned 176-finding
+  whole-repo baseline; `check_user_docs.py --strict` clean. An
+  independent `release-phase-auditor`-style review of this stage alone
+  (before Stage 88B begins, per the plan's own §11.1) returned **PASS
+  WITH NON-BLOCKING OBSERVATIONS** — one real gap (malformed-input test
+  coverage for empty required strings and out-of-range
+  `max_items`/`max_chars`, named in the plan's own §5.8/§11.1 acceptance
+  list but not yet written) was found and closed in place. Stage 88B
+  (assurance integration: `impact_classify_change`, `oracle_list_checks`,
+  `oracle_execute_check`) and the Ledgerkit demonstration are not yet
+  implemented.
+
 - **Phase 88 plan amendment — descriptor-relative directory
   confinement, genuine Ledgerkit documentation relevance, and oracle
   outcome schema correction** (planning only, no `src/` change, direct

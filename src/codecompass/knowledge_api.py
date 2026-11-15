@@ -48,7 +48,9 @@ merged into one "verified" answer.
 
 from __future__ import annotations
 
+import contextlib
 import json
+import os
 import re
 import sqlite3
 import subprocess
@@ -255,6 +257,127 @@ def _graph_revision_string(meta: dict[str, str | None]) -> str | None:
 
 
 # ---------------------------------------------------------------------------
+# Filesystem confinement for live reads (plan `planning/
+# phase-88-agent-integration-mcp.md` §17.1-§17.4, §17.9, §18.1).
+#
+# A symlink planted after an index/enumeration was built must never
+# cause this module to read or hash content outside `project_root` (or,
+# for a slug-scoped read, outside the relevant `planning/knowledge/`/
+# `planning/contracts/` subtree). `.resolve()`/`is_relative_to()` alone
+# only proves confinement *at the moment checked* (point-in-time); an
+# `O_NOFOLLOW` open additionally refuses a symlinked *final* component
+# atomically, closing the race for that one open; a `dir_fd`-relative
+# open goes further still, resolving every subsequent child lookup
+# against the already-open directory's own inode rather than by
+# re-walking a path string, so a later rename/symlink-substitution of
+# the directory entry itself cannot affect it -- a persistent, not
+# merely point-in-time, guarantee for that fd's lifetime (§18.1). None
+# of this protects an intermediate path component *above* the one last
+# confined (e.g. `planning/knowledge/` itself) -- a disclosed, not
+# eliminated, residual (§17.5/§18.1 point 4).
+# ---------------------------------------------------------------------------
+
+
+def _read_confined_bytes(
+    project_root: Path, rel_path: str, *, dir_fd: int | None = None
+) -> bytes | None:
+    """One shared atomic-read primitive, two modes:
+
+    - `dir_fd=None` (default): `rel_path` is resolved against
+      `project_root`, confined via `.resolve()`/`is_relative_to()`
+      (point-in-time), then opened `O_NOFOLLOW` (atomic for its own
+      final component only -- §17.3).
+    - `dir_fd` given: `rel_path` must be a bare name, opened directly
+      relative to that already-confined, already-open directory
+      descriptor -- no path re-walk at all, persistent confinement for
+      the descriptor's lifetime (§18.1).
+
+    Returns `None` on any rejection: the target does not exist, escapes
+    confinement, is a symlink, or is unreadable -- these are never
+    distinguished to the caller (§17.3 point 5's own correction: no
+    field makes them distinguishable, and that is not itself a defect
+    since every case safely discloses nothing)."""
+    if dir_fd is None:
+        candidate = project_root / rel_path
+        try:
+            root_real = project_root.resolve()
+            target_real = candidate.resolve()
+        except OSError:
+            return None
+        if not target_real.is_relative_to(root_real):
+            return None
+        open_target: Path | str = candidate
+    else:
+        open_target = rel_path
+
+    try:
+        fd = os.open(open_target, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=dir_fd)
+    except OSError:
+        return None
+    try:
+        chunks: list[bytes] = []
+        while True:
+            chunk = os.read(fd, 65536)
+            if not chunk:
+                break
+            chunks.append(chunk)
+        return b"".join(chunks)
+    except OSError:
+        return None
+    finally:
+        os.close(fd)
+
+
+def _open_confined_dir_fd(root_dir: Path, name: str) -> int | None:
+    """Atomically open `root_dir/name`, confined to `root_dir`, refusing
+    a symlinked `name` entry -- returns an open directory file
+    descriptor (caller must close it) so every subsequent child-file
+    access can be performed `dir_fd`-relative (§17.9.3/§18.1). `None` on
+    any rejection: malformed `name` (absolute, empty, `.`/`..`, or
+    containing a path separator -- defense-in-depth against a malformed
+    string reaching this helper directly, e.g. if a function here is
+    ever called outside the MCP wrapper's own allowlist gate), a
+    confinement escape, a symlink, or genuine absence."""
+    if not name or name in (".", "..") or "/" in name or "\\" in name:
+        return None
+    try:
+        root_real = root_dir.resolve()
+        target_real = (root_dir / name).resolve()
+    except OSError:
+        return None
+    if not target_real.is_relative_to(root_real):
+        return None
+    try:
+        return os.open(root_dir / name, os.O_RDONLY | os.O_NOFOLLOW | os.O_DIRECTORY)
+    except OSError:
+        return None
+
+
+def _open_confined_subdir_fd(parent_dir_fd: int, name: str) -> int | None:
+    """`dir_fd`-relative child-directory open, extending an
+    already-confined parent descriptor one level deeper with no path
+    re-walk (§18.1). `name` must be a fixed, non-caller-supplied literal
+    (e.g. `"results"`) -- never a caller-controlled value, since this
+    helper performs no string validation of its own."""
+    try:
+        return os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_DIRECTORY, dir_fd=parent_dir_fd)
+    except OSError:
+        return None
+
+
+@contextlib.contextmanager
+def _closing_fd(fd: int | None):
+    """Closes `fd` on exit if it is not `None` -- a tiny convenience so
+    every `_open_confined_*` call site gets a guaranteed close without
+    repeating the `if fd is not None: os.close(fd)` guard."""
+    try:
+        yield fd
+    finally:
+        if fd is not None:
+            os.close(fd)
+
+
+# ---------------------------------------------------------------------------
 # Cross-slug record access
 # ---------------------------------------------------------------------------
 
@@ -286,8 +409,51 @@ def _slug_results_dir(project_root: Path, slug: str) -> Path:
     return _contracts_root(project_root) / slug / "results"
 
 
-def _load_slug_results(project_root: Path, slug: str) -> list[_oracle.OracleResult]:
+def _load_oracle_results_via_dir_fd(
+    dir_fd: int, display_dir: Path
+) -> list[tuple[Path, _oracle.OracleResult]]:
+    """Shared `dir_fd`-relative `*.yaml` oracle-result loader (§18.1),
+    used by both `_load_slug_results` and `_results_by_test_ref` when
+    given a `confined_dir_fd` -- lists via `os.scandir(dir_fd)`
+    (excluding a symlinked match), opens each `O_NOFOLLOW`
+    `dir_fd`-relative, and parses the already-read text via
+    `parse_oracle_result(..., text=...)` rather than reopening by
+    path."""
+    out: list[tuple[Path, _oracle.OracleResult]] = []
+    try:
+        names = sorted(
+            entry.name
+            for entry in os.scandir(dir_fd)
+            if entry.name.endswith(".yaml") and not entry.is_symlink()
+        )
+    except OSError:
+        return out
+    for name in names:
+        data = _read_confined_bytes(display_dir, name, dir_fd=dir_fd)
+        if data is None:
+            continue
+        result_path = display_dir / name
+        try:
+            text = data.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        try:
+            result = _oracle.parse_oracle_result(result_path, text=text)
+        except _oracle.OracleSchemaError:
+            continue
+        out.append((result_path, result))
+    return out
+
+
+def _load_slug_results(
+    project_root: Path, slug: str, *, confined_dir_fd: int | None = None
+) -> list[_oracle.OracleResult]:
+    """`confined_dir_fd`, when given (§18.1), is an already-open,
+    already-confined descriptor for this slug's own `results/`
+    directory -- every existing caller omitting it is unaffected."""
     results_dir = _slug_results_dir(project_root, slug)
+    if confined_dir_fd is not None:
+        return [r for _, r in _load_oracle_results_via_dir_fd(confined_dir_fd, results_dir)]
     out: list[_oracle.OracleResult] = []
     if not results_dir.is_dir():
         return out
@@ -478,9 +644,19 @@ def _KI_unquote(value: str) -> str:
     return _ki._unquote(value)
 
 
-def _results_by_test_ref(project_root: Path, slug: str) -> dict[str, _oracle.OracleResult]:
+def _results_by_test_ref(
+    project_root: Path, slug: str, *, confined_dir_fd: int | None = None
+) -> dict[str, _oracle.OracleResult]:
+    """`confined_dir_fd`, when given (§18.1), is an already-open,
+    already-confined descriptor for this slug's own `results/`
+    directory -- every existing caller omitting it is unaffected."""
     by_ref: dict[str, _oracle.OracleResult] = {}
     results_dir = _slug_results_dir(project_root, slug)
+    if confined_dir_fd is not None:
+        for result_path, result in _load_oracle_results_via_dir_fd(confined_dir_fd, results_dir):
+            rel = str(result_path.relative_to(project_root))
+            by_ref[rel] = result
+        return by_ref
     if not results_dir.is_dir():
         return by_ref
     for result_path in sorted(results_dir.glob("*.yaml")):
@@ -531,8 +707,28 @@ def _oracle_result_consistency(
     )
 
 
-def _find_contract_for_slug(project_root: Path, slug: str) -> tuple[str, _oracle.OracleContract, Path] | None:
+def _find_contract_for_slug(
+    project_root: Path, slug: str, *, confined_dir_fd: int | None = None
+) -> tuple[str, _oracle.OracleContract, Path] | None:
+    """`confined_dir_fd`, when given (§18.1), is an already-open,
+    already-confined descriptor for this slug's own contracts
+    directory (`_contracts_root(project_root)/slug`) -- `oracle-
+    contract.yaml` is then opened `dir_fd`-relative instead of by a
+    re-walked path. Every existing caller omitting it is unaffected."""
     contract_path = _slug_contract_path(project_root, slug)
+    if confined_dir_fd is not None:
+        data = _read_confined_bytes(project_root, "oracle-contract.yaml", dir_fd=confined_dir_fd)
+        if data is None:
+            return None
+        try:
+            text = data.decode("utf-8")
+        except UnicodeDecodeError:
+            return None
+        try:
+            contract = _oracle.parse_oracle_contract(contract_path, text=text)
+        except _oracle.OracleSchemaError:
+            return None
+        return slug, contract, contract_path
     if not contract_path.is_file():
         return None
     try:
@@ -566,19 +762,30 @@ def _get_symbol(project_root: Path, path: str, name: str, kind: str, line: int) 
     # fact is "current" only when positively re-confirmed, "stale" when
     # actively found to disagree, "unconfirmed" only when neither could be
     # established (the live file isn't reachable at all).
+    #
+    # §17.1/§17.3: an already-indexed path can be replaced with a symlink
+    # escaping `project_root` after sync, before this live re-read -- a
+    # plain `live_path.is_file()`/`sha256_file(live_path)` (both
+    # symlink-following) would read and hash whatever that symlink
+    # currently points at. `_read_confined_bytes` resolves-and-confines
+    # the path, then opens it `O_NOFOLLOW`, atomically refusing a
+    # symlinked final component -- an escape or refusal is reported as
+    # the existing `"unconfirmed"` default below, never a leaked hash or
+    # parsed field from the external target.
     status, reasons = "unconfirmed", [
         "derived_index fact -- live source not reachable under this project_root to re-confirm"
     ]
-    live_path = project_root / path
-    if content_hash is not None and live_path.is_file():
-        live_hash = _oracle.sha256_file(live_path)
-        if live_hash == content_hash:
-            status, reasons = "current", []
-        else:
-            status, reasons = "stale", [
-                f"live content_hash ({live_hash}) does not match the graph's own recorded "
-                f"content_hash ({content_hash}) -- the graph was not re-synced against this file"
-            ]
+    if content_hash is not None:
+        live_bytes = _read_confined_bytes(project_root, path)
+        if live_bytes is not None:
+            live_hash = _oracle.sha256_bytes(live_bytes)
+            if live_hash == content_hash:
+                status, reasons = "current", []
+            else:
+                status, reasons = "stale", [
+                    f"live content_hash ({live_hash}) does not match the graph's own recorded "
+                    f"content_hash ({content_hash}) -- the graph was not re-synced against this file"
+                ]
 
     result = KnowledgeResult(
         id=symbol_identity(path, name, kind, line),
@@ -969,15 +1176,23 @@ def _traverse_cites(project_root: Path, evidence_id: str) -> ApiResponse:
     test_ref = record.fields.get("test_ref", "")
     if test_ref and test_ref != "null":
         slug = _owning_slug(project_root, record)
-        result_path = project_root / _KI_unquote(test_ref)
-        details: dict = {"raw": _KI_unquote(test_ref), "slug": slug}
+        rel_test_ref = _KI_unquote(test_ref)
+        details: dict = {"raw": rel_test_ref, "slug": slug}
         authority = AUTHORITY_SCOPED_VERIFICATION
-        if result_path.is_file():
+        # §17.2/§17.3: this live read shares the same symlink/TOCTOU
+        # exposure `_get_symbol` has -- confined, atomically-opened read
+        # instead of a plain `.is_file()`/`parse_oracle_result(path)`
+        # pair, reusing the already-read bytes via `text=` so the file
+        # is never reopened by name a second time.
+        live_bytes = _read_confined_bytes(project_root, rel_test_ref)
+        if live_bytes is not None:
             try:
-                parsed = _oracle.parse_oracle_result(result_path)
+                parsed = _oracle.parse_oracle_result(
+                    project_root / rel_test_ref, text=live_bytes.decode("utf-8")
+                )
                 details["check_id"] = parsed.check_id
                 details["outcome"] = parsed.outcome
-            except _oracle.OracleSchemaError:
+            except (_oracle.OracleSchemaError, UnicodeDecodeError):
                 details["parse_error"] = "malformed OracleResult"
         else:
             details["missing"] = True
@@ -1358,7 +1573,20 @@ def find_gaps(project_root: Path, slug: str | None = None, *, repo_root: Path | 
     gaps: list[Gap] = []
 
     for s in slugs:
-        slug_records = _ki.load_slug_records(_ki.slug_dir(project_root, s))
+        # §17.9/§18.1: `s` may be a raw, caller-supplied slug (when this
+        # function is called directly, outside the MCP wrapper's own
+        # allowlist gate -- the allowlist itself is enforced one layer
+        # up, §3.2/§5.2). Every read below is therefore confined via an
+        # atomically-opened, `dir_fd`-relative descriptor rather than a
+        # plain path join -- a confinement rejection (`None`) is treated
+        # exactly as the pre-existing "not found" branch for that same
+        # read, never a new outcome category.
+        with _closing_fd(_open_confined_dir_fd(_ki.knowledge_dir(project_root), s)) as knowledge_fd:
+            slug_records = (
+                _ki.load_slug_records(_ki.slug_dir(project_root, s), confined_dir_fd=knowledge_fd)
+                if knowledge_fd is not None
+                else {}
+            )
         if not slug_records:
             continue
 
@@ -1385,81 +1613,133 @@ def find_gaps(project_root: Path, slug: str | None = None, *, repo_root: Path | 
                     ))
 
         has_obligations = any(r.kind in ("claim", "requirement") for r in slug_records.values())
-        found = _find_contract_for_slug(project_root, s)
-        if has_obligations and found is None:
-            gaps.append(Gap(kind="missing_contract", subject_id=None, scope=None,
-                             reason=f"slug {s!r} has claims/requirements but no oracle-contract.yaml"))
-            continue
-        if found is None:
-            continue
-        _, contract, contract_path = found
-
-        results_by_ref = _results_by_test_ref(project_root, s)
-        for claim in slug_records.values():
-            if claim.kind != "claim":
-                continue
-            profile = _ki.derive_epistemic_profile(
-                claim, records, oracle_contract=contract, oracle_results_by_test_ref=results_by_ref,
-                contract_path=contract_path, repo_root=repo_root,
+        contracts_fd = _open_confined_dir_fd(_contracts_root(project_root), s)
+        try:
+            found = (
+                _find_contract_for_slug(project_root, s, confined_dir_fd=contracts_fd)
+                if contracts_fd is not None
+                else None
             )
-            for scope in profile.known_gap_scopes:
-                gaps.append(Gap(kind="unverified_required_scope", subject_id=claim.record_id, scope=scope,
-                                 reason=f"{claim.record_id} cites no currently-passing result for required scope {scope!r}"))
+            if has_obligations and found is None:
+                gaps.append(Gap(kind="missing_contract", subject_id=None, scope=None,
+                                 reason=f"slug {s!r} has claims/requirements but no oracle-contract.yaml"))
+                continue
+            if found is None:
+                continue
+            _, contract, contract_path = found
 
-        all_results = _load_slug_results(project_root, s)
-        current_pass_by_check: dict[str, bool] = {}
-        for check in contract.checks:
-            check_results = [r for r in all_results if r.check_id == check.check_id]
-            # decisions/0093: repo_root threaded here too -- a check_results
-            # entry that merely satisfies contract-relative integrity (hash/
-            # raw-output/scope) is not "currently passing" against a live,
-            # possibly-changed implementation unless this same recomputation
-            # was actually performed.
-            aggregates = _oracle.aggregate_contract(
-                contract, check_results, contract_path=contract_path, repo_root=repo_root
-            )
-            agg = next((a for a in aggregates if a.check_id == check.check_id), None)
-            current_pass_by_check[check.check_id] = bool(agg and agg.state == "PASS")
-
-        for record in slug_records.values():
-            if record.kind != "evidence" or record.fields.get("evidence_kind") != "test":
-                continue
-            raw_ref = record.fields.get("test_ref", "")
-            if not raw_ref or raw_ref == "null":
-                continue
-            result_path = project_root / _KI_unquote(raw_ref)
-            if not result_path.is_file():
-                continue
+            results_fd = _open_confined_subdir_fd(contracts_fd, "results")
             try:
-                cited = _oracle.parse_oracle_result(result_path)
-            except _oracle.OracleSchemaError:
-                continue
-            check = contract.check_by_id(cited.check_id)
-            if check is None:
-                continue
-            outcome, reason = _oracle.evaluate_result_precedence(
-                cited, contract, check, contract_path=contract_path, repo_root=repo_root
-            )
-            if outcome == "INVALID" and current_pass_by_check.get(cited.check_id):
-                # decisions/0093: never describe the fresher, uncited result
-                # as unconditionally "currently passing" -- qualify exactly
-                # how far that determination actually reaches.
-                verification_note = (
-                    "live-reconfirmed against the current implementation"
-                    if repo_root is not None
-                    else "contract-relative only -- not live-reconfirmed; no repo_root supplied"
+                results_by_ref = (
+                    _results_by_test_ref(project_root, s, confined_dir_fd=results_fd)
+                    if results_fd is not None
+                    else {}
                 )
-                gaps.append(Gap(
-                    kind="stale_test_citation", subject_id=record.record_id, scope=check.scope,
-                    reason=(
-                        f"{record.record_id}'s test_ref ({raw_ref}) is INVALID against the live contract "
-                        f"({reason}), but a different, currently-passing result for check_id "
-                        f"{cited.check_id!r} exists in {s!r}'s own results/ directory "
-                        f"({verification_note}) -- no Evidence record cites it"
-                    ),
-                ))
+                _find_gaps_for_slug_contract(
+                    project_root, s, slug_records, records, contract, contract_path,
+                    results_by_ref, results_fd, repo_root, gaps,
+                )
+            finally:
+                if results_fd is not None:
+                    os.close(results_fd)
+        finally:
+            if contracts_fd is not None:
+                os.close(contracts_fd)
 
     return _gap_response(gaps, message=None if gaps else "no gaps found")
+
+
+def _find_gaps_for_slug_contract(
+    project_root: Path,
+    s: str,
+    slug_records: dict[str, _ki.KnowledgeRecord],
+    records: dict[str, _ki.KnowledgeRecord],
+    contract: _oracle.OracleContract,
+    contract_path: Path,
+    results_by_ref: dict[str, _oracle.OracleResult],
+    results_fd: int | None,
+    repo_root: Path | None,
+    gaps: list[Gap],
+) -> None:
+    """The per-slug, contract-dependent half of `find_gaps`'s own scan
+    (`unverified_required_scope`/`stale_test_citation`), split out only
+    to keep `find_gaps` itself from growing an even deeper confined-fd
+    nesting level -- no behavioural change, same detection rules."""
+    for claim in slug_records.values():
+        if claim.kind != "claim":
+            continue
+        profile = _ki.derive_epistemic_profile(
+            claim, records, oracle_contract=contract, oracle_results_by_test_ref=results_by_ref,
+            contract_path=contract_path, repo_root=repo_root,
+        )
+        for scope in profile.known_gap_scopes:
+            gaps.append(Gap(kind="unverified_required_scope", subject_id=claim.record_id, scope=scope,
+                             reason=f"{claim.record_id} cites no currently-passing result for required scope {scope!r}"))
+
+    all_results = (
+        _load_slug_results(project_root, s, confined_dir_fd=results_fd)
+        if results_fd is not None
+        else []
+    )
+    current_pass_by_check: dict[str, bool] = {}
+    for check in contract.checks:
+        check_results = [r for r in all_results if r.check_id == check.check_id]
+        # decisions/0093: repo_root threaded here too -- a check_results
+        # entry that merely satisfies contract-relative integrity (hash/
+        # raw-output/scope) is not "currently passing" against a live,
+        # possibly-changed implementation unless this same recomputation
+        # was actually performed.
+        aggregates = _oracle.aggregate_contract(
+            contract, check_results, contract_path=contract_path, repo_root=repo_root
+        )
+        agg = next((a for a in aggregates if a.check_id == check.check_id), None)
+        current_pass_by_check[check.check_id] = bool(agg and agg.state == "PASS")
+
+    for record in slug_records.values():
+        if record.kind != "evidence" or record.fields.get("evidence_kind") != "test":
+            continue
+        raw_ref = record.fields.get("test_ref", "")
+        if not raw_ref or raw_ref == "null":
+            continue
+        rel_ref = _KI_unquote(raw_ref)
+        # §17.2/§17.3: same confined, atomically-opened read as
+        # `_traverse_cites`/`_get_symbol` -- a missing, confinement-
+        # escaping, or symlinked `test_ref` is silently skipped (no gap
+        # reported for it), exactly as the pre-existing "missing" branch
+        # already did for a genuinely absent file.
+        live_bytes = _read_confined_bytes(project_root, rel_ref)
+        if live_bytes is None:
+            continue
+        try:
+            cited = _oracle.parse_oracle_result(
+                project_root / rel_ref, text=live_bytes.decode("utf-8")
+            )
+        except (_oracle.OracleSchemaError, UnicodeDecodeError):
+            continue
+        check = contract.check_by_id(cited.check_id)
+        if check is None:
+            continue
+        outcome, reason = _oracle.evaluate_result_precedence(
+            cited, contract, check, contract_path=contract_path, repo_root=repo_root
+        )
+        if outcome == "INVALID" and current_pass_by_check.get(cited.check_id):
+            # decisions/0093: never describe the fresher, uncited result
+            # as unconditionally "currently passing" -- qualify exactly
+            # how far that determination actually reaches.
+            verification_note = (
+                "live-reconfirmed against the current implementation"
+                if repo_root is not None
+                else "contract-relative only -- not live-reconfirmed; no repo_root supplied"
+            )
+            gaps.append(Gap(
+                kind="stale_test_citation", subject_id=record.record_id, scope=check.scope,
+                reason=(
+                    f"{record.record_id}'s test_ref ({raw_ref}) is INVALID against the live contract "
+                    f"({reason}), but a different, currently-passing result for check_id "
+                    f"{cited.check_id!r} exists in {s!r}'s own results/ directory "
+                    f"({verification_note}) -- no Evidence record cites it"
+                ),
+            ))
 
 
 # ---------------------------------------------------------------------------
