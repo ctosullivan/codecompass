@@ -300,6 +300,32 @@ positions, so they are not duplicated here).
    unchanged by this item, matching the already-accepted sync-time-
    symlink precedent in item 1's own elaboration above.
 
+6. **Item 5's own confinement helper validated a path, then handed
+   callers a `Path` they re-walked by name, undoing the descriptor-
+   level guarantee for every access after the one validating open.**
+   Decided: the helper now returns (via a context manager) an open
+   directory file descriptor, not a `Path`; every subsequent child
+   lookup (`load_slug_records`, `_load_slug_results`, `_results_by_
+   test_ref`, `find_gaps`'s own four call sites) is performed relative
+   to that descriptor (`os.scandir(dir_fd)`, `os.open(name, ...,
+   dir_fd=dir_fd)`), so a substitution of the `slug` entry after the
+   descriptor was opened cannot affect it — a genuinely persistent,
+   not merely point-in-time, guarantee. Position 3's/item 4's file-
+   level mechanism (`_read_confined_bytes`, open-then-read-in-one-step)
+   needed no equivalent change, confirmed by re-reading it for this
+   same defect shape. Separately, the Ledgerkit demonstration's
+   documentation-use evidence is redirected from an admittedly-
+   unrelated `docs_get_grounded_region` plumbing check to genuinely
+   relevant `knowledge_get`-surfaced records (`EV-BFS-001`,
+   `CL-BFS-004`, `CL-BFS-005`, `DEC-BFS-002`) that materially inform
+   the task, independently checked for relevance; and `oracle_
+   execute_check`'s MCP response schema is split into a fresh
+   per-execution `outcome` (`PASS`/`FAIL`/`INVALID`) and a separately-
+   derived `aggregate_state` (`PASS`/`GAP`/`NOT_REQUIRED`, via
+   `aggregate_contract`, unchanged), correcting a schema that
+   contradicted this project's own `decisions/0081` semantics. Full
+   detail: plan §18.
+
 ## Alternatives considered
 
 - **Accept `scripts/assess_change_impact.py` as a second, disclosed

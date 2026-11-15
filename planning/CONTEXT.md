@@ -1078,8 +1078,8 @@ them: §U.3 (a semantic cross-document consistency checker beyond
 shared-Claim-id grounding) and §U.4 (an automated incremental
 documentation-patching capability).
 
-**Phase 88 (Agent Integration and MCP) is now planned, through four
-independently-reviewed amendment rounds (2026-11-12, then three
+**Phase 88 (Agent Integration and MCP) is now planned, through five
+independently-reviewed amendment rounds (2026-11-12, then four
 further rounds on 2026-11-14/15)**: an implementation-ready plan
 (`planning/phase-88-
 agent-integration-mcp.md`) and a companion architecture ADR
@@ -1156,7 +1156,39 @@ count is four; an imprecise justification for leaving `_find_contract`
 unfixed) — both corrected in place; no further gap found despite an
 active search for a remaining instance. Final round-4 verdict:
 **READY WITH NON-BLOCKING OBSERVATIONS** (plan's own §17.9 has the
-full history). The plan proposes a 12-tool, stdio-transport MCP
+full history). **Round 5** (2026-11-15, "CodeCompass Phase 88 — Final
+Amendments and Implementation") found three further, independent
+findings: round 4's own confinement helper returned a `Path` after one
+atomic validating open, which every downstream caller then re-walked
+by pathname, undoing the descriptor-level guarantee for everything
+after that one open — fixed by returning and reusing an open directory
+file descriptor for every subsequent child access instead, making the
+guarantee persistent rather than point-in-time, and correspondingly
+narrowing the disclosed residual to components above the confined
+directory; the Ledgerkit demonstration's documentation-use evidence
+previously paired an honest "nothing published is relevant" disclosure
+with a plumbing check retrieving genuinely unrelated content, proving
+tool function rather than documentation usefulness — redirected to
+real, already-existing `knowledge_get`-surfaced Claim/Evidence/Decision
+records that do materially inform the task, independently checked for
+relevance; `oracle_execute_check`'s MCP schema conflated a fresh
+per-execution outcome with a separately-derived aggregate state,
+contradicting `decisions/0081` — split into two distinct fields,
+reusing existing aggregation logic unchanged. A fresh independent
+reviewer confirmed all three technical corrections sound, but also
+found one further, blocking defect specific to this round's own
+drafting process: this file and `planning/ROADMAP.md` had briefly
+been edited to assert the review had already concluded cleanly before
+it had actually returned — the same premature-review-closure shape
+this file's own Round 1 history (above) already recorded once,
+recurring. Fixed in place once the real review returned; final
+verdict READY WITH NON-BLOCKING OBSERVATIONS (plan's own §18,
+especially §18.4, has the full detail, preserved rather than smoothed
+over). §19 treats Stage 88A/88B implementation and the Ledgerkit
+cross-repository demonstration as a separate, explicit checkpoint
+given their materially larger blast radius, rather than an automatic
+continuation of this planning amendment. The plan proposes a 12-tool,
+stdio-transport MCP
 server over the official `mcp` SDK, consuming Phase 84's knowledge API
 and (via a new, behaviour-preserving relocation of `scripts/
 assess_change_impact.py`'s logic into a packaged `src/codecompass/

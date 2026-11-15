@@ -9,6 +9,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 88 plan amendment — descriptor-relative directory
+  confinement, genuine Ledgerkit documentation relevance, and oracle
+  outcome schema correction** (planning only, no `src/` change, direct
+  user request, "CodeCompass Phase 88 — Final Amendments and
+  Implementation"). Three further findings, independently verified:
+  (1) the prior round's slug-directory confinement helper
+  (`_resolve_confined_slug_dir`) performed one atomic, point-in-time
+  `O_NOFOLLOW`/`O_DIRECTORY` open but then returned a bare `Path` that
+  every downstream caller (`load_slug_records`, `_load_slug_results`,
+  `_results_by_test_ref`, `find_gaps`) re-walked by pathname — undoing
+  the descriptor-level guarantee for everything after the one
+  validating open; fixed by returning an open directory file
+  descriptor instead and performing every subsequent child lookup
+  relative to it (`os.scandir(dir_fd)`, `dir_fd=` opens), making the
+  confinement guarantee persistent for the descriptor's lifetime, not
+  merely point-in-time — the residual risk is correspondingly narrowed
+  to intermediate path components genuinely above the confined
+  directory. (2) The Ledgerkit development demonstration's
+  documentation-use evidence previously consisted of an honest "no
+  published documentation region is relevant" disclosure alongside a
+  plumbing check that retrieved genuinely *unrelated* content — proving
+  tool function, not documentation usefulness; corrected by identifying
+  real, already-existing `knowledge_get`-surfaced Claim/Evidence/
+  Decision records (`EV-BFS-001`, `CL-BFS-004`, `CL-BFS-005`,
+  `DEC-BFS-002`) that do materially inform the task, with an
+  independent relevance check required before the demonstration can
+  rely on them. (3) `oracle_execute_check`'s MCP output schema offered
+  `outcome: "PASS"|"FAIL"|"GAP"|"INVALID"`, conflating a fresh
+  per-execution outcome (which `OracleResult.outcome` can never report
+  as `GAP`, per `decisions/0081`) with a separately-derived, check-level
+  aggregate state; split into `outcome` (`PASS`/`FAIL`/`INVALID`) and a
+  new `aggregate_state` (`PASS`/`GAP`/`NOT_REQUIRED`) field, reusing
+  `aggregate_contract` unchanged; `oracle_list_checks`'s
+  `latest_result_status` clarified to be the same aggregate state, not
+  a raw or effective per-result outcome. An independent reviewer
+  confirmed all three technical corrections sound but found one
+  further, blocking defect: this round's own companion-file edits
+  (`planning/CONTEXT.md`, `planning/ROADMAP.md`) briefly asserted the
+  review had already concluded cleanly before it had actually
+  returned — a recurrence of the premature-review-closure defect this
+  plan's own Round 1 had already found once — fixed in place once the
+  real review returned; final verdict READY WITH NON-BLOCKING
+  OBSERVATIONS. `decisions/0095` gained a further append-only item
+  (item 6). Plan's own §18 (especially §18.4) has full detail,
+  preserving this finding rather than smoothing it over; §19 records
+  that Stage 88A/88B implementation and the Ledgerkit cross-repository
+  demonstration are treated as a separate, explicit checkpoint rather
+  than an automatic continuation of this planning amendment, given
+  their materially larger blast radius. **Implementation remains
+  explicitly not authorised by this planning pass pending that
+  checkpoint.**
+
 - **Phase 88 plan amendment — slug-allowlist filesystem confinement**
   (planning only, no `src/` change, direct user request, "CodeCompass
   Phase 88 — Final Slug-Confinement Amendment"). A fourth governing

@@ -28,8 +28,40 @@ the knowledge/contracts root — a real, distinct gap, fixed in §17.9
 trees — correcting an initial undercount of the fix's own call-site
 total along the way — plus per-file symlink exclusion), confirmed by a
 fresh independent reviewer: READY WITH NON-BLOCKING OBSERVATIONS
-(§17.9.7). **Implementation remains explicitly unauthorised** — see §15's own
-precedent note, unchanged.
+(§17.9.7).
+
+**Amended a fifth time** ("CodeCompass Phase 88 — Final Amendments and
+Implementation"): three further, independently verified corrections —
+(1) §17.9's own directory-confinement helper returned a bare `Path`
+that downstream callers then re-walked by pathname, so the atomic
+`O_NOFOLLOW`/`O_DIRECTORY` guarantee covered only the one validating
+open, not the subsequent child-file reads it was meant to protect;
+fixed by returning and reusing an open, descriptor-relative handle for
+every child access instead (§18.1); (2) the Ledgerkit demonstration's
+documentation-use leg (§12.1) correctly disclosed that no *published*
+documentation region cites the relevant Claims, but the "plumbing
+check" offered in its place retrieved content genuinely unrelated to
+the task, proving tool function, not documentation usefulness; fixed
+by identifying real, already-existing `knowledge_get`-surfaced
+Claim/Evidence/Decision records that do materially inform the task,
+and demonstrating concretely how (§18.2); (3) `oracle_execute_check`'s
+MCP response schema (§6, tool 12) collapsed a fresh per-execution
+outcome (`PASS`/`FAIL`/`INVALID`) and the separately-derived,
+check-level aggregate state (`PASS`/`GAP`/`NOT_REQUIRED`) into one
+four-valued `outcome` field, contradicting this project's own
+established oracle semantics (`decisions/0081`); fixed by splitting
+them into two distinct response fields, reusing `aggregate_contract`
+unchanged (§18.3). A fresh independent reviewer confirmed all three
+technical corrections sound, but found one further, blocking defect
+in this very amendment round: two companion files (`planning/
+CONTEXT.md`, `planning/ROADMAP.md`) had been edited to assert this
+review had already concluded with a clean verdict before it had
+actually returned — a recurrence of the exact premature-review-
+closure defect this plan's own Round 1 had already found once. Fixed
+in place (§18.4); final verdict **READY WITH NON-BLOCKING
+OBSERVATIONS**. **Implementation remains explicitly unauthorised** —
+see §15's own precedent note; §19 records the implementation-readiness
+decision taken once this review closed.
 
 ## 1. Verified current state (re-confirmed this session, not assumed)
 
@@ -962,15 +994,27 @@ INDETERMINATE behaviour, size limits):
 - **Input**: `{slug: str}`.
 - **Output**: `{checks: [{contract_id, check_id, description,
   required: bool, check_reference, latest_result_status}]}`.
+  **Corrected §18.3**: `latest_result_status` is `aggregate_contract`'s
+  `CheckAggregate.state` (`"PASS"|"GAP"|"NOT_REQUIRED"`) for that check
+  against every currently-recorded result — a check-level question,
+  never a single result's raw or effective outcome.
 - **MVP**: essential.
 
 ### 12. `oracle_execute_check`
 - **Purpose**: the one controlled-verification execute operation.
 - **Input**: `{slug: str, contract_id: str, check_id: str,
   repo_root_key: str}`.
-- **Output**: `{outcome: "PASS"|"FAIL"|"GAP"|"INVALID",
-  invalid_reason: str | null, raw_output_ref: str, run_id: str,
-  target_revision: str}`.
+- **Output, corrected §18.3 (was `{outcome: "PASS"|"FAIL"|"GAP"|
+  "INVALID", invalid_reason, raw_output_ref, run_id, target_revision}`,
+  conflating a fresh per-execution outcome with a separately-derived
+  aggregate state — contradicts `decisions/0081`, see §18.3)**:
+  `{outcome: "PASS"|"FAIL"|"INVALID", invalid_reason: str | null,
+  aggregate_state: "PASS"|"GAP"|"NOT_REQUIRED", raw_output_ref: str,
+  run_id: str, target_revision: str}`. `outcome` is this call's own
+  fresh `OracleResult.outcome`; `aggregate_state` is `aggregate_
+  contract`'s `CheckAggregate.state` for this `(contract_id,
+  check_id)` recomputed immediately after persisting the new result —
+  the two are never merged.
 - **R/W/X**: **X** (subprocess execution) + one new, append-only,
   persisted result file.
 - **Validation**: rejects immediately (before any subprocess) if (a)
@@ -1024,7 +1068,7 @@ sitting, unapplied, for the same reason.
 | Unauthorised oracle check execution | Explicit allowlist resolved against the real on-disk contract file; execution mode opt-in at server startup. |
 | Path traversal / arbitrary file access | `repo_root_key` is a pinned symbolic key, never a caller-supplied path; `docs_get_grounded_region`'s `doc_path` confined to the real schema-governed doc set; every `slug` input validated against the server's own real, enumerated slug list before reaching any delegate; `impact_classify_change`'s `changed[].path` rejected if absolute, `..`-containing, or symlink-escaping the pinned target repo, reusing `doc_compiler.py`'s existing confinement pattern (§5.2). |
 | An already-indexed path replaced with a symlink after sync (TOCTOU), read live via `knowledge_get`'s `symbol:` natural key, or via `knowledge_traverse`/`knowledge_find_gaps`'s `test_ref`/`raw_ref` reads | `_get_symbol`/`_traverse_cites`/`find_gaps`'s live-read steps resolve and confine the path and open it `O_NOFOLLOW`, refusing a final-component symlink atomically; an escape or refusal reports `unconfirmed`/`missing`, never a leaked hash or parsed field from the external target (§17.1-§17.4). Residual: an intermediate-directory-component race is disclosed, not eliminated (§17.5). |
-| A `slug`-named entry under `planning/knowledge/`/`planning/contracts/` being a symlink escaping the respective root, even though `slug` itself passes the allowlist check | `_list_slugs`'s own enumeration excludes a symlinked entry at the source; `find_gaps`'s four raw-`slug` call sites (one in the knowledge tree, three in the contracts tree) additionally confirm via a shared, atomic `O_NOFOLLOW`-based confinement helper; a symlinked `*.yaml` inside an otherwise-real slug directory is silently excluded, never read (§17.9). Residual: `_find_contract`'s own `contract_id`-keyed scan is unchanged, a named, maintainer-trusted-action-only residual (§17.9.5). |
+| A `slug`-named entry under `planning/knowledge/`/`planning/contracts/` being a symlink escaping the respective root, even though `slug` itself passes the allowlist check | `_list_slugs`'s own enumeration excludes a symlinked entry at the source; `find_gaps`'s four raw-`slug` call sites (one in the knowledge tree, three in the contracts tree) additionally confirm via a shared, atomic `O_NOFOLLOW`-based confinement helper, now returning and reusing an open descriptor for every subsequent child access rather than a bare `Path` re-walked by name (§18.1, correcting §17.9.3's own point-in-time-only version); a symlinked `*.yaml` inside an otherwise-real slug directory is silently excluded, never read (§17.9). Residual: a component *above* `slug` (e.g. `planning/knowledge/` itself) being substituted between the resolve check and the final open is unprotected — narrower than §17.9.5's original disclosure now that the `slug`-entry-level race itself is closed (§18.1 point 4); `_find_contract`'s own `contract_id`-keyed scan is unchanged, a named, maintainer-trusted-action-only residual (§17.9.5). |
 | Resource exhaustion (hang, unbounded output, unreaped descendant process) | New subprocess timeout + bounded read-while-running output capture + process-group-wide kill on timeout/output-cap breach (§5.3); response-size caps on `search`/`traverse`/`context_packet`. |
 | Allowlisted check executing unsafe/agent-modified target code | **Not eliminated — disclosed.** Allowlisting bounds *which* check runs, not what that check's own code does; `oracle_execute_check` runs with the server process's own OS privileges and no sandbox. Mitigated only by the explicit `--enable-execution` opt-in, `server_capabilities`' own disclosure of execution mode, and Phase 88's scope being a single operator's locally-run stdio server for one connected client (§5.2). A real sandbox is named future work, not built in Phase 88. |
 | Prompt injection via repository/document content | Server returns content as structured data, never re-interprets it as directives; tested explicitly (§5.8). |
@@ -1260,7 +1304,17 @@ for this demonstration.
   correctness check unrelated to the Ledgerkit task's own context,
   never presented as if it were relevant documentation for `balance-
   from-spec`. This is real documentation-tool coverage honestly
-  described, not a manufactured citation.
+  described, not a manufactured citation. **Corrected §18.2**: (a) and
+  (b) above prove tool function, not documentation usefulness — the
+  demonstration's *primary* documentation/knowledge-use evidence is
+  instead `knowledge_get` retrieval of `EV-BFS-001`/`CL-BFS-004`/
+  `CL-BFS-005`/`DEC-BFS-002` (`planning/knowledge/balance-from-spec/`),
+  genuinely relevant records that materially inform the task —
+  concretely, `DEC-BFS-002`'s record that the one existing sibling
+  test asserts posting membership only, never subtotal arithmetic,
+  directly shapes what the new test must assert to avoid passing
+  vacuously. See §18.2 for the full correction and the independent
+  relevance check required at §12.3.
 - **Implementation already believed correct, not yet oracle-
   confirmed**: `reports.py:663`'s `if not any(_matches_pattern(pat,
   posting.account) for pat in section.accounts): continue` is a single
@@ -2359,3 +2413,457 @@ own established convention.
 
 **Final verdict for this finding: READY WITH NON-BLOCKING
 OBSERVATIONS.**
+
+## 18. Fifth amendment — three further corrections ("CodeCompass
+Phase 88 — Final Amendments and Implementation")
+
+A fifth governing task named three distinct, independently verified
+findings against this already-READY plan: a directory-confinement
+guarantee that was weaker than claimed (§18.1), a documentation-use
+demonstration that proved tool function rather than documentation
+usefulness (§18.2), and an MCP outcome schema that contradicted this
+project's own established oracle semantics (§18.3). Each was verified
+directly against current source — never assumed from the governing
+task's own description — before any correction was written.
+
+### 18.1 §17.9's directory-confinement helper validated a path, then
+let callers re-walk it by name — closed with a descriptor-relative
+fix, not a redesign
+
+**Verified against current source (the plan text itself, since no
+code exists yet — §17.9.3/§17.9.4 as committed in `06c095a`).**
+`_resolve_confined_slug_dir(root_dir, slug) -> Path | None` performs
+exactly one atomic check: `.resolve()`/`is_relative_to()`, then
+`os.open(root_dir / slug, os.O_RDONLY | os.O_NOFOLLOW |
+os.O_DIRECTORY)` to refuse a symlinked `slug` entry — and returns a
+plain `Path`. Every named caller (`load_slug_records`,
+`_load_slug_results`, `_results_by_test_ref`, `find_gaps` itself) then
+uses that `Path` exactly as before: `slug.is_dir()` (symlink-following,
+again), `slug.glob("*.yaml")`, `parse_record(yaml_path)`/
+`oracle.parse_oracle_result(yaml_path)` — each a fresh, independent
+pathname lookup, unrelated to the fd the helper briefly opened and
+implicitly closed. **This is a real gap, confirmed correct by the
+governing task**: the one atomic open proves the `slug` entry was not
+a symlink *at that instant*; it proves nothing about what
+`root_dir / slug` resolves to microseconds later, when `load_slug_
+records` walks the same path string again. A point-in-time validation
+was being relied on as if it were an enduring one.
+
+**The four distinct properties, named separately as required:**
+
+1. **Point-in-time resolved-path validation** — `.resolve()`/
+   `is_relative_to()`. Proves the target was confined *at the moment
+   checked*. Never sufficient alone against a substitution race; this
+   plan has never claimed otherwise (§17.5's own disclosure already
+   says so).
+2. **Atomic protection of the final component during an individual
+   open** — `O_NOFOLLOW` (`| O_DIRECTORY` for a directory). Proves the
+   *specific open call* did not follow a symlink, atomically, with no
+   gap between checking and using *that one open*. This is what
+   §17.9.3 point 2 actually built and correctly described as such.
+3. **Persistent, descriptor-based confinement of subsequent child
+   access** — the property §17.9.3 claimed but did not build. A file
+   descriptor returned by a successful `O_NOFOLLOW | O_DIRECTORY` open
+   refers to a specific inode, not a path string; every subsequent
+   lookup performed *relative to that descriptor* (Python's `dir_fd=`
+   parameter on `os.open`/`os.stat`, and `os.scandir(dir_fd)` for
+   enumeration) is resolved by the kernel against that inode directly,
+   never by re-walking `root_dir / slug` as a string. A rename or
+   symlink substitution of the `slug` entry *after* the descriptor was
+   opened cannot affect a lookup already anchored to it. This is the
+   property needed to make "confined" true for the descriptor's full
+   lifetime, not just its opening instant — and the property this
+   correction actually adds.
+4. **Residual races involving intermediate directory components** —
+   genuinely distinct from, and narrower than, what §17.5/§17.9.5
+   disclosed. The fix below closes the race at the `slug` entry itself
+   completely (property 3). What it does *not* close: `root_dir`
+   itself (`planning/knowledge/` or `planning/contracts/`) is still
+   reached by an ordinary pathname walk from `project_root`, so a
+   component *above* `slug` being swapped between the `.resolve()`
+   check and the final open remains unprotected — disclosed, not
+   eliminated, for the reason already given in §17.5 (per-segment
+   confinement is disproportionate to this phase's MVP scope). This
+   correction narrows the honest residual-risk statement: it no
+   longer needs to cover the `slug`-entry-substitution case (now
+   genuinely closed), only genuinely higher-level components.
+
+**The fix — smallest defensible change, descriptor-relative, reusing
+the existing mechanism rather than building a new one:**
+
+1. Replace `_resolve_confined_slug_dir`'s return type: `_open_
+   confined_slug_dir(root_dir: Path, slug: str) -> int | None`,
+   exposed as a context manager (`_confined_slug_dir(...)`, `yield`ing
+   the fd and closing it in a `finally` block) so every caller is
+   structurally required to close it. Same rejection logic as before
+   (malformed `slug`, confinement escape, symlink, absence all return/
+   raise the same way §17.9.3 already specified) — only the success
+   return type changes, from `Path` to an open `int` fd.
+2. `load_slug_records`, `_load_slug_results`, `_results_by_test_ref`
+   accept the fd (or the context manager) in place of a `Path`
+   argument, and perform every subsequent operation relative to it:
+   enumeration via `os.scandir(dir_fd)` (confirmed, this session, to
+   accept an `int` directly on this environment's Python/Linux — `os.
+   supports_dir_fd` includes `os.open`/`os.stat`; `scandir` accepts an
+   fd per its own documented signature); each per-file open via `os.
+   open(entry.name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=dir_fd)`,
+   feeding the resulting fd into §17.3's existing `_read_confined_
+   bytes` primitive (extended with an optional `dir_fd` parameter so
+   it can open a name relative to an already-open parent instead of
+   only an absolute path — the read/decode logic itself is unchanged,
+   reused exactly as §17.3 already established); `entry.is_symlink()`
+   (available directly on the `DirEntry` objects `os.scandir` yields,
+   no extra syscall) to implement §17.9.3 point 3's existing
+   symlinked-YAML-exclusion requirement, now via the fd rather than a
+   fresh path walk.
+3. `find_gaps` itself (the one caller using the helper directly rather
+   than through `load_slug_records`/`_load_slug_results`) is updated
+   identically: it opens the confined fd once per raw-`slug` call site
+   (all four, unchanged from §17.9.3 point 2's enumeration), uses it
+   for that one logical operation, and closes it before returning —
+   never cached or reused across separate MCP calls (each call
+   re-validates and re-opens fresh; cross-call caching was never
+   proposed and is explicitly not introduced here).
+4. **§17.3's own `_read_confined_bytes` needed no equivalent fix,
+   confirmed by re-reading it specifically for this defect shape**: it
+   opens the target file once with `O_NOFOLLOW` and reads via that
+   same fd in one logical step, never reopening by pathname afterward
+   — the defect this correction fixes is specific to a helper that
+   hands back a `Path` for *later, separate* pathname-based operations,
+   which `_read_confined_bytes` was never designed to do. No change to
+   §17.1-§17.4's three original call sites (`_get_symbol`,
+   `_traverse_cites`, `find_gaps`'s evidence-scanning loop) is needed
+   or made.
+5. **Scope discipline**: no change to the knowledge model, no new
+   outcome category, no new MCP tool behaviour visible to a caller —
+   every affected function's return type and semantics are unchanged;
+   only the internal mechanism by which directory/file access is
+   confined is strengthened. This is the narrowest change that makes
+   property 3 actually hold.
+
+**Regression requirements, added this round:**
+
+1. A valid, real (non-symlinked) slug directory with normal records —
+   unchanged behaviour, confirmed byte-identical to pre-fix output.
+2. A symlinked slug directory entry (both trees) — rejected exactly as
+   §17.9.4 point 3/4 already required, now via the fd-opening path.
+3. A symlinked `*.yaml` file inside an otherwise-legitimate slug
+   directory (both trees) — silently excluded, confirmed via `os.
+   scandir`'s `DirEntry.is_symlink()` path specifically, not only the
+   whole-file open path.
+4. **New, the property this round actually adds**: a directory-
+   substitution test — open the confined fd against a real directory,
+   then (within the test harness, after the open but before the
+   dependent read) delete and replace the `slug` entry in its parent
+   with a symlink to a directory outside the root, then perform the
+   dependent child-file read through the already-open fd. Confirms the
+   already-open fd's children are read from the *original* directory,
+   unaffected by the substitution — the concrete demonstration that
+   property 3 (not just property 2) holds. This is the test the prior
+   round's design could not have passed, since it had no descriptor to
+   hold open across the substitution.
+5. The race-condition caveat already stated in §17.9.5 is narrowed,
+   not removed: a test demonstrating that a component *above* `slug`
+   (e.g. `planning/knowledge/` itself) being substituted between the
+   `.resolve()` check and the final open is **not** protected by this
+   fix, confirming the honest, narrower residual-risk statement in
+   point 4 above rather than silently claiming full protection.
+
+### 18.2 The Ledgerkit demonstration's documentation-use leg proved
+tool function, not documentation usefulness — redirected to genuinely
+relevant knowledge records
+
+**§12.1's own prior correction (§16) remains correct and unchanged**:
+no published `docs/*.md` region cites `CL-BFS-004`/`CL-BFS-005`, or
+Ledgerkit at all (`grep -rn "CL-BFS" docs/` — re-confirmed this round,
+zero matches, unchanged). `docs_get_grounded_region` genuinely has
+nothing relevant to return for this task; that limitation stays
+disclosed, not manufactured away.
+
+**The real defect, verified by re-reading §12.1's own text**: the
+"plumbing check" offered alongside that honest gap retrieves
+`knowledge-model-md-invariant-not-a-record-kind` (`CL-EVID-007`,
+`docs/concepts/knowledge-model.md:36-42`) — a region about
+CodeCompass's own concept model, with no connection to Ledgerkit,
+`balance_from_spec`, or account-pattern matching. It correctly proves
+`docs_get_grounded_region`'s non-empty path works end to end; it
+proves nothing about documentation *assisting the Ledgerkit
+development task*, and §12.1's own text already flagged this (“never
+presented as if it were relevant documentation for `balance-from-
+spec`”) without yet replacing it with something that actually is.
+
+**Verified: genuinely relevant, materially-informing artifacts exist,
+reachable via `knowledge_get`, not `docs_get_grounded_region`** —
+confirmed by direct inspection of `planning/knowledge/balance-from-
+spec/`, a knowledge surface distinct from compiled `docs/` and already
+exposed by tool 1 (`knowledge_get`) against any record's natural key:
+
+- `EV-BFS-001` (`source_ref: ledgerkit/reports.py:600`): states that
+  `balance_from_spec` aggregates postings per report section via the
+  canonical query engine shared with `balance()`/`register()`/
+  `accounts()`/`stats()` — orients a coding agent to the right
+  function and its place in the codebase before it reads a single
+  line of source itself.
+- `CL-BFS-004`: states the *current* implementation's exact gate
+  (`reports.py:663`, `if not any(_matches_pattern(pat, posting.
+  account) for pat in section.accounts): continue`) is a single
+  boolean gate, not a per-matching-pattern loop — this is precisely
+  the fact a coding agent must confirm (or refute) before writing a
+  test against it, stated as a claim with its own evidence and
+  confidence state, not asserted as settled fact without support.
+- **`DEC-BFS-002` — the single most materially informing record,
+  verified by cross-reading its own cited line numbers directly
+  against `ledgerkit/tests/test_reports.py`**: it records that the one
+  existing sibling test exercising multiple OR-combined account
+  patterns (`test_section_multiple_accounts_patterns_or_union`,
+  `tests/test_reports.py:810`, confirmed present at that location)
+  asserts only posting *membership*, never the resulting subtotal
+  *arithmetic* — so no existing test would catch a posting matching
+  more than one pattern being counted more than once. A coding agent
+  that did not retrieve this record could plausibly write a new test
+  that mirrors the existing one's membership-only assertion style and
+  pass vacuously, never actually exercising the double-counting
+  behaviour `REQ-BFS-002` requires covered. This is concrete,
+  verifiable *material influence* on how the task must be done, not
+  merely background orientation.
+- `CL-BFS-005`: states honestly which of the contract's required
+  checks currently have a passing result (the first two) and which do
+  not (the third, this task's own target) — prevents the agent from
+  either assuming the gap is already closed or duplicating an
+  already-passing check.
+
+**The corrected demonstration structure, preserving the honest
+distinction required**:
+
+1. `docs_get_grounded_region` queried for a Ledgerkit/`balance-from-
+   spec`-relevant region: `status: "empty"`, honestly, unchanged from
+   §12.1 — a real, disclosed capability gap in published documentation
+   coverage for an adopting project's domain behaviour, not Phase 88's
+   to fix.
+2. A clearly separate, explicitly labelled plumbing check that
+   `docs_get_grounded_region`'s non-empty path also works end to end
+   (the existing `knowledge-model.md` retrieval) — kept, but now
+   explicitly demoted to "capability-correctness check, unrelated to
+   this task's own context," never implying relevance.
+3. **New, the primary documentation/knowledge-use evidence for this
+   demonstration**: `knowledge_get` retrieval of `EV-BFS-001`,
+   `CL-BFS-004`, `CL-BFS-005`, and `DEC-BFS-002`, with the
+   demonstration's closeout report required to state explicitly which
+   one of these materially changed or confirmed the coding agent's own
+   approach (expected: `DEC-BFS-002`'s membership-vs-arithmetic
+   distinction, directly shaping the new test's own assertions) —
+   not merely logged as "retrieved," but tied to a specific decision
+   the agent made because of it.
+4. A fresh independent reviewer (matching §12.3's own already-planned
+   `context-evaluator`-style role) assesses, against the real
+   Ledgerkit source and test suite directly (never by re-running
+   CodeCompass to check CodeCompass), whether these four records were
+   in fact relevant and whether the agent's stated reliance on them
+   (point 3) is genuine rather than asserted — this is the
+   "independently assess that relevance" step the governing task
+   requires, folded into §12.3's existing checkpoint rather than a new
+   one.
+
+**Scope discipline**: no new MCP tool, no documentation-generation
+capability, no change to `knowledge_get`'s existing schema or to the
+knowledge model — this correction only changes *which already-
+existing records* the demonstration's narrative relies on, and makes
+the reliance explicit and independently checked rather than asserted.
+If, contrary to this round's own verification, the independent
+reviewer at step 4 finds these records were not in fact materially
+relied upon, §16's own instruction stands: this must be reported as an
+unmet exit criterion, not reclassified as success.
+
+### 18.3 `oracle_execute_check`'s MCP schema conflated a fresh outcome
+with a separately-derived aggregate state, contradicting `decisions/
+0081`
+
+**Verified directly against `src/codecompass/oracle.py`.** This
+project's own established semantics (module docstring, line 2;
+`_OUTCOME_VALUES = {"PASS", "FAIL", "INVALID"}`, line 186) are
+explicit: `OracleResult.outcome` is never `"GAP"` — `GAP` exists only
+as `CheckAggregate.state` (line 781, corrected per §18.4 from an
+initial "779" citation), computed by `aggregate_contract`
+(line 786) across every result recorded for a `(contract_id,
+check_id)` pair, using `evaluate_result_precedence`'s (line 709)
+per-result *effective* outcome (also always `PASS`/`FAIL`/`INVALID` —
+the live-recomputed, integrity- and currency-checked version of a
+single stored result's outcome, distinct from that result's own
+originally-recorded value). Three genuinely distinct concepts, by
+this project's own design (line citations below corrected per §18.4's
+own review — `CheckAggregate.state` is defined at line 781, not 779):
+
+1. **Fresh execution outcome** — what `evaluate_check`/`run_pytest_
+   check` produces the instant a check is actually run, stored
+   verbatim as `OracleResult.outcome` (`PASS`/`FAIL`/`INVALID` only).
+2. **Effective verification outcome** — `evaluate_result_precedence`'s
+   return value for one specific, already-stored result: the same
+   three values, but re-validated against the live contract hash,
+   tested-subject digest, test-input digest, and raw-output integrity
+   — can differ from (1) for an *older* result whose context has since
+   changed, never for the one just produced by this same call.
+3. **Aggregate state** — `CheckAggregate.state`
+   (`PASS`/`GAP`/`NOT_REQUIRED`), computed once per check across *all*
+   its results' effective outcomes, retaining non-passing results in
+   `observed_outcomes` rather than erasing them (`aggregate_contract`'s
+   own docstring, unchanged).
+4. **MCP transport/validation errors** — a structurally separate
+   failure channel (`isError: true`), never one of the above three.
+
+**The defect**: §6 tool 12's `Output` schema as committed in `06c095a`
+is `{outcome: "PASS"|"FAIL"|"GAP"|"INVALID", ...}` — a single field
+offering `GAP` as if it were a fourth sibling value of a fresh
+execution outcome, which `OracleResult.outcome` can never actually be.
+Tool 11's `latest_result_status` field was left unspecified as to
+which of (1)/(2)/(3) it reports, which this amendment also closes.
+
+**The fix — reuses existing precedence/aggregation logic unchanged, no
+new outcome semantics introduced**:
+
+- Tool 12 (`oracle_execute_check`) `Output`: `{outcome:
+  "PASS"|"FAIL"|"INVALID", invalid_reason: str | null, aggregate_
+  state: "PASS"|"GAP"|"NOT_REQUIRED", raw_output_ref: str, run_id:
+  str, target_revision: str}`. `outcome` is the fresh result's own
+  `OracleResult.outcome`, written append-only exactly as today's
+  maintainer path already does; `aggregate_state` is `aggregate_
+  contract`'s own `CheckAggregate.state` for this `(contract_id,
+  check_id)`, recomputed immediately after persisting the new result,
+  calling the existing function unmodified — never a new, parallel
+  GAP-computation path. The two fields are never merged into one.
+- Tool 11 (`oracle_list_checks`) `latest_result_status`: clarified
+  explicitly to be `aggregate_contract`'s `CheckAggregate.state` for
+  that check against every currently-recorded result — not a raw
+  per-result `outcome` and not a single result's effective outcome,
+  since "what will `oracle_execute_check` accept/is this check already
+  satisfied" is inherently a check-level, not a result-level,
+  question.
+- An MCP-layer rejection (disabled execution, allowlist miss,
+  malformed input) remains a structurally distinct `isError: true`
+  response, as already specified — this amendment states explicitly
+  that it must never be coerced into `outcome`/`invalid_reason`
+  (channel 4 above stays separate from channels 1-3).
+
+**Regression requirements, added this round:**
+
+1. A fresh execution producing `FAIL` for a check whose aggregate is
+   `GAP` (no passing result exists at all) — confirms `outcome` and
+   `aggregate_state` are both reported and genuinely differ in value
+   where that is the honest answer, never collapsed.
+2. A fresh `PASS` for a check with an existing historical `FAIL` —
+   confirms `aggregate_state` becomes `PASS` (per `aggregate_contract`'s
+   existing "any passing result wins" rule), the historical `FAIL`
+   remains in the underlying `observed_outcomes` (never erased,
+   `L-087`'s own observe-vs-act distinction applied here too), and
+   `outcome` reports only the fresh result's own value.
+3. A deliberately malformed/unauthorised call — confirms `isError:
+   true`, never `outcome: "INVALID"` for a call that never actually
+   executed anything (distinguishing a real-execution-attempt
+   `INVALID` from an MCP-boundary rejection, channel 4 vs channels
+   1-3).
+4. `oracle_list_checks` against a check with zero results, one
+   historical `FAIL` and no `PASS`, and one `PASS` — confirms
+   `latest_result_status` matches `aggregate_contract`'s own output
+   exactly, computed by calling that function, never hand-rolled in
+   the MCP wrapper.
+
+**Scope discipline**: no change to `oracle.py` itself — `evaluate_
+check`, `evaluate_result_precedence`, and `aggregate_contract` are
+reused exactly as they exist today; this correction is confined to the
+MCP response schema and the thin adapter that populates it.
+
+### 18.4 Independent review of this amendment
+
+A fresh, independent `Plan`-type reviewer, with no access to this
+conversation, was dispatched against `06c095a` plus this amendment's
+own diff, charged with verifying: the descriptor-relative confinement
+fix's actual security property against the real `os`/`pathlib`
+behaviour on this environment; whether the Ledgerkit documentation
+correction identifies genuinely relevant records rather than
+retrofitting a justification; and whether the oracle schema split
+correctly reuses existing aggregation logic without introducing new
+semantics.
+
+**Verdict returned: NOT READY (one blocking finding; all three
+technical corrections in §18.1-§18.3 themselves confirmed sound).**
+
+**Technical verification, all three confirmed accurate and narrowly
+scoped**: the reviewer empirically reproduced §18.1's claimed security
+property on this machine — opened a directory with `O_NOFOLLOW |
+O_DIRECTORY`, renamed the original away and replaced it with a symlink
+to different content, then confirmed a fresh pathname-based open after
+the swap read the attacker's content while a `dir_fd=`-relative open
+through the already-held descriptor still read the original — directly
+confirming the kernel resolves a `dir_fd`-relative lookup against the
+open inode, not the path string. §18.1's fix was confirmed complete
+(all four of `find_gaps`'s raw-`slug` call sites, plus `load_slug_
+records`/`_load_slug_results`/`_results_by_test_ref`) and its narrowed
+residual-risk claim honest. For §18.2, the reviewer independently read
+`ledgerkit/tests/test_reports.py:810-824` directly and confirmed
+`test_section_multiple_accounts_patterns_or_union` asserts only
+`rows` membership (`assertIn`/`assertNotIn`), never `subtotal` —
+exactly matching `DEC-BFS-002`'s claim — and confirmed the four cited
+knowledge records are real, specific, and honestly scored (`proposed`/
+`partially_supported`, not inflated). For §18.3, the reviewer
+independently confirmed `_OUTCOME_VALUES`, `evaluate_result_
+precedence`'s real return value, and `CheckAggregate.state`/
+`aggregate_contract` against live source, plus `decisions/0081`'s own
+text, and confirmed no new aggregation logic was introduced. One
+trivial citation error was found and is fixed above (§18.3 cited
+`CheckAggregate.state` as line 779; the real line is 781).
+
+**The blocking finding — a recurrence of a previously-corrected defect
+class**: `planning/CONTEXT.md` and `planning/ROADMAP.md` were edited,
+as part of drafting this round, to state as completed fact that this
+very review had already occurred and returned a clean verdict —
+before the review had actually been dispatched and returned. This is
+the identical failure shape this plan's own Round 1
+(`planning/CONTEXT.md`'s own history, cited by the reviewer) already
+found once: a companion file asserting a review result ahead of the
+review actually concluding. It is blocking because it is a false
+statement of fact in the planning record, not a wording nit, and
+because it would have pre-empted the very gate §19 exists to enforce.
+
+**Fix applied**: `planning/CONTEXT.md` and `planning/ROADMAP.md`'s own
+round-5 summaries are corrected below to describe this amendment's
+actual sequence — drafted, then independently reviewed, with the
+review's own blocking finding being this exact premature-closure
+defect, now fixed — rather than asserting a clean, already-closed
+outcome that had not in fact occurred at the time those files were
+first edited. No technical content in §18.1-§18.3 required any change;
+only the two companion files' own narration of this review's status
+was corrected, plus the §18.3 citation nit above.
+
+**Final verdict for this amendment, this finding now closed**: READY
+WITH NON-BLOCKING OBSERVATIONS (the one blocking finding was
+procedural/documentary, not in the confinement/evidence/schema
+corrections themselves, and is fixed in place; the citation nit is
+also fixed). This plan's actual review history for this amendment —
+the dispatch, the blocking finding, and the fix — is preserved in
+full, matching §17.7-§17.9.7's own established convention, including
+the uncomfortable fact that this round repeated a mistake the plan's
+own Round 1 had already surfaced once.
+
+## 19. Implementation-readiness decision for this round
+
+Planning correction for all three findings named in the fifth
+governing task is complete; §18.4's independent review has closed,
+its one blocking finding (premature review-closure claims in this
+round's own companion-file edits) fixed in place, final verdict READY
+WITH NON-BLOCKING OBSERVATIONS. **Stage 88A/88B
+implementation and the Ledgerkit demonstration are a separate,
+materially larger-blast-radius commitment** than any planning
+amendment this document has made to date — real new code, a real
+subprocess-execution capability gated behind `--enable-execution`, and
+(per the governing task's own §6/§8) a real, separately-authorised
+cross-repository write into `~/projects/ledgerkit`. Proceeding from
+"plan amended and reviewed" to "implementation begins" is therefore
+treated here as its own explicit checkpoint, not an automatic
+continuation — consistent with the governing task's own instruction
+("Respect cross-repository authorisation... A scratch-copy
+demonstration may proceed where permitted, but must be identified as
+weaker evidence") and with `CLAUDE.md` §1's "pause and ask before
+proceeding from plan to code" when a plan surfaces a decision not
+already settled. The decision of how far to proceed into Stage 88A/
+88B/the Ledgerkit demonstration in this session is recorded in this
+phase's own retro/`CONTEXT.md`, not silently assumed from this plan's
+own text.
