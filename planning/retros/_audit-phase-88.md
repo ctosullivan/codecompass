@@ -301,3 +301,312 @@ note rather than a current-state claim, which `CONTEXT.md` is not.)
    above) does not carry forward once new commits touch the
    just-audited scope; a fresh pass is required, not a re-stamp of this
    one.
+
+---
+
+# Re-audit (2026-11-15, commit `65ab8d9`)
+
+**Scope**: the full Phase 88 effort as it now stands at `65ab8d9`
+("fix(phase-88): resolve terminal audit documentation findings") on
+`main`, confirmed pushed to `origin/main` (`git status` clean, branch
+up to date). This supersedes nothing above — the original FAIL and its
+evidence are preserved verbatim; this section is a fresh, independent
+pass against the corrected state, per `CLAUDE.md` §5's voiding rule
+("any commit after the auditor's own pass that touches audited scope
+voids that pass and requires a fresh one").
+
+## VERDICT: FAIL
+
+Both of the prior FAIL's own named gaps are now genuinely closed,
+confirmed below by direct re-reading rather than trusted from either
+prior report's own account. But this re-audit, run fresh rather than as
+a checklist against the prior report, finds one further, real,
+non-trivial Definition-of-Done gap the prior pass did not check: the
+phase retro omits substantial required content from
+`planning/retros/TEMPLATE.md`'s own structure — not merely a heading
+mismatch, but the actual content a future session needs (arc
+orientation, forward trajectory) is genuinely absent from the one file
+`CLAUDE.md` §5 designates to carry it.
+
+## What was independently re-verified (not trusted from either prior report)
+
+1. **Full regression suite, re-run myself**: `.venv/bin/python -m
+   pytest -q` → **1464 passed, 2 skipped**, exit 0 (429s). No
+   regression, including from the `server.py` docstring-only edit in
+   `65ab8d9`.
+2. **Ruff, whole repo, re-run myself**: `.venv/bin/ruff check .` →
+   **167 errors** — matches the confirmed post-Stage-88B baseline
+   exactly; `65ab8d9`'s own diff touches no `.py` logic besides
+   docstrings, so no debt change is expected or found.
+3. **`.venv/bin/python scripts/check_user_docs.py --strict`** →
+   `check_user_docs: no findings`.
+4. **Finding 1 (no `docs-reconstructor` drift audit had ever run)
+   — confirmed fixed**: `planning/retros/_drift-audit-phase-88.md`
+   exists (186 lines), read in full. Genuinely substantive, not a
+   stub: scoped explicitly to `dbcfe50^..4763fcb` (all five Phase 88
+   commits including the learnings-triage commit), checks
+   `docs/reference/mcp.md`'s full tool table line-by-line against the
+   real 12 registered tools, the validation/confinement section
+   against `security.py` directly, the bounded-subprocess claims
+   against `oracle.py::run_pytest_check` directly, re-greps for every
+   other "Stage 88" conditional across `README.md`/`docs/`/
+   `architecture/`/`ai-docs/` and inspects each hit individually,
+   checks `docs/architecture/components.md`'s new rows against the real
+   modules, and explicitly flags (non-blocking) the two omissions later
+   fixed in `65ab8d9` (`ai-docs/README.md`, `README.md`'s doc map) plus
+   the `server.py` docstring staleness. Verdict **NO DRIFT**. This is a
+   real, independent audit, not a self-report.
+5. **The specific live drift that audit found, re-checked directly in
+   the current file**: `docs/architecture/overview.md` line 11 now
+   reads "...a thin layer exposing subsystem 4's own knowledge API, plus
+   controlled oracle execution (Stage 88B), to a real coding agent...:
+   nine read-only tools and three assurance tools (`impact_classify_
+   change`, `oracle_list_checks`, `oracle_execute_check`)" — the "once
+   Stage 88B lands" conditional is gone, present-tense, accurate against
+   `server.py::build_server`'s real 12-tool registration (confirmed by
+   reading `server.py` directly). `docs/reference/cli.md`'s `mcp-serve`
+   heading now reads `(Phase 88)`, not `(Phase 88, Stage 88A)` —
+   confirmed by direct read, matching the body text which already
+   covered both stages.
+6. **The three further non-blocking omissions, re-checked directly,
+   all fixed**: `src/codecompass/mcp/server.py`'s module docstring and
+   `build_server`'s own docstring now both read "the nine Stage 88A
+   read-only tools and the three Stage 88B assurance tools" / "Registers
+   the nine Stage 88A read-only tools and the three Stage 88B assurance
+   tools" — no longer claims only nine total; grepped the whole repo for
+   a stray unqualified "nine"/"twelve" claim in `docs/reference/mcp.md`,
+   `README.md`, `ai-docs/README.md` — none found. `ai-docs/README.md`
+   now has a new "An MCP server" bullet under "What it does" (names
+   `codecompass mcp-serve`, the stdio transport, `--enable-execution`,
+   "no sandbox isolation, no network exposure") and a new table row
+   under "Where to look next" pointing at `docs/reference/mcp.md` —
+   confirmed by direct read, not just the diff. `README.md`'s
+   documentation-map bullet for `docs/reference/` now explicitly names
+   "the MCP server's tool surface/security model" alongside the CLI
+   reference, `vendor.toml`, and the adapter protocol it already named —
+   confirmed by direct read.
+7. **Finding 2 (`planning/CONTEXT.md` stale) — confirmed fixed**: read
+   the file's full "Current phase" section directly (not the diff
+   alone). It now states, accurately against `git log`: Stage 88A
+   committed `7a96d89`; Stage 88B "implemented and committed (`a554d52`)"
+   (no longer "not yet committed"); the demonstration's two result files
+   "committed alongside this stage" (no longer "staged"); learnings
+   triage "complete and committed (`4763fcb`)", all four promoted, with
+   the correct destination files named; "Everything through `4763fcb`
+   is pushed to `origin/main`" (independently re-confirmed myself via
+   `git status`/`git log` — true); the first terminal-audit FAIL and its
+   two fixes are recorded accurately, in past tense, as a point-in-time
+   note, with the correct "Next step" pointing at the drift audit then
+   a fresh terminal re-audit; `planning/ROADMAP.md`'s Phase 88 row
+   "remains, correctly, not `done`" — true, independently confirmed
+   (`grep` on the live row: status is `planned`). No false claim found
+   anywhere in this section against the real current git state.
+8. **`CHANGELOG.md`**: the new `[Unreleased]` "Phase 88 — learnings
+   triage and terminal-audit corrective pass" entry (added in `4763fcb`,
+   unchanged by `65ab8d9` except that `65ab8d9` is itself documented
+   inline within that same entry's own "Both fixed" closing sentence) —
+   read directly, accurately summarises the FAIL, its two causes, and
+   that both are fixed. Distinct, correctly scoped to this phase only.
+9. **Protected-file drift**: `git log --oneline dbcfe50^..65ab8d9 --
+   CLAUDE.md` shows exactly one touching commit (`4763fcb`); `git log -p`
+   on that commit confirms a pure addition (the L-131 sentence) directly
+   after the existing `L-088` sentence, no other line changed. Recorded
+   as user-approved per §0 in `planning/v1-redefinition/
+   proposed-governance-changes.md` §Q ("Status: approved and landed
+   (2026-11-15) ... presented to the user for §0 approval and approved
+   as drafted") — same evidentiary form this project has used for every
+   prior §0 approval record (e.g. `L-070`, `L-075`). `decisions/0095`:
+   `git log --follow -p dbcfe50^..65ab8d9 -- decisions/0095*` shows three
+   touching commits, all before implementation (`dbcfe50`, `06c095a`,
+   `26947ff`), each appending a new `## Amendment` section or a bullet
+   inside one; no line of the original `## Decision`/`## Context`
+   content is ever removed or rewritten — append-only convention held.
+   No other `decisions/*` file touched anywhere in this phase's commits.
+10. **Real `~/projects/ledgerkit` checkout, re-checked myself (not
+    trusted from the demonstration retro)**: `git status --porcelain`
+    and `git diff --stat` both empty; `git rev-parse HEAD` →
+    `a7740fd04fe1814d2a557bfcb67a9a775a4a22f9` — untouched.
+11. **Changed-file list vs. the plan's own Files section**: `git show
+    --stat --name-status` for `7a96d89` and `a554d52` lists only
+    `src/codecompass/mcp/*`, `change_impact.py`, `scripts/
+    assess_change_impact.py`, `oracle.py`, `cli.py`, `pyproject.toml`,
+    the named test files, the named docs, `CHANGELOG.md`, `planning/
+    CONTEXT.md`, `planning/ROADMAP.md`, the two new result files, and
+    the retro/audit files — every one named by the plan's own §6/§11.1/
+    §11.2/§12 deliverables or required by `CLAUDE.md` §2/§3/§5; nothing
+    extraneous. `65ab8d9` touches only the seven files its own commit
+    message describes plus the two new audit-report files — no scope
+    creep.
+12. **Stage audit reports, re-read in full**: `_audit-phase-88-stage-
+    88a.md` (110 lines) and `-88b.md` (199 lines) — both substantive,
+    both independently re-run full suite/Ruff/`check_user_docs.py`,
+    both include real, non-mocked reproductions of their own named
+    defects (the directory-substitution-after-open adversarial test for
+    88A; the `_chdir` monkey-patch-to-no-op reproduction and the
+    `changed[].path` missing-key `KeyError`-to-clean-`ToolError` fix for
+    88B). Neither is a self-report rehash.
+13. **Roadmap exit criteria, independently assessed from the plan text
+    itself** (not the prior audit's conclusion):
+    - **(a)** `planning/phase-88-agent-integration-mcp.md` §12.2
+      ("Fallback") states, verbatim: "The honest fallback is the same
+      candidate, executed against a disposable scratch copy of
+      Ledgerkit rather than the real checkout ... used only if the
+      cross-repository write authorisation for the real
+      `~/projects/ledgerkit` checkout isn't granted at the
+      demonstration's own start," and requires only that "the
+      demonstration's own closeout report ... must name explicitly
+      which of the two actually ran, since the scratch-copy variant is
+      a weaker, not equivalent, substitute." The plan's own §13 DoD
+      mapping (and §12.4, "Explicitly not a productivity claim") does
+      not require a landed change in the real checkout to close the
+      phase — it pre-authorises the scratch-copy variant as sufficient,
+      provided it is named honestly as the weaker substitute. Confirmed
+      from the plan's own text, not assumed or taken on the prior
+      audit's word.
+    - **(b)** Re-checked myself: `~/projects/ledgerkit`'s `git status
+      --porcelain` and `git diff --stat` are both empty; `HEAD` is
+      `a7740fd04fe1814d2a557bfcb67a9a775a4a22f9`. Untouched.
+    - **(c)** `planning/retros/phase-88-ledgerkit-demonstration.md`
+      (read in full): states plainly, in its own "Independent
+      verification" section, that the `docs_get_grounded_region`
+      documentation-use leg was corrected during planning (§18.2) to
+      acknowledge it has no genuinely relevant published region for
+      this task, and that "the materially-informing context here comes
+      from `knowledge_get`-surfaced" Claim/Evidence/Decision records
+      (`EV-BFS-001`, `CL-BFS-004`/`CL-BFS-005`, `DEC-BFS-002`) — matching
+      the phase retro's own §12.1 account of `DEC-BFS-002` shaping the
+      new test's row/subtotal assertions. No claim anywhere in the
+      demonstration retro, the phase retro, `CONTEXT.md`, or
+      `CHANGELOG.md` that generated/published documentation
+      (`docs_get_grounded_region`) was the source of the demonstration's
+      materially-useful context. Honestly reflected, not overclaimed.
+
+## New finding this re-audit raises — DoD condition 4 (phase retro) — FAIL
+
+`planning/retros/phase-88-agent-integration-mcp.md` (141 lines, read in
+full) uses only five headings: `## Goal`, `## Delivered vs planned`,
+`## Lessons learnt`, `## Process-improvement feedback`, `## Outstanding
+at the time of this retro`. This satisfies `CLAUDE.md` §5's own literal,
+narrower four-part list ("goal, delivered vs planned, lessons learnt,
+process-improvement feedback") — which is why the prior audit pass
+(above) accepted it as "every `TEMPLATE.md`-equivalent section
+substantively filled... not a stub." Re-reading `planning/retros/
+TEMPLATE.md` directly for this re-audit, that acceptance was too
+lenient: the template's real, required structure is `Where we are` /
+`Goal` / `Scope delivered vs planned` / `What was achieved` / `What
+worked` / `What didn't work` / `Lessons learnt` / `Process-improvement
+feedback` / `Candidate learnings filed` / `Where we're going` / `Time /
+cost note` — and this project's own three immediately-preceding phase
+retros (`phase-83-semantic-change-assurance.md`,
+`phase-84-consolidated-knowledge-api.md`,
+`phase-85-self-curation-knowledge-quality-validation.md`, all read and
+`grep`-checked directly for this re-audit) each use every one of these
+headings in full, with real, substantive, phase-specific content under
+each.
+
+Phase 88's own retro has **no `Where we are` section at all** (no arc/
+stage-group orientation — nothing locating this phase inside the
+Knowledge-Driven Software Development group, nothing on what Phase 87
+established that this phase built on, nothing narrating the
+project's overall state after this phase in the template's own
+requested form) and **no `Where we're going` section at all** (no
+explicit statement of the next phase(s) — Phase 89's reconciliation
+work, Phase 90's comparative trials — the gate ahead, or the
+trajectory). It also has no separately-framed `What worked` / `What
+didn't work` sections — "Lessons learnt" and "Process-improvement
+feedback" cover adjacent ground but answer a different question each
+(a generalizable takeaway vs. a workflow-friction report) than "what
+should we keep doing" / "what failed or cost more than it returned,"
+which the template asks for explicitly and separately. No `Candidate
+learnings filed` section (the four learnings this phase produced are
+recorded only in `CLAUDE.md`'s diff, `promoted.md`, and `CONTEXT.md` —
+never listed inside the retro itself, unlike every one of the three
+comparison retros). No `Time / cost note`.
+
+This is not a cosmetic heading mismatch: the actual *content* those
+missing sections would carry — arc orientation and forward trajectory,
+specifically — is genuinely absent from the one document `CLAUDE.md`
+§5 designates to carry a phase retro. A future session opening only
+this retro (as `CLAUDE.md` §4's own CONTEXT.md-is-for-session-resumption
+split implies a retro should support) gets no sense of where Phase 88
+sits in the v2 roadmap's arc or what comes next from the retro itself —
+that information exists only in `CONTEXT.md`/`ROADMAP.md`, not in the
+retro the DoD names as the vehicle for it.
+
+This is not a hypothetical process nitpick: `release-phase-auditor`'s
+own governing checklist (item 4) is explicit and unconditional — "with
+every `planning/retros/TEMPLATE.md` section filled substantively —
+including **Where we are** (arc/stage context), **What worked** /
+**What didn't work**, and **Where we're going** (next phase(s), gate
+ahead, trajectory). Not a stub, unless the phase is genuinely trivial
+(then a few real lines still cover where-we-are/goal/shipped/
+worked-didn't/next)." Phase 88 — a five-round-amended, two-stage,
+12-tool MCP server plus a real cross-repository demonstration — is
+plainly not a trivial phase, so no carve-out applies. `CLAUDE.md` §5's
+own shorter list is the DoD's minimum restatement, not a license to
+skip the template's own additional required structure that this
+project's own immediately preceding three phases all satisfied in
+full; reading it as satisfied by the narrower four-item list alone (as
+the prior pass did) was the error, not a genuine disagreement between
+`CLAUDE.md` and this checklist that would make `CLAUDE.md`'s text
+"win" under §0's hierarchy — there is no textual conflict here, only a
+retro that is thinner than the template and than precedent, and item 4
+requires catching that.
+
+## Everything else checked — holds
+
+- **Code implemented, docs/architecture/decisions updated, changelog
+  entry added**: all confirmed directly, items 1-9 above.
+- **Learnings triage (DoD condition 5)**: `planning/learnings/
+  promoted.md` has all four entries (`L-131` through `L-134`), each
+  with a real classification, a real destination file, and (for
+  `L-131`) the explicit "user-approved per §0" annotation — confirmed
+  genuinely triaged, not left at `candidate`. **Observation, not a
+  finding**: all four still cite `@ <this phase's own closeout commit>`
+  rather than the real hash of `65ab8d9`/`4763fcb`. Checked this
+  specifically per the dispatch's own instruction to look for exactly
+  this — but `grep -n "this phase's own closeout commit"
+  planning/learnings/promoted.md` shows this literal, unresolved
+  placeholder string is this file's own long-standing, unbroken
+  convention going back dozens of phases (e.g. `L-022`, `L-050`,
+  `L-061`, `L-089`, `L-121`, all long-`done` phases, all still carry the
+  identical placeholder text, never backfilled with a real hash after
+  the fact). This is not a Phase-88-specific regression or an omitted
+  fix — it is this project's own established (if slightly imprecise)
+  practice, applied consistently here exactly as everywhere else in the
+  same file. Not counted as a finding.
+- **Reference-project / `context-evaluator` condition**: satisfied —
+  confirmed directly in item 13(c) above.
+- **Stage-level audits persisted**: both exist, both substantive
+  (item 12 above).
+- **No scope creep**: confirmed directly in item 11 above.
+- **Roadmap exit criteria**: independently assessed from the plan text
+  itself, confirmed in item 13 above — the scratch-copy variant is
+  genuinely plan-pre-authorised, not a workaround invented after the
+  fact.
+
+## What must be fixed before re-audit
+
+1. **Bring `planning/retros/phase-88-agent-integration-mcp.md` up to
+   `planning/retros/TEMPLATE.md`'s full required structure**, matching
+   the three immediately-preceding phase retros' own established
+   practice: add a substantive `Where we are` section (this phase's
+   place in the Knowledge-Driven Software Development arc; what Phase
+   87 established that this phase built on; the project's overall state
+   after Phase 88, narratively); separately-framed `What worked` and
+   `What didn't work` sections (distinct from the existing "Lessons
+   learnt"/"Process-improvement feedback," which may be retained
+   alongside them); a `Candidate learnings filed` section naming
+   `L-131`-`L-134` and their real destinations; a `Where we're going`
+   section naming Phase 89 (incremental knowledge/documentation
+   reconciliation) and Phase 90 (comparative development trials) as
+   the next phases, and the gate/trajectory between here and there; a
+   `Time / cost note` if information to populate one is available (a
+   few honest lines if not, rather than omitting the heading).
+2. **Re-run this audit** against the resulting commit once 1 lands —
+   per `CLAUDE.md` §5's own voiding rule, this FAIL does not carry
+   forward once a new commit touches the just-audited scope (the retro
+   file itself); a fresh pass is required, not a re-stamp of this one.
+   Everything else checked in this re-audit (items 1-13 above) should
+   not need re-verification unless the retro edit itself touches
+   anything beyond the retro file.

@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 88 — second terminal-audit corrective pass (retro
+  completeness)**: a re-audit of the first corrective pass (`65ab8d9`)
+  found the phase retro (`planning/retros/
+  phase-88-agent-integration-mcp.md`) missing several of
+  `TEMPLATE.md`'s required sections (`Where we are`/`Where we're
+  going`/separately-framed `What worked`/`What didn't work`/`Candidate
+  learnings filed`), accepted too leniently by the first terminal-audit
+  pass. Rewritten to the full template structure; no other DoD
+  condition was reopened by this edit.
 - **Phase 88 — learnings triage and terminal-audit corrective pass**:
   four candidate learnings from the phase retro triaged by
   `knowledge-curator` and promoted (`L-131`-`L-134`) — `L-131` (a
