@@ -436,16 +436,29 @@ class AssuranceFinding:
 def run_check_assurance(
     oracle_mod, contract_path: Path, contract, check_id: str,
     target_repo_root: Path, raw_output_dir: Path, historical_results: list,
+    *, on_fresh_result=None,
 ) -> AssuranceFinding:
     """`oracle_mod` is accepted explicitly for the same dependency-
     injection reason as `resolve_changed_range`'s own docstring
     explains -- e.g. a test wrapping `evaluate_check` to simulate a
-    freshly-tampered raw output."""
+    freshly-tampered raw output.
+
+    `on_fresh_result`, when given, is called once with the real,
+    fully-populated `OracleResult` this function computes internally
+    (`oracle_mod.evaluate_check(...)` below), immediately after it is
+    computed and before this function's own return value (an
+    `AssuranceFinding` summary with no `run_id`/`raw_output_ref` field)
+    discards it. Additive, default `None`, every existing caller
+    unaffected (Phase 89, `source_reconciliation.py` -- the real
+    `OracleResult` is needed to persist durable Evidence provenance;
+    see `decisions/0096`)."""
     check = contract.check_by_id(check_id)
     fresh_result = oracle_mod.evaluate_check(
         contract, check, contract_path=contract_path, repo_root=target_repo_root,
         raw_output_dir=raw_output_dir,
     )
+    if on_fresh_result is not None:
+        on_fresh_result(fresh_result)
     fresh_effective_outcome, fresh_reason = oracle_mod.evaluate_result_precedence(
         fresh_result, contract, check, contract_path=contract_path, repo_root=target_repo_root,
     )
@@ -510,10 +523,32 @@ class RangeReport:
 def assess(
     *, target_repo_root: Path, target_graph_db: Path, knowledge_root: Path,
     slug: str, changed: list[ChangedRange], run_checks: bool,
+    on_fresh_result=None, raw_output_dir: Path | None = None,
 ) -> dict:
     """Behaviour-preserving relocation of the original maintainer
     script's own `assess()` -- same signature, same return shape, same
-    four-root model. See this module's own docstring."""
+    four-root model. See this module's own docstring.
+
+    `on_fresh_result`, when given, is called as `on_fresh_result(i,
+    result)` for every real `OracleResult` this call freshly executes,
+    where `i` is the zero-based index into `changed` of the
+    `ChangedRange` that produced it (`range_reports[i]` in this
+    function's own return value corresponds to `changed[i]`) and
+    `result` is the real `OracleResult`. `assess()` is the only level in
+    this call chain with range context, so it alone takes the index;
+    `run_check_assurance` itself takes a plain, range-unaware
+    single-argument callback (`Callable[[OracleResult], None]`), which
+    this function wraps per range before passing down. `raw_output_dir`,
+    when given, overrides this call's own default `scratch-assessments`
+    directory (disposable, never meant to be durable) -- Phase 89's own
+    `source_reconciliation.propose_reconciliation` passes a durable,
+    project-relative `results/raw` directory instead (`decisions/0096`).
+    Both parameters are additive, default `None`/unset, and preserve
+    this function's exact existing behaviour and return shape for every
+    caller that omits them (`src/codecompass/mcp/tools.py:342`, the one
+    real existing caller, passes neither and also passes
+    `run_checks=False`, so it is unaffected on two independent
+    counts)."""
     slug_dir = knowledge_root / "planning" / "knowledge" / slug
     contract_path = knowledge_root / "planning" / "contracts" / slug / "oracle-contract.yaml"
     records = _ki.load_slug_records(slug_dir)
@@ -523,10 +558,11 @@ def assess(
         if contract
         else []
     )
-    raw_output_dir = knowledge_root / "planning" / "contracts" / slug / "scratch-assessments"
+    if raw_output_dir is None:
+        raw_output_dir = knowledge_root / "planning" / "contracts" / slug / "scratch-assessments"
 
     range_reports: list[RangeReport] = []
-    for c in changed:
+    for range_index, c in enumerate(changed):
         res = resolve_changed_range(_oracle, target_repo_root, target_graph_db, c)
         if res.status in ("cannot_map", "stale_index"):
             range_reports.append(RangeReport(
@@ -567,6 +603,10 @@ def assess(
                 finding = run_check_assurance(
                     _oracle, contract_path, contract, check_id,
                     target_repo_root, raw_output_dir, historical_results,
+                    on_fresh_result=(
+                        (lambda result, _i=range_index: on_fresh_result(_i, result))
+                        if on_fresh_result is not None else None
+                    ),
                 )
             else:
                 finding = AssuranceFinding(

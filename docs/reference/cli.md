@@ -161,6 +161,8 @@ Writes agent-authored relationship enrichment. See `docs/workflows/sync-and-enri
 ```
 codecompass knowledge render [SLUG]
 codecompass knowledge select-candidates SLUG [--dry-run]
+codecompass knowledge detect-changes SLUG --repo-root PATH [--probe-coverage] [--json]
+codecompass knowledge verify-changes SLUG --repo-root PATH [--json]
 codecompass knowledge apply MANIFEST_PATH
 codecompass knowledge status [SLUG] [--strict]
 codecompass knowledge doc-select-candidates [--dry-run]
@@ -169,6 +171,33 @@ codecompass knowledge doc-acknowledge-chunks
 ```
 
 See `docs/workflows/knowledge-reconciliation-loop.md` for full mechanics.
+
+`detect-changes`/`verify-changes` (Phase 89 Stage 89A, `decisions/
+0096`) are two sibling detectors over a *target* repository's own
+source/test changes, layered on this same manifest/apply flow, with a
+deliberately narrow execution boundary. `detect-changes` is purely
+observational: it compares the target repo's own tracked source/test
+files (named by existing Evidence, or by a covered check's own
+`test_input_paths`) against `planning/knowledge/<slug>/reconciliation/
+source-baseline.toml`, after first confirming the target's
+`context-graph.db` is actually fresh for each file (a stale index is
+reported, never silently compared), and scans `oracle-contract.yaml`
+for a required check with zero citing Evidence. It spawns zero
+subprocesses and writes zero files. `--probe-coverage` additionally
+runs `pytest --collect-only` for every such check — exactly one
+subprocess per check, still writing nothing — to confirm it now
+collects; this is not a security sandbox (collection executes
+`conftest.py`/module-level repository code). `verify-changes`
+explicitly executes the real checks a finding names (a full `pytest`
+run, not a collection probe), persists each fresh result under
+`planning/contracts/<slug>/results/` and `results/raw/` (the same
+durable, portable convention `oracle_execute_check` already uses),
+round-trip-verifies the write, and writes a `"source_reconciliation"`-
+kind reconciliation manifest if anything is genuinely proposable —
+never mutating canonical knowledge itself. `apply` (above) remains the
+only command that ever writes a new Evidence record or updates a
+Claim's own fields, and only on an explicit, human-set `decision:
+"accept"`.
 
 ## `codecompass knowledge get|search|trace|gaps|context|export` (Phase 84)
 

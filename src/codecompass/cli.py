@@ -38,6 +38,7 @@ from codecompass import (
     knowledge_intermediate,
     oracle,
     relation_enrichment,
+    source_reconciliation,
 )
 from codecompass.adapters import AdapterError
 from codecompass.chat import ChatError, run_chat
@@ -1584,13 +1585,157 @@ def knowledge_apply_manifest(
     if not manifest_path.is_file():
         console.print(f"[red]error:[/red] no such manifest: {manifest_path}")
         raise typer.Exit(code=1)
+    import tomllib
+
+    manifest_slug = tomllib.loads(manifest_path.read_text(encoding="utf-8")).get("slug", "")
     result = knowledge_intermediate.apply_manifest(project_root, manifest_path)
     for outcome in result.applied:
         console.print(f"[green]applied[/green]: {outcome.reason}")
+        if outcome.item.get("kind") == "source_reconciliation" and manifest_slug:
+            # Phase 89 (decisions/0096): baseline advancement only ever
+            # happens after a real, successful apply -- never on
+            # detection alone (CLAUDE.md §1 L-087).
+            source_reconciliation.advance_baselines_for_applied_item(
+                project_root, manifest_slug, outcome.item
+            )
     for outcome in result.skipped:
         console.print(f"[yellow]skipped[/yellow]: {outcome.reason}")
     if not result.applied and not result.skipped:
         console.print("[yellow]manifest had no items[/yellow]")
+
+
+def _print_detect_changes_result(
+    source_result: source_reconciliation.DetectSourceChangesResult,
+    coverable_result: source_reconciliation.DetectNewlyCoverableResult,
+    as_json: bool,
+) -> None:
+    if as_json:
+        console.print_json(data={
+            "changed": [
+                {"path": f.path, "resolution": f.resolution, "check_id": f.check_id,
+                 "claim_ids": f.claim_ids}
+                for f in source_result.changed
+            ],
+            "stale_graph_index": [
+                {"path": f.path, "reason": f.reason} for f in source_result.stale_graph_index
+            ],
+            "new_files": source_result.new_files,
+            "deleted_files": source_result.deleted_files,
+            "newly_coverable": [
+                {"check_id": c.check_id, "claim_id": c.claim_id} for c in coverable_result.coverable
+            ],
+            "not_yet_coverable": coverable_result.not_yet_coverable,
+            "indeterminate": coverable_result.indeterminate,
+            "config_errors": [
+                {"check_id": e.check_id, "reason": e.reason} for e in coverable_result.config_errors
+            ],
+        })
+        return
+    if not any([
+        source_result.changed, source_result.stale_graph_index, source_result.new_files,
+        source_result.deleted_files, coverable_result.coverable, coverable_result.config_errors,
+    ]):
+        console.print("[green]nothing proposable[/green] — no detected change")
+        return
+    for f in source_result.changed:
+        extra = f" -> check_id={f.check_id}, claims={f.claim_ids}" if f.check_id else ""
+        console.print(f"[yellow]changed[/yellow] ({f.resolution}): {f.path}{extra}")
+    for f in source_result.stale_graph_index:
+        console.print(f"[red]stale_graph_index[/red]: {f.path} — {f.reason}")
+    for p in source_result.new_files:
+        console.print(f"[cyan]new[/cyan]: {p}")
+    for p in source_result.deleted_files:
+        console.print(f"[red]deleted[/red]: {p}")
+    for c in coverable_result.coverable:
+        console.print(f"[green]newly_coverable[/green]: {c.check_id} -> {c.claim_id}")
+    for e in coverable_result.config_errors:
+        console.print(f"[red]config_error[/red]: {e.check_id} — {e.reason}")
+
+
+@knowledge_app.command("detect-changes")
+def knowledge_detect_changes(
+    slug: str = typer.Argument(..., help="The planning/knowledge/<slug> to scan."),
+    repo_root: Path = typer.Option(..., "--repo-root", help="The target repository checkout."),
+    probe_coverage: bool = typer.Option(
+        False, "--probe-coverage",
+        help="Also run `pytest --collect-only` for every required check with zero "
+        "citing Evidence, to confirm it now collects. Spawns exactly one subprocess "
+        "per such check -- pytest collection executes repository Python at import "
+        "time (conftest.py, module-level code); this is NOT a security sandbox. "
+        "Without this flag, this command spawns zero subprocesses and writes zero "
+        "files.",
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Machine-readable output."),
+) -> None:
+    """Phase 89 Stage 89A (`decisions/0096`) — purely observational by
+    default: reads file/baseline/graph state only, never runs
+    `change_impact.assess()`, never executes a check, never writes a
+    file (not even the baseline). `--probe-coverage` adds a collection
+    probe only (never a run). To actually execute checks and persist
+    results, use `knowledge verify-changes`.
+    """
+    project_root = Path.cwd()
+    if not repo_root.is_dir():
+        console.print(f"[red]error:[/red] no such repo_root: {repo_root}")
+        raise typer.Exit(code=1)
+    source_result = source_reconciliation.detect_source_changes(
+        project_root, slug, repo_root=repo_root,
+    )
+    coverable_result = source_reconciliation.detect_newly_coverable_checks(
+        project_root, slug, repo_root=repo_root, probe=probe_coverage,
+    )
+    _print_detect_changes_result(source_result, coverable_result, json_output)
+
+
+@knowledge_app.command("verify-changes")
+def knowledge_verify_changes(
+    slug: str = typer.Argument(..., help="The planning/knowledge/<slug> to verify."),
+    repo_root: Path = typer.Option(..., "--repo-root", help="The target repository checkout."),
+    json_output: bool = typer.Option(False, "--json", help="Machine-readable output."),
+) -> None:
+    """Phase 89 Stage 89A (`decisions/0096`) — explicitly authorised
+    verification execution: re-runs `detect-changes`'s own observation
+    fresh (never trusting a prior call's output), then actually
+    executes every real check a finding names, persists and
+    round-trip-verifies each fresh `OracleResult` under the durable
+    `results/`/`results/raw/` convention, and writes the
+    `"source_reconciliation"`-kind reconciliation manifest
+    (`state="pending"`, `decision="undecided"`) if anything is
+    genuinely proposable. Never mutates canonical knowledge itself --
+    `codecompass knowledge apply` remains the only command that does,
+    and only after explicit human `decision: "accept"`.
+    """
+    project_root = Path.cwd()
+    if not repo_root.is_dir():
+        console.print(f"[red]error:[/red] no such repo_root: {repo_root}")
+        raise typer.Exit(code=1)
+    source_result = source_reconciliation.detect_source_changes(
+        project_root, slug, repo_root=repo_root,
+    )
+    coverable_result = source_reconciliation.detect_newly_coverable_checks(
+        project_root, slug, repo_root=repo_root, probe=True,
+    )
+    findings = source_reconciliation.propose_reconciliation(
+        project_root, slug, repo_root=repo_root,
+        source_changes=source_result, newly_coverable=coverable_result.coverable,
+    )
+    manifest_path = source_reconciliation.write_source_reconciliation_manifest(
+        project_root, slug, findings,
+        repo_root=repo_root, target_graph_db=repo_root / "context-graph.db",
+    )
+    if json_output:
+        console.print_json(data={
+            "manifest_path": str(manifest_path) if manifest_path else None,
+            "proposed_findings": len(findings),
+        })
+        return
+    if manifest_path is None:
+        console.print("[green]nothing proposable[/green] — no finding survived verification")
+        return
+    console.print(
+        f"[green]manifest written[/green]: {manifest_path} "
+        f"({len(findings)} contributing finding(s))"
+    )
 
 
 @knowledge_app.command("status")

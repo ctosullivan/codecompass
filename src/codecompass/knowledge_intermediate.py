@@ -2145,6 +2145,55 @@ def _find_existing_promoted_record(
     return None
 
 
+def _find_existing_evidence_for_run(
+    project_root: Path, records: dict[str, KnowledgeRecord],
+    contract_id: str, check_id: str, run_id: str,
+) -> str | None:
+    """Phase 89 (`decisions/0096`) — a new, narrow, Evidence-specific
+    identity check, a *sibling* to `_find_existing_promoted_record`
+    above, never a parameterisation of it: that helper is typed to
+    match `kind="claim"`/`"requirement"` records against their own
+    `statement` field, and Evidence records have no `statement` field
+    at all (they have `what_it_shows`) — this is the first mechanized
+    Evidence-creation path this codebase has, so it needs its own
+    identity convention from scratch.
+
+    Identity is the real oracle run that produced the Evidence — the
+    tuple `(contract_id, check_id, run_id)` — never a prose/content
+    match, since two separate real runs of the same check can
+    legitimately produce byte-identical raw output while still being
+    two distinct, independently-citable runs (`decisions/0082` §C).
+    Scans existing `evidence_kind="test"` records, resolves each one's
+    `test_ref` to its cited `OracleResult` and compares the identity
+    tuple directly. Checked before every individual Evidence write in
+    `_apply_source_reconciliation` below — not once per manifest item —
+    because `apply_manifest`'s own per-item `state="applied"` flag is
+    buffered for the whole batch, not persisted per item, so a crash
+    partway through one item's own multi-record write is only ever
+    safe to retry via this exact, fresh-on-every-call, disk-state
+    check."""
+    for record in records.values():
+        if record.kind != "evidence" or record.fields.get("evidence_kind") != "test":
+            continue
+        raw_ref = record.fields.get("test_ref", "")
+        if not raw_ref or raw_ref == "null":
+            continue
+        ref = raw_ref.strip()
+        if len(ref) >= 2 and ref[0] == ref[-1] and ref[0] in "\"'":
+            ref = ref[1:-1]
+        try:
+            result = _oracle.parse_oracle_result(project_root / ref)
+        except (_oracle.OracleSchemaError, OSError):
+            continue
+        if (
+            result.contract_id == contract_id
+            and result.check_id == check_id
+            and result.run_id == run_id
+        ):
+            return record.record_id
+    return None
+
+
 def _consume_candidate_text(md_path: Path, text: str) -> bool:
     """Removes every occurrence of `text` as its own candidate block from
     the live candidate region (`decisions/0073`, point 2) — once a
@@ -2475,6 +2524,141 @@ def _candidate_text_present(md_path: Path, text: str) -> bool:
     return text.strip() in blocks
 
 
+def _recompute_evidence_support_state(
+    records: dict[str, KnowledgeRecord], supporting: list[str], contradicting: list[str],
+) -> str:
+    """Phase 89 (`decisions/0096`, plan §4.4, corrected per the third/
+    fourth independent review rounds) — a pure function of the Claim's
+    own FULL, accumulated `contradicting_evidence`/`supporting_evidence`
+    contents, never only the current batch's own findings, so an
+    earlier batch's contradiction can never silently disappear. Scoped
+    correctly to a single-check Claim, the only kind this mechanism
+    ever writes to (never a whole-contract-scoped Claim like
+    `CL-BFS-003`/`CL-BFS-005`, which this write path never reaches)."""
+    if contradicting and supporting:
+        return "conflicting"
+    if contradicting:
+        return "unsupported"
+    if supporting:
+        kinds = {
+            records[eid].fields.get("evidence_kind") for eid in supporting if eid in records
+        }
+        if "test" in kinds:
+            return "supported"
+        return "partially_supported"
+    return "unsupported"
+
+
+def _apply_source_reconciliation(project_root: Path, slug: str, item: dict) -> ApplyOutcome:
+    """Phase 89 Stage 89A (`decisions/0096`, plan §4.4/§5.3) — the first
+    mechanized Evidence-creation path this codebase has. A disclosed,
+    narrowly-scoped deviation from this module's otherwise-universal
+    "never mutate, always create a competing record" convention: this
+    branch appends to the target Claim's own `contradicting_evidence`/
+    `supporting_evidence` fields and recomputes `evidence_support_state`
+    in place — `statement`/`derivation`/`timestamp`/every other field is
+    never touched. Re-validates every cited fresh oracle result against
+    live state before writing anything; never trusts the manifest's own
+    cached fields."""
+    record_id = item.get("record_id", "")
+    sdir = slug_dir(project_root, slug)
+    records = load_slug_records(sdir)
+    claim = records.get(record_id)
+    if claim is None:
+        return ApplyOutcome(False, item, "Claim no longer exists")
+    live_hash = sha256_text(claim.path.read_text(encoding="utf-8"))
+    if live_hash != item.get("base_claim_hash"):
+        return ApplyOutcome(
+            False, item,
+            "apply-time race: the Claim changed since detection "
+            "(base_claim_hash no longer matches) — refusing to write; "
+            "re-run `knowledge detect-changes`/`verify-changes` and review again",
+        )
+
+    contract_ids = item.get("contributing_contract_ids", [])
+    check_ids = item.get("contributing_check_ids", [])
+    run_ids = item.get("contributing_run_ids", [])
+    labels = item.get("contributing_labels", [])
+    target_fields = item.get("contributing_target_fields", [])
+    what_it_shows_list = item.get("contributing_what_it_shows", [])
+    repo_revisions = item.get("contributing_repository_revisions", [])
+    n = len(check_ids)
+    results_dir = project_root / "planning" / "contracts" / slug / "results"
+
+    appended: list[tuple[str, str]] = []  # (evidence_id, target_field)
+    for i in range(n):
+        contract_id, check_id, run_id = contract_ids[i], check_ids[i], run_ids[i]
+        target_field = target_fields[i]
+        result_path = results_dir / f"{check_id}--{run_id}.yaml"
+        if not result_path.is_file():
+            return ApplyOutcome(False, item, f"cited result {result_path} no longer exists")
+        try:
+            result = _oracle.parse_oracle_result(result_path)
+        except _oracle.OracleSchemaError as exc:
+            return ApplyOutcome(
+                False, item, f"cited result {result_path} failed to re-parse: {exc}"
+            )
+        if (result.contract_id, result.check_id, result.run_id) != (contract_id, check_id, run_id):
+            return ApplyOutcome(
+                False, item,
+                f"cited result {result_path} identity no longer matches the manifest item",
+            )
+        existing_ev = _find_existing_evidence_for_run(
+            project_root, records, contract_id, check_id, run_id
+        )
+        if existing_ev is not None:
+            ev_id = existing_ev
+        else:
+            ev_id = _next_id(sdir, "EV")
+            label = labels[i] if i < len(labels) else ""
+            what_it_shows = what_it_shows_list[i] if i < len(what_it_shows_list) else ""
+            repo_revision = repo_revisions[i] if i < len(repo_revisions) else "unknown"
+            ev_fields = {
+                "id": ev_id,
+                "kind": "evidence",
+                "evidence_kind": "test",
+                "what_it_shows": (
+                    what_it_shows or f"Oracle run {run_id} of check {check_id} ({label})."
+                ),
+                "observations": "null",
+                "source_ref": "null",
+                "doc_ref": "null",
+                "test_ref": f'"{result_path.relative_to(project_root)}"',
+                "repository_revision": f'"{repo_revision}"',
+                "status": "current",
+            }
+            _write_record(sdir / f"{ev_id}.yaml", ev_fields)
+            records = load_slug_records(sdir)
+        appended.append((ev_id, target_field))
+
+    claim = records.get(record_id)
+    if claim is None:
+        return ApplyOutcome(False, item, "Claim disappeared mid-apply")
+    supporting = _extract_id_strings(claim.fields.get("supporting_evidence", ""))
+    contradicting = _extract_id_strings(claim.fields.get("contradicting_evidence", ""))
+    for ev_id, target_field in appended:
+        if target_field == "supporting_evidence":
+            if ev_id not in supporting:
+                supporting.append(ev_id)
+        elif ev_id not in contradicting:
+            contradicting.append(ev_id)
+
+    new_state = _recompute_evidence_support_state(records, supporting, contradicting)
+    updated_fields = dict(claim.fields)
+    updated_fields["supporting_evidence"] = "[" + ", ".join(supporting) + "]"
+    updated_fields["contradicting_evidence"] = "[" + ", ".join(contradicting) + "]"
+    updated_fields["evidence_support_state"] = new_state
+    _write_record(claim.path, updated_fields)
+
+    new_evidence_ids = [ev_id for ev_id, _ in appended]
+    return ApplyOutcome(
+        True, item,
+        f"recomputed evidence_support_state={new_state!r}; evidence: "
+        f"{', '.join(new_evidence_ids) or 'none new'}",
+        record_id,
+    )
+
+
 def apply_manifest(project_root: Path, manifest_path: Path) -> ApplyResult:
     """The only function in this module (and the only CLI command, §11)
     allowed to write `planning/knowledge/*/*.yaml`. Never trusts Stage 2's
@@ -2529,6 +2713,8 @@ def apply_manifest(project_root: Path, manifest_path: Path) -> ApplyResult:
             outcome = _apply_candidate_addition(project_root, slug, item)
         elif item.get("kind") == "doc_region_edit":
             outcome = _apply_doc_region_edit(project_root, slug, item)
+        elif item.get("kind") == "source_reconciliation":
+            outcome = _apply_source_reconciliation(project_root, slug, item)
         else:
             outcome = ApplyOutcome(False, item, f"unknown item kind {item.get('kind')!r}")
         if outcome.ok:

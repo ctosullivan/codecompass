@@ -18,3 +18,4 @@ example: |
 decision: DEC-BFS-002
 status: implemented
 depends_on: [CL-BFS-004]
+check_id: overlapping-account-patterns-no-double-count

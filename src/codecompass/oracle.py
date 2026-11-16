@@ -717,6 +717,119 @@ def run_pytest_check(
     return outcome, invalid_reason, raw
 
 
+def run_pytest_collect_only(
+    repo_root: Path,
+    check_reference: str,
+    *,
+    timeout_seconds: float = DEFAULT_CHECK_TIMEOUT_SECONDS,
+    max_output_bytes: int = DEFAULT_CHECK_MAX_OUTPUT_BYTES,
+) -> tuple[bool, str, str]:
+    """Phase 89 (`decisions/0096`): `pytest --collect-only -q
+    <check_reference>` -- a collection probe, never a run, used by
+    `source_reconciliation.detect_newly_coverable_checks` to answer
+    "does this node id now resolve to a real test" without executing
+    any test body. Returns `(collects, reason, raw_output_text)`:
+    `collects` is `True` only when the subprocess exits `0`; any
+    nonzero exit (the node id does not exist, a collection-time error
+    unrelated to the node's own existence, a `conftest.py`-level import
+    error elsewhere in the target repo) is uniformly `collects=False`
+    with `reason` naming the exit code -- this function deliberately
+    does not distinguish "does not exist" from "exists but failed to
+    collect for some other reason"; `source_reconciliation` itself
+    reports a fail-closed "cannot determine coverability" finding
+    rather than treating either as equivalent to "exists and is
+    healthy." Never parses junit output (collection has no PASS/FAIL
+    outcome) -- deliberately not built on `run_pytest_check` (which is
+    tied to junit-xml classification); duplicates that function's own
+    bounded-subprocess pattern (timeout, output cap, process-group
+    kill) in full rather than a risky shared-helper extraction, matching
+    this project's own established `scripts/`-duplicates-`scripts/`
+    tolerance for controlled duplication when extraction risk exceeds
+    its benefit.
+
+    Not a security sandbox: `pytest --collect-only` executes
+    `conftest.py` and module-level repository code at import time, the
+    same way any pytest invocation does -- this function only avoids
+    running test *bodies*, named explicitly so a caller never treats a
+    `collects=True` result as "safely inspected.\""""
+    interpreter = _interpreter_for(repo_root)
+    env = dict(os.environ)
+    existing = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = str(repo_root) + (f":{existing}" if existing else "")
+    command = [interpreter, "-m", "pytest", "--collect-only", "-q", check_reference]
+    try:
+        proc = subprocess.Popen(
+            command,
+            cwd=repo_root,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env,
+            start_new_session=True,
+        )
+    except OSError as exc:
+        raw = f"$ {' '.join(command)}\n(cwd={repo_root})\n\ncould not launch pytest: {exc}\n"
+        return False, f"failed to launch pytest via {interpreter!r}: {exc}", raw
+
+    captured: dict[str, list[str]] = {"stdout": [], "stderr": []}
+    byte_counts: dict[str, int] = {"stdout": 0, "stderr": 0}
+    cap_breached = threading.Event()
+    readers = [
+        threading.Thread(
+            target=_read_bounded,
+            args=(proc.stdout, "stdout", captured, byte_counts, max_output_bytes, cap_breached),
+            daemon=True,
+        ),
+        threading.Thread(
+            target=_read_bounded,
+            args=(proc.stderr, "stderr", captured, byte_counts, max_output_bytes, cap_breached),
+            daemon=True,
+        ),
+    ]
+    for reader in readers:
+        reader.start()
+
+    timed_out = False
+    deadline = time.monotonic() + timeout_seconds
+    while True:
+        remaining = deadline - time.monotonic()
+        if cap_breached.wait(timeout=max(0.0, min(remaining, 0.5))):
+            break
+        if remaining <= 0:
+            timed_out = proc.poll() is None
+            break
+        if proc.poll() is not None:
+            break
+
+    if timed_out or cap_breached.is_set():
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            pass
+    proc.wait()
+    for reader in readers:
+        reader.join(timeout=5)
+
+    stdout_text = "".join(captured["stdout"])
+    stderr_text = "".join(captured["stderr"])
+    base_header = (
+        f"$ {' '.join(command)}\n(cwd={repo_root})\n\n"
+        f"--- stdout ---\n{stdout_text}\n--- stderr ---\n{stderr_text}\n"
+    )
+
+    if timed_out:
+        raw = base_header + f"--- TERMINATED: exceeded {timeout_seconds}s timeout ---\n"
+        return False, f"collection exceeded the configured timeout of {timeout_seconds}s", raw
+    if cap_breached.is_set():
+        raw = base_header + f"--- TERMINATED: output exceeded {max_output_bytes}-byte cap ---\n"
+        return False, f"collection output exceeded the configured {max_output_bytes}-byte cap", raw
+
+    raw = base_header + f"--- returncode: {proc.returncode} ---\n"
+    if proc.returncode == 0:
+        return True, "", raw
+    return False, f"pytest --collect-only exited {proc.returncode}", raw
+
+
 def evaluate_check(
     contract: OracleContract,
     check: OracleCheck,
