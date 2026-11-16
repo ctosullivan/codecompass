@@ -435,3 +435,105 @@ suite still passes, and nothing else changed) is required before Stage
 89A can be treated as closed. It should not require re-verifying the
 ten checklist points above from scratch, since none of them touch the
 lines being fixed.
+
+---
+
+## Re-audit — 2026-11-17 (focused re-check of the E501 fix, commit `1f59a1c`)
+
+**Scope:** narrow, as dispatched — verify only that commit `1f59a1c`
+(on top of `2040a8e`, the state this report's original audit above
+examined) fixes the 64 new `ruff` E501 violations the original pass
+found, without reintroducing a regression and without touching anything
+outside that cosmetic fix. The ten substantive checklist points are not
+re-verified; the original audit above already confirmed them sound and
+this fix does not touch logic.
+
+**Auditor:** `release-phase-auditor` (independent, read-only pass).
+
+### What was re-run, and the result
+
+1. **`ruff check` on the two touched files directly:**
+   `.venv/bin/ruff check src/codecompass/source_reconciliation.py
+   tests/test_source_reconciliation.py` → `All checks passed!`. Zero
+   violations, confirming all 64 flagged `E501`s are gone.
+
+2. **Whole-repo `ruff` baseline:** `.venv/bin/ruff check src/ tests/` →
+   `Found 163 errors.` This is corrected from the previous section's own
+   stated "167-error pre-existing baseline" (a typo/stale figure in the
+   original report, not independently re-derived at the time). To
+   settle the true number rather than trust either figure, this pass
+   added a disposable `git worktree` at `a7d3db8` (the commit
+   immediately before Stage 89A's own work began) and ran `ruff check
+   src/ tests/` against it directly: **163 errors**, exactly matching
+   the current count at `1f59a1c`. The pre-existing baseline is fully
+   restored — confirmed independently, not merely by trusting the fix
+   commit's own message. (The worktree was removed via `git worktree
+   remove --force` immediately after the check; `git worktree list` and
+   `git status --short` afterward confirm no stray worktree or
+   uncommitted change was left in the main working tree.)
+
+3. **Full test suite:** `.venv/bin/pytest -q` from the repo root →
+   `1497 passed, 2 skipped in 521.27s (0:08:41)`. Matches exactly, no
+   regression from the line-wrapping.
+
+4. **Diff scope check:** `git diff --stat 2040a8e 1f59a1c` and `git diff
+   --name-only 2040a8e 1f59a1c` show exactly three touched paths:
+   `planning/retros/_audit-phase-89-stage-89a.md` (this report being
+   committed — insertions only, the prior audit's own text),
+   `src/codecompass/source_reconciliation.py` (+3/-1 lines: one
+   boolean-expression line split across two lines, no token or operator
+   changed — confirmed by reading the hunk directly), and
+   `tests/test_source_reconciliation.py` (+244/-69 lines, all of which
+   this pass read in full via `git diff` and cross-checked two ways):
+   - A whitespace-insensitive normalization diff (`re.sub(r'\s+', '',
+     content)` on the full old and new file, then `difflib`) isolated
+     every non-whitespace-only change to two patterns: (a) long dict
+     literals split across lines (adding a trailing comma — standard
+     `ruff`/formatter-style reflow, not a value change), and (b)
+     repeated long path expressions (e.g.
+     `project_root/"planning"/"contracts"/"demo"/"results"`,
+     `project_root/"planning"/"knowledge"/"demo"/"reconciliation"`)
+     factored into a local variable (`results_dir`, `reconciliation_dir`)
+     then reused — read directly in the diff (hunks at original lines
+     652-674, 877-920) and confirmed the extracted variable's value is
+     character-for-character identical to the inline expression it
+     replaced, and every call site using it is unchanged in meaning.
+   - A full manual read of every hunk in the test-file diff (36 hunks)
+     confirmed every change is one of: wrapping a long function-call
+     argument list across lines, wrapping a long dict literal, wrapping
+     a long f-string/comparison expression, wrapping a long
+     `write_text(...)` call, or the two local-variable extractions
+     above. No assertion's expected value changed, no test's logic
+     branch changed, no fixture or helper's behavior changed.
+
+### Verdict
+
+**PASS WITH NON-BLOCKING OBSERVATIONS** — the fix is exactly what it
+claims to be: a cosmetic, line-wrapping-only change that resolves all 64
+new `ruff` E501 violations, restores the whole-repo lint count to its
+true pre-existing baseline (163, independently confirmed against a
+disposable `a7d3db8` worktree — not 167 as the original audit section
+above stated), introduces no test regression (1497 passed, 2 skipped,
+unchanged), and touches nothing outside the two files + this audit
+report. Stage 89A's own ten substantive checklist points remain sound,
+as the original audit above already established and this fix does not
+disturb.
+
+Carried forward, unchanged and not re-litigated, the two non-blocking
+observations the original audit above already raised:
+
+1. **Missing dedicated test coverage for the asymmetric
+   Evidence/Claim-append-retry case** (mechanism independently verified
+   correct by the original audit, but no dedicated test names it).
+2. **No `docs-reconstructor`-style independent drift audit has yet run**
+   for Stage 89A's own documentation changes — deferred to Phase 89's
+   terminal closeout per the plan's own staged structure, not a Stage
+   89A gap, but not to be silently dropped before that closeout.
+
+One additional minor correction for the record (not a new blocking
+finding): the original audit's own process note above stated the
+pre-existing baseline as "167 errors"; this re-audit independently
+re-derived it as 163 via a disposable worktree comparison against
+`a7d3db8` and confirmed 163 is both the true original baseline and the
+current post-fix count. No action required — noted so a future reader
+of this file isn't misled by the earlier figure.
