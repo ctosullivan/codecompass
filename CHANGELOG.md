@@ -9,6 +9,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 89 Stage 89A — Detection and Manifest Extension — implemented
+  and independently demonstrated against real Ledgerkit**: `src/
+  codecompass/source_reconciliation.py` (new module) adds two sibling
+  change detectors over a target repository's own source/test files —
+  `detect_source_changes` (re-verifying an already-covered scope
+  through the existing `change_impact.classify_symbol`/`assess`
+  pathway, plus a new, direct `check_id`→Claim bridge for a pure
+  test-input-file change with no source symbol involved) and
+  `detect_newly_coverable_checks` (a required check with zero citing
+  Evidence whose test now collects, resolved via the new, optional
+  `check_id` Requirement field). `propose_reconciliation` executes the
+  real checks either detector names and persists every fresh
+  `OracleResult` under the same durable, project-relative
+  `results/`/`results/raw/` convention the existing Phase 88 MCP tool
+  already uses (never Phase 83's own disposable `scratch-assessments/`),
+  round-trip-verifying the write before anything is proposed.
+  `write_source_reconciliation_manifest` writes a new `apply_manifest`
+  item kind, `"source_reconciliation"` (`knowledge_intermediate.py`'s
+  first mechanized Evidence-creation path, with its own narrow
+  run-identity helper and a disclosed, narrowly-scoped in-place update
+  of a Claim's own citation fields and cumulative `evidence_support_
+  state` — never its statement/derivation). New CLI commands
+  `codecompass knowledge detect-changes` (purely observational by
+  default; `--probe-coverage` adds exactly one `pytest --collect-only`
+  subprocess per uncovered check; `--establish-baselines` bootstraps a
+  first-ever baseline entry) and `codecompass knowledge verify-changes`
+  (the only command that actually executes checks and persists
+  results). `change_impact.assess`/`run_check_assurance` gain two
+  additive, default-`None` parameters (`on_fresh_result`,
+  `raw_output_dir`) with zero behaviour change for any existing caller.
+  `oracle.py` gains `run_pytest_collect_only`. 33 new tests (`tests/
+  test_source_reconciliation.py`); full suite (1497 tests),
+  `scripts/check_knowledge_base.py`, and `scripts/check_contracts.py`
+  all pass. Independently demonstrated against two disposable, real
+  `~/projects/ledgerkit` scratch copies (never the real checkout
+  itself): detector (a) — the real sign-inversion mutation genuinely
+  fails `single-section-expense-subtotal`/`multi-section-income-
+  expense-subtotal`, correctly reconciled against `CL-BFS-001`/
+  `CL-BFS-002`, mutation reversed and re-verified PASS correctly
+  re-proposed (a defect found and fixed along the way: a re-confirming
+  PASS was being unconditionally skipped regardless of the Claim's own
+  current state); detector (b) — the real, previously-uncovered
+  `overlapping-account-patterns-no-double-count` check, once its real
+  test is added to a scratch copy, correctly resolves to `CL-BFS-004`
+  and upgrades it from `partially_supported` to `supported`. Task B's
+  own pre-registration (`planning/retros/phase-89-ledgerkit-two-task-
+  demonstration.md`) was written and committed *before* either
+  demonstration ran. `decisions/0096` documents the four planned
+  tradeoffs plus the implementation-contract resolutions made during
+  this stage. Stages 89B/89C and Phase 89's own roadmap exit gate
+  remain not started — this phase is not marked `done`.
 - **Phase 89 — third planning amendment (Task A mechanism, Evidence
   identity, exit-gate semantics, baseline freshness) — still planning
   only**: a fresh, independent-orchestrator re-verification found the

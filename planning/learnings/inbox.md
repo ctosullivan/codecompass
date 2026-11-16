@@ -13015,3 +13015,27 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   ROADMAP.md (backlog: docs publish residual write-boundary race,
   revisit if Stage 87C introduces genuine multi-writer concurrency) @
   <landing commit>`.
+
+### L-135 — a real reference-project demonstration sequence catches live bugs a unit suite built from the same fixtures misses
+
+- **origin:** Phase 89 Stage 89A implementation
+- **date:** 2026-11-17
+- **project_revision:** 52bc369 (codecompass) + ledgerkit@a7740fd (disposable scratch copy only, never the real checkout)
+- **observation:** Running the real detect→verify→apply→reverse→detect→verify→apply sequence against a disposable `~/projects/ledgerkit` scratch copy surfaced two genuine implementation bugs (a missing baseline-bootstrap primitive; `propose_reconciliation` unconditionally skipping a re-confirming PASS regardless of the target Claim's own current `evidence_support_state`) that 32 passing unit tests, built from synthetic fixtures by the same implementer, did not catch — because no single unit test constructed the same multi-step state-transition sequence (accept a regression, then reverse and re-verify) a real demonstration naturally exercises.
+- **evidence:** `planning/retros/phase-89-stage-89a.md` "Lessons learnt"; commits `b7e9a10`/`52bc369`.
+- **classification:** workflow
+- **status:** candidate
+- **recurrence:**
+- **promoted_to:**
+
+### L-136 — `codecompass sync`'s own Phase B enrichment step fails non-fatally without an API key, after the graph rebuild it's meant to gate has already succeeded
+
+- **origin:** Phase 89 Stage 89A real Ledgerkit demonstration
+- **date:** 2026-11-17
+- **project_revision:** 52bc369
+- **observation:** `codecompass sync --yes` against a disposable scratch copy with no Anthropic API key configured prints an uncaught `TypeError` from the `anthropic` SDK's own header-validation step and exits 0 -- but `context-graph.db` is already correctly rebuilt by the time this happens, so the error is cosmetic for any caller that only needs the graph (as Phase 89's own detectors do), not fatal. No existing flag (e.g. `--budget 0`) currently suppresses the attempt cleanly when no key is configured.
+- **evidence:** `/tmp/claude-1000/.../tasks/b817q2w7d.output` (session-local, not committed); reproducible via `cd <any synced repo> && codecompass sync --yes` with no `ANTHROPIC_API_KEY` set.
+- **classification:** future-improvement
+- **status:** candidate
+- **recurrence:**
+- **promoted_to:**
