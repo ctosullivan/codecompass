@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 89 — Incremental Knowledge and Documentation Reconciliation —
+  planning only**: implementation plan drafted
+  (`planning/phase-89-incremental-knowledge-documentation-reconciliation.md`),
+  independently deliverable from Phase 88 (`decisions/0085` §3) — a
+  change-driven source/test-change detector layered on the existing
+  Phase 81 reconciliation flow and Phase 83 change-impact classifier,
+  with no new scheduler, event bus, knowledge store, or documentation
+  compiler. Pending the independent Plan-type review `CLAUDE.md` §1
+  requires. Implementation not authorised.
+- **Phase 88 — real-agent MCP acceptance exercise**: a genuine, separate
+  `claude` CLI client, connected over real MCP stdio transport to a real
+  `codecompass mcp-serve` process, completed the Ledgerkit
+  `test_section_accounts_overlapping_patterns_no_double_count`
+  development task end to end (discovery, grounded context retrieval,
+  test authoring, impact classification, controlled verification with
+  both a PASS and an independently-reproduced FAIL) — closing the gap
+  the original scratch-copy demonstration (direct tool-function calls,
+  not a real client) left open. Two independent reviews (`context-
+  evaluator`; an integration/security reviewer) both returned PASS. The
+  real `~/projects/ledgerkit` checkout remains untouched; landing the
+  test there still requires separate, explicit cross-repository
+  authorisation. Full report: `planning/retros/
+  phase-88-mcp-real-client-acceptance.md`. Does not reopen Phase 88's
+  own already-`done` status. A stale `planning/CONTEXT.md` note (an
+  outdated "`f2a1d72` not yet pushed" claim, superseded once the
+  terminal reconciliation commits landed and pushed) was corrected in
+  place as part of this same closeout.
 - **Phase 88 — second terminal-audit corrective pass (retro
   completeness)**: a re-audit of the first corrective pass (`65ab8d9`)
   found the phase retro (`planning/retros/

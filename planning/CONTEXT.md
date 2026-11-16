@@ -9,7 +9,9 @@ session-resumption, not a project history.
 
 **Phase 88 — Agent Integration and MCP — is `done` (2026-11-15)**.
 Stage 88A, Stage 88B plus the real Ledgerkit demonstration, learnings
-triage, and both terminal-audit corrective passes are all committed:
+triage, both terminal-audit corrective passes, and the terminal
+roadmap/CONTEXT/plan-file reconciliation are all committed and pushed
+(`HEAD` = `origin/main` = `4615691`):
 
 - Stage 88A (MCP foundation, read-only, `7a96d89`): `src/codecompass/
   mcp/` (`security.py`/`tools.py`/`server.py`), `codecompass mcp-serve`,
@@ -62,15 +64,42 @@ triage, and both terminal-audit corrective passes are all committed:
   phase-88-agent-integration-mcp.md`. Ledgerkit demonstration retro:
   `planning/retros/phase-88-ledgerkit-demonstration.md`.
 
-`f2a1d72` is committed on local `main` but **not yet pushed to
-`origin/main`** — `main` is one commit ahead of `origin/main`. This is
-a pending manual push, blocked by this environment's own automated
-commit-control classifier, not a defect in the work itself.
+After the second re-audit's **PASS**, the terminal reconciliation
+commit (`4615691`, flipping `planning/ROADMAP.md`'s Phase 88 row to
+`done`) and its own preceding audit-record commit (`9d0cbce`) both
+landed and were pushed — `main` and `origin/main` are in sync at
+`4615691`. The `f2a1d72`-not-yet-pushed note that previously appeared
+here was accurate when written but became stale once those later
+commits landed; corrected in place rather than left to assert an
+already-superseded push state.
+
+**A real-agent MCP acceptance exercise for Phase 88 is also now
+complete** (`planning/retros/phase-88-mcp-real-client-acceptance.md`):
+a genuine, separate `claude` CLI client connected over real MCP stdio
+transport to a real `codecompass mcp-serve` process and completed the
+same Ledgerkit development task end to end (discovery, grounded
+context retrieval, test authoring, impact classification, controlled
+verification with both a PASS and an independently-reproduced FAIL),
+closing the gap the original scratch-copy demonstration (direct
+`codecompass.mcp.tools` calls, not a real client) left open. Two fresh,
+independent dispatches (`context-evaluator`; a general-purpose
+integration/security reviewer) both returned **PASS** — full reports:
+`planning/retros/_review-phase88-mcp-acceptance-context.md`,
+`planning/retros/_review-phase88-mcp-acceptance-integration-security.md`.
+This does not reopen or extend Phase 88's own already-`done` governance
+status; it only supplies the real-client evidence a future session
+should not need to re-derive. The real `~/projects/ledgerkit` checkout
+remains untouched throughout — landing the new test there still
+requires separate, explicit cross-repository authorisation, not given
+or requested by this exercise.
 
 **Next planned phase: Phase 89 — Incremental Knowledge and
 Documentation Reconciliation.** Independently deliverable per
 `decisions/0085` §3 (its prerequisites are Phase 84 and Phase 87 only,
-not Phase 88) — not yet phase-planned, not started.
+not Phase 88). **Now phase-planned**
+(`planning/phase-89-incremental-knowledge-documentation-reconciliation.md`)
+— planning only, implementation not authorised; pending the independent
+Plan-type review `CLAUDE.md` §1 requires before this plan is READY.
 
 Phase 87 — Documentation Schema and Knowledge-Compiled Documentation —
 remains `done`, kept below for continuity. All four stages were
