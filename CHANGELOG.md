@@ -35,9 +35,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   / the roadmap's own positive benefit requirement — a negative result
   on the third no longer satisfies it merely for being honestly
   reported); and a stale-graph-index guard before any baseline
-  comparison is trusted. **This plan is not yet re-reviewed following
-  this amendment** — pending a fresh independent `Plan`-type dispatch.
-  Implementation not authorised.
+  comparison is trusted. A fresh independent review of this amendment
+  then found two further, genuinely new defects in its own
+  `evidence_support_state` recomputation rule — an invalid enum value
+  (`"contradicted"`, which is a `Claim.status` value, not a valid
+  `evidence_support_state` one) and an undefined cross-Claim "sibling
+  Claims" notion contradicted by this project's own pre-existing
+  `CL-BFS-001`/`CL-BFS-002` records — fixed in a fourth, narrow
+  amendment with a corrected, purely local, single-Claim rule. **This
+  plan is not yet re-reviewed following this fourth amendment** —
+  pending a fresh independent `Plan`-type dispatch. Implementation not
+  authorised.
 - **Phase 89 — Incremental Knowledge and Documentation Reconciliation —
   planning only**: implementation plan drafted
   (`planning/phase-89-incremental-knowledge-documentation-reconciliation.md`),

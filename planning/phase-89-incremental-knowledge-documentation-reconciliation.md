@@ -69,6 +69,33 @@ second amendment's own READY verdict above applied to the plan as it
 stood *before* this round and no longer describes the plan's current
 text.
 
+**Re-reviewed** (2026-11-16, fresh independent `Plan`-type dispatch,
+full re-verification from scratch, not taken on trust from the plan's
+or any prior review's own account): **NOT READY**, on two new blocking
+findings in §4.4's `evidence_support_state` recomputation rule
+(`planning/retros/_review-phase89-plan.md`, "Re-review (second
+amendment round)" section) — every finding from the first two review
+rounds, and this round's own re-verification of §0.1.A-D, was
+independently re-confirmed resolved/sound. Blocking Finding 1:
+`"contradicted"` is not a valid `evidence_support_state` value (the
+real, closed enum is `{"supported", "partially_supported",
+"unsupported", "conflicting"}`, `scripts/check_knowledge_base.py` line
+209-214) — `"contradicted"` is a `Claim.status` value, a different
+field entirely. Blocking Finding 2: the rule's own single-Claim scope
+and its one worked application in §6.1 (a cross-Claim "sibling Claims
+under the same Requirement family" notion) contradicted each other,
+independently falsified against this project's own pre-existing
+`CL-BFS-001`/`CL-BFS-002`/`CL-BFS-003`/`CL-BFS-005` records. **Amended
+a fourth time** (same session): §4.4's rule rewritten in place to fix
+Finding 1 (`"unsupported"`, not `"contradicted"`) and Finding 2 (a
+purely local, single-Claim-scoped test — whether `supporting_evidence`
+contains at least one `evidence_kind: "test"` record — replacing the
+undefined cross-Claim notion; directly validated against every real
+record this mechanism can actually reach, including why it never
+reaches the whole-contract-scoped `CL-BFS-003`/`CL-BFS-005` at all);
+§6.1 step 8's worked walkthrough corrected to match. **This plan is
+NOT YET re-reviewed following this fourth amendment.**
+
 ### 0.1 What this amendment found, and why the prior draft was wrong
 
 **A. The Task A walkthrough's core assumption is false, source-verified
@@ -739,17 +766,75 @@ appends each new Evidence id to exactly one of `contradicting_evidence`/
 append if that exact Evidence id is already present in the target
 field) and **recomputes** `evidence_support_state` **in place** — from
 the Claim's own full, post-append `contradicting_evidence`/
-`supporting_evidence` contents (mirroring exactly the existing CONTESTED
-derivation already at `knowledge_intermediate.py:1211-1215`: non-empty
-`contradicting_evidence` and non-empty `supporting_evidence` both ⇒
-`"conflicting"`; non-empty `contradicting_evidence` alone ⇒
-`"contradicted"`; non-empty `supporting_evidence` alone, with every
-required contract scope now covered ⇒ `"supported"`, otherwise
-`"partially_supported"`), **never from only this batch's own new
+`supporting_evidence` contents, **never from only this batch's own new
 findings** — so a contradiction accepted in an earlier batch can never
 be silently dropped just because the current batch's own findings
 happen to all be supporting (dispatch's own explicit "historical
-contradictions must not silently disappear" requirement). This is new,
+contradictions must not silently disappear" requirement).
+
+**Amended a fourth time (2026-11-16, same dispatch, after a fresh
+independent re-review found two new, concrete defects in the
+recomputation rule stated immediately below in the second/third
+amendments — `planning/retros/_review-phase89-plan.md`, "Re-review
+(second amendment round)"): the rule itself is corrected in place.**
+Blocking Finding 1: `"contradicted"` is not a valid `evidence_support_
+state` value — verified directly against `scripts/check_knowledge_
+base.py`'s own `_OPTIONAL_ENUM_FIELDS["claim"]["evidence_support_
+state"]` (line 209-214), the real, closed, already-enforced set is
+`{"supported", "partially_supported", "unsupported", "conflicting"}`;
+`"contradicted"` is a `status`-field value (`_STATUS_ENUMS["claim"]`,
+line 170), never an `evidence_support_state` one. Blocking Finding 2:
+the rule as previously stated read *only* this one Claim's own fields
+(correct, and still true below) but its one worked application (§6.1)
+reasoned about "every required contract scope... across sibling
+Claims" — a cross-Claim notion the rule itself never licenses and that
+names no actual, implementable grouping mechanism anywhere in this
+codebase. Independently falsified against this project's own
+pre-existing ground truth: `CL-BFS-001.yaml`/`CL-BFS-002.yaml` are
+*already* `evidence_support_state: supported` today, each citing only
+**one** of the contract's three required checks' own evidence —
+neither covers "every required contract scope," so a literal
+whole-contract reading would incorrectly recompute `"partially_
+supported"` for either, were it ever re-run against them. `CL-BFS-003.
+yaml`/`CL-BFS-005.yaml` are confirmed to be this project's own existing,
+*separate*, dedicated records for the distinct "every required check in
+the whole contract is satisfied" assertion (`CL-BFS-003`:
+`status: superseded`; `CL-BFS-005`: `evidence_support_state:
+partially_supported`, explicitly because it covers only two of the
+contract's now-three required checks) — confirming "this one scope is
+covered" and "the whole contract is covered" are two genuinely
+different, already-existing notions in this exact knowledge base, not
+one the corrected rule below needs to unify: this plan's own new write
+path (§4.1(a)/§4.1(b)/§5.1, both detectors) only ever resolves to a
+single-check-scoped Claim like `CL-BFS-004` (via the new `check_id` →
+`REQ.depends_on` chain, §4.2, which by construction names exactly one
+check per Requirement) — it never reaches a whole-contract-scoped Claim
+like `CL-BFS-003`/`CL-BFS-005` at all, since no Requirement naming such
+a Claim in its own `depends_on` will ever carry a single `check_id`
+(confirmed: `REQ-BFS-001`, which `CL-BFS-001`/`CL-BFS-002`/`CL-BFS-003`
+all `depends_on`, is itself a *two-check* requirement by its own
+statement — it could never meaningfully carry one `check_id` either).
+**The corrected rule, scoped correctly to a single-check Claim, the
+only kind this mechanism ever writes to**: non-empty
+`contradicting_evidence` and non-empty `supporting_evidence` both ⇒
+`"conflicting"`; non-empty `contradicting_evidence` alone, empty
+`supporting_evidence` ⇒ `"unsupported"` (fixing Finding 1); empty
+`contradicting_evidence`, and `supporting_evidence` contains at least
+one `evidence_kind: "test"` record ⇒ `"supported"` (fixing Finding 2 —
+a purely local, single-Claim test, no cross-Claim reasoning); empty
+`contradicting_evidence`, `supporting_evidence` non-empty but every
+cited record is `evidence_kind: "source"` (relevance established,
+behavioural coverage not yet — exactly `CL-BFS-004`'s own real,
+pre-Task-A state) ⇒ `"partially_supported"`; both fields empty ⇒
+`"unsupported"`. Directly validated against every real record this
+mechanism can actually reach: `CL-BFS-001`/`CL-BFS-002` (test-kind
+Evidence present ⇒ `"supported"`, matching their real current state);
+`CL-BFS-004` before Task A (`EV-BFS-001` only, source-kind ⇒
+`"partially_supported"`, matching its real current state); `CL-BFS-004`
+after Task A (`EV-BFS-004` added, test-kind, `PASS` ⇒ `"supported"`,
+§6.1's own intended result, now reached by a sound, implementable,
+single-Claim rule rather than an undefined cross-Claim one). This is
+new,
 previously-unmechanized behaviour for this codebase (no existing
 apply-path function does this — confirmed directly, §1.2) and this
 plan states that plainly rather than citing a non-existent precedent.
@@ -1180,11 +1265,12 @@ scenario** (§4.1/§5.1), traced here concretely, input by input:
    `CL-BFS-004`'s own `supporting_evidence` for `EV-BFS-004` (absent) →
    appends it, giving `supporting_evidence: [EV-BFS-001, EV-BFS-004]`
    → recomputes `evidence_support_state` from the full, now-updated
-   field contents (§4.4's rule): `contradicting_evidence` is empty,
-   `supporting_evidence` is non-empty, every one of the contract's
-   `required` checks now has a qualifying result cited somewhere in
-   `CL-BFS-004`/sibling Claims under the same Requirement family → sets
-   `"supported"` (a real change from `"partially_supported"`).
+   field contents (§4.4's corrected, single-Claim rule): `contradicting_
+   evidence` is empty, and `supporting_evidence` now contains
+   `EV-BFS-004`, an `evidence_kind: "test"` record → sets `"supported"`
+   (a real change from `"partially_supported"` — `EV-BFS-001` alone was
+   `source`-kind only; `EV-BFS-004` is the first `test`-kind Evidence
+   this Claim has ever had).
 9. **Result**: `CL-BFS-004.yaml` has genuinely new, changed knowledge —
    a new Evidence record exists on disk, a Claim's own
    `evidence_support_state` field changed, and (§4.5) `CL-BFS-004`'s own
@@ -1359,7 +1445,19 @@ SCOPE`, confirmed written to both `contradicting_evidence` and
 adds only supporting Evidence; confirmed `evidence_support_state` is
 recomputed to `"conflicting"`, never silently reset to `"supported"` —
 the direct regression test for §0.1's "historical contradictions must
-not silently disappear" requirement); an Evidence-identity-retry test
+not silently disappear" requirement); an `evidence_support_state`
+enum-validity test (confirmed every value §4.4's corrected rule can
+ever write — `"unsupported"`/`"partially_supported"`/`"supported"`/
+`"conflicting"` — passes `scripts/check_knowledge_base.py`'s own
+`check_optional_enum_fields`, never `"contradicted"` — the direct
+regression test for the third review round's Blocking Finding 1); a
+source-vs-test-Evidence test (a Claim whose `supporting_evidence`
+contains only `evidence_kind: "source"` records recomputes to
+`"partially_supported"`; the same Claim, with one `evidence_kind:
+"test"` record appended, recomputes to `"supported"` — the direct
+regression test for the third review round's Blocking Finding 2,
+reproducing `CL-BFS-004`'s own real before/after state); an
+Evidence-identity-retry test
 (`_find_existing_evidence_for_run` confirmed to find an already-written
 Evidence record by `(contract_id, check_id, run_id)` and skip
 re-creating it on a simulated retry — the direct regression test for
@@ -1476,6 +1574,19 @@ three gates above the phase actually reaches.
 - **Resolved by a second independent review round** (no longer open):
   a merged item's own disagreeing-outcome write uses the existing
   `evidence_support_state: "conflicting"` value, never an invented one.
+- **Resolved by a third independent review round** (no longer open):
+  §4.4's `evidence_support_state` recomputation rule wrote an invalid
+  enum value (`"contradicted"`, a `Claim.status` value, not an
+  `evidence_support_state` one) and relied on an undefined cross-Claim
+  "sibling Claims under the same Requirement family" notion for its one
+  worked application (§6.1) — both fixed in place with a corrected,
+  purely local, single-Claim rule (`"unsupported"` for the invalid
+  value; "does `supporting_evidence` contain an `evidence_kind: "test"`
+  record" for the cross-Claim notion), directly validated against every
+  real record this mechanism can reach (`CL-BFS-001`/`CL-BFS-002`/
+  `CL-BFS-004`) and explicitly scoped to never reach the whole-contract
+  Claims (`CL-BFS-003`/`CL-BFS-005`) that use this same field name for a
+  genuinely different, pre-existing purpose.
 - **Superseded this round (§0.1.B)**: the second amendment's own fix for
   merged-item retry safety (reusing `_find_existing_promoted_record`)
   is replaced — that helper cannot represent Evidence identity at all

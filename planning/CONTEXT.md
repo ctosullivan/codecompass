@@ -114,10 +114,17 @@ a new, narrow Evidence-identity mechanism; a cumulative
 `evidence_support_state` derivation; a new, optional `check_id` field on
 the Requirement schema; an explicit "regression" vs "newly discovered
 failure" distinction (Phase 83's own classification left unmodified);
-and a corrected, three-gate exit-gate framing. Planning only,
-implementation not authorised; **this plan is not yet re-reviewed
-following this third amendment** — pending a fresh independent
-Plan-type dispatch before READY can be re-claimed.
+and a corrected, three-gate exit-gate framing. A fresh independent
+review of this amendment then found two further, genuinely new
+defects in its own `evidence_support_state` recomputation rule — an
+invalid enum value (`"contradicted"`, a `Claim.status` value, not a
+valid `evidence_support_state` one) and an undefined cross-Claim
+"sibling Claims" notion contradicted by this project's own
+pre-existing `CL-BFS-001`/`CL-BFS-002` records — fixed in a fourth,
+narrow amendment with a corrected, purely local, single-Claim rule.
+Planning only, implementation not authorised; **this plan is not yet
+re-reviewed following this fourth amendment** — pending a fresh
+independent Plan-type dispatch before READY can be re-claimed.
 
 Phase 87 — Documentation Schema and Knowledge-Compiled Documentation —
 remains `done`, kept below for continuity. All four stages were

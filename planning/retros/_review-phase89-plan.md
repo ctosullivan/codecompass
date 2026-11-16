@@ -346,3 +346,159 @@ Stage 89A already commits to drafting first.
   the plan implies.
 - §4.10's "two new... subcommands" wording — noted as a minor,
   pre-existing (non-amendment) nit, not worth blocking on.
+
+## Re-review (second amendment round, 2026-11-16, "Phase 89 Final Planning Amendment")
+
+Reviewer: `Plan`-type agent (read-only, fresh dispatch — no access to any
+prior round's own conversation; every claim below re-verified from
+scratch against real source/records, not taken on trust from the plan's
+own account or from either prior review round's own account).
+
+### VERDICT: NOT READY (blocking findings)
+
+Both prior review rounds' own findings (Blocking Findings 1/2 from round
+1, the find_gaps-count correction and findings (a)/(b) from round 2) are
+re-confirmed resolved and remain resolved — re-verified independently
+below, not merely re-asserted. This round's own third amendment's new
+work (§0.1, the two new detectors, the Evidence-identity mechanism, the
+three-gate exit framework) is, on the whole, carefully source-grounded
+and a real improvement over the text it replaced — confirmed point by
+point below. But a new, genuinely new (introduced by *this* amendment's
+own rewrite of §4.4), concrete, falsifiable pair of defects was found in
+§4.4's `evidence_support_state` recomputation rule — the one piece of
+this plan every round so far has had to correct at least once — and
+those defects are blocking.
+
+### BLOCKING FINDING 1 (new this round) — §4.4's recomputation rule writes
+an enum value, `"contradicted"`, that does not exist for
+`evidence_support_state`
+
+§4.4 states the recomputation rule in full: "non-empty
+`contradicting_evidence` and non-empty `supporting_evidence` both ⇒
+`'conflicting'`; non-empty `contradicting_evidence` alone ⇒
+**`'contradicted'`**; non-empty `supporting_evidence` alone, with every
+required contract scope now covered ⇒ `'supported'`, otherwise ⇒
+`'partially_supported'`."
+
+Verified directly against `scripts/check_knowledge_base.py`'s own
+`_OPTIONAL_ENUM_FIELDS["claim"]["evidence_support_state"]`
+(lines 209-214): the real, closed, already-enforced set of valid values
+for this exact field is `{"supported", "partially_supported",
+"unsupported", "conflicting"}`. **`"contradicted"` is not a member of
+this set.** `"contradicted"` *is* a valid value for a different field —
+`_STATUS_ENUMS["claim"]` (line 170), the Claim's own `status` field,
+never `evidence_support_state`. The correct value for "contradicting
+evidence only, no supporting evidence" is `"unsupported"`.
+
+### BLOCKING FINDING 2 (new this round) — §4.4's "every required contract
+scope now covered" condition is internally self-contradictory, and its
+only worked application (§6.1) does not follow from §4.4's own stated
+rule
+
+§4.4 states the recomputation reads **only** this one Claim's own
+`contradicting_evidence`/`supporting_evidence` contents — explicitly
+scoped to this one Claim, nothing else. §6.1 step 8 then reaches
+`"supported"` for `CL-BFS-004` by reasoning about "every one of the
+contract's required checks... cited somewhere in CL-BFS-004/sibling
+Claims under the same Requirement family" — invoking *other* Claims'
+own citations, directly contradicting §4.4's own stated single-Claim
+scope. Independently falsified against this project's own pre-existing
+ground truth: `CL-BFS-001.yaml`/`CL-BFS-002.yaml` are already
+`evidence_support_state: supported` today, each citing only **one** of
+the contract's three required checks' own evidence — neither covers
+"every required contract scope." `CL-BFS-003.yaml` is a separate,
+dedicated record for the "every required check" assertion
+(`status: superseded`), confirming this project's own existing
+convention already keeps "this one scope is covered" separate from
+"the whole contract is covered" — §4.4/§6.1 blur this without resolving
+it, and "sibling Claims under the same Requirement family" names no
+actual, implementable grouping mechanism anywhere in this codebase or
+this plan.
+
+### Confirmed resolved / confirmed sound (re-verified from scratch)
+
+- Round 1's Blocking Finding 1 (false "reuse" claim) — still resolved;
+  `_apply_anchor_edit`/`_apply_candidate_addition`/`_apply_requirement_
+  proposal` re-read in full, confirmed each only ever creates a new
+  record.
+- Round 1's Blocking Finding 2 (L-021) — still resolved;
+  `cli.py:1570`/`knowledge_apply_manifest` confirmed as the one real
+  call site, named in §7's test list.
+- Round 2's find_gaps-count correction — now exactly right; every
+  `Gap(kind=...)` call site grepped directly, six kinds confirmed,
+  `missing_evidence` confirmed to belong only to `trace_evidence`.
+- §0.1.A's core claim — verified true, independently, by tracing
+  `classify_symbol`/`assess` line by line and confirming `CL-BFS-004`'s
+  real current state (`supporting_evidence: [EV-BFS-001]` only,
+  source-kind) and `REQ-BFS-002.yaml`'s real absence of any `check_id`
+  field, and the absence of any result file for the third check.
+- §0.1.B's core claim — verified true, independently; `apply_manifest`'s
+  `manifest_path.write_text(...)` confirmed at line 2543, strictly after
+  the whole-batch loop; zero `_next_id(sdir, "EV"` call sites confirmed;
+  `_find_existing_promoted_record`'s `statement`-field matching confirmed.
+- §0.1.D's core claim — verified true; `resolve_changed_range`'s live-
+  hash-vs-graph-hash cross-check confirmed to exist exactly as cited.
+- `evaluate_result_precedence`'s digest recomputation (§1.2) — confirmed
+  true and genuinely distinct from the "never yet run" scenario.
+- `decisions/0086`/`0087`'s classification semantics — confirmed left
+  completely unmodified; the new `"regression"`/`"newly_discovered_
+  failure"` label confirmed additive, read from `AssuranceFinding.
+  observed_outcomes`, logically sound given the fresh-outcome-is-already-
+  FAIL precondition of that branch.
+- §4.2's `check_id` field — confirmed genuinely additive and safe; no
+  allowlist/unknown-field rejection exists anywhere in `check_knowledge_
+  base.py`. Minor terminology nit: it is one shared `_RECORD_FIELD_ORDER`
+  list, not a kind-specific "requirement field table" — non-blocking.
+- The sibling-writer precedent (`write_doc_candidates_to_manifests`) and
+  its own existing idempotency precedent (`_existing_pending_doc_region_
+  edit_keys`) — confirmed real and accurately cited.
+- Evidence-identity provenance fields (`run_id`, `decisions/0082` §C) —
+  confirmed real.
+- `contract_id`'s existing one-contract-to-one-REQ mapping — confirmed
+  genuinely distinct from the new `check_id` field's purpose.
+- The exit-gate quote (§0.1.C) — confirmed verbatim-accurate against
+  `planning/v2-roadmap.md` line 702-705; the three-gate framework in
+  §6.3/§8 confirmed a faithful, non-overclaiming operationalisation.
+- §4.10's wording nit flagged in round 2 — confirmed now actually fixed.
+- `decisions/0085` §3 — confirmed accurately cited throughout.
+
+### Non-blocking observations
+
+- §5.1's "existing requirement field table" phrase is a minor
+  imprecision (one shared `_RECORD_FIELD_ORDER` list, not kind-specific).
+- The `pytest --collect-only` probe's own disclosed open risk (§9) is
+  honestly flagged as unresolved, not hidden — acceptable to leave for
+  Stage 89A's own implementer.
+- `Gap` dataclass's new label field (§5.4) is additive with no existing
+  allowlist-style validation found elsewhere for this type — no issue.
+
+### Considered and rejected (this round)
+
+- Re-litigating round 1/round 2's own already-resolved findings as if
+  still open — rejected; both independently re-verified from scratch.
+- Treating the `_RECORD_FIELD_ORDER` terminology nit as blocking —
+  rejected; purely descriptive imprecision, no behavioural consequence.
+- Treating the disclosed `pytest --collect-only` residual risk as a
+  third blocking finding — rejected; already honestly named as an open
+  Stage-89A-level risk in §9, not presented as solved.
+- Considering whether the two new Blocking Findings above might be
+  "merely" wording issues — rejected for both: Finding 1 is a mechanical
+  enum-validity bug with a concrete, checkable failure mode; Finding 2
+  is a self-contradiction directly falsifiable against this project's
+  own pre-existing, already-approved records (`CL-BFS-001`/`CL-BFS-002`/
+  `CL-BFS-003`), not a matter of interpretation.
+
+### Summary for the orchestrator
+
+This amendment's own stated motivation (§0.1.A/B/C/D) is confirmed sound
+in every particular checked, and the architecture built around it is
+well-grounded in real source and real records throughout — a materially
+better plan than the text it replaced. But §4.4's `evidence_support_
+state` recomputation rule and its own worked application in §6.1 still
+contain two new, concrete, falsifiable defects: an invalid enum value,
+and a self-contradictory/undefined notion of which "required... scope[s]"
+govern a single Claim's own recomputation. Both are narrowly scoped to
+§4.4/§6.1 specifically — no other section is implicated. Recommend a
+fourth, narrow amendment scoped to exactly these two points, followed by
+a further review pass focused specifically on re-verifying the corrected
+§4.4/§6.1 text.
