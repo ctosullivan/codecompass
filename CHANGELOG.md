@@ -42,10 +42,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `evidence_support_state` one) and an undefined cross-Claim "sibling
   Claims" notion contradicted by this project's own pre-existing
   `CL-BFS-001`/`CL-BFS-002` records — fixed in a fourth, narrow
-  amendment with a corrected, purely local, single-Claim rule. **This
-  plan is not yet re-reviewed following this fourth amendment** —
-  pending a fresh independent `Plan`-type dispatch. Implementation not
-  authorised.
+  amendment with a corrected, purely local, single-Claim rule. A
+  focused fourth independent review confirmed both fixes sound and
+  folded in three further non-blocking items (an explicit scope note
+  that the rule is sound only for contract-governed Claims; a
+  fail-closed guard against a `check_id` ever being added to a
+  multi-check Requirement; a more precisely named regression test).
+  **This plan is now READY.** Implementation remains unauthorised
+  pending a separate, explicit go-ahead.
 - **Phase 89 — Incremental Knowledge and Documentation Reconciliation —
   planning only**: implementation plan drafted
   (`planning/phase-89-incremental-knowledge-documentation-reconciliation.md`),

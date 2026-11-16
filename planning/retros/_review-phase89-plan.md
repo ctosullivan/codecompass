@@ -502,3 +502,134 @@ govern a single Claim's own recomputation. Both are narrowly scoped to
 fourth, narrow amendment scoped to exactly these two points, followed by
 a further review pass focused specifically on re-verifying the corrected
 §4.4/§6.1 text.
+
+## Re-review (fourth amendment, focused)
+
+Reviewer: `Plan`-type agent (read-only, fresh dispatch — no access to any
+prior round's own conversation; every claim below re-verified from
+scratch against real source/records). Scope, per the dispatch
+instructions: §0's new "Amended a fourth time" paragraph, §4.4 (the
+corrected recomputation rule), §6.1 step 8 (the corrected walkthrough),
+§7's new Stage 89A test-list items, and §9's risk-register update.
+Round 3's own "Confirmed resolved / confirmed sound" list was not
+re-litigated except where noted below.
+
+### VERDICT: READY WITH NON-BLOCKING OBSERVATIONS
+
+Both of round 3's two blocking findings are genuinely fixed,
+independently re-verified from scratch. One new, real, but
+currently-unreachable soundness gap was found in this round's own
+rewrite (reported below, in the spirit of round 2's own findings
+(a)/(b)), plus one test-adequacy gap and one unenforced-invariant
+observation. None rise to blocking.
+
+### Blocking Finding 1 (round 3) — RESOLVED, verified sound
+
+`scripts/check_knowledge_base.py` lines 167-214 confirmed: the real,
+closed `evidence_support_state` enum is exactly `{"supported",
+"partially_supported", "unsupported", "conflicting"}`; `"contradicted"`
+belongs only to `Claim.status`. The corrected rule's `"unsupported"`
+replacement is a real, valid value. No stray `"contradicted"`-as-
+evidence_support_state usage survives anywhere in the document.
+
+### Blocking Finding 2 (round 3) — RESOLVED, verified sound
+
+The corrected rule reads only one Claim's own fields plus each cited
+Evidence record's own `evidence_kind` — no cross-Claim reasoning
+anywhere. Directly re-validated against every real record it names:
+`CL-BFS-001`/`CL-BFS-002` (test-kind Evidence present ⇒ `supported`,
+matches real state); `CL-BFS-004` pre-Task-A (`EV-BFS-001` source-kind
+only ⇒ `partially_supported`, matches real state exactly); `CL-BFS-004`
+post-Task-A (hypothetical test-kind `EV-BFS-004` added ⇒ `supported`,
+matches §6.1's intended result). The "never reaches CL-BFS-003/
+CL-BFS-005" claim holds, confirmed two independent ways: (1) the stated
+check_id→REQ→depends_on chain genuinely cannot reach them (`REQ-BFS-001`
+is a real two-check Requirement, confirmed by its own statement,
+`depends_on: [CL-BFS-001, CL-BFS-002, CL-BFS-003]`; `CL-BFS-005` is
+named by no Requirement's `depends_on` at all, only by its own
+`supersedes` field); (2) independently, detector (a)'s own
+`classify_symbol` also cannot reach them (`CL-BFS-003`/`CL-BFS-005`
+never cite the slug's one source-kind Evidence, `EV-BFS-001`). §6.1
+step 8 now follows directly from the corrected rule, with no gap.
+§9's risk-register update is accurate and does not overclaim.
+
+### New findings this round (non-blocking, but material)
+
+**(c) The corrected rule's two-branch partition over `supporting_
+evidence`'s evidence-kind composition is not exhaustive over this
+project's own real `evidence_kind` taxonomy (5 real values in use:
+`source` 56, `test` 9, `documentation` 29, `executable` 13,
+`behavioural` 1 — grepped directly), and is independently falsified, if
+ever (counterfactually) applied, against several real, pre-existing
+Claims in `planning/knowledge/first-party-source-symbols/` (a different
+slug) — e.g. `CL-FPSS-008.yaml` cites only source-kind Evidence and is
+already `evidence_support_state: supported`, which the corrected rule
+would recompute to `partially_supported`; several others
+(`CL-FPSS-001/004/005/007/009`) cite only `documentation`/`executable`-
+kind Evidence and fall into neither of the rule's two defined branches
+at all. **Why non-blocking**: confirmed structurally unreachable by
+Phase 89's own mechanism today — `change_impact.assess()` short-circuits
+before `classify_symbol` whenever a slug has no `oracle-contract.yaml`
+(`change_impact.py:510-546`), `detect_newly_coverable_checks` likewise
+requires one, and `planning/contracts/` contains exactly one
+subdirectory, `balance-from-spec` — `first-party-source-symbols` has no
+contract at all. This is a real latent gap in the rule *as general-
+purpose prose* (§4.4 doesn't currently scope the rule to contract-
+governed Claims only), not a defect in anything Phase 89 will actually
+do. Recommended: fold an explicit scoping note into the Stage 89A ADR
+rather than a fifth review round.
+
+**(d) Stage 89A's test list has no explicitly-named test for the exact
+branch that caused Blocking Finding 1** (contradicting-evidence-only ⇒
+`"unsupported"`). The "enum-validity test" as currently worded is
+ambiguous — it may or may not actually drive the recomputation function
+through this specific branch. Recommended: name a distinct
+"contradicting-evidence-only test" explicitly in §7, mirroring the
+"source-vs-test-Evidence test" naming already used there.
+
+### Non-blocking observation
+
+**(e) The "never reaches CL-BFS-003/CL-BFS-005" guarantee rests partly
+on an unenforced human convention** — nothing in `check_knowledge_
+base.py` would reject a human mistakenly adding `check_id` to
+`REQ-BFS-001` (a multi-check Requirement), which would make the
+resolution chain return all three of its `depends_on` Claims at once,
+including the whole-contract-scoped `CL-BFS-003`. Not falsifiable
+against any current real record. Recommended: a one-line defense-in-
+depth note in the Stage 89A ADR (validate that a Requirement carrying
+`check_id` has `depends_on` of length exactly 1).
+
+### Confirmed sound (re-verified this round)
+
+`scripts/check_knowledge_base.py`'s real enums; `find_gaps`'s real
+`"contradiction"` implementation (reads `status`, never `evidence_
+support_state`, confirming the plan's own §1.1 distinction is correctly
+grounded); every one of `REQ-BFS-001`/`REQ-BFS-002`/`CL-BFS-001` through
+`CL-BFS-005`/`EV-BFS-001` through `EV-BFS-003` read in full and matching
+every plan citation; `change_impact.assess()`/`classify_symbol` read in
+full. The diff between this amendment and the prior one is confirmed
+confined exactly to §0/§4.4/§6.1 step 8/§7/§9. This amendment also
+removed a previously-inaccurate "mirrors the existing CONTESTED
+derivation" citation — that logic is read-only, not a write-rule the
+new recomputation could soundly claim to mirror — a genuine,
+uncredited improvement.
+
+### Considered and rejected (this round)
+
+- Re-litigating rounds 1-3's own already-resolved findings — rejected,
+  explicitly out of scope and nothing new contradicts them.
+- Treating (c) as a third blocking finding — rejected; independently
+  confirmed structurally unreachable by Phase 89's own mechanism today.
+- Treating (d)/(e) as blocking — rejected; a naming/specificity gap and
+  an unfalsified defense-in-depth suggestion respectively.
+
+### Summary for the orchestrator
+
+Both of round 3's blocking findings are genuinely, verifiably fixed.
+This round's own hunt for new defects turned up one real, material, but
+currently-unreachable soundness gap, plus a minor test-list specificity
+gap and a minor unenforced-invariant observation — all three
+recommended for Stage 89A's own ADR/test-list drafting rather than a
+fifth review round. **This plan is READY**, with these three
+non-blocking items to carry forward into Stage 89A. Implementation
+remains unauthorised pending a separate, explicit go-ahead.

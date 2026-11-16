@@ -93,8 +93,28 @@ contains at least one `evidence_kind: "test"` record — replacing the
 undefined cross-Claim notion; directly validated against every real
 record this mechanism can actually reach, including why it never
 reaches the whole-contract-scoped `CL-BFS-003`/`CL-BFS-005` at all);
-§6.1 step 8's worked walkthrough corrected to match. **This plan is
-NOT YET re-reviewed following this fourth amendment.**
+§6.1 step 8's worked walkthrough corrected to match.
+
+**Re-reviewed a fourth time** (2026-11-16, fresh independent `Plan`-type
+dispatch, scoped focus on the fourth amendment's own corrected text,
+full independent re-verification, not taken on trust): **READY WITH
+NON-BLOCKING OBSERVATIONS** (`planning/retros/_review-phase89-plan.md`,
+"Re-review (fourth amendment, focused)" section). Both of the third
+round's blocking findings confirmed genuinely resolved, independently
+re-derived from the real `CL-BFS-00{1,2,4}` records, not re-asserted.
+Three further non-blocking items the review surfaced — (i) the
+recomputation rule's own evidence-kind partition is sound only for
+contract-governed Claims (confirmed structurally true today, since this
+mechanism can only ever reach a contract-governed Claim, but not
+previously stated as an explicit scope limit); (ii) nothing previously
+stopped a human mistakenly adding the new `check_id` field to a
+multi-check Requirement, which would silently resolve to every one of
+its `depends_on` Claims at once; (iii) the Stage 89A test list named
+the Blocking-Finding-1 regression test ambiguously — have all been
+folded in directly in §4.4/§5.1/§7/§9 below, per the reviewer's own
+recommendation, rather than triggering a fifth review round. **This
+plan is READY.** Implementation remains unauthorised pending a
+separate, explicit go-ahead.
 
 ### 0.1 What this amendment found, and why the prior draft was wrong
 
@@ -833,8 +853,34 @@ Evidence present ⇒ `"supported"`, matching their real current state);
 `"partially_supported"`, matching its real current state); `CL-BFS-004`
 after Task A (`EV-BFS-004` added, test-kind, `PASS` ⇒ `"supported"`,
 §6.1's own intended result, now reached by a sound, implementable,
-single-Claim rule rather than an undefined cross-Claim one). This is
-new,
+single-Claim rule rather than an undefined cross-Claim one).
+
+**Scope of this rule, named explicitly (fourth-review-round non-blocking
+observation (c), folded in rather than deferred)**: the two-branch
+partition above over `supporting_evidence`'s own evidence-kind
+composition (contains a `test`-kind record vs. every record is
+`source`-kind) is sound for exactly the Claims this mechanism can ever
+actually reach — those bridged via an oracle-contract-governed
+`check_id`/`classify_symbol` path — and is **not** claimed as a
+general-purpose `evidence_support_state` convention beyond that. This
+project's own `evidence_kind` taxonomy has three further real values in
+active use (`documentation`, `executable`, `behavioural` — confirmed by
+direct grep, `planning/knowledge/first-party-source-symbols/` uses all
+three for Claims this rule's two branches do not cover), and at least
+one real, pre-existing Claim in that other slug (`CL-FPSS-008`, source-
+kind Evidence only, already `evidence_support_state: supported`) would
+be mis-recomputed if this rule were ever applied to it. This never
+happens: `first-party-source-symbols` has no `oracle-contract.yaml`
+(`planning/contracts/` contains exactly one subdirectory,
+`balance-from-spec`), and `change_impact.assess()` short-circuits
+before ever calling `classify_symbol` when a slug has no contract
+(`change_impact.py:510-546`) — so this rule is structurally confined,
+by the same contract-gating every other part of this mechanism already
+requires, to Claims it is actually sound for. Stated here so a future
+reader never lifts this rule out of context and applies it as a
+general `evidence_support_state` convention for an uncontracted slug.
+
+This is new,
 previously-unmechanized behaviour for this codebase (no existing
 apply-path function does this — confirmed directly, §1.2) and this
 plan states that plainly rather than citing a non-existent precedent.
@@ -1064,7 +1110,18 @@ both:**
   means only "this node id now resolves to a real test," never
   anything about its outcome). A check that now collects is returned,
   resolved to its governing Claim(s) via the new `check_id` → `REQ.
-  check_id` → `REQ.depends_on` chain (§4.2/below).
+  check_id` → `REQ.depends_on` chain (§4.2/below). **Fail-closed guard
+  (fourth review round's non-blocking observation (e), folded in as a
+  mechanism requirement, not left as an ADR-only note)**: before
+  resolving, confirms the matching Requirement's own `depends_on` has
+  length exactly 1 — nothing in `check_knowledge_base.py` otherwise
+  stops a human from mistakenly adding `check_id` to a multi-check
+  Requirement (e.g. `REQ-BFS-001`), which would silently resolve to
+  every one of its `depends_on` Claims at once, including a
+  whole-contract-scoped one `check_id` was never meant to reach. A
+  `depends_on` of length other than 1 on a `check_id`-bearing
+  Requirement is reported as a configuration error (never silently
+  proceeding against multiple Claims).
 - `propose_reconciliation(project_root, slug, findings, *, repo_root,
   knowledge_root) -> Path | None` — for detector (a)'s findings: calls
   `change_impact.assess(changed=[f.range for f in findings], run_checks=
@@ -1445,12 +1502,19 @@ SCOPE`, confirmed written to both `contradicting_evidence` and
 adds only supporting Evidence; confirmed `evidence_support_state` is
 recomputed to `"conflicting"`, never silently reset to `"supported"` —
 the direct regression test for §0.1's "historical contradictions must
-not silently disappear" requirement); an `evidence_support_state`
-enum-validity test (confirmed every value §4.4's corrected rule can
-ever write — `"unsupported"`/`"partially_supported"`/`"supported"`/
-`"conflicting"` — passes `scripts/check_knowledge_base.py`'s own
-`check_optional_enum_fields`, never `"contradicted"` — the direct
-regression test for the third review round's Blocking Finding 1); a
+not silently disappear" requirement); a **contradicting-evidence-only
+test** (named explicitly, per the fourth review round's own test-
+adequacy observation (d), rather than left implicit inside a generic
+"enum-validity" test that might not actually drive this exact branch:
+a Claim with non-empty `contradicting_evidence` and empty `supporting_
+evidence`, confirmed the recomputation writes `"unsupported"`, never
+`"contradicted"` — the direct regression test for the third review
+round's Blocking Finding 1, exercising the function through this exact
+branch, not merely asserting the literal string set is valid); an
+`evidence_support_state` enum-validity test (confirmed every value
+§4.4's corrected rule can ever write — `"unsupported"`/`"partially_
+supported"`/`"supported"`/`"conflicting"` — passes `scripts/check_
+knowledge_base.py`'s own `check_optional_enum_fields`); a
 source-vs-test-Evidence test (a Claim whose `supporting_evidence`
 contains only `evidence_kind: "source"` records recomputes to
 `"partially_supported"`; the same Claim, with one `evidence_kind:
@@ -1468,7 +1532,13 @@ confirmed the append is skipped rather than duplicated, independently
 of whether the Evidence record itself was newly written or already
 existed); a conflicting-edit test (a Claim hand-edited between
 detection and apply, confirmed refused, mirroring the existing
-`"anchor_edit"` conflict test). **`CLAUDE.md` §1's L-021, explicitly
+`"anchor_edit"` conflict test); a multi-check-Requirement-guard test
+(a `check_id` added to a Requirement whose own `depends_on` names more
+than one Claim, confirmed `detect_newly_coverable_checks` reports a
+configuration error and resolves nothing, rather than silently
+returning every one of those Claims — the direct regression test for
+the fourth review round's non-blocking observation (e)). **`CLAUDE.md`
+§1's L-021, explicitly
 satisfied**: `apply_manifest` has exactly one real production call
 site, `cli.py::knowledge_apply_manifest` (`codecompass knowledge apply
 MANIFEST_PATH`) — at least one Stage 89A test invokes that real CLI
@@ -1586,7 +1656,18 @@ three gates above the phase actually reaches.
   real record this mechanism can reach (`CL-BFS-001`/`CL-BFS-002`/
   `CL-BFS-004`) and explicitly scoped to never reach the whole-contract
   Claims (`CL-BFS-003`/`CL-BFS-005`) that use this same field name for a
-  genuinely different, pre-existing purpose.
+  genuinely different, pre-existing purpose. The same review round
+  found three further non-blocking items, all folded in directly rather
+  than deferred to a fifth review round: (i) the rule's own
+  evidence-kind partition is sound only for contract-governed Claims,
+  now stated explicitly in §4.4; (ii) the `depends_on`-length-1
+  fail-closed guard on a `check_id`-bearing Requirement, now a stated
+  mechanism requirement of `detect_newly_coverable_checks` itself
+  (§5.1), not merely an ADR note — nothing in `check_knowledge_base.py`
+  would otherwise reject a human mistakenly adding `check_id` to a
+  multi-check Requirement; (iii) §7's test list now names a distinct
+  contradicting-evidence-only test rather than leaving it implicit
+  inside a generically-named enum-validity test.
 - **Superseded this round (§0.1.B)**: the second amendment's own fix for
   merged-item retry safety (reusing `_find_existing_promoted_record`)
   is replaced — that helper cannot represent Evidence identity at all

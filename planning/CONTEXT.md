@@ -121,10 +121,14 @@ invalid enum value (`"contradicted"`, a `Claim.status` value, not a
 valid `evidence_support_state` one) and an undefined cross-Claim
 "sibling Claims" notion contradicted by this project's own
 pre-existing `CL-BFS-001`/`CL-BFS-002` records — fixed in a fourth,
-narrow amendment with a corrected, purely local, single-Claim rule.
-Planning only, implementation not authorised; **this plan is not yet
-re-reviewed following this fourth amendment** — pending a fresh
-independent Plan-type dispatch before READY can be re-claimed.
+narrow amendment with a corrected, purely local, single-Claim rule. A
+focused fourth independent review confirmed both fixes sound and
+folded in three further non-blocking items (an explicit scope note,
+a fail-closed multi-check-Requirement guard, a more precisely named
+regression test). **This plan is now READY** (`planning/retros/
+_review-phase89-plan.md`, four rounds of independent review history
+preserved in full). Planning only — **implementation not authorised**,
+pending a separate, explicit go-ahead.
 
 Phase 87 — Documentation Schema and Knowledge-Compiled Documentation —
 remains `done`, kept below for continuity. All four stages were
