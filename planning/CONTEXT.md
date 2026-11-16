@@ -125,10 +125,54 @@ narrow amendment with a corrected, purely local, single-Claim rule. A
 focused fourth independent review confirmed both fixes sound and
 folded in three further non-blocking items (an explicit scope note,
 a fail-closed multi-check-Requirement guard, a more precisely named
-regression test). **This plan is now READY** (`planning/retros/
-_review-phase89-plan.md`, four rounds of independent review history
-preserved in full). Planning only — **implementation not authorised**,
-pending a separate, explicit go-ahead.
+regression test). **Amended a fifth time (2026-11-16, "Phase 89 Planning
+Corrections and Independent Verification")**: a from-scratch
+re-verification against real source, the real Ledgerkit checkout, and
+the real evaluation-methodology document found five further defects —
+(A) detector (a)'s own design could not actually retain the fresh
+`OracleResult` it needed (`AssuranceFinding` has no `run_id`/
+`raw_output_ref` field at all; `write_oracle_result` has zero call
+sites anywhere in `src/`), fixed with a new, additive, default-`None`
+`on_fresh_result` capture parameter on `change_impact.assess`/
+`run_check_assurance`; (B) detector (b)'s own selection gate ("no
+currently-valid historical result") wrongly also matched a
+previously-covered, merely-stale check, fixed to gate on Evidence-bridge
+presence instead; (C) the detector-(a) demonstration's own named
+mutation (`DEC-BFS-002`'s OR-union double-counting change) cannot
+actually fail the two required-check tests it claimed to — verified
+directly against the real test bodies in `tests/test_reports.py`,
+confirming `DEC-BFS-002`'s own already-recorded rationale rather than
+contradicting it — replaced with a mutation (removing `reports.py`'s
+own `section.invert` guard) that genuinely does; (D) Task B's own
+pre-registered success threshold cited a "minimum-meaningful-difference"
+value `planning/v2-evaluation-methodology.md` does not define, and was
+sequenced after Task A's own outcome would already be known under this
+plan's own staged order — fixed with a Phase-89-owned criterion (reusing
+`context-evaluator`'s existing PASS/PASS WITH GAPS/FAIL and LOW/
+MODERATE/HIGH output) moved to a Stage 89A deliverable; (E) the proposed
+`detect-changes` CLI command was described as read-only while calling
+`change_impact.assess(run_checks=True)`, a real test-executing
+operation — split into five explicitly-bounded layers across two
+commands (`detect-changes`, purely observational, plus an opt-in
+`--probe-coverage` flag; a new, separate `verify-changes`, the only
+command that executes checks and persists results/manifests). A fresh
+independent review then found one blocking self-contradiction (§7's
+own CLI-boundary test asserted zero subprocesses "with and without
+`--probe-coverage`," contradicting §4.10's own description of what
+that flag does) plus two factual errors in the fifth amendment's own
+"zero call sites" verification (a non-recursive grep had silently
+skipped the `mcp/` subdirectory; `oracle.write_oracle_result`/
+`change_impact.assess` each have exactly one real call site, in
+`src/codecompass/mcp/tools.py`) and a result-capture specification gap
+(keyed by `check_id` alone, when the verification loop it captures from
+runs once per `(range, check_id)` pair). **Amended a sixth time**: the
+CLI-boundary test split into two non-contradictory assertions, the
+call-site facts corrected, the capture mechanism redesigned to
+accumulate per `(range, check_id)`. A focused re-review confirmed all
+three fixes sound. **This plan is now READY** (six rounds of
+independent review, full history preserved in `planning/retros/
+_review-phase89-plan.md`). Planning only — **implementation not
+authorised**, pending a separate, explicit go-ahead.
 
 Phase 87 — Documentation Schema and Knowledge-Compiled Documentation —
 remains `done`, kept below for continuity. All four stages were

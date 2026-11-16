@@ -633,3 +633,71 @@ recommended for Stage 89A's own ADR/test-list drafting rather than a
 fifth review round. **This plan is READY**, with these three
 non-blocking items to carry forward into Stage 89A. Implementation
 remains unauthorised pending a separate, explicit go-ahead.
+
+## Independent review — fifth amendment (2026-11-16, "Phase 89 Planning Corrections and Independent Verification")
+
+### VERDICT: NOT READY
+
+One new, genuinely blocking, self-contradiction was found in the fifth amendment's own text (§4.10 vs. §7), directly undermining Finding E's own fix. Findings A-D are substantively sound in design but contain real factual errors in their own stated verification. Full detail below.
+
+### A. OracleResult provenance — CONFIRMED BUT STILL DEFECTIVE
+`AssuranceFinding` (`change_impact.py:424-433`) confirmed to carry only `check_id`/`classification`/`fresh_effective_outcome`/`fresh_invalid_reason`/`aggregate_state`/`observed_outcomes`/`contributing_symbols` — no `run_id`/`raw_output_ref`. `run_check_assurance` (line 436-478) confirmed to compute `fresh_result` (line 445) and discard it on return. The core diagnosis and the additive `on_fresh_result` callback design are sound in principle.
+
+But two of the plan's own verification claims in this exact paragraph are **false**:
+- "`oracle.write_oracle_result` has zero call sites anywhere in `src/codecompass/`" — false. `src/codecompass/mcp/tools.py:466` (`oracle_execute_check`) calls it directly, in production code (not a maintainer script). This is in fact a real existing precedent for "evaluate_check → write_oracle_result" that detector (b)'s design mirrors.
+- "there are none [call sites of `assess`] in `src/` today" — false. `src/codecompass/mcp/tools.py:342` calls `_ci.assess(..., run_checks=False)`. Backward compatibility is not actually broken by this (it's `run_checks=False`, so `on_fresh_result` never fires), but the stated grep result is wrong.
+
+A further, independently-found design gap: `assess()`'s `check_contributors`/`run_check_assurance` call is nested **inside** `for c in changed:` (change_impact.py:526-574), re-initialized per range, not once per check_id globally. If the same `check_id` is contributed by findings from two different ranges in one `propose_reconciliation` call (plausible once detector (a) batches multiple drifted files), `run_check_assurance` runs twice for that check_id, and the plan's own described `_capture` mechanism ("a local closure appending each real `OracleResult` it receives, **keyed by `check_id`**, to a dict") silently overwrites the first result with the second — a redundant subprocess execution and a possible run_id/finding mismatch, never discussed anywhere in §4.4/§5.1/§9. Not exercised by the plan's own worked walkthroughs (CL-BFS-001/002 map to distinct check_ids there), so non-blocking in isolation, but a real, material specification gap that should be closed (accumulate a list per check_id, or key by `(range_index, check_id)`) before Stage 89A.
+
+### B. Detector gate — CONFIRMED SOUND
+`scripts/check_contracts.py` lines 212-300 (`current_pass_check_ids`) confirmed to ask only "does any result currently evaluate PASS," independent of whether any Evidence cites it. `classify_symbol`'s `test_evidence_check_id` bridge (change_impact.py:352-394) confirmed to require the Evidence's `test_ref` to resolve to a parseable, contract/scope-matching result. The corrected gate (zero citing test-kind Evidence) is well-defined, correctly distinguishes never-covered from previously-covered-now-stale, and is genuinely mutually exclusive with detector (a)'s scope.
+
+### C. Mutation control — CONFIRMED SOUND
+Verified directly against `/home/cormac/projects/ledgerkit/tests/test_reports.py:706-751` and `_income_expenses_spec` (line 697-704): both sections in both named tests use exactly one account pattern. `reports.py`'s matching gate (`if not any(_matches_pattern(...) for pat in section.accounts): continue`, ~line 661) is confirmed a single boolean check — the OR-union mutation genuinely cannot fail either test. The sign-inversion guard (`if section.invert: rows = {k: -v ...}`, ~line 685) confirmed: removing it negates Expenses's subtotal from `1359.00` to `-1359.00`, failing both named tests' assertions; Income (already `invert=True`) is unaffected, as claimed. Arithmetic independently reproduced and matches.
+
+### D. Task B threshold — CONFIRMED SOUND
+`planning/v2-evaluation-methodology.md` read in full: line 234, "It does not set a numeric target for any metric" — no threshold exists anywhere in the document. `.claude/agents/context-evaluator.md` confirmed to really produce PASS/PASS WITH GAPS/FAIL plus LOW/MODERATE/HIGH context-advantage (lines 7-8, 52-53), as cited. §7's Stage 89A deliverables list now explicitly includes "Task B's own pre-registration record... written and committed... before Stage 89B's Task-A demonstration runs" — genuinely earlier than Stage 89B (§7), closing the previously-cited sequencing defect.
+
+### E. CLI boundaries — CONFIRMED BUT STILL DEFECTIVE (new blocking finding)
+§4.10's five-layer design is sound on its own terms: layer 1 (`detect-changes`, no flag) genuinely calls neither `assess()` nor any subprocess; layer 2 (`--probe-coverage`) explicitly, honestly states it adds a real `pytest --collect-only` subprocess call ("not read-only in any meaningful sense," §4.10/§9) and names the collection-time-code-execution risk.
+
+But §7's own Stage 89A test-list description directly contradicts this: "a CLI-boundary test (`detect-changes`, **with and without `--probe-coverage`**, confirmed to spawn **zero subprocesses** and write zero files... on every code path...)" (line ~1957). This is a direct, falsifiable self-contradiction between §4.10 (which says `--probe-coverage` spawns a subprocess) and §7 (which says the same command, with that same flag, spawns zero subprocesses). Implemented literally, this regression test either (a) cannot pass against code that correctly implements §4.10's own design, or (b) would be satisfied only by silently making `--probe-coverage` a no-op that never actually probes test collection — defeating detector (b)'s entire coverability check and reintroducing exactly the read-only/side-effect-boundary conflation Finding E exists to fix. This is analogous in character to the third review round's blocking findings (an internal contradiction between two sections of the plan's own text, falsifiable without external facts) and should be treated as blocking.
+
+### Cross-cutting (item 6)
+No inconsistency found with rounds 1-4's settled results: the Evidence-identity mechanism, `evidence_support_state` recomputation rule, ADR list (now 4 items, consistent throughout), and risk register are internally consistent. No new scheduler/event bus/knowledge store/doc compiler/MCP dependency introduced (§4.10's closing paragraph, §10 non-goals, confirmed accurate). Append-only Evidence convention preserved outside the one disclosed exception (§4.4, confirmed narrowly scoped to two machine-derived fields). Explicit human approval before every canonical mutation confirmed (§4.9, §10). Phase 83's `CONFIRMED_REGRESSION`/etc. classification confirmed untouched — §10's own closing paragraph correctly distinguishes the additive `on_fresh_result` parameter from a classification change.
+
+### Item 7 — other independent checks
+`ReportSpec`/`ReportSection` (ledgerkit/models.py:197-222) confirmed real, frozen dataclasses; the Task-B fallback ("combined section" constructor merging two sections' account-pattern tuples) is a coherent, concretely-scoped feature given this real data model. Stage 89A's scope (§7) is large but the added Task-B pre-registration deliverable does not obviously overflow it; no second contradiction of that kind found elsewhere.
+
+### Recommendation
+A sixth, narrow amendment is needed, scoped to: (1) fix §7's CLI-boundary test description so it asserts zero subprocesses only for `detect-changes` **without** `--probe-coverage`, and separately asserts that **with** `--probe-coverage` exactly one `pytest --collect-only` subprocess per uncovered check occurs (never a full test run, never a file write); (2) correct the two factually-wrong "zero call sites" claims in §0.2.A/§4.4; (3) specify `_capture`'s behavior when the same `check_id` is contributed by more than one range in a single `assess()` call (accumulate, don't overwrite). None of these require revisiting B, C, or D.
+
+### Disposition (same session, sixth amendment)
+
+All three recommended items applied directly to the plan, not deferred: (1) §7's CLI-boundary test split into two independent, non-contradictory assertions (without `--probe-coverage`: zero subprocesses/zero files; with it: exactly one collection-only subprocess, still zero files) — the "with and without" contradiction removed. (2) §0.2.A/§4.4 corrected with the real call-site facts (`mcp/tools.py:466`/`:342`, the latter's `run_checks=False` independently confirmed to make the real caller unaffected by the new parameter for a second, structural reason beyond simply not passing it) — independently re-verified via a corrected, recursive grep before accepting the reviewer's correction. (3) `_capture` redesigned to accumulate a `list[OracleResult]` per `check_id`, matched to its own finding by `(range index, check_id)`, with a new, dedicated multi-range regression test added to §7. A fresh, focused independent review of this sixth amendment is required before READY can be re-claimed.
+
+## Independent review — sixth amendment (2026-11-16, narrow verification of three targeted fixes)
+
+### VERDICT: READY WITH NON-BLOCKING OBSERVATIONS
+
+All three recommended fixes from the fifth-round review were independently re-verified against the plan's own corrected text and, where applicable, directly against real source. No new self-contradiction or factual error was introduced.
+
+### 1. CLI-boundary test self-contradiction — FIXED, CONFIRMED
+
+`planning/phase-89-incremental-knowledge-documentation-reconciliation.md:2057-2074` now states two separate, non-contradictory assertions: (i) `detect-changes` **without** `--probe-coverage` spawns zero subprocesses and writes zero files on every code path (line 2061-2064); (ii) `detect-changes` **with** `--probe-coverage` spawns **exactly one** `pytest --collect-only` subprocess per uncovered check (never a full run, verified via invocation arguments) and still writes zero files (line 2064-2070). This matches §4.10's own layer descriptions verbatim: layer 1 (lines 1401-1416) "spawns zero subprocesses and writes zero files," layer 2 (lines 1417-1427) "adds detector (b)'s own `pytest --collect-only` step... still writes no result/manifest file." No remaining contradiction between §4.10 and §7.
+
+### 2. "Zero call sites" factual correction — FIXED, INDEPENDENTLY RE-VERIFIED
+
+Ran `grep -rn "write_oracle_result(" src/codecompass/` and `grep -rn "_ci\.assess(\|change_impact\.assess(" src/codecompass/` directly: confirms exactly one real call site each — `src/codecompass/mcp/tools.py:466` (`_oracle.write_oracle_result(out_path, result)`) and `src/codecompass/mcp/tools.py:342` (`report = _ci.assess(`). Matches the plan's corrected text at §0.2.A exactly, including the line numbers. `src/codecompass/mcp/tools.py:342-349` confirmed: `run_checks=False` is passed (line 348; the plan previously cited "line 347," off by one — now corrected to 348). The plan's reasoning that this caller is unaffected by `on_fresh_result` for two independent reasons (doesn't pass the parameter; `run_checks=False` means the callback's code path never executes) is sound and matches `assess()`'s own `if run_checks: ... else: finding = AssuranceFinding(...)` branch at `change_impact.py:566-576`.
+
+### 3. Multi-range `_capture` fix — FIXED, COHERENT, CLOSES THE GAP
+
+`change_impact.py:510-586`: `check_contributors` (line 549) and the `assurance`/`run_check_assurance` loop (lines 563-578) are both inside `for c in changed:` (line 529), re-initialized per range — confirms the prior review's diagnosis exactly. The plan's fix (§4.4; §5.1) now specifies `_capture` accumulates a `list[OracleResult]` per `check_id` (never overwrites) and `propose_reconciliation` matches each finding to its captured result by `(range index, check_id)`, consuming entries in range order — coherent given `assess()`'s deterministic range-then-sorted-check_id iteration order. §7 has a distinctly-named "multi-range capture test" exercising exactly this scenario.
+
+### Targeted cross-check
+
+No stray uncorrected "zero call sites" claims remain (both remaining occurrences are self-referential, describing the historical error being corrected). §9's risk register did not originally call out the multi-range `(range, check_id)` accumulation redesign as its own entry — non-blocking, not a contradiction. No other location still references the old "keyed by `check_id` alone" design or the old "re-walk `assess()`'s own return value" design as current.
+
+### Disposition (same session)
+
+Both non-blocking observations folded in directly: the "line 347" citation corrected to "line 348"; a new "Resolved by a fifth independent review round" entry added to §9's risk register documenting the `_capture` multi-range redesign and the two factual/contradiction fixes. No seventh review round triggered, per this project's own established practice for non-blocking editorial observations. **This plan is READY.** Implementation remains unauthorised pending a separate, explicit go-ahead.

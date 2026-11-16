@@ -48,8 +48,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that the rule is sound only for contract-governed Claims; a
   fail-closed guard against a `check_id` ever being added to a
   multi-check Requirement; a more precisely named regression test).
-  **This plan is now READY.** Implementation remains unauthorised
-  pending a separate, explicit go-ahead.
+  **Amended a fifth time** (fresh independent-orchestrator dispatch,
+  "Phase 89 Planning Corrections and Independent Verification"): a
+  from-scratch re-verification against real source, the real Ledgerkit
+  checkout, and the real evaluation-methodology document found five
+  further genuine defects — (A) `run_check_assurance`'s own fresh
+  `OracleResult` (with its `run_id`/`raw_output_ref`) was computed then
+  discarded on return, never actually recoverable by the design the
+  third amendment proposed; fixed with a new, additive, default-`None`
+  `on_fresh_result` capture parameter on `change_impact.assess`/
+  `run_check_assurance`, every existing call site unaffected. (B) the
+  "newly coverable" detector's own gate ("no currently-valid historical
+  result") wrongly also matched a previously-covered, now-merely-stale
+  check; corrected to "zero existing citing test-kind Evidence," the
+  same bridge test `classify_symbol` already performs. (C) the
+  detector-(a) demonstration's own named mutation (`DEC-BFS-002`'s
+  OR-union double-counting change) cannot actually fail the two
+  required-check tests it claimed to — verified directly against the
+  real test bodies, confirming `DEC-BFS-002`'s own already-recorded
+  rationale rather than contradicting it; replaced with a mutation that
+  genuinely fails both (removing `reports.py`'s own `section.invert`
+  guard). (D) Task B's own pre-registered success threshold cited a
+  "minimum-meaningful-difference" value `planning/v2-evaluation-
+  methodology.md` does not define (re-read in full: it explicitly sets
+  no numeric target), and separately pre-registered too late in the
+  plan's own staged order to be a genuine pre-registration at all;
+  corrected to a Phase-89-owned criterion built from `context-
+  evaluator`'s own existing PASS/PASS WITH GAPS/FAIL and LOW/MODERATE/
+  HIGH instrument, moved to a Stage 89A deliverable (before any Task-A
+  work begins, not after). (E) the proposed `detect-changes` CLI command
+  was described as read-only while calling `change_impact.assess
+  (run_checks=True)`, a real test-executing operation; split into five
+  explicitly-bounded layers across two commands (`detect-changes`,
+  purely observational, plus an opt-in `--probe-coverage` flag, and a
+  new, separate `verify-changes`, the only command that executes checks
+  and persists results/manifests). A fresh independent review then
+  found one blocking self-contradiction (§7's own CLI-boundary test
+  description asserted zero subprocesses "with and without
+  `--probe-coverage`," directly contradicting §4.10's own description
+  of what that flag does) plus two factual errors in this amendment's
+  own verification (a non-recursive grep wrongly reported zero call
+  sites for `oracle.write_oracle_result`/`change_impact.assess`; both
+  have exactly one real call site each, in `src/codecompass/mcp/
+  tools.py`) and one further specification gap (the new result-capture
+  mechanism was keyed by `check_id` alone, when `assess()`'s own
+  verification loop runs once per `(range, check_id)` pair, risking a
+  silent overwrite). **Amended a sixth time**: the CLI-boundary test
+  split into two non-contradictory assertions; the call-site facts
+  corrected; the capture mechanism redesigned to accumulate per
+  `(range, check_id)`. A focused re-review confirmed all three fixes
+  sound. **This plan is now READY** (six rounds of independent review,
+  full history preserved in `planning/retros/_review-phase89-plan.md`).
+  Implementation remains unauthorised pending a separate, explicit
+  go-ahead.
 - **Phase 89 — Incremental Knowledge and Documentation Reconciliation —
   planning only**: implementation plan drafted
   (`planning/phase-89-incremental-knowledge-documentation-reconciliation.md`),
