@@ -637,7 +637,8 @@ def propose_reconciliation(
                             classification == "VERIFIED_SCOPE"
                             and label == "re_confirmed"
                             and records.get(claim_id)
-                            and records[claim_id].fields.get("evidence_support_state") == "supported"
+                            and records[claim_id].fields.get("evidence_support_state")
+                            == "supported"
                         ):
                             # §4.3: a fresh VERIFIED_SCOPE against an
                             # ALREADY-supported Claim is a no-op -- but

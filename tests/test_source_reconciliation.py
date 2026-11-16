@@ -33,17 +33,23 @@ runner = CliRunner()
 # ---------------------------------------------------------------------------
 
 
-def _write_graph_db(db_path: Path, files: dict[str, str], symbols: dict[str, list[tuple[str, str, int]]]) -> None:
+def _write_graph_db(
+    db_path: Path, files: dict[str, str], symbols: dict[str, list[tuple[str, str, int]]]
+) -> None:
     if db_path.is_file():
         db_path.unlink()  # re-sync: replace, never append to a stale graph
     con = sqlite3.connect(db_path)
-    con.execute("CREATE TABLE source_files (id INTEGER PRIMARY KEY, path TEXT UNIQUE, content_hash TEXT)")
+    con.execute(
+        "CREATE TABLE source_files (id INTEGER PRIMARY KEY, path TEXT UNIQUE, content_hash TEXT)"
+    )
     con.execute(
         "CREATE TABLE source_symbols (id INTEGER PRIMARY KEY, source_file_id INTEGER, "
         "name TEXT, kind TEXT, line INTEGER)"
     )
     for path, content_hash in files.items():
-        cur = con.execute("INSERT INTO source_files (path, content_hash) VALUES (?, ?)", (path, content_hash))
+        cur = con.execute(
+            "INSERT INTO source_files (path, content_hash) VALUES (?, ?)", (path, content_hash)
+        )
         file_id = cur.lastrowid
         for name, kind, line in symbols.get(path, []):
             con.execute(
@@ -98,7 +104,10 @@ def _write_contract(path: Path, *, checks: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         yaml.safe_dump(
-            {"schema_version": 1, "contract_id": "REQ-X-001", "tested_paths": ["impl.py"], "checks": checks},
+            {
+                "schema_version": 1, "contract_id": "REQ-X-001",
+                "tested_paths": ["impl.py"], "checks": checks,
+            },
             sort_keys=False,
         ),
         encoding="utf-8",
@@ -125,9 +134,10 @@ def _setup_slug(project_root: Path, slug: str, *, checks: list[dict]) -> tuple[P
 def _bridge_evidence(slug_dir: Path, contract_path: Path, *, check_id: str, result_path: Path,
                       ev_id="EV-X-002", outcome="PASS") -> None:
     _write_fake_result(result_path, contract_path, check_id=check_id, outcome=outcome)
+    rel_result = result_path.relative_to(slug_dir.parents[2])
     _write_flat(slug_dir / f"{ev_id}.yaml", {
         "id": ev_id, "kind": "evidence", "evidence_kind": "test",
-        "test_ref": f'"{result_path.relative_to(slug_dir.parents[2])}"',
+        "test_ref": f'"{rel_result}"',
     })
 
 
@@ -139,7 +149,8 @@ def _write_fake_result(path: Path, contract_path: Path, *, check_id: str, outcom
     result = oracle.OracleResult(
         schema_version=1, run_id=run_id, contract_id="REQ-X-001", check_id=check_id,
         scope="scope A", baseline_id=None, tested_subject_digest="d" * 64,
-        oracle_contract_id="REQ-X-001", oracle_contract_content_hash=oracle.sha256_file(contract_path),
+        oracle_contract_id="REQ-X-001",
+        oracle_contract_content_hash=oracle.sha256_file(contract_path),
         test_input_digest="i" * 64, raw_output_ref=str(raw_path),
         raw_output_sha256=oracle.sha256_file(raw_path), outcome=outcome,
         executed_at="2026-10-28T00:00:00Z", execution_provider="pytest",
@@ -159,7 +170,8 @@ class TestOnFreshResultCallback:
         repo = _build_repo(tmp_path)
         contract_path, contract = contract_obj = _contract(tmp_path, repo)
         finding = ci.run_check_assurance(
-            oracle, contract_path, contract_obj[1], "chk-a", repo, tmp_path / "raw", historical_results=[]
+            oracle, contract_path, contract_obj[1], "chk-a", repo, tmp_path / "raw",
+            historical_results=[],
         )
         assert finding.classification == "VERIFIED_SCOPE"
 
@@ -213,7 +225,9 @@ class TestOnFreshResultCallback:
             },
         )
         contract_path, slug_dir = _setup_slug(project_root, "demo", checks=[_default_check()])
-        result_path = project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--r1.yaml"
+        result_path = (
+            project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--r1.yaml"
+        )
         _write_fake_result(result_path, contract_path, check_id="chk-a")
         _write_flat(slug_dir / "EV-SRC-1.yaml", {
             "id": "EV-SRC-1", "kind": "evidence", "evidence_kind": "source",
@@ -243,7 +257,8 @@ class TestOnFreshResultCallback:
 
         report = ci.assess(
             target_repo_root=repo, target_graph_db=graph_db, knowledge_root=project_root,
-            slug="demo", changed=[ci.ChangedRange("impl.py", 1, 6), ci.ChangedRange("impl2.py", 1, 2)],
+            slug="demo",
+            changed=[ci.ChangedRange("impl.py", 1, 6), ci.ChangedRange("impl2.py", 1, 2)],
             run_checks=True, on_fresh_result=_capture, raw_output_dir=tmp_path / "raw",
         )
         assert len(captured) == 2
@@ -264,7 +279,9 @@ def _contract(tmp_path: Path, repo: Path):
 
 def _setup_slug_for_assess(project_root: Path, repo: Path, graph_db: Path) -> None:
     contract_path, slug_dir = _setup_slug(project_root, "demo", checks=[_default_check()])
-    result_path = project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--r1.yaml"
+    result_path = (
+        project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--r1.yaml"
+    )
     _write_fake_result(result_path, contract_path, check_id="chk-a")
     _write_flat(slug_dir / "EV-SRC-1.yaml", {
         "id": "EV-SRC-1", "kind": "evidence", "evidence_kind": "source",
@@ -292,7 +309,9 @@ class TestDetectSourceChanges:
         repo = _build_repo(tmp_path)
         graph_db = _sync_graph(repo)
         contract_path, slug_dir = _setup_slug(project_root, "demo", checks=[_default_check()])
-        result_path = project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--r1.yaml"
+        result_path = (
+            project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--r1.yaml"
+        )
         _write_fake_result(result_path, contract_path, check_id="chk-a")
         _write_flat(slug_dir / "EV-SRC-1.yaml", {
             "id": "EV-SRC-1", "kind": "evidence", "evidence_kind": "source",
@@ -310,13 +329,17 @@ class TestDetectSourceChanges:
 
     def test_new_file_reported_as_new_never_establishes_baseline(self, tmp_path):
         project_root, repo, graph_db = self._setup(tmp_path)
-        result = sr.detect_source_changes(project_root, "demo", repo_root=repo, target_graph_db=graph_db)
+        result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
         assert "impl.py" in result.new_files
         assert sr._read_baseline(project_root, "demo") == {}
 
     def test_establish_baselines_for_new_files_is_explicit_and_opt_in(self, tmp_path):
         project_root, repo, graph_db = self._setup(tmp_path)
-        result = sr.detect_source_changes(project_root, "demo", repo_root=repo, target_graph_db=graph_db)
+        result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
         assert sr._read_baseline(project_root, "demo") == {}  # detection alone never writes one
         established = sr.establish_baselines_for_new_files(
             project_root, "demo", repo_root=repo, result=result, target_graph_db=graph_db,
@@ -328,35 +351,49 @@ class TestDetectSourceChanges:
         # detection alone found -- only ever re-establishes the same
         # already-recorded new-file set, never a changed file.
         (repo / "impl.py").write_text(_IMPL_TEXT + "\n# edited after baseline\n", encoding="utf-8")
-        result2 = sr.detect_source_changes(project_root, "demo", repo_root=repo, target_graph_db=graph_db)
-        assert "impl.py" not in result2.new_files  # already baselined, now reported stale/changed instead
+        result2 = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
+        assert "impl.py" not in result2.new_files  # already baselined, reported stale/changed
 
     def test_stale_graph_index_excludes_file_from_comparison(self, tmp_path):
         project_root, repo, graph_db = self._setup(tmp_path)
-        sr.establish_source_baseline(project_root, "demo", "impl.py", oracle.sha256_file(repo / "impl.py"))
+        sr.establish_source_baseline(
+            project_root, "demo", "impl.py", oracle.sha256_file(repo / "impl.py")
+        )
         (repo / "impl.py").write_text(_IMPL_TEXT + "\n# unsynced edit\n", encoding="utf-8")
-        result = sr.detect_source_changes(project_root, "demo", repo_root=repo, target_graph_db=graph_db)
+        result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
         assert any(f.path == "impl.py" for f in result.stale_graph_index)
         assert result.changed == []
 
     def test_unchanged_file_reports_nothing(self, tmp_path):
         project_root, repo, graph_db = self._setup(tmp_path)
-        sr.establish_source_baseline(project_root, "demo", "impl.py", oracle.sha256_file(repo / "impl.py"))
+        sr.establish_source_baseline(
+            project_root, "demo", "impl.py", oracle.sha256_file(repo / "impl.py")
+        )
         sr.establish_source_baseline(
             project_root, "demo", "tests/test_impl.py",
             oracle.sha256_file(repo / "tests" / "test_impl.py"),
         )
-        result = sr.detect_source_changes(project_root, "demo", repo_root=repo, target_graph_db=graph_db)
+        result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
         assert result.changed == []
         assert result.stale_graph_index == []
         assert result.new_files == []
 
     def test_symbol_change_detected_after_baseline_and_fresh_sync(self, tmp_path):
         project_root, repo, graph_db = self._setup(tmp_path)
-        sr.establish_source_baseline(project_root, "demo", "impl.py", oracle.sha256_file(repo / "impl.py"))
+        sr.establish_source_baseline(
+            project_root, "demo", "impl.py", oracle.sha256_file(repo / "impl.py")
+        )
         (repo / "impl.py").write_text(_IMPL_TEXT + "\n# a real change\n", encoding="utf-8")
         graph_db = _sync_graph(repo)  # re-sync, matching the required order
-        result = sr.detect_source_changes(project_root, "demo", repo_root=repo, target_graph_db=graph_db)
+        result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
         assert len(result.changed) == 1
         assert result.changed[0].path == "impl.py"
         assert result.changed[0].resolution == "symbol_change"
@@ -366,7 +403,9 @@ class TestDetectSourceChanges:
         source untouched) must still be discovered, through
         test_input_paths, resolved directly to the bridged Claim."""
         project_root, repo, graph_db = self._setup(tmp_path)
-        sr.establish_source_baseline(project_root, "demo", "impl.py", oracle.sha256_file(repo / "impl.py"))
+        sr.establish_source_baseline(
+            project_root, "demo", "impl.py", oracle.sha256_file(repo / "impl.py")
+        )
         sr.establish_source_baseline(
             project_root, "demo", "tests/test_impl.py",
             oracle.sha256_file(repo / "tests" / "test_impl.py"),
@@ -375,14 +414,19 @@ class TestDetectSourceChanges:
             "def test_ok():\n    assert True  # a real test-only edit\n", encoding="utf-8",
         )
         graph_db = _sync_graph(repo)
-        result = sr.detect_source_changes(project_root, "demo", repo_root=repo, target_graph_db=graph_db)
+        result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
         test_changes = [f for f in result.changed if f.resolution == "test_input_change"]
         assert len(test_changes) == 1
         assert test_changes[0].path == "tests/test_impl.py"
         assert test_changes[0].check_id == "chk-a"
         assert test_changes[0].claim_ids == ["CL-DEMO-001"]
         # And it must NEVER be misreported as a symbol_change.
-        assert not any(f.path == "tests/test_impl.py" and f.resolution == "symbol_change" for f in result.changed)
+        assert not any(
+            f.path == "tests/test_impl.py" and f.resolution == "symbol_change"
+            for f in result.changed
+        )
 
     def test_test_only_change_on_stale_graph_is_excluded_like_source(self, tmp_path):
         project_root, repo, graph_db = self._setup(tmp_path)
@@ -390,9 +434,13 @@ class TestDetectSourceChanges:
             project_root, "demo", "tests/test_impl.py",
             oracle.sha256_file(repo / "tests" / "test_impl.py"),
         )
-        (repo / "tests" / "test_impl.py").write_text("def test_ok():\n    assert True  # edit\n", encoding="utf-8")
+        (repo / "tests" / "test_impl.py").write_text(
+            "def test_ok():\n    assert True  # edit\n", encoding="utf-8",
+        )
         # Deliberately NOT re-synced -- graph_db still has the old hash.
-        result = sr.detect_source_changes(project_root, "demo", repo_root=repo, target_graph_db=graph_db)
+        result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
         assert any(f.path == "tests/test_impl.py" for f in result.stale_graph_index)
         assert not any(f.path == "tests/test_impl.py" for f in result.changed)
 
@@ -401,16 +449,22 @@ class TestDetectSourceChanges:
         check's own test_input_paths is never tracked at all."""
         project_root, repo, graph_db = self._setup(tmp_path)
         (repo / "unrelated.py").write_text("x = 1\n", encoding="utf-8")
-        result = sr.detect_source_changes(project_root, "demo", repo_root=repo, target_graph_db=graph_db)
+        result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
         assert not any(f.path == "unrelated.py" for f in result.changed)
         assert not any(f.path == "unrelated.py" for f in result.stale_graph_index)
         assert "unrelated.py" not in result.new_files
 
     def test_deleted_file_reported_distinctly(self, tmp_path):
         project_root, repo, graph_db = self._setup(tmp_path)
-        sr.establish_source_baseline(project_root, "demo", "impl.py", oracle.sha256_file(repo / "impl.py"))
+        sr.establish_source_baseline(
+            project_root, "demo", "impl.py", oracle.sha256_file(repo / "impl.py")
+        )
         (repo / "impl.py").unlink()
-        result = sr.detect_source_changes(project_root, "demo", repo_root=repo, target_graph_db=graph_db)
+        result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
         assert "impl.py" in result.deleted_files
         assert "impl.py" not in result.new_files
 
@@ -426,13 +480,17 @@ class TestDetectNewlyCoverableChecks:
         repo = _build_repo(tmp_path)
         contract_path, slug_dir = _setup_slug(project_root, "demo", checks=[_default_check()])
         _write_flat(slug_dir / "CL-DEMO-001.yaml", {
-            "id": "CL-DEMO-001", "kind": "claim", "supporting_evidence": [], "contradicting_evidence": [],
+            "id": "CL-DEMO-001", "kind": "claim",
+            "supporting_evidence": [], "contradicting_evidence": [],
         })
         _write_flat(slug_dir / "REQ-DEMO-001.yaml", {
-            "id": "REQ-DEMO-001", "kind": "requirement", "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
+            "id": "REQ-DEMO-001", "kind": "requirement",
+            "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
         })
         result = sr.detect_newly_coverable_checks(project_root, "demo", repo_root=repo, probe=True)
-        assert result.coverable == [sr.NewlyCoverableCheck(check_id="chk-a", claim_id="CL-DEMO-001")]
+        assert result.coverable == [
+            sr.NewlyCoverableCheck(check_id="chk-a", claim_id="CL-DEMO-001")
+        ]
 
     def test_check_does_not_yet_collect(self, tmp_path):
         project_root = tmp_path / "knowledge-root"
@@ -443,7 +501,8 @@ class TestDetectNewlyCoverableChecks:
         slug_dir = project_root / "planning" / "knowledge" / "demo"
         _write_flat(slug_dir / "CL-DEMO-001.yaml", {"id": "CL-DEMO-001", "kind": "claim"})
         _write_flat(slug_dir / "REQ-DEMO-001.yaml", {
-            "id": "REQ-DEMO-001", "kind": "requirement", "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
+            "id": "REQ-DEMO-001", "kind": "requirement",
+            "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
         })
         result = sr.detect_newly_coverable_checks(project_root, "demo", repo_root=repo, probe=True)
         assert result.coverable == []
@@ -456,7 +515,9 @@ class TestDetectNewlyCoverableChecks:
         project_root = tmp_path / "knowledge-root"
         repo = _build_repo(tmp_path)
         contract_path, slug_dir = _setup_slug(project_root, "demo", checks=[_default_check()])
-        result_path = project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--r1.yaml"
+        result_path = (
+            project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--r1.yaml"
+        )
         _write_fake_result(result_path, contract_path, check_id="chk-a")
         _write_flat(slug_dir / "EV-TEST-1.yaml", {
             "id": "EV-TEST-1", "kind": "evidence", "evidence_kind": "test",
@@ -464,7 +525,8 @@ class TestDetectNewlyCoverableChecks:
         })
         _write_flat(slug_dir / "CL-DEMO-001.yaml", {"id": "CL-DEMO-001", "kind": "claim"})
         _write_flat(slug_dir / "REQ-DEMO-001.yaml", {
-            "id": "REQ-DEMO-001", "kind": "requirement", "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
+            "id": "REQ-DEMO-001", "kind": "requirement",
+            "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
         })
         # Simulate real staleness (decisions/0088): the test's own input
         # file changes under the already-recorded result -- this affects
@@ -472,7 +534,9 @@ class TestDetectNewlyCoverableChecks:
         # must NOT affect the Evidence-bridge IDENTITY check (contract_id/
         # oracle_contract_id/scope), which is a historical-relationship
         # question only (classify_symbol's own established distinction).
-        (repo / "tests" / "test_impl.py").write_text("def test_ok():\n    assert True  # drifted\n", encoding="utf-8")
+        (repo / "tests" / "test_impl.py").write_text(
+            "def test_ok():\n    assert True  # drifted\n", encoding="utf-8",
+        )
         result = sr.detect_newly_coverable_checks(project_root, "demo", repo_root=repo, probe=True)
         assert result.coverable == []
         assert result.not_yet_coverable == []  # never even scanned -- detector (a)'s scope
@@ -508,7 +572,8 @@ class TestDetectNewlyCoverableChecks:
         slug_dir = project_root / "planning" / "knowledge" / "demo"
         _write_flat(slug_dir / "CL-DEMO-001.yaml", {"id": "CL-DEMO-001", "kind": "claim"})
         _write_flat(slug_dir / "REQ-DEMO-001.yaml", {
-            "id": "REQ-DEMO-001", "kind": "requirement", "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
+            "id": "REQ-DEMO-001", "kind": "requirement",
+            "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
         })
 
         def _fail(*a, **k):
@@ -567,9 +632,12 @@ class TestDurableResultPersistence:
         moved_result_path = moved_root / out_path.relative_to(project_root)
         with sr._chdir(moved_root):
             reparsed = oracle.parse_oracle_result(moved_result_path)
+            moved_contract_path = (
+                moved_root / "planning" / "contracts" / "demo" / "oracle-contract.yaml"
+            )
             outcome, _reason = oracle.evaluate_result_precedence(
                 reparsed, contract, check,
-                contract_path=moved_root / "planning" / "contracts" / "demo" / "oracle-contract.yaml",
+                contract_path=moved_contract_path,
                 repo_root=repo,
             )
         assert outcome == "PASS"
@@ -624,7 +692,9 @@ class TestDurableResultPersistence:
                 raw_output_dir=sr._durable_raw_output_dir("demo"),
             )
         sr._persist_and_verify(project_root, "demo", result)
-        (repo / "tests" / "test_impl.py").write_text("def test_ok():\n    assert True  # changed\n", encoding="utf-8")
+        (repo / "tests" / "test_impl.py").write_text(
+            "def test_ok():\n    assert True  # changed\n", encoding="utf-8",
+        )
         outcome, reason = oracle.evaluate_result_precedence(
             result, contract, check, contract_path=contract_path, repo_root=repo,
         )
@@ -652,10 +722,15 @@ class TestReconfirmationAfterMutationReversal:
         repo = _build_repo(tmp_path)
         graph_db = _sync_graph(repo)
         contract_path, slug_dir = _setup_slug(project_root, "demo", checks=[_default_check()])
-        old_pass_path = project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--old.yaml"
-        _write_fake_result(old_pass_path, contract_path, check_id="chk-a", run_id="old", outcome="PASS")
-        regression_path = project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--reg.yaml"
-        _write_fake_result(regression_path, contract_path, check_id="chk-a", run_id="reg", outcome="FAIL")
+        results_dir = project_root / "planning" / "contracts" / "demo" / "results"
+        old_pass_path = results_dir / "chk-a--old.yaml"
+        _write_fake_result(
+            old_pass_path, contract_path, check_id="chk-a", run_id="old", outcome="PASS"
+        )
+        regression_path = results_dir / "chk-a--reg.yaml"
+        _write_fake_result(
+            regression_path, contract_path, check_id="chk-a", run_id="reg", outcome="FAIL"
+        )
         _write_flat(slug_dir / "EV-SRC-1.yaml", {
             "id": "EV-SRC-1", "kind": "evidence", "evidence_kind": "source",
             "source_ref": '"impl.py:5 def target_function"',
@@ -674,17 +749,22 @@ class TestReconfirmationAfterMutationReversal:
             "contradicting_evidence": ["EV-TEST-2"],
             "evidence_support_state": "conflicting",
         })
-        sr.establish_source_baseline(project_root, "demo", "impl.py", oracle.sha256_file(repo / "impl.py"))
+        sr.establish_source_baseline(
+            project_root, "demo", "impl.py", oracle.sha256_file(repo / "impl.py")
+        )
         # The test now genuinely passes again (mutation reversed) --
         # touch the file (so it's detected as "changed") without
         # altering behaviour, then re-sync.
         (repo / "impl.py").write_text(_IMPL_TEXT + "\n# reversed\n", encoding="utf-8")
         graph_db = _sync_graph(repo)
-        source_result = sr.detect_source_changes(project_root, "demo", repo_root=repo, target_graph_db=graph_db)
+        source_result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
         assert any(f.path == "impl.py" for f in source_result.changed)
 
         findings = sr.propose_reconciliation(
-            project_root, "demo", repo_root=repo, target_graph_db=graph_db, source_changes=source_result,
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db,
+            source_changes=source_result,
         )
         assert len(findings) == 1
         assert findings[0].label == "re_confirmed"
@@ -707,13 +787,16 @@ class TestEndToEndReconciliation:
             "source_ref": '"impl.py:5 def target_function"',
         })
         _write_flat(slug_dir / "REQ-DEMO-001.yaml", {
-            "id": "REQ-DEMO-001", "kind": "requirement", "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
+            "id": "REQ-DEMO-001", "kind": "requirement",
+            "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
         })
         return project_root, repo
 
     def test_newly_coverable_check_pass_upgrades_claim_to_supported(self, tmp_path):
         project_root, repo = self._setup_newly_coverable(tmp_path)
-        coverable = sr.detect_newly_coverable_checks(project_root, "demo", repo_root=repo, probe=True)
+        coverable = sr.detect_newly_coverable_checks(
+            project_root, "demo", repo_root=repo, probe=True
+        )
         assert coverable.coverable
         findings = sr.propose_reconciliation(
             project_root, "demo", repo_root=repo, newly_coverable=coverable.coverable,
@@ -738,14 +821,17 @@ class TestEndToEndReconciliation:
         assert claim.fields["evidence_support_state"] == "supported"
         assert "EV-X-001" not in claim.fields["supporting_evidence"]
         new_evidence_ids = [
-            rid for rid, rec in records.items() if rec.kind == "evidence" and rid.startswith("EV-") and rid != "EV-SRC-1"
+            rid for rid, rec in records.items()
+            if rec.kind == "evidence" and rid.startswith("EV-") and rid != "EV-SRC-1"
         ]
         assert len(new_evidence_ids) == 1
         assert new_evidence_ids[0] in claim.fields["supporting_evidence"]
 
     def test_evidence_identity_retry_never_duplicates(self, tmp_path):
         project_root, repo = self._setup_newly_coverable(tmp_path)
-        coverable = sr.detect_newly_coverable_checks(project_root, "demo", repo_root=repo, probe=True)
+        coverable = sr.detect_newly_coverable_checks(
+            project_root, "demo", repo_root=repo, probe=True
+        )
         findings = sr.propose_reconciliation(
             project_root, "demo", repo_root=repo, newly_coverable=coverable.coverable,
         )
@@ -774,7 +860,9 @@ class TestEndToEndReconciliation:
 
     def test_conflicting_edit_between_detection_and_apply_is_refused(self, tmp_path):
         project_root, repo = self._setup_newly_coverable(tmp_path)
-        coverable = sr.detect_newly_coverable_checks(project_root, "demo", repo_root=repo, probe=True)
+        coverable = sr.detect_newly_coverable_checks(
+            project_root, "demo", repo_root=repo, probe=True
+        )
         findings = sr.propose_reconciliation(
             project_root, "demo", repo_root=repo, newly_coverable=coverable.coverable,
         )
@@ -787,7 +875,9 @@ class TestEndToEndReconciliation:
         # A human hand-edits the Claim between detection and apply.
         slug_dir = project_root / "planning" / "knowledge" / "demo"
         claim_path = slug_dir / "CL-DEMO-001.yaml"
-        claim_path.write_text(claim_path.read_text(encoding="utf-8") + "\n# hand edit\n", encoding="utf-8")
+        claim_path.write_text(
+            claim_path.read_text(encoding="utf-8") + "\n# hand edit\n", encoding="utf-8"
+        )
 
         result = ki.apply_manifest(project_root, manifest_path)
         assert len(result.applied) == 0
@@ -802,20 +892,27 @@ class TestEndToEndReconciliation:
         project_root = tmp_path / "knowledge-root"
         contract_path, slug_dir = _setup_slug(project_root, "demo", checks=[_default_check()])
         _write_flat(slug_dir / "EV-DEMO-099.yaml", {
-            "id": "EV-DEMO-099", "kind": "evidence", "evidence_kind": "test", "test_ref": "null",
+            "id": "EV-DEMO-099", "kind": "evidence",
+            "evidence_kind": "test", "test_ref": "null",
         })
         _write_flat(slug_dir / "CL-DEMO-001.yaml", {
             "id": "CL-DEMO-001", "kind": "claim",
             "supporting_evidence": [], "contradicting_evidence": ["EV-DEMO-099"],
             "evidence_support_state": "unsupported",
         })
-        result_path = project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--r2.yaml"
-        _write_fake_result(result_path, contract_path, check_id="chk-a", run_id="r2", outcome="PASS")
+        result_path = (
+            project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--r2.yaml"
+        )
+        _write_fake_result(
+            result_path, contract_path, check_id="chk-a", run_id="r2", outcome="PASS"
+        )
         from codecompass.knowledge_intermediate import _apply_source_reconciliation
 
         item = {
             "kind": "source_reconciliation", "record_id": "CL-DEMO-001",
-            "base_claim_hash": ki.sha256_text((slug_dir / "CL-DEMO-001.yaml").read_text(encoding="utf-8")),
+            "base_claim_hash": ki.sha256_text(
+                (slug_dir / "CL-DEMO-001.yaml").read_text(encoding="utf-8")
+            ),
             "contributing_contract_ids": ["REQ-X-001"], "contributing_check_ids": ["chk-a"],
             "contributing_run_ids": ["r2"], "contributing_labels": ["re_confirmed"],
             "contributing_target_fields": ["supporting_evidence"],
@@ -836,14 +933,17 @@ class TestEndToEndReconciliation:
 
 
 class TestCliBoundaries:
-    def test_detect_changes_without_probe_spawns_no_subprocess_and_writes_nothing(self, tmp_path, monkeypatch):
+    def test_detect_changes_without_probe_spawns_no_subprocess_and_writes_nothing(
+        self, tmp_path, monkeypatch
+    ):
         project_root = tmp_path / "knowledge-root"
         repo = _build_repo(tmp_path)
         _setup_slug(project_root, "demo", checks=[_default_check()])
         slug_dir = project_root / "planning" / "knowledge" / "demo"
         _write_flat(slug_dir / "CL-DEMO-001.yaml", {"id": "CL-DEMO-001", "kind": "claim"})
         _write_flat(slug_dir / "REQ-DEMO-001.yaml", {
-            "id": "REQ-DEMO-001", "kind": "requirement", "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
+            "id": "REQ-DEMO-001", "kind": "requirement",
+            "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
         })
 
         def _fail(*a, **k):
@@ -852,19 +952,24 @@ class TestCliBoundaries:
         monkeypatch.setattr(subprocess, "Popen", _fail)
         monkeypatch.chdir(project_root)
         before = set((project_root / "planning").rglob("*"))
-        res = runner.invoke(cli.app, ["knowledge", "detect-changes", "demo", "--repo-root", str(repo)])
+        res = runner.invoke(
+            cli.app, ["knowledge", "detect-changes", "demo", "--repo-root", str(repo)]
+        )
         assert res.exit_code == 0
         after = set((project_root / "planning").rglob("*"))
         assert before == after  # zero files written
 
-    def test_detect_changes_with_probe_spawns_exactly_one_collect_only_subprocess(self, tmp_path, monkeypatch):
+    def test_detect_changes_with_probe_spawns_exactly_one_collect_only_subprocess(
+        self, tmp_path, monkeypatch
+    ):
         project_root = tmp_path / "knowledge-root"
         repo = _build_repo(tmp_path)
         _setup_slug(project_root, "demo", checks=[_default_check()])
         slug_dir = project_root / "planning" / "knowledge" / "demo"
         _write_flat(slug_dir / "CL-DEMO-001.yaml", {"id": "CL-DEMO-001", "kind": "claim"})
         _write_flat(slug_dir / "REQ-DEMO-001.yaml", {
-            "id": "REQ-DEMO-001", "kind": "requirement", "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
+            "id": "REQ-DEMO-001", "kind": "requirement",
+            "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
         })
         calls = []
         real_popen = subprocess.Popen
@@ -877,7 +982,8 @@ class TestCliBoundaries:
         monkeypatch.chdir(project_root)
         before = set((project_root / "planning").rglob("*"))
         res = runner.invoke(
-            cli.app, ["knowledge", "detect-changes", "demo", "--repo-root", str(repo), "--probe-coverage"]
+            cli.app,
+            ["knowledge", "detect-changes", "demo", "--repo-root", str(repo), "--probe-coverage"],
         )
         assert res.exit_code == 0
         assert len(calls) == 1
@@ -895,7 +1001,8 @@ class TestCliBoundaries:
             "evidence_support_state": "unsupported",
         })
         _write_flat(slug_dir / "REQ-DEMO-001.yaml", {
-            "id": "REQ-DEMO-001", "kind": "requirement", "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
+            "id": "REQ-DEMO-001", "kind": "requirement",
+            "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
         })
         monkeypatch.chdir(project_root)
         res = runner.invoke(
@@ -904,7 +1011,8 @@ class TestCliBoundaries:
         assert res.exit_code == 0
         results_dir = project_root / "planning" / "contracts" / "demo" / "results"
         assert any(results_dir.glob("chk-a--*.yaml"))
-        manifests = list((project_root / "planning" / "knowledge" / "demo" / "reconciliation").glob("*-source.toml"))
+        reconciliation_dir = project_root / "planning" / "knowledge" / "demo" / "reconciliation"
+        manifests = list(reconciliation_dir.glob("*-source.toml"))
         assert len(manifests) == 1
 
     def test_apply_cli_recognises_source_reconciliation_kind(self, tmp_path, monkeypatch):
@@ -920,13 +1028,13 @@ class TestCliBoundaries:
             "evidence_support_state": "unsupported",
         })
         _write_flat(slug_dir / "REQ-DEMO-001.yaml", {
-            "id": "REQ-DEMO-001", "kind": "requirement", "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
+            "id": "REQ-DEMO-001", "kind": "requirement",
+            "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
         })
         monkeypatch.chdir(project_root)
         runner.invoke(cli.app, ["knowledge", "verify-changes", "demo", "--repo-root", str(repo)])
-        manifest_path = next(
-            (project_root / "planning" / "knowledge" / "demo" / "reconciliation").glob("*-source.toml")
-        )
+        reconciliation_dir = project_root / "planning" / "knowledge" / "demo" / "reconciliation"
+        manifest_path = next(reconciliation_dir.glob("*-source.toml"))
         import tomllib
         data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
         data["items"][0]["decision"] = "accept"
