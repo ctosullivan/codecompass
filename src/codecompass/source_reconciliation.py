@@ -220,6 +220,29 @@ def advance_source_baseline_after_apply(
     establish_source_baseline(project_root, slug, path, content_hash)
 
 
+def establish_baselines_for_new_files(
+    project_root: Path, slug: str, *, repo_root: Path,
+    result: DetectSourceChangesResult, target_graph_db: Path | None = None,
+) -> list[str]:
+    """Bootstraps a *first-ever* baseline for every file `detect_source_
+    changes` reported as `new` (mirrors `establish_new_region_baselines`
+    exactly, §1.1's own "new is read-only" precedent) — never a side
+    effect of detection itself (`CLAUDE.md` §1 L-087); an explicit,
+    separate, opt-in call (`detect-changes --establish-baselines`, §4.10)
+    a human runs once, deliberately, the first time a slug's own source/
+    test tracking begins. Returns the paths actually established."""
+    if target_graph_db is None:
+        target_graph_db = repo_root / "context-graph.db"
+    established: list[str] = []
+    for path in result.new_files:
+        content_hash = _load_file_hash(target_graph_db, path)
+        if content_hash is None:
+            continue  # not indexed -- never bootstrap a baseline from an unverifiable hash
+        establish_source_baseline(project_root, slug, path, content_hash)
+        established.append(path)
+    return established
+
+
 # ---------------------------------------------------------------------------
 # §4.1(a)/§5.1 — detect_source_changes
 # ---------------------------------------------------------------------------

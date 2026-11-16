@@ -317,6 +317,23 @@ class TestDetectSourceChanges:
         assert "impl.py" in result.new_files
         assert sr._read_baseline(project_root, "demo") == {}
 
+    def test_establish_baselines_for_new_files_is_explicit_and_opt_in(self, tmp_path):
+        project_root, repo, graph_db = self._setup(tmp_path)
+        result = sr.detect_source_changes(project_root, "demo", repo_root=repo, target_graph_db=graph_db)
+        assert sr._read_baseline(project_root, "demo") == {}  # detection alone never writes one
+        established = sr.establish_baselines_for_new_files(
+            project_root, "demo", repo_root=repo, result=result, target_graph_db=graph_db,
+        )
+        assert "impl.py" in established
+        baseline = sr._read_baseline(project_root, "demo")
+        assert baseline["impl.py"]["content_hash"] == oracle.sha256_file(repo / "impl.py")
+        # A second call never advances an EXISTING baseline past what
+        # detection alone found -- only ever re-establishes the same
+        # already-recorded new-file set, never a changed file.
+        (repo / "impl.py").write_text(_IMPL_TEXT + "\n# edited after baseline\n", encoding="utf-8")
+        result2 = sr.detect_source_changes(project_root, "demo", repo_root=repo, target_graph_db=graph_db)
+        assert "impl.py" not in result2.new_files  # already baselined, now reported stale/changed instead
+
     def test_stale_graph_index_excludes_file_from_comparison(self, tmp_path):
         project_root, repo, graph_db = self._setup(tmp_path)
         sr.establish_source_baseline(project_root, "demo", "impl.py", oracle.sha256_file(repo / "impl.py"))

@@ -1665,14 +1665,24 @@ def knowledge_detect_changes(
         "Without this flag, this command spawns zero subprocesses and writes zero "
         "files.",
     ),
+    establish_baselines: bool = typer.Option(
+        False, "--establish-baselines",
+        help="Bootstrap a first-ever source-baseline.toml entry for every file "
+        "reported as new. Only ever writes a baseline for a file with no prior "
+        "entry -- never advances an existing one (that only happens after a real, "
+        "successful `knowledge apply` of a source_reconciliation item). An "
+        "explicit, separate, opt-in action, never a side effect of detection.",
+    ),
     json_output: bool = typer.Option(False, "--json", help="Machine-readable output."),
 ) -> None:
     """Phase 89 Stage 89A (`decisions/0096`) — purely observational by
     default: reads file/baseline/graph state only, never runs
     `change_impact.assess()`, never executes a check, never writes a
     file (not even the baseline). `--probe-coverage` adds a collection
-    probe only (never a run). To actually execute checks and persist
-    results, use `knowledge verify-changes`.
+    probe only (never a run). `--establish-baselines` is the one
+    explicit, opt-in exception -- it writes `source-baseline.toml`
+    entries for newly-observed files only. To actually execute checks
+    and persist results, use `knowledge verify-changes`.
     """
     project_root = Path.cwd()
     if not repo_root.is_dir():
@@ -1684,6 +1694,12 @@ def knowledge_detect_changes(
     coverable_result = source_reconciliation.detect_newly_coverable_checks(
         project_root, slug, repo_root=repo_root, probe=probe_coverage,
     )
+    if establish_baselines:
+        established = source_reconciliation.establish_baselines_for_new_files(
+            project_root, slug, repo_root=repo_root, result=source_result,
+        )
+        if established and not json_output:
+            console.print(f"[cyan]baselines established[/cyan]: {', '.join(established)}")
     _print_detect_changes_result(source_result, coverable_result, json_output)
 
 
