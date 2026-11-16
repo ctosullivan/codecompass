@@ -9,6 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 89 — third planning amendment (Task A mechanism, Evidence
+  identity, exit-gate semantics, baseline freshness) — still planning
+  only**: a fresh, independent-orchestrator re-verification found the
+  plan's own Task A walkthrough rested on a false assumption
+  (`change_impact.assess(run_checks=True)` cannot discover a required
+  check with zero prior citing Evidence — source-traced directly
+  against the real `CL-BFS-004`/`oracle-contract.yaml` records) and a
+  more fundamental reason the previously-disclosed Evidence-idempotency
+  design was unsound (no existing code path creates an Evidence record
+  at all; `apply_manifest`'s own per-item `state` write is buffered for
+  the whole batch, not persisted per item). Fixed in place: a second,
+  genuinely new detector (`detect_newly_coverable_checks`) for a
+  required check closing coverage for the first time; a new, narrow
+  Evidence-identity helper (`_find_existing_evidence_for_run`, keyed on
+  `contract_id`/`check_id`/`run_id`, not the existing statement-text
+  helper); a cumulative, recompute-from-full-field
+  `evidence_support_state` derivation (so an earlier batch's
+  contradiction can never silently disappear); one new, optional,
+  additive `check_id` field on the Requirement schema (closing an
+  informal-prose-only check↔Requirement mapping gap); an explicit
+  `"regression"` vs `"newly_discovered_failure"` distinction (Phase
+  83's own classification left completely unmodified); a corrected,
+  three-gate exit-gate framing (technical completion / valid evaluation
+  / the roadmap's own positive benefit requirement — a negative result
+  on the third no longer satisfies it merely for being honestly
+  reported); and a stale-graph-index guard before any baseline
+  comparison is trusted. **This plan is not yet re-reviewed following
+  this amendment** — pending a fresh independent `Plan`-type dispatch.
+  Implementation not authorised.
 - **Phase 89 — Incremental Knowledge and Documentation Reconciliation —
   planning only**: implementation plan drafted
   (`planning/phase-89-incremental-knowledge-documentation-reconciliation.md`),
@@ -16,8 +45,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   change-driven source/test-change detector layered on the existing
   Phase 81 reconciliation flow and Phase 83 change-impact classifier,
   with no new scheduler, event bus, knowledge store, or documentation
-  compiler. Pending the independent Plan-type review `CLAUDE.md` §1
-  requires. Implementation not authorised.
+  compiler. Twice amended and re-reviewed to **READY** before this
+  third amendment superseded that verdict (see the entry above).
+  Implementation not authorised.
 - **Phase 88 — real-agent MCP acceptance exercise**: a genuine, separate
   `claude` CLI client, connected over real MCP stdio transport to a real
   `codecompass mcp-serve` process, completed the Ledgerkit

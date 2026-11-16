@@ -96,10 +96,28 @@ or requested by this exercise.
 **Next planned phase: Phase 89 — Incremental Knowledge and
 Documentation Reconciliation.** Independently deliverable per
 `decisions/0085` §3 (its prerequisites are Phase 84 and Phase 87 only,
-not Phase 88). **Now phase-planned**
+not Phase 88). **Plan amended a third time (2026-11-16, "Phase 89 Final
+Planning Amendment")**
 (`planning/phase-89-incremental-knowledge-documentation-reconciliation.md`)
-— planning only, implementation not authorised; pending the independent
-Plan-type review `CLAUDE.md` §1 requires before this plan is READY.
+— a fresh, independent-orchestrator source re-verification found the
+plan's own Task A walkthrough rested on a false assumption
+(`change_impact.assess(run_checks=True)` structurally cannot discover a
+required check with zero prior citing Evidence, traced directly against
+the real `CL-BFS-004`/`oracle-contract.yaml` records) and a more
+fundamental reason the previously-disclosed Evidence-idempotency design
+was unsound (no existing code path creates an Evidence record at all;
+`apply_manifest`'s own per-item state write is buffered for the whole
+batch, not per item) — plus a real exit-gate overclaim and a real
+baseline/sync-ordering gap. Fixed in place: a second, genuinely new
+detector (`detect_newly_coverable_checks`) for the real Task A scenario;
+a new, narrow Evidence-identity mechanism; a cumulative
+`evidence_support_state` derivation; a new, optional `check_id` field on
+the Requirement schema; an explicit "regression" vs "newly discovered
+failure" distinction (Phase 83's own classification left unmodified);
+and a corrected, three-gate exit-gate framing. Planning only,
+implementation not authorised; **this plan is not yet re-reviewed
+following this third amendment** — pending a fresh independent
+Plan-type dispatch before READY can be re-claimed.
 
 Phase 87 — Documentation Schema and Knowledge-Compiled Documentation —
 remains `done`, kept below for continuity. All four stages were
