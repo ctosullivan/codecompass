@@ -570,6 +570,8 @@ def propose_reconciliation(
     `verify-changes` (§4.10) -- never `detect-changes`."""
     if target_graph_db is None:
         target_graph_db = repo_root / "context-graph.db"
+    sdir = _ki.slug_dir(project_root, slug)
+    records = _ki.load_slug_records(sdir)
     contract_path = project_root / "planning" / "contracts" / slug / "oracle-contract.yaml"
     contract = _oracle.parse_oracle_contract(contract_path)
     historical_results = []
@@ -623,11 +625,6 @@ def propose_reconciliation(
                     continue
                 fresh_outcome = "FAIL" if classification == "CONFIRMED_REGRESSION" else "PASS"
                 label = _label_for(historical_results, check_id, fresh_outcome)
-                if classification == "VERIFIED_SCOPE" and label == "re_confirmed":
-                    # §4.3: a fresh VERIFIED_SCOPE against an already-
-                    # supported Claim is a no-op for reconciliation
-                    # purposes -- nothing contradicted, nothing to write.
-                    continue
                 target_field = (
                     "contradicting_evidence" if fresh_outcome == "FAIL" else "supporting_evidence"
                 )
@@ -635,8 +632,23 @@ def propose_reconciliation(
                     for claim_finding in cf.get("claims", []):
                         if claim_finding.get("check_id") != check_id:
                             continue
+                        claim_id = claim_finding["claim_id"]
+                        if (
+                            classification == "VERIFIED_SCOPE"
+                            and label == "re_confirmed"
+                            and records.get(claim_id)
+                            and records[claim_id].fields.get("evidence_support_state") == "supported"
+                        ):
+                            # §4.3: a fresh VERIFIED_SCOPE against an
+                            # ALREADY-supported Claim is a no-op -- but
+                            # a Claim in any other state (partially_
+                            # supported/unsupported/conflicting) still
+                            # gets this new, materially useful
+                            # confirming evidence proposed, e.g. a
+                            # reversed regression re-verified PASS.
+                            continue
                         out.append(ContributingFinding(
-                            claim_id=claim_finding["claim_id"],
+                            claim_id=claim_id,
                             contract_id=fresh_result.contract_id,
                             check_id=check_id, run_id=fresh_result.run_id,
                             raw_output_ref=fresh_result.raw_output_ref, label=label,
@@ -667,12 +679,16 @@ def propose_reconciliation(
         if not ok or fresh_result.outcome == "INVALID":
             continue
         label = _label_for(historical_results, f.check_id, fresh_result.outcome)
-        if label == "re_confirmed":
-            continue
         target_field = (
             "contradicting_evidence" if fresh_result.outcome == "FAIL" else "supporting_evidence"
         )
         for claim_id in f.claim_ids:
+            if (
+                label == "re_confirmed"
+                and records.get(claim_id)
+                and records[claim_id].fields.get("evidence_support_state") == "supported"
+            ):
+                continue  # §4.3: already-supported Claim, genuinely a no-op
             out.append(ContributingFinding(
                 claim_id=claim_id, contract_id=fresh_result.contract_id, check_id=f.check_id,
                 run_id=fresh_result.run_id, raw_output_ref=fresh_result.raw_output_ref, label=label,

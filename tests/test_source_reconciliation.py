@@ -21,10 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from codecompass import change_impact as ci  # noqa: E402
-from codecompass import (
-    cli,  # noqa: E402
-    oracle,  # noqa: E402
-)
+from codecompass import cli, oracle  # noqa: E402
 from codecompass import knowledge_intermediate as ki  # noqa: E402
 from codecompass import source_reconciliation as sr  # noqa: E402
 
@@ -641,6 +638,58 @@ class TestDurableResultPersistence:
 # identity, cumulative evidence_support_state, same-Claim merge,
 # conflicting-edit refusal
 # ---------------------------------------------------------------------------
+
+
+class TestReconfirmationAfterMutationReversal:
+    def test_re_confirmed_pass_is_still_proposed_against_a_non_supported_claim(self, tmp_path):
+        """A fresh VERIFIED_SCOPE re-confirming a Claim that is NOT yet
+        `evidence_support_state: supported` (e.g. `conflicting`, from an
+        earlier accepted regression) must still be proposed -- real-world
+        scenario: a regression mutation is reversed and re-verified; the
+        fix must not be silently dropped as a no-op just because a
+        historical PASS also existed before the regression."""
+        project_root = tmp_path / "knowledge-root"
+        repo = _build_repo(tmp_path)
+        graph_db = _sync_graph(repo)
+        contract_path, slug_dir = _setup_slug(project_root, "demo", checks=[_default_check()])
+        old_pass_path = project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--old.yaml"
+        _write_fake_result(old_pass_path, contract_path, check_id="chk-a", run_id="old", outcome="PASS")
+        regression_path = project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--reg.yaml"
+        _write_fake_result(regression_path, contract_path, check_id="chk-a", run_id="reg", outcome="FAIL")
+        _write_flat(slug_dir / "EV-SRC-1.yaml", {
+            "id": "EV-SRC-1", "kind": "evidence", "evidence_kind": "source",
+            "source_ref": '"impl.py:5 def target_function"',
+        })
+        _write_flat(slug_dir / "EV-TEST-1.yaml", {
+            "id": "EV-TEST-1", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{old_pass_path.relative_to(project_root)}"',
+        })
+        _write_flat(slug_dir / "EV-TEST-2.yaml", {
+            "id": "EV-TEST-2", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{regression_path.relative_to(project_root)}"',
+        })
+        _write_flat(slug_dir / "CL-DEMO-001.yaml", {
+            "id": "CL-DEMO-001", "kind": "claim",
+            "supporting_evidence": ["EV-SRC-1", "EV-TEST-1"],
+            "contradicting_evidence": ["EV-TEST-2"],
+            "evidence_support_state": "conflicting",
+        })
+        sr.establish_source_baseline(project_root, "demo", "impl.py", oracle.sha256_file(repo / "impl.py"))
+        # The test now genuinely passes again (mutation reversed) --
+        # touch the file (so it's detected as "changed") without
+        # altering behaviour, then re-sync.
+        (repo / "impl.py").write_text(_IMPL_TEXT + "\n# reversed\n", encoding="utf-8")
+        graph_db = _sync_graph(repo)
+        source_result = sr.detect_source_changes(project_root, "demo", repo_root=repo, target_graph_db=graph_db)
+        assert any(f.path == "impl.py" for f in source_result.changed)
+
+        findings = sr.propose_reconciliation(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db, source_changes=source_result,
+        )
+        assert len(findings) == 1
+        assert findings[0].label == "re_confirmed"
+        assert findings[0].target_field == "supporting_evidence"
+        assert findings[0].claim_id == "CL-DEMO-001"
 
 
 class TestEndToEndReconciliation:

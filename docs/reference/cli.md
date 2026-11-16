@@ -161,7 +161,7 @@ Writes agent-authored relationship enrichment. See `docs/workflows/sync-and-enri
 ```
 codecompass knowledge render [SLUG]
 codecompass knowledge select-candidates SLUG [--dry-run]
-codecompass knowledge detect-changes SLUG --repo-root PATH [--probe-coverage] [--json]
+codecompass knowledge detect-changes SLUG --repo-root PATH [--probe-coverage] [--establish-baselines] [--json]
 codecompass knowledge verify-changes SLUG --repo-root PATH [--json]
 codecompass knowledge apply MANIFEST_PATH
 codecompass knowledge status [SLUG] [--strict]
@@ -187,7 +187,12 @@ subprocesses and writes zero files. `--probe-coverage` additionally
 runs `pytest --collect-only` for every such check — exactly one
 subprocess per check, still writing nothing — to confirm it now
 collects; this is not a security sandbox (collection executes
-`conftest.py`/module-level repository code). `verify-changes`
+`conftest.py`/module-level repository code). `--establish-baselines`
+is the one explicit, opt-in exception to "writes zero files" — it
+bootstraps a first-ever `source-baseline.toml` entry for every file
+just reported as new, never advancing an existing entry (that only
+ever happens after a real, successful `knowledge apply` of a
+`source_reconciliation` item). `verify-changes`
 explicitly executes the real checks a finding names (a full `pytest`
 run, not a collection probe), persists each fresh result under
 `planning/contracts/<slug>/results/` and `results/raw/` (the same
