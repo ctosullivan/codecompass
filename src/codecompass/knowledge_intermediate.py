@@ -2550,7 +2550,8 @@ def _recompute_evidence_support_state(
 
 
 def _apply_source_reconciliation(project_root: Path, slug: str, item: dict) -> ApplyOutcome:
-    """Phase 89 Stage 89A (`decisions/0096`, plan §4.4/§5.3) — the first
+    """Phase 89 Stage 89A (`decisions/0096`, plan §4.4/§5.3), corrected
+    by the Phase 89A corrective pass (`decisions/0097`) — the first
     mechanized Evidence-creation path this codebase has. A disclosed,
     narrowly-scoped deviation from this module's otherwise-universal
     "never mutate, always create a competing record" convention: this
@@ -2559,36 +2560,53 @@ def _apply_source_reconciliation(project_root: Path, slug: str, item: dict) -> A
     in place — `statement`/`derivation`/`timestamp`/every other field is
     never touched. Re-validates every cited fresh oracle result against
     live state before writing anything; never trusts the manifest's own
-    cached fields."""
+    cached fields.
+
+    Idempotent-retry recovery (defect C): checked *before* the
+    `base_claim_hash` race check, since this is the one apply path in
+    the module that mutates the exact record its own race check
+    guards — a crash after the Claim write below succeeds but before
+    the caller durably records `state="applied"` would otherwise make
+    a retry see its own prior write as a false concurrent-edit
+    conflict.
+    """
     record_id = item.get("record_id", "")
     sdir = slug_dir(project_root, slug)
     records = load_slug_records(sdir)
     claim = records.get(record_id)
     if claim is None:
         return ApplyOutcome(False, item, "Claim no longer exists")
-    live_hash = sha256_text(claim.path.read_text(encoding="utf-8"))
-    if live_hash != item.get("base_claim_hash"):
-        return ApplyOutcome(
-            False, item,
-            "apply-time race: the Claim changed since detection "
-            "(base_claim_hash no longer matches) — refusing to write; "
-            "re-run `knowledge detect-changes`/`verify-changes` and review again",
-        )
 
     contract_ids = item.get("contributing_contract_ids", [])
     check_ids = item.get("contributing_check_ids", [])
     run_ids = item.get("contributing_run_ids", [])
     labels = item.get("contributing_labels", [])
-    target_fields = item.get("contributing_target_fields", [])
+    cached_target_fields = item.get("contributing_target_fields", [])
     what_it_shows_list = item.get("contributing_what_it_shows", [])
     repo_revisions = item.get("contributing_repository_revisions", [])
     n = len(check_ids)
     results_dir = project_root / "planning" / "contracts" / slug / "results"
+    contract_path = project_root / "planning" / "contracts" / slug / "oracle-contract.yaml"
 
-    appended: list[tuple[str, str]] = []  # (evidence_id, target_field)
+    repo_root_str = item.get("repo_root", "")
+    if not repo_root_str or not Path(repo_root_str).is_dir():
+        return ApplyOutcome(
+            False, item,
+            "cannot re-validate against the target checkout: repo_root is missing or "
+            "no longer exists -- refusing to apply (fail-closed)",
+        )
+    repo_root = Path(repo_root_str)
+    try:
+        contract = _oracle.parse_oracle_contract(contract_path)
+    except (_oracle.OracleSchemaError, OSError) as exc:
+        return ApplyOutcome(False, item, f"live oracle contract failed to load: {exc}")
+
+    # --- Pass 1: re-validate every cited result and independently
+    # derive its target_field (defect B) -- read-only, no writes yet. ---
+    # Each entry: (result_path_rel, run_id, check_id, target_field)
+    resolved: list[tuple[str, str, str, str]] = []
     for i in range(n):
         contract_id, check_id, run_id = contract_ids[i], check_ids[i], run_ids[i]
-        target_field = target_fields[i]
         result_path = results_dir / f"{check_id}--{run_id}.yaml"
         if not result_path.is_file():
             return ApplyOutcome(False, item, f"cited result {result_path} no longer exists")
@@ -2603,6 +2621,89 @@ def _apply_source_reconciliation(project_root: Path, slug: str, item: dict) -> A
                 False, item,
                 f"cited result {result_path} identity no longer matches the manifest item",
             )
+        check = contract.check_by_id(check_id)
+        if check is None:
+            return ApplyOutcome(
+                False, item, f"check {check_id!r} no longer exists in the live contract"
+            )
+        # `result.raw_output_ref` is a durable, project-relative path
+        # (decisions/0096) -- resolved correctly only with cwd ==
+        # project_root, exactly like `source_reconciliation._chdir`'s
+        # own established scoped-chdir pattern.
+        previous_cwd = Path.cwd()
+        os.chdir(project_root)
+        try:
+            effective_outcome, reason = _oracle.evaluate_result_precedence(
+                result, contract, check, contract_path=contract_path, repo_root=repo_root,
+            )
+        finally:
+            os.chdir(previous_cwd)
+        if effective_outcome == "INVALID":
+            return ApplyOutcome(
+                False, item,
+                f"cited result for check {check_id!r} failed re-validation: {reason}",
+            )
+        target_field = (
+            "contradicting_evidence" if effective_outcome == "FAIL" else "supporting_evidence"
+        )
+        cached = cached_target_fields[i] if i < len(cached_target_fields) else None
+        if cached is not None and cached != target_field:
+            return ApplyOutcome(
+                False, item,
+                f"cited result for check {check_id!r} re-validates as {effective_outcome} but "
+                f"the manifest's own cached target field ({cached!r}) disagrees -- refusing a "
+                "stale or tampered reference",
+            )
+        resolved.append(
+            (str(result_path.relative_to(project_root)), run_id, check_id, target_field)
+        )
+
+    # --- Idempotent-retry recovery pre-check (defect C): is this
+    # item's entire effect already durably, correctly present? ---
+    already_ev: list[str | None] = [
+        _find_existing_evidence_for_run(
+            project_root, records, contract_ids[i], check_ids[i], run_ids[i]
+        )
+        for i in range(n)
+    ]
+    if n > 0 and all(ev is not None for ev in already_ev):
+        live_supporting = _extract_id_strings(claim.fields.get("supporting_evidence", ""))
+        live_contradicting = _extract_id_strings(claim.fields.get("contradicting_evidence", ""))
+        fully_reflected = True
+        for ev_id, (_rp, _ri, _ci, target_field) in zip(already_ev, resolved):
+            target_list = (
+                live_supporting if target_field == "supporting_evidence" else live_contradicting
+            )
+            if ev_id not in target_list:
+                fully_reflected = False
+                break
+        if fully_reflected:
+            recomputed_state = _recompute_evidence_support_state(
+                records, live_supporting, live_contradicting
+            )
+            if recomputed_state == claim.fields.get("evidence_support_state"):
+                return ApplyOutcome(
+                    True, item,
+                    "already applied -- recovered from an interrupted retry (Evidence and "
+                    "Claim already reflect this exact approved item)",
+                    record_id,
+                )
+            # Internally inconsistent (recomputing disagrees with the
+            # Claim's own live state) -- never treat this as a safe
+            # recovery; fall through to the normal race check below.
+
+    live_hash = sha256_text(claim.path.read_text(encoding="utf-8"))
+    if live_hash != item.get("base_claim_hash"):
+        return ApplyOutcome(
+            False, item,
+            "apply-time race: the Claim changed since detection "
+            "(base_claim_hash no longer matches) — refusing to write; "
+            "re-run `knowledge detect-changes`/`verify-changes` and review again",
+        )
+
+    appended: list[tuple[str, str]] = []  # (evidence_id, target_field)
+    for i, (result_rel_path, run_id, check_id, target_field) in enumerate(resolved):
+        contract_id = contract_ids[i]
         existing_ev = _find_existing_evidence_for_run(
             project_root, records, contract_id, check_id, run_id
         )
@@ -2623,7 +2724,7 @@ def _apply_source_reconciliation(project_root: Path, slug: str, item: dict) -> A
                 "observations": "null",
                 "source_ref": "null",
                 "doc_ref": "null",
-                "test_ref": f'"{result_path.relative_to(project_root)}"',
+                "test_ref": f'"{result_rel_path}"',
                 "repository_revision": f'"{repo_revision}"',
                 "status": "current",
             }

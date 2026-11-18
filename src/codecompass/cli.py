@@ -1591,15 +1591,26 @@ def knowledge_apply_manifest(
     result = knowledge_intermediate.apply_manifest(project_root, manifest_path)
     for outcome in result.applied:
         console.print(f"[green]applied[/green]: {outcome.reason}")
-        if outcome.item.get("kind") == "source_reconciliation" and manifest_slug:
-            # Phase 89 (decisions/0096): baseline advancement only ever
-            # happens after a real, successful apply -- never on
-            # detection alone (CLAUDE.md §1 L-087).
-            source_reconciliation.advance_baselines_for_applied_item(
-                project_root, manifest_slug, outcome.item
-            )
     for outcome in result.skipped:
         console.print(f"[yellow]skipped[/yellow]: {outcome.reason}")
+    if manifest_slug:
+        # Phase 89A corrective pass (defect C, scenario 4): a full,
+        # idempotent pass over *every* item in the manifest's own
+        # current on-disk state (re-read fresh -- apply_manifest
+        # already rewrote it), not just the items this one call
+        # happened to apply -- so a crash between apply_manifest
+        # returning and baseline advancement completing is always
+        # safe to retry by simply re-running this same command.
+        # Baseline advancement only ever happens for an item already
+        # `state == "applied"` -- never on detection alone (CLAUDE.md
+        # §1 L-087).
+        data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest_items = data.get("items", [])
+        for item in manifest_items:
+            if item.get("kind") == "source_reconciliation" and item.get("state") == "applied":
+                source_reconciliation.advance_baselines_for_applied_item(
+                    project_root, manifest_slug, item, manifest_items=manifest_items,
+                )
     if not result.applied and not result.skipped:
         console.print("[yellow]manifest had no items[/yellow]")
 
@@ -1731,13 +1742,15 @@ def knowledge_verify_changes(
     coverable_result = source_reconciliation.detect_newly_coverable_checks(
         project_root, slug, repo_root=repo_root, probe=True,
     )
-    findings = source_reconciliation.propose_reconciliation(
+    proposal = source_reconciliation.propose_reconciliation(
         project_root, slug, repo_root=repo_root,
         source_changes=source_result, newly_coverable=coverable_result.coverable,
     )
+    findings = proposal.findings
     manifest_path = source_reconciliation.write_source_reconciliation_manifest(
         project_root, slug, findings,
         repo_root=repo_root, target_graph_db=repo_root / "context-graph.db",
+        baseline_eligible_test_input_paths=proposal.baseline_eligible_test_input_paths,
     )
     if json_output:
         console.print_json(data={

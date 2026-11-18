@@ -82,17 +82,52 @@ def _load_file_hash(graph_db: Path, path: str) -> str | None:
     return row[0] if row else None
 
 
-def _repo_revision(repo_root: Path) -> str:
+def _repo_revision(repo_root: Path, *, fresh_result=None) -> str:
+    """`git rev-parse HEAD` alone silently implies a clean commit was
+    verified even when the working tree is dirty (Phase 89A corrective
+    pass, bounded check 2) — a real risk here specifically, since
+    reconciling a source/test change is routinely done against an
+    *uncommitted* edit. When `git status --porcelain` reports any
+    local modification, the returned string is marked `+dirty` and, if
+    `fresh_result` (the real `OracleResult` this revision string is
+    being recorded for) is given, its own `tested_subject_digest`/
+    `test_input_digest` — genuine content-digest provenance, never
+    derived from git — are embedded directly, so a reader can always
+    tell the *actual* verified tree state apart from the named commit.
+    A clean tree still returns the bare commit hash, unchanged."""
     try:
-        proc = subprocess.run(
+        rev_proc = subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=repo_root,
             capture_output=True, text=True, timeout=10,
         )
+        status_proc = subprocess.run(
+            ["git", "status", "--porcelain"], cwd=repo_root,
+            capture_output=True, text=True, timeout=10,
+        )
     except (OSError, subprocess.SubprocessError):
+        if fresh_result is not None:
+            return (
+                f"working tree (tested_subject_digest={fresh_result.tested_subject_digest}, "
+                f"test_input_digest={fresh_result.test_input_digest})"
+            )
         return "working tree"
-    if proc.returncode != 0:
+    if rev_proc.returncode != 0:
+        if fresh_result is not None:
+            return (
+                f"working tree (tested_subject_digest={fresh_result.tested_subject_digest}, "
+                f"test_input_digest={fresh_result.test_input_digest})"
+            )
         return "working tree"
-    return proc.stdout.strip()
+    head = rev_proc.stdout.strip()
+    dirty = status_proc.returncode == 0 and bool(status_proc.stdout.strip())
+    if not dirty:
+        return head
+    if fresh_result is not None:
+        return (
+            f"{head}+dirty (tested_subject_digest={fresh_result.tested_subject_digest}, "
+            f"test_input_digest={fresh_result.test_input_digest})"
+        )
+    return f"{head}+dirty"
 
 
 # ---------------------------------------------------------------------------
@@ -230,14 +265,37 @@ def establish_baselines_for_new_files(
     effect of detection itself (`CLAUDE.md` §1 L-087); an explicit,
     separate, opt-in call (`detect-changes --establish-baselines`, §4.10)
     a human runs once, deliberately, the first time a slug's own source/
-    test tracking begins. Returns the paths actually established."""
+    test tracking begins. Returns the paths actually established.
+
+    A non-Python oracle input (a fixture/data file, e.g. `tests/
+    fixtures/filtered.journal`) is never indexed by the target's own
+    symbol graph at all — for exactly those, already-tracked-as-
+    `test_input_change` paths (never a `symbol_change`/source path,
+    which genuinely needs graph indexing), fall back to a direct
+    content hash rather than silently refusing to ever establish a
+    baseline for a legitimate, contract-declared input (Phase 89A
+    corrective pass, bounded check 1)."""
     if target_graph_db is None:
         target_graph_db = repo_root / "context-graph.db"
+    sdir = _ki.slug_dir(project_root, slug)
+    records = _ki.load_slug_records(sdir)
+    contract_path = project_root / "planning" / "contracts" / slug / "oracle-contract.yaml"
+    contract = _oracle.parse_oracle_contract(contract_path) if contract_path.is_file() else None
+    test_input_paths = (
+        set(_tracked_test_input_paths(records, contract, project_root)) if contract else set()
+    )
     established: list[str] = []
     for path in result.new_files:
         content_hash = _load_file_hash(target_graph_db, path)
         if content_hash is None:
-            continue  # not indexed -- never bootstrap a baseline from an unverifiable hash
+            if path not in test_input_paths:
+                # not indexed, not a tracked test input -- never
+                # bootstrap from an unverifiable hash
+                continue
+            live_path = repo_root / path
+            if not live_path.is_file():
+                continue
+            content_hash = _oracle.sha256_file(live_path)
         establish_source_baseline(project_root, slug, path, content_hash)
         established.append(path)
     return established
@@ -290,20 +348,30 @@ def _tracked_source_paths(records) -> set[str]:
 
 def _tracked_test_input_paths(
     records, contract, knowledge_root: Path
-) -> dict[str, str]:
-    """`{test_input_path: check_id}` for every `required` or non-required
-    check in the contract that already has at least one citing
-    `test`-kind Evidence record (detector (a)'s own exclusive scope,
-    §0.2.B) — a check with zero citing Evidence is detector (b)'s own
-    scope and is never tracked here."""
+) -> dict[str, list[str]]:
+    """`{test_input_path: [check_id, ...]}` for every `required` or
+    non-required check in the contract that already has at least one
+    citing `test`-kind Evidence record (detector (a)'s own exclusive
+    scope, §0.2.B) — a check with zero citing Evidence is detector
+    (b)'s own scope and is never tracked here.
+
+    One-to-many by construction (Phase 89A corrective pass, defect A):
+    the real Ledgerkit `balance-from-spec` contract already has
+    multiple covered checks sharing both `tests/test_reports.py` and
+    `tests/fixtures/filtered.journal` — a single-valued mapping here
+    would silently drop every check but the last one `contract.checks`
+    happens to iterate to for a shared path, permanently hiding its own
+    drift from `detect_source_changes`."""
     evidence_check_ids = _test_evidence_check_id_map(records, contract, knowledge_root)
     covered_check_ids = set(evidence_check_ids.values())
-    mapping: dict[str, str] = {}
+    mapping: dict[str, list[str]] = {}
     for check in contract.checks:
         if check.check_id not in covered_check_ids:
             continue
         for test_input_path in check.test_input_paths:
-            mapping[test_input_path] = check.check_id
+            mapping.setdefault(test_input_path, []).append(check.check_id)
+    for path, check_ids in mapping.items():
+        mapping[path] = sorted(set(check_ids))
     return mapping
 
 
@@ -323,7 +391,7 @@ def detect_source_changes(
     contract = _oracle.parse_oracle_contract(contract_path) if contract_path.is_file() else None
 
     tracked: dict[str, str] = {p: "symbol_change" for p in _tracked_source_paths(records)}
-    test_input_check: dict[str, str] = {}
+    test_input_check: dict[str, list[str]] = {}
     if contract is not None:
         test_input_check = _tracked_test_input_paths(records, contract, project_root)
         for p in test_input_check:
@@ -345,15 +413,24 @@ def detect_source_changes(
         graph_hash = _load_file_hash(target_graph_db, path)
         live_hash = _oracle.sha256_file(live_path)
         if graph_hash is None:
-            # Not indexed at all -- never silently treated as "unchanged";
-            # excluded from baseline comparison exactly like a stale index.
-            result.stale_graph_index.append(
-                StaleGraphIndexFinding(
-                    path, f"{path!r} has no source_files row in {target_graph_db}"
+            if resolution == "test_input_change":
+                # A non-Python oracle input (a fixture/data file) is
+                # never expected to be indexed by the target's own
+                # symbol graph at all -- "not indexed" is never
+                # "stale" here; track it directly by content hash
+                # instead (Phase 89A corrective pass, bounded check 1).
+                # `symbol_change` keeps the strict stale_graph_index
+                # treatment below: that pathway genuinely needs the
+                # graph for `classify_symbol` later.
+                effective_hash = live_hash
+            else:
+                result.stale_graph_index.append(
+                    StaleGraphIndexFinding(
+                        path, f"{path!r} has no source_files row in {target_graph_db}"
+                    )
                 )
-            )
-            continue
-        if graph_hash != live_hash:
+                continue
+        elif graph_hash != live_hash:
             result.stale_graph_index.append(
                 StaleGraphIndexFinding(
                     path,
@@ -363,23 +440,25 @@ def detect_source_changes(
                 )
             )
             continue
+        else:
+            effective_hash = graph_hash
         baseline_entry = baseline.get(path)
         if baseline_entry is None:
             result.new_files.append(path)
             continue
-        if baseline_entry.get("content_hash") == graph_hash:
+        if baseline_entry.get("content_hash") == effective_hash:
             continue  # unchanged
         if resolution == "symbol_change":
             result.changed.append(SourceChangeFinding(path=path, resolution="symbol_change"))
         else:
-            check_id = test_input_check[path]
-            claim_ids = _claims_bridged_by_check_id(records, check_id, evidence_check_ids)
-            result.changed.append(
-                SourceChangeFinding(
-                    path=path, resolution="test_input_change",
-                    check_id=check_id, claim_ids=claim_ids,
+            for check_id in sorted(test_input_check[path]):
+                claim_ids = _claims_bridged_by_check_id(records, check_id, evidence_check_ids)
+                result.changed.append(
+                    SourceChangeFinding(
+                        path=path, resolution="test_input_change",
+                        check_id=check_id, claim_ids=claim_ids,
+                    )
                 )
-            )
     return result
 
 
@@ -499,6 +578,22 @@ class ContributingFinding:
     source_path: str | None = None  # the tracked file whose drift triggered this
     # finding (detector (a) only -- symbol_change/test_input_change); None for
     # detector (b) (newly_coverable), which has no file-baseline concept at all.
+    resolution: str = ""  # "symbol_change" | "test_input_change" | "" (detector (b))
+
+
+@dataclass
+class ReconciliationProposal:
+    """`propose_reconciliation`'s own return type (Phase 89A corrective
+    pass, defect A) — carries both the contributing findings and, for
+    `test_input_change` findings specifically, which shared test-input
+    paths are actually eligible to have their baseline advanced this
+    round: a path is eligible only once *every* check sharing it
+    (`required_by_path`, derived from every `test_input_change` finding
+    `detect_source_changes` reported) was successfully, validly
+    re-verified this run (`accounted_by_path`) -- never merely because
+    *one* of several affected checks happened to be reconciled."""
+    findings: list[ContributingFinding] = field(default_factory=list)
+    baseline_eligible_test_input_paths: frozenset[str] = frozenset()
 
 
 def _durable_raw_output_dir(slug: str) -> Path:
@@ -561,12 +656,13 @@ def propose_reconciliation(
     repo_root: Path, target_graph_db: Path | None = None,
     source_changes: DetectSourceChangesResult | None = None,
     newly_coverable: list[NewlyCoverableCheck] | None = None,
-) -> list[ContributingFinding]:
+) -> ReconciliationProposal:
     """Executes real verification for every finding `detect_source_
     changes`/`detect_newly_coverable_checks` reported, persists and
     round-trip-verifies every fresh `OracleResult` (durable convention,
     `decisions/0096`), and returns the per-Claim contributing findings
-    ready for `write_source_reconciliation_manifest`. Called only from
+    plus shared-baseline eligibility (`ReconciliationProposal`) ready
+    for `write_source_reconciliation_manifest`. Called only from
     `verify-changes` (§4.10) -- never `detect-changes`."""
     if target_graph_db is None:
         target_graph_db = repo_root / "context-graph.db"
@@ -660,25 +756,48 @@ def propose_reconciliation(
                                 f"{'passes' if fresh_outcome == 'PASS' else 'fails'} "
                                 f"({label})."
                             ),
-                            repository_revision=_repo_revision(repo_root),
+                            repository_revision=_repo_revision(
+                                repo_root, fresh_result=fresh_result,
+                            ),
                             source_path=range_report["path"],
+                            resolution="symbol_change",
                         ))
 
     # --- test_input_change findings: direct execution, no symbol. ---
-    for f in (source_changes.changed if source_changes else []):
-        if f.resolution != "test_input_change":
-            continue
+    # A single check_id can be named by more than one shared test-input
+    # finding in this same run (e.g. a check whose own `test_input_paths`
+    # lists two files that both changed); execute it at most once per
+    # call and reuse the result for every finding that names it --
+    # deduplicating execution, never check identity or per-path
+    # attribution (Phase 89A corrective pass, defect A).
+    test_input_findings = [
+        f for f in (source_changes.changed if source_changes else [])
+        if f.resolution == "test_input_change"
+    ]
+    required_by_path: dict[str, set[str]] = {}
+    for f in test_input_findings:
+        if f.check_id:
+            required_by_path.setdefault(f.path, set()).add(f.check_id)
+    accounted_by_path: dict[str, set[str]] = {}
+    executed_check_results: dict[str, tuple[object, bool]] = {}
+
+    for f in test_input_findings:
         check = contract.check_by_id(f.check_id)
         if check is None or not f.claim_ids:
             continue
-        with _chdir(project_root):
-            fresh_result = _oracle.evaluate_check(
-                contract, check, contract_path=contract_path, repo_root=repo_root,
-                raw_output_dir=_durable_raw_output_dir(slug),
-            )
-        _, ok, _reason = _persist_and_verify(project_root, slug, fresh_result)
+        if f.check_id in executed_check_results:
+            fresh_result, ok = executed_check_results[f.check_id]
+        else:
+            with _chdir(project_root):
+                fresh_result = _oracle.evaluate_check(
+                    contract, check, contract_path=contract_path, repo_root=repo_root,
+                    raw_output_dir=_durable_raw_output_dir(slug),
+                )
+            _, ok, _reason = _persist_and_verify(project_root, slug, fresh_result)
+            executed_check_results[f.check_id] = (fresh_result, ok)
         if not ok or fresh_result.outcome == "INVALID":
             continue
+        accounted_by_path.setdefault(f.path, set()).add(f.check_id)
         label = _label_for(historical_results, f.check_id, fresh_result.outcome)
         target_field = (
             "contradicting_evidence" if fresh_result.outcome == "FAIL" else "supporting_evidence"
@@ -699,9 +818,15 @@ def propose_reconciliation(
                     f"triggered by a change to its own test input, "
                     f"{'passes' if fresh_result.outcome == 'PASS' else 'fails'} ({label})."
                 ),
-                repository_revision=_repo_revision(repo_root),
+                repository_revision=_repo_revision(repo_root, fresh_result=fresh_result),
                 source_path=f.path,
+                resolution="test_input_change",
             ))
+
+    baseline_eligible_test_input_paths = frozenset(
+        p for p, required in required_by_path.items()
+        if required <= accounted_by_path.get(p, set())
+    )
 
     # --- (b) newly-coverable findings: direct execution, no symbol. ---
     for nc in (newly_coverable or []):
@@ -729,10 +854,12 @@ def propose_reconciliation(
                 f"{nc.check_id!r} {'passes' if fresh_result.outcome == 'PASS' else 'fails'} "
                 f"({label})."
             ),
-            repository_revision=_repo_revision(repo_root),
+            repository_revision=_repo_revision(repo_root, fresh_result=fresh_result),
         ))
 
-    return out
+    return ReconciliationProposal(
+        findings=out, baseline_eligible_test_input_paths=baseline_eligible_test_input_paths,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -744,6 +871,7 @@ def propose_reconciliation(
 def write_source_reconciliation_manifest(
     project_root: Path, slug: str, findings: list[ContributingFinding],
     *, repo_root: Path | None = None, target_graph_db: Path | None = None,
+    baseline_eligible_test_input_paths: frozenset[str] | None = None,
 ) -> Path | None:
     """One manifest item **per Claim** (never per-finding, §4.8) —
     every contributing finding against the same Claim in one run is
@@ -753,14 +881,25 @@ def write_source_reconciliation_manifest(
 
     `repo_root`/`target_graph_db`, when given, let this function also
     record, per item, the distinct tracked file(s) (and their current
-    graph `content_hash`) whose drift produced its own contributing
-    findings (`ContributingFinding.source_path`, detector (a) only) —
+    content hash) whose drift produced its own contributing findings
+    (`ContributingFinding.source_path`, detector (a) only) —
     `advance_baselines_for_applied_item` reads these back, after a
     real, successful `apply`, to advance `source-baseline.toml` for
     exactly the files this item's own acceptance resolved (`CLAUDE.md`
-    §1 L-087: a baseline never advances on detection alone)."""
+    §1 L-087: a baseline never advances on detection alone). A `path`
+    not indexed by `target_graph_db` (a non-Python fixture) falls back
+    to a direct content hash of the live file, mirroring `detect_
+    source_changes`'s own fallback (bounded check 1).
+
+    `baseline_eligible_test_input_paths` (from `propose_reconciliation`,
+    defect A) gates a shared `test_input_change` path out of **every**
+    item's `contributing_source_paths` this round unless *every* check
+    that shares it was successfully, validly re-verified -- a
+    `symbol_change`/detector-(b) path is never gated (unaffected by
+    this parameter)."""
     if not findings:
         return None
+    eligible_paths = baseline_eligible_test_input_paths or frozenset()
     by_claim: dict[str, list[ContributingFinding]] = {}
     for f in findings:
         by_claim.setdefault(f.claim_id, []).append(f)
@@ -780,11 +919,21 @@ def write_source_reconciliation_manifest(
         if claim is None:
             continue
         base_hash = _ki.sha256_text(claim.path.read_text(encoding="utf-8"))
-        touched_paths = sorted({f.source_path for f in claim_findings if f.source_path})
+        touched_paths = sorted({
+            f.source_path for f in claim_findings
+            if f.source_path and (
+                f.resolution != "test_input_change" or f.source_path in eligible_paths
+            )
+        })
         touched_hashes = []
         if target_graph_db is not None:
             for p in touched_paths:
-                touched_hashes.append(_load_file_hash(target_graph_db, p) or "")
+                h = _load_file_hash(target_graph_db, p)
+                if h is None and repo_root is not None:
+                    live_p = repo_root / p
+                    if live_p.is_file():
+                        h = _oracle.sha256_file(live_p)
+                touched_hashes.append(h or "")
         data["items"].append({
             "kind": "source_reconciliation",
             "record_id": claim_id,
@@ -810,18 +959,41 @@ def write_source_reconciliation_manifest(
     return manifest_path
 
 
-def advance_baselines_for_applied_item(project_root: Path, slug: str, item: dict) -> None:
-    """Called by the CLI (`cli.py::knowledge_apply_manifest`) only after
-    `apply_manifest` itself reports a real, successful write for this
-    exact `source_reconciliation` item — never automatically, never on
-    detection alone (`CLAUDE.md` §1 L-087). Advances `source-
-    baseline.toml` for exactly the tracked file(s) this item's own
-    acceptance resolved, using the graph `content_hash` recorded on the
+def advance_baselines_for_applied_item(
+    project_root: Path, slug: str, item: dict, *, manifest_items: list[dict],
+) -> None:
+    """Called by the CLI (`cli.py::knowledge_apply_manifest`) only for
+    an item `apply_manifest` reports as `state == "applied"` — never
+    automatically, never on detection alone (`CLAUDE.md` §1 L-087).
+    Advances `source-baseline.toml` for the tracked file(s) this item's
+    own acceptance resolved, using the content hash recorded on the
     item at `verify-changes` time (never re-derived from a possibly
-    different, later live state)."""
+    different, later live state) -- **except** for a path shared with
+    a sibling item (`manifest_items`, every item in the same manifest)
+    that has not itself reached `state == "applied"` yet: a path's
+    baseline only ever advances once *every* item citing it has been
+    applied, so a still-pending or rejected sibling check can never be
+    silently waived just because another check sharing the same file
+    was resolved (Phase 89A corrective pass, defect A).
+
+    `manifest_items` is required, not optional, so this cross-item
+    guard can never be silently skipped by a caller that forgets to
+    pass it. Required to be **idempotent**: calling this again for an
+    item already `state == "applied"` is a harmless no-op (`establish_
+    source_baseline` unconditionally overwrites with the same value),
+    which is exactly what makes the CLI's own full, repeated pass over
+    every already-applied item safe to retry after an interruption
+    between a successful `apply_manifest` and this function completing
+    (defect C, scenario 4)."""
     paths = item.get("contributing_source_paths", [])
     hashes = item.get("contributing_source_hashes", [])
     for path, content_hash in zip(paths, hashes):
         if not content_hash:
             continue
+        siblings = [
+            it for it in manifest_items
+            if path in it.get("contributing_source_paths", [])
+        ]
+        if not all(it.get("state") == "applied" for it in siblings):
+            continue  # at least one check sharing this file is still unresolved
         advance_source_baseline_after_apply(project_root, slug, path, content_hash)

@@ -63,6 +63,7 @@ def _write_graph_db(
 _IMPL_TEXT = "def helper():\n    return 1\n\n\ndef target_function():\n    return 2\n"
 _TEST_TEXT_PASS = "def test_ok():\n    assert True\n"
 _TEST_TEXT_FAIL = "def test_ok():\n    assert False\n"
+_TEST_TEXT_TWO = "def test_ok():\n    assert True\n\n\ndef test_ok_2():\n    assert True\n"
 
 
 def _build_repo(tmp_path: Path, name: str = "target-repo", *, impl_text: str = _IMPL_TEXT,
@@ -142,16 +143,36 @@ def _bridge_evidence(slug_dir: Path, contract_path: Path, *, check_id: str, resu
 
 
 def _write_fake_result(path: Path, contract_path: Path, *, check_id: str, outcome: str = "PASS",
-                        run_id: str = "r1") -> None:
+                        run_id: str = "r1", scope: str = "scope A",
+                        repo_root: Path | None = None,
+                        tested_paths: list[str] | None = None,
+                        test_input_paths: list[str] | None = None) -> None:
+    """When `repo_root` is given, `tested_subject_digest`/`test_input_digest`
+    are REAL recomputed digests against that checkout (defaulting to
+    `tested_paths=["impl.py"]`/`test_input_paths=["tests/test_impl.py"]`,
+    matching `_build_repo`/`_write_contract`'s own defaults) -- required
+    so `oracle.evaluate_result_precedence(..., repo_root=repo_root)`
+    (the apply-time re-validation Phase 89A's corrective pass adds,
+    defect B) genuinely resolves PASS/FAIL rather than always INVALID.
+    Without `repo_root`, the digests stay fixed placeholder strings, for
+    the many tests that never exercise that apply-time re-validation."""
     path.parent.mkdir(parents=True, exist_ok=True)
     raw_path = path.parent / f"{check_id}-{run_id}-raw.txt"
     raw_path.write_text("ok", encoding="utf-8")
+    if repo_root is not None:
+        tested_subject_digest = oracle.compute_tree_digest(repo_root, tested_paths or ["impl.py"])
+        test_input_digest = oracle.compute_tree_digest(
+            repo_root, test_input_paths or ["tests/test_impl.py"]
+        )
+    else:
+        tested_subject_digest = "d" * 64
+        test_input_digest = "i" * 64
     result = oracle.OracleResult(
         schema_version=1, run_id=run_id, contract_id="REQ-X-001", check_id=check_id,
-        scope="scope A", baseline_id=None, tested_subject_digest="d" * 64,
+        scope=scope, baseline_id=None, tested_subject_digest=tested_subject_digest,
         oracle_contract_id="REQ-X-001",
         oracle_contract_content_hash=oracle.sha256_file(contract_path),
-        test_input_digest="i" * 64, raw_output_ref=str(raw_path),
+        test_input_digest=test_input_digest, raw_output_ref=str(raw_path),
         raw_output_sha256=oracle.sha256_file(raw_path), outcome=outcome,
         executed_at="2026-10-28T00:00:00Z", execution_provider="pytest",
         environment_descriptor=None, invalid_reason=None,
@@ -762,10 +783,11 @@ class TestReconfirmationAfterMutationReversal:
         )
         assert any(f.path == "impl.py" for f in source_result.changed)
 
-        findings = sr.propose_reconciliation(
+        proposal = sr.propose_reconciliation(
             project_root, "demo", repo_root=repo, target_graph_db=graph_db,
             source_changes=source_result,
         )
+        findings = proposal.findings
         assert len(findings) == 1
         assert findings[0].label == "re_confirmed"
         assert findings[0].target_field == "supporting_evidence"
@@ -798,13 +820,16 @@ class TestEndToEndReconciliation:
             project_root, "demo", repo_root=repo, probe=True
         )
         assert coverable.coverable
-        findings = sr.propose_reconciliation(
+        proposal = sr.propose_reconciliation(
             project_root, "demo", repo_root=repo, newly_coverable=coverable.coverable,
         )
+        findings = proposal.findings
         assert len(findings) == 1
         assert findings[0].label == "newly_covered"
         assert findings[0].target_field == "supporting_evidence"
-        manifest_path = sr.write_source_reconciliation_manifest(project_root, "demo", findings)
+        manifest_path = sr.write_source_reconciliation_manifest(
+            project_root, "demo", findings, repo_root=repo,
+        )
         assert manifest_path is not None
 
         import tomllib
@@ -832,10 +857,13 @@ class TestEndToEndReconciliation:
         coverable = sr.detect_newly_coverable_checks(
             project_root, "demo", repo_root=repo, probe=True
         )
-        findings = sr.propose_reconciliation(
+        proposal = sr.propose_reconciliation(
             project_root, "demo", repo_root=repo, newly_coverable=coverable.coverable,
         )
-        manifest_path = sr.write_source_reconciliation_manifest(project_root, "demo", findings)
+        findings = proposal.findings
+        manifest_path = sr.write_source_reconciliation_manifest(
+            project_root, "demo", findings, repo_root=repo,
+        )
         import tomllib
         data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
         data["items"][0]["decision"] = "accept"
@@ -863,10 +891,13 @@ class TestEndToEndReconciliation:
         coverable = sr.detect_newly_coverable_checks(
             project_root, "demo", repo_root=repo, probe=True
         )
-        findings = sr.propose_reconciliation(
+        proposal = sr.propose_reconciliation(
             project_root, "demo", repo_root=repo, newly_coverable=coverable.coverable,
         )
-        manifest_path = sr.write_source_reconciliation_manifest(project_root, "demo", findings)
+        findings = proposal.findings
+        manifest_path = sr.write_source_reconciliation_manifest(
+            project_root, "demo", findings, repo_root=repo,
+        )
         import tomllib
         data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
         data["items"][0]["decision"] = "accept"
@@ -890,6 +921,7 @@ class TestEndToEndReconciliation:
         reset to "supported") when a later batch adds only supporting
         evidence."""
         project_root = tmp_path / "knowledge-root"
+        repo = _build_repo(tmp_path)
         contract_path, slug_dir = _setup_slug(project_root, "demo", checks=[_default_check()])
         _write_flat(slug_dir / "EV-DEMO-099.yaml", {
             "id": "EV-DEMO-099", "kind": "evidence",
@@ -904,7 +936,8 @@ class TestEndToEndReconciliation:
             project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--r2.yaml"
         )
         _write_fake_result(
-            result_path, contract_path, check_id="chk-a", run_id="r2", outcome="PASS"
+            result_path, contract_path, check_id="chk-a", run_id="r2", outcome="PASS",
+            repo_root=repo,
         )
         from codecompass.knowledge_intermediate import _apply_source_reconciliation
 
@@ -913,6 +946,7 @@ class TestEndToEndReconciliation:
             "base_claim_hash": ki.sha256_text(
                 (slug_dir / "CL-DEMO-001.yaml").read_text(encoding="utf-8")
             ),
+            "repo_root": str(repo),
             "contributing_contract_ids": ["REQ-X-001"], "contributing_check_ids": ["chk-a"],
             "contributing_run_ids": ["r2"], "contributing_labels": ["re_confirmed"],
             "contributing_target_fields": ["supporting_evidence"],
@@ -1045,3 +1079,676 @@ class TestCliBoundaries:
         assert "applied" in res.stdout
         records = ki.load_slug_records(project_root / "planning" / "knowledge" / "demo")
         assert records["CL-DEMO-001"].fields["evidence_support_state"] == "supported"
+
+
+# ---------------------------------------------------------------------------
+# Phase 89A corrective pass (decisions/0097) -- defect A: a shared
+# test-input path must identify and independently attribute EVERY
+# covered check sharing it, never silently drop all but one.
+# ---------------------------------------------------------------------------
+
+
+class TestSharedTestInputMultiCheck:
+    def _setup(self, tmp_path):
+        project_root = tmp_path / "knowledge-root"
+        repo = _build_repo(tmp_path, test_text=_TEST_TEXT_TWO)
+        checks = [
+            _default_check(check_id="chk-a", scope="scope A",
+                            check_reference="tests/test_impl.py::test_ok"),
+            _default_check(check_id="chk-b", scope="scope B",
+                            check_reference="tests/test_impl.py::test_ok_2"),
+        ]
+        contract_path, slug_dir = _setup_slug(project_root, "demo", checks=checks)
+        results_dir = project_root / "planning" / "contracts" / "demo" / "results"
+        result_a = results_dir / "chk-a--r1.yaml"
+        result_b = results_dir / "chk-b--r1.yaml"
+        _write_fake_result(
+            result_a, contract_path, check_id="chk-a", scope="scope A", repo_root=repo
+        )
+        _write_fake_result(
+            result_b, contract_path, check_id="chk-b", scope="scope B", repo_root=repo
+        )
+        _write_flat(slug_dir / "EV-TEST-001.yaml", {
+            "id": "EV-TEST-001", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{result_a.relative_to(project_root)}"',
+        })
+        _write_flat(slug_dir / "EV-TEST-002.yaml", {
+            "id": "EV-TEST-002", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{result_b.relative_to(project_root)}"',
+        })
+        _write_flat(slug_dir / "CL-DEMO-001.yaml", {
+            "id": "CL-DEMO-001", "kind": "claim",
+            "supporting_evidence": ["EV-TEST-001"], "contradicting_evidence": [],
+            "evidence_support_state": "partially_supported",
+        })
+        _write_flat(slug_dir / "CL-DEMO-002.yaml", {
+            "id": "CL-DEMO-002", "kind": "claim",
+            "supporting_evidence": ["EV-TEST-002"], "contradicting_evidence": [],
+            "evidence_support_state": "partially_supported",
+        })
+        original_hash = oracle.sha256_file(repo / "tests" / "test_impl.py")
+        sr.establish_source_baseline(project_root, "demo", "tests/test_impl.py", original_hash)
+        graph_db = _sync_graph(repo)
+        return project_root, repo, contract_path, slug_dir, graph_db, original_hash
+
+    def test_shared_test_input_change_detected_for_every_covered_check(self, tmp_path):
+        """Core defect-A regression: both checks sharing `tests/
+        test_impl.py` must be reported as independent findings, each
+        correctly attributed to its own bridged Claim -- the original
+        bug silently dropped all but the last check iterated."""
+        project_root, repo, _cp, _sd, graph_db, _oh = self._setup(tmp_path)
+        (repo / "tests" / "test_impl.py").write_text(
+            _TEST_TEXT_TWO + "\n# edit\n", encoding="utf-8"
+        )
+        graph_db = _sync_graph(repo)
+        result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
+        changed = [f for f in result.changed if f.resolution == "test_input_change"]
+        assert {f.check_id for f in changed} == {"chk-a", "chk-b"}
+        assert all(f.path == "tests/test_impl.py" for f in changed)
+        by_check = {f.check_id: f for f in changed}
+        assert by_check["chk-a"].claim_ids == ["CL-DEMO-001"]
+        assert by_check["chk-b"].claim_ids == ["CL-DEMO-002"]
+
+    def test_repeated_detection_is_deterministic_and_non_duplicating(self, tmp_path):
+        """Calling `detect_source_changes` twice in a row (no further
+        change in between) is purely observational and reports exactly
+        the same two findings both times -- no accumulation, no
+        duplication, no side effect."""
+        project_root, repo, _cp, _sd, graph_db, _oh = self._setup(tmp_path)
+        (repo / "tests" / "test_impl.py").write_text(
+            _TEST_TEXT_TWO + "\n# edit\n", encoding="utf-8"
+        )
+        graph_db = _sync_graph(repo)
+        first = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
+        second = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
+        key = lambda f: (f.path, f.resolution, f.check_id, tuple(f.claim_ids))  # noqa: E731
+        assert sorted(map(key, first.changed)) == sorted(map(key, second.changed))
+        assert len(first.changed) == 2
+
+    def test_unresolvable_sibling_check_blocks_shared_baseline_eligibility(self, tmp_path):
+        """A path required by two checks is eligible for baseline
+        advancement only once BOTH are successfully, validly accounted
+        for -- a sibling check that cannot even be resolved against the
+        live contract must never let the other's own success advance
+        the shared baseline."""
+        project_root, repo, _cp, _sd, graph_db, _oh = self._setup(tmp_path)
+        source_result = sr.DetectSourceChangesResult(changed=[
+            sr.SourceChangeFinding(
+                path="tests/test_impl.py", resolution="test_input_change",
+                check_id="chk-a", claim_ids=["CL-DEMO-001"],
+            ),
+            sr.SourceChangeFinding(
+                path="tests/test_impl.py", resolution="test_input_change",
+                check_id="chk-ghost", claim_ids=["CL-DEMO-002"],
+            ),
+        ])
+        proposal = sr.propose_reconciliation(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db,
+            source_changes=source_result,
+        )
+        assert any(f.check_id == "chk-a" for f in proposal.findings)
+        assert not any(f.check_id == "chk-ghost" for f in proposal.findings)
+        assert "tests/test_impl.py" not in proposal.baseline_eligible_test_input_paths
+
+    def test_reject_one_accept_other_blocks_shared_baseline_advance(self, tmp_path):
+        """Mandatory partially-resolved multi-check control: accepting
+        chk-a's own item while rejecting chk-b's sibling item (both
+        citing the same shared file) must apply chk-a's effect but
+        never advance the shared file's baseline -- chk-b's own check
+        remains genuinely unresolved, never silently waived."""
+        project_root, repo, _cp, slug_dir, graph_db, original_hash = self._setup(tmp_path)
+        (repo / "tests" / "test_impl.py").write_text(
+            _TEST_TEXT_TWO + "\n# shared edit\n", encoding="utf-8"
+        )
+        graph_db = _sync_graph(repo)
+        source_result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
+        proposal = sr.propose_reconciliation(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db,
+            source_changes=source_result,
+        )
+        assert {f.check_id for f in proposal.findings} == {"chk-a", "chk-b"}
+        assert "tests/test_impl.py" in proposal.baseline_eligible_test_input_paths
+        manifest_path = sr.write_source_reconciliation_manifest(
+            project_root, "demo", proposal.findings, repo_root=repo, target_graph_db=graph_db,
+            baseline_eligible_test_input_paths=proposal.baseline_eligible_test_input_paths,
+        )
+        import tomllib
+        data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+        assert len(data["items"]) == 2
+        for item in data["items"]:
+            item["decision"] = "accept" if item["record_id"] == "CL-DEMO-001" else "reject"
+        manifest_path.write_text(ki._serialize_manifest(data), encoding="utf-8")
+
+        result = ki.apply_manifest(project_root, manifest_path)
+        assert len(result.applied) == 1
+        assert len(result.skipped) == 1
+        assert result.applied[0].new_record_id == "CL-DEMO-001"
+
+        data_after = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+        for item in data_after["items"]:
+            if item.get("kind") == "source_reconciliation" and item.get("state") == "applied":
+                sr.advance_baselines_for_applied_item(
+                    project_root, "demo", item, manifest_items=data_after["items"],
+                )
+        baseline = sr._read_baseline(project_root, "demo")
+        assert baseline["tests/test_impl.py"]["content_hash"] == original_hash  # unchanged
+
+        records = ki.load_slug_records(slug_dir)
+        assert records["CL-DEMO-001"].fields["evidence_support_state"] == "supported"
+        assert records["CL-DEMO-002"].fields["evidence_support_state"] == "partially_supported"
+
+        # Now resolve the sibling too, via a fresh verify-changes-style
+        # proposal + accept + apply -- once every check sharing the
+        # file is genuinely applied, the baseline is free to advance.
+        source_result2 = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
+        proposal2 = sr.propose_reconciliation(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db,
+            source_changes=source_result2,
+        )
+        assert {f.check_id for f in proposal2.findings} == {"chk-b"}
+        manifest_path2 = sr.write_source_reconciliation_manifest(
+            project_root, "demo", proposal2.findings, repo_root=repo, target_graph_db=graph_db,
+            baseline_eligible_test_input_paths=proposal2.baseline_eligible_test_input_paths,
+        )
+        data2 = tomllib.loads(manifest_path2.read_text(encoding="utf-8"))
+        data2["items"][0]["decision"] = "accept"
+        manifest_path2.write_text(ki._serialize_manifest(data2), encoding="utf-8")
+        ki.apply_manifest(project_root, manifest_path2)
+        data2_after = tomllib.loads(manifest_path2.read_text(encoding="utf-8"))
+        for item in data2_after["items"]:
+            if item.get("kind") == "source_reconciliation" and item.get("state") == "applied":
+                sr.advance_baselines_for_applied_item(
+                    project_root, "demo", item, manifest_items=data2_after["items"],
+                )
+        baseline2 = sr._read_baseline(project_root, "demo")
+        new_hash = oracle.sha256_file(repo / "tests" / "test_impl.py")
+        assert baseline2["tests/test_impl.py"]["content_hash"] == new_hash
+
+
+# ---------------------------------------------------------------------------
+# Phase 89A corrective pass -- bounded check 1: a non-Python oracle
+# input (never indexed by the target's own symbol graph) is still
+# tracked, directly by content hash.
+# ---------------------------------------------------------------------------
+
+
+class TestNonPythonFixtureTracking:
+    def _setup(self, tmp_path):
+        project_root = tmp_path / "knowledge-root"
+        repo = _build_repo(tmp_path)
+        (repo / "tests" / "fixtures").mkdir(parents=True)
+        fixture_path = repo / "tests" / "fixtures" / "data.journal"
+        fixture_path.write_text("2026-01-01 opening balance\n", encoding="utf-8")
+        contract_path, slug_dir = _setup_slug(project_root, "demo", checks=[
+            _default_check(test_input_paths=["tests/test_impl.py", "tests/fixtures/data.journal"])
+        ])
+        result_path = (
+            project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--r1.yaml"
+        )
+        _write_fake_result(result_path, contract_path, check_id="chk-a", repo_root=repo)
+        _write_flat(slug_dir / "EV-TEST-1.yaml", {
+            "id": "EV-TEST-1", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{result_path.relative_to(project_root)}"',
+        })
+        _write_flat(slug_dir / "CL-DEMO-001.yaml", {
+            "id": "CL-DEMO-001", "kind": "claim",
+            "supporting_evidence": ["EV-TEST-1"], "contradicting_evidence": [],
+            "evidence_support_state": "partially_supported",
+        })
+        # The graph is synced over impl.py/tests/test_impl.py only --
+        # the fixture is deliberately never indexed, mirroring a real
+        # non-Python oracle input (tests/fixtures/filtered.journal).
+        graph_db = _sync_graph(repo)
+        return project_root, repo, fixture_path, graph_db
+
+    def test_new_fixture_can_still_have_a_baseline_established(self, tmp_path):
+        project_root, repo, fixture_path, graph_db = self._setup(tmp_path)
+        result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
+        assert "tests/fixtures/data.journal" in result.new_files
+        established = sr.establish_baselines_for_new_files(
+            project_root, "demo", repo_root=repo, result=result, target_graph_db=graph_db,
+        )
+        assert "tests/fixtures/data.journal" in established
+        baseline = sr._read_baseline(project_root, "demo")
+        assert (
+            baseline["tests/fixtures/data.journal"]["content_hash"]
+            == oracle.sha256_file(fixture_path)
+        )
+
+    def test_changed_fixture_is_detected_not_stale_graph_index(self, tmp_path):
+        project_root, repo, fixture_path, graph_db = self._setup(tmp_path)
+        sr.establish_source_baseline(
+            project_root, "demo", "tests/fixtures/data.journal", oracle.sha256_file(fixture_path)
+        )
+        fixture_path.write_text(
+            "2026-01-01 opening balance\n2026-01-02 groceries\n", encoding="utf-8",
+        )
+        result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
+        assert any(
+            f.path == "tests/fixtures/data.journal" and f.resolution == "test_input_change"
+            for f in result.changed
+        )
+        assert not any(f.path == "tests/fixtures/data.journal" for f in result.stale_graph_index)
+
+    def test_unchanged_fixture_reports_nothing(self, tmp_path):
+        project_root, repo, fixture_path, graph_db = self._setup(tmp_path)
+        sr.establish_source_baseline(
+            project_root, "demo", "tests/fixtures/data.journal", oracle.sha256_file(fixture_path)
+        )
+        result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
+        assert not any(f.path == "tests/fixtures/data.journal" for f in result.changed)
+        assert not any(f.path == "tests/fixtures/data.journal" for f in result.stale_graph_index)
+
+    def test_deleted_fixture_reported_distinctly(self, tmp_path):
+        project_root, repo, fixture_path, graph_db = self._setup(tmp_path)
+        sr.establish_source_baseline(
+            project_root, "demo", "tests/fixtures/data.journal", oracle.sha256_file(fixture_path)
+        )
+        fixture_path.unlink()
+        result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
+        assert "tests/fixtures/data.journal" in result.deleted_files
+
+    def test_unrelated_fixture_never_tracked(self, tmp_path):
+        project_root, repo, fixture_path, graph_db = self._setup(tmp_path)
+        unrelated = repo / "tests" / "fixtures" / "unrelated.journal"
+        unrelated.write_text("nothing to see\n", encoding="utf-8")
+        result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
+        assert "tests/fixtures/unrelated.journal" not in result.new_files
+        assert not any(f.path == "tests/fixtures/unrelated.journal" for f in result.changed)
+
+
+# ---------------------------------------------------------------------------
+# Phase 89A corrective pass -- bounded check 2: working-tree provenance
+# must never silently imply a clean commit was verified when the tree
+# is dirty.
+# ---------------------------------------------------------------------------
+
+
+class TestWorkingTreeProvenance:
+    def test_clean_tree_returns_bare_commit_hash(self, tmp_path):
+        repo = tmp_path / "git-repo"
+        repo.mkdir()
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+        subprocess.run(["git", "config", "user.email", "t@example.com"], cwd=repo, check=True)
+        subprocess.run(["git", "config", "user.name", "t"], cwd=repo, check=True)
+        (repo / "f.txt").write_text("x\n", encoding="utf-8")
+        subprocess.run(["git", "add", "."], cwd=repo, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=repo, check=True)
+        rev = sr._repo_revision(repo)
+        assert "+dirty" not in rev
+        assert len(rev) == 40  # a bare commit hash, nothing appended
+
+    def test_dirty_tree_is_marked_and_carries_content_digests(self, tmp_path):
+        repo = tmp_path / "git-repo"
+        repo.mkdir()
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+        subprocess.run(["git", "config", "user.email", "t@example.com"], cwd=repo, check=True)
+        subprocess.run(["git", "config", "user.name", "t"], cwd=repo, check=True)
+        (repo / "f.txt").write_text("x\n", encoding="utf-8")
+        subprocess.run(["git", "add", "."], cwd=repo, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=repo, check=True)
+        (repo / "f.txt").write_text("y uncommitted\n", encoding="utf-8")  # dirty now
+
+        class _FakeResult:
+            tested_subject_digest = "a" * 64
+            test_input_digest = "b" * 64
+
+        rev = sr._repo_revision(repo, fresh_result=_FakeResult())
+        assert "+dirty" in rev
+        assert "a" * 64 in rev
+        assert "b" * 64 in rev
+
+    def test_dirty_tree_without_fresh_result_still_marks_dirty(self, tmp_path):
+        repo = tmp_path / "git-repo"
+        repo.mkdir()
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+        subprocess.run(["git", "config", "user.email", "t@example.com"], cwd=repo, check=True)
+        subprocess.run(["git", "config", "user.name", "t"], cwd=repo, check=True)
+        (repo / "f.txt").write_text("x\n", encoding="utf-8")
+        subprocess.run(["git", "add", "."], cwd=repo, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=repo, check=True)
+        (repo / "f.txt").write_text("y uncommitted\n", encoding="utf-8")
+        rev = sr._repo_revision(repo)
+        assert rev.endswith("+dirty")
+
+
+# ---------------------------------------------------------------------------
+# Phase 89A corrective pass -- defect B: apply-time re-validation must
+# never trust a stale or tampered cited result.
+# ---------------------------------------------------------------------------
+
+
+def _setup_accepted_manifest(tmp_path):
+    """A single-check, fully proposed-and-accepted (not yet applied)
+    manifest, for the defect-B tamper tests below to mutate on-disk
+    state against before calling `apply`."""
+    project_root = tmp_path / "knowledge-root"
+    repo = _build_repo(tmp_path)
+    contract_path, slug_dir = _setup_slug(project_root, "demo", checks=[_default_check()])
+    _write_flat(slug_dir / "CL-DEMO-001.yaml", {
+        "id": "CL-DEMO-001", "kind": "claim",
+        "supporting_evidence": [], "contradicting_evidence": [],
+        "evidence_support_state": "unsupported",
+    })
+    _write_flat(slug_dir / "REQ-DEMO-001.yaml", {
+        "id": "REQ-DEMO-001", "kind": "requirement",
+        "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
+    })
+    coverable = sr.detect_newly_coverable_checks(project_root, "demo", repo_root=repo, probe=True)
+    assert coverable.coverable
+    proposal = sr.propose_reconciliation(
+        project_root, "demo", repo_root=repo, newly_coverable=coverable.coverable,
+    )
+    manifest_path = sr.write_source_reconciliation_manifest(
+        project_root, "demo", proposal.findings, repo_root=repo,
+    )
+    import tomllib
+    data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+    data["items"][0]["decision"] = "accept"
+    manifest_path.write_text(ki._serialize_manifest(data), encoding="utf-8")
+    result_path = next(
+        (project_root / "planning" / "contracts" / "demo" / "results").glob("chk-a--*.yaml")
+    )
+    return project_root, repo, contract_path, slug_dir, manifest_path, result_path
+
+
+class TestApplyTimeRevalidation:
+    def test_legitimate_untampered_item_still_applies(self, tmp_path):
+        project_root, repo, _cp, slug_dir, manifest_path, _rp = _setup_accepted_manifest(tmp_path)
+        result = ki.apply_manifest(project_root, manifest_path)
+        assert len(result.applied) == 1
+        records = ki.load_slug_records(slug_dir)
+        assert records["CL-DEMO-001"].fields["evidence_support_state"] == "supported"
+
+    def test_tampered_raw_output_is_refused(self, tmp_path):
+        (
+            project_root,
+            repo,
+            _cp,
+            slug_dir,
+            manifest_path,
+            result_path,
+        ) = _setup_accepted_manifest(tmp_path)
+        reparsed = oracle.parse_oracle_result(result_path)
+        raw_path = project_root / reparsed.raw_output_ref
+        raw_path.write_text("TAMPERED", encoding="utf-8")
+        result = ki.apply_manifest(project_root, manifest_path)
+        assert len(result.applied) == 0
+        assert "failed re-validation" in result.skipped[0].reason
+        records = ki.load_slug_records(slug_dir)
+        assert records["CL-DEMO-001"].fields["evidence_support_state"] == "unsupported"
+        assert not any(r.kind == "evidence" for r in records.values())
+
+    def test_tampered_outcome_is_refused(self, tmp_path):
+        (
+            project_root,
+            repo,
+            _cp,
+            slug_dir,
+            manifest_path,
+            result_path,
+        ) = _setup_accepted_manifest(tmp_path)
+        text = result_path.read_text(encoding="utf-8")
+        tampered = text.replace("outcome: PASS", "outcome: FAIL")
+        assert tampered != text
+        result_path.write_text(tampered, encoding="utf-8")
+        result = ki.apply_manifest(project_root, manifest_path)
+        assert len(result.applied) == 0
+        assert "disagrees" in result.skipped[0].reason
+        records = ki.load_slug_records(slug_dir)
+        assert not any(r.kind == "evidence" for r in records.values())
+
+    def test_tampered_contract_id_is_refused(self, tmp_path):
+        (
+            project_root,
+            repo,
+            _cp,
+            slug_dir,
+            manifest_path,
+            result_path,
+        ) = _setup_accepted_manifest(tmp_path)
+        text = result_path.read_text(encoding="utf-8")
+        tampered = text.replace("contract_id: REQ-X-001", "contract_id: REQ-GHOST-999")
+        assert tampered != text
+        result_path.write_text(tampered, encoding="utf-8")
+        result = ki.apply_manifest(project_root, manifest_path)
+        assert len(result.applied) == 0
+        records = ki.load_slug_records(slug_dir)
+        assert not any(r.kind == "evidence" for r in records.values())
+
+    def test_tampered_check_id_is_refused(self, tmp_path):
+        (
+            project_root,
+            repo,
+            _cp,
+            slug_dir,
+            manifest_path,
+            result_path,
+        ) = _setup_accepted_manifest(tmp_path)
+        text = result_path.read_text(encoding="utf-8")
+        tampered = text.replace("check_id: chk-a", "check_id: chk-ghost")
+        assert tampered != text
+        result_path.write_text(tampered, encoding="utf-8")
+        result = ki.apply_manifest(project_root, manifest_path)
+        assert len(result.applied) == 0
+        assert "no longer matches" in result.skipped[0].reason
+        records = ki.load_slug_records(slug_dir)
+        assert not any(r.kind == "evidence" for r in records.values())
+
+    def test_tampered_scope_is_refused(self, tmp_path):
+        (
+            project_root,
+            repo,
+            _cp,
+            slug_dir,
+            manifest_path,
+            result_path,
+        ) = _setup_accepted_manifest(tmp_path)
+        text = result_path.read_text(encoding="utf-8")
+        tampered = text.replace("scope: scope A", "scope: scope GHOST")
+        assert tampered != text
+        result_path.write_text(tampered, encoding="utf-8")
+        result = ki.apply_manifest(project_root, manifest_path)
+        assert len(result.applied) == 0
+        records = ki.load_slug_records(slug_dir)
+        assert not any(r.kind == "evidence" for r in records.values())
+
+    def test_tampered_test_input_is_refused(self, tmp_path):
+        """Editing the test input after persistence changes the live
+        `test_input_digest` recomputation -- the cited result no longer
+        matches the current fixture/test files, so apply must refuse."""
+        project_root, repo, _cp, slug_dir, manifest_path, _rp = _setup_accepted_manifest(tmp_path)
+        (repo / "tests" / "test_impl.py").write_text(
+            "def test_ok():\n    assert True  # edited after persistence\n", encoding="utf-8",
+        )
+        result = ki.apply_manifest(project_root, manifest_path)
+        assert len(result.applied) == 0
+        assert "failed re-validation" in result.skipped[0].reason
+        records = ki.load_slug_records(slug_dir)
+        assert not any(r.kind == "evidence" for r in records.values())
+
+    def test_missing_repo_root_is_refused_fail_closed(self, tmp_path):
+        project_root, repo, _cp, slug_dir, manifest_path, _rp = _setup_accepted_manifest(tmp_path)
+        import tomllib
+        data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+        data["items"][0]["repo_root"] = str(tmp_path / "does-not-exist")
+        manifest_path.write_text(ki._serialize_manifest(data), encoding="utf-8")
+        result = ki.apply_manifest(project_root, manifest_path)
+        assert len(result.applied) == 0
+        assert "fail-closed" in result.skipped[0].reason
+
+
+# ---------------------------------------------------------------------------
+# Phase 89A corrective pass -- defect C: idempotent retry recovery must
+# never mistake its own completed write for a concurrent-edit conflict.
+# ---------------------------------------------------------------------------
+
+
+class TestIdempotentRetryRecovery:
+    def test_recovers_after_claim_written_but_manifest_state_not_persisted(self, tmp_path):
+        """The crash scenario this defect targets: the Claim write
+        succeeded but the caller never got to mark the manifest item
+        `state="applied"` -- a retry must recognise its own completed
+        effect and succeed idempotently, not refuse as a false
+        concurrent-edit conflict."""
+        project_root, repo, _cp, slug_dir, manifest_path, _rp = _setup_accepted_manifest(tmp_path)
+        first = ki.apply_manifest(project_root, manifest_path)
+        assert len(first.applied) == 1
+        claim_after_first = (slug_dir / "CL-DEMO-001.yaml").read_text(encoding="utf-8")
+
+        import tomllib
+        data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+        data["items"][0]["state"] = "pending"  # as if the flag never persisted
+        manifest_path.write_text(ki._serialize_manifest(data), encoding="utf-8")
+
+        second = ki.apply_manifest(project_root, manifest_path)
+        assert len(second.applied) == 1
+        assert "recovered from an interrupted retry" in second.applied[0].reason
+        assert (slug_dir / "CL-DEMO-001.yaml").read_text(encoding="utf-8") == claim_after_first
+
+        records = ki.load_slug_records(slug_dir)
+        evidence_ids = [r.record_id for r in records.values() if r.kind == "evidence"]
+        assert len(evidence_ids) == 1  # no duplicate Evidence
+        claim = records["CL-DEMO-001"]
+        supporting = ki._extract_id_strings(claim.fields["supporting_evidence"])
+        assert supporting == evidence_ids
+        assert claim.fields["evidence_support_state"] == "supported"
+
+    def test_evidence_written_claim_not_yet_updated_resumes_normally(self, tmp_path):
+        """A crash between the Evidence write and the Claim write: the
+        next attempt must reuse the already-written Evidence (never a
+        duplicate) and still go on to update the Claim -- this is NOT
+        the idempotent-recovery short-circuit (the Claim itself is
+        still untouched, so base_claim_hash still matches)."""
+        (
+            project_root,
+            repo,
+            _cp,
+            slug_dir,
+            manifest_path,
+            result_path,
+        ) = _setup_accepted_manifest(tmp_path)
+        reparsed = oracle.parse_oracle_result(result_path)
+
+        # Simulate the exact on-disk state a crash right after the
+        # Evidence write (but before the Claim write) would leave.
+        pre_ev_id = "EV-X-900"
+        _write_flat(slug_dir / f"{pre_ev_id}.yaml", {
+            "id": pre_ev_id, "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{result_path.relative_to(project_root)}"',
+        })
+        assert ki._find_existing_evidence_for_run(
+            project_root, ki.load_slug_records(slug_dir),
+            reparsed.contract_id, reparsed.check_id, reparsed.run_id,
+        ) == pre_ev_id
+
+        result = ki.apply_manifest(project_root, manifest_path)
+        assert len(result.applied) == 1
+        records = ki.load_slug_records(slug_dir)
+        evidence_ids = [r.record_id for r in records.values() if r.kind == "evidence"]
+        assert evidence_ids == [pre_ev_id]  # reused, never duplicated
+        claim = records["CL-DEMO-001"]
+        assert pre_ev_id in claim.fields["supporting_evidence"]
+        assert claim.fields["evidence_support_state"] == "supported"
+
+    def test_genuine_concurrent_claim_edit_is_still_refused_after_recovery_fix(self, tmp_path):
+        """The idempotent-recovery pre-check must never be tricked by a
+        real, unrelated human edit to the Claim's own statement field
+        -- it is not "this item's own effect already present" just
+        because the Claim happens to differ from base_claim_hash."""
+        project_root, repo, _cp, slug_dir, manifest_path, _rp = _setup_accepted_manifest(tmp_path)
+        claim_path = slug_dir / "CL-DEMO-001.yaml"
+        claim_path.write_text(
+            claim_path.read_text(encoding="utf-8") + "\nstatement: hand-edited\n", encoding="utf-8",
+        )
+        result = ki.apply_manifest(project_root, manifest_path)
+        assert len(result.applied) == 0
+        assert "race" in result.skipped[0].reason
+        records = ki.load_slug_records(slug_dir)
+        assert not any(r.kind == "evidence" for r in records.values())
+
+    def test_cli_apply_retry_is_idempotent_for_baseline_advancement(self, tmp_path, monkeypatch):
+        """Defect C, scenario 4: re-running `knowledge apply` against an
+        already-applied manifest must still (re-)advance the baseline
+        for every file it touched -- recovering from a crash between
+        `apply_manifest` returning and baseline advancement completing,
+        without ever duplicating Evidence or re-mutating the Claim."""
+        project_root = tmp_path / "knowledge-root"
+        repo = _build_repo(tmp_path)
+        contract_path, slug_dir = _setup_slug(project_root, "demo", checks=[_default_check()])
+        _write_flat(slug_dir / "CL-DEMO-001.yaml", {
+            "id": "CL-DEMO-001", "kind": "claim",
+            "supporting_evidence": ["EV-SRC-1", "EV-TEST-1"], "contradicting_evidence": [],
+            "evidence_support_state": "partially_supported",
+        })
+        _write_flat(slug_dir / "EV-SRC-1.yaml", {
+            "id": "EV-SRC-1", "kind": "evidence", "evidence_kind": "source",
+            "source_ref": '"impl.py:5 def target_function"',
+        })
+        _write_flat(slug_dir / "REQ-DEMO-001.yaml", {
+            "id": "REQ-DEMO-001", "kind": "requirement",
+            "depends_on": ["CL-DEMO-001"], "check_id": "chk-a",
+        })
+        result_path = (
+            project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--r1.yaml"
+        )
+        _write_fake_result(result_path, contract_path, check_id="chk-a", repo_root=repo)
+        _write_flat(slug_dir / "EV-TEST-1.yaml", {
+            "id": "EV-TEST-1", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{result_path.relative_to(project_root)}"',
+        })
+        sr.establish_source_baseline(
+            project_root, "demo", "tests/test_impl.py",
+            oracle.sha256_file(repo / "tests" / "test_impl.py"),
+        )
+        (repo / "tests" / "test_impl.py").write_text(
+            "def test_ok():\n    assert True  # changed\n", encoding="utf-8",
+        )
+        monkeypatch.chdir(project_root)
+        res = runner.invoke(
+            cli.app, ["knowledge", "verify-changes", "demo", "--repo-root", str(repo)]
+        )
+        assert res.exit_code == 0
+        reconciliation_dir = project_root / "planning" / "knowledge" / "demo" / "reconciliation"
+        manifest_path = next(reconciliation_dir.glob("*-source.toml"))
+        import tomllib
+        data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+        data["items"][0]["decision"] = "accept"
+        manifest_path.write_text(ki._serialize_manifest(data), encoding="utf-8")
+
+        res1 = runner.invoke(cli.app, ["knowledge", "apply", str(manifest_path)])
+        assert res1.exit_code == 0
+        new_hash = oracle.sha256_file(repo / "tests" / "test_impl.py")
+        baseline = sr._read_baseline(project_root, "demo")
+        assert baseline["tests/test_impl.py"]["content_hash"] == new_hash
+
+        # Retry the exact same command against the now-fully-applied
+        # manifest -- must remain idempotent (no duplicate Evidence, no
+        # error) and keep the baseline exactly where it correctly is.
+        res2 = runner.invoke(cli.app, ["knowledge", "apply", str(manifest_path)])
+        assert res2.exit_code == 0
+        records = ki.load_slug_records(slug_dir)
+        evidence_ids = [r.record_id for r in records.values() if r.kind == "evidence"]
+        assert len(evidence_ids) == len(set(evidence_ids))
+        baseline_after_retry = sr._read_baseline(project_root, "demo")
+        assert baseline_after_retry["tests/test_impl.py"]["content_hash"] == new_hash
