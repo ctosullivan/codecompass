@@ -59,7 +59,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   demonstration ran. `decisions/0096` documents the four planned
   tradeoffs plus the implementation-contract resolutions made during
   this stage. Stages 89B/89C and Phase 89's own roadmap exit gate
-  remain not started — this phase is not marked `done`.
+  remain not started — this phase is not marked `done`. **Independent
+  `release-phase-auditor` audit** (`planning/retros/
+  _audit-phase-89-stage-89a.md`): first pass **FAIL** on one narrow,
+  mechanical finding (64 new `ruff` E501 violations in the two new
+  files; all ten substantive checklist points, including a live
+  independent reproduction of detector (b), confirmed sound); fixed by
+  pure line-wrapping (`1f59a1c`, zero logic change); a focused re-audit
+  confirmed the fix and returned **PASS WITH NON-BLOCKING OBSERVATIONS**
+  (`115c87d`) — two items carried forward to Phase 89's terminal
+  closeout (asymmetric Evidence/Claim-append retry test coverage; a
+  deferred `docs-reconstructor` drift audit), neither blocking. Stage
+  89A is closed on this verdict.
 - **Phase 89 — third planning amendment (Task A mechanism, Evidence
   identity, exit-gate semantics, baseline freshness) — still planning
   only**: a fresh, independent-orchestrator re-verification found the

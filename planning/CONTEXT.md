@@ -150,6 +150,21 @@ executed under this authorisation), and the roadmap's own positive exit
 gate (§9) — Phase 89 remains `in progress`, not `done`, in `planning/
 ROADMAP.md`.
 
+**Stage 89A independent audit** (`planning/retros/_audit-phase-89-stage-89a.md`,
+fresh `release-phase-auditor` dispatch, never the implementer): first
+pass returned **FAIL** on one narrow, mechanical finding — the two new
+files introduced 64 `ruff` E501 violations not present before this
+stage (every one of the ten substantive checklist points, including a
+live, independent reproduction of detector (b), was confirmed sound).
+Fixed by pure line-wrapping (commit `1f59a1c`, zero logic change,
+confirmed by a whitespace-insensitive diff); a focused re-audit
+confirmed the fix and returned **PASS WITH NON-BLOCKING OBSERVATIONS**
+(commit `115c87d`) — two items carried forward to Phase 89's terminal
+closeout, not blocking: missing dedicated test coverage for the
+asymmetric Evidence-written/Claim-not-yet-appended retry case, and a
+deferred `docs-reconstructor` drift audit for this stage's doc changes.
+Stage 89A is closed on this verdict.
+
 Phase 87 — Documentation Schema and Knowledge-Compiled Documentation —
 remains `done`, kept below for continuity. All four stages were
 complete: Stage 87A (implemented,
