@@ -71,6 +71,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   closeout (asymmetric Evidence/Claim-append retry test coverage; a
   deferred `docs-reconstructor` drift audit), neither blocking. Stage
   89A is closed on this verdict.
+- **Phase 89 Stage 89A — corrective pass (`decisions/0097`)**: a
+  source-level review found three material defects the original audit's
+  own checklist had not probed for, confirmed against real production
+  data before any fix was written. (A) `_tracked_test_input_paths` was
+  single-valued, silently dropping every check but the last sharing a
+  test-input path — live against the real `balance-from-spec` contract,
+  where `single-section-expense-subtotal`/`multi-section-income-
+  expense-subtotal` already share both `tests/test_reports.py` and
+  `tests/fixtures/filtered.journal`; now one-to-many, with a new
+  `required_by_path`/`accounted_by_path`-derived baseline-eligibility
+  check (`propose_reconciliation` returns `ReconciliationProposal`,
+  not a bare list) so a shared file's baseline only ever advances once
+  every check sharing it has genuinely, successfully reconciled —
+  `advance_baselines_for_applied_item` gains a required `manifest_items`
+  cross-item guard, and `cli.py`'s apply command now re-attempts
+  baseline advancement for every already-`applied` item on every run,
+  making it retry-safe. (B) `_apply_source_reconciliation` never
+  re-validated a cited result at the apply-time write boundary beyond
+  an identity-tuple check — now reuses the existing Phase 82
+  `oracle.evaluate_result_precedence` (contract/check identity, scope,
+  digests, raw-output hash, fail-closed if the item's own recorded
+  `repo_root` checkout is unavailable) and independently derives
+  `target_field` from the effective outcome rather than ever trusting
+  the manifest's own cached value. (C) a crash after a Claim write
+  succeeded but before the caller recorded `state="applied"` made a
+  retry fail as a false concurrent-edit conflict — a new, narrow,
+  read-only idempotent-recovery pre-check distinguishes this from a
+  genuine concurrent human edit, which is still refused exactly as
+  before. Two further bounded fixes: a non-Python oracle input (a
+  fixture with no `source_files` graph row) is now tracked by direct
+  content hash instead of being permanently misreported as a stale
+  graph index; `_repo_revision` now marks a dirty working tree and
+  embeds the real `tested_subject_digest`/`test_input_digest` rather
+  than silently implying a clean commit was verified. 24 new tests
+  (`tests/test_source_reconciliation.py`, 57 total); full suite (1523
+  tests collected: 1517 passed, 2 skipped, 4 pre-existing sandbox-
+  environment failures in `test_execute_doc_example.py` excluded —
+  confirmed present, unrelated, at the unmodified `1bf83c2` baseline
+  too), both strict validators, and `ruff` (167 pre-existing findings,
+  confirmed byte-identical to the true `1bf83c2` baseline via a `git
+  stash` comparison — zero new findings) all pass. Independently
+  re-demonstrated end to end against fresh, disposable real `~/
+  projects/ledgerkit` scratch copies via the real CLI (`planning/retros/
+  phase-89-stage-89a-corrective-ledgerkit-demonstration.md`): the
+  shared-file dual-attribution fix, reject-one/accept-other blocking
+  premature baseline advancement (and the baseline correctly advancing
+  once the sibling is later resolved), a tampered raw output rejected
+  during a real `apply`, an interrupted post-Claim-write retry
+  recovering idempotently, a genuine pre-apply concurrent Claim edit
+  still refused, a non-Python fixture change detected correctly, and
+  the original detector (a)/(b) demonstrations continuing to behave
+  identically. Stage 89A remains closed; this corrective pass does not
+  reopen or extend it into Stage 89B/89C, and Phase 89 itself is not
+  marked `done`.
 - **Phase 89 — third planning amendment (Task A mechanism, Evidence
   identity, exit-gate semantics, baseline freshness) — still planning
   only**: a fresh, independent-orchestrator re-verification found the

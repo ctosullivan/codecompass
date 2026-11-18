@@ -165,6 +165,53 @@ asymmetric Evidence-written/Claim-not-yet-appended retry case, and a
 deferred `docs-reconstructor` drift audit for this stage's doc changes.
 Stage 89A is closed on this verdict.
 
+**Stage 89A corrective pass (2026-11-18, `decisions/0097`)**: a
+source-level review found three material defects the original audit's
+own ten-point checklist had not been scoped to probe for. (A)
+`_tracked_test_input_paths` built a single-valued `{path: check_id}`
+mapping, silently dropping every check but the last sharing a
+test-input path — confirmed live against the real `balance-from-spec`
+contract, where `single-section-expense-subtotal`/`multi-section-
+income-expense-subtotal` already share both `tests/test_reports.py`
+and `tests/fixtures/filtered.journal`; fixed to one-to-many, with a new
+`required_by_path`/`accounted_by_path`-derived baseline-eligibility
+check so a shared file's baseline only ever advances once every check
+sharing it has genuinely, successfully reconciled (`advance_baselines_
+for_applied_item` gains a required `manifest_items` cross-item guard;
+`cli.py`'s apply command now re-attempts baseline advancement for every
+already-`applied` item on every run, making it retry-safe). (B)
+`_apply_source_reconciliation` never re-validated a cited result at the
+apply-time write boundary beyond an identity-tuple check, trusting the
+manifest's own cached `target_field` verbatim — fixed to reuse the
+existing Phase 82 `oracle.evaluate_result_precedence` (contract/check
+identity, scope, digests, raw-output hash, fail-closed if the item's
+own recorded `repo_root` checkout is unavailable) and independently
+derive `target_field` from the effective outcome. (C) a crash after a
+Claim write succeeded but before the caller recorded `state="applied"`
+made a retry fail as a false concurrent-edit conflict — fixed with a
+narrow, read-only idempotent-recovery pre-check; a genuine concurrent
+human edit is still refused exactly as before. Two further bounded
+fixes: a non-Python oracle input (no `source_files` graph row) is now
+tracked by direct content hash instead of being permanently
+misreported `stale_graph_index`; `_repo_revision` now marks a dirty
+working tree and embeds the real `tested_subject_digest`/`test_input_
+digest` rather than silently implying a clean commit was verified. 24
+new tests (`tests/test_source_reconciliation.py`, 57 total); full
+suite (1517 passed, 2 skipped, plus 4 pre-existing sandbox-environment
+failures confirmed present at the unmodified baseline too), both
+strict validators, and `ruff` (167 findings, confirmed byte-identical
+to the unmodified baseline via a `git stash` comparison — zero new
+findings) all pass. Independently re-demonstrated end to end against
+fresh, disposable real `~/projects/ledgerkit` scratch copies via the
+real CLI (`planning/retros/phase-89-stage-89a-corrective-ledgerkit-
+demonstration.md`); the real checkout confirmed untouched throughout.
+`decisions/0097` documents the three resolutions plus the two bounded
+fixes. **A second, fresh independent `release-phase-auditor` pass of
+this corrective work is required and has not yet run** — Stage 89A
+remains closed on its original audit verdict above, and this
+corrective pass does not itself close anything until that second audit
+returns PASS or PASS WITH NON-BLOCKING OBSERVATIONS.
+
 Phase 87 — Documentation Schema and Knowledge-Compiled Documentation —
 remains `done`, kept below for continuity. All four stages were
 complete: Stage 87A (implemented,

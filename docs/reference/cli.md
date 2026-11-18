@@ -202,7 +202,17 @@ kind reconciliation manifest if anything is genuinely proposable —
 never mutating canonical knowledge itself. `apply` (above) remains the
 only command that ever writes a new Evidence record or updates a
 Claim's own fields, and only on an explicit, human-set `decision:
-"accept"`.
+"accept"`. `apply` never trusts a cited result's identity/outcome as
+recorded in the manifest: for every `source_reconciliation` item it
+independently re-validates each cited result (oracle contract/check
+identity, scope, digests, and raw-output hash — reusing the Phase 82
+`evaluate_result_precedence` oracle, requiring the item's own recorded
+target repository checkout to still exist) before writing anything,
+refusing the whole item on any mismatch, staleness, or tampering
+(`decisions/0097`). A retry against an item whose Evidence/Claim
+effect is already durably present recovers idempotently rather than
+being refused as a false concurrent-edit conflict; a genuine
+concurrent change to the Claim is still refused.
 
 ## `codecompass knowledge get|search|trace|gaps|context|export` (Phase 84)
 

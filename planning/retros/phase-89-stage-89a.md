@@ -184,3 +184,40 @@ fallback rather than disguised as the primary rule's own output.
   plan's own mechanism sketch is a starting point, not a contract to
   implement literally when direct source inspection reveals a simpler,
   equally sound alternative.
+
+## 2026-11-18 — corrective pass (`decisions/0097`)
+
+A source-level review, independent of this retro's own original
+"delivered" assessment above, found three material defects the
+original `release-phase-auditor` pass's own ten-point checklist had not
+been scoped to probe for: (A) `_tracked_test_input_paths`'s
+single-valued mapping silently dropping all but one check sharing a
+test-input path (live against the real `balance-from-spec` contract,
+which already has two such checks); (B) `_apply_source_reconciliation`
+never re-validating a cited result against live oracle/checkout state
+at the apply-time write boundary, trusting the manifest's own cached
+`target_field` verbatim; (C) a crash-after-Claim-write-before-state-
+persisted retry failing as a false concurrent-edit conflict. All three
+were confirmed against real source/data before any fix was written,
+fixed, covered by 24 new tests, and re-demonstrated live against fresh
+Ledgerkit scratch copies (`planning/retros/phase-89-stage-89a-
+corrective-ledgerkit-demonstration.md`) — see `CHANGELOG.md` and
+`decisions/0097` for the full account.
+
+**This retro's own §"Limitations and non-goals" above is corrected on
+one point, not merely superseded**: the bullet stating `tests/fixtures/
+filtered.journal` is "correctly, but unavoidably, always reported
+`stale_graph_index`" was accurate when written but is **no longer
+true** — the corrective pass's bounded check 1 resolves exactly this,
+tracking a non-Python oracle input directly by content hash instead.
+Left unedited above (this project's retros are append-only, like its
+ADRs and audit logs) so a future reader sees the original, honest
+assessment at the time it was written; this note is the correction.
+The `codecompass sync` AI-enrichment friction-point bullet is
+unaffected and still stands.
+
+A second, fresh independent `release-phase-auditor` dispatch (never a
+fork of the implementer) against this corrective pass is required
+before it can be treated as closed, and had not yet run as of this
+note — see `planning/retros/_audit-phase-89-stage-89a.md` for its
+append-only verdict history once it does.
